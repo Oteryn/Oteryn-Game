@@ -1,0 +1,78 @@
+name: Configure repository settings
+
+on:
+  push:
+    paths:
+      - .github/workflows/configure-repository-settings.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  configure:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Apply standard repository settings
+        env:
+          GH_TOKEN: ${{ secrets.REPO_ADMIN_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          api="https://api.github.com/repos/${REPOSITORY}"
+
+          curl --fail-with-body --silent --show-error \
+            --request PATCH \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer ${GH_TOKEN}" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "$api" \
+            --data @- <<'JSON' > /tmp/repository.json
+          {
+            "allow_auto_merge": true,
+            "allow_squash_merge": true,
+            "allow_merge_commit": false,
+            "allow_rebase_merge": false,
+            "delete_branch_on_merge": true,
+            "allow_update_branch": true,
+            "use_squash_pr_title_as_default": false,
+            "squash_merge_commit_title": "COMMIT_OR_PR_TITLE",
+            "squash_merge_commit_message": "COMMIT_MESSAGES",
+            "has_projects": true,
+            "has_issues": true,
+            "has_wiki": true,
+            "has_downloads": false
+          }
+          JSON
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data = json.loads(Path('/tmp/repository.json').read_text())
+          expected = {
+              'allow_auto_merge': True,
+              'allow_squash_merge': True,
+              'allow_merge_commit': False,
+              'allow_rebase_merge': False,
+              'delete_branch_on_merge': True,
+              'allow_update_branch': True,
+              'use_squash_pr_title_as_default': False,
+              'squash_merge_commit_title': 'COMMIT_OR_PR_TITLE',
+              'squash_merge_commit_message': 'COMMIT_MESSAGES',
+              'has_projects': True,
+              'has_issues': True,
+              'has_wiki': True,
+              'has_downloads': False,
+          }
+          mismatches = {
+              key: {'expected': value, 'actual': data.get(key)}
+              for key, value in expected.items()
+              if data.get(key) != value
+          }
+          if mismatches:
+              raise SystemExit(f'Repository settings verification failed: {mismatches}')
+          print('Repository settings applied and verified.')
+          PY
