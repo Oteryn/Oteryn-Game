@@ -111,10 +111,19 @@ def configure_ruleset() -> None:
         request("PUT", f"/rulesets/{existing['id']}", expected_ruleset, expected=(200,))
 
 
+def repository_setting_matches(repo: dict[str, Any], key: str, expected: Any) -> bool:
+    actual = repo.get(key)
+    if actual == expected:
+        return True
+    if key == "use_squash_pr_title_as_default" and actual is None:
+        return repo.get("squash_merge_commit_title") == "PR_TITLE"
+    return False
+
+
 def verify() -> None:
     repo = request("GET", "", expected=(200,))
     for key, expected in POLICY["repository"].items():
-        if repo.get(key) != expected:
+        if not repository_setting_matches(repo, key, expected):
             raise ApiError(
                 f"repository setting {key} mismatch: expected {expected!r}, got {repo.get(key)!r}"
             )

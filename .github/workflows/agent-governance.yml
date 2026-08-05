@@ -16,6 +16,7 @@ concurrency:
 
 jobs:
   validate:
+    name: Agent governance / validate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
