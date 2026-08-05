@@ -9,11 +9,26 @@
 
 ## Purpose
 
-Record the remaining architecture decisions in one durable, ordered register. This file distinguishes accepted decisions, decisions that block creation of the real Rust workspace, decisions required before durable gameplay, and subjects deliberately deferred.
+Record the remaining architecture decisions in one durable, ordered register. This file distinguishes decisions that block root-workspace bootstrap, decisions that gate specific implementation layers, decisions required before durable gameplay, and subjects deliberately deferred.
 
 The complete later project horizon is maintained in `GLOBAL_ARCHITECTURE_DECISION_REGISTER.md`. That register preserves gameplay, client, content, operations and product domains without forcing them to be designed before they block the current stage.
 
 Chat history is not authoritative. Accepted ADRs, this backlog, the global register, the active programme task and live PR/CI state are the continuation sources.
+
+## Stable gate identifiers
+
+Use these identifiers in tasks, PRs, prompts and cross-repository coordination. Section numbers or stage letters are presentation only and must not replace the stable ID.
+
+- `FND-01` — Workspace and Dependency Contract.
+- `FND-02` — `protocol-oteryn` v1 Contract.
+- `FND-03` — Runtime Execution Contract.
+- `FND-04` — Identity, Game Session, Admission and Character Lease Contract.
+- `DUR-01` — Identifier Contract.
+- `DUR-02` — Persistence v1 Contract.
+- `DUR-03` — Item Transaction and Anti-Duplication Contract.
+- `DUR-04` — Content, World Detail and Scripting Contract.
+- `VSL-01` — Foundation Vertical-Slice Programme.
+- `VSL-02` — Exact Rust Client Migration Contract.
 
 ## Already accepted
 
@@ -63,23 +78,66 @@ The following are no longer open questions:
 
 Canonical decisions: ADR-0001 through ADR-0005.
 
-## Decisions blocking the real Rust workspace
+## Progressive implementation policy
 
-The real root Cargo workspace must not be created until these contracts have enough accepted detail to prevent an incorrect foundation.
+Architecture contracts remain mandatory for public and durable behavior, but compile-time and prototype evidence are part of architecture discovery.
 
-### B1. Workspace and dependency contract
+### Gate 0 — before `FND-01`
+
+- Do not create the canonical root Cargo workspace.
+- Documentation, repository discovery and read-only technical research are allowed.
+- A disposable experiment may exist only outside the canonical product paths or on a clearly bounded spike branch, with no compatibility, production-readiness or source-of-truth claim.
+
+### Gate 1 — after `FND-01`
+
+A separately authorized workspace-bootstrap task may create the smallest compilable root workspace and executable architecture checks. It may include only members required by an immediate consumer, test or vertical proof.
+
+Allowed:
+
+- root Cargo metadata and toolchain configuration;
+- minimal placeholder-free crates/applications selected by `FND-01`;
+- compile-only interfaces and test fixtures that do not silently freeze an unresolved public contract;
+- dependency-graph checks and forbidden-edge validation;
+- bounded, reversible technical spikes whose results are recorded as evidence.
+
+Not yet allowed unless its own gate has passed:
+
+- production `protocol-oteryn` wire compatibility claims;
+- authoritative channel/runtime behavior;
+- live Game Session admission or character lease behavior;
+- durable authoritative gameplay mutation;
+- broad client migration or broad content import.
+
+### Gate 2 — layer-specific implementation
+
+- `FND-02` gates canonical protocol schemas/codecs, production framing and compatibility claims.
+- `FND-03` gates authoritative runtime scheduling, ordering, lifecycle and recovery behavior.
+- `FND-04` gates production admission, Game Session validation and character lease behavior.
+- `DUR-01` through `DUR-03` gate authoritative durable character, item and currency mutation.
+- `DUR-04` gates broad content import and durable scripting behavior.
+- `VSL-01` gates the claim that the first native gameplay slice is complete.
+
+A spike is never a substitute for an accepted contract. It must be reversible, isolated from public contracts, excluded from production defaults and either removed or deliberately promoted by a later accepted task.
+
+## Foundation contracts
+
+### `FND-01` — Workspace and Dependency Contract
+
+This is the only contract that blocks creation of the canonical root Cargo workspace.
 
 Decide:
 
-- exact initial workspace members and crate/application names;
-- legal dependency directions;
+- exact minimal initial workspace members and crate/application names;
+- legal dependency directions and forbidden edges;
 - ownership of shared identifiers, domain contracts, protocol schemas and test fixtures;
 - feature policy and dependency review rules;
 - target Rust edition and minimum supported toolchain;
 - initial CI targets, at minimum Linux server and Windows client;
-- whether optional client-only and server-only dependencies are isolated cleanly.
+- whether optional client-only and server-only dependencies are isolated cleanly;
+- executable checks that enforce the accepted dependency graph;
+- criteria for adding, splitting or merging crates later.
 
-Candidate shape:
+The following is a **capability horizon**, not an accepted initial workspace and not a checklist to create empty crates:
 
 ```text
 apps/client
@@ -108,9 +166,11 @@ crates/scripting
 crates/test-support
 ```
 
-Mandatory direction: domain and simulation crates do not depend on Tokio, TCP, TLS, HTTP, SQL, PostgreSQL, Platform APIs, renderer state or UI widgets. World/content schema crates do not depend on Tauri, editor UI or renderer implementation.
+An initial member requires an immediate named consumer and observable acceptance. Empty layering crates, speculative abstractions and convenience cycles are prohibited.
 
-### B2. `protocol-oteryn` v1 contract
+Mandatory direction: domain and simulation crates do not depend on Tokio, TCP, TLS, HTTP, SQL, PostgreSQL, Platform APIs, renderer state or UI widgets. World/content schema crates do not depend on Tauri, editor UI or renderer implementation. These boundaries must become machine-checked after bootstrap.
+
+### `FND-02` — `protocol-oteryn` v1 Contract
 
 Decide:
 
@@ -130,7 +190,7 @@ Decide:
 
 Do not create a second silent native protocol beside the existing Platform contract. Rust memory layout or unstable serializer output cannot be the public wire contract.
 
-### B3. Runtime execution contract
+### `FND-03` — Runtime Execution Contract
 
 Decide:
 
@@ -146,7 +206,7 @@ Decide:
 - channel lifecycle: starting, ready, full, draining, unhealthy, recovering and stopped;
 - checkpoint and crash-recovery boundary.
 
-### B4. Identity, Game Session, admission and lease contract
+### `FND-04` — Identity, Game Session, Admission and Character Lease Contract
 
 The ownership boundary is accepted; the exact mechanism is not.
 
@@ -186,7 +246,7 @@ audience
 
 ## Decisions required before durable gameplay mutation
 
-### D1. Identifier contract
+### `DUR-01` — Identifier Contract
 
 Freeze representations and visibility for:
 
@@ -207,7 +267,7 @@ Freeze representations and visibility for:
 
 Decide UUID/UUIDv7/integer usage, global versus scoped uniqueness, wire encoding, database encoding, public visibility and entity-ID reuse rules.
 
-### D2. Persistence v1 contract
+### `DUR-02` — Persistence v1 Contract
 
 PostgreSQL is selected. Still decide:
 
@@ -227,7 +287,7 @@ PostgreSQL is selected. Still decide:
 
 The default direction remains current-state tables plus revisions, idempotent commands, transactional outbox and bounded append-only critical audit records, not full event sourcing of every simulation event.
 
-### D3. Item transaction and anti-duplication contract
+### `DUR-03` — Item Transaction and Anti-Duplication Contract
 
 Decide, either in Persistence v1 or a separate contract:
 
@@ -239,7 +299,7 @@ Decide, either in Persistence v1 or a separate contract:
 - crash and partial-failure rollback/recovery;
 - audit evidence proving that items or currency cannot be duplicated.
 
-### D4. Remaining content migration and scripting contract
+### `DUR-04` — Content, World Detail and Scripting Contract
 
 ADR-0005 accepts the native world format, Oteryn Studio, stable content identity, chunk/semantic geography separation, encounter-placement hierarchy and legacy-conversion boundary. Still decide:
 
@@ -260,7 +320,7 @@ ADR-0005 accepts the native world format, Oteryn Studio, stable content identity
 
 Scripts must not receive a global mutable `Game` object or direct SQL access. Legacy tools and proprietary assets must not be copied without confirmed rights and pinned provenance.
 
-### D5. Foundation vertical-slice programme
+## `VSL-01` — Foundation Vertical-Slice Programme
 
 Approve ownership, implementation order and evidence for this minimum scenario:
 
@@ -290,7 +350,7 @@ Approve ownership, implementation order and evidence for this minimum scenario:
 - boss, raid, chest and daily-reward anti-hopping policy;
 - encounter uniqueness and cooldown scope across channels;
 - world communication and presence service boundary;
-- exact Rust client migration revision, provenance and rollback;
+- `VSL-02` exact Rust client migration revision, provenance and rollback;
 - event journal and checkpoint timing;
 - metrics, tracing, log redaction and audit retention;
 - updater, asset signing and release security;
@@ -300,7 +360,7 @@ Approve ownership, implementation order and evidence for this minimum scenario:
 
 ## Explicitly deferred
 
-These do not block the initial workspace or foundation vertical slice when extension points remain safe:
+These do not block the initial workspace bootstrap or foundation vertical slice when extension points remain safe:
 
 - final house presence and entry topology;
 - live migration of an active channel;
@@ -316,32 +376,49 @@ These do not block the initial workspace or foundation vertical slice when exten
 - advanced client prediction;
 - extraction of world services into independent deployable microservices.
 
-## Recommended decision order
+## Programme task model
+
+The canonical foundation task is a non-owning programme checkpoint. It preserves accepted state, dependencies and one next action, but it must not claim files or act as the implementation task for all contracts.
+
+Every substantial gate uses its own:
+
+- task ID containing the stable gate ID where practical;
+- owner, owned paths and public contracts;
+- dedicated branch and PR;
+- focused validation, independent audit and exact-head CI;
+- terminal archive and ownership release.
+
+No package may edit another active package's owned contract without explicit coordination.
+
+## Recommended decision and implementation order
 
 ```text
-1. Workspace and Dependency Contract
-2. protocol-oteryn v1 Contract
-3. Runtime Execution Contract
-4. Identity, Game Session, Admission and Character Lease Contract
-5. Identifier Contract
-6. Persistence v1 Contract
-7. Item Transaction and Anti-Duplication Contract, if not complete in Persistence v1
-8. Complete remaining content/world-detail/scripting contracts under ADR-0005
-9. Foundation Vertical-Slice Programme
-10. Pin and accept the Rust Client Migration Contract
-11. Create the real workspace and begin a separately authorized implementation programme
+1. Accept FND-01 Workspace and Dependency Contract
+2. Run a separate minimal workspace-bootstrap implementation task
+3. Accept FND-02 protocol-oteryn v1 Contract
+4. Accept FND-03 Runtime Execution Contract
+5. Accept FND-04 Identity, Game Session, Admission and Character Lease Contract
+6. Accept DUR-01 Identifier Contract
+7. Accept DUR-02 Persistence v1 Contract
+8. Accept DUR-03 Item Transaction and Anti-Duplication Contract, if not complete in DUR-02
+9. Complete DUR-04 content/world-detail/scripting contracts under ADR-0005
+10. Accept VSL-01 Foundation Vertical-Slice Programme
+11. Accept VSL-02 Exact Rust Client Migration Contract before moving client code
+12. Execute the separately authorized vertical-slice implementation programme
 ```
 
 Contracts may be developed in parallel only when ownership and dependencies do not overlap. Cross-repository changes require separate authorized tasks, branches and PRs with one coordination ID and explicit rollout order.
 
 ## Start gates
 
-- Contracts B1 through B4 must be accepted before creation of the real Rust workspace.
-- Identifier, Persistence v1 and item anti-duplication contracts must be accepted before authoritative durable item/currency mutation.
-- ADR-0005 is the accepted world/content direction; its remaining concrete format, migration, asset-rights and scripting contracts must be accepted before broad content import.
-- The vertical-slice programme must name observable E2E evidence before implementation is called complete.
-- The exact Rust client migration SHA, provenance and rollback must be accepted before moving client code.
+- `FND-01` must be accepted before creation of the canonical root Cargo workspace.
+- After `FND-01`, only a separate minimal bootstrap task is authorized; unresolved layer contracts still gate their production behavior.
+- `FND-02`, `FND-03` and `FND-04` gate canonical protocol, authoritative runtime and production admission/lease implementation respectively.
+- `DUR-01`, `DUR-02` and `DUR-03` must be accepted before authoritative durable character, item or currency mutation.
+- ADR-0005 is the accepted world/content direction; `DUR-04` must be accepted before broad content import or durable scripting.
+- `VSL-01` must name observable E2E evidence before implementation is called complete.
+- `VSL-02` must pin source SHA, provenance and rollback before moving client code.
 
 ## Current next action
 
-Execute `docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` and draft, audit, accept, merge and archive the **Workspace and Dependency Contract**.
+Execute `docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` and draft, audit, accept, merge and archive `FND-01` — the **Workspace and Dependency Contract**.
