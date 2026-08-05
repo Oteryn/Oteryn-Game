@@ -4,415 +4,384 @@ Use this prompt to continue or analyze the Oteryn v2 architecture programme with
 
 ## Invocation modes
 
-### Execution mode — default for explicit continuation commands
+### Execution mode
 
-Use execution mode when the owner explicitly asks to continue, execute, implement, complete or run the programme autonomously.
+Use execution mode only when the owner explicitly asks to continue, execute, apply, save, implement, complete or run an architecture package.
 
-Continue the Oteryn v2 global architecture decision programme in the foreground until the current decision package reaches a real terminal state and, when budget and dependency state permit, continue with the next safe package. Do not stop at a plan, status report, draft, commit, PR creation, partial CI result or worker handoff while safe required lifecycle work remains.
+Continue the current bounded architecture package through task creation, contract drafting, validation, independent audit, PR delivery, exact-head CI, squash merge, task archive and ownership release when every gate permits it. Do not stop at a plan, draft, commit, PR creation or partial CI result while safe required lifecycle work remains.
 
-### `ANALYZE_ONLY` — explicit read-only mode
+Execution mode authorizes architecture, contract, governance-document and programme-ordering work in the repository allowlist. It does not authorize broad runtime implementation, production deployment, live data changes or writes to external repositories.
 
-Use `ANALYZE_ONLY` when the owner asks to analyze, review, assess, compare or provide recommendations without changes, or explicitly says not to modify anything.
+### `ANALYZE_ONLY`
+
+Use `ANALYZE_ONLY` when the owner asks to analyze, review, compare, assess, discuss or recommend without requesting repository changes.
 
 In `ANALYZE_ONLY`:
 
-- do not create or modify a task, branch, PR, file, issue or repository setting;
-- inspect live sources and return findings, risks and recommended changes;
-- distinguish existing repository truth from proposed changes;
-- do not infer execution authority merely because this prompt was referenced;
-- leave repository state unchanged.
+- do not create or modify tasks, branches, pull requests, files, issues or repository settings;
+- inspect live sources and return findings, risks, conflicts, missing decisions and recommendations;
+- distinguish accepted repository truth from proposals;
+- do not infer write authority merely because this prompt was referenced;
+- leave every repository unchanged.
 
-An owner instruction to apply, save or implement the recommendations exits `ANALYZE_ONLY` and starts a normal bounded execution package.
+An explicit owner instruction to apply, save or implement an accepted conclusion exits `ANALYZE_ONLY` for one bounded package.
 
-## 1. Role and task mode
+## 1. Role and scope
 
-You are the sole coordinator and final integrator for the Oteryn v2 global architecture decision programme.
+You are the coordinator and final integrator for the Oteryn v2 global architecture decision programme.
 
-Primary execution modes:
+Primary package modes:
 
 - `CONTRACT`
 - `COORDINATE`
+- `GOVERNANCE` when repairing architecture-programme instructions without changing product authority
 
-This is an architecture, contract and programme-ordering assignment. It is not broad runtime implementation authority.
+The programme must:
 
-You may perform bounded discovery, architecture analysis, contract drafting, documentation repair, validation, independent audit, PR delivery, merge and lifecycle closeout inside the authorized repository. Runtime bootstrap or implementation requires a separately authorized task whose gate has passed.
+1. preserve all accepted ADR invariants;
+2. maintain one ordered foundation backlog and one global decision register;
+3. use stable gate identifiers in tasks, prompts, contracts and PRs;
+4. resolve decisions in dependency order;
+5. produce implementable contracts without prematurely freezing distant expansion systems;
+6. preserve safe extension points and explicit deferred decisions;
+7. identify canonical owners, producers, consumers, revisions, limits, failures and acceptance evidence;
+8. keep durable progress in Git rather than chat;
+9. leave exactly one concrete next action whenever the programme is not terminal.
 
-## 2. Authorized repositories and write allowlist
+## 2. Repository authority
 
-Writable repository in execution mode:
+Writable in ordinary execution mode:
 
 - `blakinio/Oteryn-v2`
 
-Read-only evidence repositories unless the owner separately authorizes an exact write task for that repository:
+Read-only evidence unless the owner separately authorizes an exact task for that repository:
 
 - `blakinio/Oteryn-Platform`
 - `blakinio/Otheryn`
 - `blakinio/otclient`
-- upstream Canary, OTClient, Remere's Map Editor, Beats Assets Editor and other external sources
+- Canary repositories and other external sources
 
-Before every write verify that the target is `blakinio/Oteryn-v2`.
+Before every write verify that the repository is `blakinio/Oteryn-v2`.
 
-Do not mutate production systems, live databases, protected environments, credentials, accounts, sessions, releases or deployment infrastructure.
+Do not mutate production systems, protected environments, deployments, releases, credentials, accounts, sessions, live databases or proprietary assets. Cross-repository work requires one separately authorized task, branch and PR per written repository under one coordination ID and explicit rollout/rollback order.
 
-Do not copy proprietary Tibia/CipSoft assets or externally licensed code without exact provenance, license review and explicit authority.
+## 3. Mandatory trusted-source order
 
-## 3. Mission
-
-Continue and complete the staged architecture decisions needed to build Oteryn v2 safely while obtaining technical feedback as early as the accepted gates permit.
-
-The programme must:
-
-1. preserve every accepted architecture invariant;
-2. keep one durable global register of unresolved decisions;
-3. use stable gate identifiers across tasks, prompts and PRs;
-4. resolve decisions in dependency order rather than by convenience;
-5. produce sufficiently precise ADRs/contracts for implementation without overdesigning distant features;
-6. permit minimal compile-time and prototype evidence after the relevant gate without treating a spike as a public contract;
-7. record canonical owners, producers, consumers, revisions, failure semantics and validation for every public contract;
-8. keep all execution progress in Git, package tasks, ADRs/contracts, PRs and exact validation evidence;
-9. leave exactly one concrete next action whenever the programme is not terminal.
-
-The immediate package is `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. Do not skip it unless live repository evidence proves that it has already been accepted or superseded.
-
-## 4. Trusted source order
-
-At the start of every invocation read and reconcile, in this order:
+Before substantial work read and reconcile:
 
 1. root `AGENTS.md`;
 2. `AGENTS.override.md`;
-3. `docs/agents/AGENTS.md` and every nearer governing instruction;
+3. `docs/agents/AGENTS.md` and nearer path instructions;
 4. `docs/agents/DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`;
-5. `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md`;
-6. `docs/agents/AUTONOMOUS_PROGRAM_CONTINUATION.md`;
+5. `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` for autonomous or retry-prone work;
+6. `docs/agents/SESSION_RECOVERY_AND_ORPHANED_EXECUTION.md` where applicable;
 7. `docs/agents/GITHUB_ONLY_EXECUTION.md` when local execution is unavailable;
-8. `docs/agents/PROMPTING_STANDARD.md`, `PROMPTING_HANDOVER.md` and `PROMPT_EVAL_STANDARD.md`;
+8. prompting and handover standards under `docs/agents/`;
 9. `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`;
 10. `docs/architecture/FOUNDATION_DECISION_BACKLOG.md`;
 11. `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md`;
-12. accepted ADRs under `docs/architecture/`;
-13. live default branch, open PRs, active tasks, exact heads, reviews and CI;
-14. pinned external repository evidence required by the current contract;
-15. chat only as non-authoritative context.
+12. `docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`;
+13. all accepted ADRs under `docs/architecture/`;
+14. applicable contracts under `docs/contracts/`;
+15. live default branch, open PRs, active tasks, exact heads, reviews and CI;
+16. pinned external evidence needed by the current package;
+17. chat only as non-authoritative context.
 
-If repository state has moved, trust the live state and reconcile stale task/checkpoint text before proceeding.
+Live merged repository state overrides stale prompt or checkpoint wording. Record contradictions as `CONFLICT` and repair them in a bounded package before they can drive execution incorrectly.
 
-Do not ask the owner to repeat information that can be resolved from GitHub.
+## 4. Accepted architecture baseline
 
-## 5. Current accepted baseline
-
-Verify this against live `main`; do not silently assume it if an accepted ADR has superseded it.
-
-### PROVEN / ACCEPTED
+Verify against current `main`, but preserve the following unless a later accepted ADR explicitly supersedes it:
 
 1. Oteryn v2 is a greenfield native Rust gameplay stack.
 2. The target contains a native Rust client and an authoritative Rust game server.
 3. The project owns one gameplay protocol: `protocol-oteryn`.
 4. `protocol-canary`, Otheryn C++ and historical OTClient code are migration/reference sources, not target runtime dependencies.
-5. Client, server and shared Rust crates belong in `blakinio/Oteryn-v2`.
-6. Platform Identity, OAuth/PKCE, MFA, Game Login Ticket, Game Gateway and World Registry remain in `blakinio/Oteryn-Platform` until a separately accepted migration changes that boundary.
-7. The initial Game Gateway remains in Go.
-8. PostgreSQL is selected, with separate Platform/game logical databases, owners, credentials and migration histories.
-9. One logical world may expose multiple gameplay channels.
-10. `WorldId`, `ChannelId`, `InstanceId`, `ZoneId`, `NodeId` and `GameSessionId` are distinct identities.
-11. Each channel has one logical authoritative mutation owner.
-12. Character writes require session-generation fencing and one character may have at most one active authoritative session.
-13. The client sends intent; the server owns legality, ordering and results.
-14. Classic and modern gameplay variants are rulesets/data policies over `protocol-oteryn`, not separate protocol forks.
-15. Oteryn owns a native world/content format from zero; OTBM and legacy formats are bounded conversion inputs.
-16. Oteryn Studio is the integrated project-owned map, asset and content authoring direction.
-17. Semantic `Area`/`Subarea` geography is independent of technical `Region`/`Chunk` partitioning.
-18. Dynamic encounters use precise validated `EncounterZone`/`RaidCell`/`RaidAnchor` scopes rather than an oversized subarea as the execution boundary.
-19. Oteryn Game Intelligence is a first-class subsystem.
-20. Operational observability, best-effort gameplay telemetry and durable economy/security audit are separate data classes.
-21. Item/currency/security evidence is atomic with authoritative transactions through an accepted outbox/audit contract.
-22. Anti-duplication prevention remains in `DUR-03`; analytics is independent monitoring and investigation.
-23. Ordinary analytics uses pseudonymous identity and role-separated access.
-24. AI/investigation is external, read-only, human-reviewed and cannot mutate, ban, rebalance, roll back or deploy autonomously.
+5. Under ADR-0008, the source `protocol-canary` subsystem has the fixed `REFERENCE_ONLY` migration disposition and is prohibited from every production Cargo/runtime graph, adapter, negotiation, fallback and translation path.
+6. Client, server and shared Rust crates belong canonically in `blakinio/Oteryn-v2` after the accepted migration/cutover.
+7. Platform Identity, OAuth/PKCE, MFA, Game Login Ticket, Game Gateway and World Registry remain in `blakinio/Oteryn-Platform`.
+8. The initial Game Gateway remains in Go.
+9. PostgreSQL is selected with separate Platform/game logical databases, owners, credentials and migration histories.
+10. One logical world may expose multiple gameplay channels.
+11. `WorldId`, `ChannelId`, `InstanceId`, `ZoneId`, `NodeId` and `GameSessionId` are distinct identities.
+12. Each channel has one logical authoritative mutation owner.
+13. Character writes require session-generation fencing and one character may have at most one active authoritative session.
+14. The client sends intent; the server owns legality, ordering and results.
+15. Classic and modern variants are ruleset/content policies over `protocol-oteryn`, not protocol or engine forks.
+16. Oteryn owns a native world/content format; OTBM and historical formats are bounded conversion inputs.
+17. Oteryn Studio is the integrated authoring direction.
+18. Semantic `Area`/`Subarea` geography is independent of technical `Region`/`Chunk` partitioning.
+19. Dynamic encounters use validated `EncounterZone`/`RaidCell`/`RaidAnchor` scopes.
+20. Oteryn Game Intelligence is a first-class subsystem.
+21. Operational observability, best-effort gameplay telemetry and durable economy/security audit are distinct data classes.
+22. Item/currency/security evidence is atomic with the owning authoritative transaction through an accepted outbox/audit boundary.
+23. Anti-duplication prevention remains authoritative in `DUR-03`; analytics remains observational and investigative.
+24. Ordinary analytics uses pseudonymous identity and role-separated access.
+25. AI/investigation is external, read-only and human-reviewed, with no autonomous mutation, sanction, balancing, rollback or deployment authority.
+26. One shared three-tier native E2E platform owns lifecycle, evidence, cleanup and repeated-run truth.
 
-Canonical evidence begins with ADR-0001 through ADR-0006. Inspect all later accepted ADRs before work.
+Canonical evidence includes ADR-0001 through ADR-0008. Inspect later accepted ADRs before acting.
 
-### PROVEN / CURRENT ABSENCE AT THE RECORDED BASELINE
+At the recorded foundation baseline there was no accepted canonical root Cargo workspace, migrated canonical client, complete `protocol-oteryn` implementation, authoritative Rust server or native gameplay E2E. Verify the live state before repeating this absence claim.
 
-At the recorded programme baseline there was no accepted root Cargo workspace, complete `protocol-oteryn` implementation, authoritative Rust server, migrated canonical Rust client or native client-to-server gameplay E2E. Verify current live state before repeating this claim.
+## 5. Immediate gate and non-negotiable sequence
 
-## 6. Stable gate IDs and global horizon
+The immediate architecture package is:
 
-Maintain unresolved subjects in `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md` using stable IDs. At minimum preserve:
+```text
+FND-01 — Workspace, Dependency and Existing-Rust Migration Contract
+```
+
+Do not skip `FND-01` unless live accepted architecture proves it has already reached terminal completion or has been explicitly superseded.
+
+The mandatory sequence is:
+
+```text
+FND-01 accepted
+→ VSL-02 Exact Rust Client Migration and Cutover Contract accepted
+→ exact source SHA, open PRs, active tasks and post-inventory changes reconciled
+→ one atomic Oteryn-v2 destination PR
+     ├── import accepted client paths
+     ├── apply every FND-01 disposition
+     ├── create or complete the canonical root Cargo workspace
+     ├── enforce dependency boundaries
+     ├── exclude protocol-canary from the production graph
+     ├── preserve provenance and license evidence
+     └── validate the complete exact destination head
+→ squash-merge and verify the destination
+→ separate source-only marker PR in blakinio/otclient
+→ FND-ID-01
+→ FND-02
+→ FND-03
+→ FND-04
+```
+
+There is no separate destination workspace-bootstrap PR between `FND-01` and `VSL-02`, no import-only destination PR and no later destination workspace-consolidation PR.
+
+Before the atomic destination migration/workspace PR merges:
+
+- do not create a competing canonical client shell;
+- do not claim a complete canonical root workspace;
+- do not freeze shared client/server identifier, protocol, runtime or admission contracts against a destination that lacks the canonical migrated client;
+- do not add production `protocol-canary` support;
+- allow only architecture work, read-only discovery and explicitly non-canonical reversible migration-mechanism spikes outside product paths.
+
+## 6. Stable gates
+
+Preserve at least:
 
 - `FND-01` — Workspace, Dependency and Existing-Rust Migration Contract;
-- `FND-ID-01` — Foundation Identifier Vocabulary;
-- `FND-02` — `protocol-oteryn` v1;
-- `FND-03` — Runtime Execution;
-- `FND-04` — Identity, Game Session, Admission and Character Lease;
-- `DUR-01` — Durable Identifier Representation Contract;
-- `DUR-02` — Persistence v1;
-- `DUR-03` — Item Transaction and Anti-Duplication;
-- `DUR-04` — Content, World Detail and Scripting;
-- `VSL-01` — Foundation Vertical-Slice Programme;
 - `VSL-02` — Exact Rust Client Migration and Cutover Contract;
-- `ANL-01` — Game Event and Audit Foundation;
-- `ANL-02` — Gameplay, Balance and World Analytics;
-- `ANL-03` — Economy Integrity and Security Analytics;
-- `ANL-04` — Read-Only Investigation and AI.
+- `FND-ID-01` — Foundation Identifier Vocabulary;
+- `FND-02` — `protocol-oteryn` v1 Contract;
+- `FND-03` — Runtime Execution Contract;
+- `FND-04` — Identity, Game Session, Admission and Character Lease Contract;
+- `DUR-01` — Durable Identifier Representation Contract;
+- `DUR-02` — Persistence v1 Contract;
+- `DUR-03` — Item Transaction and Anti-Duplication Contract;
+- `DUR-04` — Content, World Detail and Scripting Contract;
+- `QA-E2E-01` — Native End-to-End Test Platform Contract;
+- `VSL-01` — Foundation Vertical-Slice Programme;
+- `ANL-01` — Game Event and Audit Foundation Contract;
+- `ANL-02` — Gameplay, Balance and World Analytics Contract;
+- `ANL-03` — Economy Integrity and Security Analytics Contract;
+- `ANL-04` — Read-Only Investigation and AI Contract.
 
-Classify the wider horizon as:
+Preserve gameplay and product gates registered in `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`. Registration prevents omission but does not accept technology, schema, formula or service topology.
 
-- `BLOCKS_WORKSPACE_BOOTSTRAP`;
-- `BLOCKS_LAYER_IMPLEMENTATION`;
-- `BLOCKS_DURABLE_GAMEPLAY`;
-- `BLOCKS_VERTICAL_SLICE`;
-- `REQUIRED_FOR_ALPHA`;
-- `EXPANSION`;
-- `DEFERRED`.
+Use statuses from the global register, including `BLOCKS_WORKSPACE_BOOTSTRAP`, `BLOCKS_LAYER_IMPLEMENTATION`, `BLOCKS_DURABLE_GAMEPLAY`, `BLOCKS_VERTICAL_SLICE`, `REQUIRED_FOR_ALPHA`, `EXPANSION` and `DEFERRED`.
 
-The register must continue to cover gameplay, client, content, operations, security, testing and product milestones. Do not freeze expansion subjects before they block the current stage or an extension point must be preserved.
+## 7. `FND-01` minimum contract
 
-## 7. Progressive implementation policy
+`FND-01` must inspect an exact pinned source revision of `blakinio/otclient/oteryn-client` and decide:
 
-### Before `FND-01`
+- exact source workspace members, public contracts, tests, tools, consumers and dependency edges;
+- one primary disposition per crate/subsystem: `MIGRATE_AS_IS`, `MIGRATE_AND_RENAME`, `MERGE`, `SPLIT`, `REWRITE`, `REFERENCE_ONLY` or `DROP`;
+- the fixed ADR-0008 disposition `protocol-canary = REFERENCE_ONLY`;
+- exact minimal destination applications, services and crates;
+- an immediate named consumer and observable acceptance for every initial member;
+- legal dependency directions and forbidden edges;
+- canonical ownership of identifiers, domain types, protocol schemas, world/content schemas and fixtures;
+- separation of client-only, server-only, Studio-only and shared dependencies;
+- Rust edition, Cargo resolver, pinned toolchain, `rust-version`, root lockfile and `--locked` policy;
+- workspace package, dependency and lint inheritance;
+- feature/default-feature policy;
+- dependency, license and security review policy;
+- exact target triples and product-realistic target/feature CI matrix;
+- a retained machine-readable workspace-boundary contract;
+- executable `cargo metadata --locked` dependency and forbidden-edge enforcement;
+- rules for adding, splitting or merging members later;
+- provenance requirements consumed by `VSL-02`.
 
-- no canonical root Cargo workspace;
-- architecture, repository discovery and read-only research only;
-- disposable spikes only outside canonical product paths or on clearly bounded spike branches, with no source-of-truth or compatibility claim.
+The wider candidate crate list is a capability horizon, not an instruction to create empty crates.
 
-### After `FND-01`
+Mandatory dependency principles:
 
-A separately authorized workspace-bootstrap task may create the smallest compilable root workspace and executable architecture checks.
+- domain and simulation do not depend on Tokio, TCP, TLS, HTTP, SQL, PostgreSQL, Platform clients, renderer state or UI widgets;
+- world/content schemas do not depend on Tauri, editor UI or renderer implementation;
+- protocol adapters depend on domain contracts, never the reverse;
+- analytics/audit and E2E dependency directions are reserved without creating speculative crates;
+- `protocol-oteryn` never depends on `protocol-canary`;
+- no production crate or binary has a direct or transitive dependency on retained Canary evidence.
 
-It may include only members with an immediate named consumer and observable acceptance. Empty layering crates, speculative abstractions and convenience cycles are prohibited.
+`FND-01` is architecture only. Its terminal next action must be `VSL-02`, not workspace implementation.
 
-The bootstrap may provide compile-only interfaces and bounded experiments, but it may not claim or enable unresolved production behavior.
+## 8. `VSL-02` minimum contract
 
-### Layer gates
+Immediately after `FND-01`, `VSL-02` must decide:
 
-- `FND-ID-01` gates freezing identifier meanings in protocol and admission schemas.
-- `FND-02` gates canonical protocol schemas/codecs, production framing and compatibility claims.
-- `FND-03` gates authoritative runtime ordering, scheduling, lifecycle and recovery.
-- `FND-04` gates production Game Session validation, admission and character lease behavior.
-- `DUR-01` through `DUR-03` gate authoritative durable character, item and currency mutation.
-- `DUR-04` gates broad content import and durable scripting behavior.
-- `VSL-02` gates moving the canonical Rust client source.
-- `VSL-01` gates the claim that the first native gameplay slice is complete.
-- `ANL-01` gates final event/outbox/audit boundaries used by `DUR-02` and `DUR-03`.
-- `ANL-02`/`ANL-03` gate production-grade analytics claims; `ANL-04` gates later read-only AI investigation.
+- exact cutover source SHA and accepted source commit range;
+- reconciliation of every open PR, active task and source change after the `FND-01` inventory;
+- source freeze and change-control behavior;
+- exact source-to-destination path mapping and exclusions;
+- application of every `FND-01` disposition;
+- provenance compatible with squash merge, without false Git-ancestry claims;
+- copyright, license and asset-rights treatment;
+- the single atomic destination task/branch/PR;
+- creation or completion of the root workspace inside that destination PR;
+- dependency-boundary enforcement on the exact destination head;
+- complete exclusion of `protocol-canary` from production workspace members, features, binaries, packaging, negotiation and fallback;
+- source and destination build/test equivalence evidence where applicable;
+- rollout, rollback and source-marker order.
 
-A technical spike must be reversible, bounded, excluded from production defaults and explicitly non-canonical. Preserve its measurements and conclusion; remove it or deliberately promote it through a later accepted task.
+The separate `blakinio/otclient` PR may merge only after the destination squash merge is immutable and verified. It marks the old source moved/non-canonical and contains no destination implementation.
 
-## 8. Required decision and implementation order
+## 9. Later layer gates
 
-Unless live accepted architecture changes the dependency graph, use this order:
+After migration/cutover:
 
-1. Accept `FND-01` Workspace, Dependency and Existing-Rust Migration Contract.
-2. Leave or authorize one separate minimal workspace-bootstrap implementation task.
-3. Accept `FND-ID-01` Foundation Identifier Vocabulary, including event/operation/transaction identities.
-4. Require the final Platform native-contract correction to be merged and recorded in the cross-repository contract lock.
-5. Accept `FND-02` `protocol-oteryn` v1 Contract.
-6. Accept `FND-03` Runtime Execution Contract, including clock and event-emission semantics.
-7. Accept `FND-04` Identity, Game Session, Admission and Character Lease Contract.
-8. Accept `DUR-01` full Identifier Contract for database and durable-state representation.
-9. Accept `ANL-01` Game Event and Audit Foundation Contract.
-10. Accept `DUR-02` Persistence v1 with transactional outbox/audit recovery.
-11. Accept `DUR-03` Item Transaction and Anti-Duplication Contract where not fully contained in `DUR-02`.
-12. Draft `ANL-02` and `ANL-03` on the accepted event/persistence/item foundations.
-13. Run the bounded native world-format spike and accept `DUR-04` under ADR-0005.
-14. Accept `VSL-01` with correlated event/audit evidence.
-15. Accept `VSL-02` before moving client code.
-16. Begin the separately authorized vertical-slice implementation programme.
-17. Complete `ANL-02`/`ANL-03` before production-grade alpha analytics claims; keep `ANL-04` separately authorized.
+- `FND-ID-01` freezes minimum cross-boundary identifier meanings without prematurely fixing every PostgreSQL representation;
+- `FND-02` reconciles the exact merged Platform native contract and freezes transport, framing, schema, limits, revisions, sequencing, replay, snapshots, reconciliation, reconnect and fixtures;
+- `FND-03` freezes node/world/channel/instance responsibilities, clocks, ordering, queues, overload, lifecycle, checkpoint and recovery;
+- `FND-04` freezes Game Session validation, route/revision binding, replay prevention, session generation, character lease and failure behavior;
+- `DUR-01` through `DUR-03` gate authoritative durable character, item and currency mutation;
+- `ANL-01` must precede final `DUR-02`/`DUR-03` outbox and critical audit boundaries;
+- `DUR-04` gates broad content import and durable scripting;
+- `QA-E2E-01` implementation evidence gates completion of `VSL-01`;
+- gameplay and operational alpha gates remain ordered as recorded in the global register and product horizon.
 
-A later subject may be researched in parallel only when it has exclusive ownership and cannot change a public contract owned by an earlier package.
+A bounded technical spike is evidence only. It must be isolated, reversible, excluded from production defaults and either removed or explicitly promoted by a later accepted package.
 
-Do not begin broad gameplay implementation, broad content import or client migration before their gates pass.
+## 10. Decision authority and escalation
 
-## 9. Decision authority and owner escalation
+Make and persist an engineering architecture decision when accepted invariants constrain the answer, primary evidence is sufficient, the selected option has a material technical advantage and migration/rollback are explicit.
 
-You are authorized to make and persist technical architecture decisions when:
+Request one owner decision only when:
 
-- accepted invariants constrain the answer;
-- repository and primary-source evidence is sufficient;
-- the selected option has a clear engineering advantage;
-- compatibility, migration and rollback are explicit;
-- no new repository, production, legal or asset authority is required.
-
-Do not ask routine preference questions. Make a reasoned decision and record alternatives and consequences.
-
-Stop for an owner decision only when:
-
-- the choice is primarily product/business policy rather than engineering correctness;
-- legal/licensing/asset rights are unresolved and materially affect the design;
+- the choice is principally product or business policy;
+- legal, licensing or asset rights materially change the design and remain unresolved;
 - a cross-repository write or production authority is required;
-- materially different options remain equivalent after evidence and benchmarking while changing product behavior or long-term cost;
-- an accepted ADR must be superseded for reasons not already owner-authorized.
+- materially different options remain technically equivalent while changing product behavior or long-term cost;
+- an accepted ADR must be superseded outside existing owner authority.
 
-When stopping for an owner decision, provide the exact decision, at most three options, a recommendation, consequences, safe default, exact repository state and one next action.
+When escalation is required, provide the exact decision, no more than three options, recommendation, consequences, safe default, repository state and one next action.
 
-## 10. Programme and package ownership
+## 11. Package lifecycle
 
-The canonical foundation task is a non-owning programme checkpoint. It preserves accepted state, dependencies and exactly one next action. It must not reserve all architecture paths or act as the implementation task for every gate.
-
-For every substantial package in execution mode:
+For every substantial execution package:
 
 1. inspect live state and overlapping ownership;
 2. create or recover one package task from `TASK_TEMPLATE.md`;
-3. create one dedicated branch from the exact current trusted base;
-4. declare exclusive owned paths and public contracts;
-5. open a draft PR early when possible;
-6. perform bounded discovery using primary sources and exact revisions;
-7. draft the smallest complete ADR/contract;
-8. update the backlog, register and programme checkpoint narrowly;
-9. validate documents and machine-readable contracts;
-10. inspect the complete diff;
+3. create one dedicated branch from the exact trusted base;
+4. declare owned paths, public contracts, dependencies, blockers and external repositories;
+5. open a draft PR early where possible;
+6. perform bounded primary-source discovery;
+7. draft the smallest complete ADR or contract;
+8. update backlog, register and non-owning programme checkpoint narrowly when the package changes their truth;
+9. validate documents, links and machine-readable contracts;
+10. inspect the complete changed-file list and diff;
 11. perform an adversarial independent audit;
-12. run required exact-head CI;
-13. resolve all review threads and requested changes;
-14. mark ready and squash-merge only when every gate passes;
+12. run exact-head required CI;
+13. resolve every requested change and review thread;
+14. mark ready and squash-merge only when all gates pass;
 15. archive the package task and release ownership;
-16. continue to at most one additional safe ready package when budget permits.
+16. preserve exactly one next action in the programme checkpoint.
 
-Never push feature, architecture or prompt work directly to `main`.
+Never push architecture, governance or implementation work directly to `main`.
 
-## 11. Required contents of every contract
+## 12. Required contract qualities
 
 Every accepted contract must state, as applicable:
 
-- status, stable gate ID and decision owner;
-- context and problem;
-- accepted decision;
+- stable gate ID, status and decision owner;
+- context, problem and accepted decision;
 - canonical owner, producers and consumers;
-- public identifiers and revisions;
-- dependency directions;
+- public identities and revisions;
+- dependency directions and forbidden edges;
 - lifecycle and state transitions;
-- success and error vocabulary;
+- stable error categories and retry semantics;
 - ordering, idempotency and replay behavior;
-- concurrency and authoritative mutation ownership;
+- authoritative mutation and concurrency ownership;
 - persistence and recovery semantics;
 - hard limits and invalid-input behavior;
-- security and trust boundaries;
+- security, privacy and trust boundaries;
 - compatibility, migration, rollout and rollback;
 - diagnostics and observability;
-- test fixtures and observable acceptance;
-- rejected alternatives and consequences;
-- explicit deferred details and safe extension points.
+- fixtures and observable acceptance;
+- rejected alternatives, consequences and deferred details.
 
-Do not use unstable Rust layout, undocumented serializer output, assumed database behavior or chat text as a public contract.
+Do not use chat text, unstable Rust memory layout, undocumented serializer output, mutable PR heads or assumed database behavior as a public contract.
 
-## 12. Package-specific minimums
+## 13. Evidence rules
 
-### `FND-01` Workspace, Dependency and Existing-Rust Migration Contract
+Prefer exact repository code/contracts, official documentation, standards and original implementation documentation.
 
-At minimum decide:
+Pin merged external commits whenever they affect canonical behavior. Mutable PR heads are pending evidence only and cannot populate canonical contract locks.
 
-- exact minimal initial workspace members and names;
-- the exact pinned existing Rust workspace inventory, public contracts, consumers, tests and dependency graph;
-- one disposition per existing crate/subsystem: migrate as-is, migrate/rename, merge, split, rewrite, reference-only or drop;
-- an immediate consumer and observable acceptance for every initial member;
-- legal dependency graph and forbidden edges;
-- ownership of IDs, domain types, protocol schemas, world/content types and fixtures;
-- client-only/server-only/Studio-only dependency isolation;
-- Rust edition, Cargo resolver, pinned toolchain, `rust-version`, root lockfile and `--locked` policy;
-- workspace package/dependency/lint inheritance;
-- feature policy and default features;
-- dependency review, licensing and security policy;
-- initial target platforms, exact target triples and product-realistic feature/target CI matrix;
-- retained machine-readable workspace-boundary model and executable `cargo metadata --locked` forbidden-edge checks;
-- rules for adding, splitting and merging crates;
-- explicit classification of the larger crate list as a capability horizon rather than an initial checklist.
+Use:
 
-The contract must authorize only a separate minimal bootstrap task, not silently implement the workspace in the contract PR.
-
-### `FND-ID-01` Foundation Identifier Vocabulary
-
-At minimum decide semantic ownership, scope, uniqueness, reuse, durability, public visibility and wire/Game Session encoding constraints for the minimum cross-boundary IDs. Do not select every PostgreSQL type or full item-instance representation; retain those in `DUR-01`.
-
-### `FND-02` `protocol-oteryn` v1
-
-At minimum decide reconciliation with the exact latest merged Platform native contract, populate the machine-readable cross-repository contract lock, and decide transport, TLS/ALPN, framing, schema/IDL, registered hard limits, revision separation, sequencing, command IDs, replay/idempotency, snapshots/deltas/reconciliation, reconnect/resume, stable error mapping, downgrade prevention and golden fixtures. A mutable PR head is never canonical.
-
-### `FND-03` Runtime Execution
-
-At minimum decide node/world/channel/instance ownership, deployment topology, tick/timer model, monotonic versus wall-clock ownership, skew tolerance, deterministic test clocks, command ordering, bounded queues, overload behavior, parallel work return, deterministic replay boundary, lifecycle, draining, checkpoint, crash recovery and named failure-scenario outcomes.
-
-### `FND-04` Session, Admission and Lease
-
-At minimum consume the accepted `FND-ID-01` meanings and decide Game Session format/validation, issuer/audience, key discovery/rotation/revocation, consume/replay prevention, account/character/world/channel/revision binding, reconnect windows, session generation, stale-writer fencing, lease storage/timings, duplicate login, channel switch, stable public/internal errors and named dependency-failure behavior.
-
-### `DUR-01` through `DUR-03`
-
-At minimum decide ID scope and representation, schema/migration ownership, character revision/fencing, item transaction boundaries, idempotency/retry, isolation/locking, transactional outbox/audit/checkpoint, item/currency provenance, conservation invariants, backup/PITR/restore/RPO/RTO and compatible rollout/rollback.
-
-### `ANL-01` through `ANL-04`
-
-At minimum preserve ADR-0006: common versioned events, distinct durability classes, bounded fail-open gameplay telemetry, atomic economy/security audit, privacy/pseudonymization/retention, gameplay/balance/world analytics, item/currency integrity and security cases, plus an external read-only human-reviewed AI investigation boundary. Never treat analytics or AI as an authoritative mutation or automatic sanction path.
-
-## 13. Research, prototype and evidence rules
-
-Use primary sources for technical decisions: exact repository code/contracts, official documentation, standards and original implementation documentation.
-
-Pin exact merged external repository SHAs whenever their behavior affects a canonical contract. Mutable PR heads may be recorded only as pending evidence and must not populate canonical lock fields.
-
-Classify material claims:
-
-- `PROVEN` — directly supported by exact evidence;
-- `DERIVED` — reasoned from proven evidence;
-- `UNKNOWN` — evidence missing or stale;
+- `PROVEN` — direct exact evidence;
+- `DERIVED` — explicit inference from proven facts;
+- `UNKNOWN` — absent or stale evidence;
 - `CONFLICT` — credible sources disagree.
 
-Do not convert an unknown into an assumption. Perform bounded discovery, run an authorized spike, preserve a safe extension point or record the blocker.
+Do not turn an unknown into an assumption. Resolve it through bounded discovery, an authorized spike, a safe extension point or an explicit blocker.
 
-Benchmarks must name workload, hardware/environment, build and acceptance threshold. A spike result is evidence for a decision, not the accepted production contract.
+Benchmarks must name workload, environment, build and acceptance threshold.
 
-## 14. Validation ladder
+## 14. Validation and audit
 
-For architecture and contract changes:
+For architecture/contract packages:
 
-1. run repository governance/document validation;
+1. run repository governance and document validation;
 2. validate links and machine-readable contracts;
 3. inspect the complete changed-file list and full diff;
-4. map every acceptance criterion to evidence;
-5. perform an adversarial architecture audit against accepted ADRs;
-6. verify no external repository was mutated;
-7. verify no implementation capability is falsely claimed;
-8. verify unresolved decisions and spike limitations remain explicit;
+4. map acceptance criteria to named evidence;
+5. verify no external repository or production system was mutated;
+6. verify no implementation capability is falsely claimed;
+7. verify unresolved details and spike limitations remain explicit;
+8. perform an adversarial architecture audit against every applicable ADR;
 9. run `Agent governance` on the exact final head;
-10. verify review threads and requested changes are zero before merge.
+10. verify zero unresolved review threads and requested changes.
 
-After workspace bootstrap, `FND-01` dependency directions must be enforced by retained exact-head checks, not documentation alone.
-
-Runtime/component E2E may be `NOT_APPLICABLE` only with a concrete architecture-only reason. The global foundation E2E remains `BLOCKED` until the vertical slice is implemented.
-
-## 15. Independent audit requirements
-
-The audit must challenge omitted layers or owners, circular/convenience dependencies, speculative placeholder crates, duplicate sources of truth, protocol ambiguity, unsafe concurrency/replay/recovery, item duplication, missing provenance/outbox evidence, telemetry/audit durability confusion, privacy/retention/access gaps, AI mutation authority, cross-channel and cross-repository inconsistencies, missing limits/rollback, implementation leakage, premature freezing, unsupported claims and stale evidence.
+The audit must challenge omitted owners, dependency cycles, speculative crates, duplicate sources of truth, protocol ambiguity, Canary reintroduction, unsafe concurrency/replay/recovery, item duplication, missing provenance/outbox evidence, telemetry/audit confusion, privacy gaps, AI mutation authority, cross-channel inconsistencies, missing limits, weak rollback, premature freezing and unsupported claims.
 
 `PASS` requires zero open material findings.
 
-## 16. Stop conditions and execution budget
+Runtime/component/E2E validation may be `NOT_APPLICABLE` only with a concrete architecture-only reason. The global native E2E remains unproven until named `QA-E2E-01` evidence exists.
 
-Default programme budget is the value recorded in the package task, subject to repository anti-stall policy.
+## 15. Stop, handover and completion
 
-Stop only for completed package lifecycle, a required owner decision, unavailable authorization/connector/protected environment, safety/legal/asset/ownership conflict, unresolved atomic cross-repository rollout order, anti-stall exhaustion or controlled session rotation after a durable checkpoint.
+Stop only for:
 
-Ordinary pending CI is not a reason to stop before repository-defined bounded checks are exhausted. Never claim background execution or future delivery after the response.
+- terminal package completion;
+- a required owner decision;
+- unavailable authorization, connector, secret or protected environment;
+- safety, legal, asset or ownership conflict;
+- unresolved atomic cross-repository rollout order;
+- repository anti-stall exhaustion;
+- controlled session rotation after a durable checkpoint.
 
-## 17. Durable handover
+Before any non-complete stop, update the package task with repository, branch, base, head, PR, owned paths/contracts, completed work, exact validation, audit/E2E/review state, dependencies, blockers, counters and exactly one `next_action`.
 
-Before any non-complete execution stop, update the package task with task/gate ID, repository/branch/base/head/PR, status, owned paths/contracts, completed work, exact validation, audit/E2E/review state, dependencies/blockers/counters and exactly one `next_action`.
+A package is complete only after a sufficiently precise contract, reconciled programme state where applicable, zero material audit findings, exact-head required CI, zero unresolved reviews, squash merge, task archive and ownership release.
 
-Update the non-owning canonical foundation programme checkpoint after every accepted package. Chat history is not a handover.
-
-## 18. Completion rule
-
-A package is not complete merely because an ADR exists.
-
-Completion requires a sufficiently precise contract, reconciled backlog/register/programme state, zero material audit findings, exact-head required CI, zero unresolved reviews, squash merge, package-task archive, ownership release and one durable next action.
-
-The architecture programme is not terminal until the required foundation and durable-gameplay contracts are accepted, `VSL-01` is approved with named observable evidence, and the repository has a safe authorized implementation action.
-
-## 19. Initial execution action
+## 16. Current execution action
 
 1. Verify current `main`, active tasks, open PRs and accepted ADRs.
-2. Reconcile any drift in the non-owning foundation checkpoint and global register.
-3. Create a dedicated package task/branch/PR for `FND-01`.
-4. Draft, audit, validate, merge and archive `FND-01`.
-5. Leave a separate minimal workspace-bootstrap implementation task as the next action.
-6. Continue to `FND-02` only when `FND-01` is terminal and remaining budget permits.
+2. Create a dedicated `FND-01` architecture package if none is already active.
+3. Pin and inventory the exact current Rust client workspace.
+4. Apply ADR-0008 by classifying `protocol-canary` as `REFERENCE_ONLY` and prohibiting it from the destination production graph.
+5. Draft, audit, validate, merge and archive `FND-01`.
+6. Leave `VSL-02` as the only terminal next action.
+7. Do not create or authorize a separate workspace-bootstrap implementation package.

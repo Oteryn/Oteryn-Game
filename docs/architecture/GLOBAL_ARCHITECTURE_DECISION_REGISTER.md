@@ -37,12 +37,13 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | Native world/content model, Oteryn Studio and legacy conversion boundary | `ACCEPTED` | ADR-0005 |
 | Game Intelligence, analytics durability classes and read-only investigation boundary | `ACCEPTED` | ADR-0006 |
 | Native three-tier E2E platform, evidence, cleanup and stability contract | `ACCEPTED` | ADR-0007 |
+| `protocol-canary` fixed as reference-only evidence and excluded from every production runtime/dependency/fallback path | `ACCEPTED` | ADR-0008 |
 
 ## Progressive execution policy
 
 - Before `FND-01`, do not create the canonical root Cargo workspace.
 - After `FND-01`, `VSL-02` is the next mandatory gate; it must pin and reconcile the exact client cutover before shared client/server contracts are frozen.
-- One atomic `blakinio/Oteryn-v2` destination PR must contain the accepted client migration, root-workspace creation/completion, dependency enforcement, `protocol-canary` isolation, provenance and exact-head validation; no separate destination bootstrap PR may follow.
+- One atomic `blakinio/Oteryn-v2` destination PR must contain the accepted client migration, root-workspace creation/completion, dependency enforcement, ADR-0008 `protocol-canary` exclusion, provenance and exact-head validation; no separate destination bootstrap PR may follow.
 - A later `blakinio/otclient` PR is source-only cutover closeout and may merge only after the verified destination squash merge.
 - Do not create a competing placeholder client or claim a complete canonical workspace before the controlled migration/cutover.
 - `FND-ID-01` gates identifier meanings required by protocol and admission contracts after migration.
@@ -60,6 +61,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Status: `BLOCKS_WORKSPACE_BOOTSTRAP`
 - Decide the smallest initial applications, services and crates; every member requires an immediate consumer and observable acceptance.
 - Inventory the exact existing Rust client workspace at a pinned SHA and classify every reusable crate/subsystem as migrate, rename, merge, split, rewrite, reference-only or drop.
+- Apply the binding ADR-0008 classification `protocol-canary = REFERENCE_ONLY`; it may not become a destination production workspace member, dependency, adapter, negotiation candidate, fallback or translation layer.
 - Freeze legal dependency directions and forbidden edges in a retained machine-readable boundary contract.
 - Assign canonical ownership of identifiers, domain contracts, protocol schemas, world/content schemas and fixtures.
 - Select Rust edition, Cargo resolver, pinned toolchain, `rust-version`, root lockfile, workspace metadata/lint inheritance, exact target triples, feature policy and baseline CI.
@@ -76,9 +78,9 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Execute immediately after `FND-01` and before `FND-ID-01`, `FND-02`, `FND-03` or `FND-04`.
 - Pin the exact cutover source SHA from `blakinio/otclient/oteryn-client` and reconcile every open PR, active task and post-inventory source change.
 - Define provenance/history traceability compatible with squash merge, path mapping, exclusions, migration dispositions, source-repository freeze, destination ownership, cutover and rollback.
-- Require one atomic destination PR containing the accepted import, canonical root-workspace creation/completion, dependency enforcement, `protocol-canary` isolation and complete validation.
+- Require one atomic destination PR containing the accepted import, canonical root-workspace creation/completion, dependency enforcement, complete ADR-0008 exclusion of `protocol-canary` from production and complete validation.
 - Prove the migrated client and complete workspace build/test matrix on the exact destination head before the later source-marker PR marks the source non-canonical.
-- Isolate or remove `protocol-canary` from the target runtime graph while preserving bounded reference evidence where needed.
+- Prefer excluding Canary adapter source from the destination product tree; any evidence retained under ADR-0008 must be outside Cargo workspace membership and release packaging with pinned provenance and license treatment.
 - Use one atomic destination task/branch/PR in Oteryn-v2 and one later source-marker task/branch/PR in otclient under one coordination ID and explicit rollout/rollback order.
 - Preserve exact source SHA/range and machine-readable provenance/path mapping; do not claim source commits became destination mainline ancestry through squash merge.
 - Do not claim target-runtime readiness merely because source files exist in the destination.
@@ -103,6 +105,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Produce shared golden fixtures and downgrade protection.
 - Register every externally controlled size/depth/count and map stable failures into the common resource-limit and error vocabularies.
 - Gate canonical wire schemas/codecs and production compatibility claims, not migration/bootstrap evidence.
+- Preserve ADR-0008: no Canary opcode, packet, negotiation, fallback or translation compatibility is a protocol requirement.
 
 ### `FND-03` — Runtime Execution Contract
 
@@ -362,6 +365,7 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 12. VSL-02 uses one atomic Oteryn-v2 destination PR; the later otclient PR is source-marker closeout only.
 13. Every gameplay/product package must reconcile `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`; an unnamed domain may not be silently absorbed into an unrelated gate.
 14. Every vertical-slice or client-visible package must consume `QA-E2E-01`; it may add scenarios and assertions but not a competing E2E lifecycle/evidence platform.
+15. ADR-0008 is binding on `FND-01`, `VSL-02`, `FND-02` and all later client/server packages; no task may reintroduce Canary into production through an optional feature, fallback, compatibility listener or intermediate translation model.
 
 ## Current next action
 
