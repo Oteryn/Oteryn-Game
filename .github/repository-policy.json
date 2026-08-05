@@ -2,6 +2,14 @@
   "schema_version": "1.0",
   "ruleset_name": "Protect main",
   "required_status_check": "Agent governance / validate",
+  "licensing": {
+    "spdx_id": "MPL-2.0",
+    "license_file": "LICENSE",
+    "scope_policy": "docs/repository/LICENSING.md",
+    "reserved_assets_notice": "LICENSE-ASSETS.md",
+    "trademark_notice": "TRADEMARKS.md",
+    "incompatible_with_secondary_licenses": false
+  },
   "repository": {
     "allow_auto_merge": true,
     "allow_squash_merge": true,

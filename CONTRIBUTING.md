@@ -29,6 +29,16 @@ The title is the squash-commit title and must remain meaningful in permanent his
 
 Working commits should be reviewable and must not contain generated build outputs, secrets, credentials, private data, proprietary assets without confirmed rights, or unrelated cleanup. Pull requests are squash-merged.
 
+## Contribution licensing and provenance
+
+Unless explicitly accepted under different terms, contributions to source code, scripts, schemas, configuration, tests and technical documentation are submitted under the Mozilla Public License 2.0 (`MPL-2.0`). See `LICENSE` and `docs/repository/LICENSING.md`.
+
+By submitting a contribution, you represent that you created it or have sufficient rights to provide it under the stated license. Preserve all applicable copyright, license, patent and attribution notices.
+
+Do not submit third-party code, maps, art, audio, fonts, data, documentation or other material without documented provenance and a compatible license. Creative assets and Oteryn branding are governed separately by `LICENSE-ASSETS.md` and `TRADEMARKS.md`.
+
+The project does not currently require copyright assignment or a Contributor License Agreement. Do not describe a contribution as granting proprietary relicensing rights unless a separate written agreement actually provides them.
+
 ## Validation
 
 Run the focused checks named by `docs/agents/BUILD_TEST_MATRIX.md` and the actual workspace. The required GitHub checks must pass on the exact unchanged PR head. A green unrelated or historical run is not evidence for the current change.

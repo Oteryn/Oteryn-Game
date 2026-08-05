@@ -26,3 +26,11 @@ The current foundation assumes one project-owned gameplay protocol (`protocol-ot
 Governance is validated by `python tools/agents/validate_governance.py` and the `Agent governance` GitHub Actions workflow.
 
 Architecture decisions and implementation programmes are maintained under `docs/architecture/` and `docs/agents/`.
+
+## Licensing
+
+Oteryn-v2 source code, tooling, schemas, configuration and technical documentation are licensed under the [Mozilla Public License 2.0](LICENSE) unless a more specific notice applies.
+
+Creative game assets are not automatically covered by MPL-2.0 and remain reserved unless separately licensed. The Oteryn names, logos and branding are also outside the software license grant.
+
+See the complete [licensing policy](docs/repository/LICENSING.md), [creative asset notice](LICENSE-ASSETS.md) and [trademark notice](TRADEMARKS.md).
