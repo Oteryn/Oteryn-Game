@@ -27,6 +27,24 @@ This horizon complements, and does not replace:
 
 A dedicated gate may refine an existing broader gate, but it may not silently redefine an accepted ADR boundary.
 
+## Gameplay idea inventory and provenance
+
+The following documents in `blakinio/canary` are registered as a read-only discovery inventory for future Oteryn gameplay and product analysis:
+
+- `docs/ai-agent/OTS_FUTURE_GAMEPLAY_SYSTEMS.md` — the primary catalogue of future gameplay-system proposals;
+- `docs/ai-agent/OTS_FUTURE_GAMEPLAY_SYSTEMS_CLASSIFICATION.md` — the classification index for the catalogue;
+- `docs/agents/tasks/archive/CAN-20260721-ots-future-gameplay-roadmap.md` — the archived source task and provenance checkpoint;
+- pull request `blakinio/canary#664` — the historical delivery record for the inventory.
+
+These sources are not canonical Oteryn v2 architecture, an accepted product roadmap, an implementation backlog or authorization to copy Canary runtime design. Every proposal remains `PROPOSED / NOT ACCEPTED` until it is:
+
+1. mapped to an existing gate in this horizon or registered through a new non-overlapping gate;
+2. checked against accepted Oteryn v2 ADRs, product direction, legal provenance and shared-engine/profile boundaries;
+3. refined into explicit ownership, state, protocol, persistence, security, migration and acceptance decisions where applicable;
+4. accepted by the owner through the corresponding ADR or dedicated contract.
+
+When an inventory proposal conflicts with accepted Oteryn v2 architecture, the accepted Oteryn v2 decision remains authoritative. Future reviews should reference the inventory rather than duplicate its complete contents in this repository.
+
 ## Decision discipline
 
 For every gate below, a future contract must define:
