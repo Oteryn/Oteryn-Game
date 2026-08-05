@@ -30,6 +30,7 @@ Use these identifiers in tasks, PRs, prompts and cross-repository coordination. 
 - `DUR-03` — Item Transaction and Anti-Duplication Contract.
 - `DUR-04` — Content, World Detail and Scripting Contract.
 - `VSL-01` — Foundation Vertical-Slice Programme.
+- `QA-E2E-01` — Native End-to-End Test Platform Contract.
 - `ANL-01` — Game Event and Audit Foundation Contract.
 - `ANL-02` — Gameplay, Balance and World Analytics Contract.
 - `ANL-03` — Economy Integrity and Security Analytics Contract.
@@ -95,7 +96,16 @@ The following are no longer open questions:
    - AI and investigation remain read-only, external to gameplay and unable to ban, mutate, roll back or deploy autonomously;
    - privacy requires pseudonymous analytics identity, role-separated access and explicit retention, not name-only suppression.
 
-Canonical decisions: ADR-0001 through ADR-0006.
+8. **Native E2E platform direction**
+   - one shared manifest-driven E2E platform owns lifecycle, evidence, timeouts and cleanup;
+   - Tier 1 headless system E2E is the broad deterministic mechanism for Platform/Gateway/protocol/server/PostgreSQL coverage;
+   - Tier 2 instrumented native-client E2E proves real client networking, input, reconciliation, UI and rendering without bypassing server authority;
+   - Tier 3 production-binary smoke E2E proves exact release-candidate artifacts without the in-process test adapter;
+   - hidden retry-until-green is forbidden and every counted physical attempt remains visible;
+   - exact revisions, deterministic controls, first-divergence evidence and cleanup certification are mandatory;
+   - `QA-E2E-01` blocks completion of `VSL-01`, but does not block `FND-01`, `VSL-02` or architecture discovery.
+
+Canonical decisions: ADR-0001 through ADR-0007.
 
 ## Progressive implementation policy
 
@@ -157,6 +167,7 @@ Not yet allowed unless its own gate has passed:
 - `FND-04` gates production admission, Game Session validation and character lease behavior.
 - `DUR-01` through `DUR-03` gate authoritative durable character, item and currency mutation.
 - `DUR-04` gates broad content import and durable scripting behavior.
+- `QA-E2E-01` gates the shared three-tier E2E implementation and named evidence required for `VSL-01` completion.
 - `VSL-01` gates the claim that the first native gameplay slice is complete.
 - `ANL-01` gates final transactional event/outbox/audit boundaries used by `DUR-02` and `DUR-03`.
 - `ANL-02` and `ANL-03` gate production-grade balance/world and economy/security analytics claims.
@@ -483,9 +494,25 @@ Decide:
 
 This is an expansion gate and is not required for the foundation vertical slice.
 
+## `QA-E2E-01` — Native End-to-End Test Platform Contract
+
+ADR-0007 accepts the architecture. Implementation must provide:
+
+- one shared versioned scenario contract and orchestration platform;
+- Tier 1 headless system E2E using production transport and `protocol-oteryn` through the supported Platform/Gateway path;
+- Tier 2 instrumented native-client E2E whose test-only adapter may observe and submit normal actions but may not bypass admission or mutate authoritative state;
+- Tier 3 smoke E2E using exact production-default release-candidate artifacts;
+- deterministic seeds, clocks, topology and fault profiles;
+- stable semantic observations and read-only probes rather than gameplay mutation shortcuts;
+- one result envelope per attempt with exact revisions/hashes, ordered phases, first divergence and cleanup result;
+- visible repeated-run populations with no hidden retry-until-green;
+- PR/main/nightly/release placement proportional to tier and risk.
+
+The canonical client must first be migrated through `VSL-02`. Protocol, admission, durable mutation and content scenarios consume their respective accepted contracts. `QA-E2E-01` blocks completion of `VSL-01`, not the current `FND-01` or migration work.
+
 ## `VSL-01` — Foundation Vertical-Slice Programme
 
-Approve ownership, implementation order and evidence for this minimum scenario:
+Approve ownership, implementation order and evidence for this minimum scenario using the accepted `QA-E2E-01` platform and evidence contract:
 
 1. client authenticates through Platform;
 2. client receives world/channel directory data;
@@ -591,12 +618,13 @@ No package may edit another active package's owned contract without explicit coo
 17. Accept DUR-03 Item Transaction and Anti-Duplication Contract, if not complete in DUR-02
 18. Draft ANL-02 and ANL-03 on the accepted event/persistence/item foundations
 19. Run the bounded world-format spike and complete DUR-04 under ADR-0005
-20. Accept VSL-01 Foundation Vertical-Slice Programme with correlated event/audit evidence
-21. Execute the separately authorized vertical-slice implementation programme
-22. Accept GAME-ABILITY-01, GAME-AI-01 and GAME-INTERACTION-01 before Playable Alpha gameplay breadth is claimed
-23. Accept PROD-LIVEOPS-01, PROD-COMPAT-01, SEC-CLIENT-01, DATA-PRIVACY-01, UX-I18N-A11Y-01 and OPS-GM-01 before Playable Alpha operational completeness is claimed
-24. Complete ANL-02/ANL-03 before production-grade alpha analytics claims; defer ANL-04 until read-only investigation is authorized
-25. Activate expansion/deferred gameplay-product gates only when their milestone or explicit owner decision requires them
+20. Implement QA-E2E-01 incrementally as the client, protocol, admission, persistence and content prerequisites land
+21. Accept VSL-01 Foundation Vertical-Slice Programme with correlated event/audit evidence and named QA-E2E-01 tiers
+22. Execute the separately authorized vertical-slice implementation programme
+23. Accept GAME-ABILITY-01, GAME-AI-01 and GAME-INTERACTION-01 before Playable Alpha gameplay breadth is claimed
+24. Accept PROD-LIVEOPS-01, PROD-COMPAT-01, SEC-CLIENT-01, DATA-PRIVACY-01, UX-I18N-A11Y-01 and OPS-GM-01 before Playable Alpha operational completeness is claimed
+25. Complete ANL-02/ANL-03 before production-grade alpha analytics claims; defer ANL-04 until read-only investigation is authorized
+26. Activate expansion/deferred gameplay-product gates only when their milestone or explicit owner decision requires them
 ```
 
 Contracts may be developed in parallel only when ownership and dependencies do not overlap. Cross-repository changes require separate authorized tasks, branches and PRs with one coordination ID and explicit rollout order.
@@ -615,6 +643,7 @@ Contracts may be developed in parallel only when ownership and dependencies do n
 - `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01` are required before Playable Alpha gameplay breadth is claimed; bounded vertical-slice contracts may precede them.
 - `PROD-LIVEOPS-01`, `PROD-COMPAT-01`, `SEC-CLIENT-01`, `DATA-PRIVACY-01`, `UX-I18N-A11Y-01` and `OPS-GM-01` are required before Playable Alpha operational completeness is claimed.
 - ADR-0005 is the accepted world/content direction; `DUR-04` must be accepted before broad content import or durable scripting.
+- `QA-E2E-01` must be implemented with its required exact evidence before `VSL-01` implementation is called complete; feature packages add scenarios and assertions, not competing lifecycle/evidence runners.
 - `VSL-01` must name observable E2E evidence before implementation is called complete.
 - `ANL-01` must be accepted before final `DUR-02`/`DUR-03` outbox and audit boundaries are frozen.
 - `ANL-02`/`ANL-03` are required before production-grade balance/world and economy/security analytics claims; `ANL-04` remains a later read-only investigation gate.

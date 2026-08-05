@@ -36,6 +36,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | PostgreSQL and separate Platform/game ownership | `ACCEPTED` | ADR-0004 |
 | Native world/content model, Oteryn Studio and legacy conversion boundary | `ACCEPTED` | ADR-0005 |
 | Game Intelligence, analytics durability classes and read-only investigation boundary | `ACCEPTED` | ADR-0006 |
+| Native three-tier E2E platform, evidence, cleanup and stability contract | `ACCEPTED` | ADR-0007 |
 
 ## Progressive execution policy
 
@@ -49,6 +50,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Bounded technical spikes may inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 - `DUR-01` through `DUR-03` remain hard gates before authoritative durable character, item or currency mutation.
 - `ANL-01` must be accepted before `DUR-02`/`DUR-03` finalize transactional outbox and critical audit evidence; analytics consumers never replace authoritative invariants.
+- `QA-E2E-01` is accepted; its three-tier implementation and named evidence block completion of `VSL-01`, but do not block `FND-01`, `VSL-02` or continued architecture work.
 - A spike, placeholder crate or passing compile does not prove a public contract or runtime capability.
 
 ## Stage A — foundation and layer gates
@@ -221,11 +223,22 @@ Registration prevents omission; it does not accept technologies, formulas, schem
 
 ## Stage C — blocks the foundation vertical slice
 
+### `QA-E2E-01` — Native End-to-End Test Platform
+
+- Status: contract `ACCEPTED`; required implementation evidence `BLOCKS_VERTICAL_SLICE`.
+- Canonical source: ADR-0007.
+- Use one shared manifest-driven platform with Tier 1 headless system E2E, Tier 2 instrumented native-client E2E and Tier 3 production-binary smoke E2E.
+- Preserve exact revision/artifact identity, deterministic controls, first-divergence evidence, cleanup certification and every counted physical attempt.
+- Prohibit hidden retry-until-green and overclaiming headless, instrumented or environment-only evidence.
+- Implement incrementally after the canonical client migration and the relevant protocol, admission, persistence and content contracts exist.
+- Require the minimum evidence named in ADR-0007 before `VSL-01` may be called complete.
+
 ### `VSL-01` — Foundation Vertical-Slice Programme
 
 - Status: `BLOCKS_VERTICAL_SLICE`
 - Name owners, implementation order, repositories, branches/PRs and exact observable E2E.
 - Include Platform authentication, Gateway-issued Game Session, server admission, lease, minimal native map, movement, two-player visibility, combat, death, loot, retry-safe pickup, correlated game events, atomic durable item audit, replay-safe analytics, checkpoint, logout, cross-channel relog, duplicate-login rejection and channel/world-state isolation.
+- Consume the accepted `QA-E2E-01` tiers and evidence contract; do not invent a feature-owned E2E runner or count environment startup as product proof.
 
 ### `VSL-MOVE-01` — Movement, Collision and Visibility Contract
 
@@ -268,6 +281,7 @@ Registration prevents omission; it does not accept technologies, formulas, schem
 ### `ALPHA-QUALITY-01` — Testing and Performance Baselines
 
 - Status: `REQUIRED_FOR_ALPHA`
+- Consume `QA-E2E-01` rather than creating a second E2E platform.
 - Unit, property, fuzz, integration, golden protocol, deterministic simulation, database concurrency, crash recovery, multichannel, E2E, soak and migration tests.
 - Freeze quantitative targets for players/channel, channels/node, tick budget, latency, reconnect, memory, startup, bundle size and database throughput.
 
@@ -347,6 +361,7 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 11. FND-01 must terminate into VSL-02; no isolated workspace bootstrap may bypass the accepted client cutover sequence.
 12. VSL-02 uses one atomic Oteryn-v2 destination PR; the later otclient PR is source-marker closeout only.
 13. Every gameplay/product package must reconcile `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`; an unnamed domain may not be silently absorbed into an unrelated gate.
+14. Every vertical-slice or client-visible package must consume `QA-E2E-01`; it may add scenarios and assertions but not a competing E2E lifecycle/evidence platform.
 
 ## Current next action
 
