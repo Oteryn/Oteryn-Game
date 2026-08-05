@@ -46,7 +46,18 @@ The following are no longer open questions:
    - channel-local simulation state is isolated;
    - one character has at most one active authoritative session and durable writes require generation fencing.
 
-Canonical decisions: ADR-0001 through ADR-0004.
+6. **Native world, content and editor direction**
+   - Oteryn defines a project-owned world/content format from zero rather than using or extending OTBM as its canonical model;
+   - the editable World Project, canonical world/content model and deterministic runtime World Bundle are separate representations;
+   - OTBM, OTB, appearances, sprites and legacy XML are bounded conversion inputs, with constrained export only where semantics permit;
+   - one integrated Oteryn Studio edits maps, areas, assets, sprites/appearances, items and related content through one Content Registry;
+   - stable namespaced content keys are canonical; legacy and compact runtime numeric IDs are mappings;
+   - logical `Area`/`Subarea` geography is independent of technical `Region`/`Chunk` partitioning;
+   - dynamic encounters use validated `EncounterZone`, `RaidCell` and `RaidAnchor` scopes rather than treating an oversized subarea as the execution boundary;
+   - authored static world definitions remain separate from authoritative dynamic PostgreSQL state;
+   - Remere's Map Editor and Beats Assets Editor are reference/migration tools, not target runtime dependencies or automatically reusable code bases.
+
+Canonical decisions: ADR-0001 through ADR-0005.
 
 ## Decisions blocking the real Rust workspace
 
@@ -68,6 +79,7 @@ Candidate shape:
 
 ```text
 apps/client
+apps/oteryn-studio
 services/game-server
 crates/foundation
 crates/domain-core
@@ -76,18 +88,23 @@ crates/protocol-oteryn
 crates/transport
 crates/simulation-core
 crates/world-runtime
+crates/world-schema
+crates/world-project
+crates/world-bundle
+crates/world-compiler
 crates/session-lease
 crates/persistence-core
 crates/persistence-postgres
 crates/platform-contracts
 crates/platform-client
 crates/content-types
+crates/content-registry
 crates/content-runtime
 crates/scripting
 crates/test-support
 ```
 
-Mandatory direction: domain and simulation crates do not depend on Tokio, TCP, TLS, HTTP, SQL, PostgreSQL, Platform APIs, renderer state or UI widgets.
+Mandatory direction: domain and simulation crates do not depend on Tokio, TCP, TLS, HTTP, SQL, PostgreSQL, Platform APIs, renderer state or UI widgets. World/content schema crates do not depend on Tauri, editor UI or renderer implementation.
 
 ### B2. `protocol-oteryn` v1 contract
 
@@ -205,13 +222,16 @@ PostgreSQL is selected. Still decide:
 
 The default direction remains current-state tables plus revisions, idempotent commands, transactional outbox and bounded append-only critical audit records, not full event sourcing of every simulation event.
 
-### D3. Content migration and scripting contract
+### D3. Remaining content migration and scripting contract
 
-Decide:
+ADR-0005 accepts the native world format, Oteryn Studio, stable content identity, chunk/semantic geography separation, encounter-placement hierarchy and legacy-conversion boundary. Still decide:
 
-- exact pinned Otheryn source revisions;
-- classification of each source area as `COPY`, `CONVERT`, `REWRITE`, `REFERENCE_ONLY` or `REJECT`;
-- versioned output formats for maps, items, monsters, spells, NPCs, spawns, quests and events;
+- exact pinned Otheryn, Remere's Map Editor, Beats Assets Editor and other source revisions used as evidence or fixtures;
+- classification of each source area as `COPY`, `CONVERT`, `REWRITE`, `REFERENCE_ONLY` or `REJECT` after licensing and provenance review;
+- concrete versioned schemas and migration rules for maps, items, monsters, spells, NPCs, spawns, quests, events and assets;
+- exact World Project and World Bundle encoding contracts;
+- chunk-size/floor-packing benchmark and spatial indexing details;
+- Content Registry package/version/dependency rules;
 - client asset provenance and rights;
 - scripting language/runtime;
 - script API, world/channel/instance context and capability limits;
@@ -219,9 +239,9 @@ Decide:
 - failure isolation and error policy;
 - persistence access policy;
 - hot-reload policy;
-- deterministic conversion tooling and fixtures.
+- deterministic conversion tooling and fixture corpus.
 
-Scripts must not receive a global mutable `Game` object or direct SQL access.
+Scripts must not receive a global mutable `Game` object or direct SQL access. Legacy tools and proprietary assets must not be copied without confirmed rights and pinned provenance.
 
 ### D4. Foundation vertical-slice programme
 
@@ -231,7 +251,7 @@ Approve ownership, implementation order and evidence for this minimum scenario:
 2. client receives world/channel directory data;
 3. Gateway issues a bound Game Session;
 4. Rust game server validates admission and acquires the character lease;
-5. character enters a minimal map;
+5. character enters a minimal native map;
 6. movement is authoritative;
 7. two clients observe each other on one channel;
 8. one monster can be attacked and killed;
@@ -249,6 +269,7 @@ Approve ownership, implementation order and evidence for this minimum scenario:
 - PvP, skull, frag and combat-lock scope;
 - party membership versus shared-experience behaviour across channels;
 - boss, raid, chest and daily-reward anti-hopping policy;
+- encounter uniqueness and cooldown scope across channels;
 - world communication and presence service boundary;
 - event journal and checkpoint timing;
 - metrics, tracing, log redaction and audit retention;
@@ -283,7 +304,7 @@ These do not block the initial workspace or foundation vertical slice when exten
 4. Identity, Game Session, admission and lease contract
 5. Identifier contract
 6. Persistence v1 contract
-7. Content migration and scripting contract
+7. Complete the remaining content migration and scripting contract under ADR-0005
 8. Foundation vertical-slice programme
 9. Pin and migrate the existing Rust client
 10. Create the real workspace and begin implementation
@@ -295,5 +316,5 @@ Contracts may be developed in parallel only when ownership and dependencies do n
 
 - Contracts B1 through B4 must be accepted before creation of the real Rust workspace.
 - Identifier and Persistence v1 contracts must be accepted before durable gameplay mutations.
-- Content/scripting contract must be accepted before broad content import.
+- ADR-0005 is the accepted world/content direction; its remaining concrete format, migration, asset-rights and scripting contracts must be accepted before broad content import.
 - The vertical-slice programme must name observable E2E evidence before implementation is called complete.
