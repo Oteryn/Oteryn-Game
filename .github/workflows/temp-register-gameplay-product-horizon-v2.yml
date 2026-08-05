@@ -18,7 +18,7 @@ jobs:
           ref: arch/register-gameplay-product-horizon-20260805
           fetch-depth: 0
 
-      - name: Correct final patch anchor
+      - name: Correct final patch operation
         run: |
           python - <<'PY'
           from pathlib import Path
@@ -30,11 +30,15 @@ jobs:
               "  - docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md\\n  - docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md\\n",
           )
           '''
-          new = '''replace_once(
-              programme,
-              "  - docs/architecture/FOUNDATION_DECISION_BACKLOG.md\\n  - docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md\\n  - docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json\\n",
-              "  - docs/architecture/FOUNDATION_DECISION_BACKLOG.md\\n  - docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md\\n  - docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md\\n  - docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json\\n",
-          )
+          new = '''p = Path(programme)
+          text = p.read_text(encoding="utf-8")
+          needle = "  - docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md\\n"
+          addition = needle + "  - docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md\\n"
+          if "  - docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md\\n" not in text:
+              count = text.count(needle)
+              if count != 2:
+                  raise SystemExit(f"{programme}: expected two public-contract anchors, found {count}")
+              p.write_text(text.replace(needle, addition), encoding="utf-8")
           '''
           if old not in text:
               raise SystemExit('expected final patch block not found')
