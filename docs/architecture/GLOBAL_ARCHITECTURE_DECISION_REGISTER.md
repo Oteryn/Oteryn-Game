@@ -31,7 +31,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 |---|---|---|
 | Native Rust client/server and project-owned `protocol-oteryn` | `ACCEPTED` | ADR-0001 |
 | Multichannel world/channel/instance ownership baseline | `ACCEPTED` | ADR-0001 and scope matrix |
-| Canonical repository, Rust client migration direction and early cutover sequencing | `ACCEPTED` | ADR-0002 |
+| Canonical repository, early Rust client cutover and one atomic destination migration PR | `ACCEPTED` | ADR-0002 |
 | Platform Identity and initial Go Game Gateway boundary | `ACCEPTED` | ADR-0003 |
 | PostgreSQL and separate Platform/game ownership | `ACCEPTED` | ADR-0004 |
 | Native world/content model, Oteryn Studio and legacy conversion boundary | `ACCEPTED` | ADR-0005 |
@@ -41,7 +41,8 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 - Before `FND-01`, do not create the canonical root Cargo workspace.
 - After `FND-01`, `VSL-02` is the next mandatory gate; it must pin and reconcile the exact client cutover before shared client/server contracts are frozen.
-- The coordinated migration package may create or complete the destination workspace around the migrated client, or a separate bootstrap task may run immediately after migration.
+- One atomic `blakinio/Oteryn-v2` destination PR must contain the accepted client migration, root-workspace creation/completion, dependency enforcement, `protocol-canary` isolation, provenance and exact-head validation; no separate destination bootstrap PR may follow.
+- A later `blakinio/otclient` PR is source-only cutover closeout and may merge only after the verified destination squash merge.
 - Do not create a competing placeholder client or claim a complete canonical workspace before the controlled migration/cutover.
 - `FND-ID-01` gates identifier meanings required by protocol and admission contracts after migration.
 - `FND-02`, `FND-03` and `FND-04` independently gate canonical protocol, authoritative runtime and production admission/lease behavior.
@@ -72,11 +73,12 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Status: `BLOCKS_WORKSPACE_BOOTSTRAP`
 - Execute immediately after `FND-01` and before `FND-ID-01`, `FND-02`, `FND-03` or `FND-04`.
 - Pin the exact cutover source SHA from `blakinio/otclient/oteryn-client` and reconcile every open PR, active task and post-inventory source change.
-- Define history/provenance preservation, path mapping, exclusions, migration dispositions, source-repository freeze, destination ownership, cutover and rollback.
-- Decide whether the canonical root workspace is created/completed inside the migration package or immediately afterward.
-- Prove the migrated client builds/tests on the exact destination head before marking the source non-canonical.
+- Define provenance/history traceability compatible with squash merge, path mapping, exclusions, migration dispositions, source-repository freeze, destination ownership, cutover and rollback.
+- Require one atomic destination PR containing the accepted import, canonical root-workspace creation/completion, dependency enforcement, `protocol-canary` isolation and complete validation.
+- Prove the migrated client and complete workspace build/test matrix on the exact destination head before the later source-marker PR marks the source non-canonical.
 - Isolate or remove `protocol-canary` from the target runtime graph while preserving bounded reference evidence where needed.
-- Use one task/branch/PR per written repository under one coordination ID and explicit rollout order.
+- Use one atomic destination task/branch/PR in Oteryn-v2 and one later source-marker task/branch/PR in otclient under one coordination ID and explicit rollout/rollback order.
+- Preserve exact source SHA/range and machine-readable provenance/path mapping; do not claim source commits became destination mainline ancestry through squash merge.
 - Do not claim target-runtime readiness merely because source files exist in the destination.
 
 ### `FND-ID-01` — Foundation Identifier Vocabulary
@@ -311,7 +313,8 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 9. Public contracts must register applicable resource limits, stable error categories and named failure scenarios.
 10. A decision is not complete until its PR is validated, audited, squash-merged and its task archived.
 11. FND-01 must terminate into VSL-02; no isolated workspace bootstrap may bypass the accepted client cutover sequence.
+12. VSL-02 uses one atomic Oteryn-v2 destination PR; the later otclient PR is source-marker closeout only.
 
 ## Current next action
 
-Draft and accept `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. Its terminal next action is `VSL-02`, followed by the coordinated client migration/cutover and only then destination workspace bootstrap/completion and layer-specific contracts.
+Draft and accept `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. Its terminal next action is `VSL-02`, followed by one atomic destination migration/workspace PR, the source-only cutover marker and only then layer-specific contracts.

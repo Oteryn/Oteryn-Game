@@ -92,7 +92,9 @@ Every replacement agent must verify this baseline against the live default branc
    - `FND-01` audits the exact current source workspace and defines the target dependency graph;
    - `VSL-02` and the coordinated migration/cutover immediately follow `FND-01`;
    - no canonical identifier, protocol, runtime or admission contract is frozen against a destination that does not yet contain the canonical client;
-   - the destination must not create a competing placeholder client before cutover.
+   - the destination must not create a competing placeholder client before cutover;
+   - one atomic Oteryn-v2 destination PR contains the client import, root-workspace creation/completion, FND-01 dispositions, dependency enforcement, protocol-canary isolation, provenance and exact-head validation;
+   - the later otclient PR only marks the old path moved/non-canonical after the destination merge.
 
 3. **Platform boundary**
    - Identity, OAuth/PKCE, MFA, Game Login Ticket, Game Gateway and World Registry remain in `blakinio/Oteryn-Platform`;
@@ -150,15 +152,15 @@ The canonical root Cargo workspace remains blocked. Read-only discovery and arch
 
 No isolated workspace-bootstrap task may create a competing placeholder client or claim the destination as the complete canonical Rust workspace before the migration/cutover.
 
-The coordinated migration package may create or complete the root workspace around the migrated client. Otherwise a separate minimal workspace-bootstrap/completion task runs immediately after migration.
+The coordinated migration package must deliver one atomic Oteryn-v2 destination PR containing the accepted client import, root-workspace creation/completion, dependency-boundary enforcement, protocol-canary isolation, provenance and exact-head validation. A separate import-only or post-import workspace-consolidation destination PR is prohibited.
 
 The wider candidate crate list is a capability horizon, not an initial checklist. Empty placeholder crates and speculative abstractions are prohibited.
 
-### After `VSL-02` migration/cutover
+After the destination squash merge is verified, a separate otclient source-marker PR marks the old path moved/non-canonical. It is cross-repository closeout and contains no destination implementation.
 
-A separately authorized workspace-bootstrap/completion task may create the smallest immediately consumed members, toolchain/CI metadata and executable dependency-boundary checks when those were not already delivered by the migration package.
+### After the atomic `VSL-02` destination merge and source-marker cutover
 
-This bootstrap does not authorize canonical protocol, authoritative runtime, production admission/lease, durable gameplay or broad content import.
+The canonical root workspace already exists around the migrated client. Later authorized packages may extend it only for immediate consumers and may not claim unresolved protocol, runtime, admission, durable gameplay or broad content capabilities.
 
 ### Layer gates
 
@@ -190,13 +192,13 @@ This bootstrap does not authorize canonical protocol, authoritative runtime, pro
 ### `VSL-02` — Exact Rust Client Migration and Cutover Contract
 
 - exact cutover source SHA and reconciliation of open PRs, active tasks and source changes after the FND-01 inventory;
-- provenance/history preservation and exact source-to-destination path mapping;
+- squash-compatible provenance/history traceability through immutable source retention, exact SHA/range, machine-readable path mapping, copyright/license records and source links;
 - per-crate/subsystem migration disposition from FND-01;
-- destination workspace creation/completion sequence;
+- one atomic destination PR containing migration, root-workspace creation/completion, dependency enforcement, protocol-canary isolation and validation;
 - exact source/destination build and test evidence;
 - `protocol-canary` isolation or removal from the target runtime graph;
 - source freeze/non-canonical marker and destination ownership;
-- one task/branch/PR per written repository under one rollout order;
+- one atomic destination task/branch/PR in Oteryn-v2 plus one later source-marker task/branch/PR in otclient under one rollout/rollback order;
 - rollback conditions and procedure.
 
 ### `FND-ID-01` — Foundation Identifier Vocabulary
@@ -300,7 +302,9 @@ These do not block client migration, workspace bootstrap/completion after cutove
 - [ ] FND-01 classifies every existing Rust client crate/subsystem and preserves its exact evidence or explicitly rejects it.
 - [ ] `VSL-02` pins the exact cutover source SHA, provenance, open-PR/task disposition, path mapping, source freeze, destination ownership, history preservation and rollback.
 - [ ] The coordinated migration/cutover completes before canonical identifier, protocol, runtime or admission contracts are frozen.
-- [ ] The root workspace is created/completed around the migrated client by the migration package or an immediate post-migration bootstrap task.
+- [ ] One atomic Oteryn-v2 destination PR creates/completes the root workspace around the migrated client; no second destination bootstrap/consolidation PR exists.
+- [ ] The later otclient PR only marks the source moved/non-canonical after the destination squash merge is verified.
+- [ ] Provenance records exact source SHA/range and path mapping without a false Git-ancestry claim.
 - [ ] Initial workspace members require an immediate consumer and observable acceptance; no empty layering crates.
 - [ ] Dependency directions become machine-enforced after the destination workspace exists.
 - [ ] `FND-ID-01` accepted after migration and before protocol or admission freezes identifier meanings.
@@ -338,7 +342,7 @@ This programme checkpoint does not itself:
 
 ## Implementation / findings
 
-- ADR-0002 resolved canonical repository ownership and now requires early client migration/cutover immediately after FND-01.
+- ADR-0002 resolved canonical repository ownership, requires early client migration/cutover immediately after FND-01 and fixes one atomic destination migration/workspace PR followed by a source-only marker PR.
 - ADR-0003 resolved the Platform Identity/Game Gateway boundary and retained the initial Go Gateway.
 - ADR-0004 selected PostgreSQL and separate Platform/game database ownership.
 - ADR-0005 accepted the native world/content model, Oteryn Studio and bounded legacy conversion direction.
@@ -375,7 +379,7 @@ Every package PR must challenge omitted boundaries, circular dependencies, place
 ## Context checkpoint
 
 ```yaml
-last_progress: ADR-0001 through ADR-0006 are accepted; ADR-0002 now requires VSL-02 and controlled client migration/cutover immediately after FND-01, before shared client/server contracts are frozen.
+last_progress: ADR-0001 through ADR-0006 are accepted; ADR-0002 requires VSL-02 immediately after FND-01 and one atomic destination migration/workspace PR before a source-only cutover marker and shared-contract freeze.
 status: ready
 branch: null
 head_sha: null
@@ -395,7 +399,7 @@ public_contracts:
   - docs/contracts/FOUNDATION_ERROR_VOCABULARY.md
   - docs/contracts/FOUNDATION_FAILURE_SCENARIOS.md
 continuation_prompt: docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md
-validation_state: Each package requires exact-head Agent governance and full-diff audit; dependency boundaries become executable checks after client migration and destination workspace bootstrap/completion.
+validation_state: Each package requires exact-head Agent governance and full-diff audit; dependency boundaries become executable checks inside the atomic destination migration/workspace PR.
 audit_state: Future package audits pending.
 e2e_state: BLOCKED until VSL-01 is implemented.
 ci_generation: null
@@ -408,5 +412,5 @@ counters:
   repair_cycles_for_current_gate: 0
   stall_warnings: 0
 blocker: null
-next_action: Execute the global architecture coordinator prompt and draft, audit, accept, merge and archive FND-01 — the Workspace, Dependency and Existing-Rust Migration Contract; its terminal next action must be VSL-02.
+next_action: Execute the global architecture coordinator prompt and draft, audit, accept, merge and archive FND-01 — the Workspace, Dependency and Existing-Rust Migration Contract; its terminal next action must be VSL-02 and the atomic destination migration/workspace contract.
 ```
