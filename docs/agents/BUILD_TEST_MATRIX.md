@@ -22,12 +22,15 @@ Status: bootstrap; replace assumptions with discovered workspace commands as cod
 Once a root Cargo workspace exists, update this matrix with exact commands. Expected baseline, only after discovery:
 
 - `cargo fmt --all -- --check`;
-- `cargo clippy --workspace --all-targets --all-features -- -D warnings` or a documented feature-safe equivalent;
-- `cargo test --workspace` with focused package tests during development;
+- product-realistic client, server and Studio target/feature Clippy builds with `-D warnings`;
+- supplemental `--all-features` checks only where they do not create impossible mutually exclusive configurations;
+- `cargo test --workspace` plus focused package tests and target-specific integration tests;
+- `cargo metadata --locked` validation against the retained machine-readable workspace-boundary contract;
 - dependency/advisory/license checks selected by accepted tooling;
 - parser property/fuzz tests for untrusted protocol/content inputs;
 - deterministic simulation/replay tests;
-- platform-specific client build/runtime tests;
+- platform-specific client build/runtime tests on exact named target triples;
+- shared foundation failure-scenario tests, including time/clock, dependency loss, stale generation and overload cases;
 - multichannel integration, crash-recovery and soak scenarios.
 
 ## High-risk acceptance

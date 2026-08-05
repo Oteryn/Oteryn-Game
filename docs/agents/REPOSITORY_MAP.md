@@ -52,7 +52,7 @@ Create paths only when an accepted implementation task owns them. Candidate crat
 | `blakinio/Oteryn-v2` | target native Rust gameplay stack and Oteryn Studio | read/write within task scope |
 | `blakinio/Oteryn-Platform` | web/Identity/Game Gateway/World Registry producer | read-only unless separately authorized |
 | `blakinio/Otheryn` | C++ behavioral/content reference and migration oracle | read-only unless separately authorized |
-| `blakinio/otclient` | existing client/Rust implementation reference and migration source | read-only unless separately authorized |
+| `blakinio/otclient` | existing client/Rust implementation and migration source; FND-01 must inventory and classify it at an exact SHA before designing replacements | read-only unless separately authorized |
 | Remere's Map Editor | OTBM behavior/fixture/reference tool; not a target dependency | external evidence only |
 | Beats Assets Editor | modern asset/content workflow reference; not a target dependency | external evidence only |
 | upstream Canary/OTClient repositories | external evidence only | read-only |
@@ -72,6 +72,8 @@ External editor code, UI and assets require pinned revisions, license/provenance
 - Scope/consistency matrix: `docs/architecture/MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md`.
 - Otheryn migration strategy: `docs/architecture/OTHERYN_REFERENCE_MIGRATION_PLAN.md`.
 - Agent cross-repo policy: `docs/agents/CROSS_REPO_CONTRACTS.md`.
+- Machine-readable cross-repository revision state: `docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json`.
+- Shared resource-limit, error and failure contracts: `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, `FOUNDATION_ERROR_VOCABULARY.md` and `FOUNDATION_FAILURE_SCENARIOS.md`.
 
 ## Ownership boundaries
 

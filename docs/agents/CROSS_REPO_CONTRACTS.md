@@ -18,6 +18,8 @@ Oteryn v2 currently interacts with:
 - Do not merge an `atomic-required` side while its paired side is not ready.
 - Do not infer implementation from documentation alone; record current versus target state.
 - Golden fixtures/schema IDL have one canonical owner and immutable version identifiers.
+- `docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json` is the machine-readable index for canonical cross-repository revisions, producers, consumers and rollout order.
+- Canonical lock entries may contain only merged commits and immutable schema identifiers. Open PRs and mutable heads remain explicit pending evidence with canonical fields unset.
 
 ## Native protocol direction
 
@@ -35,7 +37,7 @@ Rust client
 → one-time Game Login Ticket
 → Oteryn Game Gateway
 → authoritative ticket redemption and World Registry routing
-→ Game Session bound to account, character, world, channel and protocol/profile revisions
+→ Game Session bound to account, character, world, channel, native protocol version, protocol revision, ruleset revision and content revision
 → Rust game server admission
 ```
 
@@ -53,7 +55,8 @@ A material cross-repo contract must define:
 - capability/version compatibility matrix;
 - observability/redaction requirements;
 - rollout, rollback and mixed-version behavior;
-- deterministic contract tests and fixture ownership.
+- deterministic contract tests and fixture ownership;
+- the applicable resource-limit registry entries, stable error categories and named failure scenarios.
 
 ## Migration sources
 

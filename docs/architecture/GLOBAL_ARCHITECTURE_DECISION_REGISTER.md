@@ -40,6 +40,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 - Before `FND-01`, do not create the canonical root Cargo workspace.
 - After `FND-01`, a separate task may create the smallest compilable workspace and machine-check dependency boundaries.
+- `FND-ID-01` gates identifier meanings required by protocol and admission contracts.
 - `FND-02`, `FND-03` and `FND-04` independently gate canonical protocol, authoritative runtime and production admission/lease behavior.
 - Bounded technical spikes may inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 - `DUR-01` through `DUR-03` remain hard gates before authoritative durable character, item or currency mutation.
@@ -47,48 +48,61 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 ## Stage A — foundation and layer gates
 
-### `FND-01` — Workspace and Dependency Contract
+### `FND-01` — Workspace, Dependency and Existing-Rust Migration Contract
 
 - Status: `BLOCKS_WORKSPACE_BOOTSTRAP`
 - Decide the smallest initial applications, services and crates; every member requires an immediate consumer and observable acceptance.
-- Freeze legal dependency directions and forbidden edges.
+- Inventory the exact existing Rust client workspace at a pinned SHA and classify every reusable crate/subsystem as migrate, rename, merge, split, rewrite, reference-only or drop.
+- Freeze legal dependency directions and forbidden edges in a retained machine-readable boundary contract.
 - Assign canonical ownership of identifiers, domain contracts, protocol schemas, world/content schemas and fixtures.
-- Select Rust edition, minimum toolchain, target platforms, feature policy and baseline CI.
-- Define machine-enforced dependency-graph and forbidden-edge checks.
+- Select Rust edition, Cargo resolver, pinned toolchain, `rust-version`, root lockfile, workspace metadata/lint inheritance, exact target triples, feature policy and baseline CI.
+- Define product-realistic target/feature builds in addition to supplemental all-feature checks.
+- Define machine-enforced `cargo metadata --locked` dependency-graph and forbidden-edge checks.
 - Keep domain/simulation independent from transports, SQL, renderer and UI.
 - Keep world/content schema independent from Tauri, editor UI and renderer implementation.
 - Treat the wider crate list as a capability horizon, not an instruction to create empty layering crates.
 
+### `FND-ID-01` — Foundation Identifier Vocabulary
+
+- Status: `BLOCKS_LAYER_IMPLEMENTATION` for protocol and admission schemas.
+- Freeze semantic ownership, scope, uniqueness, reuse, durability and visibility for the minimum cross-boundary identifiers.
+- Define canonical comparison and wire/Game Session encoding constraints without prematurely selecting every PostgreSQL column type.
+- Keep full durable/database/item identity representation in `DUR-01`.
+
 ### `FND-02` — `protocol-oteryn` v1
 
 - Status: `BLOCKS_LAYER_IMPLEMENTATION`
-- Reconcile with the exact current Platform native contract.
+- Reconcile only with the exact latest merged Platform native contract; record pending PR corrections as unresolved, not canonical.
+- Populate the machine-readable cross-repository contract lock with merged commit, schema revision/hash, producers, consumers and rollout order.
 - Freeze transport, TLS/ALPN, framing, schema/IDL, hard limits and error vocabulary.
 - Separate protocol, capability, content and ruleset revisions.
 - Define sequencing, command IDs, replay/idempotency, snapshots, deltas, reconciliation and reconnect/resume.
 - Produce shared golden fixtures and downgrade protection.
+- Register every externally controlled size/depth/count and map stable failures into the common resource-limit and error vocabularies.
 - Gate canonical wire schemas/codecs and production compatibility claims, not minimal workspace bootstrap.
 
 ### `FND-03` — Runtime Execution Contract
 
 - Status: `BLOCKS_LAYER_IMPLEMENTATION`
 - Freeze `NodeRuntime`, `WorldServices`, `ChannelRuntime` and `InstanceRuntime` responsibilities.
-- Define tick/timer model, command ordering, bounded queues, overload/backpressure and parallel work return to the logical writer.
+- Define tick/timer model, monotonic/wall-clock ownership, skew tolerance, deterministic test clocks, command ordering, bounded queues, overload/backpressure and parallel work return to the logical writer.
 - Define channel lifecycle, draining, checkpoint, crash recovery and replay boundaries.
+- Prove named foundation failure scenarios for overload, dependency loss, stale generations, split ownership and recovery.
 - Gate authoritative runtime behavior, not compile-only interfaces or isolated spikes.
 
 ### `FND-04` — Identity, Game Session, Admission and Character Lease
 
 - Status: `BLOCKS_LAYER_IMPLEMENTATION`
+- Consume `FND-ID-01` meanings without redefining them.
 - Freeze token/session representation, issuer/audience, key rotation, replay prevention and revocation.
 - Define world/channel/revision binding, reconnect windows and admission errors.
 - Define `session_generation`, lease storage/timings, duplicate login, stale-writer fencing and safe channel switching.
-- Define Platform, Gateway, PostgreSQL and network failure behavior.
+- Define Platform, Gateway, PostgreSQL and network failure behavior using the shared failure-scenario catalogue and stable public/internal error mapping.
 - Gate production admission and lease behavior, not minimal workspace bootstrap.
 
 ## Stage B — blocks durable gameplay
 
-### `DUR-01` — Identifier Contract
+### `DUR-01` — Durable Identifier Representation Contract
 
 - Status: `BLOCKS_DURABLE_GAMEPLAY`
 - Cover account, character, world, channel, instance, node, game session, command, entity, item-instance and revision identities.
@@ -120,7 +134,7 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 - Pin migration source revisions and classify source areas as `COPY`, `CONVERT`, `REWRITE`, `REFERENCE_ONLY` or `REJECT`.
 - Select scripting runtime and define capabilities, limits, failure isolation, persistence access and hot reload.
 - Preserve asset rights and provenance gates.
-- Permit only bounded format/compiler/loader spikes before acceptance; no compatibility or canonical-format claim may escape the spike.
+- Require a bounded format/compiler/loader spike before final encoding selection, including deterministic hashes, random access, corruption/decompression failure, round-trip equivalence and measured chunk/floor packing. No compatibility or canonical-format claim may escape the spike.
 
 ## Stage C — blocks the foundation vertical slice
 
@@ -143,11 +157,11 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 - Define action ordering, target legality, damage pipeline boundary, death, corpse, loot ownership, experience/kill attribution and retry-safe pickup integration.
 - Preserve extension points for conditions, PvP, boss contribution and rulesets.
 
-### `VSL-02` — Exact Rust Client Migration Contract
+### `VSL-02` — Exact Rust Client Migration and Cutover Contract
 
 - Status: `BLOCKS_VERTICAL_SLICE`
 - Pin exact source SHA from `blakinio/otclient/oteryn-client`.
-- Define history/provenance preservation, path mapping, exclusions and rollback.
+- Define history/provenance preservation, path mapping, exclusions, open-PR disposition, source-repository freeze, cutover and rollback.
 - Classify code as migrate, adapt, rewrite or reference-only.
 - Do not claim target-runtime readiness from source presence alone.
 
@@ -250,8 +264,10 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 5. Preserve deferred topics and safe extension points without inventing final designs.
 6. Initial workspace members require an immediate consumer and acceptance; do not create speculative placeholder crates.
 7. After workspace bootstrap, enforce accepted dependency boundaries with executable CI checks.
-8. A decision is not complete until its PR is validated, audited, squash-merged and its task archived.
+8. Cross-repository locks accept only merged canonical commits and immutable schema identifiers; mutable PR heads remain pending evidence.
+9. Public contracts must register applicable resource limits, stable error categories and named failure scenarios.
+10. A decision is not complete until its PR is validated, audited, squash-merged and its task archived.
 
 ## Current next action
 
-Draft and accept `FND-01` — the **Workspace and Dependency Contract**. After it is terminal, authorize a separate minimal workspace-bootstrap implementation task before proceeding with layer-specific implementation.
+Draft and accept `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. After it is terminal, authorize a separate minimal workspace-bootstrap implementation task before proceeding with layer-specific implementation.

@@ -39,12 +39,19 @@
     "docs/agents/CROSS_REPO_CONTRACTS.md",
     "docs/agents/KNOWN_RISKS.md",
     "docs/agents/PROJECT_LANES.json",
-    "docs/agents/tasks/TASK_TEMPLATE.md"
+    "docs/agents/tasks/TASK_TEMPLATE.md",
+    "docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md"
   ],
   "required_architecture": [
     "docs/architecture/ADR-0001-native-rust-multichannel-platform.md",
     "docs/architecture/MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md",
-    "docs/architecture/OTHERYN_REFERENCE_MIGRATION_PLAN.md"
+    "docs/architecture/OTHERYN_REFERENCE_MIGRATION_PLAN.md",
+    "docs/architecture/FOUNDATION_DECISION_BACKLOG.md",
+    "docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md",
+    "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json",
+    "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
+    "docs/contracts/FOUNDATION_ERROR_VOCABULARY.md",
+    "docs/contracts/FOUNDATION_FAILURE_SCENARIOS.md"
   ],
   "architecture_invariants": [
     "native-rust-server-and-client",

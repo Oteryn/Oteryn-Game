@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "updated_at": "2026-08-05T13:46:00+02:00",
+  "policy": {
+    "canonical_revisions_must_be_merged": true,
+    "mutable_pr_heads_are_canonical": false,
+    "required_fields_when_locked": [
+      "coordination_id",
+      "contract_name",
+      "canonical_repository",
+      "canonical_commit",
+      "schema_revision",
+      "schema_sha256",
+      "producers",
+      "consumers",
+      "rollout_order"
+    ]
+  },
+  "contracts": [
+    {
+      "coordination_id": "OTS-20260804-native-protocol-selection",
+      "contract_name": "oteryn-native-gameplay-v1",
+      "status": "LOCKED",
+      "canonical_repository": "blakinio/Oteryn-Platform",
+      "canonical_commit": "c0b8703d326a04b43ae8e06f6192b0cb91c859b7",
+      "canonical_contract_revision": 2,
+      "schema_revision": 2,
+      "schema_sha256": "9c67f19525400fb9890d2a3541ceb6d02eb955061540ad39ca1c1d891c06eba9",
+      "source_pull_request": 540,
+      "merged_at": "2026-08-05T11:35:48Z",
+      "previous_merged_revision": "9035ae987db67c062a8778721a2c8e686ce76750",
+      "previous_revision_status": "SUPERSEDED_TRANSITIONAL_PROFILE_BASED_CONTRACT",
+      "producers": [
+        {
+          "repository": "blakinio/Oteryn-Platform",
+          "status": "CONTRACT_LOCKED_RUNTIME_PRODUCER_DISABLED_PENDING_MIGRATION"
+        },
+        {
+          "repository": "blakinio/Oteryn-v2",
+          "status": "NOT_IMPLEMENTED"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "blakinio/Oteryn-v2",
+          "status": "NOT_IMPLEMENTED"
+        }
+      ],
+      "rollout_order": [
+        "canonical Platform correction merged and immutable schema identity locked",
+        "accept Oteryn-v2 FND-02 correspondence",
+        "implement and migrate disabled Platform producer plus server and client consumers",
+        "run cross-repository admission/gameplay/rollback E2E",
+        "enable only through a separately authorized rollout"
+      ],
+      "accepted_for_fnd02": false
+    }
+  ]
+}

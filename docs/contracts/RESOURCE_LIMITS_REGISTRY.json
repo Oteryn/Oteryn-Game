@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "status": "FOUNDATION_REGISTRY_INITIALIZED",
+  "updated_at": "2026-08-05T13:25:00+02:00",
+  "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
+  "required_entry_fields": [
+    "id",
+    "owner_contract",
+    "resource",
+    "unit",
+    "hard_maximum",
+    "configurable_range",
+    "failure_category",
+    "allocation_impact",
+    "client_visible",
+    "boundary_tests"
+  ],
+  "rules": [
+    "A configurable value never removes the absolute hard maximum.",
+    "Parsing and allocation checks occur before untrusted-size allocation.",
+    "Compression entries include compressed size, decompressed size and ratio limits.",
+    "Every externally controlled count, depth, length or byte size is registered before implementation acceptance.",
+    "Unknown or absent required limits fail the owning contract review; they are not inferred at runtime."
+  ],
+  "entries": []
+}

@@ -72,7 +72,7 @@ The programme must:
 8. keep all execution progress in Git, package tasks, ADRs/contracts, PRs and exact validation evidence;
 9. leave exactly one concrete next action whenever the programme is not terminal.
 
-The immediate package is `FND-01` — the **Workspace and Dependency Contract**. Do not skip it unless live repository evidence proves that it has already been accepted or superseded.
+The immediate package is `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. Do not skip it unless live repository evidence proves that it has already been accepted or superseded.
 
 ## 4. Trusted source order
 
@@ -133,16 +133,17 @@ At the recorded programme baseline there was no accepted root Cargo workspace, c
 
 Maintain unresolved subjects in `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md` using stable IDs. At minimum preserve:
 
-- `FND-01` — Workspace and Dependency Contract;
+- `FND-01` — Workspace, Dependency and Existing-Rust Migration Contract;
+- `FND-ID-01` — Foundation Identifier Vocabulary;
 - `FND-02` — `protocol-oteryn` v1;
 - `FND-03` — Runtime Execution;
 - `FND-04` — Identity, Game Session, Admission and Character Lease;
-- `DUR-01` — Identifiers;
+- `DUR-01` — Durable Identifier Representation Contract;
 - `DUR-02` — Persistence v1;
 - `DUR-03` — Item Transaction and Anti-Duplication;
 - `DUR-04` — Content, World Detail and Scripting;
 - `VSL-01` — Foundation Vertical-Slice Programme;
-- `VSL-02` — Exact Rust Client Migration.
+- `VSL-02` — Exact Rust Client Migration and Cutover Contract.
 
 Classify the wider horizon as:
 
@@ -174,6 +175,7 @@ The bootstrap may provide compile-only interfaces and bounded experiments, but i
 
 ### Layer gates
 
+- `FND-ID-01` gates freezing identifier meanings in protocol and admission schemas.
 - `FND-02` gates canonical protocol schemas/codecs, production framing and compatibility claims.
 - `FND-03` gates authoritative runtime ordering, scheduling, lifecycle and recovery.
 - `FND-04` gates production Game Session validation, admission and character lease behavior.
@@ -188,18 +190,20 @@ A technical spike must be reversible, bounded, excluded from production defaults
 
 Unless live accepted architecture changes the dependency graph, use this order:
 
-1. Accept `FND-01` Workspace and Dependency Contract.
+1. Accept `FND-01` Workspace, Dependency and Existing-Rust Migration Contract.
 2. Leave or authorize one separate minimal workspace-bootstrap implementation task.
-3. Accept `FND-02` `protocol-oteryn` v1 Contract.
-4. Accept `FND-03` Runtime Execution Contract.
-5. Accept `FND-04` Identity, Game Session, Admission and Character Lease Contract.
-6. Accept `DUR-01` Identifier Contract.
-7. Accept `DUR-02` Persistence v1 Contract.
-8. Accept `DUR-03` Item Transaction and Anti-Duplication Contract where not fully contained in `DUR-02`.
-9. Accept `DUR-04` Content, World Detail and Scripting Contract under ADR-0005.
-10. Accept `VSL-01` Foundation Vertical-Slice Programme.
-11. Accept `VSL-02` Exact Rust Client Migration Contract before moving client code.
-12. Begin the separately authorized vertical-slice implementation programme.
+3. Accept `FND-ID-01` Foundation Identifier Vocabulary.
+4. Require the final Platform native-contract correction to be merged and recorded in the cross-repository contract lock.
+5. Accept `FND-02` `protocol-oteryn` v1 Contract.
+6. Accept `FND-03` Runtime Execution Contract, including clock semantics.
+7. Accept `FND-04` Identity, Game Session, Admission and Character Lease Contract.
+8. Accept `DUR-01` full Identifier Contract for database and durable-state representation.
+9. Accept `DUR-02` Persistence v1 Contract.
+10. Accept `DUR-03` Item Transaction and Anti-Duplication Contract where not fully contained in `DUR-02`.
+11. Run the bounded native world-format spike and accept `DUR-04` under ADR-0005.
+12. Accept `VSL-01` Foundation Vertical-Slice Programme.
+13. Accept `VSL-02` Exact Rust Client Migration and Cutover Contract before moving client code.
+14. Begin the separately authorized vertical-slice implementation programme.
 
 A later subject may be researched in parallel only when it has exclusive ownership and cannot change a public contract owned by an earlier package.
 
@@ -279,36 +283,43 @@ Do not use unstable Rust layout, undocumented serializer output, assumed databas
 
 ## 12. Package-specific minimums
 
-### `FND-01` Workspace and Dependency Contract
+### `FND-01` Workspace, Dependency and Existing-Rust Migration Contract
 
 At minimum decide:
 
 - exact minimal initial workspace members and names;
+- the exact pinned existing Rust workspace inventory, public contracts, consumers, tests and dependency graph;
+- one disposition per existing crate/subsystem: migrate as-is, migrate/rename, merge, split, rewrite, reference-only or drop;
 - an immediate consumer and observable acceptance for every initial member;
 - legal dependency graph and forbidden edges;
 - ownership of IDs, domain types, protocol schemas, world/content types and fixtures;
 - client-only/server-only/Studio-only dependency isolation;
-- Rust edition and minimum supported toolchain;
+- Rust edition, Cargo resolver, pinned toolchain, `rust-version`, root lockfile and `--locked` policy;
+- workspace package/dependency/lint inheritance;
 - feature policy and default features;
 - dependency review, licensing and security policy;
-- initial target platforms and exact baseline CI matrix;
-- executable dependency-graph and forbidden-edge checks;
+- initial target platforms, exact target triples and product-realistic feature/target CI matrix;
+- retained machine-readable workspace-boundary model and executable `cargo metadata --locked` forbidden-edge checks;
 - rules for adding, splitting and merging crates;
 - explicit classification of the larger crate list as a capability horizon rather than an initial checklist.
 
 The contract must authorize only a separate minimal bootstrap task, not silently implement the workspace in the contract PR.
 
+### `FND-ID-01` Foundation Identifier Vocabulary
+
+At minimum decide semantic ownership, scope, uniqueness, reuse, durability, public visibility and wire/Game Session encoding constraints for the minimum cross-boundary IDs. Do not select every PostgreSQL type or full item-instance representation; retain those in `DUR-01`.
+
 ### `FND-02` `protocol-oteryn` v1
 
-At minimum decide reconciliation with the exact current Platform native contract, transport, TLS/ALPN, framing, schema/IDL, limits, revision separation, sequencing, command IDs, replay/idempotency, snapshots/deltas/reconciliation, reconnect/resume, errors, downgrade prevention and golden fixtures.
+At minimum decide reconciliation with the exact latest merged Platform native contract, populate the machine-readable cross-repository contract lock, and decide transport, TLS/ALPN, framing, schema/IDL, registered hard limits, revision separation, sequencing, command IDs, replay/idempotency, snapshots/deltas/reconciliation, reconnect/resume, stable error mapping, downgrade prevention and golden fixtures. A mutable PR head is never canonical.
 
 ### `FND-03` Runtime Execution
 
-At minimum decide node/world/channel/instance ownership, deployment topology, tick/timer model, command ordering, bounded queues, overload behavior, parallel work return, deterministic replay boundary, lifecycle, draining, checkpoint and crash recovery.
+At minimum decide node/world/channel/instance ownership, deployment topology, tick/timer model, monotonic versus wall-clock ownership, skew tolerance, deterministic test clocks, command ordering, bounded queues, overload behavior, parallel work return, deterministic replay boundary, lifecycle, draining, checkpoint, crash recovery and named failure-scenario outcomes.
 
 ### `FND-04` Session, Admission and Lease
 
-At minimum decide Game Session format/validation, issuer/audience, key discovery/rotation/revocation, consume/replay prevention, account/character/world/channel/revision binding, reconnect windows, session generation, stale-writer fencing, lease storage/timings, duplicate login, channel switch and dependency failure behavior.
+At minimum consume the accepted `FND-ID-01` meanings and decide Game Session format/validation, issuer/audience, key discovery/rotation/revocation, consume/replay prevention, account/character/world/channel/revision binding, reconnect windows, session generation, stale-writer fencing, lease storage/timings, duplicate login, channel switch, stable public/internal errors and named dependency-failure behavior.
 
 ### `DUR-01` through `DUR-03`
 
@@ -318,7 +329,7 @@ At minimum decide ID scope and representation, schema/migration ownership, chara
 
 Use primary sources for technical decisions: exact repository code/contracts, official documentation, standards and original implementation documentation.
 
-Pin exact external repository SHAs whenever their behavior affects a contract.
+Pin exact merged external repository SHAs whenever their behavior affects a canonical contract. Mutable PR heads may be recorded only as pending evidence and must not populate canonical lock fields.
 
 Classify material claims:
 
