@@ -26,7 +26,8 @@ The PR title and body form the permanent squash commit. Working commits may be i
 - Each workflow declares least-privilege permissions.
 - External actions are pinned to full commit SHAs.
 - Workflows avoid privileged checkout of untrusted pull-request code.
-- Repository-administration changes run through the protected `repository-administration` environment and `REPO_ADMIN_TOKEN`.
+- Repository-administration changes run only after a protected merge to `main` or an explicit manual dispatch and require `REPO_ADMIN_TOKEN`.
+- No manual environment approval is required while the repository has one maintainer; the protected PR, exact-head CI, path filters, read-only workflow token, and separate admin token are the enforcement boundary.
 - Dependabot maintains GitHub Actions dependencies.
 - CodeQL scans Python and GitHub Actions workflows.
 - Dependency review blocks newly introduced high-severity vulnerable dependencies.
@@ -42,6 +43,6 @@ The repository policy enables:
 
 ## Configuration as code
 
-`.github/repository-policy.json` is the expected GitHub configuration. `tools/repository/apply_github_settings.py` applies it idempotently, including repository metadata, labels, topics, Actions permissions, security settings, administration environment, and the `main` ruleset. `.github/workflows/repository-configuration.yml` runs only when the policy or the workflow changes on `main`, or through an explicitly approved manual dispatch.
+`.github/repository-policy.json` is the expected GitHub configuration. `tools/repository/apply_github_settings.py` applies it idempotently, including repository metadata, labels, topics, Actions permissions, security settings, and the `main` ruleset. `.github/workflows/repository-configuration.yml` runs only when the policy, apply script, or workflow changes on `main`, or through an explicit manual dispatch.
 
 `tools/repository/validate_repository_policy.py` checks that required governance files exist, workflow actions use full SHAs, dangerous privileged triggers are absent, and the policy has the expected protection invariants.

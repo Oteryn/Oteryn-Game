@@ -18,6 +18,7 @@ REPOSITORY = os.environ["GITHUB_REPOSITORY"]
 TOKEN = os.environ.get("GH_TOKEN", "")
 API = f"https://api.github.com/repos/{REPOSITORY}"
 API_VERSION = "2026-03-10"
+LEGACY_ADMINISTRATION_ENVIRONMENT = "repository-administration"
 
 
 class ApiError(RuntimeError):
@@ -52,15 +53,12 @@ def request(method: str, path: str, payload: Any | None = None, expected: tuple[
     return json.loads(data)
 
 
-def configure_environment() -> None:
-    env = POLICY["administration_environment"]
-    payload = {
-        "wait_timer": 0,
-        "prevent_self_review": False,
-        "reviewers": [{"type": "User", "id": env["reviewer_user_id"]}],
-        "deployment_branch_policy": None,
-    }
-    request("PUT", f"/environments/{env['name']}", payload, expected=(200,))
+def remove_legacy_administration_environment() -> None:
+    environments = request("GET", "/environments?per_page=100", expected=(200,))
+    names = {item.get("name") for item in environments.get("environments", [])}
+    if LEGACY_ADMINISTRATION_ENVIRONMENT in names:
+        encoded = urllib.parse.quote(LEGACY_ADMINISTRATION_ENVIRONMENT, safe="")
+        request("DELETE", f"/environments/{encoded}", expected=(204,))
 
 
 def configure_repository() -> None:
@@ -157,14 +155,21 @@ def verify() -> None:
     full = request("GET", f"/rulesets/{match['id']}", expected=(200,))
     if full.get("enforcement") != "active":
         raise ApiError("Protect main ruleset is not active")
+    if full.get("bypass_actors") != []:
+        raise ApiError("Protect main ruleset must not have bypass actors")
 
     private_reporting = request("GET", "/private-vulnerability-reporting", expected=(200,))
     if private_reporting.get("enabled") is not True:
         raise ApiError("private vulnerability reporting is not enabled")
 
+    environments = request("GET", "/environments?per_page=100", expected=(200,))
+    names = {item.get("name") for item in environments.get("environments", [])}
+    if LEGACY_ADMINISTRATION_ENVIRONMENT in names:
+        raise ApiError("legacy blocking administration environment still exists")
+
     print(
         "Repository settings, metadata, labels, Actions permissions, security features, "
-        "administration environment, and main ruleset applied and verified."
+        "and main ruleset applied and verified."
     )
 
 
@@ -173,7 +178,7 @@ def main() -> int:
         print("REPO_ADMIN_TOKEN is unavailable.", file=sys.stderr)
         return 2
     try:
-        configure_environment()
+        remove_legacy_administration_environment()
         configure_repository()
         configure_labels()
         configure_security()
