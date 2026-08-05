@@ -1,6 +1,6 @@
 # Multichannel system scope matrix
 
-Status: architecture baseline supporting ADR-0001  
+Status: architecture baseline supporting ADR-0001 and clarified by ADR-0009  
 Date: 2026-08-05
 
 ## Purpose
@@ -24,7 +24,8 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 | World | Shared by every channel of one logical world. |
 | Channel | One parallel public-world simulation. |
 | Instance | One isolated runtime space associated with a channel or world service. |
-| Node | Physical runtime placement only; never a product identity. |
+| Host / container | Physical or operating-system deployment placement; never a gameplay product identity. |
+| GameNode | Logical runtime identity and lifecycle of one game-server process, identified by `NodeId`; not a host or orchestrator node. |
 
 ## Consistency vocabulary
 
@@ -43,6 +44,7 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 |---|---|---:|---|---|---|
 | Public map definition | Content service/package | World | Immutable revision | Same revision on every channel | Shared immutable data |
 | Public map runtime overlay | `ChannelRuntime` | Channel | Authoritative immediate | Never shared implicitly | Separate per channel |
+| Channel runtime ownership and placement | `ChannelRuntime` on the assigned GameNode | Channel + GameNode | Authoritative immediate + ownership-generation fencing | `ChannelId` remains stable across safe restart or relocation | One logical writer per channel |
 | Creature and spawn runtime | `ChannelRuntime` | Channel | Authoritative immediate | Independent copies | Separate per channel |
 | Player position | `ChannelRuntime` | Channel | Authoritative immediate | Changes only by new session/entry | Local |
 | Character progression | Character persistence owner | Character | Strong durable | Same character state on every channel | Shared durable state |
@@ -81,7 +83,7 @@ The matrix prevents accidental process-global state, per-channel duplication of 
 | Item/monster/spell catalogues | Versioned content | World | Immutable revision | Identical on every channel | Shared |
 | Scripts | Script runtime with explicit context | World/Channel/Instance | Depends on effect | No unscoped process globals | Mandatory context |
 | Ranking | Ranking projection | World | Eventual | Aggregates all channels | Shared projection |
-| Metrics | Observability system | Node/Channel/World labels | Eventual | Aggregated without becoming authority | Non-authoritative |
+| Metrics | Observability system | GameNode/Channel/World labels | Eventual | Aggregated without becoming authority | Non-authoritative |
 | Channel directory | World Registry | World | Health-driven/eventual with guarded admission | Lists and routes channels | Shared control plane |
 | Game Session | Gateway/session issuer | Character + World + Channel | Strong, short-lived | Frozen to selected channel | Mandatory binding |
 
@@ -179,6 +181,6 @@ The following are fixed even though final topology is deferred:
 - exact inventory/ground-item transaction implementation;
 - exact scripting engine and isolation mechanism;
 - exact event journal/checkpoint strategy;
-- channel drain and crash recovery timing;
+- exact channel drain, checkpoint, replay, reconnect-grace, RPO and RTO values under `FND-03`, `DUR-02` and `OPS-CHANNEL-01`;
 - detailed PostgreSQL schema, isolation, locking, partitioning and migration policy under `DUR-02`;
 - final messaging technology and delivery topology.

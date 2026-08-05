@@ -31,6 +31,8 @@ Use these identifiers in tasks, PRs, prompts and cross-repository coordination. 
 - `DUR-04` — Content, World Detail and Scripting Contract.
 - `VSL-01` — Foundation Vertical-Slice Programme.
 - `QA-E2E-01` — Native End-to-End Test Platform Contract.
+- `PERF-01` — Capacity, Performance and Scalability Contract.
+- `OPS-CHANNEL-01` — GameNode Deployment and Dynamic Channel Orchestration Contract.
 - `ANL-01` — Game Event and Audit Foundation Contract.
 - `ANL-02` — Gameplay, Balance and World Analytics Contract.
 - `ANL-03` — Economy Integrity and Security Analytics Contract.
@@ -105,7 +107,21 @@ The following are no longer open questions:
    - exact revisions, deterministic controls, first-divergence evidence and cleanup certification are mandatory;
    - `QA-E2E-01` blocks completion of `VSL-01`, but does not block `FND-01`, `VSL-02` or architecture discovery.
 
-Canonical decisions: ADR-0001 through ADR-0007.
+9. **Legacy protocol migration disposition**
+   - `protocol-canary` is fixed as `REFERENCE_ONLY` migration evidence;
+   - it is excluded from the production workspace dependency graph, binaries, negotiation, fallback and translation paths;
+   - `protocol-oteryn` remains an independently designed native protocol.
+
+10. **GameNode execution, capacity, deployment and recovery direction**
+   - `GameNode` is the logical runtime identity of one game-server process identified by `NodeId`, distinct from the host, container and orchestrator node;
+   - production defaults to one GameNode process per container, while one GameNode may host several ChannelRuntimes when measured capacity and blast-radius policy allow it;
+   - the process is multithreaded, but each channel retains one logical authoritative writer and stale auxiliary results are rejected by identity, generation and revision;
+   - capacity is measured separately per channel, GameNode and logical world; no fixed player limits are accepted without representative benchmarks;
+   - the initial production headroom target is at least 30% below measured saturation until `PERF-01` provides superseding evidence;
+   - existing GameNodes may start channels within accepted capacity, while an external orchestrator starts, replaces and stops processes or containers;
+   - initial failure recovery uses fencing, checkpoint plus bounded replay, fresh Game Sessions and a full snapshot, without silently moving players to another channel.
+
+Canonical decisions: ADR-0001 through ADR-0009.
 
 ## Progressive implementation policy
 
@@ -165,6 +181,8 @@ Not yet allowed unless its own gate has passed:
 - `FND-02` gates canonical protocol schemas/codecs, production framing and compatibility claims.
 - `FND-03` gates authoritative runtime scheduling, ordering, lifecycle and recovery behavior.
 - `FND-04` gates production admission, Game Session validation and character lease behavior.
+- `PERF-01` gates published player-capacity claims and representative-load readiness.
+- `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production GameNode/channel recovery behavior.
 - `DUR-01` through `DUR-03` gate authoritative durable character, item and currency mutation.
 - `DUR-04` gates broad content import and durable scripting behavior.
 - `QA-E2E-01` gates the shared three-tier E2E implementation and named evidence required for `VSL-01` completion.
@@ -347,6 +365,39 @@ expires_at
 issuer
 audience
 ```
+
+## Capacity and channel operations follow-up contracts
+
+ADR-0009 accepts the execution, capacity-measurement, deployment-boundary and recovery direction without inventing unsupported numerical limits or selecting an orchestrator product.
+
+### `PERF-01` — Capacity, Performance and Scalability Contract
+
+Decide and prove:
+
+- named reference hardware, operating system and process/container resource cells;
+- command, simulation, queue-age and resource service objectives;
+- representative idle, movement, hunting, crowded-interest-set, mass-combat, raid, reconnect-storm, persistence-pressure, multi-channel noisy-neighbor and recovery workloads;
+- separate channel, GameNode and logical-world capacity limits;
+- safety headroom, overload admission and graceful-degradation policy;
+- profiling, soak, memory-growth and performance-regression evidence;
+- CI, nightly and release placement for repeatable benchmark evidence.
+
+Player count alone is not a scaling signal. Accepted limits must also account for latency, queue age, CPU, memory, network, persistence health and the first violated service objective.
+
+### `OPS-CHANNEL-01` — GameNode Deployment and Dynamic Channel Orchestration Contract
+
+Decide:
+
+- exact process/container packaging and production control-plane topology;
+- GameNode registration, health, readiness, capacity and compatible-revision reporting;
+- channel lifecycle, placement, dynamic creation, hysteresis, draining and closure;
+- external orchestrator authority and least-privilege boundaries;
+- ownership generation, fencing, restart, replacement, checkpoint, bounded replay and reconnect sequencing;
+- reconnect grace, player-visible outcomes, RPO, RTO and disaster-test requirements;
+- blast-radius limits and recovery-concurrency policy for several channels on one GameNode;
+- rollout and rollback behavior without active-channel live migration in the initial implementation.
+
+`FND-03`, `FND-04`, `DUR-02`, `DUR-03` and `QA-E2E-01` retain ownership of their execution, admission, persistence, anti-duplication and physical failure-evidence boundaries.
 
 ## Decisions required before durable gameplay mutation
 
@@ -559,6 +610,8 @@ The complete open-decision scope is canonical in `GAMEPLAY_AND_PRODUCT_ARCHITECT
 - `GAME-CHAR-01` and `GAME-ITEM-01` are new durable-gameplay gates: character semantics must precede final `DUR-02`, and item semantics must precede final `DUR-03`.
 - `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01` are required before Playable Alpha gameplay breadth is claimed; bounded vertical-slice contracts may precede them.
 - `PROD-LIVEOPS-01`, `PROD-COMPAT-01`, `SEC-CLIENT-01`, `DATA-PRIVACY-01`, `UX-I18N-A11Y-01` and `OPS-GM-01` are required before Playable Alpha operational completeness is claimed.
+- `PERF-01` is required before Playable Alpha claims representative-load readiness or publishes supported channel, GameNode or world capacity.
+- `OPS-CHANNEL-01` is required before automatic production channel scaling or production GameNode/channel recovery is claimed.
 - `GAME-META-01`, `GAME-INSTANCES-01`, `GAME-WORLD-LIFECYCLE-01` and `INTEGRATION-API-01` are expansion gates.
 - `PROD-ENTITLEMENTS-01` and `MOD-ECOSYSTEM-01` remain explicitly deferred until an owner decision activates them.
 
@@ -621,10 +674,12 @@ No package may edit another active package's owned contract without explicit coo
 20. Implement QA-E2E-01 incrementally as the client, protocol, admission, persistence and content prerequisites land
 21. Accept VSL-01 Foundation Vertical-Slice Programme with correlated event/audit evidence and named QA-E2E-01 tiers
 22. Execute the separately authorized vertical-slice implementation programme
-23. Accept GAME-ABILITY-01, GAME-AI-01 and GAME-INTERACTION-01 before Playable Alpha gameplay breadth is claimed
-24. Accept PROD-LIVEOPS-01, PROD-COMPAT-01, SEC-CLIENT-01, DATA-PRIVACY-01, UX-I18N-A11Y-01 and OPS-GM-01 before Playable Alpha operational completeness is claimed
-25. Complete ANL-02/ANL-03 before production-grade alpha analytics claims; defer ANL-04 until read-only investigation is authorized
-26. Activate expansion/deferred gameplay-product gates only when their milestone or explicit owner decision requires them
+23. Accept PERF-01 before publishing supported capacity or claiming Playable Alpha representative-load readiness
+24. Accept OPS-CHANNEL-01 before automatic production channel scaling or production GameNode/channel recovery behavior is claimed
+25. Accept GAME-ABILITY-01, GAME-AI-01 and GAME-INTERACTION-01 before Playable Alpha gameplay breadth is claimed
+26. Accept PROD-LIVEOPS-01, PROD-COMPAT-01, SEC-CLIENT-01, DATA-PRIVACY-01, UX-I18N-A11Y-01 and OPS-GM-01 before Playable Alpha operational completeness is claimed
+27. Complete ANL-02/ANL-03 before production-grade alpha analytics claims; defer ANL-04 until read-only investigation is authorized
+28. Activate expansion/deferred gameplay-product gates only when their milestone or explicit owner decision requires them
 ```
 
 Contracts may be developed in parallel only when ownership and dependencies do not overlap. Cross-repository changes require separate authorized tasks, branches and PRs with one coordination ID and explicit rollout order.
@@ -647,6 +702,8 @@ Contracts may be developed in parallel only when ownership and dependencies do n
 - `VSL-01` must name observable E2E evidence before implementation is called complete.
 - `ANL-01` must be accepted before final `DUR-02`/`DUR-03` outbox and audit boundaries are frozen.
 - `ANL-02`/`ANL-03` are required before production-grade balance/world and economy/security analytics claims; `ANL-04` remains a later read-only investigation gate.
+- `PERF-01` must be accepted before publishing player/channel/GameNode/world capacity claims or calling Playable Alpha representative-load ready.
+- `OPS-CHANNEL-01` must be accepted before automatic production channel scaling or production GameNode/channel recovery behavior is claimed.
 
 ## Current next action
 

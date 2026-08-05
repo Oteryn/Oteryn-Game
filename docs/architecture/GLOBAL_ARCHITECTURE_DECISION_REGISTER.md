@@ -38,6 +38,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | Game Intelligence, analytics durability classes and read-only investigation boundary | `ACCEPTED` | ADR-0006 |
 | Native three-tier E2E platform, evidence, cleanup and stability contract | `ACCEPTED` | ADR-0007 |
 | `protocol-canary` fixed as reference-only evidence and excluded from every production runtime/dependency/fallback path | `ACCEPTED` | ADR-0008 |
+| GameNode process identity, multithreaded single-writer execution, measured capacity, external orchestration and same-channel fenced recovery baseline | `ACCEPTED` | ADR-0009 |
 
 ## Progressive execution policy
 
@@ -48,6 +49,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Do not create a competing placeholder client or claim a complete canonical workspace before the controlled migration/cutover.
 - `FND-ID-01` gates identifier meanings required by protocol and admission contracts after migration.
 - `FND-02`, `FND-03` and `FND-04` independently gate canonical protocol, authoritative runtime and production admission/lease behavior.
+- ADR-0009 fixes the GameNode/process/container boundary and recovery invariants; `PERF-01` gates supported capacity claims and `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production recovery behavior.
 - Bounded technical spikes may inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 - `DUR-01` through `DUR-03` remain hard gates before authoritative durable character, item or currency mutation.
 - `ANL-01` must be accepted before `DUR-02`/`DUR-03` finalize transactional outbox and critical audit evidence; analytics consumers never replace authoritative invariants.
@@ -286,7 +288,27 @@ Registration prevents omission; it does not accept technologies, formulas, schem
 - Status: `REQUIRED_FOR_ALPHA`
 - Consume `QA-E2E-01` rather than creating a second E2E platform.
 - Unit, property, fuzz, integration, golden protocol, deterministic simulation, database concurrency, crash recovery, multichannel, E2E, soak and migration tests.
-- Freeze quantitative targets for players/channel, channels/node, tick budget, latency, reconnect, memory, startup, bundle size and database throughput.
+- Consume `PERF-01` for players/channel, channels/GameNode, logical-world capacity, tick/scheduling budget, latency, reconnect, memory, startup and database-throughput targets.
+
+### `PERF-01` — Capacity, Performance and Scalability
+
+- Status: `REQUIRED_FOR_ALPHA`.
+- Define named reference hardware and supported deployment cells.
+- Freeze latency, scheduling, queue-age, resource and overload service objectives.
+- Use representative movement, hunting, crowd, mass-combat, raid, reconnect-storm, persistence, noisy-neighbor, recovery and soak workloads.
+- Establish separate channel, GameNode and logical-world capacity limits with accepted safety headroom.
+- Record exact artifact, content, ruleset, protocol, topology and first violated objective for every supported claim.
+- Block published production capacity claims and representative-load readiness until reproducible evidence exists.
+
+### `OPS-CHANNEL-01` — GameNode Deployment and Dynamic Channel Orchestration
+
+- Status: `BLOCKS_LAYER_IMPLEMENTATION`.
+- Blocks automatic production channel scaling and claimed production GameNode/channel recovery behavior.
+- Define process/container packaging, external orchestrator authority, registration, health, readiness and capacity reporting.
+- Freeze channel placement, lifecycle, dynamic creation, hysteresis, draining and closure.
+- Define ownership-generation fencing, replacement, checkpoint, bounded replay, fresh-session reconnect and full-snapshot recovery.
+- Set reconnect grace, RPO, RTO, blast-radius and recovery-concurrency policy from named evidence.
+- Preserve the initial prohibition on active-channel live migration and silent failover to a different channel.
 
 ### `ALPHA-MILESTONE-01` — Product Milestone Contract
 
@@ -331,8 +353,9 @@ Registration prevents omission; it does not accept technologies, formulas, schem
 
 ### `EXP-OPS-01` — Deployment and Operations
 
-- Status: `EXPANSION`
-- Deployment topology, environments, configuration, secrets, discovery, health/readiness, draining, rolling updates, migrations, backup and disaster recovery.
+- Status: `EXPANSION`.
+- Broader environment, configuration, secret, rolling-update, migration, backup and disaster-recovery architecture.
+- Consume `OPS-CHANNEL-01` for GameNode process/container lifecycle, channel placement, dynamic scaling, fencing and reconnect recovery instead of defining a competing control plane.
 
 ### `EXP-OBS-01` — Observability
 
@@ -366,6 +389,7 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 13. Every gameplay/product package must reconcile `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`; an unnamed domain may not be silently absorbed into an unrelated gate.
 14. Every vertical-slice or client-visible package must consume `QA-E2E-01`; it may add scenarios and assertions but not a competing E2E lifecycle/evidence platform.
 15. ADR-0008 is binding on `FND-01`, `VSL-02`, `FND-02` and all later client/server packages; no task may reintroduce Canary into production through an optional feature, fallback, compatibility listener or intermediate translation model.
+16. ADR-0009 is binding on runtime, performance and operations packages: `NodeId` identifies the GameNode process runtime rather than a physical host, each channel retains one logical writer, capacity claims require `PERF-01`, and automatic production scaling/recovery claims require `OPS-CHANNEL-01`.
 
 ## Current next action
 
