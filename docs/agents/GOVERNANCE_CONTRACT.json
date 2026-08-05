@@ -1,0 +1,85 @@
+{
+  "schema_version": "1.0",
+  "repository": "blakinio/Oteryn-v2",
+  "default_branch": "main",
+  "task_prefix": "OTV2",
+  "merge_method": "squash",
+  "write_allowlist": [
+    "blakinio/Oteryn-v2"
+  ],
+  "external_read_only_repositories": [
+    "blakinio/Oteryn-Platform",
+    "blakinio/Otheryn",
+    "blakinio/otclient",
+    "opentibiabr/canary",
+    "opentibiabr/otclient"
+  ],
+  "required_documents": [
+    "AGENTS.md",
+    "AGENTS.override.md",
+    "docs/agents/README.md",
+    "docs/agents/AGENTS.md",
+    "docs/agents/REPOSITORY_MAP.md",
+    "docs/agents/CONTEXT_ROUTING.md",
+    "docs/agents/CONTEXT_HANDOFF.md",
+    "docs/agents/BUILD_TEST_MATRIX.md",
+    "docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md",
+    "docs/agents/AUTONOMOUS_PROGRAM_CONTINUATION.md",
+    "docs/agents/DELIVERY_COMPLETENESS_AND_CLOSEOUT.md",
+    "docs/agents/GITHUB_ONLY_EXECUTION.md",
+    "docs/agents/SESSION_RECOVERY_AND_ORPHANED_EXECUTION.md",
+    "docs/agents/TERMINAL_ONLY_COMMUNICATION.md",
+    "docs/agents/TRUST_AND_CONTEXT_BOUNDARIES.md",
+    "docs/agents/EXECUTION_PROTOCOL.md",
+    "docs/agents/END_TO_END_FEATURE_COMPLETENESS.md",
+    "docs/agents/TASK_CLOSEOUT_AUDIT_E2E.md",
+    "docs/agents/PROMPTING_STANDARD.md",
+    "docs/agents/PROMPTING_HANDOVER.md",
+    "docs/agents/PROMPT_EVAL_STANDARD.md",
+    "docs/agents/CROSS_REPO_CONTRACTS.md",
+    "docs/agents/KNOWN_RISKS.md",
+    "docs/agents/PROJECT_LANES.json",
+    "docs/agents/tasks/TASK_TEMPLATE.md"
+  ],
+  "required_architecture": [
+    "docs/architecture/ADR-0001-native-rust-multichannel-platform.md",
+    "docs/architecture/MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md",
+    "docs/architecture/OTHERYN_REFERENCE_MIGRATION_PLAN.md"
+  ],
+  "architecture_invariants": [
+    "native-rust-server-and-client",
+    "protocol-oteryn-only-target-runtime",
+    "multichannel-first-world-model",
+    "distinct-world-channel-instance-node-session-identities",
+    "single-logical-authoritative-writer-per-channel",
+    "server-authoritative-gameplay",
+    "session-generation-fenced-character-writes",
+    "rulesets-not-wire-protocol-forks",
+    "one-authoritative-house-state-per-world-provisional"
+  ],
+  "task_statuses": [
+    "investigating",
+    "implementing",
+    "validating",
+    "ready",
+    "waiting",
+    "blocked",
+    "completed"
+  ],
+  "terminal_invocation_results": [
+    "DONE",
+    "WAITING",
+    "BLOCKED",
+    "ROTATE"
+  ],
+  "task_paths": {
+    "template": "docs/agents/tasks/TASK_TEMPLATE.md",
+    "active": "docs/agents/tasks/active",
+    "archive": "docs/agents/tasks/archive"
+  },
+  "validation": {
+    "command": "python tools/agents/validate_governance.py",
+    "workflow": ".github/workflows/agent-governance.yml",
+    "workflow_name": "Agent governance"
+  }
+}
