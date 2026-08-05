@@ -23,6 +23,7 @@ public_contracts:
   - docs/architecture/ADR-0003-platform-identity-game-gateway-and-admission-boundary.md
   - docs/architecture/ADR-0004-postgresql-and-data-ownership.md
   - docs/architecture/ADR-0005-native-world-format-and-oteryn-studio.md
+  - docs/architecture/ADR-0006-game-intelligence-analytics-and-audit.md
   - docs/architecture/FOUNDATION_DECISION_BACKLOG.md
   - docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md
   - docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json
@@ -33,7 +34,7 @@ public_contracts:
   - docs/architecture/OTHERYN_REFERENCE_MIGRATION_PLAN.md
 continuation_prompt: docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md
 depends_on:
-  - ADR-0001 through ADR-0005 accepted foundation
+  - ADR-0001 through ADR-0006 accepted foundation
 blocks:
   - canonical root Cargo workspace bootstrap until FND-01 is accepted
   - protocol and Game Session identifier meanings until FND-ID-01 is accepted
@@ -41,6 +42,9 @@ blocks:
   - authoritative runtime implementation until FND-03 is accepted
   - production admission and character lease implementation until FND-04 is accepted
   - authoritative durable gameplay mutation until DUR-01 through DUR-03 are accepted
+  - final transactional event/outbox/audit boundaries until ANL-01 is accepted
+  - production-grade balance/world and economy/security analytics claims until ANL-02 and ANL-03 are accepted
+  - read-only AI investigation until ANL-04 is accepted
   - broad content import and durable scripting until DUR-04 is accepted
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories:
@@ -70,7 +74,7 @@ The complete original 2026-08-05 handoff remains preserved unchanged at `docs/ag
 - The existing Rust client remains in `blakinio/otclient/oteryn-client` until `VSL-02` pins and moves it.
 - Oteryn Platform contains Identity, World Registry, Game Login Ticket and a standalone Go Game Gateway.
 - Existing producer-side native work does not prove the complete target runtime.
-- ADR-0001 through ADR-0005 and their lifecycle closeouts are merged on `main`.
+- ADR-0001 through ADR-0006 are accepted; package lifecycle records are tracked separately.
 
 Every replacement agent must verify this baseline against the live default branch before repeating it.
 
@@ -104,7 +108,13 @@ Every replacement agent must verify this baseline against the live default branc
    - semantic `Area`/`Subarea` geography is separate from technical `Region`/`Chunk` partitioning;
    - dynamic encounter execution uses validated `EncounterZone`/`RaidCell`/`RaidAnchor` scopes.
 
-Canonical evidence: ADR-0001 through ADR-0005.
+6. **Game Intelligence direction**
+   - one versioned event foundation supports separate gameplay/balance, world/content, economy/item and security consumers;
+   - operational metrics, best-effort gameplay telemetry and durable transactional audit are distinct;
+   - anti-duplication prevention remains in `DUR-03`;
+   - investigation and AI are external, read-only and human-reviewed.
+
+Canonical evidence: ADR-0001 through ADR-0006.
 
 ## Stable gate IDs
 
@@ -119,6 +129,10 @@ Canonical evidence: ADR-0001 through ADR-0005.
 - `DUR-04` — Content, World Detail and Scripting Contract.
 - `VSL-01` — Foundation Vertical-Slice Programme.
 - `VSL-02` — Exact Rust Client Migration and Cutover Contract.
+- `ANL-01` — Game Event and Audit Foundation Contract.
+- `ANL-02` — Gameplay, Balance and World Analytics Contract.
+- `ANL-03` — Economy Integrity and Security Analytics Contract.
+- `ANL-04` — Read-Only Investigation and AI Contract.
 
 ## Progressive implementation gates
 
@@ -144,6 +158,8 @@ This bootstrap does not authorize canonical protocol, authoritative runtime, pro
 - `DUR-04` gates broad content import and durable scripting.
 - `VSL-02` gates moving the Rust client source.
 - `VSL-01` gates completion of the native foundation vertical slice.
+- `ANL-01` gates final transactional event/outbox/audit boundaries used by persistence and item transactions.
+- `ANL-02`/`ANL-03` gate production-grade analytics claims; `ANL-04` gates later read-only AI investigation.
 
 ## Remaining foundation contracts
 
@@ -200,6 +216,8 @@ The exact questions, gates and order are maintained in `FOUNDATION_DECISION_BACK
 - `DUR-02` detailed Persistence v1 contract on PostgreSQL;
 - `DUR-03` item transaction and anti-duplication invariants;
 - `DUR-04` content/world-detail/scripting contract before broad import or durable scripts;
+- `ANL-01` event and audit foundation before persistence/item contracts finalize their atomic evidence;
+- `ANL-02`/`ANL-03` before production-grade analytics claims;
 - `VSL-01` foundation vertical-slice programme with named observable evidence.
 
 ## Foundation vertical slice
@@ -212,14 +230,15 @@ The initial programme must prove at least:
 4. authoritative movement and two-player visibility on one channel;
 5. one monster combat/death/loot path;
 6. retry-safe item pickup;
-7. durable checkpoint and safe logout;
-8. relog to another channel with shared character state preserved;
-9. rejection of a simultaneous second session;
-10. isolation of channel-local state and preservation of world-shared state.
+7. correlated combat/death/loot/pickup events, atomic item audit and replay-safe analytics;
+8. durable checkpoint and safe logout;
+9. relog to another channel with shared character state preserved;
+10. rejection of a simultaneous second session;
+11. isolation of channel-local state and preservation of world-shared state.
 
 ## Wider global decision horizon
 
-The global register preserves and stages movement, combat, inventory/economy, rulesets/scripting, client migration/architecture, World Project/Bundle/Registry/Studio, raids/houses/social systems, security, updater, deployment, observability, testing, quantitative performance targets and product milestones.
+The global register preserves and stages movement, combat, inventory/economy, rulesets/scripting, client migration/architecture, World Project/Bundle/Registry/Studio, Game Intelligence/analytics/audit, raids/houses/social systems, security, updater, deployment, observability, testing, quantitative performance targets and product milestones.
 
 These subjects must not be forgotten, but they must not be prematurely frozen when they do not block the current stage.
 
@@ -266,6 +285,9 @@ These do not block initial workspace bootstrap or the foundation vertical slice 
 - [ ] `DUR-02` accepted before durable gameplay mutations.
 - [ ] `DUR-03` accepted before durable item/currency mutation.
 - [x] Native world/content/editor direction accepted in ADR-0005.
+- [x] Game Intelligence, analytics durability classes, privacy and read-only investigation direction accepted in ADR-0006.
+- [ ] `ANL-01` accepted before final outbox/audit boundaries are frozen in `DUR-02`/`DUR-03`.
+- [ ] `ANL-02`/`ANL-03` accepted before production-grade analytics claims; `ANL-04` remains a separately authorized expansion gate.
 - [ ] `DUR-04` accepted before broad content import or durable scripting.
 - [ ] `VSL-01` accepted with named E2E evidence.
 - [ ] `VSL-02` pins source SHA, provenance, open-PR disposition, source freeze, cutover, history preservation and rollback before migration.
@@ -294,6 +316,7 @@ This programme checkpoint does not itself:
 - ADR-0003 resolved the Platform Identity/Game Gateway boundary and retained the initial Go Gateway.
 - ADR-0004 selected PostgreSQL and separate Platform/game database ownership.
 - ADR-0005 accepted the native world/content model, Oteryn Studio and bounded legacy conversion direction.
+- ADR-0006 accepted Oteryn Game Intelligence, separated observability/telemetry/durable audit, and introduced ANL-01 through ANL-04.
 - `FOUNDATION_DECISION_BACKLOG.md` records stable IDs, progressive gates and the non-owning programme model.
 - `GLOBAL_ARCHITECTURE_DECISION_REGISTER.md` records the staged complete project decision horizon.
 - `OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` supports explicit read-only analysis and bounded execution.
@@ -321,12 +344,12 @@ This programme checkpoint does not itself:
 
 ## Independent audit
 
-Every package PR must challenge omitted boundaries, circular dependencies, placeholder crates, duplicate authority, unsafe concurrency/replay/recovery, item duplication, cross-repository rollout conflicts, unsupported runtime claims, premature freezing and stale decisions.
+Every package PR must challenge omitted boundaries, circular dependencies, placeholder crates, duplicate authority, unsafe concurrency/replay/recovery, item duplication, missing provenance/outbox evidence, telemetry/audit durability confusion, privacy/retention/access gaps, AI mutation authority, cross-repository rollout conflicts, unsupported runtime claims, premature freezing and stale decisions.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: ADR-0001 through ADR-0005 are accepted; FND-ID-01, the existing-Rust migration audit, and retained cross-repository/limit/error/failure registries now harden the ordered foundation programme.
+last_progress: ADR-0001 through ADR-0006 are accepted; Game Intelligence now has explicit event/audit, privacy, integrity and read-only investigation gates while FND-01 remains the next executable package.
 status: ready
 branch: null
 head_sha: null
@@ -338,6 +361,7 @@ public_contracts:
   - docs/architecture/ADR-0003-platform-identity-game-gateway-and-admission-boundary.md
   - docs/architecture/ADR-0004-postgresql-and-data-ownership.md
   - docs/architecture/ADR-0005-native-world-format-and-oteryn-studio.md
+  - docs/architecture/ADR-0006-game-intelligence-analytics-and-audit.md
   - docs/architecture/FOUNDATION_DECISION_BACKLOG.md
   - docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md
   - docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json

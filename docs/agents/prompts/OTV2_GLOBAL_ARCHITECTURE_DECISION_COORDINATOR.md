@@ -122,8 +122,14 @@ Verify this against live `main`; do not silently assume it if an accepted ADR ha
 16. Oteryn Studio is the integrated project-owned map, asset and content authoring direction.
 17. Semantic `Area`/`Subarea` geography is independent of technical `Region`/`Chunk` partitioning.
 18. Dynamic encounters use precise validated `EncounterZone`/`RaidCell`/`RaidAnchor` scopes rather than an oversized subarea as the execution boundary.
+19. Oteryn Game Intelligence is a first-class subsystem.
+20. Operational observability, best-effort gameplay telemetry and durable economy/security audit are separate data classes.
+21. Item/currency/security evidence is atomic with authoritative transactions through an accepted outbox/audit contract.
+22. Anti-duplication prevention remains in `DUR-03`; analytics is independent monitoring and investigation.
+23. Ordinary analytics uses pseudonymous identity and role-separated access.
+24. AI/investigation is external, read-only, human-reviewed and cannot mutate, ban, rebalance, roll back or deploy autonomously.
 
-Canonical evidence begins with ADR-0001 through ADR-0005. Inspect all later accepted ADRs before work.
+Canonical evidence begins with ADR-0001 through ADR-0006. Inspect all later accepted ADRs before work.
 
 ### PROVEN / CURRENT ABSENCE AT THE RECORDED BASELINE
 
@@ -143,7 +149,11 @@ Maintain unresolved subjects in `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_
 - `DUR-03` — Item Transaction and Anti-Duplication;
 - `DUR-04` — Content, World Detail and Scripting;
 - `VSL-01` — Foundation Vertical-Slice Programme;
-- `VSL-02` — Exact Rust Client Migration and Cutover Contract.
+- `VSL-02` — Exact Rust Client Migration and Cutover Contract;
+- `ANL-01` — Game Event and Audit Foundation;
+- `ANL-02` — Gameplay, Balance and World Analytics;
+- `ANL-03` — Economy Integrity and Security Analytics;
+- `ANL-04` — Read-Only Investigation and AI.
 
 Classify the wider horizon as:
 
@@ -183,6 +193,8 @@ The bootstrap may provide compile-only interfaces and bounded experiments, but i
 - `DUR-04` gates broad content import and durable scripting behavior.
 - `VSL-02` gates moving the canonical Rust client source.
 - `VSL-01` gates the claim that the first native gameplay slice is complete.
+- `ANL-01` gates final event/outbox/audit boundaries used by `DUR-02` and `DUR-03`.
+- `ANL-02`/`ANL-03` gate production-grade analytics claims; `ANL-04` gates later read-only AI investigation.
 
 A technical spike must be reversible, bounded, excluded from production defaults and explicitly non-canonical. Preserve its measurements and conclusion; remove it or deliberately promote it through a later accepted task.
 
@@ -192,18 +204,21 @@ Unless live accepted architecture changes the dependency graph, use this order:
 
 1. Accept `FND-01` Workspace, Dependency and Existing-Rust Migration Contract.
 2. Leave or authorize one separate minimal workspace-bootstrap implementation task.
-3. Accept `FND-ID-01` Foundation Identifier Vocabulary.
+3. Accept `FND-ID-01` Foundation Identifier Vocabulary, including event/operation/transaction identities.
 4. Require the final Platform native-contract correction to be merged and recorded in the cross-repository contract lock.
 5. Accept `FND-02` `protocol-oteryn` v1 Contract.
-6. Accept `FND-03` Runtime Execution Contract, including clock semantics.
+6. Accept `FND-03` Runtime Execution Contract, including clock and event-emission semantics.
 7. Accept `FND-04` Identity, Game Session, Admission and Character Lease Contract.
 8. Accept `DUR-01` full Identifier Contract for database and durable-state representation.
-9. Accept `DUR-02` Persistence v1 Contract.
-10. Accept `DUR-03` Item Transaction and Anti-Duplication Contract where not fully contained in `DUR-02`.
-11. Run the bounded native world-format spike and accept `DUR-04` under ADR-0005.
-12. Accept `VSL-01` Foundation Vertical-Slice Programme.
-13. Accept `VSL-02` Exact Rust Client Migration and Cutover Contract before moving client code.
-14. Begin the separately authorized vertical-slice implementation programme.
+9. Accept `ANL-01` Game Event and Audit Foundation Contract.
+10. Accept `DUR-02` Persistence v1 with transactional outbox/audit recovery.
+11. Accept `DUR-03` Item Transaction and Anti-Duplication Contract where not fully contained in `DUR-02`.
+12. Draft `ANL-02` and `ANL-03` on the accepted event/persistence/item foundations.
+13. Run the bounded native world-format spike and accept `DUR-04` under ADR-0005.
+14. Accept `VSL-01` with correlated event/audit evidence.
+15. Accept `VSL-02` before moving client code.
+16. Begin the separately authorized vertical-slice implementation programme.
+17. Complete `ANL-02`/`ANL-03` before production-grade alpha analytics claims; keep `ANL-04` separately authorized.
 
 A later subject may be researched in parallel only when it has exclusive ownership and cannot change a public contract owned by an earlier package.
 
@@ -323,7 +338,11 @@ At minimum consume the accepted `FND-ID-01` meanings and decide Game Session for
 
 ### `DUR-01` through `DUR-03`
 
-At minimum decide ID scope and representation, schema/migration ownership, character revision/fencing, item transaction boundaries, idempotency/retry, isolation/locking, outbox/audit/checkpoint, backup/PITR/restore/RPO/RTO and compatible rollout/rollback.
+At minimum decide ID scope and representation, schema/migration ownership, character revision/fencing, item transaction boundaries, idempotency/retry, isolation/locking, transactional outbox/audit/checkpoint, item/currency provenance, conservation invariants, backup/PITR/restore/RPO/RTO and compatible rollout/rollback.
+
+### `ANL-01` through `ANL-04`
+
+At minimum preserve ADR-0006: common versioned events, distinct durability classes, bounded fail-open gameplay telemetry, atomic economy/security audit, privacy/pseudonymization/retention, gameplay/balance/world analytics, item/currency integrity and security cases, plus an external read-only human-reviewed AI investigation boundary. Never treat analytics or AI as an authoritative mutation or automatic sanction path.
 
 ## 13. Research, prototype and evidence rules
 
@@ -363,7 +382,7 @@ Runtime/component E2E may be `NOT_APPLICABLE` only with a concrete architecture-
 
 ## 15. Independent audit requirements
 
-The audit must challenge omitted layers or owners, circular/convenience dependencies, speculative placeholder crates, duplicate sources of truth, protocol ambiguity, unsafe concurrency/replay/recovery, item duplication, cross-channel and cross-repository inconsistencies, missing limits/rollback, implementation leakage, premature freezing, unsupported claims and stale evidence.
+The audit must challenge omitted layers or owners, circular/convenience dependencies, speculative placeholder crates, duplicate sources of truth, protocol ambiguity, unsafe concurrency/replay/recovery, item duplication, missing provenance/outbox evidence, telemetry/audit durability confusion, privacy/retention/access gaps, AI mutation authority, cross-channel and cross-repository inconsistencies, missing limits/rollback, implementation leakage, premature freezing, unsupported claims and stale evidence.
 
 `PASS` requires zero open material findings.
 

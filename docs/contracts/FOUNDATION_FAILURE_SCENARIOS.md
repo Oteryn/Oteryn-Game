@@ -24,5 +24,13 @@ Each foundation contract must mark every applicable scenario as `PASS`, `NOT_APP
 | `FS-DB-OUTBOX-BOUNDARY` | Crash occurs around durable mutation/outbox publish | Transaction contract prevents lost or duplicated externally visible effects. |
 | `FS-WORLD-BUNDLE-CORRUPT` | Bundle checksum/version/decompression is invalid | Reject before unsafe allocation or partial world activation. |
 | `FS-CLIENT-CUTOVER-ROLLBACK` | Migrated client workspace fails acceptance | Development source of truth and exact rollback path remain unambiguous. |
+| `FS-ANALYTICS-TELEMETRY-OVERFLOW` | Best-effort gameplay telemetry queue reaches its registered bound | Gameplay follows the explicit fail-open/drop policy; loss is counted, bounded and never misrepresented as complete evidence. |
+| `FS-AUDIT-OUTBOX-BACKLOG` | Durable audit/outbox consumer is unavailable or falls behind | Authoritative records are not silently discarded; backlog, recovery and owning transaction behavior follow the accepted durable contract. |
+| `FS-EVENT-DUPLICATE-DELIVERY` | One event is delivered more than once | Consumer deduplication returns one analytical/provenance effect and never replays gameplay mutation. |
+| `FS-EVENT-OUT-OF-ORDER` | Related events arrive outside causal or transaction order | Consumer buffers, rejects or reconciles deterministically without inventing state or enforcement. |
+| `FS-AUDIT-MUTATION-MISMATCH` | Authoritative mutation and required audit/outbox evidence disagree | The mismatch cannot commit or remain silent; recovery produces named evidence and preserves authoritative invariants. |
+| `FS-ANALYTICS-PRIVACY-POLICY` | Event/dataset lacks an accepted purpose, privacy class, retention or access policy | Production collection/projection fails closed for that class with no unclassified player-linked data. |
+| `FS-DETECTOR-FALSE-POSITIVE` | Analytics detector raises an incorrect security anomaly | No automatic sanction or mutation occurs; evidence, detector version, human review and disposition remain auditable. |
+| `FS-INVESTIGATION-MUTATION-ATTEMPT` | Investigation or AI component attempts a runtime/database mutation | Least-privilege credentials make the mutation impossible and the attempt is audited. |
 
 New scenarios receive stable IDs and are added here rather than being named differently by each package.

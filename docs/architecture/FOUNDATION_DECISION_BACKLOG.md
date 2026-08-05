@@ -30,6 +30,10 @@ Use these identifiers in tasks, PRs, prompts and cross-repository coordination. 
 - `DUR-04` — Content, World Detail and Scripting Contract.
 - `VSL-01` — Foundation Vertical-Slice Programme.
 - `VSL-02` — Exact Rust Client Migration and Cutover Contract.
+- `ANL-01` — Game Event and Audit Foundation Contract.
+- `ANL-02` — Gameplay, Balance and World Analytics Contract.
+- `ANL-03` — Economy Integrity and Security Analytics Contract.
+- `ANL-04` — Read-Only Investigation and AI Contract.
 
 ## Already accepted
 
@@ -77,7 +81,16 @@ The following are no longer open questions:
    - authored static world definitions remain separate from authoritative dynamic PostgreSQL state;
    - Remere's Map Editor and Beats Assets Editor are reference/migration tools, not target runtime dependencies or automatically reusable code bases.
 
-Canonical decisions: ADR-0001 through ADR-0005.
+7. **Game Intelligence, analytics and audit direction**
+   - Oteryn Game Intelligence is a first-class subsystem rather than a late dashboard add-on;
+   - operational observability, best-effort gameplay telemetry and durable economy/security audit are distinct data classes;
+   - gameplay/balance, world/content, economy/item integrity and security analytics are separate consumers of one versioned event foundation;
+   - item/currency/security evidence is emitted atomically with authoritative transactions through an accepted outbox/audit boundary;
+   - anti-duplication prevention remains authoritative in `DUR-03`; analytics supplies independent evidence and investigation;
+   - AI and investigation remain read-only, external to gameplay and unable to ban, mutate, roll back or deploy autonomously;
+   - privacy requires pseudonymous analytics identity, role-separated access and explicit retention, not name-only suppression.
+
+Canonical decisions: ADR-0001 through ADR-0006.
 
 ## Progressive implementation policy
 
@@ -118,6 +131,9 @@ Not yet allowed unless its own gate has passed:
 - `DUR-01` through `DUR-03` gate authoritative durable character, item and currency mutation.
 - `DUR-04` gates broad content import and durable scripting behavior.
 - `VSL-01` gates the claim that the first native gameplay slice is complete.
+- `ANL-01` gates final transactional event/outbox/audit boundaries used by `DUR-02` and `DUR-03`.
+- `ANL-02` and `ANL-03` gate production-grade balance/world and economy/security analytics claims.
+- `ANL-04` gates read-only AI investigation and is not required for the foundation vertical slice.
 
 A spike is never a substitute for an accepted contract. It must be reversible, isolated from public contracts, excluded from production defaults and either removed or deliberately promoted by a later accepted task.
 
@@ -181,7 +197,7 @@ Mandatory direction: domain and simulation crates do not depend on Tokio, TCP, T
 
 Accept this minimum vocabulary after `FND-01` and before `FND-02` or `FND-04` freezes wire/session schemas. Decide only the semantics required across process and repository boundaries:
 
-- meaning, canonical owner and scope of `AccountId`, `CharacterId`, `WorldId`, `ChannelId`, `InstanceId`, `NodeId`, `GameSessionId`, `CommandId`, `EntityId`, `ProtocolRevision`, `RulesetRevision`, `ContentRevision` and `SessionGeneration`;
+- meaning, canonical owner and scope of `AccountId`, `CharacterId`, `WorldId`, `ChannelId`, `InstanceId`, `NodeId`, `GameSessionId`, `CommandId`, `EntityId`, `EventId`, `OperationId`, `TransactionId`, `CorrelationId`, `CausationId`, `AnalyticsActorId`, `ProtocolRevision`, `RulesetRevision`, `ContentRevision` and `SessionGeneration`;
 - global versus scoped uniqueness and whether reuse is permitted;
 - durable versus runtime-only identity;
 - public/client-visible versus opaque identity;
@@ -226,7 +242,8 @@ Decide:
 - bounded inbound/outbound/work queues;
 - overload and backpressure behaviour;
 - parallel pathfinding, AI and content work and safe return to the logical writer;
-- deterministic replay requirements;
+- deterministic replay requirements, including replay into read-only analytics/test consumers without replaying gameplay effects;
+- versioned event emission, bounded gameplay-telemetry queues and fail-open/fail-closed behavior by durability class;
 - channel lifecycle: starting, ready, full, draining, unhealthy, recovering and stopped;
 - checkpoint and crash-recovery boundary;
 - required outcomes for the named foundation failure scenarios covering overload, stale generations, dependency loss, split ownership and recovery.
@@ -289,7 +306,13 @@ Freeze representations and visibility for:
 - `ProtocolRevision`;
 - `ContentRevision`;
 - `RulesetRevision`;
-- `SessionGeneration`.
+- `SessionGeneration`;
+- `EventId`;
+- `OperationId`;
+- `TransactionId`;
+- `CorrelationId`;
+- `CausationId`;
+- `AnalyticsActorId`.
 
 Decide UUID/UUIDv7/integer usage, global versus scoped uniqueness, wire encoding, database encoding, public visibility and entity-ID reuse rules.
 
@@ -303,8 +326,9 @@ PostgreSQL is selected. Still decide:
 - inventory/equipment and ground-item transfer transaction boundaries;
 - idempotency keys and duplicate-command handling;
 - isolation levels, locking and retry policy;
-- transactional outbox boundaries;
-- critical append-only audit/journal scope;
+- transactional outbox boundaries, publication checkpoints, deduplication and recovery;
+- critical append-only audit/journal scope and its separation from best-effort gameplay telemetry;
+- atomic production of item/currency/security evidence with the owning authoritative transaction;
 - checkpoint interval and maximum accepted progress loss;
 - market, guild, house and reward consistency classes;
 - partitioning where justified;
@@ -323,7 +347,9 @@ Decide, either in Persistence v1 or a separate contract:
 - idempotency and duplicate-command outcomes;
 - stale-session and stale-writer rejection;
 - crash and partial-failure rollback/recovery;
-- audit evidence proving that items or currency cannot be duplicated.
+- audit evidence proving that items or currency cannot be duplicated;
+- authoritative event semantics for create, destroy, split, merge, move, pickup, drop, loot, trade, market, mail, depot, reward, transform, currency credit/debit, commit, abort and rollback;
+- deterministic conservation, provenance and single-authoritative-location invariants that can be independently reconciled by Game Intelligence.
 
 ### `DUR-04` — Content, World Detail and Scripting Contract
 
@@ -347,6 +373,67 @@ ADR-0005 accepts the native world format, Oteryn Studio, stable content identity
 
 Scripts must not receive a global mutable `Game` object or direct SQL access. Legacy tools and proprietary assets must not be copied without confirmed rights and pinned provenance.
 
+
+## Cross-cutting Game Intelligence contracts
+
+ADR-0006 accepts the subsystem direction. The following contracts freeze its implementable boundaries without creating runtime code in the architecture package.
+
+### `ANL-01` — Game Event and Audit Foundation Contract
+
+Decide:
+
+- common versioned event envelope and event-family ownership;
+- operational, best-effort telemetry and durable audit classifications;
+- producers, consumers, ordering, causation/correlation and schema compatibility;
+- bounded in-process queues, overload, drop and fail-open behavior for gameplay telemetry;
+- transactional outbox/atomic audit behavior for economy and security mutations;
+- idempotent delivery, deduplication, publication checkpoints and replay into read-only consumers;
+- resource limits registered in `RESOURCE_LIMITS_REGISTRY.json`, backpressure, dead-letter lifecycle and observability;
+- stable error/outcome mapping through `FOUNDATION_ERROR_VOCABULARY.md`;
+- privacy classes, pseudonymous identity, access roles, retention, deletion/anonymization and legal hold;
+- named analytics/audit/privacy/investigation scenarios from `FOUNDATION_FAILURE_SCENARIOS.md`;
+- golden fixtures and duplicate/out-of-order/schema-evolution tests.
+
+This contract must be accepted before `DUR-02` and `DUR-03` finalize the outbox/audit evidence required by their transactions. It does not block minimal workspace bootstrap.
+
+### `ANL-02` — Gameplay, Balance and World Analytics Contract
+
+Decide:
+
+- hunt/session and aggregate semantics derived from explicit events;
+- vocation/class, level, equipment/power, party, hunt-area and version dimensions;
+- damage, healing, death, experience, spell, monster, supplies, loot and profit metrics;
+- `Area`/`Subarea`/`EncounterZone`/`RaidCell`/`RaidAnchor` and technical region/chunk analysis;
+- minimum sample sizes, confidence, regression comparison and misleading-series prevention;
+- geography/privacy trade-offs, storage, retention, dashboards and reconciliation.
+
+Analytics remains observational and may not change balance automatically.
+
+### `ANL-03` — Economy Integrity and Security Analytics Contract
+
+Decide:
+
+- item/currency provenance consumers and deterministic invariant catalogue;
+- alert and investigation-case lifecycle;
+- bot, exploit, replay, cooldown, transfer-graph and protocol anomaly signals;
+- detector/rule/model versioning, evidence references and false-positive handling;
+- separation between deterministic enforcement in runtime and observational alerting;
+- human authorization and audited disposition for sanctions or remediation.
+
+This contract supplements but never replaces the prevention guarantees of `DUR-03`.
+
+### `ANL-04` — Read-Only Investigation and AI Contract
+
+Decide:
+
+- read-only views, replicas and evidence-package APIs;
+- case correlation, provenance reconstruction and report generation;
+- model/rule provenance, confidence and human review;
+- least-privilege credentials and full access auditing;
+- hard prohibitions on runtime/database mutation, autonomous bans, balance changes, rollback, deployment and unsupported proof claims.
+
+This is an expansion gate and is not required for the foundation vertical slice.
+
 ## `VSL-01` — Foundation Vertical-Slice Programme
 
 Approve ownership, implementation order and evidence for this minimum scenario:
@@ -361,11 +448,14 @@ Approve ownership, implementation order and evidence for this minimum scenario:
 8. one monster can be attacked and killed;
 9. one corpse/loot result is produced;
 10. one item is picked up through a retry-safe transfer;
-11. character state is checkpointed and saved;
-12. logout is safe;
-13. the character logs into another channel with inventory/progression preserved;
-14. a simultaneous second login of the same character is rejected;
-15. channel-local state remains isolated while world-shared state remains shared.
+11. combat, death, loot and pickup emit correlated versioned events;
+12. durable item/pickup evidence is atomic with the authoritative mutation;
+13. duplicate delivery/replay into analytics does not duplicate an item or analytical aggregate;
+14. character state is checkpointed and saved;
+15. logout is safe;
+16. the character logs into another channel with inventory/progression preserved;
+17. a simultaneous second login of the same character is rejected;
+18. channel-local state remains isolated while world-shared state remains shared.
 
 ## Decisions required as the vertical slice expands
 
@@ -378,8 +468,10 @@ Approve ownership, implementation order and evidence for this minimum scenario:
 - encounter uniqueness and cooldown scope across channels;
 - world communication and presence service boundary;
 - `VSL-02` exact Rust client migration revision, provenance, open-PR disposition, development freeze/cutover, history-preservation mechanism and rollback;
-- event journal and checkpoint timing;
-- metrics, tracing, log redaction and audit retention;
+- event journal, transactional outbox, publication checkpoint and replay timing;
+- gameplay/balance/world analytics dimensions and sample-quality policy;
+- item/currency provenance, invariant monitoring and security case lifecycle;
+- metrics, tracing, log redaction, pseudonymization, access control and differentiated retention;
 - updater, asset signing and release security;
 - supported client platforms and server architectures;
 - quantitative capacity, latency, reconnect, RPO and RTO targets;
@@ -422,18 +514,21 @@ No package may edit another active package's owned contract without explicit coo
 ```text
 1. Accept FND-01 Workspace, Dependency and Existing-Rust Migration Contract
 2. Run a separate minimal workspace-bootstrap implementation task
-3. Accept FND-ID-01 Foundation Identifier Vocabulary
+3. Accept FND-ID-01 Foundation Identifier Vocabulary, including event/operation/transaction identities
 4. Merge and lock the final canonical Platform native-contract correction
 5. Accept FND-02 protocol-oteryn v1 Contract
-6. Accept FND-03 Runtime Execution Contract, including clock semantics
+6. Accept FND-03 Runtime Execution Contract, including clock and event-emission semantics
 7. Accept FND-04 Identity, Game Session, Admission and Character Lease Contract
 8. Accept DUR-01 full Identifier Contract for database and durable-state representation
-9. Accept DUR-02 Persistence v1 Contract
-10. Accept DUR-03 Item Transaction and Anti-Duplication Contract, if not complete in DUR-02
-11. Run the bounded world-format spike and complete DUR-04 under ADR-0005
-12. Accept VSL-01 Foundation Vertical-Slice Programme
-13. Accept VSL-02 Exact Rust Client Migration and Cutover Contract before moving client code
-14. Execute the separately authorized vertical-slice implementation programme
+9. Accept ANL-01 Game Event and Audit Foundation Contract
+10. Accept DUR-02 Persistence v1 Contract with transactional outbox/audit recovery
+11. Accept DUR-03 Item Transaction and Anti-Duplication Contract, if not complete in DUR-02
+12. Draft ANL-02 and ANL-03 on the accepted event/persistence/item foundations
+13. Run the bounded world-format spike and complete DUR-04 under ADR-0005
+14. Accept VSL-01 Foundation Vertical-Slice Programme with correlated event/audit evidence
+15. Accept VSL-02 Exact Rust Client Migration and Cutover Contract before moving client code
+16. Execute the separately authorized vertical-slice implementation programme
+17. Complete ANL-02/ANL-03 before production-grade alpha analytics claims; defer ANL-04 until read-only investigation is authorized
 ```
 
 Contracts may be developed in parallel only when ownership and dependencies do not overlap. Cross-repository changes require separate authorized tasks, branches and PRs with one coordination ID and explicit rollout order.
@@ -448,6 +543,8 @@ Contracts may be developed in parallel only when ownership and dependencies do n
 - ADR-0005 is the accepted world/content direction; `DUR-04` must be accepted before broad content import or durable scripting.
 - `VSL-01` must name observable E2E evidence before implementation is called complete.
 - `VSL-02` must pin source SHA, provenance, open-PR disposition, source freeze, cutover, history preservation and rollback before moving client code.
+- `ANL-01` must be accepted before final `DUR-02`/`DUR-03` outbox and audit boundaries are frozen.
+- `ANL-02`/`ANL-03` are required before production-grade balance/world and economy/security analytics claims; `ANL-04` remains a later read-only investigation gate.
 
 ## Current next action
 

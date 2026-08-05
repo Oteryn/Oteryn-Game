@@ -35,6 +35,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | Platform Identity and initial Go Game Gateway boundary | `ACCEPTED` | ADR-0003 |
 | PostgreSQL and separate Platform/game ownership | `ACCEPTED` | ADR-0004 |
 | Native world/content model, Oteryn Studio and legacy conversion boundary | `ACCEPTED` | ADR-0005 |
+| Game Intelligence, analytics durability classes and read-only investigation boundary | `ACCEPTED` | ADR-0006 |
 
 ## Progressive execution policy
 
@@ -44,6 +45,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - `FND-02`, `FND-03` and `FND-04` independently gate canonical protocol, authoritative runtime and production admission/lease behavior.
 - Bounded technical spikes may inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 - `DUR-01` through `DUR-03` remain hard gates before authoritative durable character, item or currency mutation.
+- `ANL-01` must be accepted before `DUR-02`/`DUR-03` finalize transactional outbox and critical audit evidence; analytics consumers never replace authoritative invariants.
 - A spike, placeholder crate or passing compile does not prove a public contract or runtime capability.
 
 ## Stage A — foundation and layer gates
@@ -67,6 +69,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Status: `BLOCKS_LAYER_IMPLEMENTATION` for protocol and admission schemas.
 - Freeze semantic ownership, scope, uniqueness, reuse, durability and visibility for the minimum cross-boundary identifiers.
 - Define canonical comparison and wire/Game Session encoding constraints without prematurely selecting every PostgreSQL column type.
+- Include event, operation, transaction, correlation, causation and pseudonymous analytics identities required by ADR-0006.
 - Keep full durable/database/item identity representation in `DUR-01`.
 
 ### `FND-02` — `protocol-oteryn` v1
@@ -87,6 +90,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Freeze `NodeRuntime`, `WorldServices`, `ChannelRuntime` and `InstanceRuntime` responsibilities.
 - Define tick/timer model, monotonic/wall-clock ownership, skew tolerance, deterministic test clocks, command ordering, bounded queues, overload/backpressure and parallel work return to the logical writer.
 - Define channel lifecycle, draining, checkpoint, crash recovery and replay boundaries.
+- Define versioned event emission, bounded gameplay-telemetry queues and fail-open/fail-closed behavior by durability class.
 - Prove named foundation failure scenarios for overload, dependency loss, stale generations, split ownership and recovery.
 - Gate authoritative runtime behavior, not compile-only interfaces or isolated spikes.
 
@@ -105,7 +109,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 ### `DUR-01` — Durable Identifier Representation Contract
 
 - Status: `BLOCKS_DURABLE_GAMEPLAY`
-- Cover account, character, world, channel, instance, node, game session, command, entity, item-instance and revision identities.
+- Cover account, character, world, channel, instance, node, game session, command, entity, item-instance, event, operation, transaction, correlation, causation, analytics-actor and revision identities.
 - Decide global versus scoped uniqueness, wire/database/public representation and reuse rules.
 
 ### `DUR-02` — Persistence v1
@@ -113,7 +117,8 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Status: `BLOCKS_DURABLE_GAMEPLAY`
 - Freeze schema and migration ownership.
 - Define character revisions/fencing, lease schema, checkpoint boundaries and maximum accepted progress loss.
-- Define isolation, locking, retries, idempotency, transactional outbox and critical audit/journal scope.
+- Define isolation, locking, retries, idempotency, transactional outbox publication/recovery and critical audit/journal scope.
+- Keep best-effort gameplay telemetry separate from atomic item/currency/security evidence.
 - Define backup, PITR, restore tests, RPO/RTO and compatible rollout/rollback.
 
 ### `DUR-03` — Item Transaction and Anti-Duplication Invariants
@@ -121,7 +126,8 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Status: `BLOCKS_DURABLE_GAMEPLAY`
 - Define item instance identity and ownership.
 - Freeze inventory/equipment/container/ground transfer transaction boundaries.
-- Define pickup, drop, loot, trade, bank, depot, reward and retry semantics.
+- Define pickup, drop, loot, trade, bank, depot, market, mail, reward, split, merge, transform, currency and retry semantics.
+- Produce atomic provenance evidence and deterministic conservation/single-location invariants consumable by Game Intelligence.
 - Prove that duplicate commands, crashes, stale sessions and partial failures cannot duplicate items or currency.
 
 This may be part of Persistence v1 only if that contract is sufficiently complete and independently auditable.
@@ -136,13 +142,41 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 - Preserve asset rights and provenance gates.
 - Require a bounded format/compiler/loader spike before final encoding selection, including deterministic hashes, random access, corruption/decompression failure, round-trip equivalence and measured chunk/floor packing. No compatibility or canonical-format claim may escape the spike.
 
+
+### `ANL-01` — Game Event and Audit Foundation
+
+- Status: `BLOCKS_DURABLE_GAMEPLAY`
+- Applies before `DUR-02`/`DUR-03` finalize transactional audit evidence.
+- Freeze the common event envelope, durability classes, producers/consumers, ordering, idempotency, outbox, publication checkpoints, deduplication, replay and schema compatibility.
+- Define bounded fail-open gameplay telemetry separately from atomic durable economy/security audit.
+- Define privacy classes, pseudonymous analytics identity, access, retention, deletion/anonymization and test fixtures.
+
+### `ANL-02` — Gameplay, Balance and World Analytics
+
+- Status: `REQUIRED_FOR_ALPHA`
+- Define combat/progression/session metrics, class/vocation balance, party/hunt dimensions, world/content usage, sample quality, version comparisons and dashboards.
+- Keep analytics observational; no automatic balance mutation.
+
+### `ANL-03` — Economy Integrity and Security Analytics
+
+- Status: `REQUIRED_FOR_ALPHA`
+- Required for a production-grade integrity/security analytics claim.
+- Define provenance/invariant consumers, alerts, cases, detector versioning, evidence quality, false-positive handling and separation from authoritative enforcement.
+- Preserve `DUR-03` as the anti-duplication prevention authority.
+
+### `ANL-04` — Read-Only Investigation and AI
+
+- Status: `EXPANSION`
+- Define least-privilege read-only evidence access, correlation, provenance reconstruction, human review and full auditability.
+- Prohibit runtime/database mutation, autonomous bans, balance changes, rollback and deployment.
+
 ## Stage C — blocks the foundation vertical slice
 
 ### `VSL-01` — Foundation Vertical-Slice Programme
 
 - Status: `BLOCKS_VERTICAL_SLICE`
 - Name owners, implementation order, repositories, branches/PRs and exact observable E2E.
-- Include Platform authentication, Gateway-issued Game Session, server admission, lease, minimal native map, movement, two-player visibility, combat, death, loot, retry-safe pickup, checkpoint, logout, cross-channel relog, duplicate-login rejection and channel/world-state isolation.
+- Include Platform authentication, Gateway-issued Game Session, server admission, lease, minimal native map, movement, two-player visibility, combat, death, loot, retry-safe pickup, correlated game events, atomic durable item audit, replay-safe analytics, checkpoint, logout, cross-channel relog, duplicate-login rejection and channel/world-state isolation.
 
 ### `VSL-MOVE-01` — Movement, Collision and Visibility Contract
 
@@ -229,7 +263,8 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 ### `EXP-SECURITY-01` — Security, Abuse and Administration
 
 - Status: `EXPANSION` with foundation requirements applied earlier where relevant.
-- Rate limits, anti-replay, cheat detection, trusted admin/GM commands, least privilege, audit trails, secret management, dependency security and supply-chain controls.
+- Rate limits, anti-replay, deterministic enforcement, trusted admin/GM commands, least privilege, sanctions, secret management, dependency security and supply-chain controls.
+- Consume ADR-0006/`ANL-03` alerts and cases without treating anomaly scores as autonomous enforcement authority.
 
 ### `EXP-UPDATE-01` — Launcher, Updater and Release Distribution
 
@@ -244,7 +279,8 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 ### `EXP-OBS-01` — Observability
 
 - Status: `EXPANSION`
-- Structured logs, metrics, tracing, correlation IDs, tick/queue/channel health, DB latency, protocol errors, privacy, retention and alerts.
+- Structured logs, low-cardinality metrics, tracing, correlation IDs, tick/queue/channel health, DB latency, protocol errors, privacy, retention and alerts.
+- Remain distinct from high-cardinality gameplay analytics and transactional economy/security audit defined by ADR-0006.
 
 ### `EXP-SCALE-01` — Advanced Scaling and Prediction
 
