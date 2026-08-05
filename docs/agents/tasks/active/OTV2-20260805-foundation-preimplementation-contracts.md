@@ -13,7 +13,7 @@ base_sha: bd87792c92e26835d44c633a6064808f487a58a2
 head_sha: null
 owner: unassigned
 created_at: 2026-08-05T08:49:00+02:00
-updated_at: 2026-08-05T13:25:00+02:00
+updated_at: 2026-08-05T15:06:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: The programme checkpoint spans repository ownership, protocol, runtime, persistence, content, Platform integration, client migration and the global product architecture horizon, while each executable package remains separately bounded.
 owned_paths: []
@@ -36,8 +36,8 @@ continuation_prompt: docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORD
 depends_on:
   - ADR-0001 through ADR-0006 accepted foundation
 blocks:
-  - canonical root Cargo workspace bootstrap until FND-01 is accepted
-  - protocol and Game Session identifier meanings until FND-ID-01 is accepted
+  - canonical root Cargo workspace bootstrap or completion until FND-01 and the VSL-02 migration/cutover sequence are accepted
+  - protocol and Game Session identifier meanings until the client is migrated and FND-ID-01 is accepted
   - canonical protocol implementation until FND-02 is accepted
   - authoritative runtime implementation until FND-03 is accepted
   - production admission and character lease implementation until FND-04 is accepted
@@ -85,10 +85,14 @@ Every replacement agent must verify this baseline against the live default branc
    - one project-owned `protocol-oteryn`;
    - multichannel-first world model.
 
-2. **Repository ownership**
+2. **Repository ownership and client cutover order**
    - the Rust client will move into `blakinio/Oteryn-v2`;
    - client, server and shared Rust crates will use one canonical repository/workspace;
-   - `protocol-canary` is not part of the target runtime.
+   - `protocol-canary` is not part of the target runtime;
+   - `FND-01` audits the exact current source workspace and defines the target dependency graph;
+   - `VSL-02` and the coordinated migration/cutover immediately follow `FND-01`;
+   - no canonical identifier, protocol, runtime or admission contract is frozen against a destination that does not yet contain the canonical client;
+   - the destination must not create a competing placeholder client before cutover.
 
 3. **Platform boundary**
    - Identity, OAuth/PKCE, MFA, Game Login Ticket, Game Gateway and World Registry remain in `blakinio/Oteryn-Platform`;
@@ -119,6 +123,7 @@ Canonical evidence: ADR-0001 through ADR-0006.
 ## Stable gate IDs
 
 - `FND-01` — Workspace, Dependency and Existing-Rust Migration Contract.
+- `VSL-02` — Exact Rust Client Migration and Cutover Contract.
 - `FND-ID-01` — Foundation Identifier Vocabulary.
 - `FND-02` — `protocol-oteryn` v1 Contract.
 - `FND-03` — Runtime Execution Contract.
@@ -128,7 +133,6 @@ Canonical evidence: ADR-0001 through ADR-0006.
 - `DUR-03` — Item Transaction and Anti-Duplication Contract.
 - `DUR-04` — Content, World Detail and Scripting Contract.
 - `VSL-01` — Foundation Vertical-Slice Programme.
-- `VSL-02` — Exact Rust Client Migration and Cutover Contract.
 - `ANL-01` — Game Event and Audit Foundation Contract.
 - `ANL-02` — Gameplay, Balance and World Analytics Contract.
 - `ANL-03` — Economy Integrity and Security Analytics Contract.
@@ -142,21 +146,28 @@ The canonical root Cargo workspace remains blocked. Read-only discovery and arch
 
 ### After `FND-01`
 
-A separately authorized minimal workspace-bootstrap task may create the root Cargo workspace, the smallest immediately consumed members, toolchain/CI metadata and executable dependency-boundary checks.
+`VSL-02` becomes the next mandatory package. It must pin the exact cutover source SHA, reconcile open PRs/tasks and post-inventory changes, define provenance/history preservation, path mapping, source freeze, destination ownership, rollout and rollback.
+
+No isolated workspace-bootstrap task may create a competing placeholder client or claim the destination as the complete canonical Rust workspace before the migration/cutover.
+
+The coordinated migration package may create or complete the root workspace around the migrated client. Otherwise a separate minimal workspace-bootstrap/completion task runs immediately after migration.
 
 The wider candidate crate list is a capability horizon, not an initial checklist. Empty placeholder crates and speculative abstractions are prohibited.
 
-This bootstrap does not authorize canonical protocol, authoritative runtime, production admission/lease, durable gameplay, broad client migration or broad content import.
+### After `VSL-02` migration/cutover
+
+A separately authorized workspace-bootstrap/completion task may create the smallest immediately consumed members, toolchain/CI metadata and executable dependency-boundary checks when those were not already delivered by the migration package.
+
+This bootstrap does not authorize canonical protocol, authoritative runtime, production admission/lease, durable gameplay or broad content import.
 
 ### Layer gates
 
-- `FND-ID-01` gates freezing identifier meanings in protocol and admission schemas.
+- `FND-ID-01` gates freezing identifier meanings in protocol and admission schemas after client migration.
 - `FND-02` gates canonical protocol schemas/codecs and production compatibility claims.
 - `FND-03` gates authoritative runtime ordering, lifecycle and recovery.
 - `FND-04` gates production Game Session validation, admission and character lease behavior.
 - `DUR-01` through `DUR-03` gate authoritative durable character, item and currency mutation.
 - `DUR-04` gates broad content import and durable scripting.
-- `VSL-02` gates moving the Rust client source.
 - `VSL-01` gates completion of the native foundation vertical slice.
 - `ANL-01` gates final transactional event/outbox/audit boundaries used by persistence and item transactions.
 - `ANL-02`/`ANL-03` gate production-grade analytics claims; `ANL-04` gates later read-only AI investigation.
@@ -173,7 +184,20 @@ This bootstrap does not authorize canonical protocol, authoritative runtime, pro
 - Rust edition/resolver/toolchain/`rust-version`/lockfile, workspace inheritance, feature and dependency policy;
 - exact target triples and product-realistic target/feature CI matrix;
 - retained machine-readable workspace-boundary contract and executable dependency-graph enforcement;
-- criteria for later adding, splitting or merging crates.
+- criteria for later adding, splitting or merging crates;
+- terminal handoff to `VSL-02`, not an isolated destination bootstrap.
+
+### `VSL-02` — Exact Rust Client Migration and Cutover Contract
+
+- exact cutover source SHA and reconciliation of open PRs, active tasks and source changes after the FND-01 inventory;
+- provenance/history preservation and exact source-to-destination path mapping;
+- per-crate/subsystem migration disposition from FND-01;
+- destination workspace creation/completion sequence;
+- exact source/destination build and test evidence;
+- `protocol-canary` isolation or removal from the target runtime graph;
+- source freeze/non-canonical marker and destination ownership;
+- one task/branch/PR per written repository under one rollout order;
+- rollback conditions and procedure.
 
 ### `FND-ID-01` — Foundation Identifier Vocabulary
 
@@ -244,7 +268,7 @@ These subjects must not be forgotten, but they must not be prematurely frozen wh
 
 ## Explicitly deferred
 
-These do not block initial workspace bootstrap or the foundation vertical slice when safe extension points remain:
+These do not block client migration, workspace bootstrap/completion after cutover or the foundation vertical slice when safe extension points remain:
 
 - final house presence/entry topology;
 - live channel migration;
@@ -271,12 +295,15 @@ These do not block initial workspace bootstrap or the foundation vertical slice 
 ## Acceptance criteria
 
 - [x] Repository ownership and client migration direction accepted in ADR-0002.
+- [x] ADR-0002 requires `VSL-02` and controlled client migration/cutover immediately after `FND-01`.
 - [ ] `FND-01` Workspace, Dependency and Existing-Rust Migration Contract accepted.
-- [ ] A separate minimal workspace-bootstrap task is authorized after `FND-01`; no other foundation contract blocks bootstrap.
-- [ ] Initial workspace members require an immediate consumer and observable acceptance; no empty layering crates.
 - [ ] FND-01 classifies every existing Rust client crate/subsystem and preserves its exact evidence or explicitly rejects it.
-- [ ] Dependency directions become machine-enforced after bootstrap.
-- [ ] `FND-ID-01` accepted before protocol or admission freezes identifier meanings.
+- [ ] `VSL-02` pins the exact cutover source SHA, provenance, open-PR/task disposition, path mapping, source freeze, destination ownership, history preservation and rollback.
+- [ ] The coordinated migration/cutover completes before canonical identifier, protocol, runtime or admission contracts are frozen.
+- [ ] The root workspace is created/completed around the migrated client by the migration package or an immediate post-migration bootstrap task.
+- [ ] Initial workspace members require an immediate consumer and observable acceptance; no empty layering crates.
+- [ ] Dependency directions become machine-enforced after the destination workspace exists.
+- [ ] `FND-ID-01` accepted after migration and before protocol or admission freezes identifier meanings.
 - [ ] `FND-02` accepted and reconciled with a merged, machine-locked Platform revision before canonical protocol implementation.
 - [ ] `FND-03` accepted before authoritative runtime implementation.
 - [ ] `FND-04` accepted before production admission/lease implementation.
@@ -290,7 +317,6 @@ These do not block initial workspace bootstrap or the foundation vertical slice 
 - [ ] `ANL-02`/`ANL-03` accepted before production-grade analytics claims; `ANL-04` remains a separately authorized expansion gate.
 - [ ] `DUR-04` accepted before broad content import or durable scripting.
 - [ ] `VSL-01` accepted with named E2E evidence.
-- [ ] `VSL-02` pins source SHA, provenance, open-PR disposition, source freeze, cutover, history preservation and rollback before migration.
 - [ ] Each contract identifies canonical owner, producers, consumers and exact revisions.
 - [ ] Cross-repository changes use separate authorized tasks/branches/PRs and explicit rollout order.
 - [ ] Every executable package is separately authorized and bounded.
@@ -312,7 +338,7 @@ This programme checkpoint does not itself:
 
 ## Implementation / findings
 
-- ADR-0002 resolved canonical repository ownership and client migration direction.
+- ADR-0002 resolved canonical repository ownership and now requires early client migration/cutover immediately after FND-01.
 - ADR-0003 resolved the Platform Identity/Game Gateway boundary and retained the initial Go Gateway.
 - ADR-0004 selected PostgreSQL and separate Platform/game database ownership.
 - ADR-0005 accepted the native world/content model, Oteryn Studio and bounded legacy conversion direction.
@@ -349,7 +375,7 @@ Every package PR must challenge omitted boundaries, circular dependencies, place
 ## Context checkpoint
 
 ```yaml
-last_progress: ADR-0001 through ADR-0006 are accepted; Game Intelligence now has explicit event/audit, privacy, integrity and read-only investigation gates while FND-01 remains the next executable package.
+last_progress: ADR-0001 through ADR-0006 are accepted; ADR-0002 now requires VSL-02 and controlled client migration/cutover immediately after FND-01, before shared client/server contracts are frozen.
 status: ready
 branch: null
 head_sha: null
@@ -369,7 +395,7 @@ public_contracts:
   - docs/contracts/FOUNDATION_ERROR_VOCABULARY.md
   - docs/contracts/FOUNDATION_FAILURE_SCENARIOS.md
 continuation_prompt: docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md
-validation_state: Each package requires exact-head Agent governance and full-diff audit; dependency boundaries become executable checks after workspace bootstrap.
+validation_state: Each package requires exact-head Agent governance and full-diff audit; dependency boundaries become executable checks after client migration and destination workspace bootstrap/completion.
 audit_state: Future package audits pending.
 e2e_state: BLOCKED until VSL-01 is implemented.
 ci_generation: null
@@ -382,5 +408,5 @@ counters:
   repair_cycles_for_current_gate: 0
   stall_warnings: 0
 blocker: null
-next_action: Execute the global architecture coordinator prompt and draft, audit, accept, merge and archive FND-01 — the Workspace, Dependency and Existing-Rust Migration Contract.
+next_action: Execute the global architecture coordinator prompt and draft, audit, accept, merge and archive FND-01 — the Workspace, Dependency and Existing-Rust Migration Contract; its terminal next action must be VSL-02.
 ```

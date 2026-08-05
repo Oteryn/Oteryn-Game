@@ -180,4 +180,5 @@ The following are fixed even though final topology is deferred:
 - exact scripting engine and isolation mechanism;
 - exact event journal/checkpoint strategy;
 - channel drain and crash recovery timing;
-- final database and messaging technologies.
+- detailed PostgreSQL schema, isolation, locking, partitioning and migration policy under `DUR-02`;
+- final messaging technology and delivery topology.

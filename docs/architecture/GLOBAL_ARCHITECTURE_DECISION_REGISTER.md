@@ -17,8 +17,8 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 ## Status vocabulary
 
 - `ACCEPTED` — frozen by an accepted ADR/contract.
-- `BLOCKS_WORKSPACE_BOOTSTRAP` — must be accepted before creating the canonical root Cargo workspace.
-- `BLOCKS_LAYER_IMPLEMENTATION` — must be accepted before canonical production implementation of the named layer, but does not block a minimal workspace after `FND-01`.
+- `BLOCKS_WORKSPACE_BOOTSTRAP` — must be accepted before creating or completing the canonical root Cargo workspace.
+- `BLOCKS_LAYER_IMPLEMENTATION` — must be accepted before canonical production implementation of the named layer, but does not block a minimal workspace after the client migration/cutover sequence.
 - `BLOCKS_DURABLE_GAMEPLAY` — must be accepted before authoritative durable gameplay mutation.
 - `BLOCKS_VERTICAL_SLICE` — required for the first complete client-to-server gameplay proof.
 - `REQUIRED_FOR_ALPHA` — required before a playable alpha can be called complete.
@@ -31,7 +31,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 |---|---|---|
 | Native Rust client/server and project-owned `protocol-oteryn` | `ACCEPTED` | ADR-0001 |
 | Multichannel world/channel/instance ownership baseline | `ACCEPTED` | ADR-0001 and scope matrix |
-| Canonical repository and Rust client migration direction | `ACCEPTED` | ADR-0002 |
+| Canonical repository, Rust client migration direction and early cutover sequencing | `ACCEPTED` | ADR-0002 |
 | Platform Identity and initial Go Game Gateway boundary | `ACCEPTED` | ADR-0003 |
 | PostgreSQL and separate Platform/game ownership | `ACCEPTED` | ADR-0004 |
 | Native world/content model, Oteryn Studio and legacy conversion boundary | `ACCEPTED` | ADR-0005 |
@@ -40,8 +40,10 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 ## Progressive execution policy
 
 - Before `FND-01`, do not create the canonical root Cargo workspace.
-- After `FND-01`, a separate task may create the smallest compilable workspace and machine-check dependency boundaries.
-- `FND-ID-01` gates identifier meanings required by protocol and admission contracts.
+- After `FND-01`, `VSL-02` is the next mandatory gate; it must pin and reconcile the exact client cutover before shared client/server contracts are frozen.
+- The coordinated migration package may create or complete the destination workspace around the migrated client, or a separate bootstrap task may run immediately after migration.
+- Do not create a competing placeholder client or claim a complete canonical workspace before the controlled migration/cutover.
+- `FND-ID-01` gates identifier meanings required by protocol and admission contracts after migration.
 - `FND-02`, `FND-03` and `FND-04` independently gate canonical protocol, authoritative runtime and production admission/lease behavior.
 - Bounded technical spikes may inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 - `DUR-01` through `DUR-03` remain hard gates before authoritative durable character, item or currency mutation.
@@ -63,10 +65,24 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Keep domain/simulation independent from transports, SQL, renderer and UI.
 - Keep world/content schema independent from Tauri, editor UI and renderer implementation.
 - Treat the wider crate list as a capability horizon, not an instruction to create empty layering crates.
+- End with `VSL-02` as the next gate; do not bootstrap a competing destination client.
+
+### `VSL-02` — Exact Rust Client Migration and Cutover Contract
+
+- Status: `BLOCKS_WORKSPACE_BOOTSTRAP`
+- Execute immediately after `FND-01` and before `FND-ID-01`, `FND-02`, `FND-03` or `FND-04`.
+- Pin the exact cutover source SHA from `blakinio/otclient/oteryn-client` and reconcile every open PR, active task and post-inventory source change.
+- Define history/provenance preservation, path mapping, exclusions, migration dispositions, source-repository freeze, destination ownership, cutover and rollback.
+- Decide whether the canonical root workspace is created/completed inside the migration package or immediately afterward.
+- Prove the migrated client builds/tests on the exact destination head before marking the source non-canonical.
+- Isolate or remove `protocol-canary` from the target runtime graph while preserving bounded reference evidence where needed.
+- Use one task/branch/PR per written repository under one coordination ID and explicit rollout order.
+- Do not claim target-runtime readiness merely because source files exist in the destination.
 
 ### `FND-ID-01` — Foundation Identifier Vocabulary
 
 - Status: `BLOCKS_LAYER_IMPLEMENTATION` for protocol and admission schemas.
+- Begin only after the accepted client migration/cutover and destination workspace bootstrap/completion.
 - Freeze semantic ownership, scope, uniqueness, reuse, durability and visibility for the minimum cross-boundary identifiers.
 - Define canonical comparison and wire/Game Session encoding constraints without prematurely selecting every PostgreSQL column type.
 - Include event, operation, transaction, correlation, causation and pseudonymous analytics identities required by ADR-0006.
@@ -82,7 +98,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Define sequencing, command IDs, replay/idempotency, snapshots, deltas, reconciliation and reconnect/resume.
 - Produce shared golden fixtures and downgrade protection.
 - Register every externally controlled size/depth/count and map stable failures into the common resource-limit and error vocabularies.
-- Gate canonical wire schemas/codecs and production compatibility claims, not minimal workspace bootstrap.
+- Gate canonical wire schemas/codecs and production compatibility claims, not migration/bootstrap evidence.
 
 ### `FND-03` — Runtime Execution Contract
 
@@ -102,7 +118,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Define world/channel/revision binding, reconnect windows and admission errors.
 - Define `session_generation`, lease storage/timings, duplicate login, stale-writer fencing and safe channel switching.
 - Define Platform, Gateway, PostgreSQL and network failure behavior using the shared failure-scenario catalogue and stable public/internal error mapping.
-- Gate production admission and lease behavior, not minimal workspace bootstrap.
+- Gate production admission and lease behavior, not migration/bootstrap evidence.
 
 ## Stage B — blocks durable gameplay
 
@@ -141,7 +157,6 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 - Select scripting runtime and define capabilities, limits, failure isolation, persistence access and hot reload.
 - Preserve asset rights and provenance gates.
 - Require a bounded format/compiler/loader spike before final encoding selection, including deterministic hashes, random access, corruption/decompression failure, round-trip equivalence and measured chunk/floor packing. No compatibility or canonical-format claim may escape the spike.
-
 
 ### `ANL-01` — Game Event and Audit Foundation
 
@@ -190,14 +205,6 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 - Status: `BLOCKS_VERTICAL_SLICE`
 - Define action ordering, target legality, damage pipeline boundary, death, corpse, loot ownership, experience/kill attribution and retry-safe pickup integration.
 - Preserve extension points for conditions, PvP, boss contribution and rulesets.
-
-### `VSL-02` — Exact Rust Client Migration and Cutover Contract
-
-- Status: `BLOCKS_VERTICAL_SLICE`
-- Pin exact source SHA from `blakinio/otclient/oteryn-client`.
-- Define history/provenance preservation, path mapping, exclusions, open-PR disposition, source-repository freeze, cutover and rollback.
-- Classify code as migrate, adapt, rewrite or reference-only.
-- Do not claim target-runtime readiness from source presence alone.
 
 ### `VSL-CONTENT-01` — Minimal Native Map, Compiler and Loader Contract
 
@@ -299,11 +306,12 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 4. Every accepted package must update this register narrowly and link the canonical source.
 5. Preserve deferred topics and safe extension points without inventing final designs.
 6. Initial workspace members require an immediate consumer and acceptance; do not create speculative placeholder crates.
-7. After workspace bootstrap, enforce accepted dependency boundaries with executable CI checks.
+7. After the client migration/cutover, enforce accepted dependency boundaries with executable CI checks in the destination workspace.
 8. Cross-repository locks accept only merged canonical commits and immutable schema identifiers; mutable PR heads remain pending evidence.
 9. Public contracts must register applicable resource limits, stable error categories and named failure scenarios.
 10. A decision is not complete until its PR is validated, audited, squash-merged and its task archived.
+11. FND-01 must terminate into VSL-02; no isolated workspace bootstrap may bypass the accepted client cutover sequence.
 
 ## Current next action
 
-Draft and accept `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. After it is terminal, authorize a separate minimal workspace-bootstrap implementation task before proceeding with layer-specific implementation.
+Draft and accept `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. Its terminal next action is `VSL-02`, followed by the coordinated client migration/cutover and only then destination workspace bootstrap/completion and layer-specific contracts.
