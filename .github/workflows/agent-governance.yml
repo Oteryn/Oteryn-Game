@@ -2,42 +2,68 @@ name: Agent governance
 
 on:
   pull_request:
-    paths:
-      - AGENTS.md
-      - AGENTS.override.md
-      - README.md
-      - docs/agents/**
-      - docs/architecture/**
-      - tools/agents/**
-      - .github/workflows/agent-governance.yml
   push:
     branches:
       - main
-    paths:
-      - AGENTS.md
-      - AGENTS.override.md
-      - README.md
-      - docs/agents/**
-      - docs/architecture/**
-      - tools/agents/**
-      - .github/workflows/agent-governance.yml
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: agent-governance-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
+    name: Agent governance / validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: '3.12'
 
       - name: Validate agent governance
         run: python tools/agents/validate_governance.py
+
+      - name: Validate repository policy
+        run: python tools/repository/validate_repository_policy.py
+
+      - name: Validate pull request metadata
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          import sys
+
+          title = os.environ.get("PR_TITLE", "")
+          body = os.environ.get("PR_BODY", "")
+          pattern = re.compile(
+              r"^(feat|fix|docs|refactor|perf|test|build|ci|chore|revert)"
+              r"(\([a-z0-9][a-z0-9._/-]*\))?!?: [A-Za-z0-9].+$"
+          )
+          errors = []
+          if len(title) > 72:
+              errors.append("PR title must be at most 72 characters")
+          if not pattern.fullmatch(title):
+              errors.append("PR title must follow type(scope): imperative summary")
+          for heading in ("## Summary", "## Scope", "## Validation"):
+              if heading not in body:
+                  errors.append(f"PR body is missing {heading}")
+          if errors:
+              for error in errors:
+                  print(f"- {error}", file=sys.stderr)
+              raise SystemExit(1)
+          print("Pull request metadata is valid.")
+          PY

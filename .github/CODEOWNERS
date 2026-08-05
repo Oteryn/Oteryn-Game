@@ -1,0 +1,15 @@
+# Default ownership
+* @blakinio
+
+# Security- and governance-sensitive paths
+/.github/ @blakinio
+/docs/architecture/ @blakinio
+/docs/contracts/ @blakinio
+/docs/agents/ @blakinio
+/tools/agents/ @blakinio
+/tools/repository/ @blakinio
+
+# Future Rust workspace roots
+/Cargo.toml @blakinio
+/Cargo.lock @blakinio
+/rust-toolchain.toml @blakinio
