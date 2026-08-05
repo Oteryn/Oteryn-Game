@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: repository-configuration
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   apply:
