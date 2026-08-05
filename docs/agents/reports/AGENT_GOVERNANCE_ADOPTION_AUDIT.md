@@ -2,16 +2,17 @@
 
 Date: 2026-08-05  
 Target: `blakinio/Oteryn-v2`  
-Mode: policy adoption and adaptation audit
+Mode: policy adoption and adaptation audit  
+Final verdict: `PASS`
 
 ## Sources reviewed
 
-The audit compared the live `main` policies of:
+The audit compared the live default-branch policies of:
 
 - `blakinio/Oteryn-Platform`;
 - `blakinio/Otheryn`;
 - `blakinio/otclient`;
-- recent governance-related operating patterns in `blakinio/freqtrade`.
+- `blakinio/freqtrade`.
 
 Pinned policy evidence included:
 
@@ -22,11 +23,10 @@ Pinned policy evidence included:
 - Otheryn root `AGENTS.md` blob `a112b60139af020ea137a55b86ae4d669447212e`;
 - Otheryn bootstrap blob `48a26648117125a029c29f5a554509da45a702b6`;
 - otclient root `AGENTS.md` blob `d991b8da2169f498ada06d5775e78f97cacf2c36`;
-- otclient bootstrap blob `378187381769d36a3ebf3ba92449c93415dc6bca`.
+- otclient bootstrap blob `378187381769d36a3ebf3ba92449c93415dc6bca`;
+- freqtrade root `AGENTS.md` blob `d876abd90599639fcf0208553ad9850959ce44fc`.
 
-## Findings
-
-### Adopted common principles
+## Adopted common principles
 
 - repository write allowlist and cross-repository separation;
 - trusted-base authority freeze;
@@ -39,7 +39,7 @@ Pinned policy evidence included:
 - explicit truth labels and context minimization;
 - squash merge after all gates pass.
 
-### Adapted for Oteryn v2
+## Adapted for Oteryn v2
 
 - repository allowlist changed to `blakinio/Oteryn-v2`;
 - task prefix changed to `OTV2`;
@@ -49,9 +49,10 @@ Pinned policy evidence included:
 - Oteryn Platform, Otheryn and otclient classified as separately authorized external repositories;
 - build matrix made bootstrap-aware so agents do not invent a Cargo workspace before it exists;
 - high-risk gates added for leases, stale writers, item transfers, channel hopping, PvP, houses and protocol reconciliation;
-- asset provenance and server-authoritative gameplay made explicit.
+- asset provenance and server-authoritative gameplay made explicit;
+- a dedicated context-handoff contract was added after independent review identified the need for stronger durable continuation.
 
-### Intentionally not copied
+## Intentionally not copied
 
 - Laravel, Composer, Blade, payment-provider and PHP-specific policy;
 - CMake, MSVC, PCH, C++ Lua userdata and Canary Docker quickstart rules;
@@ -71,13 +72,22 @@ The adopted set distinguishes:
 - local task authority from external repository authority;
 - implementation evidence from plans and historical results.
 
-## Residual risks
+## Validation and review
 
-- The Rust workspace and actual build commands do not yet exist; `BUILD_TEST_MATRIX.md` must be updated during bootstrap.
-- Branch protection and required governance checks must be configured after the workflow is proven.
-- Nearer path-specific `AGENTS.md` files will be required as protocol, persistence, server, client, content and release areas are created.
-- Common policy evolution in the older repositories will not automatically propagate; future synchronization requires a reviewed governance task, not blind copying.
+- implementation PR: #2;
+- exact final head: `7ca8ab13c584d16436360dea66663054ad52194f`;
+- governance workflow run: `30981501550`;
+- workflow conclusion: `success`;
+- automated review: one P2 durable-checkpoint finding;
+- repair: checkpoint now uses live PR head authority, records immutable prior validation evidence and provides a current exact next action;
+- unresolved review threads at merge: zero;
+- implementation merge: `7ed8c6826e1fe04d259d4268049ec9fdfcdf3bf1`.
 
-## Initial verdict
+## Residual follow-ups
 
-`PASS_WITH_FOLLOW_UPS`: the policy set is suitable for Oteryn v2 bootstrap, provided the repository validator and exact-head workflow pass before merge and the active task is archived after closeout.
+- The Rust workspace and actual build commands do not yet exist; `BUILD_TEST_MATRIX.md` must be updated during workspace bootstrap.
+- Branch protection should require the proven `Agent governance` check for relevant future changes.
+- Nearer path-specific `AGENTS.md` files are required as protocol, persistence, server, client, content and release areas are created.
+- Common policy evolution in older repositories does not automatically propagate; synchronization requires a reviewed governance task, not blind copying.
+
+These are future repository-hardening actions, not open material findings against this completed adoption task.
