@@ -10,7 +10,7 @@
 
 Preserve the complete global architecture decision horizon for Oteryn v2 without requiring chat history and without forcing distant expansion features to be designed before they become relevant.
 
-This register is a coordination source, not an implementation claim. Accepted decisions live in ADRs and contracts. The ordered foundation gates live in `FOUNDATION_DECISION_BACKLOG.md`. This file ensures that global project domains are not lost while the programme resolves them in stages.
+This register is a coordination source, not an implementation claim. Accepted decisions live in ADRs and contracts. The ordered foundation gates live in `FOUNDATION_DECISION_BACKLOG.md`. This file ensures that global project domains are not lost while the programme resolves them in stages. The detailed open gameplay and product horizon is retained in `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`.
 
 Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descriptive only.
 
@@ -187,6 +187,38 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 - Define least-privilege read-only evidence access, correlation, provenance reconstruction, human review and full auditability.
 - Prohibit runtime/database mutation, autonomous bans, balance changes, rollback and deployment.
 
+## Registered gameplay and product decision horizon
+
+Detailed scope, dependencies and non-decisions are canonical in `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`.
+
+### Blocks durable gameplay
+
+- `GAME-CHAR-01` — Character Lifecycle and Progression. Must precede the final `DUR-02` character schema.
+- `GAME-ITEM-01` — Item Model and Equipment Rules. Must precede the final `DUR-03` item transaction model.
+
+### Required for Playable Alpha completeness
+
+- `GAME-ABILITY-01` — Ability, Spell and Condition Architecture.
+- `GAME-AI-01` — Creature AI, Spawn and Pathfinding Architecture.
+- `GAME-INTERACTION-01` — World Interaction and Environmental Mechanics.
+- `PROD-LIVEOPS-01` — Live Operations and Runtime Configuration.
+- `PROD-COMPAT-01` — Release Compatibility and Version Train.
+- `SEC-CLIENT-01` — Client Integrity and Anti-Cheat Boundary.
+- `DATA-PRIVACY-01` — Product Privacy and Data Lifecycle.
+- `UX-I18N-A11Y-01` — Localization, Input, Onboarding and Accessibility.
+- `OPS-GM-01` — Support, Moderation and GM Operations.
+
+### Expansion or deferred
+
+- `GAME-META-01` — Collections, Achievements and Recurring Progression (`EXPANSION`).
+- `GAME-INSTANCES-01` — Dungeons, Arenas, Matchmaking and Spectating (`EXPANSION`).
+- `GAME-WORLD-LIFECYCLE-01` — World Lifecycle, Transfer and Merge (`EXPANSION`).
+- `INTEGRATION-API-01` — External APIs, Notifications and Integrations (`EXPANSION`).
+- `PROD-ENTITLEMENTS-01` — Entitlements, Premium and Commerce Boundary (`DEFERRED`).
+- `MOD-ECOSYSTEM-01` — Modding and Plugin Ecosystem (`DEFERRED`).
+
+Registration prevents omission; it does not accept technologies, formulas, schemas, service topology or implementation.
+
 ## Stage C — blocks the foundation vertical slice
 
 ### `VSL-01` — Foundation Vertical-Slice Programme
@@ -314,7 +346,8 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 10. A decision is not complete until its PR is validated, audited, squash-merged and its task archived.
 11. FND-01 must terminate into VSL-02; no isolated workspace bootstrap may bypass the accepted client cutover sequence.
 12. VSL-02 uses one atomic Oteryn-v2 destination PR; the later otclient PR is source-marker closeout only.
+13. Every gameplay/product package must reconcile `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`; an unnamed domain may not be silently absorbed into an unrelated gate.
 
 ## Current next action
 
-Draft and accept `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. Its terminal next action is `VSL-02`, followed by one atomic destination migration/workspace PR, the source-only cutover marker and only then layer-specific contracts.
+Draft and accept `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. Its terminal next action is `VSL-02`, followed by one atomic destination migration/workspace PR, the source-only cutover marker and only then layer-specific contracts. The registered gameplay/product gates remain ordered future work and do not replace this immediate action.

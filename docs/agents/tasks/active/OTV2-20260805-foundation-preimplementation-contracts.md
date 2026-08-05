@@ -26,6 +26,7 @@ public_contracts:
   - docs/architecture/ADR-0006-game-intelligence-analytics-and-audit.md
   - docs/architecture/FOUNDATION_DECISION_BACKLOG.md
   - docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md
+  - docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md
   - docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/contracts/FOUNDATION_ERROR_VOCABULARY.md
@@ -122,6 +123,8 @@ Every replacement agent must verify this baseline against the live default branc
 
 Canonical evidence: ADR-0001 through ADR-0006.
 
+Registered open-decision coverage: `docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`. Registration prevents omission but does not accept solutions.
+
 ## Stable gate IDs
 
 - `FND-01` — Workspace, Dependency and Existing-Rust Migration Contract.
@@ -139,6 +142,23 @@ Canonical evidence: ADR-0001 through ADR-0006.
 - `ANL-02` — Gameplay, Balance and World Analytics Contract.
 - `ANL-03` — Economy Integrity and Security Analytics Contract.
 - `ANL-04` — Read-Only Investigation and AI Contract.
+- `GAME-CHAR-01` — Character Lifecycle and Progression.
+- `GAME-ITEM-01` — Item Model and Equipment Rules.
+- `GAME-ABILITY-01` — Ability, Spell and Condition Architecture.
+- `GAME-AI-01` — Creature AI, Spawn and Pathfinding Architecture.
+- `GAME-INTERACTION-01` — World Interaction and Environmental Mechanics.
+- `PROD-LIVEOPS-01` — Live Operations and Runtime Configuration.
+- `PROD-COMPAT-01` — Release Compatibility and Version Train.
+- `SEC-CLIENT-01` — Client Integrity and Anti-Cheat Boundary.
+- `DATA-PRIVACY-01` — Product Privacy and Data Lifecycle.
+- `UX-I18N-A11Y-01` — Localization, Input, Onboarding and Accessibility.
+- `OPS-GM-01` — Support, Moderation and GM Operations.
+- `GAME-META-01` — Collections, Achievements and Recurring Progression.
+- `GAME-INSTANCES-01` — Dungeons, Arenas, Matchmaking and Spectating.
+- `GAME-WORLD-LIFECYCLE-01` — World Lifecycle, Transfer and Merge.
+- `INTEGRATION-API-01` — External APIs, Notifications and Integrations.
+- `PROD-ENTITLEMENTS-01` — Entitlements, Premium and Commerce Boundary.
+- `MOD-ECOSYSTEM-01` — Modding and Plugin Ecosystem.
 
 ## Progressive implementation gates
 
@@ -173,6 +193,10 @@ The canonical root workspace already exists around the migrated client. Later au
 - `VSL-01` gates completion of the native foundation vertical slice.
 - `ANL-01` gates final transactional event/outbox/audit boundaries used by persistence and item transactions.
 - `ANL-02`/`ANL-03` gate production-grade analytics claims; `ANL-04` gates later read-only AI investigation.
+- `GAME-CHAR-01` and `GAME-ITEM-01` gate final character/item durable models before `DUR-02`/`DUR-03`.
+- `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01` gate Playable Alpha gameplay breadth.
+- `PROD-LIVEOPS-01`, `PROD-COMPAT-01`, `SEC-CLIENT-01`, `DATA-PRIVACY-01`, `UX-I18N-A11Y-01` and `OPS-GM-01` gate Playable Alpha operational completeness.
+- Expansion/deferred gameplay-product gates remain inactive until their milestone or explicit owner decision requires them.
 
 ## Remaining foundation contracts
 
@@ -278,10 +302,10 @@ These do not block client migration, workspace bootstrap/completion after cutove
 - QUIC;
 - cross-world chat/guilds/parties;
 - hundreds of dynamic channels;
-- complete instance and market programmes;
+- `GAME-INSTANCES-01` complete instance/matchmaking/spectator programme and full market programme;
 - all classic rulesets;
 - final launcher/updater;
-- public mod ecosystem;
+- `MOD-ECOSYSTEM-01` public mod ecosystem;
 - advanced client prediction;
 - extraction of world services into independently deployable microservices.
 
@@ -315,6 +339,10 @@ These do not block client migration, workspace bootstrap/completion after cutove
 - [ ] `DUR-01` accepted before durable database identity representations are frozen and before authoritative durable gameplay mutation.
 - [ ] `DUR-02` accepted before durable gameplay mutations.
 - [ ] `DUR-03` accepted before durable item/currency mutation.
+- [ ] `GAME-CHAR-01` accepted before `DUR-02` freezes the durable character schema.
+- [ ] `GAME-ITEM-01` accepted before `DUR-03` freezes item behavior and transaction semantics.
+- [ ] Playable Alpha gameplay breadth is not claimed before `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01`.
+- [ ] Playable Alpha operational completeness is not claimed before live-ops, compatibility, client-integrity, privacy, localization/accessibility and GM-operation gates are accepted.
 - [x] Native world/content/editor direction accepted in ADR-0005.
 - [x] Game Intelligence, analytics durability classes, privacy and read-only investigation direction accepted in ADR-0006.
 - [ ] `ANL-01` accepted before final outbox/audit boundaries are frozen in `DUR-02`/`DUR-03`.
@@ -379,7 +407,7 @@ Every package PR must challenge omitted boundaries, circular dependencies, place
 ## Context checkpoint
 
 ```yaml
-last_progress: ADR-0001 through ADR-0006 are accepted; ADR-0002 requires VSL-02 immediately after FND-01 and one atomic destination migration/workspace PR before a source-only cutover marker and shared-contract freeze.
+last_progress: ADR-0001 through ADR-0006 are accepted; ADR-0002 requires VSL-02 immediately after FND-01 and one atomic destination migration/workspace PR before a source-only cutover marker and shared-contract freeze; missing gameplay and product domains are registered as open future gates.
 status: ready
 branch: null
 head_sha: null
@@ -394,6 +422,7 @@ public_contracts:
   - docs/architecture/ADR-0006-game-intelligence-analytics-and-audit.md
   - docs/architecture/FOUNDATION_DECISION_BACKLOG.md
   - docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md
+  - docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md
   - docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - docs/contracts/FOUNDATION_ERROR_VOCABULARY.md
