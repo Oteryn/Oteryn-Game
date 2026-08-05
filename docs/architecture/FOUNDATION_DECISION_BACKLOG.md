@@ -525,6 +525,18 @@ Approve ownership, implementation order and evidence for this minimum scenario:
 - quantitative capacity, latency, reconnect, RPO and RTO targets;
 - Foundation, Playable Alpha, Beta and release scope.
 
+## Registered gameplay and product decision horizon
+
+The complete open-decision scope is canonical in `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`.
+
+- `GAME-CHAR-01` and `GAME-ITEM-01` are new durable-gameplay gates: character semantics must precede final `DUR-02`, and item semantics must precede final `DUR-03`.
+- `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01` are required before Playable Alpha gameplay breadth is claimed; bounded vertical-slice contracts may precede them.
+- `PROD-LIVEOPS-01`, `PROD-COMPAT-01`, `SEC-CLIENT-01`, `DATA-PRIVACY-01`, `UX-I18N-A11Y-01` and `OPS-GM-01` are required before Playable Alpha operational completeness is claimed.
+- `GAME-META-01`, `GAME-INSTANCES-01`, `GAME-WORLD-LIFECYCLE-01` and `INTEGRATION-API-01` are expansion gates.
+- `PROD-ENTITLEMENTS-01` and `MOD-ECOSYSTEM-01` remain explicitly deferred until an owner decision activates them.
+
+Registering a gate does not accept its implementation choice.
+
 ## Explicitly deferred
 
 These do not block client migration, the initial workspace bootstrap after cutover or the foundation vertical slice when extension points remain safe:
@@ -535,11 +547,11 @@ These do not block client migration, the initial workspace bootstrap after cutov
 - QUIC support;
 - cross-world chat, guilds or parties;
 - hundreds of dynamically created channels;
-- complete dungeon/arena instance programme;
+- `GAME-INSTANCES-01` complete dungeon/arena/matchmaking/spectator programme;
 - full market implementation;
 - all classic rulesets;
 - final launcher/updater implementation;
-- public mod ecosystem;
+- `MOD-ECOSYSTEM-01` public mod ecosystem;
 - advanced client prediction;
 - extraction of world services into independent deployable microservices.
 
@@ -572,14 +584,19 @@ No package may edit another active package's owned contract without explicit coo
 10. Accept FND-03 Runtime Execution Contract, including clock and event-emission semantics
 11. Accept FND-04 Identity, Game Session, Admission and Character Lease Contract
 12. Accept DUR-01 full Identifier Contract for database and durable-state representation
-13. Accept ANL-01 Game Event and Audit Foundation Contract
-14. Accept DUR-02 Persistence v1 Contract with transactional outbox/audit recovery
-15. Accept DUR-03 Item Transaction and Anti-Duplication Contract, if not complete in DUR-02
-16. Draft ANL-02 and ANL-03 on the accepted event/persistence/item foundations
-17. Run the bounded world-format spike and complete DUR-04 under ADR-0005
-18. Accept VSL-01 Foundation Vertical-Slice Programme with correlated event/audit evidence
-19. Execute the separately authorized vertical-slice implementation programme
-20. Complete ANL-02/ANL-03 before production-grade alpha analytics claims; defer ANL-04 until read-only investigation is authorized
+13. Accept GAME-CHAR-01 before DUR-02 freezes the durable character schema
+14. Accept GAME-ITEM-01 before DUR-03 freezes item behavior and transfer semantics
+15. Accept ANL-01 Game Event and Audit Foundation Contract
+16. Accept DUR-02 Persistence v1 Contract with transactional outbox/audit recovery
+17. Accept DUR-03 Item Transaction and Anti-Duplication Contract, if not complete in DUR-02
+18. Draft ANL-02 and ANL-03 on the accepted event/persistence/item foundations
+19. Run the bounded world-format spike and complete DUR-04 under ADR-0005
+20. Accept VSL-01 Foundation Vertical-Slice Programme with correlated event/audit evidence
+21. Execute the separately authorized vertical-slice implementation programme
+22. Accept GAME-ABILITY-01, GAME-AI-01 and GAME-INTERACTION-01 before Playable Alpha gameplay breadth is claimed
+23. Accept PROD-LIVEOPS-01, PROD-COMPAT-01, SEC-CLIENT-01, DATA-PRIVACY-01, UX-I18N-A11Y-01 and OPS-GM-01 before Playable Alpha operational completeness is claimed
+24. Complete ANL-02/ANL-03 before production-grade alpha analytics claims; defer ANL-04 until read-only investigation is authorized
+25. Activate expansion/deferred gameplay-product gates only when their milestone or explicit owner decision requires them
 ```
 
 Contracts may be developed in parallel only when ownership and dependencies do not overlap. Cross-repository changes require separate authorized tasks, branches and PRs with one coordination ID and explicit rollout order.
@@ -594,6 +611,9 @@ Contracts may be developed in parallel only when ownership and dependencies do n
 - `FND-ID-01` must be accepted after migration/cutover and before `FND-02` or `FND-04` freezes identifier meanings on the wire or in Game Sessions.
 - `FND-02`, `FND-03` and `FND-04` gate canonical protocol, authoritative runtime and production admission/lease implementation respectively.
 - `DUR-01`, `DUR-02` and `DUR-03` must be accepted before authoritative durable character, item or currency mutation.
+- `GAME-CHAR-01` must be accepted before `DUR-02` finalizes the character schema; `GAME-ITEM-01` must be accepted before `DUR-03` finalizes item semantics.
+- `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01` are required before Playable Alpha gameplay breadth is claimed; bounded vertical-slice contracts may precede them.
+- `PROD-LIVEOPS-01`, `PROD-COMPAT-01`, `SEC-CLIENT-01`, `DATA-PRIVACY-01`, `UX-I18N-A11Y-01` and `OPS-GM-01` are required before Playable Alpha operational completeness is claimed.
 - ADR-0005 is the accepted world/content direction; `DUR-04` must be accepted before broad content import or durable scripting.
 - `VSL-01` must name observable E2E evidence before implementation is called complete.
 - `ANL-01` must be accepted before final `DUR-02`/`DUR-03` outbox and audit boundaries are frozen.
