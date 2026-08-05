@@ -7,13 +7,13 @@ mode: IMPLEMENTATION
 status: validating
 repository: blakinio/Oteryn-v2
 base_branch: main
-branch: fix/repository-configuration-concurrency-20260805
+branch: fix/repository-policy-api-fields-20260805
 pr: null
-base_sha: 9c4942d3429cb2eb1596bb5333cc3dc6950cbaa3
+base_sha: 664bd9a2ede227220705d1058cc420c4a08bd6b2
 head_sha: null
 owner: repository-governance-agent
 created_at: 2026-08-05T15:33:00+02:00
-updated_at: 2026-08-05T16:20:00+02:00
+updated_at: 2026-08-05T16:23:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -53,6 +53,7 @@ Make the documented pull-request and squash-merge discipline enforceable through
 - [x] Implementation PR #23 was squash-merged as `30324872af421d0d2bdcb91b360a76a3d44a2592`.
 - [x] API/check-context repair PR #25 was squash-merged as `287e7fea0c50d1a29f09e82e6df31fcee9ce9c0f`.
 - [x] Solo-maintainer autonomy repair PR #27 was squash-merged as `9c4942d3429cb2eb1596bb5333cc3dc6950cbaa3`.
+- [x] Configuration-concurrency repair PR #28 was squash-merged as `664bd9a2ede227220705d1058cc420c4a08bd6b2`.
 - [ ] The task is archived in a separate closeout PR after live E2E verification succeeds.
 
 ## Excluded scope
@@ -76,30 +77,34 @@ Make the documented pull-request and squash-merge discipline enforceable through
 - autonomy repair Dependency review: `31014156309` — PASS
 - autonomy repair CodeQL: `31014156500` — PASS
 - autonomy repair merge: `9c4942d3429cb2eb1596bb5333cc3dc6950cbaa3`
+- concurrency repair exact head: `09a58ba3d29576fe5e7e0f7376b1e6d24a5a863c`
+- concurrency repair Agent governance: `31014453379` — PASS
+- concurrency repair Dependency review: `31014453260` — PASS
+- concurrency repair CodeQL: `31014453330` — PASS
+- concurrency repair merge: `664bd9a2ede227220705d1058cc420c4a08bd6b2`
 - live ruleset: `Protect main`, id `20462155`, active, no bypass — PASS
 - private vulnerability reporting: enabled — PASS
 - repository metadata/topics/merge settings: applied — PASS
-- configuration E2E run `31012977676`: settings applied; obsolete API alias caused verifier failure and was repaired
-- configuration E2E run `31013835321`: blocked by the removed sole-maintainer environment approval
-- configuration E2E run `31014285261`: queued behind the historical waiting run because stale configuration runs were not cancellable
-- concurrency repair: set `cancel-in-progress: true` so the newest protected configuration supersedes obsolete waiting executions
+- legacy administration environment: removed — PASS
+- configuration E2E run `31014596403`: current apply ran without approval/concurrency blocking; final verification found only obsolete API field `has_downloads` absent from the 2026 response
+- API-field repair: remove legacy downloads feature from the canonical repository policy instead of treating an unobservable field as enforceable
 
 ## Context checkpoint
 
 ```yaml
-last_progress: The approval deadlock was removed, but the old waiting run still holds the configuration concurrency group and blocks the newest run.
+last_progress: Configuration apply now executes autonomously and removes obsolete state; only the deprecated has_downloads field prevents terminal verification.
 status: validating
-branch: fix/repository-configuration-concurrency-20260805
+branch: fix/repository-policy-api-fields-20260805
 head_sha: null
 pr: null
-ci_check_generation: configuration-concurrency-repair
+ci_check_generation: repository-policy-api-field-repair
 ci_checks_for_current_head: 0
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 4
 stall_warnings: 0
 blocker: null
-next_action: Merge the concurrency repair through the active ruleset, allow the newest configuration run to cancel obsolete executions, verify live state, and archive the task.
+next_action: Merge the API-field repair through the active ruleset, rerun repository configuration E2E, verify live state, and archive the task.
 ```

@@ -15,7 +15,6 @@
     "has_issues": true,
     "has_projects": true,
     "has_wiki": false,
-    "has_downloads": false,
     "description": "Greenfield native Rust multichannel game server, client, protocol, content, and tooling platform."
   },
   "topics": [
