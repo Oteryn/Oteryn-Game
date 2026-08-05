@@ -4,12 +4,16 @@
 - Date: 2026-08-05
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Canonical programme task: `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`
+- Global decision register: `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md`
+- Coordinator prompt: `docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md`
 
 ## Purpose
 
 Record the remaining architecture decisions in one durable, ordered register. This file distinguishes accepted decisions, decisions that block creation of the real Rust workspace, decisions required before durable gameplay, and subjects deliberately deferred.
 
-Chat history is not authoritative. Accepted ADRs, this backlog, the active programme task and live PR/CI state are the continuation sources.
+The complete later project horizon is maintained in `GLOBAL_ARCHITECTURE_DECISION_REGISTER.md`. That register preserves gameplay, client, content, operations and product domains without forcing them to be designed before they block the current stage.
+
+Chat history is not authoritative. Accepted ADRs, this backlog, the global register, the active programme task and live PR/CI state are the continuation sources.
 
 ## Already accepted
 
@@ -195,6 +199,7 @@ Freeze representations and visibility for:
 - `GameSessionId`;
 - `CommandId`;
 - `EntityId`;
+- `ItemInstanceId`;
 - `ProtocolRevision`;
 - `ContentRevision`;
 - `RulesetRevision`;
@@ -222,7 +227,19 @@ PostgreSQL is selected. Still decide:
 
 The default direction remains current-state tables plus revisions, idempotent commands, transactional outbox and bounded append-only critical audit records, not full event sourcing of every simulation event.
 
-### D3. Remaining content migration and scripting contract
+### D3. Item transaction and anti-duplication contract
+
+Decide, either in Persistence v1 or a separate contract:
+
+- canonical item-instance identity and ownership;
+- inventory/equipment/container/ground transfer atomicity;
+- pickup, drop, loot, trade, reward, bank and depot retry behavior;
+- idempotency and duplicate-command outcomes;
+- stale-session and stale-writer rejection;
+- crash and partial-failure rollback/recovery;
+- audit evidence proving that items or currency cannot be duplicated.
+
+### D4. Remaining content migration and scripting contract
 
 ADR-0005 accepts the native world format, Oteryn Studio, stable content identity, chunk/semantic geography separation, encounter-placement hierarchy and legacy-conversion boundary. Still decide:
 
@@ -243,7 +260,7 @@ ADR-0005 accepts the native world format, Oteryn Studio, stable content identity
 
 Scripts must not receive a global mutable `Game` object or direct SQL access. Legacy tools and proprietary assets must not be copied without confirmed rights and pinned provenance.
 
-### D4. Foundation vertical-slice programme
+### D5. Foundation vertical-slice programme
 
 Approve ownership, implementation order and evidence for this minimum scenario:
 
@@ -266,16 +283,20 @@ Approve ownership, implementation order and evidence for this minimum scenario:
 ## Decisions required as the vertical slice expands
 
 - position, direction and entity-lifetime encoding;
+- movement, collision, pathfinding and visibility contracts;
+- minimal combat, death, corpse, loot and attribution contracts;
 - PvP, skull, frag and combat-lock scope;
 - party membership versus shared-experience behaviour across channels;
 - boss, raid, chest and daily-reward anti-hopping policy;
 - encounter uniqueness and cooldown scope across channels;
 - world communication and presence service boundary;
+- exact Rust client migration revision, provenance and rollback;
 - event journal and checkpoint timing;
 - metrics, tracing, log redaction and audit retention;
 - updater, asset signing and release security;
 - supported client platforms and server architectures;
-- quantitative capacity, latency, reconnect, RPO and RTO targets.
+- quantitative capacity, latency, reconnect, RPO and RTO targets;
+- Foundation, Playable Alpha, Beta and release scope.
 
 ## Explicitly deferred
 
@@ -298,16 +319,17 @@ These do not block the initial workspace or foundation vertical slice when exten
 ## Recommended decision order
 
 ```text
-1. Workspace and dependency contract
-2. protocol-oteryn v1 contract
-3. Runtime execution contract
-4. Identity, Game Session, admission and lease contract
-5. Identifier contract
-6. Persistence v1 contract
-7. Complete the remaining content migration and scripting contract under ADR-0005
-8. Foundation vertical-slice programme
-9. Pin and migrate the existing Rust client
-10. Create the real workspace and begin implementation
+1. Workspace and Dependency Contract
+2. protocol-oteryn v1 Contract
+3. Runtime Execution Contract
+4. Identity, Game Session, Admission and Character Lease Contract
+5. Identifier Contract
+6. Persistence v1 Contract
+7. Item Transaction and Anti-Duplication Contract, if not complete in Persistence v1
+8. Complete remaining content/world-detail/scripting contracts under ADR-0005
+9. Foundation Vertical-Slice Programme
+10. Pin and accept the Rust Client Migration Contract
+11. Create the real workspace and begin a separately authorized implementation programme
 ```
 
 Contracts may be developed in parallel only when ownership and dependencies do not overlap. Cross-repository changes require separate authorized tasks, branches and PRs with one coordination ID and explicit rollout order.
@@ -315,6 +337,11 @@ Contracts may be developed in parallel only when ownership and dependencies do n
 ## Start gates
 
 - Contracts B1 through B4 must be accepted before creation of the real Rust workspace.
-- Identifier and Persistence v1 contracts must be accepted before durable gameplay mutations.
+- Identifier, Persistence v1 and item anti-duplication contracts must be accepted before authoritative durable item/currency mutation.
 - ADR-0005 is the accepted world/content direction; its remaining concrete format, migration, asset-rights and scripting contracts must be accepted before broad content import.
 - The vertical-slice programme must name observable E2E evidence before implementation is called complete.
+- The exact Rust client migration SHA, provenance and rollback must be accepted before moving client code.
+
+## Current next action
+
+Execute `docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` and draft, audit, accept, merge and archive the **Workspace and Dependency Contract**.

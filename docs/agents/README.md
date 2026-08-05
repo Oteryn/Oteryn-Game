@@ -21,6 +21,12 @@ This directory is the durable operating system for autonomous and multi-agent wo
 - `CROSS_REPO_CONTRACTS.md` — Oteryn Platform/Otheryn/otclient migration boundaries.
 - `GOVERNANCE_CONTRACT.json`, `PROJECT_LANES.json` — machine-readable policy.
 
+## Reusable programme prompts
+
+- `prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — autonomous coordinator prompt for continuing the staged global architecture decision programme from the canonical foundation checkpoint and global decision register.
+
+Reusable prompts are execution contracts, not project state. Agents must still read trusted-base governance, live task checkpoints, current ADRs/contracts and live PR/CI state before acting.
+
 ## Task lifecycle
 
 Substantial work uses:
