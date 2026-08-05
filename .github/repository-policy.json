@@ -118,9 +118,5 @@
         "type": "non_fast_forward"
       }
     ]
-  },
-  "administration_environment": {
-    "name": "repository-administration",
-    "reviewer_user_id": 75369544
   }
 }
