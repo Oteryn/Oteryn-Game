@@ -39,6 +39,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | Native three-tier E2E platform, evidence, cleanup and stability contract | `ACCEPTED` | ADR-0007 |
 | `protocol-canary` fixed as reference-only evidence and excluded from every production runtime/dependency/fallback path | `ACCEPTED` | ADR-0008 |
 | GameNode process identity, multithreaded single-writer execution, measured capacity, external orchestration and same-channel fenced recovery baseline | `ACCEPTED` | ADR-0009 |
+| Reference and evolved world product profiles over one engine, client and `protocol-oteryn`, with isolated world-scoped gameplay value | `ACCEPTED` | ADR-0010 and `PRODUCT_DIRECTION_BASELINE.md` |
 
 ## Progressive execution policy
 
@@ -50,6 +51,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - `FND-ID-01` gates identifier meanings required by protocol and admission contracts after migration.
 - `FND-02`, `FND-03` and `FND-04` independently gate canonical protocol, authoritative runtime and production admission/lease behavior.
 - ADR-0009 fixes the GameNode/process/container boundary and recovery invariants; `PERF-01` gates supported capacity claims and `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production recovery behavior.
+- ADR-0010 fixes reference and evolved worlds as versioned product/ruleset/content profiles over one engine, client and `protocol-oteryn`; `GAME-VISION-01` must define measurable parity scope and launch strategy before broad gameplay/content production.
 - Bounded technical spikes may inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 - `DUR-01` through `DUR-03` remain hard gates before authoritative durable character, item or currency mutation.
 - `ANL-01` must be accepted before `DUR-02`/`DUR-03` finalize transactional outbox and critical audit evidence; analytics consumers never replace authoritative invariants.
@@ -57,6 +59,17 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - A spike, placeholder crate or passing compile does not prove a public contract or runtime capability.
 
 ## Stage A — foundation and layer gates
+
+### `GAME-VISION-01` — Product Vision, Parity Scope and World Profile Contract
+
+- Status: `BLOCKS_LAYER_IMPLEMENTATION` for broad gameplay/content production; does not block `FND-01` or `VSL-02`.
+- Refine ADR-0010 into measurable product pillars, player promise, parity scope and anti-pillars.
+- Decide whether reference worlds track a pinned release, dated behavior baseline or continuously updated target.
+- Define the first-launch profile strategy, initial intentional Oteryn differences and player-facing profile disclosure.
+- Preserve one engine, client and `protocol-oteryn`; differences remain versioned ruleset/content/product profiles.
+- Require distinct `WorldId` values for reference and evolved worlds; every channel of one logical world inherits one profile family and compatible revision.
+- Preserve default world-scoped character/economy isolation until a dedicated transfer contract proves safety.
+- Link parity evidence, legal/provenance substitutions, profile-specific acceptance and cross-profile isolation scenarios.
 
 ### `FND-01` — Workspace, Dependency and Existing-Rust Migration Contract
 

@@ -17,6 +17,7 @@ The immediate programme action remains `FND-01`. The gates below become active o
 
 This horizon complements, and does not replace:
 
+- `GAME-VISION-01` for measurable parity scope, product pillars and reference/evolved profile strategy;
 - `FND-01` through `FND-04` for workspace, protocol, runtime and admission;
 - `DUR-01` through `DUR-04` for durable identity, persistence, item transactions and content/scripting;
 - `ANL-01` through `ANL-04` for events, analytics, integrity and investigation;
@@ -40,6 +41,33 @@ For every gate below, a future contract must define:
 - migration, rollout and rollback where applicable.
 
 No gate authorizes speculative empty crates or services. Every implementation member requires an immediate consumer and observable acceptance.
+
+# Product direction gate
+
+## `GAME-VISION-01` — Product Vision, Parity Scope and World Profile Contract
+
+- Status: `BLOCKS_LAYER_IMPLEMENTATION` for broad gameplay/content production.
+- Does not block `FND-01`, `VSL-02` or shared-foundation migration work.
+- Must refine ADR-0010 and `PRODUCT_DIRECTION_BASELINE.md` before large-scale mechanics/content implementation.
+
+Must decide:
+
+- measurable player promise, design pillars and anti-pillars;
+- named Global Tibia parity baseline and lawful evidence model;
+- pinned, dated or continuously tracking reference-world policy;
+- reference versus evolved profile launch order and population strategy;
+- first intentional Oteryn improvements and their acceptance evidence;
+- user-facing profile disclosure, naming and transfer restrictions;
+- profile revision, compatibility, migration and rollback expectations;
+- product success measures beyond technical correctness.
+
+Must preserve:
+
+- one canonical engine, client and `protocol-oteryn`;
+- explicit versioned product/ruleset/content profiles rather than forks;
+- distinct `WorldId` values across profile families, with one inherited profile family for every channel of a logical world;
+- default world-scoped character and economy isolation;
+- no proprietary code, protocol or asset copying under a parity claim.
 
 # Core gameplay domain gates
 
@@ -405,6 +433,7 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 7. Expansion gates do not block foundation work when their extension points and invariants remain safe.
 8. Existing gates for social, economy, houses, events, updater, operations, observability and scaling remain authoritative for their named scopes.
 9. Any future implementation package must update this horizon, the global register and the corresponding dedicated contract status.
+10. `GAME-VISION-01` must preserve ADR-0010 and may not turn reference/evolved profiles into protocol, engine, client or repository forks.
 
 # Explicitly not decided here
 

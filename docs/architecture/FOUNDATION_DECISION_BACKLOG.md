@@ -25,6 +25,7 @@ Use these identifiers in tasks, PRs, prompts and cross-repository coordination. 
 - `FND-02` — `protocol-oteryn` v1 Contract.
 - `FND-03` — Runtime Execution Contract.
 - `FND-04` — Identity, Game Session, Admission and Character Lease Contract.
+- `GAME-VISION-01` — Product Vision, Parity Scope and World Profile Contract.
 - `DUR-01` — Durable Identifier Representation Contract.
 - `DUR-02` — Persistence v1 Contract.
 - `DUR-03` — Item Transaction and Anti-Duplication Contract.
@@ -121,7 +122,15 @@ The following are no longer open questions:
    - existing GameNodes may start channels within accepted capacity, while an external orchestrator starts, replaces and stops processes or containers;
    - initial failure recovery uses fencing, checkpoint plus bounded replay, fresh Game Sessions and a full snapshot, without silently moving players to another channel.
 
-Canonical decisions: ADR-0001 through ADR-0009.
+11. **Reference and evolved world product direction**
+   - Global Tibia behavioral parity is the initial reference target; controlled Oteryn improvements and original expansion may follow.
+   - reference and evolved worlds are versioned product/ruleset/content profiles over one canonical engine, native client and `protocol-oteryn`; they are not forks.
+   - reusable Platform identity may be shared, while characters, progression, items, currency, houses, market, guilds and rankings remain world-scoped by default.
+   - reference and evolved profiles use distinct logical worlds; every channel of one `WorldId` inherits the same profile family and compatible revision.
+   - cross-profile gameplay-value transfer is forbidden until a dedicated contract proves conservation, balance and migration safety.
+   - `GAME-VISION-01` must define measurable parity scope, first-launch strategy and initial intentional differences before broad gameplay/content production.
+
+Canonical decisions: ADR-0001 through ADR-0010.
 
 ## Progressive implementation policy
 
@@ -181,6 +190,7 @@ Not yet allowed unless its own gate has passed:
 - `FND-02` gates canonical protocol schemas/codecs, production framing and compatibility claims.
 - `FND-03` gates authoritative runtime scheduling, ordering, lifecycle and recovery behavior.
 - `FND-04` gates production admission, Game Session validation and character lease behavior.
+- `GAME-VISION-01` gates broad gameplay/content production claims, but does not block `FND-01`, `VSL-02` or shared-foundation migration work.
 - `PERF-01` gates published player-capacity claims and representative-load readiness.
 - `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production GameNode/channel recovery behavior.
 - `DUR-01` through `DUR-03` gate authoritative durable character, item and currency mutation.
