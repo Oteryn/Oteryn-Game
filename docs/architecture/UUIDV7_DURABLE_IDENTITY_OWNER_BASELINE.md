@@ -28,15 +28,18 @@ All previously accepted semantic scopes and ownership rules remain unchanged. In
 - canonical instance identity remains `WorldId + InstanceId`;
 - canonical party identity remains `WorldId + PartyId`;
 - a globally unique physical value does not erase its semantic scope;
-- identity never grants authority without the required session, ownership, revision or fencing context.
+- identity never grants authority without the required session, ownership, revision or fencing context;
+- ADR-0003 remains authoritative for Platform Identity, Game Gateway, World Registry and admission boundaries.
 
 Where an older unresolved-item list conflicts with this accepted baseline, this later owner decision takes precedence.
 
 ## Accepted primary rule
 
-Every Oteryn-owned semantic entity that can cross a process, service, GameNode, protocol, persistence, durable-event, audit, migration, backup or recovery boundary uses a strongly typed UUIDv7 as its canonical durable identity.
+Every semantic entity for which Oteryn-v2 is the accepted identity authority and which can cross a process, service, GameNode, protocol, persistence, durable-event, audit, migration, backup or recovery boundary uses a strongly typed UUIDv7 as its canonical durable identity.
 
-The rule is based on lifecycle and boundary crossing, not on whether the entity is currently large, small, common or rare.
+A cross-repository or externally owned identity adopts UUIDv7 only through its authoritative contract or an explicitly accepted coordinated migration. Oteryn-v2 does not silently re-key identities owned by Platform or another accepted authority.
+
+The rule is based on lifecycle, authority and boundary crossing, not on whether the entity is currently large, small, common or rare.
 
 A durable identity is:
 
@@ -47,12 +50,11 @@ A durable identity is:
 - compared only through its strong semantic type and required scope;
 - independent from current process, memory address, database row position, GameNode, channel placement, display name and mutable business state.
 
-## Accepted UUIDv7 candidates
+## Candidate catalogue direction
 
-Subject to the complete catalogue and ownership review in `FND-ID-01`, the accepted default applies to Oteryn-owned identities such as:
+Subject to the complete ownership and lifecycle catalogue in `FND-ID-01`, UUIDv7 is the accepted representation direction for durable identities such as:
 
-- `WorldId`;
-- `ChannelId`;
+- `WorldId` and `ChannelId` when adopted by their authoritative World Registry/topology contract;
 - `InstanceId`;
 - `ZoneId` when the zone is a durable cross-boundary entity rather than a bundle-local content region;
 - `GameNodeId`;
@@ -60,9 +62,7 @@ Subject to the complete catalogue and ownership review in `FND-ID-01`, the accep
 - `PartyId`;
 - `GuildId`;
 - `HouseId`;
-- `GameSessionId`;
-- `AdmissionId`;
-- `CharacterLeaseId`;
+- `GameSessionId`, `AdmissionId` and `CharacterLeaseId` when accepted by the coordinated `FND-04` contract;
 - `TransferId` and `HandoffId`;
 - `ItemInstanceId` and `ContainerInstanceId`;
 - `TradeId`, `MarketOfferId` and `MailId`;
@@ -71,18 +71,20 @@ Subject to the complete catalogue and ownership review in `FND-ID-01`, the accep
 - `TransactionId`, `OperationId`, `EventId`, `SnapshotId` and `RecoveryCaseId`;
 - durable social relationship, invitation and Party Finder entry identities where a separate semantic entity exists.
 
-This is a default catalogue direction, not permission to invent an ID for every struct. The complete `FND-ID-01` contract must still prove that each candidate represents a real semantic lifecycle.
+This list establishes a representation direction but does not assign ownership by itself. The complete `FND-ID-01` catalogue must prove that each candidate represents a real semantic lifecycle and name exactly one authoritative owner or coordinated issuer.
 
-## Externally owned identities
+## Externally owned and coordinated identities
 
 Oteryn does not create a competing identifier for an entity owned by another authoritative system.
 
 In particular:
 
 - `AccountId` remains owned by Oteryn Platform Identity under ADR-0003;
+- `WorldId` and authoritative channel-route policy remain under the accepted Platform World Registry boundary until a coordinated contract says otherwise;
+- `GameSessionId`, admission identifiers and lease identifiers require the cross-repository ownership decision in `FND-04` before their generator is assigned;
 - identifiers already owned by Platform, World Registry or another accepted authority preserve that authority's canonical representation until an explicitly coordinated migration is accepted;
-- Oteryn wraps external identifiers in distinct strong types and never silently converts, rekeys or aliases them as an Oteryn-owned UUIDv7;
-- new jointly defined cross-repository identities should use UUIDv7 when compatibility and migration contracts permit it.
+- Oteryn wraps external identifiers in distinct strong types and never silently converts, rekeys or aliases them as Oteryn-owned UUIDv7 values;
+- new jointly defined cross-repository identities should use UUIDv7 when compatibility, issuer ownership and migration contracts permit it.
 
 A mapping record may bridge a legacy or external identifier to an Oteryn UUIDv7 only when the mapping has an explicit owner, uniqueness rule, migration lifecycle and audit trail.
 
@@ -100,6 +102,8 @@ CharacterId(UUIDv7)
 ItemInstanceId(UUIDv7)
 TransactionId(UUIDv7)
 ```
+
+The examples describe the target representation where the authoritative cross-repository contract has adopted UUIDv7. They do not override current external ownership or migration requirements.
 
 The common physical representation does not permit substitution between semantic types.
 
@@ -212,11 +216,12 @@ The complete content identifier and revision contract remains owned by `DUR-04` 
 
 ## Database baseline
 
-The canonical durable identity is UUIDv7 regardless of physical indexing optimizations.
+The canonical durable identity is UUIDv7 regardless of physical indexing optimizations once its authoritative contract has adopted UUIDv7.
 
 Accepted database constraints for later `DUR-01` work:
 
 - PostgreSQL uses its native `uuid` representation for canonical UUID identities rather than `varchar(36)` or mutable display strings;
+- externally owned non-UUID identifiers retain the representation required by their authoritative contract or an explicit mapping/migration layer;
 - UUID text is an interchange/debug representation, not the preferred internal storage form;
 - auxiliary local surrogate keys, partition keys or ordering columns may be introduced only as physical optimizations and never replace canonical semantic identity at system boundaries;
 - all uniqueness, foreign-reference, index, WAL, replication, backup and archival costs must be measured on representative datasets;
@@ -225,7 +230,7 @@ Accepted database constraints for later `DUR-01` work:
 
 ## Wire and serialization baseline
 
-Cross-boundary protocols preserve all 128 bits of UUIDv7.
+Cross-boundary protocols preserve all 128 bits of an adopted UUIDv7 identity.
 
 Accepted constraints:
 
@@ -239,22 +244,22 @@ Accepted constraints:
 
 No central global UUID service is introduced.
 
-Each authoritative domain generates the identifiers it owns, for example:
+The complete identifier catalogue assigns exactly one logical generator or coordinated issuer to every durable identity. Subject to that catalogue:
 
-- World Registry or controlled world provisioning generates `WorldId`;
-- topology control generates `ChannelId`;
+- Platform World Registry or controlled world provisioning generates `WorldId` if the coordinated contract adopts UUIDv7;
+- authoritative topology control generates `ChannelId` if that contract adopts UUIDv7;
 - the activity/instance allocator generates `InstanceId`;
 - the party authority generates `PartyId`;
 - the character domain generates `CharacterId`;
-- the Game Session authority generates `GameSessionId`;
+- the coordinated Game Session authority generates `GameSessionId` after `FND-04` assigns ownership;
 - the authoritative item/inventory owner generates `ItemInstanceId`;
 - the transaction owner generates `TransactionId`;
 - the authoritative event producer generates `EventId`;
 - persistence/recovery components generate snapshot and recovery identities they own.
 
-The complete catalogue must identify exactly one logical generator owner for every durable identity.
+No implementation may infer generator ownership merely from the service that currently receives or stores an identifier.
 
-## Collision, nil and reuse policy
+## Clock, collision, nil and reuse policy
 
 Accepted defaults:
 
@@ -265,7 +270,10 @@ Accepted defaults:
 - a detected collision or duplicate insertion never overwrites an existing entity;
 - generation is retried or the operation fails explicitly with audit evidence;
 - imported identities are validated against namespace, ownership and collision rules;
-- deleted entities retain tombstone/audit semantics where required to prevent unsafe reuse.
+- deleted entities retain tombstone/audit semantics where required to prevent unsafe reuse;
+- UUIDv7 time ordering is an indexing/locality property, not an authority or causality guarantee;
+- clock regression, equal timestamps and generator restart must not produce duplicate identities or silently weaken uniqueness;
+- exact clock-regression and per-generator monotonicity behavior is frozen by the implementation contract and conformance tests.
 
 ## Privacy and public exposure
 
@@ -299,17 +307,19 @@ Later capacity work must compare at minimum:
 2. compact numeric identities without a coherent boundary model;
 3. the accepted hybrid: durable UUIDv7 plus runtime/session/content handles and `u64` ordering values.
 
-The accepted hybrid is the architectural default. Benchmarks may optimize physical representation and indexing but may not remove canonical durable UUIDv7 identity without a new accepted architecture decision.
+The accepted hybrid is the architectural default. Benchmarks may optimize physical representation and indexing but may not remove an accepted canonical durable UUIDv7 identity without a new architecture decision.
 
 ## Deliberately unresolved
 
 The following remain open for complete contracts and implementation evidence:
 
-- the final exhaustive durable identifier catalogue;
+- the final exhaustive durable identifier catalogue and owner/issuer matrix;
 - exact lifecycle and retention of each identity;
 - compatibility and migration for current Platform-owned or legacy identifiers;
+- whether each coordinated `WorldId`, `ChannelId`, `GameSessionId`, admission and lease identifier adopts UUIDv7 immediately or through migration;
 - exact UUIDv7 library and conformance tests;
 - canonical endianness and byte/string formatting;
+- exact clock-regression and monotonic-generation algorithm;
 - exact runtime-handle and session-handle widths and reuse rules;
 - exact PostgreSQL primary keys, indexes, partitions and clustering;
 - exact protocol/IDL serialization;
@@ -349,20 +359,24 @@ Rejected because strong semantic types and scoped references are required to pre
 
 Rejected because Platform and other accepted authorities retain ownership until a coordinated migration contract is accepted.
 
+### Assign generator ownership from repository location
+
+Rejected because ADR-0003 and later cross-repository contracts define authority; storing or consuming an identifier does not make Oteryn-v2 its issuer.
+
 ### Store UUID as `varchar(36)` by default
 
-Rejected because PostgreSQL native `uuid` is the canonical physical baseline for UUID identities; textual rendering remains an interchange and operator concern.
+Rejected because PostgreSQL native `uuid` is the canonical physical baseline for adopted UUID identities; textual rendering remains an interchange and operator concern.
 
 ## Programme effect
 
-- The durable identity representation question is accepted: Oteryn-owned durable cross-boundary identities default to strongly typed UUIDv7.
+- The durable identity representation question is accepted for Oteryn-owned identities: durable cross-boundary identities use strongly typed UUIDv7.
+- Cross-repository and Platform-owned identities adopt UUIDv7 only through their authoritative coordinated contract or migration.
 - UUIDv7 does not erase `WorldId` scope for channels, instances or parties.
 - Runtime entities use local generational handles.
 - Frequent gameplay protocol references use session-local handles.
 - Ordering, revisions, generations and fencing default to scoped `u64` values.
 - Static content and map hot paths use revision-scoped compact identifiers rather than UUID per definition access or tile.
-- PostgreSQL native `uuid` and canonical 16-byte wire representation are required architectural baselines, while exact schema and codecs remain future contract work.
+- PostgreSQL native `uuid` and canonical 16-byte wire representation are required baselines for adopted UUID identities, while exact schema and codecs remain future contract work.
 - UUID identifiers are not bearer secrets and are not automatically public references.
-- External Platform-owned identifiers retain their authoritative representation until coordinated migration.
 - Future capacity tests must measure the accepted hybrid rather than treating UUIDv7-in-every-hot-path as the target design.
 - No runtime, protocol, persistence, schema, migration or client implementation is authorized by this document.
