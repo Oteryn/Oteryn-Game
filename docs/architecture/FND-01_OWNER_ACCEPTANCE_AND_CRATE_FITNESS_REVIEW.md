@@ -26,6 +26,30 @@ This record changes the accepted contract status from candidate to owner-approve
 
 Where the accepted contract blob still uses pre-acceptance phrases such as “candidate”, “proposed” or “ready for owner acceptance”, this owner-acceptance record is the canonical status authority. The technical graph, dispositions and boundaries remain exactly those audited in the accepted blob except for the additional review obligation below.
 
+## Binding software-license correction
+
+The product owner explicitly corrected the FND-01 root Cargo licensing metadata on 2026-08-06.
+
+The accepted contract blob's line:
+
+```text
+license = MIT
+```
+
+is superseded and must not be implemented. The canonical workspace package metadata is:
+
+```text
+license = MPL-2.0
+```
+
+This correction aligns FND-01 with `docs/repository/LICENSING.md`, which remains the repository-wide licensing authority for newly authored software, scripts, build tooling, configuration, schemas, tests and technical documentation.
+
+Imported or third-party material retains any separately applicable compatible license, attribution and provenance through explicit file-level or component-level notices. Such exceptions do not change the default Oteryn-v2 workspace license and must not be used to relicense third-party material or creative assets.
+
+The correction changes licensing metadata only. It does not reopen or modify the accepted 19-member workspace, source dispositions, dependency boundaries, toolchain, release roles, migration sequencing or crate-fitness obligations.
+
+The atomic destination migration PR must use `MPL-2.0` in root workspace metadata and inherited package metadata before it may merge. A destination head containing `workspace.package.license = "MIT"` does not satisfy FND-01.
+
 ## Mandatory post-slice crate fitness review
 
 The number and boundaries of the initial 19 members are an accepted migration starting point, not a permanent crate-count target.
