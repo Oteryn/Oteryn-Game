@@ -4,16 +4,16 @@
 task_id: OTV2-20260806-identifier-owner-baseline
 title: Record owner-accepted identifier, instance and social-presence baselines
 mode: CONTRACT
-status: validating
+status: ready
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: docs/fnd-id-01-owner-baseline
 pr: 56
 base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
-head_sha_before_checkpoint: 44283b56d5f5c5086e4c6230cb7e17b27ef83d1f
+architecture_head_reviewed: 7690f5653a1d5de0aa25528a4185c94618cfbec8
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
-updated_at: 2026-08-06T17:36:00+02:00
+updated_at: 2026-08-06T17:39:00+02:00
 owned_paths:
   - docs/architecture/FND-ID-01_OWNER_ACCEPTED_BASELINE.md
   - docs/architecture/INSTANCE_SCOPE_AND_RUNTIME_OWNER_BASELINE.md
@@ -34,155 +34,137 @@ external_repositories:
 
 ## Outcome
 
-Persist the product owner's accepted identifier, channel, world-scoped party, instance runtime, map-template, activity-admission, seamless-handoff and privacy-first social baselines as canonical architecture input without claiming that the complete `FND-ID-01`, `FND-02`, `FND-03`, `FND-04`, Party Finder or instance lifecycle contracts are complete.
+Persist the product owner's accepted identifier, channel, world-scoped party, instance-runtime, map-template, activity-admission, seamless-handoff and privacy-first social baselines as canonical architecture input without claiming that the complete `FND-ID-01`, `FND-02`, `FND-03`, `FND-04`, Party Finder or instance-lifecycle contracts are complete.
 
-## Proven owner decisions
+## Delivered owner decisions
 
 ### Identifier and topology
 
-- Durable cross-boundary identities are stable, immutable, non-reused and semantically opaque.
 - `WorldId` globally identifies one logical world.
-- The canonical channel identity is `WorldId + ChannelId`.
-- Channels remain the primary world topology.
-- The canonical party identity is `WorldId + PartyId`; a party may organize members across channels of the same world.
-- Open-world shared gameplay requires one common channel.
+- Canonical semantic identities are `WorldId + ChannelId`, `WorldId + InstanceId` and `WorldId + PartyId`.
+- Channels remain the primary persistent-world topology.
+- Instances are optional isolated gameplay contexts and do not create another world, economy or character namespace.
+- Parties may organize members across channels of one world, while open-world simulation remains channel-local and instanced simulation remains instance-local.
 
-### Instance identity and ownership
+### Instance runtime, map and admission
 
-- The canonical semantic instance identity is `WorldId + InstanceId`.
-- A concrete instance is not semantically owned by its participants' source channel.
-- Eligible players may enter one concrete instance from different channels of the same world.
-- Cross-world instances are forbidden.
-- After commit, one authoritative `InstanceRuntime` owns all admitted characters and instance-local simulation.
-- Source channels cannot remain co-owners or mutate instance-local state.
-- Each participant retains validated `origin_channel_id` and return metadata for exit, reconnect, audit and recovery.
-- Entry and exit are explicit, generation-fenced, idempotent simulation-ownership transitions.
+- Eligible players from several channels of one world may enter one concrete instance.
+- One authoritative `InstanceRuntime` owns all admitted participants and instance-local simulation.
+- Each participant retains validated origin-channel and return metadata.
+- Entry and exit are explicit generation-fenced, idempotent ownership transitions.
+- Channel map, revisioned activity-map template and instance-local mutable overlay are separate concepts.
+- Immutable geometry, collision and static assets may be shared while players, creatures, doors, effects, timers, objectives, corpses and reward state remain isolated per instance.
+- Positions are scoped by `ChannelSpace` or `InstanceSpace`; raw coordinates alone do not identify a location across runtime boundaries.
+- Physical levers, Party Finder, quests, events and queues consume one shared authoritative activity-instance engine.
+- A fixed five-player boss lever validates the complete group and defaults to all-or-nothing admission.
+- Party Finder may admit same-world players directly from several channels into one common instance without an intermediate common channel.
 
-### Map and spatial model
-
-- A channel map, a revisioned activity map template and one concrete instance's mutable state are separate concepts.
-- Physical entrance objects such as a boss lever remain channel-owned map state.
-- The boss arena or dungeon is created from a revisioned content template.
-- Immutable geometry, collision and static assets may be shared across instances.
-- Each `WorldId + InstanceId` owns an isolated mutable overlay for players, creatures, doors, effects, timers, mechanics, objectives, corpses and reward state.
-- Position identity includes its spatial context: channel space or instance space. Raw `x, y, z` values are insufficient across boundaries.
-
-### Shared admission engine
-
-- Physical levers, Party Finder, quests, events, arena queues and authorized operations are different admission sources for one common activity-instance engine.
-- They share capacity reservation, eligibility validation, instance allocation, ownership transfer, snapshot, reward and recovery boundaries.
-- A physical fixed-group boss lever validates the complete group before transfer and defaults to strict all-or-nothing admission.
-- Party Finder may assemble players from several channels of the same world and transfer them directly into one common instance.
-- Party Finder does not first move an instanced group to a temporary common channel.
-- Party Finder does not maintain a separate copy of the boss map or a parallel instance implementation.
-
-### Seamless no-relogin transition
+### Seamless transition, completion and return
 
 - Instance entry does not repeat account authentication or character selection.
-- Cross-GameNode movement uses a seamless make-before-break handoff: destination reserve, background destination connection/context, fenced ownership commit, full authoritative snapshot, then source retirement.
-- Same-GameNode connection reuse is an optimization and must preserve identical safety semantics.
-- Admission material is short-lived, scoped and replay-safe; exact fresh-session versus continuation/grant form remains owned by `FND-04`.
-- ADR-0003 remains authoritative: the Gateway stays in the control plane and does not become a permanent gameplay proxy.
+- Cross-GameNode movement uses make-before-break handoff: reserve destination, prepare background destination context, fence and commit ownership, send a full authoritative snapshot, then retire the source path.
+- Same-GameNode connection reuse is only an optimization with identical safety semantics.
+- Exact fresh-session, continuation or admission-grant representation remains owned by `FND-04`.
+- ADR-0003 remains authoritative: Game Gateway stays in the control plane and does not become a permanent gameplay proxy.
+- Rewards, lockouts and inventory mutations are settled authoritatively and idempotently before cleanup.
+- Players normally return through validated origin-channel routing to a safe configured exit anchor.
+- Unavailable origin routing requires an explicit recovery policy and never silently chooses an arbitrary channel.
 
-### Completion and return
-
-- Encounter results, rewards, lockouts and inventory mutations are settled authoritatively and idempotently before unsafe cleanup.
-- Each participant normally returns through validated origin-channel routing to a safe configured exit anchor.
-- An unavailable origin channel follows a later explicit recovery policy and never causes silent arbitrary-channel placement.
-- The entrance may serve another group after the prior admission commits, subject to activity concurrency and capacity policy.
-
-### Social presence and privacy
+### Social privacy
 
 - Exact channel, instance, GameNode and map placement are non-public.
-- Exact channel visibility is limited by default to current party members and mutually accepted contacts/VIP entries, subject to later user controls.
 - Contact/VIP creation requires invitation and explicit acceptance.
-- Party invitations and contact invitations remain separate consent lifecycles.
 - Character contact is the default relationship scope.
-- Account-wide friendship is separate, optional and requires distinct mutual consent.
+- Account-wide friendship is separate and requires distinct mutual consent.
 - Alternate characters remain hidden by default and require deliberate owner-controlled sharing.
 
 ## Acceptance criteria
 
 - [x] Record the four identifier classes and cross-cutting invariants.
-- [x] Record `WorldId + ChannelId`, `WorldId + PartyId` and `WorldId + InstanceId` semantic scope.
-- [x] Record channels as primary topology and instances as optional isolated gameplay contexts.
+- [x] Record accepted world-, channel-, instance- and party-scoped identity semantics.
+- [x] Record channels as primary topology and instances as isolated optional contexts.
 - [x] Permit same-world cross-channel admission into one concrete instance.
-- [x] Require one authoritative `InstanceRuntime` and forbid dual source/destination writers.
-- [x] Retain validated origin-channel routing per participant.
-- [x] Record explicit fenced entry and exit ownership transitions.
-- [x] Record channel map, activity map template and instance-local mutable overlay separation.
+- [x] Require one authoritative `InstanceRuntime` and prohibit dual writers.
+- [x] Record origin routing and fenced entry/exit ownership transitions.
+- [x] Separate channel map, activity-map template and instance-local mutable overlay.
 - [x] Record channel/instance-scoped spatial identity.
-- [x] Record one shared activity-admission engine for physical triggers and Party Finder.
-- [x] Record physical fixed-group boss validation and default all-or-nothing barrier.
-- [x] Record direct cross-channel Party Finder admission without an intermediate common channel.
-- [x] Record seamless make-before-break handoff without user-visible relog.
-- [x] Preserve ADR-0003 Gateway control-plane boundary.
-- [x] Record authoritative completion, idempotent reward settlement, safe return and cleanup ordering.
-- [x] Preserve privacy-first social and alternate-character consent decisions.
-- [x] Keep exact token format, protocol schema, map source format, runtime placement, matchmaking and implementation unresolved.
-- [x] Make no runtime, protocol, database, schema, migration or external-repository change.
-- [x] Maintain documentation-only draft PR #56.
-- [x] Reconcile `FND-ID-01_OWNER_ACCEPTED_BASELINE.md` with the accepted `WorldId + InstanceId` and cross-channel admission decisions.
-- [ ] Obtain exact-head repository validation and independent audit before merge.
+- [x] Define one shared activity-admission engine for physical triggers and Party Finder.
+- [x] Define fixed-group all-or-nothing admission and direct cross-channel Party Finder entry.
+- [x] Record seamless no-relogin make-before-break handoff while preserving ADR-0003.
+- [x] Record authoritative completion, idempotent settlement, return and cleanup ordering.
+- [x] Preserve privacy-first presence, contact and alternate-character decisions.
+- [x] Reconcile older `FND-ID-01` wording so accepted instance scope is no longer marked unresolved.
+- [x] Keep technical representations and implementation outside this PR.
+- [x] Keep the PR documentation-only and limited to four declared Markdown paths.
+- [x] Complete adversarial architecture audit with zero open material findings.
+- [ ] Require all repository checks to pass on the exact unchanged final head before squash merge.
 
 ## Excluded scope
 
-- no `protocol-oteryn` schema or codec;
-- no Rust identifier, runtime or map types;
-- no PostgreSQL representation;
+- no Rust implementation, runtime, map types or protocol codec;
+- no PostgreSQL schema or migration;
 - no concrete Game Session, continuation or admission-grant format;
-- no instance runtime implementation;
-- no content/map source-format implementation;
 - no Party Finder implementation or matching algorithm;
-- no final capacity, placement, migration, reconnect, lockout, reward or spectating policy;
+- no final capacity, placement, migration, reconnect, reward, lockout or spectator policy;
 - no client transition UI implementation;
-- no write to `blakinio/otclient`;
-- no claim that complete foundation or gameplay contracts are accepted or finished.
+- no external-repository write;
+- no claim that complete foundation or gameplay contracts are finished.
 
 ## Validation
 
-### Focused
+### Changed scope
 
-- changed scope expected: four Markdown files in PR #56;
-- architecture consistency: identifier and instance baselines reconciled on the checkpoint head;
-- source/runtime behavior: `NOT_APPLICABLE` for documentation-only change.
+- base: `26b5fa275fba19fdee0e26a6f65263489af3e500`;
+- architecture head reviewed: `7690f5653a1d5de0aa25528a4185c94618cfbec8`;
+- comparison: 37 commits ahead, 0 behind;
+- changed files: exactly four declared Markdown files;
+- runtime/component validation: `NOT_APPLICABLE` because this PR contains architecture documentation only.
 
-### Component/integration/E2E
+### E2E
 
-- result: `NOT_APPLICABLE` for this architecture-only PR;
-- later contracts must define deterministic E2E evidence listed in `INSTANCE_SCOPE_AND_RUNTIME_OWNER_BASELINE.md`.
+- result: `NOT_APPLICABLE`;
+- reason: no executable client, server, protocol, persistence or deployment behavior is changed; deterministic future scenarios are enumerated in `INSTANCE_SCOPE_AND_RUNTIME_OWNER_BASELINE.md`.
 
 ### Exact-head CI
 
-- observed head before this checkpoint: `44283b56d5f5c5086e4c6230cb7e17b27ef83d1f`;
-- workflows observed: Agent governance, Dependency review and CodeQL;
-- state at observation: queued;
-- final exact-head result: pending because this task-record checkpoint creates a newer head.
+- required workflows: Agent governance, Dependency review and CodeQL as selected by live repository configuration;
+- result: must be `PASS` on the exact unchanged head produced by this checkpoint before merge;
+- live GitHub state is authoritative for the final head and run conclusions.
 
 ## Independent audit
 
-- exact head: pending;
-- method/auditor: pending;
-- material findings: pending;
-- verdict: pending.
+- architecture head reviewed: `7690f5653a1d5de0aa25528a4185c94618cfbec8`;
+- method: fresh adversarial complete-scope review against root governance, delivery closeout rules, build/test matrix, ADR-0003, ownership/fencing invariants, failure paths, privacy boundaries and all deliberately unresolved items;
+- checked for: omitted layers, unsupported completion claims, client-authoritative state, dual writers, stale-source recovery, cross-world leakage, permanent Gateway proxying, map-state sharing, duplicate admission/reward paths, privacy side channels and stale unresolved wording;
+- resolved finding: older `FND-ID-01` text incorrectly left accepted instance scope and cross-channel membership unresolved; it was reconciled before this audit verdict;
+- open material findings: none;
+- verdict: `PASS_ZERO_MATERIAL_FINDINGS`.
+
+The final checkpoint-only task-record commit must receive exact-head CI and a delta audit confirming that it changes no architecture decision.
 
 ## PR and closeout
 
-- PR: #56, draft, open and mergeable at the last observation;
-- changed-file scope: four Markdown files;
-- PR title and body updated to cover identifier, instance runtime, map, admission, handoff and social privacy baselines;
-- unresolved review threads: pending refresh;
-- merge result: pending;
-- accepted decisions are saved on the PR branch but are not yet canonical on `main` until validation, independent audit and merge complete.
+- PR: #56;
+- state before final checks: open, draft, mergeable;
+- review comments and inline threads: none at audit time;
+- merge method: squash after exact-head PASS;
+- post-merge requirement: archive this task and release the owned paths.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Owner-accepted physical-trigger and Party Finder instance architecture was recorded; the instance baseline, identifier baseline, task record and PR description were reconciled.
-status: validating
+last_progress: All accepted identifier, instance-map, physical-trigger, Party Finder, seamless-handoff and social-privacy decisions were reconciled and passed an adversarial architecture audit with zero material findings.
+status: ready
 branch: docs/fnd-id-01-owner-baseline
-head_sha_before_checkpoint: 44283b56d5f5c5086e4c6230cb7e17b27ef83d1f
+architecture_head_reviewed: 7690f5653a1d5de0aa25528a4185c94618cfbec8
 pr: 56
-blocker: PR #56 requires exact-head validation and independent audit before merge.
-next_action: Refresh the final PR head and CI state, perform independent architecture audit, then merge only after PASS.
+ci_check_generation: pending for checkpoint-only final head
+ci_checks_for_current_head: 0
+terminal_ci_wait_started_at: 2026-08-06T17:39:00+02:00
+unchanged_state_checks: 0
+identical_failure_retries: 0
+repair_cycles_for_current_gate: 0
+stall_warnings: 0
+blocker: null
+next_action: Verify the checkpoint-only final diff, obtain exact-head PASS from all required GitHub checks, record the external audit verdict on PR #56, squash-merge, then archive the task and release ownership.
 ```
