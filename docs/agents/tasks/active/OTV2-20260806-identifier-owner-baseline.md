@@ -13,7 +13,7 @@ base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
 head_sha: pending-final-validation
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
-updated_at: 2026-08-06T16:25:00+02:00
+updated_at: 2026-08-06T16:38:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -54,7 +54,9 @@ Persist the product owner's accepted identifier, channel/instance, world-scoped 
 - `PROVEN` — the default accepted contact relationship is between two specific characters.
 - `PROVEN` — accepting one character as a contact does not reveal, add or authorize tracking of alternate characters from the same account.
 - `PROVEN` — an account-wide relationship is a separate optional relationship requiring its own explicit mutual consent.
-- `DERIVED` — exact account-wide permission granularity, cross-world scope, persistence, protocol and UI behavior remain unresolved.
+- `PROVEN` — alternate characters remain hidden by default even after account-wide friendship is accepted.
+- `PROVEN` — alternate-character visibility may be widened only by an owner-controlled privacy setting or explicit sharing action and may be revoked independently.
+- `DERIVED` — exact sharing-control granularity, cross-world scope, persistence, protocol and UI behavior remain unresolved.
 - `DERIVED` — exact concrete-instance identity, placement, cross-channel membership and migration semantics remain unresolved and must not be inferred from feature availability.
 
 ## Acceptance criteria
@@ -79,8 +81,12 @@ Persist the product owner's accepted identifier, channel/instance, world-scoped 
 - [x] Reject automatic alternate-character discovery or contact promotion from one accepted character relationship.
 - [x] Permit account-wide friendship only as a separate optional relationship with distinct mutual consent.
 - [x] Require strong separation between character-contact and account-contact invitation types.
+- [x] Keep alternate characters hidden by default even for accepted account-wide contacts.
+- [x] Require an explicit owner-controlled setting or sharing action before alternate-character disclosure.
+- [x] Permit selective sharing and independent revocation without requiring account-contact removal.
+- [x] Require privacy-safe cache invalidation and server-side enforcement of hidden alternate characters.
 - [x] Require privacy-safe failure, stale-data handling, rate limits, blocking and abuse controls in later contracts.
-- [x] Keep account-wide permission granularity, cross-world behavior, protocol, persistence and UI details unresolved.
+- [x] Keep exact sharing controls, cross-world behavior, protocol, persistence and UI details unresolved.
 - [x] Keep UUID/ULID/database-column/wire-width and the remaining catalogue unresolved.
 - [x] Preserve the historical-marker ordering gate.
 - [x] Make no runtime, protocol, schema, migration or external-repository change.
@@ -98,7 +104,7 @@ Persist the product owner's accepted identifier, channel/instance, world-scoped 
 - no Party Finder implementation;
 - no party size, role, invite, matchmaking, teleport, channel reservation, shared-experience or loot contract;
 - no final social-presence service ownership or synchronization protocol;
-- no final account-wide contact permission model, cross-world scope or alternate-character sharing policy;
+- no final account-wide contact permission model, cross-world scope or alternate-character sharing-control design;
 - no client VIP/social-panel implementation;
 - no contact/party invitation persistence or wire schema;
 - no legacy VIP migration;
@@ -145,7 +151,13 @@ Accepted social presence and consent baseline:
 31. character contact consent cannot be silently promoted to account-wide consent;
 32. account-wide friendship is a separate optional relationship requiring a distinct invitation and explicit mutual acceptance;
 33. character-contact and account-contact identities and lifecycle transitions must be strongly separated;
-34. account-wide acceptance does not automatically authorize alternate-character disclosure without a later explicit privacy contract.
+34. account-wide acceptance does not authorize alternate-character disclosure by default;
+35. the default alternate-character visibility policy is hidden;
+36. widening alternate-character visibility requires an explicit owner-controlled setting or sharing action;
+37. selected characters may remain hidden even when broader sharing is enabled;
+38. sharing may be revoked independently of the underlying account-wide relationship;
+39. hidden alternate characters and ownership linkage must not be discoverable through social-system side channels;
+40. newly created characters remain hidden unless the active explicit policy includes them.
 
 Draft PR #56 contains only canonical architecture documents and this task record.
 
@@ -190,7 +202,7 @@ Draft PR #56 contains only canonical architecture documents and this task record
 ## Context checkpoint
 
 ```yaml
-last_progress: Owner accepted character-to-character contacts by default and a separate opt-in account-wide relationship requiring distinct mutual consent; canonical social-presence baseline and PR #56 task record were updated without freezing implementation details.
+last_progress: Owner accepted that alternate characters stay hidden by default even for account-wide contacts and become visible only through a deliberate owner-controlled privacy setting or sharing action; canonical social-presence baseline and PR #56 task record were updated.
 status: validating
 branch: docs/fnd-id-01-owner-baseline
 head_sha: pending-final-validation
