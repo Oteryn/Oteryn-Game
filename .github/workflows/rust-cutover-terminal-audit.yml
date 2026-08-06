@@ -1,0 +1,152 @@
+name: Rust cutover terminal audit
+
+on:
+  push:
+    branches: [migrate/rust-client-cutover-c923ad8]
+    paths: ['.github/workflows/rust-cutover-terminal-audit.yml']
+
+permissions:
+  contents: read
+
+env:
+  RUST_VERSION: '1.94.0'
+  SOURCE_SUBTREE_TREE: c0928dafca6df19ff11d7901e503ed85a5199439
+  AUDIT_GENERATION: '5'
+
+jobs:
+  linux:
+    name: Terminal / Linux workspace
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: rustup toolchain install "$RUST_VERSION" --profile minimal --component clippy,rustfmt
+      - name: Verify workspace
+        run: |
+          cargo +$RUST_VERSION fmt --all --check
+          cargo +$RUST_VERSION metadata --locked --format-version 1 > metadata.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('Cargo.toml').read_text(encoding='utf-8')
+          if 'license = "MPL-2.0"' not in root or 'license = "MIT"' in root:
+              raise SystemExit('root workspace license is not MPL-2.0')
+          data = json.loads(Path('metadata.json').read_text(encoding='utf-8'))
+          members = set(data['workspace_members'])
+          invalid = [p['name'] for p in data['packages'] if p['id'] in members and p.get('license') != 'MPL-2.0']
+          if invalid:
+              raise SystemExit(f'workspace packages without MPL-2.0: {invalid}')
+          PY
+          cargo +$RUST_VERSION run --locked -p oteryn-architecture-check -- workspace .
+          cargo +$RUST_VERSION tree --locked -p oteryn-client --edges normal,build > production-tree.txt
+          python - <<'PY'
+          from pathlib import Path
+          tree = Path('production-tree.txt').read_text(encoding='utf-8')
+          forbidden = ('protocol-canary','protocol-core','protocol-oteryn','transport','game-session','oteryn-client-domain','oteryn-client-simulation','oteryn-synthetic-assets','oteryn-test-support','oteryn-synthetic-client-harness')
+          found = [value for value in forbidden if value in tree]
+          if found:
+              raise SystemExit(f'forbidden production closure entries: {found}')
+          PY
+          cargo +$RUST_VERSION build --locked --workspace --all-targets
+          cargo +$RUST_VERSION clippy --locked --workspace --all-targets -- -D warnings
+          cargo +$RUST_VERSION test --locked --workspace
+          cargo +$RUST_VERSION run --locked -p oteryn-synthetic-client-harness
+
+  windows:
+    name: Terminal / Windows pre-native client
+    runs-on: windows-2025
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - shell: pwsh
+        run: rustup toolchain install $env:RUST_VERSION --profile minimal --component clippy,rustfmt
+      - shell: pwsh
+        run: |
+          cargo +$env:RUST_VERSION build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
+          cargo +$env:RUST_VERSION clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+          cargo +$env:RUST_VERSION run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke
+          cargo +$env:RUST_VERSION run --locked -p oteryn-synthetic-client-harness
+
+  supply-chain:
+    name: Terminal / supply chain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # cargo-deny 0.20.2
+        with:
+          rust-version: '1.94.0'
+          command: check
+          arguments: --all-features
+
+  migration-audit:
+    name: Terminal / adversarial migration audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - run: rustup toolchain install "$RUST_VERSION" --profile minimal
+      - name: Reconcile source
+        shell: python
+        run: |
+          import json, os, urllib.request
+          headers = {'Accept':'application/vnd.github+json','User-Agent':'Oteryn-v2-cutover-audit','X-GitHub-Api-Version':'2022-11-28'}
+          def get(url):
+              with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30) as response:
+                  return json.load(response)
+          commit = get('https://api.github.com/repos/blakinio/otclient/commits/main')
+          tree = get(commit['commit']['tree']['url'])['tree']
+          actual = next((e['sha'] for e in tree if e['path']=='oteryn-client' and e['type']=='tree'), None)
+          if actual != os.environ['SOURCE_SUBTREE_TREE']:
+              raise SystemExit(f'source subtree drift: {actual}')
+          for pull in get('https://api.github.com/repos/blakinio/otclient/pulls?state=open&per_page=100'):
+              files = get(pull['url'] + '/files?per_page=100')
+              if any(item['filename'].startswith('oteryn-client/') for item in files):
+                  raise SystemExit(f'open source PR changes frozen subtree: {pull["number"]}')
+      - name: Verify migration evidence
+        shell: python
+        run: |
+          import json, re, subprocess
+          from pathlib import Path
+          document = json.loads(Path('docs/migration/rust-client-provenance.json').read_text(encoding='utf-8'))
+          checked = 0
+          for record in document['records']:
+              if record.get('verification') != 'destination blob SHA equals source blob SHA':
+                  continue
+              actual = subprocess.check_output(['git','hash-object',record['destination_path']], text=True).strip()
+              if actual != record['source_blob_sha']:
+                  raise SystemExit(f'provenance mismatch: {record["destination_path"]}')
+              checked += 1
+          if checked < 10:
+              raise SystemExit(f'insufficient immutable provenance evidence: {checked}')
+          forbidden = re.compile(r'\b(SessionGeneration|TaskGeneration|WorldId|CharacterId|ChannelId|AccountSessionId|DirectoryRevision|GameplayChannelId|GameEntryCredential|CanaryCurrent)\b')
+          findings = []
+          for root in ('apps','crates','tests','tools'):
+              for path in Path(root).rglob('*.rs'):
+                  match = forbidden.search(path.read_text(encoding='utf-8'))
+                  if match:
+                      findings.append(f'{path}: {match.group(0)}')
+          if findings:
+              raise SystemExit('forbidden identifier leaks: ' + ', '.join(findings))
+          changed = subprocess.check_output(['git','diff','--name-only','origin/main...HEAD'], text=True).splitlines()
+          bad = [p for p in changed if p.startswith(('data/things/','data/sounds/','oteryn-client/')) or p.lower().endswith(('.dat','.spr','.otb','.otbm','.exe','.dll','.pdb'))]
+          if bad:
+              raise SystemExit(f'forbidden asset or source paths: {bad}')
+          workflow_changes = [p for p in changed if p.startswith('.github/workflows/')]
+          allowed_workflow_changes = {
+              '.github/workflows/rust.yml',
+              '.github/workflows/rust-cutover-terminal-audit.yml',
+          }
+          unexpected = [p for p in workflow_changes if p not in allowed_workflow_changes]
+          if unexpected:
+              raise SystemExit(f'unexpected migration workflow changes: {unexpected}')
+      - run: cargo +$RUST_VERSION run --locked -p oteryn-architecture-check -- workspace .
