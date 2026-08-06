@@ -13,7 +13,7 @@ base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
 head_sha: pending-final-validation
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
-updated_at: 2026-08-06T15:10:00+02:00
+updated_at: 2026-08-06T16:25:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -51,7 +51,10 @@ Persist the product owner's accepted identifier, channel/instance, world-scoped 
 - `PROVEN` — exact channel visibility is limited by default to current party members and mutually accepted contacts/VIP entries, subject to later user controls.
 - `PROVEN` — adding a contact/VIP requires an invitation and explicit acceptance; unilateral VIP tracking is not target behavior.
 - `PROVEN` — party invitations remain separate consent operations that may be accepted or declined.
-- `DERIVED` — account-vs-character contact scope, exact presence states, persistence, protocol and UI details remain unresolved.
+- `PROVEN` — the default accepted contact relationship is between two specific characters.
+- `PROVEN` — accepting one character as a contact does not reveal, add or authorize tracking of alternate characters from the same account.
+- `PROVEN` — an account-wide relationship is a separate optional relationship requiring its own explicit mutual consent.
+- `DERIVED` — exact account-wide permission granularity, cross-world scope, persistence, protocol and UI behavior remain unresolved.
 - `DERIVED` — exact concrete-instance identity, placement, cross-channel membership and migration semantics remain unresolved and must not be inferred from feature availability.
 
 ## Acceptance criteria
@@ -72,8 +75,12 @@ Persist the product owner's accepted identifier, channel/instance, world-scoped 
 - [x] Limit default exact-channel visibility to current party members and mutually accepted contacts/VIP entries.
 - [x] Require explicit invitation acceptance before creating an accepted contact/VIP relationship.
 - [x] Keep contact and party invitation lifecycles separate.
+- [x] Record character-to-character as the default contact scope.
+- [x] Reject automatic alternate-character discovery or contact promotion from one accepted character relationship.
+- [x] Permit account-wide friendship only as a separate optional relationship with distinct mutual consent.
+- [x] Require strong separation between character-contact and account-contact invitation types.
 - [x] Require privacy-safe failure, stale-data handling, rate limits, blocking and abuse controls in later contracts.
-- [x] Keep account-vs-character contact scope, protocol, persistence and UI details unresolved.
+- [x] Keep account-wide permission granularity, cross-world behavior, protocol, persistence and UI details unresolved.
 - [x] Keep UUID/ULID/database-column/wire-width and the remaining catalogue unresolved.
 - [x] Preserve the historical-marker ordering gate.
 - [x] Make no runtime, protocol, schema, migration or external-repository change.
@@ -91,7 +98,7 @@ Persist the product owner's accepted identifier, channel/instance, world-scoped 
 - no Party Finder implementation;
 - no party size, role, invite, matchmaking, teleport, channel reservation, shared-experience or loot contract;
 - no final social-presence service ownership or synchronization protocol;
-- no final account-vs-character contact scope;
+- no final account-wide contact permission model, cross-world scope or alternate-character sharing policy;
 - no client VIP/social-panel implementation;
 - no contact/party invitation persistence or wire schema;
 - no legacy VIP migration;
@@ -132,7 +139,13 @@ Accepted social presence and consent baseline:
 25. contact and party invitations remain separate consent lifecycles;
 26. the client must not receive unauthorized exact placement and cannot be trusted as the privacy-enforcement boundary;
 27. stale presence must fail toward less disclosure;
-28. unilateral legacy VIP tracking with exact presence is rejected.
+28. unilateral legacy VIP tracking with exact presence is rejected;
+29. the default contact relationship is between one explicit requester character and one explicit target character;
+30. accepting one character does not reveal, discover or add alternate characters from the same account;
+31. character contact consent cannot be silently promoted to account-wide consent;
+32. account-wide friendship is a separate optional relationship requiring a distinct invitation and explicit mutual acceptance;
+33. character-contact and account-contact identities and lifecycle transitions must be strongly separated;
+34. account-wide acceptance does not automatically authorize alternate-character disclosure without a later explicit privacy contract.
 
 Draft PR #56 contains only canonical architecture documents and this task record.
 
@@ -177,7 +190,7 @@ Draft PR #56 contains only canonical architecture documents and this task record
 ## Context checkpoint
 
 ```yaml
-last_progress: Owner accepted privacy-first social presence and consent-based VIP/contact invitations; a separate canonical architecture baseline and PR #56 task updates were added without freezing account-vs-character scope or implementation details.
+last_progress: Owner accepted character-to-character contacts by default and a separate opt-in account-wide relationship requiring distinct mutual consent; canonical social-presence baseline and PR #56 task record were updated without freezing implementation details.
 status: validating
 branch: docs/fnd-id-01-owner-baseline
 head_sha: pending-final-validation
