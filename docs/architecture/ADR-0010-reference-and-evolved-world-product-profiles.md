@@ -203,7 +203,7 @@ Rejected because foundational abstractions, content tooling and client UX would 
 
 ## Programme effect
 
-- `FND-01` remains the immediate next action.
+- `FND-01`, `VSL-02` and the atomic destination cutover are complete.
+- The remaining cutover action is the source-only `blakinio/otclient` historical marker; `FND-ID-01` follows after that closeout is merged and verified.
 - This ADR does not authorize implementation by itself.
-- This ADR does not block the controlled client migration because both profiles share the same canonical foundation.
 - Broad gameplay/content design must not contradict this profile model while `GAME-VISION-01` remains unresolved.

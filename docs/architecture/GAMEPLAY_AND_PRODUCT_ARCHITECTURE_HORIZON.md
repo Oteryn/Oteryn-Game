@@ -1,7 +1,7 @@
 # Oteryn v2 Gameplay and Product Architecture Horizon
 
 - Status: Active open-decision horizon
-- Date: 2026-08-05
+- Date: 2026-08-06
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Applies to: gameplay domain, client/product experience, security, operations and release architecture
 
@@ -11,7 +11,7 @@ Ensure that core gameplay and product domains are not omitted while Oteryn v2 re
 
 This document registers required future decisions. It does **not** accept implementation technologies, schemas, algorithms, service boundaries or final gameplay rules. Accepted decisions remain in ADRs and dedicated contracts.
 
-The immediate programme action remains `FND-01`. The gates below become active only when their stated dependencies and milestone require them.
+The immediate programme action is the source-only `blakinio/otclient` historical marker for the completed destination cutover. After that closeout is merged and verified, `FND-ID-01` is the next architecture gate. The gates below become active only when their stated dependencies and milestone require them.
 
 ## Relationship to existing architecture
 

@@ -1,7 +1,7 @@
 # Oteryn v2 Global Architecture Decision Register
 
 - Status: Active coordination register
-- Date: 2026-08-05
+- Date: 2026-08-06
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Canonical foundation programme: `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`
 - Coordinator prompt: `docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md`
@@ -40,14 +40,16 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | `protocol-canary` fixed as reference-only evidence and excluded from every production runtime/dependency/fallback path | `ACCEPTED` | ADR-0008 |
 | GameNode process identity, multithreaded single-writer execution, measured capacity, external orchestration and same-channel fenced recovery baseline | `ACCEPTED` | ADR-0009 |
 | Reference and evolved world product profiles over one engine, client and `protocol-oteryn`, with isolated world-scoped gameplay value | `ACCEPTED` | ADR-0010 and `PRODUCT_DIRECTION_BASELINE.md` |
+| Fail-closed native client state before the accepted gameplay protocol exists | `ACCEPTED` | ADR-0011 |
+| FND-01 workspace contract, VSL-02 migration contract and atomic 19-member destination cutover | `ACCEPTED` | `FND-01_WORKSPACE_AND_RUST_MIGRATION_CONTRACT.md`, `VSL-02_RUST_CLIENT_MIGRATION_AND_CUTOVER_CONTRACT.md` and merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0` |
 
 ## Progressive execution policy
 
-- Before `FND-01`, do not create the canonical root Cargo workspace.
-- After `FND-01`, `VSL-02` is the next mandatory gate; it must pin and reconcile the exact client cutover before shared client/server contracts are frozen.
-- One atomic `blakinio/Oteryn-v2` destination PR must contain the accepted client migration, root-workspace creation/completion, dependency enforcement, ADR-0008 `protocol-canary` exclusion, provenance and exact-head validation; no separate destination bootstrap PR may follow.
-- A later `blakinio/otclient` PR is source-only cutover closeout and may merge only after the verified destination squash merge.
-- Do not create a competing placeholder client or claim a complete canonical workspace before the controlled migration/cutover.
+- `FND-01` and the `VSL-02` destination migration are complete. The canonical 19-member Rust workspace was squash-merged through PR #50 as `78988f72a80cc904aa9176ae850c50d4efa0b0f0`.
+- The migrated client is in the accepted ADR-0011 `pre-native-protocol` state: it launches and fails closed before gameplay credential consumption, routing or transport.
+- `protocol-canary` and a speculative production `protocol-oteryn` adapter are absent from the destination production graph.
+- The remaining cutover action is the source-only historical marker in `blakinio/otclient`; it must point to the exact destination merge and prevent the old path from becoming a second canonical product line.
+- `FND-ID-01` begins only after that source-marker closeout is merged and verified.
 - `FND-ID-01` gates identifier meanings required by protocol and admission contracts after migration.
 - `FND-02`, `FND-03` and `FND-04` independently gate canonical protocol, authoritative runtime and production admission/lease behavior.
 - ADR-0009 fixes the GameNode/process/container boundary and recovery invariants; `PERF-01` gates supported capacity claims and `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production recovery behavior.
@@ -73,7 +75,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 ### `FND-01` — Workspace, Dependency and Existing-Rust Migration Contract
 
-- Status: `BLOCKS_WORKSPACE_BOOTSTRAP`
+- Status: `ACCEPTED`; contract archived and applied by the atomic destination cutover merged as `78988f72a80cc904aa9176ae850c50d4efa0b0f0`.
 - Decide the smallest initial applications, services and crates; every member requires an immediate consumer and observable acceptance.
 - Inventory the exact existing Rust client workspace at a pinned SHA and classify every reusable crate/subsystem as migrate, rename, merge, split, rewrite, reference-only or drop.
 - Apply the binding ADR-0008 classification `protocol-canary = REFERENCE_ONLY`; it may not become a destination production workspace member, dependency, adapter, negotiation candidate, fallback or translation layer.
@@ -89,7 +91,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 ### `VSL-02` — Exact Rust Client Migration and Cutover Contract
 
-- Status: `BLOCKS_WORKSPACE_BOOTSTRAP`
+- Status: `ACCEPTED`; destination migration is complete, while the required source-only `blakinio/otclient` marker remains cross-repository closeout.
 - Execute immediately after `FND-01` and before `FND-ID-01`, `FND-02`, `FND-03` or `FND-04`.
 - Pin the exact cutover source SHA from `blakinio/otclient/oteryn-client` and reconcile every open PR, active task and post-inventory source change.
 - Define provenance/history traceability compatible with squash merge, path mapping, exclusions, migration dispositions, source-repository freeze, destination ownership, cutover and rollback.
@@ -103,7 +105,8 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 ### `FND-ID-01` — Foundation Identifier Vocabulary
 
 - Status: `BLOCKS_LAYER_IMPLEMENTATION` for protocol and admission schemas.
-- Begin only after the accepted client migration/cutover and destination workspace bootstrap/completion.
+- Ordered start condition: merge and verify the source-only `blakinio/otclient` historical marker for the completed destination cutover.
+- The destination workspace bootstrap/completion prerequisite is already satisfied by merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`.
 - Freeze semantic ownership, scope, uniqueness, reuse, durability and visibility for the minimum cross-boundary identifiers.
 - Define canonical comparison and wire/Game Session encoding constraints without prematurely selecting every PostgreSQL column type.
 - Include event, operation, transaction, correlation, causation and pseudonymous analytics identities required by ADR-0006.
@@ -406,4 +409,4 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 
 ## Current next action
 
-Draft and accept `FND-01` — the **Workspace, Dependency and Existing-Rust Migration Contract**. Its terminal next action is `VSL-02`, followed by one atomic destination migration/workspace PR, the source-only cutover marker and only then layer-specific contracts. The registered gameplay/product gates remain ordered future work and do not replace this immediate action.
+Complete and merge the source-only historical marker in `blakinio/otclient` for destination merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`. After that cross-repository closeout is verified, draft and accept `FND-ID-01` — the Foundation Identifier Vocabulary. No `protocol-oteryn`, runtime, admission or durable-gameplay contract may bypass that order.

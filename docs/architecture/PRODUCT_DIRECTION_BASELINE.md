@@ -2,7 +2,7 @@
 
 - Status: Accepted owner direction baseline
 - Canonical decision: ADR-0010
-- Date: 2026-08-05
+- Date: 2026-08-06
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Applies to: product identity, world profiles, rulesets, content planning, parity analysis and future differentiation
 
@@ -274,8 +274,9 @@ These belong to `GAME-VISION-01`, `ALPHA-RULESET-01`, `PROD-COMPAT-01`, `GAME-WO
 
 ## Dependency and programme effect
 
-- `FND-01` remains the immediate programme action.
-- This baseline does not block workspace/client migration because both profiles require the same canonical foundation.
+- `FND-01`, `VSL-02` and the atomic destination cutover are complete.
+- The remaining cutover action is the source-only `blakinio/otclient` historical marker; `FND-ID-01` follows after that closeout is merged and verified.
+- Both profile families continue to share the same canonical workspace, client and foundation.
 - `FND-02` must preserve one `protocol-oteryn` family with profile/ruleset capability references rather than protocol forks.
 - `FND-04` and the Platform World Registry/Game Gateway contract must prevent admission to a world/profile revision different from the one selected and authorized.
 - `DUR-02`, `DUR-03` and `DUR-04` must preserve world/profile isolation and versioned migration.

@@ -93,7 +93,7 @@ The following identifiers are distinct and must never be overloaded:
 - `ChannelId` — stable gameplay channel within a world;
 - `InstanceId` — dungeon, arena, house or other isolated runtime space;
 - `ZoneId` — optional logical map partition;
-- `NodeId` — physical process or host;
+- `NodeId` — logical identity of one GameNode process runtime; it never identifies the physical host, container or orchestrator node;
 - `GameSessionId` — authenticated gameplay session.
 
 A channel may move between nodes without changing its identity. A single node may initially host several channels.

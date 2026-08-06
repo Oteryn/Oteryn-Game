@@ -1,7 +1,7 @@
 # Oteryn v2 Architecture Analysis Gap Register
 
 - Status: Active analysis coverage register
-- Date: 2026-08-05
+- Date: 2026-08-06
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Applies to: product vision, gameplay, client, content, creator tooling, operations, security, production process, community and long-term sustainability
 
@@ -18,7 +18,7 @@ This document distinguishes three states:
 
 This register does not select technologies, formulas, schemas, algorithms, service boundaries, monetization, art direction or final gameplay rules. It does not authorize implementation. Accepted decisions remain in ADRs and dedicated contracts.
 
-The immediate programme action remains `FND-01` — Workspace, Dependency and Existing-Rust Migration Contract. Product and creative analysis may proceed in parallel when it does not redefine accepted foundation boundaries or delay the atomic client migration sequence.
+The immediate programme action is the source-only historical marker in `blakinio/otclient` for the completed destination cutover. After that closeout, `FND-ID-01` is the next architecture gate. Product and creative analysis may proceed in parallel when it does not redefine accepted foundation boundaries or delay that ordered foundation sequence.
 
 ## Already accepted foundation coverage
 
@@ -34,6 +34,7 @@ The following broad foundations are already accepted and therefore are not open 
 - `protocol-canary` as reference-only migration evidence, excluded from target runtime;
 - GameNode process identity, one logical writer per channel, capacity-evidence discipline and recovery baseline.
 - Global Tibia parity as the initial product reference plus optional reference/evolved world profiles over one engine, client and `protocol-oteryn`, with default world-scoped gameplay-value isolation (ADR-0010).
+- the accepted 19-member canonical Rust workspace, ADR-0011 `pre-native-protocol` client state and completed atomic destination cutover merged as `78988f72a80cc904aa9176ae850c50d4efa0b0f0`.
 
 The exact implementation contracts beneath these foundations remain gated where listed below.
 
@@ -43,7 +44,7 @@ The exact implementation contracts beneath these foundations remain gated where 
 
 - Coverage status: **PARTIALLY_ACCEPTED** by ADR-0010 and `PRODUCT_DIRECTION_BASELINE.md`
 - Registered gate: `GAME-VISION-01` — Product Vision, Parity Scope and World Profile Contract
-- Priority: parallel analysis with `FND-01`; must be accepted before broad gameplay and content production
+- Priority: parallel analysis with `FND-ID-01`; must be accepted before broad gameplay and content production
 
 Accepted direction: begin from Global Tibia behavioral parity; permit separate reference and evolved Oteryn worlds over one shared engine/client/protocol; keep gameplay value world-scoped by default.
 
@@ -84,25 +85,26 @@ Still unresolved:
 
 Risk if omitted: renderer, asset format, authoring tools and content budgets may be frozen before the intended presentation is known.
 
-# B. Foundation contracts not yet accepted
+# B. Foundation state and unresolved contracts
 
 ## 3. Workspace, migration and dependency structure
 
-- Coverage status: **REGISTERED_UNRESOLVED**
-- Existing gates: `FND-01`, then `VSL-02`
-- Priority: immediate next programme action
+- Coverage status: **ACCEPTED / CROSS_REPOSITORY_CLOSEOUT_PENDING**
+- Completed gates: `FND-01`, `VSL-02` and the atomic destination cutover
+- Canonical destination merge: `78988f72a80cc904aa9176ae850c50d4efa0b0f0`
+- Remaining action: source-only historical marker in `blakinio/otclient`
 
-Still unresolved:
+Accepted evidence:
 
-- exact inventory and classification of every existing Rust client subsystem;
-- minimal initial workspace members with immediate consumers;
-- legal dependency directions and forbidden edges;
-- crate ownership of domain, identifiers, protocol, fixtures and tooling;
-- toolchain, edition, resolver, lockfile, lint, feature and target policies;
-- machine-readable workspace boundary enforcement;
-- exact cutover SHA, provenance, path mapping, source freeze and rollback;
-- atomic destination migration and later source-only closeout;
-- proof that Canary code remains excluded from the production dependency graph.
+- every existing Rust client subsystem was inventoried and assigned an explicit migration disposition;
+- the accepted 19-member workspace has immediate consumers, pinned toolchain/lockfile policy and machine-enforced dependency boundaries;
+- provenance, exact source SHA, path mapping, transformation evidence and rollback are retained;
+- `protocol-canary` is absent from the production workspace graph and release path;
+- the migrated client is explicitly `pre-native-protocol` and fails closed before gameplay credential consumption, routing or transport.
+
+Still unresolved only as cross-repository closeout:
+
+- merge a source-only `blakinio/otclient` marker pointing to the exact destination merge and preventing the old path from becoming a second canonical product line.
 
 ## 4. Identifier, protocol, runtime and admission contracts
 
@@ -652,8 +654,9 @@ Still unresolved:
 
 ## Track 0 — immediate
 
-1. `FND-01` — workspace, dependency and existing-client migration contract.
-2. `GAME-VISION-01` — refine ADR-0010 into measurable parity scope, product pillars and launch strategy, in parallel without blocking workspace analysis.
+1. Complete the source-only `blakinio/otclient` marker for the merged destination cutover.
+2. `FND-ID-01` — foundation identifier vocabulary.
+3. `GAME-VISION-01` — refine ADR-0010 into measurable parity scope, product pillars and launch strategy in parallel without blocking identifier analysis.
 
 ## Track 1 — before durable gameplay schemas freeze
 
@@ -725,4 +728,4 @@ When a dedicated gate is accepted:
 2. change the corresponding coverage status to **ACCEPTED** or remove duplicated question detail in favour of the canonical contract;
 3. reconcile the global decision register and gameplay/product horizon;
 4. preserve unresolved adjacent questions rather than silently absorbing them;
-5. keep `FND-01` as the immediate next action until its own accepted contract explicitly advances the programme.
+5. derive the immediate next action from merged task/ADR evidence and update this register whenever a completed gate advances the programme.
