@@ -98,7 +98,6 @@ Accepted rules:
 - an account-wide relationship requires a distinct invitation and explicit acceptance by both sides;
 - account-wide acceptance must be clearly distinguishable in the client from accepting one character as a contact;
 - neither an account identifier nor ownership linkage may be exposed merely to prove that an account-wide relationship exists;
-- an account-wide relationship must not automatically disclose all alternate characters; any alt discovery or roster sharing requires an explicit later privacy rule and must respect per-character visibility controls;
 - rejection, expiry, revocation or blocking of an account-wide request must not alter unrelated character-scoped relationships unless the user explicitly chooses a broader action;
 - removing a character-scoped relationship must not silently revoke a separately accepted account-wide relationship, and removing an account-wide relationship must not silently recreate or delete character relationships without an explicit lifecycle rule;
 - party, guild, house, trade and moderation relationships remain separate from both character-scoped and account-wide contact consent.
@@ -115,6 +114,36 @@ AccountContact
 
 The concrete identifier types, storage model and public representation remain future contract work. Strong typing must prevent a character request from being interpreted as an account request or vice versa.
 
+## Accepted alternate-character privacy default
+
+The project owner accepted on 2026-08-06 that alternate characters remain hidden by default even after two users establish a mutually accepted account-wide relationship.
+
+Accepted rules:
+
+- account-wide friendship does not automatically expose the names, identities, presence, world placement, channel placement, activity or ownership linkage of alternate characters;
+- the default alternate-character visibility policy is `HIDDEN`;
+- only the owner of an account may widen alternate-character visibility through an explicit privacy setting or an explicit per-contact/per-character sharing action;
+- changing alternate-character visibility must be a deliberate user action and must not be inferred from accepting account friendship, joining a party, joining a guild, messaging, trading or sharing one character;
+- the user must be able to keep selected characters hidden even if broader account-level sharing is enabled;
+- a future client must clearly distinguish between sharing all eligible characters, selected characters and no alternate characters;
+- the owner may revoke previously granted alternate-character visibility without ending the underlying account-wide relationship;
+- revocation and privacy-setting changes must invalidate cached roster, presence and ownership-linkage data promptly and fail toward less disclosure;
+- a contact must not be able to discover hidden alternate characters through search, invitation responses, Party Finder, guild rosters, timing, sequential identifiers, shared transport endpoints or error differences;
+- the server must enforce alternate-character privacy before sending data; hiding an already transmitted roster only in the client is insufficient;
+- newly created characters remain hidden unless the owner's active policy explicitly and safely includes them;
+- account recovery, ownership transfer, account merge/split or moderation actions must not silently broaden alternate-character visibility;
+- privileged operational access to account-character linkage requires separate authorization and audit and does not create social visibility.
+
+A later contract must define the exact user-facing options, but the semantic default is fixed:
+
+```text
+AccountContact accepted
+    does not imply alternate-character disclosure
+
+Alternate-character disclosure
+    requires a separate owner-controlled opt-in policy
+```
+
 ## VIP list becomes a consent-based social surface
 
 The client may retain the familiar `VIP` name for usability, but semantically it becomes a consent-based contact/social surface rather than a unilateral tracking list.
@@ -123,6 +152,7 @@ It may present, subject to authorization and privacy settings:
 
 - accepted character contacts;
 - separately accepted account-wide contacts where the feature is enabled;
+- only those alternate characters that their owner explicitly shared under the active privacy policy;
 - pending incoming and outgoing contact invitations with their relationship scope clearly identified;
 - coarse online/offline or privacy-preserving presence;
 - exact channel only where authorized;
@@ -137,15 +167,15 @@ The authoritative game domain owns current gameplay placement. Platform identity
 
 A later contract must define:
 
-- the authoritative owner of character-contact, account-contact and privacy-preference records;
+- the authoritative owner of character-contact, account-contact, alternate-character-sharing and privacy-preference records;
 - how Platform and game services exchange only the minimum necessary identity and presence data;
-- revisioned presence updates and stale-update rejection;
+- revisioned presence and sharing-policy updates with stale-update rejection;
 - reconnect, channel-change, instance-entry and logout transitions;
 - timeout behavior when presence becomes uncertain;
 - privacy-preserving cache invalidation;
-- audit events for privileged presence access and abuse-relevant invitation actions.
+- audit events for privileged presence, account-linkage and alternate-character access and for abuse-relevant invitation actions.
 
-A stale presence record must fail toward less disclosure. It must not keep exposing an old exact channel after authorization, party membership or contact status has ended.
+A stale presence or sharing record must fail toward less disclosure. It must not keep exposing an old exact channel, alternate-character roster or ownership linkage after authorization, party membership, contact status or sharing permission has ended.
 
 ## Relationship to world-scoped parties
 
@@ -157,7 +187,7 @@ The accepted world-scoped party model remains unchanged:
 - shared open-world simulation still requires one common channel;
 - shared instanced simulation requires one common concrete instance under later contracts.
 
-The social presence model supports this by allowing an authorized party member to see enough placement information to coordinate, without making exact placement public to the whole world.
+The social presence model supports this by allowing an authorized party member to see enough placement information to coordinate, without making exact placement public to the whole world or revealing unrelated alternate characters.
 
 ## Privacy and abuse requirements
 
@@ -167,11 +197,11 @@ Later implementation contracts must include at least:
 - safe defaults;
 - contact-invite and party-invite rate limits;
 - block lists and anti-harassment handling;
-- no presence or account-linkage enumeration through sequential identifiers, timing, search errors or invitation responses;
-- bounded retention for invitation and presence history;
+- no presence, account-linkage or alternate-character enumeration through sequential identifiers, timing, search errors or invitation responses;
+- bounded retention for invitation, presence and sharing history;
 - pseudonymous analytics where exact character or account identity is unnecessary;
 - role-separated access for moderation, support, analytics and operations;
-- durable audit for privileged exact-location or account-linkage access;
+- durable audit for privileged exact-location, account-linkage or alternate-character access;
 - protection against using social APIs to locate streamers, PvP targets, moderators or players who chose restricted visibility.
 
 ## Deliberately unresolved
@@ -185,8 +215,9 @@ This baseline does not yet decide:
 - exact invitation expiry, limits and cooldowns;
 - exact presence states and user-interface wording;
 - whether accepted contacts see exact channel automatically or only after an additional per-contact permission;
-- which account-wide permissions, if any, may be configured independently for presence, messaging, invitations or alternate-character discovery;
-- whether an account-wide relation creates derived character contacts, a shared roster view or neither;
+- the exact alternate-character sharing controls, such as global account policy, per-contact policy, per-character allowlist or a controlled combination;
+- whether sharing may expose identity only, coarse presence, exact channel, messaging availability or separate permission tiers;
+- whether an account-wide relation creates derived character contacts or only an authorized account-level social edge;
 - guild, alliance, house, mentor, family or staff visibility policies;
 - whether instance identity or only a generic `in instance` state may be shown;
 - privacy behavior for Party Finder listings;
@@ -218,6 +249,14 @@ Rejected because consent to contact one character is not consent to reveal or fo
 
 Rejected because an account-wide relationship is a separate optional relationship requiring its own clear, mutual acceptance.
 
+### Reveal alternate characters automatically after account-wide acceptance
+
+Rejected because account friendship and alternate-character disclosure are separate permissions. Alternate characters remain hidden until their owner deliberately widens visibility.
+
+### Let the client hide an already disclosed alternate-character roster
+
+Rejected because unauthorized account-character linkage must not be sent to the client in the first place.
+
 ### Couple contacts and parties into one lifecycle
 
 Rejected because permanent social relationships and temporary gameplay groups have different consent, expiry and removal semantics.
@@ -239,7 +278,9 @@ Rejected because stale data must fail toward less disclosure.
 - The default contact relationship is character-to-character.
 - Contacting one character does not reveal or add alternate characters from the same account.
 - Account-wide friendship is a separate optional relationship requiring distinct mutual consent.
+- Alternate characters remain hidden by default even after account-wide friendship is accepted.
+- Alternate-character disclosure requires a separate owner-controlled privacy setting or explicit sharing action and may be revoked independently.
 - Party invitations remain separate accept/decline operations.
 - The legacy unilateral VIP-tracking model is not the target behavior.
-- Cross-world scope, account-wide permission granularity, storage, protocol and UI details remain future contract work.
+- Cross-world scope, exact sharing-control granularity, storage, protocol and UI details remain future contract work.
 - No implementation is authorized by this document.
