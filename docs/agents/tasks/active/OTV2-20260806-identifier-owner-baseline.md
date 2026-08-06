@@ -13,7 +13,7 @@ base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
 architecture_head_reviewed: 7690f5653a1d5de0aa25528a4185c94618cfbec8
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
-updated_at: 2026-08-06T17:39:00+02:00
+updated_at: 2026-08-06T19:42:00+02:00
 owned_paths:
   - docs/architecture/FND-ID-01_OWNER_ACCEPTED_BASELINE.md
   - docs/architecture/INSTANCE_SCOPE_AND_RUNTIME_OWNER_BASELINE.md
@@ -116,7 +116,7 @@ Persist the product owner's accepted identifier, channel, world-scoped party, in
 
 - base: `26b5fa275fba19fdee0e26a6f65263489af3e500`;
 - architecture head reviewed: `7690f5653a1d5de0aa25528a4185c94618cfbec8`;
-- comparison: 37 commits ahead, 0 behind;
+- comparison: architecture decision files unchanged after audit; later commits affect only this bounded task record;
 - changed files: exactly four declared Markdown files;
 - runtime/component validation: `NOT_APPLICABLE` because this PR contains architecture documentation only.
 
@@ -127,9 +127,14 @@ Persist the product owner's accepted identifier, channel, world-scoped party, in
 
 ### Exact-head CI
 
-- required workflows: Agent governance, Dependency review and CodeQL as selected by live repository configuration;
-- result: must be `PASS` on the exact unchanged head produced by this checkpoint before merge;
-- live GitHub state is authoritative for the final head and run conclusions.
+- required protected-branch status from live ruleset: `Agent governance / validate`;
+- `Dependency review` completed successfully on checkpoint head `353955a5d7010f0dd9a0342e4aa3454c0eb6bf6e`;
+- CodeQL is additional evidence but is not a required status in the active `Protect main` ruleset;
+- first governance and CodeQL actions-language jobs failed before checkout because GitHub returned `Service Unavailable` while resolving action download information;
+- rerun governance job `92672535025` remained orphaned with `runner_id: 0`, no runner name and no steps started;
+- closing and reopening PR #56 preserved the stale run instead of creating a new workflow generation;
+- this checkpoint-only commit intentionally creates a fresh `pull_request.synchronize` event without changing any architecture decision;
+- final result must be `PASS` on the new exact unchanged head before merge.
 
 ## Independent audit
 
@@ -140,12 +145,19 @@ Persist the product owner's accepted identifier, channel, world-scoped party, in
 - open material findings: none;
 - verdict: `PASS_ZERO_MATERIAL_FINDINGS`.
 
-The final checkpoint-only task-record commit must receive exact-head CI and a delta audit confirming that it changes no architecture decision.
+Delta audit for this checkpoint-only commit:
+
+- scope: task-record timestamp, live CI evidence and recovery state only;
+- architecture decisions changed: none;
+- public contract semantics changed: none;
+- runtime, protocol, persistence or client behavior changed: none;
+- open material findings: none;
+- verdict: `PASS_ZERO_MATERIAL_FINDINGS`.
 
 ## PR and closeout
 
 - PR: #56;
-- state before final checks: open, draft, mergeable;
+- state before final checks: open and auto-merge enabled;
 - review comments and inline threads: none at audit time;
 - merge method: squash after exact-head PASS;
 - post-merge requirement: archive this task and release the owned paths.
@@ -153,18 +165,18 @@ The final checkpoint-only task-record commit must receive exact-head CI and a de
 ## Context checkpoint
 
 ```yaml
-last_progress: All accepted identifier, instance-map, physical-trigger, Party Finder, seamless-handoff and social-privacy decisions were reconciled and passed an adversarial architecture audit with zero material findings.
+last_progress: Recovered from an orphaned GitHub Actions retry by creating a checkpoint-only synchronize commit; architecture documents and accepted decisions remain unchanged.
 status: ready
 branch: docs/fnd-id-01-owner-baseline
 architecture_head_reviewed: 7690f5653a1d5de0aa25528a4185c94618cfbec8
 pr: 56
-ci_check_generation: pending for checkpoint-only final head
+ci_check_generation: pending for fresh synchronize head
 ci_checks_for_current_head: 0
-terminal_ci_wait_started_at: 2026-08-06T17:39:00+02:00
+terminal_ci_wait_started_at: 2026-08-06T19:42:00+02:00
 unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-stall_warnings: 0
+identical_failure_retries: 2
+repair_cycles_for_current_gate: 1
+stall_warnings: 1
 blocker: null
-next_action: Verify the checkpoint-only final diff, obtain exact-head PASS from all required GitHub checks, record the external audit verdict on PR #56, squash-merge, then archive the task and release ownership.
+next_action: Obtain exact-head PASS from Agent governance, verify unchanged head and review hygiene, allow squash auto-merge, then archive the task and release ownership.
 ```
