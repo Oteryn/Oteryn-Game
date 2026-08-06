@@ -10,10 +10,10 @@ base_branch: main
 branch: docs/fnd-id-01-owner-baseline
 pr: 56
 base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
-head_sha: 6d8e15b88e5aeec750430dad675373d8fb16494d
+head_sha: 1a8f2c412e1ff035f819d7fb92a26040a688ff64
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
-updated_at: 2026-08-06T14:24:00+02:00
+updated_at: 2026-08-06T14:36:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -32,7 +32,7 @@ external_repositories:
 
 ## Outcome
 
-Persist the product owner's accepted four-class identifier model as a canonical architecture input without falsely claiming that the complete `FND-ID-01` gate has started or finished.
+Persist the product owner's accepted identifier model as canonical architecture input without falsely claiming that the complete `FND-ID-01` gate has started or finished.
 
 ## Architecture and source of truth
 
@@ -40,16 +40,20 @@ Persist the product owner's accepted four-class identifier model as a canonical 
 - `PROVEN` — the canonical destination workspace and client cutover are complete.
 - `PROVEN` — the global register still requires the source-only `blakinio/otclient` historical marker before the full `FND-ID-01` package begins.
 - `PROVEN` — the owner accepted the four-class identifier baseline on 2026-08-06.
-- `DERIVED` — the accepted baseline may be recorded now as mandatory input while representation, exact type choice and the complete identifier catalogue remain unresolved.
+- `PROVEN` — the owner accepted that `WorldId` is globally unique and that channels are assigned to their world, making `WorldId + ChannelId` the canonical semantic channel identity.
+- `DERIVED` — the accepted baseline may be recorded now as mandatory input while representation, exact type choice and the remaining identifier catalogue stay unresolved.
 
 ## Acceptance criteria
 
-- [x] Record the four identifier classes and cross-cutting invariants exactly enough to govern later analysis.
-- [x] Keep UUID/ULID/database-column/wire-width and complete catalogue choices unresolved.
+- [x] Record the four identifier classes and cross-cutting invariants.
+- [x] Record `WorldId` as globally unique durable identity.
+- [x] Record `ChannelId` as semantically scoped by `WorldId`, regardless of technical global uniqueness.
+- [x] Require channel-boundary validation to preserve the world binding.
+- [x] Keep UUID/ULID/database-column/wire-width and the remaining catalogue unresolved.
 - [x] Preserve the historical-marker ordering gate.
 - [x] Make no runtime, protocol, schema, migration or external-repository change.
-- [x] Review the exact branch diff and open a documentation-only PR.
-- [ ] Obtain repository validation and independent audit before merge.
+- [x] Open documentation-only draft PR #56.
+- [ ] Obtain exact-head repository validation and independent audit before merge.
 
 ## Excluded scope
 
@@ -58,31 +62,29 @@ Persist the product owner's accepted four-class identifier model as a canonical 
 - no PostgreSQL representation;
 - no Game Session or lease token format;
 - no write to `blakinio/otclient`;
-- no claim that `FND-ID-01` is accepted or complete.
+- no claim that the complete `FND-ID-01` contract is accepted or complete.
 
 ## Implementation / findings
 
-The owner accepted this baseline:
+Accepted identifier baseline:
 
 1. durable cross-boundary identities are stable, immutable, non-reused and semantically opaque;
 2. scoped identities are meaningful only with their owning scope;
 3. runtime-local references use generation-fenced handles and never escape as durable/public identity;
 4. revisions, generations and sequences are ordering/fencing values, not entity identities;
-5. names, slugs and display numbers are labels or lookup aliases, not canonical identity.
+5. names, slugs and display numbers are labels or lookup aliases, not canonical identity;
+6. `WorldId` globally identifies one logical world;
+7. every channel is assigned to one logical world and its canonical semantic identity is `WorldId + ChannelId`;
+8. a globally unique technical `ChannelId` representation does not permit dropping the `WorldId` binding.
 
-The exact branch comparison against `main` contained only:
-
-- `docs/architecture/FND-ID-01_OWNER_ACCEPTED_BASELINE.md`;
-- `docs/agents/tasks/active/OTV2-20260806-identifier-owner-baseline.md`.
-
-Draft PR #56 records the change and keeps merge blocked on repository validation and independent audit.
+Draft PR #56 contains only the architecture baseline and this task record.
 
 ## Validation
 
 ### Focused
 
-- command/run: GitHub compare `26b5fa275fba19fdee0e26a6f65263489af3e500...docs/fnd-id-01-owner-baseline`
-- result: `PASS` — two new Markdown files, 393 additions, no deletions, no executable or external-repository change
+- command/run: exact branch comparison against task-start `main`
+- result: pending final-head refresh; expected scope remains two Markdown files only
 
 ### Component/integration
 
@@ -109,7 +111,7 @@ Draft PR #56 records the change and keeps merge blocked on repository validation
 
 ## PR and closeout
 
-- changed-file review: `PASS` for the initial PR head
+- changed-file review: pending final-head refresh
 - unresolved review threads: pending
 - related/superseded PRs: none identified
 - merge commit/result: pending
@@ -118,10 +120,10 @@ Draft PR #56 records the change and keeps merge blocked on repository validation
 ## Context checkpoint
 
 ```yaml
-last_progress: Draft PR #56 opened with the owner-accepted four-class identifier baseline and a documentation-only changed-file review.
+last_progress: Owner accepted globally unique WorldId and world-scoped channel identity; canonical baseline and PR #56 were updated.
 status: validating
 branch: docs/fnd-id-01-owner-baseline
-head_sha: 6d8e15b88e5aeec750430dad675373d8fb16494d
+head_sha: 1a8f2c412e1ff035f819d7fb92a26040a688ff64
 pr: 56
 ci_check_generation: pending after checkpoint update
 ci_checks_for_current_head: 0
@@ -131,6 +133,6 @@ unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 stall_warnings: 0
-blocker: Full FND-ID-01 remains ordered after the source-only blakinio/otclient historical marker; this PR additionally requires exact-head validation and independent audit before merge.
-next_action: Verify the exact final PR head and repository validation state.
+blocker: Full FND-ID-01 remains ordered after the source-only blakinio/otclient historical marker; PR #56 also requires exact-head validation and independent audit before merge.
+next_action: Verify the final PR head, changed-file scope and repository validation state.
 ```
