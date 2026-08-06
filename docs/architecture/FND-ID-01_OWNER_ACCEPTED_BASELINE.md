@@ -80,6 +80,32 @@ Consequences:
 
 This decision freezes semantic scope only. It does not yet choose the representation, generation algorithm, width, database key shape or wire encoding of either identifier.
 
+### Accepted channel and instance relationship
+
+The project owner clarified on 2026-08-06 that channels remain the selected primary topology for one logical world. Instances are not an alternative world-partitioning model and do not replace channels.
+
+Accepted boundary:
+
+- the normal persistent world is exposed through channels;
+- channels remain the primary mechanism for distributing players without permanently splitting the logical world, community, characters or economy;
+- an instance is an optional isolated gameplay context, such as a dungeon, arena, boss room, quest scenario or event space;
+- instance-capable gameplay may be available to players on every channel;
+- the existence of instances must not create a second independent logical world, economy or character namespace;
+- entering an instance does not by itself change the player's `WorldId`;
+- instance state, membership, visibility and lifecycle must be explicit rather than inferred only from map coordinates;
+- the runtime may place instance execution within the accepted GameNode/channel topology, but placement is not automatically the same thing as semantic identity.
+
+This clarification deliberately does not yet decide:
+
+- whether one concrete instance is permanently bound to the originating `ChannelId`;
+- whether players from different channels may join the same concrete instance;
+- whether a running instance may be moved between channels or GameNodes while preserving identity;
+- whether the canonical identity is `WorldId + InstanceId` or `WorldId + ChannelId + InstanceId`;
+- whether any instance state is durable across process restart, maintenance or long inactivity;
+- whether returning from an instance restores the originating channel or allows a separately validated channel selection.
+
+Therefore, “instances can exist on every channel” means that the feature is available across the channel topology. It does not yet mean that one concrete instance simultaneously exists on every channel, is automatically shared across channels or is freely portable between them.
+
 ### Class 3 — Runtime-local generational handle
 
 A runtime-local handle addresses transient in-memory state owned by one runtime boundary.
@@ -239,6 +265,7 @@ This baseline is mandatory input to:
 The following remain open and must not be inferred from this baseline:
 
 - the exact minimum identifier catalogue beyond the accepted `WorldId` and world-scoped `ChannelId` semantics;
+- the exact semantic scope and lifecycle of `InstanceId`, including its relationship to `ChannelId`;
 - which other durable identities are globally unique versus semantically scoped;
 - UUID, ULID, integer, random, time-ordered or mixed generation strategy;
 - byte width and canonical binary/text encoding;
@@ -269,6 +296,10 @@ Rejected because world, channel, instance, package, revision and runtime scopes 
 
 Rejected because a channel belongs to a logical world and its canonical semantic identity is `WorldId + ChannelId`. A globally unique technical encoding does not authorize omitting or bypassing the world binding.
 
+### Treat instances as a replacement for channels
+
+Rejected because channels are the accepted primary world topology. Instances are optional isolated gameplay contexts available within that topology and must not create competing worlds or permanent community partitions.
+
 ### Persist runtime handles
 
 Rejected because handle reuse and runtime lifecycle make them unsafe as durable or cross-process identity.
@@ -285,6 +316,8 @@ Rejected because mutable semantics, routing, authorization and privacy must rema
 
 - This owner-accepted baseline is canonical input to `FND-ID-01`.
 - The accepted channel identity rule is `WorldId + ChannelId`.
+- Channels remain the primary world topology; instances are optional gameplay contexts that may be offered across all channels.
+- Exact `InstanceId` scope, cross-channel membership and placement semantics remain unresolved.
 - It does not change the current ordered next action.
 - The source-only `blakinio/otclient` historical marker remains required before the complete `FND-ID-01` package begins.
 - No implementation is authorized by this document.
