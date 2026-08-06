@@ -35,11 +35,11 @@ Where an older unresolved-item list conflicts with this accepted baseline, this 
 
 ## Accepted primary rule
 
-Every semantic entity for which Oteryn-v2 is the accepted identity authority and which can cross a process, service, GameNode, protocol, persistence, durable-event, audit, migration, backup or recovery boundary uses a strongly typed UUIDv7 as its canonical durable identity.
+Every independently addressable semantic entity for which Oteryn-v2 is the accepted identity authority and whose identity must survive or cross a process, service, GameNode, protocol, persistence, durable-event, audit, migration, backup or recovery boundary uses a strongly typed UUIDv7 as its canonical durable identity.
 
 A cross-repository or externally owned identity adopts UUIDv7 only through its authoritative contract or an explicitly accepted coordinated migration. Oteryn-v2 does not silently re-key identities owned by Platform or another accepted authority.
 
-The rule is based on lifecycle, authority and boundary crossing, not on whether the entity is currently large, small, common or rare.
+The rule is based on lifecycle, authority, independent addressability and boundary crossing, not on whether the entity is currently large, small, common or rare.
 
 A durable identity is:
 
@@ -49,6 +49,29 @@ A durable identity is:
 - generated without a central global sequence service;
 - compared only through its strong semantic type and required scope;
 - independent from current process, memory address, database row position, GameNode, channel placement, display name and mutable business state.
+
+## Aggregate and snapshot boundary
+
+Serialization or transfer does not automatically make every nested field or transient runtime object an independently durable entity.
+
+State may cross a GameNode, persistence or recovery boundary as part of one authoritative aggregate. Examples include creatures, timers, effects, encounter mechanics and short-lived projectiles serialized inside an instance snapshot owned by:
+
+```text
+WorldId + InstanceId + instance ownership generation + SnapshotId + snapshot revision
+```
+
+Such nested state may use snapshot-local or aggregate-local handles and references when all of the following hold:
+
+- it is not independently addressed outside the owning aggregate;
+- it has no independent durable lifecycle, authorization boundary or external reference;
+- the snapshot validates reference closure and generation;
+- the destination reconstructs or remaps handles under one fenced ownership transition;
+- stale source handles cannot be used after destination commit;
+- audit and recovery can identify the owning aggregate and snapshot without inventing a global identity for every nested object.
+
+An entity requires its own UUIDv7 when it becomes independently addressable, externally referenced, separately persisted, separately recoverable, independently authorized or durable beyond the owning aggregate lifecycle.
+
+This distinction prevents instance migration or snapshotting from assigning UUIDv7 to every monster, timer, effect, tile or pathfinding node.
 
 ## Candidate catalogue direction
 
@@ -69,7 +92,8 @@ Subject to the complete ownership and lifecycle catalogue in `FND-ID-01`, UUIDv7
 - `QuestRunId`, `BossAttemptId` and `LockoutId`;
 - `RewardGrantId` and `LootSettlementId`;
 - `TransactionId`, `OperationId`, `EventId`, `SnapshotId` and `RecoveryCaseId`;
-- durable social relationship, invitation and Party Finder entry identities where a separate semantic entity exists.
+- durable social relationship, invitation and Party Finder entry identities where a separate semantic entity exists;
+- a creature, summon, companion or other gameplay entity only when its accepted lifecycle is independently durable rather than nested runtime state.
 
 This list establishes a representation direction but does not assign ownership by itself. The complete `FND-ID-01` catalogue must prove that each candidate represents a real semantic lifecycle and name exactly one authoritative owner or coordinated issuer.
 
@@ -151,8 +175,9 @@ Accepted constraints:
 
 - a handle is valid only inside its named runtime/allocation domain;
 - stale handles fail after slot reuse because generation is checked;
-- handles are not persisted as durable identity;
-- handles do not cross process or GameNode boundaries as sole identity;
+- handles are not persisted as independent durable identity;
+- handles do not cross process or GameNode boundaries as sole globally meaningful identity;
+- aggregate/snapshot-local handles may be serialized only inside a closed, validated and generation-fenced snapshot envelope and are remapped or revalidated at the destination;
 - a durable entity may simultaneously have UUIDv7 identity and a local runtime handle;
 - exact handle width and index/generation bit allocation remain performance decisions for `FND-03` and benchmark evidence.
 
@@ -167,7 +192,7 @@ Accepted constraints:
 - session handles are scoped to one negotiated session/context and cannot be reused as durable identity;
 - remapping, invalidation, snapshot reset and stale-handle behavior are explicit;
 - reconnect and handoff either preserve a safely fenced mapping or establish a new mapping through an authoritative snapshot;
-- cross-service, persistence, audit and recovery records retain canonical durable identities;
+- cross-service, persistence, audit and recovery records retain canonical durable aggregate identities and independently durable entity identities;
 - exact handle width, binary encoding and reuse policy remain owned by `FND-02` and `FND-04`.
 
 ## Ordering, revision and fencing values
@@ -226,6 +251,7 @@ Accepted database constraints for later `DUR-01` work:
 - auxiliary local surrogate keys, partition keys or ordering columns may be introduced only as physical optimizations and never replace canonical semantic identity at system boundaries;
 - all uniqueness, foreign-reference, index, WAL, replication, backup and archival costs must be measured on representative datasets;
 - large event and item tables may combine UUIDv7 identity with separately scoped sequence/time/partition columns;
+- nested snapshot state may be stored under its aggregate and snapshot identity without a standalone UUID for every nested runtime object;
 - exact primary-key, clustering, partitioning and index choices remain owned by `DUR-01` through `DUR-03`.
 
 ## Wire and serialization baseline
@@ -237,8 +263,9 @@ Accepted constraints:
 - binary protocols prefer a canonical 16-byte representation rather than a 36-character textual UUID;
 - endianness, canonical byte order, IDL and textual formatting are frozen by `FND-02`, not inferred by implementations;
 - frequent gameplay deltas use compact session handles where the session context already establishes identity;
+- aggregate snapshots may use closed snapshot-local reference tables for nested non-durable state;
 - logs and operator tooling may render a canonical textual form, subject to privacy and redaction policy;
-- no lossy truncation, hashing or implicit conversion is permitted as identity.
+- no lossy truncation, hashing or implicit conversion is permitted as durable identity.
 
 ## Generator ownership
 
@@ -290,22 +317,23 @@ Accepted constraints:
 
 ## Capacity and performance principle
 
-UUIDv7 is chosen for durable identity, not for every hot-path reference.
+UUIDv7 is chosen for durable identity, not for every hot-path reference or every nested snapshot object.
 
 The architecture must preserve player capacity by ensuring that:
 
 - hot simulation structures use compact generational handles;
 - frequent network messages use session-local handles;
 - content and map hot paths use compact revision-scoped identifiers;
-- UUID generation does not occur per tick, per tile, per pathfinding node or per transient visual effect unless the object genuinely becomes a durable cross-boundary entity;
+- nested runtime state uses aggregate/snapshot-local references when it has no independent durable lifecycle;
+- UUID generation does not occur per tick, per tile, per pathfinding node or per transient visual effect unless the object genuinely becomes an independently addressable durable cross-boundary entity;
 - durable UUID lookups are moved off hot loops or cached/mapped under authoritative ownership where safe;
 - memory layout, cache behavior, hashing, serialization, database indexes and network bandwidth are measured with representative workloads.
 
 Later capacity work must compare at minimum:
 
-1. UUIDv7 used directly in hot runtime structures;
+1. UUIDv7 used directly in hot runtime structures and nested snapshot objects;
 2. compact numeric identities without a coherent boundary model;
-3. the accepted hybrid: durable UUIDv7 plus runtime/session/content handles and `u64` ordering values.
+3. the accepted hybrid: durable UUIDv7 plus aggregate-local, runtime, session and content handles and `u64` ordering values.
 
 The accepted hybrid is the architectural default. Benchmarks may optimize physical representation and indexing but may not remove an accepted canonical durable UUIDv7 identity without a new architecture decision.
 
@@ -314,6 +342,8 @@ The accepted hybrid is the architectural default. Benchmarks may optimize physic
 The following remain open for complete contracts and implementation evidence:
 
 - the final exhaustive durable identifier catalogue and owner/issuer matrix;
+- exact aggregate boundaries and which gameplay entities require independent durable identity;
+- snapshot-local reference tables, closure validation and destination remapping rules;
 - exact lifecycle and retention of each identity;
 - compatibility and migration for current Platform-owned or legacy identifiers;
 - whether each coordinated `WorldId`, `ChannelId`, `GameSessionId`, admission and lease identifier adopts UUIDv7 immediately or through migration;
@@ -338,6 +368,10 @@ Rejected because ticks, generations, revisions, sequences, indexes and fencing v
 ### UUIDv7 as the primary hot-loop handle
 
 Rejected because runtime-local generational handles provide better cache locality, stale-reference detection and capacity without weakening durable identity.
+
+### UUIDv7 for every object serialized in a snapshot
+
+Rejected because nested non-durable state may cross a boundary as part of one fenced aggregate snapshot without becoming independently addressable durable identity.
 
 ### UUIDv7 in every frequent gameplay packet
 
@@ -369,8 +403,9 @@ Rejected because PostgreSQL native `uuid` is the canonical physical baseline for
 
 ## Programme effect
 
-- The durable identity representation question is accepted for Oteryn-owned identities: durable cross-boundary identities use strongly typed UUIDv7.
+- The durable identity representation question is accepted for Oteryn-owned identities: independently addressable durable cross-boundary entities use strongly typed UUIDv7.
 - Cross-repository and Platform-owned identities adopt UUIDv7 only through their authoritative coordinated contract or migration.
+- Nested state crossing a boundary inside one fenced aggregate snapshot does not automatically receive an independent UUIDv7.
 - UUIDv7 does not erase `WorldId` scope for channels, instances or parties.
 - Runtime entities use local generational handles.
 - Frequent gameplay protocol references use session-local handles.
