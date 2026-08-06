@@ -10,10 +10,10 @@ base_branch: main
 branch: docs/fnd-id-01-owner-baseline
 pr: 56
 base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
-head_sha: 1a8f2c412e1ff035f819d7fb92a26040a688ff64
+head_sha: 40cb8f3cf1fe84193cfc4c3183318fc76e793d6e
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
-updated_at: 2026-08-06T14:36:00+02:00
+updated_at: 2026-08-06T14:43:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -32,7 +32,7 @@ external_repositories:
 
 ## Outcome
 
-Persist the product owner's accepted identifier model as canonical architecture input without falsely claiming that the complete `FND-ID-01` gate has started or finished.
+Persist the product owner's accepted identifier and channel/instance baseline as canonical architecture input without falsely claiming that the complete `FND-ID-01` gate has started or finished.
 
 ## Architecture and source of truth
 
@@ -41,7 +41,9 @@ Persist the product owner's accepted identifier model as canonical architecture 
 - `PROVEN` — the global register still requires the source-only `blakinio/otclient` historical marker before the full `FND-ID-01` package begins.
 - `PROVEN` — the owner accepted the four-class identifier baseline on 2026-08-06.
 - `PROVEN` — the owner accepted that `WorldId` is globally unique and that channels are assigned to their world, making `WorldId + ChannelId` the canonical semantic channel identity.
-- `DERIVED` — the accepted baseline may be recorded now as mandatory input while representation, exact type choice and the remaining identifier catalogue stay unresolved.
+- `PROVEN` — the owner clarified that channels, rather than instances, remain the selected primary topology for the logical world.
+- `PROVEN` — instances remain a useful optional gameplay mechanism that may be available to players on every channel.
+- `DERIVED` — exact concrete-instance identity, placement, cross-channel membership and migration semantics remain unresolved and must not be inferred from feature availability.
 
 ## Acceptance criteria
 
@@ -49,6 +51,9 @@ Persist the product owner's accepted identifier model as canonical architecture 
 - [x] Record `WorldId` as globally unique durable identity.
 - [x] Record `ChannelId` as semantically scoped by `WorldId`, regardless of technical global uniqueness.
 - [x] Require channel-boundary validation to preserve the world binding.
+- [x] Record channels as the primary world topology.
+- [x] Record instances as optional isolated gameplay contexts available across the channel topology.
+- [x] Keep concrete `InstanceId` scope and channel relationship unresolved.
 - [x] Keep UUID/ULID/database-column/wire-width and the remaining catalogue unresolved.
 - [x] Preserve the historical-marker ordering gate.
 - [x] Make no runtime, protocol, schema, migration or external-repository change.
@@ -61,6 +66,8 @@ Persist the product owner's accepted identifier model as canonical architecture 
 - no Rust identifier types;
 - no PostgreSQL representation;
 - no Game Session or lease token format;
+- no final `InstanceId` scope or persistence decision;
+- no instance runtime, matchmaking, transfer or lifecycle implementation;
 - no write to `blakinio/otclient`;
 - no claim that the complete `FND-ID-01` contract is accepted or complete.
 
@@ -75,7 +82,10 @@ Accepted identifier baseline:
 5. names, slugs and display numbers are labels or lookup aliases, not canonical identity;
 6. `WorldId` globally identifies one logical world;
 7. every channel is assigned to one logical world and its canonical semantic identity is `WorldId + ChannelId`;
-8. a globally unique technical `ChannelId` representation does not permit dropping the `WorldId` binding.
+8. a globally unique technical `ChannelId` representation does not permit dropping the `WorldId` binding;
+9. channels remain the primary mechanism for exposing and distributing one logical world;
+10. instances do not replace channels and may be provided as optional isolated dungeons, arenas, encounters, quest scenarios or event spaces for players on any channel;
+11. feature availability across channels does not yet prove that one concrete instance is channel-bound, cross-channel shared or portable.
 
 Draft PR #56 contains only the architecture baseline and this task record.
 
@@ -120,10 +130,10 @@ Draft PR #56 contains only the architecture baseline and this task record.
 ## Context checkpoint
 
 ```yaml
-last_progress: Owner accepted globally unique WorldId and world-scoped channel identity; canonical baseline and PR #56 were updated.
+last_progress: Owner clarified that channels remain the primary world topology while instances are optional gameplay contexts available across all channels; canonical baseline and PR #56 were updated without freezing InstanceId scope.
 status: validating
 branch: docs/fnd-id-01-owner-baseline
-head_sha: 1a8f2c412e1ff035f819d7fb92a26040a688ff64
+head_sha: 40cb8f3cf1fe84193cfc4c3183318fc76e793d6e
 pr: 56
 ci_check_generation: pending after checkpoint update
 ci_checks_for_current_head: 0
