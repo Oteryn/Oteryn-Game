@@ -10,7 +10,7 @@ base_branch: main
 branch: docs/fnd-id-01-owner-baseline
 pr: 56
 base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
-head_sha: pending-final-validation
+head_sha: e4a7f8d92d98646ddb788f907763f4fc22827531
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
 updated_at: 2026-08-06T16:38:00+02:00
@@ -166,7 +166,7 @@ Draft PR #56 contains only canonical architecture documents and this task record
 ### Focused
 
 - command/run: exact branch comparison against task-start `main`
-- result: pending final-head refresh; expected scope is three Markdown files only
+- result: pending exact-head refresh; expected scope is three Markdown files only
 
 ### Component/integration
 
@@ -180,7 +180,7 @@ Draft PR #56 contains only canonical architecture documents and this task record
 
 ### Exact-head CI
 
-- head: pending after final checkpoint update
+- head: pending after this checkpoint update
 - workflow/run: pending
 - result: pending
 
@@ -193,7 +193,7 @@ Draft PR #56 contains only canonical architecture documents and this task record
 
 ## PR and closeout
 
-- changed-file review: pending final-head refresh
+- changed-file review: pending exact-head refresh
 - unresolved review threads: pending
 - related/superseded PRs: none identified
 - merge commit/result: pending
@@ -205,9 +205,9 @@ Draft PR #56 contains only canonical architecture documents and this task record
 last_progress: Owner accepted that alternate characters stay hidden by default even for account-wide contacts and become visible only through a deliberate owner-controlled privacy setting or sharing action; canonical social-presence baseline and PR #56 task record were updated.
 status: validating
 branch: docs/fnd-id-01-owner-baseline
-head_sha: pending-final-validation
+head_sha: e4a7f8d92d98646ddb788f907763f4fc22827531
 pr: 56
-ci_check_generation: pending after final checkpoint update
+ci_check_generation: pending after checkpoint update
 ci_checks_for_current_head: 0
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
