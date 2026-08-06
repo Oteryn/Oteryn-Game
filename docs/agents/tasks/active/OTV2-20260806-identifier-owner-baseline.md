@@ -10,10 +10,10 @@ base_branch: main
 branch: docs/fnd-id-01-owner-baseline
 pr: 56
 base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
-head_sha: 40cb8f3cf1fe84193cfc4c3183318fc76e793d6e
+head_sha: 24ab446d6bb0e6f5bbf421aaf275c9e92f56a8fe
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
-updated_at: 2026-08-06T14:43:00+02:00
+updated_at: 2026-08-06T14:59:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -32,7 +32,7 @@ external_repositories:
 
 ## Outcome
 
-Persist the product owner's accepted identifier and channel/instance baseline as canonical architecture input without falsely claiming that the complete `FND-ID-01` gate has started or finished.
+Persist the product owner's accepted identifier, channel/instance and world-scoped party baseline as canonical architecture input without falsely claiming that the complete `FND-ID-01` gate has started or finished.
 
 ## Architecture and source of truth
 
@@ -43,6 +43,8 @@ Persist the product owner's accepted identifier and channel/instance baseline as
 - `PROVEN` — the owner accepted that `WorldId` is globally unique and that channels are assigned to their world, making `WorldId + ChannelId` the canonical semantic channel identity.
 - `PROVEN` — the owner clarified that channels, rather than instances, remain the selected primary topology for the logical world.
 - `PROVEN` — instances remain a useful optional gameplay mechanism that may be available to players on every channel.
+- `PROVEN` — the owner accepted that parties are world-scoped and may contain members currently placed on different channels.
+- `PROVEN` — open-world shared gameplay still requires one common channel, while future instanced gameplay requires one common instance.
 - `DERIVED` — exact concrete-instance identity, placement, cross-channel membership and migration semantics remain unresolved and must not be inferred from feature availability.
 
 ## Acceptance criteria
@@ -54,6 +56,11 @@ Persist the product owner's accepted identifier and channel/instance baseline as
 - [x] Record channels as the primary world topology.
 - [x] Record instances as optional isolated gameplay contexts available across the channel topology.
 - [x] Keep concrete `InstanceId` scope and channel relationship unresolved.
+- [x] Record `PartyId` as semantically scoped by `WorldId`.
+- [x] Permit party membership, leadership, invitations, roles, readiness and chat across channels of one world.
+- [x] Keep shared open-world simulation channel-local and instanced simulation instance-local.
+- [x] Reject cross-channel combat, loot, experience, healing and visibility through party membership alone.
+- [x] Keep Party Finder algorithms, channel reservation, transfer and activity rules unresolved.
 - [x] Keep UUID/ULID/database-column/wire-width and the remaining catalogue unresolved.
 - [x] Preserve the historical-marker ordering gate.
 - [x] Make no runtime, protocol, schema, migration or external-repository change.
@@ -68,6 +75,8 @@ Persist the product owner's accepted identifier and channel/instance baseline as
 - no Game Session or lease token format;
 - no final `InstanceId` scope or persistence decision;
 - no instance runtime, matchmaking, transfer or lifecycle implementation;
+- no Party Finder implementation;
+- no party size, role, invite, matchmaking, teleport, channel reservation, shared-experience or loot contract;
 - no write to `blakinio/otclient`;
 - no claim that the complete `FND-ID-01` contract is accepted or complete.
 
@@ -85,7 +94,13 @@ Accepted identifier baseline:
 8. a globally unique technical `ChannelId` representation does not permit dropping the `WorldId` binding;
 9. channels remain the primary mechanism for exposing and distributing one logical world;
 10. instances do not replace channels and may be provided as optional isolated dungeons, arenas, encounters, quest scenarios or event spaces for players on any channel;
-11. feature availability across channels does not yet prove that one concrete instance is channel-bound, cross-channel shared or portable.
+11. feature availability across channels does not yet prove that one concrete instance is channel-bound, cross-channel shared or portable;
+12. the canonical semantic party identity is `WorldId + PartyId`;
+13. one party may temporarily contain members placed on different channels of the same world;
+14. party organization may remain active across channels, but it does not merge their simulations;
+15. open-world shared combat and related mechanics require one common channel;
+16. instanced shared gameplay requires one common concrete instance under later contracts;
+17. a remote party member receives no cross-channel combat, shared experience, loot, healing, local visibility or proximity effects.
 
 Draft PR #56 contains only the architecture baseline and this task record.
 
@@ -130,10 +145,10 @@ Draft PR #56 contains only the architecture baseline and this task record.
 ## Context checkpoint
 
 ```yaml
-last_progress: Owner clarified that channels remain the primary world topology while instances are optional gameplay contexts available across all channels; canonical baseline and PR #56 were updated without freezing InstanceId scope.
+last_progress: Owner accepted world-scoped parties whose members may remain on different channels for organization, while shared gameplay requires one common channel or one common instance; canonical baseline and PR #56 were updated.
 status: validating
 branch: docs/fnd-id-01-owner-baseline
-head_sha: 40cb8f3cf1fe84193cfc4c3183318fc76e793d6e
+head_sha: 24ab446d6bb0e6f5bbf421aaf275c9e92f56a8fe
 pr: 56
 ci_check_generation: pending after checkpoint update
 ci_checks_for_current_head: 0
