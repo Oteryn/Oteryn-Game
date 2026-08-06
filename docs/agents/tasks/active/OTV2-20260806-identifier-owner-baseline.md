@@ -10,10 +10,10 @@ base_branch: main
 branch: docs/fnd-id-01-owner-baseline
 pr: 56
 base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
-head_sha_before_checkpoint: 55157cc155e84e909e69026606b903a4dfd5154a
+head_sha_before_checkpoint: 44283b56d5f5c5086e4c6230cb7e17b27ef83d1f
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
-updated_at: 2026-08-06T17:29:00+02:00
+updated_at: 2026-08-06T17:36:00+02:00
 owned_paths:
   - docs/architecture/FND-ID-01_OWNER_ACCEPTED_BASELINE.md
   - docs/architecture/INSTANCE_SCOPE_AND_RUNTIME_OWNER_BASELINE.md
@@ -122,7 +122,7 @@ Persist the product owner's accepted identifier, channel, world-scoped party, in
 - [x] Keep exact token format, protocol schema, map source format, runtime placement, matchmaking and implementation unresolved.
 - [x] Make no runtime, protocol, database, schema, migration or external-repository change.
 - [x] Maintain documentation-only draft PR #56.
-- [ ] Reconcile older wording in `FND-ID-01_OWNER_ACCEPTED_BASELINE.md` that still describes instance scope as unresolved, or explicitly rely on the later-instance-baseline supersession statement.
+- [x] Reconcile `FND-ID-01_OWNER_ACCEPTED_BASELINE.md` with the accepted `WorldId + InstanceId` and cross-channel admission decisions.
 - [ ] Obtain exact-head repository validation and independent audit before merge.
 
 ## Excluded scope
@@ -144,7 +144,7 @@ Persist the product owner's accepted identifier, channel, world-scoped party, in
 ### Focused
 
 - changed scope expected: four Markdown files in PR #56;
-- architecture consistency: pending exact-head review after this checkpoint;
+- architecture consistency: identifier and instance baselines reconciled on the checkpoint head;
 - source/runtime behavior: `NOT_APPLICABLE` for documentation-only change.
 
 ### Component/integration/E2E
@@ -154,9 +154,10 @@ Persist the product owner's accepted identifier, channel, world-scoped party, in
 
 ### Exact-head CI
 
-- exact head: pending after checkpoint update;
-- workflow/run: pending;
-- result: pending.
+- observed head before this checkpoint: `44283b56d5f5c5086e4c6230cb7e17b27ef83d1f`;
+- workflows observed: Agent governance, Dependency review and CodeQL;
+- state at observation: queued;
+- final exact-head result: pending because this task-record checkpoint creates a newer head.
 
 ## Independent audit
 
@@ -167,20 +168,21 @@ Persist the product owner's accepted identifier, channel, world-scoped party, in
 
 ## PR and closeout
 
-- PR: #56, draft and open at the last observation;
-- changed-file review: pending exact-head refresh;
-- unresolved review threads: pending;
+- PR: #56, draft, open and mergeable at the last observation;
+- changed-file scope: four Markdown files;
+- PR title and body updated to cover identifier, instance runtime, map, admission, handoff and social privacy baselines;
+- unresolved review threads: pending refresh;
 - merge result: pending;
-- accepted decisions are not yet canonical on `main` until validation, audit and merge complete.
+- accepted decisions are saved on the PR branch but are not yet canonical on `main` until validation, independent audit and merge complete.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Owner accepted the shared physical-trigger and Party Finder activity-instance model, revisioned map templates with isolated mutable overlays, direct cross-channel admission, seamless make-before-break no-relogin handoff, authoritative completion and origin-channel return semantics. The instance baseline and task record were updated.
+last_progress: Owner-accepted physical-trigger and Party Finder instance architecture was recorded; the instance baseline, identifier baseline, task record and PR description were reconciled.
 status: validating
 branch: docs/fnd-id-01-owner-baseline
-head_sha_before_checkpoint: 55157cc155e84e909e69026606b903a4dfd5154a
+head_sha_before_checkpoint: 44283b56d5f5c5086e4c6230cb7e17b27ef83d1f
 pr: 56
-blocker: PR #56 requires exact-head validation and independent audit before merge; one older FND-ID baseline section still needs wording reconciliation or explicit supersession handling.
-next_action: Reconcile identifier-baseline wording, refresh PR description, then validate the exact final head.
+blocker: PR #56 requires exact-head validation and independent audit before merge.
+next_action: Refresh the final PR head and CI state, perform independent architecture audit, then merge only after PASS.
 ```
