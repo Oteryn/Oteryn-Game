@@ -10,10 +10,10 @@ base_branch: main
 branch: docs/fnd-id-01-owner-baseline
 pr: 56
 base_sha: 26b5fa275fba19fdee0e26a6f65263489af3e500
-head_sha: pending-final-self-update
+head_sha: pending-final-validation
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-06T14:19:00+02:00
-updated_at: 2026-08-06T15:09:00+02:00
+updated_at: 2026-08-06T15:10:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -155,7 +155,7 @@ Draft PR #56 contains only canonical architecture documents and this task record
 
 ### Exact-head CI
 
-- head: pending after this checkpoint update
+- head: pending after final checkpoint update
 - workflow/run: pending
 - result: pending
 
@@ -180,9 +180,9 @@ Draft PR #56 contains only canonical architecture documents and this task record
 last_progress: Owner accepted privacy-first social presence and consent-based VIP/contact invitations; a separate canonical architecture baseline and PR #56 task updates were added without freezing account-vs-character scope or implementation details.
 status: validating
 branch: docs/fnd-id-01-owner-baseline
-head_sha: pending-final-self-update
+head_sha: pending-final-validation
 pr: 56
-ci_check_generation: pending after checkpoint update
+ci_check_generation: pending after final checkpoint update
 ci_checks_for_current_head: 0
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
