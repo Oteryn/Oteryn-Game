@@ -83,20 +83,53 @@ Accepted invariants:
 - removal from contacts does not silently remove a player from an already valid party; those lifecycles are separate;
 - current party membership may temporarily grant the accepted party-level presence visibility without creating a permanent contact relation.
 
+## Accepted character-scoped and account-wide relationship boundary
+
+The project owner accepted on 2026-08-06 that the default social relationship is between specific characters, not automatically between every character owned by two accounts.
+
+Accepted rules:
+
+- the default contact/VIP request targets one specific character identity;
+- accepting that request creates a relationship only between the explicitly named requester character and target character;
+- adding one character must not automatically reveal, discover, subscribe to or add other characters owned by the same account;
+- character-scoped contact consent must not be silently promoted into account-wide consent;
+- presence, messaging and exact-channel permissions granted by the character relationship apply only to the accepted character pair unless another accepted policy explicitly widens them;
+- a relationship covering entire accounts may exist only as a separate optional relationship type;
+- an account-wide relationship requires a distinct invitation and explicit acceptance by both sides;
+- account-wide acceptance must be clearly distinguishable in the client from accepting one character as a contact;
+- neither an account identifier nor ownership linkage may be exposed merely to prove that an account-wide relationship exists;
+- an account-wide relationship must not automatically disclose all alternate characters; any alt discovery or roster sharing requires an explicit later privacy rule and must respect per-character visibility controls;
+- rejection, expiry, revocation or blocking of an account-wide request must not alter unrelated character-scoped relationships unless the user explicitly chooses a broader action;
+- removing a character-scoped relationship must not silently revoke a separately accepted account-wide relationship, and removing an account-wide relationship must not silently recreate or delete character relationships without an explicit lifecycle rule;
+- party, guild, house, trade and moderation relationships remain separate from both character-scoped and account-wide contact consent.
+
+This model establishes two distinct concepts:
+
+```text
+CharacterContact
+    explicit relationship between one requester CharacterId and one target CharacterId
+
+AccountContact
+    optional, separately consented relationship between two account identities
+```
+
+The concrete identifier types, storage model and public representation remain future contract work. Strong typing must prevent a character request from being interpreted as an account request or vice versa.
+
 ## VIP list becomes a consent-based social surface
 
 The client may retain the familiar `VIP` name for usability, but semantically it becomes a consent-based contact/social surface rather than a unilateral tracking list.
 
 It may present, subject to authorization and privacy settings:
 
-- accepted contacts;
-- pending incoming and outgoing contact invitations;
+- accepted character contacts;
+- separately accepted account-wide contacts where the feature is enabled;
+- pending incoming and outgoing contact invitations with their relationship scope clearly identified;
 - coarse online/offline or privacy-preserving presence;
 - exact channel only where authorized;
 - current party membership and remote-party status;
 - actions such as invite to party, message, remove contact, decline, cancel or block.
 
-The client is a presentation and command surface. It must not infer hidden channel or instance placement from stale caches, previous sessions, Party Finder data or transport endpoints.
+The client is a presentation and command surface. It must not infer hidden channel, instance, account linkage or alternate-character ownership from stale caches, previous sessions, Party Finder data or transport endpoints.
 
 ## Presence authority and freshness
 
@@ -104,7 +137,7 @@ The authoritative game domain owns current gameplay placement. Platform identity
 
 A later contract must define:
 
-- the authoritative owner of contact relationships and privacy preferences;
+- the authoritative owner of character-contact, account-contact and privacy-preference records;
 - how Platform and game services exchange only the minimum necessary identity and presence data;
 - revisioned presence updates and stale-update rejection;
 - reconnect, channel-change, instance-entry and logout transitions;
@@ -134,24 +167,26 @@ Later implementation contracts must include at least:
 - safe defaults;
 - contact-invite and party-invite rate limits;
 - block lists and anti-harassment handling;
-- no presence enumeration through sequential identifiers, timing, search errors or invitation responses;
+- no presence or account-linkage enumeration through sequential identifiers, timing, search errors or invitation responses;
 - bounded retention for invitation and presence history;
-- pseudonymous analytics where exact character identity is unnecessary;
+- pseudonymous analytics where exact character or account identity is unnecessary;
 - role-separated access for moderation, support, analytics and operations;
-- durable audit for privileged exact-location access;
+- durable audit for privileged exact-location or account-linkage access;
 - protection against using social APIs to locate streamers, PvP targets, moderators or players who chose restricted visibility.
 
 ## Deliberately unresolved
 
 This baseline does not yet decide:
 
-- whether contacts are account-to-account, character-to-character or a controlled combination;
+- whether character-scoped contacts may span worlds or remain world-scoped;
+- whether account-wide contacts are global or separately enabled per world;
 - whether the accepted relationship is always symmetric or may support separately consented one-way following;
-- whether contact relationships are world-scoped or reusable across worlds;
 - whether contact invitations persist while the target is offline;
 - exact invitation expiry, limits and cooldowns;
 - exact presence states and user-interface wording;
 - whether accepted contacts see exact channel automatically or only after an additional per-contact permission;
+- which account-wide permissions, if any, may be configured independently for presence, messaging, invitations or alternate-character discovery;
+- whether an account-wide relation creates derived character contacts, a shared roster view or neither;
 - guild, alliance, house, mentor, family or staff visibility policies;
 - whether instance identity or only a generic `in instance` state may be shown;
 - privacy behavior for Party Finder listings;
@@ -159,7 +194,7 @@ This baseline does not yet decide:
 - migration behavior for imported legacy VIP entries;
 - whether a private local notes list may exist without presence or social permissions.
 
-Until resolved, no unilateral legacy VIP import may silently create mutual contact consent or exact-location visibility.
+Until resolved, no unilateral legacy VIP import may silently create mutual contact consent, account-wide consent, alternate-character disclosure or exact-location visibility.
 
 ## Rejected interpretations
 
@@ -175,13 +210,21 @@ Rejected because the target must explicitly accept.
 
 Rejected because it bypasses consent and conflicts with the privacy-first direction.
 
+### Promote one character contact to all account characters
+
+Rejected because consent to contact one character is not consent to reveal or follow every alternate character owned by the same account.
+
+### Create account-wide friendship implicitly
+
+Rejected because an account-wide relationship is a separate optional relationship requiring its own clear, mutual acceptance.
+
 ### Couple contacts and parties into one lifecycle
 
 Rejected because permanent social relationships and temporary gameplay groups have different consent, expiry and removal semantics.
 
 ### Trust the client to enforce privacy
 
-Rejected because unauthorized placement data must not be sent to the client in the first place.
+Rejected because unauthorized placement and account-linkage data must not be sent to the client in the first place.
 
 ### Preserve stale exact presence after access ends
 
@@ -193,7 +236,10 @@ Rejected because stale data must fail toward less disclosure.
 - Exact channel and instance placement are non-public.
 - Current party members and mutually accepted contacts/VIP entries are the default authorized classes for exact channel visibility, subject to later user controls.
 - Adding a contact/VIP requires an invitation and explicit acceptance.
+- The default contact relationship is character-to-character.
+- Contacting one character does not reveal or add alternate characters from the same account.
+- Account-wide friendship is a separate optional relationship requiring distinct mutual consent.
 - Party invitations remain separate accept/decline operations.
 - The legacy unilateral VIP-tracking model is not the target behavior.
-- Account-vs-character relationship scope, storage, protocol and UI details remain future contract work.
+- Cross-world scope, account-wide permission granularity, storage, protocol and UI details remain future contract work.
 - No implementation is authorized by this document.
