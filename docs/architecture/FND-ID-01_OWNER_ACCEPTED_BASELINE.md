@@ -53,11 +53,12 @@ Canonical examples include concepts equivalent to:
 ```text
 WorldId + ChannelId
 WorldId + InstanceId
+WorldId + PartyId
 ContentRevision + compact runtime content ID
 Channel ownership generation + channel-local runtime entity ID
 ```
 
-Whether a particular identifier is globally unique in representation does not remove its semantic scope. A globally collision-resistant value may still be invalid outside its owning world, channel, instance, package or revision.
+Whether a particular identifier is globally unique in representation does not remove its semantic scope. A globally collision-resistant value may still be invalid outside its owning world, channel, instance, party, package or revision.
 
 ### Accepted world and channel scope
 
@@ -105,6 +106,47 @@ This clarification deliberately does not yet decide:
 - whether returning from an instance restores the originating channel or allows a separately validated channel selection.
 
 Therefore, “instances can exist on every channel” means that the feature is available across the channel topology. It does not yet mean that one concrete instance simultaneously exists on every channel, is automatically shared across channels or is freely portable between them.
+
+### Accepted world-scoped party semantics
+
+The project owner accepted on 2026-08-06 that a party is a world-level social and activity structure rather than a channel-owned simulation object.
+
+Accepted semantics:
+
+- the canonical semantic identity of a party is `WorldId + PartyId`;
+- every party belongs to exactly one logical world;
+- one party may temporarily contain characters whose active sessions are currently placed on different channels of that same world;
+- party membership, leadership, invitations, roles, readiness, activity selection and party chat may remain valid while members are distributed across channels;
+- party membership does not create cross-channel combat visibility or shared simulation;
+- open-world cooperative gameplay requires participating members to be present on the same `WorldId + ChannelId`;
+- instanced cooperative gameplay requires participating members to be admitted into the same concrete instance, regardless of their previous channel placement where the later instance contract permits it;
+- entering a common channel or instance activates only the gameplay mechanics whose own contracts and proximity rules are satisfied;
+- a character on another channel remains a remote party member and does not receive cross-channel shared experience, loot, healing, combat effects, local creature visibility or proximity-based bonuses;
+- changing a member's `ChannelId` does not by itself remove that character from the world-scoped party;
+- party routing, authorization and activity admission must validate that every participating character belongs to the same `WorldId`.
+
+This separates organization from execution:
+
+```text
+WorldId + PartyId
+    owns membership, leadership, roles, readiness and selected activity
+
+WorldId + ChannelId
+    owns open-world visibility, combat and local simulation
+
+WorldId + InstanceId
+    may own isolated cooperative simulation after a later instance contract
+```
+
+Consequences for a future Party Finder:
+
+- discovery and matching may operate across all channels of one world;
+- an open-world hunt must select or confirm one target channel before shared gameplay starts;
+- an instanced boss, dungeon, quest or arena may admit members from different source channels when the future instance and admission contracts authorize it;
+- Party Finder must not silently move, teleport or admit characters without explicit validation, readiness, capacity reservation and failure handling;
+- cross-world parties, cross-world shared progression and cross-world gameplay-value transfer remain outside this accepted baseline.
+
+This decision freezes party scope and the boundary between organization and shared simulation. It does not yet freeze party size, role model, invite lifecycle, matchmaking algorithm, channel reservation, teleport policy, activity catalogue, loot rules, shared-experience formula or instance admission protocol.
 
 ### Class 3 — Runtime-local generational handle
 
@@ -209,12 +251,13 @@ Examples include:
 ```text
 CharacterId + GameSessionId + session_generation
 WorldId + ChannelId + channel ownership generation
+WorldId + PartyId + party revision
 ItemInstanceId + item/state revision
 CommandId + GameSessionId + sequencing context
 TransactionId + idempotency and ownership context
 ```
 
-A valid identity with a stale generation is not current authority.
+A valid identity with a stale generation or revision is not current authority.
 
 ### Client-generated values are claims, not proof
 
@@ -258,14 +301,15 @@ This baseline is mandatory input to:
 - `DUR-04` — content keys, package/revision scope and compact runtime IDs;
 - `ANL-01` — event, operation, transaction, correlation, causation and analytics identities;
 - `QA-E2E-01` — exact identity, generation and revision evidence;
-- world, channel, instance, house, social, economy and lifecycle contracts.
+- future party, Party Finder, world, channel, instance, house, social, economy and lifecycle contracts.
 
 ## Still unresolved for the complete `FND-ID-01`
 
 The following remain open and must not be inferred from this baseline:
 
-- the exact minimum identifier catalogue beyond the accepted `WorldId` and world-scoped `ChannelId` semantics;
+- the exact minimum identifier catalogue beyond the accepted `WorldId`, world-scoped `ChannelId` and world-scoped `PartyId` semantics;
 - the exact semantic scope and lifecycle of `InstanceId`, including its relationship to `ChannelId`;
+- the exact lifecycle, revision and persistence rules for `PartyId` and party membership;
 - which other durable identities are globally unique versus semantically scoped;
 - UUID, ULID, integer, random, time-ordered or mixed generation strategy;
 - byte width and canonical binary/text encoding;
@@ -290,7 +334,7 @@ Rejected because names are mutable, user-visible, subject to localization and po
 
 ### Treat every identifier as globally interchangeable
 
-Rejected because world, channel, instance, package, revision and runtime scopes carry security and consistency meaning even when representations are globally collision-resistant.
+Rejected because world, channel, instance, party, package, revision and runtime scopes carry security and consistency meaning even when representations are globally collision-resistant.
 
 ### Treat `ChannelId` as a world-independent identity
 
@@ -299,6 +343,14 @@ Rejected because a channel belongs to a logical world and its canonical semantic
 ### Treat instances as a replacement for channels
 
 Rejected because channels are the accepted primary world topology. Instances are optional isolated gameplay contexts available within that topology and must not create competing worlds or permanent community partitions.
+
+### Bind party existence to one channel
+
+Rejected because party formation, Party Finder, invitations, roles and readiness are world-level social operations. Open-world shared simulation remains channel-local, but changing channels must not automatically destroy the party.
+
+### Allow cross-channel combat through party membership
+
+Rejected because party membership does not merge channel simulations. Shared combat, experience, loot, healing, visibility and proximity effects require one common channel or one common instance under their later contracts.
 
 ### Persist runtime handles
 
@@ -316,8 +368,11 @@ Rejected because mutable semantics, routing, authorization and privacy must rema
 
 - This owner-accepted baseline is canonical input to `FND-ID-01`.
 - The accepted channel identity rule is `WorldId + ChannelId`.
+- The accepted party identity rule is `WorldId + PartyId`.
 - Channels remain the primary world topology; instances are optional gameplay contexts that may be offered across all channels.
-- Exact `InstanceId` scope, cross-channel membership and placement semantics remain unresolved.
+- A party may organize members across channels, while shared open-world simulation still requires one common channel and instanced simulation requires one common instance.
+- Exact `InstanceId` scope, cross-channel instance membership and placement semantics remain unresolved.
+- Party Finder, matchmaking, reservation, transfer and activity-specific gameplay contracts remain future work.
 - It does not change the current ordered next action.
 - The source-only `blakinio/otclient` historical marker remains required before the complete `FND-ID-01` package begins.
 - No implementation is authorized by this document.
