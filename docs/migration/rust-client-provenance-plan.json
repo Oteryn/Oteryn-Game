@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "coordination_id": "OTV2-RUST-CLIENT-CUTOVER-20260806",
+  "source": {
+    "repository": "blakinio/otclient",
+    "commit": "c923ad8a1dff17b4933a6110931b0823cec2c590",
+    "subtree": "oteryn-client",
+    "subtree_tree": "c0928dafca6df19ff11d7901e503ed85a5199439",
+    "license_declared": "MIT",
+    "root_manifest_blob": "037013e8e4a762a65f0f2a30f7761ee14725a3fc",
+    "root_lockfile_blob": "2143408c12c50132883890f0821278320a331fde"
+  },
+  "destination": {
+    "repository": "blakinio/Oteryn-v2",
+    "contract_base_commit": "9034bd4bfa491eac6a898b29bc8151c94a4c2b89",
+    "canonical_after_merge": true,
+    "squash_merge_required": true
+  },
+  "history_policy": {
+    "method": "content migration with immutable provenance manifests",
+    "forbidden_claims": [
+      "do not claim preserved Git ancestry across repositories",
+      "do not use fabricated co-authorship",
+      "do not describe rewritten files as byte-identical",
+      "do not delete the source repository, selected commit or source subtree"
+    ],
+    "required_destination_files": [
+      "docs/migration/rust-client-provenance.json",
+      "docs/migration/rust-client-path-map.json",
+      "docs/migration/rust-dependency-delta.json"
+    ],
+    "required_per_file_fields": [
+      "source_path",
+      "source_blob_sha",
+      "destination_path",
+      "disposition",
+      "transformation",
+      "license",
+      "verification"
+    ]
+  },
+  "source_state": {
+    "main_at_reconciliation_commit": "c923ad8a1dff17b4933a6110931b0823cec2c590",
+    "future_main_may_advance_outside_subtree": true,
+    "cutover_block_condition": "the current default branch resolves otclient/oteryn-client to a tree other than c0928dafca6df19ff11d7901e503ed85a5199439, or a new PR/task claims that subtree",
+    "open_pull_requests": [
+      {
+        "number": 23,
+        "lane": "legacy-cpp-lua-ui",
+        "cutover_disposition": "EXCLUDED_CONTINUES_LEGACY"
+      },
+      {
+        "number": 48,
+        "lane": "operational-proprietary-package-analysis",
+        "cutover_disposition": "EXCLUDED_REFERENCE_ONLY"
+      },
+      {
+        "number": 97,
+        "lane": "legacy-client-asset-installer-security",
+        "cutover_disposition": "EXCLUDED_CONTINUES_LEGACY"
+      }
+    ],
+    "active_task_records": [
+      {
+        "path": "docs/agents/tasks/active/OTC-20260712-client-test-foundation.md",
+        "lane": "legacy-cpp-lua",
+        "cutover_disposition": "EXCLUDED_STALE_CLOSEOUT"
+      },
+      {
+        "path": "docs/agents/tasks/active/OTC-20260714-protocol-session-reentrancy.md",
+        "lane": "legacy-cpp-lua",
+        "cutover_disposition": "EXCLUDED_STALE_CLOSEOUT"
+      },
+      {
+        "path": "docs/agents/tasks/active/OTC-20260721-oteryn-identity-login.md",
+        "lane": "legacy-cpp-lua-auth",
+        "cutover_disposition": "EXCLUDED_MERGED_HISTORICAL"
+      },
+      {
+        "path": "docs/agents/tasks/active/OTC-20260724-validation-cost-policy.md",
+        "lane": "repository-governance",
+        "cutover_disposition": "EXCLUDED_STALE_CLOSEOUT"
+      },
+      {
+        "path": "docs/agents/tasks/active/OTC-20260802-agent-governance-sync.md",
+        "lane": "repository-governance",
+        "cutover_disposition": "EXCLUDED_COMPLETED_STALE_RECORD"
+      },
+      {
+        "path": "docs/agents/tasks/active/OTC2-20260803-playability-p2-canary-world-protocol.md",
+        "lane": "rust-canary-reference",
+        "cutover_disposition": "REFERENCE_ONLY_ARCHIVE_ON_SOURCE_MARKER"
+      },
+      {
+        "path": "oteryn-client/docs/agents/tasks/active/OTC2-20260805-native-protocol-single-version-completion.md",
+        "lane": "superseded-dual-protocol-native-plan",
+        "cutover_disposition": "SUPERSEDED_REFERENCE_ONLY_ARCHIVE_ON_SOURCE_MARKER"
+      }
+    ]
+  },
+  "dependency_decisions": [
+    {
+      "crate": "tokio",
+      "version": "1.51.4",
+      "decision": "RETAIN_EXACT",
+      "normal_features": ["io-util", "net", "rt-multi-thread", "sync", "time"],
+      "dev_features": ["macros", "test-util"],
+      "reason": "retain the already reviewed LTS runtime during cutover; feature sets remain package-scoped"
+    },
+    {
+      "crate": "reqwest",
+      "version": "0.13.4",
+      "decision": "ADD_EXACT",
+      "default_features": false,
+      "features": ["form", "json", "rustls", "stream"],
+      "forbidden_features": [
+        "blocking",
+        "cookies",
+        "gzip",
+        "brotli",
+        "zstd",
+        "deflate",
+        "multipart",
+        "socks",
+        "system-proxy",
+        "native-tls",
+        "native-tls-vendored",
+        "http2",
+        "http3"
+      ],
+      "runtime_policy": [
+        "redirect policy none",
+        "no automatic proxy discovery",
+        "certificate and hostname validation mandatory",
+        "bounded chunked response reads",
+        "request and total operation deadlines",
+        "cancellation through application-owned Tokio runtime"
+      ]
+    },
+    {
+      "crate": "ureq",
+      "decision": "REMOVE",
+      "reason": "blocking source implementation is reference-only"
+    },
+    {
+      "crate": "native-tls",
+      "decision": "REMOVE_DIRECT_SOURCE_USE",
+      "reason": "the selected Platform HTTP boundary uses reqwest with the rustls backend; every remaining transitive occurrence requires lockfile-delta explanation"
+    }
+  ],
+  "freeze": {
+    "effective_when": "VSL-02 contract merge",
+    "scope": "blakinio/otclient/oteryn-client/**",
+    "does_not_block": "commits and PRs wholly outside the Rust subtree",
+    "verification": "compare the current default-branch otclient/oteryn-client tree to c0928dafca6df19ff11d7901e503ed85a5199439 and import only from pinned commit c923ad8a1dff17b4933a6110931b0823cec2c590",
+    "allowed_after_freeze": [
+      "owner-approved critical security correction",
+      "owner-approved build break correction needed to complete the atomic cutover"
+    ],
+    "required_on_exception": [
+      "new exact source commit and subtree tree",
+      "updated path, provenance and dependency manifests",
+      "fresh VSL-02 reconciliation and audit",
+      "owner-approved amendment before destination migration merge"
+    ]
+  },
+  "source_marker": {
+    "requires_separate_owner_authorization": true,
+    "runs_after_destination_merge": true,
+    "operations": [
+      {
+        "path": "oteryn-client/README.md",
+        "action": "ADD_MOVED_NON_CANONICAL_NOTICE"
+      },
+      {
+        "path": "oteryn-client/AGENTS.md",
+        "action": "ADD_HIGHEST_PRIORITY_IMPLEMENTATION_FREEZE"
+      },
+      {
+        "path": "oteryn-client/MOVED_TO_OTERYN_V2.md",
+        "action": "CREATE_PROVENANCE_AND_ROLLBACK_RECORD"
+      },
+      {
+        "path": "docs/agents/tasks/active/OTC2-20260803-playability-p2-canary-world-protocol.md",
+        "action": "MOVE_TO_ARCHIVE_AS_REFERENCE_ONLY"
+      },
+      {
+        "path": "oteryn-client/docs/agents/tasks/active/OTC2-20260805-native-protocol-single-version-completion.md",
+        "action": "MOVE_TO_ARCHIVE_AS_SUPERSEDED_REFERENCE_ONLY"
+      },
+      {
+        "path": "oteryn-client/docs/architecture/OTERYN_NATIVE_PROTOCOL_CORRESPONDENCE.md",
+        "action": "ADD_SUPERSEDED_NON_CANONICAL_NOTICE"
+      },
+      {
+        "path": ".github/workflows/native-protocol-rust-correspondence.yml",
+        "action": "DELETE_OBSOLETE_SUPERSEDED_WORKFLOW"
+      }
+    ],
+    "must_not_change": [
+      "Rust runtime source",
+      "legacy C++/Lua ownership",
+      "unrelated open PR state",
+      "source Git history"
+    ]
+  },
+  "rollout": [
+    "merge VSL-02 contract in blakinio/Oteryn-v2",
+    "verify selected source commit remains reachable and the current source default branch has subtree tree c0928dafca6df19ff11d7901e503ed85a5199439",
+    "open one atomic destination implementation PR on migrate/rust-client-cutover-c923ad8 using only the pinned commit",
+    "validate and squash-merge destination implementation",
+    "verify resulting destination main and immutable provenance",
+    "open a separately authorized source-marker PR in blakinio/otclient",
+    "mark oteryn-client non-canonical, archive both conflicting Rust tasks and remove the obsolete correspondence workflow",
+    "validate and squash-merge source marker"
+  ],
+  "rollback": {
+    "before_destination_merge": [
+      "close the destination PR",
+      "source remains the single canonical but administratively frozen Rust source"
+    ],
+    "after_destination_before_source_marker": [
+      "place the destination Rust workspace under a non-writable rollback hold",
+      "revert the destination migration before dependent destination changes remain",
+      "record source as the single canonical Rust source and lift or replace its migration freeze only through an owner-approved coordination amendment"
+    ],
+    "after_source_marker": [
+      "place the destination Rust workspace under a non-writable rollback hold",
+      "revert the source marker; that merge transfers canonical write authority back to the source",
+      "revert the destination migration before any dependent destination change",
+      "do not release the destination rollback hold until the destination no longer claims canonical ownership",
+      "do not leave both repositories non-canonical or both writable as canonical"
+    ]
+  }
+}
