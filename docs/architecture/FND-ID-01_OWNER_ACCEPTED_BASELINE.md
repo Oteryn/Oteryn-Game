@@ -59,6 +59,27 @@ Channel ownership generation + channel-local runtime entity ID
 
 Whether a particular identifier is globally unique in representation does not remove its semantic scope. A globally collision-resistant value may still be invalid outside its owning world, channel, instance, package or revision.
 
+### Accepted world and channel scope
+
+The project owner accepted the following specialization on 2026-08-06:
+
+- `WorldId` is a globally unique durable cross-boundary identity of one logical world;
+- every gameplay channel is assigned to exactly one logical world at a time;
+- the canonical semantic identity of a channel is the pair `WorldId + ChannelId`;
+- `ChannelId` must never be interpreted independently of its owning `WorldId` at public, durable or cross-process boundaries;
+- a technically globally unique representation of `ChannelId` does not change this semantic rule;
+- protocol messages, events, persistence records, logs and caches must carry or authoritatively derive the `WorldId` binding wherever channel identity crosses a boundary;
+- moving a channel identifier between worlds must not silently preserve the same semantic channel identity; any such lifecycle operation requires a later explicit contract.
+
+Consequences:
+
+- equal `ChannelId` values under different `WorldId` values do not identify the same semantic channel;
+- authorization and routing must validate both the world and channel membership rather than relying only on collision resistance;
+- channel-local state, ownership generations and recovery evidence remain bound to the same world-scoped channel identity;
+- display names such as `Optional PvP 1` or `Channel 2` remain labels and cannot replace `WorldId + ChannelId`.
+
+This decision freezes semantic scope only. It does not yet choose the representation, generation algorithm, width, database key shape or wire encoding of either identifier.
+
 ### Class 3 — Runtime-local generational handle
 
 A runtime-local handle addresses transient in-memory state owned by one runtime boundary.
@@ -161,7 +182,7 @@ Examples include:
 
 ```text
 CharacterId + GameSessionId + session_generation
-ChannelId + channel ownership generation
+WorldId + ChannelId + channel ownership generation
 ItemInstanceId + item/state revision
 CommandId + GameSessionId + sequencing context
 TransactionId + idempotency and ownership context
@@ -217,8 +238,8 @@ This baseline is mandatory input to:
 
 The following remain open and must not be inferred from this baseline:
 
-- the exact minimum identifier catalogue;
-- which durable identities are globally unique versus semantically scoped;
+- the exact minimum identifier catalogue beyond the accepted `WorldId` and world-scoped `ChannelId` semantics;
+- which other durable identities are globally unique versus semantically scoped;
 - UUID, ULID, integer, random, time-ordered or mixed generation strategy;
 - byte width and canonical binary/text encoding;
 - endianness and canonical string formatting;
@@ -244,6 +265,10 @@ Rejected because names are mutable, user-visible, subject to localization and po
 
 Rejected because world, channel, instance, package, revision and runtime scopes carry security and consistency meaning even when representations are globally collision-resistant.
 
+### Treat `ChannelId` as a world-independent identity
+
+Rejected because a channel belongs to a logical world and its canonical semantic identity is `WorldId + ChannelId`. A globally unique technical encoding does not authorize omitting or bypassing the world binding.
+
 ### Persist runtime handles
 
 Rejected because handle reuse and runtime lifecycle make them unsafe as durable or cross-process identity.
@@ -259,6 +284,7 @@ Rejected because mutable semantics, routing, authorization and privacy must rema
 ## Programme effect
 
 - This owner-accepted baseline is canonical input to `FND-ID-01`.
+- The accepted channel identity rule is `WorldId + ChannelId`.
 - It does not change the current ordered next action.
 - The source-only `blakinio/otclient` historical marker remains required before the complete `FND-ID-01` package begins.
 - No implementation is authorized by this document.
