@@ -59,53 +59,70 @@ The exact tuple is illustrative. `FND-04` owns the physical representation.
 
 Character-level fencing alone is insufficient if two different CharacterIds belonging to the same AccountId could independently hold player gameplay authority.
 
-## Owner-accepted duplicate-login policy: newcomer wins
+## Owner-accepted duplicate-login policy: conditional newcomer takeover
 
-After a second login/takeover request for the same `AccountId` has been fully authenticated and accepted by admission policy, the **new login supersedes the incumbent client session**.
+A fully authenticated new login may supersede the incumbent gameplay session **only when takeover is eligible**.
 
-The incumbent transport/session must be fenced so it cannot continue submitting authoritative player commands.
+Takeover eligibility is server-authoritative. A second client does not gain the right to revoke the incumbent merely by presenting valid account credentials.
 
-This is not an authorization shortcut: the newcomer must still pass normal authentication, account ownership, admission, ban/entitlement and other security checks.
+The accepted rules are:
 
-The takeover itself must be auditable. Exact audit storage, rate limits, risk-based authentication and user-facing warnings remain later security/product work.
+- if the incumbent character is logout-eligible, the newcomer may replace the incumbent through a fenced legal handoff;
+- if the incumbent client/session is still healthy and the incumbent character has an active combat/PZ/logout blocker, the newcomer must **not** fence, close, revoke or steal that gameplay session;
+- if the incumbent transport/session is genuinely unavailable, recovery is handled as reconnect/failover and not as a hostile duplicate-login preemption;
+- the newcomer must still pass normal authentication, account ownership, admission, ban/entitlement and other security checks.
 
-## Combat-aware takeover: no escape-by-login
+The takeover attempt must be auditable. Exact audit storage, rate limits, risk-based authentication and user-facing warnings remain later security/product work.
 
-A duplicate login must never be usable as a way to erase combat consequences or force an instant safe logout.
+## Combat-aware takeover: no escape and no forced combat disconnect
 
-The authoritative server decides whether the incumbent character has a combat/logout blocker. Client disconnect, reconnect or takeover cannot clear that state.
+A duplicate login must never be usable either to escape combat consequences **or** to force a healthy fighting client to lose control.
 
-At minimum, active combat lock is a mandatory blocker. Later gameplay contracts may define additional logout blockers.
+The authoritative server decides whether the incumbent character has a combat/PZ/logout blocker and whether the incumbent gameplay session is still live. Client disconnect claims, reconnect requests or takeover requests cannot clear combat state or falsely declare the incumbent dead.
+
+At minimum, active combat/PZ/logout lock is a mandatory takeover blocker while the incumbent session remains healthy. Later gameplay contracts may define additional blockers.
 
 ### Incumbent is logout-eligible
 
 If the incumbent character has no mandatory logout blocker:
 
 1. authenticate and authorize the newcomer;
-2. fence/revoke the incumbent client authority;
-3. complete the old character's legal logout/removal;
-4. only then grant authoritative gameplay admission to the selected new character.
+2. establish that takeover is eligible;
+3. fence/revoke the incumbent client authority;
+4. complete the old character's legal logout/removal;
+5. only then grant authoritative gameplay admission to the selected new character.
 
 The transition may be atomic or staged, but it must never expose two player-controlled authoritative characters for the account.
 
-### Incumbent is combat/logout locked
+### Incumbent is combat/PZ/logout locked and client is healthy
 
-If the incumbent character has an active combat lock or another mandatory logout blocker:
+If the incumbent character has an active combat/PZ/logout blocker **and the incumbent gameplay session is still healthy/live**:
 
-1. authenticate and authorize the newcomer;
-2. fence/revoke the incumbent **client control** immediately;
-3. do **not** remove, teleport, protect or otherwise safe-log the incumbent character because of the takeover;
-4. keep that character in authoritative world simulation under the normal disconnected/combat-presence rules until the blocker resolves, the character legally logs out, or death resolution completes;
-5. keep gameplay admission of a **different CharacterId** for that AccountId pending/blocked until the incumbent character no longer has mandatory world presence.
+1. authenticate the newcomer at the account layer if credentials are valid;
+2. do **not** fence, revoke, close or otherwise interrupt the incumbent gameplay client;
+3. keep the incumbent client fully authoritative for its existing character;
+4. deny or hold pending any gameplay takeover request;
+5. do not admit a different `CharacterId` for the same `AccountId`;
+6. retry eligibility only after the blocker clears or the incumbent session genuinely becomes unavailable.
 
-The newcomer may remain authenticated at the account/login layer while gameplay admission is pending. Authentication is not gameplay authority.
+This prevents both self-abuse and malicious use of valid/stolen credentials to make a fighting client disconnect at a dangerous moment.
 
-This preserves both requirements:
+### Incumbent is combat/PZ/logout locked but transport/session is genuinely unavailable
+
+If the incumbent character must remain in world simulation because of combat/PZ/logout state but its client transport/session has genuinely been lost:
+
+- the character remains in authoritative world simulation under normal disconnected/combat rules;
+- a different `CharacterId` for that account stays blocked until the incumbent no longer has mandatory world presence;
+- reconnecting the **same CharacterId** may recover control of the same in-world actor once `FND-04` proves the old transport/session is stale and establishes a new fenced session generation;
+- reconnect must not respawn, teleport, duplicate, protect, heal, reset or otherwise alter the actor as a side effect;
+- server-side lease/session liveness is authoritative; a second client cannot manufacture "old session lost" by simply requesting takeover.
+
+This preserves all three requirements:
 
 ```text
-newcomer session wins control
-AND
-combat state cannot be escaped by switching characters
+one account has at most one playable character
+combat state cannot be escaped by switching/logging
+second client cannot kick a healthy combat-locked first client
 ```
 
 ## Anti-abuse invariants
@@ -120,25 +137,33 @@ Takeover, disconnect or reconnect must not by itself reset or clear any gameplay
 - aggro/threat or combat attribution where applicable;
 - death risk and already committed combat consequences;
 - instance or encounter state;
-- server-scheduled effects already committed before the fence.
+- server-scheduled effects already committed before the authority transition.
 
 Exact combat-engine semantics remain owned by the combat/gameplay contracts, but the session layer may not use reconnect/takeover as a reset primitive.
 
-Commands arriving from the fenced incumbent session after the authority boundary must fail closed. Already committed authoritative actions are not rolled back merely because takeover occurs.
+Commands from an incumbent session are rejected only after a legitimate fencing boundary has been established. Merely opening or authenticating a second client must not create that boundary while a protected incumbent session is healthy.
+
+Already committed authoritative actions are not rolled back merely because a later takeover or reconnect occurs.
 
 ## Character switching
 
 Switching from Character A to Character B under the same account must not create an interval in which both are player-controlled authoritative gameplay writers.
 
-If Character A is combat/logout locked, Character B cannot receive gameplay admission merely because a fresh login displaced Character A's client connection.
+If Character A is combat/PZ/logout locked, Character B cannot receive gameplay admission while Character A has mandatory world presence.
 
-The safe direction under ambiguity or partial failure is to delay/reject the new gameplay admission rather than allow dual authority or combat escape.
+If Character A's client is still healthy, the second client cannot force Character A into disconnected/X-log behavior merely by attempting to log Character B or Character A.
 
-## Same-character takeover remains a separate detail
+The safe direction under ambiguity or partial failure is to preserve the current healthy incumbent authority and delay/reject the newcomer rather than allow dual authority, combat escape or forced loss of control.
 
-Whether a newcomer selecting the **same CharacterId** may immediately reattach to the existing in-world actor during combat, without resetting any state, remains to be frozen explicitly in `FND-04`.
+## Same-character reconnect/takeover distinction
 
-Whatever policy is chosen must preserve the same actor state and must not create a second copy, respawn, teleport, clear combat state or create an invulnerability window.
+A second client selecting the **same CharacterId** is not automatically entitled to preempt a healthy incumbent client during combat/PZ/logout lock.
+
+If the incumbent session is healthy, the existing client remains in control.
+
+If the incumbent session is genuinely unavailable, `FND-04` may allow immediate same-character reconnect to the exact same in-world actor using a fresh fenced session generation. This must preserve the actor's complete state and must not create a second copy, respawn, teleport, clear combat state or create an invulnerability window.
+
+Exact liveness timeout, lease expiry, reconnect grace period and fencing transaction remain `FND-04` work.
 
 ## Failure and race requirements
 
@@ -148,16 +173,18 @@ Whatever policy is chosen must preserve the same actor state and must not create
 - two different CharacterIds selected nearly simultaneously;
 - takeover while the incumbent is actively fighting;
 - takeover immediately before/after combat lock acquisition or expiry;
-- reconnect racing with a fresh login;
+- repeated second-client login attempts against a healthy combat-locked incumbent;
+- reconnect racing with a fresh duplicate login;
+- real transport loss racing with a healthy-session heartbeat;
 - channel or instance switch racing with duplicate login;
-- character death while a takeover is pending;
+- character death while a takeover/reconnect is pending;
 - Game Gateway retry/replay;
 - GameNode crash during handoff;
 - lease timeout and delayed packets;
 - stale session-generation messages;
 - Platform/Gateway/game-database partial failure.
 
-The safe failure direction is toward **zero or one** player gameplay authority and preservation of incumbent combat consequences, never two authoritative playable characters and never instant escape from combat.
+The safe failure direction is toward preserving the healthy incumbent session or, after proven loss, toward zero or one gameplay authority. The system must never create two authoritative playable characters, instant combat escape, or a forced combat disconnect triggered only by another client login.
 
 ## Cross-repository ownership consequence
 
@@ -165,7 +192,7 @@ The safe failure direction is toward **zero or one** player gameplay authority a
 
 The single-online-character and takeover rules cross the Platform/Gateway/game boundary and therefore require an explicit contract. They must not be implemented through unrestricted cross-database coupling or by making Platform the owner of gameplay character state.
 
-Exact responsibility for admission artifacts, account-level exclusion lease, character lease, fencing generations and pending-takeover reconciliation remains `FND-04` work.
+Exact responsibility for admission artifacts, account-level exclusion lease, character lease, fencing generations, liveness proof and pending-takeover reconciliation remains `FND-04` work.
 
 No write to `blakinio/Oteryn-Platform` is authorized by this baseline.
 
@@ -173,7 +200,7 @@ No write to `blakinio/Oteryn-Platform` is authorized by this baseline.
 
 A valid AccountId, CharacterId or GameSessionId is not sufficient authority by itself.
 
-Production admission must validate current account ownership and current session/lease/fencing state so that stale sessions cannot keep playing, a second CharacterId cannot bypass the account exclusion rule, world/channel/instance changes cannot bypass it, and replayed identifiers cannot acquire gameplay authority.
+Production admission must validate current account ownership and current session/lease/fencing state so that stale sessions cannot keep playing, a second CharacterId cannot bypass the account exclusion rule, world/channel/instance changes cannot bypass it, replayed identifiers cannot acquire gameplay authority, and a second authenticated client cannot weaponize takeover to disconnect a healthy combat-locked incumbent.
 
 ## Required application to later contracts
 
@@ -184,7 +211,7 @@ This baseline is mandatory input to:
 - `FND-02` fields that carry session/admission identity after semantics are fixed;
 - `DUR-02` persistence/fencing model where durable lease/session state is required;
 - combat/logout lifecycle rules;
-- QA/E2E duplicate-login, combat-X-log and reconnect scenarios;
+- QA/E2E duplicate-login, combat-X-log, forced-disconnect and reconnect scenarios;
 - Platform/Game Gateway reconciliation where AccountId participates in admission.
 
 ## Programme effect
@@ -193,22 +220,26 @@ Accepted now:
 
 ```text
 one AccountId = maximum one authoritative online CharacterId
-new valid login supersedes the old client session
-combat/logout lock prevents instant removal and prevents admission of a different character until legal resolution
+logout-eligible incumbent -> valid newcomer may replace it through fenced handoff
+healthy combat/PZ/logout-locked incumbent -> newcomer cannot kick or steal the session
+proven incumbent connection/session loss -> same-character reconnect may recover the existing actor without resetting combat state
+different character remains blocked while incumbent has mandatory world presence
 ```
+
+This section supersedes the unconditional "newcomer always wins control" wording introduced by PR #71 for the case of a healthy combat/PZ/logout-locked incumbent.
 
 Still unresolved:
 
-- same-CharacterId takeover/reattach behavior during combat;
 - exact GameSessionId representation and issuer;
 - AdmissionId representation and issuer;
 - CharacterLeaseId representation and issuer;
 - account-level versus character-level lease physical layout;
 - lease location, TTL, renewal and revocation;
 - session-generation increment rules;
+- exact healthy/stale transport liveness proof;
 - reconnect grace period;
 - exact disconnected-character combat behavior;
 - exact Gateway/game transaction and failure state machine;
-- exact UX while a different-character takeover is pending.
+- exact UX while takeover is blocked or pending.
 
 No runtime, protocol, persistence, database or Platform implementation is authorized by this decision alone.
