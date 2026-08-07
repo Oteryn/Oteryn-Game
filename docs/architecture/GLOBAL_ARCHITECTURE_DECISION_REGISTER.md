@@ -42,6 +42,8 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | GameNode process identity, multithreaded single-writer execution, measured capacity, external orchestration and same-channel fenced recovery baseline | `ACCEPTED` | ADR-0009 |
 | Reference and evolved world product profiles over one engine, client and `protocol-oteryn`, with isolated world-scoped gameplay value | `ACCEPTED` | ADR-0010 and `PRODUCT_DIRECTION_BASELINE.md` |
 | Fail-closed native client state before the accepted gameplay protocol exists | `ACCEPTED` | ADR-0011 |
+| Native Character Authority owns CharacterId/lifecycle/account-character ownership while Platform owns AccountId and orchestration | `ACCEPTED` | ADR-0012 and `CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md` |
+| Platform database technology is independent from native game PostgreSQL; a Platform PostgreSQL migration requires separate evidence-backed Platform authority | `ACCEPTED` | ADR-0013 |
 | FND-01 workspace contract, VSL-02 migration contract, canonical 19-member destination cutover and source-only closeout | `ACCEPTED` | `FND-01_WORKSPACE_AND_RUST_MIGRATION_CONTRACT.md`, `VSL-02_RUST_CLIENT_MIGRATION_AND_CUTOVER_CONTRACT.md`, destination merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`, otclient #274/#275 |
 | Minimum cross-boundary foundation identifier contract | `ACCEPTED` | `FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md`, merge `2c584543cd1e3758958755478a6cc6ed3d39a8a9` |
 
@@ -51,11 +53,13 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - `FND-ID-01` is accepted and merged; its task lifecycle is archived.
 - The migrated client remains in ADR-0011 `pre-native-protocol`: it launches and fails closed before gameplay credential consumption, routing or gameplay transport.
 - `protocol-canary` and a speculative production `protocol-oteryn` adapter remain absent from the destination production graph.
-- issue #86 is coordination cleanup only and does not reopen accepted FND-ID semantics.
-- after #86 is merged and verified, `FND-02` is the clean next ordered foundation architecture gate.
+- issue #86 coordination reconciliation is complete and does not reopen accepted FND-ID semantics.
+- `FND-02` is the clean next ordered foundation architecture gate.
 - `FND-02`, `FND-03` and `FND-04` independently gate canonical protocol, authoritative runtime and production admission/lease behavior.
 - ADR-0009 fixes the GameNode/process/container boundary and recovery invariants; `PERF-01` gates supported capacity claims and `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production recovery behavior.
 - ADR-0010 fixes reference/evolved worlds as versioned product/ruleset/content profiles over one engine, client and `protocol-oteryn`; `GAME-VISION-01` must define measurable parity scope and launch strategy before broad gameplay/content production.
+- ADR-0012 fixes native Character Authority versus Platform lifecycle/orchestration ownership without authorizing runtime or persistence implementation.
+- ADR-0013 removes Platform database migration from the native gameplay critical path while preserving PostgreSQL for native game persistence and all ADR-0004 ownership/least-privilege invariants.
 - bounded technical spikes may inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 - `DUR-01` through `DUR-03` remain hard gates before authoritative durable character, item or currency mutation.
 - `ANL-01` must be accepted before `DUR-02`/`DUR-03` finalize transactional outbox and critical audit evidence; analytics consumers never replace authoritative invariants.
@@ -103,7 +107,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 ### `FND-02` — `protocol-oteryn` v1
 
-- Status: `BLOCKS_LAYER_IMPLEMENTATION`; next ordered foundation contract after #86 coordination cleanup.
+- Status: `BLOCKS_LAYER_IMPLEMENTATION`; next ordered foundation contract.
 - Consume `FND-ID-01` meanings without redefining them.
 - Reconcile only with the exact latest merged Platform native contract; `FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md` classifies that external contract as reconciliation input only.
 - Populate the machine-readable cross-repository contract lock with merged commit, schema revision/hash, producers, consumers and rollout order.
@@ -114,6 +118,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Register every externally controlled size/depth/count and map stable failures into the common resource-limit and error vocabularies.
 - Gate canonical wire schemas/codecs and production compatibility claims, not architecture discovery.
 - Preserve ADR-0008: no Canary opcode, packet, negotiation, fallback or translation compatibility is a protocol requirement.
+- Consume the independent wire-evidence guardrails in `ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-07.md`: shared production codecs are not the sole oracle; canonical byte fixtures, malformed corpora, property tests, fuzzing and cross-version fixtures are required as applicable.
 
 ### `FND-03` — Runtime Execution Contract
 
@@ -182,7 +187,7 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 - Status: `BLOCKS_DURABLE_GAMEPLAY`.
 - Applies before `DUR-02`/`DUR-03` finalize transactional audit evidence.
 - Freeze canonical `EventId`, `OperationId`, `TransactionId`, `CorrelationId`, `CausationId` and pseudonymous `AnalyticsActorId` semantics where required by the event/audit foundation.
-- Freeze the common event envelope, durability classes, producers/consumers, ordering, idempotency, outbox, publication checkpoints, deduplication, replay and schema compatibility.
+- Freeze a minimal common event envelope plus strongly typed/versioned event-family payloads, durability classes, producers/consumers, ordering, idempotency, outbox, publication checkpoints, deduplication, replay and schema compatibility.
 - Define bounded fail-open gameplay telemetry separately from atomic durable economy/security audit.
 - Define privacy classes, pseudonymous analytics identity, access, retention, deletion/anonymization and test fixtures.
 
@@ -401,9 +406,13 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 14. Every vertical-slice or client-visible package must consume `QA-E2E-01`; it may add scenarios and assertions but not a competing E2E lifecycle/evidence platform.
 15. ADR-0008 is binding on `FND-02` and all later client/server packages; no task may reintroduce Canary into production through an optional feature, fallback, compatibility listener or intermediate translation model.
 16. ADR-0009 is binding on runtime, performance and operations packages: `NodeId` identifies the GameNode process incarnation rather than a physical host, each channel retains one logical writer, capacity claims require `PERF-01`, and automatic production scaling/recovery claims require `OPS-CHANNEL-01`.
+17. Every material architecture decision must apply `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`: state whether it must be decided now, name blocked downstream work, identify future constraints and state evidence that would justify supersession.
+18. ADR-0013 is binding on persistence/programme planning: PostgreSQL remains the native game target, but Platform database migration is not a native-game prerequisite and requires separate Platform authority and evidence.
 
 ## Current next action
 
-Complete and merge issue #86 coordination reconciliation. Once that exact-head change is validated, audited and archived, begin a separate bounded **architecture-only `FND-02` contract task** consuming the merged FND-ID contract and `FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md`.
+Begin a separate bounded **architecture-only `FND-02` contract task** consuming the merged FND-ID contract, `FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md`, cross-repository lock, resource-limit registry, error vocabulary, failure scenarios and the protocol evidence guardrails in `ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-07.md`.
 
-No `protocol-oteryn` runtime implementation, listener/codec implementation, Platform write or production behavior is authorized by this register cleanup.
+`GAME-VISION-01` analysis may continue in parallel when it does not redefine accepted foundation identity, repository, protocol, Platform, persistence or runtime boundaries.
+
+No `protocol-oteryn` runtime implementation, listener/codec implementation, Platform write or production behavior is authorized by this register update.

@@ -29,6 +29,16 @@ Do not edit another active task except for an explicitly coordinated ownership c
 
 A task changing world/channel/instance ownership, protocol schemas, authentication/session binding, persistence guarantees, item transactions, houses, rulesets or cross-repository boundaries must update or add the corresponding ADR/contract in the same delivery programme.
 
+For architecture review, continuation, decision or coordination work, also read and apply:
+
+- `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`;
+- `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` for live foundation progression;
+- `docs/architecture/ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-07.md` for the owner-accepted review refinements and stale-status reconciliation until later canonical documents explicitly absorb them.
+
+A registered future topic is not permission to freeze it early. Every material architecture decision must state whether it must be decided now, name the concrete downstream work it blocks, and state what evidence would justify superseding it later.
+
+A task that supersedes only part of an older ADR must preserve the old ADR and identify the exact superseded clause or policy. Do not rewrite history merely to make an earlier document read as if the later decision had always existed.
+
 An unmerged task document cannot authorize its own architecture, production access or cross-repository writes.
 
 ## Shared-document discipline
