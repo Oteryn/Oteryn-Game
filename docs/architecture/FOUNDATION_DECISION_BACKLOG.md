@@ -1,10 +1,11 @@
 # Oteryn v2 Foundation Decision Backlog
 
 - Status: Active architecture backlog
-- Date: 2026-08-06
+- Date: 2026-08-07
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Canonical programme task: `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`
 - Global decision register: `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md`
+- Current execution status: `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`
 - Coordinator prompt: `docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md`
 
 ## Purpose
@@ -13,7 +14,7 @@ Record the remaining architecture decisions in one durable, ordered register. Th
 
 The complete later project horizon is maintained in `GLOBAL_ARCHITECTURE_DECISION_REGISTER.md`. That register preserves gameplay, client, content, operations and product domains without forcing them to be designed before they block the current stage.
 
-Chat history is not authoritative. Accepted ADRs, this backlog, the global register, the active programme task and live PR/CI state are the continuation sources.
+Chat history is not authoritative. Accepted ADRs/contracts, this backlog, the global register, the current-status overlay, the active programme task and live PR/CI state are the continuation sources.
 
 ## Stable gate identifiers
 
@@ -49,22 +50,22 @@ The following are no longer open questions:
    - one project-owned gameplay protocol: `protocol-oteryn`.
 
 2. **Repository ownership and migration order**
-   - the existing Rust client will move from `blakinio/otclient/oteryn-client` into `blakinio/Oteryn-v2`;
-   - client, server, shared Rust types and `protocol-oteryn` will have one canonical repository and workspace;
-   - `blakinio/otclient` remains migration/history evidence after the move;
+   - the existing Rust client moved from `blakinio/otclient/oteryn-client` into `blakinio/Oteryn-v2`;
+   - client, server, shared Rust types and `protocol-oteryn` have one canonical repository/workspace boundary;
+   - `blakinio/otclient` is migration/history evidence and its source marker is complete;
    - `protocol-canary` is not part of the target runtime;
-   - `FND-01` audits and classifies the exact source workspace;
-   - `VSL-02` and the controlled client migration/cutover follow immediately after `FND-01`, before `FND-ID-01`, `FND-02`, `FND-03` or `FND-04` freeze shared contracts;
-   - the destination must not create a competing placeholder client before the accepted migration/cutover;
-   - one atomic `blakinio/Oteryn-v2` destination PR must include the accepted client import, root-workspace creation/completion, FND-01 dispositions, dependency enforcement, `protocol-canary` isolation, provenance and exact-head validation;
-   - a later `blakinio/otclient` PR is source-only cutover closeout that marks the old path moved/non-canonical after the destination merge.
+   - `FND-01` audited and classified the exact source workspace;
+   - `VSL-02` and the controlled client migration/cutover are complete;
+   - PR #50 delivered the canonical destination workspace as `78988f72a80cc904aa9176ae850c50d4efa0b0f0`;
+   - `blakinio/otclient#274` and #275 completed the moved/non-canonical source marker and lifecycle closeout.
 
 3. **Identity and Game Gateway boundary**
    - Platform Identity remains the reusable-credential, OAuth/PKCE, MFA and account-security authority;
    - Oteryn v2 does not introduce a second classic login server or password/OAuth authority;
    - Game Gateway remains in `blakinio/Oteryn-Platform`;
    - the initial Game Gateway remains implemented in Go;
-   - the Rust game server accepts the bounded Game Session admission contract and owns gameplay admission and runtime state.
+   - the Rust game server accepts bounded pre-admission material and owns gameplay admission/runtime state;
+   - canonical `GameSessionId` is game-domain-owned and issued only after successful authoritative admission.
 
 4. **Database direction**
    - PostgreSQL is the target relational database technology;
@@ -106,7 +107,7 @@ The following are no longer open questions:
    - Tier 3 production-binary smoke E2E proves exact release-candidate artifacts without the in-process test adapter;
    - hidden retry-until-green is forbidden and every counted physical attempt remains visible;
    - exact revisions, deterministic controls, first-divergence evidence and cleanup certification are mandatory;
-   - `QA-E2E-01` blocks completion of `VSL-01`, but does not block `FND-01`, `VSL-02` or architecture discovery.
+   - `QA-E2E-01` blocks completion of `VSL-01`, but does not block architecture discovery.
 
 9. **Legacy protocol migration disposition**
    - `protocol-canary` is fixed as `REFERENCE_ONLY` migration evidence;
@@ -131,13 +132,19 @@ The following are no longer open questions:
    - `GAME-VISION-01` must define measurable parity scope, first-launch strategy and initial intentional differences before broad gameplay/content production.
 
 12. **Canonical workspace and pre-native client cutover state**
-   - `FND-01` and the `VSL-02` destination contract are accepted and archived;
-   - PR #50 delivered the accepted 19-member canonical Rust workspace and was squash-merged as `78988f72a80cc904aa9176ae850c50d4efa0b0f0`;
-   - the client is in ADR-0011 `pre-native-protocol` and fails closed before gameplay credential consumption, routing or transport;
-   - the production graph contains neither `protocol-canary` nor a speculative production `protocol-oteryn` adapter;
-   - the remaining migration action is the source-only historical marker in `blakinio/otclient`; `FND-ID-01` follows after that closeout.
+   - `FND-01` and `VSL-02` are accepted, applied and archived;
+   - PR #50 delivered the accepted 19-member canonical Rust workspace as `78988f72a80cc904aa9176ae850c50d4efa0b0f0`;
+   - source-only closeout is complete in `blakinio/otclient`;
+   - the client remains in ADR-0011 `pre-native-protocol` and fails closed before gameplay credential consumption, routing or transport;
+   - the production graph contains neither `protocol-canary` nor a speculative production `protocol-oteryn` adapter.
 
-Canonical decisions: ADR-0001 through ADR-0011.
+13. **Foundation identifier contract**
+   - `FND-ID-01` is accepted and canonical through `FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md` and merge `2c584543cd1e3758958755478a6cc6ed3d39a8a9`;
+   - the minimum catalogue is `AccountId`, `CharacterId`, `WorldId`, `ChannelId`, `NodeId`, `InstanceId`, `PartyId`, `GameSessionId` plus the accepted conditional `HandoffId`;
+   - `AdmissionId` and `CharacterLeaseId` are not created by the foundation contract;
+   - `CommandId`/wire sequencing remain `FND-02`, runtime-local handles remain `FND-03`, admission/session/lease mechanics remain `FND-04`, and later durable/analytics identity catalogues remain with `DUR-*`/`ANL-*`.
+
+Canonical decisions: ADR-0001 through ADR-0011 plus accepted dedicated foundation contracts/baselines.
 
 ## Progressive implementation policy
 
@@ -146,43 +153,25 @@ Architecture contracts remain mandatory for public and durable behavior, but com
 ### Completed foundation migration sequence
 
 - `FND-01` was accepted and archived with the exact source inventory, migration dispositions, toolchain, target matrix and machine-enforced workspace boundaries.
-- `VSL-02` was accepted and archived with the exact cutover SHA, source reconciliation, provenance, path mapping and rollback contract.
-- The atomic destination migration/workspace PR #50 was squash-merged as `78988f72a80cc904aa9176ae850c50d4efa0b0f0`.
-- ADR-0011 defines the resulting fail-closed `pre-native-protocol` state.
+- `VSL-02` was accepted and archived with exact cutover/provenance/rollback contracts.
+- the atomic destination migration/workspace PR #50 was squash-merged as `78988f72a80cc904aa9176ae850c50d4efa0b0f0`;
+- the source-only historical marker and lifecycle archive are complete in `blakinio/otclient`;
+- `FND-ID-01` was accepted and squash-merged as `2c584543cd1e3758958755478a6cc6ed3d39a8a9`;
+- its task lifecycle was archived on `main` by PR #87.
 
-### Current cross-repository closeout
+### Current foundation transition
 
-The destination workspace is canonical and verified. The remaining migration action is a source-only `blakinio/otclient` marker that preserves history, points to the exact destination merge and prevents continued canonical development in the old path. No Oteryn-v2 implementation belongs in that source-marker PR.
+The migration/cutover and foundation identifier gate are complete. The current ordered architecture transition is to `FND-02` after the coordination-register reconciliation tracked by issue #86 is merged and verified.
 
-`FND-ID-01` begins only after this source-marker closeout is merged and verified.
-
-### Gate 2 — after the atomic `VSL-02` destination merge and source-marker cutover
-
-The canonical root workspace already exists around the migrated client. Later packages may extend it only for immediate consumers and within the accepted dependency graph.
-
-Allowed:
-
-- maintenance of the accepted root Cargo metadata, toolchain and lockfile;
-- addition of minimal placeholder-free crates/applications required by an authorized immediate consumer;
-- compile-only interfaces and test fixtures that do not silently freeze an unresolved public contract;
-- dependency-graph checks and forbidden-edge validation;
-- bounded, reversible technical spikes whose results are recorded as evidence.
-
-Not yet allowed unless its own gate has passed:
-
-- production `protocol-oteryn` wire compatibility claims;
-- authoritative channel/runtime behavior;
-- live Game Session admission or character lease behavior;
-- durable authoritative gameplay mutation;
-- broad content import.
+No `FND-02` protocol/runtime implementation is authorized by this backlog reconciliation.
 
 ### Gate 3 — layer-specific implementation
 
-- `FND-ID-01` gates freezing identifier representations in protocol, Game Session and admission contracts.
-- `FND-02` gates canonical protocol schemas/codecs, production framing and compatibility claims.
-- `FND-03` gates authoritative runtime scheduling, ordering, lifecycle and recovery behavior.
-- `FND-04` gates production admission, Game Session validation and character lease behavior.
-- `GAME-VISION-01` gates broad gameplay/content production claims, but does not block `FND-01`, `VSL-02` or shared-foundation migration work.
+- `FND-ID-01` is complete and its semantic identities are mandatory inputs to later layers.
+- `FND-02` gates canonical `protocol-oteryn` schemas/codecs, production framing, command identity/sequencing and compatibility claims.
+- `FND-03` gates authoritative runtime scheduling, ordering, runtime-local handles, lifecycle and recovery behavior.
+- `FND-04` gates production admission, Game Session validation, reconnect/takeover and character lease behavior.
+- `GAME-VISION-01` gates broad gameplay/content production claims.
 - `PERF-01` gates published player-capacity claims and representative-load readiness.
 - `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production GameNode/channel recovery behavior.
 - `DUR-01` through `DUR-03` gate authoritative durable character, item and currency mutation.
@@ -254,42 +243,43 @@ An initial member requires an immediate named consumer and observable acceptance
 
 Mandatory direction: domain and simulation crates do not depend on Tokio, TCP, TLS, HTTP, SQL, PostgreSQL, Platform APIs, renderer state or UI widgets. World/content schema crates do not depend on Tauri, editor UI or renderer implementation. These boundaries must become machine-checked after the destination workspace exists.
 
-`FND-01` completion does not authorize an isolated destination bootstrap. Its next gate is `VSL-02`.
+`FND-01` is complete and no longer blocks later foundation architecture work.
 
 ### `VSL-02` — Exact Rust Client Migration and Cutover Contract
 
-Status: **ACCEPTED; DESTINATION COMPLETE; SOURCE-ONLY CLOSEOUT PENDING**.
+Status: **ACCEPTED AND COMPLETE**.
 
-Accept immediately after `FND-01` and before `FND-ID-01`, `FND-02`, `FND-03` or `FND-04`.
-
-Decide:
-
-- exact cutover source SHA from `blakinio/otclient/oteryn-client`;
-- reconciliation of every open PR, active task and source change after the `FND-01` inventory;
-- provenance/history traceability compatible with mandatory squash merge: immutable source retention, exact SHA/range, machine-readable path/provenance mapping, copyright/license records and source links without false ancestry claims;
-- exact source-to-destination path mapping and exclusions;
-- migration disposition for every crate/subsystem using the `FND-01` classification;
-- one atomic destination PR containing the accepted import, root-workspace creation/completion, dependency enforcement, `protocol-canary` isolation and complete validation;
-- destination build/test matrix and source/destination equivalence evidence;
-- isolation or removal of `protocol-canary` from the target runtime graph;
-- source development freeze, moved/non-canonical marker and post-cutover ownership;
-- cutover order across repositories;
-- rollback conditions and procedure.
-
-The migration programme requires one atomic destination task/branch/PR in `blakinio/Oteryn-v2`. A later separate task/branch/PR in `blakinio/otclient` may only freeze and mark the source moved/non-canonical after the verified destination merge. Both use one coordination ID and explicit rollout/rollback order. Do not freeze shared client/server contracts until both the destination is canonical and the source cutover marker is terminal.
+The destination migration and source-only historical/non-canonical closeout are complete. The historical contract remains evidence for provenance/cutover rules but is not an active blocker.
 
 ### `FND-ID-01` — Foundation Identifier Vocabulary
 
-Accept this minimum vocabulary after successful `VSL-02` migration/cutover and destination workspace bootstrap/completion, before `FND-02` or `FND-04` freezes wire/session schemas. Decide only the semantics required across process and repository boundaries:
+Status: **ACCEPTED AND MERGED**.
 
-- meaning, canonical owner and scope of `AccountId`, `CharacterId`, `WorldId`, `ChannelId`, `InstanceId`, `NodeId`, `GameSessionId`, `CommandId`, `EntityId`, `EventId`, `OperationId`, `TransactionId`, `CorrelationId`, `CausationId`, `AnalyticsActorId`, `ProtocolRevision`, `RulesetRevision`, `ContentRevision` and `SessionGeneration`;
-- global versus scoped uniqueness and whether reuse is permitted;
-- durable versus runtime-only identity;
-- public/client-visible versus opaque identity;
-- canonical comparison, textual diagnostics and wire/Game Session encoding constraints;
-- compatibility and migration rules when an external producer uses a different storage representation.
+Canonical source: `docs/architecture/FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md`.
 
-Do not freeze PostgreSQL column types, indexes, full item-instance identity or every durable entity here. Those remain in `DUR-01`; the purpose of `FND-ID-01` is to prevent protocol and admission contracts from inventing incompatible meanings first.
+The foundation catalogue is deliberately minimal:
+
+- `AccountId`;
+- `CharacterId`;
+- `WorldId`;
+- `ChannelId` scoped by `WorldId`;
+- `NodeId` for one GameNode process incarnation;
+- `InstanceId` scoped by `WorldId`;
+- `PartyId` scoped by `WorldId`;
+- `GameSessionId`;
+- conditional `HandoffId` scoped by `WorldId` for one bounded authoritative ownership transition.
+
+The contract freezes semantic owner/issuer/scope/lifecycle/visibility and strong-typing rules required by downstream foundation work. It does not become a whole-game identifier registry.
+
+Explicit downstream ownership:
+
+- `FND-02`: `CommandId`, protocol sequencing/acknowledgement, wire/IDL/byte order and compact session-handle encoding;
+- `FND-03`: runtime-local entity/worker/task/generational handles and runtime ownership-generation mechanics;
+- `FND-04`: admission/session/lease/reconnect/takeover state machines and any evidence-based later request for `AdmissionId` or `CharacterLeaseId`;
+- `DUR-*`: physical database representations, item/economy/durable-domain identifiers and persistence mechanics;
+- `ANL-*`: event/operation/transaction/correlation/causation/pseudonymous analytics identity catalogues and their privacy/durability rules.
+
+`ProtocolRevision`, `RulesetRevision`, `ContentRevision`, `connection_generation` and ownership generations are revisions/fences, not entity identities in `FND-ID-01`.
 
 ### `FND-02` — `protocol-oteryn` v1 Contract
 
@@ -303,16 +293,15 @@ Decide:
 - stable schema/IDL and canonical schema owner;
 - protocol revision versus ruleset/content revision;
 - capability negotiation and downgrade prevention;
-- sequencing, acknowledgement and error vocabulary;
-- `command_id`, replay protection and idempotency;
+- `CommandId` representation/scope plus sequencing, acknowledgement, replay protection and idempotency;
 - snapshot, delta and reconciliation contracts;
-- reconnect/resume semantics;
+- reconnect/resume semantics and compact session mapping where accepted;
 - compression rules and bounded allocation;
 - entries in the resource-limit registry for every externally controlled size/depth/count;
 - stable machine error categories and mapping into the foundation error vocabulary;
 - golden fixtures shared by client and server.
 
-Do not create a second silent native protocol beside the existing Platform contract. Rust memory layout or unstable serializer output cannot be the public wire contract.
+The merged Platform native contract is reconciliation input only according to `FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md`. Do not create a second silent native protocol or silently adopt the old external wire tuple. Rust memory layout or unstable serializer output cannot be the public wire contract.
 
 ### `FND-03` — Runtime Execution Contract
 
@@ -320,6 +309,7 @@ Decide:
 
 - `NodeRuntime`, `WorldServices`, `ChannelRuntime` and `InstanceRuntime` responsibilities;
 - modular-monolith initial deployment topology;
+- runtime-local entity/worker/task/generational handle semantics and invalidation boundaries;
 - fixed or variable tick model and initial tick frequency;
 - monotonic versus wall-clock ownership, clock-skew tolerance, tick-to-time conversion and injected deterministic test clocks;
 - authoritative command ordering;
@@ -339,38 +329,22 @@ The ownership boundary is accepted; the exact mechanism is not. This contract co
 
 Decide:
 
-- Game Session token format: signed, opaque or hybrid;
+- Game Session token/credential representation: signed, opaque or hybrid;
 - issuer, audience and key ownership;
 - key discovery, rotation and emergency revocation;
 - issue, expiry and reconnect windows;
 - atomic consume or equivalent replay prevention;
 - capacity routing and channel binding;
 - exact admission error vocabulary;
-- `session_generation` allocation and fencing;
+- `connection_generation` and any account/character lease-generation allocation/fencing semantics;
 - lease owner and storage;
 - lease acquisition, renewal, grace, expiry and release timings;
 - duplicate login handling;
-- safe channel switching;
+- safe channel/instance handoff state machines consuming `HandoffId`;
 - network partition and dependency failure behaviour;
 - stable public/internal error mapping, correlation/redaction rules and expected results for the shared foundation failure-scenario catalogue.
 
-Minimum data to evaluate:
-
-```text
-account_id
-character_id
-world_id
-channel_id
-game_session_id
-session_generation
-protocol_revision
-ruleset_revision
-content_revision
-issued_at
-expires_at
-issuer
-audience
-```
+Minimum data to evaluate includes the accepted FND-ID identities plus protocol/ruleset/content revisions, current fencing values, credential timestamps, issuer and audience. The exact schema remains owned by FND-04/FND-02 rather than this backlog.
 
 ## Capacity and channel operations follow-up contracts
 
@@ -409,30 +383,15 @@ Decide:
 
 ### `DUR-01` — Durable Identifier Representation Contract
 
-Freeze representations and visibility for:
+Consume the semantic identities already frozen by `FND-ID-01` and define physical durable/database representation where persistence requires it. Additionally freeze the durable-domain identifiers owned by persistence/gameplay domains, including item/entity identities and other later durable records.
 
-- `AccountId`;
-- `CharacterId`;
-- `WorldId`;
-- `ChannelId`;
-- `InstanceId`;
-- `NodeId`;
-- `GameSessionId`;
-- `CommandId`;
-- `EntityId`;
-- `ItemInstanceId`;
-- `ProtocolRevision`;
-- `ContentRevision`;
-- `RulesetRevision`;
-- `SessionGeneration`;
-- `EventId`;
-- `OperationId`;
-- `TransactionId`;
-- `CorrelationId`;
-- `CausationId`;
-- `AnalyticsActorId`.
+Requirements:
 
-Decide UUID/UUIDv7/integer usage, global versus scoped uniqueness, wire encoding, database encoding, public visibility and entity-ID reuse rules.
+- do not redefine `AccountId`, `CharacterId`, `WorldId`, `ChannelId`, `NodeId`, `InstanceId`, `PartyId`, `GameSessionId` or `HandoffId` semantics;
+- `CommandId` semantic representation/scope remains owned by `FND-02`; DUR may only define how an accepted CommandId is physically persisted when required for idempotency/audit;
+- event/operation/transaction/correlation/causation and pseudonymous analytics identities are finalized with `ANL-01`/durability ownership rather than being pulled back into FND-ID;
+- decide UUID/UUIDv7/integer/surrogate use only where the owning semantic contract permits it;
+- decide database encoding, indexing, retention/tombstone behavior and entity-ID reuse rules without changing cross-boundary semantics.
 
 ### `DUR-02` — Persistence v1 Contract
 
@@ -499,6 +458,7 @@ ADR-0006 accepts the subsystem direction. The following contracts freeze its imp
 
 Decide:
 
+- canonical `EventId`, `OperationId`, `TransactionId`, `CorrelationId`, `CausationId` and pseudonymous `AnalyticsActorId` semantics/representation/scope where required by the event/audit foundation;
 - common versioned event envelope and event-family ownership;
 - operational, best-effort telemetry and durable audit classifications;
 - producers, consumers, ordering, causation/correlation and schema compatibility;
@@ -511,7 +471,7 @@ Decide:
 - named analytics/audit/privacy/investigation scenarios from `FOUNDATION_FAILURE_SCENARIOS.md`;
 - golden fixtures and duplicate/out-of-order/schema-evolution tests.
 
-This contract must be accepted before `DUR-02` and `DUR-03` finalize the outbox/audit evidence required by their transactions. It does not block client migration or minimal workspace bootstrap after cutover.
+This contract must be accepted before `DUR-02` and `DUR-03` finalize the outbox/audit evidence required by their transactions. It does not block the completed migration/FND-ID gates.
 
 ### `ANL-02` — Gameplay, Balance and World Analytics Contract
 
@@ -565,7 +525,7 @@ ADR-0007 accepts the architecture. Implementation must provide:
 - visible repeated-run populations with no hidden retry-until-green;
 - PR/main/nightly/release placement proportional to tier and risk.
 
-The canonical client must first be migrated through `VSL-02`. Protocol, admission, durable mutation and content scenarios consume their respective accepted contracts. `QA-E2E-01` blocks completion of `VSL-01`, not the current `FND-01` or migration work.
+The canonical client migration and FND-ID gate are complete. Protocol, admission, durable mutation and content scenarios consume their respective accepted contracts. `QA-E2E-01` blocks completion of `VSL-01`, not architecture discovery.
 
 ## `VSL-01` — Foundation Vertical-Slice Programme
 
@@ -573,8 +533,8 @@ Approve ownership, implementation order and evidence for this minimum scenario u
 
 1. client authenticates through Platform;
 2. client receives world/channel directory data;
-3. Gateway issues a bound Game Session;
-4. Rust game server validates admission and acquires the character lease;
+3. Gateway issues bounded pre-admission material;
+4. Rust game server validates admission, establishes canonical game-domain Game Session and acquires the character lease;
 5. character enters a minimal native map;
 6. movement is authoritative;
 7. two clients observe each other on one channel;
@@ -587,7 +547,7 @@ Approve ownership, implementation order and evidence for this minimum scenario u
 14. character state is checkpointed and saved;
 15. logout is safe;
 16. the character logs into another channel with inventory/progression preserved;
-17. a simultaneous second login of the same character is rejected;
+17. a simultaneous second authoritative character session is rejected according to the accepted account/character policy;
 18. channel-local state remains isolated while world-shared state remains shared.
 
 ## Decisions required as the vertical slice expands
@@ -625,7 +585,7 @@ Registering a gate does not accept its implementation choice.
 
 ## Explicitly deferred
 
-These do not block client migration, the initial workspace bootstrap after cutover or the foundation vertical slice when extension points remain safe:
+These do not block the completed migration/FND-ID gates or the foundation vertical slice when extension points remain safe:
 
 - final house presence and entry topology;
 - live migration of an active channel;
@@ -660,51 +620,47 @@ No package may edit another active package's owned contract without explicit coo
 ```text
 1. COMPLETED — Accept FND-01 Workspace, Dependency and Existing-Rust Migration Contract
 2. COMPLETED — Accept VSL-02 Exact Rust Client Migration and Cutover Contract
-3. COMPLETED — Freeze and reconcile the exact source SHA, open PRs, tasks and post-inventory changes
-4. COMPLETED — Deliver one atomic Oteryn-v2 destination PR containing client migration, root-workspace creation/completion, dependency enforcement, protocol-canary isolation, provenance and validation
-5. COMPLETED — Squash-merge and verify the exact destination result as `78988f72a80cc904aa9176ae850c50d4efa0b0f0`
-6. NEXT — Merge the source-only otclient moved/non-canonical marker PR
-7. THEN — Accept FND-ID-01 Foundation Identifier Vocabulary, including event/operation/transaction identities
-8. Merge and lock the final canonical Platform native-contract correction
-9. Accept FND-02 protocol-oteryn v1 Contract
-10. Accept FND-03 Runtime Execution Contract, including clock and event-emission semantics
-11. Accept FND-04 Identity, Game Session, Admission and Character Lease Contract
-12. Accept DUR-01 full Identifier Contract for database and durable-state representation
-13. Accept GAME-CHAR-01 before DUR-02 freezes the durable character schema
-14. Accept GAME-ITEM-01 before DUR-03 freezes item behavior and transfer semantics
-15. Accept ANL-01 Game Event and Audit Foundation Contract
-16. Accept DUR-02 Persistence v1 Contract with transactional outbox/audit recovery
-17. Accept DUR-03 Item Transaction and Anti-Duplication Contract, if not complete in DUR-02
-18. Draft ANL-02 and ANL-03 on the accepted event/persistence/item foundations
-19. Run the bounded world-format spike and complete DUR-04 under ADR-0005
-20. Implement QA-E2E-01 incrementally as the client, protocol, admission, persistence and content prerequisites land
-21. Accept VSL-01 Foundation Vertical-Slice Programme with correlated event/audit evidence and named QA-E2E-01 tiers
-22. Execute the separately authorized vertical-slice implementation programme
-23. Accept PERF-01 before publishing supported capacity or claiming Playable Alpha representative-load readiness
-24. Accept OPS-CHANNEL-01 before automatic production channel scaling or production GameNode/channel recovery behavior is claimed
-25. Accept GAME-ABILITY-01, GAME-AI-01 and GAME-INTERACTION-01 before Playable Alpha gameplay breadth is claimed
-26. Accept PROD-LIVEOPS-01, PROD-COMPAT-01, SEC-CLIENT-01, DATA-PRIVACY-01, UX-I18N-A11Y-01 and OPS-GM-01 before Playable Alpha operational completeness is claimed
-27. Complete ANL-02/ANL-03 before production-grade alpha analytics claims; defer ANL-04 until read-only investigation is authorized
-28. Activate expansion/deferred gameplay-product gates only when their milestone or explicit owner decision requires them
+3. COMPLETED — Freeze/reconcile migration source and deliver canonical Oteryn-v2 workspace
+4. COMPLETED — Close source-only otclient historical/non-canonical marker
+5. COMPLETED — Accept and merge FND-ID-01 Foundation Identifier Contract
+6. CURRENT CLEANUP — Reconcile issue #86 coordination views to the accepted FND-ID scope
+7. NEXT — Accept FND-02 protocol-oteryn v1 Contract
+8. THEN — Accept FND-03 Runtime Execution Contract, including clock/event-emission/runtime-handle semantics
+9. THEN — Accept FND-04 Identity, Game Session, Admission and Character Lease Contract
+10. Accept DUR-01 durable/database identifier representation contract
+11. Accept GAME-CHAR-01 before DUR-02 freezes the durable character schema
+12. Accept GAME-ITEM-01 before DUR-03 freezes item behavior and transfer semantics
+13. Accept ANL-01 Game Event and Audit Foundation Contract
+14. Accept DUR-02 Persistence v1 Contract with transactional outbox/audit recovery
+15. Accept DUR-03 Item Transaction and Anti-Duplication Contract, if not complete in DUR-02
+16. Draft ANL-02 and ANL-03 on the accepted event/persistence/item foundations
+17. Run the bounded world-format spike and complete DUR-04 under ADR-0005
+18. Implement QA-E2E-01 incrementally as protocol, admission, persistence and content prerequisites land
+19. Accept VSL-01 Foundation Vertical-Slice Programme with correlated event/audit evidence and named QA-E2E-01 tiers
+20. Execute the separately authorized vertical-slice implementation programme
+21. Accept PERF-01 before publishing supported capacity or claiming Playable Alpha representative-load readiness
+22. Accept OPS-CHANNEL-01 before automatic production channel scaling or production GameNode/channel recovery behavior is claimed
+23. Accept GAME-ABILITY-01, GAME-AI-01 and GAME-INTERACTION-01 before Playable Alpha gameplay breadth is claimed
+24. Accept PROD-LIVEOPS-01, PROD-COMPAT-01, SEC-CLIENT-01, DATA-PRIVACY-01, UX-I18N-A11Y-01 and OPS-GM-01 before Playable Alpha operational completeness is claimed
+25. Complete ANL-02/ANL-03 before production-grade alpha analytics claims; defer ANL-04 until read-only investigation is authorized
+26. Activate expansion/deferred gameplay-product gates only when their milestone or explicit owner decision requires them
 ```
 
 Contracts may be developed in parallel only when ownership and dependencies do not overlap. Cross-repository changes require separate authorized tasks, branches and PRs with one coordination ID and explicit rollout order.
 
 ## Start gates
 
-- `FND-01`, `VSL-02` and the one atomic destination migration/workspace PR are complete and verified.
-- The canonical destination workspace is merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`; no import-only or later consolidation destination PR is permitted.
-- The remaining migration gate is the separate `blakinio/otclient` source-marker PR. It carries no destination implementation and must point to the immutable destination merge.
-- Squash-merge provenance retains the exact source SHA/range and machine-readable path mapping without claiming imported Git ancestry.
-- `FND-ID-01` is the next architecture gate after the source marker is merged and verified.
-- `FND-ID-01` must be accepted after migration/cutover and before `FND-02` or `FND-04` freezes identifier meanings on the wire or in Game Sessions.
+- `FND-01`, `VSL-02`, destination migration and source-only closeout are complete and verified.
+- `FND-ID-01` is accepted and merged; its semantics are mandatory input to `FND-02`, `FND-03` and `FND-04` and may not be redefined there.
+- issue #86 is coordination cleanup only; it does not reopen FND-ID semantics.
+- after #86 is merged and verified, `FND-02` is the clean next ordered architecture gate.
 - `FND-02`, `FND-03` and `FND-04` gate canonical protocol, authoritative runtime and production admission/lease implementation respectively.
 - `DUR-01`, `DUR-02` and `DUR-03` must be accepted before authoritative durable character, item or currency mutation.
 - `GAME-CHAR-01` must be accepted before `DUR-02` finalizes the character schema; `GAME-ITEM-01` must be accepted before `DUR-03` finalizes item semantics.
 - `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01` are required before Playable Alpha gameplay breadth is claimed; bounded vertical-slice contracts may precede them.
 - `PROD-LIVEOPS-01`, `PROD-COMPAT-01`, `SEC-CLIENT-01`, `DATA-PRIVACY-01`, `UX-I18N-A11Y-01` and `OPS-GM-01` are required before Playable Alpha operational completeness is claimed.
 - ADR-0005 is the accepted world/content direction; `DUR-04` must be accepted before broad content import or durable scripting.
-- `QA-E2E-01` must be implemented with its required exact evidence before `VSL-01` implementation is called complete; feature packages add scenarios and assertions, not competing lifecycle/evidence runners.
+- `QA-E2E-01` must be implemented with its required exact evidence before `VSL-01` implementation is called complete; feature packages add scenarios/assertions, not competing lifecycle/evidence runners.
 - `VSL-01` must name observable E2E evidence before implementation is called complete.
 - `ANL-01` must be accepted before final `DUR-02`/`DUR-03` outbox and audit boundaries are frozen.
 - `ANL-02`/`ANL-03` are required before production-grade balance/world and economy/security analytics claims; `ANL-04` remains a later read-only investigation gate.
@@ -713,4 +669,10 @@ Contracts may be developed in parallel only when ownership and dependencies do n
 
 ## Current next action
 
-Complete and merge the source-only historical marker in `blakinio/otclient` for destination merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`. After that closeout is verified, draft, audit, accept, merge and archive `FND-ID-01` — the Foundation Identifier Vocabulary.
+Complete and merge issue #86 coordination reconciliation on the two long-lived architecture registers. After exact-head validation, audit and closeout, begin a separate bounded **architecture-only `FND-02` contract task** consuming:
+
+- `FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md`;
+- `FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md`;
+- the current cross-repository contract lock and shared resource/error/failure catalogues.
+
+Do not implement `protocol-oteryn`, runtime listeners/codecs or Platform changes until a later explicitly authorized implementation task passes its owning architecture gates.
