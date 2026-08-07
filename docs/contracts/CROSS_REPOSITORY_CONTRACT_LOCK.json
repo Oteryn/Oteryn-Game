@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-07T10:18:00+02:00",
+  "updated_at": "2026-08-08T00:56:00+02:00",
   "policy": {
     "canonical_revisions_must_be_merged": true,
     "mutable_pr_heads_are_canonical": false,
@@ -35,7 +35,7 @@
       "reconciliation_required": true,
       "reconciliation_baseline": "docs/architecture/FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md",
       "conflict_classification": "CONFLICT_WITH_CURRENT_OTERYN_V2_ARCHITECTURE",
-      "final_protocol_authority": "FND-02",
+      "final_protocol_authority": "docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
       "platform_side_reconciliation": "PENDING_SEPARATE_EXPLICIT_AUTHORIZATION",
       "producers": [
         {
@@ -44,13 +44,13 @@
         },
         {
           "repository": "blakinio/Oteryn-v2",
-          "status": "NOT_IMPLEMENTED_NOT_ACCEPTED_FOR_FND02"
+          "status": "HISTORICAL_RECORD_ONLY_NOT_IMPLEMENTED_FROM_THIS_EXTERNAL_REVISION"
         }
       ],
       "consumers": [
         {
           "repository": "blakinio/Oteryn-v2",
-          "status": "NOT_IMPLEMENTED_NOT_ACCEPTED_FOR_FND02"
+          "status": "RECONCILIATION_INPUT_ONLY_NOT_IMPLEMENTED_FROM_THIS_EXTERNAL_REVISION"
         }
       ],
       "rollout_order": [
@@ -63,6 +63,59 @@
         "enable only through a separately authorized rollout"
       ],
       "accepted_for_fnd02": false
+    },
+    {
+      "coordination_id": "OTV2-NATIVE-FOUNDATION",
+      "contract_name": "protocol-oteryn-v1-foundation",
+      "status": "LOCKED",
+      "canonical_repository": "blakinio/Oteryn-v2",
+      "canonical_commit": "769ecd2ce2dfe0a7644d8dc1d67c54d40da5d202",
+      "canonical_contract_revision": 1,
+      "canonical_contract_path": "docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "schema_path": "docs/contracts/protocol-oteryn/v1/foundation.proto",
+      "schema_revision": 1,
+      "schema_sha256": "6e1c614661e72daac529be9d0ec06317201b916cd47ae17ff1590da5c7205ebe",
+      "registry_path": "docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json",
+      "resource_limits_path": "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
+      "source_pull_request": 94,
+      "source_exact_head": "91809204fcdf984a5a9d7b8c276ef9fb2f9cab9f",
+      "merged_at": "2026-08-07T22:54:33Z",
+      "exact_head_validation": {
+        "agent_governance_run": 31225287340,
+        "dependency_review_run": 31225287332,
+        "codeql_run": 31225287334,
+        "architecture_audit_review": 4887157361,
+        "open_material_findings": 0,
+        "unresolved_review_threads": 0
+      },
+      "producers": [
+        {
+          "repository": "blakinio/Oteryn-v2",
+          "status": "CANONICAL_CONTRACT_ACCEPTED_RUNTIME_NOT_IMPLEMENTED"
+        },
+        {
+          "repository": "blakinio/Oteryn-Platform",
+          "status": "PENDING_SEPARATELY_AUTHORIZED_RECONCILIATION"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "blakinio/Oteryn-v2",
+          "status": "CANONICAL_CONTRACT_ACCEPTED_CLIENT_SERVER_RUNTIME_NOT_IMPLEMENTED"
+        }
+      ],
+      "rollout_order": [
+        "complete FND-03 runtime execution contract",
+        "complete FND-04 identity Game Session admission reconnect and lease contract",
+        "perform separately authorized Platform-side protocol contract reconciliation",
+        "implement native Rust protocol client/server consumers under explicit implementation authorization",
+        "prove independent byte malformed property fuzz cross-version pipelining and snapshot-barrier evidence",
+        "run cross-repository admission gameplay rollback E2E",
+        "enable only through a separately authorized production rollout"
+      ],
+      "accepted_for_fnd02": true,
+      "runtime_implemented": false,
+      "production_enabled": false
     }
   ]
 }
