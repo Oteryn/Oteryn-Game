@@ -4,274 +4,312 @@
 task_id: OTV2-20260807-lag-disconnect-protection-analysis
 title: Continue Lag / Disconnect Protection architecture analysis
 mode: ARCHITECTURE_ANALYSIS_ONLY
-status: owner_discussion_checkpoint
+status: owner_accepted_checkpoint_current
 repository: blakinio/Oteryn-v2
 base_branch: main
-branch: docs/OTV2-20260807-lag-disconnect-protection-handover
-pr: 74
-base_sha: af094d4d75d3a19db63714810f263059c78f7b3a
 owner: Oteryn project owner
-created_at: 2026-08-07T14:40:00+02:00
-updated_at: 2026-08-07T14:44:00+02:00
-owned_paths:
-  - docs/agents/tasks/active/OTV2-20260807-lag-disconnect-protection-analysis.md
-public_contracts: []
-depends_on:
-  - PR #72 / merge 97b29e5c927f319ed03fb5583614d5fe0366d134 — healthy combat/PZ/logout-locked incumbent cannot be kicked by duplicate login
-  - PR #73 / merge af094d4d75d3a19db63714810f263059c78f7b3a — reconnect continuity, transport-generation fencing, 15-second grace window including combat/PZ/logout lock
-blocks:
-  - later FND-04 liveness/reconnect/admission state machine details affected by disconnect protection
-  - later gameplay protection policy if an emergency controller is accepted
+updated_at: 2026-08-07T18:01:00+02:00
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
+canonical_contracts:
+  - docs/architecture/FND-ID-01_ACCOUNT_SINGLE_ONLINE_CHARACTER_OWNER_BASELINE.md
+  - docs/architecture/FND-ID-01_GAME_SESSION_RECONNECT_GENERATION_OWNER_BASELINE.md
+  - docs/architecture/LAG_DISCONNECT_PROTECTION_OWNER_BASELINE.md
+  - docs/architecture/LAG_DISCONNECT_REENTRY_ACTION_POLICY_OWNER_BASELINE.md
+accepted_prs:
+  - PR #72 / merge 97b29e5c927f319ed03fb5583614d5fe0366d134
+  - PR #73 / merge af094d4d75d3a19db63714810f263059c78f7b3a
+  - PR #75 / merge 4434f3f16ba5d313b31cb6959ca68fb934b0572a
+  - PR #76 / merge b457fb70954f46df2f5f11f6b7a2b2e056b79b03
 ```
 
 ## Purpose
 
-Preserve the exact architecture-discussion boundary so a new agent can resume without relying on chat history.
+Preserve the complete current owner-accepted Lag / Disconnect Protection architecture so a later agent can continue without reconstructing the discussion from chat history.
 
-The owner has moved the discussion from **reconnect identity/session semantics** into a distinct design area: **protection against lag, network stalls and genuine Internet disconnection**.
+This is an architecture checkpoint only. Do not implement runtime, protocol, persistence, database, client, Platform or gameplay code unless the owner explicitly authorizes implementation.
 
-Do not treat the candidate mechanisms below as accepted architecture unless they are explicitly marked `OWNER-ACCEPTED`.
+The canonical semantic sources are the architecture baseline files listed above. This task is the current discussion/handover overlay and must not contradict them.
 
-Do not implement runtime/game code. Continue architecture analysis with the owner, one concrete decision at a time. Accepted decisions may later be recorded through their own bounded documentation-only change.
+## Accepted prerequisites
 
-## Canonical prerequisites already accepted
+### One authoritative online character per account
 
-### Duplicate-login / combat protection — OWNER-ACCEPTED
+At most one character per account may hold authoritative gameplay permission at a time.
 
-A second authenticated client must not forcibly disconnect, fence, revoke or steal control from a healthy incumbent gameplay session while its character has an active combat/PZ/logout blocker.
+A second authenticated client cannot kick, revoke or steal a healthy incumbent character while that character has combat/PZ/logout mandatory world presence.
 
-If the incumbent session is genuinely unavailable, same-character recovery may reconnect to the same in-world actor without resetting gameplay state. A different character remains blocked while mandatory world presence exists.
+Same-character recovery may reconnect to the same actor when the incumbent transport is genuinely unavailable. A different character remains blocked while unresolved authoritative presence exists.
 
-### Reconnect identity and fencing — OWNER-ACCEPTED
+### Logical Game Session versus transport
 
-A short eligible reconnect does not create a new logical gameplay session.
+A bounded reconnect after transient transport loss may preserve the same logical `GameSessionId` while establishing a newer transport/connection generation.
 
-During the reconnect grace window:
+Older transport generations fail closed and delayed/stale packets cannot regain gameplay authority.
 
-```text
-same GameSessionId
-+ newer transport/connection generation
-```
+### Logical reconnect grace
 
-The newer generation fences old transports and delayed/stale commands.
-
-### Reconnect grace duration — OWNER-ACCEPTED
-
-Initial policy:
+Owner-accepted initial policy:
 
 ```text
 reconnect_grace_window = 15 seconds
 ```
 
-The same 15-second value applies whether or not the character currently has a combat/PZ/logout lock.
+The same 15-second window applies in and out of combat/PZ/logout lock.
 
-The 15 seconds are a tunable server policy, not an immutable protocol constant.
+This is a tunable server policy, not an immutable wire constant. Expiry of the 15-second logical reconnect grace must not by itself create a safe logout, clear combat state or remove a character that still has mandatory world presence.
 
-Expiry of reconnect grace does **not** itself clear combat/PZ state, remove a character that still has mandatory world presence, or create a safe-logout exploit.
+## Owner-accepted disconnect protection activation
 
-The exact server-authoritative start/measurement instant is still FND-04 work.
-
-## New architecture area: Lag / Disconnect Protection
-
-The owner explicitly identified the next topic as a **mechanism protecting the player against lag and Internet disconnection**.
-
-This must be designed separately from reconnect grace:
-
-- reconnect grace answers whether the old logical `GameSessionId` can be resumed;
-- Lag / Disconnect Protection answers how the server detects loss/degradation of player control and what happens to the existing in-world actor while control is degraded or absent.
-
-The two mechanisms interact but must not be conflated.
-
-## Candidate connection-health state model — NOT YET ACCEPTED
-
-A possible server-authoritative state machine discussed so far:
+The gameplay-visible PvE rule is:
 
 ```text
-HEALTHY
-  -> DEGRADED
-  -> UNRESPONSIVE
-  -> DISCONNECTED
-  -> RECOVERING
-  -> HEALTHY
+0.0 s <= elapsed < 2.0 s  -> normal PvE monster attacks
+elapsed >= 2.0 s          -> disconnect protection active
 ```
 
-Names and exact transitions are only working terminology.
+Player-facing wording: the first two full seconds remain normal combat; **from the beginning of the third second** all PvE monsters stop actively attacking the disconnected/protected character.
 
-The system should not trust a client statement such as "I have lag" or "I disconnected" as authoritative proof.
+The boundary is exactly `elapsed >= 2.0 s`, not 3.0 seconds elapsed.
 
-Candidate server-side evidence includes:
+The timer must be based on server-authoritative liveness/control evidence, never on a client claim that it is lagging or disconnected.
 
-- heartbeat/liveness observations;
-- time since last valid inbound traffic;
-- sequencing and acknowledgment progress;
-- RTT/jitter/packet-loss trends where observable;
-- command-stream progress;
-- Gateway observation;
-- GameNode observation;
-- transport closure as a signal, but not necessarily sufficient proof by itself;
-- current session lease/fencing state.
+This gameplay boundary does not require a two-second main server loop. Networking, simulation and liveness processing may run at a finer cadence.
 
-Exact liveness proof remains unresolved.
+## Owner-accepted PvE behavior while disconnected
 
-## Hard anti-abuse / state-preservation requirements discussed
+Once disconnect protection is active:
 
-These are strong candidate invariants consistent with already accepted reconnect/combat rules. They should be challenged and then individually owner-accepted before being frozen into a contract.
+- all PvE monsters stop issuing new offensive actions against the protected actor;
+- this includes monsters that already had the character targeted or engaged;
+- preserved aggro/threat may remain internally so disconnect does not become an aggro reset;
+- monsters and encounters do not freeze and may continue acting against other legal targets;
+- actions/effects already authoritatively committed before the two-second boundary are not rolled back;
+- existing DoT, fields, hazards, projectiles or already committed AoE may still resolve;
+- disconnect protection is therefore not invulnerability.
 
-Lag/disconnect protection must not become an escape or reset primitive. In particular it should not automatically:
+Disconnect protection must not automatically:
 
-- grant invulnerability;
+- heal or refill HP/mana/resources;
+- clear conditions, debuffs, cooldowns or exhaustion;
 - clear combat/PZ/logout lock;
-- teleport or reposition the character to safety;
-- heal HP/mana/resources;
-- clear conditions, damage-over-time, debuffs, exhaustion or cooldowns;
-- reset aggro/threat/combat attribution;
-- reset encounter or instance state;
-- rollback committed authoritative actions;
-- allow stale/delayed command batches to execute after control is recovered;
-- create a second copy/actor of the same character;
-- admit another character from the same account while the first still has mandatory world presence.
+- erase aggro/combat attribution;
+- teleport/reposition the character merely because connectivity was lost;
+- reset an encounter or instance;
+- roll back committed gameplay;
+- duplicate/recreate the actor;
+- admit a second character from the same account while unresolved authoritative presence remains.
 
-The character should remain the **same authoritative in-world actor** throughout a genuine disconnect/recovery path unless normal gameplay rules later remove it.
+## Five-second stale transport cleanup
 
-## Candidate layered protection architecture — NOT YET ACCEPTED
-
-The discussion identified three conceptually separate layers.
-
-### 1. Network protection
-
-Possible responsibilities:
-
-- transport-generation fencing;
-- stale/delayed packet rejection;
-- bounded command queues;
-- expiry of time-sensitive input;
-- reconnect credential validation;
-- rapid safe rebinding to the same actor;
-- protection against duplicate execution after retransmit/replay.
-
-Much of the fencing direction is already compatible with PR #73, but detailed policies remain unresolved.
-
-### 2. Movement / input protection
-
-Possible responsibilities once the server has sufficient evidence that control is degraded or lost:
-
-- do not continue an old movement/autowalk instruction indefinitely;
-- do not replay a backlog of obsolete directional/input commands after a stall;
-- define which previously committed movement/action sequences may still finish;
-- distinguish committed server actions from stale client intent.
-
-Exact semantics are unresolved.
-
-### 3. Emergency gameplay protection / controller
-
-A possible but **controversial and NOT ACCEPTED** direction is a tightly constrained server-side emergency controller that may perform only limited defensive behavior after genuine loss of player control.
-
-Examples considered only as discussion material:
-
-- defensive healing;
-- limited defensive ability use;
-- possibly stopping dangerous movement;
-- possibly maintaining only previously allowed low-risk behavior.
-
-This carries a major abuse risk:
+Owner-accepted transport cleanup target:
 
 ```text
-dangerous situation
--> player deliberately cuts network
--> server emergency controller plays better / saves character
+stale_transport_close = 5 seconds
 ```
 
-Therefore any such controller, if accepted at all, would need strong anti-abuse constraints, deterministic limited capability, server-authoritative disconnect proof and full observability/auditability.
+If control/connectivity has not recovered after five seconds, the old concrete transport may be forcibly closed/kicked and remains fenced.
 
-No emergency-controller behavior has been owner-accepted yet.
-
-## Key distinction after 15-second reconnect expiry
-
-If the 15-second reconnect grace expires while the character still has combat/PZ/logout mandatory world presence:
-
-- expiry may end eligibility to preserve the old logical `GameSessionId` according to the eventual FND-04 state machine;
-- it must not by itself remove or protect the in-world character;
-- the character's continued world behavior is exactly where Lag / Disconnect Protection and combat/logout gameplay policy now need to be designed;
-- post-grace same-character recovery/admission semantics are still unresolved.
-
-This is the immediate architecture boundary.
-
-## Questions still unresolved
-
-Do not answer all at once. Work through these with the owner one decision at a time:
-
-1. Should genuine loss of player control trigger only network/input safety, or also a limited server-side emergency gameplay controller?
-2. What exact evidence is sufficient to classify `DEGRADED`, `UNRESPONSIVE` and genuinely `DISCONNECTED` without making deliberate cable-pulling exploitable?
-3. Should stale movement/autowalk stop immediately, after a bounded timeout, or at the next safe server action boundary?
-4. Which already-issued commands remain committed and which client intents expire during lag?
-5. If an emergency controller exists, which actions are permitted and prohibited?
-6. Should protection behavior differ in PvE, PvP, bosses, instances or high-value activities?
-7. What happens after the 15-second reconnect grace expires while combat/PZ mandatory world presence continues?
-8. How does post-grace same-character re-entry work without allowing two authorities, reset, teleport or combat escape?
-9. Which parts belong in FND-04 session/liveness versus later combat/gameplay architecture?
-10. What telemetry/audit events are required to detect deliberate disconnect abuse and tune false positives?
-
-## Current recommendation, not decision
-
-Keep Lag / Disconnect Protection modular:
+Critical distinction:
 
 ```text
-Connection Health Monitor
-        |
-        v
-Session Liveness / Fencing
-        |
-        v
-Disconnect Protection Policy
-        |
-        +--> Network/Input Safety
-        |
-        +--> optional Emergency Character Controller
+5 s  = stale concrete transport cleanup
+15 s = logical GameSessionId reconnect grace
 ```
 
-The `Emergency Character Controller` should remain optional in the architecture until the owner explicitly decides whether such gameplay automation is desirable at all.
+The five-second transport cleanup does **not** end the character's disconnect protection, does not despawn the actor, and does not shorten the already accepted 15-second logical reconnect grace.
 
-## Guardrails for the next agent
+## Longer Internet outage, client crash or power loss
 
-- ARCHITECTURE / ANALYSIS ONLY. Do not implement runtime code.
-- Do not mix client and server ownership. Detection/authority/protection state is server-side; the client may provide observations but cannot authoritatively grant itself protection.
-- Do not reopen accepted PR #72/#73 semantics unless a concrete contradiction is discovered.
-- Do not silently make candidate items above canonical decisions.
-- Surface abuse cases and race conditions before recommending a mechanism.
-- Prefer fail-safe behavior that never creates dual authority or combat escape.
-- Ask one high-leverage product/architecture question at a time.
-- Save newly owner-accepted decisions through bounded documentation-only architecture changes.
+The design must protect genuine failures lasting longer than five seconds, including ISP/router failure, client crash, computer crash/reboot and power loss.
 
-## Context checkpoint
+A longer outage may move the character into an authoritative held/suspended recovery state. Working names such as `DISCONNECTED_HELD` or `SUSPENDED_CHARACTER` are not final identifiers.
+
+Accepted semantics:
+
+- authoritative character state is preserved rather than reset;
+- unresolved combat/world obligations are not escaped merely by staying offline;
+- a different character from the same account remains blocked while authoritative presence/obligation is unresolved;
+- an implementation need not keep the full live actor resident indefinitely if later durability contracts can suspend it safely;
+- later recovery resolves the preserved state rather than creating a fresh safe-state character.
+
+Exact post-15-second admission/recovery semantics and storage representation remain unresolved and belong to later FND-04/persistence/gameplay contracts.
+
+## Owner-accepted four-second re-entry protection
+
+After a valid return to playable control:
+
+```text
+reentry_pve_protection = 4 seconds
+```
+
+This represents approximately two gameplay turns for recovery and escape.
+
+During the full four-second PvE re-entry window:
+
+### Allowed
+
+- movement and direction change;
+- escape/repositioning through normal movement rules;
+- ordinary self-healing;
+- health potion use;
+- mana/resource potion use required for recovery;
+- all allowed recovery actions still pay their normal resource/item costs and obey normal cooldowns.
+
+### Suspended
+
+- basic/auto attack initiation;
+- explicit attack-target selection that would start new offensive combat;
+- offensive spells, runes, abilities or other actions later classified as offensive.
+
+Offensive input attempted during the protection window must **not be queued or buffered** for automatic execution after protection expires.
+
+The protection window itself does not automatically heal, refill, clear conditions, remove combat/PZ/logout obligations, reset aggro or reset encounter state.
+
+When the four seconds expire, normal offensive authority and normal PvE targeting rules resume.
+
+## Instanced boss / party encounter recovery
+
+A disconnected participant must not freeze or indefinitely hold open a boss instance for the rest of the party.
+
+If participant A disconnects:
+
+```text
+A receives disconnect protection
+remaining party continues encounter
+boss may die normally
+encounter completes normally
+```
+
+The encounter result is authoritative and is not rolled back because A was offline.
+
+The architecture must retain durable participant/encounter evidence sufficient to later determine:
+
+- `EncounterId` and `CharacterId`;
+- join/participation timing;
+- disconnect timing;
+- meaningful participation across roles, not damage only;
+- encounter outcome;
+- attempt/cooldown consumption;
+- personal reward eligibility/entitlement when applicable.
+
+Disconnect cannot be used to erase a consumed boss attempt/cooldown or duplicate a reward.
+
+Personal rewards may later be materialized as durable exactly-once entitlements. Shared physical corpse/container loot is not duplicated for the absent player.
+
+Exact participation/reward thresholds remain unresolved.
+
+## Re-entry after an instance has ended
+
+If the original instance still exists and the encounter contract permits resume, the same authoritative participant may resume according to that instance's recovery rules.
+
+If the boss encounter has completed and the original `InstanceId` has been destroyed, the returning player must not be recreated inside the vanished boss room and the instance must not be resurrected.
+
+Every such instance/content definition must provide deterministic recovery destinations conceptually equivalent to:
+
+```text
+entry_anchor
+normal_exit_anchor
+recovery_exit_anchor
+```
+
+When the old instance no longer exists, the character resumes at its predefined `recovery_exit_anchor`.
+
+The recovery exit is content-defined in advance and cannot be chosen opportunistically after seeing the disconnect outcome. It may equal the normal exit/lobby when appropriate.
+
+If the recovery exit is already a safe lobby/PZ, an extra four-second monster-protection window may be unnecessary there; exact composition remains later content/gameplay policy.
+
+## Owner-accepted anti-abuse direction
+
+The server cannot reliably distinguish a single genuine ISP/power/client failure from deliberate cable-pulling.
+
+Therefore the project accepts **longitudinal telemetry and pattern analysis** as the primary anti-abuse evidence path rather than treating a single disconnect as proof.
+
+Disconnect/re-entry telemetry should support analysis of at least:
+
+- disconnect frequency and duration;
+- combat/PZ state;
+- HP/mana/resources at disconnect;
+- recent incoming damage/risk;
+- monster/boss/encounter context;
+- repeat disconnects inside the same encounter/combat episode;
+- use of four-second re-entry protection;
+- repeated low-HP disconnect -> protected reconnect -> heal/escape cycles;
+- regional/ISP/GameNode/platform outage correlation;
+- comparison of combat disconnects with ordinary session disconnects.
+
+One event is not proof of abuse.
+
+Repeated evidence-backed suspicious behavior may feed a progressive enforcement path such as warning -> stronger warning/review -> temporary suspension/ban -> stronger sanction for continued proven abuse.
+
+Consistent with ADR-0006, **Game Intelligence remains observational/investigative**. It does not autonomously ban players and does not mutate authoritative gameplay state. Exact enforcement authority, thresholds, review/appeal rules and temporary/permanent-ban progression require a separate policy contract.
+
+Correlated mass infrastructure incidents must be distinguishable from individual suspicious patterns so genuine ISP/GameNode/platform failures do not falsely accumulate abuse evidence.
+
+## Explicitly not accepted / still unresolved
+
+Do not silently promote any of the following into implementation:
+
+- exact heartbeat/liveness evidence and state-transition names;
+- exact persistence/storage model for held/suspended characters;
+- exact post-15-second logical-session recovery/admission semantics;
+- PvP disconnect/re-entry behavior;
+- exact classification of support spells, support items, class-specific defensive abilities and healing of other players during the four-second window;
+- loot, container use, push, lever/switch, NPC and other non-combat interaction rules during re-entry protection;
+- voluntary early cancellation of re-entry protection to regain offensive authority;
+- exact boss/summon/environment/script-actor classification under PvE attack suppression;
+- boss-mechanic commitment rules when a player disconnects during a targeted mechanic;
+- exact encounter participation/reward thresholds;
+- `Disconnect Protection Exhaustion` or a regenerating protection budget;
+- Emergency Character Controller / server-side auto-heal or auto-play;
+- exact warning/sanction thresholds, human review and appeal policy;
+- mass-outage compensation policy;
+- telemetry retention/privacy schema.
+
+`Emergency Character Controller` remains **NOT ACCEPTED**. The current accepted model protects and preserves the actor but does not make the server play the character during disconnect.
+
+## Required future consumers
+
+This checkpoint and its canonical baseline documents are mandatory input to later:
+
+- `FND-02` protocol fields/results where needed;
+- `FND-03` runtime timers, command scheduling, stale-input and actor suspension mechanics;
+- `FND-04` liveness, reconnect, transport cleanup, admission and lease state machine;
+- gameplay combat/action classification;
+- instance/encounter/content contracts;
+- `DUR-02` / `DUR-03` for durable suspended state and reward entitlement;
+- QA/E2E disconnect/reconnect/instance-destruction scenarios;
+- Game Intelligence disconnect-abuse telemetry;
+- later enforcement-policy architecture.
+
+## Guardrails
+
+- ARCHITECTURE / ANALYSIS ONLY until the owner explicitly authorizes implementation.
+- Do not mix client and server ownership. Server-side authority decides liveness, fencing and protection state; the client cannot grant itself protection.
+- Preserve one-authoritative-character and transport-generation fencing invariants.
+- Do not convert disconnect into invulnerability, combat reset, free loot, duplicate reward, duplicate actor or safe-logout exploit.
+- Work through remaining decisions one concrete owner question at a time.
+
+## Current checkpoint
 
 ```yaml
-status: owner_discussion_checkpoint
-branch: docs/OTV2-20260807-lag-disconnect-protection-handover
-head_sha: 2a0394a86d403e3fac34ffb30a2967a1556f2253
-pr: 74
-owned_paths:
-  - docs/agents/tasks/active/OTV2-20260807-lag-disconnect-protection-analysis.md
-public_contracts: []
-last_progress: Owner redirected the discussion from reconnect grace into a distinct Lag / Disconnect Protection mechanism and requested that all current considerations be saved for a new agent.
-validation_state: PR #74 created from main@af094d4d75d3a19db63714810f263059c78f7b3a; this metadata refresh advances the branch after the recorded content head, so the next agent must resolve the live PR head before mutation
-audit_state: candidate concepts explicitly separated from owner-accepted prerequisites
-e2e_state: not applicable; no implementation authorized
-ci_generation: PR #74
-run_ids: []
-counters:
-  waits: 0
-  retries: 0
+status: owner_accepted_checkpoint_current
+main_contains_pr_75: true
+main_contains_pr_76: true
+canonical_disconnect_baseline_merge: 4434f3f16ba5d313b31cb6959ca68fb934b0572a
+canonical_reentry_action_policy_merge: b457fb70954f46df2f5f11f6b7a2b2e056b79b03
+implementation_authorized: false
 blocker: none
-next_action: Ask the owner whether genuine disconnect protection should be limited to network/input safety or may include a tightly constrained emergency gameplay controller.
+next_decision_candidates:
+  - classify support/defensive/non-combat actions during the 4-second re-entry window
+  - define exact server-authoritative liveness evidence for the 2-second activation boundary
+  - define post-15-second held/suspended recovery/admission semantics
+  - define PvP-specific disconnect policy
 ```
 
 ## Resume instruction for the next agent
 
-Read this entire task, then verify live `main`, PR #74/head/merge state, and the accepted prerequisite documents from PR #72 and PR #73.
+Read the four canonical baseline documents listed in the task metadata and verify current `main` before making any new decision.
 
-Do **not** restart the identity/reconnect discussion.
+Do **not** restart the already accepted timing, re-entry, instance-recovery or telemetry discussions.
 
-Resume exactly at the first unresolved product decision:
-
-> Should a genuinely disconnected character receive only network/input safety, or may the server run a tightly constrained emergency defensive controller for that existing in-world actor?
+Continue only with an unresolved architecture decision and keep the work analysis-only unless the owner explicitly requests implementation.
