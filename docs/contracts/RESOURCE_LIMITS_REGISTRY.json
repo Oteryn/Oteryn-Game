@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "status": "FOUNDATION_REGISTRY_INITIALIZED",
-  "updated_at": "2026-08-05T13:25:00+02:00",
+  "status": "ACTIVE",
+  "updated_at": "2026-08-08T00:30:00+02:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -22,5 +22,378 @@
     "Every externally controlled count, depth, length or byte size is registered before implementation acceptance.",
     "Unknown or absent required limits fail the owning contract review; they are not inferred at runtime."
   ],
-  "entries": []
+  "entries": [
+    {
+      "id": "FND02-WIRE-FRAME-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "One post-TLS length-prefixed encoded WireEnvelope",
+      "unit": "bytes",
+      "hard_maximum": 1048576,
+      "configurable_range": {
+        "minimum": 1048576,
+        "maximum": 1048576
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate uint32_be length before allocating or reading the frame payload; never reserve from an unchecked peer length.",
+      "client_visible": true,
+      "boundary_tests": [
+        "0-byte frame rejected",
+        "1,048,576 bytes accepted when message-specific limits also permit",
+        "1,048,577 rejected before payload allocation",
+        "truncated frame rejected"
+      ],
+      "consumers": [
+        "client transport",
+        "server transport"
+      ],
+      "notes": "The four-byte prefix is excluded from payload_length."
+    },
+    {
+      "id": "FND02-BOOTSTRAP-PAYLOAD-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Encoded ClientBootstrap or ClientResume protobuf payload",
+      "unit": "bytes",
+      "hard_maximum": 65536,
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound total payload and nested byte fields before retaining or performing credential work.",
+      "client_visible": true,
+      "boundary_tests": [
+        "65,536 bytes accepted if all field limits pass",
+        "65,537 rejected",
+        "oversized unknown fields cannot bypass the total bound"
+      ],
+      "consumers": [
+        "ClientBootstrap decoder",
+        "ClientResume decoder"
+      ]
+    },
+    {
+      "id": "FND02-ADMISSION-MATERIAL-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "ClientBootstrap.admission_material",
+      "unit": "bytes",
+      "hard_maximum": 16384,
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject peer-controlled length before copying or verification.",
+      "client_visible": true,
+      "boundary_tests": [
+        "16,384 accepted",
+        "16,385 rejected before credential verification"
+      ],
+      "consumers": [
+        "FND-04 admission consumer"
+      ],
+      "notes": "FND-04 may define a smaller semantic credential format, but FND-02 decoders remain required to safely reject/handle up to this hard wire maximum."
+    },
+    {
+      "id": "FND02-RECONNECT-MATERIAL-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "ClientResume.reconnect_material",
+      "unit": "bytes",
+      "hard_maximum": 16384,
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject peer-controlled length before copying or verification.",
+      "client_visible": true,
+      "boundary_tests": [
+        "16,384 accepted",
+        "16,385 rejected before reconnect verification"
+      ],
+      "consumers": [
+        "FND-04 reconnect consumer"
+      ]
+    },
+    {
+      "id": "FND02-CLIENT-BUILD-ID-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "UTF-8 client_build_id",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Validate UTF-8 and byte length before retaining or logging.",
+      "client_visible": true,
+      "boundary_tests": [
+        "128-byte valid UTF-8 accepted",
+        "129 bytes rejected",
+        "invalid UTF-8 rejected"
+      ],
+      "consumers": [
+        "bootstrap/resume diagnostics"
+      ]
+    },
+    {
+      "id": "FND02-CAPABILITY-COUNT",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "supported_capability_id or selected_capability_id collection",
+      "unit": "entries",
+      "hard_maximum": 128,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound repeated field count before sorting, uniqueness checks or set intersection.",
+      "client_visible": true,
+      "boundary_tests": [
+        "128 sorted unique IDs accepted",
+        "129 rejected",
+        "duplicates or unsorted IDs rejected as INVALID_CAPABILITY_SET"
+      ],
+      "consumers": [
+        "bootstrap/resume negotiation"
+      ],
+      "notes": "Core v1 behavior is not capability-optional; this fixed decoder bound protects future additive extensions."
+    },
+    {
+      "id": "FND02-ORDINARY-REPEATED-ENTRIES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Foundation protobuf repeated field without a smaller named limit",
+      "unit": "entries",
+      "hard_maximum": 4096,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound collection growth before materializing peer-controlled repeated values.",
+      "client_visible": true,
+      "boundary_tests": [
+        "4,096 accepted where semantically valid",
+        "4,097 rejected before unbounded collection growth"
+      ],
+      "consumers": [
+        "all foundation protobuf decoders"
+      ]
+    },
+    {
+      "id": "FND02-PROTOBUF-NESTING-DEPTH",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Decoded protobuf message nesting",
+      "unit": "levels",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Decoder must enforce recursion/nesting depth without stack or heap blowup.",
+      "client_visible": false,
+      "boundary_tests": [
+        "depth 32 accepted",
+        "depth 33 rejected deterministically"
+      ],
+      "consumers": [
+        "all foundation protobuf decoders"
+      ]
+    },
+    {
+      "id": "FND02-COMMAND-EXPECTED-REVISIONS",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "ClientCommand.expected_revision",
+      "unit": "entries",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound revision vector before command normalization.",
+      "client_visible": true,
+      "boundary_tests": [
+        "64 unique revisions accepted",
+        "65 rejected",
+        "duplicate domain IDs rejected"
+      ],
+      "consumers": [
+        "server command decoder"
+      ]
+    },
+    {
+      "id": "FND02-COMMAND-PAYLOAD-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "ClientCommand.payload",
+      "unit": "bytes",
+      "hard_maximum": 65536,
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject before command-specific decode/allocation or domain mutation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "65,536 accepted when the command-type limit permits",
+        "65,537 rejected without domain mutation"
+      ],
+      "consumers": [
+        "server command decoder"
+      ]
+    },
+    {
+      "id": "FND02-COMMAND-RESULT-PAYLOAD-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "CommandResult.payload",
+      "unit": "bytes",
+      "hard_maximum": 65536,
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound before result-specific decode/allocation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "65,536 accepted when the command-type limit permits",
+        "65,537 rejected"
+      ],
+      "consumers": [
+        "client command-result decoder"
+      ]
+    },
+    {
+      "id": "FND02-OUTSTANDING-COMMANDS",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Contiguous commands sent but not terminally acknowledged for one GameSession",
+      "unit": "commands",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Ingress accounting rejects excess new work before adding it to session/runtime queues.",
+      "client_visible": true,
+      "boundary_tests": [
+        "64 outstanding commands accepted subject to runtime capacity",
+        "65th new command rejected with TOO_MANY_OUTSTANDING_COMMANDS",
+        "retry of an already-counted CommandId does not consume another slot"
+      ],
+      "consumers": [
+        "server session ingress"
+      ]
+    },
+    {
+      "id": "FND02-STATE-DOMAINS-PER-SYNC",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "State domains in one ResyncRequest or SnapshotBody",
+      "unit": "entries",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound domain vectors/maps before construction.",
+      "client_visible": true,
+      "boundary_tests": [
+        "256 unique domains accepted",
+        "257 rejected",
+        "duplicate domain IDs rejected"
+      ],
+      "consumers": [
+        "client/server reconciliation"
+      ]
+    },
+    {
+      "id": "FND02-STATE-DELTA-PAYLOAD-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "StateDelta.payload",
+      "unit": "bytes",
+      "hard_maximum": 262144,
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 262144
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject before domain-specific delta decode/allocation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "262,144 accepted when the domain-specific limit permits",
+        "262,145 rejected"
+      ],
+      "consumers": [
+        "client state-delta decoder"
+      ]
+    },
+    {
+      "id": "FND02-SNAPSHOT-CHUNK-COUNT",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Chunks in one SnapshotBody transfer",
+      "unit": "chunks",
+      "hard_maximum": 256,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate SnapshotBegin before allocating chunk tracking structures.",
+      "client_visible": true,
+      "boundary_tests": [
+        "256 accepted",
+        "257 rejected before assembler allocation",
+        "chunk_index >= chunk_count rejected"
+      ],
+      "consumers": [
+        "client snapshot assembler"
+      ]
+    },
+    {
+      "id": "FND02-SNAPSHOT-CHUNK-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "SnapshotChunk.data",
+      "unit": "bytes",
+      "hard_maximum": 524288,
+      "configurable_range": {
+        "minimum": 524288,
+        "maximum": 524288
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate chunk length before retaining or copying.",
+      "client_visible": true,
+      "boundary_tests": [
+        "524,288 accepted",
+        "524,289 rejected"
+      ],
+      "consumers": [
+        "client snapshot assembler"
+      ]
+    },
+    {
+      "id": "FND02-SNAPSHOT-ASSEMBLED-BYTES",
+      "owner_contract": "FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
+      "resource": "Complete encoded SnapshotBody before protobuf decode",
+      "unit": "bytes",
+      "hard_maximum": 16777216,
+      "configurable_range": {
+        "minimum": 16777216,
+        "maximum": 16777216
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Track cumulative received bytes using checked arithmetic and abort before exceeding the bound.",
+      "client_visible": true,
+      "boundary_tests": [
+        "16,777,216 accepted",
+        "16,777,217 cumulative bytes rejected",
+        "integer overflow in cumulative accounting rejected"
+      ],
+      "consumers": [
+        "client snapshot assembler"
+      ]
+    }
+  ]
 }
