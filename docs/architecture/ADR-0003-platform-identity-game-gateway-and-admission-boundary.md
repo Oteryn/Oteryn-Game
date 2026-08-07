@@ -12,7 +12,7 @@ The historical Open Tibia stack often uses a distinct login server or a login pr
 
 Oteryn v2 is a new native stack. Its accepted architecture already assigns web identity, OAuth/PKCE, Game Login Tickets, Game Gateway and World Registry to `blakinio/Oteryn-Platform`. The new Rust server must not become a second credential authority.
 
-`Oteryn-Platform` currently contains a standalone Game Gateway implemented in Go. It exposes the game-login orchestration boundary, redeems a Game Login Ticket through private Platform APIs, obtains an authorized login context, selects an allowed route/protocol candidate and requests a Game Session.
+`Oteryn-Platform` currently contains a standalone Game Gateway implemented in Go. It exposes the game-login orchestration boundary, redeems a Game Login Ticket through private Platform APIs, obtains an authorized login context, selects an allowed route/protocol candidate and requests bounded **pre-admission Game Session material** for the selected route. This pre-admission material is an authorization/admission capability and is not the canonical logical gameplay `GameSessionId`.
 
 The existing native gameplay work is incomplete. Platform contains contract and producer-side support, but the native candidate is disabled by default. The current Rust client has no `protocol-oteryn` adapter, and no authoritative Rust game server listener exists. Therefore native client-to-server gameplay is not currently proven.
 
@@ -25,8 +25,8 @@ Oteryn v2 does not introduce a separate classic login-server component that veri
 The target control-plane path is divided into:
 
 - **Platform Identity** — verifies reusable account credentials and account-security policy;
-- **Game Gateway** — performs bounded game-route and Game Session orchestration;
-- **Rust game server** — validates/consumes a Game Session, acquires the character lease and admits the character to gameplay.
+- **Game Gateway** — performs bounded game-route and pre-admission session orchestration;
+- **Rust game server / game-domain Game Session authority** — validates/consumes the pre-admission material, acquires the character lease, performs final admission and establishes the canonical logical gameplay session.
 
 Legacy Canary/Otheryn login paths may exist during compatibility migration, but they are not part of the target Oteryn v2 runtime and must not be treated as its final authentication architecture.
 
@@ -62,11 +62,11 @@ It is a control-plane service, not part of the authoritative gameplay runtime. I
 3. resolving authorized account, character, world and channel context;
 4. consulting authoritative World Registry policy;
 5. selecting one allowed gameplay route/protocol revision;
-6. invoking one Game Session issuance path;
-7. returning only sanitized endpoint, selection and short-lived session material;
+6. invoking one pre-admission Game Session material issuance path;
+7. returning only sanitized endpoint, selection and short-lived admission/session material;
 8. failing closed on invalid, ambiguous or unavailable dependencies.
 
-The Gateway must not own character simulation, inventory, combat, world state or durable gameplay persistence.
+The Gateway must not own character simulation, inventory, combat, world state, durable gameplay persistence or the canonical logical gameplay `GameSessionId` lifecycle.
 
 ### 4. Keep the initial Gateway implementation in Go
 
@@ -90,7 +90,7 @@ The native Rust client:
 1. authenticates through the approved Platform Identity flow;
 2. obtains a one-time Game Login Ticket;
 3. calls Game Gateway with a bounded supported protocol offer where required;
-4. receives the selected endpoint, channel, revisions and Game Session material;
+4. receives the selected endpoint, channel, revisions and short-lived pre-admission session/admission material;
 5. establishes the `protocol-oteryn` gameplay connection to the selected Rust game server;
 6. never sends the reusable account password to the game server.
 
@@ -98,15 +98,18 @@ The native Rust client:
 
 The Rust game server:
 
-- accepts only the approved Game Session admission contract;
+- accepts only the approved pre-admission Game Session/admission contract;
 - validates issuer, audience, expiry, revisions and route/channel binding;
 - atomically consumes or validates replay protection according to the future session contract;
 - acquires the current character lease;
 - rejects stale generation, wrong character/world/channel, incompatible revision and duplicate admission;
 - performs final game-owned checks such as character state, ban/disabled policy where contracted and safe entry conditions;
+- establishes the canonical logical gameplay session through the game-domain Game Session / Admission authority only after successful final admission;
 - starts authoritative gameplay only after successful admission.
 
-It does not issue reusable credentials or choose a different channel than the authorized session.
+It does not issue reusable credentials or choose a different channel than the authorized session material.
+
+The canonical `GameSessionId` is owned and logically issued by the game domain according to `FND-ID-01_GAME_SESSION_ID_OWNER_ISSUER_BASELINE.md`; Platform/Gateway pre-admission material must not be treated as that identity.
 
 ### 7. Target flow
 
@@ -116,13 +119,14 @@ Rust client
 → one-time Game Login Ticket
 → Game Gateway (Go, Oteryn-Platform)
 → ticket redemption + World Registry route selection
-→ Game Session bound to account/character/world/channel/revisions
+→ short-lived pre-admission Game Session material bound to account/character/world/channel/revisions
 → Rust game server admission
-→ character lease
+→ character lease / final game-owned admission checks
+→ game-domain canonical GameSessionId
 → protocol-oteryn gameplay
 ```
 
-Channel switching repeats the safe admission boundary with a fresh Game Session. It is not an in-place protocol or adapter switch.
+Channel switching repeats the safe admission boundary. A successful destination transition establishes the fresh logical Game Session required by the accepted multichannel architecture and therefore receives a fresh canonical `GameSessionId`; it is not an in-place protocol or adapter switch.
 
 ### 8. Current protocol truth
 
@@ -148,6 +152,17 @@ A second silent native protocol must not be created.
 
 The existing correspondence built around the C++ Otheryn producer and older profile terminology must be audited against the accepted Rust-server target and current single-native-version decision.
 
+### 10. Game Session terminology refinement
+
+The owner-accepted `FND-ID-01` decision now distinguishes two concepts that earlier revisions of this ADR described generically as “Game Session”:
+
+1. **pre-admission Game Session material** — short-lived Platform/Gateway-produced authorization and routing material presented to the game server; and
+2. **canonical logical gameplay session** — a game-domain lifecycle entity identified by `GameSessionId` after successful authoritative admission.
+
+This refinement does not move reusable credential authority, Game Login Ticket authority, World Registry or Gateway routing out of Platform. It clarifies that Platform authorization to attempt admission is not proof that a canonical gameplay session already exists.
+
+Where historical text or external Platform contracts still use the generic term `Game Session`, `FND-ID-01_GAME_SESSION_ID_OWNER_ISSUER_BASELINE.md` is authoritative for the semantic identity/issuer distinction and `FND-02`/`FND-04` must reconcile final names and schemas before implementation.
+
 ## Consequences
 
 ### Positive
@@ -155,15 +170,16 @@ The existing correspondence built around the C++ Otheryn producer and older prof
 - reusable credentials never enter the gameplay runtime;
 - Platform policy can be enforced once at a clear authority boundary;
 - game nodes can scale and fail independently from web Identity;
-- Gateway can route among channels without becoming a world-state owner;
+- Gateway can route among channels without becoming a world-state or canonical gameplay-session owner;
 - the Rust server receives a narrow, short-lived admission capability;
+- failed/pre-admission attempts do not become canonical logical gameplay sessions;
 - no unnecessary Gateway rewrite blocks the first playable slice.
 
 ### Costs
 
 - Platform availability is part of new-login admission;
 - cross-repository contracts require coordinated revisions;
-- Game Session, key rotation, replay prevention and lease failure semantics must be precisely defined;
+- pre-admission material, canonical Game Session, key rotation, replay prevention and lease failure semantics must be precisely defined;
 - compatibility login paths must be removed or fenced before claiming one globally enforced production login policy.
 
 ## Rejected alternatives
@@ -184,20 +200,26 @@ Rejected because the existing Go service is already isolated and tested, while t
 
 Rejected because route, capacity, revision and rollout policy belong to World Registry and Gateway.
 
+### Let Platform issue the canonical GameSessionId
+
+Rejected because Platform can authorize an admission attempt but cannot prove that final game-owned checks, character lease acquisition and authoritative gameplay admission succeeded. Canonical logical gameplay-session identity therefore belongs to the game-domain Game Session / Admission authority.
+
 ## Not performed by this ADR
 
 - no Platform or Gateway code is changed;
 - no legacy login path is disabled;
-- no Game Session token format is finalized;
+- no pre-admission session/admission token format is finalized;
+- no canonical `GameSessionId` wire encoding is finalized;
 - no lease implementation is chosen;
 - no native protocol is activated;
 - no runtime E2E claim is made.
 
 ## Required follow-up
 
-1. Reconcile or supersede the existing native gameplay contract for the Rust server target.
+1. Reconcile or supersede the existing native gameplay contract for the Rust server target, including the pre-admission-material versus canonical-`GameSessionId` distinction.
 2. Accept the exact Identity, Game Session, admission and lease contract across repositories.
-3. Implement the Platform client and Game Session consumer in the Oteryn v2 workspace.
-4. Implement `protocol-oteryn` client/server adapters and golden compatibility fixtures.
-5. Prove exact-revision E2E before enabling native routing.
-6. Remove or network-fence legacy authentication paths before claiming global Identity enforcement.
+3. Implement the Platform client and pre-admission material consumer in the Oteryn v2 workspace.
+4. Implement game-domain `GameSessionId` issuance only after `FND-04` freezes the admission/session state machine.
+5. Implement `protocol-oteryn` client/server adapters and golden compatibility fixtures.
+6. Prove exact-revision E2E before enabling native routing.
+7. Remove or network-fence legacy authentication paths before claiming global Identity enforcement.

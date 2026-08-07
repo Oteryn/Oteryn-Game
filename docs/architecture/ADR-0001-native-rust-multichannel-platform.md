@@ -31,9 +31,10 @@ Oteryn Platform
 ├── Game Login Ticket
 ├── Game Gateway
 ├── World Registry and channel directory
-└── Game Session issuance
+└── pre-admission Game Session material
 
 Oteryn Game Server — Rust
+├── Game Session / admission authority
 ├── authoritative world simulation
 ├── protocol-oteryn
 ├── channel runtimes
@@ -50,6 +51,8 @@ Oteryn Client — Rust
 ```
 
 No second login authority, password flow, ticket system or direct OAuth authentication to the game server may be introduced.
+
+Platform pre-admission material authorizes a bounded attempt to enter gameplay; the canonical logical `GameSessionId` is issued by the game-domain Game Session / Admission authority only after successful authoritative admission, as defined by `FND-ID-01_GAME_SESSION_ID_OWNER_ISSUER_BASELINE.md`.
 
 ### 2. One gameplay protocol
 
@@ -94,7 +97,7 @@ The following identifiers are distinct and must never be overloaded:
 - `InstanceId` — dungeon, arena, house or other isolated runtime space;
 - `ZoneId` — optional logical map partition;
 - `NodeId` — logical identity of one GameNode process runtime; it never identifies the physical host, container or orchestrator node;
-- `GameSessionId` — authenticated gameplay session.
+- `GameSessionId` — canonical admitted logical gameplay session identity.
 
 A channel may move between nodes without changing its identity. A single node may initially host several channels.
 
@@ -193,13 +196,15 @@ safe gameplay exit/checkpoint
 → close current Game Session
 → release or advance character lease
 → choose/recommend another channel
-→ issue a new Game Session
+→ obtain fresh authorized pre-admission material for the destination
+→ perform destination game-domain admission
+→ issue a fresh canonical GameSessionId
 → enter the new ChannelRuntime
 ```
 
 A player must not change channel while a protected operation is active, including combat lock, direct trade, unresolved item mutation, protected encounter or instance ownership transition.
 
-Reconnect may prefer the previous channel but must obtain a fresh valid session/lease decision.
+Reconnect may prefer the previous channel but must obtain a fresh valid session/lease decision according to the accepted reconnect and admission contracts. Eligible transport reconnect to the same logical session preserves its existing `GameSessionId`; a completed channel-session transition creates a fresh one.
 
 ### 11. Houses — provisional policy
 
@@ -244,7 +249,7 @@ Every running channel must advertise and validate a compatible set of revisions:
 - persistence schema revision;
 - server build revision.
 
-World Registry and Game Gateway must not route a session to an incompatible or draining channel.
+World Registry and Game Gateway must not route a session attempt to an incompatible or draining channel.
 
 ### 14. Failure domains
 
