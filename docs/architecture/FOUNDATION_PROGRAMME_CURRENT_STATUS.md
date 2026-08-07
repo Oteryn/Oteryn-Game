@@ -52,7 +52,7 @@ When an older document says that the `blakinio/otclient` source-only historical 
 | `VSL-02` destination cutover | `COMPLETE` | Canonical migrated client/workspace exists in Oteryn-v2. |
 | `VSL-02` source-only closeout | `COMPLETE` | Historical/non-canonical marker and archive are merged in `blakinio/otclient`. |
 | `FND-ID-01` | `NEXT ORDERED GATE` | Its source-marker start condition is satisfied; the full contract may now be drafted and accepted through its own bounded task/PR. |
-| `FND-02` | `BLOCKED ON OWN CONTRACT SEQUENCE` | Do not freeze canonical protocol schemas/codecs before identifier semantics required by the wire boundary are accepted. |
+| `FND-02` | `BLOCKED ON OWN CONTRACT SEQUENCE` | Do not freeze canonical protocol schemas/codecs before identifier semantics required by the wire boundary are accepted. The existing merged Platform native gameplay contract is reconciliation input only and is not accepted as `FND-02`. |
 | `FND-03` | `BLOCKED ON OWN CONTRACT` | No authoritative runtime implementation claim yet. |
 | `FND-04` | `BLOCKED ON OWN CONTRACT` | No production admission/lease implementation claim yet. |
 | `DUR-01`…`DUR-04`, `ANL-01`… | `LATER GATES` | Existing ordering and architecture requirements remain unchanged. |
@@ -70,6 +70,27 @@ Existing owner-accepted inputs include at least:
 - other accepted owner baselines that constrain privacy, presence and cross-boundary identity exposure.
 
 These are mandatory inputs to the complete `FND-ID-01` contract. They do not authorize protocol, runtime, database or admission implementation by themselves.
+
+## External Platform protocol reconciliation boundary
+
+The repository owner accepted on 2026-08-07 that the merged `blakinio/Oteryn-Platform` native gameplay contract at `c0b8703d326a04b43ae8e06f6192b0cb91c859b7` is **bounded reconciliation input only** for Oteryn v2 and is not the final `protocol-oteryn` contract.
+
+Canonical interpretation is recorded in `FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md`.
+
+The external revision remains useful evidence for Platform Identity, one-time ticket, Game Gateway, World Registry, exact route/session binding, fail-closed handling, downgrade prevention and related security requirements where those concepts remain consistent with accepted Oteryn-v2 ADRs.
+
+It does not pre-authorize or freeze for Oteryn v2:
+
+- production Canary protocol negotiation, adapter, listener or fallback;
+- Otheryn C++ as the target gameplay runtime;
+- the exact `tcp.tls13.protobuf.be32.v1` transport;
+- protobuf as the final IDL solely because that external contract uses it;
+- its schema revision/hash or fixed capability digest as the Oteryn-v2 `FND-02` answer;
+- its exact command, sequencing, revision or Game Session claim representation before the owning Oteryn-v2 gates decide them.
+
+`docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json` therefore retains the immutable external revision while explicitly classifying it as `RECONCILIATION_INPUT_ONLY` with `accepted_for_fnd02 = false`.
+
+A complete cross-repository resolution later requires a separate explicitly authorized `blakinio/Oteryn-Platform` task/branch/PR. No Platform write is authorized by this Oteryn-v2 decision alone.
 
 ## Stale progress-only reconciliation
 
@@ -89,6 +110,8 @@ Do not mass-rewrite historical ADRs or evidence merely to replace old progress w
 ## Current next action
 
 Create one bounded `FND-ID-01` contract task in `blakinio/Oteryn-v2`, consume all owner-accepted identifier baselines, complete the minimum cross-boundary identifier catalogue/owner/issuer/scope/visibility/encoding constraints, perform independent audit and exact-head validation, then merge/archive before `FND-02` freezes dependent protocol identity fields.
+
+The accepted Platform protocol-reconciliation baseline is a mandatory later `FND-02` input and does not change this next action.
 
 `GAME-VISION-01` analysis may continue in parallel when it does not redefine accepted foundation identity, repository, protocol, Platform or persistence boundaries.
 

@@ -1,9 +1,10 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-05T13:46:00+02:00",
+  "updated_at": "2026-08-07T10:18:00+02:00",
   "policy": {
     "canonical_revisions_must_be_merged": true,
     "mutable_pr_heads_are_canonical": false,
+    "locked_status_means_immutable_external_revision_not_fnd02_acceptance": true,
     "required_fields_when_locked": [
       "coordination_id",
       "contract_name",
@@ -30,26 +31,34 @@
       "merged_at": "2026-08-05T11:35:48Z",
       "previous_merged_revision": "9035ae987db67c062a8778721a2c8e686ce76750",
       "previous_revision_status": "SUPERSEDED_TRANSITIONAL_PROFILE_BASED_CONTRACT",
+      "oteryn_v2_disposition": "RECONCILIATION_INPUT_ONLY",
+      "reconciliation_required": true,
+      "reconciliation_baseline": "docs/architecture/FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md",
+      "conflict_classification": "CONFLICT_WITH_CURRENT_OTERYN_V2_ARCHITECTURE",
+      "final_protocol_authority": "FND-02",
+      "platform_side_reconciliation": "PENDING_SEPARATE_EXPLICIT_AUTHORIZATION",
       "producers": [
         {
           "repository": "blakinio/Oteryn-Platform",
-          "status": "CONTRACT_LOCKED_RUNTIME_PRODUCER_DISABLED_PENDING_MIGRATION"
+          "status": "EXTERNAL_MERGED_REVISION_RUNTIME_PRODUCER_DISABLED_RECONCILIATION_REQUIRED"
         },
         {
           "repository": "blakinio/Oteryn-v2",
-          "status": "NOT_IMPLEMENTED"
+          "status": "NOT_IMPLEMENTED_NOT_ACCEPTED_FOR_FND02"
         }
       ],
       "consumers": [
         {
           "repository": "blakinio/Oteryn-v2",
-          "status": "NOT_IMPLEMENTED"
+          "status": "NOT_IMPLEMENTED_NOT_ACCEPTED_FOR_FND02"
         }
       ],
       "rollout_order": [
-        "canonical Platform correction merged and immutable schema identity locked",
-        "accept Oteryn-v2 FND-02 correspondence",
-        "implement and migrate disabled Platform producer plus server and client consumers",
+        "complete and accept Oteryn-v2 FND-ID-01",
+        "complete and accept Oteryn-v2 FND-02 using this external revision only as reconciliation input",
+        "perform separately authorized Platform-side contract reconciliation or supersession",
+        "lock the later coordinated canonical cross-repository contract revision",
+        "implement and migrate disabled Platform producer plus Rust server and client consumers",
         "run cross-repository admission/gameplay/rollback E2E",
         "enable only through a separately authorized rollout"
       ],
