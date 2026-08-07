@@ -11,6 +11,8 @@ branch: <dedicated branch>
 pr: null
 base_sha: null
 head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
 owner: <agent/session identity>
 created_at: <ISO-8601>
 updated_at: <ISO-8601>
@@ -42,7 +44,9 @@ State what this task must not change or claim.
 
 ## Implementation / findings
 
-Maintain concise durable progress and decisions.
+Maintain concise durable progress and decisions. Prepare all known closeout metadata before freezing the final head; do not move a frozen head merely to copy audit or CI status into this file.
+
+A commit cannot contain its own SHA. Record the final exact head in immutable PR/check evidence after the final commit exists rather than creating a self-referential follow-up commit.
 
 ## Validation
 
@@ -63,8 +67,11 @@ Maintain concise durable progress and decisions.
 
 ### Exact-head CI
 
-- head: pending
-- workflow/run: pending
+- final head: pending
+- trigger source: pending
+- workflow/run/job: pending
+- runner assignment: pending
+- classification: pending
 - result: pending
 
 ## Independent audit
@@ -79,6 +86,7 @@ Maintain concise durable progress and decisions.
 - changed-file review: pending
 - unresolved review threads: pending
 - related/superseded PRs: pending
+- protected auto-merge: pending
 - merge commit/result: pending
 - ownership release: pending
 
@@ -90,14 +98,22 @@ status: investigating
 branch: <branch>
 head_sha: null
 pr: null
+final_head_sha: null
+final_head_frozen_at: null
+ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
+ci_run_ids: []
+ci_job_ids: []
+runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
+ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
+owner_action_required: null
 blocker: null
 next_action: <exactly one concrete action>
 ```

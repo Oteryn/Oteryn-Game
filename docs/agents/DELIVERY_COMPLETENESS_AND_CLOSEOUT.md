@@ -41,12 +41,29 @@ Before readiness:
 2. map each acceptance criterion to evidence;
 3. run focused/component checks;
 4. run required real or synthetic E2E with truthful classification;
-5. run an independent audit against the exact final diff;
-6. run required checks on the exact final head;
-7. verify no unresolved review threads/requested changes;
-8. reconcile related/superseded PRs;
-9. update task, ADRs/contracts and migration notes;
-10. verify rollback or safe failure path where relevant.
+5. prepare all known task and PR closeout metadata;
+6. freeze and record the exact final head in immutable PR/task-tracker evidence;
+7. run an independent audit against that exact final diff;
+8. run required checks on the same unchanged head;
+9. verify no unresolved review threads/requested changes;
+10. reconcile related/superseded PRs;
+11. verify rollback or safe failure path where relevant.
+
+## Final-head freeze and evidence placement
+
+The delivery head is frozen only after implementation, task metadata, PR title/body and known scope declarations are complete.
+
+After the freeze:
+
+- do not add a task/checkpoint/timestamp commit merely to record an audit verdict, run ID, CI state or merge readiness;
+- record audit and CI evidence in PR reviews, workflow runs, artifacts or another immutable evidence channel;
+- do not close/reopen, rewind, amend, force-push or replace the PR merely to regenerate a required check;
+- move the head only for a material repair, then repeat final diff review, audit and exact-head CI;
+- treat absent events and unassigned runners as classified infrastructure states, not as justification for content churn.
+
+A commit cannot contain its own SHA. Do not create a self-referential follow-up commit merely to populate an exact-head field in the repository task record.
+
+Post-merge archive movement may use a separate bounded closeout change when the merge commit was unknowable before the delivery PR merged.
 
 ## Independent audit
 
@@ -75,6 +92,8 @@ Do not call synthetic unit/integration tests real E2E.
 ## Merge gate
 
 Merge only when exact final head is unchanged and all repository gates pass. A later build-affecting commit invalidates prior build/E2E evidence. A later docs-only commit still requires applicable governance/document validation on the new head.
+
+A required check cannot be replaced by a local command, PR comment or manually asserted success. Trusted manual dispatch is acceptable only when it validates the open PR and exact frozen head and produces the repository-required context on that SHA.
 
 ## Closeout
 
