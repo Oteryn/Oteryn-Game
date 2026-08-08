@@ -159,6 +159,8 @@ This section is the sole normative FND-04 progression under `FOUNDATION_ERROR_VO
 - `COMMITTED_OR_RECONCILE_REQUIRED` — prior success may already exist; reconcile before independent retry;
 - `BOUNDED_RENEWAL_ONLY` — retry can preserve only already-current authority before fail-safe deadline and never grants replacement.
 
+For FND-04 v1, any shorthand such as `after nbf` or `post-nbf` means **after trusted server time enters the profile's accepted `nbf` skew window**, never literal `now >= nbf`. Both signed v1 profiles use the verifier boundary `now + 5s >= nbf`; before that boundary the grant is `*_NOT_YET_VALID`. The exact profile time equations govern every retry rule and fixture.
+
 | Internal code | Category | Disposition | Retry authority | Mutation / idempotency outcome | Public class |
 |---|---|---|---|---|---|
 | `ADMISSION_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | never same malformed grant; obtain newly issued valid capability | `NO_AUTHORITY_MUTATION` | `RETRY_LOGIN` |
@@ -227,8 +229,8 @@ Required implementation evidence includes at minimum:
 9. pre-loss current-binding-authorized migration, if implemented, switches authority atomically without creating ControlLossEpoch/protection;
 10. stale migration authorization from generation N cannot affect generation N+1;
 11. stolen predecessor reconnect secret after successful COMMIT cannot regain authority or fence successor;
-12. fresh-entry grant with valid signature/profile but trusted-server time before its accepted `nbf` window returns `ADMISSION_GRANT_NOT_YET_VALID`, consumes no GrantNonce and may retry the same grant only after `nbf` while all other bindings remain valid;
-13. recovery grant with valid signature/profile but trusted-server time before its accepted `nbf` window returns `RECOVERY_GRANT_NOT_YET_VALID`, consumes no RecoveryGrantNonce and may retry the same recovery grant only after `nbf` while recovery/security/session eligibility remains valid;
+12. fresh-entry grant with valid signature/profile and `now + 5s < nbf` returns `ADMISSION_GRANT_NOT_YET_VALID` and consumes no GrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed grant may proceed only while expiry, Platform-security, route/runtime-generation and every other admission binding remain valid;
+13. recovery grant with valid signature/profile and `now + 5s < nbf` returns `RECOVERY_GRANT_NOT_YET_VALID` and consumes no RecoveryGrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed recovery grant may proceed only while expiry, Platform-security and recovery/session/actor eligibility remain valid;
 14. malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported recovery-grant cases each follow the recovery-specific Section 7 progression and never silently fall into fresh-entry retry behavior;
 15. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
 
