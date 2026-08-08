@@ -44,7 +44,7 @@ external_repositories:
 delivery_pr: 104
 delivery_exact_head: e14a386c8cc998f69075f99890e6fe68a930b396
 delivery_squash_merge: c638ad524772f227dabc90e88a1381cc01e907ce
-closeout_pr: pending
+closeout_pr: 105
 closeout_branch: docs/OTV2-20260808-fnd04-session-admission-analysis-closeout
 completed_at: 2026-08-08T21:08:00+02:00
 ownership_released: true
