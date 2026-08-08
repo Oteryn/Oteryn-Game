@@ -121,11 +121,11 @@ The JWT payload MUST be a JSON object containing exactly the required claims bel
 |---|---|---|
 | `profile` | string | exact `oteryn-pre-admission-v1` |
 | `purpose` | string | exact `fresh_entry` |
-| `attempt_ref` | string | Platform AdmissionAttemptRef; canonical lowercase UUIDv7 text |
-| `account_id` | string | canonical lowercase non-nil UUID text |
-| `character_id` | string | canonical lowercase non-nil UUID text |
-| `world_id` | string | canonical lowercase non-nil UUID text |
-| `channel_id` | string | canonical lowercase non-nil UUID text |
+| `attempt_ref` | string | Platform AdmissionAttemptRef; canonical lowercase RFC UUIDv7 text |
+| `account_id` | string | canonical lowercase non-nil UUID in the authoritative Platform representation accepted by FND-ID-01 |
+| `character_id` | string | canonical lowercase non-nil RFC UUIDv7 text |
+| `world_id` | string | canonical lowercase non-nil RFC UUIDv7 text |
+| `channel_id` | string | canonical lowercase non-nil RFC UUIDv7 text |
 | `account_security_generation` | string | decimal non-zero uint64 string |
 | `route_revision` | string | bounded ASCII 1..64, `[A-Za-z0-9._:-]+` |
 | `runtime_observation_revision` | string | bounded ASCII 1..64, `[A-Za-z0-9._:-]+` |
@@ -134,7 +134,9 @@ The JWT payload MUST be a JSON object containing exactly the required claims bel
 | `transport_profile` | integer JSON number | exact `1` |
 | `compatibility_revision` | string | bounded ASCII 1..64, `[A-Za-z0-9._:-]+` |
 
-UUID claims MUST parse and round-trip to the exact canonical lowercase hyphenated form. Nil UUID is rejected.
+All UUID claims MUST parse and round-trip to the exact canonical lowercase hyphenated form. Nil UUID is rejected.
+
+`attempt_ref`, `character_id`, `world_id` and `channel_id` additionally MUST encode UUID version `7` and the RFC UUID variant; a syntactically canonical UUIDv1/v4/v6, Microsoft-reserved variant or other non-v7/non-RFC value is rejected. `account_id` remains Platform-owned and is validated against the authoritative Platform representation accepted by FND-ID-01 rather than being silently redefined as an Oteryn-issued UUIDv7.
 
 Generation values are JSON strings so cross-language tooling cannot silently lose uint64 precision above `2^53`.
 
@@ -207,7 +209,7 @@ and longer when DUR/reconciliation requires it.
 
 ## 9. AdmissionAttemptRef producer idempotency
 
-`attempt_ref` is a Platform producer operation/correlation reference represented as canonical UUIDv7 text. This does not add `AdmissionId` to the foundation entity catalogue.
+`attempt_ref` is a Platform producer operation/correlation reference represented as canonical RFC UUIDv7 text. This does not add `AdmissionId` to the foundation entity catalogue.
 
 For one logical issuance attempt:
 
@@ -296,7 +298,7 @@ No silent retarget to another Channel, owner, protocol family or Canary route.
 5. Ed25519 signature verification;
 6. exact `typ`, `iss`, `aud`, `profile`, `purpose`;
 7. time/lifetime/skew;
-8. claim schema/canonical encoding;
+8. claim schema/canonical encoding, including UUID version/variant requirements;
 9. current Platform-security projection/revocation/generation;
 10. route/runtime-observation/current ownership-generation/current-scope validation;
 11. GrantNonce consume eligibility/replay check;
@@ -381,6 +383,7 @@ Negative fixtures include:
 - expired/not-yet-valid/over-30-second lifetime;
 - malformed/duplicate/unknown claims;
 - noncanonical UUID/base64url/generation encoding;
+- canonical-looking wrong UUID version and wrong UUID variant for `attempt_ref`, `character_id`, `world_id` or `channel_id`;
 - oversized header/payload/token;
 - disabled/stale Platform account-security generation;
 - Platform-security evidence older than 5 seconds;
