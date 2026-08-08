@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: GPT-5.6 Sol architecture continuation session
 created_at: 2026-08-08T21:22:00+02:00
-updated_at: 2026-08-08T21:42:00+02:00
+updated_at: 2026-08-08T23:44:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -63,7 +63,7 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 ## Architecture and source of truth
 
 - **PROVEN:** FND-04 analysis baseline plus Platform reconciliation refinement are canonical on `main` after #104/#107 and closeout #108.
-- **PROVEN:** duplicate/superseded PR #106 is closed unmerged and contributes no separate authority.
+- **PROVEN:** duplicate/superseded PRs #106 and #110 are closed unmerged and contribute no separate authority.
 - **PROVEN:** current external Platform evidence is pinned read-only at `216f5b2817e9d102337608609e344518512c2a0d`.
 - **PROVEN:** Platform Identity/Gateway authorizes bounded attempts; Oteryn-v2 remains final admission/GameSession/CharacterLease authority.
 - **PROVEN:** FND-02 fixes TLS/bootstrap, GameSessionId issuance boundary, connection_generation and command/reconciliation semantics.
@@ -72,7 +72,8 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 - **DERIVED AND FROZEN BY CANDIDATE:** fresh entry and reauthenticated existing-actor recovery use mutually exclusive signed profiles so Channel-bound fresh-entry authority cannot be reused to move a current actor.
 - **DERIVED AND FROZEN BY CANDIDATE:** reconnect uses a two-phase PREPARE/COMMIT transition; COMMIT revalidates current incumbent/session/lease/runtime/reconciliation eligibility and proof-class security state before any authority switch.
 - **DERIVED AND FROZEN BY CANDIDATE:** Platform account-security validity is bounded by signed generation + <=5-second trusted security-projection freshness for new admission/recovery; this does not grant Platform post-admission gameplay mutation authority.
-- **DERIVED AND FROZEN BY CANDIDATE:** the normative FND-04 refinement now records mandatory decision timing plus full retry/terminal/idempotency/public progression for every contract-owned cross-component failure code.
+- **DERIVED AND FROZEN BY CANDIDATE:** the required FND-04 rebind/security refinement is reciprocally linked from the main contract and current-status overlay and is canonical for healthy-binding non-preemption, PREPARE→COMMIT revalidation, mandatory decision timing, contract-owned failure progression and the PREPARE→COMMIT eligibility-change scenario.
+- **DERIVED AND FROZEN BY CANDIDATE:** recovery-grant validation has recovery-specific malformed/authentication/expiry/replay/security/revision codes and retry authority; recovery failures never silently inherit fresh-entry Gateway actions.
 - **DEFERRED BY EVIDENCE:** production liveness probe cadence/anti-flap hysteresis and CharacterLease TTL/renew/safety-margin values require measured fault/performance evidence before implementation acceptance.
 
 ## Acceptance criteria
@@ -102,6 +103,7 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 - [x] Freeze reconnect PREPARE/COMMIT state machine, successor proof and lost-response/crash reconciliation.
 - [x] Require atomic COMMIT-time revalidation so a prepared successor cannot preempt a recovered healthy incumbent or outlive session/lease/runtime/recovery-security eligibility.
 - [x] Freeze one-winner connection_generation transition semantics.
+- [x] Freeze healthy-current-binding non-preemption by reconnect/recovery bearer proof alone.
 - [x] Freeze exact 15-second same-session grace from the accepted 2-second loss declaration; keep 5-second transport cleanup independent.
 - [x] Freeze actor/session ControlLossEpoch so routine rebind/session replacement cannot manufacture duplicate 4-second protection.
 - [x] Freeze Platform-reauthenticated same-session recovery and current game-domain placement resolution.
@@ -112,18 +114,21 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 ### Failure, compatibility and progression
 
 - [x] Add stable `FS-ADMISSION-GRANT-REPLAY` and `FS-RECONNECT-CREDENTIAL-REPLAY` scenarios.
+- [x] Add `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` and freeze its FND-04 `PASS` invariant/evidence owner.
 - [x] Freeze stable internal symbolic error codes and safe public presentation classes without leaking security/fencing details.
-- [x] Freeze `RETRYABLE` / `TERMINAL` / `SECURITY_TERMINAL`, exact retry authority and mutation/idempotency outcome for every FND-04 cross-component error code.
+- [x] Freeze `RETRYABLE` / `TERMINAL` / `SECURITY_TERMINAL`, exact retry authority and mutation/idempotency outcome for every FND-04 admission, reconnect, recovery, lease and takeover cross-component error code.
+- [x] Define recovery-specific malformed/authentication/expiry/replay/security-evidence/security-revocation/revision failure progression without reusing fresh-entry Gateway actions.
 - [x] Freeze producer/consumer compatibility matrix and independent fixture requirements.
 - [x] Record mandatory decision timing, blocked downstream work and evidence required to supersede each material FND-04 choice.
-- [x] Synchronize `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` through FND-03 completion, repaired FND-04 analysis and current final FND-04 delivery.
+- [x] Synchronize `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` through FND-03 completion, repaired FND-04 analysis and current final FND-04 delivery, including reciprocal discovery of the required rebind refinement.
 
 ### Governance
 
-- [x] No open PR existed at final-task start after duplicate #106 was closed.
+- [x] Duplicate/superseded FND-04 PRs #106 and #110 are closed unmerged.
 - [x] No Rust/runtime/protocol codec/persistence schema/Platform write/key deployment/production activation introduced by this package.
 - [x] Initial PR #109 metadata governance failure was diagnosed as title length `77 > 72`; PR title was shortened to `docs: finalize FND-04 session admission and lease contract` before final-head validation.
-- [x] Declared task ownership now matches the PR's exact seven documentation paths.
+- [x] Declared task ownership matches the PR's exact seven documentation paths.
+- [x] Exact-head Codex review on `a9634cce0599fb21c16e1ace1ea83c20d3cdb75a` found P1 discoverability/reciprocal precedence and P2 incomplete recovery-grant progression; both were repaired in the next candidate generation, invalidating the older head as terminal evidence.
 - [ ] Full exact-head seven-path architecture/security review has zero material conflicts.
 - [ ] Exact-head Agent governance, Dependency review and CodeQL pass.
 - [ ] Independent exact-head architecture/security audit passes with zero open material findings.
@@ -154,6 +159,14 @@ Fresh entry uses `oteryn-pre-admission-v1`; reauthenticated recovery uses `otery
 
 Reconnect PREPARE reserves one candidate generation/successor secret but grants no transport authority. COMMIT after successor proof revalidates current GameSession, predecessor generation/liveness, AccountPresenceClaim, CharacterLease, runtime ownership/placement and reconciliation state. Recovery-grant PREPARE additionally requires the JWT, RecoveryGrantNonce and current Platform-security validity to remain acceptable through COMMIT. Only then does one atomic transition change connection_generation/current transport/current reconnect verifier and fence predecessor.
 
+### Canonical refinement/discovery
+
+`FND-04_HEALTHY_BINDING_REBIND_SECURITY_REFINEMENT.md` is a required public contract, is explicitly consumed by the main FND-04 contract and is explicitly listed by `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`. Its owned sections are canonical for healthy-binding/rebind semantics, Decision Timing, failure progression and the new eligibility-change scenario. Duplicated main-contract progression was harmonized with it so future readers cannot encounter contradictory public mappings.
+
+### Recovery failure progression
+
+Recovery validation no longer has an underspecified catch-all. Malformed parser/header/claim/UUID/profile/purpose failures, cryptographic/trust failures, expiry, replay, Platform security revocation, stale security evidence and unsupported mandatory revision each have a recovery-specific stable symbolic result with explicit retry authority, idempotency/partial-mutation outcome and bounded public class.
+
 ### Grace / recovery
 
 ```text
@@ -167,18 +180,20 @@ Protection is one activation per eligible ControlLossEpoch. Post-grace mandatory
 
 ### Review repair disposition
 
-The final-package repair closes the material review classes observed on prior heads:
+The candidate package has now addressed all material review classes observed so far:
 
 - UUIDv7/version/variant validation is explicit in both grant profiles;
 - the normative refinement records mandatory architecture decision timing;
 - PREPARE no longer acts as authorization escrow: COMMIT revalidates current authority and proof-class security before switching control;
-- every contract-owned error now has one foundation category, disposition, retry-authority rule, mutation/idempotency outcome and bounded public class.
+- every contract-owned error has one foundation category, disposition, retry-authority rule, mutation/idempotency outcome and bounded public class;
+- the required refinement is reciprocally discoverable from the canonical main contract and current-status overlay;
+- recovery validator failures use recovery-specific progression rather than fresh-entry Gateway retry semantics.
 
 ## Validation
 
 ### Focused
 
-- accepted-input reconciliation: complete pending exact-head seven-path diff audit;
+- accepted-input reconciliation: current repair complete; fresh exact-head seven-path diff audit required after this task synchronization;
 - standards review: RFC 9864 fully specified `Ed25519`; deprecated `EdDSA` explicit negative fixture;
 - profile separation/UUID/replay/route/security-freshness/reconnect/lease/liveness/error-progression review: repaired; pending fresh independent exact-head audit.
 
@@ -194,28 +209,29 @@ The final-package repair closes the material review classes observed on prior he
 
 - historical pre-repair head `4bb02e5b211cd791b88610d540c80b0ce14e4126`: Dependency review `PASS`, CodeQL `PASS`, Agent governance `FAIL` only because original PR title exceeded 72 characters; historical and not reusable as final evidence.
 - historical reviewed head `6ea04ac8cd7587e3416160de2ad0639cf8415745`: CI green, but later material Codex findings invalidate terminal readiness.
-- post-review repair generation: pending exact-head checks after the final task-sync commit.
+- historical reviewed head `a9634cce0599fb21c16e1ace1ea83c20d3cdb75a`: Agent governance/Dependency review/CodeQL passed, but exact-head Codex review found P1 reciprocal-discovery and P2 recovery-progression gaps; this head is not terminal evidence.
+- current post-Codex-repair generation: pending exact-head checks after task synchronization.
 - trigger source: `pull_request:synchronize`
 - result: pending
 
 ## Independent audit
 
 - exact final head: pending
-- verdict: pending; the prior PASS cannot be terminal evidence because later material review findings were opened on the reviewed generation.
+- verdict: pending; every prior audit/review belongs to an older head and cannot be terminal evidence for the post-Codex-repair generation.
 
 ## PR and closeout
 
 - final delivery PR: 109
 - current title: `docs: finalize FND-04 session admission and lease contract`
 - changed-file review: expected exactly seven owned documentation paths
-- unresolved review threads: pending repair reconciliation/fresh review
+- unresolved review threads: two current Codex findings require reply/resolution after exact repaired-head verification; older findings are resolved
 - merge policy: squash after exact-head validation
 - ownership release: separate lifecycle closeout after delivery merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Reconciled concurrent profile repairs and completed the third evidence-based review repair: UUIDv7 claim validation, package decision timing, COMMIT-time revalidation and full error progression are now explicit without expanding runtime or Platform authority.
+last_progress: Exact-head Codex review on a9634cce found two material documentation-contract gaps. The required refinement is now reciprocally linked from the main contract/current-status overlay, duplicated progression is harmonized, and recovery-validator failures have complete recovery-specific Foundation Error Vocabulary progression. Older CI/review evidence is invalidated.
 status: validating
 branch: docs/OTV2-20260808-fnd04-session-admission-final
 head_sha: null
@@ -223,7 +239,7 @@ pr: 109
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: post-material-review-repair
+ci_check_generation: post-codex-repair
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -232,10 +248,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 4
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Review the exact seven-path head, require fresh Agent governance/Dependency review/CodeQL and a fresh independent architecture/security review with zero material findings, then resolve threads and squash merge only if the exact head remains unchanged.
+next_action: Freeze the exact repaired seven-path head, verify all changed files and cross-repository inputs, require fresh Agent governance/Dependency review/CodeQL and a fresh independent exact-head architecture/security review with zero material findings, resolve the two current Codex threads, then squash merge only if the head remains unchanged.
 ```
