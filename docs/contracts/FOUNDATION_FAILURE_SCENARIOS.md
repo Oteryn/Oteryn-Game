@@ -34,5 +34,6 @@ Each foundation contract must mark every applicable scenario as `PASS`, `NOT_APP
 | `FS-INVESTIGATION-MUTATION-ATTEMPT` | Investigation or AI component attempts a runtime/database mutation | Least-privilege credentials make the mutation impossible and the attempt is audited. |
 | `FS-ADMISSION-GRANT-REPLAY` | One fresh-entry grant is replayed or concurrently consumed | At most one authoritative admission may commit from one GrantNonce; a consumed or losing replay cannot create, revive or fence another GameSession. |
 | `FS-RECONNECT-CREDENTIAL-REPLAY` | A stale/predecessor reconnect proof or concurrent rebind races the current proof | At most one prepared/committed transport generation wins; stale proof/generation cannot regain authority or fence the successor. |
+| `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` | Rebind PREPARE succeeds, then incumbent health, grant/security validity, lease/runtime/session authority or reconciliation eligibility changes before COMMIT | COMMIT revalidates current authority/security atomically; stale prepared state cannot fence the current binding, advance generation, consume a recovery grant as success or create partial authority. |
 
 New scenarios receive stable IDs and are added here rather than being named differently by each package.
