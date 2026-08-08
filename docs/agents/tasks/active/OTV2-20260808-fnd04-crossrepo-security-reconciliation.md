@@ -4,18 +4,18 @@
 task_id: OTV2-20260808-fnd04-crossrepo-security-reconciliation
 title: Reconcile FND-04 analysis with current Platform pre-admission security semantics
 mode: CONTRACT
-status: implementing
+status: validating
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: docs/OTV2-20260808-fnd04-crossrepo-security-reconciliation
-pr: null
+pr: 106
 base_sha: c638ad524772f227dabc90e88a1381cc01e907ce
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: GPT-5.6 Sol architecture continuation session
 created_at: 2026-08-08T21:09:00+02:00
-updated_at: 2026-08-08T21:09:00+02:00
+updated_at: 2026-08-08T21:15:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -50,12 +50,12 @@ Add one non-overlapping architecture correction that makes the final FND-04 cont
 
 ## Acceptance criteria
 
-- [ ] Preserve the merged FND-04 analysis baseline unchanged and add an explicit normative-input addendum for the final contract.
-- [ ] Require a testable disposition for Platform account-security changes after a PreAdmissionGrant is issued but before game admission.
-- [ ] Require an explicit rule for issuance-time runtime observation/ownership-generation binding and invalidation of stale unexpired grants.
-- [ ] Preserve Platform admission-attempt idempotency/reconciliation identity as distinct from game-domain grant-consume nonce unless equivalence is explicitly proven.
-- [ ] State decision timing, blocked downstream work, risks, superseding evidence and deliberately deferred implementation choices.
-- [ ] Keep Platform read-only and introduce no runtime/protocol/persistence/deployment implementation.
+- [x] Preserve the merged FND-04 analysis baseline unchanged and add an explicit mandatory-input addendum for the final contract.
+- [x] Require a testable disposition for Platform account-security changes after a PreAdmissionGrant is issued but before game admission.
+- [x] Require an explicit rule for issuance-time runtime observation/ownership-generation binding and invalidation of stale unexpired grants.
+- [x] Preserve Platform admission-attempt idempotency/reconciliation identity as distinct from game-domain grant-consume nonce unless equivalence is explicitly proven.
+- [x] State decision timing, blocked downstream work, risks, superseding evidence and deliberately deferred implementation choices.
+- [x] Keep Platform read-only and introduce no runtime/protocol/persistence/deployment implementation.
 - [ ] Full changed-file review, independent architecture/security audit and exact-head required CI pass before merge.
 
 ## Excluded scope
@@ -70,14 +70,20 @@ Add one non-overlapping architecture correction that makes the final FND-04 cont
 
 ## Implementation / findings
 
-A separate addendum is required because the merged analysis remains useful but its external reconciliation evidence predates the current Platform native pre-admission/runtime-status contracts. The correction must constrain the later final FND-04 contract without pretending to retroactively change PR #104 history.
+The addendum now makes three cross-repository obligations explicit for final FND-04:
+
+1. post-issuance Platform account-security changes require one deterministic, testable fail-closed disposition without making the game server a second Identity authority;
+2. final admission must explicitly bind/revalidate the issuance-time runtime/route ownership evidence strongly enough that a superseded owner or generation cannot regain authority from an otherwise valid grant;
+3. Platform admission-attempt idempotency and game-domain one-time consume replay protection remain distinct semantic boundaries unless the final contract deliberately proves equivalence.
+
+The merged #104 analysis remains unchanged and compatible. The addendum does not select crypto/token libraries, KMS, storage, TTLs, PostgreSQL schema or runtime implementation.
 
 ## Validation
 
 ### Focused
 
 - command/run: full semantic reconciliation against current Platform ADR 0031, `OTERYN_V2_PRE_ADMISSION_HANDOFF_CONTRACT.md`, `OTERYN_V2_RUNTIME_STATUS_PROJECTION_CONTRACT.md` and merged FND-04 analysis
-- result: pending
+- result: `PASS` at author review; independent exact-head review still required
 
 ### Component/integration
 
@@ -91,7 +97,7 @@ A separate addendum is required because the merged analysis remains useful but i
 
 ### Exact-head CI
 
-- final head: pending
+- final head: pending after task synchronization
 - trigger source: pull_request
 - workflow/run/job: pending
 - runner assignment: pending
@@ -100,14 +106,15 @@ A separate addendum is required because the merged analysis remains useful but i
 
 ## Independent audit
 
-- exact head: pending
+- exact head: pending after task synchronization
 - method/auditor: independent cross-repository architecture/security review
 - material findings: pending
 - verdict: pending
 
 ## PR and closeout
 
-- changed-file review: pending
+- delivery PR: 106
+- changed-file review: exactly two declared documentation paths expected
 - unresolved review threads: pending
 - related/superseded PRs: merged #104 is dependency/history, not superseded
 - protected auto-merge: pending
@@ -117,15 +124,15 @@ A separate addendum is required because the merged analysis remains useful but i
 ## Context checkpoint
 
 ```yaml
-last_progress: Created a non-overlapping follow-up task after independent review found three current Platform security semantics not fully dispositioned by merged FND-04 analysis PR #104.
-status: implementing
+last_progress: PR #106 now contains the bounded FND-04 cross-repository security addendum covering post-issuance account-security revocation, stale runtime/ownership-generation grants and issuer-attempt versus consume-nonce idempotency boundaries.
+status: validating
 branch: docs/OTV2-20260808-fnd04-crossrepo-security-reconciliation
 head_sha: null
-pr: null
+pr: 106
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pending
+ci_check_generation: pending-final-head
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -139,5 +146,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Add the bounded FND-04 cross-repository security reconciliation addendum and inspect the two-path diff.
+next_action: Inspect the full exact two-path PR #106 diff against current Platform and Oteryn-v2 authority, repair any material finding, then freeze the final head for audit/CI.
 ```
