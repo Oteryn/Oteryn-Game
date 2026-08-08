@@ -49,7 +49,7 @@ FND-04 applies the repository's mandatory timing test before freezing any materi
 | Platform authorization vs game-domain final admission/GameSession authority | `YES` | native admission implementation, Platform producer integration, FND-02 admission messages, Character Authority integration | moving authority after deployment would require credential/session migration and risks two security authorities | concrete security architecture evidence proving a safer single authority without violating ADR-0003/ADR-0012 | implementation API/transport details |
 | Separate AccountPresenceClaim, CharacterLease, GameSession, TransportBinding and RuntimeScopeAuthority | `YES` | persistence schema, duplicate-login handling, runtime fencing, reconnect/recovery | collapsing identities/generations would create ambiguous stale-writer/session ownership and anti-duplication risk | fault-injection/formal invariant evidence proving an equivalent simpler model preserves all fencing semantics | physical tables, lock primitives, service placement |
 | Strict separate fresh-entry and reauthenticated-recovery grant profiles | `YES` | Platform issuer/consumer implementation and native recovery flow | one deployed bearer format could become an unintended cross-purpose credential/downgrade surface | independent cryptographic/security review and interoperability evidence for a replacement profile revision | concrete JWT libraries, KMS/HSM/vendor, key distribution transport |
-| Two-phase reconnect PREPARE/COMMIT with atomic COMMIT-time authority/security revalidation | `YES` | reconnect wire implementation, same-session recovery, crash/lost-response handling | rotate-and-forget or PREPARE-time-only authorization can create split control, stale credential takeover and unrecoverable ambiguity | deterministic concurrency/fault evidence proving a different protocol retains one-current-binding and lost-response safety | prepared-state persistence encoding and storage technology |
+| Two-phase reconnect PREPARE/COMMIT with atomic COMMIT-time authority/security/compatibility revalidation | `YES` | reconnect wire implementation, same-session recovery, crash/lost-response handling | rotate-and-forget or PREPARE-time-only authorization can create split control, stale credential takeover and unrecoverable ambiguity | deterministic concurrency/fault evidence proving a different protocol retains one-current-binding and lost-response safety | prepared-state persistence encoding and storage technology |
 | Healthy-current-binding non-preemption without a separately current-generation-authorized migration/takeover transition | `YES` | reconnect/recovery/takeover implementation | allowing secret/JWT possession alone to evict a healthy controller creates account-takeover and player-fairness risk | a separately reviewed healthy-session migration protocol with explicit current-generation consent/authorization and E2E race evidence | whether such healthy-session migration is ever added |
 | Exact 2s control-loss, 5s stale-transport cleanup and 15s same-session grace composition already accepted by owner decisions | `YES` for semantic timing | liveness/session implementation and client reconnect UX | changing deployed behavioral windows affects combat fairness and compatibility | representative latency/fault/player-experience evidence plus an explicit superseding owner decision | probe cadence, hysteresis, scheduler margins and other measured implementation values |
 | Post-grace existing-actor recovery creates a fresh GameSession without resetting actor state | `YES` | recovery state machine, persistence/reconciliation and anti-abuse tests | retrofitting after persistence/gameplay code could introduce respawn/reset/duplication escape paths | gameplay/security evidence showing a different transition preserves actor/economy/combat invariants | recovery-locator transport and physical state storage |
@@ -460,7 +460,7 @@ PREPARE does **not** make the new transport authoritative, does not consume a re
 
 Retry with the same proof + same ReconnectAttemptRef obtains the same prepared outcome while valid. Competing different attempt cannot create a second simultaneous prepared winner.
 
-Client retains predecessor proof until COMMIT is acknowledged or authoritative evidence shows successor committed.
+Client retains predecessor proof until COMMIT is acknowledged or authoritative evidence shows successor committed/superseding authority has changed.
 
 ### 14.3 COMMIT
 
@@ -490,21 +490,21 @@ When PREPARE used a reauthenticated recovery grant, COMMIT additionally requires
 - the signed `compatibility_revision` remains supported by the current protocol-major/runtime/content/ruleset/GameSession/reconciliation boundary required for this same-session continuation;
 - same-session grace remains unexpired.
 
-If the signed recovery compatibility requirement is unsupported, superseded or changed after PREPARE, COMMIT fails before the authority switch as `RECOVERY_GRANT_REVISION_UNSUPPORTED`; RecoveryGrantNonce is not consumed and no partial gameplay/session/lease/runtime/transport authority mutation is committed.
+If the signed recovery compatibility requirement is unsupported, superseded or changed after PREPARE, this candidate COMMIT fails before its authority switch as `RECOVERY_GRANT_REVISION_UNSUPPORTED`; RecoveryGrantNonce is not consumed and the candidate commits no gameplay/session/lease/runtime/transport authority mutation.
 
-If any COMMIT revalidation fails:
+If any COMMIT revalidation fails, the stale candidate is non-mutating with respect to gameplay authority:
 
 ```text
-current TransportBinding remains authoritative
-current connection_generation does not advance
-predecessor reconnect proof remains current
+the candidate connection_generation does not become current
+whatever TransportBinding / GameSession / lease / runtime ownership state is current at revalidation remains unchanged
+if the PREPARE predecessor is still current, it remains current; if it was already fenced/superseded/handed off/terminal or no current transport exists, it is not revived
 prepared candidate is cancelled/terminalized
 prepared successor secret never becomes current proof
-recovery nonce is not consumed as a successful transition
-no partial gameplay/session/lease/runtime authority mutation is committed
+recovery nonce is not consumed as a successful transition for this candidate
+no gameplay/session/lease/runtime authority mutation is committed by this failed candidate
 ```
 
-The client must reconcile current authority and, where the cause requires it, obtain a fresh proof/grant/route. A stale prepared transition can never be revived merely by replaying the successor secret.
+The client must reconcile the actual current authority state and, where the cause requires it, obtain a fresh proof/grant/route. A stale prepared transition can never be revived merely by replaying the successor secret, and failed COMMIT never rolls authority back to PREPARE-time state.
 
 Only after all required revalidation succeeds does the server atomically commit:
 
@@ -522,11 +522,11 @@ Only then is the new transport authoritative.
 
 ### 14.4 Lost PREPARE response
 
-Predecessor remains current before COMMIT. Retry same ReconnectAttemptRef obtains the same prepared transition if still valid. No duplicate candidate is minted.
+PREPARE itself does not change authority. If no other valid transition superseded the PREPARE-time predecessor, that predecessor remains current before COMMIT. Retry same ReconnectAttemptRef obtains the same prepared transition if still valid. No duplicate candidate is minted. Reconciliation always follows actual current authority rather than assuming the PREPARE predecessor still owns it.
 
 ### 14.5 Crash after PREPARE before COMMIT
 
-PREPARE alone creates no new authority. If prepared state is lost, predecessor remains current and can be retried subject to eligibility. If prepared state is durable, recovery still preserves one candidate and no generation change before COMMIT.
+PREPARE alone creates no new authority. If prepared state is lost, this candidate contributes no authority change; the state that is actually current remains authoritative. In the ordinary no-competing-transition case that is the PREPARE predecessor, which can be retried subject to eligibility. If a different valid transition already fenced, handed off, superseded or terminalized that predecessor, recovery must preserve the newer/no-current-transport state and must not revive the predecessor. If prepared state is durable, recovery still preserves one candidate and no candidate-generation change before COMMIT.
 
 A recovered prepared transition is never trusted solely because it was durable; all Section 14.3 COMMIT-time current-authority/security/compatibility checks still apply.
 
@@ -534,11 +534,11 @@ A recovered prepared transition is never trusted solely because it was durable; 
 
 Client already knows successor secret from PREPARE.
 
-If COMMIT succeeded, recoverable state must show the new connection_generation, successor verifier and, where applicable, consumed RecoveryGrantNonce; predecessor can never regain authority.
+If this candidate COMMIT succeeded, recoverable state must show the new connection_generation, successor verifier and, where applicable, consumed RecoveryGrantNonce; its predecessor can never regain authority merely because the response was lost.
 
-If COMMIT did not succeed, predecessor remains current and any partially observed candidate has no authority.
+If this candidate COMMIT did not succeed, the candidate has no authority. Recovery must preserve and report whatever authority state is actually current: that may still be the PREPARE predecessor, a newer valid owner/binding after fencing/handoff/takeover, a terminal GameSession, or no current transport. It must never manufacture predecessor rollback.
 
-Recovery must prove one of those states; never accept both or guess.
+Recovery must prove the candidate's committed or non-committed outcome and reconcile the actual current authority state; never accept two current authorities or guess.
 
 If exact state cannot be reconstructed after GameNode replacement, same-GameSession continuity is not claimed and the session follows safe fresh-session recovery rules.
 
@@ -548,7 +548,8 @@ If exact state cannot be reconstructed after GameNode replacement, same-GameSess
 - stale predecessor after COMMIT -> reject, cannot fence successor;
 - stale connection_generation -> FND-02 `STALE_GENERATION` behavior;
 - replayed consumed recovery grant -> no second rebind/session;
-- prepared transition whose eligibility/security/compatibility changed before COMMIT -> terminalize/cancel without authority change;
+- prepared transition whose eligibility/security/compatibility changed before COMMIT -> terminalize/cancel; the stale candidate mutates no authority and cannot restore PREPARE-time state;
+- a newer valid fence/handoff/takeover/terminal transition superseding PREPARE remains authoritative; stale candidate cannot revive predecessor authority;
 - incumbent that regains sufficient current-generation control before COMMIT remains authoritative; prepared contender cannot fence it;
 - one current prepared rebind per GameSession is the v1 semantic maximum.
 
@@ -847,12 +848,12 @@ Every FND-04 cross-component failure obeys `FOUNDATION_ERROR_VOCABULARY.md`. `TE
 | `ADMISSION_ACCOUNT_CHARACTER_CONFLICT` | `CONFLICT` | `TERMINAL` | new attempt only after authoritative ownership/lifecycle change | no partial admission | `SESSION_UNAVAILABLE` |
 | `ADMISSION_INCUMBENT_PROTECTED` | `CONFLICT` | `TERMINAL` | never reuse same grant as takeover; new attempt only after incumbent eligibility changes | incumbent unchanged; newcomer gets no authority | `CHARACTER_ALREADY_ACTIVE` |
 | `ADMISSION_CAPACITY_EXCEEDED` | `CAPACITY_EXCEEDED` | `RETRYABLE` | bounded backoff; same unconsumed grant only on same current route while valid, else fresh route/grant | no partial admission authority | `TEMPORARILY_UNAVAILABLE` |
-| `RECONNECT_PROOF_INVALID` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never blind-retry invalid proof; use valid proof or reauthenticated recovery | current binding unchanged | `AUTHENTICATION_REQUIRED` |
+| `RECONNECT_PROOF_INVALID` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never blind-retry invalid proof; use valid proof or reauthenticated recovery | current binding unchanged by this failed attempt | `AUTHENTICATION_REQUIRED` |
 | `RECONNECT_PROOF_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | reconcile current GameSession/binding; stale proof never reusable | prior success may exist; no duplicate transition | `SESSION_UNAVAILABLE` |
 | `RECONNECT_SESSION_TERMINAL` | `SESSION_REJECTED` | `TERMINAL` | same GameSession never retries; use eligible fresh-session actor recovery/new login | terminal GameSession never revives | `SESSION_UNAVAILABLE` |
-| `RECONNECT_GENERATION_STALE` | `STALE_GENERATION` | `TERMINAL` | reconcile current generation; stale generation/proof cannot retry as authority | no current-generation mutation | `SESSION_UNAVAILABLE` |
-| `RECONNECT_ATTEMPT_CONFLICT` | `CONFLICT` | `RETRYABLE` | reconcile current prepared/committed attempt; same ReconnectAttemptRef may fetch stable result; competing attempt waits | no authority mutation or stable prior result | `TEMPORARILY_UNAVAILABLE` |
-| `RECONNECT_GRACE_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | same-session retry forbidden; use eligible post-grace recovery | no rebind; old GameSession follows terminal progression | `SESSION_UNAVAILABLE` |
+| `RECONNECT_GENERATION_STALE` | `STALE_GENERATION` | `TERMINAL` | reconcile current generation; stale generation/proof cannot retry as authority | no current-generation mutation by stale attempt | `SESSION_UNAVAILABLE` |
+| `RECONNECT_ATTEMPT_CONFLICT` | `CONFLICT` | `RETRYABLE` | reconcile current prepared/committed attempt; same ReconnectAttemptRef may fetch stable result; competing attempt waits | no authority mutation by losing attempt or stable prior result | `TEMPORARILY_UNAVAILABLE` |
+| `RECONNECT_GRACE_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | same-session retry forbidden; use eligible post-grace recovery | no rebind; current authoritative state is not rolled back | `SESSION_UNAVAILABLE` |
 | `RECOVERY_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | never same malformed recovery grant; perform new authenticated recovery issuance | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
 | `RECOVERY_GRANT_AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never same credential/profile/signature; perform new Platform-authenticated recovery | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
 | `RECOVERY_GRANT_NOT_YET_VALID` | `SESSION_REJECTED` | `RETRYABLE` | retry the same still-unconsumed recovery grant only after trusted server time enters the accepted `nbf` window and only while `exp`, current Platform-security evidence and current recovery/session/actor eligibility remain valid; otherwise obtain a new authenticated recovery grant | no RecoveryGrantNonce consumption and no rebind/session/lease/runtime authority mutation | `TEMPORARILY_UNAVAILABLE` |
@@ -860,20 +861,20 @@ Every FND-04 cross-component failure obeys `FOUNDATION_ERROR_VOCABULARY.md`. `TE
 | `RECOVERY_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior recovery before new authenticated recovery | prior recovery may have committed; never duplicate it | `SESSION_UNAVAILABLE` |
 | `RECOVERY_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a new authenticated recovery; never reinterpret as fresh entry | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
 | `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only while still within time/profile bounds and after fresh trusted security evidence; otherwise new recovery grant | no authoritative mutation | `TEMPORARILY_UNAVAILABLE` |
-| `RECOVERY_GRANT_REVISION_UNSUPPORTED` | `UNSUPPORTED_REVISION` | `TERMINAL` | compatible producer/client/consumer recovery profile only; no downgrade or fresh-entry reinterpretation | no authoritative mutation | `CLIENT_UPDATE_REQUIRED` |
-| `RECOVERY_HEALTHY_CONTROLLER_PRESENT` | `CONFLICT` | `TERMINAL` | no bearer-proof takeover; retry only after authoritative loss or separately authorized migration | incumbent remains current; no replacement authority | `CHARACTER_ALREADY_ACTIVE` |
+| `RECOVERY_GRANT_REVISION_UNSUPPORTED` | `UNSUPPORTED_REVISION` | `TERMINAL` | compatible producer/client/consumer recovery profile only; no downgrade or fresh-entry reinterpretation | no authoritative mutation by rejected recovery candidate | `CLIENT_UPDATE_REQUIRED` |
+| `RECOVERY_HEALTHY_CONTROLLER_PRESENT` | `CONFLICT` | `TERMINAL` | no bearer-proof takeover; retry only after authoritative loss or separately authorized migration | authority state current at evaluation remains unchanged | `CHARACTER_ALREADY_ACTIVE` |
 | `RECOVERY_PLACEMENT_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only while time/security valid; else fresh recovery grant | no placement guess or authority mutation | `TEMPORARILY_UNAVAILABLE` |
-| `RECOVERY_STATE_UNSAFE` | `INTERNAL_UNAVAILABLE` | `TERMINAL` | no same transition retry until server reconciliation establishes safe state | fail closed; no partial control mutation | `SESSION_UNAVAILABLE` |
+| `RECOVERY_STATE_UNSAFE` | `INTERNAL_UNAVAILABLE` | `TERMINAL` | no same transition retry until server reconciliation establishes safe state | fail closed; no candidate control mutation or rollback | `SESSION_UNAVAILABLE` |
 | `CHARACTER_LEASE_STALE` | `STALE_GENERATION` | `TERMINAL` | stale holder never renews/replaces authority; reconcile current owner/session | stale generation commits nothing | `SESSION_UNAVAILABLE` |
 | `CHARACTER_LEASE_RENEW_TIMEOUT` | `TIMEOUT` | `RETRYABLE` | bounded same-current-lease renewal before fail-safe deadline; then fail safe | renewal only; never grants replacement writer | `TEMPORARILY_UNAVAILABLE` |
 | `CHARACTER_LEASE_DEPENDENCY_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | bounded same-current-lease renewal/reconciliation while safety deadline remains | renewal only; never grants replacement writer | `TEMPORARILY_UNAVAILABLE` |
-| `SESSION_TAKEOVER_NOT_ALLOWED` | `CONFLICT` | `TERMINAL` | fresh takeover only after authoritative eligibility change plus fresh authorization | incumbent remains current | `CHARACTER_ALREADY_ACTIVE` |
+| `SESSION_TAKEOVER_NOT_ALLOWED` | `CONFLICT` | `TERMINAL` | fresh takeover only after authoritative eligibility change plus fresh authorization | authority state current at evaluation remains unchanged | `CHARACTER_ALREADY_ACTIVE` |
 
 For fresh-entry grants, trusted-server time before the accepted `nbf` window maps to `ADMISSION_GRANT_NOT_YET_VALID`; it is neither malformed nor consumed. Expiry maps to `ADMISSION_GRANT_EXPIRED`.
 
 Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol/compatibility semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`.
 
-COMMIT-time revalidation failures use the most specific code for the changed fact. A failed COMMIT terminalizes/cancels the prepared candidate and never changes current generation, proof, lease or player authority.
+COMMIT-time revalidation failures use the most specific code for the changed fact. A failed COMMIT terminalizes/cancels only its prepared candidate and does not mutate or roll back whatever generation, proof, lease, session or runtime authority state is actually current at revalidation.
 
 Redacted diagnostics may include safe correlation IDs, profile/revision identifiers and cause classes required for operators, but never credentials, raw JWTs/nonces/secrets, Platform security-generation internals, private fencing data, SQL errors or unstable implementation strings.
 
@@ -910,8 +911,8 @@ FND-04 contract-level disposition:
 | `FS-DETECTOR-FALSE-POSITIVE` | `NOT_APPLICABLE` | analytics cannot sanction/revoke autonomously |
 | `FS-INVESTIGATION-MUTATION-ATTEMPT` | `NOT_APPLICABLE` | investigation cannot mutate session/runtime authority |
 | `FS-ADMISSION-GRANT-REPLAY` | `PASS` | one GrantNonce <= one successful admission; losing replay cannot create/revive/fence another GameSession |
-| `FS-RECONNECT-CREDENTIAL-REPLAY` | `PASS` | PREPARE/COMMIT + COMMIT-time current-authority/security/compatibility revalidation gives one winner; stale/prepared proof cannot regain authority/fence a recovered healthy successor/incumbent |
-| `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` | `PASS` | COMMIT atomically revalidates current authority/security/compatibility; stale prepared state cannot fence the current binding, advance generation, consume a recovery grant as success or create partial authority |
+| `FS-RECONNECT-CREDENTIAL-REPLAY` | `PASS` | PREPARE/COMMIT + COMMIT-time current-authority/security/compatibility revalidation gives one winner; stale/prepared proof cannot regain authority, revive a predecessor or fence whichever state is current |
+| `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` | `PASS` | COMMIT atomically revalidates current authority/security/compatibility. Stale prepared candidate cannot revive/overwrite the authority state current at revalidation, advance its candidate generation, consume a recovery grant as success or create partial authority; signed recovery compatibility mismatch uses `RECOVERY_GRANT_REVISION_UNSUPPORTED` with no nonce consumption or authority mutation. |
 
 `PASS` means architecture invariant exists, not executable proof.
 
@@ -968,9 +969,10 @@ Before implementation acceptance, deterministic/fault tests must prove at minimu
 - PREPARE then recovery-grant expiry, revocation or account-security-generation advancement cannot COMMIT;
 - PREPARE then signed recovery `compatibility_revision` becomes unsupported/superseded by current protocol/runtime/content/ruleset/session/reconciliation state cannot COMMIT and maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED` without nonce consumption or authority mutation;
 - PREPARE then CharacterLease/runtime ownership/session/reconciliation change cannot COMMIT stale authority;
-- COMMIT revalidation and authority switch are one atomic linearization boundary;
-- failed COMMIT leaves predecessor generation/proof/current authority unchanged and the candidate non-revivable;
-- lost COMMIT response/crash resolves to exactly predecessor-current or successor-current, never both;
+- PREPARE then a newer valid fence/handoff/takeover/terminality transition supersedes the PREPARE predecessor -> stale candidate COMMIT cannot revive predecessor authority or overwrite the newer/no-current-transport state;
+- COMMIT revalidation and candidate authority switch are one atomic linearization boundary;
+- failed candidate COMMIT leaves whatever authority state is actually current at revalidation unchanged and the candidate non-revivable;
+- lost COMMIT response/crash reconciles the candidate outcome plus the actual current authority state; it never assumes exactly predecessor-current or successor-current if another valid transition already superseded PREPARE;
 - valid-but-not-yet-active fresh-entry/recovery grants consume no nonce or authority and follow their bounded accepted-`nbf`-window retry rule;
 - malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported recovery-grant failures follow the recovery-specific canonical progression in the refinement.
 
@@ -998,7 +1000,7 @@ Client/OS diagnostics never authorize admission/reconnect or advance liveness.
 - Platform introspection required for every fast reconnect — rejected; unnecessary Platform dependency for admitted game-domain continuity.
 - Rotate reconnect secret and forget predecessor before client obtains successor — rejected; lost-response ambiguity.
 - PREPARE makes new transport authoritative — rejected; ambiguity before successor proof/commit.
-- PREPARE-time-only validation — rejected; eligibility/security/compatibility may change before COMMIT and stale prepared authority cannot fence a current controller.
+- PREPARE-time-only validation — rejected; eligibility/security/compatibility/current authority may change before COMMIT and stale prepared authority cannot fence a current controller or revive a superseded predecessor.
 - Reconnect/recovery secret alone preempts a healthy current binding — rejected; possession is not current-generation migration authorization.
 - Lease expiry automatically grants replacement writer — rejected; split-brain/stale-writer/combat-abuse risk.
 - GameSession terminality releases account presence immediately — rejected; actor may remain mandatory in world.
@@ -1069,8 +1071,9 @@ same-session recovery
 -> current placement resolved by Oteryn-v2
 -> PREPARE candidate generation + successor secret
 -> COMMIT successor proof + atomic current-authority/security/compatibility revalidation
--> healthy incumbent / expired-revoked-or-incompatible grant / stale lease-runtime-session state cancels candidate without fencing
--> exactly one current generation
+-> healthy incumbent / expired-revoked-or-incompatible grant / stale lease-runtime-session state / newer valid transition can invalidate candidate
+-> failed candidate never rolls back or revives predecessor; actual current authority remains unchanged
+-> successful candidate establishes exactly one current generation
 -> same GameSessionId
 -> one protection activation per eligible ControlLossEpoch
 
