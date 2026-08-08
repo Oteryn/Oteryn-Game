@@ -5,35 +5,26 @@
 - Applies to: Platform-reauthenticated attempts to recover control of an already-existing authoritative CharacterId actor/GameSession state
 - Does not apply to: fresh actor admission, OAuth/web session, Game Login Ticket, fast reconnect-secret proof, Channel/Instance handoff or Canary admission
 - Cryptographic container: JWS Compact Serialization carrying a JWT claims set
-- Signature profile: Ed25519 via JOSE `alg = EdDSA`
-- Validation guidance: RFC 7515, RFC 7519, RFC 8037 and RFC 8725
+- Signature profile: fully specified JOSE `alg = Ed25519`
+- Standards baseline: RFC 7515, RFC 7519, RFC 8032, RFC 8037, RFC 8725 and RFC 9864
 - Does not select: implementation library, KMS/HSM/vendor, recovery-locator transport, persistence/cache schema or deployment
 
 ## 1. Purpose and authority
 
 This profile exists so loss of the game-domain reconnect secret does not force a fresh-entry credential to be misused as a recovery credential.
 
-The capability proves only:
+It proves only:
 
 ```text
-Platform has freshly authenticated AccountId
+Platform freshly authenticated AccountId
 AND Platform currently permits AccountId to attempt recovery of CharacterId
 ```
 
-It does **not** prove:
+It does not prove GameSession existence, reconnectability, current actor placement, CharacterLease/runtime ownership or permission to move/respawn/recreate the actor. Oteryn-v2 resolves those facts.
 
-- a GameSession exists;
-- the actor is reconnectable;
-- the actor is currently uncontrolled;
-- current ChannelId/InstanceId placement;
-- current CharacterLease/runtime ownership;
-- permission to move/respawn/recreate the actor.
+## 2. Mutually exclusive profile
 
-Oteryn-v2 resolves all current game-domain facts and may reject the recovery attempt.
-
-## 2. Separation from fresh-entry profile
-
-Fresh entry uses:
+Fresh entry:
 
 ```text
 typ     = oteryn-admission+jwt
@@ -42,7 +33,7 @@ purpose = fresh_entry
 aud     = urn:oteryn:game:admission
 ```
 
-Reauthenticated recovery uses:
+Reauthenticated recovery:
 
 ```text
 typ     = oteryn-recovery+jwt
@@ -51,238 +42,226 @@ purpose = existing_actor_recovery
 aud     = urn:oteryn:game:recovery
 ```
 
-Validation rules are mutually exclusive. A consumer MUST NOT reinterpret one profile as the other when validation fails.
+Validators are mutually exclusive. Failure under one profile never triggers reinterpretation as the other.
 
-A fresh-entry grant bound to a Channel/route cannot be used to move an existing actor. A recovery grant intentionally contains no ChannelId or runtime placement claim.
+A fresh-entry Channel-bound grant cannot move an existing actor. Recovery intentionally contains no ChannelId/InstanceId authority.
 
-## 3. Cryptographic profile
+## 3. Exact cryptographic/header profile
 
-Recovery v1 uses JWS Compact JWT with exactly:
-
-```text
-alg = EdDSA
-key subtype = Ed25519
-```
-
-Only Ed25519 is accepted.
+Recovery v1 uses JWS Compact JWT with only the fully specified JOSE `alg = Ed25519` from RFC 9864.
 
 The protected header MUST contain exactly:
 
 ```json
 {
-  "alg": "EdDSA",
+  "alg": "Ed25519",
   "kid": "<trusted-recovery-key-id>",
   "typ": "oteryn-recovery+jwt"
 }
 ```
 
-Rules match the fresh-entry v1 strictness:
+Rules:
 
-- `kid` 1..64 ASCII characters matching `[A-Za-z0-9._-]+`;
-- key selected only from the trusted recovery-key purpose/set;
-- reject `none`, alternate algorithms/curves and algorithm fallback;
-- reject `jku`, `x5u`, `x5c`, embedded `jwk`, `crit`, `cty`, `zip`, `b64=false` and any additional header member;
-- never fetch a verifier key from a URI supplied by the token.
+- only `alg = Ed25519`;
+- deprecated polymorphic `alg = EdDSA` is rejected;
+- `kid` is 1..64 ASCII matching `[A-Za-z0-9._-]+` and selects only from the trusted recovery-key set;
+- reject `none`, other algorithms/curves and algorithm fallback;
+- reject `jku`, `x5u`, `x5c`, embedded `jwk`, `crit`, `cty`, `zip`, `b64=false` and all extra header members;
+- never fetch verification keys from token-supplied URIs.
 
-Recovery signing/verification key purpose is distinct from fresh-entry admission, OAuth, Game Login Ticket and service-authentication purposes. Physical key reuse across purposes is not assumed or required; production security operations choose key material under the accepted purpose separation.
+If trusted key distribution uses JWK, the public key follows the JOSE OKP/Ed25519 representation; the token `alg` remains `Ed25519`.
+
+Recovery key purpose is distinct from fresh-entry, OAuth, Game Login Ticket and service-authentication purposes.
 
 ## 4. Issuer and audience
-
-Profile v1 freezes:
 
 ```text
 iss = urn:oteryn:platform:game-recovery
 aud = urn:oteryn:game:recovery
 ```
 
-Both are exact case-sensitive strings.
+Exact case-sensitive matching is mandatory.
 
 ## 5. Required claims
 
-### 5.1 Standard claims
+Unknown/unregistered claims are rejected in v1.
+
+### Standard claims
 
 | Claim | Type | Rule |
 |---|---|---|
 | `iss` | string | exact Section 4 issuer |
-| `aud` | string | exact single Section 4 audience; arrays rejected in v1 |
+| `aud` | string | exact single Section 4 audience; arrays rejected |
 | `iat` | integer JSON number | whole-second NumericDate, authoritative Platform time |
-| `nbf` | integer JSON number | whole-second NumericDate, within one second of `iat` |
-| `exp` | integer JSON number | `> iat`, with `exp - iat <= 30` seconds |
-| `jti` | string | RecoveryGrantNonce: 32 random bytes, base64url unpadded, exactly 43 characters |
+| `nbf` | integer JSON number | `iat - 1 <= nbf <= iat + 1` |
+| `exp` | integer JSON number | `exp > iat`, `exp - iat <= 30` seconds |
+| `jti` | string | RecoveryGrantNonce: 32 random bytes, base64url unpadded, exactly 43 chars |
 
-### 5.2 Private claims
+### Oteryn claims
 
 | Claim | Type | Rule |
 |---|---|---|
 | `profile` | string | exact `oteryn-reauth-recovery-v1` |
 | `purpose` | string | exact `existing_actor_recovery` |
-| `attempt_ref` | string | Platform recovery-attempt correlation reference; canonical lowercase UUIDv7 text |
-| `account_id` | string | canonical lowercase UUID text, non-nil |
-| `character_id` | string | canonical lowercase UUID text, non-nil |
-| `world_id` | string | canonical lowercase UUID text, non-nil |
+| `attempt_ref` | string | Platform recovery-attempt correlation reference; canonical lowercase UUIDv7 |
+| `account_id` | string | canonical lowercase non-nil UUID |
+| `character_id` | string | canonical lowercase non-nil UUID |
+| `world_id` | string | canonical lowercase non-nil UUID |
 | `account_security_generation` | string | decimal non-zero uint64 string |
 | `protocol_major` | integer JSON number | exact `1` |
 | `compatibility_revision` | string | bounded ASCII 1..64, `[A-Za-z0-9._:-]+` |
 
-Profile v1 MUST NOT contain `channel_id`, `instance_id`, NodeId, runtime owner identity or scope ownership generation as an authority claim. Current actor/session placement is resolved by Oteryn-v2 after credential validation.
+This profile MUST NOT contain `channel_id`, `instance_id`, NodeId, runtime owner identity or scope ownership generation as placement authority. Oteryn-v2 resolves current actor/session placement after credential validation.
 
-Unknown unregistered claims are rejected by v1.
-
-## 6. Size, parsing and time limits
-
-Security/parser ceilings are the same class as fresh admission:
+## 6. Parser and time ceilings
 
 - compact token <= 4096 ASCII bytes;
 - exactly 3 JWS segments;
 - decoded header <= 512 bytes;
 - decoded payload <= 3072 bytes;
 - JSON nesting depth <= 2;
-- duplicate keys reject;
-- invalid UTF-8/non-canonical base64url/padded segments reject;
-- no floating/exponent/fractional NumericDate;
-- required null/missing claim rejects;
+- duplicate JSON members reject;
+- invalid UTF-8/non-canonical base64url/padding reject;
+- fractional/exponent NumericDate reject;
+- required null/missing claim reject;
+- no decompression;
 - maximum lifetime 30 seconds;
 - maximum verifier clock skew 5 seconds.
 
-A producer may issue a shorter token.
+A producer may issue a shorter lifetime.
 
-## 7. Platform account-security freshness
+## 7. Platform security freshness
 
-Recovery is a higher-risk action than ordinary fast reconnect because a fresh Platform authentication may substitute for missing game-domain reconnect proof.
+Recovery is higher-risk than ordinary reconnect-secret proof because fresh Platform authentication substitutes for missing game-domain proof.
 
-Therefore the same required current Platform-security projection/revocation boundary applies as fresh admission:
+Required Platform-security evidence age:
 
 ```text
-required Platform-security projection age <= 5 seconds
+<= 5 seconds
 ```
 
-If the projection is stale/unavailable/unauthenticated/contradictory, recovery fails closed.
+If evidence is stale/unavailable/unauthenticated/contradictory, recovery fails closed.
 
-If the account is disabled/revoked or the token's `account_security_generation` is below the minimum/current accepted generation, recovery is rejected even while the JWT is otherwise valid.
+Reject if account is disabled/revoked or token `account_security_generation` is below current minimum-valid generation.
 
-Platform may additionally require MFA/step-up/risk policy before issuing this recovery profile. That producer policy does not transfer final game authority to Platform.
+Platform may require MFA/step-up/risk checks before issuing this profile. That policy does not transfer final game authority to Platform.
 
 ## 8. RecoveryGrantNonce and producer attempt
 
-`jti` is a one-time RecoveryGrantNonce, distinct from `attempt_ref`.
+`jti` is the one-time RecoveryGrantNonce, distinct from `attempt_ref`.
 
-Requirements:
-
-- game-domain consume keyed by trusted issuer/profile/jti;
-- at most one successful recovery authority transition from one jti;
+- game consume state keyed by trusted issuer/profile/jti;
+- at most one successful recovery authority transition per jti;
 - concurrent use has at most one winner;
-- consumed jti remains non-reusable after a lost response;
-- consume evidence retained at least through `exp + 5 seconds` and longer when DUR/reconciliation requires it.
+- consumed jti stays consumed after lost response;
+- replay evidence retained at least through `exp + 5 seconds` and longer when DUR/reconciliation requires.
 
-`attempt_ref` provides Platform producer idempotency/correlation only and is not GameSessionId, connection_generation or replay authority.
+`attempt_ref` is producer idempotency/correlation only. Ambiguous producer retry for the same logical attempt cannot mint multiple independently usable recovery grants.
 
-An ambiguous Platform recovery-grant issuance follows the same producer rule as fresh admission: same logical attempt cannot mint multiple independently usable recovery grants.
+## 9. Current game-domain recovery resolution
 
-## 9. Game-domain recovery resolution
+After cryptographic/security validation, the game resolves state by AccountId + CharacterId + WorldId.
 
-After cryptographic/profile/security validation, the recovery boundary resolves current game-domain state by `AccountId + CharacterId + WorldId`.
-
-The token is eligible only when Oteryn-v2 proves one of two states:
+The grant can authorize only one of two game-domain transitions.
 
 ### 9.1 Same-GameSession recovery
 
-- an existing GameSession for the CharacterId is in an accepted unexpected-loss `RECONNECTABLE` state;
-- the session remains inside its 15-second same-session grace;
-- no current healthy playable controller has authority;
-- AccountId still owns CharacterId;
-- AccountPresenceClaim still binds the same CharacterId;
-- CharacterLease/runtime authority is current and compatible;
-- current placement is resolved by game-domain authority;
-- FND-02 command/session reconciliation state is safe.
+Require:
 
-Successful recovery preserves GameSessionId and uses the same rebind prepare/commit mechanism as reconnect-secret recovery, except this consumed recovery grant is the authentication proof that authorizes preparing the replacement transport.
+- existing session in accepted unexpected-loss `RECONNECTABLE` state;
+- still inside same-session 15-second grace;
+- no healthy current controller;
+- current AccountId->CharacterId ownership;
+- AccountPresenceClaim still same CharacterId;
+- current CharacterLease/runtime authority;
+- current game-domain placement;
+- safe FND-02 command/session reconciliation state.
+
+Success preserves GameSessionId and uses the FND-04 reconnect PREPARE/COMMIT state machine; this consumed recovery grant substitutes only for the missing current reconnect-secret authentication proof.
 
 ### 9.2 Post-grace existing-actor attachment
 
-- prior GameSession is terminal;
-- the same authoritative CharacterId actor remains `PRESENT_UNCONTROLLED` because gameplay rules require world presence;
-- no current playable controller exists;
-- AccountPresenceClaim remains the same CharacterId;
-- AccountId still owns CharacterId;
-- current CharacterLease/runtime actor is valid and current placement is resolved by game-domain authority.
+Require:
 
-Successful recovery creates a **new GameSessionId**, starts its own `connection_generation = 1`, creates new reconnect-proof state and attaches to the existing actor without respawn/reset/teleport/heal.
+- prior GameSession terminal;
+- same authoritative actor still `PRESENT_UNCONTROLLED`;
+- no current playable controller;
+- AccountPresenceClaim remains same CharacterId;
+- current AccountId->CharacterId ownership;
+- current CharacterLease/runtime actor;
+- current placement resolved by game-domain authority.
 
-If neither state exists, the recovery grant is rejected. It does not turn into fresh-entry authority automatically.
+Success creates a **new GameSessionId**, new connection_generation namespace beginning at `1`, new reconnect proof and control attachment to the existing actor without respawn/reset/teleport/heal.
 
-## 10. Healthy incumbent and takeover safety
+If neither state exists, reject. The recovery grant never silently becomes fresh-entry authority.
 
-A valid recovery JWT does not preempt a healthy current controller.
+## 10. Healthy incumbent safety
 
-If the incumbent session/transport has current sufficient-control evidence, recovery is rejected with a coarse conflict/session response.
+A valid recovery JWT cannot preempt a healthy current controller.
 
-Intentional takeover of a healthy logout-eligible incumbent follows the separately accepted takeover state machine; it does not use this recovery grant as an unconditional fence.
-
-A healthy combat/PZ/logout-locked incumbent cannot be kicked by presenting this grant.
+Healthy combat/PZ/logout-locked incumbent remains authoritative. Intentional logout-eligible takeover uses the separate takeover state machine, not an unconditional recovery-grant fence.
 
 ## 11. Current-placement routing
 
-Because this profile intentionally contains no ChannelId/InstanceId authority, the client/Gateway cannot choose the current actor owner from stale client memory.
+The client/Gateway does not choose actor placement from stale route memory.
 
-The final implementation must provide a bounded authenticated game-domain recovery locator/dispatcher that:
+Implementation must provide a bounded authenticated game-domain recovery locator/dispatcher that:
 
-- resolves the current authoritative actor/session owner;
-- follows current scope ownership generations;
-- does not expose private topology/fencing detail to the client unnecessarily;
-- routes or proxies the recovery attempt to the current owner;
-- fails closed on ambiguous/suspected/unavailable ownership;
-- never uses Platform configured route state as proof of current actor placement.
+- resolves current actor/session owner and scope ownership generation;
+- routes/proxies to the current owner without exposing unnecessary private topology;
+- fails closed on ambiguous/suspected/unavailable current ownership;
+- never treats Platform configured route as proof of actor placement.
 
-Exact API/transport/topology is deferred.
+Exact API/transport/deployment remains later design.
 
-## 12. Re-entry protection relationship
+## 12. Re-entry protection
 
-Consuming a recovery grant never grants PvE protection by itself.
+Consuming a recovery grant never creates protection by itself.
 
-Protection is keyed to the server-owned control-loss episode:
+Protection remains keyed to one server-owned ControlLossEpoch:
 
-- inside grace, if this is the first valid re-entry for an eligible classified unexpected-loss episode, FND-03 may activate the accepted 4-second defensive effect;
-- routine/healthy takeover does not create it;
-- post-grace new GameSession attachment to the same actor can consume the same episode's still-eligible protection decision only once;
-- GameSessionId replacement, new JWT or new connection_generation cannot restart/duplicate a consumed protection window.
+- same-session or post-grace first eligible re-entry may consume that epoch's one protection activation;
+- healthy/routine takeover does not;
+- new JWT, new GameSessionId or new connection_generation cannot restart/duplicate consumed protection.
 
 ## 13. Verification order
 
 1. outer protocol/material bound;
-2. compact/token parser limits;
+2. compact/parser limits;
 3. exact protected-header profile;
-4. trusted recovery-key lookup and Ed25519 verification;
-5. exact `typ/iss/aud/profile/purpose`;
+4. trusted recovery-key lookup + Ed25519 verification;
+5. exact typ/iss/aud/profile/purpose;
 6. time/lifetime/skew;
 7. claim canonical encoding;
-8. current Platform account-security projection/revocation/generation;
+8. current Platform-security evidence;
 9. one-time RecoveryGrantNonce eligibility;
 10. current AccountId->CharacterId ownership;
-11. current actor/session/presence/lease/runtime-placement resolution;
-12. healthy-controller/reconnectable/post-grace state decision;
-13. atomic game-domain recovery/rebind or new-session attachment commit;
-14. consume jti as part of the successful authority transition; publish success only after commit.
+11. current actor/session/presence/lease/runtime placement;
+12. healthy-controller/reconnectable/post-grace decision;
+13. atomic game-domain recovery/rebind/new-session commit;
+14. publish success only after commit.
 
 No failure creates partial player-control authority.
 
-## 14. Required independent fixtures / fault cases
+## 14. Independent fixtures / fault cases
 
-Before implementation acceptance, prove at least:
+Before implementation acceptance prove:
 
-- positive canonical recovery JWT across independent Platform/Rust implementations;
-- all fresh-entry profile tokens are rejected by recovery validator and vice versa;
-- wrong key purpose, alg, typ, issuer, audience, purpose, profile;
-- extra/forbidden header and unknown claim;
-- over-lifetime/skew/stale Platform-security evidence;
-- concurrent one-time jti consumption;
+- canonical `alg=Ed25519` recovery JWT across independent producer/consumer implementations;
+- deprecated `alg=EdDSA` rejection;
+- fresh-entry token rejected by recovery validator and vice versa;
+- wrong key purpose/alg/typ/issuer/audience/purpose/profile;
+- forbidden/extra header and unknown claim;
+- lifetime/skew/stale Platform-security rejection;
+- concurrent one-time jti consume;
 - healthy incumbent cannot be preempted;
 - same-session recovery preserves GameSessionId and advances connection generation;
-- post-grace actor attachment creates fresh GameSessionId without actor reset;
-- stale Platform/client ChannelId does not move the actor;
-- actor in InstanceRuntime is located through current game-domain placement;
-- GameNode replacement with unreconstructable session state falls back to post-grace/fresh-session rules rather than guessing same-session continuity;
-- consumed recovery grant/lost response cannot create a second controller or duplicate protection.
+- post-grace recovery creates fresh GameSessionId without actor reset;
+- stale Platform/client ChannelId does not move actor;
+- InstanceRuntime actor is resolved through current game-domain placement;
+- unreconstructable same-session state after GameNode replacement falls back safely rather than guessing continuity;
+- consumed grant/lost response cannot create a second controller or duplicate protection.
 
 ## 15. Non-authorization
 
-This profile does not implement or authorize Platform recovery issuer, recovery locator, Rust session runtime, database/cache schema, protocol message registration, key deployment or production traffic. Those require separate implementation and cross-repository rollout tasks.
+This profile does not implement or authorize Platform recovery issuer, recovery locator, Rust session runtime, database/cache schema, protocol message registration, key deployment or production traffic.
