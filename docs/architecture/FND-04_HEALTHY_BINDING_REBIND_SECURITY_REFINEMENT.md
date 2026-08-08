@@ -77,23 +77,26 @@ If the signed recovery compatibility requirement is unsupported, superseded or c
 
 RecoveryGrantNonce is consumed atomically with the successful authority transition. PREPARE alone never converts an expiring, revoked or compatibility-stale recovery grant into durable replacement authority.
 
-### 3.3 Failed COMMIT
+### 3.3 Failed COMMIT preserves the authority state that is actually current
 
-If any required COMMIT-time condition fails before the authority switch:
+A failed stale candidate is **non-mutating** with respect to gameplay authority. It never rolls authority back to the PREPARE predecessor and never revives a predecessor that was already fenced, superseded, handed off or made terminal by another valid transition.
+
+If any required COMMIT-time condition fails before this candidate's authority switch:
 
 ```text
-connection_generation does not advance
-predecessor/current authoritative binding remains current
+the candidate connection_generation does not become current
+whatever TransportBinding / GameSession / lease / runtime ownership state is current at revalidation remains unchanged
+if the PREPARE predecessor is still current, it remains current; if it was already superseded or no current transport exists, it is not revived
 successor reconnect secret never becomes current proof
 prepared candidate becomes aborted/terminal (or expires) under one stable state
-no successful RecoveryGrantNonce consumption is recorded
-no partial AccountPresence/lease/runtime/session authority mutation commits
-no ControlLossEpoch/protection is manufactured
+no successful RecoveryGrantNonce consumption is recorded for this candidate
+no authority mutation is committed by this failed candidate
+no ControlLossEpoch/protection is manufactured by this failed candidate
 ```
 
-The same ReconnectAttemptRef may return an already-committed result when COMMIT previously succeeded, or its stable aborted/expired result when it did not. An aborted candidate is never reinterpreted as fresh authority.
+The same ReconnectAttemptRef may return an already-committed result when this candidate previously succeeded, or its stable aborted/expired result when it did not. An aborted candidate is never reinterpreted as fresh authority. Reconciliation reports the actual current authority state; it does not reconstruct PREPARE-time authority as a rollback target.
 
-COMMIT revalidation and the authority switch form one linearization boundary against competing reconnect, recovery, takeover, handoff and fencing transitions.
+COMMIT revalidation and the candidate authority switch form one linearization boundary against competing reconnect, recovery, takeover, handoff and fencing transitions.
 
 ## 4. Healthy-session migration is a distinct future transition
 
@@ -215,7 +218,7 @@ The catalogue scenario:
 FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE
 ```
 
-is **`PASS` at FND-04 contract level**: Sections 2–3 require COMMIT to atomically revalidate current authority/security and require failed revalidation to leave the predecessor/current authority unchanged with no generation advance, successful recovery-nonce consumption or partial authority mutation.
+is **`PASS` at FND-04 contract level**: Sections 2–3 require COMMIT to atomically revalidate current authority/security/compatibility and require a failed stale candidate to leave the authority state that is actually current at revalidation unchanged, without candidate-generation advance, successful recovery-nonce consumption or partial authority mutation.
 
 `PASS` means a contract invariant exists; executable proof remains mandatory before implementation acceptance.
 
@@ -226,17 +229,18 @@ Required implementation evidence includes at minimum:
 3. current generation healthy + multiple concurrent contenders → none can create prepared state without current-binding migration authorization;
 4. server-declared eligible loss → one valid reconnect contender may PREPARE and exactly one may COMMIT;
 5. PREPARE accepted after eligible loss, then incumbent regains sufficient current-generation control before COMMIT → COMMIT rejected/candidate terminalized, incumbent unaffected;
-6. PREPARE using recovery grant, then grant expires/is revoked/security generation changes before COMMIT → COMMIT rejected without authority change;
-7. PREPARE using recovery grant, then signed `compatibility_revision` becomes unsupported/superseded by current runtime/content/ruleset/session/reconciliation compatibility before COMMIT → `RECOVERY_GRANT_REVISION_UNSUPPORTED`, no RecoveryGrantNonce consumption and no authority switch;
+6. PREPARE using recovery grant, then grant expires/is revoked/security generation changes before COMMIT → COMMIT rejected without candidate authority change;
+7. PREPARE using recovery grant, then signed `compatibility_revision` becomes unsupported/superseded by current runtime/content/ruleset/session/reconciliation compatibility before COMMIT → `RECOVERY_GRANT_REVISION_UNSUPPORTED`, no RecoveryGrantNonce consumption and no candidate authority switch;
 8. PREPARE then CharacterLease/runtime/session/reconciliation state changes before COMMIT → stale candidate cannot switch authority;
-9. failed COMMIT revalidation leaves predecessor proof/generation/current authority unchanged and successor secret cannot revive the candidate;
-10. pre-loss current-binding-authorized migration, if implemented, switches authority atomically without creating ControlLossEpoch/protection;
-11. stale migration authorization from generation N cannot affect generation N+1;
-12. stolen predecessor reconnect secret after successful COMMIT cannot regain authority or fence successor;
-13. fresh-entry grant with valid signature/profile and `now + 5s < nbf` returns `ADMISSION_GRANT_NOT_YET_VALID` and consumes no GrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed grant may proceed only while expiry, Platform-security, route/runtime-generation and every other admission binding remain valid;
-14. recovery grant with valid signature/profile and `now + 5s < nbf` returns `RECOVERY_GRANT_NOT_YET_VALID` and consumes no RecoveryGrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed recovery grant may proceed only while expiry, Platform-security, compatibility and recovery/session/actor eligibility remain valid;
-15. malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported recovery-grant cases each follow the recovery-specific Section 7 progression and never silently fall into fresh-entry retry behavior;
-16. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
+9. PREPARE then another valid fencing/handoff/takeover/terminality transition supersedes the predecessor → stale COMMIT cannot revive the predecessor or overwrite the newer/no-current-transport authority state;
+10. failed COMMIT revalidation leaves whatever authority state is current at revalidation unchanged and the stale candidate non-revivable;
+11. pre-loss current-binding-authorized migration, if implemented, switches authority atomically without creating ControlLossEpoch/protection;
+12. stale migration authorization from generation N cannot affect generation N+1;
+13. stolen predecessor reconnect secret after successful COMMIT cannot regain authority or fence successor;
+14. fresh-entry grant with valid signature/profile and `now + 5s < nbf` returns `ADMISSION_GRANT_NOT_YET_VALID` and consumes no GrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed grant may proceed only while expiry, Platform-security, route/runtime-generation and every other admission binding remain valid;
+15. recovery grant with valid signature/profile and `now + 5s < nbf` returns `RECOVERY_GRANT_NOT_YET_VALID` and consumes no RecoveryGrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed recovery grant may proceed only while expiry, Platform-security, compatibility and recovery/session/actor eligibility remain valid;
+16. malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported recovery-grant cases each follow the recovery-specific Section 7 progression and never silently fall into fresh-entry retry behavior;
+17. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
 
 ## 9. Concise rule
 
@@ -254,9 +258,11 @@ server-proven eligible loss
 incumbent recovered
 OR grant/security/compatibility invalidated
 OR lease/runtime/session/reconciliation changed
--> no authority switch
+OR a newer valid transition superseded PREPARE
+-> no candidate authority switch
 -> candidate terminal/aborted
--> predecessor/current authority unchanged
+-> actual current authority state remains unchanged
+-> no predecessor revival/rollback
 
 successful COMMIT
 -> exactly one current generation
