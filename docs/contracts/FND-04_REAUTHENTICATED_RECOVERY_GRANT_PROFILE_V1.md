@@ -109,7 +109,7 @@ Unknown/unregistered claims are rejected in v1.
 | `world_id` | string | canonical lowercase non-nil RFC UUIDv7 text |
 | `account_security_generation` | string | decimal non-zero uint64 string |
 | `protocol_major` | integer JSON number | exact `1` |
-| `compatibility_revision` | string | bounded ASCII 1..64, `[A-Za-z0-9._:-]+` |
+| `compatibility_revision` | string | bounded ASCII 1..64, `[A-Za-z0-9._:-]+`; syntactic validity alone is insufficient and Section 9 requires current game-domain compatibility validation |
 
 All UUID claims MUST parse and round-trip to the exact canonical lowercase hyphenated form. Nil UUID is rejected.
 
@@ -181,9 +181,13 @@ Platform may require MFA/step-up/risk checks before issuing this profile. That p
 
 `attempt_ref` is producer idempotency/correlation only. Ambiguous producer retry for the same logical attempt cannot mint multiple independently usable recovery grants.
 
-## 9. Current game-domain recovery resolution
+## 9. Current game-domain recovery resolution and compatibility
 
 After cryptographic/security validation, the game resolves state by AccountId + CharacterId + WorldId.
+
+`compatibility_revision` is a signed compatibility requirement, not descriptive metadata. Before either recovery transition may become authoritative, the current Oteryn-v2 owner MUST verify that the token revision is supported by the current protocol-major/runtime/content/ruleset/session boundary needed to continue or recreate player control. A syntactically valid but unsupported, superseded or otherwise incompatible revision fails closed as `RECOVERY_GRANT_REVISION_UNSUPPORTED`, consumes no RecoveryGrantNonce and creates no authority mutation.
+
+The token revision does not select stale content/runtime state and cannot downgrade the current actor/session. Current game-domain state remains authority for whether a compatible recovery boundary exists.
 
 The grant can authorize only one of two game-domain transitions.
 
@@ -198,6 +202,7 @@ Require:
 - AccountPresenceClaim still same CharacterId;
 - current CharacterLease/runtime authority;
 - current game-domain placement;
+- token `compatibility_revision` remains supported for the current GameSession/runtime/content/ruleset and the exact FND-02 reconciliation/snapshot boundary;
 - safe FND-02 command/session reconciliation state.
 
 Success preserves GameSessionId and uses the FND-04 reconnect PREPARE/COMMIT state machine; this recovery grant substitutes only for the missing current reconnect-secret authentication proof.
@@ -207,11 +212,12 @@ PREPARE is not authorization escrow. If this grant is used to create a prepared 
 - the prepared transition is unexpired and still belongs to the current GameSession/current predecessor generation;
 - the recovery JWT is still inside its accepted time window and its one-time nonce remains eligible;
 - current trusted Platform-security evidence is fresh and still admits the grant's `account_security_generation`;
+- the token `compatibility_revision` is still supported by the current GameSession/runtime/content/ruleset/reconciliation boundary;
 - the account/character ownership, AccountPresenceClaim, CharacterLease, runtime ownership/placement and reconciliation state are still current;
 - no healthy current controller has regained sufficient current-generation authority;
 - the same-session grace remains valid.
 
-If any condition changed, COMMIT fails before fencing the predecessor, the prepared candidate is cancelled/terminalized, its successor secret never becomes current proof and no connection generation advances. A caller must reconcile current authority and, when required, obtain a fresh recovery grant; possession of a prepared successor secret never overrides changed authorization.
+If compatibility or any other required condition changed, COMMIT fails before fencing the predecessor, the prepared candidate is cancelled/terminalized, its successor secret never becomes current proof and no connection generation advances. Compatibility failure maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. A caller must reconcile current authority and, when required, obtain a compatible fresh recovery grant; possession of a prepared successor secret never overrides changed authorization.
 
 ### 9.2 Post-grace existing-actor attachment
 
@@ -223,11 +229,12 @@ Require:
 - AccountPresenceClaim remains same CharacterId;
 - current AccountId->CharacterId ownership;
 - current CharacterLease/runtime actor;
-- current placement resolved by game-domain authority.
+- current placement resolved by game-domain authority;
+- token `compatibility_revision` is supported by the current actor/runtime/content/ruleset state and by the fresh authoritative snapshot/new-GameSession boundary.
 
 Success creates a **new GameSessionId**, new connection_generation namespace beginning at `1`, new reconnect proof and control attachment to the existing actor without respawn/reset/teleport/heal.
 
-If neither state exists, reject. The recovery grant never silently becomes fresh-entry authority.
+If current compatibility cannot be proven, reject as `RECOVERY_GRANT_REVISION_UNSUPPORTED` with no RecoveryGrantNonce consumption or authority mutation. If neither recovery state exists, reject. The recovery grant never silently becomes fresh-entry authority.
 
 ## 10. Healthy incumbent safety
 
@@ -268,12 +275,13 @@ Protection remains keyed to one server-owned ControlLossEpoch:
 6. time/lifetime/skew;
 7. claim canonical encoding, including UUID version/variant requirements;
 8. current Platform-security evidence;
-9. one-time RecoveryGrantNonce eligibility;
-10. current AccountId->CharacterId ownership;
-11. current actor/session/presence/lease/runtime placement;
-12. healthy-controller/reconnectable/post-grace decision;
-13. atomic game-domain recovery/rebind/new-session commit, including the COMMIT-time revalidation required by Section 9.1 for a prepared same-session rebind;
-14. publish success only after commit.
+9. current `protocol_major` / `compatibility_revision` support for the current recovery target and required snapshot/reconciliation boundary;
+10. one-time RecoveryGrantNonce eligibility;
+11. current AccountId->CharacterId ownership;
+12. current actor/session/presence/lease/runtime placement;
+13. healthy-controller/reconnectable/post-grace decision;
+14. atomic game-domain recovery/rebind/new-session commit, including COMMIT-time compatibility plus authority/security revalidation required by Section 9.1 for a prepared same-session rebind;
+15. publish success only after commit.
 
 No failure creates partial player-control authority.
 
@@ -290,6 +298,8 @@ Before implementation acceptance prove:
 - expiry boundary `now - 5s < exp` remains accepted and `now - 5s >= exp` rejects as expired;
 - lifetime/skew/stale Platform-security rejection;
 - canonical-looking wrong UUID version and wrong UUID variant rejection for `attempt_ref`, `character_id` and `world_id`;
+- syntactically valid but unsupported/superseded `compatibility_revision` rejects as `RECOVERY_GRANT_REVISION_UNSUPPORTED`, consumes no RecoveryGrantNonce and creates no authority mutation for both same-session and post-grace recovery;
+- compatibility revision/current runtime-content-ruleset-session support changes after PREPARE -> COMMIT rejects before authority switch and maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`;
 - concurrent one-time jti consume;
 - healthy incumbent cannot be preempted;
 - PREPARE followed by incumbent liveness recovery cannot COMMIT/fence that incumbent;
