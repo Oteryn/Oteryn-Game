@@ -18,7 +18,7 @@ For the subjects it owns below, it is the **single normative refinement** of the
 - Section 7 is the canonical FND-04 cross-component error progression table;
 - Section 8 owns the additional PREPARE→COMMIT eligibility-change failure-scenario disposition and required evidence.
 
-If duplicated candidate wording in the main FND-04 contract differs on one of those subjects, this refinement supersedes that duplicated wording in full. In particular, Section 7 below is the authoritative retry/terminal/idempotency/public mapping; a different public mapping in main-contract Section 27 is non-authoritative transitional duplication and must not be implemented.
+The canonical main FND-04 contract and `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` must reference this refinement explicitly. For the subjects above, this refinement supersedes duplicated candidate wording in the main contract when the two differ. In particular, Section 7 below is the authoritative retry/terminal/idempotency/public mapping; a different public mapping in main-contract Section 27 is non-authoritative transitional duplication and must not be implemented.
 
 This precedence rule removes ambiguity without changing the stable symbolic error names or Foundation Error Vocabulary categories already defined by the main contract.
 
@@ -177,7 +177,13 @@ This section is the sole normative FND-04 progression under `FOUNDATION_ERROR_VO
 | `RECONNECT_GENERATION_STALE` | `STALE_GENERATION` | `TERMINAL` | reconcile current generation; stale generation/proof cannot retry as authority | `NO_AUTHORITY_MUTATION` | `SESSION_UNAVAILABLE` |
 | `RECONNECT_ATTEMPT_CONFLICT` | `CONFLICT` | `RETRYABLE` | reconcile current prepared/committed attempt; same ReconnectAttemptRef may fetch stable result; competing attempt waits | `NO_AUTHORITY_MUTATION` or stable prior result | `TEMPORARILY_UNAVAILABLE` |
 | `RECONNECT_GRACE_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | same-session retry forbidden; use eligible post-grace recovery | `NO_AUTHORITY_MUTATION` | `SESSION_UNAVAILABLE` |
+| `RECOVERY_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | never same malformed recovery grant; perform new authenticated recovery issuance | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
+| `RECOVERY_GRANT_AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never same credential/profile/signature; perform new Platform-authenticated recovery | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
+| `RECOVERY_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | never same expired grant; obtain a new recovery grant if actor/session remains recovery-eligible | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
 | `RECOVERY_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior recovery before new authenticated recovery | `COMMITTED_OR_RECONCILE_REQUIRED` | `SESSION_UNAVAILABLE` |
+| `RECOVERY_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a new authenticated recovery; never reinterpret as fresh-entry grant | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
+| `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only while still within time/profile bounds and after fresh trusted security evidence; otherwise obtain a new recovery grant | `NO_AUTHORITY_MUTATION` | `TEMPORARILY_UNAVAILABLE` |
+| `RECOVERY_GRANT_REVISION_UNSUPPORTED` | `UNSUPPORTED_REVISION` | `TERMINAL` | compatible producer/client/consumer recovery profile only; no downgrade or fresh-entry reinterpretation | `NO_AUTHORITY_MUTATION` | `CLIENT_UPDATE_REQUIRED` |
 | `RECOVERY_HEALTHY_CONTROLLER_PRESENT` | `CONFLICT` | `TERMINAL` | no bearer-proof takeover; retry only after authoritative loss or separately authorized migration | `NO_AUTHORITY_MUTATION` | `CHARACTER_ALREADY_ACTIVE` |
 | `RECOVERY_PLACEMENT_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only while time/security valid; else fresh recovery grant | `NO_AUTHORITY_MUTATION` | `TEMPORARILY_UNAVAILABLE` |
 | `RECOVERY_STATE_UNSAFE` | `INTERNAL_UNAVAILABLE` | `TERMINAL` | no same transition retry until server reconciliation establishes safe state | `NO_AUTHORITY_MUTATION` | `SESSION_UNAVAILABLE` |
@@ -185,6 +191,8 @@ This section is the sole normative FND-04 progression under `FOUNDATION_ERROR_VO
 | `CHARACTER_LEASE_RENEW_TIMEOUT` | `TIMEOUT` | `RETRYABLE` | bounded same-current-lease renewal before fail-safe deadline; then fail safe | `BOUNDED_RENEWAL_ONLY` | `TEMPORARILY_UNAVAILABLE` |
 | `CHARACTER_LEASE_DEPENDENCY_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | bounded same-current-lease renewal/reconciliation while safety deadline remains | `BOUNDED_RENEWAL_ONLY` | `TEMPORARILY_UNAVAILABLE` |
 | `SESSION_TAKEOVER_NOT_ALLOWED` | `CONFLICT` | `TERMINAL` | fresh takeover only after authoritative eligibility change + fresh authorization | `NO_AUTHORITY_MUTATION` | `CHARACTER_ALREADY_ACTIVE` |
+
+Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. These recovery codes never inherit fresh-entry actions such as obtaining a Gateway route unless a later independent fresh-entry attempt is separately authorized.
 
 No public mapping exposes raw credential validity, security generation, private fence/lease data or combat-sensitive internals. Numeric wire allocation remains later FND-02 registry work and cannot weaken this progression.
 
@@ -214,7 +222,8 @@ Required implementation evidence includes at minimum:
 10. healthy migration, if later implemented, uses current-generation authorization and grants no disconnect protection;
 11. stale migration authorization from generation N cannot affect generation N+1;
 12. stolen predecessor reconnect secret after successful COMMIT cannot regain authority/fence successor;
-13. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
+13. malformed/bad-signature/expired/revoked/stale-security/unsupported recovery-grant cases each follow the recovery-specific Section 7 progression and never silently fall into fresh-entry retry behavior;
+14. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
 
 ## 9. Concise rule
 
