@@ -7,22 +7,24 @@ mode: CONTRACT
 status: validating
 repository: blakinio/Oteryn-v2
 base_branch: main
-branch: docs/OTV2-20260808-fnd04-session-admission-analysis
-pr: 104
-base_sha: 3c32fb08ddf52939159c0ace5fe607ca4fb18332
+branch: docs/OTV2-20260808-fnd04-session-admission-analysis-repair
+pr: 107
+base_sha: c638ad524772f227dabc90e88a1381cc01e907ce
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: GPT-5.6 Sol architecture continuation session
 created_at: 2026-08-08T20:46:00+02:00
-updated_at: 2026-08-08T21:00:00+02:00
+updated_at: 2026-08-08T21:15:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260808-fnd04-session-admission-analysis.md
   - docs/architecture/FND-04_SESSION_ADMISSION_LEASE_ANALYSIS_BASELINE.md
+  - docs/architecture/FND-04_PLATFORM_PRE_ADMISSION_RECONCILIATION_REFINEMENT.md
 public_contracts:
   - docs/architecture/FND-04_SESSION_ADMISSION_LEASE_ANALYSIS_BASELINE.md
+  - docs/architecture/FND-04_PLATFORM_PRE_ADMISSION_RECONCILIATION_REFINEMENT.md
 depends_on:
   - docs/architecture/ADR-0003-platform-identity-game-gateway-and-admission-boundary.md
   - docs/architecture/ADR-0012-character-authority-and-platform-lifecycle-boundary.md
@@ -35,6 +37,8 @@ depends_on:
   - docs/architecture/DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md
   - docs/contracts/FOUNDATION_ERROR_VOCABULARY.md
   - docs/contracts/FOUNDATION_FAILURE_SCENARIOS.md
+  - blakinio/Oteryn-Platform@216f5b2817e9d102337608609e344518512c2a0d:docs/contracts/OTERYN_V2_PRE_ADMISSION_HANDOFF_CONTRACT.md
+  - blakinio/Oteryn-Platform@216f5b2817e9d102337608609e344518512c2a0d:docs/contracts/OTERYN_V2_RUNTIME_STATUS_PROJECTION_CONTRACT.md
 blocks:
   - final FND-04 Identity Game Session Admission and Character Lease Contract
   - production admission reconnect takeover and character lease implementation claims
@@ -45,149 +49,127 @@ external_repositories:
 
 ## Outcome
 
-Produce a bounded architecture-analysis baseline for `FND-04` before freezing its security-sensitive final contract. The baseline reconciles accepted identity, Platform/Gateway, protocol, runtime, reconnect, duplicate-login, combat-presence and character-ownership decisions; classifies which FND-04 choices must be decided before implementation versus measured/deferred; and recommends one coherent admission/session/lease state model without implementing runtime, persistence or Platform changes.
+Repair the already-merged FND-04 analysis after a delayed exact-head review identified a material reconciliation gap against current `Oteryn-Platform/main` contracts. Preserve the accepted analysis, add one bounded companion refinement for the missing Platform producer/consumer semantics, revalidate exact head, then complete lifecycle closeout before the final FND-04 contract begins.
+
+The repair remains architecture-analysis only. It does not authorize runtime, protocol, persistence, Platform, key, deployment or production implementation.
 
 ## Architecture and source of truth
 
-- **PROVEN:** `main@3c32fb08ddf52939159c0ace5fe607ca4fb18332` contains accepted FND-01/FND-ID-01/FND-02/FND-03 foundation semantics and the FND-03 lifecycle closeout.
-- **PROVEN:** no open pull request existed at task start.
-- **PROVEN:** Platform Identity owns reusable account credentials, OAuth/PKCE, MFA and Game Login Ticket issuance; Game Gateway remains a Platform control-plane component and is not gameplay authority.
-- **PROVEN:** canonical `GameSessionId` is game-domain-owned and is issued only after successful authoritative admission.
-- **PROVEN:** FND-02 already fixes `connection_generation` as a non-zero post-admission `uint64` fence scoped to one GameSessionId, with strictly newer generation on accepted rebind.
-- **PROVEN:** one AccountId may have at most one authoritative online CharacterId; a healthy combat/PZ/logout-locked incumbent cannot be kicked by a duplicate login.
-- **PROVEN:** an eligible short reconnect preserves GameSessionId, advances connection generation, and starts from an owner-accepted initial 15-second reconnect-grace policy.
-- **PROVEN:** FND-03 owns monotonic execution of accepted 2-second disconnect protection, 5-second stale-transport cleanup and 4-second defensive PvE re-entry effects; FND-04 owns which current-generation evidence is sufficient and the exact logical session/reconnect state semantics.
-- **PROVEN:** the canonical current-status overlay on main still contains transition-safe historical wording around PR #102 and therefore needs a later narrow synchronization after the FND-04 analysis/final package selects the correct progression wording.
-- **DERIVED:** FND-04 needs separate semantic concepts for account presence exclusion, character player-control authority and transport binding even if later persistence stores them in one transaction/record family.
-- **DERIVED:** GameSession terminality cannot release account-global presence while the authoritative actor remains mandatory in world; otherwise a different CharacterId could become playable while the first actor still exists.
-- **DERIVED:** lease expiry/renewal uncertainty cannot by itself grant a replacement writer; replacement requires an explicit newer fenced authority after the old generation is unable to commit.
-- **UNKNOWN:** exact pre-admission credential container/algorithm/library, reconnect secret primitive/length, physical lease store/schema, exact heartbeat cadence, lease durations/safety margin and final public numeric error codes.
+- **PROVEN:** PR #104 merged the primary analysis baseline as `c638ad524772f227dabc90e88a1381cc01e907ce`.
+- **PROVEN:** exact delivery head `e14a386c8cc998f69075f99890e6fe68a930b396` passed Agent governance, Dependency review, CodeQL and the then-current exact-head audit.
+- **PROVEN:** delayed exact-head review after merge identified a material P1 because the analysis reconciled against historical Platform evidence but not the current accepted Platform native pre-admission/runtime-status contracts.
+- **PROVEN:** premature closeout PR #105 was closed unmerged; ownership therefore remains active on `main`.
+- **PROVEN:** current Platform reconciliation pin is `blakinio/Oteryn-Platform@216f5b2817e9d102337608609e344518512c2a0d`.
+- **PROVEN:** Platform `OTERYN_V2_PRE_ADMISSION_HANDOFF_CONTRACT.md` requires explicit disposition of Platform account-security changes after grant issuance, runtime observation/owner-generation applicability, and a Platform-generated admission-attempt correlation/idempotency reference.
+- **PROVEN:** Platform `OTERYN_V2_RUNTIME_STATUS_PROJECTION_CONTRACT.md` requires admission routing to use fresh current-owner runtime evidence and reject superseded owner/generation observations.
+- **DERIVED:** producer issuance-attempt identity and game-domain one-time consume nonce are different semantic objects and must not be collapsed merely because both can be random values.
+- **DERIVED:** an unexpired grant cannot be assumed valid after material Platform account-security revocation unless the final FND-04 security profile provides an explicit bounded mechanism.
+- **DERIVED:** issuance-time runtime observation/owner generation must have an explicit applicability rule; final game-domain current-owner validation remains mandatory even when the grant carries observation context.
 
 ## Acceptance criteria
 
-### Authority and state model
+### Existing analysis — preserved
 
-- [x] Reconcile Platform authorization-to-attempt-admission with game-domain final admission and canonical GameSessionId creation.
-- [x] Separate account-global online-character exclusion from CharacterId-specific player-control/session authority and from concrete transport binding.
-- [x] Define semantic linearization points for fresh admission, duplicate-login takeover, same-session reconnect, fresh-session recovery, logout and terminal session end.
-- [x] Preserve Character Authority ownership revalidation at final admission.
-- [x] Preserve account presence across GameSession terminality while the actor remains mandatory in world.
+- [x] Platform authorization is distinct from final game-domain admission/GameSession authority.
+- [x] AccountPresenceClaim, CharacterLease, GameSession and TransportBinding are semantically distinct.
+- [x] GameSession terminality does not release account presence while actor presence remains mandatory.
+- [x] Lease expiry/uncertainty cannot self-grant replacement authority.
+- [x] Hybrid signed PreAdmissionGrant + game-domain one-time consumption remains the recommended credential class.
+- [x] Reconnect lost-response reconciliation is mandatory; rotate-and-forget is rejected.
+- [x] PvE re-entry protection is tied to eligible classified unexpected control loss, not routine rebind.
+- [x] Recovery uses current game-domain actor placement rather than stale client/Platform routing.
 
-### Credential and replay analysis
+### Platform reconciliation repair
 
-- [x] Compare signed, opaque and hybrid pre-admission credentials against Platform availability, replay prevention, key rotation, revocation and cross-language rollout needs.
-- [x] Define minimum binding fields and validation order without changing FND-02 framing/schema ownership.
-- [x] Analyze reconnect credential replay/rotation and lost-response/crash ambiguity.
-- [x] Decide whether `AdmissionId` or `CharacterLeaseId` is actually required; current recommendation is no new foundation identity without proof.
-
-### Liveness reconnect and takeover
-
-- [x] Define sufficient current-generation liveness evidence conceptually without using socket-open state or client timestamps as authority.
-- [x] Analyze exact server-authoritative start of the accepted 15-second reconnect window relative to the 2-second control-loss boundary.
-- [x] Preserve 5-second transport cleanup independence from logical GameSession continuity.
-- [x] Define same-character recovery after reconnect-grace expiry while the actor still has mandatory combat/PZ/logout presence.
-- [x] Preserve healthy combat-locked incumbent protection and account-global one-online-character invariant under races.
-- [x] Identify anti-flap/re-entry-protection abuse risk without inventing an unapproved gameplay penalty.
-
-### Lease fencing and failure
-
-- [x] Define account/character lease-generation semantics and stale-owner behavior without freezing PostgreSQL schema.
-- [x] Define renewal failure, expiry, revocation and safe-loss-of-control semantics consistent with FND-03 fencing.
-- [x] Require that lease expiry/uncertainty cannot automatically authorize a replacement writer before explicit fencing/recovery.
-- [x] Classify every shared foundation failure scenario for FND-04 and identify candidate missing replay scenario IDs without expanding the catalogue prematurely.
-- [x] Define key rotation/emergency revocation requirements and fail-closed behavior for revision/route/audience mismatch.
+- [x] Define Platform account-security change after grant issuance as an explicit FND-04 final-contract decision and testable failure boundary.
+- [x] Preserve reviewed mechanism families: bounded lifetime/risk window, account-security generation/current validation, revocation projection/emergency deny, online introspection or equivalent; nominal expiry alone is not silently assumed sufficient.
+- [x] Define issuance-time runtime observation / route generation / ownership-generation applicability and the conditions under which generation change invalidates an otherwise unexpired grant by default.
+- [x] Preserve final game-domain current-owner validation even when Platform grant contains issuance-time runtime evidence.
+- [x] Preserve a distinct Platform `AdmissionAttemptRef`-class producer operation/correlation identity for issuance idempotency/reconciliation without promoting it to a foundation entity ID.
+- [x] Keep `AdmissionAttemptRef` distinct from game-domain `GrantNonce` consume/replay key and from GameSessionId.
+- [x] Add required race/failure cases for post-issuance account-security revocation, stale runtime owner generation and ambiguous grant issuance.
 
 ### Governance
 
-- [x] Architecture analysis only; no Rust, protocol runtime, persistence schema, Platform write, deployment or production activation.
-- [ ] Full changed-path review has zero unresolved material conflicts.
+- [x] Closeout PR #105 is closed unmerged and non-authoritative.
+- [x] Add one bounded companion refinement rather than rewriting unrelated baseline content.
+- [ ] Exact-head changed-path review finds zero unresolved material conflicts.
 - [ ] Exact-head Agent governance, Dependency review and CodeQL pass.
 - [ ] Independent exact-head architecture/security audit passes with zero open material findings.
-- [ ] Squash merge only after all final-head gates pass; archive/release ownership separately.
+- [ ] Squash merge repair before any lifecycle archive/release.
 
 ## Excluded scope
 
-This task does not implement or authorize:
+This repair does not:
 
-- Rust Game Session/admission/lease runtime;
-- Platform/Gateway code or external-repository writes;
-- PostgreSQL tables, locks, isolation levels or migrations;
-- production key infrastructure or secret material;
-- `protocol-oteryn` codecs/listeners/client adapters or new production message registration;
-- exact gameplay combat/logout formulas;
-- production heartbeat/lease numeric values unless the architecture analysis proves a value is forced by an already accepted invariant;
-- production traffic or deployment.
+- write `blakinio/Oteryn-Platform`;
+- implement grant issuer/consumer code;
+- choose JWT/PASETO/COSE library or KMS/HSM vendor;
+- define PostgreSQL/Redis schema;
+- implement GameSession/lease/reconnect runtime;
+- register new protocol messages;
+- activate production routes/keys/traffic;
+- authorize final FND-04 implementation.
 
 ## Implementation / findings
 
-The analysis baseline is now present in PR #104 and recommends four distinct semantic authority layers rather than one overloaded session concept:
+The merged baseline remains valid except where `FND-04_PLATFORM_PRE_ADMISSION_RECONCILIATION_REFINEMENT.md` explicitly narrows or supersedes Platform pre-admission semantics.
 
-1. account-global presence exclusion scoped by AccountId;
-2. character authority/lease fencing scoped by CharacterId;
-3. logical player-control lifecycle identified by GameSessionId;
-4. current concrete transport binding fenced by connection_generation.
+The repair makes three distinctions binding final-contract inputs:
 
-It recommends a hybrid signed pre-admission capability with game-side one-time consumption, a game-domain opaque rotating reconnect secret, no new AdmissionId/CharacterLeaseId without evidence, and a full 15-second same-GameSession grace measured from the server-authoritative control-loss declaration rather than the last good probe. These remain analysis recommendations until a final FND-04 contract is accepted.
+1. **Account-security freshness/revocation:** successful Platform issuance is not indefinite proof that the account remains eligible until nominal grant expiry. FND-04 must select a bounded testable post-issuance security-change disposition and maximum staleness/risk window.
+2. **Runtime observation applicability:** issuance-time runtime owner/generation evidence is immutable applicability evidence, not self-refreshing authority. Current Oteryn-v2 owner/readiness/revisions are revalidated at final admission; by default an advanced target ownership generation invalidates the fresh-entry grant and requires fresh routing/grant unless equivalent safe carry-forward is separately proven.
+3. **Producer attempt vs consumer nonce:** Platform `AdmissionAttemptRef` identifies issuance retry/reconciliation; `GrantNonce` identifies one capability's game-domain consume/replay lifecycle. They may be correlated but are never aliases for one another or for GameSessionId.
 
-Material review constraints now explicitly include:
-
-- GameSession end never makes a still-present combat/PZ/logout actor disappear or frees the account for another character;
-- lease timeout/uncertainty never acts as automatic replacement authority;
-- any same-character post-grace recovery must attach to the same authoritative actor without respawn/reset;
-- any recovery/handoff route must resolve the actor's current authoritative placement rather than treat stale client/Platform placement as authority;
-- same-session recovery across GameNode replacement may be claimed only if FND-02 command/session high-water, current generation and reconnect/fencing state are safely preserved/reconstructed; otherwise the old GameSession terminates and a fresh-session recovery path is required.
+The refinement recommends evaluating a normal-path design of short-lived signed grants + account-security generation/revision binding + trusted bounded-staleness game-side security-revocation/generation projection, with fail-closed new admission when required freshness cannot be established and optional exceptional introspection if security evidence requires it. This is an architecture-analysis direction, not a transport/cache/database choice.
 
 ## Validation
 
 ### Focused
 
-- accepted-input reconciliation: completed against ADR-0003, ADR-0012, FND-ID-01, FND-02, FND-03, reconnect/duplicate-login/disconnect baselines, error vocabulary and failure catalogue.
-- result: `PASS` pending independent final-diff audit.
+- current Platform contract reconciliation: companion refinement covers both accepted current contracts pinned at `216f5b2817e9d102337608609e344518512c2a0d`.
+- exact repair scope: active task update + one companion refinement.
+- result: `PASS` pending exact-head independent audit.
 
 ### Component/integration
 
-- result: `NOT_APPLICABLE` — architecture-analysis delivery only.
+- `NOT_APPLICABLE` — architecture-analysis repair only.
 
 ### E2E
 
-- result: `NOT_APPLICABLE` — no executable capability introduced.
+- `NOT_APPLICABLE` — no executable capability introduced; the refinement defines future E2E cases.
 
 ### Exact-head CI
 
-- final head: pending after this task synchronization commit
+- final repair head: pending after this synchronization commit
 - trigger source: pull_request
-- workflow/run/job: pending
 - result: pending
 
 ## Independent audit
 
-- exact head: pending after task synchronization
-- method/auditor: pending
-- material findings: pending
+- exact repair head: pending
 - verdict: pending
 
 ## PR and closeout
 
-- delivery PR: 104
-- changed-file review: exactly two declared documentation paths expected
-- unresolved review threads: pending
-- related/superseded PRs: none at task start
-- merge policy: squash after exact-head validation
-- merge commit/result: pending
-- ownership release: pending separate closeout
+- original delivery PR: 104, merged
+- original delivery merge: c638ad524772f227dabc90e88a1381cc01e907ce
+- superseded premature closeout PR: 105, closed unmerged
+- repair PR: 107
+- ownership release: blocked until repair merge + replacement closeout
 
 ## Context checkpoint
 
 ```yaml
-last_progress: FND-04 analysis baseline is drafted in PR #104 and accepted inputs are reconciled; the package is now in exact-head diff/audit/CI validation with no runtime or external-repository implementation authority.
+last_progress: Current Platform pre-admission/runtime-status contracts are now reconciled through one bounded companion refinement in repair PR #107. The repair freezes the missing analysis constraints without implementing any producer/consumer/runtime mechanism.
 status: validating
-branch: docs/OTV2-20260808-fnd04-session-admission-analysis
+branch: docs/OTV2-20260808-fnd04-session-admission-analysis-repair
 head_sha: null
-pr: 104
+pr: 107
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pending-final-head
+ci_check_generation: repair-final-pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -196,10 +178,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Perform full exact-head two-path architecture/security review of PR #104 and repair any material finding before freeze/merge.
+next_action: Freeze PR #107 exact head, inspect both repair paths, require fresh Agent governance/Dependency review/CodeQL and exact-head architecture/security audit before squash merge.
 ```
