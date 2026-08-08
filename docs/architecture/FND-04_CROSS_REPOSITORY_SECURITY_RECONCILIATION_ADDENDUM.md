@@ -6,14 +6,15 @@
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Repository: `blakinio/Oteryn-v2`
 - Applies to: final FND-04 admission grant validation, pre-admission revocation/freshness and ambiguous issuance semantics
+- External evidence pin: `blakinio/Oteryn-Platform@216f5b2817e9d102337608609e344518512c2a0d`
 - Consumes:
   - `docs/architecture/FND-04_SESSION_ADMISSION_LEASE_ANALYSIS_BASELINE.md`
   - `docs/architecture/ADR-0003-platform-identity-game-gateway-and-admission-boundary.md`
   - `docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md`
   - `docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md`
-  - current read-only `blakinio/Oteryn-Platform` ADR 0031
-  - current read-only Platform `OTERYN_V2_PRE_ADMISSION_HANDOFF_CONTRACT.md`
-  - current read-only Platform `OTERYN_V2_RUNTIME_STATUS_PROJECTION_CONTRACT.md`
+  - read-only Platform ADR 0031: `docs/architecture/adr/0031-native-oteryn-v2-integration-boundary.md`
+  - read-only Platform pre-admission contract blob `a7a98b943c528b9f21c0cdc2ee90b308045706f8`: `docs/contracts/OTERYN_V2_PRE_ADMISSION_HANDOFF_CONTRACT.md`
+  - read-only Platform runtime-status contract blob `5e45a4318716b62d53fd8bdf67b3b55676286ad1`: `docs/contracts/OTERYN_V2_RUNTIME_STATUS_PROJECTION_CONTRACT.md`
 - Does not authorize: runtime/protocol/persistence implementation, Platform writes, production keys, production traffic, deployment or live account/session mutation
 
 ## 1. Purpose
