@@ -831,6 +831,7 @@ Every FND-04 cross-component failure obeys `FOUNDATION_ERROR_VOCABULARY.md`. `TE
 |---|---|---|---|---|---|
 | `ADMISSION_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | never same malformed grant; obtain newly issued valid capability | no grant consume, session, lease or presence mutation | `RETRY_LOGIN` |
 | `ADMISSION_GRANT_AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never same credential; restart authenticated issuance | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
+| `ADMISSION_GRANT_NOT_YET_VALID` | `SESSION_REJECTED` | `RETRYABLE` | retry the same still-unconsumed grant only after trusted server time enters the accepted `nbf` window and only while `exp`, Platform-security, route/runtime-generation and all other admission bindings remain current; otherwise obtain a new grant | no GrantNonce consumption and no presence/lease/session/transport authority mutation | `TEMPORARILY_UNAVAILABLE` |
 | `ADMISSION_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | fresh Gateway/issuer attempt + new grant | no authoritative mutation | `RETRY_LOGIN` |
 | `ADMISSION_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior admission first, then fresh attempt only if no current authority | prior success may already exist; no duplicate effect | `SESSION_UNAVAILABLE` |
 | `ADMISSION_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a newly authenticated attempt | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
@@ -849,6 +850,7 @@ Every FND-04 cross-component failure obeys `FOUNDATION_ERROR_VOCABULARY.md`. `TE
 | `RECONNECT_GRACE_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | same-session retry forbidden; use eligible post-grace recovery | no rebind; old GameSession follows terminal progression | `SESSION_UNAVAILABLE` |
 | `RECOVERY_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | never same malformed recovery grant; perform new authenticated recovery issuance | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
 | `RECOVERY_GRANT_AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never same credential/profile/signature; perform new Platform-authenticated recovery | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
+| `RECOVERY_GRANT_NOT_YET_VALID` | `SESSION_REJECTED` | `RETRYABLE` | retry the same still-unconsumed recovery grant only after trusted server time enters the accepted `nbf` window and only while `exp`, current Platform-security evidence and current recovery/session/actor eligibility remain valid; otherwise obtain a new authenticated recovery grant | no RecoveryGrantNonce consumption and no rebind/session/lease/runtime authority mutation | `TEMPORARILY_UNAVAILABLE` |
 | `RECOVERY_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | never same expired grant; obtain a new recovery grant if actor/session remains recovery-eligible | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
 | `RECOVERY_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior recovery before new authenticated recovery | prior recovery may have committed; never duplicate it | `SESSION_UNAVAILABLE` |
 | `RECOVERY_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a new authenticated recovery; never reinterpret as fresh entry | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
@@ -862,7 +864,9 @@ Every FND-04 cross-component failure obeys `FOUNDATION_ERROR_VOCABULARY.md`. `TE
 | `CHARACTER_LEASE_DEPENDENCY_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | bounded same-current-lease renewal/reconciliation while safety deadline remains | renewal only; never grants replacement writer | `TEMPORARILY_UNAVAILABLE` |
 | `SESSION_TAKEOVER_NOT_ALLOWED` | `CONFLICT` | `TERMINAL` | fresh takeover only after authoritative eligibility change plus fresh authorization | incumbent remains current | `CHARACTER_ALREADY_ACTIVE` |
 
-Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`.
+For fresh-entry grants, trusted-server time before the accepted `nbf` window maps to `ADMISSION_GRANT_NOT_YET_VALID`; it is neither malformed nor consumed. Expiry maps to `ADMISSION_GRANT_EXPIRED`.
+
+Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`.
 
 COMMIT-time revalidation failures use the most specific code for the changed fact. A failed COMMIT terminalizes/cancels the prepared candidate and never changes current generation, proof, lease or player authority.
 
@@ -949,7 +953,7 @@ Register hard maxima for:
 
 ### Crypto/interoperability evidence
 
-Require independent PHP producer/Rust consumer fixtures, malformed/algorithm-confusion corpus including deprecated `EdDSA`, UUIDv7/version/variant rejection cases, key rotation/revocation, mixed-version rejection, replay/concurrency and credential-redaction tests.
+Require independent PHP producer/Rust consumer fixtures, malformed/algorithm-confusion corpus including deprecated `EdDSA`, UUIDv7/version/variant rejection cases, key rotation/revocation, mixed-version rejection, replay/concurrency, fresh-entry/recovery not-yet-valid `nbf` cases and credential-redaction tests.
 
 ### Reconnect authority race evidence
 
@@ -961,6 +965,7 @@ Before implementation acceptance, deterministic/fault tests must prove at minimu
 - COMMIT revalidation and authority switch are one atomic linearization boundary;
 - failed COMMIT leaves predecessor generation/proof/current authority unchanged and the candidate non-revivable;
 - lost COMMIT response/crash resolves to exactly predecessor-current or successor-current, never both;
+- valid-but-not-yet-active fresh-entry/recovery grants consume no nonce or authority and follow their bounded post-`nbf` retry rule;
 - malformed/bad-signature/expired/revoked/stale-security/unsupported recovery-grant failures follow the recovery-specific canonical progression in the refinement.
 
 No production defaults are inferred from application-library defaults.
