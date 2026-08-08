@@ -8,14 +8,14 @@ status: validating
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: docs/OTV2-20260808-fnd04-session-admission-final
-pr: null
+pr: 109
 base_sha: 27f7f647f04e3b1a4151f9b124401986910f03d8
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: GPT-5.6 Sol architecture continuation session
 created_at: 2026-08-08T21:22:00+02:00
-updated_at: 2026-08-08T21:34:00+02:00
+updated_at: 2026-08-08T21:38:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -68,7 +68,7 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 - **PROVEN:** FND-03 fixes runtime owner/fencing/time semantics and executes accepted 2s/5s/4s effects after FND-04 classifications.
 - **PROVEN current standard:** RFC 9864 registers fully specified JOSE `Ed25519` and deprecates polymorphic `EdDSA`; both FND-04 grant profiles use exact `alg=Ed25519` and reject `EdDSA` fallback.
 - **DERIVED AND FROZEN BY CANDIDATE:** fresh entry and reauthenticated existing-actor recovery use mutually exclusive signed profiles so Channel-bound fresh-entry authority cannot be reused to move a current actor.
-- **DERIVED AND FROZEN BY CANDIDATE:** reconnect uses a two-phase PREPARE/COMMIT authority transition so lost responses/crashes cannot create ambiguous current generations.
+- **DERIVED AND FROZEN BY CANDIDATE:** reconnect uses a two-phase PREPARE/COMMIT transition so lost responses/crashes cannot create ambiguous current generations.
 - **DERIVED AND FROZEN BY CANDIDATE:** Platform account-security validity is bounded by signed generation + <=5-second trusted security-projection freshness for new admission/recovery; this does not grant Platform post-admission gameplay mutation authority.
 - **DEFERRED BY EVIDENCE:** production liveness probe cadence/anti-flap hysteresis and CharacterLease TTL/renew/safety-margin values require measured fault/performance evidence before implementation acceptance.
 
@@ -132,16 +132,12 @@ This task does not implement or authorize Oteryn-v2 GameSession/admission/reconn
 ```text
 AccountPresenceClaim
 -> AccountId-global one playable/mandatory-presence CharacterId
-
 CharacterLease
 -> CharacterId writer/control fence + generation
-
 GameSession
 -> one logical player-control lifecycle
-
 TransportBinding
 -> GameSessionId + current connection_generation
-
 RuntimeScopeAuthority
 -> current FND-03 ChannelRuntime/InstanceRuntime owner generation
 ```
@@ -152,9 +148,9 @@ Fresh entry uses `oteryn-pre-admission-v1`; reauthenticated recovery uses `otery
 
 ### Reconnect ambiguity elimination
 
-Reconnect PREPARE reserves one candidate generation/successor secret but grants no transport authority. COMMIT after successor proof atomically changes connection_generation/current transport/current reconnect verifier and fences predecessor. Client retains predecessor proof until commit acknowledgement/evidence; if commit succeeded, successor proof enables safe recovery, and if it did not, predecessor remains authoritative. The system never guesses between both states.
+Reconnect PREPARE reserves one candidate generation/successor secret but grants no transport authority. COMMIT after successor proof atomically changes connection_generation/current transport/current reconnect verifier and fences predecessor. The system never guesses between predecessor-current and successor-current states.
 
-### Grace and recovery
+### Grace / recovery
 
 ```text
 T0 last sufficient control
@@ -170,7 +166,7 @@ Protection is one activation per eligible ControlLossEpoch. Post-grace mandatory
 ### Focused
 
 - accepted-input reconciliation: complete pending exact-head diff audit;
-- current standards review: updated to RFC 9864 fully specified `Ed25519`; deprecated `EdDSA` is an explicit negative fixture;
+- current standards review: updated to RFC 9864 fully specified `Ed25519`; deprecated `EdDSA` is explicit negative fixture;
 - profile separation/replay/route/security-freshness/reconnect/lease/liveness review: complete pending independent final audit.
 
 ### Component/integration
@@ -179,11 +175,11 @@ Protection is one activation per eligible ControlLossEpoch. Post-grace mandatory
 
 ### E2E
 
-- `NOT_APPLICABLE` for this documentation delivery. Exact implementation fixtures/fault cases are mandatory future evidence and are defined in the profiles/contract.
+- `NOT_APPLICABLE` for this documentation delivery. Future implementation evidence is explicitly defined by the profiles/contract.
 
 ### Exact-head CI
 
-- final head: pending after PR creation/final synchronization
+- final head: pending after this PR-binding commit
 - trigger source: pull_request
 - result: pending
 
@@ -194,7 +190,7 @@ Protection is one activation per eligible ControlLossEpoch. Post-grace mandatory
 
 ## PR and closeout
 
-- final delivery PR: pending
+- final delivery PR: 109
 - changed-file review: expected exactly six owned documentation paths
 - unresolved review threads: pending
 - merge policy: squash after exact-head validation
@@ -203,11 +199,11 @@ Protection is one activation per eligible ControlLossEpoch. Post-grace mandatory
 ## Context checkpoint
 
 ```yaml
-last_progress: Final FND-04 contract, mutually exclusive fresh-entry/recovery Ed25519 grant profiles, replay failure scenarios and canonical current-status synchronization are now drafted. RFC 9864 standards review corrected the candidate from deprecated polymorphic JOSE EdDSA to fully specified Ed25519 before PR freeze.
+last_progress: Final FND-04 PR #109 is open with six declared documentation paths. Contract/profiles use current fully specified JOSE Ed25519 and now enter exact-head security/architecture/CI validation.
 status: validating
 branch: docs/OTV2-20260808-fnd04-session-admission-final
 head_sha: null
-pr: null
+pr: 109
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
@@ -225,5 +221,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Open the single final FND-04 PR, bind its number, perform full six-path exact-head architecture/security review and require fresh repository CI/audit before merge.
+next_action: Freeze current PR #109 head, inspect all six paths, require fresh Agent governance/Dependency review/CodeQL and independent exact-head architecture/security audit before squash merge.
 ```
