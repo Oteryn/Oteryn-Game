@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: GPT-5.6 Sol architecture continuation session
 created_at: 2026-08-08T21:22:00+02:00
-updated_at: 2026-08-08T21:38:00+02:00
+updated_at: 2026-08-08T21:42:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -115,6 +115,7 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 
 - [x] No open PR existed at final-task start after duplicate #106 was closed.
 - [x] No Rust/runtime/protocol codec/persistence schema/Platform write/key deployment/production activation introduced by this package.
+- [x] Initial PR #109 metadata governance failure was diagnosed as title length `77 > 72`; PR title was shortened to `docs: finalize FND-04 session admission and lease contract` before final-head validation.
 - [ ] Full exact-head six-path architecture/security review has zero material conflicts.
 - [ ] Exact-head Agent governance, Dependency review and CodeQL pass.
 - [ ] Independent exact-head architecture/security audit passes with zero open material findings.
@@ -130,16 +131,11 @@ This task does not implement or authorize Oteryn-v2 GameSession/admission/reconn
 ### Final authority model
 
 ```text
-AccountPresenceClaim
--> AccountId-global one playable/mandatory-presence CharacterId
-CharacterLease
--> CharacterId writer/control fence + generation
-GameSession
--> one logical player-control lifecycle
-TransportBinding
--> GameSessionId + current connection_generation
-RuntimeScopeAuthority
--> current FND-03 ChannelRuntime/InstanceRuntime owner generation
+AccountPresenceClaim -> AccountId-global one playable/mandatory-presence CharacterId
+CharacterLease -> CharacterId writer/control fence + generation
+GameSession -> one logical player-control lifecycle
+TransportBinding -> GameSessionId + current connection_generation
+RuntimeScopeAuthority -> current FND-03 ChannelRuntime/InstanceRuntime owner generation
 ```
 
 ### Signed Platform capabilities
@@ -166,7 +162,7 @@ Protection is one activation per eligible ControlLossEpoch. Post-grace mandatory
 ### Focused
 
 - accepted-input reconciliation: complete pending exact-head diff audit;
-- current standards review: updated to RFC 9864 fully specified `Ed25519`; deprecated `EdDSA` is explicit negative fixture;
+- standards review: RFC 9864 fully specified `Ed25519`; deprecated `EdDSA` explicit negative fixture;
 - profile separation/replay/route/security-freshness/reconnect/lease/liveness review: complete pending independent final audit.
 
 ### Component/integration
@@ -179,18 +175,20 @@ Protection is one activation per eligible ControlLossEpoch. Post-grace mandatory
 
 ### Exact-head CI
 
-- final head: pending after this PR-binding commit
-- trigger source: pull_request
+- historical pre-repair head `4bb02e5b211cd791b88610d540c80b0ce14e4126`: Dependency review `PASS`, CodeQL `PASS`, Agent governance `FAIL` only because original PR title exceeded 72 characters; historical and not reusable as final evidence.
+- final head after this governance-repair commit: pending
+- trigger source: `pull_request:synchronize`
 - result: pending
 
 ## Independent audit
 
-- exact head: pending
+- exact final head: pending
 - verdict: pending
 
 ## PR and closeout
 
 - final delivery PR: 109
+- current title: `docs: finalize FND-04 session admission and lease contract`
 - changed-file review: expected exactly six owned documentation paths
 - unresolved review threads: pending
 - merge policy: squash after exact-head validation
@@ -199,7 +197,7 @@ Protection is one activation per eligible ControlLossEpoch. Post-grace mandatory
 ## Context checkpoint
 
 ```yaml
-last_progress: Final FND-04 PR #109 is open with six declared documentation paths. Contract/profiles use current fully specified JOSE Ed25519 and now enter exact-head security/architecture/CI validation.
+last_progress: PR #109 governance metadata failure was isolated to the >72-character title and corrected. This task commit records the repair and creates a fresh synchronize head for final exact-head CI/security review.
 status: validating
 branch: docs/OTV2-20260808-fnd04-session-admission-final
 head_sha: null
@@ -207,7 +205,7 @@ pr: 109
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pending-final-head
+ci_check_generation: post-governance-repair
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -216,10 +214,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze current PR #109 head, inspect all six paths, require fresh Agent governance/Dependency review/CodeQL and independent exact-head architecture/security audit before squash merge.
+next_action: Fetch the new exact head, review all six paths, require fresh Agent governance/Dependency review/CodeQL and independent architecture/security audit with zero open material findings before squash merge.
 ```
