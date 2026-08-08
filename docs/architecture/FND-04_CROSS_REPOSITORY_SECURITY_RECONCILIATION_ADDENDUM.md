@@ -12,7 +12,7 @@
   - `docs/architecture/ADR-0003-platform-identity-game-gateway-and-admission-boundary.md`
   - `docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md`
   - `docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md`
-  - read-only Platform ADR 0031: `docs/architecture/adr/0031-native-oteryn-v2-integration-boundary.md`
+  - read-only Platform ADR 0031 blob `893a0e76d9d4923039c52864d1c3b271336c7632`: `docs/architecture/adr/0031-native-oteryn-v2-integration-boundary.md`
   - read-only Platform pre-admission contract blob `a7a98b943c528b9f21c0cdc2ee90b308045706f8`: `docs/contracts/OTERYN_V2_PRE_ADMISSION_HANDOFF_CONTRACT.md`
   - read-only Platform runtime-status contract blob `5e45a4318716b62d53fd8bdf67b3b55676286ad1`: `docs/contracts/OTERYN_V2_RUNTIME_STATUS_PROJECTION_CONTRACT.md`
 - Does not authorize: runtime/protocol/persistence implementation, Platform writes, production keys, production traffic, deployment or live account/session mutation
@@ -138,6 +138,14 @@ Before implementation readiness, the final contract must define tests for at lea
 5. mixed producer/consumer rollout where one side does not understand the required revocation binding.
 
 The public failure response may be deliberately coarse, but internal typed evidence must distinguish policy invalidation from malformed credentials without exposing account-security details.
+
+### 4.5 Boundary after successful admission
+
+This requirement governs whether an **unconsumed pre-admission capability** remains eligible before the authoritative admission commit. It does not, by itself, define what a later Platform account-security change does to an already admitted `GameSessionId`, current CharacterLease or an actor that must remain in world because of combat/PZ/logout rules.
+
+The final FND-04 contract must separately state the post-admission security-revocation interaction. It may coordinate a session revocation/fencing transition where accepted, but it must not infer immediate actor disappearance, unsafe lease release or forced logout solely from the pre-admission rule.
+
+This distinction prevents a pre-admission security fix from silently redefining gameplay-presence semantics already owned by the game domain.
 
 ## 5. Requirement B — runtime observation and ownership-generation binding
 
@@ -270,12 +278,13 @@ Public errors may collapse sensitive distinctions. Internal audit/correlation mu
 The later final FND-04 contract is not complete until it explicitly:
 
 1. selects and documents the post-issuance Platform account-security change disposition;
-2. selects the runtime observation/ownership-generation binding and stale-grant invalidation rule;
-3. defines producer admission-attempt idempotency separately from concrete grant consume replay semantics, or proves a deliberate equivalence;
-4. maps these semantics to stable failure classes and redaction requirements;
-5. pins producer/consumer compatibility behavior and downgrade failure;
-6. requires exact-revision fixtures/fault tests for all three race classes;
-7. preserves Platform as reusable-credential/security-policy authority and Oteryn-v2 as final admission/GameSession/lease authority.
+2. separately states the post-admission account-security revocation interaction without violating game-owned mandatory-presence/lease semantics;
+3. selects the runtime observation/ownership-generation binding and stale-grant invalidation rule;
+4. defines producer admission-attempt idempotency separately from concrete grant consume replay semantics, or proves a deliberate equivalence;
+5. maps these semantics to stable failure classes and redaction requirements;
+6. pins producer/consumer compatibility behavior and downgrade failure;
+7. requires exact-revision fixtures/fault tests for all three race classes;
+8. preserves Platform as reusable-credential/security-policy authority and Oteryn-v2 as final admission/GameSession/lease authority.
 
 ## 10. Relationship to merged analysis PR #104
 
