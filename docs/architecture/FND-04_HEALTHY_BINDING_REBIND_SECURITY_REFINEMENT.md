@@ -163,6 +163,7 @@ This section is the sole normative FND-04 progression under `FOUNDATION_ERROR_VO
 |---|---|---|---|---|---|
 | `ADMISSION_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | never same malformed grant; obtain newly issued valid capability | `NO_AUTHORITY_MUTATION` | `RETRY_LOGIN` |
 | `ADMISSION_GRANT_AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never same credential; restart authenticated issuance | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
+| `ADMISSION_GRANT_NOT_YET_VALID` | `SESSION_REJECTED` | `RETRYABLE` | retry the same still-unconsumed grant only after trusted server time enters the accepted `nbf` window and only while `exp`, Platform-security, route/runtime-generation and all other admission bindings remain current; otherwise obtain a new grant | `NO_AUTHORITY_MUTATION`; GrantNonce is not consumed and no presence/lease/session/transport authority changes | `TEMPORARILY_UNAVAILABLE` |
 | `ADMISSION_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | fresh Gateway/issuer attempt + new grant | `NO_AUTHORITY_MUTATION` | `RETRY_LOGIN` |
 | `ADMISSION_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior admission first, then fresh attempt only if no current authority | `COMMITTED_OR_RECONCILE_REQUIRED` | `SESSION_UNAVAILABLE` |
 | `ADMISSION_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a newly authenticated attempt | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
@@ -181,6 +182,7 @@ This section is the sole normative FND-04 progression under `FOUNDATION_ERROR_VO
 | `RECONNECT_GRACE_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | same-session retry forbidden; use eligible post-grace recovery | `NO_AUTHORITY_MUTATION` | `SESSION_UNAVAILABLE` |
 | `RECOVERY_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | never same malformed recovery grant; perform new authenticated recovery issuance | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
 | `RECOVERY_GRANT_AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never same credential/profile/signature; perform new Platform-authenticated recovery | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
+| `RECOVERY_GRANT_NOT_YET_VALID` | `SESSION_REJECTED` | `RETRYABLE` | retry the same still-unconsumed recovery grant only after trusted server time enters the accepted `nbf` window and only while `exp`, current Platform-security evidence and the current recovery/session/actor eligibility remain valid; otherwise obtain a new authenticated recovery grant | `NO_AUTHORITY_MUTATION`; RecoveryGrantNonce is not consumed and no rebind/session/lease/runtime authority changes | `TEMPORARILY_UNAVAILABLE` |
 | `RECOVERY_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | never same expired grant; obtain a new recovery grant if actor/session remains recovery-eligible | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
 | `RECOVERY_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior recovery before new authenticated recovery | `COMMITTED_OR_RECONCILE_REQUIRED` | `SESSION_UNAVAILABLE` |
 | `RECOVERY_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a new authenticated recovery; never reinterpret as fresh-entry grant | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
@@ -194,7 +196,9 @@ This section is the sole normative FND-04 progression under `FOUNDATION_ERROR_VO
 | `CHARACTER_LEASE_DEPENDENCY_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | bounded same-current-lease renewal/reconciliation while safety deadline remains | `BOUNDED_RENEWAL_ONLY` | `TEMPORARILY_UNAVAILABLE` |
 | `SESSION_TAKEOVER_NOT_ALLOWED` | `CONFLICT` | `TERMINAL` | fresh takeover only after authoritative eligibility change + fresh authorization | `NO_AUTHORITY_MUTATION` | `CHARACTER_ALREADY_ACTIVE` |
 
-Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. These recovery codes never inherit fresh-entry actions such as obtaining a Gateway route unless a later independent fresh-entry attempt is separately authorized.
+For fresh-entry grants, a valid signature/profile whose trusted-server time is still before the accepted `nbf` window maps to `ADMISSION_GRANT_NOT_YET_VALID`; it is neither malformed nor consumed. Expiry maps to `ADMISSION_GRANT_EXPIRED`.
+
+Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. These recovery codes never inherit fresh-entry actions such as obtaining a Gateway route unless a later independent fresh-entry attempt is separately authorized.
 
 No public mapping exposes raw credential validity, security generation, private fence/lease data or combat-sensitive internals. Numeric wire allocation remains later FND-02 registry work and cannot weaken this progression.
 
@@ -213,19 +217,20 @@ is **`PASS` at FND-04 contract level**: Sections 2–3 require COMMIT to atomica
 Required implementation evidence includes at minimum:
 
 1. healthy current generation + correct reconnect secret from second transport → PREPARE rejected, incumbent unaffected;
-2. healthy current generation + valid recovery grant → PREPARE rejected, incumbent unaffected;
-3. concurrent healthy contenders → none prepares without separately authorized healthy migration;
-4. eligible declared loss → one contender may PREPARE and exactly one eligible contender may COMMIT;
-5. incumbent regains sufficient current-generation control after PREPARE → COMMIT rejected, incumbent remains authoritative;
-6. recovery JWT expires/is revoked or Platform-security generation/freshness invalidates after PREPARE → COMMIT rejected with no authority switch;
-7. CharacterLease/runtime/session/reconciliation authority changes after PREPARE → stale candidate cannot COMMIT;
-8. failed COMMIT leaves predecessor proof/generation/current authority unchanged and candidate non-revivable;
-9. crash/lost COMMIT response resolves to exactly predecessor-current or successor-current, never both;
-10. healthy migration, if later implemented, uses current-generation authorization and grants no disconnect protection;
-11. stale migration authorization from generation N cannot affect generation N+1;
-12. stolen predecessor reconnect secret after successful COMMIT cannot regain authority/fence successor;
-13. malformed/bad-signature/expired/revoked/stale-security/unsupported recovery-grant cases each follow the recovery-specific Section 7 progression and never silently fall into fresh-entry retry behavior;
-14. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
+2. healthy current generation + valid reauthenticated recovery grant → PREPARE/recovery rejected, incumbent unaffected;
+3. current generation healthy + multiple concurrent contenders → none can create prepared state without current-binding migration authorization;
+4. server-declared eligible loss → one valid reconnect contender may PREPARE and exactly one may COMMIT;
+5. PREPARE accepted after eligible loss, then incumbent regains sufficient current-generation control before COMMIT → COMMIT rejected/candidate terminalized, incumbent unaffected;
+6. PREPARE using recovery grant, then grant expires/is revoked/security generation changes before COMMIT → COMMIT rejected without authority change;
+7. PREPARE then CharacterLease/runtime/session/reconciliation state changes before COMMIT → stale candidate cannot switch authority;
+8. failed COMMIT revalidation leaves predecessor proof/generation/current authority unchanged and successor secret cannot revive the candidate;
+9. pre-loss current-binding-authorized migration, if implemented, switches authority atomically without creating ControlLossEpoch/protection;
+10. stale migration authorization from generation N cannot affect generation N+1;
+11. stolen predecessor reconnect secret after successful COMMIT cannot regain authority or fence successor;
+12. fresh-entry grant with valid signature/profile but trusted-server time before its accepted `nbf` window returns `ADMISSION_GRANT_NOT_YET_VALID`, consumes no GrantNonce and may retry the same grant only after `nbf` while all other bindings remain valid;
+13. recovery grant with valid signature/profile but trusted-server time before its accepted `nbf` window returns `RECOVERY_GRANT_NOT_YET_VALID`, consumes no RecoveryGrantNonce and may retry the same recovery grant only after `nbf` while recovery/security/session eligibility remains valid;
+14. malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported recovery-grant cases each follow the recovery-specific Section 7 progression and never silently fall into fresh-entry retry behavior;
+15. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
 
 ## 9. Concise rule
 
