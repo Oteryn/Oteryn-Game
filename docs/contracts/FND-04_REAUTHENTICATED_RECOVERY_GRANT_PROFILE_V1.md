@@ -103,13 +103,17 @@ Unknown/unregistered claims are rejected in v1.
 |---|---|---|
 | `profile` | string | exact `oteryn-reauth-recovery-v1` |
 | `purpose` | string | exact `existing_actor_recovery` |
-| `attempt_ref` | string | Platform recovery-attempt correlation reference; canonical lowercase UUIDv7 |
-| `account_id` | string | canonical lowercase non-nil UUID |
-| `character_id` | string | canonical lowercase non-nil UUID |
-| `world_id` | string | canonical lowercase non-nil UUID |
+| `attempt_ref` | string | Platform recovery-attempt correlation reference; canonical lowercase RFC UUIDv7 text |
+| `account_id` | string | canonical lowercase non-nil UUID in the authoritative Platform representation accepted by FND-ID-01 |
+| `character_id` | string | canonical lowercase non-nil RFC UUIDv7 text |
+| `world_id` | string | canonical lowercase non-nil RFC UUIDv7 text |
 | `account_security_generation` | string | decimal non-zero uint64 string |
 | `protocol_major` | integer JSON number | exact `1` |
 | `compatibility_revision` | string | bounded ASCII 1..64, `[A-Za-z0-9._:-]+` |
+
+All UUID claims MUST parse and round-trip to the exact canonical lowercase hyphenated form. Nil UUID is rejected.
+
+`attempt_ref`, `character_id` and `world_id` additionally MUST encode UUID version `7` and the RFC UUID variant; a syntactically canonical UUIDv1/v4/v6, Microsoft-reserved variant or other non-v7/non-RFC value is rejected. `account_id` remains Platform-owned and is validated against the authoritative Platform representation accepted by FND-ID-01 rather than being silently redefined as an Oteryn-issued UUIDv7.
 
 This profile MUST NOT contain `channel_id`, `instance_id`, NodeId, runtime owner identity or scope ownership generation as placement authority. Oteryn-v2 resolves current actor/session placement after credential validation.
 
@@ -177,7 +181,18 @@ Require:
 - current game-domain placement;
 - safe FND-02 command/session reconciliation state.
 
-Success preserves GameSessionId and uses the FND-04 reconnect PREPARE/COMMIT state machine; this consumed recovery grant substitutes only for the missing current reconnect-secret authentication proof.
+Success preserves GameSessionId and uses the FND-04 reconnect PREPARE/COMMIT state machine; this recovery grant substitutes only for the missing current reconnect-secret authentication proof.
+
+PREPARE is not authorization escrow. If this grant is used to create a prepared rebind, COMMIT MUST atomically revalidate before any authority change that:
+
+- the prepared transition is unexpired and still belongs to the current GameSession/current predecessor generation;
+- the recovery JWT is still inside its accepted time window and its one-time nonce remains eligible;
+- current trusted Platform-security evidence is fresh and still admits the grant's `account_security_generation`;
+- the account/character ownership, AccountPresenceClaim, CharacterLease, runtime ownership/placement and reconciliation state are still current;
+- no healthy current controller has regained sufficient current-generation authority;
+- the same-session grace remains valid.
+
+If any condition changed, COMMIT fails before fencing the predecessor, the prepared candidate is cancelled/terminalized, its successor secret never becomes current proof and no connection generation advances. A caller must reconcile current authority and, when required, obtain a fresh recovery grant; possession of a prepared successor secret never overrides changed authorization.
 
 ### 9.2 Post-grace existing-actor attachment
 
@@ -197,9 +212,9 @@ If neither state exists, reject. The recovery grant never silently becomes fresh
 
 ## 10. Healthy incumbent safety
 
-A valid recovery JWT cannot preempt a healthy current controller.
+A valid recovery JWT, a reconnect secret, a prepared successor secret or a completed PREPARE alone cannot preempt a healthy current controller.
 
-Healthy combat/PZ/logout-locked incumbent remains authoritative. Intentional logout-eligible takeover uses the separate takeover state machine, not an unconditional recovery-grant fence.
+Healthy combat/PZ/logout-locked incumbent remains authoritative. Intentional logout-eligible takeover uses the separate takeover state machine, not an unconditional recovery-grant/reconnect-secret fence. Any future healthy-session migration requires a separately current-generation-authorized transition and is not implied by this profile.
 
 ## 11. Current-placement routing
 
@@ -232,13 +247,13 @@ Protection remains keyed to one server-owned ControlLossEpoch:
 4. trusted recovery-key lookup + Ed25519 verification;
 5. exact typ/iss/aud/profile/purpose;
 6. time/lifetime/skew;
-7. claim canonical encoding;
+7. claim canonical encoding, including UUID version/variant requirements;
 8. current Platform-security evidence;
 9. one-time RecoveryGrantNonce eligibility;
 10. current AccountId->CharacterId ownership;
 11. current actor/session/presence/lease/runtime placement;
 12. healthy-controller/reconnectable/post-grace decision;
-13. atomic game-domain recovery/rebind/new-session commit;
+13. atomic game-domain recovery/rebind/new-session commit, including the COMMIT-time revalidation required by Section 9.1 for a prepared same-session rebind;
 14. publish success only after commit.
 
 No failure creates partial player-control authority.
@@ -253,9 +268,13 @@ Before implementation acceptance prove:
 - wrong key purpose/alg/typ/issuer/audience/purpose/profile;
 - forbidden/extra header and unknown claim;
 - lifetime/skew/stale Platform-security rejection;
+- canonical-looking wrong UUID version and wrong UUID variant rejection for `attempt_ref`, `character_id` and `world_id`;
 - concurrent one-time jti consume;
 - healthy incumbent cannot be preempted;
-- same-session recovery preserves GameSessionId and advances connection generation;
+- PREPARE followed by incumbent liveness recovery cannot COMMIT/fence that incumbent;
+- PREPARE followed by recovery-grant expiry/revocation/security-generation change cannot COMMIT;
+- PREPARE followed by lease/runtime/session/reconciliation change cannot COMMIT under stale prepared authority;
+- same-session recovery preserves GameSessionId and advances connection generation only after successful revalidation/COMMIT;
 - post-grace recovery creates fresh GameSessionId without actor reset;
 - stale Platform/client ChannelId does not move actor;
 - InstanceRuntime actor is resolved through current game-domain placement;
