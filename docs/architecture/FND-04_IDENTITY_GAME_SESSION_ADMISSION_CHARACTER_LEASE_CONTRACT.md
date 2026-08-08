@@ -13,6 +13,7 @@
   - accepted FND-03 runtime execution contract
   - `FND-04_SESSION_ADMISSION_LEASE_ANALYSIS_BASELINE.md`
   - `FND-04_PLATFORM_PRE_ADMISSION_RECONCILIATION_REFINEMENT.md`
+  - `FND-04_HEALTHY_BINDING_REBIND_SECURITY_REFINEMENT.md`
   - disconnect/re-entry owner decisions
   - `FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md`
   - `FND-04_REAUTHENTICATED_RECOVERY_GRANT_PROFILE_V1.md`
@@ -33,9 +34,15 @@ Only the current Oteryn-v2 game authority may create or replace gameplay control
 
 A session, transport, account-presence claim, character lease and runtime scope owner are related but are never aliases.
 
+### Normative refinement
+
+`docs/architecture/FND-04_HEALTHY_BINDING_REBIND_SECURITY_REFINEMENT.md` is a required companion of this contract. Its Sections 2–5 are authoritative for healthy-binding non-preemption and PREPARE→COMMIT revalidation; Section 6 is the canonical FND-04 decision-timing matrix; Section 7 is the canonical cross-component failure progression; and Section 8 owns the PREPARE→COMMIT eligibility-change failure-scenario disposition and evidence.
+
+This main contract is intentionally harmonized with that refinement. If a later edit makes duplicated wording differ, the refinement governs those explicitly owned subjects until an accepted superseding contract updates both documents.
+
 ## Decision timing
 
-FND-04 applies the repository's mandatory timing test before freezing any material admission/session choice.
+FND-04 applies the repository's mandatory timing test before freezing any material admission/session choice. The complete canonical timing matrix is maintained in Section 6 of `FND-04_HEALTHY_BINDING_REBIND_SECURITY_REFINEMENT.md`; the high-level decisions below remain a synchronized summary.
 
 | Material decision | Must decide now? | Concrete downstream work blocked | What becomes harder if wrong | Evidence that may justify superseding | Deliberately undecided |
 |---|---|---|---|---|---|
@@ -816,38 +823,48 @@ Production KMS/HSM, key generation, rollout and cadence remain later security-op
 
 Stable symbolic internal codes are frozen; numeric wire allocation follows later FND-02 registry work if/when exposed.
 
+The canonical progression is Section 7 of `FND-04_HEALTHY_BINDING_REBIND_SECURITY_REFINEMENT.md`. The synchronized table below is retained for local readability and must remain semantically identical to that refinement; the refinement wins if a future edit introduces drift.
+
 Every FND-04 cross-component failure obeys `FOUNDATION_ERROR_VOCABULARY.md`. `TERMINAL` means terminal for the current operation/credential/transition, not necessarily terminal for the account or actor. `SECURITY_TERMINAL` forbids retrying the same suspect credential/proof. `RETRYABLE` is always bounded by the named current authority/expiry/deadline; it never permits silent authority replacement.
 
 | Internal code | Category | Progression | Permitted retry / next authority | Idempotency / partial-mutation outcome | Coarse public class |
 |---|---|---|---|---|---|
-| `ADMISSION_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | corrected/new admission material only | no grant consume, session, lease or presence mutation | `RETRY_LOGIN` |
-| `ADMISSION_GRANT_AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never same grant; obtain new authenticated authorization | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
-| `ADMISSION_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | fresh Gateway/grant | expired grant remains unusable; no authoritative mutation | `RETRY_LOGIN` |
-| `ADMISSION_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` for that grant | never retry same grant; reconcile prior result or obtain fresh authorization | no second consume/effect; prior committed outcome, if any, remains authoritative | `RETRY_LOGIN` |
-| `ADMISSION_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | fresh authentication/security resolution required | no admission mutation | `AUTHENTICATION_REQUIRED` |
-| `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same still-valid/unconsumed grant only after fresh trusted evidence; otherwise fresh grant | no authoritative mutation | `TEMPORARILY_UNAVAILABLE` |
-| `ADMISSION_GRANT_ROUTE_STALE` | `STALE_GENERATION` | `TERMINAL` for grant | fresh Gateway route + fresh grant | no mutation; stale route cannot retarget | `RETRY_LOGIN` |
-| `ADMISSION_GRANT_RUNTIME_GENERATION_STALE` | `STALE_GENERATION` | `TERMINAL` for grant | fresh current-owner route + fresh grant | no mutation; stale owner generation cannot admit | `RETRY_LOGIN` |
-| `ADMISSION_GRANT_REVISION_UNSUPPORTED` | `UNSUPPORTED_REVISION` | `TERMINAL` | compatible client/route/profile then new attempt | no downgrade and no mutation | `CLIENT_UPDATE_REQUIRED` |
-| `ADMISSION_ACCOUNT_CHARACTER_CONFLICT` | `CONFLICT` | `TERMINAL` for attempt | new attempt only after authoritative ownership/lifecycle state changes | no partial admission | `SESSION_UNAVAILABLE` |
-| `ADMISSION_INCUMBENT_PROTECTED` | `CONFLICT` | `TERMINAL` for attempt | later new attempt after incumbent becomes legally replaceable/absent | incumbent unchanged; newcomer gets no authority | `CHARACTER_ALREADY_ACTIVE` |
-| `ADMISSION_CAPACITY_EXCEEDED` | `CAPACITY_EXCEEDED` | `RETRYABLE` | bounded retry while same grant remains valid/unconsumed and target remains current; otherwise fresh route/grant | no partial admission/reservation authority | `TEMPORARILY_UNAVAILABLE` |
-| `RECONNECT_PROOF_INVALID` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never retry same invalid proof; use valid current proof or reauthenticated recovery | current binding unchanged | `AUTHENTICATION_REQUIRED` |
-| `RECONNECT_PROOF_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` for stale proof | reconcile current binding; never re-execute stale proof | no generation rollback/second transition | `SESSION_UNAVAILABLE` |
-| `RECONNECT_SESSION_TERMINAL` | `SESSION_REJECTED` | `TERMINAL` | fresh-session existing-actor recovery or fresh admission only if independently eligible | terminal GameSession never revives | `RETRY_LOGIN` |
-| `RECONNECT_GENERATION_STALE` | `STALE_GENERATION` | `TERMINAL` for stale transport/attempt | reconcile to current generation; new proof path if eligible | no current-generation mutation | `SESSION_UNAVAILABLE` |
-| `RECONNECT_ATTEMPT_CONFLICT` | `CONFLICT` | `RETRYABLE` only through reconciliation | same winning ReconnectAttemptRef may be queried/retried; competing attempt cannot create another candidate | at most one prepared winner; no authority change before successful COMMIT | `SESSION_UNAVAILABLE` |
-| `RECONNECT_GRACE_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` for same-session reconnect | reauthenticated post-grace existing-actor recovery if actor remains eligible | old GameSession progresses terminal; no rebind | `RETRY_LOGIN` |
-| `RECOVERY_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` for that grant | never retry same grant; reconcile committed state or obtain fresh reauthentication | no second consume/rebind/session/protection | `AUTHENTICATION_REQUIRED` |
-| `RECOVERY_HEALTHY_CONTROLLER_PRESENT` | `CONFLICT` | `TERMINAL` for recovery attempt | no secret/JWT preemption; later explicit takeover/migration or new recovery after genuine loss | incumbent remains current; prepared candidate cancelled | `CHARACTER_ALREADY_ACTIVE` |
-| `RECOVERY_PLACEMENT_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same still-valid/unconsumed grant may retry after authoritative locator recovers; otherwise fresh recovery grant | no placement guess and no authority mutation | `TEMPORARILY_UNAVAILABLE` |
-| `RECOVERY_STATE_UNSAFE` | `INTERNAL_UNAVAILABLE` | `TERMINAL` for current transition | authoritative reconciliation/recovery first; then a new eligible attempt | fail closed; no partial control mutation | `SESSION_UNAVAILABLE` |
-| `CHARACTER_LEASE_STALE` | `STALE_GENERATION` | `TERMINAL` for stale holder/transition | reread current authority; only current generation may proceed | stale generation commits nothing | `SESSION_UNAVAILABLE` |
-| `CHARACTER_LEASE_RENEW_TIMEOUT` | `TIMEOUT` | `RETRYABLE` only before current holder's fail-safe deadline | bounded renewal retry under same current generation; after fail-safe deadline holder must stop authority and use recovery/fencing path | timeout never grants replacement writer or releases presence | `TEMPORARILY_UNAVAILABLE` |
-| `CHARACTER_LEASE_DEPENDENCY_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` only inside accepted safety window | bounded same-generation retry; no replacement until explicit fencing proof | no authority promotion; fail safe at deadline | `TEMPORARILY_UNAVAILABLE` |
-| `SESSION_TAKEOVER_NOT_ALLOWED` | `CONFLICT` | `TERMINAL` for attempt | later new takeover only after current authoritative eligibility changes | incumbent remains current; no partial takeover | `CHARACTER_ALREADY_ACTIVE` |
+| `ADMISSION_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | never same malformed grant; obtain newly issued valid capability | no grant consume, session, lease or presence mutation | `RETRY_LOGIN` |
+| `ADMISSION_GRANT_AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never same credential; restart authenticated issuance | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
+| `ADMISSION_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | fresh Gateway/issuer attempt + new grant | no authoritative mutation | `RETRY_LOGIN` |
+| `ADMISSION_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior admission first, then fresh attempt only if no current authority | prior success may already exist; no duplicate effect | `SESSION_UNAVAILABLE` |
+| `ADMISSION_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a newly authenticated attempt | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
+| `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only if still valid and other bindings remain current after fresh evidence; else new grant | no authoritative mutation | `TEMPORARILY_UNAVAILABLE` |
+| `ADMISSION_GRANT_ROUTE_STALE` | `STALE_GENERATION` | `TERMINAL` | fresh Gateway route + new grant; never retarget old grant | no authoritative mutation | `RETRY_LOGIN` |
+| `ADMISSION_GRANT_RUNTIME_GENERATION_STALE` | `STALE_GENERATION` | `TERMINAL` | fresh current-owner evidence + new grant | no authoritative mutation | `RETRY_LOGIN` |
+| `ADMISSION_GRANT_REVISION_UNSUPPORTED` | `UNSUPPORTED_REVISION` | `TERMINAL` | compatible producer/client/consumer revision only; no downgrade | no authoritative mutation | `CLIENT_UPDATE_REQUIRED` |
+| `ADMISSION_ACCOUNT_CHARACTER_CONFLICT` | `CONFLICT` | `TERMINAL` | new attempt only after authoritative ownership/lifecycle change | no partial admission | `SESSION_UNAVAILABLE` |
+| `ADMISSION_INCUMBENT_PROTECTED` | `CONFLICT` | `TERMINAL` | never reuse same grant as takeover; new attempt only after incumbent eligibility changes | incumbent unchanged; newcomer gets no authority | `CHARACTER_ALREADY_ACTIVE` |
+| `ADMISSION_CAPACITY_EXCEEDED` | `CAPACITY_EXCEEDED` | `RETRYABLE` | bounded backoff; same unconsumed grant only on same current route while valid, else fresh route/grant | no partial admission authority | `TEMPORARILY_UNAVAILABLE` |
+| `RECONNECT_PROOF_INVALID` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never blind-retry invalid proof; use valid proof or reauthenticated recovery | current binding unchanged | `AUTHENTICATION_REQUIRED` |
+| `RECONNECT_PROOF_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | reconcile current GameSession/binding; stale proof never reusable | prior success may exist; no duplicate transition | `SESSION_UNAVAILABLE` |
+| `RECONNECT_SESSION_TERMINAL` | `SESSION_REJECTED` | `TERMINAL` | same GameSession never retries; use eligible fresh-session actor recovery/new login | terminal GameSession never revives | `SESSION_UNAVAILABLE` |
+| `RECONNECT_GENERATION_STALE` | `STALE_GENERATION` | `TERMINAL` | reconcile current generation; stale generation/proof cannot retry as authority | no current-generation mutation | `SESSION_UNAVAILABLE` |
+| `RECONNECT_ATTEMPT_CONFLICT` | `CONFLICT` | `RETRYABLE` | reconcile current prepared/committed attempt; same ReconnectAttemptRef may fetch stable result; competing attempt waits | no authority mutation or stable prior result | `TEMPORARILY_UNAVAILABLE` |
+| `RECONNECT_GRACE_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | same-session retry forbidden; use eligible post-grace recovery | no rebind; old GameSession follows terminal progression | `SESSION_UNAVAILABLE` |
+| `RECOVERY_GRANT_MALFORMED` | `INVALID_INPUT` | `TERMINAL` | never same malformed recovery grant; perform new authenticated recovery issuance | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
+| `RECOVERY_GRANT_AUTHENTICATION_FAILED` | `AUTHENTICATION_FAILED` | `SECURITY_TERMINAL` | never same credential/profile/signature; perform new Platform-authenticated recovery | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
+| `RECOVERY_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | never same expired grant; obtain a new recovery grant if actor/session remains recovery-eligible | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
+| `RECOVERY_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior recovery before new authenticated recovery | prior recovery may have committed; never duplicate it | `SESSION_UNAVAILABLE` |
+| `RECOVERY_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a new authenticated recovery; never reinterpret as fresh entry | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
+| `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only while still within time/profile bounds and after fresh trusted security evidence; otherwise new recovery grant | no authoritative mutation | `TEMPORARILY_UNAVAILABLE` |
+| `RECOVERY_GRANT_REVISION_UNSUPPORTED` | `UNSUPPORTED_REVISION` | `TERMINAL` | compatible producer/client/consumer recovery profile only; no downgrade or fresh-entry reinterpretation | no authoritative mutation | `CLIENT_UPDATE_REQUIRED` |
+| `RECOVERY_HEALTHY_CONTROLLER_PRESENT` | `CONFLICT` | `TERMINAL` | no bearer-proof takeover; retry only after authoritative loss or separately authorized migration | incumbent remains current; no replacement authority | `CHARACTER_ALREADY_ACTIVE` |
+| `RECOVERY_PLACEMENT_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only while time/security valid; else fresh recovery grant | no placement guess or authority mutation | `TEMPORARILY_UNAVAILABLE` |
+| `RECOVERY_STATE_UNSAFE` | `INTERNAL_UNAVAILABLE` | `TERMINAL` | no same transition retry until server reconciliation establishes safe state | fail closed; no partial control mutation | `SESSION_UNAVAILABLE` |
+| `CHARACTER_LEASE_STALE` | `STALE_GENERATION` | `TERMINAL` | stale holder never renews/replaces authority; reconcile current owner/session | stale generation commits nothing | `SESSION_UNAVAILABLE` |
+| `CHARACTER_LEASE_RENEW_TIMEOUT` | `TIMEOUT` | `RETRYABLE` | bounded same-current-lease renewal before fail-safe deadline; then fail safe | renewal only; never grants replacement writer | `TEMPORARILY_UNAVAILABLE` |
+| `CHARACTER_LEASE_DEPENDENCY_UNAVAILABLE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | bounded same-current-lease renewal/reconciliation while safety deadline remains | renewal only; never grants replacement writer | `TEMPORARILY_UNAVAILABLE` |
+| `SESSION_TAKEOVER_NOT_ALLOWED` | `CONFLICT` | `TERMINAL` | fresh takeover only after authoritative eligibility change plus fresh authorization | incumbent remains current | `CHARACTER_ALREADY_ACTIVE` |
 
-COMMIT-time revalidation failures use the most specific code above for the changed fact. For example, recovered incumbent health uses `RECOVERY_HEALTHY_CONTROLLER_PRESENT`, expired recovery authorization follows the relevant terminal recovery/admission rejection, stale runtime/lease generations use their stale-generation code, and unavailable current placement uses `RECOVERY_PLACEMENT_UNAVAILABLE`. A failed COMMIT terminalizes/cancels the prepared candidate and never changes current generation, proof, lease or player authority.
+Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`.
+
+COMMIT-time revalidation failures use the most specific code for the changed fact. A failed COMMIT terminalizes/cancels the prepared candidate and never changes current generation, proof, lease or player authority.
 
 Redacted diagnostics may include safe correlation IDs, profile/revision identifiers and cause classes required for operators, but never credentials, raw JWTs/nonces/secrets, Platform security-generation internals, private fencing data, SQL errors or unstable implementation strings.
 
@@ -885,6 +902,7 @@ FND-04 contract-level disposition:
 | `FS-INVESTIGATION-MUTATION-ATTEMPT` | `NOT_APPLICABLE` | investigation cannot mutate session/runtime authority |
 | `FS-ADMISSION-GRANT-REPLAY` | `PASS` | one GrantNonce <= one successful admission; losing replay cannot create/revive/fence another GameSession |
 | `FS-RECONNECT-CREDENTIAL-REPLAY` | `PASS` | PREPARE/COMMIT + COMMIT-time current-authority/security revalidation gives one winner; stale/prepared proof cannot regain authority/fence a recovered healthy successor/incumbent |
+| `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` | `PASS` | COMMIT atomically revalidates current authority/security; stale prepared state cannot fence the current binding, advance generation, consume a recovery grant as success or create partial authority |
 
 `PASS` means architecture invariant exists, not executable proof.
 
@@ -942,7 +960,8 @@ Before implementation acceptance, deterministic/fault tests must prove at minimu
 - PREPARE then CharacterLease/runtime ownership/session/reconciliation change cannot COMMIT stale authority;
 - COMMIT revalidation and authority switch are one atomic linearization boundary;
 - failed COMMIT leaves predecessor generation/proof/current authority unchanged and the candidate non-revivable;
-- lost COMMIT response/crash resolves to exactly predecessor-current or successor-current, never both.
+- lost COMMIT response/crash resolves to exactly predecessor-current or successor-current, never both;
+- malformed/bad-signature/expired/revoked/stale-security/unsupported recovery-grant failures follow the recovery-specific canonical progression in the refinement.
 
 No production defaults are inferred from application-library defaults.
 
@@ -998,7 +1017,7 @@ May consume bounded security/audit evidence, never raw credentials and never aut
 
 ## 34. Acceptance boundary
 
-When this contract and both grant profiles merge:
+When this contract, its required rebind refinement and both grant profiles merge:
 
 - FND-04 architecture gate is complete;
 - Identity/GameSession/admission/reconnect/account-presence/CharacterLease semantics are frozen;
