@@ -217,7 +217,7 @@ PREPARE is not authorization escrow. If this grant is used to create a prepared 
 - no healthy current controller has regained sufficient current-generation authority;
 - the same-session grace remains valid.
 
-If compatibility or any other required condition changed, COMMIT fails before fencing the predecessor, the prepared candidate is cancelled/terminalized, its successor secret never becomes current proof and no connection generation advances. Compatibility failure maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. A caller must reconcile current authority and, when required, obtain a compatible fresh recovery grant; possession of a prepared successor secret never overrides changed authorization.
+If compatibility or any other required condition changed, this candidate COMMIT fails before performing any authority mutation. The prepared candidate is cancelled/terminalized, its successor secret never becomes current proof and its candidate connection generation never becomes current. The failure leaves whatever GameSession/TransportBinding/lease/runtime authority state is actually current at revalidation unchanged; it never revives a PREPARE predecessor that was already fenced, handed off, superseded or made terminal. Compatibility failure maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. A caller must reconcile current authority and, when required, obtain a compatible fresh recovery grant; possession of a prepared successor secret never overrides changed authorization.
 
 ### 9.2 Post-grace existing-actor attachment
 
@@ -299,7 +299,8 @@ Before implementation acceptance prove:
 - lifetime/skew/stale Platform-security rejection;
 - canonical-looking wrong UUID version and wrong UUID variant rejection for `attempt_ref`, `character_id` and `world_id`;
 - syntactically valid but unsupported/superseded `compatibility_revision` rejects as `RECOVERY_GRANT_REVISION_UNSUPPORTED`, consumes no RecoveryGrantNonce and creates no authority mutation for both same-session and post-grace recovery;
-- compatibility revision/current runtime-content-ruleset-session support changes after PREPARE -> COMMIT rejects before authority switch and maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`;
+- compatibility revision/current runtime-content-ruleset-session support changes after PREPARE -> COMMIT rejects before candidate authority switch and maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`;
+- another valid fencing/handoff/takeover/terminality transition supersedes the PREPARE predecessor -> stale candidate COMMIT cannot revive predecessor authority or overwrite the authority/no-current-transport state that is current at revalidation;
 - concurrent one-time jti consume;
 - healthy incumbent cannot be preempted;
 - PREPARE followed by incumbent liveness recovery cannot COMMIT/fence that incumbent;
