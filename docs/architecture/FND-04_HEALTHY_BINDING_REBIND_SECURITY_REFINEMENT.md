@@ -70,9 +70,12 @@ When PREPARE used `oteryn-reauth-recovery-v1`, COMMIT additionally revalidates w
 - current trusted Platform-security evidence is authenticated and within the accepted `<= 5s` freshness bound;
 - account remains admissible and `account_security_generation` is not below the accepted minimum/current floor;
 - key/profile revocation state still accepts the grant;
-- current AccountId→CharacterId ownership still matches.
+- current AccountId→CharacterId ownership still matches;
+- the signed `compatibility_revision` remains supported by the current protocol-major/runtime/content/ruleset/GameSession/reconciliation boundary required for the same-session continuation.
 
-RecoveryGrantNonce is consumed atomically with the successful authority transition. PREPARE alone never converts an expiring or revoked recovery grant into durable replacement authority.
+If the signed recovery compatibility requirement is unsupported, superseded or changed after PREPARE, COMMIT fails before the authority switch as `RECOVERY_GRANT_REVISION_UNSUPPORTED`; RecoveryGrantNonce is not consumed and no session/lease/runtime/transport authority changes.
+
+RecoveryGrantNonce is consumed atomically with the successful authority transition. PREPARE alone never converts an expiring, revoked or compatibility-stale recovery grant into durable replacement authority.
 
 ### 3.3 Failed COMMIT
 
@@ -200,7 +203,7 @@ For FND-04 v1, any shorthand such as `after nbf` or `post-nbf` means **after tru
 
 For fresh-entry grants, a valid signature/profile whose trusted-server time is still before the accepted `nbf` window maps to `ADMISSION_GRANT_NOT_YET_VALID`; it is neither malformed nor consumed. Expiry maps to `ADMISSION_GRANT_EXPIRED`.
 
-Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. These recovery codes never inherit fresh-entry actions such as obtaining a Gateway route unless a later independent fresh-entry attempt is separately authorized.
+Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. These recovery codes never inherit fresh-entry actions such as obtaining a Gateway route unless a later independent fresh-entry attempt is separately authorized.
 
 No public mapping exposes raw credential validity, security generation, private fence/lease data or combat-sensitive internals. Numeric wire allocation remains later FND-02 registry work and cannot weaken this progression.
 
@@ -224,15 +227,16 @@ Required implementation evidence includes at minimum:
 4. server-declared eligible loss → one valid reconnect contender may PREPARE and exactly one may COMMIT;
 5. PREPARE accepted after eligible loss, then incumbent regains sufficient current-generation control before COMMIT → COMMIT rejected/candidate terminalized, incumbent unaffected;
 6. PREPARE using recovery grant, then grant expires/is revoked/security generation changes before COMMIT → COMMIT rejected without authority change;
-7. PREPARE then CharacterLease/runtime/session/reconciliation state changes before COMMIT → stale candidate cannot switch authority;
-8. failed COMMIT revalidation leaves predecessor proof/generation/current authority unchanged and successor secret cannot revive the candidate;
-9. pre-loss current-binding-authorized migration, if implemented, switches authority atomically without creating ControlLossEpoch/protection;
-10. stale migration authorization from generation N cannot affect generation N+1;
-11. stolen predecessor reconnect secret after successful COMMIT cannot regain authority or fence successor;
-12. fresh-entry grant with valid signature/profile and `now + 5s < nbf` returns `ADMISSION_GRANT_NOT_YET_VALID` and consumes no GrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed grant may proceed only while expiry, Platform-security, route/runtime-generation and every other admission binding remain valid;
-13. recovery grant with valid signature/profile and `now + 5s < nbf` returns `RECOVERY_GRANT_NOT_YET_VALID` and consumes no RecoveryGrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed recovery grant may proceed only while expiry, Platform-security and recovery/session/actor eligibility remain valid;
-14. malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported recovery-grant cases each follow the recovery-specific Section 7 progression and never silently fall into fresh-entry retry behavior;
-15. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
+7. PREPARE using recovery grant, then signed `compatibility_revision` becomes unsupported/superseded by current runtime/content/ruleset/session/reconciliation compatibility before COMMIT → `RECOVERY_GRANT_REVISION_UNSUPPORTED`, no RecoveryGrantNonce consumption and no authority switch;
+8. PREPARE then CharacterLease/runtime/session/reconciliation state changes before COMMIT → stale candidate cannot switch authority;
+9. failed COMMIT revalidation leaves predecessor proof/generation/current authority unchanged and successor secret cannot revive the candidate;
+10. pre-loss current-binding-authorized migration, if implemented, switches authority atomically without creating ControlLossEpoch/protection;
+11. stale migration authorization from generation N cannot affect generation N+1;
+12. stolen predecessor reconnect secret after successful COMMIT cannot regain authority or fence successor;
+13. fresh-entry grant with valid signature/profile and `now + 5s < nbf` returns `ADMISSION_GRANT_NOT_YET_VALID` and consumes no GrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed grant may proceed only while expiry, Platform-security, route/runtime-generation and every other admission binding remain valid;
+14. recovery grant with valid signature/profile and `now + 5s < nbf` returns `RECOVERY_GRANT_NOT_YET_VALID` and consumes no RecoveryGrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed recovery grant may proceed only while expiry, Platform-security, compatibility and recovery/session/actor eligibility remain valid;
+15. malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported recovery-grant cases each follow the recovery-specific Section 7 progression and never silently fall into fresh-entry retry behavior;
+16. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
 
 ## 9. Concise rule
 
@@ -245,10 +249,10 @@ healthy current binding
 server-proven eligible loss
 -> PREPARE may reserve one candidate
 -> PREPARE grants no authority escrow
--> COMMIT atomically revalidates current authority/security
+-> COMMIT atomically revalidates current authority/security/compatibility
 
 incumbent recovered
-OR grant/security invalidated
+OR grant/security/compatibility invalidated
 OR lease/runtime/session/reconciliation changed
 -> no authority switch
 -> candidate terminal/aborted
