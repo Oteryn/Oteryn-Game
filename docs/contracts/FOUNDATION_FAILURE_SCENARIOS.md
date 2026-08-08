@@ -12,7 +12,8 @@ Each foundation contract must mark every applicable scenario as `PASS`, `NOT_APP
 | `FS-LEASE-RENEW-TIMEOUT` | Character lease renewal deadline expires | Stale owner stops authoritative durable writes before another generation can commit. |
 | `FS-DUPLICATE-LOGIN` | Two admissions race for one character | At most one authoritative session and generation wins atomically. |
 | `FS-ADMISSION-GRANT-REPLAY` | A consumed, expired, replayed or wrong-bound PreAdmissionGrant is presented again or concurrently | No second admission, CharacterLease authority or GameSession results; replay cannot retarget or restore consumed authority. |
-| `FS-RECONNECT-CREDENTIAL-REPLAY` | A predecessor, stolen or stale reconnect proof races or follows a valid rebind | At most one current transport generation wins; the losing proof cannot regain control or fence the valid winner. |
+| `FS-RECONNECT-CREDENTIAL-REPLAY` | A predecessor, stolen or stale game-domain reconnect proof races or follows a valid rebind | At most one current transport generation wins; the losing proof cannot regain control or fence the valid winner. |
+| `FS-RECOVERY-AUTHORIZATION-REPLAY` | A consumed, replayed, expired or wrong-bound Platform RecoveryAuthorizationGrant is presented again or concurrently | No repeated recovery, parallel current controller or second GameSession results; producer retry identity and consumer replay identity remain distinct. |
 | `FS-STALE-GENERATION` | Old session/node submits command or save | Rejected with no partial mutation. |
 | `FS-DUPLICATE-COMMAND` | Same `CommandId` is replayed | Deterministic prior result or explicit duplicate outcome; no duplicated effect. |
 | `FS-CHANNEL-SPLIT-OWNER` | Two nodes believe they own one channel | Fencing prevents dual authoritative commits. |
