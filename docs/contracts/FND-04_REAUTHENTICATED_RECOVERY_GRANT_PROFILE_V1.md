@@ -117,7 +117,9 @@ All UUID claims MUST parse and round-trip to the exact canonical lowercase hyphe
 
 This profile MUST NOT contain `channel_id`, `instance_id`, NodeId, runtime owner identity or scope ownership generation as placement authority. Oteryn-v2 resolves current actor/session placement after credential validation.
 
-## 6. Parser and time ceilings
+## 6. Parser and time policy
+
+Parser/material ceilings:
 
 - compact token <= 4096 ASCII bytes;
 - exactly 3 JWS segments;
@@ -128,11 +130,28 @@ This profile MUST NOT contain `channel_id`, `instance_id`, NodeId, runtime owner
 - invalid UTF-8/non-canonical base64url/padding reject;
 - fractional/exponent NumericDate reject;
 - required null/missing claim reject;
-- no decompression;
-- maximum lifetime 30 seconds;
-- maximum verifier clock skew 5 seconds.
+- no decompression.
 
-A producer may issue a shorter lifetime.
+Security time ceilings:
+
+```text
+maximum grant lifetime: 30 seconds from iat to exp
+maximum verifier clock-skew allowance: 5 seconds
+```
+
+A producer may issue a shorter lifetime. A consumer MUST reject a declared lifetime above 30 seconds.
+
+At trusted server time `now`, recovery v1 uses the same explicit skew equations as the fresh-entry profile:
+
+```text
+now + 5s >= nbf
+now - 5s < exp
+exp > iat
+exp - iat <= 30s
+abs(iat - now) <= 35s as structural sanity bound
+```
+
+Therefore the accepted `nbf` window begins when `now + 5s >= nbf`; validators do not wait for literal `now >= nbf`. Before that boundary the credential maps to `RECOVERY_GRANT_NOT_YET_VALID`. Client clocks never affect validity.
 
 ## 7. Platform security freshness
 
@@ -267,6 +286,8 @@ Before implementation acceptance prove:
 - fresh-entry token rejected by recovery validator and vice versa;
 - wrong key purpose/alg/typ/issuer/audience/purpose/profile;
 - forbidden/extra header and unknown claim;
+- explicit trusted-time boundaries: `now + 5s < nbf` rejects as `RECOVERY_GRANT_NOT_YET_VALID`, while the first accepted boundary `now + 5s >= nbf` may proceed only if every other recovery/security/session condition remains valid;
+- expiry boundary `now - 5s < exp` remains accepted and `now - 5s >= exp` rejects as expired;
 - lifetime/skew/stale Platform-security rejection;
 - canonical-looking wrong UUID version and wrong UUID variant rejection for `attempt_ref`, `character_id` and `world_id`;
 - concurrent one-time jti consume;
