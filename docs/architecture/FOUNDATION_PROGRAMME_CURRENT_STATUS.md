@@ -171,6 +171,10 @@ Candidate semantic contract:
 
 - `docs/architecture/FND-04_IDENTITY_GAME_SESSION_ADMISSION_CHARACTER_LEASE_CONTRACT.md`.
 
+Required candidate normative refinement:
+
+- `docs/architecture/FND-04_HEALTHY_BINDING_REBIND_SECURITY_REFINEMENT.md` — authoritative for healthy-binding non-preemption, PREPARE→COMMIT revalidation, the complete Decision Timing matrix, FND-04 failure progression and the PREPARE→COMMIT eligibility-change scenario disposition/evidence. The main FND-04 contract links this refinement reciprocally and is harmonized with it.
+
 Candidate interoperable security profiles:
 
 - `docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md`;
@@ -187,19 +191,22 @@ Candidate final delivery freezes, subject to exact-head review/merge:
 - Platform `AdmissionAttemptRef` producer idempotency distinct from game GrantNonce one-time consume;
 - game-domain 32-byte reconnect secret;
 - two-phase reconnect PREPARE/COMMIT so lost responses/crashes cannot create ambiguous authority;
+- atomic COMMIT-time current-authority/security revalidation so PREPARE never escrows stale replacement authority;
+- healthy current-binding non-preemption by reconnect/recovery bearer proof alone;
+- recovery-specific malformed/authentication/expiry/replay/security/revision failure progression distinct from fresh-entry Gateway actions;
 - exact 15-second same-GameSession grace beginning at the accepted 2-second control-loss declaration boundary;
 - actor-scoped ControlLossEpoch so routine rebind/session replacement cannot manufacture repeated 4-second protection;
 - Platform-reauthenticated same-session recovery when the game proves safe current state;
 - post-grace fresh GameSession attachment to the same `PRESENT_UNCONTROLLED` actor without reset/recreation;
 - healthy combat/PZ/logout-locked incumbent protection;
 - Channel/Instance session-continuity classes;
-- explicit admission/reconnect replay failure scenarios and stable internal errors;
+- explicit admission/reconnect replay and PREPARE→COMMIT eligibility-change failure scenarios with stable internal errors and Foundation Error Vocabulary progression;
 - measured preimplementation gates for liveness cadence, lease timing and runtime resource limits rather than guessed production defaults.
 
 Delivery-state interpretation is transition-safe:
 
 - while the final FND-04 PR remains open, its exact head is candidate architecture only;
-- after squash merge, the FND-04 contract/profiles on `main` become semantic authority;
+- after squash merge, the FND-04 main contract, required rebind refinement and both grant profiles on `main` become semantic authority;
 - a separate lifecycle closeout must archive/release final FND-04 task ownership;
 - **no runtime, Platform, persistence, protocol-codec, key or production implementation is authorized merely by FND-04 architecture acceptance**.
 
@@ -249,8 +256,8 @@ Use this file plus live GitHub state for current progression and dedicated accep
 
 Complete the single bounded final architecture-only FND-04 delivery on its current branch:
 
-1. finish exact contract/profile/failure-scenario/status reconciliation;
-2. open one PR with only declared owned paths;
+1. finish exact contract/profile/refinement/failure-scenario/status reconciliation;
+2. keep one PR with only declared owned paths;
 3. require exact-head Agent governance, Dependency review and CodeQL;
 4. require independent architecture/security audit with zero material findings;
 5. resolve all review threads;
