@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: GPT-5.6 Sol architecture continuation session
 created_at: 2026-08-08T21:09:00+02:00
-updated_at: 2026-08-08T21:15:00+02:00
+updated_at: 2026-08-08T21:22:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -42,16 +42,18 @@ Add one non-overlapping architecture correction that makes the final FND-04 cont
 ## Architecture and source of truth
 
 - **PROVEN:** PR #104 merged the FND-04 analysis baseline as `c638ad524772f227dabc90e88a1381cc01e907ce`; that baseline is analysis input only, not final FND-04 authority.
-- **PROVEN:** current Platform `OTERYN_V2_PRE_ADMISSION_HANDOFF_CONTRACT.md` requires explicit disposition of account-security changes after grant issuance, stale runtime/owner-generation binding and producer-side ambiguous-issuance idempotency.
-- **PROVEN:** current Platform runtime-status contract separates configured routing policy from fresh current-owner runtime evidence and fails closed for stale/superseded ownership evidence.
+- **PROVEN:** Platform evidence is pinned at `216f5b2817e9d102337608609e344518512c2a0d`, including ADR 0031 plus the native pre-admission and runtime-status contracts.
+- **PROVEN:** current Platform pre-admission semantics require explicit disposition of account-security changes after grant issuance, stale runtime/owner-generation binding and producer-side ambiguous-issuance idempotency.
+- **PROVEN:** current Platform runtime-status semantics separate configured routing policy from fresh current-owner runtime evidence and fail closed for stale/superseded ownership evidence.
 - **PROVEN:** the still-active PR #104 task owns the merged analysis-baseline path, so this correction uses a separate addendum path and does not mutate that task's owned files.
-- **DERIVED:** final FND-04 would remain security-incomplete if it froze hybrid signed grants without defining these three cross-repository semantics.
+- **DERIVED:** final FND-04 would remain security-incomplete if it froze hybrid signed grants without defining these cross-repository semantics and their pre-admission/post-admission boundary.
 - **UNKNOWN:** exact account-security revocation primitive, exact runtime-generation field encoding, exact producer issuance API/transport and storage implementation.
 
 ## Acceptance criteria
 
 - [x] Preserve the merged FND-04 analysis baseline unchanged and add an explicit mandatory-input addendum for the final contract.
 - [x] Require a testable disposition for Platform account-security changes after a PreAdmissionGrant is issued but before game admission.
+- [x] Prevent the pre-admission revocation rule from silently redefining already-admitted GameSession/lease/mandatory-presence semantics.
 - [x] Require an explicit rule for issuance-time runtime observation/ownership-generation binding and invalidation of stale unexpired grants.
 - [x] Preserve Platform admission-attempt idempotency/reconciliation identity as distinct from game-domain grant-consume nonce unless equivalence is explicitly proven.
 - [x] State decision timing, blocked downstream work, risks, superseding evidence and deliberately deferred implementation choices.
@@ -70,11 +72,12 @@ Add one non-overlapping architecture correction that makes the final FND-04 cont
 
 ## Implementation / findings
 
-The addendum now makes three cross-repository obligations explicit for final FND-04:
+The addendum now makes four final-contract constraints explicit:
 
-1. post-issuance Platform account-security changes require one deterministic, testable fail-closed disposition without making the game server a second Identity authority;
-2. final admission must explicitly bind/revalidate the issuance-time runtime/route ownership evidence strongly enough that a superseded owner or generation cannot regain authority from an otherwise valid grant;
-3. Platform admission-attempt idempotency and game-domain one-time consume replay protection remain distinct semantic boundaries unless the final contract deliberately proves equivalence.
+1. post-issuance Platform account-security changes require one deterministic, testable disposition without making the game server a second Identity authority;
+2. that pre-admission rule does not itself authorize immediate teardown of an already-admitted actor/GameSession/lease and must be reconciled separately with mandatory-presence semantics;
+3. final admission must explicitly bind/revalidate issuance-time runtime/route ownership evidence strongly enough that a superseded owner or generation cannot regain authority from an otherwise valid grant;
+4. Platform admission-attempt idempotency and game-domain one-time consume replay protection remain distinct semantic boundaries unless the final contract deliberately proves equivalence.
 
 The merged #104 analysis remains unchanged and compatible. The addendum does not select crypto/token libraries, KMS, storage, TTLs, PostgreSQL schema or runtime implementation.
 
@@ -82,8 +85,8 @@ The merged #104 analysis remains unchanged and compatible. The addendum does not
 
 ### Focused
 
-- command/run: full semantic reconciliation against current Platform ADR 0031, `OTERYN_V2_PRE_ADMISSION_HANDOFF_CONTRACT.md`, `OTERYN_V2_RUNTIME_STATUS_PROJECTION_CONTRACT.md` and merged FND-04 analysis
-- result: `PASS` at author review; independent exact-head review still required
+- command/run: full semantic reconciliation against pinned Platform ADR 0031, `OTERYN_V2_PRE_ADMISSION_HANDOFF_CONTRACT.md`, `OTERYN_V2_RUNTIME_STATUS_PROJECTION_CONTRACT.md` and merged FND-04 analysis
+- result: `PASS` at author review; exact-head independent review still required
 
 ### Component/integration
 
@@ -97,7 +100,7 @@ The merged #104 analysis remains unchanged and compatible. The addendum does not
 
 ### Exact-head CI
 
-- final head: pending after task synchronization
+- final head: pending after this final candidate synchronization
 - trigger source: pull_request
 - workflow/run/job: pending
 - runner assignment: pending
@@ -106,7 +109,7 @@ The merged #104 analysis remains unchanged and compatible. The addendum does not
 
 ## Independent audit
 
-- exact head: pending after task synchronization
+- exact head: pending after final candidate synchronization
 - method/auditor: independent cross-repository architecture/security review
 - material findings: pending
 - verdict: pending
@@ -124,7 +127,7 @@ The merged #104 analysis remains unchanged and compatible. The addendum does not
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #106 now contains the bounded FND-04 cross-repository security addendum covering post-issuance account-security revocation, stale runtime/ownership-generation grants and issuer-attempt versus consume-nonce idempotency boundaries.
+last_progress: Final candidate now pins exact Platform authority and additionally separates pre-admission account-security revocation from any post-admission GameSession/lease/mandatory-presence action.
 status: validating
 branch: docs/OTV2-20260808-fnd04-crossrepo-security-reconciliation
 head_sha: null
@@ -141,10 +144,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Inspect the full exact two-path PR #106 diff against current Platform and Oteryn-v2 authority, repair any material finding, then freeze the final head for audit/CI.
+next_action: Perform independent exact-head architecture/security audit and required CI on the unchanged final candidate, then merge only with zero open material findings.
 ```
