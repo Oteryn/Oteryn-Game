@@ -296,7 +296,7 @@ No silent retarget to another Channel, owner, protocol family or Canary route.
 1. outer FND-02 material bound;
 2. compact-shape/parser/size limits;
 3. exact protected-header profile;
-4. trusted `kid` lookup in dedicated admission verification-key set;
+4. prove authenticated current admission signing-key/profile trust/revocation evidence with accepted age `<= 5 seconds`, then perform trusted `kid` lookup in the dedicated admission verification-key set;
 5. Ed25519 signature verification;
 6. exact `typ`, `iss`, `aud`, `profile`, `purpose`;
 7. time/lifetime/skew;
@@ -307,14 +307,24 @@ No silent retarget to another Channel, owner, protocol family or Canary route.
 12. authoritative AccountId -> CharacterId ownership/lifecycle;
 13. AccountPresenceClaim / duplicate-login evaluation;
 14. CharacterLease compatibility/acquisition;
-15. one atomic final admission commit consumes GrantNonce and creates GameSessionId + connection_generation `1` + reconnect-proof state;
+15. one atomic final admission commit revalidates the exact admission key/profile trust decision and `<= 5s` trust/revocation-evidence freshness, then consumes GrantNonce and creates GameSessionId + connection_generation `1` + reconnect-proof state;
 16. publish admission success only after commit.
 
-No failure before step 15 creates partial player-control authority.
+If required current key/profile trust/revocation evidence is older than 5 seconds, unavailable, unauthenticated, contradictory or otherwise cannot prove current trust, fail before step 15 as `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`; GrantNonce is not consumed and no presence/lease/session/transport authority mutates. If authenticated evidence within the freshness bound explicitly says the exact key/profile is unknown, revoked or not trusted, fail as `ADMISSION_GRANT_AUTHENTICATION_FAILED` / `SECURITY_TERMINAL`. Validation earlier in the request is not trust escrow: a key/profile revoked before the authority-changing commit cannot succeed merely because signature verification previously passed.
+
+No failure before or during step 15 creates partial player-control authority.
 
 ## 13. Key distribution / rotation
 
 Game-side verification uses trusted Ed25519 public keys only.
+
+Profile v1 freezes:
+
+```text
+maximum accepted age of required authenticated signing-key/profile trust/revocation evidence: 5 seconds
+```
+
+Age is evaluated using trusted server time against authenticated provenance/freshness evidence from the trusted key/profile distribution authority. `age <= 5s` is accepted; `age > 5s` is stale. If current freshness cannot be authenticated or proven, the consumer fails closed rather than extending trust indefinitely.
 
 Requirements:
 
@@ -323,10 +333,12 @@ Requirements:
 - private signing keys never leave Platform signing/KMS boundary;
 - bounded current/retiring verification-key overlap may support still-valid grants;
 - grant expiry remains binding even if a key remains trusted;
-- emergency key revocation can invalidate otherwise unexpired grants once trusted revocation state reaches the consumer;
-- unknown/revoked key/profile fails closed.
+- emergency key/profile revocation invalidates otherwise-unexpired grants once current authenticated trust evidence records the revocation; stale/unavailable trust evidence never counts as continued authorization;
+- stale/unavailable/unauthenticated/contradictory trust/revocation evidence maps to `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`, with bounded retry only after fresh evidence while the same unconsumed grant and all other bindings remain valid;
+- fresh authenticated evidence that explicitly marks the exact key/profile unknown/revoked/not trusted maps to `ADMISSION_GRANT_AUTHENTICATION_FAILED`;
+- neither failure consumes GrantNonce or creates gameplay authority.
 
-Exact KMS/HSM/vendor, publication transport and rotation cadence are implementation/security-operations choices.
+Exact KMS/HSM/vendor, publication transport, refresh mechanism and rotation cadence inside this security ceiling are implementation/security-operations choices.
 
 ## 14. Compatibility / downgrade
 
@@ -371,6 +383,7 @@ Positive fixtures include:
 
 - canonical `alg=Ed25519` v1 grant;
 - current/retiring key rotation;
+- authenticated admission key/profile trust/revocation evidence at exact accepted age `5s`;
 - lifetime/skew boundaries;
 - exact UUID/generation/string encoding.
 
@@ -379,7 +392,9 @@ Negative fixtures include:
 - `alg=none`;
 - deprecated `alg=EdDSA`;
 - wrong algorithm/key type/curve;
-- unknown/revoked `kid`;
+- unknown/revoked `kid` under fresh current trust evidence -> `ADMISSION_GRANT_AUTHENTICATION_FAILED`;
+- signing-key/profile trust/revocation evidence older than `5s`, unavailable, unauthenticated or contradictory -> `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`, no GrantNonce consumption and no authority mutation;
+- key/profile trusted at initial verification but emergency-revoked before atomic final admission commit -> `ADMISSION_GRANT_AUTHENTICATION_FAILED`, no GrantNonce consumption and no authority mutation;
 - `jku`, `x5u`, embedded `jwk`, `crit`, extra protected header;
 - wrong `typ`, `iss`, `aud`, `profile`, `purpose`;
 - expired/not-yet-valid/over-30-second lifetime;
