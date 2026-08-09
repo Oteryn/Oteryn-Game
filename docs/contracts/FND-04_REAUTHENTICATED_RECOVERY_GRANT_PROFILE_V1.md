@@ -153,7 +153,7 @@ abs(iat - now) <= 35s as structural sanity bound
 
 Therefore the accepted `nbf` window begins when `now + 5s >= nbf`; validators do not wait for literal `now >= nbf`. Before that boundary the credential maps to `RECOVERY_GRANT_NOT_YET_VALID`. Client clocks never affect validity.
 
-## 7. Platform security freshness
+## 7. Platform security and recovery-key trust freshness
 
 Recovery is higher-risk than ordinary reconnect-secret proof because fresh Platform authentication substitutes for missing game-domain proof.
 
@@ -163,11 +163,21 @@ Required Platform-security evidence age:
 <= 5 seconds
 ```
 
-If evidence is stale/unavailable/unauthenticated/contradictory, recovery fails closed.
+Required authenticated recovery signing-key/profile trust/revocation evidence age:
+
+```text
+<= 5 seconds
+```
+
+Both ages are evaluated with trusted server time against authenticated provenance/freshness evidence. `age <= 5s` is accepted; `age > 5s` is stale. If either required evidence source is stale, unavailable, unauthenticated, contradictory or cannot prove current admissibility/trust, recovery fails closed as `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; RecoveryGrantNonce is not consumed and no rebind/session/lease/runtime authority mutates. Bounded retry of the same still-unconsumed grant is allowed only after fresh evidence is obtained and only while token time/profile/compatibility and current recovery target remain valid.
+
+If fresh authenticated key/profile trust evidence explicitly says the exact recovery `kid`/profile is unknown, revoked or not trusted, fail as `RECOVERY_GRANT_AUTHENTICATION_FAILED` / `SECURITY_TERMINAL`. Stale trust evidence is never treated as permission to continue trusting a previously accepted key/profile.
 
 Reject if account is disabled/revoked or token `account_security_generation` is below current minimum-valid generation.
 
 Platform may require MFA/step-up/risk checks before issuing this profile. That policy does not transfer final game authority to Platform.
+
+Exact KMS/HSM/vendor, publication transport, refresh mechanism and rotation cadence inside the security ceiling remain implementation/security-operations choices.
 
 ## 8. RecoveryGrantNonce and producer attempt
 
@@ -180,6 +190,10 @@ Platform may require MFA/step-up/risk checks before issuing this profile. That p
 - replay evidence retained at least through `exp + 5 seconds` and longer when DUR/reconciliation requires.
 
 `attempt_ref` is producer idempotency/correlation only. Ambiguous producer retry for the same logical attempt cannot mint multiple independently usable recovery grants.
+
+If the producer cannot prove whether the prior recovery-grant issuance succeeded, the exact recovery attempt enters `RECOVERY_ATTEMPT_RECONCILIATION_REQUIRED`. This is `DEPENDENCY_UNAVAILABLE` + bounded `RETRYABLE`; public presentation is `TEMPORARILY_UNAVAILABLE`, and the mutation/idempotency outcome is `ISSUANCE_OUTCOME_RECONCILE_REQUIRED`. Retry authority is limited to status/reconciliation for the **same recovery attempt_ref**. The producer MUST NOT mint a blind second independently usable recovery grant and MUST NOT start a new independent recovery attempt merely because the response was lost or the issuer crashed.
+
+If the exact prior outcome cannot be recovered within the registered recovery-attempt deadline, the old attempt must be deterministically retired/failed and any possibly issued recovery capability must be proven no longer acceptable before a new independently authenticated recovery attempt with a new `attempt_ref` may proceed. Producer-side ambiguity creates no gameplay authority, consumes no RecoveryGrantNonce as a successful transition and never permits reinterpretation as fresh-entry authority.
 
 ## 9. Current game-domain recovery resolution and compatibility
 
@@ -213,7 +227,7 @@ PREPARE is not authorization escrow. If this grant is used to create a prepared 
 
 - the prepared transition is unexpired and still belongs to the current GameSession/current predecessor generation;
 - the recovery JWT is still inside its accepted time window and its one-time nonce remains eligible;
-- the current trusted recovery signing key/profile policy still accepts the exact `kid`, issuer, purpose and profile used by this grant; emergency key or profile revocation after PREPARE invalidates COMMIT;
+- authenticated current recovery signing-key/profile trust/revocation evidence has accepted age `<= 5 seconds` and still accepts the exact `kid`, issuer, purpose and profile used by this grant; emergency key or profile revocation after PREPARE invalidates COMMIT;
 - current trusted Platform-security evidence is fresh and still admits the grant's `account_security_generation`;
 - the token `compatibility_revision` is still supported by the current GameSession/runtime/content/ruleset/reconciliation boundary;
 - the account/character ownership, AccountPresenceClaim, CharacterLease, runtime ownership/placement and reconciliation state are still current;
@@ -222,7 +236,7 @@ PREPARE is not authorization escrow. If this grant is used to create a prepared 
 
 If the prepared transition itself has expired while the same-session grace may still be valid, that candidate fails as `RECONNECT_PREPARED_EXPIRED`. It performs no authority mutation and does not consume RecoveryGrantNonce as a successful recovery. A caller may start a new PREPARE only after re-evaluating the still-current session/loss/grace/authority state and using currently valid proof; `RECONNECT_GRACE_EXPIRED` remains distinct and forbids same-session retry.
 
-If the recovery signing key/profile trust policy no longer accepts the grant, this candidate COMMIT fails before authority mutation as `RECOVERY_GRANT_AUTHENTICATION_FAILED`; RecoveryGrantNonce is not consumed and the current authority state remains unchanged.
+If current recovery key/profile trust/revocation evidence is stale, unavailable, unauthenticated, contradictory or cannot prove current trust, this candidate COMMIT fails before authority mutation as `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; RecoveryGrantNonce is not consumed and current authority remains unchanged. If fresh current trust evidence explicitly no longer accepts the grant, COMMIT fails before authority mutation as `RECOVERY_GRANT_AUTHENTICATION_FAILED`; RecoveryGrantNonce is not consumed and the current authority state remains unchanged.
 
 If compatibility or any other required condition changed, this candidate COMMIT fails before performing any authority mutation. The prepared candidate is cancelled/terminalized, its successor secret never becomes current proof and its candidate connection generation never becomes current. The failure leaves whatever GameSession/TransportBinding/lease/runtime authority state is actually current at revalidation unchanged; it never revives a PREPARE predecessor that was already fenced, handed off, superseded or made terminal. Compatibility failure maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. A caller must reconcile current authority and, when required, obtain a compatible fresh recovery grant; possession of a prepared successor secret never overrides changed authorization.
 
@@ -244,13 +258,13 @@ Success creates a **new GameSessionId**, new connection_generation namespace beg
 The post-grace transition MUST use one atomic authoritative commit boundary. Immediately before creating/publishing the new GameSession or any replacement control authority, that commit MUST revalidate at minimum:
 
 - the recovery JWT is still inside its accepted time window and RecoveryGrantNonce remains eligible;
-- the current trusted recovery signing key/profile policy still accepts the exact `kid`, issuer, purpose and profile used by this grant;
+- authenticated current recovery signing-key/profile trust/revocation evidence has accepted age `<= 5 seconds` and still accepts the exact `kid`, issuer, purpose and profile used by this grant;
 - current trusted Platform-security evidence is fresh and still admits the grant's `account_security_generation`;
 - the token `compatibility_revision` is still supported by the current actor/runtime/content/ruleset/snapshot/new-GameSession boundary;
 - the account/character ownership, AccountPresenceClaim, CharacterLease, runtime ownership/placement and existing actor state are still current;
 - the actor is still `PRESENT_UNCONTROLLED`, no playable controller has become current and no newer fence/handoff/takeover/terminal transition has superseded the candidate.
 
-Validation performed earlier in routing, lookup or recovery resolution is not trust escrow. Emergency recovery-key/profile revocation after earlier validation but before this post-grace commit fails before authority/session mutation as `RECOVERY_GRANT_AUTHENTICATION_FAILED`; RecoveryGrantNonce is not consumed, no new GameSession/lease/runtime/transport authority is committed and whatever authority state is actually current at commit-time revalidation remains unchanged.
+Validation performed earlier in routing, lookup or recovery resolution is not trust escrow. If current key/profile trust/revocation evidence is older than 5 seconds, unavailable, unauthenticated, contradictory or cannot prove current trust, the post-grace commit fails before authority/session mutation as `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; RecoveryGrantNonce is not consumed and whatever authority state is actually current remains unchanged. Emergency recovery-key/profile revocation recorded by fresh current evidence after earlier validation but before this commit fails as `RECOVERY_GRANT_AUTHENTICATION_FAILED`; RecoveryGrantNonce is not consumed, no new GameSession/lease/runtime/transport authority is committed and whatever authority state is actually current at commit-time revalidation remains unchanged.
 
 If current compatibility cannot be proven, reject as `RECOVERY_GRANT_REVISION_UNSUPPORTED` with no RecoveryGrantNonce consumption or authority mutation. After the dedicated healthy-controller conflict has been excluded, if authoritative state matches neither Section 9.1 nor Section 9.2 — including when the actor has legally become `ABSENT` — reject as `RECOVERY_TARGET_NOT_ELIGIBLE`. That outcome is terminal for this recovery transition, consumes no RecoveryGrantNonce, commits no authority mutation and never reinterprets this recovery grant as fresh-entry authority. A later fresh login, if permitted, is a separate newly authorized fresh-entry flow.
 
@@ -288,7 +302,7 @@ Protection remains keyed to one server-owned ControlLossEpoch:
 1. outer protocol/material bound;
 2. compact/parser limits;
 3. exact protected-header profile;
-4. trusted recovery-key lookup + Ed25519 verification;
+4. prove authenticated current recovery signing-key/profile trust/revocation evidence with accepted age `<= 5 seconds`, then perform trusted recovery-key lookup + Ed25519 verification;
 5. exact typ/iss/aud/profile/purpose;
 6. time/lifetime/skew;
 7. claim canonical encoding, including UUID version/variant requirements;
@@ -298,7 +312,7 @@ Protection remains keyed to one server-owned ControlLossEpoch:
 11. current AccountId->CharacterId ownership;
 12. current actor/session/presence/lease/runtime placement;
 13. dispatch authoritative result in this order: healthy current playable controller -> `RECOVERY_HEALTHY_CONTROLLER_PRESENT`; otherwise accepted same-session/post-grace recovery target; otherwise `RECOVERY_TARGET_NOT_ELIGIBLE`;
-14. atomic game-domain recovery/rebind/new-session commit, including COMMIT-time current recovery-key/profile trust, token time/nonce, compatibility and authority/security revalidation for both Section 9.1 same-session rebind and Section 9.2 post-grace new-GameSession attachment;
+14. atomic game-domain recovery/rebind/new-session commit, including COMMIT-time current recovery-key/profile trust decision plus `<= 5s` trust/revocation-evidence freshness, token time/nonce, compatibility and authority/security revalidation for both Section 9.1 same-session rebind and Section 9.2 post-grace new-GameSession attachment;
 15. publish success only after commit.
 
 No failure creates partial player-control authority.
@@ -312,14 +326,20 @@ Before implementation acceptance prove:
 - fresh-entry token rejected by recovery validator and vice versa;
 - wrong key purpose/alg/typ/issuer/audience/purpose/profile;
 - forbidden/extra header and unknown claim;
+- authenticated recovery key/profile trust/revocation evidence at exact accepted age `5s` may proceed only if every other condition remains valid;
+- recovery key/profile trust/revocation evidence older than `5s`, unavailable, unauthenticated or contradictory -> `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`, no RecoveryGrantNonce consumption and no authority mutation;
+- fresh current trust evidence explicitly marks exact recovery key/profile unknown/revoked/not trusted -> `RECOVERY_GRANT_AUTHENTICATION_FAILED`;
 - explicit trusted-time boundaries: `now + 5s < nbf` rejects as `RECOVERY_GRANT_NOT_YET_VALID`, while the first accepted boundary `now + 5s >= nbf` may proceed only if every other recovery/security/session condition remains valid;
 - expiry boundary `now - 5s < exp` remains accepted and `now - 5s >= exp` rejects as expired;
 - lifetime/skew/stale Platform-security rejection;
+- ambiguous recovery issuance/lost response or issuer crash -> `RECOVERY_ATTEMPT_RECONCILIATION_REQUIRED`; concurrent retries use the same `attempt_ref`, cannot mint a blind second recovery grant, and a new attempt is forbidden until deterministic retirement plus proof any possibly issued recovery capability is no longer acceptable;
 - canonical-looking wrong UUID version and wrong UUID variant rejection for `attempt_ref`, `character_id` and `world_id`;
 - syntactically valid but unsupported/superseded `compatibility_revision` rejects as `RECOVERY_GRANT_REVISION_UNSUPPORTED`, consumes no RecoveryGrantNonce and creates no authority mutation for both same-session and post-grace recovery;
 - compatibility revision/current runtime-content-ruleset-session support changes after PREPARE -> COMMIT rejects before candidate authority switch and maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`;
 - recovery signing key/profile is trusted at PREPARE, then emergency-revoked before same-session COMMIT -> COMMIT rejects as `RECOVERY_GRANT_AUTHENTICATION_FAILED`, consumes no RecoveryGrantNonce, commits no authority mutation and preserves whatever authority state is current at revalidation;
+- recovery trust evidence is fresh at PREPARE but becomes older than the `5s` ceiling before same-session COMMIT -> `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`, no RecoveryGrantNonce consumption and no authority mutation;
 - post-grace lookup/validation accepts a recovery key/profile, then that key/profile is emergency-revoked before the atomic new-GameSession attachment commit -> reject as `RECOVERY_GRANT_AUTHENTICATION_FAILED`, consume no RecoveryGrantNonce, create no new GameSession/control authority and preserve whatever authority state is current at revalidation;
+- post-grace recovery trust evidence exceeds the `5s` freshness ceiling before the atomic attachment commit -> `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`, no nonce/no new authority and actual current authority preserved;
 - authoritative actor becomes legally `ABSENT`, or otherwise matches neither same-session nor post-grace recovery target after healthy-controller conflict has been excluded, before recovery commit -> `RECOVERY_TARGET_NOT_ELIGIBLE`, no RecoveryGrantNonce consumption, no authority mutation and no recovery-to-fresh-entry reinterpretation;
 - healthy current playable controller -> `RECOVERY_HEALTHY_CONTROLLER_PRESENT` / `CHARACTER_ALREADY_ACTIVE`, no RecoveryGrantNonce consumption, no authority mutation and no fallthrough to `RECOVERY_TARGET_NOT_ELIGIBLE`;
 - same-session PREPARE's own bounded expiry is reached while grace may still be valid -> `RECONNECT_PREPARED_EXPIRED`, no authority mutation/no successful nonce consumption; a new PREPARE is allowed only after fresh current-state/proof evaluation, while actual grace expiry remains `RECONNECT_GRACE_EXPIRED`;
