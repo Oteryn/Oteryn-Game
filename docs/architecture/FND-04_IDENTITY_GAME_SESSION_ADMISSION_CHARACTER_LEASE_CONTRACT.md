@@ -38,7 +38,7 @@ A session, transport, account-presence claim, character lease and runtime scope 
 
 `docs/architecture/FND-04_HEALTHY_BINDING_REBIND_SECURITY_REFINEMENT.md` is a required companion of this contract. Its Sections 2–5 are authoritative for healthy-binding non-preemption and PREPARE→COMMIT revalidation; Section 6 is the canonical FND-04 decision-timing matrix; Section 7 is the canonical cross-component failure progression; and Section 8 owns the PREPARE→COMMIT eligibility-change failure-scenario disposition and evidence.
 
-This main contract is intentionally harmonized with that refinement. If a later edit makes duplicated wording differ, the refinement governs those explicitly owned subjects until an accepted superseding contract updates both documents.
+This main contract is intentionally harmonized with that refinement. If a later edit makes duplicated wording differ, the refinement governs those explicitly owned subjects until an accepted superseding contract updates both documents. The fresh-entry security/interchange profile is normative for the exact fresh-admission validation and final-linearization checks described in Sections 6–7 below.
 
 ## Decision timing
 
@@ -48,6 +48,7 @@ FND-04 applies the repository's mandatory timing test before freezing any materi
 |---|---|---|---|---|---|
 | Platform authorization vs game-domain final admission/GameSession authority | `YES` | native admission implementation, Platform producer integration, FND-02 admission messages, Character Authority integration | moving authority after deployment would require credential/session migration and risks two security authorities | concrete security architecture evidence proving a safer single authority without violating ADR-0003/ADR-0012 | implementation API/transport details |
 | Separate AccountPresenceClaim, CharacterLease, GameSession, TransportBinding and RuntimeScopeAuthority | `YES` | persistence schema, duplicate-login handling, runtime fencing, reconnect/recovery | collapsing identities/generations would create ambiguous stale-writer/session ownership and anti-duplication risk | fault-injection/formal invariant evidence proving an equivalent simpler model preserves all fencing semantics | physical tables, lock primitives, service placement |
+| Atomic fresh-admission final linearization with complete mutable-predicate revalidation | `YES` | native admission transaction/state machine, replay store, presence/lease integration | allowing earlier validation to escrow authority creates TOCTOU paths for expiry, revocation, stale routing/runtime ownership, duplicate presence and stale lease state | concurrency/fault evidence proving an equivalent single-winner design with no partial authority | physical transaction/isolation primitive and database/cache realization |
 | Strict separate fresh-entry and reauthenticated-recovery grant profiles | `YES` | Platform issuer/consumer implementation and native recovery flow | one deployed bearer format could become an unintended cross-purpose credential/downgrade surface | independent cryptographic/security review and interoperability evidence for a replacement profile revision | concrete JWT libraries, KMS/HSM/vendor, key distribution transport |
 | Bounded signing-key/profile trust/revocation evidence (`<=5s`) for both grant profiles | `YES` | admission/recovery verifier implementation, key rotation/revocation rollout | accepting indefinitely stale trust state would let a compromised/revoked signing key continue minting apparently valid grants | measured security/operations evidence plus explicit superseding threat-model decision | KMS/HSM/vendor, trust-distribution transport, refresh mechanism/cadence inside the ceiling |
 | Two-phase reconnect PREPARE/COMMIT with atomic COMMIT-time authority/security/compatibility revalidation | `YES` | reconnect wire implementation, same-session recovery, crash/lost-response handling | rotate-and-forget or PREPARE-time-only authorization can create split control, stale credential takeover and unrecoverable ambiguity | deterministic concurrency/fault evidence proving a different protocol retains one-current-binding and lost-response safety | prepared-state persistence encoding and storage technology |
@@ -240,7 +241,7 @@ Binding summary:
 - account-security generation binding;
 - fresh route/runtime observation/ownership-generation binding;
 - no token-directed key discovery;
-- game-side one-time consume and current-authority revalidation.
+- game-side one-time consume and final current-authority revalidation.
 
 No OAuth credential or Game Login Ticket is accepted by the game server as a substitute.
 
@@ -253,29 +254,42 @@ Platform authentication/security
 -> Game Login Ticket
 -> Gateway redeem + current route/runtime evidence
 -> signed one-time PreAdmissionGrant
--> Oteryn-v2 final admission validation
--> atomic authority commit
+-> Oteryn-v2 fail-fast validation/eligibility
+-> one atomic final revalidation + authority commit
 -> ServerAccepted / initial snapshot
 ```
 
-Fail-closed order:
+Precommit checks are eligibility evaluation only and never authorization escrow. The exact fresh-entry profile Section 12 governs the final linearization boundary.
+
+Fail-closed evaluation order:
 
 1. FND-02 material/frame limits;
 2. exact FND-04 fresh-entry profile, authenticated current signing-key/profile trust/revocation evidence <=5 seconds old and Ed25519 signature;
 3. issuer/audience/type/purpose/time;
 4. current Platform security projection freshness/revocation/generation;
-5. route/runtime observation/current scope ownership generation;
-6. protocol/content/ruleset/compatibility requirements;
+5. route/runtime observation/current scope ownership generation/current target lifecycle;
+6. protocol/content/ruleset/transport/compatibility requirements;
 7. GrantNonce consume eligibility;
 8. current AccountId->CharacterId ownership/lifecycle;
-9. AccountPresenceClaim / duplicate-login state;
-10. CharacterLease compatibility/acquisition;
+9. AccountPresenceClaim / duplicate-login eligibility;
+10. CharacterLease acquisition eligibility;
 11. current runtime scope authority/readiness;
-12. atomic admission commit, including revalidation of exact signing-key/profile trust and <=5-second trust/revocation-evidence freshness.
+12. one atomic admission linearization boundary revalidates every mutable predicate from steps 2–11 that can change authority or eligibility and, only if all remain valid, commits all admission authority effects.
 
-If signing-key/profile trust/revocation evidence is stale, unavailable, unauthenticated, contradictory or cannot prove current trust, admission fails before authority mutation as `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`; GrantNonce is not consumed. If fresh authenticated evidence explicitly marks the exact key/profile unknown, revoked or not trusted, admission fails as `ADMISSION_GRANT_AUTHENTICATION_FAILED` / `SECURITY_TERMINAL`. Earlier signature validation is not trust escrow.
+Immediately before and atomically with step 12, the current game-domain owner MUST revalidate at minimum:
 
-The commit atomically establishes:
+- JWT `nbf`/`exp`/lifetime/skew under trusted server time;
+- exact signing-key/profile trust plus authenticated trust/revocation-evidence freshness <=5 seconds;
+- authenticated Platform-security evidence freshness <=5 seconds, account revocation/disabled state and `account_security_generation` admissibility;
+- route revision, runtime-observation revision, scope ownership generation, current target lifecycle, current runtime owner/placement and readiness;
+- protocol major, transport profile and compatibility revision against the current runtime/content/ruleset boundary;
+- GrantNonce still-unconsumed eligibility;
+- current AccountId->CharacterId ownership/lifecycle;
+- AccountPresenceClaim / duplicate-login state and whether a newer claim/incumbent has won;
+- CharacterLease legal acquisition/current fence generation;
+- absence of a newer superseding fence/handoff/takeover/terminal transition.
+
+Only after all revalidation succeeds does the same boundary atomically establish:
 
 ```text
 consume GrantNonce
@@ -288,7 +302,13 @@ consume GrantNonce
 + initial authoritative session/reconciliation boundary
 ```
 
-Client-visible success is forbidden before commit.
+AccountPresenceClaim or CharacterLease eligibility checked earlier does not create partial authority before this boundary.
+
+If any mutable predicate changes after earlier validation, final admission fails before candidate authority mutation using the most-specific frozen FND-04 progression for the changed fact. The candidate does not consume GrantNonce unless another already-successful competing transition consumed it, does not overwrite current presence/lease/runtime/session authority and never rolls authority back. Validation delay, dependency latency or scheduling cannot turn stale evidence into authorization.
+
+If signing-key/profile trust/revocation evidence is stale, unavailable, unauthenticated, contradictory or cannot prove current trust, admission fails as `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`; GrantNonce is not consumed. If fresh authenticated evidence explicitly marks the exact key/profile unknown, revoked or not trusted, admission fails as `ADMISSION_GRANT_AUTHENTICATION_FAILED` / `SECURITY_TERMINAL`. Earlier signature validation is not trust escrow.
+
+Client-visible success is forbidden before the atomic boundary commits.
 
 A candidate GameSessionId generated before commit becomes canonical only if commit succeeds; otherwise it is discarded and never reused.
 
@@ -298,16 +318,16 @@ Fresh admission across all worlds/channels/instances must linearize account excl
 
 Two different CharacterIds for one AccountId cannot both become playable/mandatory-presence actors.
 
-Semantic acquisition order:
+Semantic acquisition order is evaluated as:
 
 ```text
-AccountPresenceClaim
--> CharacterLease
--> GameSession
--> TransportBinding
+AccountPresenceClaim eligibility
+-> CharacterLease eligibility
+-> GameSession candidate
+-> TransportBinding candidate
 ```
 
-DUR may realize the physical transaction differently, but no partial authority may become externally visible. Stale account-presence revision cannot overwrite a newer claim.
+but the actual authoritative AccountPresenceClaim/CharacterLease/GameSession/TransportBinding effects become current together only at the Section 7 atomic admission boundary. DUR may realize the physical transaction differently, but no partial authority may become externally visible. Stale account-presence revision cannot overwrite a newer claim.
 
 ## 9. Duplicate login / takeover
 
@@ -399,7 +419,7 @@ GrantNonce:
 
 A fresh-entry grant is valid only for exact issuance-time target evidence accepted by the profile.
 
-Game final admission always checks current authoritative state.
+Game final admission always checks current authoritative state, including again at the Section 7 atomic final linearization boundary.
 
 Default v1 rule:
 
@@ -857,7 +877,7 @@ Both grant profiles require:
 
 For a recovery grant, current recovery signing-key/profile trust **and the <=5-second trust/revocation-evidence freshness bound** are revalidated at the actual authority-changing commit boundary: again at same-session reconnect COMMIT after PREPARE, and again immediately before post-grace new-GameSession/control attachment. PREPARE, routing, lookup or earlier validation never escrows continued trust in a key/profile or stale trust projection.
 
-For fresh admission, exact admission signing-key/profile trust and <=5-second trust/revocation-evidence freshness are likewise revalidated at the atomic final admission commit; earlier signature verification does not escrow trust.
+For fresh admission, exact admission signing-key/profile trust and <=5-second trust/revocation-evidence freshness are revalidated together with **every other mutable fresh-admission authority predicate** at the atomic final admission boundary; earlier signature/security/routing/ownership/presence/lease validation never escrows authority.
 
 Production KMS/HSM, key generation, trust-distribution transport, refresh mechanism, rollout and cadence remain later security-operations implementation work inside this ceiling.
 
@@ -924,7 +944,7 @@ COMMIT-time recovery key/profile revocation proven by fresh current trust eviden
 
 Prepared-transition expiry maps to `RECONNECT_PREPARED_EXPIRED`, not `RECONNECT_GRACE_EXPIRED`: it terminalizes only that prepared candidate and may allow a new PREPARE after fresh evaluation while grace remains valid.
 
-COMMIT-time revalidation failures use the most specific code for the changed fact. A failed COMMIT terminalizes/cancels only its prepared candidate and does not mutate or roll back whatever generation, proof, lease, session or runtime authority state is actually current at revalidation.
+Any authority-changing boundary uses the most-specific frozen failure code for the fact that changed at final revalidation. A failed fresh admission or recovery/rebind candidate does not commit partial authority or roll back whatever generation, proof, presence, lease, session or runtime authority state is actually current.
 
 Redacted diagnostics may include safe correlation IDs, profile/revision identifiers and cause classes required for operators, but never credentials, raw JWTs/nonces/secrets, Platform security-generation internals, private fencing data, SQL errors or unstable implementation strings.
 
@@ -936,6 +956,7 @@ FND-04 contract-level disposition:
 |---|---|---|
 | `FS-PLATFORM-UNAVAILABLE` | `PASS` | new Platform-dependent grant issuance fails/holds boundedly; no alternate credential authority; active gameplay/game-domain fast reconnect not invalidated merely by Platform outage |
 | `FS-GATEWAY-AFTER-REDEEM` | `PASS` | AdmissionAttemptRef idempotency; ambiguous prior issuance maps to `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`; only same-attempt reconciliation may retry, with no blind second capability or new GameSession absent game commit |
+| `FS-ADMISSION-VALIDATION-COMMIT-ELIGIBILITY-CHANGE` | `PASS` | fresh-admission precommit validation is eligibility only. The atomic final boundary revalidates token time, signing-key/profile trust freshness, Platform-security freshness/revocation/generation, route/runtime/current target/compatibility, GrantNonce, ownership/lifecycle, AccountPresence/duplicate-login, CharacterLease and superseding authority state; changed facts fail before candidate authority mutation under the most-specific progression, no partial presence/lease/session/transport authority is exposed and actual current authority is preserved. |
 | `FS-RECOVERY-GRANT-ISSUANCE-AMBIGUITY` | `PASS` | ambiguous recovery issuance maps to `RECOVERY_ATTEMPT_RECONCILIATION_REQUIRED`; same recovery attempt_ref reconciliation only, no blind second grant/independent recovery attempt, deterministic retirement plus proof any possibly issued recovery grant is no longer acceptable before a new attempt; no gameplay/fresh-entry authority |
 | `FS-POSTGRES-UNAVAILABLE` | `DEFERRED_BY_ACCEPTED_GATE` | DUR physical persistence; no success when required atomic/fenced state cannot be proven |
 | `FS-LEASE-RENEW-TIMEOUT` | `PASS` | old writer fails closed before replacement; timeout never self-grants new writer |
@@ -1014,6 +1035,23 @@ Register hard maxima for:
 
 Require independent PHP producer/Rust consumer fixtures, malformed/algorithm-confusion corpus including deprecated `EdDSA`, UUIDv7/version/variant rejection cases, key rotation/revocation, authenticated signing-key/profile trust/revocation freshness at exact `5s` vs `>5s`/unavailable/unauthenticated/contradictory cases for both profiles, fresh explicit revocation cases, mixed-version rejection, replay/concurrency, fresh-entry/recovery not-yet-valid `nbf` cases, unsupported/superseded recovery compatibility revisions, ambiguous fresh-entry issuance -> `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`, ambiguous recovery issuance/crash -> `RECOVERY_ATTEMPT_RECONCILIATION_REQUIRED`, and credential-redaction tests.
 
+### Fresh admission authority-race evidence
+
+Before implementation acceptance, deterministic/fault tests must independently mutate each mutable predicate **after its earlier validation but before the atomic final admission boundary** and prove the candidate fails before authority mutation under the correct frozen progression. Cover at minimum:
+
+- JWT crosses not-yet-valid/expiry boundary;
+- signing-key/profile trust/revocation evidence becomes stale/unavailable or fresh evidence revokes the key/profile;
+- Platform-security evidence becomes stale or account/security generation becomes revoked/inadmissible;
+- route revision, runtime observation, target lifecycle, scope ownership generation, runtime owner/placement/readiness changes;
+- protocol/transport/compatibility becomes unsupported;
+- GrantNonce is concurrently consumed by another successful transition;
+- AccountId->CharacterId ownership/lifecycle changes;
+- another AccountPresenceClaim/healthy incumbent wins;
+- CharacterLease becomes conflicting/stale or its fence generation changes;
+- a newer fence/handoff/takeover/terminal transition supersedes the candidate.
+
+Each fault proves that AccountPresenceClaim, CharacterLease, GameSession and TransportBinding become authoritative only together at the final boundary; the losing candidate never overwrites or rolls back actual current authority. `FS-ADMISSION-VALIDATION-COMMIT-ELIGIBILITY-CHANGE` must pass.
+
 ### Reconnect authority race evidence
 
 Before implementation acceptance, deterministic/fault tests must prove at minimum:
@@ -1056,6 +1094,7 @@ Client/OS diagnostics never authorize admission/reconnect or advance liveness.
 - Reuse fresh-entry ChannelId grant for existing actor recovery — rejected; stale route could move actor/bypass Instance placement.
 - Pure self-contained JWT with expiry only — rejected; insufficient post-issuance Platform-security invalidation semantics.
 - Indefinitely cached signing-key/profile trust — rejected; emergency revocation must be bounded by the accepted five-second trust-evidence freshness ceiling.
+- Fresh-admission validation as authorization escrow — rejected; every mutable admission predicate must be revalidated at the final authority-changing linearization boundary.
 - Platform introspection required for every fast reconnect — rejected; unnecessary Platform dependency for admitted game-domain continuity.
 - Rotate reconnect secret and forget predecessor before client obtains successor — rejected; lost-response ambiguity.
 - PREPARE makes new transport authoritative — rejected; ambiguity before successor proof/commit.
@@ -1122,13 +1161,10 @@ signing-key/profile trust/revocation evidence
 
 fresh entry
 -> Ed25519 fresh-entry grant
--> current Platform-security evidence
--> current signing-key/profile trust freshness
--> current route/runtime owner evidence
--> one-time GrantNonce
--> AccountId->CharacterId revalidation
--> AccountPresenceClaim + CharacterLease
--> atomic new GameSessionId + connection_generation 1
+-> fail-fast eligibility only; no validation escrow
+-> atomic final boundary revalidates token time + trust + Platform security + route/runtime/current owner/readiness + protocol/transport/compatibility + nonce + ownership + presence + lease + superseding authority
+-> only then consume GrantNonce + establish AccountPresenceClaim + CharacterLease + GameSessionId + connection_generation 1 + reconnect/reconciliation state
+-> stale loser commits nothing and preserves actual current authority
 
 active control
 -> one GameSession
