@@ -184,7 +184,7 @@ Candidate final delivery freezes, subject to exact-head review/merge:
 
 - account-global presence exclusion separate from GameSession terminality;
 - CharacterLease generation/fencing separate from runtime-scope ownership;
-- fresh admission atomic linearization;
+- **fresh-admission precommit checks are eligibility only, never authorization escrow; one atomic final linearization boundary revalidates JWT time, signing-key/profile trust + `<=5s` trust evidence, Platform-security freshness/revocation/generation, route/runtime observation + scope ownership/current target lifecycle/readiness, protocol/transport/compatibility, GrantNonce, AccountId→CharacterId ownership/lifecycle, AccountPresence/duplicate-login, CharacterLease and superseding authority state, and only then atomically establishes GrantNonce consumption + AccountPresenceClaim + CharacterLease + GameSession + connection generation/reconnect/reconciliation authority**;
 - Platform signed fresh-entry and recovery capability profiles using strict Ed25519/JOSE validation with mutually exclusive purposes;
 - Platform security-generation/revocation freshness before new admission/recovery;
 - authenticated signing-key/profile trust/revocation evidence accepted age `<=5 seconds` for both grant profiles at every authority-changing validation boundary; stale/unavailable/unprovable evidence uses the purpose-specific `*_GRANT_SECURITY_EVIDENCE_STALE`, while fresh explicit unknown/revoked/not-trusted key/profile uses `*_GRANT_AUTHENTICATION_FAILED`, with no nonce consumption or gameplay authority;
@@ -202,7 +202,7 @@ Candidate final delivery freezes, subject to exact-head review/merge:
 - post-grace fresh GameSession attachment to the same `PRESENT_UNCONTROLLED` actor without reset/recreation;
 - healthy combat/PZ/logout-locked incumbent protection;
 - Channel/Instance session-continuity classes;
-- explicit admission/recovery issuance ambiguity, admission/reconnect replay and PREPARE→COMMIT eligibility-change failure scenarios with stable internal errors and Foundation Error Vocabulary progression;
+- explicit admission/recovery issuance ambiguity, `FS-ADMISSION-VALIDATION-COMMIT-ELIGIBILITY-CHANGE`, admission/reconnect replay and PREPARE→COMMIT eligibility-change failure scenarios with stable internal errors and Foundation Error Vocabulary progression;
 - measured preimplementation gates for liveness cadence, lease timing and runtime resource limits rather than guessed production defaults.
 
 Delivery-state interpretation is transition-safe:
