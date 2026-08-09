@@ -211,11 +211,14 @@ PREPARE is not authorization escrow. If this grant is used to create a prepared 
 
 - the prepared transition is unexpired and still belongs to the current GameSession/current predecessor generation;
 - the recovery JWT is still inside its accepted time window and its one-time nonce remains eligible;
+- the current trusted recovery signing key/profile policy still accepts the exact `kid`, issuer, purpose and profile used by this grant; emergency key or profile revocation after PREPARE invalidates COMMIT;
 - current trusted Platform-security evidence is fresh and still admits the grant's `account_security_generation`;
 - the token `compatibility_revision` is still supported by the current GameSession/runtime/content/ruleset/reconciliation boundary;
 - the account/character ownership, AccountPresenceClaim, CharacterLease, runtime ownership/placement and reconciliation state are still current;
 - no healthy current controller has regained sufficient current-generation authority;
 - the same-session grace remains valid.
+
+If the recovery signing key/profile trust policy no longer accepts the grant, this candidate COMMIT fails before authority mutation as `RECOVERY_GRANT_AUTHENTICATION_FAILED`; RecoveryGrantNonce is not consumed and the current authority state remains unchanged.
 
 If compatibility or any other required condition changed, this candidate COMMIT fails before performing any authority mutation. The prepared candidate is cancelled/terminalized, its successor secret never becomes current proof and its candidate connection generation never becomes current. The failure leaves whatever GameSession/TransportBinding/lease/runtime authority state is actually current at revalidation unchanged; it never revives a PREPARE predecessor that was already fenced, handed off, superseded or made terminal. Compatibility failure maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. A caller must reconcile current authority and, when required, obtain a compatible fresh recovery grant; possession of a prepared successor secret never overrides changed authorization.
 
@@ -280,7 +283,7 @@ Protection remains keyed to one server-owned ControlLossEpoch:
 11. current AccountId->CharacterId ownership;
 12. current actor/session/presence/lease/runtime placement;
 13. healthy-controller/reconnectable/post-grace decision;
-14. atomic game-domain recovery/rebind/new-session commit, including COMMIT-time compatibility plus authority/security revalidation required by Section 9.1 for a prepared same-session rebind;
+14. atomic game-domain recovery/rebind/new-session commit, including COMMIT-time current recovery-key/profile trust, compatibility and authority/security revalidation required by Section 9.1 for a prepared same-session rebind;
 15. publish success only after commit.
 
 No failure creates partial player-control authority.
@@ -300,6 +303,7 @@ Before implementation acceptance prove:
 - canonical-looking wrong UUID version and wrong UUID variant rejection for `attempt_ref`, `character_id` and `world_id`;
 - syntactically valid but unsupported/superseded `compatibility_revision` rejects as `RECOVERY_GRANT_REVISION_UNSUPPORTED`, consumes no RecoveryGrantNonce and creates no authority mutation for both same-session and post-grace recovery;
 - compatibility revision/current runtime-content-ruleset-session support changes after PREPARE -> COMMIT rejects before candidate authority switch and maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`;
+- recovery signing key/profile is trusted at PREPARE, then emergency-revoked before COMMIT -> COMMIT rejects as `RECOVERY_GRANT_AUTHENTICATION_FAILED`, consumes no RecoveryGrantNonce, commits no authority mutation and preserves whatever authority state is current at revalidation;
 - another valid fencing/handoff/takeover/terminality transition supersedes the PREPARE predecessor -> stale candidate COMMIT cannot revive predecessor authority or overwrite the authority/no-current-transport state that is current at revalidation;
 - concurrent one-time jti consume;
 - healthy incumbent cannot be preempted;
