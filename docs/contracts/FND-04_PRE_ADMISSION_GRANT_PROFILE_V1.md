@@ -218,6 +218,8 @@ For one logical issuance attempt:
 - producer behavior MUST either recover the exact prior issuance outcome or deterministically retire/fail that attempt and require a new authenticated attempt;
 - a new independent login/admission attempt uses a new `attempt_ref`.
 
+If the producer cannot prove whether the prior issuance succeeded, the exact attempt enters `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`. This is a bounded `DEPENDENCY_UNAVAILABLE` / `RETRYABLE` state: retry authority is limited to reconciliation/status recovery for the **same AdmissionAttemptRef**. The producer MUST NOT mint a second independently usable capability for that attempt and MUST NOT start a new independent attempt merely because the response was lost. If the prior outcome cannot be recovered within the registered attempt deadline, the old attempt must be deterministically retired and any possibly issued capability must be proven no longer acceptable before a new independently authorized attempt with a new AdmissionAttemptRef may proceed. Public presentation is `TEMPORARILY_UNAVAILABLE`; no gameplay authority is implied or created by this producer-side ambiguity.
+
 Oteryn-v2 may use an authorized redacted correlation of `attempt_ref`; it never treats it as authentication, GameSession identity or game consume authority.
 
 ## 10. Platform account-security freshness
@@ -389,7 +391,7 @@ Negative fixtures include:
 - Platform-security evidence older than 5 seconds;
 - stale route/runtime observation or changed scope ownership generation;
 - consumed GrantNonce replay/concurrent consume race;
-- ambiguous producer retry with same AdmissionAttemptRef;
+- ambiguous producer response maps to `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`; reconciliation uses the same AdmissionAttemptRef and cannot mint a blind second capability or begin an independent new attempt until the prior attempt is deterministically retired and any possibly issued capability is no longer acceptable;
 - mixed producer/consumer revision/downgrade attempt.
 
 Fixtures MUST be independently produced/validated enough that producer and consumer cannot share one serialization/validation bug unnoticed.
