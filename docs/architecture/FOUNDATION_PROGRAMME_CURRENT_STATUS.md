@@ -187,20 +187,22 @@ Candidate final delivery freezes, subject to exact-head review/merge:
 - fresh admission atomic linearization;
 - Platform signed fresh-entry and recovery capability profiles using strict Ed25519/JOSE validation with mutually exclusive purposes;
 - Platform security-generation/revocation freshness before new admission/recovery;
+- authenticated signing-key/profile trust/revocation evidence accepted age `<=5 seconds` for both grant profiles at every authority-changing validation boundary; stale/unavailable/unprovable evidence uses the purpose-specific `*_GRANT_SECURITY_EVIDENCE_STALE`, while fresh explicit unknown/revoked/not-trusted key/profile uses `*_GRANT_AUTHENTICATION_FAILED`, with no nonce consumption or gameplay authority;
 - fresh-entry route/runtime ownership-generation applicability;
-- Platform `AdmissionAttemptRef` producer idempotency distinct from game GrantNonce one-time consume;
+- Platform `AdmissionAttemptRef` producer idempotency distinct from game GrantNonce one-time consume, including `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED` for ambiguous fresh-entry issuance;
+- recovery producer attempt idempotency with `RECOVERY_ATTEMPT_RECONCILIATION_REQUIRED` for ambiguous recovery-grant issuance: same recovery `attempt_ref` reconciliation only, no blind second grant/independent recovery attempt, deterministic retirement plus proof any possibly issued recovery grant is no longer acceptable before a new attempt, and no recovery-to-fresh-entry reinterpretation;
 - game-domain 32-byte reconnect secret;
 - two-phase reconnect PREPARE/COMMIT so lost responses/crashes cannot create ambiguous authority;
-- atomic COMMIT-time current-authority/security revalidation so PREPARE never escrows stale replacement authority;
+- atomic COMMIT-time current-authority/security/key-profile-trust-freshness/compatibility revalidation so PREPARE never escrows stale replacement authority;
 - healthy current-binding non-preemption by reconnect/recovery bearer proof alone;
-- recovery-specific malformed/authentication/expiry/replay/security/revision failure progression distinct from fresh-entry Gateway actions;
+- recovery-specific malformed/authentication/not-yet-valid/expiry/replay/security/revision/no-target/healthy-controller/issuance-ambiguity failure progression distinct from fresh-entry Gateway actions;
 - exact 15-second same-GameSession grace beginning at the accepted 2-second control-loss declaration boundary;
 - actor-scoped ControlLossEpoch so routine rebind/session replacement cannot manufacture repeated 4-second protection;
 - Platform-reauthenticated same-session recovery when the game proves safe current state;
 - post-grace fresh GameSession attachment to the same `PRESENT_UNCONTROLLED` actor without reset/recreation;
 - healthy combat/PZ/logout-locked incumbent protection;
 - Channel/Instance session-continuity classes;
-- explicit admission/reconnect replay and PREPARE→COMMIT eligibility-change failure scenarios with stable internal errors and Foundation Error Vocabulary progression;
+- explicit admission/recovery issuance ambiguity, admission/reconnect replay and PREPARE→COMMIT eligibility-change failure scenarios with stable internal errors and Foundation Error Vocabulary progression;
 - measured preimplementation gates for liveness cadence, lease timing and runtime resource limits rather than guessed production defaults.
 
 Delivery-state interpretation is transition-safe:
