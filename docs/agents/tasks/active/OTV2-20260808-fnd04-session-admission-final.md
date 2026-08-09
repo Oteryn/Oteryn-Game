@@ -71,6 +71,7 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 - AdmissionAttemptRef is producer idempotency/correlation, distinct from GrantNonce. Ambiguous fresh-entry issuance returns `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED` and permits same-AdmissionAttemptRef reconciliation only until deterministic retirement/proof makes a new attempt safe.
 - Recovery issuance has the symmetric stable `RECOVERY_ATTEMPT_RECONCILIATION_REQUIRED`: same recovery `attempt_ref` reconciliation only; no blind second recovery grant/independent recovery attempt; deterministic retirement plus proof any possibly issued recovery capability is no longer acceptable before a new recovery attempt; no gameplay/fresh-entry authority.
 - Both grant profiles require authenticated signing-key/profile trust/revocation evidence with accepted age `<=5 seconds` at authority-changing validation boundaries. Stale, unavailable, unauthenticated, contradictory or unprovable trust evidence maps to the purpose-specific `*_GRANT_SECURITY_EVIDENCE_STALE`; fresh current evidence explicitly marking the exact key/profile unknown/revoked/not trusted maps to the purpose-specific `*_GRANT_AUTHENTICATION_FAILED`. Neither consumes its nonce or creates authority.
+- Fresh-entry precommit checks are **eligibility only**. The final fresh-admission linearization boundary atomically revalidates JWT time/skew, signing-key/profile trust and trust-evidence freshness, Platform-security freshness/revocation/generation, route/runtime observation and scope ownership/current target lifecycle/readiness, protocol/transport/compatibility, GrantNonce, AccountId→CharacterId ownership/lifecycle, AccountPresence/duplicate-login state, CharacterLease eligibility/fence and any superseding authority transition; only then does it atomically consume GrantNonce and establish AccountPresenceClaim + CharacterLease + GameSession + connection generation + reconnect/reconciliation authority. Earlier validation never escrows admission authority.
 - Reconnect PREPARE is a candidate reservation only. COMMIT atomically revalidates current incumbent/session/presence/lease/runtime/reconciliation eligibility and, for recovery grants, token/nonce/recovery-key-profile trust **and trust-evidence freshness**/Platform-security/compatibility before changing authority.
 - Recovery trust is never escrowed by PREPARE, routing or earlier validation. Same-session COMMIT and post-grace new-GameSession attachment both revalidate trust and the `<=5s` trust/revocation-evidence ceiling.
 - A reconnect secret, recovery JWT or prepared successor secret alone cannot preempt a healthy current binding. A healthy current playable controller returns `RECOVERY_HEALTHY_CONTROLLER_PRESENT` / `CHARACTER_ALREADY_ACTIVE` before any generic no-target fallback.
@@ -87,6 +88,8 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 
 - [x] Separate AccountPresenceClaim, CharacterLease, GameSession, TransportBinding and RuntimeScopeAuthority.
 - [x] Atomic fresh admission with no externally visible partial authority.
+- [x] Fresh-admission validation before the final boundary is eligibility only; AccountPresenceClaim and CharacterLease do not become authoritative before the same atomic boundary that consumes GrantNonce and establishes GameSession/TransportBinding authority.
+- [x] The final fresh-admission boundary revalidates every mutable authority predicate and uses the most-specific frozen progression if any changed, without partial mutation or rollback of actual current authority.
 - [x] Account-global one-character exclusion and healthy-incumbent protection.
 - [x] GameSession terminality does not release mandatory actor presence.
 - [x] Post-grace same-character recovery may attach a fresh GameSession to the same `PRESENT_UNCONTROLLED` actor without reset, respawn, teleport or heal.
@@ -102,9 +105,9 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 - [x] Platform account-security generation/revocation freshness remains bounded before new admission/recovery without becoming post-admission gameplay authority.
 - [x] Signing-key/profile trust/revocation evidence is authenticated and no older than five seconds for both grant profiles at authority-changing validation boundaries.
 - [x] Stale/unavailable/unprovable trust evidence uses purpose-specific `*_GRANT_SECURITY_EVIDENCE_STALE`; fresh explicit unknown/revoked/not-trusted trust state uses purpose-specific `*_GRANT_AUTHENTICATION_FAILED`.
-- [x] Fresh-entry final admission revalidates signing-key/profile trust and trust-evidence freshness atomically before GrantNonce/session authority commit.
+- [x] Fresh-entry final admission revalidates signing-key/profile trust and **all other mutable admission predicates** atomically before GrantNonce/presence/lease/session authority commit.
 - [x] Recovery same-session COMMIT and post-grace new-session commit revalidate key/profile trust plus `<=5s` trust/revocation-evidence freshness.
-- [x] Fresh-entry route/runtime owner-generation binding fails closed on stale owner generation.
+- [x] Fresh-entry route/runtime owner-generation binding fails closed on stale owner generation, including change-before-commit.
 - [x] Recovery `compatibility_revision` is validated/revalidated against current protocol/runtime/content/ruleset/session compatibility on both recovery paths.
 - [x] 32-byte game-domain reconnect proof material and one-winner PREPARE/COMMIT generation transition.
 - [x] COMMIT-time authority/security/key-profile-trust-freshness/compatibility revalidation closes PREPARE→COMMIT TOCTOU.
@@ -114,8 +117,9 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 
 ### Failure and decision discipline
 
-- [x] Stable `FS-RECOVERY-GRANT-ISSUANCE-AMBIGUITY`, `FS-ADMISSION-GRANT-REPLAY`, `FS-RECONNECT-CREDENTIAL-REPLAY` and `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` scenarios exist.
-- [x] `FS-KEY-ROTATION` now freezes the grant-profile trust/revocation freshness ceiling and distinguishes stale/unprovable evidence from fresh explicit revocation.
+- [x] Stable `FS-ADMISSION-VALIDATION-COMMIT-ELIGIBILITY-CHANGE`, `FS-RECOVERY-GRANT-ISSUANCE-AMBIGUITY`, `FS-ADMISSION-GRANT-REPLAY`, `FS-RECONNECT-CREDENTIAL-REPLAY` and `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` scenarios exist.
+- [x] `FS-ADMISSION-VALIDATION-COMMIT-ELIGIBILITY-CHANGE` requires independent change-before-commit coverage for token time, key trust, Platform security, route/runtime/current owner/readiness, compatibility, nonce, ownership, presence, lease and superseding authority; stale candidate commits no partial authority and preserves actual current state.
+- [x] `FS-KEY-ROTATION` freezes the grant-profile trust/revocation freshness ceiling and distinguishes stale/unprovable evidence from fresh explicit revocation.
 - [x] Every FND-04 cross-component error has stable internal code/category, disposition, exact retry authority, mutation/idempotency outcome and bounded public class.
 - [x] `RECONNECT_PREPARED_EXPIRED`, `RECOVERY_TARGET_NOT_ELIGIBLE` and `RECOVERY_HEALTHY_CONTROLLER_PRESENT` remain distinct and ordered correctly.
 - [x] Recovery validator failures never inherit fresh-entry Gateway actions.
@@ -139,27 +143,28 @@ Historical heads are evidence of review provenance only and cannot satisfy termi
 11. Repair cycle 12 consolidated those four edge cases across recovery profile, canonical refinement, main contract and shared catalogue.
 12. `c366bf1e9fda6b3f9525fc9dd3bf8ce86541b0df`: terminal review found missing admission-attempt reconciliation progression and healthy-controller/no-target dispatch conflict.
 13. `49d7bf88b0272ba9708a6a9a8f7c687d8cc70fab`: repair cycle 13 added `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED` and ordered healthy-controller recovery dispatch. Exact-head Agent governance `31305568013`, Dependency review `31305568026`, CodeQL `31305568015` and self-audit passed; all prior threads were resolved. Replacement terminal Codex review nevertheless found one new P1 and one P2, invalidating merge readiness.
-14. Exceptional safety repair cycle 14 closes the `49d7bf...` findings: P1 unbounded signing-key/profile revocation-state freshness is replaced by authenticated `<=5s` trust/revocation evidence for **both** grant profiles with purpose-specific stale-evidence vs fresh-explicit-revocation outcomes and commit-time revalidation; P2 ambiguous recovery-grant issuance now has complete `RECOVERY_ATTEMPT_RECONCILIATION_REQUIRED` progression, deterministic retirement/proof and a dedicated shared failure scenario. Both profiles, canonical refinement, main contract, shared failure catalogue and programme status are synchronized.
+14. Exceptional safety repair cycle 14 closed the `49d7bf...` findings: P1 unbounded signing-key/profile revocation-state freshness was replaced by authenticated `<=5s` trust/revocation evidence for both grant profiles with purpose-specific stale-evidence vs fresh-explicit-revocation outcomes and commit-time revalidation; P2 ambiguous recovery-grant issuance gained complete `RECOVERY_ATTEMPT_RECONCILIATION_REQUIRED` progression, deterministic retirement/proof and a dedicated shared failure scenario. Exact-head `a77e959b32b03c45e2571aaa881eeebe4874a6e7` then passed Agent governance `31306702872`, Dependency review `31306702878`, CodeQL `31306702876`, self-audit and had zero unresolved threads.
+15. The exceptional independent safety review on `a77e959b32b03c45e2571aaa881eeebe4874a6e7` found one new P1: fresh-entry final commit revalidated key/profile trust but could still consume authority after JWT time, Platform-security, route/runtime ownership, compatibility, nonce, AccountId→CharacterId ownership, AccountPresence or CharacterLease eligibility had changed since earlier checks. Repair cycle 15 closes this TOCTOU by making all precommit checks eligibility-only and requiring one atomic final admission boundary to revalidate **every mutable authority predicate**, then and only then consume GrantNonce and establish AccountPresenceClaim + CharacterLease + GameSession + TransportBinding authority. The fresh-entry profile, main contract, programme status and shared `FS-ADMISSION-VALIDATION-COMMIT-ELIGIBILITY-CHANGE` scenario/change-before-commit matrix are synchronized. No runtime/storage implementation mechanism is selected.
 
 ## Review budget / Codex usage policy
 
 The independent Codex reviewer is a terminal assurance gate, not an iterative repair loop.
 
 - Iterative repairs use exact-diff review, full assistant self-audit, repository governance and exact-head CI.
-- The original terminal-review budget allowed one replacement review after a material terminal finding.
-- That replacement review on `49d7bf...` found a new **P1 security issue**. The budget cap is therefore narrowly superseded for safety: it cannot be used as justification to merge a known P1.
-- Repair cycle 14 permits **one exceptional final independent exact-head safety review** after the repaired head is frozen and local/CI/thread gates are green.
-- Do not invoke Codex again for unchanged status, polling or cosmetic confirmation. A further material finding blocks merge and must not be ignored.
+- Historical reviewer-budget caps exist to prevent waste, not to authorize merge with a known material security defect.
+- The replacement review on `49d7bf...` found a P1/P2 and the exceptional safety review on `a77e959b...` found another P1; both invalidate their heads regardless of green CI.
+- Repair cycle 15 permits one final independent exact-head safety review only after the new head is frozen and local exact-head CI/self-audit/thread gates are green.
+- Do not invoke Codex again for unchanged status, polling or cosmetic confirmation. Any material finding remains a hard merge blocker and cannot be ignored merely to finish the task.
 
 ## Governance acceptance
 
 - [x] PR title is within repository governance limit.
 - [x] Scope remains exactly seven declared documentation paths.
 - [x] No runtime/protocol codec/persistence schema/Platform write/key deployment/production activation is introduced.
-- [ ] Freeze one final exact head after this repair-cycle-14 task synchronization commit.
+- [ ] Freeze one final exact head after this repair-cycle-15 task synchronization commit.
 - [ ] Full exact-head seven-path architecture/security review reports zero material conflicts.
 - [ ] Exact-head Agent governance, Dependency review and CodeQL all pass.
-- [ ] One exceptional final independent exact-head Codex architecture/security review reports zero material findings.
+- [ ] One final independent exact-head safety review reports zero material findings.
 - [ ] Zero unresolved review threads.
 - [ ] Squash merge only with expected-head protection.
 - [ ] Archive/release ownership in a separate closeout PR after merge.
@@ -176,15 +181,16 @@ The independent Codex reviewer is a terminal assurance gate, not an iterative re
 - `6ea04ac8...`: historical; later material findings invalidated readiness.
 - `a9634cce...`, `66d47381...`, `9907e4be...`, `cf6b13df...`, `10e2ba70...`, `44530286...`, `ad8eb45b...`, `9a7ace36...`, `77d619b5...`: historical reviewed repair generations.
 - `c366bf1e9fda6b3f9525fc9dd3bf8ce86541b0df`: historical; CI/self-audit green but terminal review found two P2 findings.
-- `49d7bf88b0272ba9708a6a9a8f7c687d8cc70fab`: historical; exact-head Agent governance/Dependency review/CodeQL/self-audit green and repair-cycle-13 threads resolved, but replacement terminal review found P1 unbounded signing-key/profile revocation freshness and P2 missing ambiguous recovery-issuance progression.
+- `49d7bf88b0272ba9708a6a9a8f7c687d8cc70fab`: historical; CI/self-audit green but replacement review found P1 unbounded signing-key/profile revocation freshness and P2 missing ambiguous recovery-issuance progression.
+- `a77e959b32b03c45e2571aaa881eeebe4874a6e7`: historical; Agent governance `31306702872`, Dependency review `31306702878`, CodeQL `31306702876`, self-audit and zero unresolved threads were green, but final safety review found fresh-admission mutable-predicate TOCTOU at the final authority commit.
 
 ### Current generation
 
-- final head: pending after this task-synchronization commit;
+- final head: pending after this repair-cycle-15 task synchronization commit;
 - exact-head CI: pending;
 - exact-head self-audit: pending;
-- exceptional final independent Codex safety audit: pending after local gates pass;
-- unresolved material findings: repair-cycle-14 P1/P2 are repaired in candidate docs; pending exact-head validation.
+- final independent safety audit: pending after local gates pass;
+- unresolved material findings: the `a77e959b...` P1 is repaired in candidate docs; pending exact-head validation.
 
 ## PR and closeout
 
@@ -196,16 +202,16 @@ The independent Codex reviewer is a terminal assurance gate, not an iterative re
 ## Context checkpoint
 
 ```yaml
-last_progress: Replacement terminal Codex review on 49d7bf88b0272ba9708a6a9a8f7c687d8cc70fab found P1 unbounded signing-key/profile revocation-state freshness and P2 missing ambiguous recovery-grant issuance progression. Exceptional safety repair cycle 14 now freezes authenticated signing-key/profile trust/revocation evidence age <=5s for both grant profiles, stale/unavailable/unprovable evidence -> purpose-specific *_GRANT_SECURITY_EVIDENCE_STALE, fresh explicit unknown/revoked/not-trusted -> purpose-specific *_GRANT_AUTHENTICATION_FAILED, with atomic fresh-admission/same-session/post-grace revalidation and no nonce/authority mutation on failure. It also defines RECOVERY_ATTEMPT_RECONCILIATION_REQUIRED with same-recovery-attempt-ref reconciliation only, deterministic retirement/proof before any new recovery attempt, TEMPORARILY_UNAVAILABLE public mapping and no gameplay/fresh-entry authority. Profiles, canonical refinement, main contract, shared failure catalogue and programme status are synchronized.
+last_progress: Final independent safety review on a77e959b32b03c45e2571aaa881eeebe4874a6e7 found P1 fresh-admission TOCTOU because final authority commit did not revalidate every mutable predicate checked earlier. Repair cycle 15 makes all precommit fresh-entry checks eligibility-only and freezes one atomic final linearization boundary that revalidates JWT time/skew, key/profile trust plus <=5s trust evidence, Platform-security freshness/revocation/generation, route/runtime observation/scope ownership/current target lifecycle/readiness, protocol/transport/compatibility, GrantNonce, AccountId-to-CharacterId ownership/lifecycle, AccountPresence/duplicate-login, CharacterLease/fence and superseding authority; only then consume GrantNonce and establish AccountPresenceClaim, CharacterLease, GameSession, connection_generation 1, reconnect proof and reconciliation authority. Shared FS-ADMISSION-VALIDATION-COMMIT-ELIGIBILITY-CHANGE and independent change-before-commit fixtures cover every class. Fresh-entry profile, main contract, failure catalogue and programme status are synchronized; recovery semantics from cycle 14 are unchanged.
 status: validating
 branch: docs/OTV2-20260808-fnd04-session-admission-final
 pr: 109
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-ci_check_generation: exceptional-safety-repair-14
-repair_cycles_for_current_gate: 14
+ci_check_generation: final-safety-repair-15
+repair_cycles_for_current_gate: 15
 owner_action_required: null
 blocker: null
-next_action: treat this task-synchronization commit as the new frozen exact-head candidate; verify exact seven-file scope, live main and repair-cycle-14 delta; run fresh exact-head Agent governance, Dependency review and CodeQL; perform full seven-path self-audit; reply to and resolve the two 49d7 Codex threads only with exact-head evidence; then invoke one exceptional final independent Codex safety review. Squash merge only if it reports zero material findings and head/main/CI/thread state remains unchanged. After delivery merge, perform separate two-path lifecycle closeout and release ownership.
+next_action: treat this task-synchronization commit as the frozen exact-head candidate; verify exact seven-file scope, live main and repair-cycle-15 delta; run exact-head Agent governance, Dependency review and CodeQL; perform full seven-path self-audit; reply to and resolve the a77e959b Codex P1 thread only with exact-head evidence; then invoke one final independent exact-head safety review. Squash merge only if that review reports zero material findings and head/main/CI/thread state remains unchanged. After delivery merge, perform separate two-path lifecycle closeout and release ownership.
 ```
