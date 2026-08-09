@@ -16,7 +16,7 @@ base_sha: 27f7f647f04e3b1a4151f9b124401986910f03d8
 historical_candidate_sha: bf82e392d6ef8b1e627849cdc7383af9a7c987ae
 owner: GPT-5.6 Sol architecture continuation session
 created_at: 2026-08-09T12:16:00+02:00
-updated_at: 2026-08-09T12:21:00+02:00
+updated_at: 2026-08-09T12:27:00+02:00
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260809-fnd04a-authority-fresh-admission.md
   - docs/architecture/FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md
@@ -24,7 +24,7 @@ owned_paths:
 public_contracts:
   - docs/architecture/FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md
   - docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 max_repair_cycles_for_current_gate: 3
 final_head_sha: null
 final_head_frozen_at: null
@@ -56,62 +56,60 @@ Do not treat any unmerged #109 file as canonical merely because it was reviewed.
 
 ### Included
 
-- fresh-admission authority layers;
-- Platform/game authority split;
+- fresh-admission authority layers and Platform/game authority split;
 - AccountPresenceClaim/CharacterLease admission boundary;
 - strict fresh-entry signed profile;
 - AdmissionAttemptRef vs GrantNonce;
 - Platform-security and key/profile trust freshness;
 - route/runtime/compatibility/current target applicability;
-- current `CharacterId -> WorldId` / world-eligibility binding;
+- current ownership-safe `CharacterId -> WorldId` / world eligibility;
 - atomic final admission revalidation/commit;
 - fresh-admission duplicate-login/no-preemption rules;
-- fresh-admission error subset with full Foundation Error Vocabulary fields;
-- fresh-admission/world-transfer TOCTOU evidence requirements.
+- fresh-admission error subset with complete Foundation Error Vocabulary fields;
+- fresh-admission/world-transfer TOCTOU evidence.
 
 ### Excluded
 
-- reconnect secret and PREPARE/COMMIT;
+- reconnect secret/proof and PREPARE/COMMIT;
 - reauthenticated recovery;
 - liveness/same-session grace/ControlLossEpoch;
 - post-grace recovery;
 - Channel/Instance continuity and GameNode replacement;
-- complete FND-04 error catalogue/shared failure integration;
-- final FND-04 index/programme status;
+- complete FND-04 shared error/failure integration and final FND-04 index/status;
 - runtime, protocol-codec, persistence schema, Platform implementation, KMS/HSM, deployment, production traffic.
 
 Those are FND-04B/FND-04C under #112.
 
 ## Carried P1 acceptance
 
-The final review of superseded #109 found that final fresh admission did not explicitly prove the current `CharacterId -> WorldId` / world-eligibility relation matched the signed `world_id`.
+The final review of superseded #109 found missing current `CharacterId -> WorldId` / world-eligibility validation.
 
-FND-04A closes that finding only if both public contracts require:
+FND-04A closes it only if both public contracts require:
 
-1. initial current character-world eligibility evaluation;
-2. the same check again immediately before and atomically with authority creation;
-3. mismatch or changed-world-before-commit -> `ADMISSION_GRANT_WORLD_STALE`;
-4. no GrantNonce consumption or candidate presence/lease/session/transport authority mutation;
-5. no silent grant retarget after legal world transfer;
-6. independent initial-mismatch and change-before-commit/world-transfer fixtures.
+1. prove current `AccountId -> CharacterId` ownership/lifecycle before any world-state classification;
+2. then evaluate current CharacterId->WorldId/world eligibility;
+3. repeat ownership first and world applicability second immediately before/atomically with authority creation;
+4. valid ownership + world mismatch/change-before-commit -> `ADMISSION_GRANT_WORLD_STALE`;
+5. invalid ownership -> account/character conflict without world-state oracle;
+6. no GrantNonce or candidate presence/lease/session/transport mutation;
+7. no silent retarget after legal world transfer;
+8. independent initial-mismatch, invalid-ownership and transfer-before-commit fixtures.
 
 ## Error-vocabulary discipline
 
-FND-04A does not defer the completeness of its own fresh-admission errors. Every FND-04A-owned public/cross-component error must have:
+Every FND-04A-owned cross-component error defines stable code/category, disposition, retry authority, redacted diagnostic, credential-free correlation fields, mutation/idempotency outcome and bounded public class. Diagnostics never expose credentials, Platform security-generation values or private fencing generations; match/stale classes are used where needed.
 
-- stable code and Foundation category;
-- `RETRYABLE` / `TERMINAL` / `SECURITY_TERMINAL`;
-- exact retry/new-authority rule;
-- redacted diagnostic message;
-- credential-free correlation/trace fields;
-- idempotency/partial-mutation outcome;
-- bounded public class.
+FND-04C may integrate accepted rows but must not silently alter them.
 
-FND-04C will integrate accepted rows but must not silently alter FND-04A semantics.
+## Repair cycle 1 — pre-freeze self-review
 
-## Decision timing
+Self-review found three material scope/security inconsistencies and repaired them before final-head freeze:
 
-Authority split, atomic final admission, current character-world binding, strict profile and security/trust freshness are decide-now. Physical transaction technology, tables, caches, KMS vendor, production lease timing and capacities remain deferred to evidence-owning downstream gates.
+1. world-state evaluation originally preceded AccountId->CharacterId ownership, risking a world-state classification oracle for a producer-invalid/non-owned CharacterId; both contracts now require ownership first, then world relation, including at final atomic revalidation;
+2. FND-04A atomic effects mentioned reconnect-proof initialization despite reconnect being explicitly out of scope; all reconnect secret/proof semantics were removed from A and left to FND-04B;
+3. diagnostics correlation exposed raw `scope_ownership_generation` despite forbidding private fencing data; it now records only safe match/stale relation classes plus non-secret revision context.
+
+These changes are one coherent repair hypothesis and count as `repair_cycles_for_current_gate: 1`.
 
 ## Validation plan
 
@@ -119,24 +117,24 @@ Before readiness:
 
 - inspect full three-path diff against trusted main;
 - confirm no reconnect/recovery semantic duplication;
-- verify both public docs have identical current-world and final-linearization semantics;
+- verify both public docs have identical ownership-before-world and final-linearization semantics;
 - verify every FND-04A error row satisfies Foundation Error Vocabulary;
-- verify `ADMISSION_GRANT_WORLD_STALE` public mapping does not expose private transfer details;
+- verify `ADMISSION_GRANT_WORLD_STALE` public mapping leaks no transfer detail;
 - run exact-head Agent governance, Dependency review and CodeQL;
 - full exact-head architecture/security self-review;
 - freeze exact head without a later checkpoint-only commit;
 - one independent exact-head review;
-- zero material findings and unresolved threads;
-- no more than three repair cycles;
+- zero material findings/unresolved threads;
+- maximum three repair cycles;
 - squash merge only on unchanged accepted head.
 
-Runtime/component/browser E2E: `NOT_APPLICABLE` because this delivery is architecture/contracts only. Future implementation must execute the specified fault/interoperability fixtures.
+Runtime/component/browser E2E: `NOT_APPLICABLE` because this delivery is architecture/contracts only. Future implementation must execute the specified fixtures.
 
 ## Current checkpoint
 
 ```yaml
 status: validating
-last_progress: Superseded monolithic #109 after owner-approved final review found P1 current-character-world omission and P2 incomplete error diagnostics. Replacement programme #112 and bounded gate #113 created. PR #114 now carries one bounded three-path FND-04A package reconstructed from trusted main with explicit CharacterId->WorldId/world-eligibility final revalidation, ADMISSION_GRANT_WORLD_STALE, world-transfer race fixtures and complete fresh-admission diagnostic/correlation fields.
-repair_cycles_for_current_gate: 0
-next_action: validate full PR #114 three-path diff against trusted main and FND-04A acceptance; repair only material findings, otherwise freeze exact head and run exact-head CI/self-audit/independent review.
+last_progress: Repair cycle 1 completed before freeze. Both public contracts now prove AccountId->CharacterId ownership before current world classification, repeat that ordering at atomic final admission, keep ADMISSION_GRANT_WORLD_STALE for an owned character whose signed world is stale, exclude reconnect-proof semantics from FND-04A, and remove raw fencing generation from diagnostics. PR #114 remains exactly three bounded documentation paths.
+repair_cycles_for_current_gate: 1
+next_action: perform a fresh full three-path architecture/security self-review of the repaired head; if zero material findings, freeze that exact head and run exact-head CI before the single independent terminal review.
 ```
