@@ -110,7 +110,7 @@ Immediately before and atomically with a post-grace new-GameSession/control atta
 
 Emergency recovery-key/profile revocation after earlier validation but before that commit maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`, consumes no RecoveryGrantNonce, creates no GameSession/lease/runtime/transport authority and preserves whatever authority state is current at revalidation.
 
-If authoritative state matches neither same-GameSession recovery nor the post-grace existing-actor transition — including an actor that has legally become `ABSENT` — recovery fails as `RECOVERY_TARGET_NOT_ELIGIBLE`. The grant is not consumed as success, no authority mutation occurs and it is never reinterpreted as fresh-entry authority.
+Recovery result classification is ordered: if authoritative state shows a healthy current playable controller, the attempt returns the dedicated `RECOVERY_HEALTHY_CONTROLLER_PRESENT` conflict progression before any generic recovery-target fallback is considered. Only after that dedicated conflict is excluded may authoritative state matching neither same-GameSession recovery nor the post-grace existing-actor transition — including an actor that has legally become `ABSENT` — fail as `RECOVERY_TARGET_NOT_ELIGIBLE`. Neither outcome consumes RecoveryGrantNonce or mutates authority, and the no-target fallback is never used to hide a healthy-controller conflict.
 
 ## 4. Healthy-session migration is a distinct future transition
 
@@ -177,6 +177,7 @@ This section is the sole normative FND-04 progression under `FOUNDATION_ERROR_VO
 - `SECURITY_TERMINAL` — rejected credential/proof must not be blindly retried/reinterpreted;
 - `NO_AUTHORITY_MUTATION` — no new gameplay/session/lease authority committed;
 - `COMMITTED_OR_RECONCILE_REQUIRED` — prior success may already exist; reconcile before independent retry;
+- `ISSUANCE_OUTCOME_RECONCILE_REQUIRED` — one Platform capability may already have been issued for the same AdmissionAttemptRef; reconcile or deterministically retire that attempt before any independent new issuance; no gameplay authority is implied by the ambiguity;
 - `BOUNDED_RENEWAL_ONLY` — retry can preserve only already-current authority before fail-safe deadline and never grants replacement.
 
 For FND-04 v1, any shorthand such as `after nbf` or `post-nbf` means **after trusted server time enters the profile's accepted `nbf` skew window**, never literal `now >= nbf`. Both signed v1 profiles use the verifier boundary `now + 5s >= nbf`; before that boundary the grant is `*_NOT_YET_VALID`. The exact profile time equations govern every retry rule and fixture.
@@ -188,6 +189,7 @@ For FND-04 v1, any shorthand such as `after nbf` or `post-nbf` means **after tru
 | `ADMISSION_GRANT_NOT_YET_VALID` | `SESSION_REJECTED` | `RETRYABLE` | retry the same still-unconsumed grant only after trusted server time enters the accepted `nbf` window and only while `exp`, Platform-security, route/runtime-generation and all other admission bindings remain current; otherwise obtain a new grant | `NO_AUTHORITY_MUTATION`; GrantNonce is not consumed and no presence/lease/session/transport authority changes | `TEMPORARILY_UNAVAILABLE` |
 | `ADMISSION_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | fresh Gateway/issuer attempt + new grant | `NO_AUTHORITY_MUTATION` | `RETRY_LOGIN` |
 | `ADMISSION_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior admission first, then fresh attempt only if no current authority | `COMMITTED_OR_RECONCILE_REQUIRED` | `SESSION_UNAVAILABLE` |
+| `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same AdmissionAttemptRef reconciliation/status recovery only; do not mint a second capability or begin an independent new attempt merely because issuance outcome is unknown; after the registered attempt deadline, a new attempt requires deterministic retirement of the old attempt and proof that any possibly issued capability is no longer acceptable | `ISSUANCE_OUTCOME_RECONCILE_REQUIRED`; game authority is unchanged by the ambiguous producer outcome | `TEMPORARILY_UNAVAILABLE` |
 | `ADMISSION_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a newly authenticated attempt | `NO_AUTHORITY_MUTATION` | `AUTHENTICATION_REQUIRED` |
 | `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only if still valid and other bindings remain current after fresh evidence; else new grant | `NO_AUTHORITY_MUTATION` | `TEMPORARILY_UNAVAILABLE` |
 | `ADMISSION_GRANT_ROUTE_STALE` | `STALE_GENERATION` | `TERMINAL` | fresh Gateway route + new grant; never retarget old grant | `NO_AUTHORITY_MUTATION` | `RETRY_LOGIN` |
@@ -222,7 +224,9 @@ For FND-04 v1, any shorthand such as `after nbf` or `post-nbf` means **after tru
 
 For fresh-entry grants, a valid signature/profile whose trusted-server time is still before the accepted `nbf` window maps to `ADMISSION_GRANT_NOT_YET_VALID`; it is neither malformed nor consumed. Expiry maps to `ADMISSION_GRANT_EXPIRED`.
 
-Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`; authoritative state that matches neither legal recovery transition maps to `RECOVERY_TARGET_NOT_ELIGIBLE`. These recovery codes never inherit fresh-entry actions such as obtaining a Gateway route unless a later independent fresh-entry attempt is separately authorized.
+If Platform issuance may already have succeeded but the producer cannot recover that exact outcome, the attempt maps to `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`. Only same-AdmissionAttemptRef reconciliation is retryable; ambiguity never authorizes blind second issuance. A new independent attempt is allowed only after deterministic retirement of the old attempt and proof that any possibly issued capability can no longer be accepted.
+
+Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol semantics maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. A healthy current playable controller maps first to `RECOVERY_HEALTHY_CONTROLLER_PRESENT`; only after that conflict is excluded does authoritative state matching neither legal recovery transition map to `RECOVERY_TARGET_NOT_ELIGIBLE`. These recovery codes never inherit fresh-entry actions such as obtaining a Gateway route unless a later independent fresh-entry attempt is separately authorized.
 
 Prepared-transition expiry is not same-session grace expiry. `RECONNECT_PREPARED_EXPIRED` terminalizes only that prepared candidate and may permit a new PREPARE after fresh evaluation while grace remains valid; `RECONNECT_GRACE_EXPIRED` ends same-session retry eligibility.
 
@@ -243,7 +247,7 @@ is **`PASS` at FND-04 contract level**: Sections 2–3 require COMMIT to atomica
 Required implementation evidence includes at minimum:
 
 1. healthy current generation + correct reconnect secret from second transport → PREPARE rejected, incumbent unaffected;
-2. healthy current generation + valid reauthenticated recovery grant → PREPARE/recovery rejected, incumbent unaffected;
+2. healthy current generation + valid reauthenticated recovery grant → `RECOVERY_HEALTHY_CONTROLLER_PRESENT`, incumbent unaffected, no fallback to `RECOVERY_TARGET_NOT_ELIGIBLE`;
 3. current generation healthy + multiple concurrent contenders → none can create prepared state without current-binding migration authorization;
 4. server-declared eligible loss → one valid reconnect contender may PREPARE and exactly one may COMMIT;
 5. PREPARE accepted after eligible loss, then incumbent regains sufficient current-generation control before COMMIT → COMMIT rejected/candidate terminalized, incumbent unaffected;
@@ -254,14 +258,15 @@ Required implementation evidence includes at minimum:
 10. failed COMMIT revalidation leaves whatever authority state is current at revalidation unchanged and the stale candidate non-revivable;
 11. PREPARE's own bounded expiry occurs while same-session grace remains valid → `RECONNECT_PREPARED_EXPIRED`; candidate remains non-mutating/non-revivable and only a freshly evaluated new PREPARE may proceed;
 12. post-grace recovery passes earlier validation, then recovery signing-key/profile is emergency-revoked before the atomic new-GameSession attachment → `RECOVERY_GRANT_AUTHENTICATION_FAILED`, no RecoveryGrantNonce consumption, no new GameSession/control authority and current authority preserved;
-13. a valid recovery grant resolves to an actor that is legally `ABSENT` or otherwise matches neither recovery transition → `RECOVERY_TARGET_NOT_ELIGIBLE`, no RecoveryGrantNonce consumption/no authority mutation/no recovery-to-fresh-entry reinterpretation;
-14. pre-loss current-binding-authorized migration, if implemented, switches authority atomically without creating ControlLossEpoch/protection;
-15. stale migration authorization from generation N cannot affect generation N+1;
-16. stolen predecessor reconnect secret after successful COMMIT cannot regain authority or fence successor;
-17. fresh-entry grant with valid signature/profile and `now + 5s < nbf` returns `ADMISSION_GRANT_NOT_YET_VALID` and consumes no GrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed grant may proceed only while expiry, Platform-security, route/runtime-generation and every other admission binding remain valid;
-18. recovery grant with valid signature/profile and `now + 5s < nbf` returns `RECOVERY_GRANT_NOT_YET_VALID` and consumes no RecoveryGrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed recovery grant may proceed only while expiry, Platform-security, compatibility and recovery/session/actor eligibility remain valid;
-19. malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported/no-target recovery-grant cases each follow the recovery-specific Section 7 progression and never silently fall into fresh-entry retry behavior;
-20. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
+13. a valid recovery grant resolves to an actor that is legally `ABSENT` or otherwise matches neither recovery transition after the healthy-controller conflict is excluded → `RECOVERY_TARGET_NOT_ELIGIBLE`, no RecoveryGrantNonce consumption/no authority mutation/no recovery-to-fresh-entry reinterpretation;
+14. ambiguous Platform admission issuance response after capability creation may have succeeded → `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`; only same-AdmissionAttemptRef reconciliation may retry, no blind second capability may be minted, and a fresh independent attempt requires deterministic retirement plus proof that any possibly issued old capability is no longer acceptable;
+15. pre-loss current-binding-authorized migration, if implemented, switches authority atomically without creating ControlLossEpoch/protection;
+16. stale migration authorization from generation N cannot affect generation N+1;
+17. stolen predecessor reconnect secret after successful COMMIT cannot regain authority or fence successor;
+18. fresh-entry grant with valid signature/profile and `now + 5s < nbf` returns `ADMISSION_GRANT_NOT_YET_VALID` and consumes no GrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed grant may proceed only while expiry, Platform-security, route/runtime-generation and every other admission binding remain valid;
+19. recovery grant with valid signature/profile and `now + 5s < nbf` returns `RECOVERY_GRANT_NOT_YET_VALID` and consumes no RecoveryGrantNonce; at the first accepted boundary `now + 5s >= nbf`, the same still-unconsumed recovery grant may proceed only while expiry, Platform-security, compatibility and recovery/session/actor eligibility remain valid;
+20. malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported/no-target/healthy-controller recovery cases each follow the recovery-specific Section 7 progression and never silently fall into another recovery result or fresh-entry retry behavior;
+21. every Section 7 failure code follows its frozen disposition/retry/idempotency/public mapping in positive, negative and ambiguous-result fixtures.
 
 ## 9. Concise rule
 
@@ -269,7 +274,13 @@ Required implementation evidence includes at minimum:
 healthy current binding
 + reconnect secret / recovery JWT elsewhere
 -> NOT replacement authority
+-> RECOVERY_HEALTHY_CONTROLLER_PRESENT for recovery
 -> reject unsolicited PREPARE
+
+ambiguous fresh-entry grant issuance
+-> ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED
+-> same AdmissionAttemptRef reconciliation only
+-> no blind second capability
 
 server-proven eligible loss
 -> PREPARE may reserve one candidate
@@ -292,7 +303,8 @@ OR a newer valid transition superseded PREPARE
 
 post-grace recovery new-session commit
 -> revalidate current recovery-key/profile trust and all current actor/session/security facts atomically
--> no legal recovery target => RECOVERY_TARGET_NOT_ELIGIBLE
+-> healthy controller => RECOVERY_HEALTHY_CONTROLLER_PRESENT
+-> after healthy conflict excluded, no legal recovery target => RECOVERY_TARGET_NOT_ELIGIBLE
 
 successful COMMIT
 -> exactly one current generation
