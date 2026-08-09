@@ -381,6 +381,8 @@ AdmissionAttemptRef:
 - ambiguous issuance cannot mint multiple independently usable grants for that attempt;
 - independent new attempt uses new ref.
 
+If Platform cannot prove whether grant issuance for an AdmissionAttemptRef succeeded, the attempt returns `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`. Only reconciliation/status recovery for that **same AdmissionAttemptRef** is retryable. The producer cannot mint a blind second capability or start a new independent attempt because the response was lost. If the exact prior outcome cannot be recovered within the registered attempt deadline, the old attempt must be deterministically retired and any possibly issued capability proven no longer acceptable before a newly authorized attempt with a new AdmissionAttemptRef can proceed. This ambiguity is publicly `TEMPORARILY_UNAVAILABLE` and creates no gameplay authority by itself.
+
 GrantNonce:
 
 - 32 random bytes under the signed profile;
@@ -726,7 +728,7 @@ It MUST NOT respawn/recreate/heal/reset/teleport actor, clear conditions/cooldow
 
 If current placement/lease/actor/compatibility state cannot be proven, fail closed; an unsupported or superseded signed recovery compatibility requirement maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED` without RecoveryGrantNonce consumption or authority mutation.
 
-If authoritative state matches neither legal recovery transition — including when the actor has legally become `ABSENT` — reject as `RECOVERY_TARGET_NOT_ELIGIBLE`. This is terminal for that recovery transition, consumes no RecoveryGrantNonce, creates no authority mutation and never converts the recovery grant into fresh-entry authority. A later fresh login, when legally permitted, is a separate newly authorized fresh-entry attempt.
+Recovery result classification is ordered. A healthy current playable controller returns `RECOVERY_HEALTHY_CONTROLLER_PRESENT` and cannot fall through to the generic no-target result. Only after that dedicated conflict is excluded, if authoritative state matches neither legal recovery transition — including when the actor has legally become `ABSENT` — reject as `RECOVERY_TARGET_NOT_ELIGIBLE`. This is terminal for that recovery transition, consumes no RecoveryGrantNonce, creates no authority mutation and never converts the recovery grant into fresh-entry authority. A later fresh login, when legally permitted, is a separate newly authorized fresh-entry attempt.
 
 A different CharacterId remains blocked until original actor is legally absent.
 
@@ -861,6 +863,7 @@ Every FND-04 cross-component failure obeys `FOUNDATION_ERROR_VOCABULARY.md`. `TE
 | `ADMISSION_GRANT_NOT_YET_VALID` | `SESSION_REJECTED` | `RETRYABLE` | retry the same still-unconsumed grant only after trusted server time enters the accepted `nbf` window and only while `exp`, Platform-security, route/runtime-generation and all other admission bindings remain current; otherwise obtain a new grant | no GrantNonce consumption and no presence/lease/session/transport authority mutation | `TEMPORARILY_UNAVAILABLE` |
 | `ADMISSION_GRANT_EXPIRED` | `SESSION_REJECTED` | `TERMINAL` | fresh Gateway/issuer attempt + new grant | no authoritative mutation | `RETRY_LOGIN` |
 | `ADMISSION_GRANT_REPLAYED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | never reuse grant; reconcile prior admission first, then fresh attempt only if no current authority | prior success may already exist; no duplicate effect | `SESSION_UNAVAILABLE` |
+| `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same AdmissionAttemptRef reconciliation/status recovery only; do not mint a second capability or begin an independent new attempt because issuance outcome is unknown; after the registered attempt deadline, a new attempt requires deterministic retirement of the old attempt and proof that any possibly issued capability is no longer acceptable | prior Platform capability may already exist; no gameplay authority mutation is implied by the ambiguous producer outcome | `TEMPORARILY_UNAVAILABLE` |
 | `ADMISSION_GRANT_SECURITY_STATE_REVOKED` | `SESSION_REJECTED` | `SECURITY_TERMINAL` | wait for Platform security authority to permit a newly authenticated attempt | no authoritative mutation | `AUTHENTICATION_REQUIRED` |
 | `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE` | `DEPENDENCY_UNAVAILABLE` | `RETRYABLE` | same unconsumed grant only if still valid and other bindings remain current after fresh evidence; else new grant | no authoritative mutation | `TEMPORARILY_UNAVAILABLE` |
 | `ADMISSION_GRANT_ROUTE_STALE` | `STALE_GENERATION` | `TERMINAL` | fresh Gateway route + new grant; never retarget old grant | no authoritative mutation | `RETRY_LOGIN` |
@@ -895,7 +898,9 @@ Every FND-04 cross-component failure obeys `FOUNDATION_ERROR_VOCABULARY.md`. `TE
 
 For fresh-entry grants, trusted-server time before the accepted `nbf` window maps to `ADMISSION_GRANT_NOT_YET_VALID`; it is neither malformed nor consumed. Expiry maps to `ADMISSION_GRANT_EXPIRED`.
 
-Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol/compatibility semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`; authoritative state matching neither legal recovery transition maps to `RECOVERY_TARGET_NOT_ELIGIBLE`.
+Ambiguous Platform issuance where the exact prior outcome cannot be proven maps to `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`: retry is limited to same-AdmissionAttemptRef reconciliation; no blind second capability or independent new attempt is permitted until deterministic retirement and proof that any possibly issued capability is no longer acceptable.
+
+Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol/compatibility semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`. A healthy current playable controller maps first to `RECOVERY_HEALTHY_CONTROLLER_PRESENT`; only after that conflict is excluded does authoritative state matching neither legal recovery transition map to `RECOVERY_TARGET_NOT_ELIGIBLE`.
 
 COMMIT-time recovery key/profile revocation is a current trust-validation failure and maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`; this applies both to same-session COMMIT and post-grace new-session attachment and consumes no RecoveryGrantNonce or candidate authority mutation.
 
@@ -912,7 +917,7 @@ FND-04 contract-level disposition:
 | Scenario | Status | FND-04 requirement / owner |
 |---|---|---|
 | `FS-PLATFORM-UNAVAILABLE` | `PASS` | new Platform-dependent grant issuance fails/holds boundedly; no alternate credential authority; active gameplay/game-domain fast reconnect not invalidated merely by Platform outage |
-| `FS-GATEWAY-AFTER-REDEEM` | `PASS` | AdmissionAttemptRef idempotency; no blind second capability; no GameSession absent game commit |
+| `FS-GATEWAY-AFTER-REDEEM` | `PASS` | AdmissionAttemptRef idempotency; ambiguous prior issuance maps to `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`; only same-attempt reconciliation may retry, with no blind second capability or new GameSession absent game commit |
 | `FS-POSTGRES-UNAVAILABLE` | `DEFERRED_BY_ACCEPTED_GATE` | DUR physical persistence; no success when required atomic/fenced state cannot be proven |
 | `FS-LEASE-RENEW-TIMEOUT` | `PASS` | old writer fails closed before replacement; timeout never self-grants new writer |
 | `FS-DUPLICATE-LOGIN` | `PASS` | account-global exclusion + healthy incumbent protection + one winner |
@@ -986,7 +991,7 @@ Register hard maxima for:
 
 ### Crypto/interoperability evidence
 
-Require independent PHP producer/Rust consumer fixtures, malformed/algorithm-confusion corpus including deprecated `EdDSA`, UUIDv7/version/variant rejection cases, key rotation/revocation, mixed-version rejection, replay/concurrency, fresh-entry/recovery not-yet-valid `nbf` cases, unsupported/superseded recovery compatibility revisions and credential-redaction tests.
+Require independent PHP producer/Rust consumer fixtures, malformed/algorithm-confusion corpus including deprecated `EdDSA`, UUIDv7/version/variant rejection cases, key rotation/revocation, mixed-version rejection, replay/concurrency, fresh-entry/recovery not-yet-valid `nbf` cases, unsupported/superseded recovery compatibility revisions, ambiguous Platform issuance -> `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED` behavior and credential-redaction tests.
 
 ### Reconnect authority race evidence
 
@@ -1001,10 +1006,11 @@ Before implementation acceptance, deterministic/fault tests must prove at minimu
 - COMMIT revalidation and candidate authority switch are one atomic linearization boundary;
 - failed candidate COMMIT leaves whatever authority state is actually current at revalidation unchanged and the candidate non-revivable;
 - post-grace recovery passes earlier validation, then recovery signing-key/profile is emergency-revoked before atomic new-GameSession attachment -> `RECOVERY_GRANT_AUTHENTICATION_FAILED`, no RecoveryGrantNonce consumption, no new GameSession/control authority and current authority preserved;
-- valid recovery grant resolves to actor legally `ABSENT` or otherwise to neither legal recovery transition -> `RECOVERY_TARGET_NOT_ELIGIBLE`, no nonce consumption/no authority mutation/no recovery-to-fresh-entry reinterpretation;
+- recovery against a healthy current playable controller returns `RECOVERY_HEALTHY_CONTROLLER_PRESENT` / `CHARACTER_ALREADY_ACTIVE` and never falls through to `RECOVERY_TARGET_NOT_ELIGIBLE`;
+- valid recovery grant resolves to actor legally `ABSENT` or otherwise to neither legal recovery transition after the healthy-controller conflict is excluded -> `RECOVERY_TARGET_NOT_ELIGIBLE`, no nonce consumption/no authority mutation/no recovery-to-fresh-entry reinterpretation;
 - lost COMMIT response/crash reconciles the candidate outcome plus the actual current authority state; it never assumes exactly predecessor-current or successor-current if another valid transition already superseded PREPARE;
 - valid-but-not-yet-active fresh-entry/recovery grants consume no nonce or authority and follow their bounded accepted-`nbf`-window retry rule;
-- malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported/no-target recovery-grant failures follow the recovery-specific canonical progression in the refinement.
+- malformed/bad-signature/not-yet-valid/expired/revoked/stale-security/unsupported/no-target/healthy-controller recovery-grant failures follow the recovery-specific canonical progression in the refinement.
 
 No production defaults are inferred from application-library defaults.
 
@@ -1076,6 +1082,11 @@ Platform authenticates
 -> strict signed bounded attempt capability
 -> never GameSession authority
 
+ambiguous Platform grant issuance
+-> ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED
+-> same AdmissionAttemptRef reconciliation only
+-> no blind second capability
+
 fresh entry
 -> Ed25519 fresh-entry grant
 -> current Platform-security evidence
@@ -1114,7 +1125,8 @@ post-grace actor mandatory
 -> AccountPresenceClaim remains same CharacterId
 -> compatible recovery grant may create fresh GameSessionId attached to same actor
 -> atomic commit revalidates current recovery-key/profile trust + current security/actor/lease/runtime/controller state
--> no legal recovery target => RECOVERY_TARGET_NOT_ELIGIBLE; never reinterpret recovery grant as fresh-entry authority
+-> healthy controller => RECOVERY_HEALTHY_CONTROLLER_PRESENT
+-> after healthy conflict excluded, no legal recovery target => RECOVERY_TARGET_NOT_ELIGIBLE; never reinterpret recovery grant as fresh-entry authority
 -> no reset/respawn/teleport/heal
 -> different CharacterId blocked
 
