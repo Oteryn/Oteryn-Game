@@ -93,7 +93,9 @@ Payload is a JSON object containing exactly these claims; unknown claims reject 
 | `world_policy_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
 | `offer_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
 
-`compatibility_revision` is deliberately absent from v1. Protocol, transport, ruleset, content, map, world-policy and offer are independent authoritative dimensions and MUST NOT be overloaded into one opaque compatibility token.
+`compatibility_revision` is deliberately absent. Protocol, transport, ruleset, content, map, world-policy and offer are independent authoritative dimensions and MUST NOT be overloaded into one opaque compatibility token.
+
+FND-02 `schema_revision` is diagnostic/build evidence rather than exact-equality admission identity, so it is also deliberately absent from the signed FND-04A v1 gate.
 
 All UUIDs parse/round-trip exact canonical lowercase hyphenated form; nil rejects. `attempt_ref`, `character_id`, `world_id`, `channel_id` additionally require UUIDv7 + RFC variant. `account_id` remains Platform-owned and is not silently redefined as Oteryn UUIDv7.
 
@@ -136,17 +138,50 @@ One logical issuance uses one `attempt_ref`. Lost response/crash does not permit
 
 Unknown exact issuance outcome -> `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`: `DEPENDENCY_UNAVAILABLE` + bounded `RETRYABLE`, public `TEMPORARILY_UNAVAILABLE`, same-ref status/reconciliation only. A new independent attempt requires deterministic retirement plus proof any possibly issued capability is no longer acceptable. Producer ambiguity creates no gameplay authority.
 
-## 10. Platform account-security freshness
+## 10. Required Platform-security evidence semantics
 
 Grant binds `account_id` + `account_security_generation`. Final game admission consumes authenticated Platform-security evidence proving account enabled/revoked state, accepted generation floor and evidence freshness.
 
+The evidence transport/schema is deferred, but the semantic envelope MUST provide enough authenticated information to establish:
+
 ```text
-maximum accepted Platform-security evidence age: 5s
+source authority + security purpose/scope
+AccountId scope
+source_observed_at (or equivalently strong authenticated source-time provenance)
+monotonic/comparable source_revision (or equivalent non-rollback decision fence)
+current account-security decision facts / accepted generation floor
 ```
 
-Older/unavailable/unauthenticated/contradictory/unprovable evidence fails closed. Reject disabled/revoked account or grant generation below current minimum. Signature validity/exp never overrides newer account-security invalidation. Platform does not gain post-admission GameSession authority.
+### 10.1 Source-age freshness
 
-## 11. Route/runtime, independent revisions and character-world applicability
+The maximum accepted age is 5 seconds measured from authenticated source observation, not cache receipt:
+
+```text
+conservative upper_bound_source_age <= 5s
+```
+
+The upper bound includes known clock uncertainty. Local cache insertion, refresh, DB write, reserialization or re-read MUST NOT reset/reduce the age.
+
+If source-time provenance is missing/future-ambiguous/contradictory or timing uncertainty prevents proving the upper-bound source age <=5s, fail as `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`.
+
+### 10.2 Platform-security anti-rollback
+
+For the relevant AccountId/security purpose, a source revision/fence older than the highest accepted comparable revision already established for that scope cannot authorize, even while its source age remains <=5s. Equal revisions with contradictory authenticated decision content are invalid.
+
+After a newer revision disables/revokes the account or raises its minimum accepted generation, an older allow revision can never restore authorization. On recovery/restart, admission requires reconstruction of a current non-rollback floor from authoritative evidence or preserved trusted state; inability to prove that floor fails closed.
+
+Reject current accepted evidence when:
+
+```text
+account disabled/revoked
+OR grant.account_security_generation < minimum_valid_generation
+```
+
+Current explicit account/security denial maps to `ADMISSION_GRANT_SECURITY_STATE_REVOKED`; stale/superseded/unprovable evidence maps to `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`.
+
+Signature validity/exp never overrides newer Platform-security state. Platform gains no post-admission GameSession authority.
+
+## 11. Route/runtime, independent revisions and ownership-safe character-world applicability
 
 Grant binds independently:
 
@@ -194,19 +229,19 @@ Steps 1–15 are fail-fast eligibility only:
 1. FND-02 material bound;
 2. parser/size bounds;
 3. exact protected header/profile;
-4. authenticated admission key/profile trust/revocation evidence age <=5s, then trusted `kid` lookup;
+4. authenticated admission key/profile trust/revocation evidence: source provenance, source-age upper bound <=5s and anti-rollback revision/fence; then trusted `kid` lookup;
 5. Ed25519 signature;
 6. exact `iss`, `aud`, `typ`, `purpose`; unsupported `profile` is a revision failure;
 7. time/lifetime/skew;
 8. exact claim schema/canonical UUID/revision encoding;
-9. current Platform-security projection;
+9. Platform-security evidence: source provenance, source-age upper bound <=5s, anti-rollback revision/fence and current account generation/state;
 10. route/runtime/current target/ownership + protocol/transport + ruleset/content/map/world-policy/offer revisions independently;
 11. GrantNonce eligibility;
 12. current AccountId->CharacterId ownership/lifecycle;
 13. current CharacterId->WorldId/world eligibility only after step 12;
 14. AccountPresence/duplicate-login eligibility;
 15. CharacterLease/current runtime-scope acquisition/readiness;
-16. one atomic final boundary revalidates every mutable predicate and only then commits complete admission authority;
+16. one atomic final boundary revalidates every mutable predicate and only then commits complete FND-04A admission authority;
 17. publish success only after commit.
 
 ### 12.1 Wrong-bound credential classification
@@ -218,8 +253,8 @@ A syntactically valid and correctly signed credential whose exact `iss`, `aud`, 
 Immediately before/atomically with authority creation revalidate:
 
 - JWT time/lifetime/skew;
-- exact key/profile trust + authenticated evidence age <=5s;
-- Platform-security evidence age <=5s + account state/generation;
+- exact key/profile trust using authenticated source provenance, source-age upper bound <=5s and non-rollback source revision/fence;
+- Platform-security using authenticated source provenance, source-age upper bound <=5s, non-rollback source revision/fence + account state/generation;
 - route/runtime observation, target lifecycle, scope ownership, runtime owner/placement/readiness;
 - protocol_major and transport_profile;
 - each ruleset/content/map/world-policy/offer revision independently;
@@ -246,31 +281,55 @@ FND-04A defines no reconnect secret/proof state.
 
 Any failed final check leaves actual current authority unchanged. Ownership failure precedes world classification; owned-character stale world uses `ADMISSION_GRANT_WORLD_STALE`.
 
-## 13. Key distribution, rotation and bounded revocation detection
+## 13. Signing-key/profile trust evidence: provenance, freshness and anti-rollback
 
 Verification uses trusted Ed25519 public keys only. Dedicated admission key purpose, trusted configured set, bounded current/retiring overlap. Token-controlled key fetch forbidden. Private signing key never leaves Platform signing/KMS boundary.
 
+The authenticated trust/revocation evidence transport/schema is deferred, but it MUST provide enough semantics to establish:
+
 ```text
-maximum accepted authenticated key/profile trust/revocation evidence age: 5s
+trusted source authority
+issuer/profile/key-purpose trust scope
+source_observed_at (or equivalent authenticated source-time provenance)
+monotonic/comparable source_revision (or equivalent non-rollback decision fence)
+current key/profile trust/revocation decision
 ```
 
-- evidence age >5s/unavailable/unauthenticated/contradictory/unprovable -> `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`;
-- fresh accepted evidence explicitly marking exact key/profile unknown/revoked/not-trusted -> `ADMISSION_GRANT_AUTHENTICATION_FAILED`.
+### 13.1 Source-age freshness
 
-### 13.1 Residual revocation window
+```text
+conservative upper_bound_source_age <= 5s
+```
 
-The <=5s model is bounded stale evidence, not atomic global revocation.
+Age is from authenticated source observation and includes known clock uncertainty. Local cache receive/refresh/storage time never re-ages evidence.
 
-If revocation occurs after the observation point of evidence that is still authenticated and <=5s old, the verifier cannot know that unseen event. The old evidence may remain acceptable only until:
+Missing/ambiguous/contradictory provenance or inability to prove the upper bound <=5s -> `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`.
 
-- newer authenticated evidence records the revocation, or
-- its age exceeds 5s, at which point failure is mandatory without a fresh provable replacement.
+### 13.2 Trust anti-rollback
 
-Therefore FND-04A explicitly accepts at most the five-second residual detection window attributable to this projection. It does not require an impossible instantaneous-revocation fixture. Any zero-window design would require a separately reviewed cross-repository epoch/fence.
+For a comparable issuer/profile/key-purpose trust scope, an evidence revision/fence lower than the highest accepted comparable revision cannot authorize even if its source age is <=5s. Equal revision with contradictory authenticated content is invalid.
+
+Once a newer accepted trust revision revokes/untrusts a key/profile, an older trusted revision cannot restore it. On recovery/restart, consumer must reconstruct a current non-rollback floor from authoritative evidence or preserved trusted state before fresh admission; inability to prove the floor fails closed.
+
+- current accepted explicit unknown/revoked/not-trusted decision -> `ADMISSION_GRANT_AUTHENTICATION_FAILED`;
+- stale/superseded/unprovable evidence -> `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`.
+
+### 13.3 Residual revocation window
+
+The <=5s model is bounded-staleness, not instantaneous global revocation.
+
+If revocation occurs after the observation point of the latest accepted evidence and before a newer source revision is observable, the verifier cannot infer that unseen event. The prior evidence may remain usable only while its conservative source age stays <=5s **and** no newer comparable revision has been accepted.
+
+Authorization ends at the first of:
+
+- newer accepted evidence recording the restriction; or
+- inability to prove the existing evidence source-age upper bound remains <=5s.
+
+Cache refresh cannot extend this window; an older revision cannot roll back a newer revoke. A future zero-window design requires a separately reviewed cross-repository atomic epoch/fence.
 
 ## 14. Compatibility/downgrade
 
-Version dimensions remain separate: profile, producer/consumer contract, protocol major, transport profile, ruleset, content, map, world policy and offer. Unknown mandatory revision rejects; no profile/algorithm/Canary downgrade.
+Version dimensions remain separate: profile, producer/consumer contract, protocol major, transport profile, ruleset, content, map, world policy and offer. FND-02 `schema_revision` remains diagnostic/build metadata rather than exact admission equality. Unknown mandatory revision rejects; no profile/algorithm/Canary downgrade.
 
 FND-04C later integrates rollout compatibility matrix; it cannot collapse accepted independent dimensions into one opaque revision.
 
@@ -278,7 +337,7 @@ FND-04C later integrates rollout compatibility matrix; it cannot collapse accept
 
 Never log/export raw JWT, GrantNonce, private key, OAuth/Game Login Ticket or future reconnect material.
 
-Authorized diagnostics may include attempt_ref, safe kid/profile, WorldId/ChannelId where policy permits, route/runtime revision and typed outcome. Never export Platform security-generation values, raw scope-ownership fence generation or transfer details; use match/stale/relation classes. AccountId/CharacterId remain privacy-controlled, not ordinary metric labels.
+Authorized diagnostics may include attempt_ref, safe kid/profile, WorldId/ChannelId where policy permits, route/runtime revision and typed outcome. Never export Platform security-generation values, raw source evidence fences when sensitive, raw scope-ownership fence generation or transfer details; use safe source-age/relation/order classes. AccountId/CharacterId remain privacy-controlled, not ordinary metric labels.
 
 Complete FND-04A diagnostic rows live in the authority companion contract.
 
@@ -298,14 +357,22 @@ Complete FND-04A diagnostic rows live in the authority companion contract.
 
 ### Independent authoritative revisions
 
-For each of `ruleset_revision`, `content_revision`, `map_revision`, `world_policy_revision`, `offer_revision`, mutate only that current dimension after issuance while keeping all others unchanged. Final admission must reject as revision unsupported/stale according to FND-04A and never accept because an opaque compatibility token happened not to change.
+For each `ruleset_revision`, `content_revision`, `map_revision`, `world_policy_revision`, `offer_revision`, mutate only that current dimension after issuance while keeping all others unchanged. Final admission must reject; no opaque compatibility token may hide the mismatch.
 
-### Security/revocation timing
+### Security evidence provenance/rollback
 
-- trust evidence exactly 5s accepted if otherwise valid;
-- >5s/unavailable/unauthenticated/contradictory -> stale evidence;
-- final accepted evidence already contains revocation -> authentication failed/no mutation;
-- revocation occurs after the evidence observation point while evidence remains <=5s -> do **not** assert instant detection; prove acceptance cannot extend beyond first newer revocation evidence or expiry of the 5s evidence window.
+Apply independently to Platform-security evidence and signing-key/profile trust evidence:
+
+- authenticated source observation provenance + comparable source revision/fence required;
+- local cache refresh/reinsert/re-read does not reset source age;
+- source-age upper bound including clock uncertainty must be provably <=5s;
+- older still-<5s allow/trust revision arriving after a newer accepted revision is rejected as superseded;
+- newer Platform-security deny/generation floor cannot be rolled back by older allow;
+- newer trust revoke cannot be rolled back by older trusted evidence;
+- equal revision with contradictory authenticated content fails closed;
+- restart/recovery without provable current non-rollback floor cannot authorize until floor/current evidence is reconstructed;
+- latest accepted evidence already records revoke -> purpose-specific terminal denial/no mutation;
+- revocation after latest evidence observation point -> do not assert instant detection; prove authority ends at first newer restrictive evidence or source-age proof >5s, whichever comes first.
 
 ### Ownership/world
 
@@ -317,9 +384,9 @@ For each of `ruleset_revision`, `content_revision`, `map_revision`, `world_polic
 
 ### Change-before-commit matrix
 
-Independently mutate JWT time, key/profile trust, Platform security, route/runtime/target/ownership, protocol/transport, each independent gameplay revision, AccountId->CharacterId, CharacterId->WorldId/world eligibility, GrantNonce, AccountPresence/incumbent, CharacterLease/fence or superseding transfer/handoff/fence/takeover/terminal authority. Every loser fails before candidate authority mutation and preserves actual current authority.
+Independently mutate JWT time; key/profile evidence source age/order/decision; Platform-security evidence source age/order/account state; route/runtime/target/ownership; protocol/transport; each independent gameplay revision; AccountId->CharacterId; CharacterId->WorldId/world eligibility; GrantNonce; AccountPresence/incumbent; CharacterLease/fence; or newer transfer/handoff/fence/takeover/terminal authority.
 
-Fixtures must be independently produced/validated enough to avoid shared producer/consumer bugs.
+Every loser fails before candidate authority mutation and preserves actual current authority. Fixtures must be independently produced/validated enough to avoid shared producer/consumer bugs.
 
 ## 17. Error integration
 
