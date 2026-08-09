@@ -4,18 +4,19 @@
 task_id: OTV2-20260809-fnd04a-authority-fresh-admission
 title: FND-04A authority and fresh-admission bounded contract
 mode: CONTRACT
-status: active
+status: validating
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: docs/fnd04a-authority-fresh-admission
 issue: 113
 programme_issue: 112
+pr: 114
 supersedes_evidence_pr: 109
 base_sha: 27f7f647f04e3b1a4151f9b124401986910f03d8
 historical_candidate_sha: bf82e392d6ef8b1e627849cdc7383af9a7c987ae
 owner: GPT-5.6 Sol architecture continuation session
 created_at: 2026-08-09T12:16:00+02:00
-updated_at: 2026-08-09T12:16:00+02:00
+updated_at: 2026-08-09T12:21:00+02:00
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260809-fnd04a-authority-fresh-admission.md
   - docs/architecture/FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md
@@ -46,6 +47,7 @@ FND-04A is architecture/documentation only. It does not authorize runtime implem
 - `docs/contracts/FOUNDATION_ERROR_VOCABULARY.md`;
 - replacement programme Issue #112;
 - owning Issue #113;
+- delivery PR #114;
 - superseded PR #109 exact head `bf82e392...` as historical reviewed evidence only.
 
 Do not treat any unmerged #109 file as canonical merely because it was reviewed.
@@ -133,8 +135,8 @@ Runtime/component/browser E2E: `NOT_APPLICABLE` because this delivery is archite
 ## Current checkpoint
 
 ```yaml
-status: active
-last_progress: Superseded monolithic #109 after owner-approved final review found P1 current-character-world omission and P2 incomplete error diagnostics. Replacement programme #112 and bounded gate #113 created. Fresh branch from trusted main created. FND-04A contracts reconstructed as a three-path bounded package with explicit CharacterId->WorldId/world-eligibility final revalidation, ADMISSION_GRANT_WORLD_STALE, world-transfer race fixtures and complete fresh-admission diagnostic/correlation fields.
+status: validating
+last_progress: Superseded monolithic #109 after owner-approved final review found P1 current-character-world omission and P2 incomplete error diagnostics. Replacement programme #112 and bounded gate #113 created. PR #114 now carries one bounded three-path FND-04A package reconstructed from trusted main with explicit CharacterId->WorldId/world-eligibility final revalidation, ADMISSION_GRANT_WORLD_STALE, world-transfer race fixtures and complete fresh-admission diagnostic/correlation fields.
 repair_cycles_for_current_gate: 0
-next_action: commit the coherent three-path FND-04A package, open one bounded PR, validate full diff/scope, then run exact-head gates before independent review.
+next_action: validate full PR #114 three-path diff against trusted main and FND-04A acceptance; repair only material findings, otherwise freeze exact head and run exact-head CI/self-audit/independent review.
 ```
