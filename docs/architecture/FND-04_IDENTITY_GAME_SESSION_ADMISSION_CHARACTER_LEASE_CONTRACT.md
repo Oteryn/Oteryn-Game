@@ -484,11 +484,14 @@ When PREPARE used a reauthenticated recovery grant, COMMIT additionally requires
 
 - the JWT remains within its accepted time/skew window;
 - the RecoveryGrantNonce remains unconsumed/eligible and is consumed exactly once only by the successful COMMIT;
+- the current trusted recovery signing key/profile revocation state still accepts the exact grant, including its `kid`, issuer, purpose and profile; emergency key or profile revocation after PREPARE invalidates the candidate;
 - trusted Platform-security evidence is still authenticated and <=5 seconds old;
 - account disabled/revoked/minimum-security-generation policy still admits the grant;
 - current AccountId->CharacterId ownership still matches;
 - the signed `compatibility_revision` remains supported by the current protocol-major/runtime/content/ruleset/GameSession/reconciliation boundary required for this same-session continuation;
 - same-session grace remains unexpired.
+
+If recovery-key/profile trust no longer accepts the grant, this candidate COMMIT fails before its authority switch as `RECOVERY_GRANT_AUTHENTICATION_FAILED`; RecoveryGrantNonce is not consumed and the candidate commits no gameplay/session/lease/runtime/transport authority mutation.
 
 If the signed recovery compatibility requirement is unsupported, superseded or changed after PREPARE, this candidate COMMIT fails before its authority switch as `RECOVERY_GRANT_REVISION_UNSUPPORTED`; RecoveryGrantNonce is not consumed and the candidate commits no gameplay/session/lease/runtime/transport authority mutation.
 
@@ -548,7 +551,7 @@ If exact state cannot be reconstructed after GameNode replacement, same-GameSess
 - stale predecessor after COMMIT -> reject, cannot fence successor;
 - stale connection_generation -> FND-02 `STALE_GENERATION` behavior;
 - replayed consumed recovery grant -> no second rebind/session;
-- prepared transition whose eligibility/security/compatibility changed before COMMIT -> terminalize/cancel; the stale candidate mutates no authority and cannot restore PREPARE-time state;
+- prepared transition whose eligibility/security/key-profile trust/compatibility changed before COMMIT -> terminalize/cancel; the stale candidate mutates no authority and cannot restore PREPARE-time state;
 - a newer valid fence/handoff/takeover/terminal transition superseding PREPARE remains authoritative; stale candidate cannot revive predecessor authority;
 - incumbent that regains sufficient current-generation control before COMMIT remains authoritative; prepared contender cannot fence it;
 - one current prepared rebind per GameSession is the v1 semantic maximum.
@@ -653,7 +656,7 @@ A valid recovery grant may substitute for missing reconnect secret only if game 
 - signed `compatibility_revision` is supported by the current protocol-major/runtime/content/ruleset/GameSession and exact FND-02 reconciliation/snapshot boundary;
 - FND-02 command/session reconciliation state remains reconstructable.
 
-PREPARE records a candidate only. The recovery grant remains subject to all Section 14.3 COMMIT-time token, Platform-security, compatibility, incumbent-health, lease/runtime/session/reconciliation and grace revalidation.
+PREPARE records a candidate only. The recovery grant remains subject to all Section 14.3 COMMIT-time token, current recovery-key/profile trust, Platform-security, compatibility, incumbent-health, lease/runtime/session/reconciliation and grace revalidation.
 
 Success:
 
@@ -823,6 +826,8 @@ Both grant profiles require:
 - no acceptance merely because a key is mathematically valid outside trusted policy;
 - mixed profile/producer/consumer revisions fail closed.
 
+For a recovery grant used by reconnect PREPARE, current recovery signing-key/profile trust is revalidated again at COMMIT; PREPARE never escrows continued trust in a key/profile that is emergency-revoked before authority changes.
+
 Production KMS/HSM, key generation, rollout and cadence remain later security-operations implementation work.
 
 ## 27. Stable internal error codes / public classes
@@ -874,6 +879,8 @@ For fresh-entry grants, trusted-server time before the accepted `nbf` window map
 
 Recovery-profile parser/header/claim/UUID/profile/purpose failures map to `RECOVERY_GRANT_MALFORMED` unless cryptographic/key/trust validation fails, which maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`. Trusted-server time before the accepted `nbf` window maps to `RECOVERY_GRANT_NOT_YET_VALID`; time expiry maps to `RECOVERY_GRANT_EXPIRED`; account-security revocation/generation denial maps to `RECOVERY_GRANT_SECURITY_STATE_REVOKED`; stale/unavailable-but-recoverable trusted security evidence maps to `RECOVERY_GRANT_SECURITY_EVIDENCE_STALE`; incompatible mandatory profile/protocol/compatibility semantics map to `RECOVERY_GRANT_REVISION_UNSUPPORTED`.
 
+COMMIT-time recovery key/profile revocation is a current trust-validation failure and maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`; it consumes no RecoveryGrantNonce and commits no candidate authority mutation.
+
 COMMIT-time revalidation failures use the most specific code for the changed fact. A failed COMMIT terminalizes/cancels only its prepared candidate and does not mutate or roll back whatever generation, proof, lease, session or runtime authority state is actually current at revalidation.
 
 Redacted diagnostics may include safe correlation IDs, profile/revision identifiers and cause classes required for operators, but never credentials, raw JWTs/nonces/secrets, Platform security-generation internals, private fencing data, SQL errors or unstable implementation strings.
@@ -896,7 +903,7 @@ FND-04 contract-level disposition:
 | `FS-QUEUE-SATURATION` | `DEFERRED_BY_ACCEPTED_GATE` | runtime/resource limits; authority transition fails before partial commit |
 | `FS-SLOW-CLIENT` | `PASS` | transport may close while logical GameSession follows FND-04 reconnect semantics |
 | `FS-CLOCK-SKEW` | `PASS` | grant max 5s skew; liveness/grace uses server monotonic time |
-| `FS-KEY-ROTATION` | `PASS` | dedicated purpose, bounded overlap, emergency revocation, fail-closed unknown/deprecated algorithm/profile |
+| `FS-KEY-ROTATION` | `PASS` | dedicated purpose, bounded overlap, emergency revocation, fail-closed unknown/deprecated algorithm/profile; recovery PREPARE cannot escrow a key/profile that is revoked before COMMIT |
 | `FS-REVISION-MISMATCH` | `PASS` | no profile/protocol/route/runtime/content/session compatibility downgrade |
 | `FS-SNAPSHOT-DELTA-MISMATCH` | `NOT_APPLICABLE` | FND-02/FND-03 reconciliation |
 | `FS-DB-OUTBOX-BOUNDARY` | `DEFERRED_BY_ACCEPTED_GATE` | DUR/ANL physical atomic evidence; admission success cannot precede required durable commit |
@@ -911,8 +918,8 @@ FND-04 contract-level disposition:
 | `FS-DETECTOR-FALSE-POSITIVE` | `NOT_APPLICABLE` | analytics cannot sanction/revoke autonomously |
 | `FS-INVESTIGATION-MUTATION-ATTEMPT` | `NOT_APPLICABLE` | investigation cannot mutate session/runtime authority |
 | `FS-ADMISSION-GRANT-REPLAY` | `PASS` | one GrantNonce <= one successful admission; losing replay cannot create/revive/fence another GameSession |
-| `FS-RECONNECT-CREDENTIAL-REPLAY` | `PASS` | PREPARE/COMMIT + COMMIT-time current-authority/security/compatibility revalidation gives one winner; stale/prepared proof cannot regain authority, revive a predecessor or fence whichever state is current |
-| `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` | `PASS` | COMMIT atomically revalidates current authority/security/compatibility. Stale prepared candidate cannot revive/overwrite the authority state current at revalidation, advance its candidate generation, consume a recovery grant as success or create partial authority; signed recovery compatibility mismatch uses `RECOVERY_GRANT_REVISION_UNSUPPORTED` with no nonce consumption or authority mutation. |
+| `FS-RECONNECT-CREDENTIAL-REPLAY` | `PASS` | PREPARE/COMMIT + COMMIT-time current-authority/security/key-profile-trust/compatibility revalidation gives one winner; stale/prepared proof cannot regain authority, revive a predecessor or fence whichever state is current |
+| `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` | `PASS` | COMMIT atomically revalidates current authority/security/recovery-key-profile trust/compatibility. Stale prepared candidate cannot revive/overwrite the authority state current at revalidation, advance its candidate generation, consume a recovery grant as success or create partial authority; recovery key/profile revocation after PREPARE fails as `RECOVERY_GRANT_AUTHENTICATION_FAILED`, while signed recovery compatibility mismatch uses `RECOVERY_GRANT_REVISION_UNSUPPORTED`; neither consumes the nonce or mutates authority. |
 
 `PASS` means architecture invariant exists, not executable proof.
 
@@ -966,7 +973,7 @@ Require independent PHP producer/Rust consumer fixtures, malformed/algorithm-con
 Before implementation acceptance, deterministic/fault tests must prove at minimum:
 
 - PREPARE then incumbent liveness recovery before COMMIT cannot fence the incumbent;
-- PREPARE then recovery-grant expiry, revocation or account-security-generation advancement cannot COMMIT;
+- PREPARE then recovery-grant expiry, account-security-generation advancement or recovery signing-key/profile emergency revocation cannot COMMIT; key/profile trust revocation maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED` with no nonce consumption or authority mutation;
 - PREPARE then signed recovery `compatibility_revision` becomes unsupported/superseded by current protocol/runtime/content/ruleset/session/reconciliation state cannot COMMIT and maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED` without nonce consumption or authority mutation;
 - PREPARE then CharacterLease/runtime ownership/session/reconciliation change cannot COMMIT stale authority;
 - PREPARE then a newer valid fence/handoff/takeover/terminality transition supersedes the PREPARE predecessor -> stale candidate COMMIT cannot revive predecessor authority or overwrite the newer/no-current-transport state;
@@ -1070,8 +1077,8 @@ same-session recovery
 -> reconnect secret OR strict Ed25519 recovery grant
 -> current placement resolved by Oteryn-v2
 -> PREPARE candidate generation + successor secret
--> COMMIT successor proof + atomic current-authority/security/compatibility revalidation
--> healthy incumbent / expired-revoked-or-incompatible grant / stale lease-runtime-session state / newer valid transition can invalidate candidate
+-> COMMIT successor proof + atomic current-authority/security/recovery-key-profile-trust/compatibility revalidation
+-> healthy incumbent / expired-or-revoked-or-incompatible grant / stale lease-runtime-session state / newer valid transition can invalidate candidate
 -> failed candidate never rolls back or revives predecessor; actual current authority remains unchanged
 -> successful candidate establishes exactly one current generation
 -> same GameSessionId
