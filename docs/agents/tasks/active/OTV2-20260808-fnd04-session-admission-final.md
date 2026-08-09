@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: GPT-5.6 Sol architecture continuation session
 created_at: 2026-08-08T21:22:00+02:00
-updated_at: 2026-08-09T10:19:00+02:00
+updated_at: 2026-08-09T11:16:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260808-fnd04-session-admission-final.md
@@ -68,12 +68,14 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 - FND-02 owns bootstrap, GameSession issuance boundary, connection generation and command/reconciliation semantics; FND-03 owns runtime ordering/fencing/time execution.
 - Fresh entry and reauthenticated existing-actor recovery use mutually exclusive signed profiles. Both use fully specified JOSE `alg=Ed25519`; deprecated polymorphic `EdDSA` fallback is rejected.
 - Oteryn-owned grant identities follow FND-ID UUIDv7/RFC-variant semantics; Platform-owned AccountId is not silently redefined.
+- AdmissionAttemptRef is Platform producer idempotency/correlation and remains distinct from GrantNonce. If Platform cannot prove whether a capability was already issued, the exact attempt enters `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`: only same-AdmissionAttemptRef reconciliation/status recovery may retry; a blind second capability or independent new attempt is forbidden until the old attempt is deterministically retired and any possibly issued capability is proven no longer acceptable.
 - Reconnect PREPARE is a candidate reservation only. COMMIT atomically revalidates current incumbent/session/presence/lease/runtime/reconciliation eligibility and, for recovery grants, current token/nonce/recovery-key-profile trust/Platform-security/compatibility validity before changing authority.
 - Recovery signing-key/profile trust is never escrowed by PREPARE, routing or earlier recovery validation. It is revalidated at the actual authority-changing boundary for both same-session COMMIT and post-grace new-GameSession attachment. Emergency revocation fails as `RECOVERY_GRANT_AUTHENTICATION_FAILED`, without RecoveryGrantNonce consumption or authority mutation.
 - A reconnect secret, recovery JWT or prepared successor secret alone cannot preempt a healthy current binding.
+- Recovery result classification is ordered: a healthy current playable controller returns `RECOVERY_HEALTHY_CONTROLLER_PRESENT` / `CHARACTER_ALREADY_ACTIVE` before the resolver considers same-session recovery, post-grace recovery or the generic `RECOVERY_TARGET_NOT_ELIGIBLE` fallback.
 - A failed stale COMMIT candidate never rolls authority back to its PREPARE predecessor. It mutates no gameplay authority and preserves whatever GameSession/TransportBinding/lease/runtime ownership state is actually current at revalidation; a predecessor already fenced, superseded, handed off or terminalized is never revived.
 - Prepared-candidate expiry is distinct from same-session grace expiry. `RECONNECT_PREPARED_EXPIRED` terminalizes only the prepared candidate; a new PREPARE is allowed only after fresh current-state/proof evaluation while same-session grace and authority eligibility still permit it. `RECONNECT_GRACE_EXPIRED` ends same-session retry eligibility.
-- A valid recovery grant with no legal recovery target, including an actor already legally `ABSENT`, fails as `RECOVERY_TARGET_NOT_ELIGIBLE`: terminal for that recovery transition, no RecoveryGrantNonce consumption, no authority mutation and no recovery-to-fresh-entry reinterpretation.
+- A valid recovery grant with no legal recovery target, after the dedicated healthy-controller conflict has been excluded, including an actor already legally `ABSENT`, fails as `RECOVERY_TARGET_NOT_ELIGIBLE`: terminal for that recovery transition, no RecoveryGrantNonce consumption, no authority mutation and no recovery-to-fresh-entry reinterpretation.
 - `FND-04_HEALTHY_BINDING_REBIND_SECURITY_REFINEMENT.md` is reciprocally linked and canonical for healthy-binding/rebind semantics, the complete mandatory Decision Timing matrix, FND-04 failure progression and the PREPARE→COMMIT eligibility-change scenario.
 - Both signed v1 profiles use the same trusted-server time equations for the accepted clock-skew window, including `now + 5s >= nbf` and `now - 5s < exp`; FND-04 shorthand such as `after nbf` means entry into that accepted skew window, never literal `now >= nbf`.
 - Recovery `compatibility_revision` is a signed required compatibility constraint, not descriptive metadata: current Oteryn-v2 protocol/runtime/content/ruleset/session compatibility must support it before either same-session or post-grace recovery, and it is revalidated at the authority-changing boundary. Unsupported or superseded revision maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED` without nonce consumption or authority mutation.
@@ -95,6 +97,7 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 - [x] Strict, mutually exclusive fresh-entry and reauthenticated-recovery JWS profiles.
 - [x] Dedicated issuer/audience/type/purpose/key policy, bounded parser/input sizes and no token-directed key discovery.
 - [x] AdmissionAttemptRef is distinct from GrantNonce/RecoveryGrantNonce.
+- [x] Ambiguous Platform issuance has stable `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED` progression with same-AdmissionAttemptRef reconciliation only, no blind second capability, no gameplay authority implication and `TEMPORARILY_UNAVAILABLE` public presentation.
 - [x] Platform account-security generation/revocation freshness is revalidated for new admission/recovery without becoming post-admission gameplay authority.
 - [x] Fresh-entry route/runtime owner-generation binding fails closed on stale owner generation.
 - [x] Recovery `compatibility_revision` is validated against current protocol/runtime/content/ruleset/session compatibility on both recovery paths and revalidated at the authority-changing commit boundary.
@@ -104,16 +107,18 @@ Acceptance completes the FND-04 architecture gate only. It does not authorize ru
 - [x] 32-byte game-domain reconnect proof material and one-winner PREPARE/COMMIT generation transition.
 - [x] COMMIT-time authority/security/key-profile-trust/compatibility revalidation closes PREPARE→COMMIT TOCTOU.
 - [x] Failed COMMIT is candidate-local and non-mutating: actual current authority remains current, including a newer fence/handoff/takeover/terminal state; PREPARE predecessor is never revived as rollback.
-- [x] Healthy binding cannot be evicted by bearer reconnect/recovery proof; any future healthy migration needs separately current-generation-authorized semantics.
+- [x] Healthy binding cannot be evicted by bearer reconnect/recovery proof; a recovery attempt against a healthy current controller returns the dedicated `RECOVERY_HEALTHY_CONTROLLER_PRESENT` result and cannot fall through to `RECOVERY_TARGET_NOT_ELIGIBLE`.
 - [x] Accepted 2s loss / 5s concrete transport cleanup / 15s same-session grace / one 4s protection activation per eligible ControlLossEpoch remain binding.
 
 ### Failure and decision discipline
 
 - [x] Stable `FS-ADMISSION-GRANT-REPLAY`, `FS-RECONNECT-CREDENTIAL-REPLAY` and `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` scenarios exist.
+- [x] `FS-GATEWAY-AFTER-REDEEM` and canonical failure progression now cover ambiguous issuance with `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`, same-ref-only reconciliation and no blind second capability.
 - [x] Shared `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` explicitly requires post-PREPARE key/profile revocation to return `RECOVERY_GRANT_AUTHENTICATION_FAILED`, with no RecoveryGrantNonce consumption/no authority mutation and preservation of actual current authority; compatibility drift remains `RECOVERY_GRANT_REVISION_UNSUPPORTED`.
 - [x] Every FND-04 cross-component error has stable internal code/category, RETRYABLE/TERMINAL/SECURITY_TERMINAL disposition, exact retry authority, mutation/idempotency outcome and bounded public class.
 - [x] `RECONNECT_PREPARED_EXPIRED` is `TIMEOUT` + `TERMINAL` for the expired candidate, allows only a newly evaluated PREPARE while same-session grace/current eligibility still permit, and is distinct from `RECONNECT_GRACE_EXPIRED`.
-- [x] `RECOVERY_TARGET_NOT_ELIGIBLE` is `SESSION_REJECTED` + `TERMINAL`, consumes no RecoveryGrantNonce, mutates no authority and never turns the recovery grant into fresh-entry authority.
+- [x] `RECOVERY_TARGET_NOT_ELIGIBLE` is `SESSION_REJECTED` + `TERMINAL`, consumes no RecoveryGrantNonce, mutates no authority and never turns the recovery grant into fresh-entry authority; it is evaluated only after the dedicated healthy-controller conflict has been excluded.
+- [x] `RECOVERY_HEALTHY_CONTROLLER_PRESENT` is the mandatory first result for a recovery attempt against a healthy current playable controller and maps to `CHARACTER_ALREADY_ACTIVE`.
 - [x] Recovery validator failures have recovery-specific malformed/authentication/not-yet-valid/expiry/replay/security-revocation/stale-security/unsupported-revision/no-target progression and never inherit fresh-entry Gateway actions.
 - [x] Recovery key/profile trust revocation maps to `RECOVERY_GRANT_AUTHENTICATION_FAILED`; unsupported/superseded recovery `compatibility_revision` maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`; both fail before nonce consumption/authority mutation when discovered at an authority-changing boundary.
 - [x] `ADMISSION_GRANT_NOT_YET_VALID` and `RECOVERY_GRANT_NOT_YET_VALID` explicitly allow only bounded same-unconsumed-grant retry once trusted server time enters the accepted `nbf` skew window while all other purpose-specific bindings remain valid; neither consumes its nonce or mutates authority.
@@ -135,6 +140,7 @@ Historical heads are evidence of the review process only and cannot satisfy term
 8. Exact-head Codex review on `ad8eb45b899bf326483603d94beea0d505ccc8c9` found P1 that failed COMMIT wording could incorrectly restore PREPARE predecessor after another valid fence/handoff/terminal transition, and P2 that the shared failure catalogue did not explicitly include signed recovery compatibility drift. Main contract, canonical refinement and recovery profile now define failed stale candidate COMMIT as non-mutating with no predecessor rollback/revival; crash/lost-response paths reconcile actual current authority. The shared failure scenario now covers compatibility drift and superseding authority transitions.
 9. Exact-head Codex review on `9a7ace36d1716f10c5edb362c76c5e461c1fdb0c` found one P1: the canonical refinement required current recovery signing-key/profile revocation trust at COMMIT, but the recovery profile §9.1 and main §14.3 did not mirror it. Recovery profile, main contract and shared failure catalogue now require post-PREPARE emergency key/profile revocation to reject COMMIT as `RECOVERY_GRANT_AUTHENTICATION_FAILED`, preserve current authority, consume no RecoveryGrantNonce and carry a dedicated change-after-PREPARE fixture.
 10. Exact-head Codex review on `77d619b509cd8775ad7d21fc49b4879a2aa17422` found four final material edge cases: P1 missing post-grace new-GameSession key/profile trust revalidation; P2 shared failure catalogue not naming exact `RECOVERY_GRANT_AUTHENTICATION_FAILED`; P2 no canonical no-legal-recovery-target progression; and P2 no prepared-transition-expiry progression distinct from grace expiry. Repair cycle 12 closes all four across recovery profile, canonical refinement, main contract and shared failure catalogue. The repair introduces `RECOVERY_TARGET_NOT_ELIGIBLE` and `RECONNECT_PREPARED_EXPIRED` with complete Foundation Error Vocabulary progression and fixtures.
+11. Terminal exact-head Codex review on `c366bf1e9fda6b3f9525fc9dd3bf8ce86541b0df` found two P2 gaps: the consumed Platform reconciliation refinement's `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED` result was missing from the canonical progression, and the recovery profile's generic no-target fallback could incorrectly classify a healthy current controller instead of `RECOVERY_HEALTHY_CONTROLLER_PRESENT`. Repair cycle 13 adds the complete ambiguous-issuance progression across the fresh-entry profile, canonical refinement and main contract, and freezes healthy-controller-first recovery dispatch across the recovery profile, canonical refinement and main contract. The `c366bf...` CI/self-audit/Codex evidence is historical after these material edits.
 
 ## Review budget / Codex usage policy
 
@@ -144,6 +150,7 @@ The independent Codex reviewer is a **terminal assurance gate, not an iterative 
 - Do not invoke `@codex review` merely after every small repair, for status polling, or to repeat an unchanged result.
 - Invoke one independent Codex architecture/security review only after the delivery head is frozen and the local audit/CI/thread checks indicate it is ready to merge.
 - If that final Codex review finds a material issue, repair the issue, restart exact-head CI/self-audit, and permit at most one further terminal Codex review on the newly frozen repaired head.
+- The terminal review on `c366bf...` found material issues, so repair cycle 13 consumes the exception and authorizes exactly one replacement terminal Codex review on the newly frozen repaired head. No further Codex review is budgeted for this delivery.
 - This execution-budget rule reduces external reviewer consumption without weakening the requirement that the final material delivery receive independent review before merge.
 
 ## Governance acceptance
@@ -151,10 +158,10 @@ The independent Codex reviewer is a **terminal assurance gate, not an iterative 
 - [x] PR title is within repository governance limit.
 - [x] Scope remains exactly seven declared documentation paths.
 - [x] No runtime/protocol codec/persistence schema/Platform write/key deployment/production activation is introduced.
-- [ ] Freeze one final exact head after this task-synchronization commit.
+- [ ] Freeze one final exact head after this repair-cycle-13 task synchronization commit.
 - [ ] Full exact-head seven-path architecture/security review reports zero material conflicts.
 - [ ] Exact-head Agent governance, Dependency review and CodeQL all pass.
-- [ ] One final independent exact-head Codex architecture/security review reports zero material findings.
+- [ ] One replacement terminal independent exact-head Codex architecture/security review reports zero material findings.
 - [ ] Zero unresolved review threads.
 - [ ] Squash merge only with expected-head protection.
 - [ ] Archive/release ownership in a separate closeout PR after merge.
@@ -178,14 +185,15 @@ The independent Codex reviewer is a **terminal assurance gate, not an iterative 
 - `ad8eb45b899bf326483603d94beea0d505ccc8c9`: historical; exact-head CI green but Codex found predecessor-rollback ambiguity plus missing shared compatibility-race scenario coverage.
 - `9a7ace36d1716f10c5edb362c76c5e461c1fdb0c`: historical; exact-head CI green but Codex found missing recovery signing-key/profile revocation revalidation at COMMIT in profile/main normative checklists.
 - `77d619b509cd8775ad7d21fc49b4879a2aa17422`: historical; exact-head CI/self-audit green but Codex found the four repair-cycle-12 edge cases listed above.
+- `c366bf1e9fda6b3f9525fc9dd3bf8ce86541b0df`: historical; exact-head Agent governance/Dependency review/CodeQL and self-audit passed, but terminal Codex found the two repair-cycle-13 P2 findings listed above.
 
 ### Current generation
 
 - final head: pending after this task-synchronization commit;
 - exact-head CI: pending;
 - exact-head self-audit: pending;
-- final independent Codex audit: pending and budgeted for one terminal invocation after local gates pass;
-- unresolved material findings: the four findings on `77d619...` are repaired; pending final exact-head audit.
+- replacement terminal independent Codex audit: pending and this is the final budgeted Codex invocation for PR #109;
+- unresolved material findings: the two `c366bf...` findings are repaired; pending exact-head local and replacement-terminal validation.
 
 ## PR and closeout
 
@@ -197,16 +205,16 @@ The independent Codex reviewer is a **terminal assurance gate, not an iterative 
 ## Context checkpoint
 
 ```yaml
-last_progress: Exact-head Codex review on 77d619b509cd8775ad7d21fc49b4879a2aa17422 found four final edge cases. Repair cycle 12 now requires current recovery signing-key/profile trust at the post-grace new-GameSession commit; pins post-PREPARE revocation to RECOVERY_GRANT_AUTHENTICATION_FAILED in the shared failure catalogue; defines RECOVERY_TARGET_NOT_ELIGIBLE for authoritative no-recovery-target state; and defines RECONNECT_PREPARED_EXPIRED separately from same-session grace expiry. Recovery profile, canonical refinement, main FND-04 contract and failure catalogue are synchronized. Codex usage is now budgeted as one final independent review only after local exact-head audit and CI are green.
+last_progress: Terminal exact-head Codex review on c366bf1e9fda6b3f9525fc9dd3bf8ce86541b0df found two P2 gaps. Repair cycle 13 now defines ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED as bounded DEPENDENCY_UNAVAILABLE/RETRYABLE same-AdmissionAttemptRef reconciliation with no blind second capability/new attempt and TEMPORARILY_UNAVAILABLE public mapping; recovery result dispatch now classifies a healthy current playable controller first as RECOVERY_HEALTHY_CONTROLLER_PRESENT/CHARACTER_ALREADY_ACTIVE before considering same-session, post-grace or RECOVERY_TARGET_NOT_ELIGIBLE. Fresh-entry profile, recovery profile, canonical refinement and main FND-04 contract are synchronized. The previous c366bf exact-head evidence is historical.
 status: validating
 branch: docs/OTV2-20260808-fnd04-session-admission-final
 pr: 109
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-ci_check_generation: post-final-recovery-edge-repair
-repair_cycles_for_current_gate: 12
+ci_check_generation: post-terminal-codex-repair-13
+repair_cycles_for_current_gate: 13
 owner_action_required: null
 blocker: null
-next_action: treat this task-synchronization commit as the final exact-head candidate; verify seven-file scope, current main and pinned inputs; run exact-head Agent governance, Dependency review and CodeQL; perform full self-audit and resolve the four repaired review threads; then invoke exactly one terminal independent Codex review. Squash merge only if that review reports zero material findings and the head/main/CI/thread state remains unchanged.
+next_action: treat this task-synchronization commit as the new frozen exact-head candidate; verify seven-file scope, main and pinned inputs; run fresh exact-head Agent governance, Dependency review and CodeQL; perform full self-audit and resolve the two repaired Codex threads; then invoke the single replacement terminal Codex review allowed by the budget. Squash merge only if it reports zero material findings and head/main/CI/thread state remains unchanged. No further Codex invocation is budgeted for this delivery.
 ```
