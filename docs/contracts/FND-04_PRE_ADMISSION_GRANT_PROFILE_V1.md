@@ -3,7 +3,7 @@
 - Status: Candidate normative profile owned by FND-04A; canonical when the owning FND-04A delivery merges
 - Profile ID: `oteryn-pre-admission-v1`
 - Applies to: fresh native Oteryn-v2 gameplay entry authorization produced by Oteryn Platform and consumed by Oteryn-v2 final game admission
-- Does not apply to: OAuth tokens, web sessions, Game Login Tickets, reconnect credentials, reauthenticated recovery grants, Channel/Instance handoff credentials, Canary compatibility admission or already-admitted GameSession control
+- Does not apply to: OAuth tokens, web sessions, Game Login Tickets, reconnect/recovery credentials, handoff credentials, Canary compatibility admission or already-admitted GameSession control
 - Cryptographic container: JWS Compact Serialization carrying a JWT claims set
 - Signature profile: fully specified JOSE `alg = Ed25519`
 - Standards baseline: RFC 7515, RFC 7519, RFC 8032, RFC 8037, RFC 8725 and RFC 9864
@@ -14,31 +14,22 @@
 
 ```text
 Platform signs one bounded fresh-entry capability.
-Oteryn-v2 verifies the capability and current authoritative game facts.
+Oteryn-v2 verifies capability + current authoritative game facts.
 Oteryn-v2 consumes the grant at most once.
 Oteryn-v2 creates canonical GameSessionId only after final admission succeeds.
 ```
 
-A valid signature is necessary but never sufficient. A signed `world_id` is a binding to be checked against current authoritative character/world state after current account-character ownership is proven; it is not evidence that the character still belongs to or is eligible for that world.
+A valid signature is necessary but never sufficient. Signed world/revision values are authorization bindings to current state, not proof that state remains current.
 
-## 2. Exact v1 cryptographic profile
+## 2. Exact cryptographic profile
 
-```text
-JWS Compact Serialization
-JWT Claims Set payload
-alg = Ed25519
-Ed25519 parameter set from RFC 8032
-```
+v1 uses JWS Compact Serialization, JWT Claims Set and fully specified JOSE `alg=Ed25519` / RFC 8032 Ed25519.
 
-Only fully specified JOSE `alg = Ed25519` is accepted. RFC 9864 deprecates the older polymorphic `EdDSA` identifier for new fully specified use.
-
-Reject `none`, `EdDSA`, HMAC/RSA/ECDSA fallback, `Ed448`, incompatible key type/curve and any algorithm selection not equal to the exact allowlisted profile.
-
-Changing algorithm/container requires a new reviewed profile revision.
+Reject `alg=none`, deprecated polymorphic `EdDSA`, HMAC/RSA/ECDSA fallback, Ed448, incompatible key type/curve and any non-exact algorithm selection. Changing algorithm/container requires a new reviewed profile revision.
 
 ## 3. Protected JOSE header
 
-Exact v1 header:
+Exact header:
 
 ```json
 {
@@ -48,16 +39,12 @@ Exact v1 header:
 }
 ```
 
-Rules:
-
 - `alg` exactly `Ed25519`;
 - `typ` exactly `oteryn-admission+jwt`;
-- `kid` is 1..64 ASCII `[A-Za-z0-9._-]+` and resolves only inside the trusted admission-key set;
-- any protected-header member outside `alg`, `kid`, `typ` is rejected.
+- `kid` 1..64 ASCII `[A-Za-z0-9._-]+`, looked up only in trusted admission-key set;
+- no other protected member.
 
-Explicitly reject `jku`, `x5u`, `x5c`, embedded `jwk`, `crit`, `cty`, `zip`, `b64=false` and token-controlled key discovery.
-
-If trusted key distribution uses JWK, its public key representation follows the accepted OKP/Ed25519 representation; token `alg` remains `Ed25519`.
+Reject `jku`, `x5u`, `x5c`, embedded `jwk`, `crit`, `cty`, `zip`, `b64=false` and token-controlled key discovery.
 
 ## 4. Canonical issuer and audience
 
@@ -66,31 +53,31 @@ iss = urn:oteryn:platform:game-admission
 aud = urn:oteryn:game:admission
 ```
 
-Both are exact case-sensitive strings. The signing-key purpose is dedicated to `oteryn-pre-admission-v1` and is not inherited from OAuth, Game Login Ticket, recovery-grant or service-authentication trust.
+Both exact/case-sensitive. Signing-key purpose is dedicated to `oteryn-pre-admission-v1` and not inherited from OAuth, Game Login Ticket, recovery or service-auth trust.
 
 ## 5. Required claims
 
-The JWT payload MUST contain exactly the required claims below. Unknown claims are rejected by v1.
+Payload is a JSON object containing exactly these claims; unknown claims reject in v1.
 
-### 5.1 Standard claims
+### 5.1 Standard
 
 | Claim | Type | Rule |
 |---|---|---|
 | `iss` | string | exact Section 4 issuer |
-| `aud` | string | exact single Section 4 audience; arrays rejected |
-| `iat` | integer JSON number | whole-second NumericDate |
-| `nbf` | integer JSON number | whole-second NumericDate; `iat - 1 <= nbf <= iat + 1` |
-| `exp` | integer JSON number | `exp > iat` and `exp - iat <= 30` seconds |
-| `jti` | string | GrantNonce: 32 random bytes, base64url without padding; exactly 43 chars |
+| `aud` | string | exact single audience; arrays rejected |
+| `iat` | integer | whole-second NumericDate |
+| `nbf` | integer | whole-second; `iat - 1 <= nbf <= iat + 1` |
+| `exp` | integer | `exp > iat`; `exp - iat <=30s` |
+| `jti` | string | 32 random bytes base64url-no-padding; exactly 43 chars |
 
-### 5.2 Oteryn claims
+### 5.2 Oteryn
 
 | Claim | Type | Rule |
 |---|---|---|
 | `profile` | string | exact `oteryn-pre-admission-v1` |
 | `purpose` | string | exact `fresh_entry` |
-| `attempt_ref` | string | Platform AdmissionAttemptRef; canonical lowercase RFC UUIDv7 |
-| `account_id` | string | canonical lowercase non-nil UUID in authoritative Platform representation accepted by FND-ID-01 |
+| `attempt_ref` | string | canonical lowercase RFC UUIDv7 |
+| `account_id` | string | canonical lowercase non-nil authoritative Platform UUID representation accepted by FND-ID-01 |
 | `character_id` | string | canonical lowercase non-nil RFC UUIDv7 |
 | `world_id` | string | canonical lowercase non-nil RFC UUIDv7 |
 | `channel_id` | string | canonical lowercase non-nil RFC UUIDv7 |
@@ -98,168 +85,152 @@ The JWT payload MUST contain exactly the required claims below. Unknown claims a
 | `route_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
 | `runtime_observation_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
 | `scope_ownership_generation` | string | decimal non-zero uint64 string |
-| `protocol_major` | integer JSON number | exact `1` |
-| `transport_profile` | integer JSON number | exact `1` |
-| `compatibility_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
+| `protocol_major` | integer | exact `1` |
+| `transport_profile` | integer | exact `1` |
+| `ruleset_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
+| `content_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
+| `map_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
+| `world_policy_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
+| `offer_revision` | string | ASCII 1..64 `[A-Za-z0-9._:-]+` |
 
-All UUIDs must parse and round-trip to exact lowercase hyphenated canonical text; nil UUID rejects. `attempt_ref`, `character_id`, `world_id`, `channel_id` additionally require UUID version 7 and RFC variant. `account_id` remains Platform-owned and is not silently redefined as Oteryn UUIDv7.
+`compatibility_revision` is deliberately absent from v1. Protocol, transport, ruleset, content, map, world-policy and offer are independent authoritative dimensions and MUST NOT be overloaded into one opaque compatibility token.
 
-Generation values are strings to avoid uint64 precision loss above `2^53`.
+All UUIDs parse/round-trip exact canonical lowercase hyphenated form; nil rejects. `attempt_ref`, `character_id`, `world_id`, `channel_id` additionally require UUIDv7 + RFC variant. `account_id` remains Platform-owned and is not silently redefined as Oteryn UUIDv7.
 
-`attempt_ref` is producer operation/correlation identity only. `jti` is the concrete game consume/replay identity. Neither is GameSessionId.
+Generation values are strings to avoid uint64 precision loss >2^53. `attempt_ref` is producer operation/correlation identity; `jti` is game consume identity; neither is GameSessionId.
 
-## 6. Size and parser limits
+## 6. Size/parser limits
 
-Before signature verification enforce:
-
-- compact token <= 4096 ASCII bytes;
-- exactly 3 JWS segments;
-- decoded protected header <= 512 bytes;
-- decoded payload <= 3072 bytes;
-- JSON nesting depth <= 2;
-- duplicate JSON members reject;
-- invalid UTF-8 reject;
-- malformed/noncanonical/padded base64url reject;
-- floating/exponent/fractional NumericDate reject;
-- missing/null required claim reject;
-- decompression unsupported.
-
-The stricter FND-02 outer admission-material bound also applies.
+Before signature verification enforce: token <=4096 ASCII bytes; exactly 3 JWS segments; decoded header <=512; payload <=3072; nesting <=2; duplicate JSON members reject; invalid UTF-8 reject; malformed/noncanonical/padded base64url reject; fractional/exponent NumericDate reject; missing/null required claim reject; decompression unsupported. Stricter FND-02 outer bound wins.
 
 ## 7. Time policy
 
 ```text
-maximum grant lifetime: 30 seconds from iat to exp
-maximum verifier clock-skew allowance: 5 seconds
+maximum lifetime: 30s from iat to exp
+maximum verifier skew: 5s
 ```
 
-At trusted server time `now` require:
+At trusted server time `now`:
 
 ```text
 now + 5s >= nbf
 now - 5s < exp
 exp > iat
-exp - iat <= 30s
-abs(iat - now) <= 35s
+exp - iat <=30s
+abs(iat - now) <=35s
 ```
 
 Client clocks never affect validity.
 
-## 8. GrantNonce and one-time game consumption
+## 8. GrantNonce
 
 `jti` is 32 cryptographically random producer bytes encoded base64url without padding.
 
-Authoritative consume state is keyed by at least `(trusted issuer, profile, jti)` and guarantees:
+Authoritative consume state keyed by at least `(trusted issuer, profile, jti)` guarantees one successful admission maximum, one linearized winner under concurrent use, no reuse after lost response and no authority creation/revival/fencing by losing replay.
 
-- one GrantNonce participates in at most one successful admission commit;
-- concurrent use has at most one linearized winner;
-- consumed nonce never becomes reusable after lost response;
-- losing replay cannot create/revive/fence a different current session.
-
-Consume/replay evidence remains authoritative at least through `exp + 5s` skew and longer when DUR/reconciliation requires.
+Replay evidence remains authoritative through at least `exp + 5s` and longer if DUR requires.
 
 ## 9. AdmissionAttemptRef producer idempotency
 
-One logical issuance attempt uses one `attempt_ref`. Retry/reconciliation uses the same ref; a lost response may not mint a blind second independently usable capability.
+One logical issuance uses one `attempt_ref`. Lost response/crash does not permit a blind second independently usable capability.
 
-If exact prior issuance cannot be proven, use `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`: bounded `DEPENDENCY_UNAVAILABLE` / `RETRYABLE`, public `TEMPORARILY_UNAVAILABLE`, same-AdmissionAttemptRef status/reconciliation only. A new independent attempt requires deterministic retirement of the old attempt and proof any possibly issued capability is no longer acceptable.
-
-Producer ambiguity creates no gameplay authority. `attempt_ref` may be used only as authorized redacted correlation, never authentication or game consume authority.
+Unknown exact issuance outcome -> `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`: `DEPENDENCY_UNAVAILABLE` + bounded `RETRYABLE`, public `TEMPORARILY_UNAVAILABLE`, same-ref status/reconciliation only. A new independent attempt requires deterministic retirement plus proof any possibly issued capability is no longer acceptable. Producer ambiguity creates no gameplay authority.
 
 ## 10. Platform account-security freshness
 
-The grant binds `account_id` and `account_security_generation`.
-
-Final game admission consumes authenticated Platform-security evidence proving current fresh-admission disabled/revoked state, accepted minimum/current generation and evidence freshness.
+Grant binds `account_id` + `account_security_generation`. Final game admission consumes authenticated Platform-security evidence proving account enabled/revoked state, accepted generation floor and evidence freshness.
 
 ```text
-maximum accepted Platform-security evidence age: 5 seconds
+maximum accepted Platform-security evidence age: 5s
 ```
 
-Older, unavailable, unauthenticated, contradictory or unprovable evidence fails closed.
+Older/unavailable/unauthenticated/contradictory/unprovable evidence fails closed. Reject disabled/revoked account or grant generation below current minimum. Signature validity/exp never overrides newer account-security invalidation. Platform does not gain post-admission GameSession authority.
 
-Reject when:
+## 11. Route/runtime, independent revisions and character-world applicability
+
+Grant binds independently:
 
 ```text
-account disabled/revoked
-OR grant.account_security_generation < minimum_valid_generation
+world_id
+channel_id
+route_revision
+runtime_observation_revision
+scope_ownership_generation
+protocol_major
+transport_profile
+ruleset_revision
+content_revision
+map_revision
+world_policy_revision
+offer_revision
 ```
 
-Signature validity/expiry never overrides newer account-security invalidation. This admission veto does not give Platform post-admission GameSession authority.
-
-## 11. Route/runtime and ownership-safe character-world applicability
-
-The grant binds `world_id`, `channel_id`, `route_revision`, `runtime_observation_revision`, `scope_ownership_generation`, `protocol_major`, `transport_profile` and `compatibility_revision`.
+Each dimension is compared with current authoritative target state separately. A change to any one invalidates an older grant even when all others remain unchanged.
 
 Default runtime rule:
 
 ```text
-current target scope ownership generation != token.scope_ownership_generation
--> stale grant
+current scope ownership generation != token.scope_ownership_generation
+-> stale runtime grant
 ```
 
-Default character-world rule is evaluated only after current `AccountId -> CharacterId` ownership/lifecycle is proven:
+Character-world state is checked only after current `AccountId -> CharacterId` ownership/lifecycle is proven:
 
 ```text
 current_character_world_id == token.world_id
-AND current character lifecycle permits fresh admission to token.world_id
+AND current lifecycle permits fresh admission to token.world_id
 ```
 
-`CharacterId` is global and may survive a legal world transfer. Therefore route validity plus a global CharacterId is insufficient.
+Global CharacterId may survive legal world transfer; route validity plus CharacterId alone is insufficient.
 
-When current ownership is valid but character-world applicability differs or changes before commit:
+Valid ownership + current world mismatch/change before commit -> `ADMISSION_GRANT_WORLD_STALE`, no candidate nonce/presence/lease/session/transport mutation, no retarget, require current world resolution + newly authorized route/grant.
 
-- `ADMISSION_GRANT_WORLD_STALE`;
-- no candidate GrantNonce consumption;
-- no candidate AccountPresenceClaim/CharacterLease/GameSession/TransportBinding authority;
-- no silent retarget to current/new world or Channel;
-- current world must be resolved and a new route/grant authorized.
-
-Also reject superseded route/runtime observation, changed scope owner, non-open target lifecycle and unsupported protocol/transport/compatibility.
-
-NodeId never substitutes for scope ownership generation.
+Reject non-open target, stale route/runtime observation, changed scope ownership, unsupported protocol/transport, mismatched ruleset/content/map/world-policy/offer revision. No silent retarget/downgrade. NodeId never substitutes for scope ownership generation.
 
 ## 12. Verification/admission order and final linearization
 
-Steps 1–15 are fail-fast **eligibility**, never authorization escrow.
+Steps 1–15 are fail-fast eligibility only:
 
-1. outer FND-02 material bound;
-2. compact/parser/size limits;
-3. exact header/profile;
-4. authenticated current admission key/profile trust/revocation evidence age `<=5s`, then trusted `kid` lookup;
+1. FND-02 material bound;
+2. parser/size bounds;
+3. exact protected header/profile;
+4. authenticated admission key/profile trust/revocation evidence age <=5s, then trusted `kid` lookup;
 5. Ed25519 signature;
-6. exact `typ`, `iss`, `aud`, `profile`, `purpose`;
+6. exact `iss`, `aud`, `typ`, `purpose`; unsupported `profile` is a revision failure;
 7. time/lifetime/skew;
-8. claim schema/canonical encoding/UUID rules;
-9. current Platform-security projection/revocation/generation;
-10. route/runtime/current target/ownership generation + protocol/transport/compatibility;
-11. GrantNonce consume eligibility/replay check;
-12. authoritative current `AccountId -> CharacterId` ownership/lifecycle;
-13. only after step 12 succeeds, authoritative `CharacterId -> WorldId` / world eligibility against signed `world_id`;
-14. AccountPresenceClaim / duplicate-login eligibility;
-15. CharacterLease acquisition eligibility + current runtime-scope readiness;
-16. one atomic final boundary revalidates **every mutable authority predicate** and, only if all remain valid, consumes GrantNonce and establishes complete FND-04A admission authority;
+8. exact claim schema/canonical UUID/revision encoding;
+9. current Platform-security projection;
+10. route/runtime/current target/ownership + protocol/transport + ruleset/content/map/world-policy/offer revisions independently;
+11. GrantNonce eligibility;
+12. current AccountId->CharacterId ownership/lifecycle;
+13. current CharacterId->WorldId/world eligibility only after step 12;
+14. AccountPresence/duplicate-login eligibility;
+15. CharacterLease/current runtime-scope acquisition/readiness;
+16. one atomic final boundary revalidates every mutable predicate and only then commits complete admission authority;
 17. publish success only after commit.
 
-### 12.1 Mandatory final revalidation
+### 12.1 Wrong-bound credential classification
 
-Immediately before and atomically with authority creation revalidate:
+A syntactically valid and correctly signed credential whose exact `iss`, `aud`, `typ` or `purpose` is wrong returns `ADMISSION_GRANT_BINDING_MISMATCH` (`SESSION_REJECTED`, `SECURITY_TERMINAL`) and is never reinterpreted as the required fresh-entry credential. Unsupported `profile` returns `ADMISSION_GRANT_REVISION_UNSUPPORTED`; malformed/missing/noncanonical structure returns `ADMISSION_GRANT_MALFORMED`; cryptographic/key trust failure returns `ADMISSION_GRANT_AUTHENTICATION_FAILED`.
 
-- JWT time/skew/lifetime;
-- exact key/profile trust + authenticated trust evidence age `<=5s`;
-- authenticated Platform-security evidence age `<=5s`, account state/generation;
-- route/runtime observation, target lifecycle, scope ownership, current runtime owner/placement/readiness;
-- protocol/transport/compatibility;
-- current `AccountId -> CharacterId` ownership/lifecycle **first**;
-- current `CharacterId -> WorldId` / world eligibility **second**, only for that proven account-owned character;
-- GrantNonce eligibility;
-- AccountPresence/duplicate-login state;
-- CharacterLease current/acquirable fence state;
-- absence of newer world-transfer/handoff/fence/takeover/terminal authority superseding the candidate.
+### 12.2 Final atomic revalidation
 
-### 12.2 Atomic effects
+Immediately before/atomically with authority creation revalidate:
 
-Only after all revalidation succeeds:
+- JWT time/lifetime/skew;
+- exact key/profile trust + authenticated evidence age <=5s;
+- Platform-security evidence age <=5s + account state/generation;
+- route/runtime observation, target lifecycle, scope ownership, runtime owner/placement/readiness;
+- protocol_major and transport_profile;
+- each ruleset/content/map/world-policy/offer revision independently;
+- AccountId->CharacterId ownership/lifecycle first;
+- CharacterId->WorldId/world eligibility second;
+- GrantNonce;
+- AccountPresence/incumbent state;
+- CharacterLease/fence state;
+- no newer world-transfer/handoff/fence/takeover/terminal authority.
+
+Only then atomically:
 
 ```text
 consume GrantNonce
@@ -271,87 +242,89 @@ consume GrantNonce
 + establish initial authoritative session/reconciliation boundary
 ```
 
-FND-04A intentionally defines no reconnect secret/proof state. FND-04B must later define reconnect/recovery without weakening this boundary.
+FND-04A defines no reconnect secret/proof state.
 
-No earlier presence/lease eligibility creates partial authority. Any failed final revalidation leaves the actual current world-transfer/presence/lease/runtime/session authority unchanged.
+Any failed final check leaves actual current authority unchanged. Ownership failure precedes world classification; owned-character stale world uses `ADMISSION_GRANT_WORLD_STALE`.
 
-Specific examples:
+## 13. Key distribution, rotation and bounded revocation detection
 
-- stale/unprovable key/profile or Platform-security evidence -> `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`;
-- fresh explicit key/profile unknown/revoked/not-trusted -> `ADMISSION_GRANT_AUTHENTICATION_FAILED`;
-- ownership conflict -> `ADMISSION_ACCOUNT_CHARACTER_CONFLICT`, without world-state classification for a non-owned candidate;
-- current owned character world mismatch/change -> `ADMISSION_GRANT_WORLD_STALE`;
-- changed route/runtime generation -> route/runtime stale outcomes;
-- consumed nonce -> replay outcome.
-
-## 13. Key distribution / rotation
-
-Game-side verification uses trusted Ed25519 public keys only.
+Verification uses trusted Ed25519 public keys only. Dedicated admission key purpose, trusted configured set, bounded current/retiring overlap. Token-controlled key fetch forbidden. Private signing key never leaves Platform signing/KMS boundary.
 
 ```text
-maximum accepted authenticated signing-key/profile trust/revocation evidence age: 5 seconds
+maximum accepted authenticated key/profile trust/revocation evidence age: 5s
 ```
 
-`age <=5s` is accepted; `>5s`, unavailable, unauthenticated, contradictory or unprovable state fails closed as `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`. Fresh authenticated evidence explicitly marking the exact key/profile unknown/revoked/not trusted maps to `ADMISSION_GRANT_AUTHENTICATION_FAILED`.
+- evidence age >5s/unavailable/unauthenticated/contradictory/unprovable -> `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`;
+- fresh accepted evidence explicitly marking exact key/profile unknown/revoked/not-trusted -> `ADMISSION_GRANT_AUTHENTICATION_FAILED`.
 
-Use dedicated admission key purpose, trusted configured key set and bounded current/retiring overlap for still-valid grants. Token-controlled key fetching is forbidden. Private keys never leave Platform signing/KMS boundary.
+### 13.1 Residual revocation window
 
-KMS/HSM/vendor/publication transport/refresh cadence remain implementation choices inside this ceiling.
+The <=5s model is bounded stale evidence, not atomic global revocation.
 
-## 14. Compatibility / downgrade
+If revocation occurs after the observation point of evidence that is still authenticated and <=5s old, the verifier cannot know that unseen event. The old evidence may remain acceptable only until:
 
-Independent dimensions include this profile revision, Platform producer revision, Oteryn-v2 FND-04A consumer revision, FND-02 protocol major/transport profile and route/runtime compatibility revision.
+- newer authenticated evidence records the revocation, or
+- its age exceeds 5s, at which point failure is mandatory without a fresh provable replacement.
 
-Unknown mandatory revision/claim rejects. No deprecated `EdDSA`, algorithm, profile or Canary downgrade is attempted automatically.
+Therefore FND-04A explicitly accepts at most the five-second residual detection window attributable to this projection. It does not require an impossible instantaneous-revocation fixture. Any zero-window design would require a separately reviewed cross-repository epoch/fence.
 
-FND-04C must later integrate the production compatibility matrix before any implementation/rollout claim.
+## 14. Compatibility/downgrade
 
-## 15. Logging / privacy
+Version dimensions remain separate: profile, producer/consumer contract, protocol major, transport profile, ruleset, content, map, world policy and offer. Unknown mandatory revision rejects; no profile/algorithm/Canary downgrade.
 
-MUST NOT log/export raw JWT, GrantNonce/jti, signing private key, OAuth/Game Login Ticket credentials or future reconnect secret/verifier material.
+FND-04C later integrates rollout compatibility matrix; it cannot collapse accepted independent dimensions into one opaque revision.
 
-Authorized bounded diagnostic correlation MAY use `attempt_ref`, safe `kid`/profile, WorldId/ChannelId where policy permits, route/runtime observation revision and typed outcome. It MUST NOT export raw `scope_ownership_generation`, Platform security-generation values, private fencing data or transfer details. Use match/stale/relation classes where a fence-sensitive comparison must be diagnosed.
+## 15. Logging/privacy
 
-The complete fresh-admission diagnostic templates/correlation fields are owned by FND-04A Section 11. AccountId/CharacterId remain privacy-controlled and are not ordinary high-cardinality metric labels.
+Never log/export raw JWT, GrantNonce, private key, OAuth/Game Login Ticket or future reconnect material.
 
-## 16. Independent fixtures required before implementation acceptance
+Authorized diagnostics may include attempt_ref, safe kid/profile, WorldId/ChannelId where policy permits, route/runtime revision and typed outcome. Never export Platform security-generation values, raw scope-ownership fence generation or transfer details; use match/stale/relation classes. AccountId/CharacterId remain privacy-controlled, not ordinary metric labels.
 
-Positive fixtures include canonical Ed25519 grant, key overlap/rotation, trust evidence exactly `5s`, time/skew bounds, canonical UUID/generation encoding, current ownership and current world match.
+Complete FND-04A diagnostic rows live in the authority companion contract.
 
-Negative/fault fixtures include:
+## 16. Independent implementation fixtures
 
-- `alg=none`, deprecated `EdDSA`, wrong algorithm/key type/curve;
-- `jku`, `x5u`, embedded `jwk`, `crit`, extra protected header;
-- wrong type/issuer/audience/profile/purpose;
-- malformed/duplicate/unknown claims and noncanonical UUID/base64url/generation;
-- wrong UUID version/variant for `attempt_ref`, `character_id`, `world_id`, `channel_id`;
-- oversized token/header/payload;
-- not-yet-valid, expired or >30s lifetime;
-- unknown/revoked key under fresh trust evidence -> authentication failed;
-- trust evidence `>5s`, unavailable, unauthenticated, contradictory -> stale security evidence;
-- key/profile revocation after early verification but before final commit;
-- disabled/stale Platform-security evidence;
-- stale route/runtime observation or changed scope ownership;
-- replay/concurrent GrantNonce;
-- ambiguous producer issuance reconciliation;
-- mixed revision/downgrade attempt;
-- **ownership-before-world negative:** grant references a CharacterId not currently owned by account -> account/character conflict; do not return world-mismatch classification for that candidate;
-- **initial owned-character world mismatch:** ownership valid, but signed `world_id` differs from current authoritative world -> `ADMISSION_GRANT_WORLD_STALE`, no candidate nonce/authority mutation;
-- **world transfer/change-before-commit:** ownership/world initially valid, then current authoritative CharacterId->WorldId/world eligibility changes before step 16 -> `ADMISSION_GRANT_WORLD_STALE`, no candidate mutation;
-- stale grant is never retargeted to new/current world or Channel.
+### Profile/crypto/binding
+
+- canonical Ed25519 positive;
+- `none`, deprecated `EdDSA`, wrong algorithm/key type/curve;
+- token-directed key discovery;
+- malformed/duplicate/unknown claims, UUIDv7/variant/canonical failures, size limits;
+- wrong exact `iss`, `aud`, `typ`, `purpose` -> `ADMISSION_GRANT_BINDING_MISMATCH`;
+- unsupported `profile` -> `ADMISSION_GRANT_REVISION_UNSUPPORTED`;
+- nbf/expiry/lifetime/skew boundaries;
+- replay/concurrent consume;
+- ambiguous issuance reconciliation.
+
+### Independent authoritative revisions
+
+For each of `ruleset_revision`, `content_revision`, `map_revision`, `world_policy_revision`, `offer_revision`, mutate only that current dimension after issuance while keeping all others unchanged. Final admission must reject as revision unsupported/stale according to FND-04A and never accept because an opaque compatibility token happened not to change.
+
+### Security/revocation timing
+
+- trust evidence exactly 5s accepted if otherwise valid;
+- >5s/unavailable/unauthenticated/contradictory -> stale evidence;
+- final accepted evidence already contains revocation -> authentication failed/no mutation;
+- revocation occurs after the evidence observation point while evidence remains <=5s -> do **not** assert instant detection; prove acceptance cannot extend beyond first newer revocation evidence or expiry of the 5s evidence window.
+
+### Ownership/world
+
+- non-owned CharacterId -> account/character conflict before any world classification;
+- valid ownership + initial world mismatch -> `ADMISSION_GRANT_WORLD_STALE`;
+- valid ownership/world then legal transfer/world change before final commit -> world stale;
+- stale grant never retargeted;
+- concurrent transfer/admission has one authoritative outcome.
 
 ### Change-before-commit matrix
 
-Independently change after earlier validation and before step 16: JWT time; key/profile trust/freshness; Platform security; route/runtime/current target; protocol/transport/compatibility; AccountId->CharacterId ownership; CharacterId->WorldId/world eligibility; GrantNonce; AccountPresence/incumbent; CharacterLease/fence; or a newer world-transfer/handoff/fence/takeover/terminal transition.
+Independently mutate JWT time, key/profile trust, Platform security, route/runtime/target/ownership, protocol/transport, each independent gameplay revision, AccountId->CharacterId, CharacterId->WorldId/world eligibility, GrantNonce, AccountPresence/incumbent, CharacterLease/fence or superseding transfer/handoff/fence/takeover/terminal authority. Every loser fails before candidate authority mutation and preserves actual current authority.
 
-Every losing candidate fails before its own authority mutation and preserves actual current authority. Fixtures must be independently produced/validated enough that producer and consumer cannot share one bug unnoticed.
+Fixtures must be independently produced/validated enough to avoid shared producer/consumer bugs.
 
 ## 17. Error integration
 
-Every FND-04A fresh-admission symbolic outcome is fully defined in `FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md`, including code/category, progression, retry authority, mutation outcome, public class, redacted diagnostic message and credential-free correlation fields.
-
-FND-04C may integrate accepted rows but cannot weaken them.
+FND-04A authority contract fully defines its symbolic outcomes with Foundation category, disposition, retry authority, mutation outcome, public class, redacted diagnostic and credential-free correlation fields. FND-04C may integrate, not weaken.
 
 ## 18. Non-authorization
 
-This profile implements nothing. It does not authorize Platform issuer code, Rust verifier/consume store, security projection transport, persistence/cache schema, JWT library, KMS/HSM/vendor, production keys, production routing or live traffic. Overall FND-04 remains incomplete until FND-04B, FND-04C and lifecycle closeout complete.
+This profile implements nothing and authorizes no Platform/Rust verifier, consume store, security projection, persistence schema, library, KMS/HSM, production key, routing or traffic. Overall FND-04 remains incomplete until FND-04B/FND-04C/closeout.
