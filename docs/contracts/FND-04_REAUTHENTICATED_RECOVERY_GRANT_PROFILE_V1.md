@@ -191,6 +191,8 @@ The token revision does not select stale content/runtime state and cannot downgr
 
 The grant can authorize only one of two game-domain transitions.
 
+**Recovery result dispatch is ordered.** After authoritative state is resolved, a healthy current playable controller is classified first as `RECOVERY_HEALTHY_CONTROLLER_PRESENT`; bearer recovery proof cannot turn that conflict into a generic no-target result. Only after excluding that dedicated healthy-controller conflict may the resolver select Section 9.1 same-GameSession recovery, Section 9.2 post-grace existing-actor attachment, or the `RECOVERY_TARGET_NOT_ELIGIBLE` fallback.
+
 ### 9.1 Same-GameSession recovery
 
 Require:
@@ -250,13 +252,13 @@ The post-grace transition MUST use one atomic authoritative commit boundary. Imm
 
 Validation performed earlier in routing, lookup or recovery resolution is not trust escrow. Emergency recovery-key/profile revocation after earlier validation but before this post-grace commit fails before authority/session mutation as `RECOVERY_GRANT_AUTHENTICATION_FAILED`; RecoveryGrantNonce is not consumed, no new GameSession/lease/runtime/transport authority is committed and whatever authority state is actually current at commit-time revalidation remains unchanged.
 
-If current compatibility cannot be proven, reject as `RECOVERY_GRANT_REVISION_UNSUPPORTED` with no RecoveryGrantNonce consumption or authority mutation. If authoritative state matches neither Section 9.1 nor Section 9.2 — including when the actor has legally become `ABSENT` — reject as `RECOVERY_TARGET_NOT_ELIGIBLE`. That outcome is terminal for this recovery transition, consumes no RecoveryGrantNonce, commits no authority mutation and never reinterprets this recovery grant as fresh-entry authority. A later fresh login, if permitted, is a separate newly authorized fresh-entry flow.
+If current compatibility cannot be proven, reject as `RECOVERY_GRANT_REVISION_UNSUPPORTED` with no RecoveryGrantNonce consumption or authority mutation. After the dedicated healthy-controller conflict has been excluded, if authoritative state matches neither Section 9.1 nor Section 9.2 — including when the actor has legally become `ABSENT` — reject as `RECOVERY_TARGET_NOT_ELIGIBLE`. That outcome is terminal for this recovery transition, consumes no RecoveryGrantNonce, commits no authority mutation and never reinterprets this recovery grant as fresh-entry authority. A later fresh login, if permitted, is a separate newly authorized fresh-entry flow.
 
 ## 10. Healthy incumbent safety
 
 A valid recovery JWT, a reconnect secret, a prepared successor secret or a completed PREPARE alone cannot preempt a healthy current controller.
 
-Healthy combat/PZ/logout-locked incumbent remains authoritative. Intentional logout-eligible takeover uses the separate takeover state machine, not an unconditional recovery-grant/reconnect-secret fence. Any future healthy-session migration requires a separately current-generation-authorized transition and is not implied by this profile.
+Healthy combat/PZ/logout-locked incumbent remains authoritative. A recovery attempt against a healthy current playable controller returns the dedicated `RECOVERY_HEALTHY_CONTROLLER_PRESENT` conflict progression; it is not `RECOVERY_TARGET_NOT_ELIGIBLE`. Intentional logout-eligible takeover uses the separate takeover state machine, not an unconditional recovery-grant/reconnect-secret fence. Any future healthy-session migration requires a separately current-generation-authorized transition and is not implied by this profile.
 
 ## 11. Current-placement routing
 
@@ -295,7 +297,7 @@ Protection remains keyed to one server-owned ControlLossEpoch:
 10. one-time RecoveryGrantNonce eligibility;
 11. current AccountId->CharacterId ownership;
 12. current actor/session/presence/lease/runtime placement;
-13. healthy-controller/reconnectable/post-grace decision, rejecting authoritative no-target state as `RECOVERY_TARGET_NOT_ELIGIBLE`;
+13. dispatch authoritative result in this order: healthy current playable controller -> `RECOVERY_HEALTHY_CONTROLLER_PRESENT`; otherwise accepted same-session/post-grace recovery target; otherwise `RECOVERY_TARGET_NOT_ELIGIBLE`;
 14. atomic game-domain recovery/rebind/new-session commit, including COMMIT-time current recovery-key/profile trust, token time/nonce, compatibility and authority/security revalidation for both Section 9.1 same-session rebind and Section 9.2 post-grace new-GameSession attachment;
 15. publish success only after commit.
 
@@ -318,7 +320,8 @@ Before implementation acceptance prove:
 - compatibility revision/current runtime-content-ruleset-session support changes after PREPARE -> COMMIT rejects before candidate authority switch and maps to `RECOVERY_GRANT_REVISION_UNSUPPORTED`;
 - recovery signing key/profile is trusted at PREPARE, then emergency-revoked before same-session COMMIT -> COMMIT rejects as `RECOVERY_GRANT_AUTHENTICATION_FAILED`, consumes no RecoveryGrantNonce, commits no authority mutation and preserves whatever authority state is current at revalidation;
 - post-grace lookup/validation accepts a recovery key/profile, then that key/profile is emergency-revoked before the atomic new-GameSession attachment commit -> reject as `RECOVERY_GRANT_AUTHENTICATION_FAILED`, consume no RecoveryGrantNonce, create no new GameSession/control authority and preserve whatever authority state is current at revalidation;
-- authoritative actor becomes legally `ABSENT`, or otherwise matches neither same-session nor post-grace recovery target, before recovery commit -> `RECOVERY_TARGET_NOT_ELIGIBLE`, no RecoveryGrantNonce consumption, no authority mutation and no recovery-to-fresh-entry reinterpretation;
+- authoritative actor becomes legally `ABSENT`, or otherwise matches neither same-session nor post-grace recovery target after healthy-controller conflict has been excluded, before recovery commit -> `RECOVERY_TARGET_NOT_ELIGIBLE`, no RecoveryGrantNonce consumption, no authority mutation and no recovery-to-fresh-entry reinterpretation;
+- healthy current playable controller -> `RECOVERY_HEALTHY_CONTROLLER_PRESENT` / `CHARACTER_ALREADY_ACTIVE`, no RecoveryGrantNonce consumption, no authority mutation and no fallthrough to `RECOVERY_TARGET_NOT_ELIGIBLE`;
 - same-session PREPARE's own bounded expiry is reached while grace may still be valid -> `RECONNECT_PREPARED_EXPIRED`, no authority mutation/no successful nonce consumption; a new PREPARE is allowed only after fresh current-state/proof evaluation, while actual grace expiry remains `RECONNECT_GRACE_EXPIRED`;
 - another valid fencing/handoff/takeover/terminality transition supersedes the PREPARE predecessor -> stale candidate COMMIT cannot revive predecessor authority or overwrite the authority/no-current-transport state that is current at revalidation;
 - concurrent one-time jti consume;
