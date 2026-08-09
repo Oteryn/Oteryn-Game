@@ -291,7 +291,9 @@ NodeId is not a grant claim and never substitutes for scope ownership generation
 
 No silent retarget to another Channel, owner, protocol family or Canary route.
 
-## 12. Verification/admission order
+## 12. Verification/admission order and final linearization
+
+Steps 1–14 are fail-fast validation and eligibility evaluation. **They are not authorization escrow.** No mutable predicate checked before the final commit is trusted merely because it passed earlier.
 
 1. outer FND-02 material bound;
 2. compact-shape/parser/size limits;
@@ -302,15 +304,45 @@ No silent retarget to another Channel, owner, protocol family or Canary route.
 7. time/lifetime/skew;
 8. claim schema/canonical encoding, including UUID version/variant requirements;
 9. current Platform-security projection/revocation/generation;
-10. route/runtime-observation/current ownership-generation/current-scope validation;
+10. route/runtime-observation/current ownership-generation/current-scope plus protocol/transport/compatibility validation;
 11. GrantNonce consume eligibility/replay check;
 12. authoritative AccountId -> CharacterId ownership/lifecycle;
-13. AccountPresenceClaim / duplicate-login evaluation;
-14. CharacterLease compatibility/acquisition;
-15. one atomic final admission commit revalidates the exact admission key/profile trust decision and `<= 5s` trust/revocation-evidence freshness, then consumes GrantNonce and creates GameSessionId + connection_generation `1` + reconnect-proof state;
+13. AccountPresenceClaim / duplicate-login eligibility evaluation;
+14. CharacterLease acquisition eligibility plus current runtime-scope authority/readiness evaluation;
+15. one atomic final admission linearization boundary revalidates **every mutable predicate relevant to authority creation** and, only if all remain valid, consumes GrantNonce and establishes the complete admission authority set;
 16. publish admission success only after commit.
 
-If required current key/profile trust/revocation evidence is older than 5 seconds, unavailable, unauthenticated, contradictory or otherwise cannot prove current trust, fail before step 15 as `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`; GrantNonce is not consumed and no presence/lease/session/transport authority mutates. If authenticated evidence within the freshness bound explicitly says the exact key/profile is unknown, revoked or not trusted, fail as `ADMISSION_GRANT_AUTHENTICATION_FAILED` / `SECURITY_TERMINAL`. Validation earlier in the request is not trust escrow: a key/profile revoked before the authority-changing commit cannot succeed merely because signature verification previously passed.
+Immediately before and atomically with step 15 authority creation, the current game-domain owner MUST revalidate at minimum:
+
+- the JWT still satisfies the accepted `nbf`/`exp`/lifetime/skew equations at trusted server time;
+- authenticated admission signing-key/profile trust/revocation evidence still has accepted age `<= 5 seconds` and still accepts the exact key/profile/issuer/purpose;
+- current authenticated Platform-security evidence still has accepted age `<= 5 seconds`, remains non-contradictory and still admits the token `account_security_generation` and account state;
+- `route_revision`, `runtime_observation_revision`, target lifecycle, `scope_ownership_generation`, current runtime owner/placement and readiness still identify the exact permitted current target;
+- `protocol_major`, `transport_profile` and `compatibility_revision` are still supported by the exact current admission/runtime/content/ruleset boundary;
+- GrantNonce is still eligible and has not been consumed by a competing successful admission;
+- current AccountId -> CharacterId ownership/lifecycle still matches;
+- AccountPresenceClaim / duplicate-login state still permits this exact CharacterId and no newer competing claim has won;
+- CharacterLease is still legally acquirable/current for this exact character and no newer lease/fence generation conflicts;
+- no newer handoff, fence, takeover, terminal lifecycle or other current authority transition has superseded the candidate.
+
+Step 15 atomically performs the first authoritative admission effects:
+
+```text
+consume GrantNonce
++ establish/advance AccountPresenceClaim as required
++ establish/acquire current CharacterLease as required
++ create canonical GameSessionId
++ GameSession ACTIVE
++ connection_generation = 1
++ current reconnect-proof verifier/state
++ initial authoritative session/reconciliation boundary
+```
+
+No AccountPresenceClaim or CharacterLease acquisition becomes externally authoritative before this boundary merely because steps 13–14 evaluated eligibility.
+
+If any mutable predicate changed after its earlier check, step 15 fails before any candidate authority mutation and uses the most specific frozen FND-04 failure progression for the changed fact (for example grant expiry/not-yet-valid, key/profile trust failure or stale trust evidence, Platform-security revocation/stale evidence, route/runtime-generation stale, unsupported revision, account/character conflict, incumbent conflict or nonce replay). A losing candidate never rolls back or overwrites whatever account-presence, lease, runtime or session authority is actually current.
+
+If required current key/profile trust/revocation evidence is older than 5 seconds, unavailable, unauthenticated, contradictory or otherwise cannot prove current trust, fail as `ADMISSION_GRANT_SECURITY_EVIDENCE_STALE`; GrantNonce is not consumed and no presence/lease/session/transport authority mutates. If authenticated evidence within the freshness bound explicitly says the exact key/profile is unknown, revoked or not trusted, fail as `ADMISSION_GRANT_AUTHENTICATION_FAILED` / `SECURITY_TERMINAL`. Validation earlier in the request is not trust escrow: a key/profile revoked before the authority-changing commit cannot succeed merely because signature verification previously passed.
 
 No failure before or during step 15 creates partial player-control authority.
 
@@ -387,7 +419,7 @@ Positive fixtures include:
 - lifetime/skew boundaries;
 - exact UUID/generation/string encoding.
 
-Negative fixtures include:
+Negative/fault fixtures include:
 
 - `alg=none`;
 - deprecated `alg=EdDSA`;
@@ -407,7 +439,8 @@ Negative fixtures include:
 - stale route/runtime observation or changed scope ownership generation;
 - consumed GrantNonce replay/concurrent consume race;
 - ambiguous producer response maps to `ADMISSION_ATTEMPT_RECONCILIATION_REQUIRED`; reconciliation uses the same AdmissionAttemptRef and cannot mint a blind second capability or begin an independent new attempt until the prior attempt is deterministically retired and any possibly issued capability is no longer acceptable;
-- mixed producer/consumer revision/downgrade attempt.
+- mixed producer/consumer revision/downgrade attempt;
+- **change-before-commit matrix:** after the corresponding earlier validation succeeds but before step 15, independently expire/not-yet-validate the grant, revoke/stale Platform-security evidence, stale/untrust the signing-key/profile evidence, change route/runtime observation or scope ownership generation, make protocol/transport/compatibility unsupported, consume GrantNonce concurrently, change AccountId->CharacterId ownership/lifecycle, let another AccountPresenceClaim/incumbent win, make CharacterLease conflicting/stale, change runtime owner/readiness, or supersede the candidate with a newer authority transition; every case must fail before candidate authority mutation with the most specific frozen progression, consume no GrantNonce unless another already-successful transition consumed it, and preserve the authority state actually current at the final linearization boundary.
 
 Fixtures MUST be independently produced/validated enough that producer and consumer cannot share one serialization/validation bug unnoticed.
 
