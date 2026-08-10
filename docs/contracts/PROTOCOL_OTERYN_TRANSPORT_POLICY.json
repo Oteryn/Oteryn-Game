@@ -1,56 +1,74 @@
 {
   "contract_id": "NET-TRANSPORT-01",
-  "revision": 1,
-  "status": "ACCEPTED_ARCHITECTURE",
+  "revision": 2,
+  "status": "ACCEPTED_STRATEGY_QUIC_ACTIVATION_BLOCKED",
   "application_protocol": "protocol-oteryn",
   "application_protocol_count": 1,
   "superseding_adr": "docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md",
+  "currently_registered_transport_profiles": [1],
   "transports": {
     "tcp_tls13": {
+      "transport_profile_id": 1,
       "transport": "TCP",
       "security": "TLS_1_3",
       "initial_default": true,
+      "currently_registered": true,
+      "authoritative_admission_available": true,
       "required_safe_fallback": true
     },
     "quic_v1_tls13": {
+      "transport_profile_id": null,
       "transport": "QUIC_V1",
       "security": "TLS_1_3",
       "initial_default": false,
-      "player_opt_in_preference": true,
-      "production_adapter_implementation_authorized": false
+      "player_opt_in_target": true,
+      "player_opt_in_available": false,
+      "currently_registered": false,
+      "authoritative_admission_available": false,
+      "production_adapter_implementation_authorized": false,
+      "blocked_on": [
+        "PROTOCOL_OTERYN_V1_REGISTRY_QUIC_PROFILE",
+        "FND04_FRESH_ADMISSION_TRANSPORT_PROFILE_RECONCILIATION",
+        "FND04_RECOVERY_TRANSPORT_PROFILE_RECONCILIATION",
+        "QUIC_RESOURCE_LIMITS_AND_CONFORMANCE_EVIDENCE"
+      ]
     }
   },
   "client_modes": [
     {
       "id": "AUTO_TCP_FIRST",
       "ordinary_player_mode": true,
+      "available_now": true,
       "fallback": true,
-      "behavior": "TCP first; QUIC experiments only when authorized by rollout policy"
+      "behavior": "TCP profile 1 is authoritative; future QUIC experiments do not gain admission authority until separately accepted"
     },
     {
       "id": "PREFER_QUIC",
       "ordinary_player_mode": true,
-      "fallback": true,
-      "behavior": "QUIC first; automatic authorized TCP fallback after transport-class failure"
+      "available_now": false,
+      "target_behavior": "After profile reconciliation: request QUIC first and obtain a fresh Gateway-authorized TCP fallback attempt after transport-class failure"
     },
     {
       "id": "TCP_ONLY",
       "ordinary_player_mode": false,
+      "available_now": true,
       "fallback": false,
       "behavior": "Compatibility, diagnostics and remote operational kill switch"
     },
     {
       "id": "QUIC_ONLY",
       "ordinary_player_mode": false,
+      "available_now": false,
       "developer_diagnostic_only": true,
       "fallback": false,
-      "behavior": "Strict QUIC diagnostics; not a normal player preference"
+      "behavior": "Future strict QUIC diagnostics after a QUIC profile/adapter exists; never ordinary player authority"
     }
   ],
   "invariants": {
     "same_message_semantics": true,
     "same_service_identity": true,
     "same_tls_certificate_policy": true,
+    "same_platform_gateway_boundary": true,
     "same_admission_authority": true,
     "same_character_lease_authority": true,
     "same_game_session_authority": true,
@@ -60,22 +78,30 @@
     "gameplay_domain_transport_agnostic": true,
     "simultaneous_dual_transport_command_authority": false
   },
-  "credential_selection": {
-    "select_authenticated_winning_transport_before_ticket_redeem": true,
-    "ordinary_concurrent_ticket_redeem_on_tcp_and_quic": false
+  "gateway_admission_boundary": {
+    "game_login_ticket_redeemed_by": "OTERYN_PLATFORM_GAME_GATEWAY",
+    "game_login_ticket_sent_to_game_node": false,
+    "pre_admission_grant_is_game_login_ticket": false,
+    "pre_admission_grant_bound_to_one_registered_transport_profile": true,
+    "current_fresh_admission_transport_profile": 1,
+    "cross_profile_pre_admission_grant_reuse": false,
+    "fallback_before_admission": "OBTAIN_FRESH_GATEWAY_AUTHORIZED_ATTEMPT_AND_FALLBACK_PROFILE_GRANT",
+    "fallback_authorization_source": "FRESH_GAME_LOGIN_TICKET_OR_SEPARATELY_ACCEPTED_PLATFORM_CONTINUATION_MECHANISM",
+    "older_possibly_issued_grant_must_not_remain_independently_usable": true
   },
   "fallback": {
-    "allowed_failure_classes": [
-      "QUIC_PATH_OR_HANDSHAKE_TIMEOUT_WITHOUT_AUTHENTICATED_POLICY_RESPONSE",
+    "activation_status": "BLOCKED_UNTIL_QUIC_PROFILE_RECONCILIATION",
+    "allowed_failure_classes_after_activation": [
+      "QUIC_PATH_OR_HANDSHAKE_TIMEOUT_WITHOUT_AUTHENTICATED_APPLICATION_OR_SECURITY_REJECTION",
       "UDP_PATH_UNUSABLE_OR_BLOCKED",
       "LOCAL_QUIC_STACK_INITIALIZATION_FAILURE",
-      "AUTHENTICATED_TEMPORARY_QUIC_DISABLEMENT"
+      "AUTHENTICATED_ROLLOUT_POLICY_QUIC_DISABLEMENT"
     ],
     "forbidden_bypass_classes": [
       "CERTIFICATE_OR_SERVICE_IDENTITY_REJECTION",
       "ALPN_OR_PROTOCOL_REJECTION",
-      "INVALID_EXPIRED_OR_REPLAYED_TICKET",
-      "UNSUPPORTED_VERSION",
+      "INVALID_EXPIRED_OR_REPLAYED_CREDENTIAL_AT_ITS_OWNING_BOUNDARY",
+      "UNSUPPORTED_VERSION_OR_TRANSPORT_PROFILE",
       "ACCOUNT_OR_CHARACTER_RESTRICTION",
       "ENTITLEMENT_DENIAL",
       "CHARACTER_LEASE_OR_SESSION_CONFLICT",
@@ -84,11 +110,12 @@
   },
   "active_session_rebind": {
     "uses_fnd04_reconnect": true,
+    "target_transport_must_be_registered_and_authorized": true,
     "increments_connection_generation": true,
     "fences_stale_binding": true,
     "requires_reconciliation": true
   },
-  "quic_baseline": {
+  "quic_baseline_target": {
     "stream_per_message": false,
     "small_fixed_bounded_reliable_lanes": true,
     "zero_rtt_enabled": false,
@@ -99,7 +126,10 @@
       "s2n-quic"
     ]
   },
-  "required_preimplementation_evidence": [
+  "required_before_quic_player_activation": [
+    "REGISTER_STABLE_QUIC_TRANSPORT_PROFILE_ID",
+    "RECONCILE_FND04_FRESH_ADMISSION_GRANT_PROFILE",
+    "RECONCILE_FND04_REAUTHENTICATED_RECOVERY_GRANT_PROFILE",
     "UDP_BLACKHOLE_AND_RESTRICTED_NETWORK_FALLBACK",
     "PACKET_LOSS_AND_REORDERING",
     "NAT_REBINDING_OR_PATH_CHANGE",
@@ -111,8 +141,9 @@
     "REGISTERED_NUMERIC_RESOURCE_CEILINGS"
   ],
   "rollout": {
-    "phase_1": "TCP_DEFAULT_QUIC_OPT_IN",
-    "phase_2": "CONTROLLED_QUIC_ELIGIBILITY_WITH_TCP_DEFAULT",
+    "current": "TCP_PROFILE_1_ONLY",
+    "future_phase_1": "TCP_DEFAULT_QUIC_PLAYER_OPT_IN_AFTER_PROFILE_RECONCILIATION",
+    "future_phase_2": "CONTROLLED_QUIC_ELIGIBILITY_WITH_TCP_DEFAULT",
     "future_quic_default_requires_new_decision": true,
     "remote_tcp_only_kill_switch_required": true
   }
