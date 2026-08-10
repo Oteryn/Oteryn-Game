@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT architecture coordinator
 created_at: 2026-08-10T21:06:00+02:00
-updated_at: 2026-08-10T21:18:00+02:00
+updated_at: 2026-08-10T21:35:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -38,7 +38,7 @@ depends_on:
   - accepted FND-04 admission/reconnect/session architecture
   - accepted DUR-01 and ANL-01 contracts
 blocks:
-  - unambiguous architecture continuation and transport implementation spike
+  - unambiguous architecture continuation and a future bounded QUIC profile-reconciliation task
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories:
   - blakinio/Oteryn-Platform
@@ -46,36 +46,41 @@ external_repositories:
 
 ## Outcome
 
-Persist the owner-requested multi-perspective architecture review and the accepted transport direction without implementing runtime code: keep the existing Oteryn-v2 technical foundation, reduce delivery scope toward evidence-producing vertical slices, add explicit product/channel/determinism/admin/SRE/tooling guardrails, and supersede the TCP-only transport preference with one `protocol-oteryn` application protocol over TCP+TLS 1.3 by default plus player-opt-in QUIC preference with secure TCP fallback.
+Persist the owner-requested multi-perspective architecture review and transport direction without implementing runtime code: keep the existing Oteryn-v2 technical foundation, reduce delivery scope toward evidence-producing vertical slices, add explicit product/channel/determinism/admin/SRE/tooling guardrails, retain TCP+TLS 1.3 profile `1` as the current default/authoritative transport, and record QUIC v1 + TLS 1.3 as the future player-opt-in target with secure TCP fallback after the protocol/admission profile contracts are explicitly reconciled.
 
 ## Architecture and source of truth
 
 - `PROVEN`: current `main` at task start is `9794e9a6307b6f9db193ca2ce08607eb065b7d7e`.
-- `PROVEN`: there were no open PRs at task start; this task opened draft PR #145.
-- `PROVEN`: PR #63 is merged but its active task record still declared ownership of `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`; this task archives that stale record as an ownership/lifecycle correction without changing historical architecture evidence.
-- `PROVEN`: `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` marks FND-02/FND-03/FND-04, DUR-01 and ANL-01 accepted while runtime implementation remains separately unauthorized.
+- `PROVEN`: there were no open PRs at task start; this task opened PR #145.
+- `PROVEN`: PR #63 was merged while its active task record remained; this task archives that stale record and releases advisory ownership without changing historical architecture evidence.
+- `PROVEN`: FND-02 currently registers only TCP transport profile `1`; FND-04 fresh admission requires profile `1`, and the accepted recovery profile currently supports exact profile `1`.
+- `PROVEN`: Game Login Ticket redemption remains owned by Oteryn Platform Game Gateway; GameNode consumes purpose-separated pre-admission/recovery material and must not accept the Game Login Ticket.
 - `OWNER_ACCEPTED`: preserve the native Rust stack, one authoritative `protocol-oteryn`, Platform/game boundary, CharacterLease/fencing, one-writer channel authority, PostgreSQL durability direction, transactional outbox/audit, multichannel-first identity/ownership, native World Project/Bundle direction and read-only Game Intelligence.
-- `OWNER_ACCEPTED`: initial gameplay transport policy is TCP+TLS 1.3 default with QUIC v1 + TLS 1.3 available as a player preference; QUIC failure may fall back only for transport-level failures and must never bypass authentication, certificate, ALPN, ticket, lease, version, entitlement or policy rejection.
-- `OWNER_ACCEPTED`: `QUIC_ONLY` is diagnostic/developer-only; 0-RTT and QUIC DATAGRAM are excluded from baseline v1.
-- `DERIVED`: production preference for QUIC requires benchmark/fault evidence and a safe TCP-only kill switch.
+- `OWNER_ACCEPTED`: TCP+TLS 1.3 stays the initial default/safe baseline; QUIC is the intended later player preference with safe TCP fallback, not a second application protocol.
+- `REPAIRED`: QUIC player admission is explicitly **blocked** until a later accepted delivery registers a stable QUIC transport profile and reconciles both FND-04 fresh/recovery grant profiles. `PREFER_QUIC` is therefore not a functional production-client option yet.
+- `OWNER_ACCEPTED`: `QUIC_ONLY` is diagnostic/developer-only after QUIC exists; 0-RTT and QUIC DATAGRAM are excluded from the baseline.
 
 ## Acceptance criteria
 
 - [x] Archive the stale merged-PR #63 task and release its advisory ownership without rewriting historical evidence.
 - [x] Add a canonical 2026-08-10 architecture review refinement covering software, systems, development, engine, networking, security, SRE, producer, design, MMO operations, tooling and player perspectives.
 - [x] Add an explicit architecture status model separating decision, delivery and implementation states.
-- [x] Add ADR-0014 plus a machine-readable transport policy for TCP default / QUIC opt-in / secure fallback.
+- [x] Add ADR-0014 plus a machine-readable transport policy for TCP current/default plus future QUIC opt-in direction and safe fallback.
+- [x] Keep Game Login Ticket redemption at Platform Game Gateway and separate it from transport-bound pre-admission material.
+- [x] Make QUIC admission/recovery activation explicitly blocked until FND-02/FND-04 transport-profile reconciliation.
 - [x] Record GAME-VISION, GAME-CHANNEL, GAME-CHAR, GAME-ITEM and deterministic-simulation ordering/guardrails without prematurely implementing gameplay.
 - [x] Split the broad first proof into small ordered vertical slices that still traverse real system boundaries.
-- [x] Refresh the canonical current-status overlay and architecture index; older stale backlog/register execution prose remains historical under the overlay instead of being mass-rewritten.
+- [x] Refresh the canonical current-status overlay and architecture index without mass-rewriting historical evidence.
 - [x] Do not implement protocol, server, persistence, QUIC runtime, Platform changes or production activation.
-- [ ] Verify the final changed-file set, exact-head documentation/governance CI and independent audit before merge readiness.
+- [ ] Verify the repaired final changed-file set, exact-head CI and independent Codex/audit state before merge readiness.
 
 ## Excluded scope
 
 - no runtime implementation;
 - no production or protected-environment changes;
 - no writes to `blakinio/Oteryn-Platform`;
+- no QUIC transport-profile ID registration in this delivery;
+- no FND-04 grant-profile revision in this delivery;
 - no QUIC library selection freeze;
 - no QUIC 0-RTT or DATAGRAM baseline;
 - no autonomous AI sanctions;
@@ -84,61 +89,52 @@ Persist the owner-requested multi-perspective architecture review and the accept
 
 ## Implementation / findings
 
-- Refreshed root `AGENTS.md`, `AGENTS.override.md`, nested architecture/governance policy and GitHub-only execution rules before writes.
-- Verified GitHub connector access with admin/push permission; the earlier claim that this session lacked GitHub write access was incorrect.
-- Created dedicated branch and draft PR #145 from exact `main` SHA `9794e9a6307b6f9db193ca2ce08607eb065b7d7e`.
-- Archived the stale PR #63 task and released its advisory ownership.
-- Added ADR-0014, machine-readable transport policy, three-axis status model, canonical architecture index and multi-perspective programme refinement.
-- Refreshed `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` so the dependency ordering and transport decision are visible without rewriting historical ADR evidence.
-- `NET-TRANSPORT-01` explicitly supersedes only FND-02 transport-choice clauses; FND-02 remains authority for one `protocol-oteryn` application protocol and its sequencing/security/framing semantics.
+- Refreshed root and nested repository instructions before writes and verified the GitHub connector has write/admin permission for `blakinio/Oteryn-v2`.
+- Created dedicated branch and PR #145 from exact `main` SHA `9794e9a6307b6f9db193ca2ce08607eb065b7d7e`.
+- Archived stale PR #63 lifecycle ownership.
+- Added ADR-0014, transport-policy registry, status model, architecture index and multi-perspective programme refinement.
+- Initial exact-head CI passed, but Codex exact-head review on `ef1fa2cb7fec66e33b547a3343c6015654ba6e17` found two P1 contract conflicts:
+  1. QUIC had been described as accepted/player-available while the canonical FND-02 registry and FND-04 grant profiles support TCP profile `1` only.
+  2. the initial transport policy incorrectly implied transport selection before Game Login Ticket redemption, conflicting with the accepted Gateway redemption boundary.
+- Repair cycle 1 corrected both findings without broadening scope: QUIC is now an accepted future strategy but admission/recovery activation remains blocked; Game Login Ticket redemption remains at Gateway; fallback requires fresh Gateway-authorized transport-bound pre-admission material rather than cross-profile reuse.
 
 ## Validation
 
 ### Focused
 
-- changed-file discovery: GitHub PR #145 reports exactly the declared documentation/task/contract scope.
-- PR diff inspection: performed through GitHub connector; no runtime/workflow/dependency files are changed.
-- machine-readable contract: covered by the repository Agent Governance validation on the PR head; no JSON/governance failure reported.
+- changed-file discovery and diff inspection: GitHub PR #145.
+- machine-readable contract: `PROTOCOL_OTERYN_TRANSPORT_POLICY.json` revision 2 now records `ACCEPTED_STRATEGY_QUIC_ACTIVATION_BLOCKED`, current registered profile `[1]`, Gateway-owned Game Login Ticket redemption and no cross-profile pre-admission grant reuse.
+- runtime/workflow/dependency changes: none.
 
 ### Component/integration
 
-- command/run: `NOT_APPLICABLE` — documentation/contract task only
-- result: `NOT_APPLICABLE`
+- result: `NOT_APPLICABLE` — documentation/contract task only.
 
 ### E2E
 
-- scenario: `NOT_APPLICABLE` — no executable runtime behavior changes
-- result: `NOT_APPLICABLE`
+- result: `NOT_APPLICABLE` — no executable runtime behavior changes.
 
 ### Exact-head CI
 
-- final head: pending after this task checkpoint commit
-- trigger source: pull request
-- workflow/run/job: prior head `ba39311d8bb8d42ffb88016e04bc8b8a449b8184` had Agent Governance PASS (`31423159049`), Dependency Review PASS (`31423159735`), CodeQL in progress (`31423158441`); these results do not substitute for the new final head.
-- runner assignment: pending final-head observation
-- classification: pending
-- result: pending
+- prior pre-repair head `ef1fa2cb7fec66e33b547a3343c6015654ba6e17`: Agent Governance `31423308902` PASS; Dependency Review `31423310091` PASS; CodeQL `31423310164` PASS.
+- repaired final head: pending exact-head runs after this checkpoint commit; prior results do not substitute.
 
 ## Independent audit
 
-- exact head: pending final head
-- method/auditor: independent reviewer/workflow evidence required by repository policy; current coordinator review is not claimed as independent
-- material findings: pending
-- verdict: pending
+- Codex review `4900259919` on pre-repair head found two material P1 findings; both are repaired in the current branch.
+- final repaired exact-head Codex/audit result: pending.
 
 ## PR and closeout
 
-- changed-file review: current diff inspected; final-head recheck pending after this metadata commit
-- unresolved review threads: pending final-head inspection
-- related/superseded PRs: PR #63 merged; stale lifecycle record corrected
-- protected auto-merge: not enabled while audit/final-head gates remain pending
-- merge commit/result: pending
-- ownership release: pending merge/archive
+- changed-file review: repaired scope remains documentation/task/contract only.
+- unresolved review threads: two pre-repair P1 threads remain until the repaired exact head is re-reviewed/resolved.
+- merge: forbidden until repaired exact-head CI and review/audit are clean.
+- ownership release: pending merge + lifecycle archive.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Architecture and dual-transport artifacts are on draft PR #145; scope is frozen except for validation/closeout metadata.
+last_progress: Repaired both Codex P1 findings by preserving Gateway ticket redemption and blocking QUIC admission until protocol/FND-04 transport profiles are reconciled.
 status: validating
 branch: docs/OTV2-20260810-architecture-review-dual-transport
 head_sha: null
@@ -146,7 +142,7 @@ pr: 145
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: final-head-pending
+ci_check_generation: repaired-head-pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -155,10 +151,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Verify final-head CI and obtain independent audit evidence for PR #145 without moving the head.
+next_action: Verify repaired exact-head CI and rerun Codex review on PR #145; merge only if all material findings are closed.
 ```
