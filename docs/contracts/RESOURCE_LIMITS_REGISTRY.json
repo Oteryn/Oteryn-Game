@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-08-08T00:30:00+02:00",
+  "updated_at": "2026-08-10T14:48:00+02:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -29,23 +29,12 @@
       "resource": "One post-TLS length-prefixed encoded WireEnvelope",
       "unit": "bytes",
       "hard_maximum": 1048576,
-      "configurable_range": {
-        "minimum": 1048576,
-        "maximum": 1048576
-      },
+      "configurable_range": {"minimum": 1048576, "maximum": 1048576},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate uint32_be length before allocating or reading the frame payload; never reserve from an unchecked peer length.",
       "client_visible": true,
-      "boundary_tests": [
-        "0-byte frame rejected",
-        "1,048,576 bytes accepted when message-specific limits also permit",
-        "1,048,577 rejected before payload allocation",
-        "truncated frame rejected"
-      ],
-      "consumers": [
-        "client transport",
-        "server transport"
-      ],
+      "boundary_tests": ["0-byte frame rejected", "1,048,576 bytes accepted when message-specific limits also permit", "1,048,577 rejected before payload allocation", "truncated frame rejected"],
+      "consumers": ["client transport", "server transport"],
       "notes": "The four-byte prefix is excluded from payload_length."
     },
     {
@@ -54,22 +43,12 @@
       "resource": "Encoded ClientBootstrap or ClientResume protobuf payload",
       "unit": "bytes",
       "hard_maximum": 65536,
-      "configurable_range": {
-        "minimum": 65536,
-        "maximum": 65536
-      },
+      "configurable_range": {"minimum": 65536, "maximum": 65536},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound total payload and nested byte fields before retaining or performing credential work.",
       "client_visible": true,
-      "boundary_tests": [
-        "65,536 bytes accepted if all field limits pass",
-        "65,537 rejected",
-        "oversized unknown fields cannot bypass the total bound"
-      ],
-      "consumers": [
-        "ClientBootstrap decoder",
-        "ClientResume decoder"
-      ]
+      "boundary_tests": ["65,536 bytes accepted if all field limits pass", "65,537 rejected", "oversized unknown fields cannot bypass the total bound"],
+      "consumers": ["ClientBootstrap decoder", "ClientResume decoder"]
     },
     {
       "id": "FND02-ADMISSION-MATERIAL-BYTES",
@@ -77,20 +56,12 @@
       "resource": "ClientBootstrap.admission_material",
       "unit": "bytes",
       "hard_maximum": 16384,
-      "configurable_range": {
-        "minimum": 16384,
-        "maximum": 16384
-      },
+      "configurable_range": {"minimum": 16384, "maximum": 16384},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject peer-controlled length before copying or verification.",
       "client_visible": true,
-      "boundary_tests": [
-        "16,384 accepted",
-        "16,385 rejected before credential verification"
-      ],
-      "consumers": [
-        "FND-04 admission consumer"
-      ],
+      "boundary_tests": ["16,384 accepted", "16,385 rejected before credential verification"],
+      "consumers": ["FND-04 admission consumer"],
       "notes": "FND-04 may define a smaller semantic credential format, but FND-02 decoders remain required to safely reject/handle up to this hard wire maximum."
     },
     {
@@ -99,20 +70,12 @@
       "resource": "ClientResume.reconnect_material",
       "unit": "bytes",
       "hard_maximum": 16384,
-      "configurable_range": {
-        "minimum": 16384,
-        "maximum": 16384
-      },
+      "configurable_range": {"minimum": 16384, "maximum": 16384},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject peer-controlled length before copying or verification.",
       "client_visible": true,
-      "boundary_tests": [
-        "16,384 accepted",
-        "16,385 rejected before reconnect verification"
-      ],
-      "consumers": [
-        "FND-04 reconnect consumer"
-      ]
+      "boundary_tests": ["16,384 accepted", "16,385 rejected before reconnect verification"],
+      "consumers": ["FND-04 reconnect consumer"]
     },
     {
       "id": "FND02-CLIENT-BUILD-ID-BYTES",
@@ -120,21 +83,12 @@
       "resource": "UTF-8 client_build_id",
       "unit": "UTF-8 bytes",
       "hard_maximum": 128,
-      "configurable_range": {
-        "minimum": 128,
-        "maximum": 128
-      },
+      "configurable_range": {"minimum": 128, "maximum": 128},
       "failure_category": "INVALID_INPUT",
       "allocation_impact": "Validate UTF-8 and byte length before retaining or logging.",
       "client_visible": true,
-      "boundary_tests": [
-        "128-byte valid UTF-8 accepted",
-        "129 bytes rejected",
-        "invalid UTF-8 rejected"
-      ],
-      "consumers": [
-        "bootstrap/resume diagnostics"
-      ]
+      "boundary_tests": ["128-byte valid UTF-8 accepted", "129 bytes rejected", "invalid UTF-8 rejected"],
+      "consumers": ["bootstrap/resume diagnostics"]
     },
     {
       "id": "FND02-CAPABILITY-COUNT",
@@ -142,21 +96,12 @@
       "resource": "supported_capability_id or selected_capability_id collection",
       "unit": "entries",
       "hard_maximum": 128,
-      "configurable_range": {
-        "minimum": 128,
-        "maximum": 128
-      },
+      "configurable_range": {"minimum": 128, "maximum": 128},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound repeated field count before sorting, uniqueness checks or set intersection.",
       "client_visible": true,
-      "boundary_tests": [
-        "128 sorted unique IDs accepted",
-        "129 rejected",
-        "duplicates or unsorted IDs rejected as INVALID_CAPABILITY_SET"
-      ],
-      "consumers": [
-        "bootstrap/resume negotiation"
-      ],
+      "boundary_tests": ["128 sorted unique IDs accepted", "129 rejected", "duplicates or unsorted IDs rejected as INVALID_CAPABILITY_SET"],
+      "consumers": ["bootstrap/resume negotiation"],
       "notes": "Core v1 behavior is not capability-optional; this fixed decoder bound protects future additive extensions."
     },
     {
@@ -165,20 +110,12 @@
       "resource": "Foundation protobuf repeated field without a smaller named limit",
       "unit": "entries",
       "hard_maximum": 4096,
-      "configurable_range": {
-        "minimum": 4096,
-        "maximum": 4096
-      },
+      "configurable_range": {"minimum": 4096, "maximum": 4096},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound collection growth before materializing peer-controlled repeated values.",
       "client_visible": true,
-      "boundary_tests": [
-        "4,096 accepted where semantically valid",
-        "4,097 rejected before unbounded collection growth"
-      ],
-      "consumers": [
-        "all foundation protobuf decoders"
-      ]
+      "boundary_tests": ["4,096 accepted where semantically valid", "4,097 rejected before unbounded collection growth"],
+      "consumers": ["all foundation protobuf decoders"]
     },
     {
       "id": "FND02-PROTOBUF-NESTING-DEPTH",
@@ -186,20 +123,12 @@
       "resource": "Decoded protobuf message nesting",
       "unit": "levels",
       "hard_maximum": 32,
-      "configurable_range": {
-        "minimum": 32,
-        "maximum": 32
-      },
+      "configurable_range": {"minimum": 32, "maximum": 32},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Decoder must enforce recursion/nesting depth without stack or heap blowup.",
       "client_visible": false,
-      "boundary_tests": [
-        "depth 32 accepted",
-        "depth 33 rejected deterministically"
-      ],
-      "consumers": [
-        "all foundation protobuf decoders"
-      ]
+      "boundary_tests": ["depth 32 accepted", "depth 33 rejected deterministically"],
+      "consumers": ["all foundation protobuf decoders"]
     },
     {
       "id": "FND02-COMMAND-EXPECTED-REVISIONS",
@@ -207,21 +136,12 @@
       "resource": "ClientCommand.expected_revision",
       "unit": "entries",
       "hard_maximum": 64,
-      "configurable_range": {
-        "minimum": 64,
-        "maximum": 64
-      },
+      "configurable_range": {"minimum": 64, "maximum": 64},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound revision vector before command normalization.",
       "client_visible": true,
-      "boundary_tests": [
-        "64 unique revisions accepted",
-        "65 rejected",
-        "duplicate domain IDs rejected"
-      ],
-      "consumers": [
-        "server command decoder"
-      ]
+      "boundary_tests": ["64 unique revisions accepted", "65 rejected", "duplicate domain IDs rejected"],
+      "consumers": ["server command decoder"]
     },
     {
       "id": "FND02-COMMAND-PAYLOAD-BYTES",
@@ -229,20 +149,12 @@
       "resource": "ClientCommand.payload",
       "unit": "bytes",
       "hard_maximum": 65536,
-      "configurable_range": {
-        "minimum": 65536,
-        "maximum": 65536
-      },
+      "configurable_range": {"minimum": 65536, "maximum": 65536},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject before command-specific decode/allocation or domain mutation.",
       "client_visible": true,
-      "boundary_tests": [
-        "65,536 accepted when the command-type limit permits",
-        "65,537 rejected without domain mutation"
-      ],
-      "consumers": [
-        "server command decoder"
-      ]
+      "boundary_tests": ["65,536 accepted when the command-type limit permits", "65,537 rejected without domain mutation"],
+      "consumers": ["server command decoder"]
     },
     {
       "id": "FND02-COMMAND-RESULT-PAYLOAD-BYTES",
@@ -250,20 +162,12 @@
       "resource": "CommandResult.payload",
       "unit": "bytes",
       "hard_maximum": 65536,
-      "configurable_range": {
-        "minimum": 65536,
-        "maximum": 65536
-      },
+      "configurable_range": {"minimum": 65536, "maximum": 65536},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound before result-specific decode/allocation.",
       "client_visible": true,
-      "boundary_tests": [
-        "65,536 accepted when the command-type limit permits",
-        "65,537 rejected"
-      ],
-      "consumers": [
-        "client command-result decoder"
-      ]
+      "boundary_tests": ["65,536 accepted when the command-type limit permits", "65,537 rejected"],
+      "consumers": ["client command-result decoder"]
     },
     {
       "id": "FND02-OUTSTANDING-COMMANDS",
@@ -271,21 +175,12 @@
       "resource": "Contiguous commands sent but not terminally acknowledged for one GameSession",
       "unit": "commands",
       "hard_maximum": 64,
-      "configurable_range": {
-        "minimum": 64,
-        "maximum": 64
-      },
+      "configurable_range": {"minimum": 64, "maximum": 64},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Ingress accounting rejects excess new work before adding it to session/runtime queues.",
       "client_visible": true,
-      "boundary_tests": [
-        "64 outstanding commands accepted subject to runtime capacity",
-        "65th new command rejected with TOO_MANY_OUTSTANDING_COMMANDS",
-        "retry of an already-counted CommandId does not consume another slot"
-      ],
-      "consumers": [
-        "server session ingress"
-      ]
+      "boundary_tests": ["64 outstanding commands accepted subject to runtime capacity", "65th new command rejected with TOO_MANY_OUTSTANDING_COMMANDS", "retry of an already-counted CommandId does not consume another slot"],
+      "consumers": ["server session ingress"]
     },
     {
       "id": "FND02-STATE-DOMAINS-PER-SYNC",
@@ -293,21 +188,12 @@
       "resource": "State domains in one ResyncRequest or SnapshotBody",
       "unit": "entries",
       "hard_maximum": 256,
-      "configurable_range": {
-        "minimum": 256,
-        "maximum": 256
-      },
+      "configurable_range": {"minimum": 256, "maximum": 256},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Bound domain vectors/maps before construction.",
       "client_visible": true,
-      "boundary_tests": [
-        "256 unique domains accepted",
-        "257 rejected",
-        "duplicate domain IDs rejected"
-      ],
-      "consumers": [
-        "client/server reconciliation"
-      ]
+      "boundary_tests": ["256 unique domains accepted", "257 rejected", "duplicate domain IDs rejected"],
+      "consumers": ["client/server reconciliation"]
     },
     {
       "id": "FND02-STATE-DELTA-PAYLOAD-BYTES",
@@ -315,20 +201,12 @@
       "resource": "StateDelta.payload",
       "unit": "bytes",
       "hard_maximum": 262144,
-      "configurable_range": {
-        "minimum": 262144,
-        "maximum": 262144
-      },
+      "configurable_range": {"minimum": 262144, "maximum": 262144},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Reject before domain-specific delta decode/allocation.",
       "client_visible": true,
-      "boundary_tests": [
-        "262,144 accepted when the domain-specific limit permits",
-        "262,145 rejected"
-      ],
-      "consumers": [
-        "client state-delta decoder"
-      ]
+      "boundary_tests": ["262,144 accepted when the domain-specific limit permits", "262,145 rejected"],
+      "consumers": ["client state-delta decoder"]
     },
     {
       "id": "FND02-SNAPSHOT-CHUNK-COUNT",
@@ -336,21 +214,12 @@
       "resource": "Chunks in one SnapshotBody transfer",
       "unit": "chunks",
       "hard_maximum": 256,
-      "configurable_range": {
-        "minimum": 256,
-        "maximum": 256
-      },
+      "configurable_range": {"minimum": 256, "maximum": 256},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate SnapshotBegin before allocating chunk tracking structures.",
       "client_visible": true,
-      "boundary_tests": [
-        "256 accepted",
-        "257 rejected before assembler allocation",
-        "chunk_index >= chunk_count rejected"
-      ],
-      "consumers": [
-        "client snapshot assembler"
-      ]
+      "boundary_tests": ["256 accepted", "257 rejected before assembler allocation", "chunk_index >= chunk_count rejected"],
+      "consumers": ["client snapshot assembler"]
     },
     {
       "id": "FND02-SNAPSHOT-CHUNK-BYTES",
@@ -358,20 +227,12 @@
       "resource": "SnapshotChunk.data",
       "unit": "bytes",
       "hard_maximum": 524288,
-      "configurable_range": {
-        "minimum": 524288,
-        "maximum": 524288
-      },
+      "configurable_range": {"minimum": 524288, "maximum": 524288},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Validate chunk length before retaining or copying.",
       "client_visible": true,
-      "boundary_tests": [
-        "524,288 accepted",
-        "524,289 rejected"
-      ],
-      "consumers": [
-        "client snapshot assembler"
-      ]
+      "boundary_tests": ["524,288 accepted", "524,289 rejected"],
+      "consumers": ["client snapshot assembler"]
     },
     {
       "id": "FND02-SNAPSHOT-ASSEMBLED-BYTES",
@@ -379,21 +240,204 @@
       "resource": "Complete encoded SnapshotBody before protobuf decode",
       "unit": "bytes",
       "hard_maximum": 16777216,
-      "configurable_range": {
-        "minimum": 16777216,
-        "maximum": 16777216
-      },
+      "configurable_range": {"minimum": 16777216, "maximum": 16777216},
       "failure_category": "CAPACITY_EXCEEDED",
       "allocation_impact": "Track cumulative received bytes using checked arithmetic and abort before exceeding the bound.",
       "client_visible": true,
-      "boundary_tests": [
-        "16,777,216 accepted",
-        "16,777,217 cumulative bytes rejected",
-        "integer overflow in cumulative accounting rejected"
-      ],
-      "consumers": [
-        "client snapshot assembler"
-      ]
+      "boundary_tests": ["16,777,216 accepted", "16,777,217 cumulative bytes rejected", "integer overflow in cumulative accounting rejected"],
+      "consumers": ["client snapshot assembler"]
+    },
+    {
+      "id": "ANL01-EVENT-ENVELOPE-BYTES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "One encoded game EventEnvelope including payload",
+      "unit": "bytes",
+      "hard_maximum": 262144,
+      "configurable_range": {"minimum": 1024, "maximum": 262144},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check encoded record length before retaining, decoding, batching or publishing; family-specific maxima may be lower.",
+      "client_visible": false,
+      "boundary_tests": ["262,144-byte envelope accepted only when every nested limit passes", "262,145 rejected before retained allocation", "integer-overflow accounting rejected"]
+    },
+    {
+      "id": "ANL01-EVENT-PAYLOAD-BYTES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "EventEnvelope.payload registered protobuf bytes",
+      "unit": "bytes",
+      "hard_maximum": 196608,
+      "configurable_range": {"minimum": 0, "maximum": 196608},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject payload length before family-specific decode or copy; total envelope limit also applies.",
+      "client_visible": false,
+      "boundary_tests": ["196,608-byte payload accepted if total envelope remains within bound", "196,609 rejected", "payload cannot bypass total envelope bound"]
+    },
+    {
+      "id": "ANL01-ENVELOPE-STRING-BYTES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "One retention profile, identity-domain, build or revision string in EventEnvelope",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 128,
+      "configurable_range": {"minimum": 1, "maximum": 128},
+      "failure_category": "INVALID_INPUT",
+      "allocation_impact": "Validate per-string length and profile-specific ASCII grammar before retaining, indexing or logging.",
+      "client_visible": false,
+      "boundary_tests": ["128-byte allowed canonical string accepted where field grammar permits", "129 bytes rejected", "invalid field grammar rejected"]
+    },
+    {
+      "id": "ANL01-PROTOBUF-NESTING-DEPTH",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Decoded event envelope and registered payload protobuf nesting",
+      "unit": "levels",
+      "hard_maximum": 32,
+      "configurable_range": {"minimum": 8, "maximum": 32},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Decoder enforces recursion depth before stack/heap amplification.",
+      "client_visible": false,
+      "boundary_tests": ["configured maximum accepted", "one level above configured/hard maximum rejected deterministically"]
+    },
+    {
+      "id": "ANL01-BEST-EFFORT-QUEUE-ENTRIES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "In-process queued best-effort gameplay telemetry events per collector",
+      "unit": "events",
+      "hard_maximum": 65536,
+      "configurable_range": {"minimum": 1, "maximum": 65536},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reserve bounded collector accounting before enqueue. Overflow follows counted best-effort drop policy and never blocks authoritative gameplay on remote analytics storage.",
+      "client_visible": false,
+      "boundary_tests": ["configured queue bound enforced", "next new best-effort event counted/dropped when full", "durable audit cannot be routed into this drop queue"]
+    },
+    {
+      "id": "ANL01-BEST-EFFORT-QUEUE-BYTES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Total retained encoded bytes in one in-process best-effort telemetry collector queue",
+      "unit": "bytes",
+      "hard_maximum": 67108864,
+      "configurable_range": {"minimum": 1048576, "maximum": 67108864},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Checked cumulative byte accounting must reject/drop before queue growth exceeds the configured or absolute limit.",
+      "client_visible": false,
+      "boundary_tests": ["64 MiB absolute ceiling never exceeded", "checked arithmetic overflow rejected", "byte ceiling may bind before entry ceiling"]
+    },
+    {
+      "id": "ANL01-PUBLISH-BATCH-EVENTS",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Events in one publication/delivery batch",
+      "unit": "events",
+      "hard_maximum": 1024,
+      "configurable_range": {"minimum": 1, "maximum": 1024},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Split larger committed backlogs into bounded batches; never discard durable records to meet batch size.",
+      "client_visible": false,
+      "boundary_tests": ["1,024 events accepted subject to byte bound", "1,025 requires split/reject of batch construction", "durable records remain recoverable after split"]
+    },
+    {
+      "id": "ANL01-PUBLISH-BATCH-BYTES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Total encoded bytes in one publication/delivery batch",
+      "unit": "bytes",
+      "hard_maximum": 8388608,
+      "configurable_range": {"minimum": 262144, "maximum": 8388608},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked cumulative accounting and split before 8 MiB. Individual event maxima still apply.",
+      "client_visible": false,
+      "boundary_tests": ["8 MiB batch accepted only if event-count limit passes", "one byte over requires split/reject before send", "integer overflow rejected"]
+    },
+    {
+      "id": "ANL01-QUARANTINE-BATCH-EVENTS",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Events materialized in one dead-letter/quarantine operator/reprocessing batch",
+      "unit": "events",
+      "hard_maximum": 4096,
+      "configurable_range": {"minimum": 1, "maximum": 4096},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound one in-memory/transfer batch. Durable quarantine storage itself is not deleted at this bound.",
+      "client_visible": false,
+      "boundary_tests": ["4,096 materialized entries accepted subject to bytes", "4,097 split/paged", "paging does not discard durable quarantine evidence"]
+    },
+    {
+      "id": "ANL01-QUARANTINE-BATCH-BYTES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Encoded bytes materialized in one dead-letter/quarantine batch",
+      "unit": "bytes",
+      "hard_maximum": 33554432,
+      "configurable_range": {"minimum": 262144, "maximum": 33554432},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Page/split operator/reprocessing transfer before 32 MiB without deleting durable source evidence.",
+      "client_visible": false,
+      "boundary_tests": ["32 MiB accepted subject to entry/event bounds", "one byte over split/paged", "source evidence remains recoverable"]
+    },
+    {
+      "id": "ANL01-REPLAY-BATCH-EVENTS",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Events decoded/applied to a derived consumer in one replay batch",
+      "unit": "events",
+      "hard_maximum": 4096,
+      "configurable_range": {"minimum": 1, "maximum": 4096},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound replay work per batch and preserve checkpoint/cancellation between batches.",
+      "client_visible": false,
+      "boundary_tests": ["4,096 events accepted subject to byte bound", "4,097 split into another batch", "batch replay never invokes gameplay mutation"]
+    },
+    {
+      "id": "ANL01-REPLAY-BATCH-BYTES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Total encoded event bytes in one replay batch",
+      "unit": "bytes",
+      "hard_maximum": 33554432,
+      "configurable_range": {"minimum": 262144, "maximum": 33554432},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked byte accounting and split before 32 MiB.",
+      "client_visible": false,
+      "boundary_tests": ["32 MiB accepted only with count/event limits", "one byte over split", "overflow rejected"]
+    },
+    {
+      "id": "ANL01-REPLAY-WINDOW-EVENTS",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Maximum events requested in one bounded replay job/window before explicit continuation",
+      "unit": "events",
+      "hard_maximum": 100000,
+      "configurable_range": {"minimum": 1, "maximum": 100000},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Larger rebuilds must be partitioned into explicit resumable windows; do not allocate tracking for an unbounded caller range.",
+      "client_visible": false,
+      "boundary_tests": ["100,000-event window accepted as a bounded job", "100,001 requires partition/continuation", "cancellation/checkpoint works between windows"]
+    },
+    {
+      "id": "ANL01-QUERY-PAGE-ROWS",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Rows/events returned in one investigation/analytics query page",
+      "unit": "rows",
+      "hard_maximum": 10000,
+      "configurable_range": {"minimum": 1, "maximum": 10000},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Require pagination/cursor before materializing a larger result set.",
+      "client_visible": false,
+      "boundary_tests": ["10,000 rows accepted subject to byte/access policy", "10,001 requires pagination", "pagination preserves authorization/filter scope"]
+    },
+    {
+      "id": "ANL01-QUERY-RESULT-BYTES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "Encoded bytes returned/materialized in one analytics/investigation query page",
+      "unit": "bytes",
+      "hard_maximum": 67108864,
+      "configurable_range": {"minimum": 262144, "maximum": 67108864},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Stream/page before 64 MiB and apply access/redaction before serialization.",
+      "client_visible": false,
+      "boundary_tests": ["64 MiB accepted subject to row/access limits", "one byte over paged/rejected", "redaction cannot be bypassed by pagination"]
+    },
+    {
+      "id": "ANL01-EVIDENCE-PACKAGE-BYTES",
+      "owner_contract": "ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md",
+      "resource": "One generated investigation/export evidence package",
+      "unit": "bytes",
+      "hard_maximum": 268435456,
+      "configurable_range": {"minimum": 1048576, "maximum": 268435456},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Package generation must stream/chunk or explicitly split before 256 MiB; privacy/export authorization is checked before inclusion.",
+      "client_visible": false,
+      "boundary_tests": ["256 MiB maximum package generated only for authorized data", "one byte over requires split/new package", "split packages retain manifest/correlation without leaking unauthorized records"]
     }
   ]
 }
