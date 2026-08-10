@@ -23,10 +23,13 @@ All actively maintained architecture status documents should distinguish three i
 
 | Value | Meaning |
 |---|---|
-| `OPEN` | task/delivery work in progress |
-| `IN_REVIEW` | PR/audit/CI closeout in progress |
+| `PLANNED` | registered future gate; no active task or PR currently owns delivery |
+| `OPEN` | concrete task/delivery work is active |
+| `IN_REVIEW` | PR/audit/CI closeout is in progress |
 | `MERGED` | delivery merged but lifecycle bookkeeping may remain |
 | `LIFECYCLE_CLOSED` | task archived, ownership released and delivery bookkeeping complete |
+
+`OPEN` must not be used merely because a gate is required later. Use `PLANNED` until a concrete active task/delivery exists.
 
 ## ImplementationStatus
 
@@ -42,11 +45,13 @@ All actively maintained architecture status documents should distinguish three i
 
 1. One axis never implies another.
 2. `DecisionStatus=ACCEPTED` does not imply code exists.
-3. `DeliveryStatus=LIFECYCLE_CLOSED` does not imply runtime implementation.
-4. `ImplementationStatus=IMPLEMENTED` is not enough to claim production readiness.
-5. `PROVEN` requires named evidence tied to an exact revision.
-6. `PRODUCTION_ENABLED` requires separate production authority; repository merge authority is insufficient.
-7. Historical ADRs are not rewritten merely to retrofit this vocabulary. Current overlays and new maintained documents use it and explicitly supersede stale wording where required.
+3. `DeliveryStatus=PLANNED` means no active delivery task/PR exists for that gate.
+4. `DeliveryStatus=OPEN` requires a concrete active delivery record.
+5. `DeliveryStatus=LIFECYCLE_CLOSED` does not imply runtime implementation.
+6. `ImplementationStatus=IMPLEMENTED` is not enough to claim production readiness.
+7. `PROVEN` requires named evidence tied to an exact revision.
+8. `PRODUCTION_ENABLED` requires separate production authority; repository merge authority is insufficient.
+9. Historical ADRs are not rewritten merely to retrofit this vocabulary. Current overlays and new maintained documents use it and explicitly supersede stale wording where required.
 
 ## Examples
 
@@ -55,6 +60,14 @@ All actively maintained architecture status documents should distinguish three i
 ```yaml
 DecisionStatus: ACCEPTED
 DeliveryStatus: LIFECYCLE_CLOSED
+ImplementationStatus: NOT_STARTED
+```
+
+### Registered future gate without an active task
+
+```yaml
+DecisionStatus: PROPOSED
+DeliveryStatus: PLANNED
 ImplementationStatus: NOT_STARTED
 ```
 
@@ -82,6 +95,6 @@ Production remains separately disabled until rollout authority exists.
 
 Where compact tables cannot carry all three fields, wording must still preserve the distinction, for example:
 
-`ACCEPTED / LIFECYCLE-CLOSED / RUNTIME NOT STARTED`.
+`ACCEPTED / LIFECYCLE_CLOSED / RUNTIME NOT STARTED`.
 
 Do not use `DONE`, `COMPLETE` or `CLOSED` alone when readers could reasonably interpret it as implemented product behavior.
