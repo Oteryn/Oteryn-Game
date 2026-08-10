@@ -138,15 +138,16 @@ A mock that bypasses a claimed Gateway/transport/GameNode/PostgreSQL boundary is
 
 ## Networking decision
 
-`ADR-0014 / NET-TRANSPORT-01` defines the accepted transport direction:
+`ADR-0014 / NET-TRANSPORT-01` defines the accepted transport **strategy**, not current QUIC activation:
 
 ```text
-TCP + TLS 1.3: initial default + mandatory safe fallback
-QUIC v1 + TLS 1.3: player-opt-in preferred transport
-QUIC_ONLY: developer/diagnostic only
+TCP + TLS 1.3 profile 1: current registered/default authoritative transport
+QUIC v1 + TLS 1.3: intended future player-opt-in target
+QUIC player admission/recovery: BLOCKED pending FND-02/FND-04 profile reconciliation and evidence
+QUIC_ONLY: future developer/diagnostic only
 ```
 
-Both adapters carry the same `protocol-oteryn`; 0-RTT and baseline QUIC DATAGRAM remain disabled. QUIC implementation/default promotion requires measured evidence and registered numeric resource ceilings.
+Both transports must carry the same `protocol-oteryn`. FND-02's measured-benefit prerequisite remains binding. The future QUIC baseline preserves FND-02 visible ordering by keeping all `SERVER_SEQUENCED` traffic and snapshot Begin/Chunk/Commit on one reliable ordered server-authoritative lane; semantically independent control/liveness may use another bounded lane only if it cannot advance or contradict command/server-sequence/state-revision/snapshot authority. 0-RTT and baseline QUIC DATAGRAM remain disabled.
 
 ## Admin/GM control plane
 
@@ -262,8 +263,10 @@ admin/security/SRE baseline
 
 Do not freeze now without evidence:
 
+- stable QUIC transport-profile ID and FND-04 QUIC grant-profile revisions;
 - final QUIC Rust library and exact QUIC limits/fallback timing;
-- QUIC as default transport;
+- QUIC activation or default transport;
+- optional future cross-lane QUIC authoritative resequencing;
 - live migration between GameNodes;
 - Kubernetes/microservice decomposition;
 - full Studio UX architecture;
