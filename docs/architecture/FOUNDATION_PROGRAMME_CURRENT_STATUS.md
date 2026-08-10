@@ -15,7 +15,7 @@ This document answers what is accepted now and what may happen next. Detailed re
 
 Older backlog/register prose that describes completed FND/DUR/ANL gates as live is historical execution narrative. Accepted contracts plus this overlay govern current progression. Stable decision IDs and future dependency requirements remain valid unless explicitly superseded.
 
-`docs/architecture/ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-10.md` adds owner-accepted programme ordering and product/operations refinements. `docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md` explicitly supersedes only the TCP-only/defer-QUIC transport-choice clauses of FND-02; the application protocol and all security/sequencing/fencing semantics remain one `protocol-oteryn` contract.
+`docs/architecture/ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-10.md` adds owner-accepted programme ordering and product/operations refinements. `docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md` accepts the long-term dual-transport strategy but explicitly preserves TCP transport profile `1` as the only currently registered/authoritative gameplay transport. QUIC player admission remains blocked until `PROTOCOL_OTERYN_V1_REGISTRY.json` and both FND-04 fresh/recovery grant profiles are reconciled by a later accepted delivery. The application protocol and all security/sequencing/fencing semantics remain one `protocol-oteryn` contract.
 
 Use `ARCHITECTURE_STATUS_MODEL.md` to distinguish architecture acceptance, delivery closeout and actual implementation/proof/production state.
 
@@ -28,8 +28,8 @@ No status row implies runtime implementation or production activation.
 | `FND-01` | `ACCEPTED AND APPLIED` | workspace/dependency contract + canonical Rust cutover |
 | `VSL-02` | `ACCEPTED AND COMPLETE` | client migration/cutover complete |
 | `FND-ID-01` | `ACCEPTED` | semantic identity contract |
-| `FND-02` | `ACCEPTED` | `protocol-oteryn` v1 architecture; implementation separately gated; transport-choice subset refined by ADR-0014 |
-| `NET-TRANSPORT-01` | `ACCEPTED ARCHITECTURE / RUNTIME NOT STARTED` | TCP+TLS 1.3 initial default + safe fallback; QUIC v1+TLS 1.3 player-opt-in preference; no 0-RTT/DATAGRAM baseline |
+| `FND-02` | `ACCEPTED` | `protocol-oteryn` v1 architecture; current registered transport remains TCP profile `1` |
+| `NET-TRANSPORT-01` | `ACCEPTED STRATEGY / QUIC ADMISSION BLOCKED / RUNTIME NOT STARTED` | TCP+TLS 1.3 initial default + safe baseline; QUIC v1+TLS 1.3 is a future player-opt-in target pending protocol/FND-04 profile reconciliation; no 0-RTT/DATAGRAM baseline |
 | `FND-03` | `ACCEPTED` | authoritative runtime execution architecture |
 | `FND-04A/B/C` | `ACCEPTED AND LIFECYCLE-CLOSED` | admission + reconnect/recovery + integration |
 | `FND-04` overall | `ACCEPTED AND CLOSED` | programme #112 complete |
@@ -46,7 +46,7 @@ No status row implies runtime implementation or production activation.
 
 ## 3. Accepted baseline preserved
 
-FND-02 retains one `protocol-oteryn` application protocol, TLS/protobuf gameplay semantics, GameSession-scoped nonzero uint64 CommandId, server sequencing/revisions, reconciliation, bounded inputs and fail-closed compatibility/security behavior. ADR-0014 changes only transport selection: TCP+TLS 1.3 is the initial default and mandatory safe fallback, while QUIC v1+TLS 1.3 may be preferred by an opted-in client. Both transports preserve identical application/security authority.
+FND-02 retains one `protocol-oteryn` application protocol, TLS/protobuf gameplay semantics, GameSession-scoped nonzero uint64 CommandId, server sequencing/revisions, reconciliation, bounded inputs and fail-closed compatibility/security behavior. The current accepted registry contains TCP+TLS 1.3 transport profile `1` only. ADR-0014 changes long-term transport direction, not current admission compatibility: QUIC remains blocked until a stable QUIC transport profile and matching FND-04 fresh/recovery grant semantics are accepted. Any future QUIC adapter must preserve identical application/security authority.
 
 FND-03 retains one logical authoritative mutation owner per channel/instance, separate ownership generation, owner-scoped RuntimeExecutionOrdinal, bounded queues, fail-closed stale work and measured capacity requirements. The first GameNode implementation should remain a domain-modular monolith until real deployment/security/data/failure boundaries justify separation.
 
@@ -114,7 +114,7 @@ Before external alpha, operator/GM mutations must use typed, RBAC-controlled, id
 Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01 architecture does **not** authorize:
 
 - TCP or QUIC gameplay adapter/listener implementation;
-- QUIC library selection, 0-RTT or DATAGRAM activation;
+- a QUIC transport profile, QUIC admission/recovery, functional player QUIC option, QUIC library selection, 0-RTT or DATAGRAM activation;
 - runtime event collector implementation;
 - PostgreSQL table/outbox/checkpoint/migration implementation;
 - transaction isolation/locking/retry/RPO/RTO implementation;
@@ -139,8 +139,9 @@ The immediate programme is refined to avoid freezing persistence/gameplay from t
 5. `DUR-03 — Item Transaction and Anti-Duplication Invariants` — consumes accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics.
 6. `DUR-04` minimum headless content path — schema -> validator -> deterministic compiler -> bundle -> loader; full Studio remains downstream.
 7. `SIM-DETERMINISM-01` — freeze authoritative arithmetic/replay requirements before broad combat/AI implementation.
-8. Implement the umbrella `VSL-01` as ordered real-boundary slices: admission, movement, combat, persistence, recovery, then multichannel.
-9. Establish minimal admin/security/SRE readiness before external alpha.
+8. `NET-TRANSPORT-02` (or an equivalent bounded successor) — register QUIC transport profile and reconcile FND-04 fresh/recovery transport bindings before functional player QUIC admission.
+9. Implement the umbrella `VSL-01` as ordered real-boundary slices: admission, movement, combat, persistence, recovery, then multichannel.
+10. Establish minimal admin/security/SRE readiness before external alpha.
 
 `PROD-ENTITLEMENTS-01` remains independently blocked by open P1 `Oteryn-Platform#944`; these refinements do not change that dependency.
 
@@ -166,11 +167,13 @@ accepted foundation architecture
 != implemented runtime
 != proven production system
 
-TCP + TLS 1.3
--> initial default + safe fallback
+TCP + TLS 1.3 profile 1
+-> current registered/default gameplay transport
+-> safe baseline
 
 QUIC v1 + TLS 1.3
--> player-opt-in preferred transport
+-> accepted future player-opt-in target
+-> admission/recovery BLOCKED until registry + FND-04 profile reconciliation
 -> implementation/default promotion requires evidence
 
 DUR-02
