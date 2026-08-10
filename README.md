@@ -14,14 +14,14 @@ Core baseline:
 - [ADR-0005: Native world format, Oteryn Studio and legacy conversion boundary](docs/architecture/ADR-0005-native-world-format-and-oteryn-studio.md)
 - [ADR-0006: Game Intelligence, analytics and audit](docs/architecture/ADR-0006-game-intelligence-analytics-and-audit.md)
 - [ADR-0009: GameNode capacity, deployment and recovery](docs/architecture/ADR-0009-game-node-execution-capacity-deployment-and-recovery-baseline.md)
-- [ADR-0014: TCP-default, QUIC-opt-in dual gameplay transport](docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md)
+- [ADR-0014: TCP-default, QUIC-opt-in dual gameplay transport strategy](docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md)
 - [2026-08-10 architecture review refinements](docs/architecture/ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-10.md)
 - [Foundation decision backlog](docs/architecture/FOUNDATION_DECISION_BACKLOG.md)
 - [Multichannel system scope matrix](docs/architecture/MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md)
 
 The target uses one project-owned gameplay application protocol (`protocol-oteryn`), one logical world with one or more gameplay channels, explicit world/channel/instance ownership, an authoritative Rust server and a project-owned native world/content model. OTBM and historical editors remain migration/reference inputs rather than target runtime dependencies.
 
-Initial gameplay transport policy is TCP + TLS 1.3 by default, with QUIC v1 + TLS 1.3 available as a player-opt-in preferred transport and TCP retained as the safe fallback. Both adapters carry the same `protocol-oteryn`; QUIC implementation and production rollout remain separately gated.
+Current registered gameplay transport remains TCP + TLS 1.3 profile `1`. QUIC v1 + TLS 1.3 is the accepted future player-opt-in transport target with TCP retained as the safe baseline, but functional QUIC admission/recovery is blocked until the protocol transport registry and FND-04 fresh/recovery grant profiles are explicitly reconciled and accepted. Both transports remain one `protocol-oteryn` application protocol.
 
 Architecture acceptance does not imply implementation or production activation. See the [three-axis architecture status model](docs/architecture/ARCHITECTURE_STATUS_MODEL.md).
 
