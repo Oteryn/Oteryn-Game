@@ -1,10 +1,16 @@
 {
   "contract_id": "NET-TRANSPORT-01",
-  "revision": 3,
-  "status": "ACCEPTED_STRATEGY_QUIC_ACTIVATION_BLOCKED",
+  "revision": 4,
+  "status": "ACCEPTED_STRATEGY_QUIC_ACTIVATION_BLOCKED_RUNTIME_NOT_STARTED",
   "application_protocol": "protocol-oteryn",
   "application_protocol_count": 1,
   "adr": "docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md",
+  "runtime_implementation": {
+    "gameplay_transport_adapter_available": false,
+    "gameplay_listener_available": false,
+    "native_client_gameplay_entry_available": false,
+    "production_activation_authorized": false
+  },
   "fnd02_relationship": {
     "current_tcp_profile_1_superseded": false,
     "measured_benefit_prerequisite_superseded": false,
@@ -12,7 +18,7 @@
       "SECTION_5_WHY_TCP_FOR_V1_DEFERRED_QUIC_DIRECTION",
       "SECTION_24_QUIC_V1_DEFERRED_PENDING_MEASURED_BENEFIT"
     ],
-    "refinement": "QUIC is the intended future optional transport target, while registration, activation and default promotion remain deferred until contracts and evidence are accepted"
+    "refinement": "QUIC is the intended future optional transport target, while registration, activation and default promotion remain deferred until contracts, implementation and evidence are accepted"
   },
   "currently_registered_transport_profiles": [1],
   "transports": {
@@ -20,20 +26,24 @@
       "transport_profile_id": 1,
       "transport": "TCP",
       "security": "TLS_1_3",
-      "initial_default": true,
+      "architecture_initial_default": true,
       "currently_registered": true,
-      "authoritative_admission_available": true,
+      "admission_semantics_registered": true,
+      "runtime_adapter_available": false,
+      "runtime_listener_available": false,
       "required_safe_baseline": true
     },
     "quic_v1_tls13": {
       "transport_profile_id": null,
       "transport": "QUIC_V1",
       "security": "TLS_1_3",
-      "initial_default": false,
+      "architecture_initial_default": false,
       "player_opt_in_target": true,
-      "player_opt_in_available": false,
+      "player_opt_in_runtime_available": false,
       "currently_registered": false,
-      "authoritative_admission_available": false,
+      "admission_semantics_registered": false,
+      "runtime_adapter_available": false,
+      "runtime_listener_available": false,
       "production_adapter_implementation_authorized": false,
       "blocked_on": [
         "PROTOCOL_OTERYN_V1_REGISTRY_QUIC_PROFILE",
@@ -48,30 +58,35 @@
     {
       "id": "AUTO_TCP_FIRST",
       "ordinary_player_mode": true,
-      "available_now": true,
+      "runtime_available_now": false,
+      "architecture_target": true,
       "fallback": true,
-      "behavior": "TCP profile 1 is authoritative; future QUIC experiments do not gain admission authority until separately accepted"
+      "target_behavior": "When gameplay transport runtime exists, TCP profile 1 is the initial default; future QUIC experiments do not gain admission authority until separately accepted"
     },
     {
       "id": "PREFER_QUIC",
       "ordinary_player_mode": true,
-      "available_now": false,
-      "target_behavior": "After profile reconciliation: request QUIC first and obtain a fresh Gateway-authorized TCP fallback attempt after transport-class failure"
+      "runtime_available_now": false,
+      "architecture_target": true,
+      "fallback": true,
+      "target_behavior": "After QUIC profile reconciliation and runtime implementation: request QUIC first and obtain a fresh Gateway-authorized TCP fallback attempt after transport-class failure"
     },
     {
       "id": "TCP_ONLY",
       "ordinary_player_mode": false,
-      "available_now": true,
+      "runtime_available_now": false,
+      "architecture_target": true,
       "fallback": false,
-      "behavior": "Compatibility, diagnostics and remote operational kill switch"
+      "target_behavior": "Compatibility, diagnostics and remote operational kill switch after a TCP gameplay runtime exists"
     },
     {
       "id": "QUIC_ONLY",
       "ordinary_player_mode": false,
-      "available_now": false,
+      "runtime_available_now": false,
+      "architecture_target": true,
       "developer_diagnostic_only": true,
       "fallback": false,
-      "behavior": "Future strict QUIC diagnostics after a QUIC profile/adapter exists; never ordinary player authority"
+      "target_behavior": "Future strict QUIC diagnostics after a registered QUIC profile and adapter exist; never ordinary player authority"
     }
   ],
   "invariants": {
@@ -94,14 +109,14 @@
     "game_login_ticket_sent_to_game_node": false,
     "pre_admission_grant_is_game_login_ticket": false,
     "pre_admission_grant_bound_to_one_registered_transport_profile": true,
-    "current_fresh_admission_transport_profile": 1,
+    "current_architecture_fresh_admission_transport_profile": 1,
     "cross_profile_pre_admission_grant_reuse": false,
     "fallback_before_admission": "OBTAIN_FRESH_GATEWAY_AUTHORIZED_ATTEMPT_AND_FALLBACK_PROFILE_GRANT",
     "fallback_authorization_source": "FRESH_GAME_LOGIN_TICKET_OR_SEPARATELY_ACCEPTED_PLATFORM_CONTINUATION_MECHANISM",
     "older_possibly_issued_grant_must_not_remain_independently_usable": true
   },
   "fallback": {
-    "activation_status": "BLOCKED_UNTIL_QUIC_PROFILE_RECONCILIATION",
+    "runtime_activation_status": "NOT_IMPLEMENTED_AND_QUIC_BLOCKED_UNTIL_PROFILE_RECONCILIATION",
     "allowed_failure_classes_after_activation": [
       "QUIC_PATH_OR_HANDSHAKE_TIMEOUT_WITHOUT_AUTHENTICATED_APPLICATION_OR_SECURITY_REJECTION",
       "UDP_PATH_UNUSABLE_OR_BLOCKED",
@@ -165,13 +180,14 @@
     "MALFORMED_AND_ADVERSARIAL_TRAFFIC",
     "OBSERVABILITY_AND_OPERABILITY",
     "REGISTERED_NUMERIC_RESOURCE_CEILINGS",
-    "MEASURED_PLAYER_OR_OPERATIONAL_BENEFIT_OVER_TCP"
+    "MEASURED_PLAYER_OR_OPERATIONAL_BENEFIT_OVER_TCP",
+    "IMPLEMENT_AND_PROVE_GAMEPLAY_TRANSPORT_ADAPTERS"
   ],
   "rollout": {
-    "current": "TCP_PROFILE_1_ONLY",
-    "future_phase_1": "TCP_DEFAULT_QUIC_PLAYER_OPT_IN_AFTER_PROFILE_RECONCILIATION_AND_EVIDENCE",
+    "current": "ARCHITECTURE_ONLY_TCP_PROFILE_1_REGISTERED_RUNTIME_NOT_STARTED",
+    "future_phase_1": "TCP_DEFAULT_QUIC_PLAYER_OPT_IN_AFTER_PROFILE_RECONCILIATION_RUNTIME_IMPLEMENTATION_AND_EVIDENCE",
     "future_phase_2": "CONTROLLED_QUIC_ELIGIBILITY_WITH_TCP_DEFAULT",
     "future_quic_default_requires_new_decision": true,
-    "remote_tcp_only_kill_switch_required": true
+    "remote_tcp_only_kill_switch_required_when_runtime_exists": true
   }
 }
