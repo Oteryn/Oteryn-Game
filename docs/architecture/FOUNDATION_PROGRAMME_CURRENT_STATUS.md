@@ -1,13 +1,15 @@
 # Oteryn v2 Foundation Programme — Current Status
 
 - Status: Canonical current execution-status overlay
-- Date: 2026-08-10
+- Date: 2026-08-11
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Applies to: accepted foundation progression and next ordered architecture gates
 - FND-04 lifecycle closeout merge: `adb0882a5ddbe42944fe955f5effb78fd5495422`
 - DUR-01 lifecycle closeout merge: `ef42fa47ab054ab8aa304c017307c1945f931b59`
 - ANL-01 delivery merge: `af2fa495c1126080ffc1d0717b7d0ef54f6b29ca`
-- Current phase: `ANL-01 ACCEPTED + LIFECYCLE_CLOSED + NOT_STARTED runtime / DUR-02 discovery next / product-channel refinements planned`
+- Dual-transport architecture closeout merge: `05544969baf58c3a40354f366438d759bfd159e5`
+- Platform entitlement producer-remediation merge: `blakinio/Oteryn-Platform@afaa6d1d8340e44b1152b62d6d27e5fd1649804a`
+- Current phase: `foundation architecture accepted/lifecycle-closed where delivered + runtime largely NOT_STARTED / product semantics and bounded DUR-02 discovery next`
 
 ## 1. Authority of this overlay
 
@@ -25,9 +27,9 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 |---|---|---|---|---|
 | `FND-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `PROVEN` | applied 19-member workspace/dependency cutover proven by PR #50 exact final head `5092f868a42d545f47a98c0b9723210570cd9d45`, squash merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`; exact-head Agent Governance `31095853261`, Dependency Review `31095853437`, CodeQL `31095853606`, Rust workspace `31095853343` and adversarial migration audit `31095053578` all PASS |
 | `VSL-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `PROVEN` | native-client cutover/migration proven by the same PR #50 exact head `5092f868a42d545f47a98c0b9723210570cd9d45` and merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`; Linux/Windows build, tests, pre-native fail-closed, supply-chain and named exact-head checks recorded PASS in PR #50 |
-| `FND-ID-01` | `ACCEPTED` | `OPEN` | `NOT_STARTED` | semantic identity architecture is accepted, but authoritative active support-task records still remain under `docs/agents/tasks/active/`; PR #147 archived only a bounded stale subset, so lifecycle ownership is not yet fully released and no runtime implementation is claimed |
+| `FND-ID-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | semantic identity architecture is accepted; PR #147 merge `81db47966d76709a0e44dfbf1bc3979f38a24ffa` archived the remaining stale merged FND-ID support records and post-merge lifecycle normalization releases its cleanup owner; no runtime identity implementation is claimed |
 | `FND-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | `protocol-oteryn` v1 architecture accepted and its task lifecycle is archived; TCP profile `1` is registered architecturally, but production gameplay protocol/transport runtime remains separately gated |
-| `NET-TRANSPORT-01` | `ACCEPTED` | `OPEN` | `NOT_STARTED` | exhausted review candidate PR #145 rotated after final material review findings; bounded successor repair owns the final documentation repair; no gameplay transport adapter/listener or player mode is runtime-available |
+| `NET-TRANSPORT-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | final successor PR #149 exact head `641de04b1397cb910f6f26e7dd1594babb8ad1ac` passed exact-head self-review, Agent Governance, Dependency Review, CodeQL and required independent review; squash merge `05544969baf58c3a40354f366438d759bfd159e5`; no gameplay transport adapter/listener or player mode is runtime-available |
 | `FND-03` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | authoritative runtime execution architecture accepted and its task lifecycle is archived; GameNode runtime implementation not claimed |
 | `FND-04A/B/C` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | admission + reconnect/recovery + integration architecture accepted; runtime implementation separately gated |
 | `FND-04` overall | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | programme #112 architecture lifecycle complete; no gameplay admission runtime claimed |
@@ -41,6 +43,7 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 | `DUR-02` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | persistence discovery may start from DUR-01 + ANL-01; final character-bearing schema also requires GAME-CHAR-01 |
 | `DUR-03` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | waits for accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics |
 | `DUR-04` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | content/world/scripting architecture; minimum headless schema/validator/compiler/bundle/loader precedes full Studio |
+| `PROD-ENTITLEMENTS-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Platform producer security prerequisite #944 is satisfied by PR #968 merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`; Oteryn-v2 consumer/enforcement contract remains unaccepted and Premium/VIP/game-consumed entitlement activation remains unauthorized |
 
 The `ImplementationStatus` column describes only the scope of the named gate. `NOT_STARTED` does not mean adjacent repository code is absent; it means this overlay does not claim the gate's production/runtime behavior as implemented. `PROVEN` is used only where exact revision and named evidence are present in the row or directly named delivery record.
 
@@ -48,7 +51,7 @@ The `ImplementationStatus` column describes only the scope of the named gate. `N
 
 FND-02 retains one `protocol-oteryn` application protocol, TLS/protobuf gameplay semantics, GameSession-scoped nonzero uint64 CommandId, server sequencing/revisions, reconciliation, bounded inputs and fail-closed compatibility/security behavior. The current accepted registry contains TCP+TLS 1.3 transport profile `1` only as architecture/compatibility registration; **no gameplay transport adapter/listener is implemented or authorized by these architecture documents**. ADR-0014 refines future transport direction, not current admission compatibility: QUIC remains blocked until a stable QUIC transport profile and matching FND-04 fresh/recovery grant semantics are accepted. FND-02's measured-benefit prerequisite remains binding. Any future QUIC adapter must preserve identical application/security authority and visible ordering.
 
-FND-03 retains one logical authoritative mutation owner per channel/instance, separate ownership generation, owner-scoped RuntimeExecutionOrdinal, bounded queues, fail-closed stale work and measured capacity requirements. The first GameNode implementation should remain a domain-modular monolith until real deployment/security/data/failure boundaries justify separation.
+FND-03 retains one logical authoritative mutation owner per channel/instance, separate ownership generation, owner-scoped RuntimeExecutionOrdinal, bounded queues, fail-closed stale work and measured capacity requirements. ADR-0009 remains binding that one `GameNode` is one game-server process. ADR-0015 leaves internal module/crate decomposition unfrozen; a domain-modular monolith is only the preferred nonbinding starting hypothesis until measured deployment/security/data/failure evidence justifies a distinct adjacent service boundary or a later explicit superseding decision.
 
 FND-04 remains accepted/lifecycle-closed with ownership-before-world admission, purpose-separated grant profiles, anti-rollback security evidence, PREPARE/COMMIT reconnect, healthy-binding non-preemption, ControlLossEpoch, exactly 4 seconds eligible defensive PvE re-entry protection and fail-closed recovery. Any future change to the four-second value requires explicit game-design evidence and superseding policy rather than hidden configuration drift.
 
@@ -125,7 +128,8 @@ Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01 architecture does **not** authorize:
 - investigation/AI write authority;
 - Platform migrations/writes;
 - production analytics collection;
-- gameplay runtime/deployment/traffic activation.
+- gameplay runtime/deployment/traffic activation;
+- Premium/VIP or other game-consumed entitlement activation.
 
 The native client therefore remains legitimately pre-native-protocol until a separately authorized implementation task proves the transport/session/runtime path.
 
@@ -144,7 +148,7 @@ The immediate programme is refined to avoid freezing persistence/gameplay from t
 9. Implement the umbrella `VSL-01` as ordered real-boundary slices: admission, movement, combat, persistence, recovery, then multichannel.
 10. Establish minimal admin/security/SRE readiness before external alpha.
 
-`PROD-ENTITLEMENTS-01` remains independently blocked by open P1 `Oteryn-Platform#944`; these refinements do not change that dependency.
+`PROD-ENTITLEMENTS-01` is no longer waiting on Platform issue #944: its producer-side security prerequisite is satisfied by Oteryn-Platform PR #968 / merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`. It remains independently deferred and blocks only game-consumed entitlement implementation/activation until the Oteryn-v2 consumer/enforcement contract and cross-repository rollout proof are accepted.
 
 ## 9. Vertical-slice execution rule
 
@@ -190,6 +194,11 @@ DUR-03
 
 GAME-VISION-01 + GAME-CHANNEL-01 + SIM-DETERMINISM-01
 -> shape product/multichannel/simulation before broad implementation
+
+PROD-ENTITLEMENTS-01
+-> Platform producer prerequisite SATISFIED
+-> Oteryn-v2 consumer contract NOT_ACCEPTED
+-> Premium/VIP activation NOT_AUTHORIZED
 
 runtime / production activation
 -> still separately unauthorized
