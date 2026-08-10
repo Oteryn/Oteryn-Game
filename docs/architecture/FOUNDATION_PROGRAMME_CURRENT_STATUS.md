@@ -4,168 +4,140 @@
 - Date: 2026-08-10
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Applies to: accepted foundation progression and next ordered architecture gates
-- FND-04 final delivery merge: `cdca8f0ad2c8267c7533e52a4f9a48dc128b231d`
-- Current phase represented by this closeout candidate: `FOUNDATION FND-04 COMPLETE / NEXT STAGE-B GATES`
+- FND-04 lifecycle closeout merge: `adb0882a5ddbe42944fe955f5effb78fd5495422`
+- Active Stage-B delivery: Issue #111 (`DUR-01`)
+- Current phase represented by this delivery candidate: `DUR-01 FINAL DELIVERY / CLOSEOUT_PENDING`
 
 ## 1. Authority of this overlay
 
 This document answers **what is accepted now and what may happen next**. Detailed review/CI/repair evidence lives in accepted contracts, archived task records and merged PRs.
 
-If an older coordination/backlog/register paragraph describes FND-02, FND-03 or FND-04 as a live gate, that wording is historical execution narrative. Accepted contracts plus this overlay govern current progression. Stable decision IDs and future dependency requirements in the global register/backlog remain valid unless explicitly superseded.
+If an older coordination/backlog/register paragraph describes FND-02, FND-03 or FND-04 as a live gate, that wording is historical execution narrative. Accepted contracts plus this overlay govern current progression. Stable decision IDs and future dependency requirements remain valid unless explicitly superseded.
+
+`DUR-01 FINAL DELIVERY / CLOSEOUT_PENDING` is transition-safe: before the delivery merge it means final candidate validation is in progress; after the delivery merge it means only lifecycle archive/ownership release remains. DUR-01 becomes `ACCEPTED AND LIFECYCLE-CLOSED` only through its separate closeout.
 
 No status row implies runtime implementation unless explicitly stated.
 
-## 2. Foundation progression summary
+## 2. Foundation and Stage-B progression summary
 
 | Gate | Current status | Canonical evidence / note |
 |---|---|---|
-| `FND-01` | `ACCEPTED AND APPLIED` | workspace/dependency contract + canonical 19-member destination cutover; destination merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0` |
-| `VSL-02` | `ACCEPTED AND COMPLETE` | exact Rust-client migration/cutover contract; source-only historical/non-canonical closeout completed |
-| `FND-ID-01` | `ACCEPTED` | `FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md`; merge `2c584543cd1e3758958755478a6cc6ed3d39a8a9` |
-| `FND-02` | `ACCEPTED` | `protocol-oteryn` v1 contract; PR #94 merge `769ecd2ce2dfe0a7644d8dc1d67c54d40da5d202`; runtime codec/listener implementation remains separately gated |
-| `FND-03` | `ACCEPTED` | `FND-03_RUNTIME_EXECUTION_CONTRACT.md`; PR #102 merge `e72f2514924e8bbf8d1a729721cce9e67d977544`; runtime implementation/capacity/OPS claims remain separately gated |
-| `FND-04A` | `ACCEPTED AND LIFECYCLE-CLOSED` | fresh admission authority/profile; PR #125 merge `cae318b8891844891c734012eb2020e669ebaff4`; closeout #126 `2fd7bac4879f381d5b97230732076df2e9c61f95` |
-| `FND-04B` | `ACCEPTED AND LIFECYCLE-CLOSED` | reconnect/recovery/continuity + recovery profile; PR #128 merge `e6282b9c48713b2a2980f2598a81775f78725cff`; closeout #129 `3d07b3faaca683514fdfe6291e974f9195e2f763` |
-| `FND-04C` | `ACCEPTED AND LIFECYCLE-CLOSED` | final errors/diagnostics/failure/compatibility integration; PR #131 delivery merge `cdca8f0ad2c8267c7533e52a4f9a48dc128b231d`; active ownership is released by the closeout carrying this overlay |
-| `FND-04` overall | `ACCEPTED AND CLOSED` | A/B/C semantic architecture accepted; all component task ownership released by their lifecycle closeouts |
-| programme `#112` | `COMPLETE` | replacement FND-04 programme has no remaining semantic architecture gate after this closeout merges |
+| `FND-01` | `ACCEPTED AND APPLIED` | workspace/dependency contract + canonical 19-member destination cutover |
+| `VSL-02` | `ACCEPTED AND COMPLETE` | Rust-client migration/cutover complete |
+| `FND-ID-01` | `ACCEPTED` | `FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md` |
+| `FND-02` | `ACCEPTED` | `protocol-oteryn` v1 architecture accepted; implementation remains separately gated |
+| `FND-03` | `ACCEPTED` | authoritative runtime execution architecture accepted; implementation/capacity/OPS remain separately gated |
+| `FND-04A` | `ACCEPTED AND LIFECYCLE-CLOSED` | fresh admission authority/profile |
+| `FND-04B` | `ACCEPTED AND LIFECYCLE-CLOSED` | reconnect/recovery/continuity + recovery profile |
+| `FND-04C` | `ACCEPTED AND LIFECYCLE-CLOSED` | errors/diagnostics/failure/compatibility integration |
+| `FND-04` overall | `ACCEPTED AND CLOSED` | A/B/C semantic architecture accepted; programme #112 complete |
+| `DUR-01` | `FINAL DELIVERY / CLOSEOUT_PENDING` | Issue #111; bounded analysis + candidate durable representation contract |
+| `ANL-01` | `NEXT REQUIRED GATE` | must be accepted before DUR-02/DUR-03 finalize transactional outbox/critical audit evidence |
+| `DUR-02` | `BLOCKED ON DUR-01 + ANL-01 INPUTS` | Persistence v1 |
+| `DUR-03` | `BLOCKED ON DUR-01 + ANL-01 INPUTS` | item transaction/anti-duplication invariants |
 
-## 3. Accepted FND-02 baseline
+## 3. Accepted foundation baseline
 
-Canonical production protocol family is `oteryn`.
+### FND-02
 
-Accepted foundation includes TCP + TLS 1.3, ALPN `oteryn-game/1`, verified server identity, no TLS 0-RTT/plaintext/Canary fallback, bounded `uint32_be` framing + protobuf/proto3, exact 16-byte wire foundation UUID form, authoritative post-admission GameSessionId, monotonic non-zero `connection_generation`, `(GameSessionId, CommandId)` identity, server_sequence + typed state-domain revisions, explicit snapshot/delta/resync, authenticated liveness probe/ack, registered hard limits/stable errors and required independent byte/malformed/property/fuzz/cross-version evidence before implementation claims.
+Canonical production protocol family is `oteryn`: TCP + TLS 1.3, ALPN `oteryn-game/1`, verified server identity, no plaintext/0-RTT/Canary fallback, bounded framing/protobuf, exact foundation UUID wire representation, authoritative post-admission GameSessionId, monotonic non-zero `connection_generation`, `(GameSessionId, CommandId)` identity, server sequencing/domain revisions, explicit snapshot/delta/resync and authenticated liveness primitives.
 
-FND-02 `schema_revision` remains diagnostic/build evidence, not an opaque gameplay compatibility token.
+FND-02 `CommandId` is a GameSession-scoped monotonic non-zero `uint64`. FND-02 `schema_revision` is diagnostic/build evidence, not an opaque gameplay compatibility token.
 
-## 4. Accepted FND-03 baseline
+### FND-03
 
-Canonical runtime semantics include multithreaded GameNode operation with many authoritative scopes; one logical ordered mutation owner per ChannelRuntime/InstanceRuntime; NodeId as process-incarnation/placement rather than authority; separate scope ownership generation; execution order distinct from CommandId; separate wall/monotonic/execution clocks; mutation-capable async/timer work re-entering through current owner; stale generation/revision/handle work failing closed; bounded queues; non-starvable fencing/control work; measured rather than guessed capacity; and deterministic replay from normalized authoritative inputs/order rather than CPU/thread interleaving.
+GameNode runtime is multithreaded with many authoritative scopes and one logical ordered mutation owner per ChannelRuntime/InstanceRuntime. NodeId is process incarnation/placement rather than scope authority. Scope ownership generation, execution order, wall/monotonic clocks and CommandId remain distinct. Queues are bounded; stale generation/revision/handle work fails closed; capacity claims require evidence rather than guesses.
 
-No async runtime product, worker count, CPU affinity, global tick numeric capacity, orchestrator or heartbeat cadence is selected merely by FND-03 acceptance.
+### FND-04
 
-## 5. Accepted FND-04 architecture
-
-The thin canonical integration index is:
+FND-04 is `ACCEPTED AND CLOSED`. Canonical index:
 
 - `docs/architecture/FND-04_IDENTITY_GAME_SESSION_ADMISSION_CHARACTER_LEASE_CONTRACT.md`.
 
-Its normative component contracts are:
+Normative components are FND-04A fresh admission, FND-04B reconnect/recovery and FND-04C error/diagnostics/failure/compatibility integration.
 
-- FND-04A: `docs/architecture/FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md` + `docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md`;
-- FND-04B: `docs/architecture/FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md` + `docs/contracts/FND-04_REAUTHENTICATED_RECOVERY_GRANT_PROFILE_V1.md`;
-- FND-04C: `docs/architecture/FND-04C_ERROR_DIAGNOSTICS_FAILURE_COMPATIBILITY_CONTRACT.md` + `docs/contracts/FOUNDATION_FAILURE_SCENARIOS.md`.
+Important frozen outcomes remain unchanged: ownership-before-world validation, separate AccountPresenceClaim/CharacterLease/GameSession/TransportBinding/runtime authority, purpose-separated Ed25519 grant profiles, independent protocol/transport/ruleset/content/map/world-policy dimensions, authenticated source-age `<=5s` with anti-rollback, PREPARE/COMMIT reconnect, healthy-binding non-preemption, `ControlLossEpoch`, exact 4-second eligible PvE re-entry protection, protection re-arm requiring stable-control evidence, no historical 2s/5s/15s timing authority, and fail-closed GameNode recovery without guessed continuity.
 
-### Fresh admission
+## 4. DUR-01 candidate decisions
 
-- Platform authenticates/authorizes one bounded attempt; Oteryn-v2 alone decides current game-domain admission.
-- AccountId->CharacterId ownership is proven before CharacterId->WorldId/world eligibility and both are revalidated at the atomic authority boundary.
-- stale world never retargets an old grant and creates no candidate nonce/presence/lease/session/transport authority.
-- AccountPresenceClaim, CharacterLease, GameSession, TransportBinding and RuntimeScopeAuthority remain distinct.
-- fresh grant uses purpose-separated fully specified Ed25519, verifier-anchored trust and deterministic crypto/schema/binding/profile precedence.
-- protocol/transport/ruleset/content/map/world-policy/offer revisions remain independent; no opaque `compatibility_revision`.
-- Platform-security and key/profile trust require authenticated source observation age `<=5s`, anti-rollback ordering, no cache re-aging and fail-closed restart-floor reconstruction.
+DUR-01 consumes accepted identity meaning and freezes only durable representation.
 
-### Reconnect/recovery/continuity
+Candidate final decisions are:
 
-- one current playable `connection_generation` per GameSession;
-- healthy current binding is non-preemptible by reconnect bearer proof or recovery JWT;
-- PREPARE has no gameplay/liveness/fencing authority; COMMIT revalidates current authority and atomically switches one winner;
-- inactive candidate successor reconnect proof may be delivered before COMMIT, becomes current only at COMMIT and predecessor proof never revives;
-- same-session grace begins at server-authoritative `ControlLossEpoch`, not socket close/first missed probe/cleanup/reconnect attempt;
-- original grace/protection/re-arm state and deadlines survive GameNode/runtime-owner replacement without restart;
-- valid eligible re-entry activates exactly 4 seconds defensive PvE protection at most once per eligible entitlement;
-- successful control restoration does not automatically re-arm protection; server-authoritative stable-control evidence is required before a later unexpected loss may receive another entitlement;
-- historical candidate reconnect/liveness timings `2s/5s/15s` are non-canonical;
-- recovery uses its own purpose-separated Ed25519 profile and independent protocol/transport/ruleset/content/map/world-policy revisions;
-- ownership precedes recovery world/actor/controller classification;
-- same-session recovery preserves GameSessionId/CommandId/server_sequence/domain revisions and actor state;
-- post-grace existing-actor recovery creates a new GameSessionId and never respawns/resets/teleports/heals the actor;
-- GameNode replacement may preserve same-session continuity only from complete fenced recoverable evidence; NodeId/restart never guesses authority or restarts deadlines;
-- ordinary reconnect does not manufacture HandoffId.
+- native UUID-backed durable identities use PostgreSQL native `uuid`, preserving all 128 bits;
+- canonical native `AccountId` is Platform-issued UUIDv7 per Platform ADR 0028; Platform local integer IDs and Canary account IDs are not native AccountId;
+- canonical native `WorldId`/`ChannelId` are Platform-issued UUIDv7 per Platform ADR 0029 and ChannelId remains semantically WorldId-scoped;
+- strong semantic types remain distinct even though PostgreSQL physical scalar is shared;
+- nil UUID is invalid; semantic absence uses NULL/typed absence;
+- scoped identities preserve `WorldId + component` and may not drop scope merely because UUID values are globally collision-resistant;
+- UUIDv7 ordering is never authority, causality, fencing or business chronology;
+- when FND-02 `CommandId` is persisted, preserve the full non-zero `uint64` as PostgreSQL `numeric(20,0)` and scope it by `GameSessionId`; signed `bigint` must not silently narrow the legal range;
+- `ItemInstanceId` is introduced as game-owned global durable UUIDv7 identity for one concrete item-instance lifecycle;
+- no generic catch-all DurableEntityId is introduced;
+- EventId/OperationId/TransactionId/CorrelationId/CausationId/AnalyticsActorId remain ANL-01-owned semantic decisions;
+- no cross-database Platform/game foreign keys; Platform-owned IDs remain contract references;
+- legacy identity mapping uses a stable source namespace key; source revision/snapshot/import-run are provenance and cannot mint a second native identity for the same stable source entity;
+- internal UUIDv7 values are not automatically public identifiers;
+- representation changes require explicit lossless versioned migration and mixed-version evidence.
 
-### Error/failure/compatibility integration
+The candidate contract is:
 
-- one canonical FND-04 error catalogue defines category, progression, exact retry authority, mutation/idempotency outcome, bounded public class, redacted diagnostic and credential-free correlation;
-- superseded aliases are explicitly non-canonical where A/B/C own the condition;
-- every Foundation Failure Scenario registered at FND-04C acceptance has an explicit FND-04 disposition using only `PASS`, `NOT_APPLICABLE`, `BLOCKED`, `DEFERRED_BY_ACCEPTED_GATE`;
-- producer/consumer rollout is purpose/profile/key-purpose exact, fully specified Ed25519, verifier-anchored, source-age `<=5s` + anti-rollback and independently revisioned; no fresh/recovery/Canary reinterpretation or downgrade;
-- rollback cannot restore older allow/trust/revision authority or revive terminal GameSession, consumed nonce, stale reconnect proof or old runtime owner;
-- implementation evidence is required for credential interoperability, replay/races, fencing, lost responses, exact 4-second protection/re-arm, failover, actor preservation, diagnostics and privacy.
+- `docs/architecture/DUR-01_DURABLE_IDENTIFIER_REPRESENTATION_CONTRACT.md`.
 
-## 6. Exact timing/security values accepted by FND-04
+Acceptance of this candidate does not create tables, migrations or runtime behavior.
 
-Accepted exact/profile ceilings:
+## 5. Security/privacy boundary
 
-- fresh/recovery grant maximum lifetime: 30 seconds;
-- fresh/recovery verifier skew: 5 seconds;
-- authenticated Platform-security/signing-key/profile source-age ceiling: `<=5 seconds`;
-- defensive PvE protection after eligible valid re-entry: exactly 4 seconds.
+- identity equality is not authentication/authorization;
+- stored Platform-owned identity is not fresh Platform authority;
+- AccountId/CharacterId/ItemInstanceId and other high-cardinality IDs are not ordinary Prometheus labels;
+- UUIDv7 creation-time structure is considered before public exposure;
+- migration/import conflicts fail closed rather than overwrite or silently re-key;
+- no code may repair identity ambiguity by choosing the newest-looking UUID;
+- CommandId persistence preserves its complete GameSession scope and unsigned range; persistence cannot redefine command identity.
 
-FND-04 intentionally does **not** freeze numeric values for liveness probe cadence/hysteresis/control-loss threshold, stale transport cleanup, same-session grace, stable-control protection re-arm threshold, CharacterLease TTL/renew/safety deadlines, prepared reconnect/resource/rate limits, recovery locator/cache/resource limits or relevant queue caps.
+## 6. Runtime/implementation status
 
-Those values must be finite and measured in their owning DUR/OPS/PERF/future registry gates before runtime activation. Historical defaults are not implementation authority.
-
-## 7. Security/privacy boundary
-
-- server game/liveness/runtime evidence decides gameplay control/loss/protection;
-- client/OS/Launcher/Guardian evidence is corroborative only;
-- diagnostics opt-out remains respected and missing client evidence is not adverse;
-- no broad Windows Event Log ingestion, kernel driver, invasive anti-cheat or mandatory fingerprint is required;
-- Game Intelligence may investigate bounded/audited patterns but cannot autonomously sanction, mutate, fence, reconnect or recover gameplay;
-- raw credentials/proofs/nonces/private keys/private fence values never enter ordinary telemetry;
-- AccountId/CharacterId are not ordinary high-cardinality metric labels.
-
-## 8. Runtime/implementation status
-
-`FND-04 = ACCEPTED AND CLOSED` means **semantic architecture complete**, not runtime implemented.
-
-This programme does not authorize:
+Foundation architecture and DUR-01 representation architecture do **not** authorize:
 
 - production protocol listener/client gameplay adapter;
-- GameNode/session/admission/reconnect/recovery runtime implementation;
-- CharacterLease persistence/schema;
-- Platform issuer/security-projection writes;
-- production signing keys/KMS/HSM;
-- deployment/traffic cutover;
-- entitlement/Premium/VIP implementation;
+- GameNode/session/admission/reconnect runtime implementation;
+- PostgreSQL schema/table/migration implementation;
+- CharacterLease persistence;
+- item/currency mutation implementation;
+- Platform migration/writes;
+- production deployment/traffic;
+- entitlement/Premium/VIP activation;
 - broad gameplay/content production.
 
-Any implementation must prove the FND-04C evidence matrix plus downstream DUR/OPS/PERF decisions for deferred physical/numeric values.
+## 7. Next ordered architecture work
 
-## 9. Next ordered architecture work
+After DUR-01 delivery and lifecycle closeout:
 
-With the identity/protocol/runtime/admission foundation chain closed, next dependency work is:
+1. `ANL-01 — Game Event and Audit Foundation` is the immediate missing prerequisite for durable audit/outbox semantics.
+2. `DUR-02 — Persistence v1` may consume accepted DUR-01 identity/CommandId physical representation but must wait for required ANL-01 decisions before finalizing transactional outbox/critical audit evidence.
+3. `DUR-03 — Item Transaction and Anti-Duplication Invariants` consumes `ItemInstanceId` and also requires ANL-01/DUR-02 integration for atomic provenance evidence.
+4. `DUR-04 — Content, World Detail and Scripting` remains a separate durable-content gate.
+5. `GAME-VISION-01` still blocks broad gameplay/content production.
 
-1. `ANL-01 — Game Event and Audit Foundation` — required before DUR-02/DUR-03 finalize transactional outbox and critical audit evidence.
-2. `DUR-01 — Durable Identifier Representation Contract` — required before authoritative durable gameplay representation.
-3. `DUR-02 — Persistence v1` and `DUR-03 — Item Transaction and Anti-Duplication Invariants` — hard gates before authoritative durable character/item/currency mutation; consume required ANL-01/DUR-01 decisions.
-4. `DUR-04 — Content, World Detail and Scripting` — required before broad durable/scripted content behavior.
-5. `GAME-VISION-01` — still blocks broad gameplay/content production and must define measurable reference-vs-evolved launch/parity strategy.
+`PROD-ENTITLEMENTS-01` remains separately blocked by open Platform security prerequisite `Oteryn-Platform#944`; it is not part of DUR-01.
 
-ANL consumers remain observational and never replace authoritative invariants; DUR-03 prevents duplication while later ANL-03 detects/investigates economy integrity anomalies.
-
-## 10. Concise current rule
+## 8. Concise current rule
 
 ```text
-FND-01 / VSL-02 / FND-ID-01 / FND-02 / FND-03
--> accepted
+foundation FND-01 .. FND-04
+-> accepted / closed as applicable
 
-FND-04A / FND-04B / FND-04C
--> accepted + lifecycle-closed
+DUR-01
+-> FINAL DELIVERY / CLOSEOUT_PENDING
+-> architecture representation only, no schema/runtime implementation
 
-FND-04 overall
--> ACCEPTED AND CLOSED
+ANL-01
+-> next required semantic gate
 
-programme #112
--> COMPLETE
+DUR-02 / DUR-03
+-> cannot finalize durable mutation/audit architecture before required DUR-01 + ANL-01 inputs
 
-runtime implementation
--> still separately gated and not authorized by this architecture closeout
-
-next
--> ANL-01 + DUR-01
--> DUR-02 / DUR-03 after required inputs
--> DUR-04 for durable content/scripting
--> no broad gameplay/content production before GAME-VISION-01
+PROD-ENTITLEMENTS-01
+-> still blocked by Oteryn-Platform#944
 ```
