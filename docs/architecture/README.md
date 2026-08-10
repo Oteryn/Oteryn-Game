@@ -40,7 +40,7 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 - [ADR-0010 — Reference and evolved world product profiles](ADR-0010-reference-and-evolved-world-product-profiles.md)
 - [ADR-0011 — Native client pre-protocol migration state](ADR-0011-native-client-pre-protocol-migration-state.md)
 - [ADR-0013 — Platform database technology independence](ADR-0013-platform-database-technology-independence.md)
-- [ADR-0014 — TCP-default, QUIC-opt-in dual gameplay transport](ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md)
+- [ADR-0014 — TCP-default, QUIC-opt-in dual gameplay transport strategy](ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md)
 
 ## Accepted foundation contracts
 
@@ -53,7 +53,7 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 
 ## Machine-readable contracts
 
-- [Transport policy](../contracts/PROTOCOL_OTERYN_TRANSPORT_POLICY.json) — one `protocol-oteryn`, TCP+TLS 1.3 initial default/fallback, QUIC v1 opt-in preference, no 0-RTT/DATAGRAM baseline.
+- [Transport policy](../contracts/PROTOCOL_OTERYN_TRANSPORT_POLICY.json) — one `protocol-oteryn`; current registered transport is TCP+TLS 1.3 profile `1`; QUIC is a future player-opt-in target and is blocked until protocol/FND-04 transport-profile reconciliation; no 0-RTT/DATAGRAM baseline.
 - [Game event foundation registry](../contracts/GAME_EVENT_FOUNDATION_REGISTRY.json)
 - [Resource limits registry](../contracts/RESOURCE_LIMITS_REGISTRY.json)
 - [Cross-repository contract lock](../contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json)
@@ -82,6 +82,6 @@ SIM-DETERMINISM-01
 
 ## Transport rule
 
-`ADR-0014` explicitly supersedes only FND-02's TCP-only/defer-QUIC transport-choice clauses. FND-02 remains authoritative for the application protocol, framing/semantic requirements, sequencing, revisions, bounded inputs and related invariants.
+`ADR-0014` accepts the dual-transport strategy but does not register QUIC as an authoritative transport profile. FND-02 remains authoritative for the current transport registry, application protocol, framing/semantic requirements, sequencing, revisions, bounded inputs and related invariants.
 
-No QUIC adapter, library choice, endpoint rollout or production traffic is authorized by the architecture decision alone.
+Functional QUIC admission/recovery requires a later accepted delivery that registers a stable QUIC transport profile and reconciles both FND-04 fresh-admission and reauthenticated-recovery grant contracts. No QUIC adapter, library choice, endpoint rollout or production traffic is authorized by ADR-0014 alone.
