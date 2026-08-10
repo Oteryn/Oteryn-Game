@@ -33,8 +33,10 @@ Do not run heavy validation after every small step unless build manifests/public
 
 ## Review and repair
 
-Inspect full diff, logs and artifacts. Fix root cause; do not weaken checks. Re-run only the smallest check proving the repair, followed by required final exact-head gates.
+Inspect the full diff, logs and artifacts. Mandatory self-review applies to every task. Perform a genuinely independent second review when required by the trusted-base risk policy, owner or governing contract. Fix root cause; do not weaken checks. Re-run only the smallest check proving the repair, followed by required final exact-head gates.
+
+A self-review by the implementing agent is not independent review. Codex is one optional independent mechanism and is not required merely because a PR exists.
 
 ## Closeout
 
-Perform independent audit, E2E classification, exact-head CI, review-thread cleanup, merge, task archive and ownership release. A merge is not automatically programme completion.
+Perform mandatory self-review, any required independent review, E2E classification, exact-head CI, review-thread cleanup, merge, task archive and ownership release. A merge is not automatically programme completion.

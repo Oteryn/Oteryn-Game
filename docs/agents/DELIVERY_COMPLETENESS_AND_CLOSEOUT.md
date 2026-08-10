@@ -43,11 +43,12 @@ Before readiness:
 4. run required real or synthetic E2E with truthful classification;
 5. prepare all known task and PR closeout metadata;
 6. freeze and record the exact final head in immutable PR/task-tracker evidence;
-7. run an independent audit against that exact final diff;
-8. run required checks on the same unchanged head;
-9. verify no unresolved review threads/requested changes;
-10. reconcile related/superseded PRs;
-11. verify rollback or safe failure path where relevant.
+7. run mandatory full-diff self-review against that exact final head;
+8. run an independent review/audit on the same exact head when required by the risk policy, owner or governing contract;
+9. run required checks on the same unchanged head;
+10. verify no unresolved review threads/requested changes;
+11. reconcile related/superseded PRs;
+12. verify rollback or safe failure path where relevant.
 
 ## Final-head freeze and evidence placement
 
@@ -55,19 +56,21 @@ The delivery head is frozen only after implementation, task metadata, PR title/b
 
 After the freeze:
 
-- do not add a task/checkpoint/timestamp commit merely to record an audit verdict, run ID, CI state or merge readiness;
-- record audit and CI evidence in PR reviews, workflow runs, artifacts or another immutable evidence channel;
+- do not add a task/checkpoint/timestamp commit merely to record a review/audit verdict, run ID, CI state or merge readiness;
+- record review/audit and CI evidence in PR reviews, workflow runs, artifacts or another immutable evidence channel;
 - do not close/reopen, rewind, amend, force-push or replace the PR merely to regenerate a required check;
-- move the head only for a material repair, then repeat final diff review, audit and exact-head CI;
+- move the head only for a material repair, then repeat final diff self-review, applicable independent review and exact-head CI;
 - treat absent events and unassigned runners as classified infrastructure states, not as justification for content churn.
 
 A commit cannot contain its own SHA. Do not create a self-referential follow-up commit merely to populate an exact-head field in the repository task record.
 
 Post-merge archive movement may use a separate bounded closeout change when the merge commit was unknowable before the delivery PR merged.
 
-## Independent audit
+## Review and audit policy
 
-The audit must challenge, not repeat, the implementer's conclusion. Review at minimum:
+### Self-review
+
+Self-review is mandatory for every delivery. It must challenge, not merely summarize, the implementer's result. Review at minimum:
 
 - omitted paths/layers;
 - architecture and ownership violations;
@@ -78,7 +81,15 @@ The audit must challenge, not repeat, the implementer's conclusion. Review at mi
 - dead temporary workflows/instrumentation;
 - unresolved compatibility/rollout holds.
 
-Record auditor identity/method, exact head and material findings. `PASS` requires zero open material findings.
+Record reviewer identity/method, exact head and material findings. `PASS` requires zero open material findings.
+
+### Independent review
+
+A second genuinely independent reviewer is required when the trusted-base risk policy, owner or owning contract requires it. This includes high-risk authority/security/protocol/durable-data/production changes, safety-reducing governance changes and cases where material uncertainty/complexity makes self-review insufficient.
+
+Independent review may be performed by a qualified human, a separate non-authoring agent/session, Codex or a dedicated independent audit workflow. Codex is not mandatory by name and should not be invoked routinely for low-risk work.
+
+A review by the same agent/session that implemented or materially authored the change is self-review, not independent review. If independence is required and no genuine independent mechanism is available, the task is blocked rather than silently downgraded.
 
 ## E2E classification
 
@@ -91,9 +102,11 @@ Do not call synthetic unit/integration tests real E2E.
 
 ## Merge gate
 
-Merge only when exact final head is unchanged and all repository gates pass. A later build-affecting commit invalidates prior build/E2E evidence. A later docs-only commit still requires applicable governance/document validation on the new head.
+Merge only when exact final head is unchanged and all applicable repository gates pass. A later build-affecting commit invalidates prior build/E2E evidence. A later docs-only commit still requires applicable governance/document validation on the new head.
 
 A required check cannot be replaced by a local command, PR comment or manually asserted success. Trusted manual dispatch is acceptable only when it validates the open PR and exact frozen head and produces the repository-required context on that SHA.
+
+Mandatory self-review must be clean. When independent review is required by the risk policy, that review must also be clean on the exact final head.
 
 ## Closeout
 

@@ -1,7 +1,7 @@
 # Anti-stall and execution budget
 
 ```yaml
-anti_stall_policy_version: 2.3-oteryn-v2
+anti_stall_policy_version: 2.4-oteryn-v2
 normal_foreground_runtime_minutes: 60
 large_foreground_runtime_minutes: 120
 no_progress_minutes: 15
@@ -30,7 +30,7 @@ Progress means at least one material event:
 - new validation evidence or a narrowed failure;
 - a root cause repaired with a new proving result;
 - branch/PR/CI/review/dependency state materially changed;
-- a material audit finding opened, resolved or reclassified;
+- a material review/audit finding opened, resolved or reclassified;
 - task/PR reached an intentional terminal state.
 
 Repeated reads, unchanged checks, duplicate summaries, waiting, activity-only commits, branch rewinds, close/reopen cycles and replacement PRs created only to regenerate CI are not progress.
@@ -63,21 +63,22 @@ Reset counters only after the exact head, failure signature, hypothesis, externa
 
 ## Final-head freeze
 
-Before final audit and exact-head CI:
+Before final review and exact-head CI:
 
 1. finish implementation, task record, PR title/body, changed-scope declaration and all known closeout metadata;
 2. create the smallest coherent final commit or atomic commit set;
 3. record `final_head_sha` and `final_head_frozen_at` in immutable PR/task-tracker evidence after the commit exists;
-4. review the full diff and run focused validation;
-5. perform the independent audit and required exact-head CI on that unchanged SHA.
+4. perform the mandatory full-diff self-review and run focused validation;
+5. when the trusted-base risk policy/owner/contract requires independent review, perform it on the same unchanged SHA;
+6. run required exact-head CI on that unchanged SHA.
 
 After the freeze:
 
-- do not commit a checkpoint, timestamp, audit verdict, CI status or PR number merely to document progress;
-- place exact-head audit and CI evidence in the PR review, workflow run, artifact or external task tracker without moving the head;
+- do not commit a checkpoint, timestamp, review/audit verdict, CI status or PR number merely to document progress;
+- place exact-head review/audit and CI evidence in the PR review, workflow run, artifact or external task tracker without moving the head;
 - do not amend, force-push, rewind, close/reopen or replace the PR merely to create another event;
 - move the head only for a material content repair based on an explicit finding or failed validation;
-- every moved head invalidates the final-head audit and exact-head CI generation and requires a new freeze.
+- every moved head invalidates the prior exact-head self-review, any required independent review and exact-head CI generation and requires a new freeze.
 
 A commit cannot contain its own SHA. Do not create a self-referential follow-up commit merely to fill `final_head_sha` inside the repository task file.
 
@@ -121,7 +122,7 @@ Do not keep a worker active only to wait.
 
 ## Bounded terminal CI
 
-A foreground invocation may remain active through final exact-head CI and merge only when implementation, audit, E2E, review hygiene and all non-CI gates are complete and the final head is frozen.
+A foreground invocation may remain active through final exact-head CI and merge only when implementation, mandatory self-review, any required independent review, E2E, review hygiene and all non-CI gates are complete and the final head is frozen.
 
 During this exception:
 
@@ -130,7 +131,7 @@ During this exception:
 - at most 12 observations are allowed per materially new required-check generation;
 - new generations do not reset the total wait budget;
 - a failure exits waiting and enters the repair loop;
-- after success re-check head, checks, reviews, ownership and mergeability before merge.
+- after success re-check head, checks, required review state, ownership and mergeability before merge.
 
 ## Failure loop
 
@@ -163,7 +164,7 @@ STATUS: DONE | WAITING | BLOCKED | ROTATE
 RESULT:
 CHANGED_PATHS:
 VALIDATION:
-AUDIT:
+REVIEW_AUDIT:
 E2E:
 PR_HYGIENE:
 FINAL_HEAD:

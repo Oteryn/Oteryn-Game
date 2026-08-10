@@ -87,9 +87,9 @@ Default workflow:
 4. run focused validation;
 5. open/update PR and inspect full diff;
 6. run required exact-head CI and E2E;
-7. perform an independent audit;
+7. perform mandatory self-review and any independent review required by the risk policy below;
 8. resolve review threads and reconcile related PRs;
-9. squash-merge only when every gate passes;
+9. squash-merge only when every applicable gate passes;
 10. archive task and release ownership.
 
 Never push feature, fix or documentation task work directly to `main`.
@@ -101,11 +101,46 @@ Merge only when:
 - acceptance criteria and observable outcomes are satisfied;
 - required focused/component/E2E checks pass;
 - required GitHub checks pass on the exact unchanged head;
-- audit has no open material finding;
+- mandatory self-review has no open material finding;
+- any required independent review has no open material finding;
 - no requested change, unresolved review thread, ownership conflict, migration hold or cross-repo ordering hold remains;
 - task, architecture and contracts are current.
 
 Use squash merge. Never force, bypass protection, weaken tests or mark failures successful.
+
+## Review and audit policy
+
+### Mandatory self-review
+
+Every task requires a deliberate full-diff self-review by the implementing/coordinating agent before readiness. Review the exact final changed-file set for scope, architecture, security, failure paths, unsupported claims, stale evidence, temporary residue and omissions. Record material findings and repairs truthfully.
+
+A self-review is valid review evidence but **must never be described as independent** when the reviewer implemented or materially authored the same change.
+
+### When independent review is required
+
+A genuinely independent second review/audit is mandatory when any of the following applies:
+
+- an explicit owner instruction, accepted contract, trusted-base task policy or repository rule requires it;
+- authentication, authorization, Game Login Ticket, admission, Game Session, CharacterLease, reconnect/recovery, session fencing or security-generation semantics change;
+- gameplay protocol/wire/framing/transport compatibility, parser trust boundaries or downgrade/replay behavior change;
+- authoritative persistence schemas/migrations, crash recovery, item/currency/economy conservation, market/bank/depot/loot ownership or other durable-value invariants change;
+- secrets, signing keys, updater/download trust, artifact verification, privacy/security policy or protected-environment behavior changes;
+- production deployment, live data/session/account behavior, protected configuration or operational authority changes;
+- multichannel/world-shared ownership, failover/fencing or other change can create split-brain or stale-writer authority;
+- governance is changed to reduce a safety gate, expand repository/write/merge/production/cross-repository authority or weaken required evidence;
+- the implementer records material uncertainty, the change has unusual complexity/blast radius, or self-review cannot provide credible confidence against common-mode error.
+
+An independent review is not automatically required for low-risk documentation/navigation, typo, stale-task bookkeeping or other non-semantic changes when no rule above applies, provided full-diff self-review and all applicable exact-head validation pass.
+
+### Independent reviewer mechanisms
+
+Independent review may be performed by a qualified human reviewer, a separate agent/session that did not implement or materially author the change, an independent review tool such as Codex, or a dedicated audit workflow that actually evaluates the exact final head. The evidence must identify the reviewer/method and exact SHA.
+
+**Codex is optional, not a mandatory project dependency.** Use Codex only when a genuinely independent review is required by this policy, the owner or a governing contract and Codex is the necessary or appropriate available independent mechanism for that requirement. Do not invoke Codex merely for extra assurance when the task does not require independent review, and do not invoke it routinely merely because a PR exists.
+
+If independent review is required but no genuinely independent mechanism is available, stop with that exact blocker. Do not relabel self-review as independent and do not weaken the gate.
+
+Any independent-review finding that moves the head invalidates the prior exact-head review for merge readiness; re-run applicable exact-head validation and, when still required, re-review the repaired final head.
 
 ## Rust implementation policy
 

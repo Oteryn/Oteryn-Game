@@ -44,7 +44,7 @@ State what this task must not change or claim.
 
 ## Implementation / findings
 
-Maintain concise durable progress and decisions. Prepare all known closeout metadata before freezing the final head; do not move a frozen head merely to copy audit or CI status into this file.
+Maintain concise durable progress and decisions. Prepare all known closeout metadata before freezing the final head; do not move a frozen head merely to copy review/audit or CI status into this file.
 
 A commit cannot contain its own SHA. Record the final exact head in immutable PR/check evidence after the final commit exists rather than creating a self-referential follow-up commit.
 
@@ -74,12 +74,20 @@ A commit cannot contain its own SHA. Record the final exact head in immutable PR
 - classification: pending
 - result: pending
 
-## Independent audit
+## Self-review
 
 - exact head: pending
-- method/auditor: pending
+- method/reviewer: implementing/coordinating agent (mandatory; cannot be delegated away)
 - material findings: pending
 - verdict: pending
+
+## Independent review
+
+- required: pending (`YES` with reason or `NO` with risk-policy reason)
+- exact head: pending or `NOT_APPLICABLE`
+- method/auditor: pending or `NOT_APPLICABLE`
+- material findings: pending or `NOT_APPLICABLE`
+- verdict: pending or `NOT_APPLICABLE`
 
 ## PR and closeout
 
