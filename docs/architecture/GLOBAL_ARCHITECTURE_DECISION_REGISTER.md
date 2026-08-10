@@ -1,7 +1,7 @@
 # Oteryn v2 Global Architecture Decision Register
 
 - Status: Active coordination register
-- Date: 2026-08-07
+- Date: 2026-08-11
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Canonical foundation programme: `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`
 - Current execution status: `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`
@@ -44,6 +44,9 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | Fail-closed native client state before the accepted gameplay protocol exists | `ACCEPTED` | ADR-0011 |
 | Native Character Authority owns CharacterId/lifecycle/account-character ownership while Platform owns AccountId and orchestration | `ACCEPTED` | ADR-0012 and `CHARACTER_AUTHORITY_PLATFORM_BOUNDARY.md` |
 | Platform database technology is independent from native game PostgreSQL; a Platform PostgreSQL migration requires separate evidence-backed Platform authority | `ACCEPTED` | ADR-0013 |
+| Dual gameplay transport strategy keeps TCP+TLS profile 1 as the initial/default architecture intent and QUIC as a future player-opt-in target without creating a second application protocol | `ACCEPTED` | ADR-0014 and `../contracts/PROTOCOL_OTERYN_TRANSPORT_POLICY.json` |
+| GameNode remains one game-server process under ADR-0009; internal module/crate decomposition is not frozen and distinct adjacent services require their own evidence-backed boundary | `ACCEPTED` | ADR-0015 with ADR-0009 |
+| Gameplay transport mode vocabulary does not imply runtime readiness; all gameplay transport modes remain unavailable until their concrete path is implemented and proven | `ACCEPTED` | ADR-0016 and `../contracts/PROTOCOL_OTERYN_TRANSPORT_POLICY.json` |
 | FND-01 workspace contract, VSL-02 migration contract, canonical 19-member destination cutover and source-only closeout | `ACCEPTED` | `FND-01_WORKSPACE_AND_RUST_MIGRATION_CONTRACT.md`, `VSL-02_RUST_CLIENT_MIGRATION_AND_CUTOVER_CONTRACT.md`, destination merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`, otclient #274/#275 |
 | Minimum cross-boundary foundation identifier contract | `ACCEPTED` | `FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md`, merge `2c584543cd1e3758958755478a6cc6ed3d39a8a9` |
 
@@ -60,6 +63,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - ADR-0010 fixes reference/evolved worlds as versioned product/ruleset/content profiles over one engine, client and `protocol-oteryn`; `GAME-VISION-01` must define measurable parity scope and launch strategy before broad gameplay/content production.
 - ADR-0012 fixes native Character Authority versus Platform lifecycle/orchestration ownership without authorizing runtime or persistence implementation.
 - ADR-0013 removes Platform database migration from the native gameplay critical path while preserving PostgreSQL for native game persistence and all ADR-0004 ownership/least-privilege invariants.
+- ADR-0014 accepts TCP-default/future-QUIC dual transport only as architecture direction; ADR-0016 keeps every gameplay transport runtime mode unavailable until implemented and proven, and ADR-0015 preserves ADR-0009's one-process GameNode identity while leaving only internal decomposition and genuinely distinct adjacent-service placement evidence-driven.
 - bounded technical spikes may inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 - `DUR-01` through `DUR-03` remain hard gates before authoritative durable character, item or currency mutation.
 - `ANL-01` must be accepted before `DUR-02`/`DUR-03` finalize transactional outbox and critical audit evidence; analytics consumers never replace authoritative invariants.
@@ -382,7 +386,8 @@ Registration prevents omission; it does not accept technologies, formulas, schem
 ### `EXP-SCALE-01` — Advanced Scaling and Prediction
 
 - Status: `DEFERRED`.
-- Live channel migration, partitioning one channel across nodes, hundreds of dynamic channels, QUIC, advanced client prediction and independently deployable world services.
+- Live channel migration, partitioning one channel across nodes, hundreds of dynamic channels, advanced client prediction and independently deployable world services.
+- QUIC transport evolution is governed by ADR-0014 and its later `NET-TRANSPORT-02` implementation/evidence gate rather than by this scaling gate.
 
 ## Programme ownership discipline
 
@@ -408,6 +413,7 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 16. ADR-0009 is binding on runtime, performance and operations packages: `NodeId` identifies the GameNode process incarnation rather than a physical host, each channel retains one logical writer, capacity claims require `PERF-01`, and automatic production scaling/recovery claims require `OPS-CHANNEL-01`.
 17. Every material architecture decision must apply `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`: state whether it must be decided now, name blocked downstream work, identify future constraints and state evidence that would justify supersession.
 18. ADR-0013 is binding on persistence/programme planning: PostgreSQL remains the native game target, but Platform database migration is not a native-game prerequisite and requires separate Platform authority and evidence.
+19. ADR-0014 through ADR-0016 are binding within their named transport/GameNode-readiness scopes: one `protocol-oteryn` remains authoritative, ADR-0009's one-process GameNode identity remains intact, transport profile registration does not imply runtime readiness, and QUIC cannot activate without its later profile/reconciliation/evidence/implementation gates.
 
 ## Current next action
 
