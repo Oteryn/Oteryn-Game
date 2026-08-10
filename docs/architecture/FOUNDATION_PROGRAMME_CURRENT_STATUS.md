@@ -17,7 +17,7 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 
 `docs/architecture/ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-10.md` adds owner-accepted programme ordering and product/operations refinements. `docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md` accepts the long-term dual-transport strategy but explicitly preserves TCP transport profile `1` as the only currently registered/authoritative gameplay transport. QUIC player admission remains blocked until `PROTOCOL_OTERYN_V1_REGISTRY.json` and both FND-04 fresh/recovery grant profiles are reconciled by a later accepted delivery. The application protocol and all security/sequencing/fencing semantics remain one `protocol-oteryn` contract.
 
-`ARCHITECTURE_STATUS_MODEL.md` is normative for current status presentation. Every row below separates `DecisionStatus`, `DeliveryStatus` and `ImplementationStatus`; one axis never implies another. `PLANNED` means the gate is registered for future work but no active task/PR currently owns its delivery; `OPEN` is reserved for a concrete active delivery.
+`ARCHITECTURE_STATUS_MODEL.md` is normative for current status presentation. Every row below separates `DecisionStatus`, `DeliveryStatus` and `ImplementationStatus`; one axis never implies another. `PLANNED` means the gate is registered for future work but no active task/PR currently owns its delivery; `OPEN` is reserved for a concrete active delivery or unresolved lifecycle record.
 
 ## 2. Foundation and Stage-B progression
 
@@ -25,7 +25,7 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 |---|---|---|---|---|
 | `FND-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `PROVEN` | workspace/dependency contract is applied and machine-enforced; canonical Rust cutover evidence exists |
 | `VSL-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `PROVEN` | native client migration/cutover completed and source/destination lifecycle closed |
-| `FND-ID-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | semantic identity architecture is accepted; this overlay makes no separate runtime implementation claim |
+| `FND-ID-01` | `ACCEPTED` | `OPEN` | `NOT_STARTED` | semantic identity architecture is accepted, but legacy FND-ID task records still remain under `docs/agents/tasks/active/`; lifecycle cleanup/ownership reconciliation must complete before this row can become `LIFECYCLE_CLOSED`; no separate runtime implementation claim |
 | `FND-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | `protocol-oteryn` v1 architecture accepted and its task lifecycle is archived; current registered transport remains TCP profile `1`; production protocol adapter remains separately gated |
 | `NET-TRANSPORT-01` | `ACCEPTED` | `IN_REVIEW` | `NOT_STARTED` | dual-transport strategy delivery PR #145; TCP profile `1` remains current, QUIC activation blocked pending profile/grant/evidence gates |
 | `FND-03` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | authoritative runtime execution architecture accepted and its task lifecycle is archived; GameNode runtime implementation not claimed |
