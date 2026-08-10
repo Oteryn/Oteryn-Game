@@ -7,13 +7,13 @@ This directory contains the canonical architecture decisions, contracts, current
 Use this order when documents overlap:
 
 1. explicit owner instruction and repository governance;
-2. an accepted ADR/contract that explicitly owns the domain;
-3. an explicit later superseding ADR/contract for the named scope;
+2. an explicit later ADR/contract that states it supersedes the older authority for the named scope;
+3. the accepted ADR/contract that otherwise owns the domain;
 4. `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` for current progression/status wording;
 5. actively maintained review refinements and decision registers;
 6. historical analysis, evidence and archived task records.
 
-A newer date alone does not supersede an accepted semantic contract. Supersession must be explicit about what changes and what remains binding.
+Supersession precedence applies **only** to the scope explicitly named by the later decision. The older owning contract remains authoritative everywhere else. A newer date alone never supersedes an accepted semantic contract.
 
 Architecture acceptance is not runtime implementation. Use [Architecture Status Model](ARCHITECTURE_STATUS_MODEL.md) to distinguish decision, delivery and implementation state.
 
@@ -53,7 +53,7 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 
 ## Machine-readable contracts
 
-- [Transport policy](../contracts/PROTOCOL_OTERYN_TRANSPORT_POLICY.json) — one `protocol-oteryn`; current registered transport is TCP+TLS 1.3 profile `1`; QUIC is a future player-opt-in target and is blocked until protocol/FND-04 transport-profile reconciliation; no 0-RTT/DATAGRAM baseline.
+- [Transport policy](../contracts/PROTOCOL_OTERYN_TRANSPORT_POLICY.json) — one `protocol-oteryn`; TCP+TLS 1.3 profile `1` is the currently registered initial/default architecture profile, while **all gameplay transport runtime modes remain unavailable until implementation is separately authorized and proven**; QUIC is a future player-opt-in target blocked on protocol/FND-04 transport-profile reconciliation and evidence; no 0-RTT/DATAGRAM baseline.
 - [Game event foundation registry](../contracts/GAME_EVENT_FOUNDATION_REGISTRY.json)
 - [Resource limits registry](../contracts/RESOURCE_LIMITS_REGISTRY.json)
 - [Cross-repository contract lock](../contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json)
@@ -82,6 +82,6 @@ SIM-DETERMINISM-01
 
 ## Transport rule
 
-`ADR-0014` accepts the dual-transport strategy but does not register QUIC as an authoritative transport profile. FND-02 remains authoritative for the current transport registry, application protocol, framing/semantic requirements, sequencing, revisions, bounded inputs and related invariants.
+`ADR-0014` accepts the dual-transport strategy but does not register QUIC as an authoritative transport profile and does not claim any gameplay transport runtime implementation. For the explicitly refined deferred-QUIC strategy scope, ADR-0014 takes precedence; FND-02 remains authoritative everywhere else, including the current transport registry, application protocol, framing/semantic requirements, sequencing, revisions, bounded inputs and measured-benefit prerequisite.
 
-Functional QUIC admission/recovery requires a later accepted delivery that registers a stable QUIC transport profile and reconciles both FND-04 fresh-admission and reauthenticated-recovery grant contracts. No QUIC adapter, library choice, endpoint rollout or production traffic is authorized by ADR-0014 alone.
+Functional gameplay networking requires later implementation authority and proof. Functional QUIC admission/recovery additionally requires a later accepted delivery that registers a stable QUIC transport profile and reconciles both FND-04 fresh-admission and reauthenticated-recovery grant contracts. No QUIC adapter, library choice, endpoint rollout or production traffic is authorized by ADR-0014 alone.
