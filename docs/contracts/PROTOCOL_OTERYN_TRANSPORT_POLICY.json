@@ -1,10 +1,19 @@
 {
   "contract_id": "NET-TRANSPORT-01",
-  "revision": 2,
+  "revision": 3,
   "status": "ACCEPTED_STRATEGY_QUIC_ACTIVATION_BLOCKED",
   "application_protocol": "protocol-oteryn",
   "application_protocol_count": 1,
-  "superseding_adr": "docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md",
+  "adr": "docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md",
+  "fnd02_relationship": {
+    "current_tcp_profile_1_superseded": false,
+    "measured_benefit_prerequisite_superseded": false,
+    "refined_sections": [
+      "SECTION_5_WHY_TCP_FOR_V1_DEFERRED_QUIC_DIRECTION",
+      "SECTION_24_QUIC_V1_DEFERRED_PENDING_MEASURED_BENEFIT"
+    ],
+    "refinement": "QUIC is the intended future optional transport target, while registration, activation and default promotion remain deferred until contracts and evidence are accepted"
+  },
   "currently_registered_transport_profiles": [1],
   "transports": {
     "tcp_tls13": {
@@ -14,7 +23,7 @@
       "initial_default": true,
       "currently_registered": true,
       "authoritative_admission_available": true,
-      "required_safe_fallback": true
+      "required_safe_baseline": true
     },
     "quic_v1_tls13": {
       "transport_profile_id": null,
@@ -30,6 +39,7 @@
         "PROTOCOL_OTERYN_V1_REGISTRY_QUIC_PROFILE",
         "FND04_FRESH_ADMISSION_TRANSPORT_PROFILE_RECONCILIATION",
         "FND04_RECOVERY_TRANSPORT_PROFILE_RECONCILIATION",
+        "QUIC_ORDERING_AND_SNAPSHOT_BARRIER_PROOF",
         "QUIC_RESOURCE_LIMITS_AND_CONFORMANCE_EVIDENCE"
       ]
     }
@@ -73,6 +83,7 @@
     "same_character_lease_authority": true,
     "same_game_session_authority": true,
     "same_command_and_state_revision_semantics": true,
+    "same_snapshot_barrier_semantics": true,
     "same_connection_generation_fencing": true,
     "same_security_error_meaning": true,
     "gameplay_domain_transport_agnostic": true,
@@ -117,10 +128,24 @@
   },
   "quic_baseline_target": {
     "stream_per_message": false,
-    "small_fixed_bounded_reliable_lanes": true,
     "zero_rtt_enabled": false,
     "datagram_enabled": false,
     "library_selected": false,
+    "server_authoritative_ordering": {
+      "single_reliable_ordered_lane_required": true,
+      "carries_all_server_sequenced_messages": true,
+      "carries_snapshot_begin_chunks_and_commit": true,
+      "later_server_sequence_may_bypass_snapshot_on_other_lane": false,
+      "cross_lane_authoritative_resequencing_baseline_enabled": false
+    },
+    "client_command_ordering": {
+      "single_reliable_ordered_lane_required": true
+    },
+    "independent_control_lane": {
+      "permitted": true,
+      "restriction": "Only traffic that cannot advance or contradict CommandId, server_sequence, StateRevision, snapshot barrier or gameplay authority"
+    },
+    "future_cross_lane_resequencing_requires_separate_review": true,
     "candidate_libraries_for_bakeoff": [
       "quinn",
       "s2n-quic"
@@ -130,19 +155,21 @@
     "REGISTER_STABLE_QUIC_TRANSPORT_PROFILE_ID",
     "RECONCILE_FND04_FRESH_ADMISSION_GRANT_PROFILE",
     "RECONCILE_FND04_REAUTHENTICATED_RECOVERY_GRANT_PROFILE",
+    "PROVE_SERVER_SEQUENCE_ORDERING_UNDER_QUIC_STREAM_DELAY_LOSS_AND_RESET",
+    "PROVE_SNAPSHOT_BEGIN_CHUNK_COMMIT_BARRIER_WITH_LATER_SEQUENCED_TRAFFIC",
     "UDP_BLACKHOLE_AND_RESTRICTED_NETWORK_FALLBACK",
     "PACKET_LOSS_AND_REORDERING",
     "NAT_REBINDING_OR_PATH_CHANGE",
-    "SNAPSHOT_CONCURRENT_WITH_CONTROL_TRAFFIC",
     "HANDSHAKE_CPU_AND_RATE",
     "MEMORY_PER_CONNECTION",
     "MALFORMED_AND_ADVERSARIAL_TRAFFIC",
     "OBSERVABILITY_AND_OPERABILITY",
-    "REGISTERED_NUMERIC_RESOURCE_CEILINGS"
+    "REGISTERED_NUMERIC_RESOURCE_CEILINGS",
+    "MEASURED_PLAYER_OR_OPERATIONAL_BENEFIT_OVER_TCP"
   ],
   "rollout": {
     "current": "TCP_PROFILE_1_ONLY",
-    "future_phase_1": "TCP_DEFAULT_QUIC_PLAYER_OPT_IN_AFTER_PROFILE_RECONCILIATION",
+    "future_phase_1": "TCP_DEFAULT_QUIC_PLAYER_OPT_IN_AFTER_PROFILE_RECONCILIATION_AND_EVIDENCE",
     "future_phase_2": "CONTROLLED_QUIC_ELIGIBILITY_WITH_TCP_DEFAULT",
     "future_quic_default_requires_new_decision": true,
     "remote_tcp_only_kill_switch_required": true
