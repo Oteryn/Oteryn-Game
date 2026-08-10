@@ -25,7 +25,7 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 |---|---|---|---|---|
 | `FND-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `PROVEN` | workspace/dependency contract is applied and machine-enforced; canonical Rust cutover evidence exists |
 | `VSL-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `PROVEN` | native client migration/cutover completed and source/destination lifecycle closed |
-| `FND-ID-01` | `ACCEPTED` | `OPEN` | `NOT_STARTED` | semantic identity architecture is accepted, but legacy FND-ID task records still remain under `docs/agents/tasks/active/`; lifecycle cleanup/ownership reconciliation must complete before this row can become `LIFECYCLE_CLOSED`; no separate runtime implementation claim |
+| `FND-ID-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | semantic identity architecture is accepted; stale support-task ownership was archived and released by PR #147 / merge `81db47966d76709a0e44dfbf1bc3979f38a24ffa`; no separate runtime implementation claim |
 | `FND-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | `protocol-oteryn` v1 architecture accepted and its task lifecycle is archived; current registered transport remains TCP profile `1`; production protocol adapter remains separately gated |
 | `NET-TRANSPORT-01` | `ACCEPTED` | `IN_REVIEW` | `NOT_STARTED` | dual-transport strategy delivery PR #145; TCP profile `1` remains current, QUIC activation blocked pending profile/grant/evidence gates |
 | `FND-03` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | authoritative runtime execution architecture accepted and its task lifecycle is archived; GameNode runtime implementation not claimed |
