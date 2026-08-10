@@ -2,25 +2,34 @@
 
 Status: normative scenario names; owning contracts define exact timings and expected codes.
 
-Each foundation contract must mark every applicable scenario as `PASS`, `NOT_APPLICABLE`, `BLOCKED` or `DEFERRED_BY_ACCEPTED_GATE` with named evidence.
+Each foundation contract must mark every applicable scenario as `PASS`, `NOT_APPLICABLE`, `BLOCKED` or `DEFERRED_BY_ACCEPTED_GATE` with named evidence. Architecture `PASS` means the contract freezes the required deterministic invariant; it does not imply runtime implementation/test evidence exists.
 
 | ID | Scenario | Minimum invariant |
 |---|---|---|
-| `FS-PLATFORM-UNAVAILABLE` | Platform unavailable during login/admission | No alternate credential authority or unbound session is created. |
-| `FS-GATEWAY-AFTER-REDEEM` | Gateway fails after one-time ticket redemption | No second candidate or silent downgrade; result is bounded and auditable. |
-| `FS-POSTGRES-UNAVAILABLE` | Game PostgreSQL unavailable | No unfenced durable mutation; admission/runtime policy is explicit. |
-| `FS-LEASE-RENEW-TIMEOUT` | Character lease renewal deadline expires | Stale owner stops authoritative durable writes before another generation can commit. |
-| `FS-DUPLICATE-LOGIN` | Two admissions race for one character | At most one authoritative session and generation wins atomically. |
-| `FS-STALE-GENERATION` | Old session/node submits command or save | Rejected with no partial mutation. |
+| `FS-PLATFORM-UNAVAILABLE` | Platform unavailable during login/admission/recovery authorization | No alternate credential authority or unbound session is created. Already-current game authority is not silently replaced by Platform unavailability. |
+| `FS-GATEWAY-AFTER-REDEEM` | Gateway fails after one-time ticket redemption / fresh-grant issuance becomes ambiguous | No blind second candidate/capability or silent downgrade; same producer attempt is reconciled or deterministically retired before a new attempt. |
+| `FS-ADMISSION-VALIDATION-COMMIT-ELIGIBILITY-CHANGE` | Fresh-admission validation passes, then token time/trust/security/route/runtime/revision/nonce/ownership/presence/lease/current-target authority changes before final commit | Final admission boundary revalidates every mutable authority predicate. Losing/stale candidate creates no partial presence/lease/session/transport authority and never rolls current authority back. |
+| `FS-ADMISSION-GRANT-REPLAY` | One fresh-entry grant is replayed or concurrently consumed | At most one authoritative admission commits from one GrantNonce; consumed/losing replay cannot create, revive or fence another GameSession. |
+| `FS-RECOVERY-GRANT-ISSUANCE-AMBIGUITY` | Recovery-grant producer loses response/crashes after a grant may already have been issued | Same recovery `attempt_ref` reconciliation only; no blind second capability. A new independent attempt requires deterministic retirement plus proof any possibly issued old capability is no longer acceptable. |
+| `FS-RECOVERY-OWNERSHIP-WORLD-CHANGE` | Recovery credential validates, then AccountId->CharacterId or CharacterId->WorldId/eligibility changes before recovery commit | Ownership is revalidated before world/actor classification and again at commit. Stale recovery creates no control/nonce mutation, never retargets, respawns or recreates the actor. |
+| `FS-RECONNECT-CREDENTIAL-REPLAY` | Stale/predecessor reconnect proof or candidate generation is replayed/concurrently raced | At most one current TransportBinding generation wins. Old proof/generation cannot command, advance liveness, regain authority or fence the successor. |
+| `FS-RECONNECT-PREPARE-COMMIT-ELIGIBILITY-CHANGE` | PREPARE succeeds, then generation/grace/controller health/presence/lease/runtime/reconciliation/security/revision/handoff/terminal state changes before COMMIT | COMMIT atomically revalidates current authority and proof-specific security. Stale candidate cannot advance generation, activate successor proof, consume recovery nonce or roll authority back to PREPARE-time state. |
+| `FS-RECONNECT-COMMIT-RESPONSE-LOSS` | Rebind COMMIT may have succeeded but final response is lost, duplicated or process crashes around response publication | Same `ReconnectAttemptRef` reconciles one stable transition. Candidate successor proof/transport remain current if committed; predecessor proof/generation never revive and a second authority switch is forbidden. |
+| `FS-REENTRY-PROTECTION-REARM-FAILOVER` | Player reconnects repeatedly or runtime/process fails during ControlLossEpoch, grace, active protection or protection re-arm | Loss/grace/protection/re-arm state and original deadlines survive failover without restart. One eligible entitlement activates exactly one 4-second protection window; disconnect/retry churn before stable-control re-arm creates no new window. |
+| `FS-GAMENODE-SESSION-CONTINUITY-AMBIGUOUS` | New runtime owner cannot prove whether/which prior GameSession/generation/rebind attempt/proof/loss deadline was authoritative after GameNode failure | NodeId never implies authority. Same-session continuity is allowed only from complete fenced recoverable evidence; otherwise no GameSession/proof/deadline is guessed or restarted. Existing actor is not duplicated/respawned. |
+| `FS-POSTGRES-UNAVAILABLE` | Game PostgreSQL unavailable | No unfenced durable mutation; admission/runtime/lease policy is explicit. Physical durable recovery belongs to accepted DUR gates. |
+| `FS-LEASE-RENEW-TIMEOUT` | Character lease renewal deadline expires | Stale owner stops authoritative durable writes before another generation can commit. Retry preserves only an already-current lease within a measured fail-safe deadline; exact numeric values require DUR/OPS evidence. |
+| `FS-DUPLICATE-LOGIN` | Two admissions race for one account/character | Account-global exclusion linearizes at most one playable/mandatory-presence winner; a fresh candidate cannot convert into a bearer takeover of a protected incumbent. |
+| `FS-STALE-GENERATION` | Old session/node/transport/lease holder submits command, save or control transition | Current generation/ownership fences reject stale work with no partial mutation. |
 | `FS-DUPLICATE-COMMAND` | Same `CommandId` is replayed | Deterministic prior result or explicit duplicate outcome; no duplicated effect. |
-| `FS-CHANNEL-SPLIT-OWNER` | Two nodes believe they own one channel | Fencing prevents dual authoritative commits. |
-| `FS-CHANNEL-DRAIN` | Channel drains during active gameplay | New work stops in order; admitted state reaches a documented safe boundary. |
-| `FS-QUEUE-SATURATION` | Bounded inbound/outbound/work queue fills | Defined backpressure/rejection; no silent loss or unbounded growth. |
-| `FS-SLOW-CLIENT` | Client cannot consume outbound state | Bounded memory and explicit disconnect/resync behavior. |
-| `FS-CLOCK-SKEW` | Wall clocks disagree or move | Monotonic deadlines remain safe; signed timestamps use bounded skew policy. |
-| `FS-KEY-ROTATION` | Signing/verification key rotates during login | Valid overlap and revocation behavior; no acceptance outside policy. |
-| `FS-REVISION-MISMATCH` | Protocol/ruleset/content revisions disagree | Fail closed with no implicit downgrade or mixed authoritative state. |
-| `FS-SNAPSHOT-DELTA-MISMATCH` | Snapshot and delta revisions diverge | Deterministic resync; no partial application. |
+| `FS-CHANNEL-SPLIT-OWNER` | Two nodes believe they own one channel | Scope ownership generation/fencing prevents dual authoritative commits. |
+| `FS-CHANNEL-DRAIN` | Channel drains during active gameplay | New work stops in order; admitted state reaches a documented safe boundary and reconnect/recovery cannot revive a stale owner. |
+| `FS-QUEUE-SATURATION` | Bounded inbound/outbound/work/prepared-operation queue fills | Defined backpressure/rejection; no silent loss or unbounded growth. |
+| `FS-SLOW-CLIENT` | Client cannot consume outbound state | Bounded memory and explicit disconnect/resync behavior; slow-client state does not bypass generation/liveness authority. |
+| `FS-CLOCK-SKEW` | Wall clocks disagree or move | Signed timestamps use bounded trusted-server skew; monotonic lifecycle deadlines remain safe and are not reset by process failover. |
+| `FS-KEY-ROTATION` | Fresh/recovery signing key/profile trust rotates, trust evidence becomes stale/unavailable or emergency revoke occurs during admission/recovery/PREPARE->COMMIT | Both grant profiles require authenticated source-observation trust evidence within the accepted <=5s source-age ceiling plus monotonic anti-rollback ordering. Earlier validation/PREPARE is never trust escrow. Stale/unprovable evidence fails closed; fresh explicit revoke/unknown trust uses purpose-specific authentication failure; no nonce/authority mutation. |
+| `FS-REVISION-MISMATCH` | Protocol/transport/ruleset/content/map/world-policy/offer revisions disagree | Each contract-owned dimension is independently validated; fail closed with no opaque compatibility token, implicit downgrade, credential reinterpretation or mixed authoritative state. |
+| `FS-SNAPSHOT-DELTA-MISMATCH` | Snapshot and delta/server sequence/domain revisions diverge during initial admission or same-session continuation | Deterministic explicit resync/replacement snapshot; no partial/gap-guessing application. |
 | `FS-DB-OUTBOX-BOUNDARY` | Crash occurs around durable mutation/outbox publish | Transaction contract prevents lost or duplicated externally visible effects. |
 | `FS-WORLD-BUNDLE-CORRUPT` | Bundle checksum/version/decompression is invalid | Reject before unsafe allocation or partial world activation. |
 | `FS-CLIENT-CUTOVER-ROLLBACK` | Migrated client workspace fails acceptance | Development source of truth and exact rollback path remain unambiguous. |

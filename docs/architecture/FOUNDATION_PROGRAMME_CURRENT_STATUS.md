@@ -1,243 +1,120 @@
 # Oteryn v2 Foundation Programme — Current Status
 
 - Status: Canonical current execution-status overlay
-- Date: 2026-08-08
+- Date: 2026-08-10
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Applies to: current foundation gate progression and next-action interpretation
-- Does not supersede: accepted ADR semantics, dedicated accepted contract semantics, product decisions or historical evidence except where this file explicitly identifies stale progress/coordination wording
+- Trusted main at FND-04C start: `3d07b3faaca683514fdfe6291e974f9195e2f763`
+- Active final foundation delivery: Issue #130 (`FND-04C`)
+- Current phase represented by this delivery candidate: `FINAL_DELIVERY / CLOSEOUT_PENDING`
 
-## Purpose
+## 1. Authority of this overlay
 
-Keep the live foundation programme state unambiguous when long-lived backlog, global-register, gap-register, baseline or coordinator documents contain progress sentences written before later accepted closeouts and contracts.
+This document answers **what is accepted now and what may happen next**. Detailed historical review/CI/repair evidence lives in accepted contracts, archived task records and merged PRs.
 
-This file is authoritative for **current execution status and gate readiness**. Accepted architecture semantics remain authoritative in ADRs and dedicated contracts. Stable gate definitions remain in `FOUNDATION_DECISION_BACKLOG.md`; the wider decision horizon remains in `GLOBAL_ARCHITECTURE_DECISION_REGISTER.md`.
+If an older coordination/backlog/register paragraph still describes FND-02, FND-03 or FND-04 as the current live gate, that wording is historical execution narrative. Accepted contracts plus this overlay govern current progression. Stable decision IDs and future dependency requirements in the global register/backlog remain valid unless explicitly superseded.
 
-Chat history is not execution authority.
+No status row below implies runtime implementation unless explicitly stated.
 
-## Accepted foundation evidence
+## 2. Foundation progression summary
 
-### `FND-01` — workspace/dependency/migration foundation
+| Gate | Current status | Canonical evidence / note |
+|---|---|---|
+| `FND-01` | `ACCEPTED AND APPLIED` | workspace/dependency contract + canonical 19-member destination cutover; destination merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0` |
+| `VSL-02` | `ACCEPTED AND COMPLETE` | exact Rust-client migration/cutover contract; source-only historical/non-canonical closeout completed |
+| `FND-ID-01` | `ACCEPTED` | `FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md`; merge `2c584543cd1e3758958755478a6cc6ed3d39a8a9` |
+| `FND-02` | `ACCEPTED` | `protocol-oteryn` v1 contract; PR #94 merged as `769ecd2ce2dfe0a7644d8dc1d67c54d40da5d202`; runtime codec/listener implementation remains separately gated |
+| `FND-03` | `ACCEPTED` | `FND-03_RUNTIME_EXECUTION_CONTRACT.md`; PR #102 merged as `e72f2514924e8bbf8d1a729721cce9e67d977544`; runtime implementation/capacity/OPS claims remain separately gated |
+| `FND-04A` | `ACCEPTED AND LIFECYCLE-CLOSED` | fresh admission authority/profile; PR #125 merge `cae318b8891844891c734012eb2020e669ebaff4`; closeout #126 `2fd7bac4879f381d5b97230732076df2e9c61f95` |
+| `FND-04B` | `ACCEPTED AND LIFECYCLE-CLOSED` | reconnect/recovery/continuity + recovery profile; PR #128 merge `e6282b9c48713b2a2980f2598a81775f78725cff`; closeout #129 `3d07b3faaca683514fdfe6291e974f9195e2f763` |
+| `FND-04C` | `FINAL DELIVERY / CLOSEOUT PENDING` | Issue #130 owns final errors/diagnostics/failure/compatibility integration. Before its delivery merge this means final candidate validation; after delivery merge it means lifecycle archival/ownership release still remains. |
+| `FND-04` overall | `INCOMPLETE UNTIL FND-04C DELIVERY + LIFECYCLE CLOSEOUT` | A/B accepted; C delivery and its closeout are the only remaining programme #112 steps |
 
-- status: `ACCEPTED AND APPLIED`;
-- canonical Rust workspace exists in `blakinio/Oteryn-v2`;
-- destination client/workspace cutover PR #50 squash merge: `78988f72a80cc904aa9176ae850c50d4efa0b0f0`;
-- old `blakinio/otclient` Rust client source is historical/non-canonical after its dedicated source-marker closeout;
-- canonical workspace remains the accepted 19-member Rust workspace until later consumer-backed crate changes supersede it.
+The FND-04C lifecycle closeout MUST update this overlay again to `FND-04C = ACCEPTED AND LIFECYCLE-CLOSED` and `FND-04 = ACCEPTED AND CLOSED`; therefore the same text is correct both immediately before and immediately after the FND-04C delivery merge.
 
-### `VSL-02` — client migration/cutover
+## 3. Accepted FND-02 baseline
 
-- status: `COMPLETE`;
-- canonical native Rust client path: `apps/client`;
-- ADR-0011 `pre-native-protocol` fail-closed state remains binding until separately authorized native-protocol implementation.
+Canonical production protocol family is `oteryn`.
 
-### `FND-ID-01` — foundation identifiers
+Accepted foundation includes TCP + TLS 1.3; ALPN `oteryn-game/1`; verified server identity; no TLS 0-RTT/plaintext/Canary fallback; `uint32_be` bounded framing + protobuf/proto3; exact 16-byte wire form for exposed foundation UUIDs; post-admission GameSessionId; monotonic non-zero `connection_generation`; `(GameSessionId, CommandId)` command identity with monotonic uint64 CommandId order; server_sequence + typed state-domain revisions; explicit snapshot/delta/resync; authenticated liveness probe/ack; registered hard limits/stable protocol errors; and independent byte/malformed/property/fuzz/cross-version evidence before implementation claims.
 
-- status: `ACCEPTED AND MERGED`;
-- canonical contract: `docs/architecture/FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md`;
-- delivery PR #85 exact validated head: `6686a4b62c1e6b518d38ab3c80326b8621abe5bb`;
-- delivery squash merge: `2c584543cd1e3758958755478a6cc6ed3d39a8a9`;
-- lifecycle/status closeout PR #87 squash merge: `648aa10bb5b36d8826d82ed0f1ed94a47ca53a24`;
-- coordination reconciliation issue #86 is complete.
+FND-02 `schema_revision` is diagnostic/build evidence, not an opaque exact gameplay compatibility token.
 
-The accepted foundation identity catalogue remains `AccountId`, `CharacterId`, `WorldId`, `ChannelId`, `NodeId`, `InstanceId`, `PartyId`, `GameSessionId` plus conditional `HandoffId`. `AdmissionId` and `CharacterLeaseId` are not invented by the foundation contract.
+## 4. Accepted FND-03 baseline
 
-### `FND-02` — `protocol-oteryn` v1 foundation contract
+Canonical runtime semantics include a multithreaded GameNode with many authoritative scopes; one logical ordered mutation owner per ChannelRuntime/InstanceRuntime; NodeId as process-incarnation/placement rather than authority; separate scope ownership generation; execution order distinct from CommandId; separate wall/monotonic/execution clocks; mutation-capable async/timer work re-entering through the current owner; stale generation/revision/handle work failing closed; bounded queues; non-starvable fencing/control work; measured rather than guessed capacity; and deterministic replay based on normalized authoritative inputs/order rather than CPU/thread interleaving.
 
-- status: `ACCEPTED AND MERGED`;
-- canonical contract: `docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md`;
-- canonical foundation schema: `docs/contracts/protocol-oteryn/v1/foundation.proto`;
-- canonical protocol registry: `docs/contracts/PROTOCOL_OTERYN_V1_REGISTRY.json`;
-- canonical resource limits: `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`;
-- delivery PR: `blakinio/Oteryn-v2#94`;
-- exact validated delivery head: `91809204fcdf984a5a9d7b8c276ef9fb2f9cab9f`;
-- Agent governance run `31225287340`: `PASS`;
-- Dependency review run `31225287332`: `PASS`;
-- CodeQL run `31225287334`: `PASS`;
-- exact-head architecture/security audit review `4887157361`: `PASS`, zero open material findings;
-- unresolved review threads: `0`;
-- squash merge: `769ecd2ce2dfe0a7644d8dc1d67c54d40da5d202`;
-- schema revision: `1`;
-- schema SHA-256: `6e1c614661e72daac529be9d0ec06317201b916cd47ae17ff1590da5c7205ebe`;
-- runtime/component/E2E implementation: `NOT IMPLEMENTED / NOT AUTHORIZED BY FND-02`.
+No async runtime product, worker count, CPU affinity, global tick numeric capacity, orchestrator or heartbeat cadence is selected merely by FND-03 acceptance.
 
-`CROSS_REPOSITORY_CONTRACT_LOCK.json` records the immutable accepted local FND-02 revision while preserving the older Platform protocol revision as `RECONCILIATION_INPUT_ONLY`.
+## 5. Accepted FND-04A baseline
 
-## Accepted disconnect/re-entry clarification
+Fresh admission canonically requires Platform bounded-attempt authority with Oteryn-v2 final game-domain admission authority; AccountId->CharacterId before CharacterId->WorldId eligibility including final revalidation; stale-world no-retarget/no partial authority; separate presence/lease/session/transport/runtime authority; one atomic final admission boundary; strict purpose-separated Ed25519 fresh profile with verifier-anchored trust and deterministic crypto/schema/binding/profile precedence; independent protocol/transport/ruleset/content/map/world-policy/offer revisions; and authenticated Platform-security + signing-key/profile source-age <=5s with monotonic anti-rollback, no cache re-aging and fail-closed restart-floor reconstruction.
 
-The reconnect/disconnect owner clarification is accepted, merged and closed out.
+## 6. Accepted FND-04B baseline
 
-Canonical sources:
+Reconnect/recovery canonically requires one current playable connection generation; healthy-binding non-preemption; PREPARE without authority and atomic COMMIT revalidation/switch; inactive candidate successor proof activation with predecessor fencing and lost-response reconciliation; same-session grace originating at server-authoritative ControlLossEpoch; grace/protection/re-arm state surviving failover without timer restart; exact 4-second defensive PvE protection as the only frozen reconnect/gameplay timing; stable-control re-arm before any later protection entitlement; historical `2s/5s/15s` candidate timings non-canonical; purpose-separated Ed25519 recovery profile; independent protocol/transport/ruleset/content/map/world-policy revisions; ownership before recovery world/actor/controller classification; same-session state continuity; post-grace new GameSession attached to the same unreset actor; GameNode continuity only from complete fenced evidence; and no ordinary reconnect HandoffId invention.
 
-- `docs/architecture/DISCONNECT_REENTRY_PVE_PROTECTION_OWNER_DECISION.md`;
-- `docs/architecture/DISCONNECT_CLIENT_OS_FORENSICS_OWNER_DIRECTION.md`;
-- `docs/architecture/DISCONNECT_CLIENT_OS_FORENSICS_PRIVACY_TIMING_REFINEMENT.md`;
-- `docs/architecture/DISCONNECT_FORENSIC_EVIDENCE_OWNER_BASELINE.md` remains the authoritative server-side forensic baseline;
-- `docs/architecture/CLIENT_CRASH_DIAGNOSTICS_PRIVACY_OWNER_BASELINE.md` remains the privacy authority for automatic client-originated diagnostics.
+## 7. FND-04C acceptance target
 
-Delivery evidence:
+FND-04C delivery must provide, on one accepted exact head:
 
-- PR #96 final exact head: `ddf62ec48443fb4ce119eed0900662e222a99726`;
-- PR #96 squash merge: `496f0b9ad5231d24325e937a3f09ba221cf5c86b`;
-- lifecycle closeout PR #97 squash merge: `b85bdd3f278d9de12284eab7c6352219325b3751`.
+- complete FND-04 cross-component error catalogue conforming Foundation Error Vocabulary;
+- stable redacted diagnostics + credential-free correlation per error;
+- historical superseded error aliases explicitly non-canonical where A/B already own the condition;
+- Foundation failure scenarios for admission/recovery/reconnect replay/races, lost responses, security/key rotation, ownership/world changes, GameNode continuity ambiguity and protection re-arm/failover;
+- independent producer/consumer compatibility and rollout/rollback rules;
+- implementation evidence gates;
+- security/privacy integration;
+- thin final `FND-04_IDENTITY_GAME_SESSION_ADMISSION_CHARACTER_LEASE_CONTRACT.md` linking A/B/C without duplication;
+- this transition-safe current-status overlay.
 
-Binding semantics include:
+After delivery merges, only lifecycle archival/ownership release remains. Closeout then updates this overlay to final accepted/closed state and closes Issue #130 + programme #112.
 
-- valid re-entry after **unexpected loss of playable control** receives exactly four seconds of defensive PvE protection;
-- accepted graceful logout/login does not manufacture that protection window;
-- movement, self-healing and health/mana/resource potion use remain legal under ordinary costs/cooldowns/exhaustion;
-- the protected character cannot execute offensive actions against PvE monsters and prohibited outgoing actions are not buffered;
-- the protected character cannot heal another player but may receive legal healing from another player;
-- reconnect does not reset HP/resources/position/conditions/cooldowns/combat/PZ/logout state, threat/aggro, encounter state or committed effects;
-- client/OS/Launcher/Guardian evidence is corroborating only; server-generated gameplay/liveness/runtime evidence remains authoritative;
-- full Event Viewer/Event Log ingestion is rejected in favor of bounded, allowlisted, normalized incident evidence;
-- automatic client-originated incident-capsule uploads remain governed by the existing global client-diagnostics opt-out;
-- diagnostics opt-out or missing client evidence is not adverse evidence and cannot weaken server-side incident visibility;
-- an independent client-side observer/Launcher/Guardian is an extension point, not a mandatory first implementation;
-- a direct Guardian heartbeat remains separately gated by measured purpose/privacy/security/resource evidence;
-- Game Intelligence may investigate longitudinal suspicious disconnect patterns but cannot autonomously sanction or mutate gameplay.
+## 8. Deliberately deferred implementation-sensitive decisions
 
-No kernel driver, invasive anti-cheat, production client diagnostics or enforcement implementation was authorized by that package.
+FND-04 acceptance does not freeze unmeasured implementation values. Still deferred: CharacterLease TTL/renew/safety/fail-safe deadlines; liveness cadence/hysteresis/control-loss threshold; same-session grace duration; stale-transport cleanup; stable-control protection re-arm threshold; prepared reconnect/resource/rate/retention limits; async runtime/worker/affinity choices; production capacity/scaling; persistence schema/isolation/outbox/RPO/RTO; KMS/HSM vendor; healthy-session migration protocol; and handoff implementation details beyond accepted fencing extension points.
 
-## `FND-03` analysis evidence
+These are not permission to use defaults. Owning DUR/OPS/PERF/future contracts must accept measured evidence before implementation can claim correctness.
 
-The bounded FND-03 analysis gate is complete, merged and archived.
+## 9. Runtime/implementation status
 
-Canonical analysis inputs:
+Foundation architecture acceptance is **not runtime implementation**. Current architecture work does not authorize production protocol listener/client gameplay adapter, GameNode/session/admission/reconnect runtime, CharacterLease persistence, Platform issuer/security-projection writes, production keys/KMS, deployment/traffic cutover, entitlement/Premium/VIP implementation or broad gameplay/content production.
 
-- `docs/architecture/FND-03_AUTHORITATIVE_RUNTIME_EXECUTION_ANALYSIS_BASELINE.md`;
-- `docs/architecture/FND-03_RUNTIME_LIFECYCLE_FAILURE_AND_REPLAY_ANALYSIS_BASELINE.md`.
+The migrated Rust client remains governed by ADR-0011 pre-native-protocol fail-closed requirements until separately authorized implementation proves FND-02/FND-03/FND-04 conformance.
 
-Delivery evidence:
+## 10. Next ordered work after FND-04 closes
 
-- analysis PR #98 exact final head: `d46be7cda497de02ef671f7297a75d88f004cbbe`;
-- Agent governance run `31269178770`: `PASS`;
-- Dependency review run `31269178707`: `PASS`;
-- CodeQL run `31269178709`: `PASS`;
-- exact-head architecture audit review `4889306827`: `PASS`, zero open material findings;
-- PR #98 squash merge: `86881713ac99877ae765f73bf2750867d450516b`;
-- lifecycle closeout PR #100 squash merge: `a931c54e7e32b2cea370317ce88896a18eed8ccb`;
-- duplicate/premature PR #99 and duplicate closeout PR #101 were closed unmerged and are non-authoritative.
+After FND-04C lifecycle closeout:
 
-The accepted analysis direction is:
+1. `ANL-01 — Game Event and Audit Foundation` must be accepted before `DUR-02`/`DUR-03` finalize transactional outbox and critical audit evidence.
+2. `DUR-01 — Durable Identifier Representation Contract` remains required before authoritative durable gameplay representation.
+3. `DUR-02 — Persistence v1` and `DUR-03 — Item Transaction and Anti-Duplication Invariants` remain hard gates before authoritative durable character/item/currency mutation and consume required DUR-01/ANL-01 decisions.
+4. `DUR-04 — Content, World Detail and Scripting` remains required before broad import/scripted durable behavior.
+5. `GAME-VISION-01` still blocks broad gameplay/content production and must define measurable reference-vs-evolved launch/parity strategy.
+
+ANL consumers remain observational and never replace authoritative invariants; DUR-03 prevents duplication while later ANL-03 detects/investigates economy integrity anomalies.
+
+## 11. Concise rule
 
 ```text
-multithreaded GameNode
--> many independent authoritative scopes may progress concurrently
--> each ChannelRuntime/InstanceRuntime has one logical ordered mutation owner
--> logical owner is not a dedicated OS-thread contract
--> NodeId is process-incarnation identity, not scope authority
--> scope ownership generation is separate from NodeId and semantic ChannelId/InstanceId
--> FND-02 CommandId order remains separate from runtime execution order
--> wall clock, process monotonic time and authoritative execution order remain distinct
--> mutation-capable timers and async results re-enter through the current owner
--> stale generation/revision/local-handle work fails closed
--> control/fencing cannot starve behind ordinary gameplay backlog
--> all queues/executors are bounded
--> benchmark-sensitive numeric capacities require measured/safety evidence rather than architectural guessing
--> deterministic replay records normalized authoritative inputs/clocks/randomness/order, not original CPU/thread interleaving
+FND-01 / VSL-02 / FND-ID-01 / FND-02 / FND-03
+-> accepted
+
+FND-04A
+-> accepted + closed
+
+FND-04B
+-> accepted + closed
+
+FND-04C
+-> final delivery / closeout pending
+
+FND-04C delivery + lifecycle closeout
+-> FND-04 ACCEPTED AND CLOSED
+-> programme #112 closes
+
+then
+-> ANL-01 + DUR-01 dependency work
+-> DUR-02 / DUR-03 only after required inputs
+-> no broad gameplay/content production before GAME-VISION-01
 ```
-
-The analysis intentionally did not itself complete FND-03 or authorize runtime implementation.
-
-## Current `FND-03` final contract delivery
-
-PR #102 (`docs/OTV2-20260808-fnd03-runtime-execution-final`) is the single bounded architecture-only final FND-03 delivery package.
-
-Candidate contract:
-
-- `docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md`.
-
-The final contract freezes, subject to exact-head validation and merge:
-
-- `NodeRuntime`, `WorldServices`, `ChannelRuntime` and `InstanceRuntime` responsibilities;
-- semantic scope identity versus scope ownership generation versus NodeId placement;
-- one owner-scoped `RuntimeExecutionOrdinal` as the runtime input linearization/evidence value, while domain/state revisions remain the committed-state authority;
-- non-interleaved authoritative input resolution and FND-02 per-session CommandId ordering;
-- wall-clock versus process-local monotonic versus runtime execution-order semantics;
-- durable/recoverable timer boundary and bounded catch-up taxonomy;
-- auxiliary worker/service pending/revalidation behavior;
-- bounded queue/backpressure, control-lane, scope-fairness and slow-client semantics;
-- scope activation, drain, checkpoint cut, fencing, failure containment and recovery;
-- strict FND-03/FND-04 liveness/reconnect timing ownership split;
-- deterministic authoritative gameplay randomness and simulation replay evidence;
-- foundation error mapping and complete failure-scenario disposition;
-- downstream ownership split with FND-04, DUR-*, ANL-*, PERF-01, OPS-CHANNEL-01 and gameplay contracts.
-
-The contract deliberately does **not** select an async runtime, worker count, CPU affinity, fixed global tick/quantum, benchmark-sensitive numeric capacities, checkpoint storage/RPO/RTO, orchestrator product or heartbeat cadence.
-
-Implementation acceptance will require concrete numeric runtime hard limits in `RESOURCE_LIMITS_REGISTRY.json` (or accepted successor) with boundary tests and safety/benchmark/spike evidence. This architecture package does not invent those numbers.
-
-Delivery-state interpretation is transition-safe:
-
-- while PR #102 remains open, its exact head is candidate delivery state and must not be represented as accepted architecture;
-- after PR #102 squash-merges, `FND-03_RUNTIME_EXECUTION_CONTRACT.md` on `main` becomes the FND-03 semantic authority;
-- after delivery merge, a separate task-lifecycle closeout archives/releases the FND-03 contract task without changing its semantics;
-- runtime code still requires a separately explicit implementation task; FND-03 contract acceptance alone does not authorize implementation in this architecture-only programme.
-
-## Current ordered foundation state
-
-| Gate / programme step | Current status | Consequence |
-|---|---|---|
-| `FND-01` | `ACCEPTED AND APPLIED` | Workspace/dependency/migration contract is complete. |
-| `VSL-02` | `COMPLETE` | Canonical migrated client/workspace exists; old source is historical/non-canonical. |
-| `FND-ID-01` | `ACCEPTED AND MERGED` | Cross-boundary foundation identifier semantics are frozen. |
-| `FND-02` | `ACCEPTED AND MERGED` | Native gameplay wire foundation is frozen; no runtime implementation claim is implied. |
-| Disconnect/re-entry clarification | `ACCEPTED AND MERGED` | Mandatory input to runtime/session design; no diagnostics/enforcement implementation claim. |
-| FND-03 analysis | `COMPLETE AND MERGED` | Two reviewed analysis baselines are canonical inputs to the final contract. |
-| `FND-03` final contract | `DELIVERY = LIVE PR #102 / MAIN AFTER MERGE` | Complete runtime execution semantics are being validated; no runtime implementation is authorized by delivery alone. |
-| `FND-04` | `BLOCKED ON OWN CONTRACT` | Admission/Game Session/lease/reconnect implementation remains unclaimed; final contract follows accepted FND-03. |
-| `DUR-01`…`DUR-04`, `ANL-01`… | `LATER GATES` | Existing ordering and architecture requirements remain unchanged. |
-
-## `FND-02` completion boundary
-
-The accepted v1 foundation freezes the minimum wire mechanics required by downstream runtime/admission work:
-
-- one native production family: `oteryn`;
-- transport profile 1: TCP + TLS 1.3, ALPN `oteryn-game/1`, verified server identity, no TLS 0-RTT/plaintext/Canary fallback;
-- framing: `uint32_be` payload length + one bounded protobuf `WireEnvelope`;
-- Protocol Buffers binary with `proto3` source IDL for v1;
-- schema revision/hash as immutable evidence metadata, **not** exact-equality runtime compatibility identity;
-- stable numeric registries for foundation messages/errors and future additive capabilities;
-- initially zero speculative optional capabilities; core v1 semantics are mandatory under protocol major 1;
-- foundation UUID identities use exact 16-byte standard UUID wire representation when exposed;
-- canonical game-domain `GameSessionId` is issued only after authoritative admission;
-- `connection_generation` is a monotonic non-zero post-admission transport fence carried in both directions;
-- `(GameSessionId, CommandId)` is the command identity, where `CommandId` is monotonic `uint64` and also defines total client-command order;
-- bounded ordered command ingress permits safe pipelining while preventing duplicate execution;
-- server-authoritative `server_sequence` and typed state-domain revisions continue across eligible reconnect of the same GameSession;
-- snapshot/delta/resync is explicit, atomic and never guesses through gaps;
-- replacement snapshots use a bounded sequencing barrier so later server-sequenced output cannot overtake `SnapshotCommit`;
-- liveness uses authenticated probe/ack primitives and is not inferred from gameplay-command silence or socket-open state;
-- hard peer-controlled wire/count/depth limits are concrete in `RESOURCE_LIMITS_REGISTRY.json`;
-- future implementation acceptance requires independent byte fixtures, malformed corpus, property tests, fuzzing, cross-version fixtures, reconnect-fencing tests, pipelining tests and snapshot-barrier tests.
-
-FND-02 deliberately does **not** select a concrete Rust protobuf/TLS library, implement listeners/codecs, define heartbeat cadence, define admission/reconnect credentials, define gameplay-specific movement/combat/content payloads, introduce QUIC/compression, or enable production traffic.
-
-## External Platform reconciliation boundary
-
-The merged `blakinio/Oteryn-Platform` protocol contract at `c0b8703d326a04b43ae8e06f6192b0cb91c859b7` remains immutable historical/reconciliation evidence. It is **not** final Oteryn-v2 protocol authority and remains classified `RECONCILIATION_INPUT_ONLY`.
-
-The final local FND-02 authority is `blakinio/Oteryn-v2@769ecd2ce2dfe0a7644d8dc1d67c54d40da5d202` plus its canonical contract/schema/registry/limits.
-
-A complete cross-repository rollout still requires a separately authorized `blakinio/Oteryn-Platform` task/branch/PR to reconcile Gateway/World Registry/session-offer structures with accepted FND-02. No Platform write or rollout is authorized by this status overlay.
-
-## Historical progress wording
-
-Historical ADRs, archived tasks, evidence snapshots and older coordination documents may retain progress-only sentences from before later foundation completion. Do not mass-rewrite historical evidence merely to make old timestamps read like current status.
-
-`GLOBAL_ARCHITECTURE_DECISION_REGISTER.md`, `FOUNDATION_DECISION_BACKLOG.md` and other long-lived coordination files may contain stale progress sentences such as `FND-02 is next` or `FND-03 is next`. Those sentences are not current execution authority. This file and live GitHub state govern current progression; dedicated accepted contracts govern semantics.
-
-## Current next action
-
-Use live PR #102 state to select exactly one transition:
-
-- **if PR #102 is open** — complete full diff/accepted-input review, exact-head repository checks and independent architecture/security audit; squash merge only with zero open material findings;
-- **if PR #102 is merged** — perform its separate task-lifecycle archive/ownership release, then begin one bounded architecture-only `FND-04 Identity, Game Session, Admission and Character Lease Contract` package from current `main`.
-
-Do **not** start authoritative runtime implementation from this architecture-only programme merely because FND-03 merges. Runtime implementation requires separately explicit implementation authority and the concrete resource-limit evidence required by FND-03.
-
-`GAME-VISION-01` analysis may continue in parallel when it does not redefine accepted foundation identity, repository, protocol, runtime, Platform or persistence boundaries.
-
-## Non-authorization
-
-This status update does **not** authorize implementation of the Rust gameplay server runtime, production `protocol-oteryn` listener/client adapter, Game Session admission/lease, persistence schemas, Platform changes, client/Windows diagnostics, Launcher/Guardian, Game Intelligence detectors, sanctions, production deployment or live operations. Those remain behind their own explicit implementation gates and/or owner authorization.
