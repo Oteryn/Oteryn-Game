@@ -39,6 +39,7 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 - [ADR-0009 — GameNode capacity, deployment and recovery](ADR-0009-game-node-execution-capacity-deployment-and-recovery-baseline.md)
 - [ADR-0010 — Reference and evolved world product profiles](ADR-0010-reference-and-evolved-world-product-profiles.md)
 - [ADR-0011 — Native client pre-protocol migration state](ADR-0011-native-client-pre-protocol-migration-state.md)
+- [ADR-0012 — Character authority and Platform lifecycle boundary](ADR-0012-character-authority-and-platform-lifecycle-boundary.md)
 - [ADR-0013 — Platform database technology independence](ADR-0013-platform-database-technology-independence.md)
 - [ADR-0014 — TCP-default, QUIC-opt-in dual gameplay transport strategy](ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md)
 
