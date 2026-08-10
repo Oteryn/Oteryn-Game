@@ -1,0 +1,119 @@
+{
+  "contract_id": "NET-TRANSPORT-01",
+  "revision": 1,
+  "status": "ACCEPTED_ARCHITECTURE",
+  "application_protocol": "protocol-oteryn",
+  "application_protocol_count": 1,
+  "superseding_adr": "docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md",
+  "transports": {
+    "tcp_tls13": {
+      "transport": "TCP",
+      "security": "TLS_1_3",
+      "initial_default": true,
+      "required_safe_fallback": true
+    },
+    "quic_v1_tls13": {
+      "transport": "QUIC_V1",
+      "security": "TLS_1_3",
+      "initial_default": false,
+      "player_opt_in_preference": true,
+      "production_adapter_implementation_authorized": false
+    }
+  },
+  "client_modes": [
+    {
+      "id": "AUTO_TCP_FIRST",
+      "ordinary_player_mode": true,
+      "fallback": true,
+      "behavior": "TCP first; QUIC experiments only when authorized by rollout policy"
+    },
+    {
+      "id": "PREFER_QUIC",
+      "ordinary_player_mode": true,
+      "fallback": true,
+      "behavior": "QUIC first; automatic authorized TCP fallback after transport-class failure"
+    },
+    {
+      "id": "TCP_ONLY",
+      "ordinary_player_mode": false,
+      "fallback": false,
+      "behavior": "Compatibility, diagnostics and remote operational kill switch"
+    },
+    {
+      "id": "QUIC_ONLY",
+      "ordinary_player_mode": false,
+      "developer_diagnostic_only": true,
+      "fallback": false,
+      "behavior": "Strict QUIC diagnostics; not a normal player preference"
+    }
+  ],
+  "invariants": {
+    "same_message_semantics": true,
+    "same_service_identity": true,
+    "same_tls_certificate_policy": true,
+    "same_admission_authority": true,
+    "same_character_lease_authority": true,
+    "same_game_session_authority": true,
+    "same_command_and_state_revision_semantics": true,
+    "same_connection_generation_fencing": true,
+    "same_security_error_meaning": true,
+    "gameplay_domain_transport_agnostic": true,
+    "simultaneous_dual_transport_command_authority": false
+  },
+  "credential_selection": {
+    "select_authenticated_winning_transport_before_ticket_redeem": true,
+    "ordinary_concurrent_ticket_redeem_on_tcp_and_quic": false
+  },
+  "fallback": {
+    "allowed_failure_classes": [
+      "QUIC_PATH_OR_HANDSHAKE_TIMEOUT_WITHOUT_AUTHENTICATED_POLICY_RESPONSE",
+      "UDP_PATH_UNUSABLE_OR_BLOCKED",
+      "LOCAL_QUIC_STACK_INITIALIZATION_FAILURE",
+      "AUTHENTICATED_TEMPORARY_QUIC_DISABLEMENT"
+    ],
+    "forbidden_bypass_classes": [
+      "CERTIFICATE_OR_SERVICE_IDENTITY_REJECTION",
+      "ALPN_OR_PROTOCOL_REJECTION",
+      "INVALID_EXPIRED_OR_REPLAYED_TICKET",
+      "UNSUPPORTED_VERSION",
+      "ACCOUNT_OR_CHARACTER_RESTRICTION",
+      "ENTITLEMENT_DENIAL",
+      "CHARACTER_LEASE_OR_SESSION_CONFLICT",
+      "OTHER_AUTHENTICATED_APPLICATION_OR_SECURITY_REJECTION"
+    ]
+  },
+  "active_session_rebind": {
+    "uses_fnd04_reconnect": true,
+    "increments_connection_generation": true,
+    "fences_stale_binding": true,
+    "requires_reconciliation": true
+  },
+  "quic_baseline": {
+    "stream_per_message": false,
+    "small_fixed_bounded_reliable_lanes": true,
+    "zero_rtt_enabled": false,
+    "datagram_enabled": false,
+    "library_selected": false,
+    "candidate_libraries_for_bakeoff": [
+      "quinn",
+      "s2n-quic"
+    ]
+  },
+  "required_preimplementation_evidence": [
+    "UDP_BLACKHOLE_AND_RESTRICTED_NETWORK_FALLBACK",
+    "PACKET_LOSS_AND_REORDERING",
+    "NAT_REBINDING_OR_PATH_CHANGE",
+    "SNAPSHOT_CONCURRENT_WITH_CONTROL_TRAFFIC",
+    "HANDSHAKE_CPU_AND_RATE",
+    "MEMORY_PER_CONNECTION",
+    "MALFORMED_AND_ADVERSARIAL_TRAFFIC",
+    "OBSERVABILITY_AND_OPERABILITY",
+    "REGISTERED_NUMERIC_RESOURCE_CEILINGS"
+  ],
+  "rollout": {
+    "phase_1": "TCP_DEFAULT_QUIC_OPT_IN",
+    "phase_2": "CONTROLLED_QUIC_ELIGIBILITY_WITH_TCP_DEFAULT",
+    "future_quic_default_requires_new_decision": true,
+    "remote_tcp_only_kill_switch_required": true
+  }
+}
