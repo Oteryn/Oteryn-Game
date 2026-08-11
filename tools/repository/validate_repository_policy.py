@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = ROOT / ".github/repository-policy.json"
 USES_LINE = re.compile(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)", re.MULTILINE)
 CANONICAL_MPL_2_0_GIT_BLOB_SHA = "d0a1fa1482eea82e19510e7920cbe3a03e41f691"
+EXPECTED_REQUIRED_STATUS = "Merge gate / validate"
 
 REQUIRED_FILES = [
     ".github/CODEOWNERS",
@@ -22,10 +23,11 @@ REQUIRED_FILES = [
     ".github/ISSUE_TEMPLATE/config.yml",
     ".github/dependabot.yml",
     ".github/repository-policy.json",
+    ".github/workflows/merge-gate.yml",
     ".github/workflows/agent-governance.yml",
     ".github/workflows/codeql.yml",
-    ".github/workflows/dependency-review.yml",
     ".github/workflows/repository-configuration.yml",
+    ".github/workflows/rust.yml",
     "CONTRIBUTING.md",
     "SECURITY.md",
     "LICENSE",
@@ -43,6 +45,20 @@ def git_blob_sha(data: bytes) -> str:
     return hashlib.sha1(header + data).hexdigest()
 
 
+def required_status_contexts(ruleset: dict) -> list[str]:
+    for rule in ruleset.get("rules", []):
+        if isinstance(rule, dict) and rule.get("type") == "required_status_checks":
+            checks = rule.get("parameters", {}).get("required_status_checks", [])
+            if not isinstance(checks, list):
+                return []
+            return [
+                check.get("context")
+                for check in checks
+                if isinstance(check, dict) and isinstance(check.get("context"), str)
+            ]
+    return []
+
+
 def main() -> int:
     errors: list[str] = []
 
@@ -58,8 +74,8 @@ def main() -> int:
 
     if policy.get("schema_version") != "1.0":
         errors.append("repository policy schema_version must be 1.0")
-    if policy.get("required_status_check") != "Agent governance / validate":
-        errors.append("unexpected required status check")
+    if policy.get("required_status_check") != EXPECTED_REQUIRED_STATUS:
+        errors.append(f"required_status_check must be {EXPECTED_REQUIRED_STATUS}")
 
     licensing = policy.get("licensing", {})
     expected_licensing = {
@@ -160,6 +176,13 @@ def main() -> int:
     if "required_signatures" in rule_types:
         errors.append("strict signed commits are incompatible with third-party squash PRs")
 
+    contexts = required_status_contexts(ruleset)
+    if contexts != [EXPECTED_REQUIRED_STATUS]:
+        errors.append(
+            "ruleset required status checks must contain only the stable aggregate "
+            f"{EXPECTED_REQUIRED_STATUS!r}; got {contexts!r}"
+        )
+
     workflow_dir = ROOT / ".github/workflows"
     if workflow_dir.is_dir():
         for workflow in sorted(workflow_dir.glob("*.y*ml")):
@@ -173,6 +196,34 @@ def main() -> int:
                 errors.append(
                     f"{workflow.relative_to(ROOT)} combines pull_request_target with checkout"
                 )
+
+    merge_gate = ROOT / ".github/workflows/merge-gate.yml"
+    if merge_gate.is_file():
+        text = merge_gate.read_text(encoding="utf-8")
+        if "pull_request:" not in text:
+            errors.append("merge gate must run on pull_request")
+        if "paths:" in text or "paths-ignore:" in text:
+            errors.append("merge gate must not use workflow-level path filters")
+        if "name: Merge gate / validate" not in text:
+            errors.append("merge gate must emit the stable Merge gate / validate job")
+        for required_fragment in (
+            "Merge gate / governance",
+            "Merge gate / dependency review",
+            "Merge gate / CodeQL",
+            "Merge gate / Rust policy and metadata",
+            "Merge gate / Rust Linux workspace",
+            "Merge gate / Rust Windows client",
+            "Merge gate / Rust supply chain",
+        ):
+            if required_fragment not in text:
+                errors.append(f"merge gate missing required sub-gate: {required_fragment}")
+
+    dependabot = ROOT / ".github/dependabot.yml"
+    if dependabot.is_file():
+        text = dependabot.read_text(encoding="utf-8")
+        for ecosystem in ("github-actions", "cargo"):
+            if f"package-ecosystem: {ecosystem}" not in text:
+                errors.append(f"Dependabot missing ecosystem: {ecosystem}")
 
     template = ROOT / ".github/pull_request_template.md"
     if template.is_file():
