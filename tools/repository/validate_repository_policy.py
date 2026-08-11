@@ -204,7 +204,7 @@ def main() -> int:
             errors.append("merge gate must run on pull_request")
         if "workflow_dispatch:" not in text:
             errors.append("merge gate must provide exact-head workflow_dispatch recovery")
-        if "paths:" in text or "paths-ignore:" in text:
+        if re.search(r"(?m)^    paths(?:-ignore)?:", text):
             errors.append("merge gate must not use workflow-level path filters")
         if "name: Merge gate / validate" not in text:
             errors.append("merge gate must emit the stable Merge gate / validate job")
