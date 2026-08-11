@@ -1,7 +1,7 @@
 # Oteryn v2 Gameplay and Product Architecture Horizon
 
 - Status: Active open-decision horizon
-- Date: 2026-08-06
+- Date: 2026-08-11
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Applies to: gameplay domain, client/product experience, security, operations and release architecture
 
@@ -11,13 +11,13 @@ Ensure that core gameplay and product domains are not omitted while Oteryn v2 re
 
 This document registers required future decisions. It does **not** accept implementation technologies, schemas, algorithms, service boundaries or final gameplay rules. Accepted decisions remain in ADRs and dedicated contracts.
 
-The immediate programme action is the source-only `blakinio/otclient` historical marker for the completed destination cutover. After that closeout is merged and verified, `FND-ID-01` is the next architecture gate. The gates below become active only when their stated dependencies and milestone require them.
+The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline. `GAME-CHAR-01` is the next product-sensitive architecture gate; `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel within their existing boundaries. Runtime implementation remains separately unauthorized.
 
 ## Relationship to existing architecture
 
 This horizon complements, and does not replace:
 
-- `GAME-VISION-01` for measurable parity scope, product pillars and reference/evolved profile strategy;
+- accepted `GAME-VISION-01` minimum product direction plus its explicitly deferred/hard-gated downstream subjects;
 - `FND-01` through `FND-04` for workspace, protocol, runtime and admission;
 - `DUR-01` through `DUR-04` for durable identity, persistence, item transactions and content/scripting;
 - `ANL-01` through `ANL-04` for events, analytics, integrity and investigation;
@@ -25,7 +25,7 @@ This horizon complements, and does not replace:
 - `ALPHA-CLIENT-01`, `ALPHA-RULESET-01`, `ALPHA-CONTENT-01`, `ALPHA-QUALITY-01` and `ALPHA-MILESTONE-01`;
 - existing expansion gates for events, houses, social systems, economy, security, updater, operations, observability and advanced scaling.
 
-A dedicated gate may refine an existing broader gate, but it may not silently redefine an accepted ADR boundary.
+A dedicated gate may refine an existing broader gate, but it may not silently redefine an accepted ADR or owner baseline boundary.
 
 ## Gameplay idea inventory and provenance
 
@@ -64,20 +64,37 @@ No gate authorizes speculative empty crates or services. Every implementation me
 
 ## `GAME-VISION-01` — Product Vision, Parity Scope and World Profile Contract
 
-- Status: `BLOCKS_LAYER_IMPLEMENTATION` for broad gameplay/content production.
-- Does not block `FND-01`, `VSL-02` or shared-foundation migration work.
-- Must refine ADR-0010 and `PRODUCT_DIRECTION_BASELINE.md` before large-scale mechanics/content implementation.
+- Status: **`ACCEPTED` for the minimum product-vision gate scope; implementation `NOT_STARTED`.**
+- Canonical minimum source: `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md` plus the seven earlier dedicated owner baselines.
+- This minimum gate no longer blocks baseline-neutral product-sensitive architecture merely because the vision itself is open.
+- Acceptance does not authorize gameplay/content/runtime implementation and does not close explicitly deferred/downstream subjects.
 
-Must decide:
+Accepted minimum product direction:
 
-- measurable player promise, design pillars and anti-pillars;
-- named Global Tibia parity baseline and lawful evidence model;
-- pinned, dated or continuously tracking reference-world policy;
-- reference versus evolved profile launch order and population strategy;
-- first intentional Oteryn improvements and their acceptance evidence;
-- user-facing profile disclosure, naming and transfer restrictions;
-- profile revision, compatibility, migration and rollback expectations;
-- product success measures beyond technical correctness.
+- first external evaluation is Reference-first;
+- released Reference revisions are immutable while newer upstream evidence may be observed continuously and explicitly promoted into later revisions;
+- preserve recognizable Tibia depth/readability/persistent-world identity, modern reliable native quality and explicit/versioned/measurable intentional Oteryn differences;
+- first Evolved differentiation is reliability/UX-first rather than broad systemic gameplay redesign;
+- PvP is a supported secondary pillar;
+- ordinary progression is solo viable while coordinated party play is materially rewarded;
+- Reference parity takes precedence over future-facing GAME-VISION gameplay preferences for actual Reference mechanics;
+- accepted session loop is player goal -> preparation -> travel/access -> risk/activity -> secure committed progress/value -> recovery/restock/trade/reorganize -> next goal;
+- accepted long-term horizons include character capability, equipment/wealth/resources, exploration/access/quest/encounter mastery, social/world relationships and increasingly difficult/rare/prestigious objectives;
+- Reference economy uses mechanical source/sink parity rather than historical market-price/supply parity, with conservation before tuning, measurable provenance, semantic scarcity and no hidden macro tuning;
+- accepted success categories cover Reference correctness, player interaction quality, progress/value trust, core-loop health, economy health and product/operational health; numeric thresholds remain milestone-owned.
+
+Deliberately deferred or downstream-owned after minimum acceptance:
+
+- exact Global Tibia patch/date/behavior baseline for the first Reference revision — **`DEFERRED WITH HARD GATE`** before broad Reference mechanics/content or final parity fixtures that require concrete target semantics and before the first external Reference evaluation/release contract;
+- exact Reference revision naming scheme;
+- exhaustive numbered pillars/anti-pillars formalization while the current accepted player-promise/product filters remain sufficient;
+- exact death/progression/PvP/party formulas;
+- exact economy rates, prices, drops, fees, sink values and scarcity thresholds;
+- numeric product/KPI thresholds until their named milestone;
+- exact first Evolved feature inventory beyond the accepted reliability/UX-first strategy;
+- branding/public marketing wording;
+- monetization/Premium/VIP economics;
+- LiveOps cadence or automatic economy control.
 
 Must preserve:
 
@@ -85,14 +102,18 @@ Must preserve:
 - explicit versioned product/ruleset/content profiles rather than forks;
 - distinct `WorldId` values across profile families, with one inherited profile family for every channel of a logical world;
 - default world-scoped character and economy isolation;
-- no proprietary code, protocol or asset copying under a parity claim.
+- no proprietary code, protocol or asset copying under a parity claim;
+- fail-closed behavior when a downstream Reference decision cannot remain baseline-neutral: select the exact named Reference baseline instead of guessing.
 
 # Core gameplay domain gates
 
 ## `GAME-CHAR-01` — Character Lifecycle and Progression
 
 - Status: `BLOCKS_DURABLE_GAMEPLAY`
+- **Current role: next product-sensitive architecture gate.**
 - Must be accepted before `DUR-02` freezes the durable character schema and before broad progression implementation.
+- Consume `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`, the Reference parity-precedence owner baseline, character-authority/session/lease contracts and current persistence invariants.
+- May remain baseline-neutral where possible; any concrete Reference semantic that cannot be decided neutrally is blocked on the exact first Reference baseline rather than guessed.
 
 Must decide:
 
@@ -105,13 +126,14 @@ Must decide:
 - world transfer, rename and migration semantics without duplicating state;
 - revision/fencing interaction with Game Session and character lease;
 - ruleset version changes and safe progression migrations;
-- deterministic formulas and test fixtures.
+- deterministic formulas and test fixtures where their owning Reference/Evolved rules are actually known.
 
 Must preserve:
 
 - one authoritative active character session;
 - no client-authoritative progression;
-- no schema finalization before progression ownership is explicit.
+- no schema finalization before progression ownership is explicit;
+- Reference parity precedence over future-facing Evolved product preferences.
 
 ## `GAME-ITEM-01` — Item Model and Equipment Rules
 
@@ -135,7 +157,8 @@ Must preserve:
 
 - `DUR-03` as the authority for conservation and single-location invariants;
 - no item behavior encoded only in the client or wire format;
-- explicit limits for nesting, stack size, modifiers and transformation chains.
+- explicit limits for nesting, stack size, modifiers and transformation chains;
+- accepted GAME-VISION economy/scarcity principles, including no hidden Reference macro tuning.
 
 ## `GAME-ABILITY-01` — Ability, Spell and Condition Architecture
 
@@ -227,7 +250,8 @@ Must decide:
 Must preserve:
 
 - no unaudited live mutation of authoritative rules;
-- runtime flags cannot silently change protocol or durable schema compatibility.
+- runtime flags cannot silently change protocol or durable schema compatibility;
+- GAME-VISION acceptance does not authorize automatic economy/gameplay tuning.
 
 ## `PROD-COMPAT-01` — Release Compatibility and Version Train
 
@@ -360,7 +384,7 @@ Must preserve:
 
 - the client never grants entitlements;
 - payment success does not bypass an idempotent authoritative delivery transaction;
-- no monetization decision is implied by registering this gate.
+- no monetization decision is implied by registering this gate or accepting the minimum GAME-VISION baseline.
 
 # Broader gameplay and product expansion gates
 
@@ -442,7 +466,7 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 
 # Dependency and ordering rules
 
-1. `GAME-CHAR-01` must precede the final durable character schema in `DUR-02`.
+1. `GAME-CHAR-01` is the next product-sensitive architecture gate and must precede the final durable character schema in `DUR-02`.
 2. `GAME-ITEM-01` must precede the final item transaction model in `DUR-03`; `DUR-03` remains the conservation authority.
 3. The foundation vertical slice may use bounded minimal movement/combat/creature/interaction contracts, but Playable Alpha requires `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01`.
 4. `PROD-COMPAT-01` must precede production release-train and updater compatibility claims.
@@ -451,19 +475,25 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 7. Expansion gates do not block foundation work when their extension points and invariants remain safe.
 8. Existing gates for social, economy, houses, events, updater, operations, observability and scaling remain authoritative for their named scopes.
 9. Any future implementation package must update this horizon, the global register and the corresponding dedicated contract status.
-10. `GAME-VISION-01` must preserve ADR-0010 and may not turn reference/evolved profiles into protocol, engine, client or repository forks.
+10. Accepted `GAME-VISION-01` must preserve ADR-0010 and may not turn Reference/Evolved profiles into protocol, engine, client or repository forks; downstream Reference semantics that cannot remain baseline-neutral are hard-blocked on the exact named first Reference baseline rather than guessed.
+11. `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel with `GAME-CHAR-01` only with explicit path/contract ownership and without pre-accepting their unresolved semantics.
 
 # Explicitly not decided here
 
 This horizon does not select:
 
+- the exact first Global Tibia Reference patch/date/behavior baseline;
 - gameplay formulas or balance values;
 - exact character classes, skills or item systems;
+- exact economy rates/prices/drop tables/scarcity thresholds;
+- numeric alpha/release KPI thresholds;
+- exact first Evolved feature inventory beyond the accepted reliability/UX-first strategy;
 - scripting engine, AI framework or pathfinding algorithm;
 - anti-cheat vendor or invasive client technology;
 - payment provider or monetization model;
 - final supported platforms/locales/accessibility scope;
 - deployment topology, messaging technology or service decomposition;
+- LiveOps cadence or automatic economy-control policy;
 - modding support.
 
 Those choices require dedicated evidence, contracts and owner acceptance at the appropriate gate.

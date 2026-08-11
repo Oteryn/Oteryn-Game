@@ -9,7 +9,7 @@
 - ANL-01 delivery merge: `af2fa495c1126080ffc1d0717b7d0ef54f6b29ca`
 - Dual-transport architecture closeout merge: `05544969baf58c3a40354f366438d759bfd159e5`
 - Platform entitlement producer-remediation merge: `blakinio/Oteryn-Platform@afaa6d1d8340e44b1152b62d6d27e5fd1649804a`
-- Current phase: `foundation architecture accepted/lifecycle-closed where delivered + runtime largely NOT_STARTED / product semantics and bounded DUR-02 discovery next`
+- Current phase: `foundation architecture accepted/lifecycle-closed where delivered + runtime largely NOT_STARTED / GAME-VISION minimum accepted; GAME-CHAR, GAME-CHANNEL and bounded DUR-02 discovery next`
 
 ## 1. Authority of this overlay
 
@@ -35,9 +35,9 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 | `FND-04` overall | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | programme #112 architecture lifecycle complete; no gameplay admission runtime claimed |
 | `DUR-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | durable representation + ItemInstanceId accepted; physical PostgreSQL implementation is downstream |
 | `ANL-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | event/audit foundation accepted; no runtime event collector/outbox/broker/warehouse implementation |
-| `GAME-VISION-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | near-term product gate before broad gameplay/content and product-sensitive persistence semantics |
+| `GAME-VISION-01` | `ACCEPTED` | `OPEN` | `NOT_STARTED` | owner accepted the minimum product-vision gate in `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`: core/session/long-term loop, Reference-rule-first economy/scarcity, success-evidence categories and explicit deferrals/hard gates; exact first Reference baseline remains unresolved and fail-closed where concrete parity semantics are required; no runtime authority |
 | `GAME-CHANNEL-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | social/economic/PvP/UX channel policy required before multichannel becomes a product feature |
-| `GAME-CHAR-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | blocks final character-bearing DUR-02 semantics |
+| `GAME-CHAR-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | next product-sensitive architecture gate; blocks final character-bearing DUR-02 semantics |
 | `GAME-ITEM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | blocks final DUR-03 item transaction semantics |
 | `SIM-DETERMINISM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | required before broad combat/AI formula freeze |
 | `DUR-02` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | persistence discovery may start from DUR-01 + ANL-01; final character-bearing schema also requires GAME-CHAR-01 |
@@ -56,6 +56,8 @@ FND-03 retains one logical authoritative mutation owner per channel/instance, se
 FND-04 remains accepted/lifecycle-closed with ownership-before-world admission, purpose-separated grant profiles, anti-rollback security evidence, PREPARE/COMMIT reconnect, healthy-binding non-preemption, ControlLossEpoch, exactly 4 seconds eligible defensive PvE re-entry protection and fail-closed recovery. Any future change to the four-second value requires explicit game-design evidence and superseding policy rather than hidden configuration drift.
 
 DUR-01 remains accepted/lifecycle-closed: UUIDv7 native durability uses PostgreSQL `uuid`, persisted CommandId preserves full uint64 via `numeric(20,0)`, ItemInstanceId is a game-owned UUIDv7 identity, legacy imports use stable source namespace identity, and internal IDs are not automatically public.
+
+`GAME-VISION-01` minimum product semantics are accepted in `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`. The accepted loop is player-goal driven across preparation, risk/activity, committed progress/value and recovery/planning, with persistent character/equipment/exploration/social/prestige horizons. Reference uses mechanical source/sink parity rather than historical market-state parity, conservation precedes tuning, and intentional differences remain explicit/versioned/measurable. Success is measured by Reference correctness, interaction quality, progress/value trust, core-loop health, economy health and product/operational health. Numeric targets remain milestone-owned. The exact first Global Tibia Reference baseline remains a hard downstream gate whenever concrete parity semantics are required.
 
 ## 4. Accepted ANL-01 foundation
 
@@ -114,7 +116,7 @@ Before external alpha, operator/GM mutations must use typed, RBAC-controlled, id
 
 ## 7. Runtime/implementation status
 
-Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01 architecture does **not** authorize:
+Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01/GAME-VISION-01 architecture does **not** authorize:
 
 - TCP or QUIC gameplay adapter/listener implementation;
 - any currently functional gameplay transport client mode;
@@ -123,6 +125,7 @@ Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01 architecture does **not** authorize:
 - PostgreSQL table/outbox/checkpoint/migration implementation;
 - transaction isolation/locking/retry/RPO/RTO implementation;
 - item/currency transaction implementation;
+- broad gameplay/content implementation from the product baseline alone;
 - broker/stream/warehouse/lake/dashboard selection or deployment;
 - balance/security detector implementation;
 - investigation/AI write authority;
@@ -135,18 +138,19 @@ The native client therefore remains legitimately pre-native-protocol until a sep
 
 ## 8. Next ordered architecture and proof work
 
-The immediate programme is refined to avoid freezing persistence/gameplay from technical schemas before product semantics:
+The immediate programme is refined now that the minimum product vision is accepted:
 
-1. `GAME-VISION-01` minimum launch/product baseline and `GAME-CHANNEL-01` channel semantics may proceed in parallel with bounded persistence discovery.
-2. `GAME-CHAR-01` — accept character lifecycle/progression semantics before final character-bearing `DUR-02` schema.
-3. `DUR-02 — Persistence v1` — discovery may start now from accepted DUR-01 + ANL-01; final character schema waits for GAME-CHAR-01.
-4. `GAME-ITEM-01` — accept item model/equipment/container/transform semantics.
-5. `DUR-03 — Item Transaction and Anti-Duplication Invariants` — consumes accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics.
-6. `DUR-04` minimum headless content path — schema -> validator -> deterministic compiler -> bundle -> loader; full Studio remains downstream.
-7. `SIM-DETERMINISM-01` — freeze authoritative arithmetic/replay requirements before broad combat/AI implementation.
-8. `NET-TRANSPORT-02` (or an equivalent bounded successor) — register QUIC transport profile, reconcile FND-04 fresh/recovery transport bindings and prove FND-02 ordered-lane/snapshot semantics before functional player QUIC admission.
-9. Implement the umbrella `VSL-01` as ordered real-boundary slices: admission, movement, combat, persistence, recovery, then multichannel.
-10. Establish minimal admin/security/SRE readiness before external alpha.
+1. `GAME-CHAR-01` — next product-sensitive architecture gate; accept character lifecycle/progression semantics before final character-bearing `DUR-02` schema.
+2. `GAME-CHANNEL-01` — channel social/economic/PvP/UX policy may proceed in parallel before multichannel becomes a product feature.
+3. `DUR-02 — Persistence v1` — bounded discovery may continue now from accepted DUR-01 + ANL-01; final character schema waits for GAME-CHAR-01.
+4. Select the exact named first Reference baseline before any broad Reference mechanics/content work or final parity fixtures that require concrete target semantics; baseline-neutral architecture analysis may proceed without guessing.
+5. `GAME-ITEM-01` — accept item model/equipment/container/transform semantics.
+6. `DUR-03 — Item Transaction and Anti-Duplication Invariants` — consumes accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics.
+7. `DUR-04` minimum headless content path — schema -> validator -> deterministic compiler -> bundle -> loader; full Studio remains downstream.
+8. `SIM-DETERMINISM-01` — freeze authoritative arithmetic/replay requirements before broad combat/AI implementation.
+9. `NET-TRANSPORT-02` (or an equivalent bounded successor) — register QUIC transport profile, reconcile FND-04 fresh/recovery transport bindings and prove FND-02 ordered-lane/snapshot semantics before functional player QUIC admission.
+10. Implement the umbrella `VSL-01` as ordered real-boundary slices: admission, movement, combat, persistence, recovery, then multichannel.
+11. Establish minimal admin/security/SRE readiness before external alpha.
 
 `PROD-ENTITLEMENTS-01` is no longer waiting on Platform issue #944: its producer-side security prerequisite is satisfied by Oteryn-Platform PR #968 / merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`. It remains independently deferred and blocks only game-consumed entitlement implementation/activation until the Oteryn-v2 consumer/enforcement contract and cross-repository rollout proof are accepted.
 
@@ -185,15 +189,25 @@ QUIC v1 + TLS 1.3
 all gameplay transport client modes
 -> runtime unavailable now
 
+GAME-VISION-01 minimum
+-> ACCEPTED product semantics
+-> implementation NOT_STARTED
+-> no runtime authority
+-> exact first Reference baseline remains a hard gate where concrete parity semantics are required
+
+GAME-CHAR-01
+-> next product-sensitive architecture gate
+-> final character-bearing DUR-02 waits for acceptance
+
+GAME-CHANNEL-01 + SIM-DETERMINISM-01
+-> still shape multichannel/simulation before their broad implementation scopes
+
 DUR-02
--> discovery may start
+-> bounded discovery may continue
 -> final character-bearing schema waits for GAME-CHAR-01
 
 DUR-03
 -> waits for accepted DUR-02 + GAME-ITEM-01
-
-GAME-VISION-01 + GAME-CHANNEL-01 + SIM-DETERMINISM-01
--> shape product/multichannel/simulation before broad implementation
 
 PROD-ENTITLEMENTS-01
 -> Platform producer prerequisite SATISFIED

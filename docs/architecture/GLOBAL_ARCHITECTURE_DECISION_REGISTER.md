@@ -53,20 +53,19 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 ## Progressive execution policy
 
 - `FND-01`, `VSL-02`, the destination migration and the source-only historical/non-canonical closeout are complete.
-- `FND-ID-01` is accepted and merged; its task lifecycle is archived.
+- `FND-ID-01`, `FND-02`, `FND-03`, `FND-04`, `DUR-01`, `ANL-01` and the dual-transport architecture strategy are accepted/lifecycle-closed where recorded by `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`; their implementation status remains separate and is largely `NOT_STARTED`.
 - The migrated client remains in ADR-0011 `pre-native-protocol`: it launches and fails closed before gameplay credential consumption, routing or gameplay transport.
-- `protocol-canary` and a speculative production `protocol-oteryn` adapter remain absent from the destination production graph.
-- issue #86 coordination reconciliation is complete and does not reopen accepted FND-ID semantics.
-- `FND-02` is the clean next ordered foundation architecture gate.
-- `FND-02`, `FND-03` and `FND-04` independently gate canonical protocol, authoritative runtime and production admission/lease behavior.
+- `protocol-canary` remains absent from the destination production graph and cannot re-enter as a production adapter/fallback without an explicit superseding owner decision.
 - ADR-0009 fixes the GameNode/process/container boundary and recovery invariants; `PERF-01` gates supported capacity claims and `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production recovery behavior.
-- ADR-0010 fixes reference/evolved worlds as versioned product/ruleset/content profiles over one engine, client and `protocol-oteryn`; `GAME-VISION-01` must define measurable parity scope and launch strategy before broad gameplay/content production.
+- `GAME-VISION-01` minimum product-vision semantics are accepted in `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`: Reference-first/hybrid tracking, product promise, reliability/UX-first Evolved ordering, PvP-secondary, solo-viable/party-rewarded, Reference parity precedence, accepted core/session/long-term loop, Reference-rule-first economy/scarcity and category-level success evidence now form the minimum product direction.
+- The exact first Global Tibia Reference baseline remains `DEFERRED WITH HARD GATE`: any broad Reference mechanics/content implementation or final parity fixtures requiring concrete semantics must stop until that baseline is explicitly selected; baseline-neutral architecture analysis may proceed without guessing.
+- `GAME-CHAR-01` is the next product-sensitive architecture gate and must precede final character-bearing `DUR-02`; `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel within their existing boundaries.
 - ADR-0012 fixes native Character Authority versus Platform lifecycle/orchestration ownership without authorizing runtime or persistence implementation.
 - ADR-0013 removes Platform database migration from the native gameplay critical path while preserving PostgreSQL for native game persistence and all ADR-0004 ownership/least-privilege invariants.
 - ADR-0014 accepts TCP-default/future-QUIC dual transport only as architecture direction; ADR-0016 keeps every gameplay transport runtime mode unavailable until implemented and proven, and ADR-0015 preserves ADR-0009's one-process GameNode identity while leaving only internal decomposition and genuinely distinct adjacent-service placement evidence-driven.
 - bounded technical spikes may inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
-- `DUR-01` through `DUR-03` remain hard gates before authoritative durable character, item or currency mutation.
-- `ANL-01` must be accepted before `DUR-02`/`DUR-03` finalize transactional outbox and critical audit evidence; analytics consumers never replace authoritative invariants.
+- `DUR-02` and `DUR-03` remain hard gates before their named authoritative durable gameplay mutation scopes; `DUR-03` also waits for `GAME-ITEM-01`.
+- accepted `ANL-01` event/audit semantics constrain `DUR-02`/`DUR-03` transactional outbox and critical audit evidence; analytics consumers never replace authoritative invariants.
 - `QA-E2E-01` is accepted; its three-tier implementation and named evidence block completion of `VSL-01`.
 - a spike, placeholder crate or passing compile does not prove a public contract or runtime capability.
 
@@ -74,14 +73,18 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 ### `GAME-VISION-01` — Product Vision, Parity Scope and World Profile Contract
 
-- Status: `BLOCKS_LAYER_IMPLEMENTATION` for broad gameplay/content production.
-- Refine ADR-0010 into measurable product pillars, player promise, parity scope and anti-pillars.
-- Decide whether reference worlds track a pinned release, dated behavior baseline or continuously updated target.
-- Define the first-launch profile strategy, initial intentional Oteryn differences and player-facing profile disclosure.
-- Preserve one engine, client and `protocol-oteryn`; differences remain versioned ruleset/content/product profiles.
-- Require distinct `WorldId` values for reference and evolved worlds; every channel of one logical world inherits one profile family and compatible revision.
+- Status: `ACCEPTED` for the minimum product-vision gate scope; implementation `NOT_STARTED`.
+- Canonical minimum owner source: `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`, incorporating the seven earlier dedicated owner baselines.
+- Accepted first external evaluation is Reference-first; released Reference revisions are immutable while upstream evidence may be observed continuously and explicitly promoted into later revisions.
+- Accepted player/product direction preserves recognizable Tibia depth and persistent-world identity, modern native quality, explicit/versioned/measurable intentional differences, `PvP = secondary pillar`, `solo viable, party rewarded`, and reliability/UX-first initial Evolved differentiation.
+- Accepted core loop is player-chosen goal -> preparation -> risk/activity -> secure committed progress/value -> recovery/planning across persistent character/equipment/exploration/social/prestige horizons.
+- Accepted economy direction is Reference mechanical source/sink parity rather than historical market-price/supply parity, with conservation before tuning, measurable provenance, semantic scarcity and no hidden macro tuning.
+- Accepted success categories are Reference correctness, player interaction quality, progress/value trust, core-loop health, economy health and product/operational health; numeric targets remain milestone-owned.
+- Preserve one engine, client and `protocol-oteryn`; differences remain versioned ruleset/content/product profiles and distinct logical worlds.
 - Preserve default world-scoped character/economy isolation until a dedicated transfer contract proves safety.
-- Link parity evidence, legal/provenance substitutions, profile-specific acceptance and cross-profile isolation scenarios.
+- Exact first Global Tibia patch/date/behavior baseline is deliberately deferred but is a hard blocker before broad Reference mechanics/content or final parity fixtures that require concrete target semantics.
+- Exact gameplay/economy formulas, numeric KPI thresholds, branding, monetization, exact first Evolved feature inventory and LiveOps cadence remain downstream/deferred under their named gates.
+- Acceptance of this gate authorizes no runtime, persistence, content or production implementation by itself.
 
 ### `FND-01` — Workspace, Dependency and Existing-Rust Migration Contract
 
@@ -111,54 +114,40 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 ### `FND-02` — `protocol-oteryn` v1
 
-- Status: `BLOCKS_LAYER_IMPLEMENTATION`; next ordered foundation contract.
+- Status: `ACCEPTED`; architecture lifecycle closed, implementation `NOT_STARTED`.
+- Canonical source: `FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md` plus current registries and reconciliation baseline.
 - Consume `FND-ID-01` meanings without redefining them.
-- Reconcile only with the exact latest merged Platform native contract; `FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md` classifies that external contract as reconciliation input only.
-- Populate the machine-readable cross-repository contract lock with merged commit, schema revision/hash, producers, consumers and rollout order.
-- Freeze transport, TLS/ALPN, framing, schema/IDL, hard limits and error vocabulary.
-- Separate protocol, capability, content and ruleset revisions.
-- Define `CommandId`, sequencing, acknowledgement, replay/idempotency, snapshots, deltas, reconciliation and reconnect/resume.
-- Produce shared golden fixtures and downgrade protection.
-- Register every externally controlled size/depth/count and map stable failures into the common resource-limit and error vocabularies.
-- Gate canonical wire schemas/codecs and production compatibility claims, not architecture discovery.
+- Preserve one project-owned application protocol, transport/security/framing/schema limits, stable error vocabulary, CommandId/sequencing/replay/reconciliation semantics and independent wire-evidence requirements already accepted.
+- TCP+TLS transport profile `1` is registered architecturally; no gameplay listener/adapter/runtime path is implied.
 - Preserve ADR-0008: no Canary opcode, packet, negotiation, fallback or translation compatibility is a protocol requirement.
-- Consume the independent wire-evidence guardrails in `ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-07.md`: shared production codecs are not the sole oracle; canonical byte fixtures, malformed corpora, property tests, fuzzing and cross-version fixtures are required as applicable.
 
 ### `FND-03` — Runtime Execution Contract
 
-- Status: `BLOCKS_LAYER_IMPLEMENTATION`.
-- Freeze `NodeRuntime`, `WorldServices`, `ChannelRuntime` and `InstanceRuntime` responsibilities.
-- Define runtime-local entity/worker/task/generational handle semantics and invalidation boundaries.
-- Define tick/timer model, monotonic/wall-clock ownership, skew tolerance, deterministic test clocks, command ordering, bounded queues, overload/backpressure and parallel work return to the logical writer.
-- Define channel lifecycle, draining, checkpoint, crash recovery and replay boundaries.
-- Define versioned event emission, bounded gameplay-telemetry queues and fail-open/fail-closed behavior by durability class.
-- Prove named foundation failure scenarios for overload, dependency loss, stale generations, split ownership and recovery.
-- Gate authoritative runtime behavior, not compile-only interfaces or isolated spikes.
+- Status: `ACCEPTED`; architecture lifecycle closed, implementation `NOT_STARTED`.
+- Canonical source: `FND-03_RUNTIME_EXECUTION_CONTRACT.md` and accepted analysis baselines.
+- Preserve `NodeRuntime`, `WorldServices`, `ChannelRuntime` and `InstanceRuntime` ownership responsibilities, one logical writer, ownership generations, RuntimeExecutionOrdinal, bounded queues/backpressure, test clocks, fail-closed stale work and recovery semantics.
+- ADR-0009 remains binding that one `GameNode` is one game-server process; internal decomposition remains evidence-driven under ADR-0015.
 
 ### `FND-04` — Identity, Game Session, Admission and Character Lease
 
-- Status: `BLOCKS_LAYER_IMPLEMENTATION`.
-- Consume `FND-ID-01` meanings without redefining them.
-- Freeze token/session representation, issuer/audience, key rotation, replay prevention and revocation.
-- Define world/channel/revision binding, reconnect windows and admission errors.
-- Define `connection_generation`, any account/character lease fencing values, lease storage/timings, duplicate login, stale-writer fencing and safe channel/instance handoff consuming `HandoffId`.
-- Define Platform, Gateway, PostgreSQL and network failure behavior using the shared failure-scenario catalogue and stable public/internal error mapping.
-- Gate production admission and lease behavior, not architecture discovery.
+- Status: `ACCEPTED`; architecture lifecycle closed, implementation `NOT_STARTED`.
+- Canonical sources include `FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT.md`, `FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT.md` and `FND-04C_ERROR_DIAGNOSTICS_FAILURE_COMPATIBILITY_CONTRACT.md`.
+- Preserve ownership-before-world admission, purpose-separated grants, GameSession/lease fencing, PREPARE/COMMIT recovery, healthy-binding non-preemption, ControlLossEpoch, accepted four-second eligible defensive PvE re-entry protection and fail-closed stale authority.
+- No production admission/session/lease runtime is implied by architecture acceptance.
 
 ## Stage B — blocks durable gameplay
 
 ### `DUR-01` — Durable Identifier Representation Contract
 
-- Status: `BLOCKS_DURABLE_GAMEPLAY`.
-- Consume accepted `FND-ID-01` semantics and define physical database/durable representation without redefining them.
-- Define later durable-domain identities owned by persistence/gameplay, including entity/item-instance identities and other persisted records.
-- `CommandId` semantics/representation/scope remain owned by `FND-02`; DUR may define only its physical persistence when required.
-- event/operation/transaction/correlation/causation/pseudonymous analytics identities are finalized with `ANL-01`/durability ownership, not retroactively moved into FND-ID.
-- Decide database encoding, indexing, retention/tombstone behavior and reuse rules where the owning semantic contract permits it.
+- Status: `ACCEPTED`; architecture lifecycle closed, implementation `NOT_STARTED`.
+- Canonical source: `DUR-01_DURABLE_IDENTIFIER_REPRESENTATION_CONTRACT.md`.
+- UUIDv7 native durability uses PostgreSQL `uuid`; persisted uint64 CommandId uses `numeric(20,0)`; ItemInstanceId is game-owned UUIDv7; legacy imports use stable source namespace identity.
+- Accepted representation does not itself create physical tables or authorize migrations.
 
 ### `DUR-02` — Persistence v1
 
 - Status: `BLOCKS_DURABLE_GAMEPLAY`.
+- Bounded discovery may proceed from accepted DUR-01 + ANL-01, but final character-bearing schema waits for accepted `GAME-CHAR-01`.
 - Freeze schema and migration ownership.
 - Define character revisions/fencing, lease schema, checkpoint boundaries and maximum accepted progress loss.
 - Define isolation, locking, retries, idempotency, transactional outbox publication/recovery and critical audit/journal scope.
@@ -168,6 +157,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 ### `DUR-03` — Item Transaction and Anti-Duplication Invariants
 
 - Status: `BLOCKS_DURABLE_GAMEPLAY`.
+- Waits for accepted `DUR-02`, `GAME-ITEM-01` and ANL-01 evidence semantics.
 - Define item instance identity and ownership.
 - Freeze inventory/equipment/container/ground transfer transaction boundaries.
 - Define pickup, drop, loot, trade, bank, depot, market, mail, reward, split, merge, transform, currency and retry semantics.
@@ -188,12 +178,10 @@ This may be part of Persistence v1 only if that contract is sufficiently complet
 
 ### `ANL-01` — Game Event and Audit Foundation
 
-- Status: `BLOCKS_DURABLE_GAMEPLAY`.
-- Applies before `DUR-02`/`DUR-03` finalize transactional audit evidence.
-- Freeze canonical `EventId`, `OperationId`, `TransactionId`, `CorrelationId`, `CausationId` and pseudonymous `AnalyticsActorId` semantics where required by the event/audit foundation.
-- Freeze a minimal common event envelope plus strongly typed/versioned event-family payloads, durability classes, producers/consumers, ordering, idempotency, outbox, publication checkpoints, deduplication, replay and schema compatibility.
-- Define bounded fail-open gameplay telemetry separately from atomic durable economy/security audit.
-- Define privacy classes, pseudonymous analytics identity, access, retention, deletion/anonymization and test fixtures.
+- Status: `ACCEPTED`; architecture lifecycle closed, implementation `NOT_STARTED`.
+- Canonical sources: `ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md`, `docs/contracts/game-events/v1/foundation.proto`, `GAME_EVENT_FOUNDATION_REGISTRY.json` and ANL resource-limit entries.
+- Preserve the minimal common envelope + typed/versioned event-family payload model, explicit durability classes, stable identity/correlation semantics, at-least-once publication with EventId-stable idempotency, privacy/pseudonymization rules and atomic durable mutation evidence requirements.
+- No event table, outbox implementation, broker, collector, detector, warehouse or production collection is implied.
 
 ### `ANL-02` — Gameplay, Balance and World Analytics
 
@@ -220,7 +208,7 @@ Detailed scope, dependencies and non-decisions are canonical in `GAMEPLAY_AND_PR
 
 ### Blocks durable gameplay
 
-- `GAME-CHAR-01` — Character Lifecycle and Progression. Must precede the final `DUR-02` character schema.
+- `GAME-CHAR-01` — Character Lifecycle and Progression. **Next product-sensitive architecture gate**; must precede the final `DUR-02` character schema.
 - `GAME-ITEM-01` — Item Model and Equipment Rules. Must precede the final `DUR-03` item transaction model.
 
 ### Required for Playable Alpha completeness
@@ -405,20 +393,21 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 8. Cross-repository locks accept only merged canonical commits and immutable schema identifiers; mutable PR heads remain pending evidence.
 9. Public contracts must register applicable resource limits, stable error categories and named failure scenarios.
 10. A decision is not complete until its PR is validated, audited, squash-merged and its task archived.
-11. `FND-01`, `VSL-02` and `FND-ID-01` are completed historical gates; later work consumes rather than reopens them unless a dedicated superseding decision is explicitly accepted.
-12. `FND-02` consumes the merged FND-ID contract and Platform reconciliation baseline; it must not silently adopt the old external wire tuple or reintroduce Canary compatibility.
+11. Completed historical foundation gates are consumed rather than reopened unless a dedicated superseding decision is explicitly accepted.
+12. FND-02/FND-03/FND-04/DUR-01/ANL-01 architecture acceptance does not imply runtime implementation; consume their canonical contracts and current status overlay rather than older progress prose.
 13. Every gameplay/product package must reconcile `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`; an unnamed domain may not be silently absorbed into an unrelated gate.
 14. Every vertical-slice or client-visible package must consume `QA-E2E-01`; it may add scenarios and assertions but not a competing E2E lifecycle/evidence platform.
-15. ADR-0008 is binding on `FND-02` and all later client/server packages; no task may reintroduce Canary into production through an optional feature, fallback, compatibility listener or intermediate translation model.
+15. ADR-0008 is binding on all later client/server packages; no task may reintroduce Canary into production through an optional feature, fallback, compatibility listener or intermediate translation model.
 16. ADR-0009 is binding on runtime, performance and operations packages: `NodeId` identifies the GameNode process incarnation rather than a physical host, each channel retains one logical writer, capacity claims require `PERF-01`, and automatic production scaling/recovery claims require `OPS-CHANNEL-01`.
 17. Every material architecture decision must apply `docs/agents/ARCHITECTURE_DECISION_DISCIPLINE.md`: state whether it must be decided now, name blocked downstream work, identify future constraints and state evidence that would justify supersession.
 18. ADR-0013 is binding on persistence/programme planning: PostgreSQL remains the native game target, but Platform database migration is not a native-game prerequisite and requires separate Platform authority and evidence.
 19. ADR-0014 through ADR-0016 are binding within their named transport/GameNode-readiness scopes: one `protocol-oteryn` remains authoritative, ADR-0009's one-process GameNode identity remains intact, transport profile registration does not imply runtime readiness, and QUIC cannot activate without its later profile/reconciliation/evidence/implementation gates.
+20. `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md` is binding for the minimum product-vision gate. Future gameplay architecture must preserve its accepted loop/economy/success direction, while exact first Reference semantics fail closed on the separately selected named Reference baseline whenever a downstream decision cannot remain baseline-neutral.
 
 ## Current next action
 
-Begin a separate bounded **architecture-only `FND-02` contract task** consuming the merged FND-ID contract, `FND-02_PLATFORM_PROTOCOL_RECONCILIATION_OWNER_BASELINE.md`, cross-repository lock, resource-limit registry, error vocabulary, failure scenarios and the protocol evidence guardrails in `ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-07.md`.
+Start a separate bounded **paper-only `GAME-CHAR-01` architecture task** as the next product-sensitive gate, consuming the accepted minimum GAME-VISION baseline plus existing character authority/session/persistence invariants. Keep exact Reference formulas/rules unresolved unless the task proves they are required; if a decision cannot remain baseline-neutral, stop that scope on the hard prerequisite to select the exact first Reference baseline rather than guessing.
 
-`GAME-VISION-01` analysis may continue in parallel when it does not redefine accepted foundation identity, repository, protocol, Platform, persistence or runtime boundaries.
+`GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel under their existing gates and without path/ownership collision.
 
-No `protocol-oteryn` runtime implementation, listener/codec implementation, Platform write or production behavior is authorized by this register update.
+No gameplay/runtime implementation, Platform write or production behavior is authorized by this register update.
