@@ -126,6 +126,7 @@ jobs:
               errors.append('pull request base SHA is invalid')
 
           files: list[str] = []
+          classification_paths: list[str] = []
           page = 1
           while not errors:
               files_request = urllib.request.Request(
@@ -139,7 +140,13 @@ jobs:
               )
               with urllib.request.urlopen(files_request, timeout=30) as response:
                   batch = json.load(response)
-              files.extend(item['filename'] for item in batch)
+              for item in batch:
+                  filename = item['filename']
+                  files.append(filename)
+                  classification_paths.append(filename)
+                  previous_filename = item.get('previous_filename')
+                  if isinstance(previous_filename, str) and previous_filename:
+                      classification_paths.append(previous_filename)
               if len(batch) < 100:
                   break
               page += 1
@@ -155,11 +162,14 @@ jobs:
               '.github/workflows/rust.yml', '.github/workflows/merge-gate.yml',
           }
           prefixes = ('apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')
-          rust = any(path in exact or path.startswith(prefixes) for path in files)
+          rust = any(path in exact or path.startswith(prefixes) for path in classification_paths)
 
           print(f'Validated PR #{number_text} exact head {head_sha} against base {base_sha}.')
-          print('Changed files:')
+          print('Changed destination/current files:')
           for path in files:
+              print(f'- {path}')
+          print('Classification paths, including rename sources:')
+          for path in dict.fromkeys(classification_paths):
               print(f'- {path}')
           print(f'Rust/workspace validation required: {rust}')
 
