@@ -9,7 +9,7 @@
 - ANL-01 delivery merge: `af2fa495c1126080ffc1d0717b7d0ef54f6b29ca`
 - Dual-transport architecture closeout merge: `05544969baf58c3a40354f366438d759bfd159e5`
 - Platform entitlement producer-remediation merge: `blakinio/Oteryn-Platform@afaa6d1d8340e44b1152b62d6d27e5fd1649804a`
-- Current phase: `foundation architecture accepted/lifecycle-closed where delivered + runtime largely NOT_STARTED / GAME-VISION minimum and GAME-CHAR Stage A accepted; exact first Reference baseline, GAME-CHANNEL and bounded DUR-02 discovery next`
+- Current phase: `foundation architecture accepted/lifecycle-closed where delivered + runtime largely NOT_STARTED / GAME-VISION minimum, GAME-CHAR Stage A and first Reference target accepted; GAME-CHAR Stage B, GAME-CHANNEL and bounded DUR-02 discovery next`
 
 ## 1. Authority of this overlay
 
@@ -35,12 +35,12 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 | `FND-04` overall | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | programme #112 architecture lifecycle complete; no gameplay admission runtime claimed |
 | `DUR-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | durable representation + ItemInstanceId accepted; physical PostgreSQL implementation is downstream |
 | `ANL-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | event/audit foundation accepted; no runtime event collector/outbox/broker/warehouse implementation |
-| `GAME-VISION-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | owner-accepted minimum product-vision baseline delivered by PR #173 final head `bf4d009877547f0d3581f8af874d8eee4e49a0a8`, exact-head self-review `4907535082`, Agent Governance `31503809594`, Dependency Review `31503810003` and CodeQL `31503810222` all PASS, squash merge `c71081557c7bcb837d15571a4ed3837e2591a24b`; exact first Reference baseline remains unresolved and fail-closed where concrete parity semantics are required; no runtime authority |
+| `GAME-VISION-01` | `ACCEPTED` | `OPEN` | `NOT_STARTED` | minimum product-vision baseline remains accepted; owner also accepted `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md`, selecting Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance boundary as the immutable first Reference target with explicit evidence classification/provenance rules; this accepted-target delivery is currently active and authorizes no runtime |
 | `GAME-CHANNEL-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | social/economic/PvP/UX channel policy required before multichannel becomes a product feature |
-| `GAME-CHAR-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Stage A baseline-neutral semantics are owner-accepted in `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md`, but the overall gate intentionally remains unaccepted because Reference-sensitive Stage B is hard-blocked on the exact first named Reference baseline; final character-bearing DUR-02 schema still waits for full GAME-CHAR acceptance; no runtime authority |
-| `GAME-ITEM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | blocks final DUR-03 item transaction semantics |
+| `GAME-CHAR-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Stage A baseline-neutral semantics are owner-accepted; the exact first Reference target prerequisite is now satisfied, so Stage B is unblocked for paper-only evidence reconciliation but remains unaccepted; final character-bearing DUR-02 schema still waits for full GAME-CHAR acceptance; no runtime authority |
+| `GAME-ITEM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | blocks final DUR-03 item transaction semantics; Reference-sensitive item work uses the accepted 2026-07-28 target unless explicitly superseded/scoped |
 | `SIM-DETERMINISM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | required before broad combat/AI formula freeze |
-| `DUR-02` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | bounded persistence discovery may consume accepted GAME-CHAR Stage-A invariants together with DUR-01 + ANL-01; final character-bearing schema still requires full GAME-CHAR-01 Stage-B closure |
+| `DUR-02` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | bounded persistence discovery may consume DUR-01 + ANL-01 + accepted GAME-CHAR Stage-A invariants and use the selected Reference target only as question/compatibility context; final character-bearing schema still requires accepted Stage B/full GAME-CHAR closure |
 | `DUR-03` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | waits for accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics |
 | `DUR-04` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | content/world/scripting architecture; minimum headless schema/validator/compiler/bundle/loader precedes full Studio |
 | `PROD-ENTITLEMENTS-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Platform producer security prerequisite #944 is satisfied by PR #968 merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`; Oteryn-v2 consumer/enforcement contract remains unaccepted and Premium/VIP/game-consumed entitlement activation remains unauthorized |
@@ -57,7 +57,9 @@ FND-04 remains accepted/lifecycle-closed with ownership-before-world admission, 
 
 DUR-01 remains accepted/lifecycle-closed: UUIDv7 native durability uses PostgreSQL `uuid`, persisted CommandId preserves full uint64 via `numeric(20,0)`, ItemInstanceId is a game-owned UUIDv7 identity, legacy imports use stable source namespace identity, and internal IDs are not automatically public.
 
-`GAME-VISION-01` minimum product semantics are accepted in `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`. The accepted loop is player-goal driven across preparation, risk/activity, committed progress/value and recovery/planning, with persistent character/equipment/exploration/social/prestige horizons. Reference uses mechanical source/sink parity rather than historical market-state parity, conservation precedes tuning, and intentional differences remain explicit/versioned/measurable. Success is measured by Reference correctness, interaction quality, progress/value trust, core-loop health, economy health and product/operational health. Numeric targets remain milestone-owned. The exact first Global Tibia Reference baseline remains a hard downstream gate whenever concrete parity semantics are required.
+`GAME-VISION-01` minimum product semantics are accepted in `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`. The accepted loop is player-goal driven across preparation, risk/activity, committed progress/value and recovery/planning, with persistent character/equipment/exploration/social/prestige horizons. Reference uses mechanical source/sink parity rather than historical market-state parity, conservation precedes tuning, and intentional differences remain explicit/versioned/measurable. Success is measured by Reference correctness, interaction quality, progress/value trust, core-loop health, economy health and product/operational health. Numeric targets remain milestone-owned.
+
+`GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` now fixes the first Reference external behavior cut to **Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary**. The target is immutable; later Global changes are candidate evidence for a later explicit Reference revision rather than silent mutation. Target selection remains separate from evidence completeness: individual mechanics may be `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or `DECLARED_DIFFERENCE`. Official public sources are primary but not assumed exhaustive; controlled black-box observation may provide target evidence; community sources are corroborative/discovery inputs; Canary/crystalserver/other OTS remain hypothesis/inventory inputs rather than proof of Global behavior. Patch-note/search absence is not evidence of no change. Security/integrity/legal/provenance constraints override defect compatibility.
 
 `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` is binding for the baseline-neutral partial scope only. It freezes the bounded Character aggregate, minimal ACTIVE/DELETION_SCHEDULED/RETIRED lifecycle, atomic idempotent creation, a durable Character revision/fence distinct from FND-04 session/lease fencing, conservative quiescence for terminal retirement/world/account transfer, progression-fact/derived-value separation, idempotent death-consequence boundary, explicit ruleset/profile migration, ruleset-owned vocation/build state, opt-in offline progression, Character Authority naming/quota authority boundaries, transfer-as-capability, and the exact limits on what bounded DUR-02 discovery may consume before Stage B. It does not select any Reference formula or physical schema and does not close the overall GAME-CHAR gate.
 
@@ -118,7 +120,7 @@ Before external alpha, operator/GM mutations must use typed, RBAC-controlled, id
 
 ## 7. Runtime/implementation status
 
-Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01/GAME-VISION-01 and the partial GAME-CHAR Stage-A architecture do **not** authorize:
+Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01/GAME-VISION-01, the selected first Reference target and the partial GAME-CHAR Stage-A architecture do **not** authorize:
 
 - TCP or QUIC gameplay adapter/listener implementation;
 - any currently functional gameplay transport client mode;
@@ -126,7 +128,7 @@ Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01/GAME-VISION-01 and the partial GAME-
 - runtime event collector implementation;
 - PostgreSQL table/outbox/checkpoint/migration implementation;
 - transaction isolation/locking/retry/RPO/RTO implementation;
-- character schema/progression/death/offline-training implementation from Stage A alone;
+- character schema/progression/death/offline-training implementation before accepted Stage B/full GAME-CHAR closure;
 - item/currency transaction implementation;
 - broad gameplay/content implementation from the product baseline alone;
 - broker/stream/warehouse/lake/dashboard selection or deployment;
@@ -141,13 +143,13 @@ The native client therefore remains legitimately pre-native-protocol until a sep
 
 ## 8. Next ordered architecture and proof work
 
-The immediate programme is refined now that baseline-neutral GAME-CHAR Stage A is owner-accepted:
+The immediate programme is refined now that the first Reference target is owner-accepted:
 
-1. Select the **exact named first Reference baseline** as the next material GAME-CHAR input; Stage B must reconcile its character-visible semantics rather than guess them.
+1. `GAME-CHAR-01` Stage B — perform paper-only evidence reconciliation against the accepted 2026-07-28 target for naming/creation/progression/vocation/death/offline-training/quota semantics; `UNKNOWN` remains fail-closed rather than guessed.
 2. `GAME-CHANNEL-01` — channel social/economic/PvP/UX policy may proceed in parallel before multichannel becomes a product feature.
-3. `DUR-02 — Persistence v1` — bounded discovery may consume accepted DUR-01 + ANL-01 + GAME-CHAR Stage-A invariants; final character-bearing schema waits for full GAME-CHAR Stage-B acceptance.
-4. Complete `GAME-CHAR-01` Stage B from the selected Reference baseline: naming/creation/progression/vocation/death/offline-training/quota semantics and applicable deterministic fixtures.
-5. `GAME-ITEM-01` — accept item model/equipment/container/transform semantics.
+3. `DUR-02 — Persistence v1` — bounded discovery may consume accepted DUR-01 + ANL-01 + GAME-CHAR Stage-A invariants and the Reference target as compatibility context; final character-bearing schema waits for accepted Stage B/full GAME-CHAR closure.
+4. Build the versioned Reference evidence/parity manifest as the owning parity/evidence tooling contract is defined; target selection does not imply evidence completeness.
+5. `GAME-ITEM-01` — accept item model/equipment/container/transform semantics against the same first Reference target where parity applies.
 6. `DUR-03 — Item Transaction and Anti-Duplication Invariants` — consumes accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics.
 7. `DUR-04` minimum headless content path — schema -> validator -> deterministic compiler -> bundle -> loader; full Studio remains downstream.
 8. `SIM-DETERMINISM-01` — freeze authoritative arithmetic/replay requirements before broad combat/AI implementation.
@@ -182,7 +184,7 @@ accepted foundation architecture
 TCP + TLS 1.3 profile 1
 -> currently registered architecture profile
 -> intended initial/default safe baseline after runtime implementation
--> runtime adapter/listener NOT STARTED
+-> runtime adapter/listener NOT_STARTED
 
 QUIC v1 + TLS 1.3
 -> accepted future player-opt-in target
@@ -197,15 +199,23 @@ GAME-VISION-01 minimum
 -> implementation NOT_STARTED
 -> no runtime authority
 
+first Reference target
+-> OWNER-ACCEPTED
+-> Global Tibia production-observable behavior after 2026-07-28 server save/maintenance
+-> immutable target; later Global changes require explicit later Reference revision
+-> evidence gaps remain PROVEN/OBSERVED/DERIVED/UNKNOWN/CONFLICT/DECLARED_DIFFERENCE rather than guessed
+
 GAME-CHAR-01 Stage A
 -> OWNER-ACCEPTED partial baseline
 -> bounded aggregate/lifecycle/revision/migration invariants are binding
--> overall GAME-CHAR gate remains PROPOSED / PLANNED / NOT_STARTED
--> Stage B hard-blocked on exact first Reference baseline
+
+GAME-CHAR-01 overall
+-> PROPOSED / PLANNED / NOT_STARTED
+-> Stage B UNBLOCKED for paper-only evidence reconciliation, still NOT ACCEPTED
 
 DUR-02
--> bounded discovery may consume Stage-A invariants
--> final character-bearing schema waits for full GAME-CHAR Stage-B acceptance
+-> bounded discovery may consume Stage-A invariants and use selected target as compatibility context
+-> final character-bearing schema waits for accepted Stage B/full GAME-CHAR closure
 
 GAME-CHANNEL-01 + SIM-DETERMINISM-01
 -> still shape multichannel/simulation before their broad implementation scopes

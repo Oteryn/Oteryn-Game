@@ -11,13 +11,14 @@ Ensure that core gameplay and product domains are not omitted while Oteryn v2 re
 
 This document registers required future decisions. It does **not** accept implementation technologies, schemas, algorithms, service boundaries or final gameplay rules. Accepted decisions remain in ADRs and dedicated contracts.
 
-The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline and the owner-accepted partial `GAME-CHAR-01` Stage-A baseline. The exact first Reference baseline is now the next material GAME-CHAR input for Stage B; `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel within their existing boundaries. Runtime implementation remains separately unauthorized.
+The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline, the owner-accepted partial `GAME-CHAR-01` Stage-A baseline and the owner-accepted first Reference target cut. `GAME-CHAR-01` Stage B is now unblocked for evidence-backed paper-only reconciliation; `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel within their existing boundaries. Runtime implementation remains separately unauthorized.
 
 ## Relationship to existing architecture
 
 This horizon complements, and does not replace:
 
-- accepted `GAME-VISION-01` minimum product direction plus its explicitly deferred/hard-gated downstream subjects;
+- accepted `GAME-VISION-01` minimum product direction plus its explicitly deferred/downstream subjects;
+- `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` for the accepted immutable first Reference behavior cut and evidence/provenance model;
 - `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` for binding baseline-neutral character semantics while the overall GAME-CHAR gate remains unaccepted;
 - `FND-01` through `FND-04` for workspace, protocol, runtime and admission;
 - `DUR-01` through `DUR-04` for durable identity, persistence, item transactions and content/scripting;
@@ -65,9 +66,9 @@ No gate authorizes speculative empty crates or services. Every implementation me
 
 ## `GAME-VISION-01` — Product Vision, Parity Scope and World Profile Contract
 
-- Status: **`ACCEPTED` for the minimum product-vision gate scope; implementation `NOT_STARTED`.**
+- Status: **`ACCEPTED` for the minimum product-vision gate scope and the first Reference target cut; implementation `NOT_STARTED`.**
 - Canonical minimum source: `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md` plus the seven earlier dedicated owner baselines.
-- This minimum gate no longer blocks baseline-neutral product-sensitive architecture merely because the vision itself is open.
+- Canonical first Reference target source: `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md`.
 - Acceptance does not authorize gameplay/content/runtime implementation and does not close explicitly deferred/downstream subjects.
 
 Accepted minimum product direction:
@@ -82,15 +83,18 @@ Accepted minimum product direction:
 - accepted session loop is player goal -> preparation -> travel/access -> risk/activity -> secure committed progress/value -> recovery/restock/trade/reorganize -> next goal;
 - accepted long-term horizons include character capability, equipment/wealth/resources, exploration/access/quest/encounter mastery, social/world relationships and increasingly difficult/rare/prestigious objectives;
 - Reference economy uses mechanical source/sink parity rather than historical market-price/supply parity, with conservation before tuning, measurable provenance, semantic scarcity and no hidden macro tuning;
-- accepted success categories cover Reference correctness, player interaction quality, progress/value trust, core-loop health, economy health and product/operational health; numeric thresholds remain milestone-owned.
+- accepted success categories cover Reference correctness, player interaction quality, progress/value trust, core-loop health, economy health and product/operational health; numeric thresholds remain milestone-owned;
+- the first Reference target is Global Tibia production-observable behavior after the **2026-07-28 server-save/maintenance change boundary**;
+- that target is immutable; later Global changes require explicit later Reference revision promotion;
+- target selection is separate from evidence completeness: material behaviors remain `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or `DECLARED_DIFFERENCE` until evidence resolves them;
+- official public evidence is primary but not assumed exhaustive, controlled black-box observation is admissible with provenance, community sources are corroborative/discovery inputs, and OTS implementations are hypothesis/inventory inputs only.
 
-Deliberately deferred or downstream-owned after minimum acceptance:
+Deliberately deferred or downstream-owned after these acceptances:
 
-- exact Global Tibia patch/date/behavior baseline for the first Reference revision — **`DEFERRED WITH HARD GATE`** before broad Reference mechanics/content or final parity fixtures that require concrete target semantics and before the first external Reference evaluation/release contract;
 - exact Reference revision naming scheme;
 - exhaustive numbered pillars/anti-pillars formalization while the current accepted player-promise/product filters remain sufficient;
-- exact death/progression/PvP/party formulas;
-- exact economy rates, prices, drops, fees, sink values and scarcity thresholds;
+- exact death/progression/PvP/party formulas until their owning Reference/Evolved gates establish them;
+- exact economy rates, prices, drops, fees, sink values and scarcity thresholds until evidenced/accepted under their owning gates;
 - numeric product/KPI thresholds until their named milestone;
 - exact first Evolved feature inventory beyond the accepted reliability/UX-first strategy;
 - branding/public marketing wording;
@@ -104,7 +108,9 @@ Must preserve:
 - distinct `WorldId` values across profile families, with one inherited profile family for every channel of a logical world;
 - default world-scoped character and economy isolation;
 - no proprietary code, protocol or asset copying under a parity claim;
-- fail-closed behavior when a downstream Reference decision cannot remain baseline-neutral: select the exact named Reference baseline instead of guessing.
+- the accepted 2026-07-28 target as the default first Reference cut across character/item/combat/content/economy parity work unless an explicit scoped owner decision or later Reference revision supersedes it;
+- no assumption that patch-note/search absence proves no upstream change;
+- fail-closed behavior for `UNKNOWN` or conflicting Reference semantics rather than guessing from current Global, OTS code or implementation convenience.
 
 # Core gameplay domain gates
 
@@ -112,9 +118,9 @@ Must preserve:
 
 - Overall gate status: `BLOCKS_DURABLE_GAMEPLAY`; overall `DecisionStatus` remains `PROPOSED`, implementation `NOT_STARTED`.
 - **Stage A: OWNER-ACCEPTED PARTIAL BASELINE** in `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md`.
-- **Stage B: UNACCEPTED / HARD-BLOCKED** on selection of the exact first named Reference baseline wherever character-visible semantics are Reference-sensitive.
+- **Stage B: UNACCEPTED / UNBLOCKED** for evidence-backed reconciliation against `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md`.
 - Final character-bearing `DUR-02` schema and broad progression implementation still require full GAME-CHAR acceptance after Stage B.
-- Consume `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`, the Reference parity-precedence owner baseline, character-authority/session/lease contracts, DUR-01 and the Stage-A owner baseline.
+- Consume `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`, `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md`, the Reference parity-precedence owner baseline, character-authority/session/lease contracts, DUR-01 and the Stage-A owner baseline.
 
 Stage A already accepts, within its baseline-neutral scope:
 
@@ -133,7 +139,7 @@ Stage A already accepts, within its baseline-neutral scope:
 - bounded `DUR-02` consumption of Stage-A invariants only;
 - the explicit rule that Stage A does not close the overall GAME-CHAR gate.
 
-Stage B must still reconcile, against the selected exact Reference target where applicable:
+Stage B must now reconcile, against the accepted 2026-07-28 target and evidence classifications:
 
 - character creation choices and starter state;
 - name namespace, normalization, recycling/history and Reference-visible rules;
@@ -144,18 +150,22 @@ Stage B must still reconcile, against the selected exact Reference target where 
 - offline training/progression where present;
 - deterministic formulas/fixtures under the appropriate gameplay/simulation gates.
 
+A target date never converts an `UNKNOWN` behavior into an accepted mechanic.
+
 Must preserve:
 
 - one authoritative active character session/account exclusion as already accepted;
 - no client-authoritative progression;
 - no final character schema before full progression semantics are explicit;
 - Reference parity precedence over future-facing Evolved preferences;
-- Stage-A aggregate/revision/migration/safety boundaries unless explicitly superseded with evidence.
+- Stage-A aggregate/revision/migration/safety boundaries unless explicitly superseded with evidence;
+- the accepted evidence/provenance hierarchy and immutable-target rules.
 
 ## `GAME-ITEM-01` — Item Model and Equipment Rules
 
 - Status: `BLOCKS_DURABLE_GAMEPLAY`
 - Must be accepted before `DUR-03` finalizes transfer invariants and before broad item/content import.
+- Reference-sensitive item semantics use the accepted 2026-07-28 target unless explicitly superseded/scoped.
 
 Must decide:
 
@@ -175,7 +185,8 @@ Must preserve:
 - `DUR-03` as the authority for conservation and single-location invariants;
 - no item behavior encoded only in the client or wire format;
 - explicit limits for nesting, stack size, modifiers and transformation chains;
-- accepted GAME-VISION economy/scarcity principles, including no hidden Reference macro tuning.
+- accepted GAME-VISION economy/scarcity principles, including no hidden Reference macro tuning;
+- accepted first Reference evidence/provenance rules.
 
 ## `GAME-ABILITY-01` — Ability, Spell and Condition Architecture
 
@@ -483,7 +494,7 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 
 # Dependency and ordering rules
 
-1. `GAME-CHAR-01` Stage A is owner-accepted as a binding partial baseline; the exact first Reference baseline and Stage B reconciliation must complete before overall GAME-CHAR acceptance and before the final durable character schema in `DUR-02`.
+1. `GAME-CHAR-01` Stage A and the exact first Reference target are owner-accepted; Stage B evidence reconciliation must complete before overall GAME-CHAR acceptance and before the final durable character schema in `DUR-02`.
 2. `GAME-ITEM-01` must precede the final item transaction model in `DUR-03`; `DUR-03` remains the conservation authority.
 3. The foundation vertical slice may use bounded minimal movement/combat/creature/interaction contracts, but Playable Alpha requires `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01`.
 4. `PROD-COMPAT-01` must precede production release-train and updater compatibility claims.
@@ -492,19 +503,20 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 7. Expansion gates do not block foundation work when their extension points and invariants remain safe.
 8. Existing gates for social, economy, houses, events, updater, operations, observability and scaling remain authoritative for their named scopes.
 9. Any future implementation package must update this horizon, the global register and the corresponding dedicated contract status.
-10. Accepted `GAME-VISION-01` must preserve ADR-0010 and may not turn Reference/Evolved profiles into protocol, engine, client or repository forks; downstream Reference semantics that cannot remain baseline-neutral are hard-blocked on the exact named first Reference baseline rather than guessed.
-11. `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel with Reference-baseline/Stage-B GAME-CHAR work only with explicit path/contract ownership and without pre-accepting unresolved semantics.
-12. Before Stage B, `DUR-02` may consume only the invariants explicitly accepted by `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md`; persistence must not choose Reference gameplay policy by schema convenience.
+10. Accepted `GAME-VISION-01` must preserve ADR-0010 and may not turn Reference/Evolved profiles into protocol, engine, client or repository forks; the accepted 2026-07-28 first Reference target is binding across downstream Reference-sensitive work unless explicitly superseded/scoped, and evidence gaps remain fail-closed rather than guessed.
+11. `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel with Stage-B GAME-CHAR work only with explicit path/contract ownership and without pre-accepting unresolved semantics.
+12. Before accepted Stage B, `DUR-02` may consume only the invariants explicitly accepted by `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` and may use the selected target only as evidence/compatibility context; persistence must not choose Reference gameplay policy by schema convenience.
+13. Later Global changes are candidate evidence for a later explicit Reference revision and never silently mutate the accepted first target.
 
 # Explicitly not decided here
 
 This horizon does not select:
 
-- the exact first Global Tibia Reference patch/date/behavior baseline;
-- GAME-CHAR Stage-B Reference-sensitive rules;
-- gameplay formulas or balance values;
-- exact character classes, skills or item systems;
-- exact economy rates/prices/drop tables/scarcity thresholds;
+- final Reference revision identifier/naming syntax;
+- GAME-CHAR Stage-B Reference-sensitive rules not yet evidenced/accepted;
+- gameplay formulas or balance values beyond separately accepted/evidenced rules;
+- exact character classes, skills or item systems beyond their owning gates;
+- exact economy rates/prices/drop tables/scarcity thresholds beyond accepted/evidenced Reference rules;
 - numeric alpha/release KPI thresholds;
 - exact first Evolved feature inventory beyond the accepted reliability/UX-first strategy;
 - scripting engine, AI framework or pathfinding algorithm;
