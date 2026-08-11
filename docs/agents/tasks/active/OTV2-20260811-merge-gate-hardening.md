@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT repository engineering agent
 created_at: 2026-08-11T10:30:00+02:00
-updated_at: 2026-08-11T10:57:00+02:00
+updated_at: 2026-08-11T11:15:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: Repository merge-authority transition plus exact-head Linux/Windows/security validation and independent review repair.
 owned_paths:
@@ -44,7 +44,7 @@ external_repositories: []
 
 ## Outcome
 
-Make one always-present `Merge gate / validate` check the protected-branch merge authority for pull requests, with governance, dependency review, CodeQL and path-proportional Rust validation composed behind it. Provide bounded exact-head dispatch recovery for a suppressed initial PR event, remove stale workspace/bootstrap wording, add Cargo dependency maintenance and retire the completed one-off Rust cutover audit workflow.
+Make one always-present `Merge gate / validate` check the protected-branch merge authority for pull requests, with governance, dependency review, CodeQL and path-proportional Rust validation composed behind it. Provide bounded exact-head dispatch recovery for a suppressed initial PR event, make path classification robust to file renames, remove stale workspace/bootstrap wording, add Cargo dependency maintenance and retire the completed one-off Rust cutover audit workflow.
 
 ## Architecture and source of truth
 
@@ -54,6 +54,7 @@ Make one always-present `Merge gate / validate` check the protected-branch merge
 - `PROVEN`: `.github/dependabot.yml` covered GitHub Actions but not Cargo.
 - `DERIVED`: one stable aggregate required context avoids required-check deadlocks from path-proportional jobs while still failing unless every applicable sub-gate passes.
 - `DERIVED`: because the aggregate becomes the sole required context, it must retain a trusted exact-head dispatch recovery path equivalent in safety to the existing governance recovery path.
+- `PROVEN`: GitHub PR changed-file metadata may include a `previous_filename` for renamed files; scope classification must account for both source and destination paths so a rename cannot move a Rust-sensitive file out of a watched root and evade Rust validation.
 
 ## Acceptance criteria
 
@@ -64,13 +65,15 @@ Make one always-present `Merge gate / validate` check the protected-branch merge
 - [x] repository-policy validators prove declared/live required-status consistency;
 - [x] exact-head `workflow_dispatch` recovery requires an open PR number, unchanged full head SHA and dispatch ref resolving to that same head;
 - [x] Dependency Review receives explicit validated base/head refs for PR and recovery-dispatch modes;
+- [x] Rust/workspace scope classification includes both current/destination paths and rename-source `previous_filename` values;
+- [x] repository validator asserts that rename-source classification cannot silently disappear from the merge gate;
 - [x] canonical GitHub governance documentation names the aggregate required context and recovery path;
 - [x] Cargo Dependabot is enabled;
 - [x] stale workspace/test-matrix and CODEOWNERS wording is corrected;
 - [x] obsolete migration-only workflow is removed;
-- [ ] repaired exact-head full-diff self-review has no open material finding;
-- [ ] repaired exact-head GitHub Actions validation passes, including transition `Agent governance / validate` and new `Merge gate / validate`;
-- [ ] independent automatic review of the repaired exact head has no open material finding;
+- [ ] repair-cycle-2 exact-head full-diff self-review has no open material finding;
+- [ ] repair-cycle-2 exact-head GitHub Actions validation passes, including transition `Agent governance / validate` and new `Merge gate / validate`;
+- [ ] independent automatic review of the repair-cycle-2 exact head has no open material finding;
 - [ ] squash merge only after unchanged-head readiness.
 
 ## Excluded scope
@@ -84,13 +87,21 @@ Make one always-present `Merge gate / validate` check the protected-branch merge
 
 ## Implementation / findings
 
-Initial implementation on exact head `8248a7f3f4dda50101e922a3bc1fcc0b18232468` introduced the aggregate gate and passed the transition governance check plus all completed Linux/policy/security jobs before independent review surfaced three material findings.
+Initial implementation introduced the aggregate gate and the repository-engineering cleanup described above.
 
-Independent review repair cycle 1:
+### Independent review repair cycle 1
 
-1. **P1 — missing dispatch recovery:** valid. Added `workflow_dispatch` inputs for PR number and full expected head SHA. The scope job now verifies that a manual dispatch ref resolves to that exact SHA, re-fetches the open same-repository PR targeting `main`, rejects head movement, and exports validated base/head revisions consumed by all downstream jobs. Dependency Review now receives explicit `base-ref`/`head-ref` values so recovery mode does not depend on a `pull_request` event payload.
-2. **P1 — incomplete authoritative task record:** valid. Restored all task-template metadata fields and explicit focused/component/E2E/exact-head/self-review/independent-review/closeout sections with pending values where final-head evidence cannot yet exist.
-3. **P2 — stale canonical GitHub governance:** valid. Updated `docs/repository/GITHUB_GOVERNANCE.md` to the aggregate required context, exact-head recovery semantics and Cargo Dependabot, and extended the repository validator to assert this documentation remains aligned.
+Independent review of the earlier candidate surfaced three valid findings:
+
+1. **P1 — missing dispatch recovery:** repaired by adding `workflow_dispatch` inputs for PR number and full expected head SHA. The scope job verifies that a manual dispatch ref resolves to that exact SHA, re-fetches the open same-repository PR targeting `main`, rejects head movement, and exports validated base/head revisions consumed by all downstream jobs. Dependency Review receives explicit `base-ref`/`head-ref` values so recovery mode does not depend on a `pull_request` event payload.
+2. **P1 — incomplete authoritative task record:** repaired by restoring all task-template metadata fields and explicit focused/component/E2E/exact-head/self-review/independent-review/closeout sections with pending values where final-head evidence cannot yet exist.
+3. **P2 — stale canonical GitHub governance:** repaired by updating `docs/repository/GITHUB_GOVERNANCE.md` to the aggregate required context, exact-head recovery semantics and Cargo Dependabot, and by extending the repository validator to assert this documentation remains aligned.
+
+### Independent review repair cycle 2
+
+Independent review of repaired head `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` surfaced one further valid P1:
+
+4. **P1 — rename-source path could bypass Rust classification:** repaired by collecting both each changed entry's current/destination `filename` and any `previous_filename` into the Rust/workspace classification set. This preserves Rust validation when a file is renamed out of a watched root as well as when it is renamed into one. The repository-policy validator now requires the `previous_filename` classification logic to remain present.
 
 The existing `Agent governance / validate` pull-request workflow remains unchanged in this transition package so the currently live old ruleset can validate PR #162. It may be deduplicated only after the new required context has been applied and verified live on `main`.
 
@@ -98,11 +109,10 @@ The existing `Agent governance / validate` pull-request workflow remains unchang
 
 ### Focused
 
-- repository/agent governance validators on pre-repair exact head `8248a7f3f4dda50101e922a3bc1fcc0b18232468`: PASS in Merge gate governance job `93726822735`, superseded by repair cycle 1;
-- Dependency Review on pre-repair head: PASS, job `93726822717`, superseded by repair cycle 1;
-- Rust policy/metadata on pre-repair head: PASS, job `93726843566`, superseded by repair cycle 1;
-- CodeQL Python/Actions on pre-repair head: PASS, jobs `93726822752` / `93726822916`, superseded by repair cycle 1;
-- repaired-head focused validation: pending exact repaired candidate head.
+- transition `Agent governance / validate` on earlier repaired head `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db`: PASS, run `31475743111`, superseded by repair-cycle-2 head;
+- merge-gate scope on `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db`: PASS and selected the full Rust gate set, superseded by repair-cycle-2 head;
+- repository/agent governance, Dependency Review, CodeQL and Rust validation from older heads are historical only and cannot prove the final repaired head;
+- repair-cycle-2 focused validation: pending exact final candidate head.
 
 ### Component/integration
 
@@ -116,32 +126,32 @@ The existing `Agent governance / validate` pull-request workflow remains unchang
 
 ### Exact-head CI
 
-- final head: pending repair-cycle-1 checkpoint commit;
+- final head: pending repair-cycle-2 checkpoint commit;
 - trigger source: `pull_request/synchronize`;
-- workflow/run/job: new Merge gate run pending repaired head; transition Agent governance run also required;
-- runner assignment: GitHub-hosted Linux and Windows runners expected from workflow contract; exact repaired assignments pending;
+- workflow/run/job: fresh transition Agent governance and Merge gate runs pending final candidate head;
+- runner assignment: pending final candidate head;
 - classification: pending;
 - result: pending.
 
 ## Self-review
 
-- exact head: pre-repair `8248a7f3f4dda50101e922a3bc1fcc0b18232468` PASS, superseded by review-driven repairs;
+- exact head: `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` PASS, superseded by repair-cycle-2 rename-classification repair;
 - method/reviewer: implementing/coordinating agent full-diff review;
-- material findings: no self-review finding on old head; independent review later found three issues repaired in cycle 1;
-- verdict: repaired exact-head self-review pending.
+- material findings: independent review later identified rename-source classification gap; repaired in cycle 2;
+- verdict: repair-cycle-2 exact-head self-review pending.
 
 ## Independent review
 
 - required: `YES` — changing the sole protected merge-authority path has unusual repository-wide blast radius and common-mode-error risk;
-- exact head: pre-repair `8248a7f3f4dda50101e922a3bc1fcc0b18232468`, repaired-head review pending;
+- exact head: review of `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` found one P1; repair-cycle-2 final-head review pending;
 - method/auditor: automatic `chatgpt-codex-connector` independent PR review;
-- material findings: P1 dispatch recovery, P1 task recoverability, P2 canonical governance alignment; all repaired in cycle 1, repaired-head verification pending;
-- verdict: pending repaired exact-head review.
+- material findings: cycle 1 fixed dispatch recovery/task recoverability/canonical governance alignment; cycle 2 fixes rename-source scope bypass;
+- verdict: pending independent review of repair-cycle-2 exact head.
 
 ## PR and closeout
 
-- changed-file review: pre-repair full diff reviewed; repaired full diff pending;
-- unresolved review threads: 3 from pre-repair independent review, pending repaired-head reply/resolution;
+- changed-file review: repaired full diff pending final candidate head;
+- unresolved review threads: four historical/material threads pending final repaired-head evidence and resolution;
 - related/superseded PRs: PR #161 was non-overlapping and merged before branch reconciliation;
 - protected auto-merge: pending;
 - merge commit/result: pending;
@@ -150,7 +160,7 @@ The existing `Agent governance / validate` pull-request workflow remains unchang
 ## Context checkpoint
 
 ```yaml
-last_progress: Independent review of pre-repair head found three valid issues; repair cycle 1 added trusted exact-head dispatch recovery, completed the task schema and aligned canonical GitHub governance plus validator enforcement.
+last_progress: Independent review of head 6244f2a1 found a valid rename-source classification bypass; repair cycle 2 now classifies both filename and previous_filename and makes the repository validator preserve that guard.
 status: validating
 branch: ci/OTV2-20260811-merge-gate-hardening
 head_sha: null
@@ -158,7 +168,7 @@ pr: 162
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request/synchronize
-ci_check_generation: repair-cycle-1-final-head-pending
+ci_check_generation: repair-cycle-2-final-head-pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -167,10 +177,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze the repair-cycle-1 candidate head, perform a complete repaired-head self-review, then verify fresh transition governance, aggregate merge-gate CI and independent review on that unchanged head.
+next_action: Freeze the repair-cycle-2 candidate head, perform complete exact-head self-review, then verify fresh transition governance, aggregate merge-gate CI and independent review on that unchanged head.
 ```
