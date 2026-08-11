@@ -118,6 +118,20 @@ def repository_setting_matches(repo: dict[str, Any], key: str, expected: Any) ->
     return False
 
 
+def required_status_contexts(ruleset: dict[str, Any]) -> list[str]:
+    for rule in ruleset.get("rules", []):
+        if isinstance(rule, dict) and rule.get("type") == "required_status_checks":
+            checks = rule.get("parameters", {}).get("required_status_checks", [])
+            if not isinstance(checks, list):
+                return []
+            return [
+                check.get("context")
+                for check in checks
+                if isinstance(check, dict) and isinstance(check.get("context"), str)
+            ]
+    return []
+
+
 def verify() -> None:
     repo = request("GET", "", expected=(200,))
     for key, expected in POLICY["repository"].items():
@@ -158,6 +172,16 @@ def verify() -> None:
     if full.get("bypass_actors") != []:
         raise ApiError("Protect main ruleset must not have bypass actors")
 
+    expected_contexts = required_status_contexts(POLICY["ruleset"])
+    actual_contexts = required_status_contexts(full)
+    if actual_contexts != expected_contexts:
+        raise ApiError(
+            "Protect main required-status mismatch: "
+            f"expected {expected_contexts!r}, got {actual_contexts!r}"
+        )
+    if expected_contexts != [POLICY["required_status_check"]]:
+        raise ApiError("repository policy required_status_check disagrees with ruleset")
+
     private_reporting = request("GET", "/private-vulnerability-reporting", expected=(200,))
     if private_reporting.get("enabled") is not True:
         raise ApiError("private vulnerability reporting is not enabled")
@@ -169,7 +193,7 @@ def verify() -> None:
 
     print(
         "Repository settings, metadata, labels, Actions permissions, security features, "
-        "and main ruleset applied and verified."
+        "and exact main ruleset status checks applied and verified."
     )
 
 
