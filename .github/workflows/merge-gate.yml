@@ -1,14 +1,28 @@
 name: Merge gate
 
+run-name: >-
+  Merge gate • ${{ github.event_name }} •
+  ${{ github.event.pull_request.number || github.event.inputs.pull_request_number || github.ref_name }}
+
 on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: 'Open PR number whose exact head should be recovered'
+        required: true
+        type: string
+      expected_head_sha:
+        description: 'Exact 40-character PR head SHA; dispatch the workflow from that PR head branch'
+        required: true
+        type: string
 
 permissions: {}
 
 concurrency:
-  group: merge-gate-${{ github.event.pull_request.number }}
+  group: merge-gate-${{ github.event.pull_request.number || github.event.inputs.pull_request_number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,41 +34,120 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
+      pr_number: ${{ steps.detect.outputs.pr_number }}
+      target_sha: ${{ steps.detect.outputs.target_sha }}
+      base_sha: ${{ steps.detect.outputs.base_sha }}
       rust: ${{ steps.detect.outputs.rust }}
     steps:
-      - name: Detect validation scope
+      - name: Resolve and validate exact pull request head
         id: detect
         env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_SHA: ${{ github.sha }}
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DISPATCH_PR_NUMBER: ${{ github.event.inputs.pull_request_number }}
+          DISPATCH_EXPECTED_HEAD_SHA: ${{ github.event.inputs.expected_head_sha }}
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
-          PULL_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           python - <<'PY'
           import json
           import os
+          import re
+          import sys
           import urllib.request
 
+          event_name = os.environ['EVENT_NAME']
           repository = os.environ['REPOSITORY']
-          number = os.environ['PULL_NUMBER']
-          token = os.environ['GH_TOKEN']
+          errors: list[str] = []
+
+          def normalize_labeled_input(raw: str, label: str) -> str:
+              value = raw.strip()
+              prefix = f'{label}:'
+              if value.lower().startswith(prefix.lower()):
+                  value = value[len(prefix):].strip()
+              return value
+
+          if event_name == 'workflow_dispatch':
+              number_text = normalize_labeled_input(
+                  os.environ.get('DISPATCH_PR_NUMBER', ''), 'pull_request_number'
+              )
+              expected_head = normalize_labeled_input(
+                  os.environ.get('DISPATCH_EXPECTED_HEAD_SHA', ''), 'expected_head_sha'
+              ).lower()
+              event_sha = os.environ.get('EVENT_SHA', '').strip().lower()
+              if event_sha != expected_head:
+                  errors.append(
+                      'workflow dispatch ref does not resolve to expected_head_sha; '
+                      'dispatch from the exact unchanged PR head branch'
+                  )
+          else:
+              number_text = os.environ.get('EVENT_PR_NUMBER', '').strip()
+              expected_head = os.environ.get('EVENT_PR_HEAD_SHA', '').strip().lower()
+
+          if re.fullmatch(r'[1-9][0-9]*', number_text) is None:
+              errors.append('pull_request_number must be a positive integer')
+          if re.fullmatch(r'[0-9a-f]{40}', expected_head) is None:
+              errors.append('expected_head_sha must be a full lowercase 40-character SHA')
+
+          if errors:
+              for error in errors:
+                  print(f'- {error}', file=sys.stderr)
+              raise SystemExit(1)
+
+          request = urllib.request.Request(
+              f'https://api.github.com/repos/{repository}/pulls/{number_text}',
+              headers={
+                  'Accept': 'application/vnd.github+json',
+                  'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'User-Agent': 'Oteryn-v2-merge-gate',
+              },
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              pull = json.load(response)
+
+          state = pull.get('state', '')
+          head_sha = pull.get('head', {}).get('sha', '').lower()
+          head_repository = pull.get('head', {}).get('repo', {}).get('full_name', '')
+          base_ref = pull.get('base', {}).get('ref', '')
+          base_sha = pull.get('base', {}).get('sha', '').lower()
+
+          if state != 'open':
+              errors.append('merge-gate validation requires an open pull request')
+          if head_sha != expected_head:
+              errors.append('pull request head moved after expected_head_sha was resolved')
+          if head_repository != repository:
+              errors.append('merge gate only accepts same-repository pull request heads')
+          if base_ref != 'main':
+              errors.append('merge gate only accepts pull requests targeting main')
+          if re.fullmatch(r'[0-9a-f]{40}', base_sha) is None:
+              errors.append('pull request base SHA is invalid')
+
           files: list[str] = []
           page = 1
-          while True:
-              request = urllib.request.Request(
-                  f'https://api.github.com/repos/{repository}/pulls/{number}/files?per_page=100&page={page}',
+          while not errors:
+              files_request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repository}/pulls/{number_text}/files?per_page=100&page={page}',
                   headers={
                       'Accept': 'application/vnd.github+json',
-                      'Authorization': f'Bearer {token}',
+                      'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
                       'X-GitHub-Api-Version': '2022-11-28',
                       'User-Agent': 'Oteryn-v2-merge-gate',
                   },
               )
-              with urllib.request.urlopen(request, timeout=30) as response:
+              with urllib.request.urlopen(files_request, timeout=30) as response:
                   batch = json.load(response)
               files.extend(item['filename'] for item in batch)
               if len(batch) < 100:
                   break
               page += 1
+
+          if errors:
+              for error in errors:
+                  print(f'- {error}', file=sys.stderr)
+              raise SystemExit(1)
 
           exact = {
               'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'rustfmt.toml',
@@ -63,52 +156,75 @@ jobs:
           }
           prefixes = ('apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')
           rust = any(path in exact or path.startswith(prefixes) for path in files)
+
+          print(f'Validated PR #{number_text} exact head {head_sha} against base {base_sha}.')
           print('Changed files:')
           for path in files:
               print(f'- {path}')
           print(f'Rust/workspace validation required: {rust}')
+
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f'pr_number={number_text}\n')
+              output.write(f'target_sha={head_sha}\n')
+              output.write(f'base_sha={base_sha}\n')
               output.write(f"rust={'true' if rust else 'false'}\n")
           PY
 
   governance:
     name: Merge gate / governance
+    needs: scope
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
-    env:
-      TARGET_SHA: ${{ github.event.pull_request.head.sha }}
     steps:
-      - name: Verify pull request target and metadata
+      - name: Verify pull request metadata
         env:
+          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
+          GH_TOKEN: ${{ github.token }}
+          PULL_NUMBER: ${{ needs.scope.outputs.pr_number }}
           REPOSITORY: ${{ github.repository }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
-          PR_BASE_REF: ${{ github.event.pull_request.base.ref }}
         run: |
           python - <<'PY'
+          import json
           import os
           import re
           import sys
+          import urllib.request
 
-          errors: list[str] = []
           repository = os.environ['REPOSITORY']
-          title = os.environ.get('PR_TITLE', '')
-          body = os.environ.get('PR_BODY', '')
-          head_sha = os.environ.get('PR_HEAD_SHA', '')
-          head_repository = os.environ.get('PR_HEAD_REPOSITORY', '')
-          base_ref = os.environ.get('PR_BASE_REF', '')
+          number = os.environ['PULL_NUMBER']
+          expected_head = os.environ['EXPECTED_HEAD']
+          errors: list[str] = []
 
+          request = urllib.request.Request(
+              f'https://api.github.com/repos/{repository}/pulls/{number}',
+              headers={
+                  'Accept': 'application/vnd.github+json',
+                  'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'User-Agent': 'Oteryn-v2-merge-gate',
+              },
+          )
+          with urllib.request.urlopen(request, timeout=30) as response:
+              pull = json.load(response)
+
+          title = pull.get('title', '')
+          body = pull.get('body') or ''
+          head_sha = pull.get('head', {}).get('sha', '')
+          head_repository = pull.get('head', {}).get('repo', {}).get('full_name', '')
+          base_ref = pull.get('base', {}).get('ref', '')
+          state = pull.get('state', '')
+
+          if state != 'open':
+              errors.append('merge gate requires an open pull request')
+          if head_sha != expected_head:
+              errors.append('pull request head moved after scope validation')
           if head_repository != repository:
               errors.append('merge gate only accepts same-repository pull request heads')
           if base_ref != 'main':
               errors.append('merge gate only accepts pull requests targeting main')
-          if re.fullmatch(r'[0-9a-f]{40}', head_sha) is None:
-              errors.append('pull request head SHA is invalid')
 
           pattern = re.compile(
               r'^(feat|fix|docs|refactor|perf|test|build|ci|chore|revert)'
@@ -132,11 +248,13 @@ jobs:
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ env.TARGET_SHA }}
+          ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
 
       - name: Verify checked-out SHA
-        run: test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Validate agent governance
         run: python tools/agents/validate_governance.py
@@ -146,6 +264,7 @@ jobs:
 
   dependency_review:
     name: Merge gate / dependency review
+    needs: scope
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -155,9 +274,12 @@ jobs:
         uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
+          base-ref: ${{ needs.scope.outputs.base_sha }}
+          head-ref: ${{ needs.scope.outputs.target_sha }}
 
   codeql:
     name: Merge gate / CodeQL (${{ matrix.language }})
+    needs: scope
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     permissions:
@@ -175,7 +297,7 @@ jobs:
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
 
       - name: Initialize CodeQL
@@ -200,7 +322,7 @@ jobs:
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
 
       - name: Install Rust toolchain
@@ -259,7 +381,7 @@ jobs:
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
 
       - name: Install Rust toolchain
@@ -289,7 +411,7 @@ jobs:
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
 
       - name: Install Rust toolchain
@@ -324,7 +446,7 @@ jobs:
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
 
       - name: Check advisories licenses bans and sources
@@ -388,5 +510,5 @@ jobs:
               for failure in failures:
                   print(f'- {failure}', file=sys.stderr)
               raise SystemExit(1)
-          print('All applicable merge gates passed on the pull request head.')
+          print('All applicable merge gates passed on the exact pull request head.')
           PY
