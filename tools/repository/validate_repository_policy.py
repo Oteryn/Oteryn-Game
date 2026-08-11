@@ -213,6 +213,8 @@ def main() -> int:
             "expected_head_sha:",
             "workflow dispatch ref does not resolve to expected_head_sha",
             "pull request head moved after expected_head_sha was resolved",
+            "previous_filename = item.get('previous_filename')",
+            "classification_paths.append(previous_filename)",
             "base-ref: ${{ needs.scope.outputs.base_sha }}",
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
             "Merge gate / governance",
