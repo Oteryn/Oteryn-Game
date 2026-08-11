@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT repository engineering agent
 created_at: 2026-08-11T10:30:00+02:00
-updated_at: 2026-08-11T11:15:00+02:00
+updated_at: 2026-08-11T11:20:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: Repository merge-authority transition plus exact-head Linux/Windows/security validation and independent review repair.
 owned_paths:
@@ -71,9 +71,9 @@ Make one always-present `Merge gate / validate` check the protected-branch merge
 - [x] Cargo Dependabot is enabled;
 - [x] stale workspace/test-matrix and CODEOWNERS wording is corrected;
 - [x] obsolete migration-only workflow is removed;
-- [ ] repair-cycle-2 exact-head full-diff self-review has no open material finding;
-- [ ] repair-cycle-2 exact-head GitHub Actions validation passes, including transition `Agent governance / validate` and new `Merge gate / validate`;
-- [ ] independent automatic review of the repair-cycle-2 exact head has no open material finding;
+- [ ] repair-cycle-3 exact-head full-diff self-review has no open material finding;
+- [ ] repair-cycle-3 exact-head GitHub Actions validation passes, including transition `Agent governance / validate` and new `Merge gate / validate`;
+- [ ] independent automatic review of the repair-cycle-3 exact head has no open material finding;
 - [ ] squash merge only after unchanged-head readiness.
 
 ## Excluded scope
@@ -101,7 +101,15 @@ Independent review of the earlier candidate surfaced three valid findings:
 
 Independent review of repaired head `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` surfaced one further valid P1:
 
-4. **P1 — rename-source path could bypass Rust classification:** repaired by collecting both each changed entry's current/destination `filename` and any `previous_filename` into the Rust/workspace classification set. This preserves Rust validation when a file is renamed out of a watched root as well as when it is renamed into one. The repository-policy validator now requires the `previous_filename` classification logic to remain present.
+4. **P1 — rename-source path could bypass Rust classification:** repaired by collecting both each changed entry's current/destination `filename` and any `previous_filename` into the Rust/workspace classification set. This preserves Rust validation when a file is renamed out of a watched root as well as when it is renamed into one. The repository-policy validator requires the `previous_filename` classification logic to remain present.
+
+### Validation repair cycle 3
+
+Exact-head transition governance on candidate `2283d8a5f1d075d1c68f58221c554c26249ba3c5` correctly checked out the exact PR head and passed agent-governance validation, but repository-policy validation failed on its own overly broad static assertion. The validator used substring search for `paths:` and therefore misclassified the Python type annotation `classification_paths: list[str]` inside the workflow as a workflow-level YAML path filter.
+
+5. **Validator false positive — workflow-level path-filter detection:** repaired by replacing the substring search with an anchored multiline regular expression matching only four-space-indented YAML trigger keys `paths:` or `paths-ignore:`. No merge-gate runtime semantics, permissions, recovery behavior or classification policy changed in this cycle.
+
+This is repair cycle `3/3` for the gate. No further repair cycle may be silently started: any new material final-head failure requires an exact blocker/new hypothesis decision under the anti-stall policy rather than another routine repair loop.
 
 The existing `Agent governance / validate` pull-request workflow remains unchanged in this transition package so the currently live old ruleset can validate PR #162. It may be deduplicated only after the new required context has been applied and verified live on `main`.
 
@@ -109,10 +117,9 @@ The existing `Agent governance / validate` pull-request workflow remains unchang
 
 ### Focused
 
-- transition `Agent governance / validate` on earlier repaired head `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db`: PASS, run `31475743111`, superseded by repair-cycle-2 head;
-- merge-gate scope on `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db`: PASS and selected the full Rust gate set, superseded by repair-cycle-2 head;
-- repository/agent governance, Dependency Review, CodeQL and Rust validation from older heads are historical only and cannot prove the final repaired head;
-- repair-cycle-2 focused validation: pending exact final candidate head.
+- transition `Agent governance / validate` on candidate `2283d8a5f1d075d1c68f58221c554c26249ba3c5`: exact checkout + agent governance PASS; repository-policy validator failed only on the proven `classification_paths:` false positive, run `31476895797`, job `93732558762`; superseded by cycle-3 validator repair;
+- merge-gate scope and older CI results are historical only and cannot prove the final repaired head;
+- repair-cycle-3 focused validation: pending exact final candidate head.
 
 ### Component/integration
 
@@ -126,7 +133,7 @@ The existing `Agent governance / validate` pull-request workflow remains unchang
 
 ### Exact-head CI
 
-- final head: pending repair-cycle-2 checkpoint commit;
+- final head: pending repair-cycle-3 checkpoint commit;
 - trigger source: `pull_request/synchronize`;
 - workflow/run/job: fresh transition Agent governance and Merge gate runs pending final candidate head;
 - runner assignment: pending final candidate head;
@@ -135,23 +142,23 @@ The existing `Agent governance / validate` pull-request workflow remains unchang
 
 ## Self-review
 
-- exact head: `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` PASS, superseded by repair-cycle-2 rename-classification repair;
+- exact head: `2283d8a5f1d075d1c68f58221c554c26249ba3c5` PASS, superseded only by cycle-3 validator false-positive repair;
 - method/reviewer: implementing/coordinating agent full-diff review;
-- material findings: independent review later identified rename-source classification gap; repaired in cycle 2;
-- verdict: repair-cycle-2 exact-head self-review pending.
+- material findings: no merge-gate logic finding in cycle 3; static validator false positive repaired without changing gate semantics;
+- verdict: repair-cycle-3 exact-head self-review pending.
 
 ## Independent review
 
 - required: `YES` — changing the sole protected merge-authority path has unusual repository-wide blast radius and common-mode-error risk;
-- exact head: review of `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` found one P1; repair-cycle-2 final-head review pending;
+- exact head: review of `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` found one P1; review of `2283d8a5f1d075d1c68f58221c554c26249ba3c5` was requested before the validator-only cycle-3 repair and is superseded for merge readiness;
 - method/auditor: automatic `chatgpt-codex-connector` independent PR review;
-- material findings: cycle 1 fixed dispatch recovery/task recoverability/canonical governance alignment; cycle 2 fixes rename-source scope bypass;
-- verdict: pending independent review of repair-cycle-2 exact head.
+- material findings: cycle 1 fixed dispatch recovery/task recoverability/canonical governance alignment; cycle 2 fixed rename-source scope bypass; cycle 3 changes only the static validator false-positive pattern;
+- verdict: pending independent review of repair-cycle-3 exact head.
 
 ## PR and closeout
 
-- changed-file review: repaired full diff pending final candidate head;
-- unresolved review threads: four historical/material threads pending final repaired-head evidence and resolution;
+- changed-file review: repair-cycle-3 full diff pending final candidate head;
+- unresolved review threads: historical/material threads pending final repaired-head evidence and resolution;
 - related/superseded PRs: PR #161 was non-overlapping and merged before branch reconciliation;
 - protected auto-merge: pending;
 - merge commit/result: pending;
@@ -160,7 +167,7 @@ The existing `Agent governance / validate` pull-request workflow remains unchang
 ## Context checkpoint
 
 ```yaml
-last_progress: Independent review of head 6244f2a1 found a valid rename-source classification bypass; repair cycle 2 now classifies both filename and previous_filename and makes the repository validator preserve that guard.
+last_progress: Exact-head governance exposed a false positive in repository-policy validation because the validator matched Python classification_paths as YAML paths; cycle 3 narrows the assertion to real workflow-level trigger keys without changing merge-gate behavior.
 status: validating
 branch: ci/OTV2-20260811-merge-gate-hardening
 head_sha: null
@@ -168,7 +175,7 @@ pr: 162
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request/synchronize
-ci_check_generation: repair-cycle-2-final-head-pending
+ci_check_generation: repair-cycle-3-final-head-pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -177,10 +184,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
+repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze the repair-cycle-2 candidate head, perform complete exact-head self-review, then verify fresh transition governance, aggregate merge-gate CI and independent review on that unchanged head.
+next_action: Freeze the repair-cycle-3 candidate head, perform complete exact-head self-review, then verify fresh transition governance, aggregate merge-gate CI and independent review on that unchanged head; do not start a fourth repair cycle.
 ```
