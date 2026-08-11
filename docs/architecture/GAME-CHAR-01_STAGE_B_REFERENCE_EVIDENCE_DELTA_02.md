@@ -70,7 +70,7 @@ This is **RECOMMENDATION / NOT ACCEPTED**.
 
 ### E1 — promotion level 20 + Premium
 
-Official 2001 release material introducing promoted vocations states that Premium players at or above level 20 can receive promotion:
+Official **2002** release material introducing promoted vocations states that Premium players at or above level 20 can receive promotion:
 
 - `https://www.tibia.com/news/?id=122&subtopic=newsarchive`
 
