@@ -37,6 +37,9 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
         required: true
         type: string
 """
+EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
+    "c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a"
+)
 
 REQUIRED_FILES = [
     ".github/CODEOWNERS",
@@ -104,17 +107,12 @@ def canonical_top_level_yaml_keys(text: str) -> list[str] | None:
     return keys
 
 
-def top_level_yaml_mapping_block(text: str, key: str) -> str | None:
-    """Return one canonical top-level mapping block or fail closed.
-
-    This intentionally does not accept arbitrary equivalent YAML spellings. Repository
-    governance keeps the security-sensitive trigger in one canonical textual form so
-    inline mappings, alternate indentation, duplicate keys and added path filters all
-    fail validation instead of depending on a heuristic YAML interpretation.
-    """
+def indented_yaml_mapping_block(text: str, key: str, indent: int) -> str | None:
+    """Return exactly one mapping block at a fixed indentation, normalized only at edges."""
 
     lines = text.splitlines(keepends=True)
-    key_line = re.compile(rf"^{re.escape(key)}:\s*(?:#.*)?(?:\r?\n)?$")
+    prefix = " " * indent
+    key_line = re.compile(rf"^{re.escape(prefix + key)}:\s*(?:#.*)?(?:\r?\n)?$")
     starts = [index for index, line in enumerate(lines) if key_line.fullmatch(line)]
     if len(starts) != 1:
         return None
@@ -125,12 +123,24 @@ def top_level_yaml_mapping_block(text: str, key: str) -> str | None:
         line = lines[index]
         if not line.strip() or line.lstrip().startswith("#"):
             continue
-        if not line[0].isspace():
+        leading_spaces = len(line) - len(line.lstrip(" "))
+        if leading_spaces <= indent:
             end = index
             break
 
-    block = "".join(lines[start:end]).replace("\r\n", "\n").rstrip("\n") + "\n"
-    return block
+    return "".join(lines[start:end]).replace("\r\n", "\n").rstrip("\n") + "\n"
+
+
+def top_level_yaml_mapping_block(text: str, key: str) -> str | None:
+    """Return one canonical top-level mapping block or fail closed.
+
+    This intentionally does not accept arbitrary equivalent YAML spellings. Repository
+    governance keeps the security-sensitive trigger in one canonical textual form so
+    inline mappings, alternate indentation, duplicate keys and added path filters all
+    fail validation instead of depending on a heuristic YAML interpretation.
+    """
+
+    return indented_yaml_mapping_block(text, key, 0)
 
 
 def main() -> int:
@@ -286,8 +296,17 @@ def main() -> int:
                 "merge gate trigger block must exactly match the canonical always-on "
                 "pull_request plus exact-head workflow_dispatch contract"
             )
-        if "name: Merge gate / validate" not in text:
-            errors.append("merge gate must emit the stable Merge gate / validate job")
+        validate_block = indented_yaml_mapping_block(text, "validate", 2)
+        validate_digest = (
+            hashlib.sha256(validate_block.encode("utf-8")).hexdigest()
+            if validate_block is not None
+            else None
+        )
+        if validate_digest != EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256:
+            errors.append(
+                "merge gate aggregate validate job must exactly match the canonical "
+                "needs/result wiring and fail-closed implementation"
+            )
         for required_fragment in (
             "pull_request_number:",
             "expected_head_sha:",
@@ -295,6 +314,7 @@ def main() -> int:
             "pull request head moved after expected_head_sha was resolved",
             "previous_filename = item.get('previous_filename')",
             "classification_paths.append(previous_filename)",
+            "prefixes = ('.cargo/', 'apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')",
             "base-ref: ${{ needs.scope.outputs.base_sha }}",
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
             "Merge gate / governance",
@@ -307,6 +327,12 @@ def main() -> int:
         ):
             if required_fragment not in text:
                 errors.append(f"merge gate missing required recovery/sub-gate contract: {required_fragment}")
+
+    rust_workflow = ROOT / ".github/workflows/rust.yml"
+    if rust_workflow.is_file():
+        text = rust_workflow.read_text(encoding="utf-8")
+        if "      - '.cargo/**'" not in text:
+            errors.append("Rust post-merge workflow must treat .cargo/** as Rust-sensitive")
 
     dependabot = ROOT / ".github/dependabot.yml"
     if dependabot.is_file():
