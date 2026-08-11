@@ -22,7 +22,7 @@ large_budget_reason: Repository merge-authority transition plus exact-head Linux
 successor_generation: 1
 predecessor_blocked_head_sha: 07c38012015711857ad716d6586829d37efc6801
 predecessor_repair_cycles: 3
-successor_repair_cycles: 1
+successor_repair_cycles: 2
 owner_authorized_at: 2026-08-11T16:07:00+02:00
 owner_authorization: Autoryzuję successor repair package dla PR #162
 owned_paths:
@@ -76,25 +76,38 @@ Final predecessor review then found P2 `PRRT_kwDOTuGrds6YLEL3`: the four-space r
 
 Owner authorization created a new bounded repair generation rather than a fourth predecessor cycle.
 
-Implemented successor hypothesis:
+### Successor cycle 1 — representation-independent fail-closed trigger contract
 
-- reconcile the branch with current `main@c88f778a3d4a8d26efeb3a2ad2f328b4efca3768` without overwriting its eight non-overlapping GAME-VISION commits;
-- replace indentation-dependent path-filter detection with an exact canonical `on:` block contract;
-- require exactly the canonical merge-gate top-level keys (`name`, `run-name`, `on`, `permissions`, `concurrency`, `jobs`) in the expected order;
-- reject duplicate/alternate root-key syntax, inline trigger mappings, alternate indentation/layout, extra root mappings, comments/additions inside the trigger contract, `paths`, `paths-ignore`, or any other trigger drift;
-- retain all existing checks for exact-head recovery, rename-source classification, explicit Dependency Review refs and required sub-gates.
+Implemented:
+
+- reconciled the branch with `main@c88f778a3d4a8d26efeb3a2ad2f328b4efca3768` without overwriting its eight non-overlapping GAME-VISION commits;
+- replaced indentation-dependent path-filter detection with an exact canonical `on:` block contract;
+- required exactly the canonical merge-gate top-level keys (`name`, `run-name`, `on`, `permissions`, `concurrency`, `jobs`) in the expected order;
+- reject duplicate/alternate root-key syntax, inline trigger mappings, alternate indentation/layout, extra root mappings, `paths`, `paths-ignore`, or other trigger drift;
+- retained exact-head recovery, rename-source classification, explicit Dependency Review refs and all aggregate sub-gates.
 
 No third-party YAML library was introduced; the validator deliberately recognizes only the single approved textual governance representation.
+
+### Successor cycle 2 — self-review boundary normalization
+
+Pre-freeze self-review of cycle 1 found a concrete implementation defect before merge readiness was claimed: the top-level block extractor included the blank separator line before `permissions`, while the expected canonical trigger constant ended immediately after the last `type: string` line. The validator would therefore have rejected the actual approved workflow.
+
+Repair:
+
+- normalize only trailing blank-line separators from the extracted top-level mapping via `rstrip("\n") + "\n"` after CRLF normalization;
+- keep all substantive trigger lines exact, so comments, extra mappings, path filters, alternate indentation, inline syntax and duplicate/alternate root keys still fail closed;
+- this is successor repair cycle `2/3`, not a hidden retry and not a predecessor cycle.
 
 ## Acceptance criteria
 
 - [x] successor authorization is recorded without erasing predecessor `3/3` evidence;
 - [x] branch is reconciled with current `main` and `behind_by=0`;
 - [x] current merge gate itself remains always-on for PRs to `main`;
-- [x] successor validator rejects all noncanonical top-level workflow roots rather than accepting alternate `on` key spellings;
-- [x] successor validator requires the exact canonical `on:` block, therefore any `paths`/`paths-ignore` or alternate trigger representation fails closed;
-- [x] existing exact-head recovery, rename-source classification and aggregate sub-gate invariants remain enforced;
-- [ ] final PR metadata is updated before freeze;
+- [x] successor validator rejects noncanonical/duplicate/alternate top-level workflow roots;
+- [x] successor validator requires the exact canonical `on:` block and rejects `paths`/`paths-ignore` or alternate trigger representations;
+- [x] harmless trailing blank separator normalization no longer causes a false failure;
+- [x] exact-head recovery, rename-source classification and aggregate sub-gate invariants remain enforced;
+- [ ] final PR metadata names the resulting frozen successor head;
 - [ ] exact-head full-diff self-review passes on the frozen successor head;
 - [ ] transition `Agent governance / validate` passes on the exact successor head;
 - [ ] `Merge gate / validate` passes on the exact successor head, including all Rust/security sub-gates selected by this PR;
@@ -116,8 +129,9 @@ No third-party YAML library was introduced; the validator deliberately recognize
 
 ### Focused
 
-- successor code review target: `tools/repository/validate_repository_policy.py` canonical top-level and `on:` contract;
-- executable result: pending frozen exact-head GitHub Actions.
+- successor code target: `tools/repository/validate_repository_policy.py` canonical top-level and `on:` contract;
+- cycle-1 self-review finding: trailing blank separator mismatch, repaired in cycle 2;
+- executable focused result: pending frozen exact-head GitHub Actions.
 
 ### Component/integration
 
@@ -130,7 +144,7 @@ No third-party YAML library was introduced; the validator deliberately recognize
 
 ### Exact-head CI
 
-- final head: pending final metadata commit/freeze;
+- final head: pending this final task-record commit;
 - trigger source: pending `pull_request/synchronize`;
 - transition governance: pending;
 - aggregate merge gate: pending;
@@ -138,22 +152,22 @@ No third-party YAML library was introduced; the validator deliberately recognize
 
 ## Self-review
 
-- exact head: pending freeze;
+- cycle-1 candidate `78f5ce66f74872fda80be03b0a2b83ce303adc84`: material implementation finding in trigger-block trailing separator handling; repaired before readiness;
+- frozen successor head: pending this task-record commit;
 - method/reviewer: implementing/coordinating agent full-diff review;
-- material findings: pending;
-- verdict: pending.
+- final verdict: pending.
 
 ## Independent review
 
 - required: `YES` — sole protected merge-authority transition has repository-wide common-mode-error risk;
 - predecessor findings: preserved above;
-- exact successor head: pending freeze;
+- exact successor head: pending freeze after this commit;
 - auditor: automatic `chatgpt-codex-connector` PR review;
 - verdict: pending.
 
 ## PR and closeout
 
-- PR: #162, currently draft during successor repair;
+- PR: #162, draft during successor validation;
 - changed-file review: pending frozen successor head;
 - unresolved review threads: historical findings intentionally remain open until final-head evidence exists;
 - merge: pending exact-head CI + independent review;
@@ -163,7 +177,7 @@ No third-party YAML library was introduced; the validator deliberately recognize
 ## Context checkpoint
 
 ```yaml
-last_progress: Owner explicitly authorized successor generation 1; branch was reconciled with current main and the final predecessor P2 was addressed with fail-closed canonical top-level and exact on-block validation.
+last_progress: Successor pre-freeze self-review found and repaired a trailing blank-separator mismatch in the canonical trigger-block extractor; substantive fail-closed trigger/root invariants remain unchanged.
 status: validating
 branch: ci/OTV2-20260811-merge-gate-hardening
 head_sha: null
@@ -171,7 +185,7 @@ pr: 162
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pending-final-freeze
-ci_check_generation: successor-1-pre-freeze
+ci_check_generation: successor-1-cycle-2-pre-freeze
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -181,10 +195,10 @@ terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
 predecessor_repair_cycles: 3
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Update PR #162 metadata for successor generation 1, freeze that resulting head, then perform exact-head self-review, full CI and independent review without adding checkpoint-only commits.
+next_action: Treat this commit as the final content commit, update PR metadata to the resulting exact SHA without moving the branch, then freeze and perform full exact-head self-review, CI and independent review.
 ```
