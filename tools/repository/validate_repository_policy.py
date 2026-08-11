@@ -14,6 +14,14 @@ POLICY_PATH = ROOT / ".github/repository-policy.json"
 USES_LINE = re.compile(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)", re.MULTILINE)
 CANONICAL_MPL_2_0_GIT_BLOB_SHA = "d0a1fa1482eea82e19510e7920cbe3a03e41f691"
 EXPECTED_REQUIRED_STATUS = "Merge gate / validate"
+EXPECTED_MERGE_GATE_TOP_LEVEL_KEYS = [
+    "name",
+    "run-name",
+    "on",
+    "permissions",
+    "concurrency",
+    "jobs",
+]
 EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
   pull_request:
     branches:
@@ -72,6 +80,28 @@ def required_status_contexts(ruleset: dict) -> list[str]:
                 if isinstance(check, dict) and isinstance(check.get("context"), str)
             ]
     return []
+
+
+def canonical_top_level_yaml_keys(text: str) -> list[str] | None:
+    """Return canonical root keys, rejecting alternate YAML key spellings.
+
+    The merge-authority workflow deliberately permits only plain, unquoted root keys
+    with the canonical `key:` spelling. That makes duplicate or alternate forms such
+    as `on :`, quoted `"on"`, document directives, or extra root mappings fail closed.
+    """
+
+    keys: list[str] = []
+    key_line = re.compile(r"^([a-z][a-z0-9-]*):(?:[ \t].*)?$")
+    for line in text.replace("\r\n", "\n").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if line[0].isspace():
+            continue
+        match = key_line.fullmatch(line)
+        if match is None:
+            return None
+        keys.append(match.group(1))
+    return keys
 
 
 def top_level_yaml_mapping_block(text: str, key: str) -> str | None:
@@ -246,6 +276,12 @@ def main() -> int:
     merge_gate = ROOT / ".github/workflows/merge-gate.yml"
     if merge_gate.is_file():
         text = merge_gate.read_text(encoding="utf-8")
+        top_level_keys = canonical_top_level_yaml_keys(text)
+        if top_level_keys != EXPECTED_MERGE_GATE_TOP_LEVEL_KEYS:
+            errors.append(
+                "merge gate must use only the canonical top-level workflow keys in the "
+                f"expected order; got {top_level_keys!r}"
+            )
         trigger_block = top_level_yaml_mapping_block(text, "on")
         if trigger_block != EXPECTED_MERGE_GATE_TRIGGER_BLOCK:
             errors.append(
