@@ -37,7 +37,7 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 | `ANL-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | event/audit foundation accepted; no runtime event collector/outbox/broker/warehouse implementation |
 | `GAME-VISION-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | minimum product-vision baseline and the immutable first Reference target are accepted; target delivery PR #181 final head `2a07643653d6d56a94ada89caf79005fce09e58a` passed self-review `4910439614`, Agent Governance `31532701302`, Dependency Review `31532701303` and CodeQL `31532701319`, then squash-merged as `b57b382cb929b2c8a20d5c81197e933b0526764f`; no runtime authority |
 | `GAME-CHANNEL-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | social/economic/PvP/UX channel policy required before multichannel becomes a product feature |
-| `GAME-CHAR-01` | `ACCEPTED` | `OPEN` | `NOT_STARTED` | Stage A plus the owner-accepted Stage-B semantic closure in `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` are binding; exact formulas/unknown target values remain per-behavior parity gates; this owner-baseline delivery is active and runtime authority is NONE |
+| `GAME-CHAR-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | Stage A + Stage B semantic architecture are owner-accepted; delivery PR #193 exact head `bc4942cab0e58b3aa4ed9713cc3f23b11b83aaa6` passed self-review `4911343351`, Agent Governance `31542939497`, Dependency Review `31542939533` and CodeQL `31542939487`, then squash-merged as `08775e378db8c1fd6bb97bedf66bf08b3541f35f`; unresolved target rules remain per-behavior parity gates and runtime authority is NONE |
 | `GAME-ITEM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | blocks final DUR-03 item transaction semantics; Reference-sensitive item work uses the accepted 2026-07-28 target unless explicitly superseded/scoped |
 | `SIM-DETERMINISM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | required before broad combat/AI formula freeze and before `PARITY_CONFIRMED` claims for unresolved Character arithmetic delegated from GAME-CHAR |
 | `DUR-02` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | accepted GAME-CHAR semantics unblock final paper-only **profile-neutral core** Character schema architecture plus typed/versioned profile-extension boundaries; physical DDL/migrations and profile-specific schema completeness remain separately unauthorized/gated |
@@ -61,7 +61,7 @@ DUR-01 remains accepted/lifecycle-closed: UUIDv7 native durability uses PostgreS
 
 `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` fixes the first Reference external behavior cut to **Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary**. The target is immutable; later Global changes are candidate evidence for a later explicit Reference revision rather than silent mutation. Target selection remains separate from evidence completeness: individual mechanics may be `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or `DECLARED_DIFFERENCE`. Official public sources are primary but not assumed exhaustive; controlled black-box observation may provide target evidence; community sources are corroborative/discovery inputs; Canary/crystalserver/other OTS remain hypothesis/inventory inputs rather than proof of Global behavior. Patch-note/search absence is not evidence of no change. Security/integrity/legal/provenance constraints override defect compatibility.
 
-`GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` remains binding for baseline-neutral Character ownership/lifecycle/revision/migration safety. `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` now accepts the Reference-sensitive semantic closure layered on Stage A: global logical naming namespace with versioned canonical-comparison policy; versioned lifecycle/quota policy; versioned creation/starter context; five Reference vocation families/promoted forms plus pre-vocation state and eight skill categories; formula-neutral progression ownership; promotion achievement versus entitlement-derived activation; profile-scoped death/protection; character-owned offline-training counter semantics; modern character-specific progression ownership scope; and explicit hard parity gates for every unresolved `UNKNOWN/CONFLICT` target rule. Architecture acceptance does **not** imply `PARITY_CONFIRMED`, physical schema, runtime implementation or all-profile schema completeness.
+`GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` remains binding for baseline-neutral Character ownership/lifecycle/revision/migration safety. `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` accepts the Reference-sensitive semantic closure layered on Stage A: global logical naming namespace with versioned canonical-comparison policy; versioned lifecycle/quota policy; versioned creation/starter context; five Reference vocation families/promoted forms plus pre-vocation state and eight skill categories; formula-neutral progression ownership; promotion achievement versus entitlement-derived activation; profile-scoped death/protection; character-owned offline-training counter semantics; modern character-specific progression ownership scope; and explicit hard parity gates for every unresolved `UNKNOWN/CONFLICT` target rule. Architecture acceptance does **not** imply `PARITY_CONFIRMED`, physical schema, runtime implementation or all-profile schema completeness.
 
 Accepted GAME-CHAR semantics allow `DUR-02` to design the final **paper-only profile-neutral core** Character schema architecture with explicit typed/versioned extension and migration boundaries. Any profile-specific durable Character facts remain separately gated before that profile's schema may be called complete. An untyped/generic miscellaneous-state bag is not an accepted substitute for semantic ownership.
 
@@ -209,14 +209,13 @@ first Reference target
 -> evidence gaps remain PROVEN/OBSERVED/DERIVED/UNKNOWN/CONFLICT/DECLARED_DIFFERENCE rather than guessed
 
 GAME-CHAR-01
--> ACCEPTED architecture
+-> ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED
 -> owner-accepted Stage A + Stage B semantic closure
--> delivery OPEN until owner-baseline lifecycle closeout
--> implementation NOT_STARTED
 -> exact unresolved target behavior remains hard parity-gated
+-> runtime authority NONE
 
 DUR-02
--> may proceed to paper-only profile-neutral core Character schema architecture after GAME-CHAR lifecycle closeout
+-> may proceed to paper-only profile-neutral core Character schema architecture
 -> typed/versioned profile extensions required
 -> physical DDL/migrations NOT_AUTHORIZED
 -> no all-profile completeness claim
