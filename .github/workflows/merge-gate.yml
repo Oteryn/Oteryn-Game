@@ -144,7 +144,7 @@ jobs:
       - name: Validate repository policy
         run: python tools/repository/validate_repository_policy.py
 
-  dependency-review:
+  dependency_review:
     name: Merge gate / dependency review
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -188,7 +188,7 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
 
-  rust-policy:
+  rust_policy:
     name: Merge gate / Rust policy and metadata
     needs: scope
     if: needs.scope.outputs.rust == 'true'
@@ -247,7 +247,7 @@ jobs:
           print('production closure: PASS')
           PY
 
-  rust-linux:
+  rust_linux:
     name: Merge gate / Rust Linux workspace
     needs: scope
     if: needs.scope.outputs.rust == 'true'
@@ -277,7 +277,7 @@ jobs:
       - name: Run synthetic harness
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
 
-  rust-windows:
+  rust_windows:
     name: Merge gate / Rust Windows client
     needs: scope
     if: needs.scope.outputs.rust == 'true'
@@ -312,7 +312,7 @@ jobs:
         shell: pwsh
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
 
-  rust-supply-chain:
+  rust_supply_chain:
     name: Merge gate / Rust supply chain
     needs: scope
     if: needs.scope.outputs.rust == 'true'
@@ -340,12 +340,12 @@ jobs:
     needs:
       - scope
       - governance
-      - dependency-review
+      - dependency_review
       - codeql
-      - rust-policy
-      - rust-linux
-      - rust-windows
-      - rust-supply-chain
+      - rust_policy
+      - rust_linux
+      - rust_windows
+      - rust_supply_chain
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
@@ -355,13 +355,13 @@ jobs:
         env:
           SCOPE: ${{ needs.scope.result }}
           GOVERNANCE: ${{ needs.governance.result }}
-          DEPENDENCY_REVIEW: ${{ needs.dependency-review.result }}
+          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
           CODEQL: ${{ needs.codeql.result }}
           RUST_REQUIRED: ${{ needs.scope.outputs.rust }}
-          RUST_POLICY: ${{ needs.rust-policy.result }}
-          RUST_LINUX: ${{ needs.rust-linux.result }}
-          RUST_WINDOWS: ${{ needs.rust-windows.result }}
-          RUST_SUPPLY_CHAIN: ${{ needs.rust-supply-chain.result }}
+          RUST_POLICY: ${{ needs.rust_policy.result }}
+          RUST_LINUX: ${{ needs.rust_linux.result }}
+          RUST_WINDOWS: ${{ needs.rust_windows.result }}
+          RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
         run: |
           python - <<'PY'
           import os
