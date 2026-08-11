@@ -202,11 +202,19 @@ def main() -> int:
         text = merge_gate.read_text(encoding="utf-8")
         if "pull_request:" not in text:
             errors.append("merge gate must run on pull_request")
+        if "workflow_dispatch:" not in text:
+            errors.append("merge gate must provide exact-head workflow_dispatch recovery")
         if "paths:" in text or "paths-ignore:" in text:
             errors.append("merge gate must not use workflow-level path filters")
         if "name: Merge gate / validate" not in text:
             errors.append("merge gate must emit the stable Merge gate / validate job")
         for required_fragment in (
+            "pull_request_number:",
+            "expected_head_sha:",
+            "workflow dispatch ref does not resolve to expected_head_sha",
+            "pull request head moved after expected_head_sha was resolved",
+            "base-ref: ${{ needs.scope.outputs.base_sha }}",
+            "head-ref: ${{ needs.scope.outputs.target_sha }}",
             "Merge gate / governance",
             "Merge gate / dependency review",
             "Merge gate / CodeQL",
@@ -216,7 +224,7 @@ def main() -> int:
             "Merge gate / Rust supply chain",
         ):
             if required_fragment not in text:
-                errors.append(f"merge gate missing required sub-gate: {required_fragment}")
+                errors.append(f"merge gate missing required recovery/sub-gate contract: {required_fragment}")
 
     dependabot = ROOT / ".github/dependabot.yml"
     if dependabot.is_file():
@@ -224,6 +232,17 @@ def main() -> int:
         for ecosystem in ("github-actions", "cargo"):
             if f"package-ecosystem: {ecosystem}" not in text:
                 errors.append(f"Dependabot missing ecosystem: {ecosystem}")
+
+    github_governance = ROOT / "docs/repository/GITHUB_GOVERNANCE.md"
+    if github_governance.is_file():
+        text = github_governance.read_text(encoding="utf-8")
+        for fragment in (
+            f"`{EXPECTED_REQUIRED_STATUS}` is the single stable required status check",
+            "manually dispatched only from the exact unchanged PR head branch",
+            "Dependabot maintains both GitHub Actions and Cargo dependencies",
+        ):
+            if fragment not in text:
+                errors.append(f"GitHub governance document missing current merge policy: {fragment}")
 
     template = ROOT / ".github/pull_request_template.md"
     if template.is_file():
