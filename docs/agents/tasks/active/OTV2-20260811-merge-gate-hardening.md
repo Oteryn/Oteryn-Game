@@ -4,18 +4,18 @@
 task_id: OTV2-20260811-merge-gate-hardening
 title: Harden PR merge gating and repository engineering drift controls
 mode: REPAIR
-status: validating
+status: blocked
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: ci/OTV2-20260811-merge-gate-hardening
 pr: 162
-base_sha: c94f331ec20849e8306875a2f88b87fa7e1974f9
+base_sha: f184930fac66fdf9ae0cc7f606d3502c17626a79
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT repository engineering agent
 created_at: 2026-08-11T10:30:00+02:00
-updated_at: 2026-08-11T11:20:00+02:00
+updated_at: 2026-08-11T11:28:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: Repository merge-authority transition plus exact-head Linux/Windows/security validation and independent review repair.
 owned_paths:
@@ -44,142 +44,119 @@ external_repositories: []
 
 ## Outcome
 
-Make one always-present `Merge gate / validate` check the protected-branch merge authority for pull requests, with governance, dependency review, CodeQL and path-proportional Rust validation composed behind it. Provide bounded exact-head dispatch recovery for a suppressed initial PR event, make path classification robust to file renames, remove stale workspace/bootstrap wording, add Cargo dependency maintenance and retire the completed one-off Rust cutover audit workflow.
+Replace the weak single-purpose required PR check with one stable `Merge gate / validate` context that composes governance, Dependency Review, CodeQL and path-proportional Rust Linux/Windows/policy/supply-chain checks. Repair stale repository-engineering documentation, add Cargo Dependabot, and retire completed/duplicated CI workflows.
 
-## Architecture and source of truth
+## Implemented scope
 
-- `PROVEN`: the live `Protect main` ruleset at task start required only `Agent governance / validate`.
-- `PROVEN`: Rust, CodeQL and Dependency Review validation existed separately but was not represented by the protected required context.
-- `PROVEN`: `main` already contains the canonical root Rust workspace, while `BUILD_TEST_MATRIX.md` and CODEOWNERS retained bootstrap/future-workspace wording.
-- `PROVEN`: `.github/dependabot.yml` covered GitHub Actions but not Cargo.
-- `DERIVED`: one stable aggregate required context avoids required-check deadlocks from path-proportional jobs while still failing unless every applicable sub-gate passes.
-- `DERIVED`: because the aggregate becomes the sole required context, it must retain a trusted exact-head dispatch recovery path equivalent in safety to the existing governance recovery path.
-- `PROVEN`: GitHub PR changed-file metadata may include a `previous_filename` for renamed files; scope classification must account for both source and destination paths so a rename cannot move a Rust-sensitive file out of a watched root and evade Rust validation.
+- Added `.github/workflows/merge-gate.yml` for every PR to `main`, without workflow-level path filters.
+- Added bounded `workflow_dispatch` recovery requiring an open PR number, exact full head SHA, dispatch from that unchanged head, same-repository/main-target validation and explicit validated base/head refs.
+- Added fail-closed aggregate validation and full Rust gates when the current or rename-source path is Rust/workspace-sensitive.
+- Changed retained machine policy to require `Merge gate / validate` after merge.
+- Extended `apply_github_settings.py` to verify the live required-status list exactly after policy application.
+- Extended repository policy validation for aggregate-gate invariants, exact-head recovery, rename-source classification and documentation alignment.
+- Added Cargo Dependabot.
+- Refreshed `BUILD_TEST_MATRIX.md`, `CODEOWNERS` and `GITHUB_GOVERNANCE.md` to current repository truth.
+- Removed standalone Dependency Review and the completed one-off Rust cutover terminal audit workflow.
+- Converted retained Rust/CodeQL workflows to post-merge/manual use to avoid duplicate PR execution once the aggregate gate is active.
+- Intentionally retained the old PR `Agent governance / validate` during this transition so the currently live ruleset can validate PR #162 before the new required context is applied.
 
-## Acceptance criteria
+No gameplay, protocol, persistence, content, Platform, production, deployment or cross-repository authority is changed.
 
-- [x] one PR workflow always emits `Merge gate / validate`;
-- [x] governance, dependency review and CodeQL are mandatory sub-gates;
-- [x] Rust Linux/Windows/supply-chain checks run when Rust/workspace-relevant paths change;
-- [x] repository policy requires only the stable aggregate merge-gate context;
-- [x] repository-policy validators prove declared/live required-status consistency;
-- [x] exact-head `workflow_dispatch` recovery requires an open PR number, unchanged full head SHA and dispatch ref resolving to that same head;
-- [x] Dependency Review receives explicit validated base/head refs for PR and recovery-dispatch modes;
-- [x] Rust/workspace scope classification includes both current/destination paths and rename-source `previous_filename` values;
-- [x] repository validator asserts that rename-source classification cannot silently disappear from the merge gate;
-- [x] canonical GitHub governance documentation names the aggregate required context and recovery path;
-- [x] Cargo Dependabot is enabled;
-- [x] stale workspace/test-matrix and CODEOWNERS wording is corrected;
-- [x] obsolete migration-only workflow is removed;
-- [ ] repair-cycle-3 exact-head full-diff self-review has no open material finding;
-- [ ] repair-cycle-3 exact-head GitHub Actions validation passes, including transition `Agent governance / validate` and new `Merge gate / validate`;
-- [ ] independent automatic review of the repair-cycle-3 exact head has no open material finding;
-- [ ] squash merge only after unchanged-head readiness.
+## Repair history
 
-## Excluded scope
+### Cycle 1
 
-- no gameplay/client/server runtime behavior;
-- no protocol, persistence or content semantics;
-- no production deployment, protected-environment approval or secret expansion;
-- no cross-repository writes;
-- no lowering of review, exact-head or branch-protection evidence requirements;
-- no cleanup of unrelated historical branches in this package.
+Independent review found and the task repaired:
 
-## Implementation / findings
+1. P1 — no exact-head manual recovery for the future sole required gate;
+2. P1 — incomplete authoritative task/recovery fields;
+3. P2 — stale canonical GitHub governance documentation.
 
-Initial implementation introduced the aggregate gate and the repository-engineering cleanup described above.
+### Cycle 2
 
-### Independent review repair cycle 1
+Independent review of `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` found and the task repaired:
 
-Independent review of the earlier candidate surfaced three valid findings:
+4. P1 — renamed Rust-sensitive files could evade scope classification because `previous_filename` was ignored.
 
-1. **P1 — missing dispatch recovery:** repaired by adding `workflow_dispatch` inputs for PR number and full expected head SHA. The scope job verifies that a manual dispatch ref resolves to that exact SHA, re-fetches the open same-repository PR targeting `main`, rejects head movement, and exports validated base/head revisions consumed by all downstream jobs. Dependency Review receives explicit `base-ref`/`head-ref` values so recovery mode does not depend on a `pull_request` event payload.
-2. **P1 — incomplete authoritative task record:** repaired by restoring all task-template metadata fields and explicit focused/component/E2E/exact-head/self-review/independent-review/closeout sections with pending values where final-head evidence cannot yet exist.
-3. **P2 — stale canonical GitHub governance:** repaired by updating `docs/repository/GITHUB_GOVERNANCE.md` to the aggregate required context, exact-head recovery semantics and Cargo Dependabot, and by extending the repository validator to assert this documentation remains aligned.
+The gate now classifies both `filename` and `previous_filename`.
 
-### Independent review repair cycle 2
+### Cycle 3
 
-Independent review of repaired head `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` surfaced one further valid P1:
+Exact-head governance on `2283d8a5f1d075d1c68f58221c554c26249ba3c5` proved a validator-only false positive: substring matching for `paths:` also matched the Python identifier `classification_paths:`. The task replaced it with a narrower anchored YAML regex. Merge-gate runtime behavior did not change in this cycle.
 
-4. **P1 — rename-source path could bypass Rust classification:** repaired by collecting both each changed entry's current/destination `filename` and any `previous_filename` into the Rust/workspace classification set. This preserves Rust validation when a file is renamed out of a watched root as well as when it is renamed into one. The repository-policy validator requires the `previous_filename` classification logic to remain present.
+Repair budget for this gate is now **3/3 exhausted**.
 
-### Validation repair cycle 3
+## Final candidate evidence before blocker
 
-Exact-head transition governance on candidate `2283d8a5f1d075d1c68f58221c554c26249ba3c5` correctly checked out the exact PR head and passed agent-governance validation, but repository-policy validation failed on its own overly broad static assertion. The validator used substring search for `paths:` and therefore misclassified the Python type annotation `classification_paths: list[str]` inside the workflow as a workflow-level YAML path filter.
+Candidate reviewed head: `af834e10605be7088df444d474d203c9fa3c43eb`.
 
-5. **Validator false positive — workflow-level path-filter detection:** repaired by replacing the substring search with an anchored multiline regular expression matching only four-space-indented YAML trigger keys `paths:` or `paths-ignore:`. No merge-gate runtime semantics, permissions, recovery behavior or classification policy changed in this cycle.
+- branch compare against `main@f184930fac66fdf9ae0cc7f606d3502c17626a79`: `behind_by=0`, exactly 13 intended repository-engineering paths;
+- full-diff self-review: PASS, PR comment `5251287815`;
+- transition `Agent governance / validate`: PASS, run `31477148834`, job `93733376330`;
+- aggregate Merge gate run `31477148862` was pending/queued when the independent final-head blocker arrived and is not merge-readiness evidence;
+- final independent review was explicitly requested on `af834e10605be7088df444d474d203c9fa3c43eb`.
 
-This is repair cycle `3/3` for the gate. No further repair cycle may be silently started: any new material final-head failure requires an exact blocker/new hypothesis decision under the anti-stall policy rather than another routine repair loop.
+## BLOCKER — independent final-head finding after repair budget exhaustion
 
-The existing `Agent governance / validate` pull-request workflow remains unchanged in this transition package so the currently live old ruleset can validate PR #162. It may be deduplicated only after the new required context has been applied and verified live on `main`.
+Independent review of exact candidate `af834e10605be7088df444d474d203c9fa3c43eb` produced a new material P2 on `tools/repository/validate_repository_policy.py`:
 
-## Validation
+> the static validator rejects `paths` / `paths-ignore` only for one exact indentation/layout, while valid YAML can represent the `pull_request` mapping with different indentation/formatting; a future path-filtered merge gate could therefore escape this guard.
 
-### Focused
+Thread: `PRRT_kwDOTuGrds6YLEL3`.
 
-- transition `Agent governance / validate` on candidate `2283d8a5f1d075d1c68f58221c554c26249ba3c5`: exact checkout + agent governance PASS; repository-policy validator failed only on the proven `classification_paths:` false positive, run `31476895797`, job `93732558762`; superseded by cycle-3 validator repair;
-- merge-gate scope and older CI results are historical only and cannot prove the final repaired head;
-- repair-cycle-3 focused validation: pending exact final candidate head.
+**Classification: VALID MATERIAL GOVERNANCE FINDING.**
 
-### Component/integration
+The current `merge-gate.yml` itself has no path filter, so this is not evidence of a current runtime bypass. It is evidence that the repository's anti-regression validator is insufficiently representation-independent for the future sole merge-authority workflow.
 
-- command/run: repository configuration apply/verify is post-merge by design and must be verified on the resulting `main` merge revision;
-- result: pending post-merge configuration workflow; no product component integration applies.
+Repository anti-stall policy allows at most three repair cycles for one gate. The task has consumed `3/3`. A fourth routine patch would violate the governing execution budget and is therefore not authorized by this task.
 
-### E2E
+PR #162 was converted back to **draft** and remains unmerged. Historical material review threads remain unresolved intentionally.
 
-- scenario: `NOT_APPLICABLE` — repository CI/governance transition only; no executable game journey changes;
-- result: `NOT_APPLICABLE`.
+## Acceptance status
 
-### Exact-head CI
+- [x] aggregate merge gate implemented;
+- [x] exact-head recovery implemented;
+- [x] dependency/security/Rust sub-gates composed;
+- [x] rename-source classification implemented;
+- [x] Cargo Dependabot added;
+- [x] stale developer/repository documentation repaired;
+- [x] old/duplicate CI workflow cleanup implemented;
+- [x] final candidate self-review PASS;
+- [x] transition governance PASS on final reviewed candidate;
+- [ ] independent final-head review clean — **BLOCKED by P2 thread `PRRT_kwDOTuGrds6YLEL3`**;
+- [ ] aggregate final-head CI PASS — not sufficient/terminal while blocker exists;
+- [ ] PR merge — prohibited while blocker exists;
+- [ ] post-merge live ruleset verification — not applicable until merge;
+- [ ] task archive/ownership release — prohibited until terminal delivery or explicit abandonment/supersession.
 
-- final head: pending repair-cycle-3 checkpoint commit;
-- trigger source: `pull_request/synchronize`;
-- workflow/run/job: fresh transition Agent governance and Merge gate runs pending final candidate head;
-- runner assignment: pending final candidate head;
-- classification: pending;
-- result: pending.
+## Required next decision
 
-## Self-review
+One of the following must occur before work can proceed:
 
-- exact head: `2283d8a5f1d075d1c68f58221c554c26249ba3c5` PASS, superseded only by cycle-3 validator false-positive repair;
-- method/reviewer: implementing/coordinating agent full-diff review;
-- material findings: no merge-gate logic finding in cycle 3; static validator false positive repaired without changing gate semantics;
-- verdict: repair-cycle-3 exact-head self-review pending.
+1. the owner explicitly authorizes a bounded successor repair package / renewed repair budget for the representation-independent YAML path-filter validator; or
+2. the owner explicitly abandons/supersedes this merge-gate transition.
 
-## Independent review
-
-- required: `YES` — changing the sole protected merge-authority path has unusual repository-wide blast radius and common-mode-error risk;
-- exact head: review of `6244f2a134a791d53ee9ebcd39cab00cf4e3d8db` found one P1; review of `2283d8a5f1d075d1c68f58221c554c26249ba3c5` was requested before the validator-only cycle-3 repair and is superseded for merge readiness;
-- method/auditor: automatic `chatgpt-codex-connector` independent PR review;
-- material findings: cycle 1 fixed dispatch recovery/task recoverability/canonical governance alignment; cycle 2 fixed rename-source scope bypass; cycle 3 changes only the static validator false-positive pattern;
-- verdict: pending independent review of repair-cycle-3 exact head.
-
-## PR and closeout
-
-- changed-file review: repair-cycle-3 full diff pending final candidate head;
-- unresolved review threads: historical/material threads pending final repaired-head evidence and resolution;
-- related/superseded PRs: PR #161 was non-overlapping and merged before branch reconciliation;
-- protected auto-merge: pending;
-- merge commit/result: pending;
-- ownership release: pending archive after terminal merge/configuration verification.
+A successor repair must not silently reuse this task as a fourth repair cycle. It must preserve PR #162 evidence, address the exact independent finding, receive new exact-head CI and independent review, and only then resume merge readiness.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Exact-head governance exposed a false positive in repository-policy validation because the validator matched Python classification_paths as YAML paths; cycle 3 narrows the assertion to real workflow-level trigger keys without changing merge-gate behavior.
-status: validating
+last_progress: Final independent review of candidate af834e10605be7088df444d474d203c9fa3c43eb found a valid P2 in representation-dependent path-filter validation after the task exhausted its 3/3 repair budget. PR #162 was converted to draft and the finding was recorded without a prohibited fourth patch.
+status: blocked
 branch: ci/OTV2-20260811-merge-gate-hardening
 head_sha: null
 pr: 162
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request/synchronize
-ci_check_generation: repair-cycle-3-final-head-pending
+ci_check_generation: blocked-after-final-independent-review
 ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_run_ids:
+  - 31477148834
+  - 31477148862
+ci_job_ids:
+  - 93733376330
+runner_assignment_state: not_material_while_blocked
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -187,7 +164,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
-blocker: null
-next_action: Freeze the repair-cycle-3 candidate head, perform complete exact-head self-review, then verify fresh transition governance, aggregate merge-gate CI and independent review on that unchanged head; do not start a fourth repair cycle.
+owner_action_required: Explicitly authorize a bounded successor repair package / renewed repair budget, or explicitly abandon/supersede the transition.
+blocker: Independent final-head P2 thread PRRT_kwDOTuGrds6YLEL3; representation-dependent static detection of pull_request paths/paths-ignore can miss valid YAML forms; repair budget 3/3 exhausted.
+next_action: Do not patch or merge PR #162. Await explicit owner authorization for a successor repair package or an explicit abandon/supersede decision.
 ```
