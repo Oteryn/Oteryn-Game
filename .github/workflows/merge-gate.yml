@@ -161,7 +161,7 @@ jobs:
               'deny.toml', 'workspace-boundaries.toml',
               '.github/workflows/rust.yml', '.github/workflows/merge-gate.yml',
           }
-          prefixes = ('apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')
+          prefixes = ('.cargo/', 'apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')
           rust = any(path in exact or path.startswith(prefixes) for path in classification_paths)
 
           print(f'Validated PR #{number_text} exact head {head_sha} against base {base_sha}.')
