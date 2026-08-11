@@ -14,6 +14,21 @@ POLICY_PATH = ROOT / ".github/repository-policy.json"
 USES_LINE = re.compile(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)", re.MULTILINE)
 CANONICAL_MPL_2_0_GIT_BLOB_SHA = "d0a1fa1482eea82e19510e7920cbe3a03e41f691"
 EXPECTED_REQUIRED_STATUS = "Merge gate / validate"
+EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: 'Open PR number whose exact head should be recovered'
+        required: true
+        type: string
+      expected_head_sha:
+        description: 'Exact 40-character PR head SHA; dispatch the workflow from that PR head branch'
+        required: true
+        type: string
+"""
 
 REQUIRED_FILES = [
     ".github/CODEOWNERS",
@@ -57,6 +72,37 @@ def required_status_contexts(ruleset: dict) -> list[str]:
                 if isinstance(check, dict) and isinstance(check.get("context"), str)
             ]
     return []
+
+
+def top_level_yaml_mapping_block(text: str, key: str) -> str | None:
+    """Return one canonical top-level mapping block or fail closed.
+
+    This intentionally does not accept arbitrary equivalent YAML spellings. Repository
+    governance keeps the security-sensitive trigger in one canonical textual form so
+    inline mappings, alternate indentation, duplicate keys and added path filters all
+    fail validation instead of depending on a heuristic YAML interpretation.
+    """
+
+    lines = text.splitlines(keepends=True)
+    key_line = re.compile(rf"^{re.escape(key)}:\s*(?:#.*)?(?:\r?\n)?$")
+    starts = [index for index, line in enumerate(lines) if key_line.fullmatch(line)]
+    if len(starts) != 1:
+        return None
+
+    start = starts[0]
+    end = len(lines)
+    for index in range(start + 1, len(lines)):
+        line = lines[index]
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if not line[0].isspace():
+            end = index
+            break
+
+    block = "".join(lines[start:end]).replace("\r\n", "\n")
+    if not block.endswith("\n"):
+        block += "\n"
+    return block
 
 
 def main() -> int:
@@ -200,12 +246,12 @@ def main() -> int:
     merge_gate = ROOT / ".github/workflows/merge-gate.yml"
     if merge_gate.is_file():
         text = merge_gate.read_text(encoding="utf-8")
-        if "pull_request:" not in text:
-            errors.append("merge gate must run on pull_request")
-        if "workflow_dispatch:" not in text:
-            errors.append("merge gate must provide exact-head workflow_dispatch recovery")
-        if re.search(r"(?m)^    paths(?:-ignore)?:", text):
-            errors.append("merge gate must not use workflow-level path filters")
+        trigger_block = top_level_yaml_mapping_block(text, "on")
+        if trigger_block != EXPECTED_MERGE_GATE_TRIGGER_BLOCK:
+            errors.append(
+                "merge gate trigger block must exactly match the canonical always-on "
+                "pull_request plus exact-head workflow_dispatch contract"
+            )
         if "name: Merge gate / validate" not in text:
             errors.append("merge gate must emit the stable Merge gate / validate job")
         for required_fragment in (
