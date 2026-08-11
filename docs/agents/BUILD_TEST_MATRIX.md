@@ -1,6 +1,6 @@
 # Build and test matrix
 
-Status: bootstrap; replace assumptions with discovered workspace commands as code is introduced.
+Status: active repository baseline; update this matrix whenever executable workspace or merge-gate behavior changes.
 
 Canonical native E2E architecture: `docs/architecture/ADR-0007-native-end-to-end-test-platform.md` (`QA-E2E-01`).
 
@@ -9,34 +9,74 @@ Canonical native E2E architecture: `docs/architecture/ADR-0007-native-end-to-end
 - Validate proportionally to changed paths and risk.
 - Cheap focused checks run during implementation; heavy checks run at coherent package/final head.
 - Exact-head required checks cannot be replaced by historical or parent results.
-- Do not claim commands exist until their manifests/workflows are present.
+- `Merge gate / validate` is the stable protected-branch PR check and may succeed only when every applicable sub-gate succeeds.
+- Rust/workspace validation is path-proportional but cannot be bypassed by changing CI/workspace policy itself.
 - Environment startup alone is not successful E2E.
 - Hidden retry-until-green is forbidden; every physical attempt and cleanup outcome remains visible.
 - A headless system scenario does not prove native-client presentation, and an instrumented client does not prove the exact production binary.
 
-## Current repository checks
+## Current pull-request merge gate
 
-| Change | Focused validation | Exact-head validation |
+`.github/workflows/merge-gate.yml` runs on every pull request to `main` without workflow-level path filters.
+
+Always-required sub-gates:
+
+- PR metadata, agent-governance and repository-policy validation;
+- GitHub Dependency Review with `high` severity as the failure threshold;
+- CodeQL for repository Python and GitHub Actions code;
+- final aggregate `Merge gate / validate`.
+
+When Rust/workspace-relevant paths change, the same merge gate additionally requires:
+
+- Rust policy/metadata validation;
+- Linux workspace build, strict Clippy, tests and synthetic harness;
+- Windows production-client build, strict Clippy, smoke and synthetic harness;
+- `cargo-deny` advisory/license/ban/source validation.
+
+The protected `main` ruleset requires only the stable aggregate `Merge gate / validate` context. Individual sub-gates are intentionally composed behind it so path-proportional jobs may be skipped without creating missing required-status deadlocks.
+
+## Current focused validation
+
+| Change | Focused validation | Exact-head PR validation |
 |---|---|---|
-| Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` | `agent-governance` workflow |
-| Architecture/contracts only | governance validator plus link/JSON checks | documentation/governance workflow |
-| GitHub workflow | syntax/review of permissions/triggers | workflow run on exact head |
+| Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` | `Merge gate / governance` → `Merge gate / validate` |
+| Repository/GitHub policy | `python tools/repository/validate_repository_policy.py` | governance + dependency review + CodeQL + applicable Rust jobs → aggregate gate |
+| Architecture/contracts only | governance validator plus applicable link/JSON/schema checks | always-required merge-gate subchecks; runtime E2E may be `NOT_APPLICABLE` with reason |
+| Rust/workspace/client code | package-focused tests while editing | full path-triggered Rust policy/Linux/Windows/supply-chain merge-gate set |
+| GitHub workflow affecting Rust validation | repository-policy validation plus workflow review | full Rust merge-gate set because merge-gate/rust workflow paths are Rust-validation-sensitive |
 
-## Planned Rust workspace checks
+## Current Rust workspace commands
 
-Once a root Cargo workspace exists, update this matrix with exact commands. Expected baseline, only after discovery:
+The canonical root Cargo workspace exists and is enforced by `Cargo.toml`, `Cargo.lock`, `rust-toolchain.toml`, `deny.toml` and `workspace-boundaries.toml`.
 
-- `cargo fmt --all -- --check`;
-- product-realistic client, server and Studio target/feature Clippy builds with `-D warnings`;
-- supplemental `--all-features` checks only where they do not create impossible mutually exclusive configurations;
-- `cargo test --workspace` plus focused package tests and target-specific integration tests;
-- `cargo metadata --locked` validation against the retained machine-readable workspace-boundary contract;
-- dependency/advisory/license checks selected by accepted tooling;
+Current exact baseline uses Rust `1.94.0` and includes:
+
+- `cargo +1.94.0 metadata --locked --format-version 1`;
+- `cargo +1.94.0 fmt --all --check`;
+- `cargo +1.94.0 run --locked -p oteryn-architecture-check -- workspace .`;
+- production dependency-closure negative checks for forbidden pre-native/runtime packages;
+- `cargo +1.94.0 build --locked --workspace --all-targets` on Linux;
+- `cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings` on Linux;
+- `cargo +1.94.0 test --locked --workspace`;
+- `cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness`;
+- Windows release build for `oteryn-client` on `x86_64-pc-windows-msvc`;
+- Windows strict client Clippy and `--smoke` launch;
+- `cargo-deny check --all-features` through the pinned cargo-deny action.
+
+Post-merge/manual `.github/workflows/rust.yml` preserves the same current workspace baseline independently of the PR aggregate gate.
+
+## Required additions as owning layers appear
+
+Do not create speculative tests for nonexistent runtime layers. Add these when their owning implementation exists:
+
 - parser property/fuzz tests for untrusted protocol/content inputs;
+- canonical/golden protocol byte fixtures and malformed/adversarial corpora;
 - deterministic simulation/replay tests;
-- platform-specific client build/runtime tests on exact named target triples;
+- server target/feature builds and strict Clippy;
+- persistence migration, concurrency, rollback and crash-recovery tests;
 - shared foundation failure-scenario tests, including time/clock, dependency loss, stale generation and overload cases;
-- multichannel integration, crash-recovery and soak scenarios.
+- multichannel integration, crash-recovery and soak scenarios;
+- sanitizer/Miri or equivalent targeted undefined-behavior checks where they provide evidence beyond the workspace-wide `unsafe_code = "forbid"` baseline.
 
 ## `QA-E2E-01` execution tiers
 
@@ -88,4 +128,4 @@ A repaired runner or environment requires a new population. It does not rewrite 
 
 ## Documentation-only rule
 
-A documentation-only final commit does not require a nonexistent Rust build. It does require the governance/document validation selected by current workflows and an accurate `NOT_APPLICABLE` reason for runtime E2E.
+A documentation-only final commit does not automatically require Rust build/test jobs when no Rust/workspace validation path is affected. It always requires the always-on merge-gate governance, dependency-review and CodeQL layers plus an accurate `NOT_APPLICABLE` reason for runtime E2E when runtime behavior is not changed.
