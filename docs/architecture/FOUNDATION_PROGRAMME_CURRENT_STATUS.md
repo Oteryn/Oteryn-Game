@@ -1,7 +1,7 @@
 # Oteryn v2 Foundation Programme — Current Status
 
 - Status: Canonical current execution-status overlay
-- Date: 2026-08-11
+- Date: 2026-08-12
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Applies to: accepted foundation progression and next ordered architecture gates
 - FND-04 lifecycle closeout merge: `adb0882a5ddbe42944fe955f5effb78fd5495422`
@@ -9,7 +9,7 @@
 - ANL-01 delivery merge: `af2fa495c1126080ffc1d0717b7d0ef54f6b29ca`
 - Dual-transport architecture closeout merge: `05544969baf58c3a40354f366438d759bfd159e5`
 - Platform entitlement producer-remediation merge: `blakinio/Oteryn-Platform@afaa6d1d8340e44b1152b62d6d27e5fd1649804a`
-- Current phase: `foundation architecture accepted/lifecycle-closed where delivered + runtime largely NOT_STARTED / GAME-VISION minimum, GAME-CHAR Stage A and first Reference target accepted; GAME-CHAR Stage B, GAME-CHANNEL and bounded DUR-02 discovery next`
+- Current phase: `foundation architecture accepted/lifecycle-closed where delivered + runtime largely NOT_STARTED / GAME-VISION and GAME-CHAR semantic architecture accepted; profile-neutral DUR-02 schema architecture, GAME-CHANNEL, GAME-ITEM and SIM/ruleset evidence are next paper-only gates`
 
 ## 1. Authority of this overlay
 
@@ -37,10 +37,10 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 | `ANL-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | event/audit foundation accepted; no runtime event collector/outbox/broker/warehouse implementation |
 | `GAME-VISION-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | minimum product-vision baseline and the immutable first Reference target are accepted; target delivery PR #181 final head `2a07643653d6d56a94ada89caf79005fce09e58a` passed self-review `4910439614`, Agent Governance `31532701302`, Dependency Review `31532701303` and CodeQL `31532701319`, then squash-merged as `b57b382cb929b2c8a20d5c81197e933b0526764f`; no runtime authority |
 | `GAME-CHANNEL-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | social/economic/PvP/UX channel policy required before multichannel becomes a product feature |
-| `GAME-CHAR-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Stage A baseline-neutral semantics are owner-accepted; the exact first Reference target prerequisite is now satisfied, so Stage B is unblocked for paper-only evidence reconciliation but remains unaccepted; final character-bearing DUR-02 schema still waits for full GAME-CHAR acceptance; no runtime authority |
+| `GAME-CHAR-01` | `ACCEPTED` | `OPEN` | `NOT_STARTED` | Stage A plus the owner-accepted Stage-B semantic closure in `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` are binding; exact formulas/unknown target values remain per-behavior parity gates; this owner-baseline delivery is active and runtime authority is NONE |
 | `GAME-ITEM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | blocks final DUR-03 item transaction semantics; Reference-sensitive item work uses the accepted 2026-07-28 target unless explicitly superseded/scoped |
-| `SIM-DETERMINISM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | required before broad combat/AI formula freeze |
-| `DUR-02` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | bounded persistence discovery may consume DUR-01 + ANL-01 + accepted GAME-CHAR Stage-A invariants and use the selected Reference target only as question/compatibility context; final character-bearing schema still requires accepted Stage B/full GAME-CHAR closure |
+| `SIM-DETERMINISM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | required before broad combat/AI formula freeze and before `PARITY_CONFIRMED` claims for unresolved Character arithmetic delegated from GAME-CHAR |
+| `DUR-02` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | accepted GAME-CHAR semantics unblock final paper-only **profile-neutral core** Character schema architecture plus typed/versioned profile-extension boundaries; physical DDL/migrations and profile-specific schema completeness remain separately unauthorized/gated |
 | `DUR-03` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | waits for accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics |
 | `DUR-04` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | content/world/scripting architecture; minimum headless schema/validator/compiler/bundle/loader precedes full Studio |
 | `PROD-ENTITLEMENTS-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Platform producer security prerequisite #944 is satisfied by PR #968 merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`; Oteryn-v2 consumer/enforcement contract remains unaccepted and Premium/VIP/game-consumed entitlement activation remains unauthorized |
@@ -59,9 +59,11 @@ DUR-01 remains accepted/lifecycle-closed: UUIDv7 native durability uses PostgreS
 
 `GAME-VISION-01` minimum product semantics are accepted in `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`. The accepted loop is player-goal driven across preparation, risk/activity, committed progress/value and recovery/planning, with persistent character/equipment/exploration/social/prestige horizons. Reference uses mechanical source/sink parity rather than historical market-state parity, conservation precedes tuning, and intentional differences remain explicit/versioned/measurable. Success is measured by Reference correctness, interaction quality, progress/value trust, core-loop health, economy health and product/operational health. Numeric targets remain milestone-owned.
 
-`GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` now fixes the first Reference external behavior cut to **Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary**. The target is immutable; later Global changes are candidate evidence for a later explicit Reference revision rather than silent mutation. Target selection remains separate from evidence completeness: individual mechanics may be `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or `DECLARED_DIFFERENCE`. Official public sources are primary but not assumed exhaustive; controlled black-box observation may provide target evidence; community sources are corroborative/discovery inputs; Canary/crystalserver/other OTS remain hypothesis/inventory inputs rather than proof of Global behavior. Patch-note/search absence is not evidence of no change. Security/integrity/legal/provenance constraints override defect compatibility.
+`GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` fixes the first Reference external behavior cut to **Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary**. The target is immutable; later Global changes are candidate evidence for a later explicit Reference revision rather than silent mutation. Target selection remains separate from evidence completeness: individual mechanics may be `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or `DECLARED_DIFFERENCE`. Official public sources are primary but not assumed exhaustive; controlled black-box observation may provide target evidence; community sources are corroborative/discovery inputs; Canary/crystalserver/other OTS remain hypothesis/inventory inputs rather than proof of Global behavior. Patch-note/search absence is not evidence of no change. Security/integrity/legal/provenance constraints override defect compatibility.
 
-`GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` is binding for the baseline-neutral partial scope only. It freezes the bounded Character aggregate, minimal ACTIVE/DELETION_SCHEDULED/RETIRED lifecycle, atomic idempotent creation, a durable Character revision/fence distinct from FND-04 session/lease fencing, conservative quiescence for terminal retirement/world/account transfer, progression-fact/derived-value separation, idempotent death-consequence boundary, explicit ruleset/profile migration, ruleset-owned vocation/build state, opt-in offline progression, Character Authority naming/quota authority boundaries, transfer-as-capability, and the exact limits on what bounded DUR-02 discovery may consume before Stage B. It does not select any Reference formula or physical schema and does not close the overall GAME-CHAR gate.
+`GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` remains binding for baseline-neutral Character ownership/lifecycle/revision/migration safety. `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` now accepts the Reference-sensitive semantic closure layered on Stage A: global logical naming namespace with versioned canonical-comparison policy; versioned lifecycle/quota policy; versioned creation/starter context; five Reference vocation families/promoted forms plus pre-vocation state and eight skill categories; formula-neutral progression ownership; promotion achievement versus entitlement-derived activation; profile-scoped death/protection; character-owned offline-training counter semantics; modern character-specific progression ownership scope; and explicit hard parity gates for every unresolved `UNKNOWN/CONFLICT` target rule. Architecture acceptance does **not** imply `PARITY_CONFIRMED`, physical schema, runtime implementation or all-profile schema completeness.
+
+Accepted GAME-CHAR semantics allow `DUR-02` to design the final **paper-only profile-neutral core** Character schema architecture with explicit typed/versioned extension and migration boundaries. Any profile-specific durable Character facts remain separately gated before that profile's schema may be called complete. An untyped/generic miscellaneous-state bag is not an accepted substitute for semantic ownership.
 
 ## 4. Accepted ANL-01 foundation
 
@@ -120,7 +122,7 @@ Before external alpha, operator/GM mutations must use typed, RBAC-controlled, id
 
 ## 7. Runtime/implementation status
 
-Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01/GAME-VISION-01, the selected first Reference target and the partial GAME-CHAR Stage-A architecture do **not** authorize:
+Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01/GAME-VISION-01 and GAME-CHAR architecture do **not** authorize:
 
 - TCP or QUIC gameplay adapter/listener implementation;
 - any currently functional gameplay transport client mode;
@@ -128,7 +130,9 @@ Accepted FND/DUR-01/ANL-01/NET-TRANSPORT-01/GAME-VISION-01, the selected first R
 - runtime event collector implementation;
 - PostgreSQL table/outbox/checkpoint/migration implementation;
 - transaction isolation/locking/retry/RPO/RTO implementation;
-- character schema/progression/death/offline-training implementation before accepted Stage B/full GAME-CHAR closure;
+- Character schema/progression/death/offline-training runtime implementation merely because GAME-CHAR architecture is accepted;
+- profile-specific Character persistence without its owning profile semantics;
+- any unresolved `UNKNOWN/CONFLICT` Character rule as Reference behavior;
 - item/currency transaction implementation;
 - broad gameplay/content implementation from the product baseline alone;
 - broker/stream/warehouse/lake/dashboard selection or deployment;
@@ -143,19 +147,18 @@ The native client therefore remains legitimately pre-native-protocol until a sep
 
 ## 8. Next ordered architecture and proof work
 
-The immediate programme is refined now that the first Reference target is owner-accepted:
+The immediate programme is refined now that GAME-CHAR semantic architecture is owner-accepted:
 
-1. `GAME-CHAR-01` Stage B — perform paper-only evidence reconciliation against the accepted 2026-07-28 target for naming/creation/progression/vocation/death/offline-training/quota semantics; `UNKNOWN` remains fail-closed rather than guessed.
-2. `GAME-CHANNEL-01` — channel social/economic/PvP/UX policy may proceed in parallel before multichannel becomes a product feature.
-3. `DUR-02 — Persistence v1` — bounded discovery may consume accepted DUR-01 + ANL-01 + GAME-CHAR Stage-A invariants and the Reference target as compatibility context; final character-bearing schema waits for accepted Stage B/full GAME-CHAR closure.
-4. Build the versioned Reference evidence/parity manifest as the owning parity/evidence tooling contract is defined; target selection does not imply evidence completeness.
-5. `GAME-ITEM-01` — accept item model/equipment/container/transform semantics against the same first Reference target where parity applies.
-6. `DUR-03 — Item Transaction and Anti-Duplication Invariants` — consumes accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics.
-7. `DUR-04` minimum headless content path — schema -> validator -> deterministic compiler -> bundle -> loader; full Studio remains downstream.
-8. `SIM-DETERMINISM-01` — freeze authoritative arithmetic/replay requirements before broad combat/AI implementation.
-9. `NET-TRANSPORT-02` (or an equivalent bounded successor) — register QUIC transport profile, reconcile FND-04 fresh/recovery transport bindings and prove FND-02 ordered-lane/snapshot semantics before functional player QUIC admission.
-10. Implement the umbrella `VSL-01` as ordered real-boundary slices: admission, movement, combat, persistence, recovery, then multichannel.
-11. Establish minimal admin/security/SRE readiness before external alpha.
+1. `DUR-02 — Persistence v1` — prepare the final **paper-only profile-neutral core Character schema architecture** from accepted DUR-01 + ANL-01 + GAME-CHAR semantics, including explicit typed/versioned profile-extension and migration boundaries; do not implement DDL/migrations or encode unresolved Reference values.
+2. `GAME-CHANNEL-01` — channel social/economic/PvP/UX policy may proceed in parallel before multichannel becomes a product feature and before profile-specific PvP Character schema completeness is claimed.
+3. Build the versioned Reference evidence/parity manifest as the owning parity/evidence tooling contract is defined; GAME-CHAR `UNKNOWN/CONFLICT` rules remain fail-closed until evidenced or explicitly declared different.
+4. `GAME-ITEM-01` — accept item model/equipment/container/transform semantics against the same first Reference target where parity applies.
+5. `DUR-03 — Item Transaction and Anti-Duplication Invariants` — consumes accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics.
+6. `DUR-04` minimum headless content path — schema -> validator -> deterministic compiler -> bundle -> loader; full Studio remains downstream.
+7. `SIM-DETERMINISM-01` — freeze authoritative arithmetic/replay requirements and deterministic fixtures before broad combat/AI implementation and before unresolved Character arithmetic may be `PARITY_CONFIRMED`.
+8. `NET-TRANSPORT-02` (or an equivalent bounded successor) — register QUIC transport profile, reconcile FND-04 fresh/recovery transport bindings and prove FND-02 ordered-lane/snapshot semantics before functional player QUIC admission.
+9. Implement the umbrella `VSL-01` as ordered real-boundary slices: admission, movement, combat, persistence, recovery, then multichannel.
+10. Establish minimal admin/security/SRE readiness before external alpha.
 
 `PROD-ENTITLEMENTS-01` is no longer waiting on Platform issue #944: its producer-side security prerequisite is satisfied by Oteryn-Platform PR #968 / merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`. It remains independently deferred and blocks only game-consumed entitlement implementation/activation until the Oteryn-v2 consumer/enforcement contract and cross-repository rollout proof are accepted.
 
@@ -205,20 +208,21 @@ first Reference target
 -> immutable target; later Global changes require explicit later Reference revision
 -> evidence gaps remain PROVEN/OBSERVED/DERIVED/UNKNOWN/CONFLICT/DECLARED_DIFFERENCE rather than guessed
 
-GAME-CHAR-01 Stage A
--> OWNER-ACCEPTED partial baseline
--> bounded aggregate/lifecycle/revision/migration invariants are binding
-
-GAME-CHAR-01 overall
--> PROPOSED / PLANNED / NOT_STARTED
--> Stage B UNBLOCKED for paper-only evidence reconciliation, still NOT ACCEPTED
+GAME-CHAR-01
+-> ACCEPTED architecture
+-> owner-accepted Stage A + Stage B semantic closure
+-> delivery OPEN until owner-baseline lifecycle closeout
+-> implementation NOT_STARTED
+-> exact unresolved target behavior remains hard parity-gated
 
 DUR-02
--> bounded discovery may consume Stage-A invariants and use selected target as compatibility context
--> final character-bearing schema waits for accepted Stage B/full GAME-CHAR closure
+-> may proceed to paper-only profile-neutral core Character schema architecture after GAME-CHAR lifecycle closeout
+-> typed/versioned profile extensions required
+-> physical DDL/migrations NOT_AUTHORIZED
+-> no all-profile completeness claim
 
 GAME-CHANNEL-01 + SIM-DETERMINISM-01
--> still shape multichannel/simulation before their broad implementation scopes
+-> still shape profile-specific PvP/multichannel and exact arithmetic before their broad implementation scopes
 
 DUR-03
 -> waits for accepted DUR-02 + GAME-ITEM-01

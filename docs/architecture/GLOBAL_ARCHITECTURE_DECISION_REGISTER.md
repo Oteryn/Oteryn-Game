@@ -1,7 +1,7 @@
 # Oteryn v2 Global Architecture Decision Register
 
 - Status: Active coordination register
-- Date: 2026-08-11
+- Date: 2026-08-12
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Canonical foundation programme: `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`
 - Current execution status: `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`
@@ -51,7 +51,8 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | Minimum cross-boundary foundation identifier contract | `ACCEPTED` | `FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md`, merge `2c584543cd1e3758958755478a6cc6ed3d39a8a9` |
 | Minimum GAME-VISION product contract | `ACCEPTED` | `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md` plus the seven earlier owner baselines |
 | First immutable Reference behavior cut: Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance boundary | `ACCEPTED` | `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` |
-| Baseline-neutral GAME-CHAR Stage-A semantics (partial scope only; overall GAME-CHAR remains unaccepted) | `ACCEPTED` | `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` |
+| Baseline-neutral GAME-CHAR Stage-A semantics | `ACCEPTED` | `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` |
+| GAME-CHAR semantic architecture closure: Stage A + Reference-sensitive Stage B ownership/versioning/migration envelope, with unresolved per-behavior parity gates retained | `ACCEPTED` | `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` |
 
 ## Progressive execution policy
 
@@ -63,9 +64,10 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - `GAME-VISION-01` minimum product-vision semantics are accepted in `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`: Reference-first/hybrid tracking, product promise, reliability/UX-first Evolved ordering, PvP-secondary, solo-viable/party-rewarded, Reference parity precedence, accepted core/session/long-term loop, Reference-rule-first economy/scarcity and category-level success evidence form the minimum product direction.
 - `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` fixes the first Reference target to Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance boundary. The target is immutable; later Global changes require explicit later Reference-revision promotion. Target selection is separate from evidence completeness, which remains classified as `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or `DECLARED_DIFFERENCE`.
 - Official public sources are primary Reference evidence but not assumed exhaustive; controlled black-box observation may provide target evidence; community documentation remains corroborative/discovery input; Canary/crystalserver/other OTS are hypotheses/inventory only and never proof of Global behavior or production authority.
-- `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` remains binding for the baseline-neutral partial character scope. The overall `GAME-CHAR-01` gate remains `PROPOSED / PLANNED / NOT_STARTED` because Stage B is not accepted.
-- The exact-target prerequisite for GAME-CHAR Stage B is now satisfied. Stage B is unblocked for paper-only evidence reconciliation against the accepted 2026-07-28 target but remains fail-closed on `UNKNOWN`/`CONFLICT` mechanics rather than guessing.
-- `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel. Before Stage-B acceptance, DUR-02 may consume Stage-A invariants and use the selected target only as question/compatibility context; persistence must not let schema convenience choose gameplay semantics.
+- `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` remains binding for baseline-neutral Character ownership/lifecycle/revision/migration safety. `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` accepts the Reference-sensitive semantic closure needed for safe durability architecture. Overall `GAME-CHAR-01` is therefore architecture-accepted while implementation remains `NOT_STARTED` and runtime authority remains NONE.
+- GAME-CHAR acceptance does **not** mean complete July-28 behavior knowledge or `PARITY_CONFIRMED`. Every unresolved `UNKNOWN/CONFLICT` naming/lifecycle/content/arithmetic/promotion/PvP/offline-training/profile rule remains a hard per-behavior parity gate that cannot be filled from current Global, Canary, crystalserver or implementation convenience.
+- `DUR-02` may now proceed to final **paper-only profile-neutral core Character schema architecture** plus typed/versioned extension/migration boundaries. It may not implement PostgreSQL DDL/migrations, claim one schema complete for all future profiles, or use an untyped generic state bag to defer ownership.
+- `GAME-CHANNEL-01` may proceed in parallel. PvP/world-profile-specific durable Character facts remain separately gated before that profile's schema may be called complete.
 - ADR-0012 fixes native Character Authority versus Platform lifecycle/orchestration ownership without authorizing runtime or persistence implementation.
 - ADR-0013 removes Platform database migration from the native gameplay critical path while preserving PostgreSQL for native game persistence and all ADR-0004 ownership/least-privilege invariants.
 - ADR-0014 accepts TCP-default/future-QUIC dual transport only as architecture direction; ADR-0016 keeps every gameplay transport runtime mode unavailable until implemented and proven, and ADR-0015 preserves ADR-0009's one-process GameNode identity while leaving only internal decomposition and genuinely distinct adjacent-service placement evidence-driven.
@@ -156,13 +158,14 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 ### `DUR-02` — Persistence v1
 
 - Status: `BLOCKS_DURABLE_GAMEPLAY`.
-- Bounded discovery may proceed from accepted DUR-01 + ANL-01 + GAME-CHAR Stage-A invariants and may use the selected 2026-07-28 target as compatibility/evidence context, but final character-bearing schema still waits for accepted GAME-CHAR Stage B/full `GAME-CHAR-01` closure.
-- Freeze schema and migration ownership only after the owning gameplay semantics are accepted.
-- Define character revisions/fencing, lease schema, checkpoint boundaries and maximum accepted progress loss.
+- Accepted GAME-CHAR semantics now allow the final **paper-only profile-neutral core Character schema architecture** to be designed from DUR-01 + ANL-01 + GAME-CHAR, with explicit typed/versioned profile-extension and migration boundaries.
+- Freeze physical schema and migration ownership only after the owning semantic decision for each represented fact is accepted; profile-specific facts remain gated by their profile/world-policy contract.
+- Define Character revisions/fencing, lease schema, checkpoint boundaries and maximum accepted progress loss.
 - Define isolation, locking, retries, idempotency, transactional outbox publication/recovery and critical audit/journal scope.
 - Keep best-effort gameplay telemetry separate from atomic item/currency/security evidence.
 - Define backup, PITR, restore tests, RPO/RTO and compatible rollout/rollback.
-- Before accepted Stage B, do not freeze final progression/name/death/starter physical structures from `UNKNOWN`, `CONFLICT`, current-Global or OTS-inferred semantics.
+- Do not encode unresolved Reference formulas/values, choose naming canonicalization through database collation, or use an untyped/generic miscellaneous-state bag to evade semantic ownership.
+- Paper-only schema architecture acceptance still does not authorize PostgreSQL DDL/migrations or authoritative gameplay writes.
 
 ### `DUR-03` — Item Transaction and Anti-Duplication Invariants
 
@@ -218,7 +221,7 @@ Detailed scope, dependencies and non-decisions are canonical in `GAMEPLAY_AND_PR
 
 ### Blocks durable gameplay
 
-- `GAME-CHAR-01` — Character Lifecycle and Progression. Stage A baseline-neutral scope and the first Reference target are owner-accepted; Stage B remains unaccepted but is now unblocked for evidence reconciliation, and full GAME-CHAR acceptance must still precede final `DUR-02` character schema.
+- `GAME-CHAR-01` — **ACCEPTED architecture**. Stage A baseline-neutral semantics and Stage B Reference-sensitive semantic closure are owner-accepted; unresolved per-behavior values/formulas/profile-specific facts remain hard parity gates and do not imply runtime or all-profile schema completeness. Accepted GAME-CHAR unblocks profile-neutral paper-only `DUR-02` Character schema architecture.
 - `GAME-ITEM-01` — Item Model and Equipment Rules. Must precede the final `DUR-03` item transaction model and consumes the same accepted first Reference target where parity applies.
 
 ### Required for Playable Alpha completeness
@@ -413,13 +416,14 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 18. ADR-0013 is binding on persistence/programme planning: PostgreSQL remains the native game target, but Platform database migration is not a native-game prerequisite and requires separate Platform authority and evidence.
 19. ADR-0014 through ADR-0016 are binding within their named transport/GameNode-readiness scopes: one `protocol-oteryn` remains authoritative, ADR-0009's one-process GameNode identity remains intact, transport profile registration does not imply runtime readiness, and QUIC cannot activate without its later profile/reconciliation/evidence/implementation gates.
 20. `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md` is binding for the minimum product-vision gate.
-21. `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` is binding for its baseline-neutral partial scope. It does not make the overall GAME-CHAR gate accepted; DUR-02 may not use persistence design to infer unresolved Reference gameplay semantics.
+21. `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` remains binding for baseline-neutral Character safety/ownership/lifecycle semantics and is consumed by the accepted Stage-B closure rather than superseded.
 22. `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` is binding across Reference-sensitive domains: the first target cut is Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance boundary; later Global changes do not silently mutate it; `UNKNOWN`/`CONFLICT` evidence remains fail-closed; OTS implementations are not proof of Global behavior.
+23. `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` is binding for overall GAME-CHAR semantic closure. Architecture acceptance does not imply complete Reference parity; unresolved target rules remain per-behavior hard parity gates, and `DUR-02` is limited to a profile-neutral core plus explicit typed/versioned profile extensions unless later accepted profile semantics justify more.
 
 ## Current next action
 
-Start a separate bounded **paper-only `GAME-CHAR-01` Stage-B evidence reconciliation task** using the accepted first Reference target plus the Stage-A owner baseline. It should classify creation/naming/quota/progression/vocation/death/offline-training semantics as `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or explicit difference; it must not guess an unknown mechanic or freeze physical persistence schema.
+Start a separate bounded **paper-only `DUR-02` profile-neutral core Character schema architecture task** consuming accepted DUR-01 + ANL-01 + GAME-CHAR semantics. It must define typed physical ownership, revisions/fencing, transaction/locking/idempotency, migration/rollback and explicit profile-extension boundaries without implementing DDL/migrations or filling unresolved Reference values/formulas.
 
-`GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel under their existing gates and without path/ownership collision. Before accepted Stage B, DUR-02 consumes Stage-A invariants and uses the selected target only as compatibility/evidence context.
+`GAME-CHANNEL-01`, `GAME-ITEM-01`, the Reference evidence/parity manifest and `SIM-DETERMINISM-01` may proceed in parallel under separate path/contract ownership. Profile-specific PvP Character state remains blocked on the owning world/profile policy even though the neutral core is unblocked.
 
-No gameplay/runtime implementation, Platform write, persistence schema or production behavior is authorized by this register update.
+No gameplay/runtime implementation, Platform write, PostgreSQL migration, persistence schema deployment or production behavior is authorized by this register update.
