@@ -129,9 +129,7 @@ def top_level_yaml_mapping_block(text: str, key: str) -> str | None:
             end = index
             break
 
-    block = "".join(lines[start:end]).replace("\r\n", "\n")
-    if not block.endswith("\n"):
-        block += "\n"
+    block = "".join(lines[start:end]).replace("\r\n", "\n").rstrip("\n") + "\n"
     return block
 
 
