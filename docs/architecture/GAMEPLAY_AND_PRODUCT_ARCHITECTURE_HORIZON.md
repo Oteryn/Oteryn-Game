@@ -11,13 +11,14 @@ Ensure that core gameplay and product domains are not omitted while Oteryn v2 re
 
 This document registers required future decisions. It does **not** accept implementation technologies, schemas, algorithms, service boundaries or final gameplay rules. Accepted decisions remain in ADRs and dedicated contracts.
 
-The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline. `GAME-CHAR-01` is the next product-sensitive architecture gate; `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel within their existing boundaries. Runtime implementation remains separately unauthorized.
+The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline and the owner-accepted partial `GAME-CHAR-01` Stage-A baseline. The exact first Reference baseline is now the next material GAME-CHAR input for Stage B; `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel within their existing boundaries. Runtime implementation remains separately unauthorized.
 
 ## Relationship to existing architecture
 
 This horizon complements, and does not replace:
 
 - accepted `GAME-VISION-01` minimum product direction plus its explicitly deferred/hard-gated downstream subjects;
+- `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` for binding baseline-neutral character semantics while the overall GAME-CHAR gate remains unaccepted;
 - `FND-01` through `FND-04` for workspace, protocol, runtime and admission;
 - `DUR-01` through `DUR-04` for durable identity, persistence, item transactions and content/scripting;
 - `ANL-01` through `ANL-04` for events, analytics, integrity and investigation;
@@ -109,31 +110,47 @@ Must preserve:
 
 ## `GAME-CHAR-01` — Character Lifecycle and Progression
 
-- Status: `BLOCKS_DURABLE_GAMEPLAY`
-- **Current role: next product-sensitive architecture gate.**
-- Must be accepted before `DUR-02` freezes the durable character schema and before broad progression implementation.
-- Consume `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`, the Reference parity-precedence owner baseline, character-authority/session/lease contracts and current persistence invariants.
-- May remain baseline-neutral where possible; any concrete Reference semantic that cannot be decided neutrally is blocked on the exact first Reference baseline rather than guessed.
+- Overall gate status: `BLOCKS_DURABLE_GAMEPLAY`; overall `DecisionStatus` remains `PROPOSED`, implementation `NOT_STARTED`.
+- **Stage A: OWNER-ACCEPTED PARTIAL BASELINE** in `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md`.
+- **Stage B: UNACCEPTED / HARD-BLOCKED** on selection of the exact first named Reference baseline wherever character-visible semantics are Reference-sensitive.
+- Final character-bearing `DUR-02` schema and broad progression implementation still require full GAME-CHAR acceptance after Stage B.
+- Consume `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`, the Reference parity-precedence owner baseline, character-authority/session/lease contracts, DUR-01 and the Stage-A owner baseline.
 
-Must decide:
+Stage A already accepts, within its baseline-neutral scope:
 
-- character creation, naming, world assignment, slots, deletion, restore and retention;
-- account-wide, world-wide and character-local ownership of state;
-- level, experience, skills, attributes, capacities and derived statistics;
-- vocation/class, promotion, mastery, specialization and future respec boundaries;
-- death, respawn, penalties, blessings/protection and recovery behavior;
-- offline progression or training, if supported;
-- world transfer, rename and migration semantics without duplicating state;
-- revision/fencing interaction with Game Session and character lease;
-- ruleset version changes and safe progression migrations;
-- deterministic formulas and test fixtures where their owning Reference/Evolved rules are actually known.
+- a bounded Character aggregate that owns character lifecycle/current owner/current world/name/progression/build/revision semantics while item/economy/social/house/market/session authorities remain separate;
+- semantic lifecycle `ACTIVE -> DELETION_SCHEDULED -> RETIRED`, with restore/cancel only before terminal retirement and CharacterId never reused;
+- atomic idempotent creation with authoritative name reservation and versioned starter/ruleset context;
+- a Character-state revision/fence distinct from GameSession/CharacterLease/connection/runtime ownership generations;
+- conservative first-generation quiescence for terminal retirement, world transfer and account transfer: actor `ABSENT` and no current playable CharacterLease before commit;
+- separation of authoritative progression facts from derived values, without assuming all progression is monotonic;
+- an idempotent/versioned Character-owned death-consequence boundary while exact death mechanics and item effects remain with their owning later contracts;
+- explicit ruleset/profile migration with no silent reinterpretation of incompatible persisted state;
+- vocation/build state as versioned ruleset-owned character state rather than an engine/protocol fork;
+- offline progression only as an explicit ruleset capability;
+- Character Authority as final naming/quota arbiter while exact namespace/recycling/quota values remain unresolved;
+- world/account transfer as an architecture capability rather than a first-launch promise;
+- bounded `DUR-02` consumption of Stage-A invariants only;
+- the explicit rule that Stage A does not close the overall GAME-CHAR gate.
+
+Stage B must still reconcile, against the selected exact Reference target where applicable:
+
+- character creation choices and starter state;
+- name namespace, normalization, recycling/history and Reference-visible rules;
+- slot/quota behavior;
+- persistent progression catalogue and exact level/experience/skill/attribute/capacity semantics;
+- vocation/class/promotion/mastery state required by the target;
+- death/respawn/progression-loss/blessing/protection behavior;
+- offline training/progression where present;
+- deterministic formulas/fixtures under the appropriate gameplay/simulation gates.
 
 Must preserve:
 
-- one authoritative active character session;
+- one authoritative active character session/account exclusion as already accepted;
 - no client-authoritative progression;
-- no schema finalization before progression ownership is explicit;
-- Reference parity precedence over future-facing Evolved product preferences.
+- no final character schema before full progression semantics are explicit;
+- Reference parity precedence over future-facing Evolved preferences;
+- Stage-A aggregate/revision/migration/safety boundaries unless explicitly superseded with evidence.
 
 ## `GAME-ITEM-01` — Item Model and Equipment Rules
 
@@ -466,7 +483,7 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 
 # Dependency and ordering rules
 
-1. `GAME-CHAR-01` is the next product-sensitive architecture gate and must precede the final durable character schema in `DUR-02`.
+1. `GAME-CHAR-01` Stage A is owner-accepted as a binding partial baseline; the exact first Reference baseline and Stage B reconciliation must complete before overall GAME-CHAR acceptance and before the final durable character schema in `DUR-02`.
 2. `GAME-ITEM-01` must precede the final item transaction model in `DUR-03`; `DUR-03` remains the conservation authority.
 3. The foundation vertical slice may use bounded minimal movement/combat/creature/interaction contracts, but Playable Alpha requires `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01`.
 4. `PROD-COMPAT-01` must precede production release-train and updater compatibility claims.
@@ -476,13 +493,15 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 8. Existing gates for social, economy, houses, events, updater, operations, observability and scaling remain authoritative for their named scopes.
 9. Any future implementation package must update this horizon, the global register and the corresponding dedicated contract status.
 10. Accepted `GAME-VISION-01` must preserve ADR-0010 and may not turn Reference/Evolved profiles into protocol, engine, client or repository forks; downstream Reference semantics that cannot remain baseline-neutral are hard-blocked on the exact named first Reference baseline rather than guessed.
-11. `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel with `GAME-CHAR-01` only with explicit path/contract ownership and without pre-accepting their unresolved semantics.
+11. `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel with Reference-baseline/Stage-B GAME-CHAR work only with explicit path/contract ownership and without pre-accepting unresolved semantics.
+12. Before Stage B, `DUR-02` may consume only the invariants explicitly accepted by `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md`; persistence must not choose Reference gameplay policy by schema convenience.
 
 # Explicitly not decided here
 
 This horizon does not select:
 
 - the exact first Global Tibia Reference patch/date/behavior baseline;
+- GAME-CHAR Stage-B Reference-sensitive rules;
 - gameplay formulas or balance values;
 - exact character classes, skills or item systems;
 - exact economy rates/prices/drop tables/scarcity thresholds;

@@ -58,8 +58,9 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - `protocol-canary` remains absent from the destination production graph and cannot re-enter as a production adapter/fallback without an explicit superseding owner decision.
 - ADR-0009 fixes the GameNode/process/container boundary and recovery invariants; `PERF-01` gates supported capacity claims and `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production recovery behavior.
 - `GAME-VISION-01` minimum product-vision semantics are accepted in `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md`: Reference-first/hybrid tracking, product promise, reliability/UX-first Evolved ordering, PvP-secondary, solo-viable/party-rewarded, Reference parity precedence, accepted core/session/long-term loop, Reference-rule-first economy/scarcity and category-level success evidence now form the minimum product direction.
-- The exact first Global Tibia Reference baseline remains `DEFERRED WITH HARD GATE`: any broad Reference mechanics/content implementation or final parity fixtures requiring concrete semantics must stop until that baseline is explicitly selected; baseline-neutral architecture analysis may proceed without guessing.
-- `GAME-CHAR-01` is the next product-sensitive architecture gate and must precede final character-bearing `DUR-02`; `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel within their existing boundaries.
+- `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` is now binding for the baseline-neutral partial character scope: bounded Character aggregate ownership, minimal lifecycle, idempotent creation, Character revision/fencing, conservative quiescent high-impact mutations, progression/derived-state separation, death consequence boundary, explicit ruleset migration and bounded DUR-02 consumption. The overall `GAME-CHAR-01` gate remains `PROPOSED / PLANNED / NOT_STARTED` because Stage B is not accepted.
+- The exact first Global Tibia Reference baseline remains `DEFERRED WITH HARD GATE` and is now the next material GAME-CHAR input: Stage B, broad Reference mechanics/content and final parity fixtures requiring concrete semantics must stop until that baseline is explicitly selected.
+- `GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel. Before Stage B, DUR-02 may consume only the invariants explicitly accepted by GAME-CHAR Stage A and must not let schema convenience choose gameplay semantics.
 - ADR-0012 fixes native Character Authority versus Platform lifecycle/orchestration ownership without authorizing runtime or persistence implementation.
 - ADR-0013 removes Platform database migration from the native gameplay critical path while preserving PostgreSQL for native game persistence and all ADR-0004 ownership/least-privilege invariants.
 - ADR-0014 accepts TCP-default/future-QUIC dual transport only as architecture direction; ADR-0016 keeps every gameplay transport runtime mode unavailable until implemented and proven, and ADR-0015 preserves ADR-0009's one-process GameNode identity while leaving only internal decomposition and genuinely distinct adjacent-service placement evidence-driven.
@@ -147,12 +148,13 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 ### `DUR-02` — Persistence v1
 
 - Status: `BLOCKS_DURABLE_GAMEPLAY`.
-- Bounded discovery may proceed from accepted DUR-01 + ANL-01, but final character-bearing schema waits for accepted `GAME-CHAR-01`.
+- Bounded discovery may proceed from accepted DUR-01 + ANL-01 + the accepted GAME-CHAR Stage-A invariants, but final character-bearing schema still waits for full `GAME-CHAR-01` Stage-B acceptance.
 - Freeze schema and migration ownership.
 - Define character revisions/fencing, lease schema, checkpoint boundaries and maximum accepted progress loss.
 - Define isolation, locking, retries, idempotency, transactional outbox publication/recovery and critical audit/journal scope.
 - Keep best-effort gameplay telemetry separate from atomic item/currency/security evidence.
 - Define backup, PITR, restore tests, RPO/RTO and compatible rollout/rollback.
+- Before Stage B, do not freeze final progression/name/death/starter physical structures from guessed Reference semantics.
 
 ### `DUR-03` — Item Transaction and Anti-Duplication Invariants
 
@@ -208,7 +210,7 @@ Detailed scope, dependencies and non-decisions are canonical in `GAMEPLAY_AND_PR
 
 ### Blocks durable gameplay
 
-- `GAME-CHAR-01` — Character Lifecycle and Progression. **Next product-sensitive architecture gate**; must precede the final `DUR-02` character schema.
+- `GAME-CHAR-01` — Character Lifecycle and Progression. Stage A baseline-neutral scope is owner-accepted in `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md`; overall gate remains unaccepted until exact Reference baseline selection and Stage-B reconciliation, and must still precede final `DUR-02` character schema.
 - `GAME-ITEM-01` — Item Model and Equipment Rules. Must precede the final `DUR-03` item transaction model.
 
 ### Required for Playable Alpha completeness
@@ -403,11 +405,12 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 18. ADR-0013 is binding on persistence/programme planning: PostgreSQL remains the native game target, but Platform database migration is not a native-game prerequisite and requires separate Platform authority and evidence.
 19. ADR-0014 through ADR-0016 are binding within their named transport/GameNode-readiness scopes: one `protocol-oteryn` remains authoritative, ADR-0009's one-process GameNode identity remains intact, transport profile registration does not imply runtime readiness, and QUIC cannot activate without its later profile/reconciliation/evidence/implementation gates.
 20. `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md` is binding for the minimum product-vision gate. Future gameplay architecture must preserve its accepted loop/economy/success direction, while exact first Reference semantics fail closed on the separately selected named Reference baseline whenever a downstream decision cannot remain baseline-neutral.
+21. `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` is binding for its baseline-neutral partial scope. It does not make the overall GAME-CHAR gate accepted; Stage B must consume the exact named first Reference baseline, and DUR-02 may not use persistence design to infer unresolved Reference gameplay semantics.
 
 ## Current next action
 
-Start a separate bounded **paper-only `GAME-CHAR-01` architecture task** as the next product-sensitive gate, consuming the accepted minimum GAME-VISION baseline plus existing character authority/session/persistence invariants. Keep exact Reference formulas/rules unresolved unless the task proves they are required; if a decision cannot remain baseline-neutral, stop that scope on the hard prerequisite to select the exact first Reference baseline rather than guessing.
+Prepare a separate bounded **paper-only exact first Reference baseline decision dossier** as the next material GAME-CHAR input. It must identify a named immutable Global Tibia patch/date/behavior target and lawful evidence model sufficient for Stage-B character reconciliation; no target may be silently selected or inferred from current implementation convenience.
 
-`GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel under their existing gates and without path/ownership collision.
+`GAME-CHANNEL-01` and bounded `DUR-02` discovery may proceed in parallel under their existing gates and without path/ownership collision. Before Stage B, DUR-02 consumes only `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` invariants and remains prohibited from freezing guessed Reference progression/name/death semantics.
 
-No gameplay/runtime implementation, Platform write or production behavior is authorized by this register update.
+No gameplay/runtime implementation, Platform write, persistence schema or production behavior is authorized by this register update.
