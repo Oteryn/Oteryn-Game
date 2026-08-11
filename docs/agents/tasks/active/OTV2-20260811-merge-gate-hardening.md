@@ -4,15 +4,15 @@
 task_id: OTV2-20260811-merge-gate-hardening
 title: Harden PR merge gating and repository engineering drift controls
 mode: REPAIR
-status: implementing
+status: validating
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: ci/OTV2-20260811-merge-gate-hardening
-pr: null
+pr: 162
 base_sha: c94f331ec20849e8306875a2f88b87fa7e1974f9
 owner: ChatGPT repository engineering agent
 created_at: 2026-08-11T10:30:00+02:00
-updated_at: 2026-08-11T10:52:00+02:00
+updated_at: 2026-08-11T10:53:00+02:00
 execution_budget_minutes: 120
 owned_paths:
   - .github/workflows/merge-gate.yml
@@ -45,7 +45,7 @@ Make one always-present `Merge gate / validate` check the protected-branch merge
 - PR #161 was a non-overlapping player-promise task closeout and merged while this package was being prepared;
 - branch was reconciled non-destructively with current `main@f184930fac66fdf9ae0cc7f606d3502c17626a79` by a merge commit preserving both histories;
 - current compare is `behind_by=0`; no player-promise active/archive path appears in this task diff;
-- existing `Agent governance / validate` pull-request workflow is intentionally left unchanged in this transition package so the currently active ruleset can validate this PR before the aggregate gate becomes the protected status check;
+- existing `Agent governance / validate` pull-request workflow is intentionally left unchanged in this transition package so the currently active ruleset can validate PR #162 before the aggregate gate becomes the protected status check;
 - no runtime/gameplay/product behavior is changed;
 - production/deployment authority is not granted.
 
@@ -84,15 +84,23 @@ Make one always-present `Merge gate / validate` check the protected-branch merge
 - Exact-head GitHub Actions is the authoritative executable validation for this workflow/policy change.
 - Because this changes the repository merge authority path, review the full final diff for accidental gate weakening, permission expansion, path-filter bypass and transition deadlock before readiness.
 
+## PR and closeout
+
+- PR: #162
+- base at creation: `main@f184930fac66fdf9ae0cc7f606d3502c17626a79`
+- initial PR head before this checkpoint update: `60701f99776544e4800c63b994705e272ad73022`
+- final candidate head: pending this checkpoint commit
+- merge: pending exact-head validation and review
+
 ## Context checkpoint
 
 ```yaml
-last_progress: Implemented the aggregate PR merge gate, dependency/security/workspace composition, repository-policy consistency checks, Cargo Dependabot and stale CI/documentation cleanup; reconciled the branch with the non-overlapping PR #161 closeout and preserved the currently-required governance PR check for the transition.
-status: implementing
+last_progress: Opened PR #162 for the aggregate merge-gate hardening package after reconciling with current main; all implementation changes are present and the next phase is exact-head review and executable GitHub Actions validation.
+status: validating
 branch: ci/OTV2-20260811-merge-gate-hardening
-pr: null
+pr: 162
 final_head_sha: null
 owner_action_required: null
 blocker: null
-next_action: Open the bounded PR, record its exact head, perform full-diff self-review, then verify transition governance plus every new aggregate merge-gate job on that unchanged head.
+next_action: Freeze the post-checkpoint exact head, perform full-diff self-review, then verify transition governance plus every new aggregate merge-gate job and any independent automatic review on that unchanged head.
 ```
