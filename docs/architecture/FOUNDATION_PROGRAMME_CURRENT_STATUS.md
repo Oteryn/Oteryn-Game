@@ -26,7 +26,7 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 | Gate | DecisionStatus | DeliveryStatus | ImplementationStatus | Canonical evidence / note |
 |---|---|---|---|---|
 | `FND-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `PROVEN` | applied 19-member workspace/dependency cutover proven by PR #50 exact final head `5092f868a42d545f47a98c0b9723210570cd9d45`, squash merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`; exact-head Agent Governance `31095853261`, Dependency Review `31095853437`, CodeQL `31095853606`, Rust workspace `31095853343` and adversarial migration audit `31095053578` all PASS |
-| `VSL-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `PROVEN` | native-client cutover/migration proven by the same PR #50 exact head `5092f868a42d545f47a98c0b9723210570cd9d45` and merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`; Linux/Windows build, tests, pre-native fail-closed, supply-chain and named exact-head checks recorded PASS in PR #50 |
+| `VSL-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `PROVEN` | native-client cutover/migration proven by the same PR #50 exact final head `5092f868a42d545f47a98c0b9723210570cd9d45` and merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0`; Linux/Windows build, tests, pre-native fail-closed, supply-chain and named exact-head checks recorded PASS in PR #50 |
 | `FND-ID-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | semantic identity architecture is accepted; PR #147 merge `81db47966d76709a0e44dfbf1bc3979f38a24ffa` archived the remaining stale merged FND-ID support records and post-merge lifecycle normalization releases its cleanup owner; no runtime identity implementation is claimed |
 | `FND-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | `protocol-oteryn` v1 architecture accepted and its task lifecycle is archived; TCP profile `1` is registered architecturally, but production gameplay protocol/transport runtime remains separately gated |
 | `NET-TRANSPORT-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | final successor PR #149 exact head `641de04b1397cb910f6f26e7dd1594babb8ad1ac` passed exact-head self-review, Agent Governance, Dependency Review, CodeQL and required independent review; squash merge `05544969baf58c3a40354f366438d759bfd159e5`; no gameplay transport adapter/listener or player mode is runtime-available |
@@ -40,7 +40,7 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 | `GAME-CHAR-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | Stage A + Stage B semantic architecture are owner-accepted; delivery PR #193 exact head `bc4942cab0e58b3aa4ed9713cc3f23b11b83aaa6` passed self-review `4911343351`, Agent Governance `31542939497`, Dependency Review `31542939533` and CodeQL `31542939487`, then squash-merged as `08775e378db8c1fd6bb97bedf66bf08b3541f35f`; unresolved target rules remain per-behavior parity gates and runtime authority is NONE |
 | `GAME-ITEM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | blocks final DUR-03 item transaction semantics; Reference-sensitive item work uses the accepted 2026-07-28 target unless explicitly superseded/scoped |
 | `SIM-DETERMINISM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | required before broad combat/AI formula freeze and before `PARITY_CONFIRMED` claims for unresolved Character arithmetic delegated from GAME-CHAR |
-| `DUR-02` | `ACCEPTED` | `OPEN` | `NOT_STARTED` | owner accepted the complete six-rule whole-Persistence-v1 closure package and fourteen-subject reconciliation in `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md`; Character persistence partial baseline remains binding; this owner-baseline recording lifecycle is active; no PostgreSQL DDL/migration or runtime authority exists |
+| `DUR-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | owner-accepted whole Persistence-v1 baseline in `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md`; delivery PR #201 exact head `900be9f499981e638a6f8089fb46331b43ba321c` passed self-review `4914253621`, independent Codex review `5264011166`, Agent Governance `31576235871`, Dependency Review `31576235909` and CodeQL `31576235921`, then squash-merged as `ec4b840b0742967370a4235d87094b29a802fe28`; Character persistence partial baseline remains binding; no PostgreSQL DDL/migration or runtime authority |
 | `DUR-03` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | whole DUR-02 common persistence architecture is accepted; durable item/currency/value semantics still wait for GAME-ITEM-01 + DUR-03 acceptance and ANL-01 evidence semantics |
 | `DUR-04` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | content/world/scripting architecture; minimum headless schema/validator/compiler/bundle/loader precedes full Studio |
 | `PROD-ENTITLEMENTS-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Platform producer security prerequisite #944 is satisfied by PR #968 merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`; Oteryn-v2 consumer/enforcement contract remains unaccepted and Premium/VIP/game-consumed entitlement activation remains unauthorized |
@@ -152,7 +152,7 @@ The native client therefore remains legitimately pre-native-protocol until a sep
 
 ## 8. Next ordered architecture and proof work
 
-Whole `DUR-02 — Persistence v1` architecture is owner-accepted. The project has therefore reached the point where a **separately authorized server/persistence foundation implementation programme** may begin for already accepted FND-02/FND-03/FND-04/DUR-01/DUR-02/ANL-01/GAME-CHAR scopes; this owner-acceptance task does not itself grant that implementation authority.
+Whole `DUR-02 — Persistence v1` architecture is owner-accepted. The project has therefore reached the point where a **separately authorized server/persistence foundation implementation programme** may begin for already accepted FND-02/FND-03/FND-04/DUR-01/DUR-02/ANL-01/GAME-CHAR scopes; architecture acceptance does not itself grant that implementation authority.
 
 The next ordered work is:
 
@@ -226,7 +226,7 @@ DUR-02 Character persistence sub-scope
 -> normalized current state + CharacterRevision + typed extensions + FND-04 atomic authority persistence
 
 DUR-02 overall
--> ACCEPTED / OPEN during this owner-baseline recording / NOT_STARTED
+-> ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED
 -> six common Persistence-v1 rules owner-accepted
 -> fourteen historical subjects reconciled to exact owners/dispositions
 -> DDL/migrations/runtime NOT_AUTHORIZED
