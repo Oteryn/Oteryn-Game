@@ -54,14 +54,16 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 - [DUR-01 — Durable identifier representation](DUR-01_DURABLE_IDENTIFIER_REPRESENTATION_CONTRACT.md)
 - [ANL-01 — Game event and audit foundation](ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md)
 
-## Accepted gameplay and durability contracts
+## Accepted gameplay, product and durability contracts
 
 - [GAME-ITEM-01 — Item model and equipment analysis](GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_ANALYSIS.md)
 - [GAME-ITEM-01 — Item model and equipment contract](GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md)
 - [DUR-03 — Item transaction and anti-duplication analysis](DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_ANALYSIS.md)
 - [DUR-03 — Item transaction and anti-duplication contract](DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md)
+- [GAME-CHANNEL-01 — Channel product policy analysis](GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_ANALYSIS.md)
+- [GAME-CHANNEL-01 — Channel product policy contract](GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md)
 
-`GAME-ITEM-01` and `DUR-03` are accepted/lifecycle-closed architecture with implementation `NOT_STARTED`. Together with DUR-01/DUR-02/ANL-01 and the accepted runtime/session authority contracts they freeze the semantic envelope for durable item/currency/value mutation: typed item legality, one durable item location, ItemInstanceId lifecycle transitions, conservation/source-sink lineage, idempotency/retry/ambiguous-commit handling, runtime↔durable pickup/drop fencing, typed custody and bounded durable evidence. They do **not** authorize Rust/runtime implementation, PostgreSQL DDL/migrations, production mutation or entitlement activation.
+`GAME-ITEM-01`, `DUR-03` and `GAME-CHANNEL-01` are accepted/lifecycle-closed architecture with implementation `NOT_STARTED`. GAME-ITEM + DUR-03 freeze typed item legality, one durable item location, ItemInstanceId lifecycle transitions, conservation/source-sink lineage, idempotency/retry/ambiguous-commit handling, runtime↔durable pickup/drop fencing, custody and bounded audit. GAME-CHANNEL freezes player Channel selection/recommendation/queue/co-location, durable anti-hopping/prior-Channel semantics, explicit source/reward multiplicity classes, qualitative public Channel create/drain/drain-abort/retirement predicates, same-Channel recovery and one-World community/economy boundaries while leaving all numeric capacity/windows/hysteresis to PERF/OPS. None of these acceptances authorizes Rust/runtime/client implementation, PostgreSQL DDL/migrations, Platform writes, production mutation or entitlement activation.
 
 ## Machine-readable contracts
 
@@ -75,10 +77,10 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 The current ordering constraints do not claim runtime implementation:
 
 ```text
-GAME-VISION-01 minimum
-+ GAME-CHANNEL-01
+accepted GAME-VISION-01
++ accepted GAME-CHANNEL-01
 
-GAME-CHAR-01
+accepted GAME-CHAR-01
 -> accepted DUR-02 Character persistence envelope
 
 accepted GAME-ITEM-01
@@ -86,12 +88,12 @@ accepted GAME-ITEM-01
 -> accepted DUR-03 transaction/conservation architecture
 -> runtime item mutation still separately unauthorized
 
-SIM-DETERMINISM-01
-+ minimal DUR-04 headless toolchain
+minimal DUR-04 headless content architecture
++ SIM-DETERMINISM-01
 -> small real-boundary VSL sequence
 ```
 
-After DUR-03 lifecycle closeout, `GAME-CHANNEL-01` is the earliest still-unresolved paper-only gate in the owner-accepted recommended ordering. Reference evidence/parity tooling, `DUR-04` and `SIM-DETERMINISM-01` remain independently ownable paper-only work. Any executable server/persistence/gameplay increment still requires separate explicit implementation authority.
+After GAME-CHANNEL lifecycle closeout, `DUR-04` is the selected next bounded paper-only architecture action: source schema -> validator -> deterministic compiler -> World Bundle -> loader, with Content Registry evolution, corruption/resource/security limits and scripting capability boundaries. Reference evidence/parity tooling and `SIM-DETERMINISM-01` remain independently ownable paper-only work. Any executable server/persistence/channel/item/content increment still requires separate explicit implementation authority.
 
 ## Transport rule
 

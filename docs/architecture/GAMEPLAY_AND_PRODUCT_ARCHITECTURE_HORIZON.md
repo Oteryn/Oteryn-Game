@@ -11,7 +11,7 @@ Ensure that core gameplay and product domains are not omitted while Oteryn v2 re
 
 This document registers required future decisions. It does **not** accept implementation technologies, schemas, algorithms, service boundaries or final gameplay rules. Accepted decisions remain in ADRs and dedicated contracts.
 
-The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline, the accepted immutable first Reference target, the owner-accepted complete semantic `GAME-CHAR-01` architecture, the owner-accepted whole `DUR-02 — Persistence v1` architecture, the accepted/lifecycle-closed `GAME-ITEM-01` item semantic architecture and the accepted/lifecycle-closed `DUR-03` item/currency/value transaction and anti-duplication architecture. The accepted Character persistence partial baseline remains a binding sub-baseline. Common server/persistence and item/value implementation may proceed only under separate explicit implementation authority. Under the owner-accepted programme ordering, `GAME-CHANNEL-01` is now the earliest remaining bounded paper-only product gate; `DUR-04` and ruleset/SIM evidence remain separate parallel architecture work. Runtime implementation remains separately unauthorized until the owner explicitly grants implementation authority.
+The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline, the accepted immutable first Reference target, the owner-accepted complete semantic `GAME-CHAR-01` architecture, the owner-accepted whole `DUR-02 — Persistence v1` architecture, the accepted/lifecycle-closed `GAME-ITEM-01` item semantic architecture, the accepted/lifecycle-closed `DUR-03` item/currency/value transaction and anti-duplication architecture, and the accepted/lifecycle-closed `GAME-CHANNEL-01` multichannel product/lifecycle policy. The accepted Character persistence partial baseline remains a binding sub-baseline. Common server/persistence and item/value implementation may proceed only under separate explicit implementation authority. Under the owner-accepted programme ordering, `DUR-04` is now the selected next bounded paper-only architecture gate; Reference evidence/parity tooling and `SIM-DETERMINISM-01` remain separately ownable parallel paper-only work. Runtime implementation remains separately unauthorized until the owner explicitly grants implementation authority.
 
 ## Relationship to existing architecture
 
@@ -23,6 +23,7 @@ This horizon complements, and does not replace:
 - `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` for the owner-accepted Reference-sensitive semantic closure and hard parity-gate discipline;
 - `GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md` for accepted item definition/instance semantics, equipment/container legality, definition compatibility/migration and item-domain boundaries;
 - `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md` for accepted durable item/currency/value location, identity-transition, conservation, idempotency, runtime↔durable handoff, custody, audit and restore-integrity semantics;
+- `GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md` for accepted channel identity/selection/queue/co-location, durable anti-hopping, value-source multiplicity, qualitative lifecycle, PvP/community and same-Channel recovery product semantics;
 - `DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md` for the binding profile-neutral Character persistence sub-scope;
 - `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` for the owner-accepted whole Persistence-v1 architecture and exhaustive historical-scope reconciliation;
 - `FND-01` through `FND-04` for workspace, protocol, runtime and admission;
@@ -262,6 +263,27 @@ Preserved downstream authority:
 - physical SQL schema/index/lock details, concrete Rust APIs, ANL event IDs/payloads and numeric transaction/resource ceilings remain implementation/evidence work.
 
 DUR-03 architecture acceptance is not runtime proof. A future implementation must separately prove the exact concurrency, crash-window, stale-owner, idempotency, receipt, audit, resource-bound and restore scenarios named by the contract.
+
+## `GAME-CHANNEL-01` — Multichannel Product Policy
+
+- DecisionStatus: **`ACCEPTED`**.
+- DeliveryStatus: **`LIFECYCLE_CLOSED`** after lifecycle closeout PR #210 merges.
+- ImplementationStatus: **`NOT_STARTED`**; runtime/client/Platform/DDL/production authority **`NONE`**.
+- Canonical sources: `GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_ANALYSIS.md` and `GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md`; delivery PR #209 exact final head `ca1112191ede7d316c874189f3053ad7f8247579`, squash merge `54dddbcfcb64baaf66e6cfd9fcd2cc3e1b4f04f1`.
+
+Accepted semantic closure includes:
+
+- canonical `ChannelRef=WorldId+ChannelId` separate from presentation labels/ordinals;
+- current eligible-set plus recommendation/explicit selection with FND-04 retaining final target-bound admission;
+- bounded pre-admission queue semantics and privacy-bounded party/friend co-location without party-owned Channel authority;
+- fresh-session Channel switching with durable `CharacterId+WorldId` anti-hopping/prior-Channel state that survives logout/relog/restart;
+- recovery-safe different-Channel admission + guard advancement and no mandatory new `ChannelSwitchId`;
+- fail-closed explicit value-source multiplicity classes `CHANNEL_LOCAL_REPEATABLE`, `CHANNEL_LOCAL_SHARED_ELIGIBILITY`, `WORLD_SCOPED_UNIQUE`, `EXPLICIT_EVENT_POLICY_REQUIRED` with simulation scope separate from durable eligibility scope;
+- qualitative lifecycle trigger vocabulary `DEMAND_PRESSURE`, `RECOVERY_PRESSURE`, `LOW_LOAD_CONSOLIDATION_CANDIDATE`, `CHANNEL_UNHEALTHY`;
+- product predicates for legitimate new public Channel creation, low-load drain, drain abort/hold and terminal retirement while PERF/OPS retain numeric windows/thresholds/headroom/hysteresis/timers and orchestration;
+- same-ChannelId recovery first, no silent relocation into another simulation, durable PvP/reward/value consequences and one-World economy/community identity.
+
+GAME-CHANNEL acceptance does not accept downstream PvP/boss/reward/economy/social/house/instance business rules and does not authorize runtime implementation.
 
 ## `GAME-ABILITY-01` — Ability, Spell and Condition Architecture
 
@@ -569,9 +591,9 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 
 # Dependency and ordering rules
 
-1. `GAME-CHAR-01` semantic architecture, Character persistence partial baseline, whole `DUR-02 — Persistence v1`, `GAME-ITEM-01` and `DUR-03` are accepted/lifecycle-closed architecture. Common server/persistence and item/value runtime implementation still require separate explicit implementation authority and exact implementation evidence.
+1. `GAME-CHAR-01` semantic architecture, Character persistence partial baseline, whole `DUR-02 — Persistence v1`, `GAME-ITEM-01`, `DUR-03` and `GAME-CHANNEL-01` are accepted/lifecycle-closed architecture after their recorded closeouts. Common server/persistence, item/value and multichannel runtime implementation still require separate explicit implementation authority and exact implementation evidence.
 2. GAME-ITEM + DUR-03 now close the paper-only native item semantic, location, identity-transition, conservation, idempotency and anti-duplication prerequisites. Downstream trade/market/bank/depot/mail/reward/house/crafting/entitlement policy remains separately unaccepted, and runtime mutation is not authorized by architecture acceptance.
-3. `GAME-CHANNEL-01` is the earliest remaining owner-accepted recommended-order paper-only product gate because channel social/economic/PvP/UX policy must precede multichannel becoming a product feature.
+3. `GAME-CHANNEL-01` is accepted/lifecycle-closed architecture. The selected next bounded paper-only gate is `DUR-04`, while Reference evidence/parity tooling and `SIM-DETERMINISM-01` remain separately ownable parallel work under independent path ownership.
 4. The foundation vertical slice may use bounded minimal movement/combat/creature/interaction contracts, but Playable Alpha requires `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01`.
 5. `PROD-COMPAT-01` must precede production release-train and updater compatibility claims.
 6. `SEC-CLIENT-01`, `DATA-PRIVACY-01`, `UX-I18N-A11Y-01`, `OPS-GM-01` and `PROD-LIVEOPS-01` are required before Playable Alpha is declared operationally complete.
@@ -580,12 +602,12 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 9. Existing gates for social, economy, houses, events, updater, operations, observability and scaling remain authoritative for their named scopes.
 10. Any future implementation package must update this horizon, the global register and the corresponding dedicated contract status.
 11. Accepted `GAME-VISION-01` must preserve ADR-0010 and may not turn Reference/Evolved profiles into protocol, engine, client or repository forks; the accepted 2026-07-28 first Reference target is binding across downstream Reference-sensitive work unless explicitly superseded/scoped, and evidence gaps remain fail-closed rather than guessed.
-12. `GAME-CHANNEL-01` is the next ordered product paper-only gate. The Reference evidence/parity manifest, `DUR-04`, `SIM-DETERMINISM-01` and any separately authorized implementation programme may proceed in parallel only with explicit path/contract ownership and without pre-accepting another gate's semantics.
+12. `DUR-04` is the one selected next programme-order paper-only architecture action after GAME-CHANNEL lifecycle closeout. Reference evidence/parity tooling and `SIM-DETERMINISM-01` may proceed in parallel only with explicit path/contract ownership; any executable implementation programme still requires separate owner authority.
 13. The accepted DUR-02 Character persistence sub-baseline applies only to the profile-neutral core. Profile-specific PvP/world-policy Character facts remain blocked until their owning profile/channel semantics are accepted; persistence cannot invent them through schema convenience.
 14. Later Global changes are candidate evidence for a later explicit Reference revision and never silently mutate the accepted first target.
 15. Every remaining GAME-CHAR, GAME-ITEM or downstream Reference-sensitive `UNKNOWN/CONFLICT` exact value/formula/content/profile rule remains a hard parity/implementation gate where exercised even though Character/item/value semantic architecture is accepted.
 16. Whole-DUR-02 acceptance does not authorize DDL/runtime and does not accept destination gates from historical reconciliation; `MOVED` means ownership moved, not that destination business behavior is accepted.
-17. GAME-ITEM/DUR-03 acceptance does not accept `PROD-ENTITLEMENTS-01`, downstream economy/social/house/reward business policy or any runtime item/value implementation.
+17. GAME-ITEM/DUR-03/GAME-CHANNEL acceptance does not accept `PROD-ENTITLEMENTS-01`, downstream economy/social/house/reward business policy or any runtime item/value/multichannel implementation.
 
 # Explicitly not decided here
 
