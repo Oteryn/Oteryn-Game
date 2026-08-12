@@ -1,5 +1,14 @@
 # Oteryn v2 Agent Instructions
 
+## Owner-funded AI and credential budget — highest priority
+
+- Agents MUST NOT invoke Codex, OpenAI API, paid/limited AI review services, or any other mechanism that consumes the repository owner's personal AI quota, credits, tokens, subscription limits, or metered allowance unless the owner gives explicit permission for that specific use.
+- Agents MUST NOT use, export, copy, inspect, forward, or authenticate with owner-supplied API keys, access tokens, session tokens, personal credentials, or secrets for AI/model services unless the owner explicitly authorizes that exact credential/service use.
+- Availability of a credential, environment variable, CLI login, browser session, connector, MCP/plugin, or previously granted access does NOT constitute permission to consume owner-funded AI resources.
+- Prior permission is not standing permission. Authorization must be explicit for the current task/use; if scope, provider, model, or expected consumption materially changes, ask again.
+- If a workflow, policy, review gate, script, or tool would normally invoke Codex or another owner-funded AI service, skip that invocation and use a non-owner-funded alternative when one is genuinely available. If the requirement cannot be satisfied without such use, stop and report the exact blocker instead of consuming quota.
+- Never weaken, bypass, or falsely mark a review/validation gate as satisfied merely because owner-funded AI use is forbidden.
+
 ## Instruction order
 
 1. System, developer and explicit owner instructions.
@@ -136,7 +145,7 @@ An independent review is not automatically required for low-risk documentation/n
 
 Independent review may be performed by a qualified human reviewer, a separate agent/session that did not implement or materially author the change, an independent review tool such as Codex, or a dedicated audit workflow that actually evaluates the exact final head. The evidence must identify the reviewer/method and exact SHA.
 
-**Codex is optional, not a mandatory project dependency.** Use Codex only when a genuinely independent review is required by this policy, the owner or a governing contract and Codex is the necessary or appropriate available independent mechanism for that requirement. Do not invoke Codex merely for extra assurance when the task does not require independent review, and do not invoke it routinely merely because a PR exists.
+**Codex is optional, not a mandatory project dependency, and is subject to the owner-funded AI restriction above.** Do not invoke Codex without explicit owner permission for the current use. If independent review is required, prefer another genuinely independent mechanism that does not consume owner-funded AI resources; if none is available, stop with that exact blocker.
 
 If independent review is required but no genuinely independent mechanism is available, stop with that exact blocker. Do not relabel self-review as independent and do not weaken the gate.
 
