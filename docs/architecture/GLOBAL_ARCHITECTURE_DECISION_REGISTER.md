@@ -1,7 +1,7 @@
 # Oteryn v2 Global Architecture Decision Register
 
 - Status: Active coordination register
-- Date: 2026-08-12
+- Date: 2026-08-13
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Canonical foundation programme: `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`
 - Current execution status: `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`
@@ -57,11 +57,12 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | GAME-ITEM-01 item definition/instance/equipment/container compatibility semantics | `ACCEPTED` | `GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md`, PR #205 merge `5c502d24557621efc798def87b68f137ba23fad8` |
 | DUR-03 item/currency/value location, conservation, retry and anti-duplication architecture | `ACCEPTED` | `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`, PR #207 merge `63380bcba469027e90677aaf4db571fa941be2f4` |
 | GAME-CHANNEL-01 channel selection/queue/co-location/anti-hopping/multiplicity/lifecycle product policy | `ACCEPTED` | `GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md`, PR #209 exact head `ca1112191ede7d316c874189f3053ad7f8247579`, merge `54dddbcfcb64baaf66e6cfd9fcd2cc3e1b4f04f1` |
+| DUR-04 deterministic content/package/bundle/migration and authoritative scripting boundary | `ACCEPTED` | `DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md`, PR #212 exact head `77e68ffb9e9e0e31ca751d42ff5f7c03466b2b23`, merge `568236c33cd23da017bca1dbd1ed98afc8da71f4` |
 
 ## Progressive execution policy
 
 - FND-01, VSL-02 and migration/source closeout are complete.
-- FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, DUR-03, ANL-01, GAME-VISION-01, GAME-CHANNEL-01, GAME-CHAR-01, GAME-ITEM-01 and the dual-transport strategy are accepted/lifecycle-closed where recorded by `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`; implementation remains separate and largely `NOT_STARTED`.
+- FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, DUR-03, DUR-04, ANL-01, GAME-VISION-01, GAME-CHANNEL-01, GAME-CHAR-01, GAME-ITEM-01 and the dual-transport strategy are accepted/lifecycle-closed where recorded by `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`; implementation remains separate and largely `NOT_STARTED`.
 - The migrated client remains ADR-0011 `pre-native-protocol` and fails closed before gameplay credential/routing/transport consumption.
 - `protocol-canary` remains absent from the production graph and may not re-enter through compatibility/fallback without explicit supersession.
 - ADR-0009 fixes GameNode/process/Channel ownership; PERF-01 gates capacity claims and OPS-CHANNEL-01 gates automatic production scaling/recovery implementation.
@@ -69,10 +70,11 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - GAME-CHAR Stage A/B remains binding; acceptance does not imply complete Reference parity.
 - DUR-02 whole-gate acceptance grants no SQL DDL/migration execution/runtime authority.
 - GAME-ITEM and DUR-03 together close item/value semantics and anti-duplication architecture, but do not implement item/value runtime or physical schema.
-- GAME-CHANNEL now closes the product-policy gap between technical multichannel capability and player-visible channels: selection/recommendation/queue/co-location, durable anti-hopping/prior-Channel semantics, explicit value-source multiplicity classes, qualitative create/drain/abort/retirement predicates, same-Channel recovery and one-World community/economy rules are accepted. Numeric capacity/headroom/windows/hysteresis remain PERF/OPS-owned and no runtime/Platform implementation is implied.
+- GAME-CHANNEL closes the product-policy gap between technical multichannel capability and player-visible channels: selection/recommendation/queue/co-location, durable anti-hopping/prior-Channel semantics, explicit value-source multiplicity classes, qualitative create/drain/abort/retirement predicates, same-Channel recovery and one-World community/economy rules are accepted. Numeric capacity/headroom/windows/hysteresis remain PERF/OPS-owned and no runtime/Platform implementation is implied.
+- DUR-04 closes the semantic content/package/compiler/bundle/activation/migration/scripting architecture gap: exact dependency locks, deterministic immutable artifact flow, bounded loader, explicit durable migration classes, provenance, Component Model + project-owned WIT capability boundary, proposal-only mutations and versioned script-execution determinism are accepted. Physical format, numeric limits, exact Wasmtime/WIT implementation and broad content/runtime activation remain separately gated.
 - Historical market/economy consistency remains EXP-ECONOMY-01; guild/social remains EXP-SOCIAL-01; houses remains EXP-HOUSES-01; rewards remain their GAME-META/EXP-EVENTS owners; DUR-03 retains conservation wherever these move value.
 - Partitioning/sharding and exact Rust DB/migration library remain measured implementation/PERF choices unless correctness evidence creates an architecture constraint.
-- With GAME-CHANNEL and DUR-03 closed, `DUR-04` is selected as the next bounded paper-only content/world/scripting gate; `SIM-DETERMINISM-01` and Reference evidence/parity tooling may proceed independently under separate ownership.
+- With DUR-04 closed, `SIM-DETERMINISM-01` is selected as the next bounded paper-only simulation architecture gate; Reference evidence/parity tooling may proceed independently under separate ownership.
 - ADR-0014..0016 remain binding: TCP profile registration does not imply runtime readiness, QUIC remains future profile/reconciliation/evidence work, and GameNode remains one process.
 - bounded spikes inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 
@@ -142,11 +144,17 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 ### `DUR-04` — Content, World Detail and Scripting Contract
 
-- Status: `BLOCKS_DURABLE_GAMEPLAY`; `DecisionStatus=PROPOSED`, `DeliveryStatus=PLANNED`, `ImplementationStatus=NOT_STARTED`.
-- Selected next bounded paper-only architecture action.
-- Continue ADR-0005 with exact World Project/World Bundle semantic boundaries and minimum headless path: source schema -> validator -> deterministic compiler -> bundle -> loader.
-- Freeze Content Registry package/version/dependency behavior, source/bundle evolution, corruption/resource limits, migration source dispositions, scripting capabilities/isolation/persistence access/hot reload boundary and asset provenance.
-- Require evidence/spikes only where representation/tooling choices are benchmark-sensitive; do not build full Studio or broad import/runtime implementation in the architecture task.
+- Status: `ACCEPTED`; lifecycle closed, implementation `NOT_STARTED`.
+- Canonical source: `DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md`; delivery PR #212 exact final head `77e68ffb9e9e0e31ca751d42ff5f7c03466b2b23`, squash merge `568236c33cd23da017bca1dbd1ed98afc8da71f4`.
+- Freeze stable semantic package/content identity and exact dependency locking; deterministic compiler/client-server projection/immutable bundle/staging/activation; bounded fail-closed loading; durable migration classes; legacy provenance; Component Model + project-owned versioned WIT capability boundary; snapshot-bound reads; proposal-only mutations; authority-scoped action plans; deterministic script time/RNG/query/floating/fuel/resource behavior under `script_execution_profile_revision`; typed persistent extension state; and explicit Resource Limits Registry/spike gates.
+- Does not freeze the physical serializer/container/chunk/floor/compression choice, exact WIT function inventory, exact Wasmtime version/features or numeric limits, and grants no runtime/client/compiler/loader/Studio/WIT-host/DDL/content-import/production authority.
+
+### `SIM-DETERMINISM-01` — Authoritative Simulation Determinism Contract
+
+- Status: `BLOCKS_LAYER_IMPLEMENTATION`; `DecisionStatus=PROPOSED`, `DeliveryStatus=PLANNED`, `ImplementationStatus=NOT_STARTED`.
+- Selected next bounded paper-only architecture action after DUR-04 lifecycle closeout.
+- Freeze authoritative arithmetic representation, rounding/overflow/invalid numeric-state rules, deterministic RNG ownership and substreams, simulation logical time/order/tie-break semantics, replay inputs/external nondeterminism capture, state hashing/divergence evidence, supported-target determinism, formula/ruleset revision compatibility and the boundary with DUR-04 `script_execution_profile_revision`.
+- Do not implement combat, AI, scripts or runtime in the architecture gate.
 
 ### `ANL-01` — Game Event and Audit Foundation
 
@@ -177,6 +185,7 @@ Detailed scope/dependencies/non-decisions remain canonical in `GAMEPLAY_AND_PROD
 - `GAME-CHAR-01` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; unresolved exact profile/Reference facts remain hard gates.
 - `GAME-ITEM-01` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; runtime item/value mutation remains separate implementation work.
 - `GAME-CHANNEL-01` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; selection/queue/co-location/switch/multiplicity/lifecycle policy is frozen, while runtime/Platform scaling implementation and numeric PERF/OPS values remain downstream.
+- `DUR-04` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; content/package/compiler/bundle/migration/scripting architecture is frozen while physical encoding, numeric limits and executable content infrastructure remain downstream.
 
 ### Required for Playable Alpha completeness
 
@@ -227,7 +236,7 @@ Registration prevents omission; it does not accept technologies, formulas, schem
 ### `VSL-CONTENT-01` — Minimal Native Map, Compiler and Loader Contract
 
 - Status: `BLOCKS_VERTICAL_SLICE`.
-- Define the minimum World Project/World Bundle/compiler/loader/content keys for the vertical slice; do not implement full Studio/import breadth.
+- Define the minimum World Project/World Bundle/compiler/loader/content keys for the vertical slice; consume accepted DUR-04 semantic architecture and the required physical-format/resource-limit evidence; do not implement full Studio/import breadth by default.
 
 ## Stage D — required for playable alpha
 
@@ -305,7 +314,7 @@ The foundation task is non-owning. Every substantial gate has one task/branch/PR
 9. Public contracts register applicable resource limits/errors/failure scenarios.
 10. A decision is complete only after validated/audited unchanged merge + task archive/lifecycle closeout.
 11. Completed gates are consumed unless explicitly superseded.
-12. FND-02/FND-03/FND-04/DUR-01/DUR-02/DUR-03/ANL-01/GAME-CHANNEL architecture acceptance does not imply runtime implementation.
+12. FND-02/FND-03/FND-04/DUR-01/DUR-02/DUR-03/DUR-04/ANL-01/GAME-CHANNEL architecture acceptance does not imply runtime implementation.
 13. Every gameplay/product package reconciles the gameplay/product horizon; unnamed domains cannot be absorbed silently.
 14. Every vertical-slice/client-visible package consumes QA-E2E-01.
 15. ADR-0008 forbids production Canary compatibility/fallback/translation without supersession.
@@ -320,13 +329,14 @@ The foundation task is non-owning. Every substantial gate has one task/branch/PR
 24. GAME-ITEM is binding for item semantics and grants no DUR-03/entitlement/runtime authority.
 25. DUR-03 is binding for durable item/value integrity and grants no downstream business/runtime authority.
 26. GAME-CHANNEL is binding for Channel product/lifecycle/multiplicity semantics; numeric capacity/windows/hysteresis remain PERF/OPS, and acceptance grants no runtime/client/Platform/scaling authority.
+27. DUR-04 is binding for semantic content/package/compiler/bundle/migration/scripting architecture; physical encoding, numeric limits and executable content infrastructure remain separately gated.
 
 ## Current next action
 
-GAME-CHANNEL, GAME-ITEM, DUR-02 and DUR-03 are architecture-complete/lifecycle-closed while implementation remains `NOT_STARTED`.
+GAME-CHANNEL, GAME-ITEM, DUR-02, DUR-03 and DUR-04 are architecture-complete/lifecycle-closed while implementation remains `NOT_STARTED`.
 
-The remaining pre-VSL paper-only programme has independent Reference-evidence, `DUR-04` and `SIM-DETERMINISM-01` work. To keep ownership singular, the selected next action is one bounded paper-only **`DUR-04 — Content, World Detail and Scripting Contract`** task consuming ADR-0005 and all currently accepted identity/runtime/durability/security boundaries. It must define the minimum headless source-schema/validator/compiler/bundle/loader architecture and scripting/content safety without implementing the full Studio, broad import, runtime gameplay or production deployment.
+The remaining near-term pre-VSL paper-only programme has independent Reference-evidence and `SIM-DETERMINISM-01` work. To keep ownership singular, the selected next action is one bounded paper-only **`SIM-DETERMINISM-01 — Authoritative Simulation Determinism Contract`** task consuming accepted FND-03, GAME-VISION, GAME-CHAR, GAME-ITEM, DUR-03 and DUR-04 boundaries. It must define arithmetic/rounding/overflow, deterministic RNG ownership, logical time/order, replay inputs/state hashing, supported-target determinism and the core-simulation relationship to DUR-04 `script_execution_profile_revision`, without implementing combat, AI, scripts or runtime.
 
-`SIM-DETERMINISM-01` and Reference evidence/parity tooling may continue separately under independent ownership.
+Reference evidence/parity tooling may continue separately under independent ownership.
 
-Executable server/persistence/channel/item implementation still requires explicit owner implementation authorization. No gameplay/runtime implementation, Platform write, PostgreSQL migration/schema deployment, entitlement activation or production behavior is authorized by this register update.
+Executable server/persistence/channel/item/content implementation still requires explicit owner implementation authorization. No gameplay/runtime implementation, Platform write, PostgreSQL migration/schema deployment, entitlement activation, broad content import or production behavior is authorized by this register update.

@@ -9,15 +9,15 @@ repository: blakinio/Oteryn-v2
 base_branch: main
 branch: null
 pr: null
-base_sha: 54dddbcfcb64baaf66e6cfd9fcd2cc3e1b4f04f1
+base_sha: 568236c33cd23da017bca1dbd1ed98afc8da71f4
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: unassigned
 created_at: 2026-08-05T08:49:00+02:00
-updated_at: 2026-08-12T17:26:00+02:00
+updated_at: 2026-08-13T00:30:00+02:00
 execution_budget_minutes: 120
-large_budget_reason: Non-owning programme checkpoint spanning accepted native foundation architecture and the remaining gameplay/content/vertical-slice gates; executable packages remain separately bounded.
+large_budget_reason: Non-owning programme checkpoint spanning accepted native foundation architecture and remaining paper-only/vertical-slice gates; executable packages remain separately bounded.
 owned_paths: []
 public_contracts:
   - docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md
@@ -31,8 +31,8 @@ handover_report: docs/agents/reports/OTV2-20260812-foundation-handover.md
 depends_on:
   - accepted ADR-0001 through ADR-0016 as applicable to their named scopes
   - FND-01 and VSL-02 accepted/applied
-  - FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, DUR-03, ANL-01 and NET-TRANSPORT-01 accepted/lifecycle-closed after their recorded closeouts
-  - GAME-VISION-01, GAME-CHANNEL-01, GAME-CHAR-01 and GAME-ITEM-01 accepted/lifecycle-closed after their recorded closeouts
+  - FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, DUR-03, DUR-04, ANL-01 and NET-TRANSPORT-01 accepted/lifecycle-closed after recorded closeouts
+  - GAME-VISION-01, GAME-CHANNEL-01, GAME-CHAR-01 and GAME-ITEM-01 accepted/lifecycle-closed after recorded closeouts
 blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories:
@@ -43,132 +43,93 @@ external_repositories:
 
 ## Outcome
 
-Maintain a truthful **non-owning** programme checkpoint for Oteryn-v2. It coordinates accepted architecture and names exactly one next safe package without implementing gates, reserving their paths or treating architecture acceptance as runtime completion.
+Maintain a truthful **non-owning** programme checkpoint. This record owns no architecture path and grants no implementation authority. Every substantial future gate still requires its own bounded task, branch, PR, validation and archive lifecycle.
 
-Every substantial architecture or implementation gate still requires its own bounded task, branch, PR, validation, review policy, merge and archive lifecycle.
-
-This refresh is part of GAME-CHANNEL lifecycle closeout PR #210 and becomes canonical only when that closeout merges.
+This refresh is part of DUR-04 lifecycle closeout PR #213 and becomes canonical only after that closeout merges.
 
 ## Canonical continuation order
 
-Use these sources in this order:
+Use, in order:
 
-1. `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` — current DecisionStatus/DeliveryStatus/ImplementationStatus truth;
-2. accepted ADRs/contracts/owner baselines and exact registries — semantic authority;
-3. `docs/architecture/FOUNDATION_DECISION_BACKLOG.md` — stable gate definitions/dependencies;
-4. `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md` — global staged horizon;
-5. `docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md` — gameplay/product ownership and dependencies;
-6. `docs/agents/reports/OTV2-20260812-foundation-handover.md` — current successor handoff;
-7. this checkpoint — non-owning programme summary;
-8. live GitHub branch/PR/CI/task ownership — execution truth.
+1. `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` for current DecisionStatus/DeliveryStatus/ImplementationStatus and selected successor;
+2. accepted ADRs/contracts/owner baselines and machine-readable registries for semantic authority;
+3. `docs/architecture/FOUNDATION_DECISION_BACKLOG.md` for stable gate definitions;
+4. `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md` and `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md` for global/gameplay staged ownership;
+5. `docs/agents/reports/OTV2-20260812-foundation-handover.md` for the durable successor packet;
+6. live GitHub main/PR/task/CI state for execution truth.
 
-Older progress prose that conflicts with current status or later accepted contracts is historical, not executable instruction.
+Older progress prose that conflicts with a later accepted contract or the current-status overlay is historical.
 
-## PROVEN accepted/lifecycle-closed architecture
+## Accepted/lifecycle-closed architecture to consume
 
-Consume rather than redesign:
+Do not restart these gates merely because older backlog or predecision text describes an earlier state:
 
-- canonical native Rust workspace/client cutover and one project-owned `protocol-oteryn`;
-- FND-ID-01 typed identity vocabulary;
+- native Rust workspace/client cutover and one project-owned `protocol-oteryn`;
+- FND-ID-01 identity vocabulary;
 - FND-02 protocol/CommandRef sequencing/reconciliation;
-- FND-03 one-writer runtime ownership, generations and asynchronous external-work boundary;
+- FND-03 one-writer runtime ownership/generation/asynchronous-work boundary;
 - FND-04 GameSession/CharacterLease/admission/recovery fencing;
-- DUR-01 durable identifier representation including non-reused UUIDv7 ItemInstanceId;
-- DUR-02 common Persistence-v1 transaction/migration/outbox/durable-ack/PITR/schema-evolution architecture;
-- ANL-01 event/audit identity, durable evidence, privacy and read-only replay/investigation boundary;
-- GAME-VISION-01 minimum product direction and immutable first Reference target after the 2026-07-28 Global Tibia server-save/maintenance boundary;
-- GAME-CHAR-01 Stage A + Stage B semantic closure with unresolved exact Reference behavior still fail-closed;
+- DUR-01 durable identifier representation;
+- DUR-02 common Persistence-v1 migration/transaction/outbox/durable-ack/PITR/schema-evolution architecture;
+- ANL-01 event/audit identity, durable evidence, privacy and read-only investigation boundary;
+- GAME-VISION-01 product direction and immutable first Reference target after the 2026-07-28 Global Tibia server-save/maintenance boundary;
+- GAME-CHAR-01 Stage A/B semantic closure with unresolved Reference behavior remaining fail-closed;
 - GAME-ITEM-01 typed item definition/instance/equipment/container/revision semantics;
-- DUR-03 item/currency/value transaction, conservation and anti-duplication semantics from PR #207 merge `63380bcba469027e90677aaf4db571fa941be2f4`;
-- GAME-CHANNEL-01 channel product/lifecycle policy from delivery PR #209 exact final head `ca1112191ede7d316c874189f3053ad7f8247579`, squash merge `54dddbcfcb64baaf66e6cfd9fcd2cc3e1b4f04f1`.
+- DUR-03 item/currency/value location, transaction, conservation and anti-duplication semantics;
+- GAME-CHANNEL-01 selection/queue/co-location/anti-hopping/multiplicity/qualitative lifecycle/community policy;
+- DUR-04 stable content/package identity, deterministic locked compilation, immutable bundle staging/activation/migration, bounded loader/provenance and authoritative scripting capability/determinism boundary from delivery PR #212 exact final head `77e68ffb9e9e0e31ca751d42ff5f7c03466b2b23`, squash merge `568236c33cd23da017bca1dbd1ed98afc8da71f4`.
 
-Do not restart these gates merely because older backlog/predecision prose describes an earlier state.
+## Accepted DUR-04 boundary — consume, do not reopen
 
-## Accepted GAME-CHANNEL boundary — consume, do not reopen
+DUR-04 freezes architecture for:
 
-`GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md` freezes:
+- typed semantic content graph independent from YAML/RON/JSON5/custom physical serialization;
+- stable `PackageKey`, immutable `PackageRevision`, stable `ContentKey`, exact immutable Content Lock and revision-scoped compact IDs;
+- deterministic source/import -> typed model -> validation -> dependency/alias resolution -> normalization -> lowering -> client/server projection -> immutable bundle -> staging -> explicit activation;
+- allowlisted client-safe projection with server-only authoritative data excluded;
+- fail-closed loader validation with checked allocation/decompression/integrity/version/dependency/index/semantic validation and no partial authoritative publication;
+- explicit content activation/rollback and durable-state migration classes;
+- exact external-source provenance and `COPY|CONVERT|REWRITE|REFERENCE_ONLY|REJECT` dispositions with importer-boundary LIR;
+- target WebAssembly Component Model + project-owned versioned WIT capability ABI, with Wasmtime only an implementation candidate;
+- no ambient filesystem/network/process/environment/SQL/global-Game authority for scripts;
+- snapshot-bound authoritative reads and proposal-only extension-state/domain mutations;
+- no ActionPlan-created cross-owner atomicity; wider workflows retain owning OperationId/idempotency/compensation semantics;
+- deterministic logical time, invocation-local RNG, stable query order, deterministic numeric/NaN policy, fuel/resource bounds and `script_execution_profile_revision`;
+- typed/versioned bounded durable extension state, never VM memory persistence;
+- explicit GAME-CHANNEL multiplicity/eligibility classification for relevant value-producing sources;
+- Resource Limits Registry completeness before implementation acceptance;
+- a bounded reversible physical-format/compiler/loader spike before final serializer/container/chunk/floor/compression choices.
 
-- canonical `ChannelRef=WorldId+ChannelId` versus non-authoritative display labels/ordinals;
-- bounded eligible-set + non-authoritative recommendation + explicit eligible target with FND-04 retaining final admission authority;
-- fail-closed stale/full/draining/recovering/incompatible targets and no silent grant retarget;
-- optional bounded target-Channel pre-admission queue that is never GameSession/CharacterLease/value authority;
-- privacy-bounded party/friend co-location hints with independent Character admissions and no party-owned Channel;
-- same-Channel reconnect/recovery versus completed fresh-session Channel switch;
-- durable GAME-CHANNEL/world-policy anti-hopping state scoped Character+World, including prior successful Channel semantics across logout/relog/restart;
-- different-Channel destination admission + remembered Channel/guard update as one recovery-safe semantic outcome;
-- no mandatory new ChannelSwitchId without later lifecycle evidence;
-- fail-closed authored Channel-sensitive value-source multiplicity classes `CHANNEL_LOCAL_REPEATABLE`, `CHANNEL_LOCAL_SHARED_ELIGIBILITY`, `WORLD_SCOPED_UNIQUE`, `EXPLICIT_EVENT_POLICY_REQUIRED`;
-- explicit separation of event simulation scope and durable reward eligibility scope;
-- no hidden inverse spawn/loot tuning based on active Channel count;
-- qualitative lifecycle triggers `DEMAND_PRESSURE`, `RECOVERY_PRESSURE`, `LOW_LOAD_CONSOLIDATION_CANDIDATE`, `CHANNEL_UNHEALTHY`;
-- legitimate new semantic Channel creation only from sustained eligible demand or bounded recovery-capacity need with insufficient healthy eligible capacity/headroom, compatible product/event/reward multiplicity policy, safe resources and Ready-before-Selectable;
-- party/private-copy preference, emptier-Channel preference, rare-spawn/loot farming, PvP avoidance or operator preference alone cannot create public Channel capacity;
-- same-ChannelId recovery for affected failed actors; a new semantic Channel may supply general capacity but cannot silently continue failed Channel A actors as Channel B;
-- low-load drain prerequisites, drain abort/hold conditions and terminal retirement settlement/fencing/stale-routing requirements;
-- temporary stop/reactivation versus permanent semantic retirement; retired ChannelId never reused;
-- local PvP execution with World/Character consequences surviving Channel transitions;
-- one-World guild/economy/ranking/community identity while local speech/combat/position stays Channel-local;
-- product-facing `SELECTABLE`, `CAPACITY_LIMITED`, `DRAINING`, `RECOVERING`, `UNAVAILABLE` semantics;
-- existing `world_policy_revision` for Channel-policy compatibility and separate cross-World lifecycle.
-
-GAME-CHANNEL intentionally leaves all numeric demand/load windows, utilization percentages, queue objectives, headroom, players/Channel thresholds, min/max Channels, cooldowns, hysteresis/timers and placement capacities to PERF/OPS evidence. It does not grant runtime/client/Platform/DDL/production/entitlement authority.
-
-## Accepted DUR-03 boundary — consume, do not reopen
-
-DUR-03 remains authoritative for durable item/currency/value location, ItemInstanceId lifecycle transitions, exact conservation/source-sink lineage, CommandRef/OperationId/TransactionId idempotency/retry/ambiguous-commit handling, current lease/runtime fencing, typed custody, bounded durable audit and restore-integrity/anti-duplication.
-
-GAME-CHANNEL decides product multiplicity/eligibility/lifecycle; it cannot authorize value creation or weaken DUR-03.
+DUR-04 intentionally does **not** freeze the authoring serializer, final bundle container, 32x32 versus 64x64 chunking, floor packing, compression codec, exact WIT function inventory, exact Wasmtime version/features or numeric resource ceilings.
 
 ## Implementation boundary
 
-Architecture acceptance still grants **no executable authority**. No task may create or claim:
+Architecture acceptance grants **no executable authority**. A future task may not create or claim Rust GameNode/Channel/item/content runtime, compiler/loader/Studio/scripting host, WIT implementation, PostgreSQL DDL/migrations, Platform/Gateway/World Registry changes, live item/currency/content/Channel mutation, broad legacy content import, production traffic/configuration or entitlement activation without separate explicit owner implementation authority and its own evidence.
 
-- Rust GameNode/Channel/item/content runtime;
-- protocol gameplay payload implementation;
-- PostgreSQL DDL/migration files or migration execution;
-- Platform/Gateway/World Registry implementation changes;
-- live item/currency/value or Channel mutation;
-- production traffic/deployment/configuration;
-- Premium/VIP or other entitlement activation;
+## Current ordered paper-only architecture work
 
-without a separate explicit owner implementation authorization and its own bounded task/evidence.
+After DUR-04 lifecycle closeout, `SIM-DETERMINISM-01` and the Reference evidence/parity manifest remain independently ownable pre-VSL paper-only work.
 
-A future authorized server/persistence programme may consume accepted contracts through bounded real-boundary slices. The safe decomposition hypothesis remains:
+To preserve singular ownership, the selected next action is exactly:
 
 ```text
-server bootstrap / GameNode shell
--> protocol-oteryn transport/runtime adapter
--> admission + GameSession + CharacterLease
--> PostgreSQL migration/persistence substrate
--> Character/FND-04 persistence
--> minimal ChannelRuntime
--> later movement/combat/item/content slices
+SIM-DETERMINISM-01 — Authoritative Simulation Determinism Contract
 ```
 
-Channel product implementation additionally consumes GAME-CHANNEL and later PERF/OPS numeric/orchestration evidence. Item/value implementation additionally consumes GAME-ITEM/DUR-03 plus concrete ANL/resource-limit evidence.
+The bounded gate should define only architecture needed now for authoritative arithmetic representation, rounding and overflow, deterministic RNG ownership/streams, simulation logical time and ordering, replay inputs, state hashing/divergence evidence, supported-target determinism and the relationship to DUR-04 `script_execution_profile_revision`. It must not implement combat, AI, scripts or runtime.
 
-## Current ordered architecture work
-
-After GAME-CHANNEL lifecycle closeout, remaining pre-VSL paper-only architecture includes independent Reference evidence/parity tooling, `DUR-04` and `SIM-DETERMINISM-01`.
-
-To preserve singular ownership, the selected next action is:
-
-1. `DUR-04 — Content, World Detail and Scripting Contract` — bounded paper-only architecture for the minimum headless content path: source schema -> validator -> deterministic compiler -> World Bundle -> loader, including Content Registry package/version/dependency semantics, source/bundle evolution and compatibility, corruption/decompression/resource limits, migration/import classification, scripting capabilities/isolation/persistence access/hot-reload boundary and asset provenance. Do not build the full Studio or runtime implementation.
-
-`SIM-DETERMINISM-01` and Reference evidence/parity tooling may proceed independently under separate ownership. Neither is implicitly accepted by choosing DUR-04 as the next action.
-
-QUIC remains later profile/reconciliation/evidence work.
+Reference evidence/parity tooling remains independently ownable and is not implicitly accepted by selecting SIM as next.
 
 ## Repository and production authority
 
-Routine writes remain limited to `blakinio/Oteryn-v2`. External repositories remain read-only unless the owner separately authorizes an exact write task.
+Routine writes remain limited to `blakinio/Oteryn-v2`. External repositories remain read-only unless explicitly authorized for an exact write task.
 
-This checkpoint grants no production deployment, protected-environment approval, secrets, live account/session/data/database mutation, entitlement activation or proprietary asset copying.
+No production deployment, protected-environment approval, secrets, live account/session/data/database mutation, entitlement activation or proprietary asset copying is authorized.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: GAME-CHANNEL-01 delivery PR #209 passed exact-head self-review, required fresh independent no-suggestion Codex review and Agent Governance/Dependency Review/CodeQL after repair budget 3/3, then squash-merged unchanged as 54dddbcfcb64baaf66e6cfd9fcd2cc3e1b4f04f1; lifecycle closeout #210 reconciles canonical status/handoff and releases GAME-CHANNEL ownership.
+last_progress: DUR-04 delivery PR #212 passed owner-directed exact-head self-review `4921665072` under the explicit owner review override, repair budget 3/3 and exact-head Governance/Dependency/CodeQL, then squash-merged as `568236c33cd23da017bca1dbd1ed98afc8da71f4`; lifecycle closeout #213 reconciles canonical status and releases DUR-04 ownership.
 status: ready
 branch: null
 head_sha: null
@@ -190,5 +151,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: false
 blocker: null
-next_action: From live main after GAME-CHANNEL lifecycle closeout, create one bounded paper-only `DUR-04` architecture task for the minimum headless content/world/scripting contract; do not implement runtime/Studio/DDL/production behavior.
+next_action: From live main after DUR-04 lifecycle closeout, create one bounded paper-only `SIM-DETERMINISM-01` architecture task; do not implement runtime/combat/AI/scripts/DDL/production behavior.
 ```
