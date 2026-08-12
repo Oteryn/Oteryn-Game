@@ -40,7 +40,7 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 | `GAME-CHAR-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | Stage A + Stage B semantic architecture are owner-accepted; delivery PR #193 exact head `bc4942cab0e58b3aa4ed9713cc3f23b11b83aaa6` passed self-review `4911343351`, Agent Governance `31542939497`, Dependency Review `31542939533` and CodeQL `31542939487`, then squash-merged as `08775e378db8c1fd6bb97bedf66bf08b3541f35f`; unresolved target rules remain per-behavior parity gates and runtime authority is NONE |
 | `GAME-ITEM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | blocks final DUR-03 item transaction semantics; Reference-sensitive item work uses the accepted 2026-07-28 target unless explicitly superseded/scoped |
 | `SIM-DETERMINISM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | required before broad combat/AI formula freeze and before `PARITY_CONFIRMED` claims for unresolved Character arithmetic delegated from GAME-CHAR |
-| `DUR-02` | `PROPOSED` | `OPEN` | `NOT_STARTED` | `DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md` is owner-accepted for the profile-neutral Character persistence sub-scope only; overall Persistence-v1 remains broader and unaccepted, this owner-baseline recording lifecycle is active, and no DDL/runtime authority exists |
+| `DUR-02` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | profile-neutral Character persistence partial baseline is owner-accepted in `DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md`; delivery PR #197 exact head `3a0695bb659e5f052c2fd0dfe14f3e791ff5daf3` passed self-review `4913700786`, independent Codex review `5263320234`, Agent Governance `31570888666`, Dependency Review `31570888613` and CodeQL `31570888677`, then squash-merged as `a88c15e6bf77fe4b775005011ec3cc38837f2a0a`; overall Persistence-v1 remains broader and `PROPOSED`, no DDL/runtime authority |
 | `DUR-03` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | waits for accepted DUR-02 + GAME-ITEM-01 + ANL-01 evidence semantics |
 | `DUR-04` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | content/world/scripting architecture; minimum headless schema/validator/compiler/bundle/loader precedes full Studio |
 | `PROD-ENTITLEMENTS-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Platform producer security prerequisite #944 is satisfied by PR #968 merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`; Oteryn-v2 consumer/enforcement contract remains unaccepted and Premium/VIP/game-consumed entitlement activation remains unauthorized |
@@ -147,7 +147,7 @@ The native client therefore remains legitimately pre-native-protocol until a sep
 
 ## 8. Next ordered architecture and proof work
 
-The immediate programme is refined now that the profile-neutral Character persistence sub-scope is owner-accepted while overall DUR-02 remains open:
+The immediate programme is refined now that the profile-neutral Character persistence sub-scope is owner-accepted while overall DUR-02 remains `PROPOSED`:
 
 1. `DUR-02 — Persistence v1` — perform a bounded **whole-gate paper-only reconciliation** against `FOUNDATION_DECISION_BACKLOG.md` and later gate splits. Identify which historical Persistence-v1 subjects still belong to DUR-02, which are already accepted by the Character partial baseline, which moved to GAME-ITEM/DUR-03/OPS/PERF/privacy or another owner, and what still requires acceptance before overall DUR-02 may become `ACCEPTED`. Do not implement DDL/migrations/runtime.
 2. `GAME-CHANNEL-01` — channel social/economic/PvP/UX policy may proceed in parallel before multichannel becomes a product feature and before profile-specific PvP Character schema completeness is claimed.
@@ -215,13 +215,13 @@ GAME-CHAR-01
 -> runtime authority NONE
 
 DUR-02 Character persistence sub-scope
--> OWNER-ACCEPTED PARTIAL BASELINE
+-> OWNER-ACCEPTED PARTIAL BASELINE / LIFECYCLE_CLOSED
 -> normalized current state + CharacterRevision + typed extensions + FND-04 atomic authority persistence
 -> no generic JSON/KV/EAV misc-state escape hatch
 -> DDL/migrations/runtime NOT_AUTHORIZED
 
 DUR-02 overall
--> PROPOSED / OPEN during this owner-baseline delivery / NOT_STARTED
+-> PROPOSED / PLANNED / NOT_STARTED
 -> historical Persistence-v1 scope is broader than Character persistence
 -> whole-gate paper-only reconciliation required before ACCEPTED
 
