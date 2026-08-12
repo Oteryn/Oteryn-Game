@@ -9,7 +9,7 @@
 - ANL-01 delivery merge: `af2fa495c1126080ffc1d0717b7d0ef54f6b29ca`
 - Dual-transport architecture closeout merge: `05544969baf58c3a40354f366438d759bfd159e5`
 - Platform entitlement producer-remediation merge: `blakinio/Oteryn-Platform@afaa6d1d8340e44b1152b62d6d27e5fd1649804a`
-- Current phase: `foundation architecture accepted/lifecycle-closed where delivered + runtime largely NOT_STARTED / GAME-VISION, GAME-CHAR, whole DUR-02 Persistence-v1 and GAME-ITEM architecture accepted; server/persistence foundation implementation still requires separate explicit implementation authorization while DUR-03 is the next ordered paper-only item/value gate and GAME-CHANNEL, DUR-04 and SIM/ruleset evidence remain independent gates`
+- Current phase: `foundation architecture accepted/lifecycle-closed where delivered + runtime largely NOT_STARTED / GAME-VISION, GAME-CHAR, whole DUR-02 Persistence-v1, GAME-ITEM and DUR-03 durable-value architecture accepted; server/persistence and item/value runtime implementation still require separate explicit owner authority while GAME-CHANNEL-01 is the earliest remaining owner-accepted programme-order paper-only product gate and DUR-04/SIM/ruleset evidence remain independent gates`
 
 ## 1. Authority of this overlay
 
@@ -36,12 +36,12 @@ Older backlog/register prose that describes completed FND/DUR/ANL gates as live 
 | `DUR-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | durable representation + ItemInstanceId accepted; physical PostgreSQL implementation is downstream |
 | `ANL-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | event/audit foundation accepted; no runtime event collector/outbox/broker/warehouse implementation |
 | `GAME-VISION-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | minimum product-vision baseline and the immutable first Reference target are accepted; target delivery PR #181 final head `2a07643653d6d56a94ada89caf79005fce09e58a` passed self-review `4910439614`, Agent Governance `31532701302`, Dependency Review `31532701303` and CodeQL `31532701319`, then squash-merged as `b57b382cb929b2c8a20d5c81197e933b0526764f`; no runtime authority |
-| `GAME-CHANNEL-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | social/economic/PvP/UX channel policy required before multichannel becomes a product feature |
+| `GAME-CHANNEL-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | owner-accepted programme refinement requires social/economic/PvP/UX channel policy before multichannel becomes a product feature; with DUR-03 closed this is the earliest remaining ordered paper-only product gate |
 | `GAME-CHAR-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | Stage A + Stage B semantic architecture are owner-accepted; delivery PR #193 exact head `bc4942cab0e58b3aa4ed9713cc3f23b11b83aaa6` passed self-review `4911343351`, Agent Governance `31542939497`, Dependency Review `31542939533` and CodeQL `31542939487`, then squash-merged as `08775e378db8c1fd6bb97bedf66bf08b3541f35f`; unresolved target rules remain per-behavior parity gates and runtime authority is NONE |
 | `GAME-ITEM-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | canonical `GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md`; delivery PR #205 exact final head `53d0189a114c99b4e7d44ca8d0db7a6bf5f3ea1a` passed terminal self-review `4915880173`, independent Codex no-suggestion review and Agent Governance `31591336315`, Dependency Review `31591336312`, CodeQL `31591336340`, then squash-merged as `5c502d24557621efc798def87b68f137ba23fad8`; no runtime/DDL/entitlement authority |
 | `SIM-DETERMINISM-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | required before broad combat/AI formula freeze and before `PARITY_CONFIRMED` claims for unresolved Character arithmetic delegated from GAME-CHAR |
 | `DUR-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | owner-accepted whole Persistence-v1 baseline in `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md`; delivery PR #201 exact head `900be9f499981e638a6f8089fb46331b43ba321c` passed self-review `4914253621`, independent Codex review `5264011166`, Agent Governance `31576235871`, Dependency Review `31576235909` and CodeQL `31576235921`, then squash-merged as `ec4b840b0742967370a4235d87094b29a802fe28`; Character persistence partial baseline remains binding; no PostgreSQL DDL/migration or runtime authority |
-| `DUR-03` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | GAME-ITEM-01, whole DUR-02 and ANL-01 semantic prerequisites are accepted; DUR-03 is now the next eligible paper-only item/currency/value transaction and anti-duplication architecture gate, while runtime item mutation remains unauthorized |
+| `DUR-03` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | canonical `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`; delivery PR #207 exact final head `a1d949362e219373a5d314c0e9ddf8de110362dd` passed self-review `4916797999`, independent Codex no-suggestion review, Agent Governance `31599369738`, Dependency Review `31599369737`, CodeQL `31599369780`, then squash-merged as `63380bcba469027e90677aaf4db571fa941be2f4`; architecture freezes item/value location, conservation, idempotency, runtime↔durable handoff and anti-duplication semantics but grants no runtime/DDL/production authority |
 | `DUR-04` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | content/world/scripting architecture; minimum headless schema/validator/compiler/bundle/loader precedes full Studio |
 | `PROD-ENTITLEMENTS-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Platform producer security prerequisite #944 is satisfied by PR #968 merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`; Oteryn-v2 consumer/enforcement contract remains unaccepted and Premium/VIP/game-consumed entitlement activation remains unauthorized |
 
@@ -53,7 +53,7 @@ FND-02 retains one `protocol-oteryn` application protocol, TLS/protobuf gameplay
 
 FND-03 retains one logical authoritative mutation owner per channel/instance, separate ownership generation, owner-scoped RuntimeExecutionOrdinal, bounded queues, fail-closed stale work and measured capacity requirements. ADR-0009 remains binding that one `GameNode` is one game-server process. ADR-0015 leaves internal module/crate decomposition unfrozen; a domain-modular monolith is only the preferred nonbinding starting hypothesis until measured deployment/security/data/failure evidence justifies a distinct adjacent service boundary or a later explicit superseding decision.
 
-FND-04 remains accepted/lifecycle-closed with ownership-before-world admission, purpose-separated grant profiles, anti-rollback security evidence, PREPARE/COMMIT reconnect, healthy-binding non-preemption, ControlLossEpoch, exactly 4 seconds eligible defensive PvE re-entry protection and fail-closed recovery. Any future change to the four-second value requires explicit game-design evidence and superseding policy rather than hidden configuration drift.
+FND-04 remains accepted/lifecycle-closed with ownership-before-world admission, purpose-separated grant profiles, anti-rollback security evidence, PREPARE/COMMIT reconnect, healthy-binding non-preemption, ControlLossEpoch, exactly 4 seconds eligible defensive PvE re-entry protection and fail-closed recovery. Any future change to the four-second value requires explicit game-design evidence and superseding policy rather than hidden per-server drift.
 
 DUR-01 remains accepted/lifecycle-closed: UUIDv7 native durability uses PostgreSQL `uuid`, persisted CommandId preserves full uint64 via `numeric(20,0)`, ItemInstanceId is a game-owned UUIDv7 identity, legacy imports use stable source namespace identity, and internal IDs are not automatically public.
 
@@ -67,7 +67,9 @@ DUR-01 remains accepted/lifecycle-closed: UUIDv7 native durability uses PostgreS
 
 `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` closes the **whole common Persistence-v1 architecture** above that Character sub-baseline. It accepts: one ordered game-owned migration history for the current `oteryn_game` boundary with explicit immutable migration artifacts and a dedicated least-privilege migrator; anomaly-proof transaction isolation/locking/retry rules; one ANL-compatible durable journal plus crash-safe publication checkpoint substrate; strict separation of acknowledged committed durability from FND-03 runtime checkpoints and disaster RPO; PITR-capable restore-tested fail-closed recovery with non-rollback authority fencing; and game-wide expand/migrate/validate/cut-over/contract schema evolution. The fourteen historical DUR-02 subjects are exhaustively assigned to `SATISFIED`, whole-DUR-02, exact gameplay/domain owners or implementation/PERF evidence. Whole-DUR-02 acceptance creates no DDL, migration-execution or runtime authority.
 
-`GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md` is now accepted/lifecycle-closed architecture. It fixes ItemType versus ItemInstance versus authored StaticItemPlacement semantics; typed bounded item capabilities; server-authoritative equipment occupancy and container legality; explicit definition compatibility/migration; Reference fail-closed evidence discipline; and preserves DUR-03 as the sole owner of item/currency/value conservation, atomic location, retry/crash and create/destroy/split/merge/transform identity-transition semantics. GAME-ITEM acceptance creates no item runtime, SQL, entitlement or production authority.
+`GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md` is accepted/lifecycle-closed architecture. It fixes ItemType versus ItemInstance versus authored StaticItemPlacement semantics; typed bounded item capabilities; server-authoritative equipment occupancy and container legality; explicit definition compatibility/migration; Reference fail-closed evidence discipline; and delegates item/currency/value conservation, atomic location, retry/crash and create/destroy/split/merge/transform identity-transition semantics to the now accepted DUR-03 contract. GAME-ITEM acceptance creates no item runtime, SQL, entitlement or production authority.
+
+`DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md` is accepted/lifecycle-closed architecture. It freezes one typed immediate semantic location for every live durable ItemInstance; current runtime ownership versus durable recoverability; non-blocking runtime reservation -> asynchronous game-DB durable linearization -> runtime reconciliation for ground/instance value crossings; transaction-scoped new ItemInstanceId semantics; split/merge/transform lifecycle rules; exact transfer/mint/burn/transform/conversion conservation and provenance; CommandRef/OperationId/TransactionId retry/ambiguous-commit behavior; current GameSession/CharacterLease/runtime ownership fencing; typed custody; bounded durable audit; and fail-closed restore reconciliation. It preserves downstream loot/trade/market/bank/depot/mail/reward/house/crafting/entitlement policy ownership and grants no runtime/client/DDL/migration/production authority.
 
 ## 4. Accepted ANL-01 foundation
 
@@ -126,7 +128,7 @@ Before external alpha, operator/GM mutations must use typed, RBAC-controlled, id
 
 ## 7. Runtime/implementation status
 
-Accepted FND/DUR-01/DUR-02/ANL-01/NET-TRANSPORT-01/GAME-VISION-01/GAME-CHAR/GAME-ITEM architecture does **not** itself authorize:
+Accepted FND/DUR-01/DUR-02/DUR-03/ANL-01/NET-TRANSPORT-01/GAME-VISION-01/GAME-CHAR/GAME-ITEM architecture does **not** itself authorize:
 
 - TCP or QUIC gameplay adapter/listener implementation;
 - any currently functional gameplay transport client mode;
@@ -138,7 +140,7 @@ Accepted FND/DUR-01/DUR-02/ANL-01/NET-TRANSPORT-01/GAME-VISION-01/GAME-CHAR/GAME
 - Character schema/progression/death/offline-training runtime implementation merely because semantic/persistence architecture is accepted;
 - profile-specific Character persistence without its owning profile semantics;
 - any unresolved `UNKNOWN/CONFLICT` Character rule as Reference behavior;
-- item/currency transaction implementation;
+- item/currency transaction implementation, runtime ground↔durable handoff implementation or anti-duplication runtime merely because DUR-03 is accepted;
 - broad gameplay/content implementation from the product baseline alone;
 - broker/stream/warehouse/lake/dashboard selection or deployment;
 - balance/security detector implementation;
@@ -152,19 +154,20 @@ The native client therefore remains legitimately pre-native-protocol until a sep
 
 ## 8. Next ordered architecture and proof work
 
-Whole `DUR-02 — Persistence v1` and `GAME-ITEM-01` architecture are accepted. The project has reached the point where a **separately authorized server/persistence foundation implementation programme** may begin for already accepted FND-02/FND-03/FND-04/DUR-01/DUR-02/ANL-01/GAME-CHAR scopes; architecture acceptance does not itself grant that implementation authority. Independently, `DUR-03` is now the next ordered paper-only item/value architecture gate.
+Whole `DUR-02 — Persistence v1`, `GAME-ITEM-01` and `DUR-03` durable-value architecture are accepted/lifecycle-closed while implementation remains `NOT_STARTED`. A **separately authorized server/persistence foundation implementation programme** may consume accepted common scopes, but architecture acceptance does not itself grant that authority.
+
+Under the owner-accepted 2026-08-10 recommended ordering, `GAME-CHANNEL-01` is now the earliest remaining paper-only product gate: channel policy was intentionally required before multichannel becomes a product feature and remains `PROPOSED / PLANNED / NOT_STARTED` with no live owning PR at this closeout.
 
 The next ordered work is:
 
-1. `DUR-03 — Item Transaction and Anti-Duplication Invariants` — freeze durable item/currency/value transfer/conservation, single-location, idempotency, stale-writer, retry/crash and create/destroy/split/merge/transform identity-transition semantics on top of accepted GAME-ITEM + DUR-02 + ANL-01. This is paper-only architecture; runtime item mutation remains unauthorized.
-2. Obtain explicit implementation authority before any bounded server/persistence foundation executable increment. A safe decomposition remains: GameNode/bootstrap shell -> `protocol-oteryn` transport/runtime adapter -> admission/GameSession/CharacterLease -> PostgreSQL migration/persistence substrate -> Character/FND-04 persistence -> minimal ChannelRuntime. Do not implement until that authority is explicit.
-3. `GAME-CHANNEL-01` — channel social/economic/PvP/UX policy may proceed in parallel before multichannel becomes a product feature and before profile-specific PvP Character schema completeness is claimed.
-4. Build the versioned Reference evidence/parity manifest under its owning contract; GAME-CHAR and GAME-ITEM `UNKNOWN/CONFLICT` exact rules remain fail-closed until evidenced or explicitly declared different.
-5. `DUR-04` minimum headless content path — schema -> validator -> deterministic compiler -> bundle -> loader; full Studio remains downstream.
-6. `SIM-DETERMINISM-01` — freeze authoritative arithmetic/replay requirements and deterministic fixtures before broad combat/AI implementation and before unresolved Character arithmetic may be `PARITY_CONFIRMED`.
-7. `NET-TRANSPORT-02` (or equivalent bounded successor) — register QUIC transport profile, reconcile FND-04 fresh/recovery transport bindings and prove FND-02 ordered-lane/snapshot semantics before functional player QUIC admission.
-8. Expand the umbrella `VSL-01` through ordered real-boundary slices after each owning architecture/implementation gate is ready: admission, movement, combat, persistence, recovery, then multichannel.
-9. Establish minimal admin/security/SRE readiness before external alpha.
+1. `GAME-CHANNEL-01` — freeze channel creation/removal/capacity policy, player choice/assignment, party/friend co-location, queue/visibility, switch cooldown/anti-hopping, spawn/loot/resource multiplication, world-global event/reward scope, PvP implications, social fragmentation safeguards and recovery rule preventing silent relocation into a different live state. Paper-only architecture; no runtime implementation.
+2. Obtain explicit implementation authority before any bounded server/persistence or DUR-03 executable increment. A safe decomposition remains: GameNode/bootstrap shell -> `protocol-oteryn` transport/runtime adapter -> admission/GameSession/CharacterLease -> PostgreSQL migration/persistence substrate -> Character/FND-04 persistence -> minimal ChannelRuntime. Item/value runtime implementation additionally consumes accepted GAME-ITEM/DUR-03 and concrete ANL/resource-limit evidence. Do not implement until authority is explicit.
+3. Build the versioned Reference evidence/parity manifest under its owning contract; GAME-CHAR, GAME-ITEM and downstream Reference-sensitive `UNKNOWN/CONFLICT` exact rules remain fail-closed until evidenced or explicitly declared different.
+4. `DUR-04` minimum headless content path — schema -> validator -> deterministic compiler -> bundle -> loader; full Studio remains downstream.
+5. `SIM-DETERMINISM-01` — freeze authoritative arithmetic/replay requirements and deterministic fixtures before broad combat/AI implementation and before unresolved Character arithmetic may be `PARITY_CONFIRMED`.
+6. `NET-TRANSPORT-02` (or equivalent bounded successor) — register QUIC transport profile, reconcile FND-04 fresh/recovery transport bindings and prove FND-02 ordered-lane/snapshot semantics before functional player QUIC admission.
+7. Expand the umbrella `VSL-01` through ordered real-boundary slices after each owning architecture/implementation gate is ready: admission, movement, combat, persistence, recovery, then multichannel.
+8. Establish minimal admin/security/SRE readiness before external alpha.
 
 `PROD-ENTITLEMENTS-01` remains independently deferred. Its Platform producer-side prerequisite is satisfied, but game-consumed Premium/VIP/commerce behavior still requires its own Oteryn-v2 consumer/enforcement contract and rollout proof.
 
@@ -237,9 +240,13 @@ GAME-ITEM-01
 -> runtime / DDL / entitlement authority NONE
 
 DUR-03
+-> ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED
+-> durable item/currency/value transaction, conservation, idempotency and runtime↔durable handoff architecture accepted
+-> runtime / DDL / production authority NONE
+
+GAME-CHANNEL-01
 -> PROPOSED / PLANNED / NOT_STARTED
--> next eligible paper-only item/currency/value transaction and anti-duplication gate
--> runtime item mutation still NOT_AUTHORIZED
+-> next ordered paper-only product/channel gate
 
 server/persistence foundation implementation
 -> architecture prerequisites for accepted common scopes are READY

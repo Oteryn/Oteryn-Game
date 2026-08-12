@@ -58,8 +58,10 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 
 - [GAME-ITEM-01 — Item model and equipment analysis](GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_ANALYSIS.md)
 - [GAME-ITEM-01 — Item model and equipment contract](GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md)
+- [DUR-03 — Item transaction and anti-duplication analysis](DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_ANALYSIS.md)
+- [DUR-03 — Item transaction and anti-duplication contract](DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md)
 
-`GAME-ITEM-01` is accepted/lifecycle-closed architecture with implementation `NOT_STARTED`. It freezes the item semantic envelope required by `DUR-03` but does not authorize runtime item/currency/value mutation, PostgreSQL DDL/migrations or entitlement activation.
+`GAME-ITEM-01` and `DUR-03` are accepted/lifecycle-closed architecture with implementation `NOT_STARTED`. Together with DUR-01/DUR-02/ANL-01 and the accepted runtime/session authority contracts they freeze the semantic envelope for durable item/currency/value mutation: typed item legality, one durable item location, ItemInstanceId lifecycle transitions, conservation/source-sink lineage, idempotency/retry/ambiguous-commit handling, runtime↔durable pickup/drop fencing, typed custody and bounded durable evidence. They do **not** authorize Rust/runtime implementation, PostgreSQL DDL/migrations, production mutation or entitlement activation.
 
 ## Machine-readable contracts
 
@@ -77,12 +79,11 @@ GAME-VISION-01 minimum
 + GAME-CHANNEL-01
 
 GAME-CHAR-01
--> final character-bearing DUR-02
+-> accepted DUR-02 Character persistence envelope
 
 accepted GAME-ITEM-01
-+ accepted DUR-02
-+ accepted ANL-01 evidence semantics
--> paper-only DUR-03 architecture
++ accepted DUR-01/DUR-02/ANL-01
+-> accepted DUR-03 transaction/conservation architecture
 -> runtime item mutation still separately unauthorized
 
 SIM-DETERMINISM-01
@@ -90,7 +91,7 @@ SIM-DETERMINISM-01
 -> small real-boundary VSL sequence
 ```
 
-`DUR-03` is the next eligible paper-only item/currency/value transaction and anti-duplication architecture gate. It retains conservation, atomic location, idempotency/retry/crash behavior and create/destroy/split/merge/transform identity-transition ownership.
+After DUR-03 lifecycle closeout, `GAME-CHANNEL-01` is the earliest still-unresolved paper-only gate in the owner-accepted recommended ordering. Reference evidence/parity tooling, `DUR-04` and `SIM-DETERMINISM-01` remain independently ownable paper-only work. Any executable server/persistence/gameplay increment still requires separate explicit implementation authority.
 
 ## Transport rule
 

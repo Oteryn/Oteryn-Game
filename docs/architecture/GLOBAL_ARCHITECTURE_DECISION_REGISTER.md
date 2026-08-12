@@ -56,11 +56,12 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | DUR-02 profile-neutral Character persistence partial baseline | `ACCEPTED` | `DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md` |
 | DUR-02 Persistence-v1 whole-gate architecture: migration authority, transaction correctness, durable audit/outbox substrate, durable-ack/checkpoint/RPO separation, PITR/restore safety and compatible schema evolution with all historical subjects reconciled | `ACCEPTED` | `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` |
 | GAME-ITEM-01 native item model, equipment/container legality and definition compatibility/migration semantics | `ACCEPTED` | `GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md`, delivery PR #205 final head `53d0189a114c99b4e7d44ca8d0db7a6bf5f3ea1a`, merge `5c502d24557621efc798def87b68f137ba23fad8` |
+| DUR-03 item/currency/value transaction, conservation, idempotency, runtime↔durable handoff and anti-duplication architecture | `ACCEPTED` | `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`, delivery PR #207 final head `a1d949362e219373a5d314c0e9ddf8de110362dd`, merge `63380bcba469027e90677aaf4db571fa941be2f4` |
 
 ## Progressive execution policy
 
 - `FND-01`, `VSL-02`, the destination migration and the source-only historical/non-canonical closeout are complete.
-- `FND-ID-01`, `FND-02`, `FND-03`, `FND-04`, `DUR-01`, `DUR-02`, `ANL-01`, `GAME-ITEM-01` and the dual-transport architecture strategy are accepted/lifecycle-closed where recorded by `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`; implementation status remains separate and is largely `NOT_STARTED`.
+- `FND-ID-01`, `FND-02`, `FND-03`, `FND-04`, `DUR-01`, `DUR-02`, `DUR-03`, `ANL-01`, `GAME-ITEM-01` and the dual-transport architecture strategy are accepted/lifecycle-closed where recorded by `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`; implementation status remains separate and is largely `NOT_STARTED`.
 - The migrated client remains in ADR-0011 `pre-native-protocol`: it launches and fails closed before gameplay credential consumption, routing or gameplay transport.
 - `protocol-canary` remains absent from the destination production graph and cannot re-enter as a production adapter/fallback without an explicit superseding owner decision.
 - ADR-0009 fixes the GameNode/process/container boundary and recovery invariants; `PERF-01` gates supported capacity claims and `OPS-CHANNEL-01` gates automatic production channel scaling and claimed production recovery behavior.
@@ -69,11 +70,11 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` and `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` remain binding; GAME-CHAR acceptance does not mean complete July-28 behavior knowledge or `PARITY_CONFIRMED`.
 - `DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md` remains binding for the profile-neutral Character persistence sub-scope and is consumed by the accepted whole gate.
 - `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` accepts the six common Persistence-v1 rules and the exhaustive fourteen-subject disposition. It makes no SQL DDL, migration execution, Rust runtime or production claim.
-- Whole-DUR-02 acceptance removes the historical accidental dependency on GAME-ITEM/DUR-03 for the **common persistence substrate**. A separately authorized server/persistence foundation implementation may now consume accepted FND-02/FND-03/FND-04/DUR-01/DUR-02/ANL-01/GAME-CHAR architecture without waiting for item semantics.
-- `GAME-ITEM-01` now satisfies the item semantic prerequisite for DUR-03. Durable item/currency/value runtime mutation remains blocked on DUR-03 acceptance plus separate implementation authority; common persistence and accepted GAME-ITEM semantics cannot claim conservation on DUR-03's behalf.
-- Historical market/economy consistency belongs to `EXP-ECONOMY-01`, guild/social to `EXP-SOCIAL-01`, houses to `EXP-HOUSES-01`, recurring/meta rewards to `GAME-META-01`, encounter/event rewards to `EXP-EVENTS-01`, with `DUR-03` retaining item/currency conservation wherever those domains move value.
+- Whole-DUR-02 acceptance removes the historical accidental dependency on GAME-ITEM/DUR-03 for the **common persistence substrate**. A separately authorized server/persistence foundation implementation may consume accepted FND-02/FND-03/FND-04/DUR-01/DUR-02/ANL-01/GAME-CHAR architecture without waiting for item semantics.
+- `GAME-ITEM-01` and `DUR-03` now close the paper-only item/value semantic and conservation prerequisites. Durable item/currency/value runtime mutation remains `NOT_STARTED` and requires a separate explicit implementation task plus the concrete ANL/resource-limit/transaction evidence named by DUR-03.
+- Historical market/economy consistency belongs to `EXP-ECONOMY-01`, guild/social to `EXP-SOCIAL-01`, houses to `EXP-HOUSES-01`, recurring/meta rewards to `GAME-META-01`, encounter/event rewards to `EXP-EVENTS-01`; accepted DUR-03 supplies conservation/custody primitives wherever those domains later move value without absorbing their business policy.
 - Partitioning/sharding and exact Rust DB/migration library selection remain implementation/PERF decisions unless evidence later proves an architecture constraint.
-- `DUR-03` is the next ordered paper-only item/value architecture gate. `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` may continue in parallel only under separate ownership.
+- `GAME-CHANNEL-01` is the earliest remaining owner-accepted recommended-order paper-only product gate. The Reference evidence/parity manifest, `DUR-04` and `SIM-DETERMINISM-01` may proceed in parallel only under separate ownership.
 - ADR-0012 fixes native Character Authority versus Platform lifecycle/orchestration ownership without authorizing runtime or persistence implementation.
 - ADR-0013 removes Platform database migration from the native gameplay critical path while preserving PostgreSQL for native game persistence and all ADR-0004 ownership/least-privilege invariants.
 - ADR-0014 accepts TCP-default/future-QUIC dual transport only as architecture direction; ADR-0016 keeps every gameplay transport runtime mode unavailable until implemented and proven, and ADR-0015 preserves ADR-0009's one-process GameNode identity while leaving only internal decomposition and genuinely distinct adjacent-service placement evidence-driven.
@@ -168,16 +169,17 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Whole-gate acceptance binds six common persistence rules: ordered game-owned migration history with immutable artifacts and dedicated migrator; anomaly-proof transaction isolation/locking/retry; ANL-compatible durable journal plus crash-safe publication checkpoint; strict durable-ack versus FND-03 checkpoint versus disaster-RPO separation; PITR-capable restore-tested fail-closed recovery with non-rollback fencing; and expand/migrate/validate/cut-over/contract schema evolution.
 - The fourteen historical subjects are exhaustively reconciled. Character/session questions are satisfied by accepted Character/FND-04 architecture; item/currency/value conservation is moved to GAME-ITEM-01/DUR-03; market/social/house/reward semantics are moved to their exact domain owners; partitioning and exact Rust DB/migration library remain measured implementation choices unless evidence creates an architecture constraint.
 - No PostgreSQL DDL/migrations, Rust persistence/runtime implementation, production backup policy or authoritative gameplay write is authorized merely by architecture acceptance.
-- A separately authorized server/persistence foundation implementation may now consume accepted common DUR-02 plus Character/FND-04 semantics without waiting for GAME-ITEM/DUR-03.
+- A separately authorized server/persistence foundation implementation may consume accepted common DUR-02 plus Character/FND-04 semantics without waiting for GAME-ITEM/DUR-03.
 
 ### `DUR-03` — Item Transaction and Anti-Duplication Invariants
 
-- Status: `BLOCKS_DURABLE_GAMEPLAY`; `DecisionStatus=PROPOSED`, `DeliveryStatus=PLANNED`, `ImplementationStatus=NOT_STARTED`.
-- GAME-ITEM-01, whole DUR-02 and ANL-01 semantic prerequisites are accepted. DUR-03 is now the next eligible paper-only item/currency/value transaction and anti-duplication architecture gate; runtime item mutation remains separately unauthorized.
-- Consume DUR-01 `ItemInstanceId` and accepted GAME-ITEM legal state/type/equipment/container semantics without redefining them.
-- Freeze create/destroy/split/merge/transform identity-transition rules, inventory/equipment/container/ground atomic location, pickup/drop/loot/trade/bank/depot/market/mail/reward/currency transfer boundaries, idempotency and duplicate-command outcomes, stale-writer rejection, retry/crash/partial-failure recovery and deterministic conservation/provenance evidence.
-- Produce atomic provenance evidence and deterministic conservation/single-location invariants consumable by Game Intelligence.
-- Prove at implementation time that duplicate commands, crashes, stale sessions and partial failures cannot duplicate items or currency; architecture acceptance alone will not claim runtime proof.
+- Status: **`ACCEPTED` architecture; lifecycle closed; implementation `NOT_STARTED`**.
+- Canonical source: `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`; delivery PR #207 final head `a1d949362e219373a5d314c0e9ddf8de110362dd`, squash merge `63380bcba469027e90677aaf4db571fa941be2f4`.
+- Consume DUR-01 ItemInstanceId, accepted GAME-ITEM legality, DUR-02 persistence and ANL/FND authority without redefining them.
+- Accepted semantics include one typed immediate semantic location for every live durable ItemInstance; runtime-owned ground versus durable recoverability separation; non-blocking runtime reservation -> async game-DB durable linearization -> runtime reconciliation; transaction-scoped new ItemInstanceId allocation; explicit split/merge/transform lifecycle rules; exact transfer/mint/burn/transform/conversion conservation and source/sink lineage; CommandRef/OperationId/TransactionId retry and ambiguous-commit reconciliation; current GameSession/CharacterLease/runtime-generation fencing; typed custody; bounded durable audit; fail-closed restore reconciliation; and default cross-world value isolation.
+- Runtime-only loot versus already-durable ground ItemInstance materialization timing remains downstream combat/content policy but must use one explicit idempotent model.
+- Trade/market/bank/depot/mail/reward/house/crafting/entitlement business policy remains downstream-owned.
+- Architecture acceptance creates no Rust/client runtime, PostgreSQL DDL/migration, production item transaction or Game Intelligence write authority. Future implementation must prove the exact concurrency/crash/recovery/receipt/audit/resource-limit evidence named in the contract.
 
 ### `DUR-04` — Content, World Detail and Scripting Contract
 
@@ -207,7 +209,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - Status: `REQUIRED_FOR_ALPHA`.
 - Required for a production-grade integrity/security analytics claim.
 - Define provenance/invariant consumers, alerts, cases, detector versioning, evidence quality, false-positive handling and separation from authoritative enforcement.
-- Preserve `DUR-03` as the anti-duplication prevention authority.
+- Preserve accepted `DUR-03` as the anti-duplication prevention authority; analytics never substitutes for prevention.
 
 ### `ANL-04` — Read-Only Investigation and AI
 
@@ -222,7 +224,8 @@ Detailed scope, dependencies and non-decisions are canonical in `GAMEPLAY_AND_PR
 ### Blocks durable gameplay
 
 - `GAME-CHAR-01` — **ACCEPTED architecture**. Stage A + Stage B semantic closure plus the accepted DUR-02 Character persistence sub-baseline provide the profile-neutral Character durability envelope; unresolved per-behavior values/formulas/profile-specific facts remain hard parity gates.
-- `GAME-ITEM-01` — **ACCEPTED / LIFECYCLE_CLOSED / implementation NOT_STARTED**. Typed item definition/instance semantics, equipment/container legality and definition compatibility are frozen by `GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md`; runtime item/currency/value mutation still requires DUR-03 plus separate implementation authority.
+- `GAME-ITEM-01` — **ACCEPTED / LIFECYCLE_CLOSED / implementation NOT_STARTED**. Typed item definition/instance semantics, equipment/container legality and definition compatibility are frozen by `GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md`; runtime authority remains separate.
+- `DUR-03` — **ACCEPTED / LIFECYCLE_CLOSED / implementation NOT_STARTED**. Item/currency/value conservation, atomic location, idempotency, runtime↔durable handoff and anti-duplication semantics are frozen; production/runtime proof remains separately unauthorized and unproven.
 
 ### Required for Playable Alpha completeness
 
@@ -407,7 +410,7 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 9. Public contracts must register applicable resource limits, stable error categories and named failure scenarios.
 10. A decision is not complete until its PR is validated, audited, squash-merged and its task archived.
 11. Completed historical foundation gates are consumed rather than reopened unless a dedicated superseding decision is explicitly accepted.
-12. FND-02/FND-03/FND-04/DUR-01/DUR-02/ANL-01 architecture acceptance does not imply runtime implementation; consume their canonical contracts and current status overlay rather than older progress prose.
+12. FND-02/FND-03/FND-04/DUR-01/DUR-02/DUR-03/ANL-01 architecture acceptance does not imply runtime implementation; consume their canonical contracts and current status overlay rather than older progress prose.
 13. Every gameplay/product package must reconcile `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md`; an unnamed domain may not be silently absorbed into an unrelated gate.
 14. Every vertical-slice or client-visible package must consume `QA-E2E-01`; it may add scenarios and assertions but not a competing E2E lifecycle/evidence platform.
 15. ADR-0008 is binding on all later client/server packages; no task may reintroduce Canary into production through an optional feature, fallback, compatibility listener or intermediate translation model.
@@ -421,13 +424,16 @@ The canonical foundation task is a non-owning programme checkpoint. Each substan
 23. `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` is binding for overall GAME-CHAR semantic closure. Architecture acceptance does not imply complete Reference parity; unresolved target rules remain per-behavior hard parity gates.
 24. `DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md` remains binding for the Character persistence sub-scope and is consumed, not superseded, by whole DUR-02.
 25. `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` is binding for whole Persistence-v1. Its accepted fourteen-subject disposition prevents generic persistence from becoming a second owner of item/economy/social/house/reward semantics, and its acceptance does not grant SQL/runtime authority.
-26. `GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md` is binding for item definition/instance semantics, typed capability state, equipment/container legality and definition compatibility; it does not grant runtime authority and may not absorb DUR-03 conservation/identity-transition or `PROD-ENTITLEMENTS-01` consumer authority.
+26. `GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md` is binding for item definition/instance semantics, typed capability state, equipment/container legality and definition compatibility; it grants no runtime/entitlement authority.
+27. `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md` is binding for durable item/currency/value location, identity transitions, conservation, retry/idempotency, runtime↔durable handoff, custody, audit and restore integrity. It does not accept downstream business policy, select physical SQL/runtime implementation or grant production authority.
 
 ## Current next action
 
-`GAME-ITEM-01` and the common persistence/event prerequisites required by DUR-03 are accepted. The next ordered architecture action is one bounded **paper-only `DUR-03 — Item Transaction and Anti-Duplication Invariants`** task consuming accepted GAME-ITEM, DUR-01, DUR-02 and ANL-01 without reopening their semantics.
+`GAME-ITEM-01` and `DUR-03` have closed the paper-only durable item/value semantic and anti-duplication architecture while implementation remains `NOT_STARTED`.
 
-Separately, the generic persistence architecture blocker is closed and a bounded server/persistence foundation implementation programme for already accepted common scopes may begin only after explicit owner implementation authorization. A safe first programme decomposition remains:
+The owner-accepted 2026-08-10 recommended ordering still has one earlier unresolved product gate: **`GAME-CHANNEL-01`**. No open GAME-CHANNEL PR owns it at this closeout. The next ordered architecture action is therefore one bounded paper-only `GAME-CHANNEL-01` task consuming accepted multichannel/FND/GAME-VISION/GAME-CHAR/GAME-ITEM/DUR-03 boundaries without implementing runtime channel orchestration.
+
+Separately, a bounded server/persistence or DUR-03 implementation programme may begin only after explicit owner implementation authorization. A safe first common programme decomposition remains:
 
 ```text
 server bootstrap / GameNode shell
@@ -438,6 +444,6 @@ server bootstrap / GameNode shell
 -> minimal ChannelRuntime
 ```
 
-Do **not** execute that implementation until the owner explicitly grants implementation authority. `GAME-CHANNEL-01`, the Reference evidence/parity manifest, `DUR-04` and `SIM-DETERMINISM-01` may proceed in parallel under their own boundaries. Profile-specific PvP Character state remains blocked on its owning profile policy.
+Do **not** execute implementation until the owner explicitly grants implementation authority. The Reference evidence/parity manifest, `DUR-04` and `SIM-DETERMINISM-01` may proceed in parallel under their own boundaries. Profile-specific PvP Character state remains blocked on its owning profile/channel policy.
 
 No gameplay/runtime implementation, Platform write, PostgreSQL migration, persistence schema deployment, entitlement activation or production behavior is authorized by this register update.
