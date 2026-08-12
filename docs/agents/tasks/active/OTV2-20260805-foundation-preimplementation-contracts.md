@@ -9,13 +9,13 @@ repository: blakinio/Oteryn-v2
 base_branch: main
 branch: null
 pr: null
-base_sha: 22b64e1b20cf2220828f5a3d47b30df29f9a60b6
+base_sha: 5c502d24557621efc798def87b68f137ba23fad8
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: unassigned
 created_at: 2026-08-05T08:49:00+02:00
-updated_at: 2026-08-12T10:20:00+02:00
+updated_at: 2026-08-12T13:35:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: Non-owning programme checkpoint spanning accepted native foundation architecture and the remaining gameplay/durability/vertical-slice gates; executable packages remain separately bounded.
 owned_paths: []
@@ -31,10 +31,8 @@ handover_report: docs/agents/reports/OTV2-20260812-foundation-handover.md
 depends_on:
   - accepted ADR-0001 through ADR-0016 as applicable to their named scopes
   - FND-01 and VSL-02 accepted/applied
-  - FND-ID-01, FND-02, FND-03, FND-04, DUR-01, ANL-01 and NET-TRANSPORT-01 accepted/lifecycle-closed
-  - GAME-VISION-01 and GAME-CHAR-01 accepted/lifecycle-closed
-  - DUR-02 profile-neutral Character persistence partial baseline accepted/lifecycle-closed
-  - whole DUR-02 Persistence-v1 accepted/lifecycle-closed
+  - FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, ANL-01 and NET-TRANSPORT-01 accepted/lifecycle-closed
+  - GAME-VISION-01, GAME-CHAR-01 and GAME-ITEM-01 accepted/lifecycle-closed
 blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories:
@@ -48,6 +46,8 @@ external_repositories:
 Maintain a truthful **non-owning** programme checkpoint for Oteryn-v2. It coordinates accepted architecture and names exactly one next safe package without implementing gates, reserving their paths or treating architecture acceptance as runtime completion.
 
 Every substantial architecture or implementation gate still requires its own bounded task, branch, PR, validation, review policy, merge and archive lifecycle.
+
+This checkpoint refresh is part of GAME-ITEM lifecycle closeout PR #206 and becomes canonical only when that closeout merges.
 
 ## Canonical continuation order
 
@@ -64,9 +64,7 @@ Use these sources in this order:
 
 Older prose that conflicts with the current-status overlay or later accepted baselines is historical, not executable instruction.
 
-## PROVEN current foundation state
-
-Trusted state at this refresh originated from `main@22b64e1b20cf2220828f5a3d47b30df29f9a60b6`.
+## PROVEN accepted architecture
 
 Accepted/lifecycle-closed architecture includes:
 
@@ -76,70 +74,47 @@ Accepted/lifecycle-closed architecture includes:
 - `FND-03` runtime execution architecture;
 - `FND-04` admission/GameSession/CharacterLease/reconnect architecture;
 - `DUR-01` durable identifier representation;
+- `DUR-02` profile-neutral Character persistence partial baseline and whole Persistence-v1 common architecture;
 - `ANL-01` event/audit foundation;
 - TCP-default/future-QUIC architecture direction under ADR-0014..0016 while gameplay transport runtime remains unavailable;
 - `GAME-VISION-01` minimum product direction and immutable first Reference target;
 - `GAME-CHAR-01` Stage A + Stage B semantics;
-- profile-neutral Character persistence partial baseline;
-- whole `DUR-02 — Persistence v1` common architecture.
+- `GAME-ITEM-01` typed item definition/instance/equipment/container/revision semantics from PR #205, final head `53d0189a114c99b4e7d44ca8d0db7a6bf5f3ea1a`, squash merge `5c502d24557621efc798def87b68f137ba23fad8`.
 
-Whole DUR-02 is canonically:
+Do not restart FND-01, VSL-02, GAME-CHAR, DUR-02 or GAME-ITEM architecture work unless an explicit superseding decision is accepted.
 
-```text
-DecisionStatus       = ACCEPTED
-DeliveryStatus       = LIFECYCLE_CLOSED
-ImplementationStatus = NOT_STARTED
-Runtime authority    = NONE
-DDL/migrations       = NOT_AUTHORIZED
-```
+## Accepted GAME-ITEM boundary — consume, do not reopen
 
-Recent binding evidence:
+`GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md` freezes:
 
-- GAME-CHAR delivery #193 / closeout #194;
-- Character persistence partial baseline #197 / closeout #198;
-- whole-DUR-02 reconciliation #199 / closeout #200;
-- whole-DUR-02 owner acceptance #201 / merge `ec4b840b0742967370a4235d87094b29a802fe28`;
-- whole-DUR-02 lifecycle closeout #202 / merge `22b64e1b20cf2220828f5a3d47b30df29f9a60b6`.
+- stable versioned `ItemType` versus concrete DUR-01 `ItemInstance` versus authored `StaticItemPlacement`;
+- typed bounded capabilities for stack quantity, charges, durability, temporal/decay, equipment, container, binding/restrictions and upgrades/modifiers;
+- rejection of arbitrary authoritative JSON/EAV/free-form item state;
+- server-authoritative atomic equipment occupancy and bounded acyclic container legality;
+- deterministic modifier contribution ordering requirements without taking SIM arithmetic ownership;
+- explicit item-definition compatibility/migration and no silent reinterpretation;
+- Reference-sensitive unknowns as fail-closed `PARITY_PENDING_EVIDENCE`;
+- `PROD-ENTITLEMENTS-01` as a separately unaccepted Oteryn-v2 consumer/enforcement gate.
 
-No complete production-ready Rust GameNode, gameplay transport listener path, persistence runtime, event/outbox runtime or native client-to-server gameplay E2E is implied by those architecture decisions.
+It does **not** own create/destroy/split/merge/transform ItemInstanceId transition mechanics, atomic location, idempotency/retry/crash behavior or item/currency/value conservation. Those remain `DUR-03`.
 
-## Accepted architecture — do not silently redesign
-
-A successor must consume rather than reopen, unless a later explicit superseding decision is accepted:
-
-- one native Rust client/server stack and one project-owned `protocol-oteryn`;
-- `protocol-canary` reference-only and absent from production runtime/fallback/translation paths;
-- one-process GameNode identity under ADR-0009 with evidence-driven internal decomposition;
-- multichannel-first world model and one authoritative mutation owner per current channel/instance scope;
-- Platform Identity/Gateway versus native-game authority separation;
-- PostgreSQL native-game target with separate Platform/game ownership;
-- FND-02/FND-03/FND-04 authority, ordering, fencing and recovery semantics;
-- GAME-VISION first Reference target and evidence discipline;
-- GAME-CHAR ownership/lifecycle/progression semantic envelope;
-- Character persistence normalized/typed model and no generic miscellaneous JSON/KV/EAV state escape hatch;
-- whole-DUR-02 migration, transaction, durable outbox, durable-ack, PITR/restore and schema-evolution rules;
-- ANL-01 event/audit semantic ownership and read-only Game Intelligence boundaries.
-
-## Binding DUR-02 ownership split
-
-Whole DUR-02 no longer owns item/economy/social/house/reward gameplay semantics.
+## Binding DUR ownership split
 
 Preserve:
 
-- `GAME-ITEM-01 -> DUR-03` for item/currency/value semantics and conservation/anti-duplication;
-- `EXP-ECONOMY-01` for market/economy semantics;
-- `EXP-SOCIAL-01` for guild/social semantics;
-- `EXP-HOUSES-01` for houses;
-- `GAME-META-01` for recurring/meta rewards;
-- `EXP-EVENTS-01` for encounter/event rewards;
-- `ANL-01` for event/audit semantics;
-- PERF/implementation evidence for partitioning and exact Rust DB/migration-library choices unless correctness evidence requires an architecture decision.
+- `GAME-ITEM-01` — item semantic legality and definition/instance state;
+- `DUR-03` — item/currency/value transaction, single-location, conservation, provenance and anti-duplication semantics;
+- `EXP-ECONOMY-01` — market/economy semantics;
+- `EXP-SOCIAL-01` — guild/social semantics;
+- `EXP-HOUSES-01` — houses;
+- `GAME-META-01` — recurring/meta rewards;
+- `EXP-EVENTS-01` — encounter/event rewards;
+- `ANL-01` — event/audit semantics;
+- PERF/implementation evidence — partitioning and exact Rust DB/migration-library choices unless correctness evidence requires an architecture decision.
 
 ## Implementation boundary
 
-Architecture prerequisites now permit a **later separately authorized** server/persistence foundation implementation programme for accepted common scopes.
-
-Accepted decomposition hypothesis for that future authorization:
+Architecture prerequisites permit a **later separately authorized** server/persistence foundation implementation programme for already accepted common scopes. A safe decomposition hypothesis remains:
 
 ```text
 server bootstrap / GameNode shell
@@ -150,37 +125,28 @@ server bootstrap / GameNode shell
 -> minimal ChannelRuntime
 ```
 
-This checkpoint grants **no implementation authority**. Do not create server runtime code, DDL/migrations or production configuration unless a new explicit owner instruction authorizes an implementation package.
+This checkpoint grants **no implementation authority**. Do not create server runtime code, DDL/migrations, item mutation runtime or production configuration unless a new explicit owner instruction authorizes an implementation package.
 
 ## Current ordered architecture work
 
-Because no new implementation authority was granted at the 2026-08-12 handoff, the immediate safe paper-only sequence is:
+After GAME-ITEM lifecycle closeout, the immediate safe paper-only sequence is:
 
-1. `GAME-ITEM-01` — item model/equipment/container/transform semantics against the accepted Reference target where parity applies;
-2. `DUR-03` — item/currency/value transfer, conservation, single-location, retry/crash and anti-duplication invariants after GAME-ITEM-01;
-3. `GAME-CHANNEL-01`, Reference evidence/parity tooling, `DUR-04` minimum headless content path and `SIM-DETERMINISM-01` may proceed in parallel only under separate explicit path ownership;
-4. real-boundary VSL implementation expands only after each owning architecture and implementation authorization is ready.
+1. `DUR-03 — Item Transaction and Anti-Duplication Invariants` — consume accepted GAME-ITEM, DUR-01, DUR-02 and ANL-01 and freeze item/currency/value conservation, single-location, identity-transition, idempotency, stale-writer, retry/crash and provenance semantics without runtime implementation;
+2. `GAME-CHANNEL-01`, Reference evidence/parity tooling, `DUR-04` minimum headless content path and `SIM-DETERMINISM-01` may proceed in parallel only under separate explicit path ownership;
+3. real-boundary VSL implementation expands only after each owning architecture and implementation authorization is ready.
 
 QUIC remains later evidence-gated work, not the current implementation priority.
-
-## Concurrent work discipline
-
-At this refresh, unrelated open PRs included #191 (GAME-CHAR factual provenance correction) and #162 (CI/governance aggregate merge gate). Do not mutate them from a new gameplay package unless live ownership explicitly requires coordination.
-
-Long-lived lag/disconnect architecture checkpoint tasks also remain present and architecture-only. Do not absorb or delete them as cleanup.
-
-Always re-check live state before acting because these facts may advance after this checkpoint refresh.
 
 ## Repository and production authority
 
 Routine writes: `blakinio/Oteryn-v2` only.
 
-External repositories remain read-only unless the owner separately authorizes an exact write task. This checkpoint grants no production deployment, protected-environment, secret, live account/session/data/database or asset-copying authority.
+External repositories remain read-only unless the owner separately authorizes an exact write task. This checkpoint grants no production deployment, protected-environment, secret, live account/session/data/database, entitlement activation or asset-copying authority.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: GAME-VISION, GAME-CHAR, profile-neutral Character persistence and whole DUR-02 Persistence-v1 architecture are accepted/lifecycle-closed. The stale FND-01-era programme handoff was refreshed so a successor can continue from current repo truth without chat history.
+last_progress: GAME-ITEM-01 delivery PR #205 was accepted and squash-merged as 5c502d24557621efc798def87b68f137ba23fad8; lifecycle closeout #206 reconciles canonical status/handoff and releases GAME-ITEM ownership, after which DUR-03 is the next bounded paper-only architecture gate.
 status: ready
 branch: null
 head_sha: null
@@ -200,7 +166,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
+owner_action_required: false
 blocker: null
-next_action: From live main, create one bounded paper-only `GAME-ITEM-01` architecture task that consumes the accepted Reference target and preserves `DUR-03` as the item/currency/value conservation authority.
+next_action: From live main after GAME-ITEM lifecycle closeout, create one bounded paper-only `DUR-03` architecture task that consumes accepted GAME-ITEM, DUR-01, DUR-02 and ANL-01; do not implement runtime/DDL/production behavior.
 ```

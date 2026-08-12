@@ -54,6 +54,13 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 - [DUR-01 — Durable identifier representation](DUR-01_DURABLE_IDENTIFIER_REPRESENTATION_CONTRACT.md)
 - [ANL-01 — Game event and audit foundation](ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md)
 
+## Accepted gameplay and durability contracts
+
+- [GAME-ITEM-01 — Item model and equipment analysis](GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_ANALYSIS.md)
+- [GAME-ITEM-01 — Item model and equipment contract](GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md)
+
+`GAME-ITEM-01` is accepted/lifecycle-closed architecture with implementation `NOT_STARTED`. It freezes the item semantic envelope required by `DUR-03` but does not authorize runtime item/currency/value mutation, PostgreSQL DDL/migrations or entitlement activation.
+
 ## Machine-readable contracts
 
 - [Transport policy](../contracts/PROTOCOL_OTERYN_TRANSPORT_POLICY.json) — one `protocol-oteryn`; TCP+TLS 1.3 profile `1` is the currently registered initial/default architecture profile, while **all gameplay transport runtime modes remain unavailable until implementation is separately authorized and proven**; QUIC is a future player-opt-in target blocked on protocol/FND-04 transport-profile reconciliation and evidence; no 0-RTT/DATAGRAM baseline.
@@ -63,7 +70,7 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 
 ## Current programme dependency refinement
 
-The 2026-08-10 review adds the following ordering constraints without claiming runtime implementation:
+The current ordering constraints do not claim runtime implementation:
 
 ```text
 GAME-VISION-01 minimum
@@ -72,16 +79,18 @@ GAME-VISION-01 minimum
 GAME-CHAR-01
 -> final character-bearing DUR-02
 
-GAME-ITEM-01
+accepted GAME-ITEM-01
 + accepted DUR-02
--> DUR-03
++ accepted ANL-01 evidence semantics
+-> paper-only DUR-03 architecture
+-> runtime item mutation still separately unauthorized
 
 SIM-DETERMINISM-01
 + minimal DUR-04 headless toolchain
 -> small real-boundary VSL sequence
 ```
 
-`DUR-02` discovery may continue from already accepted DUR-01/ANL-01 inputs, but its final durable character semantics wait for the character lifecycle/product gate.
+`DUR-03` is the next eligible paper-only item/currency/value transaction and anti-duplication architecture gate. It retains conservation, atomic location, idempotency/retry/crash behavior and create/destroy/split/merge/transform identity-transition ownership.
 
 ## Transport rule
 
