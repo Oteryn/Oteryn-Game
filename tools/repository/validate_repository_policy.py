@@ -14,6 +14,13 @@ POLICY_PATH = ROOT / ".github/repository-policy.json"
 USES_LINE = re.compile(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)", re.MULTILINE)
 CANONICAL_MPL_2_0_GIT_BLOB_SHA = "d0a1fa1482eea82e19510e7920cbe3a03e41f691"
 EXPECTED_REQUIRED_STATUS = "Merge gate / validate"
+EXPECTED_CONTROL_PLANE_PATHS = [
+    ".github/workflows/*",
+    ".github/workflows/**/*",
+    ".github/repository-policy.json",
+    "tools/repository/*",
+    "tools/repository/**/*",
+]
 EXPECTED_MERGE_GATE_TOP_LEVEL_KEYS = [
     "name",
     "run-name",
@@ -38,7 +45,7 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
         type: string
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
-    "76c77c3b2b939e955aceb63441172fd1a77cb1e384cb58ac70c0cade4ab8d729"
+    "667478ef53d311ab084695c12274eaff2759f2fcd43a56ae8047bd3411862998"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a"
@@ -88,14 +95,17 @@ def required_status_contexts(ruleset: dict) -> list[str]:
     return []
 
 
+def restricted_file_paths(ruleset: dict) -> list[str]:
+    for rule in ruleset.get("rules", []):
+        if isinstance(rule, dict) and rule.get("type") == "file_path_restriction":
+            paths = rule.get("parameters", {}).get("restricted_file_paths", [])
+            if isinstance(paths, list) and all(isinstance(path, str) for path in paths):
+                return paths
+            return []
+    return []
+
+
 def canonical_top_level_yaml_keys(text: str) -> list[str] | None:
-    """Return canonical root keys, rejecting alternate YAML key spellings.
-
-    The merge-authority workflow deliberately permits only plain, unquoted root keys
-    with the canonical `key:` spelling. That makes duplicate or alternate forms such
-    as `on :`, quoted `"on"`, document directives, or extra root mappings fail closed.
-    """
-
     keys: list[str] = []
     key_line = re.compile(r"^([a-z][a-z0-9-]*):(?:[ \t].*)?$")
     for line in text.replace("\r\n", "\n").splitlines():
@@ -111,15 +121,12 @@ def canonical_top_level_yaml_keys(text: str) -> list[str] | None:
 
 
 def indented_yaml_mapping_block(text: str, key: str, indent: int) -> str | None:
-    """Return exactly one mapping block at a fixed indentation, normalized only at edges."""
-
     lines = text.splitlines(keepends=True)
     prefix = " " * indent
     key_line = re.compile(rf"^{re.escape(prefix + key)}:\s*(?:#.*)?(?:\r?\n)?$")
     starts = [index for index, line in enumerate(lines) if key_line.fullmatch(line)]
     if len(starts) != 1:
         return None
-
     start = starts[0]
     end = len(lines)
     for index in range(start + 1, len(lines)):
@@ -130,19 +137,10 @@ def indented_yaml_mapping_block(text: str, key: str, indent: int) -> str | None:
         if leading_spaces <= indent:
             end = index
             break
-
     return "".join(lines[start:end]).replace("\r\n", "\n").rstrip("\n") + "\n"
 
 
 def top_level_yaml_mapping_block(text: str, key: str) -> str | None:
-    """Return one canonical top-level mapping block or fail closed.
-
-    This intentionally does not accept arbitrary equivalent YAML spellings. Repository
-    governance keeps the security-sensitive trigger in one canonical textual form so
-    inline mappings, alternate indentation, duplicate keys and added path filters all
-    fail validation instead of depending on a heuristic YAML interpretation.
-    """
-
     return indented_yaml_mapping_block(text, key, 0)
 
 
@@ -182,15 +180,14 @@ def main() -> int:
         license_text = license_bytes.decode("utf-8")
         if git_blob_sha(license_bytes) != CANONICAL_MPL_2_0_GIT_BLOB_SHA:
             errors.append("LICENSE does not match the pinned canonical MPL-2.0 text")
-        required_license_fragments = (
+        for fragment in (
             "Mozilla Public License Version 2.0",
             "2. License Grants and Conditions",
             "3. Responsibilities",
             "10. Versions of the License",
             "Exhibit A - Source Code Form License Notice",
             'Exhibit B - "Incompatible With Secondary Licenses" Notice',
-        )
-        for fragment in required_license_fragments:
+        ):
             if fragment not in license_text:
                 errors.append(f"LICENSE is missing canonical MPL-2.0 fragment: {fragment}")
         if len(license_text.splitlines()) < 330:
@@ -241,15 +238,13 @@ def main() -> int:
             errors.append(f"repository policy missing label: {required_label}")
 
     ruleset = policy.get("ruleset", {})
+    if ruleset.get("name") != "Protect main" or ruleset.get("target") != "branch":
+        errors.append("main ruleset must be the branch ruleset named Protect main")
     if ruleset.get("enforcement") != "active":
         errors.append("main ruleset must be active")
     if ruleset.get("bypass_actors") != []:
         errors.append("main ruleset must not define routine bypass actors")
-    rule_types = {
-        rule.get("type")
-        for rule in ruleset.get("rules", [])
-        if isinstance(rule, dict)
-    }
+    rule_types = {rule.get("type") for rule in ruleset.get("rules", []) if isinstance(rule, dict)}
     required_rule_types = {
         "deletion",
         "required_linear_history",
@@ -260,6 +255,8 @@ def main() -> int:
     missing_rules = sorted(required_rule_types - rule_types)
     if missing_rules:
         errors.append(f"main ruleset missing rules: {', '.join(missing_rules)}")
+    if "file_path_restriction" in rule_types:
+        errors.append("file_path_restriction must not be placed in the branch ruleset")
     if "required_signatures" in rule_types:
         errors.append("strict signed commits are incompatible with third-party squash PRs")
 
@@ -270,19 +267,30 @@ def main() -> int:
             f"{EXPECTED_REQUIRED_STATUS!r}; got {contexts!r}"
         )
 
+    push_ruleset = policy.get("push_ruleset", {})
+    if push_ruleset.get("name") != "Protect repository control plane" or push_ruleset.get("target") != "push":
+        errors.append("control-plane ruleset must be a dedicated push ruleset")
+    if push_ruleset.get("enforcement") != "active":
+        errors.append("control-plane push ruleset must be active")
+    if push_ruleset.get("bypass_actors") != []:
+        errors.append("control-plane push ruleset must not define bypass actors")
+    push_rule_types = {
+        rule.get("type") for rule in push_ruleset.get("rules", []) if isinstance(rule, dict)
+    }
+    if push_rule_types != {"file_path_restriction"}:
+        errors.append("control-plane push ruleset must contain only file_path_restriction")
+    if restricted_file_paths(push_ruleset) != EXPECTED_CONTROL_PLANE_PATHS:
+        errors.append("control-plane push ruleset restricted paths do not match canonical policy")
+
     workflow_dir = ROOT / ".github/workflows"
     if workflow_dir.is_dir():
         for workflow in sorted(workflow_dir.glob("*.y*ml")):
             text = workflow.read_text(encoding="utf-8")
             for action, ref in USES_LINE.findall(text):
                 if re.fullmatch(r"[0-9a-f]{40}", ref) is None:
-                    errors.append(
-                        f"{workflow.relative_to(ROOT)} uses unpinned action {action}@{ref}"
-                    )
+                    errors.append(f"{workflow.relative_to(ROOT)} uses unpinned action {action}@{ref}")
             if "pull_request_target:" in text and "actions/checkout" in text:
-                errors.append(
-                    f"{workflow.relative_to(ROOT)} combines pull_request_target with checkout"
-                )
+                errors.append(f"{workflow.relative_to(ROOT)} combines pull_request_target with checkout")
 
     merge_gate = ROOT / ".github/workflows/merge-gate.yml"
     if merge_gate.is_file():
@@ -300,22 +308,14 @@ def main() -> int:
                 "pull_request plus exact-head workflow_dispatch contract"
             )
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
-        scope_digest = (
-            hashlib.sha256(scope_block.encode("utf-8")).hexdigest()
-            if scope_block is not None
-            else None
-        )
+        scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
         if scope_digest != EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256:
             errors.append(
                 "merge gate scope job must exactly match the canonical exact-head, "
                 "changed-path classification and output implementation"
             )
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
-        validate_digest = (
-            hashlib.sha256(validate_block.encode("utf-8")).hexdigest()
-            if validate_block is not None
-            else None
-        )
+        validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
         if validate_digest != EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256:
             errors.append(
                 "merge gate aggregate validate job must exactly match the canonical "
@@ -326,9 +326,14 @@ def main() -> int:
             "expected_head_sha:",
             "workflow dispatch ref does not resolve to expected_head_sha",
             "pull request head moved after expected_head_sha was resolved",
+            "changed_files = pull.get('changed_files')",
+            "changed_files > 3000",
+            "len(files) != changed_files",
             "previous_filename = item.get('previous_filename')",
             "classification_paths.append(previous_filename)",
             "prefixes = ('.cargo/', 'apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')",
+            "if: github.event_name == 'workflow_dispatch'",
+            "ref: ${{ github.sha }}",
             "base-ref: ${{ needs.scope.outputs.base_sha }}",
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
             "Merge gate / governance",
@@ -361,6 +366,7 @@ def main() -> int:
         for fragment in (
             f"`{EXPECTED_REQUIRED_STATUS}` is the single stable required status check",
             "manually dispatched only from the exact unchanged PR head branch",
+            "dedicated push ruleset",
             "Dependabot maintains both GitHub Actions and Cargo dependencies",
         ):
             if fragment not in text:
