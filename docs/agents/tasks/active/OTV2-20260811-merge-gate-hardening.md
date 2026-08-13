@@ -9,22 +9,25 @@ repository: blakinio/Oteryn-v2
 base_branch: main
 branch: ci/OTV2-20260811-merge-gate-hardening
 pr: 162
-base_sha: c88f778a3d4a8d26efeb3a2ad2f328b4efca3768
+base_sha: 872b629e027b46abb4b558d61ee6104389d97ea7
 original_base_sha: f184930fac66fdf9ae0cc7f606d3502c17626a79
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT repository engineering agent
 created_at: 2026-08-11T10:30:00+02:00
-updated_at: 2026-08-11T16:34:00+02:00
+updated_at: 2026-08-13T17:07:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: Repository merge-authority transition plus exact-head Linux/Windows/security validation and independent review repair.
-successor_generation: 1
-predecessor_blocked_head_sha: 07c38012015711857ad716d6586829d37efc6801
+successor_generation: 2
 predecessor_repair_cycles: 3
-successor_repair_cycles: 3
-owner_authorized_at: 2026-08-11T16:07:00+02:00
-owner_authorization: Autoryzuję successor repair package dla PR #162
+successor_generation_1_repair_cycles: 3
+successor_generation_2_repair_cycles: 1
+successor_generation_1_owner_authorized_at: 2026-08-11T16:07:00+02:00
+successor_generation_1_owner_authorization: Autoryzuję successor repair package dla PR #162
+successor_generation_2_owner_authorized_at: 2026-08-13T17:07:00+02:00
+successor_generation_2_owner_authorization: dokoncz zadnaie
+owner_funded_ai_authorized_for_generation_2: false
 owned_paths:
   - .github/workflows/merge-gate.yml
   - .github/workflows/codeql.yml
@@ -51,76 +54,85 @@ external_repositories: []
 
 ## Outcome
 
-Replace the weak single-purpose required PR check with one stable `Merge gate / validate` context that composes governance, Dependency Review, CodeQL and path-proportional Rust Linux/Windows/policy/supply-chain checks. Repair repository-engineering drift, provide exact-head recovery, and fail closed against trigger, path-classification, or aggregate-result-wiring regressions in the sole protected merge authority.
+Replace the weak single-purpose required PR check with one stable `Merge gate / validate` context that composes governance, Dependency Review, CodeQL and path-proportional Rust Linux/Windows/policy/supply-chain checks. Repair repository-engineering drift, provide exact-head recovery, and fail closed against trigger, exact-head scope-production, path-classification, or aggregate-result-wiring regressions in the sole protected merge authority.
 
 ## Architecture and source of truth
 
-- `PROVEN`: PR #162 was blocked after predecessor repair budget `3/3` was exhausted by independent-review thread `PRRT_kwDOTuGrds6YLEL3`.
-- `PROVEN`: the owner explicitly authorized bounded successor generation 1 for PR #162 on 2026-08-11 at 16:07 +02:00.
-- `PROVEN`: the branch was reconciled with `main@c88f778a3d4a8d26efeb3a2ad2f328b4efca3768` using a true two-parent merge; the intervening GAME-VISION changes did not overlap this ownership.
-- `PROVEN`: `.github/workflows/merge-gate.yml` is always-on for PRs to `main`, provides bounded exact-head dispatch recovery, and classifies rename-source paths.
-- `DERIVED`: security-sensitive workflow representation is intentionally canonical rather than accepting arbitrary equivalent YAML spellings; noncanonical forms fail closed.
-- `DERIVED`: because `Merge gate / validate` becomes the sole required context, the aggregate job implementation itself must be immutable under repository validation, not merely discoverable by job name or scattered fragments.
+- `PROVEN`: PR #162 remains the delivery vehicle for the repository-engineering/governance package.
+- `PROVEN`: predecessor generation and successor generation 1 each exhausted bounded `3/3` repair budgets without being merged.
+- `PROVEN`: successor generation 1 final exact-head `97d3dd0a304446acbbfbb68b4365af4f8fd8c692` passed its complete aggregate CI, but independent review found P1 thread `PRRT_kwDOTuGrds6YRHL9`: the `validate` consumer was pinned while the `scope.rust` producer remained mutable.
+- `PROVEN`: current `main` advanced to `872b629e027b46abb4b558d61ee6104389d97ea7`; compare showed no overlap between its intervening changes and the 13 PR #162 repository-engineering paths.
+- `PROVEN`: the branch was reconciled non-destructively with that exact main using two-parent merge commit `055ed2b2e8a1342f21feee2368a4e75b7acafe47`.
+- `PROVEN`: current main `AGENTS.md` forbids Codex/OpenAI API or other owner-funded AI quota consumption without explicit permission for that specific use. The owner's instruction to finish the task authorizes continuation of repository work, not Codex consumption.
+- `DERIVED`: because `scope` decides whether all Rust gates are required, the scope producer must be protected as strongly as the final aggregate consumer.
 
-## Predecessor history retained
+## Retained repair history
 
-The predecessor generation consumed three repair cycles and is not being silently continued as cycle 4:
+### Predecessor generation — 3/3
 
-1. exact-head dispatch recovery, task recoverability, canonical GitHub governance alignment;
+1. exact-head dispatch recovery, task recoverability and canonical GitHub governance alignment;
 2. rename-source `previous_filename` Rust/workspace classification;
 3. correction of an overbroad static `paths:` substring assertion.
 
-The predecessor final review then found P2 `PRRT_kwDOTuGrds6YLEL3`: indentation-dependent path-filter detection could miss valid YAML representations. The PR was returned to draft until explicit owner successor authorization.
+Final predecessor review then found representation-dependent path-filter validation, which was carried into successor generation 1.
 
-## Successor generation 1
+### Successor generation 1 — 3/3
 
-### Cycle 1 — canonical trigger/root contract
+1. canonical always-on trigger/root contract;
+2. trigger-block boundary normalization without weakening substantive trigger checks;
+3. `.cargo/` Rust sensitivity plus full aggregate `validate` job SHA-256 pinning.
 
-- replaced indentation-dependent path-filter detection with an exact canonical `on:` block contract;
-- required exact canonical top-level keys in order: `name`, `run-name`, `on`, `permissions`, `concurrency`, `jobs`;
-- alternate/quoted/duplicate root keys, inline trigger mappings, extra root mappings, alternate trigger layout, `paths`, `paths-ignore`, or other trigger drift fail closed;
-- retained exact-head recovery, rename-source classification, explicit Dependency Review refs and aggregate sub-gates.
+Generation-1 final candidate `97d3dd0a304446acbbfbb68b4365af4f8fd8c692` passed:
 
-### Cycle 2 — trigger-block boundary normalization
+- transition `Agent governance / validate`;
+- `Merge gate / scope`;
+- governance/repository-policy validation;
+- Dependency Review;
+- CodeQL for Python and Actions;
+- Rust policy/metadata;
+- Linux build, strict Clippy, tests and synthetic harness;
+- Windows release build, strict Clippy, visible smoke and synthetic harness;
+- cargo-deny;
+- final `Merge gate / validate`.
 
-Pre-freeze self-review found that the extractor included the blank separator before `permissions`, while the expected canonical trigger constant did not. The repair normalizes CRLF and trailing blank separators only (`rstrip("\n") + "\n"`) while leaving substantive trigger content exact.
+Independent review then proved that changing the executable scope assignment to `rust = False` could preserve the pinned consumer and skip all Rust jobs. That valid P1 blocked generation 1 after its repair budget was exhausted.
 
-### Cycle 3 — aggregate implementation and Cargo repository configuration
+## Successor generation 2
 
-Independent review of frozen candidate `51d3be4d08219358edf25d18f48f1fe959e3993d` found two valid issues:
+The owner instructed the agent to finish the task on 2026-08-13. Under the current repository AI-budget policy this authorizes repository implementation and delivery work but does **not** authorize another Codex invocation.
 
-1. **P1 — `PRRT_kwDOTuGrds6YQvvI`: aggregate implementation not canonicalized.** A malicious change could replace only the `validate` job's fail-closed script with `echo` while retaining names/fragments, allowing the sole required status to succeed despite failed sub-gates.
-2. **P2 — `PRRT_kwDOTuGrds6YQvvP`: `.cargo/**` not Rust-sensitive.** Repository-wide Cargo target/runner/rustflags/network configuration could change while all four PR Rust jobs and the retained post-merge Rust workflow skipped.
+### Cycle 1 — pin the scope producer
 
-Repairs:
+Implemented hypothesis:
 
-- `.cargo/` is now in merge-gate Rust classification prefixes, including rename-source classification;
-- `.cargo/**` is now in `.github/workflows/rust.yml` push paths;
-- repository validation asserts both selectors remain present;
-- the entire normalized two-space-indented `validate` job is SHA-256 pinned as `c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a`, covering `if: always()`, every `needs` edge, result/output env wiring, and the fail-closed implementation;
-- any modification to the aggregate job's dependencies, wiring, or script therefore fails repository policy validation even if names or fragments remain unchanged.
+- retained the existing canonical `.github/workflows/merge-gate.yml` scope implementation unchanged;
+- computed the normalized two-space-indented `scope` job SHA-256 as `76c77c3b2b939e955aceb63441172fd1a77cb1e384cb58ac70c0cade4ab8d729`;
+- `tools/repository/validate_repository_policy.py` now extracts that exact `scope` job and rejects any digest mismatch;
+- the pinned producer covers exact-head PR resolution, same-repository/main-target validation, paginated changed-file discovery, rename-source classification, Rust-sensitive exact/prefix policy including `.cargo/`, the executable `rust = any(...)` classification, and all `scope` outputs;
+- the existing `validate` consumer pin `c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a` remains unchanged;
+- therefore mutating `rust = any(...)` to `rust = False`, changing the Rust path classifier, changing exact-head resolution or changing scope output wiring now fails repository-policy validation before the aggregate can become merge-ready.
 
-This consumes successor repair budget **3/3**. A new material finding on the next frozen head is a blocker requiring new explicit owner authorization, not a fourth successor repair cycle.
+No owner-funded AI service was invoked for this generation-2 repair.
 
 ## Acceptance criteria
 
-- [x] successor authorization is recorded without erasing predecessor `3/3` evidence;
-- [x] branch reconciled with accepted current main baseline;
-- [x] canonical always-on trigger/root contract implemented;
-- [x] trigger boundary normalization avoids the cycle-1 false failure without weakening substantive checks;
-- [x] `.cargo/` changes and rename sources force PR Rust validation;
-- [x] `.cargo/**` changes trigger retained post-merge Rust validation;
-- [x] entire aggregate `validate` implementation is cryptographically pinned by repository policy validation;
-- [x] exact-head recovery, explicit Dependency Review refs and rename-source classification remain enforced;
-- [ ] final PR metadata names the resulting frozen cycle-3 head;
-- [ ] exact-head full-diff self-review passes on that frozen head;
+- [x] branch reconciled with `main@872b629e027b46abb4b558d61ee6104389d97ea7` without losing either history;
+- [x] predecessor and successor-generation-1 evidence retained;
+- [x] successor generation 2 is recorded separately rather than silently extending generation 1;
+- [x] `scope` producer implementation is cryptographically pinned;
+- [x] aggregate `validate` consumer implementation remains cryptographically pinned;
+- [x] `.cargo/` and rename-source Rust sensitivity remains present;
+- [x] current owner-funded AI restriction is respected; no Codex invocation is treated as implicitly authorized;
+- [ ] final PR metadata names the resulting frozen generation-2 head;
+- [ ] exact-head full-diff self-review passes on the frozen generation-2 head;
 - [ ] transition `Agent governance / validate` passes on that exact head;
 - [ ] aggregate `Merge gate / validate` and every applicable sub-gate pass on that exact head;
-- [ ] independent Codex review of that exact head has no open material finding;
+- [ ] mandatory independent review is satisfied by a genuinely independent mechanism that does not consume owner-funded AI without specific permission;
 - [ ] all repaired historical review threads are resolved with final-head evidence;
 - [ ] branch is still up to date with current `main` immediately before merge;
 - [ ] squash merge uses the unchanged validated expected head SHA;
-- [ ] post-merge repository configuration proves the live `Protect main` ruleset requires exactly `Merge gate / validate`.
+- [ ] post-merge repository configuration proves the live `Protect main` ruleset requires exactly `Merge gate / validate`;
+- [ ] task record is archived and ownership is released after terminal delivery.
 
 ## Excluded scope
 
@@ -129,15 +141,16 @@ This consumes successor repair budget **3/3**. A new material finding on the nex
 - no production deployment or secret expansion;
 - no cross-repository writes;
 - no weakening of exact-head, review or branch-protection requirements;
+- no owner-funded Codex/OpenAI invocation without separate explicit authorization;
 - no unrelated branch/task cleanup.
 
 ## Validation
 
 ### Focused
 
-- cycle 1 canonical trigger/root implementation: reviewed;
-- cycle 2 boundary-normalization repair: reviewed;
-- cycle 3 `.cargo` selectors + full aggregate job hash pin: implemented; executable exact-head validation pending final freeze.
+- generation-2 target: `tools/repository/validate_repository_policy.py` scope producer SHA-256 pin;
+- adversarial invariant: any change to the canonical scope block, including `rust = False`, produces a digest different from `76c77c3b2b939e955aceb63441172fd1a77cb1e384cb58ac70c0cade4ab8d729` and must fail repository policy validation;
+- executable exact-head result: pending final freeze.
 
 ### Component/integration
 
@@ -150,7 +163,7 @@ This consumes successor repair budget **3/3**. A new material finding on the nex
 
 ### Exact-head CI
 
-- final head: pending this task-record commit;
+- final generation-2 head: pending this task-record commit;
 - trigger source: pending `pull_request/synchronize`;
 - transition governance: pending;
 - aggregate merge gate: pending;
@@ -158,31 +171,30 @@ This consumes successor repair budget **3/3**. A new material finding on the nex
 
 ## Self-review
 
-- candidate `51d3be4d08219358edf25d18f48f1fe959e3993d`: self-review PASS before independent review; independent review then found P1/P2 above, so it is superseded;
-- final cycle-3 head: pending this task-record commit;
-- method/reviewer: implementing/coordinating agent full-diff + successor-delta review;
+- implementing/coordinating agent must review the complete 13-path PR diff plus the generation-2 delta on the frozen final SHA;
 - verdict: pending.
 
 ## Independent review
 
-- required: `YES` — sole protected merge-authority transition has repository-wide common-mode-error risk;
-- auditor: automatic `chatgpt-codex-connector` PR review;
-- latest reviewed candidate `51d3be4d08219358edf25d18f48f1fe959e3993d`: P1/P2 repaired in successor cycle 3;
-- final cycle-3 head verdict: pending.
+- required: `YES` — this changes protected merge authority and has repository-wide common-mode-error risk.
+- current policy source: root `AGENTS.md` on `main@872b629e027b46abb4b558d61ee6104389d97ea7`.
+- Codex status for generation 2: `NOT AUTHORIZED / NOT INVOKED`.
+- preferred mechanism: a fresh separate qualified agent/session or human reviewer that did not implement or materially author the change and does not consume owner-funded AI quota.
+- final exact-head independent verdict: pending.
 
 ## PR and closeout
 
-- PR: #162, draft during final successor validation;
-- changed-file review: pending frozen cycle-3 head;
-- unresolved review threads: intentionally remain until final-head evidence exists;
-- merge: pending exact-head CI + independent review + up-to-date branch proof;
+- PR: #162, draft during generation-2 validation;
+- changed-file review: pending frozen generation-2 head;
+- unresolved historical review threads remain until exact-head repair evidence exists;
+- merge: pending exact-head CI, independent review, review-thread hygiene and current-main proof;
 - live ruleset verification: pending post-merge repository-configuration workflow;
-- archive/ownership release: separate terminal closeout after merge and live verification.
+- archive/ownership release: terminal closeout after merge and live verification.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Final successor review found aggregate-job bypass and missing .cargo sensitivity; both were repaired by full validate-job SHA-256 pinning and .cargo selectors in PR/post-merge Rust CI.
+last_progress: Successor generation 2 reconciled PR #162 with main@872b629e027b46abb4b558d61ee6104389d97ea7 and repaired P1 PRRT_kwDOTuGrds6YRHL9 by SHA-256 pinning the complete merge-gate scope producer while retaining the pinned aggregate consumer.
 status: validating
 branch: ci/OTV2-20260811-merge-gate-hardening
 head_sha: null
@@ -190,7 +202,7 @@ pr: 162
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pending-final-freeze
-ci_check_generation: successor-1-cycle-3-pre-freeze
+ci_check_generation: successor-2-cycle-1-pre-freeze
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -200,10 +212,11 @@ terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
 predecessor_repair_cycles: 3
-repair_cycles_for_current_gate: 3
+successor_generation_1_repair_cycles: 3
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Treat this task-record commit as the last content commit, update PR metadata to its exact resulting SHA without moving the branch, then freeze and perform complete exact-head self-review, CI and independent review. Any new material finding blocks the successor package.
+next_action: Update PR #162 metadata to the resulting exact generation-2 content head without moving the branch, freeze it, run complete exact-head self-review and CI, and satisfy mandatory independent review without invoking owner-funded AI absent separate permission.
 ```
