@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "manifest_revision": 1,
+  "canonical_digest": null,
+  "status": "CANDIDATE_NOT_ACCEPTED",
+  "reference_target": {
+    "id": "global-tibia-observable-2026-07-28-post-server-save",
+    "title": "Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary",
+    "effective_boundary_date": "2026-07-28",
+    "boundary_time_precision": "DATE_ONLY_SERVER_SAVE_TIME_NOT_FROZEN",
+    "immutable": true,
+    "accepted_by": "GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md",
+    "later_upstream_changes_policy": "CANDIDATE_FOR_LATER_REFERENCE_REVISION_ONLY"
+  },
+  "evidence_classes": [
+    "PROVEN",
+    "OBSERVED",
+    "DERIVED",
+    "UNKNOWN",
+    "CONFLICT",
+    "DECLARED_DIFFERENCE"
+  ],
+  "implementation_states": [
+    "NOT_STARTED",
+    "PARTIAL",
+    "IMPLEMENTED",
+    "NOT_APPLICABLE"
+  ],
+  "parity_statuses": [
+    "PARITY_CONFIRMED",
+    "PARITY_PENDING_EVIDENCE",
+    "PARITY_CONFLICT",
+    "DECLARED_DIFFERENCE",
+    "OUT_OF_SCOPE"
+  ],
+  "source_types": [
+    "OFFICIAL_PUBLIC",
+    "OWNER_PRIMARY_CAPTURE",
+    "CONTROLLED_BLACK_BOX_OBSERVATION",
+    "COMMUNITY_CORROBORATION",
+    "OTS_HYPOTHESIS_ONLY",
+    "OTERYN_ACCEPTED_CONTRACT",
+    "OTERYN_FIXTURE_OR_TEST"
+  ],
+  "provenance_states": [
+    "CLEARED",
+    "PENDING",
+    "REJECTED"
+  ],
+  "domains": [
+    {
+      "domain": "CHARACTER",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "ITEM",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "CHANNEL",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "CONTENT_WORLD",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "SIMULATION",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "ABILITY_COMBAT",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "AI_SPAWN",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "WORLD_INTERACTION",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    },
+    {
+      "domain": "ECONOMY",
+      "coverage_status": "NO_MECHANIC_CASES_REGISTERED"
+    }
+  ],
+  "cases": [],
+  "policy": {
+    "ots_can_prove_global_behavior": false,
+    "patch_note_absence_proves_no_change": false,
+    "parity_confirmed_requires_target_evidence": true,
+    "parity_confirmed_requires_oteryn_exact_revision": true,
+    "parity_confirmed_requires_passing_fixture_or_test": true,
+    "unknown_fails_closed": true,
+    "conflict_fails_closed": true,
+    "uncleared_provenance_blocks_promotion": true,
+    "security_integrity_legal_overrides_reference_fidelity": true
+  },
+  "canonicalization": {
+    "algorithm": "RFC8785_JCS",
+    "digest": "SHA-256",
+    "digest_member_excluded": "canonical_digest",
+    "null_digest_meaning": "TOOLING_NOT_YET_ACCEPTED_OR_EXECUTED"
+  },
+  "normative_contracts": [
+    "docs/architecture/GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md",
+    "docs/architecture/GAME-VISION-01_MINIMUM_OWNER_BASELINE.md",
+    "docs/architecture/GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md",
+    "docs/architecture/GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md",
+    "docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md",
+    "docs/architecture/REFERENCE_EVIDENCE_PARITY_MANIFEST_CONTRACT.md",
+    "docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.schema.json"
+  ],
+  "change_history": [
+    {
+      "manifest_revision": 1,
+      "date": "2026-08-13",
+      "summary": "Register immutable first Reference target, evidence/parity vocabulary, fail-closed policy and empty domain coverage inventory including Economy.",
+      "issue": "#219"
+    }
+  ]
+}
