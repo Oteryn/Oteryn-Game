@@ -91,17 +91,27 @@ jobs:
           workflow_path = Path('.github/workflows/merge-gate.yml')
           policy_path = Path('.github/repository-policy.json')
           validator_path = Path('tools/repository/validate_repository_policy.py')
+          apply_path = Path('tools/repository/apply_github_settings.py')
+          codeowners_path = Path('.github/CODEOWNERS')
 
           workflow = workflow_path.read_text(encoding='utf-8')
           policy = json.loads(policy_path.read_text(encoding='utf-8'))
+          apply_text = apply_path.read_text(encoding='utf-8')
+          codeowners = codeowners_path.read_text(encoding='utf-8')
 
-          expected_restricted_paths = [
+          expected_push_paths = [
               '.github/workflows/*',
               '.github/workflows/**/*',
               '.github/repository-policy.json',
               'tools/repository/*',
               'tools/repository/**/*',
           ]
+          expected_codeowners = {
+              '/.github/CODEOWNERS @blakinio',
+              '/.github/workflows/ @blakinio',
+              '/.github/repository-policy.json @blakinio',
+              '/tools/repository/ @blakinio',
+          }
 
           if policy.get('required_status_check') != 'Merge gate / validate':
               raise SystemExit('policy required status is not the aggregate merge gate')
@@ -123,17 +133,60 @@ jobs:
           if any(r.get('type') == 'file_path_restriction' for r in ruleset.get('rules', [])):
               raise SystemExit('branch ruleset must not contain file_path_restriction')
 
+          pr_rules = [r for r in ruleset.get('rules', []) if r.get('type') == 'pull_request']
+          if len(pr_rules) != 1:
+              raise SystemExit('expected exactly one pull_request rule')
+          pr = pr_rules[0].get('parameters', {})
+          expected_pr = {
+              'dismiss_stale_reviews_on_push': True,
+              'require_code_owner_review': True,
+              'require_last_push_approval': False,
+              'required_approving_review_count': 0,
+              'required_review_thread_resolution': True,
+          }
+          for key, expected in expected_pr.items():
+              if pr.get(key) != expected:
+                  raise SystemExit(f'Protect main pull_request {key} mismatch: {pr.get(key)!r}')
+
+          protection = policy.get('control_plane_protection', {})
+          if protection.get('public_repository_strategy') != 'required_code_owner_review':
+              raise SystemExit('public repository control-plane fallback is not Code Owner review')
+          if protection.get('push_ruleset_private_internal_only') is not True:
+              raise SystemExit('policy must mark push rulesets private/internal-only')
+
+          entries = {
+              line.strip()
+              for line in codeowners.splitlines()
+              if line.strip() and not line.lstrip().startswith('#')
+          }
+          if entries != expected_codeowners:
+              raise SystemExit(f'CODEOWNERS control-plane entries mismatch: {sorted(entries)!r}')
+          if any(line.lstrip().startswith('* ') for line in codeowners.splitlines()):
+              raise SystemExit('CODEOWNERS must not make ordinary PRs require owner approval')
+
           push_ruleset = policy.get('push_ruleset', {})
           if push_ruleset.get('target') != 'push':
-              raise SystemExit('control-plane ruleset must target pushes')
+              raise SystemExit('latent control-plane ruleset must target pushes')
           if push_ruleset.get('enforcement') != 'active' or push_ruleset.get('bypass_actors') != []:
-              raise SystemExit('control-plane push ruleset must be active with no bypass actors')
+              raise SystemExit('latent push ruleset must be active with no bypass actors')
+          if 'conditions' in push_ruleset:
+              raise SystemExit('push ruleset must not contain branch ref_name conditions')
           path_rules = [r for r in push_ruleset.get('rules', []) if r.get('type') == 'file_path_restriction']
           if len(path_rules) != 1:
-              raise SystemExit('expected exactly one file_path_restriction rule')
+              raise SystemExit('expected exactly one latent file_path_restriction rule')
           restricted = path_rules[0].get('parameters', {}).get('restricted_file_paths')
-          if restricted != expected_restricted_paths:
-              raise SystemExit(f'unexpected merge-authority restricted paths: {restricted!r}')
+          if restricted != expected_push_paths:
+              raise SystemExit(f'unexpected latent push-ruleset paths: {restricted!r}')
+
+          for fragment in (
+              'repository_supports_push_ruleset',
+              'repo.get("visibility") in {"private", "internal"}',
+              'remove_named_ruleset_if_present',
+              'verify_codeowners_fallback',
+              'public repository must not retain unsupported control-plane push ruleset',
+          ):
+              if fragment not in apply_text:
+                  raise SystemExit(f'visibility-aware apply/readback missing fragment: {fragment}')
 
           if workflow.count('name: Merge gate / validate') != 1:
               raise SystemExit('aggregate required status name must be unique')
@@ -197,11 +250,10 @@ jobs:
               'merge gate path-filtered',
           )
 
-          workflow_digest = hashlib.sha256(original_workflow.encode('utf-8')).hexdigest()
-          policy_digest = hashlib.sha256(policy_path.read_bytes()).hexdigest()
-          validator_digest = hashlib.sha256(validator_path.read_bytes()).hexdigest()
-          print(f'merge-gate sha256={workflow_digest}')
-          print(f'repository-policy sha256={policy_digest}')
-          print(f'repository-validator sha256={validator_digest}')
+          print(f"merge-gate sha256={hashlib.sha256(original_workflow.encode('utf-8')).hexdigest()}")
+          print(f"repository-policy sha256={hashlib.sha256(policy_path.read_bytes()).hexdigest()}")
+          print(f"repository-validator sha256={hashlib.sha256(validator_path.read_bytes()).hexdigest()}")
+          print(f"repository-apply sha256={hashlib.sha256(apply_path.read_bytes()).hexdigest()}")
+          print(f"CODEOWNERS sha256={hashlib.sha256(codeowners_path.read_bytes()).hexdigest()}")
           print('Independent deterministic merge-authority audit: PASS')
           PY

@@ -102,8 +102,8 @@
           "allowed_merge_methods": [
             "squash"
           ],
-          "dismiss_stale_reviews_on_push": false,
-          "require_code_owner_review": false,
+          "dismiss_stale_reviews_on_push": true,
+          "require_code_owner_review": true,
           "require_last_push_approval": false,
           "required_approving_review_count": 0,
           "required_review_thread_resolution": true
@@ -126,19 +126,23 @@
       }
     ]
   },
+  "control_plane_protection": {
+    "public_repository_strategy": "required_code_owner_review",
+    "code_owner": "@blakinio",
+    "protected_paths": [
+      ".github/CODEOWNERS",
+      ".github/workflows/",
+      ".github/repository-policy.json",
+      "tools/repository/"
+    ],
+    "push_ruleset_private_internal_only": true,
+    "break_glass": "temporarily alter the live branch ruleset in GitHub Settings, require independent exact-head review, then restore and verify canonical policy"
+  },
   "push_ruleset": {
     "name": "Protect repository control plane",
     "target": "push",
     "enforcement": "active",
     "bypass_actors": [],
-    "conditions": {
-      "ref_name": {
-        "include": [
-          "~DEFAULT_BRANCH"
-        ],
-        "exclude": []
-      }
-    },
     "rules": [
       {
         "type": "file_path_restriction",

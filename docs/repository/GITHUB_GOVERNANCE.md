@@ -12,26 +12,35 @@
 - Changed-file classification fails closed when GitHub reports more than the 3,000-file files-API cap or when the enumerated file count does not exactly match the pull request metadata.
 - Review conversations must be resolved.
 - Force-push, branch deletion, and merge commits are rejected.
-- Required approvals remain `0` while the repository has only one maintainer. Increase this to at least `1` when a second trusted maintainer is added.
+- General required approvals remain `0` while the repository has only one maintainer. `require_code_owner_review` is enabled separately and therefore requires owner approval only when a PR touches a path actually present in the deliberately narrow base-branch `CODEOWNERS` file.
+- Code Owner approvals are dismissed when new reviewable commits are pushed, so an approval cannot silently cover a later control-plane head.
 - GitHub-generated squash commits are verified. A strict signed-commit rule is deferred because it would prevent the maintainer from squash-merging third-party-authored PRs such as Dependabot updates.
 
 The retained `Agent governance / validate` workflow remains available during the transition to the aggregate gate and for explicit manual governance validation, but it is not the canonical required status after the repository policy is applied.
 
 ## Protected merge-authority control plane
 
-After the aggregate merge gate is bootstrapped, a dedicated push ruleset named `Protect repository control plane` applies `file_path_restriction` with no bypass actors to:
+`Oteryn-v2` is a public repository. GitHub push rulesets are available for private/internal repositories (and eligible fork networks), not for an ordinary public repository. A push ruleset also applies repository-wide and therefore does not use branch `ref_name` targeting. The failed post-merge run after PR #238 proved this platform boundary when GitHub rejected the attempted public push ruleset.
 
-- `.github/workflows/*` and `.github/workflows/**/*`;
+For the current public repository, the native fallback is **required Code Owner review on a deliberately narrow control-plane ownership map**. The base-branch `.github/CODEOWNERS` owns only:
+
+- `.github/CODEOWNERS` itself;
+- `.github/workflows/`;
 - `.github/repository-policy.json`;
-- `tools/repository/*` and `tools/repository/**/*`.
+- `tools/repository/`.
 
-The branch ruleset `Protect main` retains pull-request, linear-history and required-status protection; the dedicated push ruleset owns only the path restriction because GitHub does not permit `file_path_restriction` to be combined with branch-only rules in one branch ruleset.
+GitHub evaluates CODEOWNERS from the pull request base branch. A PR changing one of these paths therefore cannot replace its own ownership mapping and use that replacement to authorize itself. Ordinary architecture, runtime and content paths are intentionally absent from CODEOWNERS so their normal approval count remains zero.
 
-These paths are intentionally immutable through ordinary pull requests. This keeps the workflow that emits the required status, the policy that selects that status, the repository-administration workflow, and the scripts that apply/validate repository settings outside the normal PR-modifiable trust domain. It also prevents adding a new workflow that can consume `REPO_ADMIN_TOKEN`.
+The machine policy retains the no-bypass `Protect repository control plane` push-ruleset definition as a **latent private/internal strategy only**. For private/internal visibility that latent strategy is a **dedicated push ruleset**. `tools/repository/apply_github_settings.py` applies it only when GitHub reports repository visibility `private` or `internal`; on a public repository it removes any stale ruleset of that name and verifies the Code Owner fallback instead. The push-ruleset definition intentionally contains no `ref_name` condition because GitHub push rulesets are repository-wide.
 
-A legitimate future merge-authority/control-plane change therefore requires an explicit owner action in GitHub Settings to temporarily alter the live push-ruleset restriction before opening or updating the control-plane PR, followed by exact-head validation, required independent review, merge, and restoration/verification of the intended restriction. Do not create routine bypass actors for convenience.
+A legitimate future merge-authority/control-plane change with one maintainer is intentionally break-glass work: the owner must explicitly and temporarily alter the live `Protect main` Code Owner-review requirement in GitHub Settings, perform the bounded governance PR with exact-head validation and mandatory independent audit, then restore the canonical policy and require post-merge repository-configuration plus live ruleset readback. Do not create routine bypass actors or weaken the general merge gate for convenience. Adding a second trusted maintainer can instead allow ordinary Code Owner approval without break-glass.
 
-`Merge authority audit / validate` is a deterministic, non-AI audit workflow for high-risk merge-authority changes. It independently checks the expected ruleset contract and executes adversarial mutation tests against the repository validator on the exact PR head. It does not consume owner-funded AI quota and does not replace the ordinary aggregate merge gate.
+`Merge authority audit / validate` is the deterministic, non-AI independent audit workflow for high-risk merge-authority changes. It checks the branch ruleset contract, the public Code Owner fallback, the latent private/internal push policy, visibility-aware apply/readback logic and adversarial mutations of the aggregate merge gate on the exact PR head. It does not consume owner-funded AI quota and does not replace the ordinary aggregate merge gate.
+
+GitHub platform references for this boundary:
+
+- <https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/creating-rulesets-for-a-repository>
+- <https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners>
 
 ## Pull request and commit convention
 
@@ -51,7 +60,7 @@ The PR title and body form the permanent squash commit. Working commits may be i
 - The scope job verifies the live open same-repository PR, target branch, exact event head SHA and complete changed-file enumeration before downstream jobs check out the validated head.
 - Dependency Review receives explicit base/head revisions from the validated PR context.
 - Repository-administration changes run only after a protected merge to `main` or an explicit manual dispatch and require `REPO_ADMIN_TOKEN`.
-- No manual environment approval is required while the repository has one maintainer; the protected PR, exact-head CI, aggregate merge gate, read-only workflow token, separate admin token, and ruleset-level control-plane restriction are the enforcement boundary.
+- No manual environment approval is required for ordinary work while the repository has one maintainer; the protected PR, exact-head aggregate gate and read-only workflow defaults are the routine boundary. Control-plane changes are the explicit exception and require the Code Owner/break-glass process above.
 - Dependabot maintains both GitHub Actions and Cargo dependencies.
 - CodeQL scans Python and GitHub Actions workflows.
 - Dependency review blocks newly introduced high-severity vulnerable dependencies.
@@ -80,6 +89,6 @@ The repository validator checks that these files and machine-readable policy fie
 
 ## Configuration as code
 
-`.github/repository-policy.json` is the expected GitHub configuration. `tools/repository/apply_github_settings.py` applies it idempotently, including repository metadata, labels, topics, Actions permissions, security settings, the `Protect main` branch ruleset, and the dedicated `Protect repository control plane` push ruleset. `.github/workflows/repository-configuration.yml` runs only when the policy, apply script, or workflow changes on `main`, or through an explicit manual dispatch.
+`.github/repository-policy.json` is the expected GitHub configuration. `tools/repository/apply_github_settings.py` applies it idempotently, including repository metadata, labels, topics, Actions permissions, security settings and the `Protect main` branch ruleset. It selects the supported control-plane enforcement by live repository visibility: Code Owner review for public `Oteryn-v2`, or the latent push ruleset for a future private/internal repository. `.github/workflows/repository-configuration.yml` runs only when the policy, apply script, or workflow changes on `main`, or through an explicit manual dispatch.
 
-`tools/repository/validate_repository_policy.py` checks that required governance files exist, workflow actions use full SHAs, dangerous privileged triggers are absent, the aggregate merge-gate recovery contract is retained, the documented required context agrees with machine policy, and both rulesets have the expected protection and licensing invariants.
+`tools/repository/validate_repository_policy.py` retains the static merge-gate/ruleset/licensing checks. The deterministic merge-authority audit additionally validates the visibility-aware Code Owner fallback and latent push-ruleset boundary. Post-merge repository configuration is the integration proof that the policy can actually be applied to GitHub and read back from the live repository.
