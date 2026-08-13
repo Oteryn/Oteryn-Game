@@ -1,7 +1,10 @@
 {
   "schema_version": "1.0",
   "ruleset_name": "Protect main",
-  "required_status_check": "Merge gate / validate",
+  "required_status_checks": [
+    "Merge gate / validate",
+    "Control plane guard / validate"
+  ],
   "licensing": {
     "spdx_id": "MPL-2.0",
     "license_file": "LICENSE",
@@ -116,6 +119,9 @@
           "required_status_checks": [
             {
               "context": "Merge gate / validate"
+            },
+            {
+              "context": "Control plane guard / validate"
             }
           ],
           "strict_required_status_checks_policy": true
@@ -126,32 +132,15 @@
       }
     ]
   },
-  "push_ruleset": {
-    "name": "Protect repository control plane",
-    "target": "push",
-    "enforcement": "active",
-    "bypass_actors": [],
-    "conditions": {
-      "ref_name": {
-        "include": [
-          "~DEFAULT_BRANCH"
-        ],
-        "exclude": []
-      }
-    },
-    "rules": [
-      {
-        "type": "file_path_restriction",
-        "parameters": {
-          "restricted_file_paths": [
-            ".github/workflows/*",
-            ".github/workflows/**/*",
-            ".github/repository-policy.json",
-            "tools/repository/*",
-            "tools/repository/**/*"
-          ]
-        }
-      }
+  "control_plane_guard": {
+    "workflow": ".github/workflows/control-plane-guard.yml",
+    "required_status_check": "Control plane guard / validate",
+    "protected_paths": [
+      ".github/workflows/*",
+      ".github/workflows/**/*",
+      ".github/repository-policy.json",
+      "tools/repository/*",
+      "tools/repository/**/*"
     ]
   }
 }
