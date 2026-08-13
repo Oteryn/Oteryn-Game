@@ -8,7 +8,7 @@
 - The pull request title becomes the squash-commit title and the pull request body becomes its canonical message.
 - `Merge gate / validate` is the single stable required status check for the current exact PR head and the branch must be up to date.
 - The aggregate merge gate always requires repository/agent governance, Dependency Review and CodeQL, and additionally requires the full Rust policy/Linux/Windows/supply-chain set when Rust/workspace-sensitive paths change.
-- If an initial PR event is suppressed and no run exists to rerun, the merge gate may be manually dispatched only from the exact unchanged PR head branch with the open PR number and full expected head SHA; the workflow re-resolves live PR metadata and fails closed if the head moved.
+- If an initial PR event is suppressed and no run exists to rerun, recover without changing the head SHA: close and reopen the unchanged pull request. The standard `pull_request: reopened` event re-runs the gate in the ordinary pull-request trust context, and the scope job re-resolves live PR metadata before any repository code executes.
 - Changed-file classification fails closed when GitHub reports more than the 3,000-file files-API cap or when the enumerated file count does not exactly match the pull request metadata.
 - Review conversations must be resolved.
 - Force-push, branch deletion, and merge commits are rejected.
@@ -47,9 +47,9 @@ The PR title and body form the permanent squash commit. Working commits may be i
 - Each workflow declares least-privilege permissions.
 - External actions are pinned to full commit SHAs.
 - Workflows avoid privileged checkout of untrusted pull-request code.
-- The merge-gate recovery dispatch requires an open same-repository PR targeting `main`, an exact expected head SHA and a dispatch ref resolving to that same unchanged head.
-- For `workflow_dispatch` recovery, checkout uses the trusted event SHA (`github.sha`) after the scope job proves it equals the expected unchanged PR head; pull-request runs continue to use the validated PR head output.
-- Dependency Review receives explicit base/head revisions from the validated PR context so the same dependency comparison can be performed for ordinary PR events and exact-head dispatch recovery.
+- Merge-gate recovery does not use `workflow_dispatch` to execute pull-request code. Recovery uses the normal `pull_request: reopened` event on the unchanged head instead.
+- The scope job verifies the live open same-repository PR, target branch, exact event head SHA and complete changed-file enumeration before downstream jobs check out the validated head.
+- Dependency Review receives explicit base/head revisions from the validated PR context.
 - Repository-administration changes run only after a protected merge to `main` or an explicit manual dispatch and require `REPO_ADMIN_TOKEN`.
 - No manual environment approval is required while the repository has one maintainer; the protected PR, exact-head CI, aggregate merge gate, read-only workflow token, separate admin token, and ruleset-level control-plane restriction are the enforcement boundary.
 - Dependabot maintains both GitHub Actions and Cargo dependencies.
