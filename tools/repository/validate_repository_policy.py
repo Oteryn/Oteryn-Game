@@ -37,6 +37,9 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
         required: true
         type: string
 """
+EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
+    "76c77c3b2b939e955aceb63441172fd1a77cb1e384cb58ac70c0cade4ab8d729"
+)
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a"
 )
@@ -295,6 +298,17 @@ def main() -> int:
             errors.append(
                 "merge gate trigger block must exactly match the canonical always-on "
                 "pull_request plus exact-head workflow_dispatch contract"
+            )
+        scope_block = indented_yaml_mapping_block(text, "scope", 2)
+        scope_digest = (
+            hashlib.sha256(scope_block.encode("utf-8")).hexdigest()
+            if scope_block is not None
+            else None
+        )
+        if scope_digest != EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256:
+            errors.append(
+                "merge gate scope job must exactly match the canonical exact-head, "
+                "changed-path classification and output implementation"
             )
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = (
