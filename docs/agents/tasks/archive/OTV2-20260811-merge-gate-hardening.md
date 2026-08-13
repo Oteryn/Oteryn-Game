@@ -15,7 +15,7 @@ public_control_plane_repair_pr: 241
 public_control_plane_repair_head_sha: 87d113271ce42b8a1369fb083caff18f4980775c
 public_control_plane_repair_merge_sha: 3a8add69e76221597f2973c9873521d82fb83568
 lifecycle_closeout_branch: ci/merge-gate-hardening-closeout-20260813
-lifecycle_closeout_pr: pending
+lifecycle_closeout_pr: 242
 owner: released_after_closeout
 created_at: 2026-08-11T10:30:00+02:00
 completed_at: 2026-08-13T20:16:00+02:00
@@ -242,7 +242,7 @@ public_control_plane_repair_head_sha: 87d113271ce42b8a1369fb083caff18f4980775c
 public_control_plane_repair_merge_sha: 3a8add69e76221597f2973c9873521d82fb83568
 repository_configuration_run: 31729712428
 repository_configuration_result: PASS
-lifecycle_closeout_pr: pending
+lifecycle_closeout_pr: 242
 owner_action_required: false
 blocker: null
 next_action: Complete bookkeeping-only archive PR, release ownership, then resume pending GAME-ABILITY-01 effect-family/Reference-catalogue architecture work.
