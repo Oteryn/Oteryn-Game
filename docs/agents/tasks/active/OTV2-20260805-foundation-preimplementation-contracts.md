@@ -9,15 +9,15 @@ repository: blakinio/Oteryn-v2
 base_branch: main
 branch: null
 pr: null
-base_sha: 568236c33cd23da017bca1dbd1ed98afc8da71f4
+base_sha: 1e16b32069868f14aa1761a512b6cd8b1024e277
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: unassigned
 created_at: 2026-08-05T08:49:00+02:00
-updated_at: 2026-08-13T00:30:00+02:00
+updated_at: 2026-08-13T09:24:00+02:00
 execution_budget_minutes: 120
-large_budget_reason: Non-owning programme checkpoint spanning accepted native foundation architecture and remaining paper-only/vertical-slice gates; executable packages remain separately bounded.
+large_budget_reason: Non-owning programme checkpoint spanning accepted native foundation/game/content/determinism architecture and remaining Reference/vertical-slice gates; executable packages remain separately bounded.
 owned_paths: []
 public_contracts:
   - docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md
@@ -31,7 +31,7 @@ handover_report: docs/agents/reports/OTV2-20260812-foundation-handover.md
 depends_on:
   - accepted ADR-0001 through ADR-0016 as applicable to their named scopes
   - FND-01 and VSL-02 accepted/applied
-  - FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, DUR-03, DUR-04, ANL-01 and NET-TRANSPORT-01 accepted/lifecycle-closed after recorded closeouts
+  - FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, DUR-03, DUR-04, ANL-01, NET-TRANSPORT-01 and SIM-DETERMINISM-01 accepted/lifecycle-closed after recorded closeouts
   - GAME-VISION-01, GAME-CHANNEL-01, GAME-CHAR-01 and GAME-ITEM-01 accepted/lifecycle-closed after recorded closeouts
 blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
@@ -45,7 +45,7 @@ external_repositories:
 
 Maintain a truthful **non-owning** programme checkpoint. This record owns no architecture path and grants no implementation authority. Every substantial future gate still requires its own bounded task, branch, PR, validation and archive lifecycle.
 
-This refresh is part of DUR-04 lifecycle closeout PR #213 and becomes canonical only after that closeout merges.
+This refresh is part of SIM-DETERMINISM lifecycle closeout PR #215 and becomes canonical only after that closeout merges.
 
 ## Canonical continuation order
 
@@ -62,7 +62,7 @@ Older progress prose that conflicts with a later accepted contract or the curren
 
 ## Accepted/lifecycle-closed architecture to consume
 
-Do not restart these gates merely because older backlog or predecision text describes an earlier state:
+Do not restart these gates merely because older backlog/predecision text describes an earlier state:
 
 - native Rust workspace/client cutover and one project-owned `protocol-oteryn`;
 - FND-ID-01 identity vocabulary;
@@ -77,48 +77,47 @@ Do not restart these gates merely because older backlog or predecision text desc
 - GAME-ITEM-01 typed item definition/instance/equipment/container/revision semantics;
 - DUR-03 item/currency/value location, transaction, conservation and anti-duplication semantics;
 - GAME-CHANNEL-01 selection/queue/co-location/anti-hopping/multiplicity/qualitative lifecycle/community policy;
-- DUR-04 stable content/package identity, deterministic locked compilation, immutable bundle staging/activation/migration, bounded loader/provenance and authoritative scripting capability/determinism boundary from delivery PR #212 exact final head `77e68ffb9e9e0e31ca751d42ff5f7c03466b2b23`, squash merge `568236c33cd23da017bca1dbd1ed98afc8da71f4`.
+- DUR-04 typed semantic content graph, exact package locking, deterministic compilation, immutable bundle staging/activation/migration, bounded loader/provenance and capability-oriented deterministic scripting;
+- SIM-DETERMINISM-01 deterministic arithmetic/RNG/order/replay/state-hash/supported-target architecture from delivery PR #214 exact final head `4c6684328123aebd657696808372a5855980d34e`, squash merge `1e16b32069868f14aa1761a512b6cd8b1024e277`.
 
-## Accepted DUR-04 boundary — consume, do not reopen
+## Accepted SIM-DETERMINISM boundary — consume, do not reopen
 
-DUR-04 freezes architecture for:
+SIM-DETERMINISM freezes architecture for:
 
-- typed semantic content graph independent from YAML/RON/JSON5/custom physical serialization;
-- stable `PackageKey`, immutable `PackageRevision`, stable `ContentKey`, exact immutable Content Lock and revision-scoped compact IDs;
-- deterministic source/import -> typed model -> validation -> dependency/alias resolution -> normalization -> lowering -> client/server projection -> immutable bundle -> staging -> explicit activation;
-- allowlisted client-safe projection with server-only authoritative data excluded;
-- fail-closed loader validation with checked allocation/decompression/integrity/version/dependency/index/semantic validation and no partial authoritative publication;
-- explicit content activation/rollback and durable-state migration classes;
-- exact external-source provenance and `COPY|CONVERT|REWRITE|REFERENCE_ONLY|REJECT` dispositions with importer-boundary LIR;
-- target WebAssembly Component Model + project-owned versioned WIT capability ABI, with Wasmtime only an implementation candidate;
-- no ambient filesystem/network/process/environment/SQL/global-Game authority for scripts;
-- snapshot-bound authoritative reads and proposal-only extension-state/domain mutations;
-- no ActionPlan-created cross-owner atomicity; wider workflows retain owning OperationId/idempotency/compensation semantics;
-- deterministic logical time, invocation-local RNG, stable query order, deterministic numeric/NaN policy, fuel/resource bounds and `script_execution_profile_revision`;
-- typed/versioned bounded durable extension state, never VM memory persistence;
-- explicit GAME-CHANNEL multiplicity/eligibility classification for relevant value-producing sources;
-- Resource Limits Registry completeness before implementation acceptance;
-- a bounded reversible physical-format/compiler/loader spike before final serializer/container/chunk/floor/compression choices.
+- reproducibility from canonical future-determining state + exact owner-local normalized input order + exact semantic revision/profile set + normalized external facts;
+- FND-03 RuntimeExecutionOrdinal remaining owner-local authority/evidence with no global total order or second runtime commit ordinal;
+- `SimulationDeterminismProfileRevision` for numeric/RNG/tie-break/hash/supported-target semantics without replacing content/ruleset/world-policy/DUR-04 script profiles;
+- exact semantic revision binding for retryable/delayed occurrences, preventing silent reinterpretation under newer incompatible rules;
+- explicit numeric semantic classes and formula descriptors with named rounding/invalid-state behavior;
+- DUR-03 exact conservation remaining exact and non-floating;
+- purpose-isolated deterministic gameplay RNG with retry/failover stability, authoritative stream advancement, no process-global mutable RNG and anti-prediction protection for exploit-sensitive seed/root state;
+- separation of wall clock, monotonic elapsed time and authoritative execution order with no universal fixed tick;
+- deterministic simultaneous/conflict policy using commutative semantics, stable tie-breaks or exact retained FND-03 order;
+- typed normalization of external nondeterminism before it influences authoritative gameplay;
+- replay envelopes retaining exact server/build executable identity, protocol revision/profile, World Bundle artifact/digest, semantic revisions, input/order evidence, formula/script profiles, RNG evidence and normalized external/time facts;
+- optional NodeId/process-incarnation forensic attribution without making original placement a replay prerequisite;
+- canonical deterministic state/hash coverage of active revisions, gameplay state, RNG state, pending accepted work, occurrence identities and semantically relevant fences/revisions;
+- hierarchical first-divergence evidence that is read-only and cannot repair live authority;
+- identical normalized authoritative results across supported server targets, with deterministic floating allowed only under explicit cross-target proof;
+- explicit replay/hash/RNG/formula/pending-state resource limits before implementation acceptance.
 
-DUR-04 intentionally does **not** freeze the authoring serializer, final bundle container, 32x32 versus 64x64 chunking, floor packing, compression codec, exact WIT function inventory, exact Wasmtime version/features or numeric resource ceilings.
+SIM-DETERMINISM intentionally does **not** choose a Rust numeric/RNG/hash crate, exact gameplay RNG algorithm, exact fixed scale or gameplay formula, global tick rate, scheduler/thread counts, replay storage backend or production hash cadence.
 
 ## Implementation boundary
 
-Architecture acceptance grants **no executable authority**. A future task may not create or claim Rust GameNode/Channel/item/content runtime, compiler/loader/Studio/scripting host, WIT implementation, PostgreSQL DDL/migrations, Platform/Gateway/World Registry changes, live item/currency/content/Channel mutation, broad legacy content import, production traffic/configuration or entitlement activation without separate explicit owner implementation authority and its own evidence.
+Architecture acceptance grants **no executable authority**. A future task may not create or claim Rust GameNode/Channel/item/content/SIM runtime, combat/AI/progression/scripts, compiler/loader/Studio/WIT host, PostgreSQL DDL/migrations, Platform/Gateway/World Registry changes, broad legacy content import, production traffic/configuration or entitlement activation without separate explicit owner implementation authority and its own evidence.
 
 ## Current ordered paper-only architecture work
 
-After DUR-04 lifecycle closeout, `SIM-DETERMINISM-01` and the Reference evidence/parity manifest remain independently ownable pre-VSL paper-only work.
-
-To preserve singular ownership, the selected next action is exactly:
+After SIM-DETERMINISM lifecycle closeout, the remaining named pre-VSL paper-only programme action is:
 
 ```text
-SIM-DETERMINISM-01 — Authoritative Simulation Determinism Contract
+Build the versioned Reference evidence/parity manifest under its owning contract.
 ```
 
-The bounded gate should define only architecture needed now for authoritative arithmetic representation, rounding and overflow, deterministic RNG ownership/streams, simulation logical time and ordering, replay inputs, state hashing/divergence evidence, supported-target determinism and the relationship to DUR-04 `script_execution_profile_revision`. It must not implement combat, AI, scripts or runtime.
+Do not invent a new stable gate ID unless the repository owner explicitly creates one. The bounded task must preserve the accepted first Reference target and evidence hierarchy, make unresolved behavior fail closed, record provenance/status per exercised mechanic and avoid promoting OTS implementations or search absence into Global truth.
 
-Reference evidence/parity tooling remains independently ownable and is not implicitly accepted by selecting SIM as next.
+That manifest work is architecture/evidence-only and does not authorize runtime implementation, DDL, production behavior, proprietary code/assets or any external-repository mutation.
 
 ## Repository and production authority
 
@@ -129,7 +128,7 @@ No production deployment, protected-environment approval, secrets, live account/
 ## Context checkpoint
 
 ```yaml
-last_progress: DUR-04 delivery PR #212 passed owner-directed exact-head self-review `4921665072` under the explicit owner review override, repair budget 3/3 and exact-head Governance/Dependency/CodeQL, then squash-merged as `568236c33cd23da017bca1dbd1ed98afc8da71f4`; lifecycle closeout #213 reconciles canonical status and releases DUR-04 ownership.
+last_progress: SIM-DETERMINISM delivery PR #214 repaired the review P1 in owner-authorized cycle 4, passed exact-head self-review and Governance/Dependency/CodeQL, then squash-merged exact final head 4c6684328123aebd657696808372a5855980d34e as 1e16b32069868f14aa1761a512b6cd8b1024e277 after the owner explicitly overrode the fresh-independent-review-after-repair gate for that exact head; lifecycle closeout #215 reconciles canonical status and releases SIM ownership.
 status: ready
 branch: null
 head_sha: null
@@ -151,5 +150,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: false
 blocker: null
-next_action: From live main after DUR-04 lifecycle closeout, create one bounded paper-only `SIM-DETERMINISM-01` architecture task; do not implement runtime/combat/AI/scripts/DDL/production behavior.
+next_action: From live main after SIM-DETERMINISM lifecycle closeout, create one bounded paper-only task to build the versioned Reference evidence/parity manifest under its owning contract; do not invent a stable gate ID or implement runtime/DDL/production behavior.
 ```

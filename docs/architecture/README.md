@@ -54,7 +54,7 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 - [DUR-01 — Durable identifier representation](DUR-01_DURABLE_IDENTIFIER_REPRESENTATION_CONTRACT.md)
 - [ANL-01 — Game event and audit foundation](ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md)
 
-## Accepted gameplay, product and durability contracts
+## Accepted gameplay, product, durability and determinism contracts
 
 - [GAME-ITEM-01 — Item model and equipment analysis](GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_ANALYSIS.md)
 - [GAME-ITEM-01 — Item model and equipment contract](GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md)
@@ -64,8 +64,10 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 - [GAME-CHANNEL-01 — Channel product policy contract](GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md)
 - [DUR-04 — Content, world detail and scripting analysis](DUR-04_CONTENT_WORLD_AND_SCRIPTING_ANALYSIS.md)
 - [DUR-04 — Content, world detail and scripting contract](DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md)
+- [SIM-DETERMINISM-01 — Authoritative simulation determinism analysis](SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_ANALYSIS.md)
+- [SIM-DETERMINISM-01 — Authoritative simulation determinism contract](SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md)
 
-`GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01` and `DUR-04` are accepted/lifecycle-closed architecture with implementation `NOT_STARTED`. GAME-ITEM + DUR-03 freeze typed item legality, one durable item location, ItemInstanceId lifecycle transitions, conservation/source-sink lineage, idempotency/retry/ambiguous-commit handling, runtime↔durable pickup/drop fencing, custody and bounded audit. GAME-CHANNEL freezes player Channel selection/recommendation/queue/co-location, durable anti-hopping/prior-Channel semantics, explicit source/reward multiplicity classes, qualitative public Channel create/drain/drain-abort/retirement predicates, same-Channel recovery and one-World community/economy boundaries while leaving all numeric capacity/windows/hysteresis to PERF/OPS. DUR-04 freezes stable semantic package/content identity, deterministic locked compilation, immutable bundle staging/activation/migration, bounded fail-closed loading and the target Component Model + project-owned WIT capability boundary with proposal-only authoritative mutations and versioned deterministic execution-profile semantics. None of these acceptances authorizes Rust/runtime/client/compiler/loader/Studio implementation, PostgreSQL DDL/migrations, Platform writes, broad content import, production mutation or entitlement activation.
+`GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` are accepted/lifecycle-closed architecture with implementation `NOT_STARTED`. GAME-ITEM + DUR-03 freeze typed item legality, one durable item location, ItemInstanceId lifecycle transitions, conservation/source-sink lineage, idempotency/retry/ambiguous-commit handling, runtime↔durable pickup/drop fencing, custody and bounded audit. GAME-CHANNEL freezes player Channel selection/recommendation/queue/co-location, durable anti-hopping/prior-Channel semantics, explicit source/reward multiplicity classes, qualitative public Channel create/drain/drain-abort/retirement predicates, same-Channel recovery and one-World community/economy boundaries while leaving all numeric capacity/windows/hysteresis to PERF/OPS. DUR-04 freezes stable semantic package/content identity, deterministic locked compilation, immutable bundle staging/activation/migration, bounded fail-closed loading and the target Component Model + project-owned WIT capability boundary with proposal-only authoritative mutations and versioned deterministic execution-profile semantics. SIM-DETERMINISM freezes explicit numeric/rounding/failure semantics, purpose-isolated deterministic gameplay RNG, exact semantic revision binding, logical time/order, normalized external nondeterminism, replay provenance, future-determining state hashing/divergence evidence and supported-target determinism. None of these acceptances authorizes Rust/runtime/client/compiler/loader/Studio/SIM/combat/AI/script implementation, exact formulas or RNG/numeric/hash dependencies, PostgreSQL DDL/migrations, Platform writes, broad content import, production mutation or entitlement activation.
 
 ## Machine-readable contracts
 
@@ -91,11 +93,12 @@ accepted GAME-ITEM-01
 -> runtime item mutation still separately unauthorized
 
 accepted DUR-04 content/world/scripting architecture
-+ SIM-DETERMINISM-01
--> small real-boundary VSL sequence
++ accepted SIM-DETERMINISM-01
+-> versioned Reference evidence/parity manifest
+-> later real-boundary VSL sequence only after explicit implementation authority
 ```
 
-After DUR-04 lifecycle closeout, `SIM-DETERMINISM-01` is the selected next bounded paper-only architecture action: authoritative arithmetic representation, rounding/overflow, deterministic RNG streams/ownership, simulation order/time, replay inputs/state hashing and supported-target determinism. Reference evidence/parity tooling remains independently ownable paper-only work. Any executable server/persistence/channel/item/content increment still requires separate explicit implementation authority.
+After SIM-DETERMINISM lifecycle closeout, the selected next bounded paper-only programme action is the **versioned Reference evidence/parity manifest under its owning contract**. It must preserve the accepted 2026-07-28 first Reference target and fail-closed evidence hierarchy; no new stable gate ID is implied. Any executable server/persistence/channel/item/content/SIM increment still requires separate explicit implementation authority.
 
 ## Transport rule
 

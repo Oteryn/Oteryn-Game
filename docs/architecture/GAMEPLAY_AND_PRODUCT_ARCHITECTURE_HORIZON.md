@@ -11,7 +11,7 @@ Ensure that core gameplay and product domains are not omitted while Oteryn v2 re
 
 This document registers required future decisions. It does **not** accept implementation technologies, schemas, algorithms, service boundaries or final gameplay rules. Accepted decisions remain in ADRs and dedicated contracts.
 
-The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline, the accepted immutable first Reference target, the owner-accepted complete semantic `GAME-CHAR-01` architecture, the owner-accepted whole `DUR-02 — Persistence v1` architecture, the accepted/lifecycle-closed `GAME-ITEM-01` item semantic architecture, the accepted/lifecycle-closed `DUR-03` item/currency/value transaction and anti-duplication architecture, the accepted/lifecycle-closed `GAME-CHANNEL-01` multichannel product/lifecycle policy and the accepted/lifecycle-closed `DUR-04` content/world/scripting architecture. The accepted Character persistence partial baseline remains a binding sub-baseline. Common server/persistence/item/content implementation may proceed only under separate explicit implementation authority. Under the owner-accepted programme ordering, `SIM-DETERMINISM-01` is now the selected next bounded paper-only architecture gate; Reference evidence/parity tooling remains separately ownable parallel paper-only work. Runtime implementation remains separately unauthorized until the owner explicitly grants implementation authority.
+The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline, the accepted immutable first Reference target, the owner-accepted complete semantic `GAME-CHAR-01` architecture, the owner-accepted whole `DUR-02 — Persistence v1` architecture, the accepted/lifecycle-closed `GAME-ITEM-01` item semantic architecture, the accepted/lifecycle-closed `DUR-03` item/currency/value transaction and anti-duplication architecture, the accepted/lifecycle-closed `GAME-CHANNEL-01` multichannel product/lifecycle policy, the accepted/lifecycle-closed `DUR-04` content/world/scripting architecture and the accepted/lifecycle-closed `SIM-DETERMINISM-01` authoritative simulation-determinism architecture. The accepted Character persistence partial baseline remains a binding sub-baseline. Common server/persistence/item/content/SIM implementation may proceed only under separate explicit implementation authority. Under the current programme ordering, the one selected next paper-only action is the versioned Reference evidence/parity manifest under its owning contract. Runtime implementation remains separately unauthorized until the owner explicitly grants implementation authority.
 
 ## Relationship to existing architecture
 
@@ -25,6 +25,7 @@ This horizon complements, and does not replace:
 - `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md` for accepted durable item/currency/value location, identity-transition, conservation, idempotency, runtime↔durable handoff, custody, audit and restore-integrity semantics;
 - `GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md` for accepted channel identity/selection/queue/co-location, durable anti-hopping, value-source multiplicity, qualitative lifecycle, PvP/community and same-Channel recovery product semantics;
 - `DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md` for accepted semantic package/content identity, deterministic locked compilation, immutable bundle staging/activation/migration, bounded loading/provenance and authoritative Component Model/WIT scripting capability/determinism boundaries;
+- `SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md` for accepted arithmetic/RNG/order/replay/state-hash/supported-target determinism and exact replay-provenance boundaries;
 - `DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md` for the binding profile-neutral Character persistence sub-scope;
 - `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` for the owner-accepted whole Persistence-v1 architecture and exhaustive historical-scope reconciliation;
 - `FND-01` through `FND-04` for workspace, protocol, runtime and admission;
@@ -289,7 +290,7 @@ GAME-CHANNEL acceptance does not accept downstream PvP/boss/reward/economy/socia
 ## `DUR-04` — Content, World Detail and Scripting Contract
 
 - DecisionStatus: **`ACCEPTED`**.
-- DeliveryStatus: **`LIFECYCLE_CLOSED`** after lifecycle closeout PR #213 merges.
+- DeliveryStatus: **`LIFECYCLE_CLOSED`**.
 - ImplementationStatus: **`NOT_STARTED`**; runtime/client/compiler/loader/Studio/WIT-host/DDL/content-import/production authority **`NONE`**.
 - Canonical sources: `DUR-04_CONTENT_WORLD_AND_SCRIPTING_ANALYSIS.md` and `DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md`; delivery PR #212 exact final head `77e68ffb9e9e0e31ca751d42ff5f7c03466b2b23`, squash merge `568236c33cd23da017bca1dbd1ed98afc8da71f4`.
 
@@ -315,32 +316,33 @@ DUR-04 deliberately leaves exact physical source/bundle encoding, chunk/floor pa
 
 ## `SIM-DETERMINISM-01` — Authoritative Simulation Determinism Contract
 
-- DecisionStatus: `PROPOSED`.
-- DeliveryStatus: `PLANNED`.
-- ImplementationStatus: `NOT_STARTED`.
-- Selected as the next bounded paper-only architecture gate after DUR-04 lifecycle closeout.
+- DecisionStatus: **`ACCEPTED`**.
+- DeliveryStatus: **`LIFECYCLE_CLOSED`**.
+- ImplementationStatus: **`NOT_STARTED`**; runtime/client/combat/AI/script/formula/dependency/DDL/production authority **`NONE`**.
+- Canonical sources: `SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_ANALYSIS.md` and `SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md`; delivery PR #214 exact repaired final head `4c6684328123aebd657696808372a5855980d34e`, squash merge `1e16b32069868f14aa1761a512b6cd8b1024e277`.
 
-Must decide:
+Accepted semantic closure includes:
 
-- authoritative numeric representation boundaries and where integer/fixed-point/decimal/floating semantics are permitted;
-- rounding, overflow/underflow, saturation/error and invalid numeric-state behavior;
-- deterministic RNG identity, seed derivation, stream/substream ownership and consumption ordering;
-- simulation logical time, tick/order and simultaneous-event tie-break semantics;
-- external nondeterminism capture required for deterministic replay;
-- replay input contract, checkpoint/revision requirements and formula/ruleset compatibility;
-- state hashing and first-divergence localization without inventing one false global order;
-- supported-target/cross-platform determinism expectations and comparison evidence;
-- boundary between core simulation determinism and DUR-04 `script_execution_profile_revision`;
-- deterministic fixtures required before broad combat/AI formula freeze or unresolved Character arithmetic can be `PARITY_CONFIRMED`.
+- canonical future-determining deterministic state + exact owner-local normalized input order + exact behavior-affecting semantic revision/profile set + normalized external facts as the reproducibility basis;
+- FND-03 `RuntimeExecutionOrdinal` remains owner-local authority/evidence; SIM creates no global total order or second runtime commit ordinal;
+- `SimulationDeterminismProfileRevision` versions cross-cutting numeric/RNG/tie-break/hash/supported-target semantics without replacing ruleset/content/world-policy/DUR-04 script profiles;
+- long-lived/retryable occurrences bind exact behavior-affecting revisions and cannot silently recalculate under newer incompatible semantics after retry/reconnect/failover/delay;
+- explicit numeric semantic classes and formula descriptors with named units, operation order, rounding boundaries/modes and fail-closed invalid-state behavior;
+- DUR-03 exact conservation/value arithmetic remains exact and non-floating;
+- purpose-isolated deterministic gameplay RNG with retry/failover stability, authoritative stream advancement and anti-prediction protection for exploit-sensitive seed/root/substream evidence;
+- wall clock, process-local monotonic elapsed time and authoritative execution order remain distinct; no universal fixed tick is introduced;
+- simultaneous/conflicting inputs use commutative semantics, stable semantic tie-breaks or exact retained FND-03 owner order;
+- external nondeterminism must cross a typed normalized authority boundary before affecting gameplay;
+- replay retains exact authoritative server/build identity, `protocol-oteryn` revision/profile, exact World Bundle artifact/digest, semantic revisions/profiles, normalized inputs/order, formula/script identities, RNG evidence and normalized time/external facts;
+- original NodeId/process-incarnation may be retained for forensic attribution but replay correctness does not require recreating original process placement;
+- canonical deterministic state/hash includes active revisions, gameplay state, RNG state/cursors, pending accepted timers/operations/continuations, occurrence identities and semantically relevant authority/fence revisions;
+- hierarchical state hashes/divergence evidence are read-only evidence and cannot repair live authority;
+- supported authoritative server targets must produce identical normalized outcomes; authoritative floating requires explicit deterministic profile plus cross-target proof;
+- replay/hash/RNG/formula/pending-state hard limits must exist before implementation acceptance.
 
-Must preserve:
+Delivery history preserves the material review finding rather than erasing it: independent review `4924203877` found one replay-provenance P1 on superseded head `5dc628f32ca4573725bcb4a42c3a7702536d7f35`; owner-authorized repair cycle 4 restored missing server/build, protocol and World Bundle provenance. Terminal self-review `4924321455`, repeat self-review `4924423397`, Agent Governance `31676250271`, Dependency Review `31676250273` and CodeQL `31676250272` passed on final head. The owner explicitly overrode the otherwise-required fresh independent-review-after-repair mechanism for that exact final head and instructed finalization; the self-reviews remain classified as self-review.
 
-- FND-03 one-writer/order/generation authority;
-- GAME-VISION Reference evidence discipline and fail-closed unknowns;
-- GAME-CHAR formula-neutral durable facts until formula ownership/evidence is accepted;
-- GAME-ITEM/DUR-03 value integrity and exact conservation;
-- DUR-04 script execution profile as a nested execution-environment identity rather than a competing core-simulation authority;
-- no runtime/combat/AI/script implementation authority in this paper-only gate.
+SIM acceptance does not select concrete Rust numeric/RNG/hash libraries, exact gameplay RNG algorithm, exact fixed-point scale or gameplay formula, global tick, scheduler/thread counts, replay backend or production hash cadence, and it does not authorize executable simulation/combat/AI/progression/script behavior.
 
 ## `GAME-ABILITY-01` — Ability, Spell and Condition Architecture
 
@@ -648,9 +650,9 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 
 # Dependency and ordering rules
 
-1. `GAME-CHAR-01` semantic architecture, Character persistence partial baseline, whole `DUR-02 — Persistence v1`, `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01` and `DUR-04` are accepted/lifecycle-closed architecture after their recorded closeouts. Common server/persistence, item/value, multichannel and content runtime implementation still require separate explicit implementation authority and exact implementation evidence.
+1. `GAME-CHAR-01` semantic architecture, Character persistence partial baseline, whole `DUR-02 — Persistence v1`, `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` are accepted/lifecycle-closed architecture after their recorded closeouts. Common server/persistence, item/value, multichannel, content and SIM runtime implementation still require separate explicit implementation authority and exact implementation evidence.
 2. GAME-ITEM + DUR-03 close the paper-only native item semantic, location, identity-transition, conservation, idempotency and anti-duplication prerequisites. Downstream trade/market/bank/depot/mail/reward/house/crafting/entitlement policy remains separately unaccepted, and runtime mutation is not authorized by architecture acceptance.
-3. `DUR-04` is accepted/lifecycle-closed architecture. The selected next bounded paper-only gate is `SIM-DETERMINISM-01`, while Reference evidence/parity tooling remains separately ownable parallel work under independent path ownership.
+3. `DUR-04` and `SIM-DETERMINISM-01` are accepted/lifecycle-closed. The selected next paper-only programme action is the versioned Reference evidence/parity manifest under its owning contract; no new stable gate ID is implied by this horizon.
 4. The foundation vertical slice may use bounded minimal movement/combat/creature/interaction contracts, but Playable Alpha requires `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01`.
 5. `PROD-COMPAT-01` must precede production release-train and updater compatibility claims.
 6. `SEC-CLIENT-01`, `DATA-PRIVACY-01`, `UX-I18N-A11Y-01`, `OPS-GM-01` and `PROD-LIVEOPS-01` are required before Playable Alpha is declared operationally complete.
@@ -659,12 +661,12 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 9. Existing gates for social, economy, houses, events, updater, operations, observability and scaling remain authoritative for their named scopes.
 10. Any future implementation package must update this horizon, the global register and the corresponding dedicated contract status.
 11. Accepted `GAME-VISION-01` must preserve ADR-0010 and may not turn Reference/Evolved profiles into protocol, engine, client or repository forks; the accepted 2026-07-28 first Reference target is binding across downstream Reference-sensitive work unless explicitly superseded/scoped, and evidence gaps remain fail-closed rather than guessed.
-12. `SIM-DETERMINISM-01` is the one selected next programme-order paper-only architecture action after DUR-04 lifecycle closeout. Reference evidence/parity tooling may proceed in parallel only with explicit path/contract ownership; any executable implementation programme still requires separate owner authority.
+12. After SIM lifecycle closeout, the one programme-order paper-only action is the versioned Reference evidence/parity manifest under its owning contract. It must preserve the accepted first Reference target/evidence hierarchy and may not promote `UNKNOWN/CONFLICT` behavior to parity by convenience or OTS implementation.
 13. The accepted DUR-02 Character persistence sub-baseline applies only to the profile-neutral core. Profile-specific PvP/world-policy Character facts remain blocked until their owning profile/channel semantics are accepted; persistence cannot invent them through schema convenience.
 14. Later Global changes are candidate evidence for a later explicit Reference revision and never silently mutate the accepted first target.
-15. Every remaining GAME-CHAR, GAME-ITEM or downstream Reference-sensitive `UNKNOWN/CONFLICT` exact value/formula/content/profile rule remains a hard parity/implementation gate where exercised even though Character/item/value semantic architecture is accepted.
+15. Every remaining GAME-CHAR, GAME-ITEM or downstream Reference-sensitive `UNKNOWN/CONFLICT` exact value/formula/content/profile rule remains a hard parity/implementation gate where exercised even though Character/item/value/SIM semantic architecture is accepted.
 16. Whole-DUR-02 acceptance does not authorize DDL/runtime and does not accept destination gates from historical reconciliation; `MOVED` means ownership moved, not that destination business behavior is accepted.
-17. GAME-ITEM/DUR-03/GAME-CHANNEL/DUR-04 acceptance does not accept `PROD-ENTITLEMENTS-01`, downstream economy/social/house/reward business policy or any runtime item/value/multichannel/content implementation.
+17. GAME-ITEM/DUR-03/GAME-CHANNEL/DUR-04/SIM acceptance does not accept `PROD-ENTITLEMENTS-01`, downstream economy/social/house/reward business policy or any runtime item/value/multichannel/content/SIM implementation.
 
 # Explicitly not decided here
 
@@ -682,6 +684,7 @@ This horizon does not select:
 - numeric alpha/release KPI thresholds;
 - exact first Evolved feature inventory beyond the accepted reliability/UX-first strategy;
 - final DUR-04 authoring serializer/file extensions, World Bundle container, chunk/floor packing, compression codec, exact WIT function inventory/lowering, exact Wasmtime version/features or numeric content/script resource ceilings;
+- concrete SIM numeric/RNG/hash libraries, exact gameplay RNG algorithm, per-formula fixed-point scales, exact authoritative formulas, global tick rate, scheduler/thread counts, replay storage backend or production hash cadence;
 - AI framework or pathfinding algorithm;
 - anti-cheat vendor or invasive client technology;
 - payment provider or monetization model;

@@ -58,11 +58,12 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | DUR-03 item/currency/value location, conservation, retry and anti-duplication architecture | `ACCEPTED` | `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`, PR #207 merge `63380bcba469027e90677aaf4db571fa941be2f4` |
 | GAME-CHANNEL-01 channel selection/queue/co-location/anti-hopping/multiplicity/lifecycle product policy | `ACCEPTED` | `GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md`, PR #209 exact head `ca1112191ede7d316c874189f3053ad7f8247579`, merge `54dddbcfcb64baaf66e6cfd9fcd2cc3e1b4f04f1` |
 | DUR-04 deterministic content/package/bundle/migration and authoritative scripting boundary | `ACCEPTED` | `DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md`, PR #212 exact head `77e68ffb9e9e0e31ca751d42ff5f7c03466b2b23`, merge `568236c33cd23da017bca1dbd1ed98afc8da71f4` |
+| SIM-DETERMINISM-01 authoritative arithmetic/RNG/order/replay/state-hash boundary | `ACCEPTED` | `SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md`, PR #214 exact final head `4c6684328123aebd657696808372a5855980d34e`, merge `1e16b32069868f14aa1761a512b6cd8b1024e277` |
 
 ## Progressive execution policy
 
 - FND-01, VSL-02 and migration/source closeout are complete.
-- FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, DUR-03, DUR-04, ANL-01, GAME-VISION-01, GAME-CHANNEL-01, GAME-CHAR-01, GAME-ITEM-01 and the dual-transport strategy are accepted/lifecycle-closed where recorded by `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`; implementation remains separate and largely `NOT_STARTED`.
+- FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, DUR-03, DUR-04, ANL-01, GAME-VISION-01, GAME-CHANNEL-01, GAME-CHAR-01, GAME-ITEM-01, SIM-DETERMINISM-01 and the dual-transport strategy are accepted/lifecycle-closed where recorded by `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`; implementation remains separate and largely `NOT_STARTED`.
 - The migrated client remains ADR-0011 `pre-native-protocol` and fails closed before gameplay credential/routing/transport consumption.
 - `protocol-canary` remains absent from the production graph and may not re-enter through compatibility/fallback without explicit supersession.
 - ADR-0009 fixes GameNode/process/Channel ownership; PERF-01 gates capacity claims and OPS-CHANNEL-01 gates automatic production scaling/recovery implementation.
@@ -72,9 +73,10 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - GAME-ITEM and DUR-03 together close item/value semantics and anti-duplication architecture, but do not implement item/value runtime or physical schema.
 - GAME-CHANNEL closes the product-policy gap between technical multichannel capability and player-visible channels: selection/recommendation/queue/co-location, durable anti-hopping/prior-Channel semantics, explicit value-source multiplicity classes, qualitative create/drain/abort/retirement predicates, same-Channel recovery and one-World community/economy rules are accepted. Numeric capacity/headroom/windows/hysteresis remain PERF/OPS-owned and no runtime/Platform implementation is implied.
 - DUR-04 closes the semantic content/package/compiler/bundle/activation/migration/scripting architecture gap: exact dependency locks, deterministic immutable artifact flow, bounded loader, explicit durable migration classes, provenance, Component Model + project-owned WIT capability boundary, proposal-only mutations and versioned script-execution determinism are accepted. Physical format, numeric limits, exact Wasmtime/WIT implementation and broad content/runtime activation remain separately gated.
+- SIM-DETERMINISM closes the cross-domain deterministic arithmetic/RNG/order/replay/state-hash architecture gap: exact semantic revision binding, explicit numeric classes/rounding/failure semantics, purpose-isolated gameplay RNG, normalized time/external facts, replay provenance and supported-target determinism are accepted. Concrete libraries, exact gameplay formulas/RNG algorithm, global tick, runtime implementation and production replay remain separately gated.
 - Historical market/economy consistency remains EXP-ECONOMY-01; guild/social remains EXP-SOCIAL-01; houses remains EXP-HOUSES-01; rewards remain their GAME-META/EXP-EVENTS owners; DUR-03 retains conservation wherever these move value.
 - Partitioning/sharding and exact Rust DB/migration library remain measured implementation/PERF choices unless correctness evidence creates an architecture constraint.
-- With DUR-04 closed, `SIM-DETERMINISM-01` is selected as the next bounded paper-only simulation architecture gate; Reference evidence/parity tooling may proceed independently under separate ownership.
+- With SIM-DETERMINISM closed, the one selected next paper-only programme action is the versioned Reference evidence/parity manifest under its owning contract; do not invent a new stable gate ID without explicit registration.
 - ADR-0014..0016 remain binding: TCP profile registration does not imply runtime readiness, QUIC remains future profile/reconciliation/evidence work, and GameNode remains one process.
 - bounded spikes inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 
@@ -151,10 +153,12 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 
 ### `SIM-DETERMINISM-01` — Authoritative Simulation Determinism Contract
 
-- Status: `BLOCKS_LAYER_IMPLEMENTATION`; `DecisionStatus=PROPOSED`, `DeliveryStatus=PLANNED`, `ImplementationStatus=NOT_STARTED`.
-- Selected next bounded paper-only architecture action after DUR-04 lifecycle closeout.
-- Freeze authoritative arithmetic representation, rounding/overflow/invalid numeric-state rules, deterministic RNG ownership and substreams, simulation logical time/order/tie-break semantics, replay inputs/external nondeterminism capture, state hashing/divergence evidence, supported-target determinism, formula/ruleset revision compatibility and the boundary with DUR-04 `script_execution_profile_revision`.
-- Do not implement combat, AI, scripts or runtime in the architecture gate.
+- Status: `ACCEPTED`; lifecycle closed, implementation `NOT_STARTED`.
+- Canonical source: `SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md`; delivery PR #214 exact repaired final head `4c6684328123aebd657696808372a5855980d34e`, squash merge `1e16b32069868f14aa1761a512b6cd8b1024e277`.
+- Freeze future-determining canonical state + exact owner-local normalized input order + exact semantic revision/profile set as the reproducibility basis; FND-03 RuntimeExecutionOrdinal remains owner-local and no global total order is created.
+- Freeze `SimulationDeterminismProfileRevision`, explicit numeric semantic classes/rounding/failure rules, exact revision binding for retryable occurrences, purpose-isolated deterministic gameplay RNG and anti-prediction boundaries, logical time/order/tie-break semantics, normalized external facts, exact server/build/protocol/World Bundle replay provenance, canonical deterministic state hashing/divergence evidence and supported-target determinism.
+- Historical independent review `4924203877` found one replay-provenance P1 on superseded head `5dc628f32ca4573725bcb4a42c3a7702536d7f35`; owner-authorized repair cycle 4 closed it. Terminal self-review `4924321455`, repeat self-review `4924423397`, Agent Governance `31676250271`, Dependency Review `31676250273` and CodeQL `31676250272` passed on final head. The owner explicitly overrode the fresh-independent-review-after-repair mechanism for that exact head and instructed finalization; this does not convert self-review into independent review.
+- Does not select numeric/RNG/hash libraries, exact gameplay RNG algorithm, exact formulas/scales, global tick, scheduler/thread counts, replay backend/hash cadence or authorize runtime/combat/AI/script/DDL/production implementation.
 
 ### `ANL-01` — Game Event and Audit Foundation
 
@@ -186,6 +190,7 @@ Detailed scope/dependencies/non-decisions remain canonical in `GAMEPLAY_AND_PROD
 - `GAME-ITEM-01` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; runtime item/value mutation remains separate implementation work.
 - `GAME-CHANNEL-01` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; selection/queue/co-location/switch/multiplicity/lifecycle policy is frozen, while runtime/Platform scaling implementation and numeric PERF/OPS values remain downstream.
 - `DUR-04` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; content/package/compiler/bundle/migration/scripting architecture is frozen while physical encoding, numeric limits and executable content infrastructure remain downstream.
+- `SIM-DETERMINISM-01` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; deterministic arithmetic/RNG/order/replay/state-hash architecture is frozen while formula values, libraries and executable SIM/combat/AI implementation remain downstream.
 
 ### Required for Playable Alpha completeness
 
@@ -314,7 +319,7 @@ The foundation task is non-owning. Every substantial gate has one task/branch/PR
 9. Public contracts register applicable resource limits/errors/failure scenarios.
 10. A decision is complete only after validated/audited unchanged merge + task archive/lifecycle closeout.
 11. Completed gates are consumed unless explicitly superseded.
-12. FND-02/FND-03/FND-04/DUR-01/DUR-02/DUR-03/DUR-04/ANL-01/GAME-CHANNEL architecture acceptance does not imply runtime implementation.
+12. FND-02/FND-03/FND-04/DUR-01/DUR-02/DUR-03/DUR-04/ANL-01/GAME-CHANNEL/SIM-DETERMINISM-01 architecture acceptance does not imply runtime implementation.
 13. Every gameplay/product package reconciles the gameplay/product horizon; unnamed domains cannot be absorbed silently.
 14. Every vertical-slice/client-visible package consumes QA-E2E-01.
 15. ADR-0008 forbids production Canary compatibility/fallback/translation without supersession.
@@ -330,13 +335,12 @@ The foundation task is non-owning. Every substantial gate has one task/branch/PR
 25. DUR-03 is binding for durable item/value integrity and grants no downstream business/runtime authority.
 26. GAME-CHANNEL is binding for Channel product/lifecycle/multiplicity semantics; numeric capacity/windows/hysteresis remain PERF/OPS, and acceptance grants no runtime/client/Platform/scaling authority.
 27. DUR-04 is binding for semantic content/package/compiler/bundle/migration/scripting architecture; physical encoding, numeric limits and executable content infrastructure remain separately gated.
+28. SIM-DETERMINISM-01 is binding for deterministic numeric/RNG/order/replay/state-hash semantics; acceptance grants no formula/library/runtime/combat/AI/script/production authority and does not itself prove Reference correctness.
 
 ## Current next action
 
-GAME-CHANNEL, GAME-ITEM, DUR-02, DUR-03 and DUR-04 are architecture-complete/lifecycle-closed while implementation remains `NOT_STARTED`.
+GAME-CHANNEL, GAME-ITEM, DUR-02, DUR-03, DUR-04 and SIM-DETERMINISM-01 are architecture-complete/lifecycle-closed while implementation remains `NOT_STARTED`.
 
-The remaining near-term pre-VSL paper-only programme has independent Reference-evidence and `SIM-DETERMINISM-01` work. To keep ownership singular, the selected next action is one bounded paper-only **`SIM-DETERMINISM-01 — Authoritative Simulation Determinism Contract`** task consuming accepted FND-03, GAME-VISION, GAME-CHAR, GAME-ITEM, DUR-03 and DUR-04 boundaries. It must define arithmetic/rounding/overflow, deterministic RNG ownership, logical time/order, replay inputs/state hashing, supported-target determinism and the core-simulation relationship to DUR-04 `script_execution_profile_revision`, without implementing combat, AI, scripts or runtime.
+The selected next paper-only programme action is to **build the versioned Reference evidence/parity manifest under its owning contract**. Preserve the accepted 2026-07-28 first Reference target and evidence hierarchy, record provenance/status per exercised mechanic, keep `UNKNOWN/CONFLICT` fail-closed, and do not invent a new stable gate ID unless explicitly registered.
 
-Reference evidence/parity tooling may continue separately under independent ownership.
-
-Executable server/persistence/channel/item/content implementation still requires explicit owner implementation authorization. No gameplay/runtime implementation, Platform write, PostgreSQL migration/schema deployment, entitlement activation, broad content import or production behavior is authorized by this register update.
+Executable server/persistence/channel/item/content/SIM implementation still requires explicit owner implementation authorization. No gameplay/runtime implementation, Platform write, PostgreSQL migration/schema deployment, entitlement activation, broad content import or production behavior is authorized by this register update.
