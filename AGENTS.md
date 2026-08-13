@@ -7,6 +7,8 @@
 - Availability of a credential, environment variable, CLI login, browser session, connector, MCP/plugin, or previously granted access does NOT constitute permission to consume owner-funded AI resources.
 - Prior permission is not standing permission. Authorization must be explicit for the current task/use; if scope, provider, model, or expected consumption materially changes, ask again.
 - If a workflow, policy, review gate, script, or tool would normally invoke Codex or another owner-funded AI service, skip that invocation and use a non-owner-funded alternative when one is genuinely available. If the requirement cannot be satisfied without such use, stop and report the exact blocker instead of consuming quota.
+- When a genuinely independent review can be satisfied by a fresh separate agent/session that did not implement or materially author the change, prefer that mechanism by default instead of Codex.
+- If an agent judges that Codex would be materially more efficient or effective for a particular implementation, review or audit, the agent MUST first inform the owner, explain the expected advantage, and provide a ready-to-run bounded Codex prompt for that exact task. The agent MUST NOT invoke Codex until the owner explicitly authorizes that exact use.
 - Never weaken, bypass, or falsely mark a review/validation gate as satisfied merely because owner-funded AI use is forbidden.
 
 ## Instruction order
@@ -145,7 +147,9 @@ An independent review is not automatically required for low-risk documentation/n
 
 Independent review may be performed by a qualified human reviewer, a separate agent/session that did not implement or materially author the change, an independent review tool such as Codex, or a dedicated audit workflow that actually evaluates the exact final head. The evidence must identify the reviewer/method and exact SHA.
 
-**Codex is optional, not a mandatory project dependency, and is subject to the owner-funded AI restriction above.** Do not invoke Codex without explicit owner permission for the current use. If independent review is required, prefer another genuinely independent mechanism that does not consume owner-funded AI resources; if none is available, stop with that exact blocker.
+**The default independent-review mechanism is a fresh separate agent/session that did not implement or materially author the change**, when such a reviewer is available and qualified for the task. Give that reviewer the exact final SHA, governing contracts and audit scope, but do not treat the implementing agent's conclusions as trusted input; the reviewer must verify the change independently.
+
+**Codex is optional, not a mandatory project dependency, and is subject to the owner-funded AI restriction above.** Do not invoke Codex without explicit owner permission for the current use. Recommend Codex when it is expected to provide a material efficiency or review-quality advantage over the available non-owner-funded reviewer; before invocation, explain that advantage to the owner and provide a bounded ready-to-run prompt for the exact task. If the owner does not authorize it, use another genuinely independent mechanism when one is suitable; if none can satisfy a mandatory gate, stop with that exact blocker.
 
 If independent review is required but no genuinely independent mechanism is available, stop with that exact blocker. Do not relabel self-review as independent and do not weaken the gate.
 
