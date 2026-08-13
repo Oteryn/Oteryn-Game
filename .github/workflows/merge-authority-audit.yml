@@ -130,6 +130,8 @@ jobs:
           if policy.get('required_status_check') != 'Merge gate / validate':
               raise SystemExit('policy required status is not the aggregate merge gate')
           ruleset = policy.get('ruleset', {})
+          if ruleset.get('target') != 'branch':
+              raise SystemExit('Protect main must target branches')
           if ruleset.get('enforcement') != 'active' or ruleset.get('bypass_actors') != []:
               raise SystemExit('Protect main must be active with no bypass actors')
 
@@ -142,8 +144,15 @@ jobs:
           ]
           if contexts != ['Merge gate / validate']:
               raise SystemExit(f'unexpected required contexts: {contexts!r}')
+          if any(r.get('type') == 'file_path_restriction' for r in ruleset.get('rules', [])):
+              raise SystemExit('branch ruleset must not contain file_path_restriction')
 
-          path_rules = [r for r in ruleset.get('rules', []) if r.get('type') == 'file_path_restriction']
+          push_ruleset = policy.get('push_ruleset', {})
+          if push_ruleset.get('target') != 'push':
+              raise SystemExit('control-plane ruleset must target pushes')
+          if push_ruleset.get('enforcement') != 'active' or push_ruleset.get('bypass_actors') != []:
+              raise SystemExit('control-plane push ruleset must be active with no bypass actors')
+          path_rules = [r for r in push_ruleset.get('rules', []) if r.get('type') == 'file_path_restriction']
           if len(path_rules) != 1:
               raise SystemExit('expected exactly one file_path_restriction rule')
           restricted = path_rules[0].get('parameters', {}).get('restricted_file_paths')
