@@ -96,8 +96,7 @@ def configure_security() -> None:
         request("PUT", "/private-vulnerability-reporting", expected=(204,))
 
 
-def configure_ruleset() -> None:
-    expected_ruleset = POLICY["ruleset"]
+def configure_named_ruleset(expected_ruleset: dict[str, Any]) -> None:
     rulesets = request("GET", "/rulesets", expected=(200,))
     existing = next(
         (item for item in rulesets if item.get("name") == expected_ruleset["name"]),
@@ -107,6 +106,11 @@ def configure_ruleset() -> None:
         request("POST", "/rulesets", expected_ruleset, expected=(201,))
     else:
         request("PUT", f"/rulesets/{existing['id']}", expected_ruleset, expected=(200,))
+
+
+def configure_rulesets() -> None:
+    configure_named_ruleset(POLICY["ruleset"])
+    configure_named_ruleset(POLICY["push_ruleset"])
 
 
 def repository_setting_matches(repo: dict[str, Any], key: str, expected: Any) -> bool:
@@ -130,6 +134,36 @@ def required_status_contexts(ruleset: dict[str, Any]) -> list[str]:
                 if isinstance(check, dict) and isinstance(check.get("context"), str)
             ]
     return []
+
+
+def restricted_file_paths(ruleset: dict[str, Any]) -> list[str]:
+    for rule in ruleset.get("rules", []):
+        if isinstance(rule, dict) and rule.get("type") == "file_path_restriction":
+            paths = rule.get("parameters", {}).get("restricted_file_paths", [])
+            if isinstance(paths, list) and all(isinstance(path, str) for path in paths):
+                return paths
+            return []
+    return []
+
+
+def fetch_ruleset_by_name(name: str) -> dict[str, Any]:
+    rulesets = request("GET", "/rulesets", expected=(200,))
+    match = next((item for item in rulesets if item.get("name") == name), None)
+    if match is None:
+        raise ApiError(f"ruleset {name!r} was not created")
+    return request("GET", f"/rulesets/{match['id']}", expected=(200,))
+
+
+def verify_ruleset_common(full: dict[str, Any], expected: dict[str, Any]) -> None:
+    name = expected["name"]
+    if full.get("enforcement") != "active":
+        raise ApiError(f"ruleset {name!r} is not active")
+    if full.get("bypass_actors") != []:
+        raise ApiError(f"ruleset {name!r} must not have bypass actors")
+    if full.get("target") != expected.get("target"):
+        raise ApiError(
+            f"ruleset {name!r} target mismatch: expected {expected.get('target')!r}, got {full.get('target')!r}"
+        )
 
 
 def verify() -> None:
@@ -159,28 +193,27 @@ def verify() -> None:
                 f"Actions setting {key} mismatch: expected {expected!r}, got {permissions.get(key)!r}"
             )
 
-    rulesets = request("GET", "/rulesets", expected=(200,))
-    match = next(
-        (item for item in rulesets if item.get("name") == POLICY["ruleset"]["name"]),
-        None,
-    )
-    if match is None:
-        raise ApiError("Protect main ruleset was not created")
-    full = request("GET", f"/rulesets/{match['id']}", expected=(200,))
-    if full.get("enforcement") != "active":
-        raise ApiError("Protect main ruleset is not active")
-    if full.get("bypass_actors") != []:
-        raise ApiError("Protect main ruleset must not have bypass actors")
-
+    branch_ruleset = fetch_ruleset_by_name(POLICY["ruleset"]["name"])
+    verify_ruleset_common(branch_ruleset, POLICY["ruleset"])
     expected_contexts = required_status_contexts(POLICY["ruleset"])
-    actual_contexts = required_status_contexts(full)
+    actual_contexts = required_status_contexts(branch_ruleset)
     if actual_contexts != expected_contexts:
         raise ApiError(
             "Protect main required-status mismatch: "
             f"expected {expected_contexts!r}, got {actual_contexts!r}"
         )
     if expected_contexts != [POLICY["required_status_check"]]:
-        raise ApiError("repository policy required_status_check disagrees with ruleset")
+        raise ApiError("repository policy required_status_check disagrees with branch ruleset")
+
+    push_ruleset = fetch_ruleset_by_name(POLICY["push_ruleset"]["name"])
+    verify_ruleset_common(push_ruleset, POLICY["push_ruleset"])
+    expected_paths = restricted_file_paths(POLICY["push_ruleset"])
+    actual_paths = restricted_file_paths(push_ruleset)
+    if actual_paths != expected_paths:
+        raise ApiError(
+            "control-plane push ruleset restricted-path mismatch: "
+            f"expected {expected_paths!r}, got {actual_paths!r}"
+        )
 
     private_reporting = request("GET", "/private-vulnerability-reporting", expected=(200,))
     if private_reporting.get("enabled") is not True:
@@ -193,7 +226,7 @@ def verify() -> None:
 
     print(
         "Repository settings, metadata, labels, Actions permissions, security features, "
-        "and exact main ruleset status checks applied and verified."
+        "branch protection ruleset, and control-plane push ruleset applied and verified."
     )
 
 
@@ -206,7 +239,7 @@ def main() -> int:
         configure_repository()
         configure_labels()
         configure_security()
-        configure_ruleset()
+        configure_rulesets()
         verify()
     except ApiError as exc:
         print(str(exc), file=sys.stderr)
