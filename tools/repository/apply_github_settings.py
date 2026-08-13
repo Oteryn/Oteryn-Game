@@ -96,7 +96,8 @@ def configure_security() -> None:
         request("PUT", "/private-vulnerability-reporting", expected=(204,))
 
 
-def configure_named_ruleset(expected_ruleset: dict[str, Any]) -> None:
+def configure_ruleset() -> None:
+    expected_ruleset = POLICY["ruleset"]
     rulesets = request("GET", "/rulesets", expected=(200,))
     existing = next(
         (item for item in rulesets if item.get("name") == expected_ruleset["name"]),
@@ -106,11 +107,6 @@ def configure_named_ruleset(expected_ruleset: dict[str, Any]) -> None:
         request("POST", "/rulesets", expected_ruleset, expected=(201,))
     else:
         request("PUT", f"/rulesets/{existing['id']}", expected_ruleset, expected=(200,))
-
-
-def configure_rulesets() -> None:
-    configure_named_ruleset(POLICY["ruleset"])
-    configure_named_ruleset(POLICY["push_ruleset"])
 
 
 def repository_setting_matches(repo: dict[str, Any], key: str, expected: Any) -> bool:
@@ -133,16 +129,6 @@ def required_status_contexts(ruleset: dict[str, Any]) -> list[str]:
                 for check in checks
                 if isinstance(check, dict) and isinstance(check.get("context"), str)
             ]
-    return []
-
-
-def restricted_file_paths(ruleset: dict[str, Any]) -> list[str]:
-    for rule in ruleset.get("rules", []):
-        if isinstance(rule, dict) and rule.get("type") == "file_path_restriction":
-            paths = rule.get("parameters", {}).get("restricted_file_paths", [])
-            if isinstance(paths, list) and all(isinstance(path, str) for path in paths):
-                return paths
-            return []
     return []
 
 
@@ -195,25 +181,23 @@ def verify() -> None:
 
     branch_ruleset = fetch_ruleset_by_name(POLICY["ruleset"]["name"])
     verify_ruleset_common(branch_ruleset, POLICY["ruleset"])
-    expected_contexts = required_status_contexts(POLICY["ruleset"])
+    expected_contexts = POLICY["required_status_checks"]
+    policy_contexts = required_status_contexts(POLICY["ruleset"])
     actual_contexts = required_status_contexts(branch_ruleset)
+    if policy_contexts != expected_contexts:
+        raise ApiError(
+            "repository policy required_status_checks disagrees with branch ruleset: "
+            f"policy {expected_contexts!r}, ruleset {policy_contexts!r}"
+        )
     if actual_contexts != expected_contexts:
         raise ApiError(
             "Protect main required-status mismatch: "
             f"expected {expected_contexts!r}, got {actual_contexts!r}"
         )
-    if expected_contexts != [POLICY["required_status_check"]]:
-        raise ApiError("repository policy required_status_check disagrees with branch ruleset")
 
-    push_ruleset = fetch_ruleset_by_name(POLICY["push_ruleset"]["name"])
-    verify_ruleset_common(push_ruleset, POLICY["push_ruleset"])
-    expected_paths = restricted_file_paths(POLICY["push_ruleset"])
-    actual_paths = restricted_file_paths(push_ruleset)
-    if actual_paths != expected_paths:
-        raise ApiError(
-            "control-plane push ruleset restricted-path mismatch: "
-            f"expected {expected_paths!r}, got {actual_paths!r}"
-        )
+    guard = POLICY["control_plane_guard"]
+    if guard.get("required_status_check") not in actual_contexts:
+        raise ApiError("control-plane guard is not enforced by Protect main")
 
     private_reporting = request("GET", "/private-vulnerability-reporting", expected=(200,))
     if private_reporting.get("enabled") is not True:
@@ -226,7 +210,7 @@ def verify() -> None:
 
     print(
         "Repository settings, metadata, labels, Actions permissions, security features, "
-        "branch protection ruleset, and control-plane push ruleset applied and verified."
+        "Protect main required statuses, and base-trusted control-plane guard enforcement verified."
     )
 
 
@@ -239,7 +223,7 @@ def main() -> int:
         configure_repository()
         configure_labels()
         configure_security()
-        configure_rulesets()
+        configure_ruleset()
         verify()
     except ApiError as exc:
         print(str(exc), file=sys.stderr)
