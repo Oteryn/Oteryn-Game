@@ -122,6 +122,25 @@
         }
       },
       {
+        "type": "non_fast_forward"
+      }
+    ]
+  },
+  "push_ruleset": {
+    "name": "Protect repository control plane",
+    "target": "push",
+    "enforcement": "active",
+    "bypass_actors": [],
+    "conditions": {
+      "ref_name": {
+        "include": [
+          "~DEFAULT_BRANCH"
+        ],
+        "exclude": []
+      }
+    },
+    "rules": [
+      {
         "type": "file_path_restriction",
         "parameters": {
           "restricted_file_paths": [
@@ -132,9 +151,6 @@
             "tools/repository/**/*"
           ]
         }
-      },
-      {
-        "type": "non_fast_forward"
       }
     ]
   }
