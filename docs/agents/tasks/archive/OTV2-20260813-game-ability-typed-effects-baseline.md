@@ -14,7 +14,7 @@ base_sha: 5518a562bfea55f4f75e3aae03775b33fb55581e
 final_head_sha: df01e6e2577cbc86476de2f8cd062e1e84587412
 delivery_merge_sha: be80a3c6a8a5d3fd71c5a23786d3e34c7572aef3
 lifecycle_closeout_branch: docs/game-ability-typed-effects-222-closeout
-lifecycle_closeout_pr: null
+lifecycle_closeout_pr: 227
 owner: released_after_closeout
 created_at: 2026-08-13T17:41:00+02:00
 completed_at: 2026-08-13T17:48:18+02:00
@@ -78,6 +78,7 @@ status: completed
 delivery_pr: 226
 final_head_sha: df01e6e2577cbc86476de2f8cd062e1e84587412
 delivery_merge_sha: be80a3c6a8a5d3fd71c5a23786d3e34c7572aef3
+lifecycle_closeout_pr: 227
 owner_action_required: false
 blocker: null
 next_action: Continue GAME-ABILITY-01 with the targeting model and legality/effect-resolution boundary; do not implement runtime.
