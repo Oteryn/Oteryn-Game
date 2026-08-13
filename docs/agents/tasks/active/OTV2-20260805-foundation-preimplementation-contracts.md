@@ -9,15 +9,15 @@ repository: blakinio/Oteryn-v2
 base_branch: main
 branch: null
 pr: null
-base_sha: 05544969baf58c3a40354f366438d759bfd159e5
+base_sha: 1e16b32069868f14aa1761a512b6cd8b1024e277
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: unassigned
 created_at: 2026-08-05T08:49:00+02:00
-updated_at: 2026-08-11T01:45:00+02:00
+updated_at: 2026-08-13T09:24:00+02:00
 execution_budget_minutes: 120
-large_budget_reason: Non-owning programme checkpoint spanning the accepted native foundation and the remaining product/durability/vertical-slice gates; executable packages remain separately bounded.
+large_budget_reason: Non-owning programme checkpoint spanning accepted native foundation/game/content/determinism architecture and remaining Reference/vertical-slice gates; executable packages remain separately bounded.
 owned_paths: []
 public_contracts:
   - docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md
@@ -27,11 +27,12 @@ public_contracts:
   - docs/architecture/ARCHITECTURE_ANALYSIS_GAP_REGISTER.md
   - docs/architecture/README.md
 continuation_prompt: docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md
+handover_report: docs/agents/reports/OTV2-20260812-foundation-handover.md
 depends_on:
   - accepted ADR-0001 through ADR-0016 as applicable to their named scopes
   - FND-01 and VSL-02 accepted/applied
-  - FND-ID-01, FND-02, FND-03, FND-04, DUR-01 and ANL-01 accepted/lifecycle-closed
-  - dual-transport architecture closeout PR 149 merged as 05544969baf58c3a40354f366438d759bfd159e5
+  - FND-ID-01, FND-02, FND-03, FND-04, DUR-01, DUR-02, DUR-03, DUR-04, ANL-01, NET-TRANSPORT-01 and SIM-DETERMINISM-01 accepted/lifecycle-closed after recorded closeouts
+  - GAME-VISION-01, GAME-CHANNEL-01, GAME-CHAR-01 and GAME-ITEM-01 accepted/lifecycle-closed after recorded closeouts
 blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories:
@@ -42,102 +43,92 @@ external_repositories:
 
 ## Outcome
 
-Maintain a truthful **non-owning** programme checkpoint for Oteryn-v2. It coordinates accepted foundation architecture and names exactly the next safe decision/proof work without implementing gates, reserving their paths or treating architecture acceptance as runtime completion.
+Maintain a truthful **non-owning** programme checkpoint. This record owns no architecture path and grants no implementation authority. Every substantial future gate still requires its own bounded task, branch, PR, validation and archive lifecycle.
 
-Every substantial gate still requires its own bounded task, branch, PR, validation, review policy, merge and archive lifecycle.
+This refresh is part of SIM-DETERMINISM lifecycle closeout PR #215 and becomes canonical only after that closeout merges.
 
 ## Canonical continuation order
 
-Use these sources in this order:
+Use, in order:
 
-1. `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` — canonical current progression, delivery and implementation status;
-2. accepted ADRs/contracts and exact machine-readable registries — semantic authority;
-3. `docs/architecture/FOUNDATION_DECISION_BACKLOG.md` — stable gate definitions/dependencies;
-4. `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md` — complete staged architecture horizon;
-5. `docs/architecture/GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md` and `ARCHITECTURE_ANALYSIS_GAP_REGISTER.md` — unresolved product/gameplay coverage and historical analysis;
-6. this checkpoint — coordination summary only;
-7. live GitHub branch/PR/CI state — execution truth.
+1. `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` for current DecisionStatus/DeliveryStatus/ImplementationStatus and selected successor;
+2. accepted ADRs/contracts/owner baselines and machine-readable registries for semantic authority;
+3. `docs/architecture/FOUNDATION_DECISION_BACKLOG.md` for stable gate definitions;
+4. `docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md` and `GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md` for global/gameplay staged ownership;
+5. `docs/agents/reports/OTV2-20260812-foundation-handover.md` for the durable successor packet;
+6. live GitHub main/PR/task/CI state for execution truth.
 
-Older progress prose in backlogs/registers is historical where it conflicts with the later exact evidence in `FOUNDATION_PROGRAMME_CURRENT_STATUS.md`.
+Older progress prose that conflicts with a later accepted contract or the current-status overlay is historical.
 
-## PROVEN current foundation state
+## Accepted/lifecycle-closed architecture to consume
 
-- Canonical repository is `blakinio/Oteryn-v2` for native Rust client, future Rust game server, gameplay protocol/content/tooling boundaries.
-- PR #50 / merge `78988f72a80cc904aa9176ae850c50d4efa0b0f0` delivered the accepted 19-member Rust workspace and pre-native client cutover.
-- The native client is intentionally ADR-0011 `pre-native-protocol`: it launches but gameplay entry fails closed until a separately authorized real transport/session/server path exists.
-- `protocol-canary` remains reference-only and absent from the production dependency/negotiation/fallback path.
-- `FND-ID-01`, `FND-02`, `FND-03`, `FND-04`, `DUR-01` and `ANL-01` architecture are accepted and lifecycle-closed; their runtime implementation status remains separate and is mostly `NOT_STARTED`.
-- ADR-0009 remains binding that one `GameNode` is one game-server process. ADR-0015 does not reopen that identity; it only leaves internal module/crate decomposition and genuinely separate adjacent-service boundaries evidence-driven.
-- ADR-0014 through ADR-0016 accept TCP-default/future-QUIC transport direction while keeping every gameplay transport client mode runtime-unavailable now. TCP profile `1` is architecture registration, not an implemented listener; QUIC remains a later evidence-gated target.
-- Platform remains credential/commercial-control-plane authority; native game authority remains separate as defined by ADR-0003/ADR-0012/FND-04.
-- Platform entitlement security finding #944 is repaired by Oteryn-Platform PR #968 / merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`. Oteryn-v2 still lacks the accepted game-side `PROD-ENTITLEMENTS-01` consumer/enforcement contract, so Premium/VIP activation remains unauthorized.
-- No complete Rust GameNode, gameplay transport listener/codec path, game persistence runtime, event/outbox runtime or native client-to-server gameplay E2E is proven by the accepted architecture packages.
+Do not restart these gates merely because older backlog/predecision text describes an earlier state:
 
-## Accepted foundation — do not silently redesign
+- native Rust workspace/client cutover and one project-owned `protocol-oteryn`;
+- FND-ID-01 identity vocabulary;
+- FND-02 protocol/CommandRef sequencing/reconciliation;
+- FND-03 one-writer runtime ownership/generation/asynchronous-work boundary;
+- FND-04 GameSession/CharacterLease/admission/recovery fencing;
+- DUR-01 durable identifier representation;
+- DUR-02 common Persistence-v1 migration/transaction/outbox/durable-ack/PITR/schema-evolution architecture;
+- ANL-01 event/audit identity, durable evidence, privacy and read-only investigation boundary;
+- GAME-VISION-01 product direction and immutable first Reference target after the 2026-07-28 Global Tibia server-save/maintenance boundary;
+- GAME-CHAR-01 Stage A/B semantic closure with unresolved Reference behavior remaining fail-closed;
+- GAME-ITEM-01 typed item definition/instance/equipment/container/revision semantics;
+- DUR-03 item/currency/value location, transaction, conservation and anti-duplication semantics;
+- GAME-CHANNEL-01 selection/queue/co-location/anti-hopping/multiplicity/qualitative lifecycle/community policy;
+- DUR-04 typed semantic content graph, exact package locking, deterministic compilation, immutable bundle staging/activation/migration, bounded loader/provenance and capability-oriented deterministic scripting;
+- SIM-DETERMINISM-01 deterministic arithmetic/RNG/order/replay/state-hash/supported-target architecture from delivery PR #214 exact final head `4c6684328123aebd657696808372a5855980d34e`, squash merge `1e16b32069868f14aa1761a512b6cd8b1024e277`.
 
-A later task must explicitly supersede the relevant accepted source before materially changing:
+## Accepted SIM-DETERMINISM boundary — consume, do not reopen
 
-- native Rust client/server direction and one project-owned `protocol-oteryn`;
-- multichannel-first logical world model and one logical authoritative writer per channel/instance scope;
-- Platform Identity/Game Gateway versus native game authority boundary;
-- PostgreSQL native-game persistence target and separate Platform/game ownership;
-- native world/content model, deterministic compiler/bundle direction and Oteryn Studio boundary;
-- Game Intelligence separation between observability, best-effort telemetry and durable audit;
-- native three-tier E2E evidence discipline;
-- ADR-0009 one-process GameNode identity, external orchestration and measured-capacity/recovery requirements;
-- reference/evolved product profiles over one engine/client/protocol with world-scoped gameplay value isolation;
-- fail-closed pre-native client state;
-- foundation identifiers, `protocol-oteryn` semantics, runtime execution semantics, admission/lease/reconnect semantics, durable identity representation and ANL-01 event/audit foundation;
-- dual-transport safety invariants accepted in ADR-0014..0016.
+SIM-DETERMINISM freezes architecture for:
 
-## Current ordered work
+- reproducibility from canonical future-determining state + exact owner-local normalized input order + exact semantic revision/profile set + normalized external facts;
+- FND-03 RuntimeExecutionOrdinal remaining owner-local authority/evidence with no global total order or second runtime commit ordinal;
+- `SimulationDeterminismProfileRevision` for numeric/RNG/tie-break/hash/supported-target semantics without replacing content/ruleset/world-policy/DUR-04 script profiles;
+- exact semantic revision binding for retryable/delayed occurrences, preventing silent reinterpretation under newer incompatible rules;
+- explicit numeric semantic classes and formula descriptors with named rounding/invalid-state behavior;
+- DUR-03 exact conservation remaining exact and non-floating;
+- purpose-isolated deterministic gameplay RNG with retry/failover stability, authoritative stream advancement, no process-global mutable RNG and anti-prediction protection for exploit-sensitive seed/root state;
+- separation of wall clock, monotonic elapsed time and authoritative execution order with no universal fixed tick;
+- deterministic simultaneous/conflict policy using commutative semantics, stable tie-breaks or exact retained FND-03 order;
+- typed normalization of external nondeterminism before it influences authoritative gameplay;
+- replay envelopes retaining exact server/build executable identity, protocol revision/profile, World Bundle artifact/digest, semantic revisions, input/order evidence, formula/script profiles, RNG evidence and normalized external/time facts;
+- optional NodeId/process-incarnation forensic attribution without making original placement a replay prerequisite;
+- canonical deterministic state/hash coverage of active revisions, gameplay state, RNG state, pending accepted work, occurrence identities and semantically relevant fences/revisions;
+- hierarchical first-divergence evidence that is read-only and cannot repair live authority;
+- identical normalized authoritative results across supported server targets, with deterministic floating allowed only under explicit cross-target proof;
+- explicit replay/hash/RNG/formula/pending-state resource limits before implementation acceptance.
 
-Do **not** return to FND-ID/FND-02/FND-03/FND-04 as the programme's next gate; those architecture packages are already accepted/lifecycle-closed.
+SIM-DETERMINISM intentionally does **not** choose a Rust numeric/RNG/hash crate, exact gameplay RNG algorithm, exact fixed scale or gameplay formula, global tick rate, scheduler/thread counts, replay storage backend or production hash cadence.
 
-The immediate architecture/proof sequence is:
+## Implementation boundary
 
-1. `GAME-VISION-01` minimum product/launch profile baseline and `GAME-CHANNEL-01` channel semantics; bounded `DUR-02` discovery may proceed in parallel when it does not freeze product-sensitive character semantics.
-2. `GAME-CHAR-01` before final character-bearing `DUR-02` schema.
-3. `DUR-02 — Persistence v1` finalization after required product semantics.
-4. `GAME-ITEM-01`, then `DUR-03` item transaction/anti-duplication invariants.
-5. Minimum `DUR-04` headless content path: schema -> validator -> deterministic compiler -> bundle -> loader.
-6. `SIM-DETERMINISM-01` before broad combat/AI formula freeze.
-7. Real-boundary vertical slices: `VSL-ADMISSION-01 -> VSL-MOVE-01 -> VSL-COMBAT-01 -> VSL-PERSISTENCE-01 -> VSL-RECOVERY-01 -> VSL-MULTICHANNEL-01`.
-8. `NET-TRANSPORT-02` QUIC profile/admission/evidence work only when the current product/runtime path can measure benefit and preserve FND-02/FND-04 semantics; QUIC is not the current implementation priority.
-9. Minimal admin/security/SRE readiness before external alpha.
+Architecture acceptance grants **no executable authority**. A future task may not create or claim Rust GameNode/Channel/item/content/SIM runtime, combat/AI/progression/scripts, compiler/loader/Studio/WIT host, PostgreSQL DDL/migrations, Platform/Gateway/World Registry changes, broad legacy content import, production traffic/configuration or entitlement activation without separate explicit owner implementation authority and its own evidence.
 
-`PROD-ENTITLEMENTS-01` remains a separate deferred gate. Its Platform producer prerequisite is satisfied, but game-side consumer semantics and implementation remain blocked/unaccepted.
+## Current ordered paper-only architecture work
 
-## Implementation discipline
+After SIM-DETERMINISM lifecycle closeout, the remaining named pre-VSL paper-only programme action is:
 
-- Architecture acceptance never implies implementation or production readiness.
-- Do not create speculative crates/services solely to mirror diagrams; `workspace-boundaries.toml` remains the executable guard against premature fragments.
-- Start runtime implementation with small vertical slices and immediate consumers rather than broad skeleton generation.
-- Preserve client/server separation in task ownership while integrating only through accepted contracts.
-- Keep GameNode one process until a dedicated later decision explicitly supersedes ADR-0009 with measured evidence.
-- Keep TCP+TLS as the initial safe transport path when gameplay networking is authorized; QUIC remains later opt-in/evidence-gated.
-- Cross-repository writes require exact explicit authority; this programme checkpoint does not grant them.
+```text
+Build the versioned Reference evidence/parity manifest under its owning contract.
+```
 
-## What remains deliberately unresolved
+Do not invent a new stable gate ID unless the repository owner explicitly creates one. The bounded task must preserve the accepted first Reference target and evidence hierarchy, make unresolved behavior fail closed, record provenance/status per exercised mechanic and avoid promoting OTS implementations or search absence into Global truth.
 
-The following require product-owner decisions or future measured evidence and must not be guessed by an autonomous agent:
+That manifest work is architecture/evidence-only and does not authorize runtime implementation, DDL, production behavior, proprietary code/assets or any external-repository mutation.
 
-- exact Reference versus Evolved launch/profile promise and parity target (`GAME-VISION-01`);
-- player-facing channel semantics and cross-channel social/economy/PvP behavior (`GAME-CHANNEL-01`);
-- final character lifecycle/progression semantics (`GAME-CHAR-01`);
-- final item/equipment/container/transform semantics (`GAME-ITEM-01`);
-- final simulation arithmetic/determinism choices beyond accepted foundation constraints;
-- specific QUIC implementation/library/profile values and numeric capacity/SLO claims;
-- Premium/VIP product policy and final game-side entitlement behavior.
+## Repository and production authority
 
-## Validation rule
+Routine writes remain limited to `blakinio/Oteryn-v2`. External repositories remain read-only unless explicitly authorized for an exact write task.
 
-This checkpoint itself is coordination state. It does not substitute for package validation. Every implementation or contract package must provide exact-head evidence appropriate to its scope, and a mock/bypass cannot be terminal proof for a claimed real boundary.
+No production deployment, protected-environment approval, secrets, live account/session/data/database mutation, entitlement activation or proprietary asset copying is authorized.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Foundation architecture through FND-ID/FND-04/DUR-01/ANL-01 and the dual-transport strategy is accepted/lifecycle-closed; runtime remains largely unimplemented. Programme priority moved to product semantics, bounded persistence discovery and ordered real-boundary vertical slices.
+last_progress: SIM-DETERMINISM delivery PR #214 repaired the review P1 in owner-authorized cycle 4, passed exact-head self-review and Governance/Dependency/CodeQL, then squash-merged exact final head 4c6684328123aebd657696808372a5855980d34e as 1e16b32069868f14aa1761a512b6cd8b1024e277 after the owner explicitly overrode the fresh-independent-review-after-repair gate for that exact head; lifecycle closeout #215 reconciles canonical status and releases SIM ownership.
 status: ready
 branch: null
 head_sha: null
@@ -157,7 +148,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
+owner_action_required: false
 blocker: null
-next_action: Start one bounded architecture-only package for GAME-VISION-01 or GAME-CHANNEL-01 when product-owner input is available; otherwise bounded DUR-02 discovery may proceed without freezing product-sensitive semantics.
+next_action: From live main after SIM-DETERMINISM lifecycle closeout, create one bounded paper-only task to build the versioned Reference evidence/parity manifest under its owning contract; do not invent a stable gate ID or implement runtime/DDL/production behavior.
 ```
