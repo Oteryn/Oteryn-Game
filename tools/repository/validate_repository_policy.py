@@ -33,19 +33,9 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
-    inputs:
-      pull_request_number:
-        description: 'Open PR number whose exact head should be recovered'
-        required: true
-        type: string
-      expected_head_sha:
-        description: 'Exact 40-character PR head SHA; dispatch the workflow from that PR head branch'
-        required: true
-        type: string
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
-    "667478ef53d311ab084695c12274eaff2759f2fcd43a56ae8047bd3411862998"
+    "c4ed68e5e828897500f6fe0cde71f0bbc4de853c585508b893e1c066bb900ab1"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a"
@@ -305,8 +295,10 @@ def main() -> int:
         if trigger_block != EXPECTED_MERGE_GATE_TRIGGER_BLOCK:
             errors.append(
                 "merge gate trigger block must exactly match the canonical always-on "
-                "pull_request plus exact-head workflow_dispatch contract"
+                "pull_request contract"
             )
+        if "workflow_dispatch:" in text:
+            errors.append("merge gate must not execute pull-request code through workflow_dispatch")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
         scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
         if scope_digest != EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256:
@@ -322,18 +314,13 @@ def main() -> int:
                 "needs/result wiring and fail-closed implementation"
             )
         for required_fragment in (
-            "pull_request_number:",
-            "expected_head_sha:",
-            "workflow dispatch ref does not resolve to expected_head_sha",
-            "pull request head moved after expected_head_sha was resolved",
+            "pull request head moved after event head was resolved",
             "changed_files = pull.get('changed_files')",
             "changed_files > 3000",
             "len(files) != changed_files",
             "previous_filename = item.get('previous_filename')",
             "classification_paths.append(previous_filename)",
             "prefixes = ('.cargo/', 'apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')",
-            "if: github.event_name == 'workflow_dispatch'",
-            "ref: ${{ github.sha }}",
             "base-ref: ${{ needs.scope.outputs.base_sha }}",
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
             "Merge gate / governance",
@@ -365,7 +352,7 @@ def main() -> int:
         text = github_governance.read_text(encoding="utf-8")
         for fragment in (
             f"`{EXPECTED_REQUIRED_STATUS}` is the single stable required status check",
-            "manually dispatched only from the exact unchanged PR head branch",
+            "close and reopen the unchanged pull request",
             "dedicated push ruleset",
             "Dependabot maintains both GitHub Actions and Cargo dependencies",
         ):
