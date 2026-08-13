@@ -16,6 +16,20 @@
 
 The retained `Agent governance / validate` workflow remains available during the transition to the aggregate gate and for explicit manual governance validation, but it is not the canonical required status after the repository policy is applied.
 
+## Protected merge-authority control plane
+
+After the aggregate merge gate is bootstrapped, the live `Protect main` ruleset applies `file_path_restriction` with no bypass actors to:
+
+- `.github/workflows/*` and `.github/workflows/**/*`;
+- `.github/repository-policy.json`;
+- `tools/repository/*` and `tools/repository/**/*`.
+
+These paths are intentionally immutable through ordinary pull requests. This keeps the workflow that emits the required status, the policy that selects that status, the repository-administration workflow, and the scripts that apply/validate repository settings outside the normal PR-modifiable trust domain. It also prevents adding a new workflow that can consume `REPO_ADMIN_TOKEN`.
+
+A legitimate future merge-authority/control-plane change therefore requires an explicit owner action in GitHub Settings to temporarily alter the live ruleset restriction before opening or updating the control-plane PR, followed by exact-head validation, required independent review, merge, and restoration/verification of the intended restriction. Do not create routine bypass actors for convenience.
+
+`Merge authority audit / validate` is a deterministic, non-AI audit workflow for high-risk merge-authority changes. It independently checks the expected ruleset contract and executes adversarial mutation tests against the repository validator on the exact PR head. It does not consume owner-funded AI quota and does not replace the ordinary aggregate merge gate.
+
 ## Pull request and commit convention
 
 Pull request titles follow:
@@ -33,7 +47,7 @@ The PR title and body form the permanent squash commit. Working commits may be i
 - The merge-gate recovery dispatch requires an open same-repository PR targeting `main`, an exact expected head SHA and a dispatch ref resolving to that same unchanged head.
 - Dependency Review receives explicit base/head revisions from the validated PR context so the same dependency comparison can be performed for ordinary PR events and exact-head dispatch recovery.
 - Repository-administration changes run only after a protected merge to `main` or an explicit manual dispatch and require `REPO_ADMIN_TOKEN`.
-- No manual environment approval is required while the repository has one maintainer; the protected PR, exact-head CI, aggregate merge gate, read-only workflow token, and separate admin token are the enforcement boundary.
+- No manual environment approval is required while the repository has one maintainer; the protected PR, exact-head CI, aggregate merge gate, read-only workflow token, separate admin token, and ruleset-level control-plane restriction are the enforcement boundary.
 - Dependabot maintains both GitHub Actions and Cargo dependencies.
 - CodeQL scans Python and GitHub Actions workflows.
 - Dependency review blocks newly introduced high-severity vulnerable dependencies.
