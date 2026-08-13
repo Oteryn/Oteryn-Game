@@ -1,0 +1,79 @@
+name: Control plane guard
+
+run-name: Control plane guard • ${{ github.event.pull_request.number }}
+
+on:
+  pull_request_target:
+    branches:
+      - main
+
+permissions: {}
+
+jobs:
+  validate:
+    name: Control plane guard / validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Inspect pull request metadata only
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          headers = {
+              'Accept': 'application/vnd.github+json',
+              'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+              'X-GitHub-Api-Version': '2026-03-10',
+              'User-Agent': 'Oteryn-v2-control-plane-guard',
+          }
+          base = f"https://api.github.com/repos/{os.environ['REPOSITORY']}/pulls/{os.environ['PR_NUMBER']}"
+          with urllib.request.urlopen(urllib.request.Request(base, headers=headers), timeout=30) as response:
+              pull = json.load(response)
+
+          changed_files = pull.get('changed_files')
+          if not isinstance(changed_files, int) or changed_files < 0 or changed_files > 3000:
+              raise SystemExit('invalid or over-limit changed-files count; fail closed')
+
+          destinations = []
+          paths = []
+          page = 1
+          while True:
+              url = f"{base}/files?per_page=100&page={page}"
+              with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=30) as response:
+                  batch = json.load(response)
+              for item in batch:
+                  destinations.append(item['filename'])
+                  paths.append(item['filename'])
+                  previous = item.get('previous_filename')
+                  if isinstance(previous, str) and previous:
+                      paths.append(previous)
+              if len(batch) < 100:
+                  break
+              page += 1
+
+          if len(destinations) != changed_files:
+              raise SystemExit('changed-files enumeration mismatch; fail closed')
+
+          protected = sorted({
+              path for path in paths
+              if path.startswith('.github/workflows/')
+              or path == '.github/repository-policy.json'
+              or path.startswith('tools/repository/')
+          })
+          if protected:
+              print('Repository control-plane paths are immutable through ordinary pull requests:', file=sys.stderr)
+              for path in protected:
+                  print(f'- {path}', file=sys.stderr)
+              raise SystemExit(1)
+
+          print(f'Control-plane guard PASS: {changed_files} files, no protected paths.')
+          PY
