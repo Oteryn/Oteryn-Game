@@ -1,21 +1,6 @@
 name: Rust workspace
 
 on:
-  pull_request:
-    paths:
-      - Cargo.toml
-      - Cargo.lock
-      - rust-toolchain.toml
-      - rustfmt.toml
-      - deny.toml
-      - workspace-boundaries.toml
-      - 'apps/**'
-      - 'crates/**'
-      - 'tests/**'
-      - 'tools/**'
-      - 'docs/migration/**'
-      - '.github/workflows/rust.yml'
-      - '.github/workflows/bootstrap-rust-lock.yml'
   push:
     branches:
       - main
@@ -26,19 +11,21 @@ on:
       - rustfmt.toml
       - deny.toml
       - workspace-boundaries.toml
+      - '.cargo/**'
       - 'apps/**'
       - 'crates/**'
       - 'tests/**'
       - 'tools/**'
       - 'docs/migration/**'
       - '.github/workflows/rust.yml'
+      - '.github/workflows/merge-gate.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: rust-workspace-${{ github.event.pull_request.number || github.ref }}
+  group: rust-workspace-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -164,6 +151,6 @@ jobs:
       - name: Check advisories licenses bans and sources
         uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # cargo-deny 0.20.2
         with:
-          rust-version: "1.94.0"
+          rust-version: '1.94.0'
           command: check
           arguments: --all-features

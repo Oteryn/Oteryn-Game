@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "ruleset_name": "Protect main",
-  "required_status_check": "Agent governance / validate",
+  "required_status_check": "Merge gate / validate",
   "licensing": {
     "spdx_id": "MPL-2.0",
     "license_file": "LICENSE",
@@ -115,7 +115,7 @@
           "do_not_enforce_on_create": false,
           "required_status_checks": [
             {
-              "context": "Agent governance / validate"
+              "context": "Merge gate / validate"
             }
           ],
           "strict_required_status_checks_policy": true
@@ -123,6 +123,34 @@
       },
       {
         "type": "non_fast_forward"
+      }
+    ]
+  },
+  "push_ruleset": {
+    "name": "Protect repository control plane",
+    "target": "push",
+    "enforcement": "active",
+    "bypass_actors": [],
+    "conditions": {
+      "ref_name": {
+        "include": [
+          "~DEFAULT_BRANCH"
+        ],
+        "exclude": []
+      }
+    },
+    "rules": [
+      {
+        "type": "file_path_restriction",
+        "parameters": {
+          "restricted_file_paths": [
+            ".github/workflows/*",
+            ".github/workflows/**/*",
+            ".github/repository-policy.json",
+            "tools/repository/*",
+            "tools/repository/**/*"
+          ]
+        }
       }
     ]
   }

@@ -9,7 +9,14 @@
 /tools/agents/ @blakinio
 /tools/repository/ @blakinio
 
-# Future Rust workspace roots
+# Current Rust workspace roots and machine boundaries
 /Cargo.toml @blakinio
 /Cargo.lock @blakinio
 /rust-toolchain.toml @blakinio
+/rustfmt.toml @blakinio
+/deny.toml @blakinio
+/workspace-boundaries.toml @blakinio
+/apps/ @blakinio
+/crates/ @blakinio
+/tests/ @blakinio
+/tools/architecture-check/ @blakinio
