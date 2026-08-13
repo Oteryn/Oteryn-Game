@@ -122,6 +122,18 @@
         }
       },
       {
+        "type": "file_path_restriction",
+        "parameters": {
+          "restricted_file_paths": [
+            ".github/workflows/*",
+            ".github/workflows/**/*",
+            ".github/repository-policy.json",
+            "tools/repository/*",
+            "tools/repository/**/*"
+          ]
+        }
+      },
+      {
         "type": "non_fast_forward"
       }
     ]
