@@ -25,6 +25,26 @@ Use `tasks/TASK_TEMPLATE.md`. Every substantial task must record:
 
 Do not edit another active task except for an explicitly coordinated ownership correction. Archive only after terminal completion/merge and ownership release.
 
+## Multi-agent architecture programmes
+
+When an architecture/research issue is explicitly allocated under `docs/agents/MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md`:
+
+- read that policy and `docs/agents/programs/OTERYN_V2_ARCHITECTURE_PARALLEL_WORK_ALLOCATION.md` before mutation;
+- a DOMAIN ARCHITECTURE DESIGN AGENT is a worker with **draft-PR-only delivery authority**;
+- the worker may research, design, self-review, run ordinary validation and repair findings only within its allocated paths;
+- the worker MUST NOT merge/auto-merge, lifecycle-close/archive its own task, update coordinator-only global overlays or make its new proposal canonically accepted;
+- the worker MUST NOT mark a draft ready when that transition triggers owner-funded Codex/OpenAI unless the owner explicitly authorizes that exact PR/use;
+- every worker PR must state `MERGE_AUTHORITY: ARCHITECTURE_COORDINATOR_ONLY`;
+- cross-domain gaps are reported as `CROSS_DOMAIN_FINDING` with `worker_action: REPORT_ONLY` rather than repaired by editing another owner's contract;
+- the Architecture Coordinator/Auditor is the only programme role allowed to integrate, merge, archive/release worker ownership and reconcile canonical programme overlays;
+- worker completion order never overrides dependency-aware coordinator integration order.
+
+For these allocated worker tasks, the general own-PR merge authority is redistributed deliberately: worker authority is narrowed, while the coordinator receives bounded authority to merge and close out allocated worker PRs authored by other domain agents. That coordinator-side cross-worker merge/closeout authority is a **merge-authority expansion** relative to the repository's general own-PR baseline.
+
+Therefore any governance change that introduces or materially widens this multi-agent coordinator authority requires explicit owner scope and a genuinely independent exact-head review before the governance change itself may merge. Once the reviewed governance policy is merged, ordinary coordinator integration of worker PRs within the already-approved allocation uses existing policy authority and is not itself a new governance expansion unless the allocation/authority is widened again.
+
+This authority redistribution does not grant the coordinator any runtime, DDL, Platform, production, secret, protected-environment or cross-repository authority.
+
 ## Architecture and contract changes
 
 A task changing world/channel/instance ownership, protocol schemas, authentication/session binding, persistence guarantees, item transactions, houses, rulesets or cross-repository boundaries must update or add the corresponding ADR/contract in the same delivery programme.
