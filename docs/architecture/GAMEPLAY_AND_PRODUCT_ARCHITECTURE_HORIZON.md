@@ -1,7 +1,7 @@
 # Oteryn v2 Gameplay and Product Architecture Horizon
 
 - Status: Active open-decision horizon
-- Date: 2026-08-13
+- Date: 2026-08-14
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Applies to: gameplay domain, client/product experience, security, operations and release architecture
 
@@ -11,7 +11,7 @@ Ensure that core gameplay and product domains are not omitted while Oteryn v2 re
 
 This document registers required future decisions. It does **not** accept implementation technologies, schemas, algorithms, service boundaries or final gameplay rules. Accepted decisions remain in ADRs and dedicated contracts.
 
-The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline, the accepted immutable first Reference target, the owner-accepted complete semantic `GAME-CHAR-01` architecture, the owner-accepted whole `DUR-02 — Persistence v1` architecture, the accepted/lifecycle-closed `GAME-ITEM-01` item semantic architecture, the accepted/lifecycle-closed `DUR-03` item/currency/value transaction and anti-duplication architecture, the accepted/lifecycle-closed `GAME-CHANNEL-01` multichannel product/lifecycle policy, the accepted/lifecycle-closed `DUR-04` content/world/scripting architecture and the accepted/lifecycle-closed `SIM-DETERMINISM-01` authoritative simulation-determinism architecture. The accepted Character persistence partial baseline remains a binding sub-baseline. Common server/persistence/item/content/SIM implementation may proceed only under separate explicit implementation authority. Under the current programme ordering, the one selected next paper-only action is the versioned Reference evidence/parity manifest under its owning contract. Runtime implementation remains separately unauthorized until the owner explicitly grants implementation authority.
+The current product-sensitive progression starts from the accepted minimum `GAME-VISION-01` baseline, the accepted immutable first Reference target, the owner-accepted complete semantic `GAME-CHAR-01` architecture, the owner-accepted whole `DUR-02 — Persistence v1` architecture, the accepted/lifecycle-closed `GAME-ITEM-01` item semantic architecture, the accepted/lifecycle-closed `DUR-03` item/currency/value transaction and anti-duplication architecture, the accepted/lifecycle-closed `GAME-CHANNEL-01` multichannel product/lifecycle policy, the accepted/lifecycle-closed `DUR-04` content/world/scripting architecture and the accepted/lifecycle-closed `SIM-DETERMINISM-01` authoritative simulation-determinism architecture. The accepted Character persistence partial baseline remains a binding sub-baseline. Reference evidence/parity manifest v1 is accepted/pinned; manifest revision 3 contains the first representative `ABILITY_COMBAT` Light Healing/Ice Strike cases delivered fail-closed by PR #255. Common server/persistence/item/content/SIM implementation may proceed only under separate explicit implementation authority. Under the current programme ordering, the one selected next paper-only action is target-continuity + provenance-clearance evidence for those four registered `ABILITY_COMBAT` cases. Runtime implementation remains separately unauthorized until the owner explicitly grants implementation authority.
 
 ## Relationship to existing architecture
 
@@ -19,6 +19,8 @@ This horizon complements, and does not replace:
 
 - accepted `GAME-VISION-01` minimum product direction plus its explicitly deferred/downstream subjects;
 - `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` for the accepted immutable first Reference behavior cut and evidence/provenance model;
+- `REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` plus `REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json` for the accepted/pinned Reference registry and its fail-closed case classifications;
+- `GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md` for the first representative Light Healing/Ice Strike case/catalogue/blueprint package, which is evidence metadata rather than executable parity;
 - `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` for binding baseline-neutral Character ownership/lifecycle/revision/migration safety;
 - `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` for the owner-accepted Reference-sensitive semantic closure and hard parity-gate discipline;
 - `GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md` for accepted item definition/instance semantics, equipment/container legality, definition compatibility/migration and item-domain boundaries;
@@ -346,28 +348,33 @@ SIM acceptance does not select concrete Rust numeric/RNG/hash libraries, exact g
 
 ## `GAME-ABILITY-01` — Ability, Spell and Condition Architecture
 
-- Status: `REQUIRED_FOR_ALPHA`
-- The foundation vertical slice may implement a bounded minimal combat contract first, but playable-alpha breadth requires this gate.
+- DecisionStatus: **`CANDIDATE`** for the whole gate; accepted partial baselines remain binding only for their declared scopes.
+- DeliveryStatus: **`PLANNED`** for the whole gate; no active task/PR currently owns whole-gate delivery. The separate representative evidence package was delivered by PR #255 / merge `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`; its lifecycle bookkeeping is handled by closeout PR #257 and does not change the whole-gate delivery status.
+- ImplementationStatus: **`NOT_STARTED`**; runtime/client/protocol/content authority **`NONE`**.
+- Existing accepted partial baselines cover typed effect pipeline, targeting/legality, cast/channel/commit, cooldown/charge/condition, effect composition/damage/heal, effect-family/reference-catalogue boundaries and catalogue-entry evidence/fixture binding.
+- Manifest revision 3 registers four Light Healing/Ice Strike cases as target `UNKNOWN`, source/case/legal provenance `PENDING`, implementation `NOT_STARTED`, parity `PARITY_PENDING_EVIDENCE`; pending fixture blueprints are not executable parity fixtures.
+- The immediate GAME-ABILITY evidence successor is target-continuity + provenance-clearance for these existing cases, not broad mechanic expansion or physical catalogue-tooling freeze.
 
-Must decide:
+Remaining whole-gate subjects include:
 
-- common model for spells, weapon actions, runes, active skills, passive effects and item-triggered abilities;
-- resource costs, cast times, cooldowns and cooldown groups;
-- target selection, ranges, line of sight, shapes and area effects;
-- validation, interruption, cancellation and retry semantics;
-- damage/healing pipeline extension points and formula versioning;
-- conditions, buffs, debuffs, stacking, refresh, replacement, immunity and dispel;
+- common model for spells, weapon actions, runes, active skills, passive effects and item-triggered abilities beyond the accepted partial boundaries;
+- complete resource costs, cast times, cooldown groups and condition semantics where not already bounded by accepted partial contracts;
+- complete target selection, ranges, line of sight, shapes and area effects;
+- validation, interruption, cancellation and retry semantics outside accepted partial scope;
+- exact damage/healing formula values and versioning evidence;
+- complete conditions, buffs, debuffs, stacking, refresh, replacement, immunity and dispel behavior;
 - periodic effects, timers, persistence across logout and channel transfer rules;
 - proc/trigger ordering, recursion limits and loop prevention;
 - client prediction/presentation without client authority;
 - data/policy versus typed Rust domain logic boundaries;
-- deterministic fixtures for formulas, ordering and edge cases.
+- deterministic executable fixtures only after sufficient Reference evidence and implementation authority exist.
 
 Must preserve:
 
 - one server-authoritative action result;
 - no protocol fork per ruleset;
-- bounded execution and explicit recursion/event limits.
+- bounded execution and explicit recursion/event limits;
+- no `PARITY_CONFIRMED` by catalogue presence, OTS similarity or current indexed official content alone.
 
 ## `GAME-AI-01` — Creature AI, Spawn and Pathfinding Architecture
 
@@ -652,7 +659,7 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 
 1. `GAME-CHAR-01` semantic architecture, Character persistence partial baseline, whole `DUR-02 — Persistence v1`, `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` are accepted/lifecycle-closed architecture after their recorded closeouts. Common server/persistence, item/value, multichannel, content and SIM runtime implementation still require separate explicit implementation authority and exact implementation evidence.
 2. GAME-ITEM + DUR-03 close the paper-only native item semantic, location, identity-transition, conservation, idempotency and anti-duplication prerequisites. Downstream trade/market/bank/depot/mail/reward/house/crafting/entitlement policy remains separately unaccepted, and runtime mutation is not authorized by architecture acceptance.
-3. `DUR-04` and `SIM-DETERMINISM-01` are accepted/lifecycle-closed. The selected next paper-only programme action is the versioned Reference evidence/parity manifest under its owning contract; no new stable gate ID is implied by this horizon.
+3. Reference evidence/parity manifest v1 is accepted/pinned and manifest revision 3 contains the first four representative ABILITY_COMBAT cases. The selected next paper-only programme action is target-continuity + provenance-clearance evidence for those existing cases; no new stable gate ID is implied by this horizon.
 4. The foundation vertical slice may use bounded minimal movement/combat/creature/interaction contracts, but Playable Alpha requires `GAME-ABILITY-01`, `GAME-AI-01` and `GAME-INTERACTION-01`.
 5. `PROD-COMPAT-01` must precede production release-train and updater compatibility claims.
 6. `SEC-CLIENT-01`, `DATA-PRIVACY-01`, `UX-I18N-A11Y-01`, `OPS-GM-01` and `PROD-LIVEOPS-01` are required before Playable Alpha is declared operationally complete.
@@ -661,18 +668,20 @@ No public mod ecosystem is implied until this gate is explicitly accepted.
 9. Existing gates for social, economy, houses, events, updater, operations, observability and scaling remain authoritative for their named scopes.
 10. Any future implementation package must update this horizon, the global register and the corresponding dedicated contract status.
 11. Accepted `GAME-VISION-01` must preserve ADR-0010 and may not turn Reference/Evolved profiles into protocol, engine, client or repository forks; the accepted 2026-07-28 first Reference target is binding across downstream Reference-sensitive work unless explicitly superseded/scoped, and evidence gaps remain fail-closed rather than guessed.
-12. After SIM lifecycle closeout, the one programme-order paper-only action is the versioned Reference evidence/parity manifest under its owning contract. It must preserve the accepted first Reference target/evidence hierarchy and may not promote `UNKNOWN/CONFLICT` behavior to parity by convenience or OTS implementation.
+12. The current programme-order paper-only action is to obtain provenance-cleared, time-appropriate continuity evidence for the four registered ABILITY_COMBAT cases. It must preserve the accepted first Reference target/evidence hierarchy, may not promote `UNKNOWN/PENDING` behavior by convenience or OTS implementation, and may not infer continuity from patch-note/search silence.
 13. The accepted DUR-02 Character persistence sub-baseline applies only to the profile-neutral core. Profile-specific PvP/world-policy Character facts remain blocked until their owning profile/channel semantics are accepted; persistence cannot invent them through schema convenience.
 14. Later Global changes are candidate evidence for a later explicit Reference revision and never silently mutate the accepted first target.
 15. Every remaining GAME-CHAR, GAME-ITEM or downstream Reference-sensitive `UNKNOWN/CONFLICT` exact value/formula/content/profile rule remains a hard parity/implementation gate where exercised even though Character/item/value/SIM semantic architecture is accepted.
 16. Whole-DUR-02 acceptance does not authorize DDL/runtime and does not accept destination gates from historical reconciliation; `MOVED` means ownership moved, not that destination business behavior is accepted.
 17. GAME-ITEM/DUR-03/GAME-CHANNEL/DUR-04/SIM acceptance does not accept `PROD-ENTITLEMENTS-01`, downstream economy/social/house/reward business policy or any runtime item/value/multichannel/content/SIM implementation.
+18. The first GAME-ABILITY case package does not freeze a physical catalogue schema/serializer/fixture runner and does not make its pending blueprints executable tests.
 
 # Explicitly not decided here
 
 This horizon does not select:
 
 - final Reference revision identifier/naming syntax;
+- promotion of the four current ABILITY_COMBAT cases beyond `UNKNOWN/PENDING` without continuity/provenance evidence;
 - remaining exact GAME-CHAR Reference values/formulas/content/profile-specific rules that are still `PARITY_PENDING_EVIDENCE` under the accepted Stage-B owner baseline;
 - exact PostgreSQL DDL, migration/ORM/Rust database technology or production persistence configuration;
 - exact DUR-03 SQL/index/constraint/lock implementation, Rust transaction/runtime APIs, concrete ANL event IDs/payloads or numeric transaction/resource ceilings;

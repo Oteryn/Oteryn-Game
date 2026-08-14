@@ -12,7 +12,8 @@
 - DUR-04 delivery merge: `568236c33cd23da017bca1dbd1ed98afc8da71f4`
 - SIM-DETERMINISM delivery merge: `1e16b32069868f14aa1761a512b6cd8b1024e277`
 - Reference evidence manifest v1 acceptance delivery: PR #252 / merge `52ef65f67e8a0e9c6f31d4754f8a6b7322d8d6d8`
-- Current phase: `foundation/game/content/determinism architecture accepted/lifecycle-closed where delivered + Reference evidence/parity manifest v1 accepted/pinned/lifecycle-closed; runtime largely NOT_STARTED; all executable runtime/DDL/production work still requires separate explicit owner authority; the selected next paper-only programme action is the first reviewed representative ABILITY_COMBAT mechanic evidence/parity case + fixture package`
+- First representative ABILITY_COMBAT evidence delivery: PR #255 / merge `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`
+- Current phase: `foundation/game/content/determinism architecture accepted/lifecycle-closed where delivered + Reference evidence/parity manifest v1 accepted/pinned with manifest revision 3 and first representative ABILITY_COMBAT cases delivered fail-closed; runtime largely NOT_STARTED; all executable runtime/DDL/production work still requires separate explicit owner authority; the selected next paper-only programme action is target-continuity + provenance-clearance evidence for the four registered ABILITY_COMBAT cases`
 
 ## 1. Authority of this overlay
 
@@ -64,7 +65,7 @@ DUR-01 remains accepted/lifecycle-closed: UUIDv7 native durability uses PostgreS
 
 `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` fixes the first Reference external behavior cut to **Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary**. The target is immutable; later Global changes are candidate evidence for a later explicit Reference revision rather than silent mutation. Target selection remains separate from evidence completeness: individual mechanics may be `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or `DECLARED_DIFFERENCE`. Official public sources are primary but not assumed exhaustive; controlled black-box observation may provide target evidence; community sources are corroborative/discovery inputs; Canary/crystalserver/other OTS remain hypothesis/inventory inputs rather than proof of Global behavior. Patch-note/search absence is not evidence of no change. Security/integrity/legal/provenance constraints override defect compatibility.
 
-`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` accepts and pins the already-delivered paper registry for that immutable first target: schema version 1 remains the unchanged schema blob `208506f461231eb3ed8966ae16dade0764eb39b8`, manifest revision 2 is `ACCEPTED`, `cases` remains empty, all nine domain inventories remain `NO_MECHANIC_CASES_REGISTERED`, and `canonical_digest` remains null until accepted canonicalization/digest tooling exists. Registry acceptance creates no mechanic-level parity claim, no mutable `latest` consumer authority and no runtime/release/content/DDL/Platform/production authority.
+`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` accepts and pins the paper registry for that immutable first target: schema version 1 remains the unchanged schema blob `208506f461231eb3ed8966ae16dade0764eb39b8`, manifest revision 3 is `ACCEPTED`, `ABILITY_COMBAT` is `MECHANIC_CASES_REGISTERED`, four bounded Light Healing/Ice Strike cases are registered with target evidence `UNKNOWN`, source/case provenance `PENDING`, legal review `PENDING`, Oteryn implementation `NOT_STARTED` and parity `PARITY_PENDING_EVIDENCE`, and `canonical_digest` remains null until accepted canonicalization/digest tooling exists. Registry acceptance and case registration create no mechanic-level parity claim, no mutable `latest` consumer authority and no runtime/release/content/DDL/Platform/production authority. Delivery PR #255 merged as `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`.
 
 `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` remains binding for baseline-neutral Character ownership/lifecycle/revision/migration safety. `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` accepts the Reference-sensitive semantic closure layered on Stage A: global logical naming namespace with versioned canonical-comparison policy; versioned lifecycle/quota policy; versioned creation/starter context; five Reference vocation families/promoted forms plus pre-vocation state and eight skill categories; formula-neutral progression ownership; promotion achievement versus entitlement-derived activation; profile-scoped death/protection; character-owned offline-training counter semantics; modern character-specific progression ownership scope; and explicit hard parity gates for every unresolved `UNKNOWN/CONFLICT` target rule. Architecture acceptance does **not** imply `PARITY_CONFIRMED`, physical schema, runtime implementation or all-profile schema completeness.
 
@@ -170,15 +171,15 @@ The native client therefore remains legitimately pre-native-protocol until a sep
 
 ## 8. Next ordered architecture and proof work
 
-Whole `DUR-02 — Persistence v1`, `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` architecture are accepted/lifecycle-closed while implementation remains `NOT_STARTED`. Reference evidence/parity manifest v1 is accepted/pinned/lifecycle-closed as a paper registry. A **separately authorized server/persistence/content foundation implementation programme** may consume accepted common scopes, but architecture acceptance does not itself grant that authority.
+Whole `DUR-02 — Persistence v1`, `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` architecture are accepted/lifecycle-closed while implementation remains `NOT_STARTED`. Reference evidence/parity manifest v1 is accepted/pinned/lifecycle-closed as a paper registry and now contains the first representative `ABILITY_COMBAT` case set. A **separately authorized server/persistence/content foundation implementation programme** may consume accepted common scopes, but architecture acceptance does not itself grant that authority.
 
-`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` freezes schema version 1, manifest revision 2 with `status=ACCEPTED`, the immutable 2026-07-28 first Reference target and fail-closed evidence/provenance policy. `cases=[]`, all nine domains remain `NO_MECHANIC_CASES_REGISTERED`, and `canonical_digest=null` remains truthful until accepted digest tooling exists. The registry must not be rebuilt or duplicated.
+`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` freezes schema version 1 and the immutable 2026-07-28 first Reference target plus fail-closed evidence/provenance policy. Manifest revision 3 is `ACCEPTED`; `ABILITY_COMBAT` is `MECHANIC_CASES_REGISTERED`; four Light Healing/Ice Strike cases are registered with target evidence `UNKNOWN`, source/case provenance `PENDING`, legal review `PENDING`, Oteryn implementation `NOT_STARTED`, exact revision null, no fixture/test link and parity `PARITY_PENDING_EVIDENCE`. `canonical_digest=null` remains truthful until accepted digest tooling exists. The registry must not be rebuilt or duplicated.
 
-The remaining named pre-VSL paper-only programme action is the first reviewed representative **`ABILITY_COMBAT` mechanic evidence case(s) + parity-fixture binding package** under the already-defined GAME-ABILITY catalogue contract. Do not invent a new stable gate ID. Each exercised behavior remains fail-closed until evidenced or explicitly `DECLARED_DIFFERENCE`; `PARITY_CONFIRMED` still requires complete declared case/aspect coverage, cleared provenance, an exact Oteryn implementation revision and passing bounded fixture/test evidence.
+The remaining named pre-VSL paper-only programme action is a bounded **target-continuity + provenance-clearance evidence package for those four registered `ABILITY_COMBAT` cases**. It must locate provenance-cleared, time-appropriate evidence that directly bridges or captures the immutable 2026-07-28 target boundary and then either promote or reject the indexed official-state hypotheses. Patch-note/search absence is not continuity proof. Do not broaden mechanic inventory or freeze physical catalogue tooling before proving this representative historical-evidence path; do not invent a new stable gate ID.
 
 The next ordered work is:
 
-1. Add the first reviewed representative `ABILITY_COMBAT` mechanic evidence case(s) and bounded parity fixture(s) under the accepted manifest plus GAME-ABILITY catalogue contract; do not infer parity from catalogue presence or implementation similarity.
+1. Obtain provenance-cleared, time-appropriate target-continuity evidence for the four registered Light Healing/Ice Strike cases and update classifications only when the evidence contract permits it; keep `UNKNOWN/PENDING` fail-closed otherwise and do not claim executable parity.
 2. Obtain explicit implementation authority before any bounded server/persistence/Channel/DUR/content/SIM executable increment. A safe decomposition remains GameNode/bootstrap shell -> `protocol-oteryn` transport/runtime adapter -> admission/GameSession/CharacterLease -> PostgreSQL migration/persistence substrate -> Character/FND-04 persistence -> minimal ChannelRuntime; item/value implementation additionally consumes GAME-ITEM/DUR-03 and concrete ANL/resource-limit evidence; content implementation additionally consumes DUR-04 and required physical-format/resource-limit/WIT execution-profile evidence; deterministic simulation/combat/AI/progression implementation additionally consumes SIM-DETERMINISM and exact formula/Reference evidence; Channel product implementation additionally consumes GAME-CHANNEL and later PERF/OPS numeric/orchestration decisions.
 3. `NET-TRANSPORT-02` (or equivalent bounded successor) remains later evidence work for QUIC profile/FND-04 reconciliation.
 4. Expand `VSL-01` through real-boundary slices only after each owning architecture/implementation gate is ready: admission, movement, combat, persistence, recovery, multichannel.
@@ -258,15 +259,16 @@ SIM-DETERMINISM-01
 
 Reference evidence/parity manifest v1
 -> ACCEPTED / LIFECYCLE_CLOSED
--> schema version 1 pinned; manifest revision 2 ACCEPTED
--> cases empty; all nine domains fail-closed
+-> schema version 1 pinned; manifest revision 3 ACCEPTED
+-> ABILITY_COMBAT has four registered Light Healing/Ice Strike cases
+-> target UNKNOWN; source/case/legal provenance PENDING; implementation NOT_STARTED; parity PENDING
 -> canonical_digest null until accepted tooling exists
 -> no mechanic parity implied
 
 next paper-only programme action
--> first reviewed representative ABILITY_COMBAT mechanic evidence case(s) + bounded parity fixture(s)
--> consume accepted manifest v1 and GAME-ABILITY catalogue contract
--> no invented stable gate ID
+-> target-continuity + provenance-clearance evidence for the four registered ABILITY_COMBAT cases
+-> directly bridge/capture the immutable 2026-07-28 target boundary
+-> no patch/search-silence continuity inference; no broaden-before-proof; no invented stable gate ID
 
 server/persistence/channel/content/SIM implementation
 -> explicit owner implementation authorization still REQUIRED

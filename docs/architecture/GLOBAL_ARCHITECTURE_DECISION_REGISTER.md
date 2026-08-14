@@ -1,7 +1,7 @@
 # Oteryn v2 Global Architecture Decision Register
 
 - Status: Active coordination register
-- Date: 2026-08-13
+- Date: 2026-08-14
 - Coordination ID: `OTV2-GLOBAL-ARCHITECTURE`
 - Canonical foundation programme: `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`
 - Current execution status: `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`
@@ -51,6 +51,8 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 | Foundation identifier vocabulary | `ACCEPTED` | `FND-ID-01_FOUNDATION_IDENTIFIER_CONTRACT.md` |
 | Minimum GAME-VISION product contract | `ACCEPTED` | `GAME-VISION-01_MINIMUM_OWNER_BASELINE.md` |
 | First immutable Reference cut: Global Tibia after 2026-07-28 server-save/maintenance | `ACCEPTED` | `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` |
+| Reference evidence/parity manifest v1, schema v1, immutable first target | `ACCEPTED` | `REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md`, PR #252 merge `52ef65f67e8a0e9c6f31d4754f8a6b7322d8d6d8` |
+| First representative ABILITY_COMBAT Reference case package | `ACCEPTED` | manifest revision 3 registered fail-closed cases + `GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md`, PR #255 merge `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`; this does not imply mechanic parity |
 | GAME-CHAR Stage A + Stage B semantic closure | `ACCEPTED` | `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` + Stage B baseline |
 | DUR-02 profile-neutral Character persistence sub-baseline | `ACCEPTED` | `DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md` |
 | DUR-02 whole Persistence-v1 architecture | `ACCEPTED` | `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md` |
@@ -68,6 +70,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - `protocol-canary` remains absent from the production graph and may not re-enter through compatibility/fallback without explicit supersession.
 - ADR-0009 fixes GameNode/process/Channel ownership; PERF-01 gates capacity claims and OPS-CHANNEL-01 gates automatic production scaling/recovery implementation.
 - GAME-VISION minimum semantics and immutable 2026-07-28 first Reference target remain binding. Official public evidence is primary but not assumed exhaustive; controlled observation may prove behavior; OTS code is hypothesis/inventory only.
+- Reference evidence/parity manifest v1 is accepted/pinned. Manifest revision 3 contains four representative ABILITY_COMBAT cases for Light Healing/Ice Strike. All remain target `UNKNOWN`, source/case provenance `PENDING`, legal review `PENDING`, Oteryn implementation `NOT_STARTED` and parity `PARITY_PENDING_EVIDENCE`; this is evidence registration, not parity acceptance.
 - GAME-CHAR Stage A/B remains binding; acceptance does not imply complete Reference parity.
 - DUR-02 whole-gate acceptance grants no SQL DDL/migration execution/runtime authority.
 - GAME-ITEM and DUR-03 together close item/value semantics and anti-duplication architecture, but do not implement item/value runtime or physical schema.
@@ -76,7 +79,7 @@ Stable IDs are canonical across tasks, prompts and PRs. Stage labels are descrip
 - SIM-DETERMINISM closes the cross-domain deterministic arithmetic/RNG/order/replay/state-hash architecture gap: exact semantic revision binding, explicit numeric classes/rounding/failure semantics, purpose-isolated gameplay RNG, normalized time/external facts, replay provenance and supported-target determinism are accepted. Concrete libraries, exact gameplay formulas/RNG algorithm, global tick, runtime implementation and production replay remain separately gated.
 - Historical market/economy consistency remains EXP-ECONOMY-01; guild/social remains EXP-SOCIAL-01; houses remains EXP-HOUSES-01; rewards remain their GAME-META/EXP-EVENTS owners; DUR-03 retains conservation wherever these move value.
 - Partitioning/sharding and exact Rust DB/migration library remain measured implementation/PERF choices unless correctness evidence creates an architecture constraint.
-- With SIM-DETERMINISM closed, the one selected next paper-only programme action is the versioned Reference evidence/parity manifest under its owning contract; do not invent a new stable gate ID without explicit registration.
+- The one selected next paper-only programme action is target-continuity + provenance-clearance evidence for the four registered ABILITY_COMBAT cases; do not rebuild the manifest/first package, infer continuity from patch/search silence, broaden mechanics first or invent a new stable gate ID.
 - ADR-0014..0016 remain binding: TCP profile registration does not imply runtime readiness, QUIC remains future profile/reconciliation/evidence work, and GameNode remains one process.
 - bounded spikes inform contracts only when reversible, isolated, non-production and explicitly non-canonical.
 
@@ -191,6 +194,7 @@ Detailed scope/dependencies/non-decisions remain canonical in `GAMEPLAY_AND_PROD
 - `GAME-CHANNEL-01` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; selection/queue/co-location/switch/multiplicity/lifecycle policy is frozen, while runtime/Platform scaling implementation and numeric PERF/OPS values remain downstream.
 - `DUR-04` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; content/package/compiler/bundle/migration/scripting architecture is frozen while physical encoding, numeric limits and executable content infrastructure remain downstream.
 - `SIM-DETERMINISM-01` — `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED`; deterministic arithmetic/RNG/order/replay/state-hash architecture is frozen while formula values, libraries and executable SIM/combat/AI implementation remain downstream.
+- Reference evidence/parity manifest v1 — `ACCEPTED`; revision 3 has four fail-closed ABILITY_COMBAT cases and no mechanic parity claim.
 
 ### Required for Playable Alpha completeness
 
@@ -336,11 +340,12 @@ The foundation task is non-owning. Every substantial gate has one task/branch/PR
 26. GAME-CHANNEL is binding for Channel product/lifecycle/multiplicity semantics; numeric capacity/windows/hysteresis remain PERF/OPS, and acceptance grants no runtime/client/Platform/scaling authority.
 27. DUR-04 is binding for semantic content/package/compiler/bundle/migration/scripting architecture; physical encoding, numeric limits and executable content infrastructure remain separately gated.
 28. SIM-DETERMINISM-01 is binding for deterministic numeric/RNG/order/replay/state-hash semantics; acceptance grants no formula/library/runtime/combat/AI/script/production authority and does not itself prove Reference correctness.
+29. Reference manifest acceptance/case registration never implies Reference parity; target continuity, provenance/legal clearance, exact Oteryn implementation revision and passing bounded fixture/test evidence remain independent prerequisites.
 
 ## Current next action
 
-GAME-CHANNEL, GAME-ITEM, DUR-02, DUR-03, DUR-04 and SIM-DETERMINISM-01 are architecture-complete/lifecycle-closed while implementation remains `NOT_STARTED`.
+GAME-CHANNEL, GAME-ITEM, DUR-02, DUR-03, DUR-04 and SIM-DETERMINISM-01 are architecture-complete/lifecycle-closed while implementation remains `NOT_STARTED`. Reference manifest v1 is accepted/pinned, and PR #255 delivered the first representative ABILITY_COMBAT case package as manifest revision 3 without promoting target truth or parity.
 
-The selected next paper-only programme action is to **build the versioned Reference evidence/parity manifest under its owning contract**. Preserve the accepted 2026-07-28 first Reference target and evidence hierarchy, record provenance/status per exercised mechanic, keep `UNKNOWN/CONFLICT` fail-closed, and do not invent a new stable gate ID unless explicitly registered.
+The selected next paper-only programme action is a bounded **target-continuity + provenance-clearance evidence package for the four registered Light Healing/Ice Strike cases**. It must obtain provenance-cleared, time-appropriate evidence that directly bridges or captures the immutable 2026-07-28 Reference boundary; keep `UNKNOWN/PENDING` fail-closed where evidence is insufficient; never infer continuity from patch-note/search silence; and not broaden mechanics or freeze physical catalogue/fixture tooling before the representative historical-evidence path is proven. No new stable gate ID is implied.
 
 Executable server/persistence/channel/item/content/SIM implementation still requires explicit owner implementation authorization. No gameplay/runtime implementation, Platform write, PostgreSQL migration/schema deployment, entitlement activation, broad content import or production behavior is authorized by this register update.

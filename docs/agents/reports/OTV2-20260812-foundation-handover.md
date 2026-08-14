@@ -2,11 +2,12 @@
 
 - Handover ID: `OTV2-20260812-foundation-handover`
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
-- Refreshed: 2026-08-13 09:24 +02:00
+- Refreshed: 2026-08-14 13:55 +02:00
 - Repository: `blakinio/Oteryn-v2`
-- Trusted refresh base: `main@1e16b32069868f14aa1761a512b6cd8b1024e277`
-- SIM-DETERMINISM delivery: PR #214 / exact final head `4c6684328123aebd657696808372a5855980d34e` / squash merge `1e16b32069868f14aa1761a512b6cd8b1024e277`
-- SIM-DETERMINISM lifecycle closeout: PR #215
+- Trusted refresh base: `main@d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`
+- Reference manifest acceptance: PR #252 / merge `52ef65f67e8a0e9c6f31d4754f8a6b7322d8d6d8`
+- First representative ABILITY_COMBAT evidence delivery: PR #255 / exact final head `6744f655c6438eebeab70b30aae17d33b5bd2fa7` / squash merge `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`
+- Current lifecycle closeout: issue #256 / draft PR #257 / branch `docs/ability-combat-evidence-closeout`
 - Terminal successor result after closeout: **`ROTATE`**
 - Runtime/client/combat/AI/script implementation authority: **NOT GRANTED**
 - PostgreSQL DDL/migration execution authority: **NONE**
@@ -17,9 +18,9 @@
 
 This is the durable successor handoff for Oteryn-v2 architecture continuation. Chat history is non-authoritative. A successor must read trusted-base governance and live GitHub state first, verify drift/ownership, and then execute the one `next_action` below.
 
-PR #215 is lifecycle/status/handoff reconciliation only. It does not create or change SIM-DETERMINISM semantics and becomes canonical only when the closeout merges.
+The current closeout is lifecycle/status/handoff reconciliation only. It does not promote any Reference mechanic, provenance/legal state, implementation state or parity classification.
 
-## 2. Canonical current state after SIM closeout
+## 2. Canonical current state
 
 ```text
 GAME-VISION-01        ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED
@@ -32,10 +33,12 @@ DUR-03                ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED
 DUR-04                ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED
 ANL-01                ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED
 SIM-DETERMINISM-01    ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED
+REFERENCE MANIFEST    ACCEPTED / schema v1 / revision 3
+ABILITY_COMBAT CASES  4 REGISTERED / UNKNOWN / provenance PENDING / implementation NOT_STARTED / parity PENDING
 PROD-ENTITLEMENTS-01  PROPOSED / PLANNED / NOT_STARTED
 ```
 
-Architecture acceptance does **not** imply runtime/client/server implementation, compiler/loader/Studio/WIT-host implementation, PostgreSQL DDL/migrations, Platform implementation, broad content import, gameplay traffic, exact gameplay formulas or production readiness.
+Architecture acceptance and evidence registration do **not** imply runtime/client/server implementation, compiler/loader/Studio/WIT-host implementation, PostgreSQL DDL/migrations, Platform implementation, broad content import, gameplay traffic, exact gameplay formulas or production readiness.
 
 ## 3. Accepted architecture — consume rather than rediscover
 
@@ -52,82 +55,101 @@ Unless explicitly superseded, preserve:
 - DUR-03 durable item/currency/value conservation/idempotency/anti-duplication;
 - GAME-CHANNEL selection/queue/co-location/anti-hopping/multiplicity/qualitative lifecycle and one-World community/economy policy;
 - DUR-04 typed semantic content graph, exact package lock, deterministic compilation, immutable bundle activation/migration, bounded loading/provenance and capability-bounded deterministic scripting;
-- SIM-DETERMINISM deterministic arithmetic/RNG/order/replay/state-hash architecture described below.
+- SIM-DETERMINISM deterministic arithmetic/RNG/order/replay/state-hash architecture;
+- Reference manifest v1 owner acceptance, evidence hierarchy and fail-closed rules;
+- GAME-ABILITY typed effect/targeting/cast/cooldown/composition/reference-catalogue architecture already accepted as partial baselines.
 
 Do not restart accepted gates merely because older backlog/predecision prose reflects an earlier state.
 
-## 4. Accepted SIM-DETERMINISM-01 — binding result
+## 4. Reference evidence registry — binding current result
 
 Canonical sources:
 
-- `docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_ANALYSIS.md`;
-- `docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md`.
+- `docs/architecture/GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md`;
+- `docs/architecture/REFERENCE_EVIDENCE_PARITY_MANIFEST_CONTRACT.md`;
+- `docs/architecture/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md`;
+- `docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.schema.json`;
+- `docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json`;
+- `docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md`;
+- `docs/agents/evidence/OTV2-20260814-ability-combat-official-spell-library.md`.
 
-Delivery evidence:
-
-- PR #214;
-- final repaired head `4c6684328123aebd657696808372a5855980d34e`;
-- independent review `4924203877` on superseded head `5dc628f32ca4573725bcb4a42c3a7702536d7f35` found one material replay-provenance P1;
-- owner-authorized repair cycle 4 restored exact server/build, `protocol-oteryn` and World Bundle provenance while keeping NodeId/process placement forensic-only;
-- repaired P1 thread resolved;
-- terminal full-diff self-review `4924321455` — PASS, material findings `0`;
-- repeat exact-head self-review `4924423397` — PASS, material findings `0`;
-- Agent Governance `31676250271` — PASS;
-- Dependency Review `31676250273` — PASS;
-- CodeQL `31676250272` — PASS;
-- unresolved review threads before merge: `0`;
-- the owner explicitly instructed the coordinator to finish PR #214 at exact head `4c668432...`, overriding the otherwise-required fresh independent-review-after-repair mechanism without relabeling self-review as independent and without authorizing any new owner-funded AI use;
-- squash merge `1e16b32069868f14aa1761a512b6cd8b1024e277`.
-
-Binding SIM closure includes:
-
-- same canonical future-determining state + same exact owner-local normalized input order + same semantic revision/profile set + same normalized external facts => same normalized authoritative result sequence;
-- no global total order and no second runtime commit ordinal; FND-03 RuntimeExecutionOrdinal remains owner-local evidence;
-- `SimulationDeterminismProfileRevision` versions numeric/RNG/tie-break/hash/supported-target semantics without replacing content/ruleset/world-policy/script execution revisions;
-- retryable/delayed logical occurrences bind exact behavior-affecting revisions and do not silently recalculate under newer incompatible semantics;
-- exact discrete and DUR-03 conservation arithmetic remains exact; formula fixed-scale/rational semantics are preferred where appropriate; authoritative floating requires explicit deterministic profile and cross-target proof;
-- formula descriptors define units, representation, operation order, explicit rounding boundaries/modes, invalid-state behavior and Reference evidence state;
-- one process-global mutable gameplay RNG is forbidden; random decisions use stable semantic purpose identities and isolated keyed/counter decisions or isolated checkpointed substreams;
-- retry/failover preserves the same logical random decision; speculative/rejected/aborted work does not independently advance committed RNG state;
-- exploit-sensitive deterministic RNG may remain confidential and may not be derived solely from public facts unless predictability is explicitly accepted;
-- wall clock, process-local monotonic time and authoritative execution order remain distinct; no global fixed tick is introduced;
-- simultaneous/conflicting inputs use commutative semantics, stable semantic tie-breaks or exact retained FND-03 owner order;
-- external nondeterminism crosses a typed normalization boundary before affecting authority;
-- replay retains exact server/build executable identity, protocol profile/revision, World Bundle artifact/digest, semantic revisions, inputs/order, formula/script profiles, RNG evidence and normalized time/external facts;
-- original NodeId/process-incarnation may be retained for forensics but replay correctness does not require recreating placement;
-- canonical deterministic state/hash includes active revisions, gameplay state, RNG state/cursors, pending accepted timers/operations/continuations, occurrence identities and semantically relevant fences/revisions;
-- state hashes and replay/divergence tooling are evidence only and cannot repair/mutate live authority;
-- supported authoritative server targets must produce identical normalized authoritative outcomes; incompatible targets fail closed;
-- missing replay/hash/RNG/formula/pending-state limits block implementation rather than becoming unlimited.
-
-## 5. One next paper-only action
-
-After SIM closeout, the remaining named pre-VSL paper-only programme action is:
+Current machine state after PR #255:
 
 ```text
-Build the versioned Reference evidence/parity manifest under its owning contract.
+schema_version = 1
+manifest_revision = 3
+status = ACCEPTED
+canonical_digest = null
+reference_target = global-tibia-observable-2026-07-28-post-server-save
+ABILITY_COMBAT = MECHANIC_CASES_REGISTERED
+cases = 4
 ```
 
-Do not invent a new stable gate ID unless the owner/repository explicitly creates one. The manifest must preserve the accepted first Reference target and evidence discipline:
+The four cases are Light Healing cast metadata, Light Healing qualitative self-heal semantics, Ice Strike cast metadata and Ice Strike qualitative targeted ice-damage semantics.
 
-- first Reference target remains Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary;
-- each exercised Reference-sensitive behavior stays `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or explicit `DECLARED_DIFFERENCE` until evidence supports stronger status;
-- official public evidence is primary but not assumed exhaustive;
-- controlled black-box observation may supply provenance-bound behavior evidence;
-- community sources are corroborative/discovery inputs;
-- Canary/crystalserver/other OTS code is hypothesis/inventory material, not proof of Global behavior;
-- patch-note/search absence is not proof of no change;
-- unresolved Reference-sensitive behavior remains fail-closed and cannot be `PARITY_CONFIRMED` by implementation convenience.
+Every case remains deliberately fail closed:
 
-This next action is paper-only. It does not authorize runtime implementation, packet probing beyond separately authorized/legal evidence acquisition, proprietary asset/code copying, DDL, Platform writes or production changes.
+- target evidence `UNKNOWN`;
+- source provenance `PENDING`;
+- case provenance `PENDING`;
+- legal review `PENDING`;
+- Oteryn implementation `NOT_STARTED`;
+- exact implementation revision null;
+- fixture/test links empty;
+- parity `PARITY_PENDING_EVIDENCE`.
 
-## 6. Implementation boundary
+The indexed official Library content does not prove the immutable target. Exact official locators are known, but search-index freshness was only approximate, direct official page fetch from the research environment returned HTTP 403, exact crawl/live observation time is unknown and source/case provenance is not cleared. Patch-note/search absence is not continuity proof.
 
-A future executable server/persistence/content/Channel/SIM package still requires separate explicit owner implementation authorization and its own bounded evidence. The current safe high-level sequence remains real-boundary implementation slices only after owning contracts are ready.
+The human fixture records are **pending blueprints**, not executable/passing parity fixtures. `healing` and `damage` are descriptive accepted semantic families, not frozen physical serializer/enum identifiers.
+
+## 5. PR #255 delivery evidence
+
+- issue #254: completed;
+- final exact head: `6744f655c6438eebeab70b30aae17d33b5bd2fa7`;
+- final self-review comment `5292724813`: PASS, zero open material findings;
+- three repaired findings: target evidence over-promotion, live-page retrieval overstatement, source/case provenance over-promotion;
+- owner-authorized Codex review scope: **PR #255 only**;
+- Codex result: no findings, final PR `+1` reaction `454048359`;
+- Agent governance `31795833321`: PASS;
+- Merge authority audit `31795833334`: PASS;
+- Merge gate `31795833324`: PASS including scope, governance, Dependency Review, CodeQL actions, CodeQL python and aggregate `Merge gate / validate`;
+- unresolved review threads before merge: 0;
+- squash merge: `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`;
+- post-merge `main`: verified exactly at that SHA.
+
+The Codex authorization for PR #255 is consumed and does not authorize closeout PR #257 or future work.
+
+## 6. One next paper-only action
+
+The versioned Reference manifest and the first representative ABILITY_COMBAT evidence package are already delivered. **Do not build them again.**
+
+After lifecycle closeout, the one selected pre-VSL paper-only programme action is:
+
+```text
+Obtain target-continuity + provenance-clearance evidence for the four registered
+ABILITY_COMBAT Light Healing/Ice Strike cases.
+```
+
+A successor should create one bounded task that:
+
+1. keeps the immutable 2026-07-28 Reference target unchanged;
+2. seeks provenance-cleared, time-appropriate evidence that directly bridges or captures the target boundary;
+3. updates existing case classifications only when the accepted evidence contract permits it;
+4. leaves `UNKNOWN/PENDING` unchanged where evidence is insufficient;
+5. never treats patch/search silence as continuity evidence;
+6. does not broaden mechanic inventory or freeze physical catalogue/fixture tooling before this representative historical-evidence path is proven;
+7. does not invent a new stable architecture gate ID;
+8. does not claim `PARITY_CONFIRMED` without sufficient target evidence, cleared provenance/legal state, exact Oteryn implementation revision and a passing bounded fixture/test.
+
+This next action is paper-only. It does not authorize official-client automation beyond separately authorized/legal evidence acquisition, runtime implementation, proprietary asset/code copying, DDL, Platform writes or production changes.
+
+## 7. Implementation boundary
+
+A future executable server/persistence/content/Channel/SIM package still requires separate explicit owner implementation authorization and its own bounded evidence. Current accepted architecture may be consumed only after that authorization.
 
 `PROD-ENTITLEMENTS-01` remains independently unaccepted for Oteryn-v2 consumption; Premium/VIP/game-consumed entitlement activation remains unauthorized.
 
-## 7. Successor bootstrap
+## 8. Successor bootstrap
 
 Before mutation, a successor must read/follow at minimum:
 
@@ -139,25 +161,27 @@ Before mutation, a successor must read/follow at minimum:
 6. `docs/agents/tasks/active/OTV2-20260805-foundation-preimplementation-contracts.md`;
 7. this handoff;
 8. `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md`;
-9. accepted GAME-VISION and domain contracts relevant to the exact Reference claims being inventoried;
+9. accepted Reference/GAME-ABILITY contracts and manifest files relevant to the four existing cases;
 10. live `main`, open PRs, active tasks/owned paths, review threads and CI.
 
 Live merged repository state overrides this report if state has legitimately advanced.
 
-## 8. Context checkpoint
+## 9. Context checkpoint
 
 ```yaml
 status: ready
 terminal_invocation_result: ROTATE
 repository: blakinio/Oteryn-v2
-trusted_base_sha: 1e16b32069868f14aa1761a512b6cd8b1024e277
-closeout_pr: 215
+trusted_base_sha: d04f0939f0078cb677ca3ad66f5949e9f3dadc8d
+closeout_issue: 256
+closeout_branch: docs/ability-combat-evidence-closeout
+closeout_pr: 257
 owned_paths: []
 public_contracts: []
-last_progress: SIM-DETERMINISM-01 delivery PR #214 merged exact repaired head 4c6684328123aebd657696808372a5855980d34e as 1e16b32069868f14aa1761a512b6cd8b1024e277 after the explicit owner finalization override; lifecycle closeout #215 promotes canonical status and releases SIM ownership.
-validation_state: delivery #214 merged after repaired P1, exact-head self-review and green Governance/Dependency/CodeQL; closeout #215 must pass its own exact-head documentation/governance validation.
+last_progress: PR #255 exact final head 6744f655c6438eebeab70b30aae17d33b5bd2fa7 passed final self-review, owner-authorized Codex no-finding review and exact-head repository gates, then squash-merged as d04f0939f0078cb677ca3ad66f5949e9f3dadc8d; issue #254 closed completed; lifecycle closeout #256 / draft PR #257 reconciles archive/status/handoff and releases task ownership.
+validation_state: delivery #255 merged after exact-head self-review, no-finding Codex and green Agent governance/Merge authority/Merge gate; closeout #257 must pass its own exact-head documentation/governance validation.
 e2e_state: NOT_APPLICABLE documentation-only architecture/closeout
 blocker: null
 owner_action_required: false
-next_action: From live main after SIM-DETERMINISM lifecycle closeout, create one bounded paper-only task to build the versioned Reference evidence/parity manifest under its owning contract; do not invent a new stable gate ID or implement runtime/DDL/production behavior.
+next_action: After lifecycle closeout, create one bounded paper-only target-continuity + provenance-clearance evidence task for the four registered Light Healing/Ice Strike cases; do not broaden/freeze tooling first and do not implement runtime/DDL/production behavior.
 ```

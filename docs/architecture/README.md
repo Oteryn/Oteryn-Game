@@ -66,8 +66,12 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 - [DUR-04 — Content, world detail and scripting contract](DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md)
 - [SIM-DETERMINISM-01 — Authoritative simulation determinism analysis](SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_ANALYSIS.md)
 - [SIM-DETERMINISM-01 — Authoritative simulation determinism contract](SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md)
+- [Reference evidence/parity manifest v1 owner acceptance](REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md)
+- [GAME-ABILITY-01 — First Reference evidence and pending fixture package](GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md)
 
 `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` are accepted/lifecycle-closed architecture with implementation `NOT_STARTED`. GAME-ITEM + DUR-03 freeze typed item legality, one durable item location, ItemInstanceId lifecycle transitions, conservation/source-sink lineage, idempotency/retry/ambiguous-commit handling, runtime↔durable pickup/drop fencing, custody and bounded audit. GAME-CHANNEL freezes player Channel selection/recommendation/queue/co-location, durable anti-hopping/prior-Channel semantics, explicit source/reward multiplicity classes, qualitative public Channel create/drain/drain-abort/retirement predicates, same-Channel recovery and one-World community/economy boundaries while leaving all numeric capacity/windows/hysteresis to PERF/OPS. DUR-04 freezes stable semantic package/content identity, deterministic locked compilation, immutable bundle staging/activation/migration, bounded fail-closed loading and the target Component Model + project-owned WIT capability boundary with proposal-only authoritative mutations and versioned deterministic execution-profile semantics. SIM-DETERMINISM freezes explicit numeric/rounding/failure semantics, purpose-isolated deterministic gameplay RNG, exact semantic revision binding, logical time/order, normalized external nondeterminism, replay provenance, future-determining state hashing/divergence evidence and supported-target determinism. None of these acceptances authorizes Rust/runtime/client/compiler/loader/Studio/SIM/combat/AI/script implementation, exact formulas or RNG/numeric/hash dependencies, PostgreSQL DDL/migrations, Platform writes, broad content import, production mutation or entitlement activation.
+
+The accepted Reference evidence/parity registry remains a paper-only evidence authority. Schema v1 is pinned and manifest revision 3 is `ACCEPTED`; `ABILITY_COMBAT` has four registered Light Healing/Ice Strike cases delivered by PR #255 merge `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`. All four remain fail-closed: target `UNKNOWN`, source/case provenance `PENDING`, legal review `PENDING`, implementation `NOT_STARTED`, parity `PARITY_PENDING_EVIDENCE`. The human package contains pending fixture blueprints only; it is not executable content and does not establish mechanic parity.
 
 ## Machine-readable contracts
 
@@ -75,6 +79,8 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 - [Game event foundation registry](../contracts/GAME_EVENT_FOUNDATION_REGISTRY.json)
 - [Resource limits registry](../contracts/RESOURCE_LIMITS_REGISTRY.json)
 - [Cross-repository contract lock](../contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json)
+- [Reference evidence/parity manifest v1](../contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json)
+- [Reference evidence/parity manifest v1 schema](../contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.schema.json)
 
 ## Current programme dependency refinement
 
@@ -94,11 +100,13 @@ accepted GAME-ITEM-01
 
 accepted DUR-04 content/world/scripting architecture
 + accepted SIM-DETERMINISM-01
--> versioned Reference evidence/parity manifest
+-> accepted/pinned Reference evidence/parity manifest v1
+-> first representative ABILITY_COMBAT cases delivered fail-closed
+-> target-continuity + provenance-clearance evidence for those four cases
 -> later real-boundary VSL sequence only after explicit implementation authority
 ```
 
-After SIM-DETERMINISM lifecycle closeout, the selected next bounded paper-only programme action is the **versioned Reference evidence/parity manifest under its owning contract**. It must preserve the accepted 2026-07-28 first Reference target and fail-closed evidence hierarchy; no new stable gate ID is implied. Any executable server/persistence/channel/item/content/SIM increment still requires separate explicit implementation authority.
+The selected next bounded paper-only programme action is the **target-continuity + provenance-clearance evidence package for the four registered `ABILITY_COMBAT` cases**. It must obtain provenance-cleared, time-appropriate evidence that directly bridges or captures the immutable 2026-07-28 first Reference target boundary and may promote classifications only when the evidence contract permits it. Patch-note/search silence is not continuity proof; do not broaden mechanic inventory or freeze physical catalogue tooling before proving this representative historical-evidence path. No new stable gate ID is implied. Any executable server/persistence/channel/item/content/SIM increment still requires separate explicit implementation authority.
 
 ## Transport rule
 
