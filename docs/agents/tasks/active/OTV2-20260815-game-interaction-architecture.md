@@ -10,12 +10,12 @@ base_branch: main
 branch: docs/arch-d-game-interaction
 pr: 269
 base_sha: 088b46638ac014cd7928d6b0b75cee44902fe22c
-head_sha: 1bba123d7b5c803a63f2f1053584ab74132b728d
+head_sha: c0b064a16dc8b47d529d7a1679d4438fea9acfe0
 final_head_sha: null
 final_head_frozen_at: null
 owner: DOMAIN_ARCHITECTURE_DESIGN_AGENT_D
 created_at: 2026-08-15T00:18:00+02:00
-updated_at: 2026-08-15T00:34:00+02:00
+updated_at: 2026-08-15T00:38:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260815-game-interaction-architecture.md
@@ -75,7 +75,7 @@ Primary authority consumed by this worker:
 - [x] deterministic acceptance/failure scenarios are included
 - [x] `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS` are explicit
 - [x] manual governance/authority/scope review is complete
-- [ ] exact-head ordinary PR CI is inspected; final evidence must be recorded externally on PR #269 without moving the validated head
+- [ ] exact-head ordinary PR CI is inspected; final immutable evidence must be recorded externally on PR #269 without moving the validated head
 - [x] full pre-freeze diff self-review is complete and identified metadata findings were repaired
 - [x] draft PR remains draft for Architecture Coordinator audit
 
@@ -124,16 +124,25 @@ A local checkout-based repository validator could not be executed in the current
 
 ### Exact-head CI
 
-Final exact-head ordinary PR CI must be inspected after this task checkpoint commit. The immutable evidence belongs in GitHub checks and a PR checkpoint comment so recording it does not move the validated head.
+The first exact-head generation on `c0b064a16dc8b47d529d7a1679d4438fea9acfe0` produced:
+
+- `Merge authority audit` run `31847103092` — `SUCCESS`;
+- `Agent governance` run `31847103148` — `FAILURE` in the metadata pre-check before checkout;
+- `Merge gate` run `31847103088` — queued in the observed generation.
+
+Root cause was deterministic and non-architectural: `.github/workflows/agent-governance.yml` requires exact PR body headings `## Summary`, `## Scope` and `## Validation`, while the initial worker handoff body used uppercase variants and `## OWNED_PATHS`. The PR body was repaired to the workflow-required headings **without moving the branch head**.
+
+This task-record update is a material CI bookkeeping repair that records the failure/root cause and intentionally creates a new `synchronize` head so ordinary pull-request workflows consume the corrected current PR metadata. Final exact-head results must be recorded in GitHub checks/a PR checkpoint comment rather than by another file edit.
 
 ## Self-review
 
-Full worker diff review identified and repaired two non-architectural handoff findings before final freeze:
+Full worker diff review identified and repaired these handoff findings before final validation:
 
-1. task metadata still had `pr: null` and an authoring-stage checkpoint;
-2. the analysis header used descriptive `PROPOSED ANALYSIS` rather than canonical `DecisionStatus: PROPOSED`.
+1. task metadata initially had `pr: null` and an authoring-stage checkpoint;
+2. the analysis header initially used descriptive `PROPOSED ANALYSIS` rather than canonical `DecisionStatus: PROPOSED`;
+3. the PR body initially did not satisfy the workflow's case-sensitive/shape-sensitive `## Summary`, `## Scope`, `## Validation` metadata contract; the body is now repaired.
 
-No open material architecture finding was identified in the pre-freeze content review. Final unchanged-head review must confirm the same after this checkpoint commit.
+No open material architecture finding was identified. Final unchanged-head review must confirm this after the current CI-repair checkpoint commit.
 
 Explicitly checked:
 
@@ -161,29 +170,33 @@ Worker closeout is limited to `INTEGRATION_READY — DRAFT PR — COORDINATOR AC
 ## Context checkpoint
 
 ```yaml
-last_progress: GAME-INTERACTION-01 analysis and contract candidate are complete on draft PR #269; pre-freeze full-diff self-review found two metadata/status issues and both were repaired. Final exact-head GitHub Actions and unchanged-head review remain the external handoff evidence step.
+last_progress: GAME-INTERACTION-01 analysis/candidate are complete; pre-freeze metadata/status findings are repaired. Exact-head CI on c0b064a16dc8b47d529d7a1679d4438fea9acfe0 exposed a PR metadata-heading mismatch before checkout; the PR body is corrected and this material task checkpoint triggers a fresh ordinary synchronize generation for the corrected metadata.
 status: ready
 branch: docs/arch-d-game-interaction
-head_sha: 1bba123d7b5c803a63f2f1053584ab74132b728d
+head_sha: c0b064a16dc8b47d529d7a1679d4438fea9acfe0
 pr: 269
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pending-final-head
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_check_generation: metadata-repair-synchronize-pending
+ci_checks_for_current_head: 3
+ci_run_ids:
+  - 31847103148
+  - 31847103092
+  - 31847103088
+ci_job_ids:
+  - 94915672726
+runner_assignment_state: assigned-on-prior-generation
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 0
+unchanged_state_checks: 2
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: false
 blocker: null
-next_action: Architecture Coordinator audit PR #269 after final exact-head worker validation; keep the PR draft and do not merge or lifecycle-close.
+next_action: Architecture Coordinator audit PR #269 after the fresh exact-head ordinary CI generation passes; keep the PR draft and do not merge or lifecycle-close.
 ```
 
 MERGE_AUTHORITY: ARCHITECTURE_COORDINATOR_ONLY
