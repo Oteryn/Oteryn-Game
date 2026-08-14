@@ -10,12 +10,12 @@ base_branch: main
 branch: docs/arch-c-game-ai
 pr: 272
 base_sha: 088b46638ac014cd7928d6b0b75cee44902fe22c
-head_sha: b074293f0127c27028858b3b880b653d2c5f1683
+head_sha: cc2f258412bdc9868f9764c8e3c57921f9fa1f8c
 final_head_sha: null
 final_head_frozen_at: null
 owner: DOMAIN ARCHITECTURE DESIGN AGENT / worker C
 created_at: 2026-08-15T00:18:00+02:00
-updated_at: 2026-08-15T00:29:18+02:00
+updated_at: 2026-08-15T00:32:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -91,11 +91,12 @@ Exact Reference perception, aggro/threat, retarget, leash/reset, path preference
 - [x] Resource-limit dimensions are enumerated without inventing benchmark-sensitive numbers.
 - [x] Failure/recovery matrix and deterministic future acceptance scenarios are present.
 - [x] Reference/Evolved mapping separates shared engine invariants from evidence/profile policy.
-- [x] Required worker handoff markers `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS` are present in the owned task record.
+- [x] Required worker handoff markers `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS` are present in task and PR metadata.
 - [x] Cross-domain findings are `REPORT_ONLY` and no foreign architecture file is edited.
 - [x] Draft PR `#272` created and changed-file scope verified as exactly the three worker-owned paths.
-- [ ] Exact-head repository governance/architecture CI result inspected.
-- [ ] Final exact-head self-review/evidence recorded in immutable PR evidence after this final task-metadata commit.
+- [x] Initial exact-head CI metadata failure classified without claiming repository-validation PASS.
+- [ ] Fresh exact-head repository governance/architecture CI result inspected after PR metadata repair.
+- [ ] Final exact-head self-review/evidence recorded in immutable PR evidence after this metadata-only synchronization commit.
 
 ## Excluded scope
 
@@ -137,7 +138,8 @@ These are explicit non-decisions, not permissive defaults.
 6. Defined pathfinding as bounded auxiliary proposal work with deterministic search profile and owner revalidation.
 7. Defined immutable actor/template/spawn provenance, explicit spawn recovery classes and GAME-CHANNEL multiplicity gates.
 8. Self-review found the horizon's dynamic population/ecology requirement was not explicit enough in the first candidate draft; repaired on semantic checkpoint `b4924278f543325007356b2e2b52ca0d0d0fc966` by requiring immutable/versioned bounded population policy and prohibiting direct analytics-to-runtime feedback.
-9. Work-allocation self-review found the required literal handoff markers were semantically present but not canonically named; repaired in this task-metadata commit without changing foreign scope.
+9. Work-allocation self-review found the required literal handoff markers were semantically present but not canonically named; repaired on `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c`.
+10. Exact-head Agent governance run `31846830146` on `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c` failed before checkout because the PR body lacked required `## Summary` and `## Scope` headings. Merge authority audit `31846830143` passed. The PR body was repaired without changing repository content; this metadata-only task commit intentionally creates a fresh `synchronize` event so governance can validate the exact new head with corrected PR metadata.
 
 ## CROSS_DOMAIN_FINDINGS
 
@@ -159,14 +161,18 @@ Disposition for every item below: `CROSS_DOMAIN_FINDING / REPORT_ONLY`.
 - command/run: PR `#272` changed-file enumeration
 - result: `PASS` — exactly three worker-owned paths; zero forbidden/global/foreign paths
 - command/run: full work-allocation handoff-minimum review
-- result: first pass found missing canonical literal marker names; repaired before final exact-head CI
+- result: first pass found missing canonical literal marker names; repaired before exact-head validation
+- command/run: Agent governance PR-metadata preflight, run `31846830146`, head `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c`
+- result: `FAIL / METADATA_ONLY` before checkout — missing `## Summary` and `## Scope`; PR body repaired without claiming repository validation
+- command/run: Merge authority audit, run `31846830143`, same head
+- result: `PASS`
 
 ### Component/integration
 
 - command/run: `python tools/agents/validate_governance.py`
-- result: pending exact-head GitHub Actions result; local execution unavailable because the sandbox cannot resolve `github.com` for checkout
+- result: pending fresh exact-head GitHub Actions result; initial run did not reach this step
 - command/run: `cargo run --locked -p architecture-check`
-- result: pending exact-head GitHub Actions result; local execution unavailable for the same sandbox/network reason
+- result: pending exact-head repository validation evidence; local execution unavailable because the sandbox cannot resolve `github.com` for checkout
 
 ### E2E
 
@@ -175,9 +181,10 @@ Disposition for every item below: `CROSS_DOMAIN_FINDING / REPORT_ONLY`.
 
 ### Exact-head CI
 
-- final head: pending; by repository task discipline the commit cannot contain its own SHA, so exact final-head result will be recorded in immutable PR/check evidence
-- trigger source: draft PR `#272`
-- workflow/run/job: pending
+- final head: pending immutable PR/check evidence; this commit cannot contain its own SHA
+- trigger source: fresh `pull_request synchronize` from this metadata-only task update after PR-body repair
+- prior stale/failed run: Agent governance `31846830146` on `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c` — metadata-only failure before checkout
+- workflow/run/job: pending fresh exact-head generation
 - runner assignment: pending
 - classification: repository-hosted validation required because local checkout is network-blocked
 - result: pending
@@ -185,15 +192,15 @@ Disposition for every item below: `CROSS_DOMAIN_FINDING / REPORT_ONLY`.
 ## Self-review
 
 - semantic checkpoint: `b4924278f543325007356b2e2b52ca0d0d0fc966`
-- work-allocation checkpoint before final marker repair: `b074293f0127c27028858b3b880b653d2c5f1683`
+- work-allocation checkpoint: `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c`
 - method/reviewer: implementing DOMAIN ARCHITECTURE DESIGN AGENT / worker C
-- material findings: (1) dynamic population/ecology policy was implicit; repaired; (2) canonical handoff marker names were absent; repaired in final task-metadata commit
-- verdict: semantic/work-allocation repairs complete; exact final-head diff/CI must still be inspected and recorded in immutable PR evidence
+- material findings: (1) dynamic population/ecology policy was implicit; repaired; (2) canonical handoff marker names were absent; repaired; (3) governance-required PR body headings were absent; repaired in PR metadata before this synchronization commit
+- verdict: semantic and metadata repairs complete; exact final-head diff/CI must still be inspected and recorded in immutable PR evidence
 
 ## Independent review
 
 - required: `YES` — Architecture Coordinator audit is mandatory by issue/work-allocation merge authority
-- exact head: to be supplied by immutable PR/check evidence after this final task-metadata update
+- exact head: to be supplied by immutable PR/check evidence after this commit
 - method/auditor: Architecture Coordinator via draft PR `#272`
 - material findings: pending coordinator audit
 - verdict: pending coordinator audit
@@ -210,15 +217,15 @@ Disposition for every item below: `CROSS_DOMAIN_FINDING / REPORT_ONLY`.
 ## Context checkpoint
 
 ```yaml
-last_progress: work-allocation handoff markers repaired after semantic package self-review
+last_progress: PR metadata governance failure classified and body repaired; fresh exact-head synchronize triggered by task-only metadata commit
 status: validating
 branch: docs/arch-c-game-ai
-head_sha: b074293f0127c27028858b3b880b653d2c5f1683
+head_sha: cc2f258412bdc9868f9764c8e3c57921f9fa1f8c
 pr: 272
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: draft-pr-272
-ci_check_generation: pending-final-head
+ci_trigger_source: pull-request-synchronize-after-pr-body-repair
+ci_check_generation: pending-new-head
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -227,10 +234,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
-ci_recovery_actions_for_current_head: 0
+repair_cycles_for_current_gate: 3
+ci_recovery_actions_for_current_head: 1
 stall_warnings: 0
 owner_action_required: null
-blocker: local checkout unavailable; exact-head GitHub Actions validation required
-next_action: inspect the final PR head/diff, self-review it, then inspect exact-head Actions results and record immutable PR handoff evidence without merging or lifecycle closeout
+blocker: local checkout unavailable; fresh exact-head GitHub Actions validation required
+next_action: inspect the new exact PR head/diff and fresh Actions generation, then record immutable worker handoff evidence without merging or lifecycle closeout
 ```
