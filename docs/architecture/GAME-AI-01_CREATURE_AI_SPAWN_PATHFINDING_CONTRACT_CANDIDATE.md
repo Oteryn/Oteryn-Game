@@ -53,7 +53,7 @@ Its output MAY inform human review, testing or future authored changes through s
 - spawn/despawn actors;
 - modify path results;
 - grant/revoke loot or XP;
-- change live behavior/template policy.
+- change live behavior/template/population policy.
 
 ## 4. Immutable actor/template/spawn provenance
 
@@ -293,7 +293,26 @@ When the primary placement is unavailable, the authored policy MUST choose one f
 
 Unbounded random probing and recursive immediate spawn retries are prohibited.
 
-## 14. Spawn/AI recovery classes
+## 14. Dynamic population/ecology policy
+
+Dynamic population or ecology behavior MAY exist only through an explicit immutable/versioned authored policy. It MUST NOT be an implicit feedback loop hidden in runtime heuristics.
+
+A dynamic population policy MUST define, as applicable:
+
+- exact authoritative scope and owner;
+- bounded population minima/maxima and mutation step/rate semantics;
+- bounded evaluation cadence and FND-03 timer/catch-up policy;
+- normalized authoritative input facts it may consume;
+- deterministic arithmetic/tie-break/RNG semantics under SIM;
+- GAME-CHANNEL multiplicity/eligibility consequences for value-producing sources;
+- recovery/checkpoint semantics;
+- hard resource limits and overload disposition.
+
+Analytics/Game Intelligence output MUST NOT directly change population authority. A human-reviewed future policy revision MAY use analytics evidence as design input, but live runtime mutation still requires an accepted versioned policy and ordinary authoritative inputs.
+
+For Reference, adaptive population/ecology behavior MUST remain disabled/unclaimed unless target evidence proves the exercised behavior. For Evolved, an adaptive policy MAY be an explicit declared difference, but it retains the same deterministic, bounded, provenance and anti-duplication requirements.
+
+## 15. Spawn/AI recovery classes
 
 Every source/encounter whose process-failure behavior can affect gameplay/value MUST choose an explicit recovery class:
 
@@ -311,7 +330,7 @@ A named event/world owner persists semantic occurrence/eligibility and local AI 
 
 A high-impact or value-producing source MUST NOT silently default to ephemeral reset when that can duplicate or erase semantic eligibility.
 
-## 15. Deterministic state and recovery
+## 16. Deterministic state and recovery
 
 AI/spawn state that can change a future authoritative result without a new external normalized fact MUST be represented in SIM deterministic state/checkpoint/replay evidence.
 
@@ -329,7 +348,7 @@ This includes, as applicable:
 
 Derived route caches MAY be recomputed after recovery only when the deterministic search/profile plus retained semantic inputs guarantee equivalent normalized result. Old-generation worker results are always stale.
 
-## 16. Gameplay RNG
+## 17. Gameplay RNG
 
 AI/spawn gameplay randomness MUST comply with SIM:
 
@@ -342,7 +361,7 @@ AI/spawn gameplay randomness MUST comply with SIM:
 
 Random placement/selection, when a profile actually defines it, MUST have stable decision identity and bounded candidate space. This contract does not claim any Reference AI/spawn decision is random without evidence.
 
-## 17. Controlled actors: summons and pets
+## 18. Controlled actors: summons and pets
 
 A summon/pet remains a server-authoritative runtime actor owned by its current Channel/Instance simulation.
 
@@ -352,19 +371,19 @@ Controlled actors MUST retain enough controller/principal provenance for downstr
 
 Exact ownership persistence, summon lifetime, command vocabulary, XP/loot attribution and despawn rules remain downstream/profile-owned.
 
-## 18. NPC-local AI
+## 19. NPC-local AI
 
 NPC idle/movement/perception MAY reuse the bounded FSM/pathing kernel.
 
 Dialogue, trade, quest, bank, economy or other durable business semantics MUST remain with their owning domains. Scripted interaction uses DUR-04 proposal semantics and cannot obtain ambient database/network/global-game authority.
 
-## 19. Boss/encounter composition
+## 20. Boss/encounter composition
 
 Actor-local phase state MAY reside in the actor FSM only when its semantic scope is genuinely actor-local.
 
 Multi-actor objectives, world events, durable encounter occurrence, shared eligibility and reward settlement require a named encounter/event owner. GAME-AI consumes typed phase/occurrence facts and emits bounded actor intents; it MUST NOT invent cross-owner atomicity.
 
-## 20. Combat/action boundary
+## 21. Combat/action boundary
 
 GAME-AI MAY select a typed action/ability intent. It MUST NOT directly:
 
@@ -376,7 +395,7 @@ GAME-AI MAY select a typed action/ability intent. It MUST NOT directly:
 
 The downstream authoritative domain validates/commits/rejects the intent under its accepted semantics. AI consumes the typed outcome as a later/current owner input according to that domain contract.
 
-## 21. Loot, XP and reward boundary
+## 22. Loot, XP and reward boundary
 
 GAME-AI MUST NOT mint item instances, currency, XP or reward eligibility directly.
 
@@ -393,7 +412,7 @@ Where one AI-controlled source can produce durable value, the composed system MU
 
 Exact reward formulas/thresholds/transaction identities are foreign-domain decisions.
 
-## 22. Overload semantics
+## 23. Overload semantics
 
 GAME-AI MUST preserve FND-03 owner/control progress under overload.
 
@@ -409,7 +428,7 @@ At minimum:
 - best-effort precomputation may drop/coalesce only when outcome-equivalent;
 - overload policy cannot silently create an undocumented Reference/Evolved behavior change.
 
-## 23. Mandatory resource-limit dimensions
+## 24. Mandatory resource-limit dimensions
 
 Concrete numeric ceilings are intentionally not guessed here. Before implementation acceptance, the shared resource-limit registry or an accepted superseding machine-readable registry MUST contain hard maxima, units, failure categories, rationale and boundary tests for at least:
 
@@ -425,13 +444,14 @@ Concrete numeric ceilings are intentionally not guessed here. Before implementat
 10. repath/retry work over a bounded semantic window;
 11. spawn sources/controllers per scope;
 12. spawn population and placement candidates/attempts;
-13. controlled-actor command backlog;
-14. inherited script fuel/memory/host-call/query/proposal bounds;
-15. replay/diagnostic volume where amplification-prone.
+13. dynamic population-policy evaluations/changes per scope/window where enabled;
+14. controlled-actor command backlog;
+15. inherited script fuel/memory/host-call/query/proposal bounds;
+16. replay/diagnostic volume where amplification-prone.
 
 Absent required limits block executable `GAME-AI-01` implementation acceptance.
 
-## 24. Fail-closed matrix
+## 25. Fail-closed matrix
 
 | Condition | Required result |
 |---|---|
@@ -448,9 +468,10 @@ Absent required limits block executable `GAME-AI-01` implementation acceptance.
 | ownership generation changed | old work/timers cannot publish authority |
 | missing future-determining recovery state | no claim of equivalent recovery until fail-closed reconciliation |
 | missing value-source multiplicity/eligibility | block source activation |
+| dynamic population policy missing bounds/provenance | block adaptive behavior; no implicit heuristic fallback |
 | Reference behavior `UNKNOWN/CONFLICT/PENDING` | no `PARITY_CONFIRMED` claim and no guessed Reference enablement |
 
-## 25. Reference/Evolved contract
+## 26. Reference/Evolved contract
 
 One engine MUST support both profiles without forks.
 
@@ -463,11 +484,11 @@ One engine MUST support both profiles without forks.
 
 ### Evolved
 
-- MAY intentionally use different versioned behavior/path/spawn policies;
+- MAY intentionally use different versioned behavior/path/spawn/population policies;
 - each intentional difference MUST be explicit, reviewable and revision-bound;
 - Evolved MUST preserve the same authority, deterministic replay, bounded resource, provenance and anti-duplication invariants.
 
-## 26. Required acceptance evidence for a future implementation
+## 27. Required acceptance evidence for a future implementation
 
 An implementation cannot claim this gate until tests/evidence prove at least:
 
@@ -484,15 +505,16 @@ An implementation cannot claim this gate until tests/evidence prove at least:
 11. actor despawn/recycled-slot safety with in-flight path work;
 12. bounded deterministic spawn placement/occupancy fallback;
 13. value-source activation failure when multiplicity/eligibility is absent;
-14. recovery fences old owner and reconstructs one semantic occurrence;
-15. deterministic replay/state-hash continuity for future-determining AI/spawn state;
-16. controlled-actor command remains a request, not client authority;
-17. controlled-actor attribution cannot create duplicate reward through duplicate representation;
-18. overload preserves owner control/fencing serviceability and hard queue bounds;
-19. Reference unknown/pending fixture cannot be promoted to parity by implementation convenience;
-20. incompatible immutable revision activation fails closed.
+14. dynamic population policy cannot exceed declared bounds or change from analytics feedback without a versioned policy revision;
+15. recovery fences old owner and reconstructs one semantic occurrence;
+16. deterministic replay/state-hash continuity for future-determining AI/spawn state;
+17. controlled-actor command remains a request, not client authority;
+18. controlled-actor attribution cannot create duplicate reward through duplicate representation;
+19. overload preserves owner control/fencing serviceability and hard queue bounds;
+20. Reference unknown/pending fixture cannot be promoted to parity by implementation convenience;
+21. incompatible immutable revision activation fails closed.
 
-## 27. Explicitly unresolved decisions
+## 28. Explicitly unresolved decisions
 
 The candidate intentionally leaves unresolved until the owning evidence/implementation gate:
 
@@ -500,6 +522,7 @@ The candidate intentionally leaves unresolved until the owning evidence/implemen
 - exact path algorithm and library;
 - exact Reference movement/path cost/tie/corner/obstacle behavior;
 - exact spawn count/timer/occupancy/recovery values;
+- exact dynamic ecology/population behavior, if any, for Reference;
 - exact summon/pet command, persistence and reward rules;
 - exact NPC interaction behavior;
 - exact boss/world-event occurrence ownership APIs;
@@ -510,7 +533,7 @@ The candidate intentionally leaves unresolved until the owning evidence/implemen
 
 These unknowns do not authorize permissive defaults.
 
-## 28. Cross-domain findings — report only
+## 29. Cross-domain findings — report only
 
 - `CROSS_DOMAIN_FINDING / REPORT_ONLY — GAME-ABILITY`: provide/confirm a stable typed AI action-intent and rejection boundary during whole-gate reconciliation.
 - `CROSS_DOMAIN_FINDING / REPORT_ONLY — GAME-INTERACTION`: define normalized route invalidation/door/teleport/environment interaction facts without moving interaction authority into AI.
@@ -519,7 +542,7 @@ These unknowns do not authorize permissive defaults.
 - `CROSS_DOMAIN_FINDING / REPORT_ONLY — RESOURCE LIMITS`: register concrete AI/path/spawn hard maxima before implementation acceptance.
 - `CROSS_DOMAIN_FINDING / REPORT_ONLY — ANL`: define any durable AI-decision evidence schema/retention through ANL rather than a parallel AI audit system.
 
-## 29. Acceptance matrix for coordinator audit
+## 30. Acceptance matrix for coordinator audit
 
 | Requirement | Candidate disposition | Status |
 |---|---|---|
@@ -530,6 +553,7 @@ These unknowns do not authorize permissive defaults.
 | leash/reset | optional typed bounded policy; foreign mutations routed to owners | `PROPOSED` |
 | pathing | auxiliary proposal, deterministic profile, cancellation/stale rejection | `PROPOSED` |
 | spawn/population/respawn/occupancy | immutable content, finite placement, explicit recovery class | `PROPOSED` |
+| dynamic population/ecology | versioned bounded policy only; no analytics-directed live mutation | `PROPOSED` |
 | channel/world source scope | GAME-CHANNEL multiplicity/eligibility preserved | `PROPOSED` |
 | boss/encounter extension | actor-local only unless named event/encounter owner | `PROPOSED` |
 | controlled actor attribution | validated principal provenance; exact reward rules downstream | `PROPOSED` |
@@ -538,9 +562,11 @@ These unknowns do not authorize permissive defaults.
 | Reference/Evolved mapping | common invariants + fail-closed Reference evidence gaps | `PROPOSED` |
 | runtime implementation | none authorized | `NOT_STARTED` |
 
-## 30. Candidate conclusion
+## 31. Candidate conclusion
 
 This candidate chooses the smallest explicit execution model that satisfies current Oteryn authority, determinism, content, multichannel and safety contracts: bounded FSMs inside the current runtime owner, with pathfinding and optional scripts restricted to revalidated proposals.
+
+Dynamic population/ecology is permitted only through explicit bounded versioned policy and can never become a direct analytics-to-runtime control loop.
 
 No executable implementation, framework/library choice, numeric limit or unproven Reference mechanic is authorized by this document.
 
