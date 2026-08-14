@@ -4,18 +4,18 @@
 task_id: OTV2-20260815-game-ai-architecture
 title: Design GAME-AI-01 creature AI, spawn and pathfinding architecture
 mode: CONTRACT
-status: implementing
+status: validating
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: docs/arch-c-game-ai
-pr: null
+pr: 272
 base_sha: 088b46638ac014cd7928d6b0b75cee44902fe22c
-head_sha: null
+head_sha: b4924278f543325007356b2e2b52ca0d0d0fc966
 final_head_sha: null
 final_head_frozen_at: null
 owner: DOMAIN ARCHITECTURE DESIGN AGENT / worker C
 created_at: 2026-08-15T00:18:00+02:00
-updated_at: 2026-08-15T00:18:00+02:00
+updated_at: 2026-08-15T00:28:02+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -44,10 +44,11 @@ Produce a bounded noncanonical worker proposal for `GAME-AI-01` that:
 - selects an explicit bounded behavior execution model;
 - defines deterministic aggro/target/memory and pathfinding boundaries without inventing Reference tuning;
 - binds spawn/template/content provenance and recovery semantics;
+- permits dynamic population/ecology only through explicit bounded versioned policy;
 - preserves GAME-CHANNEL value-source multiplicity/eligibility;
 - separates AI intent from combat, interaction, reward/value and persistence owners;
 - defines resource-limit dimensions, failure/recovery cases and Reference/Evolved acceptance requirements;
-- ends as a draft PR for Architecture Coordinator audit only.
+- ends as draft PR `#272` for Architecture Coordinator audit only.
 
 `MERGE_AUTHORITY: ARCHITECTURE_COORDINATOR_ONLY`
 
@@ -70,10 +71,11 @@ Produce a bounded noncanonical worker proposal for `GAME-AI-01` that:
 - A typed bounded FSM is the smallest current execution model that makes transition bounds, deterministic replay and failure isolation explicit while permitting bounded DUR-04 proposal leaves.
 - Pathfinding must remain auxiliary proposal work with generation/revision/goal revalidation before route adoption.
 - Future-determining AI/spawn state must participate in SIM deterministic state/replay evidence.
+- Dynamic population/ecology cannot be a hidden runtime/analytics feedback loop; any such behavior requires an immutable versioned bounded policy and ordinary authoritative inputs.
 
 ### UNKNOWN
 
-Exact Reference perception, aggro/threat, retarget, leash/reset, path preference, spawn/respawn/occupancy, summon/pet command/reward, NPC movement coupling and boss recovery semantics remain evidence-gated.
+Exact Reference perception, aggro/threat, retarget, leash/reset, path preference, spawn/respawn/occupancy, dynamic ecology/population behavior, summon/pet command/reward, NPC movement coupling and boss recovery semantics remain evidence-gated.
 
 ## Acceptance criteria
 
@@ -82,6 +84,7 @@ Exact Reference perception, aggro/threat, retarget, leash/reset, path preference
 - [x] Perception/aggro/threat/target/memory pipeline is deterministic and bounded without invented Reference tuning.
 - [x] Pathfinding request/result/cancellation/stale-rejection semantics preserve FND-03 owner authority.
 - [x] Spawn/template/source provenance and finite occupancy/respawn/recovery classes are explicit.
+- [x] Dynamic population/ecology requires an explicit bounded versioned policy and cannot be directly analytics-controlled.
 - [x] GAME-CHANNEL multiplicity/eligibility is preserved for value-producing sources.
 - [x] Controlled actor and NPC boundaries preserve server authority and foreign business owners.
 - [x] Loot/XP/reward abuse boundary prevents direct AI value mutation and records downstream ownership.
@@ -89,9 +92,9 @@ Exact Reference perception, aggro/threat, retarget, leash/reset, path preference
 - [x] Failure/recovery matrix and deterministic future acceptance scenarios are present.
 - [x] Reference/Evolved mapping separates shared engine invariants from evidence/profile policy.
 - [x] Cross-domain findings are `REPORT_ONLY` and no foreign architecture file is edited.
-- [ ] Draft PR created and exact changed-file scope verified.
+- [x] Draft PR `#272` created and changed-file scope verified as exactly the three worker-owned paths.
 - [ ] Exact-head repository governance/architecture CI result inspected.
-- [ ] Final self-review completed on exact handoff head.
+- [ ] Final exact-head self-review/evidence recorded in immutable PR evidence after the final task-metadata commit.
 
 ## Excluded scope
 
@@ -115,7 +118,8 @@ This worker task MUST NOT:
 5. Selected typed bounded FSM for v1 semantic behavior; runtime behavior tree is deferred and direct authoritative script mutation rejected.
 6. Defined pathfinding as bounded auxiliary proposal work with deterministic search profile and owner revalidation.
 7. Defined immutable actor/template/spawn provenance, explicit spawn recovery classes and GAME-CHANNEL multiplicity gates.
-8. Recorded foreign combat/interaction/reward/event/resource-limit/ANL needs only as `CROSS_DOMAIN_FINDING / REPORT_ONLY`.
+8. Self-review found the horizon's dynamic population/ecology requirement was not explicit enough in the first candidate draft; repaired on semantic checkpoint `b4924278f543325007356b2e2b52ca0d0d0fc966` by requiring immutable/versioned bounded population policy and prohibiting direct analytics-to-runtime feedback.
+9. Recorded foreign combat/interaction/reward/event/resource-limit/ANL needs only as `CROSS_DOMAIN_FINDING / REPORT_ONLY`.
 
 ### CROSS_DOMAIN_FINDING / REPORT_ONLY
 
@@ -131,7 +135,9 @@ This worker task MUST NOT:
 ### Focused
 
 - command/run: direct repository inspection through GitHub connector against `docs/arch-c-game-ai` and trusted base
-- result: `PASS` for branch/base ownership and owned-path discipline before writes
+- result: `PASS` for branch/base ownership before writes
+- command/run: PR `#272` changed-file enumeration
+- result: `PASS` — exactly three worker-owned paths; zero forbidden/global/foreign paths
 
 ### Component/integration
 
@@ -147,8 +153,8 @@ This worker task MUST NOT:
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending draft PR
+- final head: pending; by repository task discipline the commit cannot contain its own SHA, so exact final-head result will be recorded in immutable PR/check evidence
+- trigger source: draft PR `#272`
 - workflow/run/job: pending
 - runner assignment: pending
 - classification: repository-hosted validation required because local checkout is network-blocked
@@ -156,23 +162,23 @@ This worker task MUST NOT:
 
 ## Self-review
 
-- exact head: pending
+- semantic checkpoint: `b4924278f543325007356b2e2b52ca0d0d0fc966`
 - method/reviewer: implementing DOMAIN ARCHITECTURE DESIGN AGENT / worker C
-- material findings: pending
-- verdict: pending
+- material findings: one bounded-completeness gap found — dynamic population/ecology policy was implicit; repaired before handoff metadata freeze
+- verdict: `PASS` for semantic package at that checkpoint; exact final-head task-metadata-only delta must still be inspected and recorded in PR evidence
 
 ## Independent review
 
 - required: `YES` — Architecture Coordinator audit is mandatory by issue/work-allocation merge authority
-- exact head: pending
-- method/auditor: Architecture Coordinator via draft PR
-- material findings: pending
-- verdict: pending
+- exact head: to be supplied by immutable PR/check evidence after this final task-metadata update
+- method/auditor: Architecture Coordinator via draft PR `#272`
+- material findings: pending coordinator audit
+- verdict: pending coordinator audit
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: `PASS` — exactly three allocated paths in draft PR `#272`
+- unresolved review threads: to be checked on final head before worker handoff
 - related/superseded PRs: none identified at startup for this worker scope
 - protected auto-merge: prohibited/not requested
 - merge commit/result: `NOT_PERMITTED_FOR_WORKER`
@@ -181,15 +187,15 @@ This worker task MUST NOT:
 ## Context checkpoint
 
 ```yaml
-last_progress: GAME-AI analysis and contract candidate authored on the activated worker lane
-status: implementing
+last_progress: draft PR #272 created; semantic self-review repaired dynamic population/ecology boundary
+status: validating
 branch: docs/arch-c-game-ai
-head_sha: null
-pr: null
+head_sha: b4924278f543325007356b2e2b52ca0d0d0fc966
+pr: 272
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+ci_trigger_source: draft-pr-272
+ci_check_generation: pending-final-head
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -198,10 +204,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: null
-next_action: create draft PR, update handoff metadata once, then validate exact final head without lifecycle closeout
+blocker: local checkout unavailable; exact-head GitHub Actions validation required
+next_action: inspect the final PR head/diff, self-review it, then inspect exact-head Actions results and record immutable PR handoff evidence without merging or lifecycle closeout
 ```
