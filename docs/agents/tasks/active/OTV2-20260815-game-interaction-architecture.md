@@ -10,12 +10,12 @@ base_branch: main
 branch: docs/arch-d-game-interaction
 pr: 269
 base_sha: 088b46638ac014cd7928d6b0b75cee44902fe22c
-head_sha: c0b064a16dc8b47d529d7a1679d4438fea9acfe0
+head_sha: 62c2a498770337b45bea74ef4ad9de4e7023489a
 final_head_sha: null
 final_head_frozen_at: null
 owner: DOMAIN_ARCHITECTURE_DESIGN_AGENT_D
 created_at: 2026-08-15T00:18:00+02:00
-updated_at: 2026-08-15T00:38:00+02:00
+updated_at: 2026-08-15T00:40:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260815-game-interaction-architecture.md
@@ -124,25 +124,28 @@ A local checkout-based repository validator could not be executed in the current
 
 ### Exact-head CI
 
-The first exact-head generation on `c0b064a16dc8b47d529d7a1679d4438fea9acfe0` produced:
+The first inspected generation on `c0b064a16dc8b47d529d7a1679d4438fea9acfe0` produced `Merge authority audit` success and `Agent governance` failure in `Verify pull request target and metadata` before checkout. Repository workflow inspection established the machine contract:
 
-- `Merge authority audit` run `31847103092` — `SUCCESS`;
-- `Agent governance` run `31847103148` — `FAILURE` in the metadata pre-check before checkout;
-- `Merge gate` run `31847103088` — queued in the observed generation.
+- PR head must be same-repository and target `main`;
+- title must follow conventional `type(scope): summary` and be at most 72 characters;
+- body must contain exact headings `## Summary`, `## Scope`, `## Validation`.
 
-Root cause was deterministic and non-architectural: `.github/workflows/agent-governance.yml` requires exact PR body headings `## Summary`, `## Scope` and `## Validation`, while the initial worker handoff body used uppercase variants and `## OWNED_PATHS`. The PR body was repaired to the workflow-required headings **without moving the branch head**.
+The initial worker PR body violated the heading shape and the initial PR title was 74 characters. The body is now repaired and the title is now `docs(architecture): propose GAME-INTERACTION-01 interaction contract` (68 characters).
 
-This task-record update is a material CI bookkeeping repair that records the failure/root cause and intentionally creates a new `synchronize` head so ordinary pull-request workflows consume the corrected current PR metadata. Final exact-head results must be recorded in GitHub checks/a PR checkpoint comment rather than by another file edit.
+The intermediate `62c2a498770337b45bea74ef4ad9de4e7023489a` synchronize generation was created after the heading repair but before discovery/correction of the 72-character title constraint, so it is not eligible as final evidence even if other jobs progress.
+
+This task-record update is the final material PR-metadata repair checkpoint and intentionally creates a fresh `synchronize` event with both current body headings and the corrected title. Final exact-head results must be recorded in GitHub checks/a PR checkpoint comment rather than by another file edit.
 
 ## Self-review
 
-Full worker diff review identified and repaired these handoff findings before final validation:
+Full worker review identified and repaired these handoff findings before final validation:
 
 1. task metadata initially had `pr: null` and an authoring-stage checkpoint;
 2. the analysis header initially used descriptive `PROPOSED ANALYSIS` rather than canonical `DecisionStatus: PROPOSED`;
-3. the PR body initially did not satisfy the workflow's case-sensitive/shape-sensitive `## Summary`, `## Scope`, `## Validation` metadata contract; the body is now repaired.
+3. the PR body initially did not satisfy the workflow-required exact `## Summary`, `## Scope`, `## Validation` headings;
+4. the initial PR title was 74 characters while the repository workflow enforces a 72-character maximum; the title is now 68 characters and still follows the conventional-title regex.
 
-No open material architecture finding was identified. Final unchanged-head review must confirm this after the current CI-repair checkpoint commit.
+No open material architecture finding was identified. Final unchanged-head review must confirm this after the current title-metadata repair checkpoint commit.
 
 Explicitly checked:
 
@@ -170,28 +173,27 @@ Worker closeout is limited to `INTEGRATION_READY — DRAFT PR — COORDINATOR AC
 ## Context checkpoint
 
 ```yaml
-last_progress: GAME-INTERACTION-01 analysis/candidate are complete; pre-freeze metadata/status findings are repaired. Exact-head CI on c0b064a16dc8b47d529d7a1679d4438fea9acfe0 exposed a PR metadata-heading mismatch before checkout; the PR body is corrected and this material task checkpoint triggers a fresh ordinary synchronize generation for the corrected metadata.
+last_progress: GAME-INTERACTION-01 analysis/candidate are complete. Governance self-review and exact-head pre-checking exposed task PR metadata, canonical DecisionStatus, required PR-body heading, and PR-title-length defects; all are repaired. This checkpoint triggers a fresh ordinary synchronize generation with the corrected 68-character title and exact required headings.
 status: ready
 branch: docs/arch-d-game-interaction
-head_sha: c0b064a16dc8b47d529d7a1679d4438fea9acfe0
+head_sha: 62c2a498770337b45bea74ef4ad9de4e7023489a
 pr: 269
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: metadata-repair-synchronize-pending
+ci_check_generation: final-metadata-repair-synchronize-pending
 ci_checks_for_current_head: 3
 ci_run_ids:
-  - 31847103148
-  - 31847103092
-  - 31847103088
-ci_job_ids:
-  - 94915672726
+  - 31847260261
+  - 31847260442
+  - 31847260430
+ci_job_ids: []
 runner_assignment_state: assigned-on-prior-generation
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 2
+unchanged_state_checks: 1
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
+repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: false
