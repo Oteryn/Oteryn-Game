@@ -11,8 +11,8 @@
 - Platform entitlement producer-remediation merge: `blakinio/Oteryn-Platform@afaa6d1d8340e44b1152b62d6d27e5fd1649804a`
 - DUR-04 delivery merge: `568236c33cd23da017bca1dbd1ed98afc8da71f4`
 - SIM-DETERMINISM delivery merge: `1e16b32069868f14aa1761a512b6cd8b1024e277`
-- Reference evidence manifest v1 acceptance delivery: PR #252
-- Current phase: `foundation/game/content/determinism architecture accepted/lifecycle-closed where delivered + Reference evidence/parity manifest v1 accepted/pinned while its delivery lifecycle remains open; runtime largely NOT_STARTED; all executable runtime/DDL/production work still requires separate explicit owner authority; the selected next paper-only programme action after lifecycle closeout is the first reviewed representative ABILITY_COMBAT mechanic evidence/parity case + fixture package`
+- Reference evidence manifest v1 acceptance delivery: PR #252 / merge `52ef65f67e8a0e9c6f31d4754f8a6b7322d8d6d8`
+- Current phase: `foundation/game/content/determinism architecture accepted/lifecycle-closed where delivered + Reference evidence/parity manifest v1 accepted/pinned/lifecycle-closed; runtime largely NOT_STARTED; all executable runtime/DDL/production work still requires separate explicit owner authority; the selected next paper-only programme action is the first reviewed representative ABILITY_COMBAT mechanic evidence/parity case + fixture package`
 
 ## 1. Authority of this overlay
 
@@ -170,7 +170,7 @@ The native client therefore remains legitimately pre-native-protocol until a sep
 
 ## 8. Next ordered architecture and proof work
 
-Whole `DUR-02 — Persistence v1`, `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` architecture are accepted/lifecycle-closed while implementation remains `NOT_STARTED`. Reference evidence/parity manifest v1 is accepted/pinned as a paper registry while its delivery task remains open until lifecycle closeout. A **separately authorized server/persistence/content foundation implementation programme** may consume accepted common scopes, but architecture acceptance does not itself grant that authority.
+Whole `DUR-02 — Persistence v1`, `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` architecture are accepted/lifecycle-closed while implementation remains `NOT_STARTED`. Reference evidence/parity manifest v1 is accepted/pinned/lifecycle-closed as a paper registry. A **separately authorized server/persistence/content foundation implementation programme** may consume accepted common scopes, but architecture acceptance does not itself grant that authority.
 
 `REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` freezes schema version 1, manifest revision 2 with `status=ACCEPTED`, the immutable 2026-07-28 first Reference target and fail-closed evidence/provenance policy. `cases=[]`, all nine domains remain `NO_MECHANIC_CASES_REGISTERED`, and `canonical_digest=null` remains truthful until accepted digest tooling exists. The registry must not be rebuilt or duplicated.
 
@@ -257,7 +257,7 @@ SIM-DETERMINISM-01
 -> exact formulas/libraries/runtime NOT_AUTHORIZED
 
 Reference evidence/parity manifest v1
--> ACCEPTED / delivery lifecycle OPEN until task closeout
+-> ACCEPTED / LIFECYCLE_CLOSED
 -> schema version 1 pinned; manifest revision 2 ACCEPTED
 -> cases empty; all nine domains fail-closed
 -> canonical_digest null until accepted tooling exists
