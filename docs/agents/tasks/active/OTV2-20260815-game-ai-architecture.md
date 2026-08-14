@@ -10,12 +10,12 @@ base_branch: main
 branch: docs/arch-c-game-ai
 pr: 272
 base_sha: 088b46638ac014cd7928d6b0b75cee44902fe22c
-head_sha: b4924278f543325007356b2e2b52ca0d0d0fc966
+head_sha: b074293f0127c27028858b3b880b653d2c5f1683
 final_head_sha: null
 final_head_frozen_at: null
 owner: DOMAIN ARCHITECTURE DESIGN AGENT / worker C
 created_at: 2026-08-15T00:18:00+02:00
-updated_at: 2026-08-15T00:28:02+02:00
+updated_at: 2026-08-15T00:29:18+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -91,10 +91,11 @@ Exact Reference perception, aggro/threat, retarget, leash/reset, path preference
 - [x] Resource-limit dimensions are enumerated without inventing benchmark-sensitive numbers.
 - [x] Failure/recovery matrix and deterministic future acceptance scenarios are present.
 - [x] Reference/Evolved mapping separates shared engine invariants from evidence/profile policy.
+- [x] Required worker handoff markers `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS` are present in the owned task record.
 - [x] Cross-domain findings are `REPORT_ONLY` and no foreign architecture file is edited.
 - [x] Draft PR `#272` created and changed-file scope verified as exactly the three worker-owned paths.
 - [ ] Exact-head repository governance/architecture CI result inspected.
-- [ ] Final exact-head self-review/evidence recorded in immutable PR evidence after the final task-metadata commit.
+- [ ] Final exact-head self-review/evidence recorded in immutable PR evidence after this final task-metadata commit.
 
 ## Excluded scope
 
@@ -109,6 +110,23 @@ This worker task MUST NOT:
 - claim `DecisionStatus=ACCEPTED`, canonicality, lifecycle closeout or runtime implementation;
 - merge, enable auto-merge or archive this task record.
 
+## DECISIONS_NOT_TAKEN
+
+The worker deliberately does **not** decide or authorize:
+
+- a concrete Rust AI, behavior-tree or pathfinding library/framework;
+- a concrete pathfinding algorithm or physical navigation representation;
+- numeric AI/path/spawn resource ceilings without implementation evidence;
+- physical AI/spawn content serializer/schema beyond DUR-04 semantic requirements;
+- exact Reference perception, aggro/threat, retarget, memory, leash/reset, path-preference, spawn/respawn/occupancy or dynamic-ecology rules where evidence is absent;
+- exact summon/pet command vocabulary, persistence, despawn, XP or loot attribution;
+- exact NPC business/quest/trade semantics;
+- exact boss/world-event durable occurrence/eligibility owner APIs;
+- exact reward contribution/settlement rules;
+- runtime implementation, production activation, canonical acceptance, merge or lifecycle closeout.
+
+These are explicit non-decisions, not permissive defaults.
+
 ## Implementation / findings
 
 1. Verified branch head before writes exactly matched coordinator trusted base `088b46638ac014cd7928d6b0b75cee44902fe22c`.
@@ -119,9 +137,11 @@ This worker task MUST NOT:
 6. Defined pathfinding as bounded auxiliary proposal work with deterministic search profile and owner revalidation.
 7. Defined immutable actor/template/spawn provenance, explicit spawn recovery classes and GAME-CHANNEL multiplicity gates.
 8. Self-review found the horizon's dynamic population/ecology requirement was not explicit enough in the first candidate draft; repaired on semantic checkpoint `b4924278f543325007356b2e2b52ca0d0d0fc966` by requiring immutable/versioned bounded population policy and prohibiting direct analytics-to-runtime feedback.
-9. Recorded foreign combat/interaction/reward/event/resource-limit/ANL needs only as `CROSS_DOMAIN_FINDING / REPORT_ONLY`.
+9. Work-allocation self-review found the required literal handoff markers were semantically present but not canonically named; repaired in this task-metadata commit without changing foreign scope.
 
-### CROSS_DOMAIN_FINDING / REPORT_ONLY
+## CROSS_DOMAIN_FINDINGS
+
+Disposition for every item below: `CROSS_DOMAIN_FINDING / REPORT_ONLY`.
 
 - GAME-ABILITY: typed AI action-intent/rejection boundary should be preserved/confirmed by whole-gate reconciliation.
 - GAME-INTERACTION: route invalidation and door/teleport/environment facts need a typed normalized boundary.
@@ -138,6 +158,8 @@ This worker task MUST NOT:
 - result: `PASS` for branch/base ownership before writes
 - command/run: PR `#272` changed-file enumeration
 - result: `PASS` — exactly three worker-owned paths; zero forbidden/global/foreign paths
+- command/run: full work-allocation handoff-minimum review
+- result: first pass found missing canonical literal marker names; repaired before final exact-head CI
 
 ### Component/integration
 
@@ -163,9 +185,10 @@ This worker task MUST NOT:
 ## Self-review
 
 - semantic checkpoint: `b4924278f543325007356b2e2b52ca0d0d0fc966`
+- work-allocation checkpoint before final marker repair: `b074293f0127c27028858b3b880b653d2c5f1683`
 - method/reviewer: implementing DOMAIN ARCHITECTURE DESIGN AGENT / worker C
-- material findings: one bounded-completeness gap found — dynamic population/ecology policy was implicit; repaired before handoff metadata freeze
-- verdict: `PASS` for semantic package at that checkpoint; exact final-head task-metadata-only delta must still be inspected and recorded in PR evidence
+- material findings: (1) dynamic population/ecology policy was implicit; repaired; (2) canonical handoff marker names were absent; repaired in final task-metadata commit
+- verdict: semantic/work-allocation repairs complete; exact final-head diff/CI must still be inspected and recorded in immutable PR evidence
 
 ## Independent review
 
@@ -187,10 +210,10 @@ This worker task MUST NOT:
 ## Context checkpoint
 
 ```yaml
-last_progress: draft PR #272 created; semantic self-review repaired dynamic population/ecology boundary
+last_progress: work-allocation handoff markers repaired after semantic package self-review
 status: validating
 branch: docs/arch-c-game-ai
-head_sha: b4924278f543325007356b2e2b52ca0d0d0fc966
+head_sha: b074293f0127c27028858b3b880b653d2c5f1683
 pr: 272
 final_head_sha: null
 final_head_frozen_at: null
@@ -204,7 +227,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
