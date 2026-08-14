@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "manifest_revision": 1,
+  "manifest_revision": 2,
   "canonical_digest": null,
-  "status": "CANDIDATE_NOT_ACCEPTED",
+  "status": "ACCEPTED",
   "reference_target": {
     "id": "global-tibia-observable-2026-07-28-post-server-save",
     "title": "Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary",
@@ -110,6 +110,7 @@
     "docs/architecture/GAME-ITEM-01_ITEM_MODEL_AND_EQUIPMENT_CONTRACT.md",
     "docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md",
     "docs/architecture/REFERENCE_EVIDENCE_PARITY_MANIFEST_CONTRACT.md",
+    "docs/architecture/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md",
     "docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.schema.json"
   ],
   "change_history": [
@@ -118,6 +119,12 @@
       "date": "2026-08-13",
       "summary": "Register immutable first Reference target, evidence/parity vocabulary, fail-closed policy and empty domain coverage inventory including Economy.",
       "issue": "#219"
+    },
+    {
+      "manifest_revision": 2,
+      "date": "2026-08-14",
+      "summary": "Accept and pin schema v1 plus manifest revision 2 for the immutable first Reference target without adding mechanic cases or parity promotion; canonical digest remains null until accepted tooling exists.",
+      "issue": "#251"
     }
   ]
 }
