@@ -4,18 +4,18 @@
 task_id: OTV2-20260815-game-ai-architecture
 title: Design GAME-AI-01 creature AI, spawn and pathfinding architecture
 mode: CONTRACT
-status: validating
+status: ready
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: docs/arch-c-game-ai
 pr: 272
 base_sha: 088b46638ac014cd7928d6b0b75cee44902fe22c
-head_sha: cc2f258412bdc9868f9764c8e3c57921f9fa1f8c
+head_sha: 1f5f21d28d56aef00dc781a196a50ac4dc0dc883
 final_head_sha: null
 final_head_frozen_at: null
 owner: DOMAIN ARCHITECTURE DESIGN AGENT / worker C
 created_at: 2026-08-15T00:18:00+02:00
-updated_at: 2026-08-15T00:32:00+02:00
+updated_at: 2026-08-15T00:34:20+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -31,14 +31,15 @@ depends_on:
   - SIM-DETERMINISM-01
   - GAME-ABILITY-01 accepted partial baselines
   - GAME-VISION-01 first Reference target/evidence discipline
-blocks: []
-cross_repository_coordination_id: OTV2-GAME-AI-01
+blocks:
+  - Architecture Coordinator audit of draft PR #272
+cross_repository_coordination_id: null
 external_repositories: []
 ```
 
 ## Outcome
 
-Produce a bounded noncanonical worker proposal for `GAME-AI-01` that:
+Deliver a bounded noncanonical worker proposal for `GAME-AI-01` that:
 
 - keeps creature/spawn/AI mutation inside the current authoritative Channel/Instance owner;
 - selects an explicit bounded behavior execution model;
@@ -56,14 +57,15 @@ Produce a bounded noncanonical worker proposal for `GAME-AI-01` that:
 
 ### PROVEN
 
-- Issue `#261` allocates worker C to `GAME-AI-01` and forbids runtime implementation, foreign-domain edits, global overlays, AI library selection without evidence and self-merge/lifecycle closeout.
-- Coordinator activation comment binds the lane to trusted base `main@088b46638ac014cd7928d6b0b75cee44902fe22c` on `docs/arch-c-game-ai`.
+- Issue `#261` allocates worker C to `GAME-AI-01` and forbids runtime implementation, foreign-domain edits, global overlays, unsupported AI-library selection and worker merge/lifecycle closeout.
+- Coordinator activation binds the lane to trusted base `main@088b46638ac014cd7928d6b0b75cee44902fe22c` on `docs/arch-c-game-ai`.
 - `FND-03_RUNTIME_EXECUTION_CONTRACT.md` assigns channel-local creatures/spawns/AI to `ChannelRuntime`, instance-local creatures to `InstanceRuntime`, and auxiliary pathfinding/AI work to proposal + owner revalidation semantics.
 - `GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md` requires explicit value-source multiplicity/eligibility and forbids treating runtime Channel locality as automatic reward repeatability.
 - `DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md` supplies immutable content/World Bundle provenance and proposal-only bounded script semantics.
 - `SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md` supplies revision binding, deterministic RNG/tie-break/order/replay/state-hash semantics.
-- accepted partial GAME-ABILITY baselines retain targeting/cast/cooldown/effect ownership; whole-gate GAME-ABILITY remains sibling/coordinator work.
-- GAME-VISION first Reference target/evidence discipline forbids guessing unknown target behavior from OTS/current-live implementation similarity.
+- Accepted partial GAME-ABILITY baselines retain targeting/cast/cooldown/effect ownership; whole-gate GAME-ABILITY remains sibling/coordinator work.
+- GAME-VISION first-Reference target/evidence discipline forbids guessing unknown target behavior from OTS/current-live implementation similarity.
+- Current `docs/agents/BUILD_TEST_MATRIX.md` classifies architecture/contracts-only PR validation as always-required governance, dependency review, CodeQL and aggregate merge gate; Rust/workspace jobs are path-proportional and are not required solely for this documentation-only slice.
 
 ### DERIVED
 
@@ -91,12 +93,13 @@ Exact Reference perception, aggro/threat, retarget, leash/reset, path preference
 - [x] Resource-limit dimensions are enumerated without inventing benchmark-sensitive numbers.
 - [x] Failure/recovery matrix and deterministic future acceptance scenarios are present.
 - [x] Reference/Evolved mapping separates shared engine invariants from evidence/profile policy.
-- [x] Required worker handoff markers `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS` are present in task and PR metadata.
-- [x] Cross-domain findings are `REPORT_ONLY` and no foreign architecture file is edited.
-- [x] Draft PR `#272` created and changed-file scope verified as exactly the three worker-owned paths.
-- [x] Initial exact-head CI metadata failure classified without claiming repository-validation PASS.
-- [ ] Fresh exact-head repository governance/architecture CI result inspected after PR metadata repair.
-- [ ] Final exact-head self-review/evidence recorded in immutable PR evidence after this metadata-only synchronization commit.
+- [x] Required worker handoff markers `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS` are present.
+- [x] PR metadata contains role/domain/issue/merge/implementation authority plus summary/scope/owned paths/proposed decisions/dependencies/validation/self-review handoff fields.
+- [x] Cross-domain findings are normalized with stable IDs/owner/severity/evidence/required-before/`REPORT_ONLY` disposition in PR handoff metadata; no foreign architecture file is edited.
+- [x] Draft PR `#272` exists and changed-file scope is exactly the three worker-owned paths.
+- [x] Material self-review findings identified before final freeze were repaired and recorded.
+- [ ] Exact-final-head ordinary repository CI conclusion is recorded externally in immutable PR/check evidence after this final task-metadata commit exists.
+- [ ] Exact-final-head full-diff self-review is recorded externally in immutable PR evidence after this commit exists.
 
 ## Excluded scope
 
@@ -109,7 +112,7 @@ This worker task MUST NOT:
 - edit GAME-ABILITY, GAME-INTERACTION, GAME-ITEM, DUR, ANL or other foreign contracts;
 - claim exact Reference behavior where evidence is missing;
 - claim `DecisionStatus=ACCEPTED`, canonicality, lifecycle closeout or runtime implementation;
-- merge, enable auto-merge or archive this task record.
+- merge, enable auto-merge, mark the PR ready, close issue #261 or archive this task record.
 
 ## DECISIONS_NOT_TAKEN
 
@@ -131,113 +134,117 @@ These are explicit non-decisions, not permissive defaults.
 ## Implementation / findings
 
 1. Verified branch head before writes exactly matched coordinator trusted base `088b46638ac014cd7928d6b0b75cee44902fe22c`.
-2. Verified live `main` had advanced by one coordinator closeout/bookkeeping commit unrelated to GAME-AI semantics; worker lane intentionally remained on the explicitly activated trusted base rather than silently rebasing.
-3. Verified no active sibling architecture PR overlapped the GAME-AI owned paths at startup.
+2. Verified live `main@cb98fd32a2bb71fce83234ebf8bf69bdd1a1970e` remained one coordinator closeout/bookkeeping commit ahead of the trusted base and did not introduce a material GAME-AI dependency change.
+3. Verified no sibling worker owns or changes the three GAME-AI paths. Open Agent A/B/D/E/F PRs remain noncanonical parallel proposals; Agent A PR #271 reports 0/4 ABILITY_COMBAT evidence promotions and Agent B PR #268 remains a draft whole-gate candidate.
 4. Resolved terminology collision: ADR-0006 Game Intelligence / Investigation AI is read-only external analysis; GAME-AI runtime behavior remains inside authoritative simulation.
 5. Selected typed bounded FSM for v1 semantic behavior; runtime behavior tree is deferred and direct authoritative script mutation rejected.
 6. Defined pathfinding as bounded auxiliary proposal work with deterministic search profile and owner revalidation.
 7. Defined immutable actor/template/spawn provenance, explicit spawn recovery classes and GAME-CHANNEL multiplicity gates.
-8. Self-review found the horizon's dynamic population/ecology requirement was not explicit enough in the first candidate draft; repaired on semantic checkpoint `b4924278f543325007356b2e2b52ca0d0d0fc966` by requiring immutable/versioned bounded population policy and prohibiting direct analytics-to-runtime feedback.
-9. Work-allocation self-review found the required literal handoff markers were semantically present but not canonically named; repaired on `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c`.
-10. Exact-head Agent governance run `31846830146` on `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c` failed before checkout because the PR body lacked required `## Summary` and `## Scope` headings. Merge authority audit `31846830143` passed. The PR body was repaired without changing repository content; this metadata-only task commit intentionally creates a fresh `synchronize` event so governance can validate the exact new head with corrected PR metadata.
+8. Self-review found the horizon's dynamic population/ecology requirement was not explicit enough in the first candidate draft; repaired at semantic checkpoint `b4924278f543325007356b2e2b52ca0d0d0fc966` by requiring immutable/versioned bounded population policy and prohibiting direct analytics-to-runtime feedback.
+9. Work-allocation review found required literal handoff markers were not canonically named; repaired before final freeze.
+10. Agent governance run `31846830146` on `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c` failed before checkout because PR metadata lacked required `## Summary` and `## Scope`; Merge authority audit `31846830143` passed. PR metadata was repaired; the failed run is retained as historical evidence and is not treated as a repository-validation PASS.
+11. Full domain-prompt handoff review found PR metadata needed explicit role/domain/issue/implementation authority and structured cross-domain finding fields; repaired before final freeze without adding foreign repository changes.
+12. Validation requirements were reconciled to the current Build/Test Matrix: docs-only architecture needs the always-required merge gate; a Rust/workspace architecture binary run is not a required blocker for these paths.
 
 ## CROSS_DOMAIN_FINDINGS
 
-Disposition for every item below: `CROSS_DOMAIN_FINDING / REPORT_ONLY`.
+The complete structured records are present in PR #272 metadata. Repository-file disposition remains report-only:
 
-- GAME-ABILITY: typed AI action-intent/rejection boundary should be preserved/confirmed by whole-gate reconciliation.
-- GAME-INTERACTION: route invalidation and door/teleport/environment facts need a typed normalized boundary.
-- GAME-ITEM/DUR-03/reward: exact controlled-actor contribution and idempotent reward settlement remain downstream.
-- EVENT/ENCOUNTER: durable world-shared boss/event occurrence/eligibility needs a named owner where required.
-- RESOURCE LIMITS: concrete AI/path/spawn maxima must be registered before implementation acceptance.
-- ANL: durable AI-decision evidence, if required, remains ANL schema/retention/privacy work.
+- `GAME-AI-XD-01` / P1 / GAME-ABILITY-01 + coordinator — typed AI action-intent/rejection seam before executable combat integration.
+- `GAME-AI-XD-02` / P1 / GAME-INTERACTION-01 — dynamic navigation invalidation/interaction seam before executable dynamic-world pathing.
+- `GAME-AI-XD-03` / P1 / GAME-ITEM-01 + DUR-03/reward — controlled-actor contribution and idempotent reward settlement before loot/XP integration.
+- `GAME-AI-XD-04` / P1 / EVENT/ENCOUNTER + coordinator — durable world-shared encounter occurrence/eligibility ownership before world-shared boss integration.
+- `GAME-AI-XD-05` / P1 / shared resource-limit owner + coordinator — measured hard maxima before executable GAME-AI implementation acceptance.
+- `GAME-AI-XD-06` / P2 / ANL — durable AI-decision analytics/forensics schema/retention/privacy before production retention.
+
+Every finding has `worker_action: REPORT_ONLY`; no target-owner file is modified.
 
 ## Validation
 
 ### Focused
 
-- command/run: direct repository inspection through GitHub connector against `docs/arch-c-game-ai` and trusted base
-- result: `PASS` for branch/base ownership before writes
-- command/run: PR `#272` changed-file enumeration
-- result: `PASS` — exactly three worker-owned paths; zero forbidden/global/foreign paths
-- command/run: full work-allocation handoff-minimum review
-- result: first pass found missing canonical literal marker names; repaired before exact-head validation
-- command/run: Agent governance PR-metadata preflight, run `31846830146`, head `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c`
-- result: `FAIL / METADATA_ONLY` before checkout — missing `## Summary` and `## Scope`; PR body repaired without claiming repository validation
-- command/run: Merge authority audit, run `31846830143`, same head
-- result: `PASS`
+- branch/trusted-base ownership inspection: **PASS**.
+- exact changed-file allowlist before final metadata freeze: **PASS** — exactly three worker-C paths.
+- coordinator-only/sibling path review: **PASS** — none changed.
+- domain prompt + parallel work-allocation handoff review: **PASS after recorded metadata repairs**.
+- live-main drift and sibling overlap review: **PASS for worker handoff** — no merged material dependency drift; sibling proposals remain draft/noncanonical.
+- initial PR-metadata preflight run `31846830146`: **FAIL / METADATA_ONLY** before checkout, correctly repaired and not counted as final validation.
+- same historical head Merge authority audit run `31846830143`: **PASS**.
 
 ### Component/integration
 
-- command/run: `python tools/agents/validate_governance.py`
-- result: pending fresh exact-head GitHub Actions result; initial run did not reach this step
-- command/run: `cargo run --locked -p architecture-check`
-- result: pending exact-head repository validation evidence; local execution unavailable because the sandbox cannot resolve `github.com` for checkout
+- command/run: `NOT_APPLICABLE` for Rust/runtime component testing — architecture/contracts-only documentation paths changed; no Rust/workspace implementation path is affected.
+- required repository validation: current Build/Test Matrix always-required governance, dependency review, CodeQL and aggregate Merge Gate on exact final head.
+- result: external exact-head PR/check evidence after this final commit exists.
 
 ### E2E
 
-- scenario: `NOT_APPLICABLE` — paper-only architecture; no executable runtime behavior changed
-- result: `NOT_APPLICABLE`
+- scenario: `NOT_APPLICABLE` — paper-only architecture; no executable runtime behavior changed.
+- result: `NOT_APPLICABLE`.
 
 ### Exact-head CI
 
-- final head: pending immutable PR/check evidence; this commit cannot contain its own SHA
-- trigger source: fresh `pull_request synchronize` from this metadata-only task update after PR-body repair
-- prior stale/failed run: Agent governance `31846830146` on `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c` — metadata-only failure before checkout
-- workflow/run/job: pending fresh exact-head generation
-- runner assignment: pending
-- classification: repository-hosted validation required because local checkout is network-blocked
-- result: pending
+- final head: recorded externally on PR #272 after this commit exists; a commit cannot contain its own SHA.
+- trigger source: draft PR synchronize from this final task-metadata commit.
+- workflow/run/job: external immutable PR/check evidence.
+- runner assignment: external PR/check evidence.
+- classification: documentation-only always-required merge-gate set.
+- result: external PR/check evidence.
 
 ## Self-review
 
-- semantic checkpoint: `b4924278f543325007356b2e2b52ca0d0d0fc966`
-- work-allocation checkpoint: `cc2f258412bdc9868f9764c8e3c57921f9fa1f8c`
-- method/reviewer: implementing DOMAIN ARCHITECTURE DESIGN AGENT / worker C
-- material findings: (1) dynamic population/ecology policy was implicit; repaired; (2) canonical handoff marker names were absent; repaired; (3) governance-required PR body headings were absent; repaired in PR metadata before this synchronization commit
-- verdict: semantic and metadata repairs complete; exact final-head diff/CI must still be inspected and recorded in immutable PR evidence
+- exact head: recorded externally on PR #272 after this final commit exists.
+- method/reviewer: DOMAIN ARCHITECTURE DESIGN AGENT / worker C.
+- material findings repaired before final freeze: dynamic population/ecology boundary; literal handoff markers; PR summary/scope metadata; complete domain-prompt handoff fields; structured cross-domain records; Build/Test Matrix docs-only validation classification.
+- semantic content review: bounded owner/FSM/path/spawn/recovery/controlled-actor/reward/overload/Reference-Evolved invariants reviewed with no remaining known material worker finding.
+- verdict: **READY FOR COORDINATOR AUDIT**, subject to exact-final-head PR checks and external full-diff evidence.
 
 ## Independent review
 
-- required: `YES` — Architecture Coordinator audit is mandatory by issue/work-allocation merge authority
-- exact head: to be supplied by immutable PR/check evidence after this commit
-- method/auditor: Architecture Coordinator via draft PR `#272`
-- material findings: pending coordinator audit
-- verdict: pending coordinator audit
+- required: `YES` — issue #261 and work allocation require Architecture Coordinator audit.
+- exact head: coordinator must pin the final PR #272 head.
+- method/auditor: Architecture Coordinator/Auditor via draft PR #272.
+- material findings: pending coordinator audit.
+- verdict: pending coordinator audit.
 
 ## PR and closeout
 
-- changed-file review: `PASS` — exactly three allocated paths in draft PR `#272`
-- unresolved review threads: to be checked on final head before worker handoff
-- related/superseded PRs: none identified at startup for this worker scope
-- protected auto-merge: prohibited/not requested
-- merge commit/result: `NOT_PERMITTED_FOR_WORKER`
-- ownership release: `NOT_PERMITTED_FOR_WORKER`; coordinator lifecycle only
+- draft PR: #272.
+- changed-file review: expected exactly the three worker-C allocated paths; final exact-head set must remain identical after this task-metadata-only commit.
+- unresolved review threads: none existed at the latest worker inspection; final exact-head query is external handoff evidence.
+- related/superseded PRs: no overlapping canonical GAME-AI PR; sibling domain PRs are noncanonical and disjoint.
+- protected auto-merge: FORBIDDEN / not requested.
+- merge commit/result: NOT PERFORMED / NOT PERMITTED FOR WORKER.
+- issue #261 close: NOT PERFORMED.
+- ownership release: NOT PERFORMED; task remains under `active/` for coordinator audit.
+- lifecycle closeout: NOT PERFORMED / FORBIDDEN FOR THIS WORKER.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: PR metadata governance failure classified and body repaired; fresh exact-head synchronize triggered by task-only metadata commit
-status: validating
+last_progress: GAME-AI semantic package and final worker handoff metadata frozen; exact final head and checks are recorded externally on PR #272
+status: ready
 branch: docs/arch-c-game-ai
-head_sha: cc2f258412bdc9868f9764c8e3c57921f9fa1f8c
+head_sha: 1f5f21d28d56aef00dc781a196a50ac4dc0dc883
 pr: 272
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: pull-request-synchronize-after-pr-body-repair
-ci_check_generation: pending-new-head
+ci_trigger_source: pull_request
+ci_check_generation: pending-final-head
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: pending
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 5
 ci_recovery_actions_for_current_head: 1
 stall_warnings: 0
-owner_action_required: null
-blocker: local checkout unavailable; fresh exact-head GitHub Actions validation required
-next_action: inspect the new exact PR head/diff and fresh Actions generation, then record immutable worker handoff evidence without merging or lifecycle closeout
+owner_action_required: coordinator audit after exact-head worker evidence is attached
+blocker: null
+next_action: architecture coordinator audits exact PR #272 head after worker attaches immutable exact-head CI/self-review evidence; worker must not merge or lifecycle-close
 ```
+
+**MERGE_AUTHORITY: ARCHITECTURE_COORDINATOR_ONLY**
