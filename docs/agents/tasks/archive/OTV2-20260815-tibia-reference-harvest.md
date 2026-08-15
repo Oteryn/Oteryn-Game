@@ -4,21 +4,25 @@
 task_id: OTV2-20260815-tibia-reference-harvest
 title: Harvest canonical Tibia reference worldmap tooling
 mode: MIGRATE
-status: validating
+status: completed
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: tools/OTV2-20260815-tibia-reference-harvest
 pr: 283
+closeout_pr: 284
 base_sha: 0cfd8d8ee3ecf4fbb1cb76cbc9680b53a152e3c1
 material_head_sha: 54165596f98b66c3164cccab881bb53f0655cb2b
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: 5b3d16c9fdc0f50a58a52e30146456e6473180f0
+final_head_frozen_at: 2026-08-15T23:50:00+02:00
+delivery_merge_sha: 0c307db73832b824ccf50801e626671e0aeb38d1
 owner: chatgpt-github
+owner_state: released_after_closeout
 created_at: 2026-08-15T23:24:00+02:00
-updated_at: 2026-08-15T23:51:00+02:00
+updated_at: 2026-08-16T00:04:48+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
-owned_paths:
+owned_paths: []
+historical_owned_paths:
   - docs/agents/tasks/active/OTV2-20260815-tibia-reference-harvest.md
   - docs/agents/evidence/OTV2-20260815-tibia-reference-harvest.md
   - tools/tibia-worldmap-reconstruction/**
@@ -32,6 +36,8 @@ blocks: []
 cross_repository_coordination_id: OTER-CLIENT-REFERENCE-HARVEST-20260815
 external_repositories:
   - blakinio/Oteryn-Platform
+source_branch_disposition: auto_deleted_after_merge
+source_branch_evidence: branch search after PR #283 merge returned no tools/OTV2-20260815-tibia-reference-harvest ref
 ```
 
 ## Outcome
@@ -53,9 +59,9 @@ Move the durable, proprietary-data-free worldmap normalization/comparison tool a
 - [x] Durable evidence records what was and was not migrated from PRs #1006 and #988.
 - [x] No Platform-specific GitHub runner workflow, credential path, login automation, VNC path, gdb/ptrace workflow, private-message action, screenshot/base64 evidence or proprietary binary is migrated.
 - [x] Focused Python compile/unit/example validation passes on material head `54165596f98b66c3164cccab881bb53f0655cb2b`.
-- [ ] Oteryn-v2 required exact-final-head merge-gate/governance/CodeQL checks pass after this lifecycle checkpoint commit.
+- [x] Oteryn-v2 required exact-final-head merge-gate/governance checks pass on final delivery head `5b3d16c9fdc0f50a58a52e30146456e6473180f0`.
 - [x] Whole-diff self-review found no remaining material ownership, provenance or safety defect after four automated-review findings were repaired.
-- [ ] Merge and task closeout are terminal before the Platform source research PRs are closed/deleted.
+- [x] Delivery PR #283 merged as `0c307db73832b824ccf50801e626671e0aeb38d1` and its source branch was removed before Platform source research closeout.
 
 ## Excluded scope
 
@@ -85,13 +91,13 @@ The current Platform-side official Linux reference harness is not copied by this
 ### Focused
 
 - command/run: `Tibia Reference Tooling` run `31910093544`, job `95073747757`
-- exact head: `54165596f98b66c3164cccab881bb53f0655cb2b`
+- exact material head: `54165596f98b66c3164cccab881bb53f0655cb2b`
 - result: PASS
 
 ### Component/integration
 
 - command/run: deterministic synthetic worldmap compile, unit suite and CLI validation
-- exact head: `54165596f98b66c3164cccab881bb53f0655cb2b`
+- exact material head: `54165596f98b66c3164cccab881bb53f0655cb2b`
 - result: PASS
 
 ### E2E
@@ -101,15 +107,20 @@ The current Platform-side official Linux reference harness is not copied by this
 
 ### Exact-head CI
 
-- material head: `54165596f98b66c3164cccab881bb53f0655cb2b`
-- observed PASS: Merge authority audit, merge-gate scope/governance/Rust policy/Rust supply chain/Linux workspace/dependency review, CodeQL actions/python, standalone CodeQL and focused worldmap reconstruction.
-- remaining before final freeze: fresh pull-request generation for the lifecycle checkpoint commit, including Agent governance with the corrected current PR body and any repository-required Windows job.
-- result: PENDING FINAL GENERATION
+Final delivery head: `5b3d16c9fdc0f50a58a52e30146456e6473180f0`.
+
+- Agent governance run `31910514137`: PASS.
+- Tibia Reference Tooling run `31910514134`: PASS.
+- Merge authority audit run `31910514153`: PASS.
+- Merge gate run `31910514148`: PASS, including Windows client validation and repository-selected gates.
+
+Result: PASS.
 
 ## Self-review
 
-- exact head: `54165596f98b66c3164cccab881bb53f0655cb2b`
-- method/reviewer: whole-diff implementing/coordinating self-review recorded as PR review `4944784918`
+- material implementation head: `54165596f98b66c3164cccab881bb53f0655cb2b`
+- final delivery head: `5b3d16c9fdc0f50a58a52e30146456e6473180f0`
+- method/reviewer: whole-diff implementing/coordinating self-review recorded as PR review `4944784918`; final docs-only lifecycle checkpoint was also inspected before merge
 - material findings: none remaining after repair
 - verdict: PASS
 
@@ -123,36 +134,35 @@ The current Platform-side official Linux reference harness is not copied by this
 
 ## PR and closeout
 
-- PR: #283
-- changed-file review: PASS on material head after repair
+- delivery PR: #283
+- delivery merge: `0c307db73832b824ccf50801e626671e0aeb38d1`
+- changed-file review: PASS after repair
 - unresolved review threads: 0
-- related/superseded PRs: Platform #1006 and #988 remain open until destination/Platform harvest is merged
-- protected auto-merge: pending final exact-head generation
-- merge commit/result: pending
-- ownership release: pending
+- source branch: automatically deleted after merge; verified absent
+- closeout PR: #284
+- runtime/component/E2E for closeout: NOT_APPLICABLE — bookkeeping-only archive/ownership release
+- ownership release: effective when #284 merges
 
 ## Context checkpoint
 
 ```yaml
-last_progress: four automated-review findings repaired and material-head validation/self-review passed
-status: validating
+last_progress: delivery PR 283 merged to main and source branch deletion verified
+status: completed
 branch: tools/OTV2-20260815-tibia-reference-harvest
 pr: 283
+closeout_pr: 284
 material_head_sha: 54165596f98b66c3164cccab881bb53f0655cb2b
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: 5b3d16c9fdc0f50a58a52e30146456e6473180f0
+delivery_merge_sha: 0c307db73832b824ccf50801e626671e0aeb38d1
 ci_trigger_source: pull_request
-ci_check_generation: lifecycle-checkpoint-refresh
+ci_check_generation: terminal-delivery
 ci_checks_for_current_head: 1
 ci_run_ids:
-  - 31910093544
-  - 31910093485
-  - 31910093480
-ci_job_ids:
-  - 95073747757
-  - 95073860301
-  - 95073747527
-runner_assignment_state: assigned
+  - 31910514137
+  - 31910514134
+  - 31910514153
+  - 31910514148
+runner_assignment_state: completed
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -162,5 +172,9 @@ ci_recovery_actions_for_current_head: 1
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Validate the fresh pull-request generation created by this task checkpoint commit; if all required checks pass and no new review finding exists, merge PR #283 and archive/release this task before Platform source PR #1006 is closed.
+next_action: Merge lifecycle-only closeout PR #284 after its governance checks pass; then this task is fully terminal and Platform may rely on Oteryn-v2 merge 0c307db73832b824ccf50801e626671e0aeb38d1 as durable destination evidence.
 ```
+
+## Post-merge closeout
+
+Delivery PR #283 is terminal merged. The canonical destination now exists on `main@0c307db73832b824ccf50801e626671e0aeb38d1`; the implementation source branch is absent; all initial automated-review findings are resolved; no production/live-client authority was expanded. This archive preserves the cross-repository provenance needed by Platform PRs #988 and #1006 without keeping historical client work in `blakinio/otclient`.
