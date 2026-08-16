@@ -53,7 +53,13 @@ def forbid_re(doc: str, pattern: str, label: str) -> None:
 
 
 def common(task: str) -> None:
-    need(task, "repair_cycles_for_current_gate: 4", "repair history")
+    declared = re.search(r"(?m)^repair_cycles_for_current_gate:\s*([0-9]+)\s*$", task)
+    if declared is None:
+        fail("repair history: missing repair_cycles_for_current_gate")
+    cycles = int(declared.group(1))
+    if cycles < 4:
+        fail(f"repair history: expected owner-overridden stable gate at cycle >= 4, got {cycles}")
+    need(task, "repair_cycle_4_owner_override:", "owner repair override")
     need(task, "no Codex for this continuation", "owner review constraint", ci=True)
     need(task, "MERGE_AUTHORITY: ARCHITECTURE_COORDINATOR_ONLY", "merge authority")
 
