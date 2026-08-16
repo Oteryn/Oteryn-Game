@@ -1,0 +1,58 @@
+name: Game Atlas Physical Profile Spike
+
+run-name: Game Atlas physical profile spike • pull_request • ${{ github.event.pull_request.number }}
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - tools/game-atlas-profile-spike/**
+      - .github/workflows/game-atlas-profile-spike.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-atlas-profile-spike-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Game Atlas Physical Profile Spike / validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out exact pull request head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Verify exact head
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Compile spike
+        run: python -m py_compile tools/game-atlas-profile-spike/spike.py
+
+      - name: Execute deterministic spike and self-test
+        run: |
+          python tools/game-atlas-profile-spike/spike.py \
+            --self-test \
+            --output /tmp/game-atlas-physical-profile-report.json \
+            --summary
+
+      - name: Emit machine-readable evidence
+        run: |
+          sha256sum /tmp/game-atlas-physical-profile-report.json
+          echo 'SPIKE_REPORT_JSON_BEGIN'
+          cat /tmp/game-atlas-physical-profile-report.json
+          echo 'SPIKE_REPORT_JSON_END'

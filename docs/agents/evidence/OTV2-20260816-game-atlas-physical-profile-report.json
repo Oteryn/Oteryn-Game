@@ -1,0 +1,118 @@
+{
+  "schema": "oteryn-game-atlas-physical-readiness-evidence-v1",
+  "source": {
+    "repository": "blakinio/Oteryn-v2",
+    "head_sha": "8d43167d44efc7933b47713b47a35d71bf7ff708",
+    "workflow_run_id": 31938999246,
+    "workflow_job_id": 95145312378,
+    "workflow_job": "Game Atlas Physical Profile Spike / validate",
+    "conclusion": "success",
+    "python": "3.12.13",
+    "generated_report_sha256": "c20cc40de3ac1811574c29e116249314234caebab05276cfabb8c9d6b524d4f9",
+    "matrix_rows": 24,
+    "spike_checks_pass": true,
+    "cap_negative_checks_pass": true,
+    "accepted_evidence_generation": 3,
+    "superseded_generations": [
+      {
+        "head_sha": "f35c28375abaa7339f3f74a4d19966c36393eee1",
+        "workflow_run_id": 31938342334,
+        "workflow_job_id": 95143702307,
+        "reason": "self-review found invalid binary text-diff interpretation and insufficient compact-JSON reviewability measurement"
+      },
+      {
+        "head_sha": "700365199044c15ef22aaa9336d72dd103715a76",
+        "workflow_run_id": 31938708639,
+        "workflow_job_id": 95144635706,
+        "reason": "self-review then found encoding-asymmetric research caps and package-edit granularity that omitted manifest churn"
+      }
+    ]
+  },
+  "fixture_policy": "project-owned deterministic synthetic data only; no OTBM/Crystal/Canary/Tibia assets",
+  "fixtures": [
+    ["synthetic-sparse-v1", 128, 128, 6, 98304, "d91d031d8c129f9310fe15188914969d9e35aa4eb44be283d61751d4eb0043a2"],
+    ["synthetic-dense-v1", 128, 128, 6, 98304, "045a4b698e5e43e251b040e04da29641b631e14b9c59c8487c0333897e0f6b6c"]
+  ],
+  "fixture_columns": ["name", "width", "height", "floors", "record_count", "semantic_sha256"],
+  "internal_spike_caps_not_production_limits": {
+    "max_records": 200000,
+    "max_chunk_bytes": 67108864,
+    "max_string_bytes": 1024,
+    "max_objects_per_record": 256
+  },
+  "invariants": {
+    "deterministic_bytes_all_rows": true,
+    "semantic_roundtrip_all_rows": true,
+    "raw_digest_corruption_detected_all_rows": true,
+    "gzip_corruption_detected_all_rows": true,
+    "single_record_edit_changes_exactly_one_data_chunk_all_rows": true,
+    "single_record_edit_changes_exactly_two_package_files_all_rows": true,
+    "point_access_uses_exactly_one_data_chunk_all_rows": true,
+    "binary_text_metrics_null_all_binary_rows": true,
+    "text_diff_is_two_lines_all_text_rows": true,
+    "encoding_neutral_negative_cap_checks_pass": true
+  },
+  "metrics_columns": [
+    "fixture",
+    "encoding",
+    "chunk_size",
+    "floor_packing",
+    "raw_total_bytes",
+    "gzip_total_bytes",
+    "max_chunk_gzip_bytes",
+    "point_access_gzip_bytes",
+    "viewport_gzip_bytes",
+    "local_edit_changed_data_files",
+    "local_edit_changed_package_files",
+    "local_edit_text_diff_lines",
+    "local_edit_text_max_line_bytes"
+  ],
+  "metrics": [
+    ["synthetic-sparse-v1", "canonical-json-v0", 32, "per-floor", 9204517, 409911, 4325, 4264, 37762, 1, 2, 2, 95514],
+    ["synthetic-sparse-v1", "canonical-jsonl-v0", 32, "per-floor", 9205094, 410372, 4330, 4269, 37802, 1, 2, 2, 160],
+    ["synthetic-sparse-v1", "binary-baseline-v0", 32, "per-floor", 4549851, 322045, 3399, 3328, 29678, 1, 2, null, null],
+    ["synthetic-sparse-v1", "canonical-json-v0", 32, "packed-floors", 9183241, 379100, 24127, 23830, 211261, 1, 2, 2, 572167],
+    ["synthetic-sparse-v1", "canonical-jsonl-v0", 32, "packed-floors", 9183338, 379190, 24129, 23835, 211311, 1, 2, 2, 160],
+    ["synthetic-sparse-v1", "binary-baseline-v0", 32, "packed-floors", 4533935, 299975, 18905, 18723, 167973, 1, 2, null, null],
+    ["synthetic-sparse-v1", "canonical-json-v0", 64, "per-floor", 9185341, 385180, 16284, 16273, 63905, 1, 2, 2, 385011],
+    ["synthetic-sparse-v1", "canonical-jsonl-v0", 64, "per-floor", 9185486, 385308, 16289, 16278, 63923, 1, 2, 2, 162],
+    ["synthetic-sparse-v1", "binary-baseline-v0", 64, "per-floor", 4535499, 303983, 13041, 12510, 50078, 1, 2, null, null],
+    ["synthetic-sparse-v1", "canonical-json-v0", 64, "packed-floors", 9179985, 376973, 95842, 95842, 376458, 1, 2, 2, 2309339],
+    ["synthetic-sparse-v1", "canonical-jsonl-v0", 64, "packed-floors", 9180010, 376924, 95832, 95832, 376406, 1, 2, 2, 162],
+    ["synthetic-sparse-v1", "binary-baseline-v0", 64, "packed-floors", 4531483, 298937, 75085, 74685, 298426, 1, 2, null, null],
+    ["synthetic-dense-v1", "canonical-json-v0", 32, "per-floor", 13134709, 536246, 5618, 5581, 49696, 1, 2, 2, 136313],
+    ["synthetic-dense-v1", "canonical-jsonl-v0", 32, "per-floor", 13135286, 536827, 5626, 5585, 49742, 1, 2, 2, 196],
+    ["synthetic-dense-v1", "binary-baseline-v0", 32, "per-floor", 8438395, 479243, 5004, 4949, 44440, 1, 2, null, null],
+    ["synthetic-dense-v1", "canonical-json-v0", 32, "packed-floors", 13113337, 502136, 31724, 31615, 281208, 1, 2, 2, 817860],
+    ["synthetic-dense-v1", "canonical-jsonl-v0", 32, "packed-floors", 13113434, 502247, 31730, 31623, 281271, 1, 2, 2, 196],
+    ["synthetic-dense-v1", "binary-baseline-v0", 32, "packed-floors", 8422479, 453883, 28513, 28325, 254571, 1, 2, null, null],
+    ["synthetic-dense-v1", "canonical-json-v0", 64, "per-floor", 13115437, 514097, 21814, 21760, 85428, 1, 2, 2, 548541],
+    ["synthetic-dense-v1", "canonical-jsonl-v0", 64, "per-floor", 13115582, 514284, 21819, 21767, 85454, 1, 2, 2, 198],
+    ["synthetic-dense-v1", "binary-baseline-v0", 64, "per-floor", 8424043, 446345, 18848, 18444, 73957, 1, 2, null, null],
+    ["synthetic-dense-v1", "canonical-json-v0", 64, "packed-floors", 13110085, 505382, 128745, 128745, 504868, 1, 2, 2, 3291861],
+    ["synthetic-dense-v1", "canonical-jsonl-v0", 64, "packed-floors", 13110110, 505373, 128745, 128745, 504855, 1, 2, 2, 198],
+    ["synthetic-dense-v1", "binary-baseline-v0", 64, "packed-floors", 8420031, 440450, 110462, 109877, 439938, 1, 2, null, null]
+  ],
+  "derived_observations": {
+    "json_vs_jsonl_size": "Synthetic compressed-size differences are negligible; size alone does not select between them.",
+    "json_vs_jsonl_reviewability": "A one-record edit changes two textual diff lines in both formats, but compact JSON makes the changed line roughly 95 KiB to 3.29 MiB in this matrix while JSONL keeps the maximum changed-file line to 160-198 bytes. This is meaningful reviewability evidence, not sufficient by itself to select an Atlas distribution format.",
+    "floor_packing": "Packed-floor layouts reduce total compressed bytes modestly but multiply single-floor point/viewport bytes by approximately the number of synthetic floors; per-floor packaging is the stronger locality baseline for a floor-oriented Atlas consumer.",
+    "chunk_size": "64x64 reduces file count and total compressed bytes versus 32x32, while increasing one-point and representative viewport bytes; representative consumer workload evidence is required to select the trade-off.",
+    "binary_baseline": "The research binary baseline is smaller, especially raw, but the synthetic compressed advantage alone is insufficient evidence to introduce a public binary schema or dependency. Binary text-diff metrics are intentionally null.",
+    "local_edit_package_churn": "A one-record semantic edit changes one data chunk plus manifest.json in every tested package; package-level churn is therefore two files even when data-chunk churn is one."
+  },
+  "readiness_verdict": "EVIDENCE_GAP",
+  "smallest_missing_owner_evidence": {
+    "owner": "Oteryn-Game canonical World/Content architecture",
+    "needed": "A canonical Game spatial/coordinate profile that freezes axes/orientation, numeric coordinate domain and bounds, floor identity/domain/order, valid point/bounds semantics, deterministic same-position ordering/stack-layer semantics, and presentation anchor/displacement semantics where canonical presentation references require them.",
+    "why_blocking": "OTERYN_GAME_ATLAS_EXPORT_CONTRACT_V1 requires these semantics before an executable producer/consumer may claim coordinate-profile compatibility, while current executable Position evidence is explicitly non-authoritative client projection and the workspace has no canonical world-schema implementation to promote."
+  },
+  "non_authority": [
+    "No serializer is selected by this report.",
+    "No chunk size or floor packing is selected by this report.",
+    "No production resource limit is established by this report.",
+    "No canonical coordinate/floor numeric range is established by this report.",
+    "binary-baseline-v0 is not a proposed public schema.",
+    "SHA-256 and gzip are measurement mechanisms in the spike, not accepted Game -> Atlas production profiles."
+  ]
+}
