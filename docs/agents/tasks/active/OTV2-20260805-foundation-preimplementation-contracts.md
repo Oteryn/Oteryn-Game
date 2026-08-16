@@ -9,13 +9,13 @@ repository: blakinio/Oteryn-v2
 base_branch: main
 branch: null
 pr: null
-base_sha: c197ba12cc1b2ebbc4b27eab5d6054037720c48a
+base_sha: ab527ef8c3c77ef237973a005fdc36abbee85286
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: unassigned
 created_at: 2026-08-05T08:49:00+02:00
-updated_at: 2026-08-16T16:00:00+02:00
+updated_at: 2026-08-16T16:32:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: Non-owning programme checkpoint spanning accepted native foundation/game/content/determinism architecture, completed A-F proposal delivery and remaining owner-decision/vertical-slice gates; executable packages remain separately bounded.
 owned_paths: []
@@ -37,6 +37,7 @@ depends_on:
   - Reference evidence/parity manifest v1 accepted/pinned; manifest revision 3 contains the first representative ABILITY_COMBAT case set from PR #255
   - Agent A PR #271 completed target-continuity/provenance pass with 0/4 cases promoted
   - GAME-ABILITY PR #268, GAME-AI successor #276, GAME-INTERACTION successor #277, ALPHA-CLIENT #273 and ANL-02/03 #270 merged and lifecycle-closed as proposal/candidate deliveries without automatic owner acceptance
+  - post-wave global reconciliation PR #303 merged as ab527ef8c3c77ef237973a005fdc36abbee85286; lifecycle closeout is PR #304
 blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories:
@@ -140,7 +141,7 @@ Owner-funded Codex/OpenAI use remains forbidden unless the owner explicitly auth
 ## Context checkpoint
 
 ```yaml
-last_progress: First A-F parallel architecture wave is delivery/lifecycle complete. Agent A #271 preserved 0/4 ABILITY_COMBAT promotions; merged GAME-ABILITY/GAME-AI/GAME-INTERACTION/ALPHA-CLIENT/ANL-02/03 packages remain candidate/proposed until explicit owner acceptance. Global post-wave reconciliation is issue #302 / PR #303.
+last_progress: Post-wave global reconciliation PR #303 passed exact-head governance/semantic/merge checks and squash-merged as ab527ef8c3c77ef237973a005fdc36abbee85286. Its active coordinator task has been moved to archive on lifecycle closeout PR #304; ownership release becomes terminal only after #304 merges.
 status: ready
 branch: null
 head_sha: null
@@ -162,5 +163,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: false
 blocker: null
-next_action: From live main after post-wave reconciliation closeout, create one bounded paper-only GAME-ABILITY-01 owner-decision task using the merged whole-gate candidate; preserve Agent-A 0/4 fail-closed Reference truth and do not implement runtime/DDL/production behavior.
+next_action: After PR #304 lifecycle closeout merges, create one bounded paper-only GAME-ABILITY-01 owner-decision task using the merged whole-gate candidate; preserve Agent-A 0/4 fail-closed Reference truth and do not implement runtime/DDL/production behavior.
 ```
