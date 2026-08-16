@@ -175,10 +175,18 @@ Combined #183 + #185 + #187 evidence is now sufficient to stop treating every re
 
 No such closure recommendation is accepted by this archive.
 
+## Post-closeout provenance erratum — 2026-08-16
+
+A later factual provenance audit found one source-year typo in E1 of the delivered report. The source is official Tibia news `id=122`, `The Update is here!`, dated **February 18, 2002**; the report text had described it as `Official 2001 release material`.
+
+Correction lifecycle is tracked by `OTV2-20260811-game-char-delta-02-provenance-correction` / PR #191. The canonical report correction is limited to `2001 -> 2002`. It does **not** change any B4-B8 substantive classification or recommendation: level >=20 + Premium remains `DERIVED / very strong primary continuity`; exact 20,000 gp July-28 continuity remains `UNKNOWN`; exact Premium-lapse suspension/reactivation semantics remain `UNKNOWN`.
+
+This post-closeout note does not reopen or reactivate the original task, does not modify its delivery/closeout evidence, and does not accept Stage B or alter runtime/schema/content/protocol/Platform/production authority. Terminal merge/closeout evidence for the correction itself belongs to the correction task's own archive record.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: B4-B8 evidence delta delivered by PR #187 with repair cycle 1, exact-head self-review PASS and all required exact-head CI PASS; task ready for lifecycle archive/ownership release.
+last_progress: B4-B8 evidence delta delivered by PR #187 with repair cycle 1, exact-head self-review PASS and all required exact-head CI PASS; post-closeout provenance erratum points to correction lifecycle PR #191 without changing substantive classifications.
 status: completed
 delivery_pr: 187
 final_head_sha: 2d93f3211a1a27f0e88f08fd13612fae9cf50193
