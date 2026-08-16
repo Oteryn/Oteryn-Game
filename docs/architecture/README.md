@@ -10,7 +10,7 @@ Use this order when documents overlap:
 2. an explicit later ADR/contract that states it supersedes the older authority for the named scope;
 3. the accepted ADR/contract that otherwise owns the domain;
 4. `FOUNDATION_PROGRAMME_CURRENT_STATUS.md` for current progression/status wording;
-5. actively maintained review refinements and decision registers;
+5. actively maintained review refinements, reconciliation overlays and decision registers;
 6. historical analysis, evidence and archived task records.
 
 Supersession precedence applies **only** to the scope explicitly named by the later decision. The older owning contract remains authoritative everywhere else. A newer date alone never supersedes an accepted semantic contract.
@@ -20,10 +20,12 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 ## Current architecture entry points
 
 - [Foundation programme current status](FOUNDATION_PROGRAMME_CURRENT_STATUS.md)
+- [2026-08-16 post-wave A–F reconciliation](OTERYN_V2_POST_WAVE_A_F_RECONCILIATION_20260816.md) — supersedes only stale execution-status/coverage/next-action wording in older horizon/gap snapshots
 - [Foundation decision backlog](FOUNDATION_DECISION_BACKLOG.md)
 - [Global architecture decision register](GLOBAL_ARCHITECTURE_DECISION_REGISTER.md)
 - [2026-08-10 multi-perspective architecture refinements](ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-10.md)
 - [Gameplay and product architecture horizon](GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md)
+- [Architecture analysis gap register](ARCHITECTURE_ANALYSIS_GAP_REGISTER.md)
 - [Multichannel system scope matrix](MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md)
 
 ## Core ADRs
@@ -71,7 +73,18 @@ Architecture acceptance is not runtime implementation. Use [Architecture Status 
 
 `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` are accepted/lifecycle-closed architecture with implementation `NOT_STARTED`. GAME-ITEM + DUR-03 freeze typed item legality, one durable item location, ItemInstanceId lifecycle transitions, conservation/source-sink lineage, idempotency/retry/ambiguous-commit handling, runtime↔durable pickup/drop fencing, custody and bounded audit. GAME-CHANNEL freezes player Channel selection/recommendation/queue/co-location, durable anti-hopping/prior-Channel semantics, explicit source/reward multiplicity classes, qualitative public Channel create/drain/drain-abort/retirement predicates, same-Channel recovery and one-World community/economy boundaries while leaving all numeric capacity/windows/hysteresis to PERF/OPS. DUR-04 freezes stable semantic package/content identity, deterministic locked compilation, immutable bundle staging/activation/migration, bounded fail-closed loading and the target Component Model + project-owned WIT capability boundary with proposal-only authoritative mutations and versioned deterministic execution-profile semantics. SIM-DETERMINISM freezes explicit numeric/rounding/failure semantics, purpose-isolated deterministic gameplay RNG, exact semantic revision binding, logical time/order, normalized external nondeterminism, replay provenance, future-determining state hashing/divergence evidence and supported-target determinism. None of these acceptances authorizes Rust/runtime/client/compiler/loader/Studio/SIM/combat/AI/script implementation, exact formulas or RNG/numeric/hash dependencies, PostgreSQL DDL/migrations, Platform writes, broad content import, production mutation or entitlement activation.
 
-The accepted Reference evidence/parity registry remains a paper-only evidence authority. Schema v1 is pinned and manifest revision 3 is `ACCEPTED`; `ABILITY_COMBAT` has four registered Light Healing/Ice Strike cases delivered by PR #255 merge `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`. All four remain fail-closed: target `UNKNOWN`, source/case provenance `PENDING`, legal review `PENDING`, implementation `NOT_STARTED`, parity `PARITY_PENDING_EVIDENCE`. The human package contains pending fixture blueprints only; it is not executable content and does not establish mechanic parity.
+The accepted Reference evidence/parity registry remains a paper-only evidence authority. Schema v1 is pinned and manifest revision 3 is `ACCEPTED`; `ABILITY_COMBAT` has four registered Light Healing/Ice Strike cases delivered by PR #255 merge `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`. Agent A PR #271 later completed the bounded continuity/provenance pass with **0/4 promoted**. All four remain fail-closed: target `UNKNOWN`, source/case provenance `PENDING`, legal review `PENDING`, implementation `NOT_STARTED`, parity `PARITY_PENDING_EVIDENCE`. The human package contains pending fixture blueprints only; it is not executable content and does not establish mechanic parity.
+
+## Delivered first-wave proposals/candidates — not yet owner-accepted
+
+These files are merged and their delivery lifecycles are closed, but their `DecisionStatus` remains proposal/candidate as shown. Do not list them under accepted contracts until a later explicit owner-decision package says so.
+
+- [GAME-ABILITY-01 whole-gate analysis](GAME-ABILITY-01_WHOLE_GATE_GAP_ANALYSIS.md) + [candidate](GAME-ABILITY-01_WHOLE_GATE_CONTRACT_CANDIDATE.md) — `CANDIDATE / LIFECYCLE_CLOSED / NOT_STARTED`, PR #268 merge `0cfd8d8ee3ecf4fbb1cb76cbc9680b53a152e3c1`.
+- [GAME-AI-01 analysis](GAME-AI-01_CREATURE_AI_SPAWN_PATHFINDING_ANALYSIS.md) + [successor candidate](GAME-AI-01_CREATURE_AI_SPAWN_PATHFINDING_CONTRACT_CANDIDATE.md) — `PROPOSED / LIFECYCLE_CLOSED / NOT_STARTED`, successor PR #276 merge `f1bd64a62b9392223589e6b0609149570f5a76b5`; predecessor #272 superseded.
+- [GAME-INTERACTION-01 successor analysis](GAME-INTERACTION-01_SUCCESSOR_CHILD_IDENTITY_RETRY_ANALYSIS.md) + [successor candidate](GAME-INTERACTION-01_SUCCESSOR_CHILD_IDENTITY_RETRY_CONTRACT_CANDIDATE.md) — `PROPOSED / LIFECYCLE_CLOSED / NOT_STARTED`, successor PR #277 merge `c8d8ae20471acf004db7bbf6015a2d1b710aa8af`; predecessor #269 superseded.
+- [ALPHA-CLIENT-01 analysis](ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_ANALYSIS.md) + [candidate](ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_CONTRACT_CANDIDATE.md) — `CANDIDATE / LIFECYCLE_CLOSED / NOT_STARTED`, PR #273 merge `b7f239a32081fc43f5d3306517eadde850b5be6b`.
+- [ANL-02 analysis](ANL-02_GAMEPLAY_BALANCE_WORLD_ANALYTICS_ANALYSIS.md) + [candidate](ANL-02_GAMEPLAY_BALANCE_WORLD_ANALYTICS_CONTRACT_CANDIDATE.md) — `CANDIDATE / LIFECYCLE_CLOSED / NOT_STARTED`, PR #270 merge `32ff2ae75530cb9334463833462eb02c44dc435b`.
+- [ANL-03 analysis](ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_ANALYSIS.md) + [candidate](ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_CONTRACT_CANDIDATE.md) — `CANDIDATE / LIFECYCLE_CLOSED / NOT_STARTED`, same PR #270.
 
 ## Machine-readable contracts
 
@@ -102,11 +115,13 @@ accepted DUR-04 content/world/scripting architecture
 + accepted SIM-DETERMINISM-01
 -> accepted/pinned Reference evidence/parity manifest v1
 -> first representative ABILITY_COMBAT cases delivered fail-closed
--> target-continuity + provenance-clearance evidence for those four cases
--> later real-boundary VSL sequence only after explicit implementation authority
+-> Agent A continuity/provenance pass completed: 0/4 promoted
+-> merged GAME-ABILITY whole-gate candidate
+-> next: bounded GAME-ABILITY-01 owner-decision package
+-> later real-boundary VSL sequence only after accepted owning architecture + explicit implementation authority
 ```
 
-The selected next bounded paper-only programme action is the **target-continuity + provenance-clearance evidence package for the four registered `ABILITY_COMBAT` cases**. It must obtain provenance-cleared, time-appropriate evidence that directly bridges or captures the immutable 2026-07-28 first Reference target boundary and may promote classifications only when the evidence contract permits it. Patch-note/search silence is not continuity proof; do not broaden mechanic inventory or freeze physical catalogue tooling before proving this representative historical-evidence path. No new stable gate ID is implied. Any executable server/persistence/channel/item/content/SIM increment still requires separate explicit implementation authority.
+The selected next bounded paper-only programme action is the **`GAME-ABILITY-01` owner-decision package**. It consumes the merged whole-gate analysis/candidate, all accepted GAME-ABILITY partial baselines and the canonical Agent-A 0/4 fail-closed result. It must apply the architecture decision-timing test, preserve cross-domain ownership and `UNKNOWN/PENDING` Reference truth, and obtain an explicit owner disposition without implementing runtime or claiming parity. After that decision is delivered/lifecycle-closed, re-evaluate the merged GAME-AI, GAME-INTERACTION, ALPHA-CLIENT and ANL-02/ANL-03 packages before selecting their owner-decision order. Any executable server/persistence/channel/item/content/SIM/client/analytics increment still requires separate explicit implementation authority.
 
 ## Transport rule
 

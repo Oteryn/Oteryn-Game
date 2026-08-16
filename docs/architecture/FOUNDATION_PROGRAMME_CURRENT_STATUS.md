@@ -1,7 +1,7 @@
 # Oteryn v2 Foundation Programme — Current Status
 
 - Status: Canonical current execution-status overlay
-- Date: 2026-08-14
+- Date: 2026-08-16
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Applies to: accepted foundation progression and next ordered architecture gates
 - FND-04 lifecycle closeout merge: `adb0882a5ddbe42944fe955f5effb78fd5495422`
@@ -13,17 +13,18 @@
 - SIM-DETERMINISM delivery merge: `1e16b32069868f14aa1761a512b6cd8b1024e277`
 - Reference evidence manifest v1 acceptance delivery: PR #252 / merge `52ef65f67e8a0e9c6f31d4754f8a6b7322d8d6d8`
 - First representative ABILITY_COMBAT evidence delivery: PR #255 / merge `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`
-- Current phase: `foundation/game/content/determinism architecture accepted/lifecycle-closed where delivered + Reference evidence/parity manifest v1 accepted/pinned with manifest revision 3 and first representative ABILITY_COMBAT cases delivered fail-closed; runtime largely NOT_STARTED; all executable runtime/DDL/production work still requires separate explicit owner authority; the selected next paper-only programme action is target-continuity + provenance-clearance evidence for the four registered ABILITY_COMBAT cases`
+- First parallel architecture wave delivery merges: Agent A #271 `dc1eecae7952902bee3fb1e2d88aefc2be792cae`; GAME-ABILITY #268 `0cfd8d8ee3ecf4fbb1cb76cbc9680b53a152e3c1`; GAME-AI successor #276 `f1bd64a62b9392223589e6b0609149570f5a76b5`; GAME-INTERACTION successor #277 `c8d8ae20471acf004db7bbf6015a2d1b710aa8af`; ALPHA-CLIENT #273 `b7f239a32081fc43f5d3306517eadde850b5be6b`; ANL-02/ANL-03 #270 `32ff2ae75530cb9334463833462eb02c44dc435b`
+- Current phase: `foundation/game/content/determinism architecture accepted/lifecycle-closed where explicitly owner-accepted; first A-F parallel architecture wave delivery/lifecycle is complete; Agent A preserved the four ABILITY_COMBAT cases fail-closed at 0/4 promoted; GAME-ABILITY, GAME-AI, GAME-INTERACTION, ALPHA-CLIENT and ANL-02/ANL-03 now have merged lifecycle-closed proposal/candidate packages but are not silently promoted to ACCEPTED; runtime remains largely NOT_STARTED; all executable runtime/DDL/production work still requires separate explicit owner authority; the selected next paper-only programme action is a bounded owner-decision package for the merged GAME-ABILITY-01 whole-gate candidate`
 
 ## 1. Authority of this overlay
 
 This document answers what is accepted now and what may happen next. Detailed review/CI/repair evidence lives in accepted contracts, archived task records and merged PRs.
 
-Older backlog/register prose that describes completed FND/DUR/ANL/gameplay/SIM gates as live is historical execution narrative. Accepted contracts plus this overlay govern current progression. Stable decision IDs and future dependency requirements remain valid unless explicitly superseded.
+Older backlog/register prose that describes completed FND/DUR/ANL/gameplay/SIM gates or the pre-wave ABILITY_COMBAT evidence task as live is historical execution narrative. Accepted contracts plus this overlay govern current progression. Stable decision IDs and future dependency requirements remain valid unless explicitly superseded.
 
 `docs/architecture/ARCHITECTURE_REVIEW_REFINEMENTS_2026-08-10.md` adds owner-accepted programme ordering and product/operations refinements. `docs/architecture/ADR-0014-dual-gameplay-transport-tcp-default-quic-opt-in.md` accepts the long-term dual-transport strategy but explicitly preserves TCP transport profile `1` as the only currently registered gameplay transport profile. QUIC player admission remains blocked until `PROTOCOL_OTERYN_V1_REGISTRY.json` and both FND-04 fresh/recovery grant profiles are reconciled by a later accepted delivery. The application protocol and all security/sequencing/fencing semantics remain one `protocol-oteryn` contract.
 
-`ARCHITECTURE_STATUS_MODEL.md` is normative for current status presentation. Every row below separates `DecisionStatus`, `DeliveryStatus` and `ImplementationStatus`; one axis never implies another. `PLANNED` means the gate is registered for future work but no active task/PR currently owns its delivery; `OPEN` is reserved for a concrete active delivery or unresolved lifecycle record.
+`ARCHITECTURE_STATUS_MODEL.md` is normative for current status presentation. Every row below separates `DecisionStatus`, `DeliveryStatus` and `ImplementationStatus`; one axis never implies another. `PLANNED` means the gate is registered for future work but no active task/PR currently owns its delivery; `OPEN` is reserved for a concrete active delivery or unresolved lifecycle record. A merged/lifecycle-closed proposal or candidate is not `ACCEPTED` merely because its delivery lifecycle completed.
 
 ## 2. Foundation and Stage-B progression
 
@@ -47,6 +48,12 @@ Older backlog/register prose that describes completed FND/DUR/ANL/gameplay/SIM g
 | `DUR-02` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | owner-accepted whole Persistence-v1 baseline in `DUR-02_PERSISTENCE_V1_OWNER_BASELINE.md`; delivery PR #201 exact head `900be9f499981e638a6f8089fb46331b43ba321c` passed self-review `4914253621`, independent Codex review `5264011166`, Agent Governance `31576235871`, Dependency Review `31576235909` and CodeQL `31576235921`, then squash-merged as `ec4b840b0742967370a4235d87094b29a802fe28`; Character persistence partial baseline remains binding; no PostgreSQL DDL/migration or runtime authority |
 | `DUR-03` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | canonical `DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md`; delivery PR #207 exact final head `a1d949362e219373a5d314c0e9ddf8de110362dd` passed self-review `4916797999`, independent Codex no-suggestion review, Agent Governance `31599369738`, Dependency Review `31599369737`, CodeQL `31599369780`, then squash-merged as `63380bcba469027e90677aaf4db571fa941be2f4`; architecture freezes item/value location, conservation, idempotency, runtime↔durable handoff and anti-duplication semantics but grants no runtime/DDL/production authority |
 | `DUR-04` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | canonical `DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md`; delivery PR #212 exact final head `77e68ffb9e9e0e31ca751d42ff5f7c03466b2b23` passed owner-directed exact-head self-review `4921665072` under the explicit 2026-08-13 owner override of the independent-review mechanism, Agent Governance `31646998515`, Dependency Review `31646998564`, CodeQL `31646998517`, then squash-merged unchanged as `568236c33cd23da017bca1dbd1ed98afc8da71f4`; repair budget `3/3`; no runtime/client/compiler/loader/Studio/DDL/content-import/production authority |
+| `GAME-ABILITY-01` whole-gate | `CANDIDATE` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | merged reviewed candidate in `GAME-ABILITY-01_WHOLE_GATE_CONTRACT_CANDIDATE.md`; Agent A dependency was consumed at 0/4 promoted; delivery PR #268 final head `a65680d9504b3a4e6394ad3bb3dc25c6630cd098`, merge `0cfd8d8ee3ecf4fbb1cb76cbc9680b53a152e3c1`, closeout #282; candidate remains awaiting explicit acceptance and grants no runtime/parity authority |
+| `GAME-AI-01` | `PROPOSED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | owner-authorized same-gate successor package is merged as PR #276 / `f1bd64a62b9392223589e6b0609149570f5a76b5`, closeout #293; predecessor #272/#261 is superseded/closed; merged proposal preserves deterministic bounded AI/spawn/pathfinding semantics but is not silently promoted to owner-accepted architecture |
+| `GAME-INTERACTION-01` | `PROPOSED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | owner-authorized same-gate successor package is merged as PR #277 / `c8d8ae20471acf004db7bbf6015a2d1b710aa8af`, closeout #290; predecessor #269/#262 is superseded/closed; merged proposal preserves child-occurrence identity/retry/reconciliation semantics but remains unaccepted as a whole gate |
+| `ALPHA-CLIENT-01` | `CANDIDATE` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | merged reviewed candidate in `ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_CONTRACT_CANDIDATE.md`; delivery PR #273 / `b7f239a32081fc43f5d3306517eadde850b5be6b`, closeout #297; no executable client/Studio/runtime authority follows from candidate delivery |
+| `ANL-02` | `CANDIDATE` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | merged reviewed candidate in `ANL-02_GAMEPLAY_BALANCE_WORLD_ANALYTICS_CONTRACT_CANDIDATE.md`; delivery PR #270 / `32ff2ae75530cb9334463833462eb02c44dc435b`, closeout #300; analytics remains read-only/non-authoritative and candidate acceptance is still separate |
+| `ANL-03` | `CANDIDATE` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | merged reviewed candidate in `ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_CONTRACT_CANDIDATE.md`; same PR #270 / `32ff2ae75530cb9334463833462eb02c44dc435b`; DUR-03 remains authoritative prevention/conservation owner and ANL-03 remains read-only evidence/detection |
 | `PROD-ENTITLEMENTS-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Platform producer security prerequisite #944 is satisfied by PR #968 merge `afaa6d1d8340e44b1152b62d6d27e5fd1649804a`; Oteryn-v2 consumer/enforcement contract remains unaccepted and Premium/VIP/game-consumed entitlement activation remains unauthorized |
 
 The `ImplementationStatus` column describes only the scope of the named gate. `NOT_STARTED` does not mean adjacent repository code is absent; it means this overlay does not claim the gate's production/runtime behavior as implemented. `PROVEN` is used only where exact revision and named evidence are present in the row or directly named delivery record.
@@ -65,7 +72,7 @@ DUR-01 remains accepted/lifecycle-closed: UUIDv7 native durability uses PostgreS
 
 `GAME-VISION-01_FIRST_REFERENCE_BASELINE_OWNER_BASELINE.md` fixes the first Reference external behavior cut to **Global Tibia production-observable behavior after the 2026-07-28 server-save/maintenance change boundary**. The target is immutable; later Global changes are candidate evidence for a later explicit Reference revision rather than silent mutation. Target selection remains separate from evidence completeness: individual mechanics may be `PROVEN`, `OBSERVED`, `DERIVED`, `UNKNOWN`, `CONFLICT` or `DECLARED_DIFFERENCE`. Official public sources are primary but not assumed exhaustive; controlled black-box observation may provide target evidence; community sources are corroborative/discovery inputs; Canary/crystalserver/other OTS remain hypothesis/inventory inputs rather than proof of Global behavior. Patch-note/search absence is not evidence of no change. Security/integrity/legal/provenance constraints override defect compatibility.
 
-`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` accepts and pins the paper registry for that immutable first target: schema version 1 remains the unchanged schema blob `208506f461231eb3ed8966ae16dade0764eb39b8`, manifest revision 3 is `ACCEPTED`, `ABILITY_COMBAT` is `MECHANIC_CASES_REGISTERED`, four bounded Light Healing/Ice Strike cases are registered with target evidence `UNKNOWN`, source/case provenance `PENDING`, legal review `PENDING`, Oteryn implementation `NOT_STARTED` and parity `PARITY_PENDING_EVIDENCE`, and `canonical_digest` remains null until accepted canonicalization/digest tooling exists. Registry acceptance and case registration create no mechanic-level parity claim, no mutable `latest` consumer authority and no runtime/release/content/DDL/Platform/production authority. Delivery PR #255 merged as `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`.
+`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` accepts and pins the paper registry for that immutable first target: schema version 1 remains the unchanged schema blob `208506f461231eb3ed8966ae16dade0764eb39b8`, manifest revision 3 is `ACCEPTED`, `ABILITY_COMBAT` is `MECHANIC_CASES_REGISTERED`, four bounded Light Healing/Ice Strike cases are registered with target evidence `UNKNOWN`, source/case provenance `PENDING`, legal review `PENDING`, Oteryn implementation `NOT_STARTED` and parity `PARITY_PENDING_EVIDENCE`, and `canonical_digest` remains null until accepted canonicalization/digest tooling exists. Registry acceptance and case registration create no mechanic-level parity claim, no mutable `latest` consumer authority and no runtime/release/content/DDL/Platform/production authority. Delivery PR #255 merged as `d04f0939f0078cb677ca3ad66f5949e9f3dadc8d`. Agent A PR #271 later performed the bounded target-continuity/provenance pass and promoted **0/4** cases; the same fail-closed classifications remain current.
 
 `GAME-CHAR-01_STAGE_A_OWNER_BASELINE.md` remains binding for baseline-neutral Character ownership/lifecycle/revision/migration safety. `GAME-CHAR-01_STAGE_B_OWNER_BASELINE.md` accepts the Reference-sensitive semantic closure layered on Stage A: global logical naming namespace with versioned canonical-comparison policy; versioned lifecycle/quota policy; versioned creation/starter context; five Reference vocation families/promoted forms plus pre-vocation state and eight skill categories; formula-neutral progression ownership; promotion achievement versus entitlement-derived activation; profile-scoped death/protection; character-owned offline-training counter semantics; modern character-specific progression ownership scope; and explicit hard parity gates for every unresolved `UNKNOWN/CONFLICT` target rule. Architecture acceptance does **not** imply `PARITY_CONFIRMED`, physical schema, runtime implementation or all-profile schema completeness.
 
@@ -158,6 +165,7 @@ Accepted FND/DUR-01/DUR-02/DUR-03/DUR-04/ANL-01/NET-TRANSPORT-01/GAME-VISION-01/
 - Channel directory/recommendation/queue/switch-guard/dynamic-scaling runtime or Platform implementation merely because GAME-CHANNEL is accepted;
 - compiler/loader/Studio/scripting runtime, final physical world/bundle encoding, WIT host implementation, broad content import or live content activation merely because DUR-04 is accepted;
 - authoritative SIM kernel/RNG/state-hash/replay implementation, numeric/RNG/hash dependency adoption, combat/AI/progression/script implementation or exact gameplay/Reference/balance formulas merely because SIM-DETERMINISM is accepted;
+- any implementation based solely on the merged GAME-ABILITY/GAME-AI/GAME-INTERACTION/ALPHA-CLIENT/ANL-02/ANL-03 candidate/proposal deliveries before their owning architecture is explicitly accepted;
 - broad gameplay/content implementation from the product baseline alone;
 - broker/stream/warehouse/lake/dashboard selection or deployment;
 - balance/security detector implementation;
@@ -171,21 +179,20 @@ The native client therefore remains legitimately pre-native-protocol until a sep
 
 ## 8. Next ordered architecture and proof work
 
-Whole `DUR-02 — Persistence v1`, `GAME-ITEM-01`, `DUR-03`, `GAME-CHANNEL-01`, `DUR-04` and `SIM-DETERMINISM-01` architecture are accepted/lifecycle-closed while implementation remains `NOT_STARTED`. Reference evidence/parity manifest v1 is accepted/pinned/lifecycle-closed as a paper registry and now contains the first representative `ABILITY_COMBAT` case set. A **separately authorized server/persistence/content foundation implementation programme** may consume accepted common scopes, but architecture acceptance does not itself grant that authority.
+The first A-F parallel architecture delivery wave is complete under `OTERYN_V2_ARCHITECTURE_PARALLEL_WORK_ALLOCATION.md`: every allocated lane is merged/lifecycle-closed or terminally superseded. Agent A's exact evidence result remains **0/4 promoted** for the registered Light Healing/Ice Strike cases; target evidence is `UNKNOWN`, source/case/legal provenance remains `PENDING`, implementation is `NOT_STARTED` and parity remains `PARITY_PENDING_EVIDENCE`.
 
-`REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` freezes schema version 1 and the immutable 2026-07-28 first Reference target plus fail-closed evidence/provenance policy. Manifest revision 3 is `ACCEPTED`; `ABILITY_COMBAT` is `MECHANIC_CASES_REGISTERED`; four Light Healing/Ice Strike cases are registered with target evidence `UNKNOWN`, source/case provenance `PENDING`, legal review `PENDING`, Oteryn implementation `NOT_STARTED`, exact revision null, no fixture/test link and parity `PARITY_PENDING_EVIDENCE`. `canonical_digest=null` remains truthful until accepted digest tooling exists. The registry must not be rebuilt or duplicated.
+The wave also delivered lifecycle-closed architecture packages for GAME-ABILITY, GAME-AI, GAME-INTERACTION, ALPHA-CLIENT and ANL-02/ANL-03. Delivery completion is not decision acceptance. Their current decision axes remain the explicit statuses recorded in the table above, and none grants executable implementation authority.
 
-The remaining named pre-VSL paper-only programme action is a bounded **target-continuity + provenance-clearance evidence package for those four registered `ABILITY_COMBAT` cases**. It must locate provenance-cleared, time-appropriate evidence that directly bridges or captures the immutable 2026-07-28 target boundary and then either promote or reject the indexed official-state hypotheses. Patch-note/search absence is not continuity proof. Do not broaden mechanic inventory or freeze physical catalogue tooling before proving this representative historical-evidence path; do not invent a new stable gate ID.
+The next bounded paper-only programme action is:
 
-The next ordered work is:
+1. **Prepare an owner-decision package for `GAME-ABILITY-01` whole-gate acceptance or rejection** using the merged `GAME-ABILITY-01_WHOLE_GATE_GAP_ANALYSIS.md` and `GAME-ABILITY-01_WHOLE_GATE_CONTRACT_CANDIDATE.md` as candidate evidence. Preserve every accepted partial baseline, the Agent-A 0/4 fail-closed Reference result, FND-03 timer/catch-up rules, cross-domain owner boundaries and explicit `DECISIONS_NOT_TAKEN`; do not implement runtime or claim Reference parity.
+2. After that owner decision is canonically delivered and lifecycle-closed, re-evaluate the merged GAME-AI, GAME-INTERACTION, ALPHA-CLIENT and ANL-02/ANL-03 proposal/candidate packages against the resulting accepted main before selecting their own owner-decision order.
+3. Obtain explicit implementation authority before any bounded server/persistence/Channel/DUR/content/SIM/client/analytics executable increment. A safe decomposition remains GameNode/bootstrap shell -> `protocol-oteryn` transport/runtime adapter -> admission/GameSession/CharacterLease -> PostgreSQL migration/persistence substrate -> Character/FND-04 persistence -> minimal ChannelRuntime; item/value implementation additionally consumes GAME-ITEM/DUR-03 and concrete ANL/resource-limit evidence; content implementation additionally consumes DUR-04 and required physical-format/resource-limit/WIT execution-profile evidence; deterministic simulation/combat/AI/progression implementation additionally consumes SIM-DETERMINISM plus accepted owning domain contracts and exact formula/Reference evidence; Channel product implementation additionally consumes GAME-CHANNEL and later PERF/OPS numeric/orchestration decisions.
+4. `NET-TRANSPORT-02` (or equivalent bounded successor) remains later evidence work for QUIC profile/FND-04 reconciliation.
+5. Expand `VSL-01` through real-boundary slices only after each owning architecture/implementation gate is ready: admission, movement, combat, persistence, recovery, multichannel.
+6. Establish minimal admin/security/SRE readiness before external alpha.
 
-1. Obtain provenance-cleared, time-appropriate target-continuity evidence for the four registered Light Healing/Ice Strike cases and update classifications only when the evidence contract permits it; keep `UNKNOWN/PENDING` fail-closed otherwise and do not claim executable parity.
-2. Obtain explicit implementation authority before any bounded server/persistence/Channel/DUR/content/SIM executable increment. A safe decomposition remains GameNode/bootstrap shell -> `protocol-oteryn` transport/runtime adapter -> admission/GameSession/CharacterLease -> PostgreSQL migration/persistence substrate -> Character/FND-04 persistence -> minimal ChannelRuntime; item/value implementation additionally consumes GAME-ITEM/DUR-03 and concrete ANL/resource-limit evidence; content implementation additionally consumes DUR-04 and required physical-format/resource-limit/WIT execution-profile evidence; deterministic simulation/combat/AI/progression implementation additionally consumes SIM-DETERMINISM and exact formula/Reference evidence; Channel product implementation additionally consumes GAME-CHANNEL and later PERF/OPS numeric/orchestration decisions.
-3. `NET-TRANSPORT-02` (or equivalent bounded successor) remains later evidence work for QUIC profile/FND-04 reconciliation.
-4. Expand `VSL-01` through real-boundary slices only after each owning architecture/implementation gate is ready: admission, movement, combat, persistence, recovery, multichannel.
-5. Establish minimal admin/security/SRE readiness before external alpha.
-
-`PROD-ENTITLEMENTS-01` remains independently deferred. Its Platform producer prerequisite is satisfied, but game-consumed Premium/VIP/commerce behavior still requires its own Oteryn-v2 consumer/enforcement contract and rollout proof.
+`PROD-ENTITLEMENTS-01` remains independently deferred. Its Platform producer prerequisite is satisfied, but game-consumed Premium/VIP/commerce behavior still requires its own Oteryn-v2 consumer/enforcement contract and rollout proof. Open issue #115 remains the consumer-side architecture gate and is not absorbed by the GAME-ABILITY decision package.
 
 ## 9. Vertical-slice execution rule
 
@@ -261,16 +268,36 @@ Reference evidence/parity manifest v1
 -> ACCEPTED / LIFECYCLE_CLOSED
 -> schema version 1 pinned; manifest revision 3 ACCEPTED
 -> ABILITY_COMBAT has four registered Light Healing/Ice Strike cases
+-> Agent A #271 promoted 0/4
 -> target UNKNOWN; source/case/legal provenance PENDING; implementation NOT_STARTED; parity PENDING
 -> canonical_digest null until accepted tooling exists
 -> no mechanic parity implied
 
-next paper-only programme action
--> target-continuity + provenance-clearance evidence for the four registered ABILITY_COMBAT cases
--> directly bridge/capture the immutable 2026-07-28 target boundary
--> no patch/search-silence continuity inference; no broaden-before-proof; no invented stable gate ID
+GAME-ABILITY-01 whole-gate
+-> CANDIDATE / LIFECYCLE_CLOSED / NOT_STARTED
+-> merged candidate awaiting explicit owner acceptance/rejection
 
-server/persistence/channel/content/SIM implementation
+GAME-AI-01
+-> PROPOSED / LIFECYCLE_CLOSED / NOT_STARTED
+-> owner-authorized successor merged; predecessor superseded
+
+GAME-INTERACTION-01
+-> PROPOSED / LIFECYCLE_CLOSED / NOT_STARTED
+-> owner-authorized successor merged; predecessor superseded
+
+ALPHA-CLIENT-01
+-> CANDIDATE / LIFECYCLE_CLOSED / NOT_STARTED
+
+ANL-02 / ANL-03
+-> CANDIDATE / LIFECYCLE_CLOSED / NOT_STARTED
+-> observational/read-only authority only
+
+next paper-only programme action
+-> prepare bounded GAME-ABILITY-01 owner-decision package from the merged whole-gate candidate
+-> preserve Agent-A 0/4 fail-closed Reference result and all accepted owner boundaries
+-> no runtime implementation and no parity claim
+
+server/persistence/channel/content/SIM/client/analytics implementation
 -> explicit owner implementation authorization still REQUIRED
 
 PROD-ENTITLEMENTS-01
