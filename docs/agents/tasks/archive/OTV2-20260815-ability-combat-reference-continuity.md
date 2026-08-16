@@ -4,21 +4,26 @@
 task_id: OTV2-20260815-ability-combat-reference-continuity
 title: Build target-continuity and provenance-clearance evidence package for first ABILITY_COMBAT cases
 mode: CONTRACT
-status: validating
+status: completed
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: docs/arch-a-reference-continuity
 pr: 271
 base_sha: 088b46638ac014cd7928d6b0b75cee44902fe22c
 head_sha: a76f674b4d231fc0f33f65893ba56153583083a7
-final_head_sha: null
+final_head_sha: 5b13f0145301700b6c3249ef01de49da4352d4f5
 final_head_frozen_at: null
+delivery_merge_sha: dc1eecae7952902bee3fb1e2d88aefc2be792cae
+closeout_branch: docs/arch-a-b-lifecycle-closeout-20260815
+closeout_pr: 282
 owner: DOMAIN ARCHITECTURE DESIGN AGENT / Agent A worker
+owner_state: released_after_closeout
 created_at: 2026-08-15T00:20:22+02:00
-updated_at: 2026-08-15T00:26:12+02:00
+updated_at: 2026-08-15T23:24:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
-owned_paths:
+owned_paths: []
+original_owned_paths:
   - docs/agents/tasks/active/OTV2-20260815-ability-combat-reference-continuity.md
   - docs/agents/evidence/OTV2-20260815-ability-combat-reference-continuity.md
 public_contracts: []
@@ -33,11 +38,20 @@ depends_on:
   - docs/contracts/REFERENCE_EVIDENCE_PARITY_MANIFEST_V1.json
   - docs/architecture/GAME-ABILITY-01_FIRST_REFERENCE_EVIDENCE_FIXTURE_PACKAGE.md
   - PR #255 / merge d04f0939f0078cb677ca3ad66f5949e9f3dadc8d
-blocks:
+blocks: []
+historical_blocks:
   - coordinator audit of draft PR #271
 cross_repository_coordination_id: OTV2-ARCH-PARALLEL-20260814
 external_repositories: []
+repair_cycles_for_current_gate: 2
+implementation_authority: NONE
+runtime_authority: NONE
+ddl_authority: NONE
+platform_authority: NONE
+production_authority: NONE
 ```
+
+> **Archive note:** the sections below preserve the complete delivery-time task record, including historical statements that merge/closeout were not yet performed at worker handoff. Current terminal state is defined by the completed metadata above and the post-merge closeout section at the end. No delivery history is deleted during archival.
 
 ## Outcome
 
@@ -188,4 +202,44 @@ blocker: null
 next_action: WORKER_EXACT_HEAD_FULL_DIFF_SELF_REVIEW_AND_CI_THEN_COORDINATOR_REAUDIT
 ```
 
+## Post-merge lifecycle closeout
+
+Delivery PR #271 was independently re-audited on exact final head `5b13f0145301700b6c3249ef01de49da4352d4f5`, passed required exact-head repository checks, completed a clean owner-authorized independent Codex review, and was squash-merged as `dc1eecae7952902bee3fb1e2d88aefc2be792cae`.
+
+### Exact delivery validation snapshot
+
+The merge decision used the following immutable delivery evidence on unchanged final head `5b13f0145301700b6c3249ef01de49da4352d4f5` against then-live `main@4246b165473059c0ac81475d885d71350c2cfb36`:
+
+- drift: `behind_by=0`;
+- changed-file scope: exactly the two Agent-A allocated paths;
+- Agent governance run `31904625485`: **PASS**;
+- Merge authority audit run `31904625821`: **PASS**;
+- Merge gate run `31904626082`, including final `Merge gate / validate`: **PASS**;
+- coordinator exact-head full-diff audit/self-review: **PASS**, zero open material findings;
+- owner-authorized independent Codex review on the exact final head: **clean**;
+- unresolved review threads immediately before merge: **0**;
+- runtime/component/E2E: `NOT_APPLICABLE` — paper-only evidence/task-state delivery.
+
+Closeout PR #282 changes bookkeeping only:
+
+- this complete task history moves from `active/` to `archive/`;
+- task ownership is released (`owned_paths: []`, original paths retained above);
+- issue #259 becomes eligible for completed closure only after #282 merges;
+- the canonical evidence artifact remains unchanged;
+- the substantive result remains **0/4 promoted / UNKNOWN / PENDING / NOT_STARTED / parity fail closed**.
+
+Historical `NOT PERFORMED` statements above describe the worker handoff point and are intentionally retained as audit history; this post-merge section records their later terminal resolution.
+
+```yaml
+terminal_status: completed
+delivery_final_head_sha: 5b13f0145301700b6c3249ef01de49da4352d4f5
+delivery_merge_sha: dc1eecae7952902bee3fb1e2d88aefc2be792cae
+closeout_pr: 282
+owner_state: released_after_closeout
+owner_action_required: false
+blocker: null
+next_action: none
+```
+
 **MERGE_AUTHORITY: ARCHITECTURE_COORDINATOR_ONLY**
+**IMPLEMENTATION_AUTHORITY: NONE**

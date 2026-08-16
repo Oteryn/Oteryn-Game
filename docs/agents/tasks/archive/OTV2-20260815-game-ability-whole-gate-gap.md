@@ -4,7 +4,7 @@
 task_id: OTV2-20260815-game-ability-whole-gate-gap
 title: Reconcile GAME-ABILITY-01 partial baselines into a bounded whole-gate closure candidate
 mode: CONTRACT
-status: validating
+status: completed
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: docs/arch-b-game-ability-gap
@@ -12,14 +12,19 @@ issue: 260
 pr: 268
 base_sha: 088b46638ac014cd7928d6b0b75cee44902fe22c
 head_sha: 98085bc2586c0e66ecf9715599f0e9a09c62952c
-final_head_sha: null
+final_head_sha: a65680d9504b3a4e6394ad3bb3dc25c6630cd098
 final_head_frozen_at: null
+delivery_merge_sha: 0cfd8d8ee3ecf4fbb1cb76cbc9680b53a152e3c1
+closeout_branch: docs/arch-a-b-lifecycle-closeout-20260815
+closeout_pr: 282
 owner: domain-architecture-agent-b
+owner_state: released_after_closeout
 created_at: 2026-08-15T00:17:00+02:00
-updated_at: 2026-08-15T23:02:00+02:00
+updated_at: 2026-08-16T08:36:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: whole-gate architecture reconciliation across accepted partial baselines and multiple read-only dependency contracts
-owned_paths:
+owned_paths: []
+original_owned_paths:
   - docs/agents/tasks/active/OTV2-20260815-game-ability-whole-gate-gap.md
   - docs/architecture/GAME-ABILITY-01_WHOLE_GATE_GAP_ANALYSIS.md
   - docs/architecture/GAME-ABILITY-01_WHOLE_GATE_CONTRACT_CANDIDATE.md
@@ -34,13 +39,22 @@ depends_on:
   - accepted FND-04, GAME-CHANNEL-01, GAME-CHAR-01, GAME-ITEM-01, DUR-02/DUR-03/DUR-04, SIM-DETERMINISM-01 and ANL-01 boundaries
   - docs/architecture/GLOBAL_ARCHITECTURE_DECISION_REGISTER.md
   - docs/agents/MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md
-blocks:
+blocks: []
+historical_blocks:
   - Architecture Coordinator exact-head audit and independent review before merge
   - broad executable GAME-ABILITY implementation until separately authorized and implementation/evidence dependencies are satisfied
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories: []
 merge_authority: ARCHITECTURE_COORDINATOR_ONLY
+repair_cycles_for_current_gate: 2
+implementation_authority: NONE
+runtime_authority: NONE
+ddl_authority: NONE
+platform_authority: NONE
+production_authority: NONE
 ```
+
+> **Archive note:** the sections below preserve the complete delivery-time task record, including historical statements that audit/merge/closeout were still pending at worker handoff. Current terminal state is defined by the completed metadata above and the post-merge closeout section at the end. No delivery history is deleted during archival.
 
 `head_sha` records the immediately preceding repaired architecture revision. The exact task-containing final head is recorded externally in immutable PR/check/review evidence rather than by a self-referential follow-up commit.
 
@@ -173,6 +187,46 @@ stall_warnings: 0
 owner_action_required: null
 blocker: null
 next_action: EXACT_HEAD_FULL_DIFF_SELF_REVIEW_AND_CI_THEN_INDEPENDENT_REVIEW
+```
+
+## Post-merge lifecycle closeout
+
+Delivery PR #268 completed exact-head repository checks and coordinator full-diff self-review on final head `a65680d9504b3a4e6394ad3bb3dc25c6630cd098`, received a clean owner-authorized independent Codex review with zero new material threads, and was squash-merged as `0cfd8d8ee3ecf4fbb1cb76cbc9680b53a152e3c1`.
+
+### Exact delivery validation snapshot
+
+The merge decision used the following immutable delivery evidence on unchanged final head `a65680d9504b3a4e6394ad3bb3dc25c6630cd098` against then-live `main@dc1eecae7952902bee3fb1e2d88aefc2be792cae`:
+
+- drift: `behind_by=0`;
+- changed-file scope: exactly the three Agent-B allocated paths;
+- Agent governance run `31908192483`: **PASS**;
+- Merge authority audit run `31908192475`: **PASS**;
+- Merge gate run `31908192473`, including final `Merge gate / validate`: **PASS**;
+- coordinator exact-head full-diff self-review: **PASS**, zero open material findings;
+- owner-authorized independent Codex review on the exact final head: **clean**;
+- unresolved review threads immediately before merge: **0**;
+- runtime/component/E2E: `NOT_APPLICABLE` — paper-only architecture delivery.
+
+Closeout PR #282 changes bookkeeping only:
+
+- this complete task history moves from `active/` to `archive/`;
+- task ownership is released (`owned_paths: []`, original paths retained above);
+- issue #260 becomes eligible for completed closure only after #282 merges;
+- merged GAME-ABILITY analysis/candidate remain unchanged;
+- canonical Agent-A evidence remains **0/4 promoted / UNKNOWN / PENDING / NOT_STARTED / parity fail closed**;
+- implementation remains `NOT_STARTED` and no runtime/client/protocol/content/DDL/Platform/production authority is created.
+
+Historical pending/`NOT_APPLICABLE` statements above describe the delivery-time handoff and are intentionally retained as audit history; this post-merge section records their later terminal resolution.
+
+```yaml
+terminal_status: completed
+delivery_final_head_sha: a65680d9504b3a4e6394ad3bb3dc25c6630cd098
+delivery_merge_sha: 0cfd8d8ee3ecf4fbb1cb76cbc9680b53a152e3c1
+closeout_pr: 282
+owner_state: released_after_closeout
+owner_action_required: false
+blocker: null
+next_action: none
 ```
 
 `MERGE_AUTHORITY: ARCHITECTURE_COORDINATOR_ONLY`
