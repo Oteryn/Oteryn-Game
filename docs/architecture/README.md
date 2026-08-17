@@ -21,6 +21,7 @@ Architecture acceptance is not runtime implementation or Reference parity. See `
 
 - [Foundation programme current status](FOUNDATION_PROGRAMME_CURRENT_STATUS.md) — current three-axis status and next safe gate.
 - [Global architecture decision register](GLOBAL_ARCHITECTURE_DECISION_REGISTER.md) — stable gate IDs, accepted state and remaining horizon.
+- [Stage-C VSL owner acceptance](OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md) — owner acceptance of `VSL-MOVE-01`, `VSL-COMBAT-01` and `VSL-CONTENT-01`.
 - [Remaining first-wave owner acceptance baseline](OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md) — owner acceptance of GAME-INTERACTION, ALPHA-CLIENT, GAME-AI and ANL-02/03.
 - [GAME-ABILITY whole-gate owner acceptance baseline](GAME-ABILITY-01_WHOLE_GATE_OWNER_ACCEPTANCE_BASELINE.md).
 - [Foundation decision backlog](FOUNDATION_DECISION_BACKLOG.md) — stable historical gate definitions; current execution wording may be superseded by current status.
@@ -65,9 +66,15 @@ Current accepted architecture includes:
 - `GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md`;
 - `SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md`;
 - `GAME-ABILITY-01_WHOLE_GATE_OWNER_ACCEPTANCE_BASELINE.md`;
-- `OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md`.
+- `OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md`;
+- `OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md`, accepting the bounded scope in:
+  - `VSL-MOVE-01_MINIMAL_MOVEMENT_VISIBILITY_CONTRACT_CANDIDATE.md`;
+  - `VSL-COMBAT-01_MINIMAL_COMBAT_DEATH_LOOT_CONTRACT_CANDIDATE.md`;
+  - `VSL-CONTENT-01_MINIMAL_NATIVE_CONTENT_SLICE_CONTRACT_CANDIDATE.md`.
 
-## Historical first-wave proposal/candidate artifacts
+The three Stage-C candidate filenames remain historical names because they are the exact reviewed artifacts accepted by the later owner-acceptance baseline; do not infer `CANDIDATE` DecisionStatus from the filename.
+
+## Historical first-wave / Stage-C preparation artifacts
 
 The following remain important immutable design/review history but are no longer the current DecisionStatus authority after explicit owner acceptance:
 
@@ -77,7 +84,8 @@ The following remain important immutable design/review history but are no longer
 - `GAME-AI-01_CREATURE_AI_SPAWN_PATHFINDING_ANALYSIS.md` + successor candidate;
 - `ANL-02_GAMEPLAY_BALANCE_WORLD_ANALYTICS_ANALYSIS.md` + candidate;
 - `ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_ANALYSIS.md` + candidate;
-- `OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_DECISION_PACKAGE_20260816.md` — resolved historical decision-preparation record.
+- `OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_DECISION_PACKAGE_20260816.md` — resolved historical decision-preparation record;
+- `OTERYN_V2_STAGE_C_VSL_OWNER_DECISION_PACKAGE_20260816.md` — resolved historical Stage-C decision-preparation record.
 
 Do not rewrite those files merely to change their historical proposal/candidate status.
 
@@ -90,15 +98,15 @@ Do not rewrite those files merely to change their historical proposal/candidate 
 
 Architecture acceptance does not change those facts.
 
-## Current Stage-C blockers before gameplay executors
+## Stage-C architecture is accepted; implementation remains gated
 
-Three named architecture contracts remain required before their corresponding implementation prompts can be released:
+The former Stage-C architecture blockers are now accepted/lifecycle-closed:
 
-- `VSL-MOVE-01` — movement/collision/floor/teleport/visibility/reconciliation vertical-slice contract;
-- `VSL-COMBAT-01` — minimal combat/death/corpse/loot/XP/pickup vertical-slice contract;
-- `VSL-CONTENT-01` — minimum World Project/World Bundle/compiler/loader physical vertical-slice contract.
+- `VSL-MOVE-01` — bounded local movement/collision/relocation/visibility/reconciliation architecture;
+- `VSL-COMBAT-01` — bounded combat/death/loot/XP/retry-safe pickup integration architecture;
+- `VSL-CONTENT-01` — bounded native semantic content/compiler/loader/activation evidence slice.
 
-They are registered gates, not yet accepted contracts. `QA-E2E-01` architecture is accepted, but executable evidence remains required for terminal slice proof.
+They remain `ImplementationStatus=NOT_STARTED`. Exact Reference movement/combat/loot/XP values remain evidence-gated. The permanent World Project/World Bundle physical encoding remains undecided and still requires the DUR-04 format spike plus a later owner format decision. `QA-E2E-01` executable evidence remains required for terminal vertical-slice proof.
 
 ## Machine-readable contracts
 
@@ -117,18 +125,16 @@ Machine-readable runtime availability wins over architecture target vocabulary. 
 ## Current execution rule
 
 ```text
-accepted first-wave architecture
+accepted first-wave + Stage-C architecture
 != implemented gameplay runtime
 
-before movement/combat/content executors:
-  accept VSL-MOVE-01
-  accept VSL-COMBAT-01
-  accept VSL-CONTENT-01
+before implementation workers:
+  reconcile and release the final implementation executor package on PR #314
+  verify every lane consumes accepted contracts and live main
+  grant only coordinator-allocated, lane-specific implementation authority
+  preserve all resource/evidence/foreign-owner/Reference/final-format blockers
 
-then:
-  audit executor prompts against current accepted architecture
-  grant only lane-specific implementation authority
-  preserve all resource/evidence/foreign-owner blockers
+Stage-C acceptance does not grant implementation authority by itself.
 ```
 
 `EXECUTOR_PROMPTS: HOLD`
