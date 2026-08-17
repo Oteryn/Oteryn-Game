@@ -33,6 +33,11 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
   pull_request:
     branches:
       - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
     "c4ed68e5e828897500f6fe0cde71f0bbc4de853c585508b893e1c066bb900ab1"
@@ -352,7 +357,7 @@ def main() -> int:
         text = github_governance.read_text(encoding="utf-8")
         for fragment in (
             f"`{EXPECTED_REQUIRED_STATUS}` is the single stable required status check",
-            "close and reopen the unchanged pull request",
+            "PR metadata edits automatically re-run the exact-head aggregate gate",
             "dedicated push ruleset",
             "Dependabot maintains both GitHub Actions and Cargo dependencies",
         ):
