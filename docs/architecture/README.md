@@ -19,11 +19,14 @@ Architecture acceptance is not runtime implementation or Reference parity. See `
 
 ## Current entry points
 
-- [Foundation programme current status](FOUNDATION_PROGRAMME_CURRENT_STATUS.md) — current three-axis status and next safe gate.
+- [Foundation programme current status](FOUNDATION_PROGRAMME_CURRENT_STATUS.md) — current three-axis status and implementation-handoff state.
 - [Global architecture decision register](GLOBAL_ARCHITECTURE_DECISION_REGISTER.md) — stable gate IDs, accepted state and remaining horizon.
 - [Stage-C VSL owner acceptance](OTERYN_V2_STAGE_C_VSL_OWNER_ACCEPTANCE_20260816.md) — owner acceptance of `VSL-MOVE-01`, `VSL-COMBAT-01` and `VSL-CONTENT-01`.
 - [Remaining first-wave owner acceptance baseline](OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md) — owner acceptance of GAME-INTERACTION, ALPHA-CLIENT, GAME-AI and ANL-02/03.
 - [GAME-ABILITY whole-gate owner acceptance baseline](GAME-ABILITY-01_WHOLE_GATE_OWNER_ACCEPTANCE_BASELINE.md).
+- [Implementation executor DAG](../agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md) — released dependency/order contract after PR #314 merge.
+- [Implementation prompt evaluation](../agents/evidence/OTV2-20260816-final-executor-prompt-evaluation.md) — 17/17 execution prompts PASS across all required prompt gates.
+- [Reusable prompt index](../agents/prompts/README.md) — aliases and execution rules; normal implementation entry point is `Oteryn: implementation coordinator`.
 - [Foundation decision backlog](FOUNDATION_DECISION_BACKLOG.md) — stable historical gate definitions; current execution wording may be superseded by current status.
 - [Gameplay/product architecture horizon](GAMEPLAY_AND_PRODUCT_ARCHITECTURE_HORIZON.md) — detailed later product horizon.
 - [Architecture decision discipline](../agents/ARCHITECTURE_DECISION_DISCIPLINE.md).
@@ -72,41 +75,34 @@ Current accepted architecture includes:
   - `VSL-COMBAT-01_MINIMAL_COMBAT_DEATH_LOOT_CONTRACT_CANDIDATE.md`;
   - `VSL-CONTENT-01_MINIMAL_NATIVE_CONTENT_SLICE_CONTRACT_CANDIDATE.md`.
 
-The three Stage-C candidate filenames remain historical names because they are the exact reviewed artifacts accepted by the later owner-acceptance baseline; do not infer `CANDIDATE` DecisionStatus from the filename.
+The Stage-C candidate filenames remain historical names because they are the exact reviewed artifacts accepted by the later owner-acceptance baseline; do not infer `CANDIDATE` DecisionStatus from the filename.
 
 ## Historical first-wave / Stage-C preparation artifacts
 
-The following remain important immutable design/review history but are no longer the current DecisionStatus authority after explicit owner acceptance:
+The following remain immutable design/review history but are no longer current DecisionStatus authority after explicit owner acceptance:
 
-- `GAME-ABILITY-01_WHOLE_GATE_GAP_ANALYSIS.md` + `GAME-ABILITY-01_WHOLE_GATE_CONTRACT_CANDIDATE.md`;
-- `GAME-INTERACTION-01_SUCCESSOR_CHILD_IDENTITY_RETRY_ANALYSIS.md` + candidate;
-- `ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_ANALYSIS.md` + candidate;
-- `GAME-AI-01_CREATURE_AI_SPAWN_PATHFINDING_ANALYSIS.md` + successor candidate;
-- `ANL-02_GAMEPLAY_BALANCE_WORLD_ANALYTICS_ANALYSIS.md` + candidate;
-- `ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_ANALYSIS.md` + candidate;
-- `OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_DECISION_PACKAGE_20260816.md` — resolved historical decision-preparation record;
-- `OTERYN_V2_STAGE_C_VSL_OWNER_DECISION_PACKAGE_20260816.md` — resolved historical Stage-C decision-preparation record.
+- GAME-ABILITY whole-gate analysis/candidate;
+- GAME-INTERACTION successor-child analysis/candidate;
+- ALPHA-CLIENT analysis/candidate;
+- GAME-AI analysis/successor candidate;
+- ANL-02/ANL-03 analyses/candidates;
+- `OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_DECISION_PACKAGE_20260816.md`;
+- `OTERYN_V2_STAGE_C_VSL_OWNER_DECISION_PACKAGE_20260816.md`.
 
-Do not rewrite those files merely to change their historical proposal/candidate status.
+Do not rewrite those historical artifacts merely to change their proposal/candidate labels.
 
 ## Reference evidence/parity
 
 - `REFERENCE_EVIDENCE_PARITY_MANIFEST_V1_OWNER_ACCEPTANCE.md` is accepted paper evidence authority.
-- Four `ABILITY_COMBAT` Light Healing/Ice Strike cases are registered.
+- Four `ABILITY_COMBAT` cases are registered.
 - Agent A #271 promoted **0/4**.
 - Target evidence remains `UNKNOWN`, provenance/legal `PENDING`, implementation `NOT_STARTED`, parity `PARITY_PENDING_EVIDENCE`.
 
-Architecture acceptance does not change those facts.
+Architecture acceptance and implementation-prompt release do not change those facts.
 
-## Stage-C architecture is accepted; implementation remains gated
+## Stage-C architecture
 
-The former Stage-C architecture blockers are now accepted/lifecycle-closed:
-
-- `VSL-MOVE-01` — bounded local movement/collision/relocation/visibility/reconciliation architecture;
-- `VSL-COMBAT-01` — bounded combat/death/loot/XP/retry-safe pickup integration architecture;
-- `VSL-CONTENT-01` — bounded native semantic content/compiler/loader/activation evidence slice.
-
-They remain `ImplementationStatus=NOT_STARTED`. Exact Reference movement/combat/loot/XP values remain evidence-gated. The permanent World Project/World Bundle physical encoding remains undecided and still requires the DUR-04 format spike plus a later owner format decision. `QA-E2E-01` executable evidence remains required for terminal vertical-slice proof.
+`VSL-MOVE-01`, `VSL-COMBAT-01` and `VSL-CONTENT-01` are `ACCEPTED / LIFECYCLE_CLOSED / NOT_STARTED` after PR #311 and lifecycle closeout #318. Exact Reference values remain evidence-gated. Permanent World Project/World Bundle physical encoding remains undecided and still requires the DUR-04 format spike plus later owner decision. `QA-E2E-01` executable evidence remains required for terminal vertical-slice proof.
 
 ## Machine-readable contracts
 
@@ -124,18 +120,23 @@ Machine-readable runtime availability wins over architecture target vocabulary. 
 
 ## Current execution rule
 
+When PR #314 merges, the final evaluated implementation prompt package is released, but implementation is **not** started by the merge.
+
 ```text
-accepted first-wave + Stage-C architecture
-!= implemented gameplay runtime
-
-before implementation workers:
-  reconcile and release the final implementation executor package on PR #314
-  verify every lane consumes accepted contracts and live main
-  grant only coordinator-allocated, lane-specific implementation authority
-  preserve all resource/evidence/foreign-owner/Reference/final-format blockers
-
-Stage-C acceptance does not grant implementation authority by itself.
+EXECUTOR_PROMPTS: RELEASED
+DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
+DIRECT_WORKERS: ALLOCATION_GATED
+IMPLEMENTATION_STARTED: NO
 ```
 
-`EXECUTOR_PROMPTS: HOLD`
-`IMPLEMENTATION_AUTHORITY: NONE`
+Normal next action is an explicit owner invocation of:
+
+```text
+Oteryn: implementation coordinator
+```
+
+The coordinator must then create bounded allocations and execute the serial Bootstrap gate before releasing compatible non-overlapping workers. Direct worker aliases without an active allocation are read-only.
+
+Prompt release does not grant production/protected-environment/live-data, Platform/external-repository, entitlement, Reference-parity or owner-funded-AI authority. High-risk implementation lanes retain genuinely independent exact-head review requirements.
+
+`IMPLEMENTATION_AUTHORITY: NONE_UNTIL_OWNER_INVOCATION`
