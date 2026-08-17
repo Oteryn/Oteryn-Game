@@ -146,7 +146,7 @@ AccountId + EntitlementId
 
 The first accepted authority binds the expected product/product-version/target provenance. A contradictory reuse fails closed **unless** a strictly newer accepted Platform lifecycle decision is explicitly governed by a producer migration/replacement compatibility rule that authorizes that exact provenance transition. Product/version changes are never inferred from local game state or silently reinterpreted.
 
-### 6.2 Ordered high water
+### 6.2 Ordered high water and producer equivocation
 
 Within one entitlement, accepted producer evidence is ordered by:
 
@@ -160,9 +160,11 @@ Rules:
 1. a higher valid `lifecycle_revision` supersedes every lower lifecycle revision;
 2. within one lifecycle revision, a higher `authority_revision` supersedes every lower authority revision;
 3. exact semantic replay of the same ordered authority is idempotent;
-4. the same ordered revision with contradictory authenticated state, target, product/version, interval or cutoff is a current-authority conflict and fails closed;
-5. evidence below the accepted high water is stale and rejected without replacing current classification;
+4. **any detected authenticated contradiction for the same ordered `(lifecycle_revision, authority_revision)` fails closed as conflicting producer authority evidence**, whether that ordered revision is the current high water or a previously accepted historical revision;
+5. evidence below the accepted high water is stale and rejected when it is not contradictory to previously accepted evidence; stale ordering is never a reason to ignore detected authenticated producer equivocation;
 6. a strictly newer authenticated Platform lifecycle decision may supersede an older restrictive decision only because Platform issued newer commercial truth; Oteryn-v2 never synthesizes reactivation or revision advancement.
+
+Implementation must retain or otherwise be able to reconstruct enough bounded authenticated revision/fingerprint evidence to detect same-ordered-revision contradiction over the producer replay/rollback/recovery horizon it claims to support. Exact retention/index/schema design is deferred, but an implementation may not claim equivocation detection for evidence it has intentionally discarded.
 
 ### 6.3 Crash-consistent consume-and-fence invariant
 
@@ -220,11 +222,12 @@ The consumer exposes typed/equivalent enforcement classifications. Names may cha
 ### 8.1 Input acceptance before state classification
 
 1. Reject malformed/unauthenticated/wrong-source input without changing accepted commercial state.
-2. Reject evidence below the durable high-water fence as stale/out-of-order.
-3. If the **current high-water interpretation itself** is unsafe because of an authenticated equal-revision contradiction, unsupported/downgraded required semantic revision or unreconstructable monotonic fence/continuity, classify `INVALID_OR_CONFLICTING` and deny benefit.
-4. Otherwise classify the latest accepted authority using producer-compatible restrictive precedence.
+2. If authenticated evidence contradicts any previously accepted evidence for the **same ordered revision**, classify `INVALID_OR_CONFLICTING` and deny entitlement-derived benefit; this applies even when that revision is below the current high water.
+3. If no contradiction exists, reject evidence below the durable high-water fence as stale/out-of-order without replacing current classification.
+4. If the current high-water interpretation is otherwise unsafe because of unsupported/downgraded required semantic revision or unreconstructable monotonic fence/continuity, classify `INVALID_OR_CONFLICTING` and deny benefit.
+5. Otherwise classify the latest accepted authority using producer-compatible restrictive precedence.
 
-Thus an old hostile/replayed packet cannot turn a known revoke into `INVALID_OR_CONFLICTING`, while a genuine contradiction at the current authority revision cannot be masked as merely `NOT_YET_EFFECTIVE` or `CURRENT_AUTHORITY`.
+This matches the pinned producer contract: stale replay is harmless and rejected, but authenticated equivocation at one revision is a fail-closed security condition rather than a benign stale packet.
 
 ### 8.2 Producer-compatible restrictive precedence
 
@@ -249,9 +252,9 @@ Transport failure alone never manufactures `ACTIVE`, `REVOKED`, `EXPIRED` or `NO
 - **`CURRENT_AUTHORITY`** — latest accepted active evidence is usable, conservative start reached, no end/cutoff reached, trusted time safe and refresh not known overdue.
 - **`STALE_WITHIN_BOUND`** — refresh due/failed or producer temporarily unreachable, but accepted active evidence remains inside the conservative interval, trusted time is safe, producer policy permits bounded stale use and the exact Oteryn consumer surface policy also permits it.
 - **`AUTHORITY_UNAVAILABLE`** — acceptable current producer evidence cannot be obtained and no accepted fact yields `REVOKED`, `EXPIRED` or `NOT_YET_EFFECTIVE`; includes a within-bound stale candidate when stale use is not permitted for the requested consumer surface. Deny benefit without inventing revocation.
-- **`INVALID_OR_CONFLICTING`** — current authority cannot be safely interpreted because of authenticated same-revision conflict, unsupported/downgraded required semantics or unreconstructable monotonic fence/continuity. Deny benefit and require reconciliation.
+- **`INVALID_OR_CONFLICTING`** — producer authority cannot be safely interpreted because of authenticated same-ordered-revision contradiction, unsupported/downgraded required semantics or unreconstructable monotonic fence/continuity. Deny benefit and require reconciliation.
 
-A previously accepted restrictive fact is never erased by later malformed, unavailable or lower-revision evidence.
+A previously accepted restrictive fact is never erased by later malformed or unavailable evidence; detected authenticated producer equivocation is separately fail closed.
 
 ## 9. Product/version consumer enforcement policy
 
@@ -366,6 +369,7 @@ Rollback must never:
 - move `effective_from` earlier;
 - move cutoff later or restart an expired lease;
 - roll producer-consumption progress ahead of the durable high water it represents;
+- discard contradiction-detection evidence while still claiming the corresponding replay/rollback/recovery horizon;
 - activate a producer/consumer revision unable to understand current fence/validity semantics;
 - blindly replay ambiguous gameplay mutation through a fallback path.
 
@@ -377,6 +381,7 @@ Implementation must expose bounded operator evidence for:
 
 - accepted/rejected producer semantic revisions;
 - high-water advancement and rejected rollback/out-of-order evidence;
+- detected same-ordered-revision producer contradictions;
 - producer-consumption/ack continuity relative to durable high water;
 - all consumer classifications and transitions;
 - conservative remaining authority interval and refresh failure age;
@@ -410,7 +415,8 @@ These are future implementation requirements, **not runtime PASS claims** for th
 | Delayed older active after newer revoke | retain newer restrictive state; reject old evidence | anti-rollback |
 | Higher authority refresh then older refresh replay | retain higher authority revision | no cutoff reset |
 | Same current revision with contradictory authenticated payload | `INVALID_OR_CONFLICTING` | fail closed + reconciliation |
-| Lower stale revision has contradictory payload | reject as stale; retain current classification | old input cannot poison newer truth |
+| Same historical/lower revision with contradictory authenticated payload | `INVALID_OR_CONFLICTING` | detected producer equivocation fails closed even though ordering is stale |
+| Lower stale revision with no contradiction | reject as stale; retain current classification | ordinary replay cannot roll authority back |
 | Unauthenticated/malformed input | reject; no accepted-state mutation | input cannot manufacture commercial state |
 | Restart with cached active | reconstruct original times + high water + source continuity before benefit | no lease/fence reset |
 | Projection/snapshot rollback | fail closed until monotonic fence/continuity proven | no authority resurrection |
@@ -439,12 +445,13 @@ Future implementation evidence must name exact producer, consumer, product-polic
 2. **No early authority:** uncertainty/pre-issued evidence cannot begin benefit before conservatively proven start.
 3. **Monotonic restriction:** newer producer authority fences older evidence across delivery/restart/reconnect/restore.
 4. **Crash-consistent consume-and-fence:** acknowledged/current producer progress can never outrun the durable entitlement high water needed to prevent resurrection.
-5. **Transport is not truth:** availability affects evidence availability, not commercial lifecycle.
-6. **Session is not truth:** login/reconnect continuity cannot mint/extend commercial authority.
-7. **No local commercial authority:** game policy may narrow, never extend, producer rights.
-8. **Idempotent mutation:** ambiguous/duplicate delivery cannot double-apply gameplay value.
-9. **Explicit compatibility:** semantic mismatch never silently downgrades security.
-10. **Secret-safe evidence:** diagnosis does not leak bearer/payment/private payloads.
+5. **Producer equivocation fails closed:** detected authenticated contradictory content for one ordered revision cannot be dismissed merely because a newer revision exists.
+6. **Transport is not truth:** availability affects evidence availability, not commercial lifecycle.
+7. **Session is not truth:** login/reconnect continuity cannot mint/extend commercial authority.
+8. **No local commercial authority:** game policy may narrow, never extend, producer rights.
+9. **Idempotent mutation:** ambiguous/duplicate delivery cannot double-apply gameplay value.
+10. **Explicit compatibility:** semantic mismatch never silently downgrades security.
+11. **Secret-safe evidence:** diagnosis does not leak bearer/payment/private payloads.
 
 ## 18. Cross-domain findings — `REPORT_ONLY`
 
@@ -454,9 +461,9 @@ cross_domain_finding:
   observed_in_domain: PROD-ENTITLEMENTS-01
   target_owner: DUR-02 / future entitlement persistence implementation
   severity: P1
-  evidence: Producer contract requires durable lifecycle/authority high water across restart/rollback; consumer security additionally requires source-consumption progress not to outrun that fence.
-  conflict_or_gap: Exact physical storage, transaction and durable inbox/cursor/receipt coupling mechanism is intentionally not selected here.
-  required_before: Profile-B implementation can claim crash/restart/rollback proof
+  evidence: Producer contract requires durable lifecycle/authority high water across restart/rollback; consumer security additionally requires source-consumption progress not to outrun that fence and detected same-revision contradiction to remain auditable over the claimed recovery horizon.
+  conflict_or_gap: Exact physical storage, transaction, revision-fingerprint retention and durable inbox/cursor/receipt coupling mechanism is intentionally not selected here.
+  required_before: Profile-B implementation can claim crash/restart/rollback/equivocation proof
   worker_action: REPORT_ONLY
 ```
 
@@ -501,8 +508,9 @@ No foreign-owner file is modified by these findings.
 ## 19. Risks and trade-offs
 
 - **False allow after rollback/crash:** mitigated by durable high water plus consume-and-fence continuity.
+- **False deny on producer equivocation:** intentional fail-closed response to authenticated contradictory authority; reconciliation must establish safe newer truth before benefit resumes.
 - **Temporary paid-benefit denial:** conservative time/outage/persistence/continuity failures may create false negatives; bounded stale policy may preserve availability while base session continuity remains independent.
-- **High-cardinality authority state:** retention/compaction/indexing remain implementation decisions but cannot discard anti-resurrection evidence.
+- **High-cardinality authority state:** retention/compaction/indexing remain implementation decisions but cannot discard anti-resurrection/equivocation evidence while claiming the corresponding recovery horizon.
 - **Producer/consumer drift:** mitigated by exact compatibility records, dark deployment and fail-closed unknown revisions.
 - **Wrong delivery profile:** irreversible durable benefits must not be disguised as Profile B; use separately accepted Profile C/D and DUR/gameplay contracts.
 
@@ -512,11 +520,12 @@ No foreign-owner file is modified by these findings.
 | --- | --- | --- | --- | --- |
 | Platform commercial vs Oteryn gameplay authority | `YES` — accepted producer baseline | any entitlement integration | split-brain truth/direct mutation | newer explicit cross-repository contract |
 | Durable high water + consume-progress continuity | `YES` | crash-safe consumer + restart/rollback tests | permissive cache/ack behavior can resurrect authority | equivalent reviewed monotonic crash-consistency mechanism |
+| Same-revision equivocation fail-closed semantics | `YES` — producer baseline requires it | parser/cache/replay/reconciliation behavior | lenient historical equivocation becomes security compatibility | newer producer contract with safe explicit alternative |
 | Conservative producer-issued time | `YES` | expiry/clock tests | local grace becomes compatibility behavior | stronger bounded authority-time proof |
 | Typed state/conflict precedence | `YES` | deterministic enforcement/telemetry | nodes may disagree on outage/expiry | newer producer semantic model + safe mapping |
 | Explicit admission/reconnect/running stale policy | `YES` | FND-04 integration + product activation | implicit session grace becomes product behavior | safer accepted product/producer model |
 | Stable delivery operation identity | `YES` | Profile C/D retry safety | duplicate value cleanup becomes unsafe | equivalent idempotency/reconciliation proof |
-| Exact storage/inbox/cursor schema | `NO` | nothing now | premature physical coupling | DUR-02/integration workload and fault evidence |
+| Exact storage/fingerprint/inbox/cursor schema | `NO` | nothing now | premature physical coupling | DUR-02/integration workload and fault evidence |
 | Exact API/event/query transport/serializer | `NO` | nothing until integration implementation | premature topology/library coupling | bounded integration/security spike |
 | Exact Premium/VIP benefits/catalogue | `NO` | generic contract independent | freezes product design without evidence | owner/player product decision |
 | Numeric lease/refresh/skew values | `NO` here; mandatory per product pre-activation | concrete activation/tests | guessed availability/security trade-off | measured latency/outage/clock/product-risk evidence |
@@ -527,7 +536,7 @@ No foreign-owner file is modified by these findings.
 Not selected here:
 
 - payment provider/order implementation/Platform schema;
-- game-side table/index/ORM/transaction/inbox/cursor syntax;
+- game-side table/index/ORM/transaction/revision-fingerprint/inbox/cursor syntax;
 - REST/gRPC/event/broker/pull/push transport or wire encoding;
 - mTLS/JWT/signature/KMS vendor or exact service-auth primitive;
 - actual Premium/VIP existence, price, benefits or catalogue;
@@ -546,6 +555,7 @@ A separately authorized implementation programme must prove on exact revisions:
 
 - authenticated producer interoperability and semantic/profile compatibility;
 - crash-consistent high-water persistence plus source-consumption/replay/refetch continuity;
+- detected same-ordered-revision contradiction behavior over the declared replay/rollback/recovery horizon;
 - restore/rollback and crash-after-observe-before-fence faults;
 - trusted-time/skew/clock-rollback/recovery faults;
 - every matrix scenario above;
