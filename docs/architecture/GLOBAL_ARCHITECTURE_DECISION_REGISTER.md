@@ -98,14 +98,16 @@ Registration prevents omission; it does not authorize implementation.
 
 ## 7. Released implementation handoff
 
-When PR #314 merges, the formally evaluated implementation prompt package is released. The merge itself starts no worker.
+PR #314 merged as `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`; the formally evaluated implementation coordinator programme is released. The merge itself started no worker.
 
 ```text
-EXECUTOR_PROMPTS: RELEASED
+EXECUTOR_PROGRAMME: RELEASED
 DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
 DIRECT_WORKERS: ALLOCATION_GATED
-IMPLEMENTATION_STARTED: NO
-IMPLEMENTATION_AUTHORITY: NONE_UNTIL_OWNER_INVOCATION
+IMPLEMENTATION_WORKERS_STARTED: NO
+IMPLEMENTATION_AUTHORITY_OUTSIDE_LIVE_COORDINATOR_ALLOCATION: NONE
 ```
 
-After explicit owner invocation, the live coordinator may create bounded implementation allocations in `blakinio/Oteryn-v2` under repository governance. Production/protected-environment/live data/session/account, Platform, external-repository, entitlement, Reference-parity and owner-funded-AI authority remain separately governed.
+After explicit coordinator invocation, the live coordinator may create bounded implementation allocations in `blakinio/Oteryn-v2` under repository governance. Direct workers remain read-only until allocated. Production/protected-environment/live data/session/account, Platform, external-repository, entitlement, Reference-parity and owner-funded-AI authority remain separately governed.
+
+`PRODUCTION_AUTHORITY: NONE`

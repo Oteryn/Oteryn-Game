@@ -27,7 +27,7 @@ Canonical recent deliveries:
 - remaining first-wave acceptance: PR #309 / merge `bf2a2ae279516f62626a5d8f4dc1aeb587535c62`; its terminal task bookkeeping is consolidated into PR #314;
 - Stage-C acceptance: PR #311 / merge `e0ea9ef87c01dec720a22e8df6d54bfd669cb62c`; genuinely independent exact-head review reported zero material findings on `c5d9f839abd8998d42f4f37b203882f03bb51ce0`;
 - Stage-C lifecycle/status closeout: PR #318 / merge `a6a5180d98cf7791e40d9e1d08b25a5c8b4eff96`;
-- final implementation-prompt handoff: PR #314. When this file reaches `main` through #314, the evaluated prompt package is released for explicit owner invocation.
+- final implementation-prompt handoff: PR #314 / merge `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`; the evaluated coordinator programme is released for explicit invocation.
 
 No accepted gameplay/runtime gate below is implemented merely because its architecture or prompt is released.
 
@@ -86,7 +86,7 @@ Agent A #271 promoted **0/4**. Architecture acceptance and prompt release do not
 
 ## 5. Released implementation handoff
 
-When PR #314 merges, the evaluated implementation prompt programme is released. Normal owner entry point:
+PR #314 merged as `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`; the evaluated implementation coordinator programme is released. Normal owner entry point:
 
 ```text
 Oteryn: implementation coordinator
@@ -128,18 +128,20 @@ Prompt release does not remove lane-specific gates:
 
 ## 7. Executor state
 
-When this document is merged as part of PR #314:
+After PR #314 / `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`:
 
 ```text
-EXECUTOR_PROMPTS: RELEASED
+EXECUTOR_PROGRAMME: RELEASED
 DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
 DIRECT_WORKERS: ALLOCATION_GATED
-IMPLEMENTATION_STARTED: NO
-IMPLEMENTATION_AUTHORITY: NONE_UNTIL_OWNER_INVOCATION
+IMPLEMENTATION_WORKERS_STARTED: NO
+IMPLEMENTATION_AUTHORITY_OUTSIDE_LIVE_COORDINATOR_ALLOCATION: NONE
 ```
 
-Merging #314 does not itself start implementation. Implementation begins only after the owner explicitly invokes the released coordinator prompt.
+PR #314 did not start implementation. A later explicit coordinator invocation may create bounded allocations; no worker receives write authority until its live allocation exists.
 
 ## 8. Runtime / production authority
 
 Nothing here authorizes production deployment, protected-environment approval, live data/session/account mutation, production PostgreSQL migration execution, Platform writes, external-repository mutation, entitlement activation, Reference parity claims or owner-funded AI use.
+
+`PRODUCTION_AUTHORITY: NONE`

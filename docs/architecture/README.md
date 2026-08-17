@@ -120,16 +120,17 @@ Machine-readable runtime availability wins over architecture target vocabulary. 
 
 ## Current execution rule
 
-When PR #314 merges, the final evaluated implementation prompt package is released, but implementation is **not** started by the merge.
+PR #314 merged as `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`; the final evaluated implementation coordinator programme is released, but that merge started no implementation worker.
 
 ```text
-EXECUTOR_PROMPTS: RELEASED
+EXECUTOR_PROGRAMME: RELEASED
 DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
 DIRECT_WORKERS: ALLOCATION_GATED
-IMPLEMENTATION_STARTED: NO
+IMPLEMENTATION_WORKERS_STARTED: NO
+IMPLEMENTATION_AUTHORITY_OUTSIDE_LIVE_COORDINATOR_ALLOCATION: NONE
 ```
 
-Normal next action is an explicit owner invocation of:
+Normal next action, only when implementation should begin, is an explicit invocation of:
 
 ```text
 Oteryn: implementation coordinator
@@ -139,4 +140,4 @@ The coordinator must then create bounded allocations and execute the serial Boot
 
 Prompt release does not grant production/protected-environment/live-data, Platform/external-repository, entitlement, Reference-parity or owner-funded-AI authority. High-risk implementation lanes retain genuinely independent exact-head review requirements.
 
-`IMPLEMENTATION_AUTHORITY: NONE_UNTIL_OWNER_INVOCATION`
+`PRODUCTION_AUTHORITY: NONE`

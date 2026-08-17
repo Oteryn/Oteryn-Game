@@ -47,7 +47,7 @@ Reference evidence remains 0/4 promoted and fail closed. Architecture acceptance
 
 ## Final implementation handoff
 
-PR #314 delivers the formally evaluated implementation coordinator/worker DAG:
+PR #314 merged as `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815` and delivered the formally evaluated implementation coordinator/worker DAG:
 
 ```text
 17/17 execution prompts: PASS
@@ -55,7 +55,7 @@ PR #314 delivers the formally evaluated implementation coordinator/worker DAG:
 open material prompt findings: 0
 ```
 
-When PR #314 merges, executor prompts are released for **explicit owner invocation**. The merge itself does not start implementation.
+The merge released the coordinator programme for explicit invocation but started no implementation worker.
 
 Normal owner entry point:
 
@@ -93,24 +93,26 @@ Stable workspace/registry/stable-ID mutations remain serialized.
 - QA-E2E real-boundary evidence remains required for terminal vertical-slice proof.
 - Production/protected-environment/live data/session/account, Platform/external-repository and owner-funded AI authority remain separately governed.
 
-## Executor state after #314 delivery
+## Executor state
 
 ```text
-EXECUTOR_PROMPTS: RELEASED
+EXECUTOR_PROGRAMME: RELEASED
 DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
 DIRECT_WORKERS: ALLOCATION_GATED
-IMPLEMENTATION_STARTED: NO
-IMPLEMENTATION_AUTHORITY: NONE_UNTIL_OWNER_INVOCATION
+IMPLEMENTATION_WORKERS_STARTED: NO
+IMPLEMENTATION_AUTHORITY_OUTSIDE_LIVE_COORDINATOR_ALLOCATION: NONE
 ```
 
 ## Context checkpoint
 
 ```yaml
-last_progress: first-wave and Stage-C architecture accepted/lifecycle-closed; final 17-prompt executor DAG evaluated and released on PR #314 merge
+last_progress: first-wave and Stage-C architecture accepted/lifecycle-closed; final 17-prompt executor DAG merged through #314 and coordinator programme released
 status: ready_for_owner_initiated_implementation
 owner_action_required: explicit invocation of `Oteryn: implementation coordinator` when implementation should start
-blocker: none for starting the bounded coordinator programme after #314 reaches main; lane-specific evidence/authority/resource holds remain binding
+blocker: none for starting the bounded coordinator programme; lane-specific evidence/authority/resource holds remain binding
 authorized_implementation_started: false
 next_action: owner invokes `Oteryn: implementation coordinator`; coordinator verifies live main and creates the serial Bootstrap allocation
-executor_prompts: RELEASED_ON_314_MERGE
+executor_programme: RELEASED
 ```
+
+`PRODUCTION_AUTHORITY: NONE`
