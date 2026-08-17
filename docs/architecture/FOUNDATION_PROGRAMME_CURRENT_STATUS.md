@@ -1,7 +1,7 @@
 # Oteryn v2 Foundation Programme — Current Status
 
 - Status: **Canonical current execution-status overlay**
-- Date: 2026-08-16
+- Date: 2026-08-17
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Applies to: current DecisionStatus / DeliveryStatus / ImplementationStatus and the next safe architecture or implementation-proof gate
 - Detailed historical review/CI/repair evidence: accepted contracts, owner baselines, archived task records and merged PR discussions
@@ -20,24 +20,15 @@ Architecture acceptance never implies runtime implementation, Reference parity o
 
 ## 2. Current programme headline
 
-The native foundation, durability/content/determinism architecture and the complete first A-F gameplay/client/analytics architecture wave are now owner-accepted where listed below.
+The native foundation, durability/content/determinism architecture, the complete first A-F gameplay/client/analytics architecture wave, and the bounded Stage-C movement/combat/content architecture are owner-accepted.
 
-The most recent owner decisions are:
+Recent canonical deliveries are:
 
 - `GAME-ABILITY-01` owner acceptance: PR #306 / merge `e2bb284f56f39d8fa01a843d098bcb21d17d77ac`; lifecycle closeout #307 / `dfc75d1332f710d6ac85009653579f7bc51ccc59`;
-- remaining first-wave owner acceptance is being delivered by PR #309 through `OTERYN_V2_REMAINING_FIRST_WAVE_OWNER_ACCEPTANCE_BASELINE_20260816.md`.
+- remaining first-wave owner acceptance: PR #309 / merge `bf2a2ae279516f62626a5d8f4dc1aeb587535c62`; its bookkeeping closeout is consolidated into PR #314;
+- Stage-C `VSL-MOVE-01`, `VSL-COMBAT-01`, `VSL-CONTENT-01` owner acceptance delivery: PR #311 / merge `e0ea9ef87c01dec720a22e8df6d54bfd669cb62c`; lifecycle/status closeout is PR #318.
 
-The owner explicitly accepted:
-
-```text
-GAME-INTERACTION-01
-ALPHA-CLIENT-01
-GAME-AI-01
-ANL-02
-ANL-03
-```
-
-All remain `ImplementationStatus=NOT_STARTED`.
+All accepted first-wave and Stage-C gameplay/client/analytics gates remain `ImplementationStatus=NOT_STARTED` unless explicitly stated otherwise below.
 
 ## 3. Current three-axis status
 
@@ -61,21 +52,21 @@ All remain `ImplementationStatus=NOT_STARTED`.
 | `GAME-ITEM-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | item model/equipment/container semantics accepted |
 | `SIM-DETERMINISM-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | arithmetic/RNG/order/replay/state-hash architecture accepted |
 | `GAME-ABILITY-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | owner acceptance baseline merged via #306; exact Reference mechanic evidence remains independent |
-| `GAME-INTERACTION-01` | `ACCEPTED` | `IN_REVIEW` on #309 | `NOT_STARTED` | owner accepted successor child-identity/retry/reconciliation architecture; target lifecycle closes after #309 delivery/closeout |
-| `ALPHA-CLIENT-01` | `ACCEPTED` | `IN_REVIEW` on #309 | `NOT_STARTED` | owner accepted native-client composition/authority/projection/release/test architecture |
-| `GAME-AI-01` | `ACCEPTED` | `IN_REVIEW` on #309 | `NOT_STARTED` | owner accepted bounded deterministic AI/spawn/path proposal architecture |
-| `ANL-02` | `ACCEPTED` | `IN_REVIEW` on #309 | `NOT_STARTED` | owner accepted read-only gameplay/balance/world analytics architecture |
-| `ANL-03` | `ACCEPTED` | `IN_REVIEW` on #309 | `NOT_STARTED` | owner accepted read-only economy/integrity/security analytics architecture |
+| `GAME-INTERACTION-01` | `ACCEPTED` | `IN_REVIEW` closeout on #314 | `NOT_STARTED` | owner acceptance delivery merged via #309; consolidated lifecycle bookkeeping remains on #314 |
+| `ALPHA-CLIENT-01` | `ACCEPTED` | `IN_REVIEW` closeout on #314 | `NOT_STARTED` | owner acceptance delivery merged via #309; consolidated lifecycle bookkeeping remains on #314 |
+| `GAME-AI-01` | `ACCEPTED` | `IN_REVIEW` closeout on #314 | `NOT_STARTED` | owner acceptance delivery merged via #309; consolidated lifecycle bookkeeping remains on #314 |
+| `ANL-02` | `ACCEPTED` | `IN_REVIEW` closeout on #314 | `NOT_STARTED` | owner acceptance delivery merged via #309; consolidated lifecycle bookkeeping remains on #314 |
+| `ANL-03` | `ACCEPTED` | `IN_REVIEW` closeout on #314 | `NOT_STARTED` | owner acceptance delivery merged via #309; consolidated lifecycle bookkeeping remains on #314 |
 | `QA-E2E-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED / EVIDENCE_REQUIRED` | three-tier E2E architecture accepted; executable evidence still blocks terminal VSL claims |
 | `VSL-01` | `PLANNED` | `PLANNED` | `NOT_STARTED` | vertical-slice programme remains a proof programme, not an implementation claim |
-| `VSL-MOVE-01` | `PLANNED` | `PLANNED` | `NOT_STARTED` | **architecture contract still required before movement/collision/visibility executor** |
-| `VSL-COMBAT-01` | `PLANNED` | `PLANNED` | `NOT_STARTED` | **minimal combat/death/loot slice contract still required before combat executor** |
-| `VSL-CONTENT-01` | `PLANNED` | `PLANNED` | `NOT_STARTED` | **minimal native map/compiler/loader slice contract still required before content executor** |
+| `VSL-MOVE-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | Stage-C local movement/collision/visibility/reconciliation architecture accepted via #311; implementation not released |
+| `VSL-COMBAT-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | Stage-C combat/death/loot/XP/pickup architecture accepted via #311; Reference values remain evidence-gated |
+| `VSL-CONTENT-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` | Stage-C semantic content/compiler/loader evidence slice accepted; permanent physical format remains undecided |
 | `PERF-01` | `PLANNED` | `PLANNED` | `NOT_STARTED` | measured capacity/resource values required before capacity/performance claims |
 | `OPS-CHANNEL-01` | `PLANNED` | `PLANNED` | `NOT_STARTED` | required before automatic production channel scaling/recovery claims |
 | `PROD-ENTITLEMENTS-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` | Platform producer prerequisite satisfied; Oteryn-v2 consumer/enforcement contract remains unaccepted; Premium/VIP executor/activation blocked |
 
-During final #309 merge/closeout, the five rows in `IN_REVIEW` transition to `LIFECYCLE_CLOSED` without changing `ImplementationStatus`.
+The five first-wave rows still shown `IN_REVIEW` are not waiting on owner acceptance or PR #309; only their separately consolidated lifecycle-bookkeeping delivery on #314 remains. Stage-C architecture lifecycle closes through PR #318 without changing its `ImplementationStatus`.
 
 ## 4. Reference evidence/parity state
 
@@ -96,7 +87,7 @@ canonical_digest: null
 
 Agent A PR #271 promoted **0/4** cases. None of the gameplay architecture acceptances changes that result.
 
-## 5. Accepted first-wave boundaries now binding
+## 5. Accepted gameplay/client/analytics and Stage-C boundaries now binding
 
 ### GAME-ABILITY-01
 
@@ -104,7 +95,7 @@ One typed server-authoritative semantic ability/effect pipeline, revision-bound 
 
 ### GAME-INTERACTION-01
 
-Stable recursive child occurrence identity, deterministic order/RNG, exactly-once/reconciliation semantics, truthful pending/committed/rejected results and no generic distributed transaction. Movement/handoff, writable text, physical FND-02 registration and numeric limits remain downstream owners.
+Stable recursive child occurrence identity, deterministic order/RNG, exactly-once/reconciliation semantics, truthful pending/committed/rejected results and no generic distributed transaction. Cross-scope handoff, durable writable text, physical FND-02 registration and numeric limits remain downstream owners.
 
 ### ALPHA-CLIENT-01
 
@@ -118,49 +109,52 @@ One local authoritative runtime owner, finite deterministic bounded representati
 
 Read-only analytics/integrity/security evidence. Explicit quality/privacy/revision semantics, fail-closed regression evaluation, deterministic invariant evaluation when evidence is complete, immutable human-review lifecycle, referral-after-disposition, non-adverse optional client diagnostics. No gameplay mutation, sanction or enforcement authority.
 
+### Stage-C VSL architecture
+
+`VSL-MOVE-01`, `VSL-COMBAT-01` and `VSL-CONTENT-01` are accepted architecture. They freeze only the minimum movement, combat/value and native-content integration seams required for the first real-boundary vertical slice. They do not implement those seams, select the permanent world format, supply unknown Reference formulas/values or authorize production.
+
 ## 6. Cross-domain implementation blockers that remain real
 
-Architecture acceptance deliberately does not invent these dependencies:
+Stage-C architecture is no longer an unresolved architecture blocker. Remaining implementation/evidence dependencies include:
 
-- `VSL-MOVE-01`: authoritative movement/collision/floor/teleport/interest/snapshot-delta slice contract is not yet accepted;
-- `VSL-COMBAT-01`: minimal combat/death/corpse/loot/XP/pickup slice integration contract is not yet accepted;
-- `VSL-CONTENT-01`: minimum World Project/World Bundle/compiler/loader physical vertical-slice contract is not yet accepted;
-- GAME-INTERACTION movement/handoff owner and durable writable-text owner remain unresolved for mechanics that need them;
+- GAME-INTERACTION cross-scope movement/handoff owner and durable writable-text owner for mechanics that require those broader capabilities;
 - GAME-AI event/encounter durable multi-actor owner, concrete resource ceilings and controlled-actor reward attribution remain downstream;
 - `GAME_EVENT_FOUNDATION_REGISTRY.json` still requires concrete producer event families before ANL-02/03 can claim real metric/detector coverage;
 - FND-02/FND-04/client/server executable protocol/admission path remains unimplemented;
 - DUR-01/02/03 physical PostgreSQL migration/transaction implementation remains unimplemented;
 - DUR-04 physical content format/compiler/loader/WIT-host implementation and accepted resource values remain unimplemented;
+- the permanent World Project/World Bundle encoding still requires the mandated DUR-04 evidence spike and later owner format decision;
+- required Stage-C/resource numeric ceilings must be registered before affected executable acceptance; missing values are blockers, not infinity;
+- `QA-E2E-01` executable Tier 1/2/3 evidence remains required for terminal vertical-slice proof;
 - `PERF-01` and `OPS-CHANNEL-01` own measured numeric production capacity/orchestration decisions;
 - `PROD-ENTITLEMENTS-01` blocks only entitlement implementation/activation, not unrelated first vertical-slice work.
 
-## 7. What may be implemented before Stage-C gameplay slice contracts
+## 7. Implementation boundary after Stage-C acceptance
 
-A later explicitly authorized implementation programme may safely work only on bounded layers whose semantic architecture is already accepted and whose task does not cross an unaccepted owning gate. Examples include:
+A later explicitly authorized implementation programme may work only on bounded layers whose semantic architecture is accepted and whose task does not cross an unresolved owner/evidence/resource gate. Examples include:
 
 - workspace/build/test/governance maintenance;
-- GameNode/bootstrap/runtime-owner scaffolding under FND-03 without movement/combat/content semantics;
-- `protocol-oteryn` transport/codec/admission plumbing under FND-02/FND-04 using accepted registries and resource limits, without claiming complete gameplay slice;
-- PostgreSQL migration/persistence substrate under DUR-01/DUR-02 where physical design is itself covered by an authorized implementation task and tests;
+- GameNode/bootstrap/runtime-owner scaffolding under FND-03;
+- `protocol-oteryn` transport/codec/admission plumbing under FND-02/FND-04 using accepted registries and resource limits;
+- PostgreSQL migration/persistence substrate under DUR-01/DUR-02 where physical design is covered by an authorized implementation task and tests;
 - Character/session persistence where exact accepted Character/DUR/FND contracts suffice;
 - QA-E2E harness/platform implementation that does not fake product-boundary proof;
-- client composition/capability/projection scaffolding that remains fail-closed before native gameplay availability.
+- client composition/capability/projection scaffolding that remains fail-closed until compatible native gameplay seams exist;
+- Stage-C movement/combat/content implementation only under a released coordinator allocation that consumes the accepted Stage-C contracts and preserves their remaining evidence/resource/foreign-owner gates.
 
-No executor may silently fill a missing Stage-C mechanic contract from implementation convenience.
+No executor may silently fill an unresolved mechanic, authority, numeric limit, Reference fact or permanent content-format decision from implementation convenience.
 
-## 8. Current paper-only next action
+## 8. Current next action
 
-Before issuing **movement/combat/content implementation executors**, complete one bounded Stage-C architecture package covering:
+The Stage-C architecture decision package is complete. The next repository action before implementation workers are released is the separately owned final implementation-executor handoff on PR #314:
 
-```text
-VSL-MOVE-01
-VSL-COMBAT-01
-VSL-CONTENT-01
-```
+1. reconcile #314 against the exact post-Stage-C-closeout `main`;
+2. update stale prerequisite wording without changing accepted architecture;
+3. re-evaluate any prompt-content delta required by that reconciliation;
+4. pass exact-head governance/merge gates and mandatory self-review;
+5. release only the coordinator/DAG if every declared release condition remains satisfied.
 
-The package must consume the now accepted GAME-ABILITY / GAME-INTERACTION / GAME-AI / ALPHA-CLIENT / DUR / SIM / QA-E2E boundaries and must not re-open accepted domain semantics.
-
-After those Stage-C contracts are owner-accepted and lifecycle-closed, perform one executor-readiness/prompt audit. `PROD-ENTITLEMENTS-01` remains excluded unless separately accepted.
+`PROD-ENTITLEMENTS-01` remains excluded unless separately accepted.
 
 ## 9. Executor prompt state
 
@@ -168,12 +162,12 @@ After those Stage-C contracts are owner-accepted and lifecycle-closed, perform o
 EXECUTOR_PROMPTS: HOLD
 ```
 
-Reason: the first-wave architecture is accepted, but three named `BLOCKS_VERTICAL_SLICE` mechanic/content slice contracts remain unaccepted. Releasing a global implementation prompt set now would invite movement/combat/content agents to make architecture decisions inside code.
+Reason: Stage-C architecture is accepted/lifecycle-closed, but the final implementation executor package on PR #314 has not yet been reconciled, validated, merged and released against the exact post-closeout `main`. No implementation worker may infer authority directly from architecture acceptance.
 
 ## 10. Runtime / production authority
 
 Nothing in this status overlay authorizes production deployment, protected-environment approval, live data/session/account mutation, PostgreSQL migration execution, Platform writes, broad content import, entitlement activation or production traffic.
 
-Implementation requires a separate explicit owner-authorized executor task/PR with exact scope and evidence.
+Implementation requires a separate explicit owner-authorized executor task/allocation under the released implementation coordinator programme.
 
 `IMPLEMENTATION_AUTHORITY: NONE`
