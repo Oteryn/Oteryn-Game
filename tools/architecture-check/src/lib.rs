@@ -11,6 +11,7 @@ struct Policy {
     members: BTreeSet<String>,
     paths: BTreeSet<String>,
     production: BTreeSet<String>,
+    production_roots: BTreeSet<String>,
     synthetic: BTreeSet<String>,
     test: BTreeSet<String>,
     tool: BTreeSet<String>,
@@ -103,6 +104,7 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
         members: take("members")?,
         paths: take("paths")?,
         production: take("production")?,
+        production_roots: take("production_roots")?,
         synthetic: take("synthetic")?,
         test: take("test")?,
         tool: take("tool")?,
@@ -112,9 +114,23 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
 }
 
 fn validate_policy_shape(policy: &Policy) -> Result<(), String> {
-    if policy.members.len() != 19 || policy.paths.len() != 19 {
-        return Err("workspace policy must contain exactly 19 members and paths".to_owned());
+    if policy.members.is_empty() {
+        return Err("workspace policy must contain at least one member".to_owned());
     }
+    if policy.paths.len() != policy.members.len() {
+        return Err(format!(
+            "workspace policy member/path cardinality differs: {} members, {} paths",
+            policy.members.len(),
+            policy.paths.len()
+        ));
+    }
+    if policy.production_roots.is_empty() {
+        return Err("workspace policy must declare at least one production root".to_owned());
+    }
+    if !policy.production_roots.is_subset(&policy.production) {
+        return Err("every production root must have the production release role".to_owned());
+    }
+
     let role_sets = [
         &policy.production,
         &policy.synthetic,
@@ -264,7 +280,7 @@ fn validate_acyclic(edges: &BTreeMap<String, BTreeSet<String>>) -> Result<(), St
 }
 
 fn validate_production_closure(policy: &Policy) -> Result<(), String> {
-    let mut pending = vec!["oteryn-client".to_owned()];
+    let mut pending = policy.production_roots.iter().cloned().collect::<Vec<_>>();
     let mut visited = BTreeSet::new();
     while let Some(package) = pending.pop() {
         if !visited.insert(package.clone()) {
@@ -286,13 +302,61 @@ fn validate_production_closure(policy: &Policy) -> Result<(), String> {
 mod tests {
     use super::*;
 
+    fn structural_policy() -> Policy {
+        Policy {
+            members: BTreeSet::from(["app".to_owned(), "foundation".to_owned()]),
+            paths: BTreeSet::from(["apps/app".to_owned(), "crates/foundation".to_owned()]),
+            production: BTreeSet::from(["app".to_owned(), "foundation".to_owned()]),
+            production_roots: BTreeSet::from(["app".to_owned()]),
+            synthetic: BTreeSet::new(),
+            test: BTreeSet::new(),
+            tool: BTreeSet::new(),
+            forbidden_fragments: vec!["canary".to_owned()],
+            edges: BTreeMap::from([
+                ("app".to_owned(), BTreeSet::from(["foundation".to_owned()])),
+                ("foundation".to_owned(), BTreeSet::new()),
+            ]),
+        }
+    }
+
     #[test]
-    fn checked_in_policy_has_exact_member_count() -> Result<(), String> {
+    fn checked_in_policy_is_structurally_valid() -> Result<(), String> {
         let root = Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
             .and_then(Path::parent)
             .ok_or_else(|| "cannot resolve workspace root".to_owned())?;
         let policy = parse_policy(&root.join("workspace-boundaries.toml"))?;
         validate_policy_shape(&policy)
+    }
+
+    #[test]
+    fn structural_policy_does_not_freeze_member_count() -> Result<(), String> {
+        validate_policy_shape(&structural_policy())
+    }
+
+    #[test]
+    fn production_root_cannot_reach_synthetic_member() {
+        let mut policy = structural_policy();
+        policy.members.insert("fixture".to_owned());
+        policy.paths.insert("crates/fixture".to_owned());
+        policy.synthetic.insert("fixture".to_owned());
+        policy.edges.insert("fixture".to_owned(), BTreeSet::new());
+        policy
+            .edges
+            .get_mut("app")
+            .into_iter()
+            .for_each(|dependencies| {
+                dependencies.insert("fixture".to_owned());
+            });
+
+        assert!(validate_policy_shape(&policy).is_ok());
+        assert!(validate_production_closure(&policy).is_err());
+    }
+
+    #[test]
+    fn production_root_must_have_production_role() {
+        let mut policy = structural_policy();
+        policy.production_roots = BTreeSet::from(["fixture".to_owned()]);
+        assert!(validate_policy_shape(&policy).is_err());
     }
 }
