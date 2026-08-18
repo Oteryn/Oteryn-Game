@@ -1,6 +1,9 @@
 name: One-off Oteryn Game history import
 
 on:
+  pull_request:
+    branches:
+      - main
   push:
     branches:
       - main
@@ -12,7 +15,7 @@ permissions:
 
 jobs:
   import-history:
-    if: github.repository == 'Oteryn/Oteryn-Game'
+    if: github.repository == 'Oteryn/Oteryn-Game' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
@@ -40,9 +43,8 @@ jobs:
           TARGET_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPOSITORY}.git"
           git -C "$SOURCE" remote add target "$TARGET_URL"
 
-          # Push only durable Git repository refs. GitHub pull-request refs are
-          # server-managed and are intentionally retained only in the verified
-          # external backup, not recreated in the new repository.
+          # Push only durable repository refs. GitHub pull-request refs are
+          # server-managed and remain preserved in the external backup only.
           git -C "$SOURCE" push --force --prune target \
             'refs/heads/*:refs/heads/*' \
             'refs/tags/*:refs/tags/*'
@@ -73,3 +75,7 @@ jobs:
             echo "git_fsck=PASS"
             echo "refs_compare=PASS"
           } | tee "$RUNNER_TEMP/import-manifest.txt"
+
+          # Remove the temporary bootstrap branch only after all verification
+          # has passed. The imported source history does not contain this branch.
+          git -C "$SOURCE" push "$TARGET_URL" --delete bootstrap/history-import-pr
