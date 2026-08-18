@@ -3,6 +3,7 @@
 //! Bootstrap intentionally owns no gameplay listener, protocol, admission or persistence authority.
 
 use oteryn_foundation::CancellationToken;
+use oteryn_simulation_determinism::{SimulationDeterminismProfile, active_profile};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use tokio::runtime::Builder;
@@ -18,6 +19,7 @@ pub enum GameplayAvailability {
 #[derive(Debug, Clone)]
 pub struct GameServerBootstrap {
     shutdown: CancellationToken,
+    determinism_profile: SimulationDeterminismProfile,
 }
 
 impl Default for GameServerBootstrap {
@@ -31,6 +33,7 @@ impl GameServerBootstrap {
     pub fn new() -> Self {
         Self {
             shutdown: CancellationToken::new(),
+            determinism_profile: active_profile(),
         }
     }
 
@@ -42,6 +45,11 @@ impl GameServerBootstrap {
     #[must_use]
     pub const fn gameplay_unavailable_reason(&self) -> &'static str {
         GAMEPLAY_UNAVAILABLE_REASON
+    }
+
+    #[must_use]
+    pub const fn determinism_profile(&self) -> SimulationDeterminismProfile {
+        self.determinism_profile
     }
 
     pub fn request_shutdown(&self) {
@@ -101,6 +109,7 @@ pub fn bootstrap_smoke() -> Result<(), BootstrapSmokeError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use oteryn_simulation_determinism::SimulationDeterminismProfileRevision;
 
     #[test]
     fn bootstrap_is_explicitly_gameplay_unavailable() {
@@ -112,6 +121,10 @@ mod tests {
         assert_eq!(
             server.gameplay_unavailable_reason(),
             GAMEPLAY_UNAVAILABLE_REASON
+        );
+        assert_eq!(
+            server.determinism_profile().revision(),
+            SimulationDeterminismProfileRevision::V1
         );
         assert!(!server.is_shutdown_requested());
     }
