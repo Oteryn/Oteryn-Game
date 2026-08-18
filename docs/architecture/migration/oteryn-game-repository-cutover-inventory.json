@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "coordination_id": "OTERYN-GAME-TRANSFER-20260818",
+  "observed_at_source_main": "457df3772a7aaf648c1a048b2db2caa409fcf974",
+  "source": {
+    "repository": "blakinio/Oteryn-v2",
+    "repository_id": 1323412342,
+    "state": "EXISTS",
+    "visibility": "public",
+    "default_branch": "main"
+  },
+  "target": {
+    "repository": "Oteryn/Oteryn-Game",
+    "state": "ABSENT_404",
+    "intended_mutation": "TRANSFER_AND_RENAME_SAME_REPOSITORY_OBJECT"
+  },
+  "mutation_fingerprint": "transfer_repository:1323412342:blakinio/Oteryn-v2->Oteryn/Oteryn-Game",
+  "organization_installation": {
+    "installation_id": 154585379,
+    "account_login": "Oteryn",
+    "currently_visible_repositories": [
+      "Oteryn/Oteryn",
+      "Oteryn/Oteryn-Atlas"
+    ]
+  },
+  "current_provider_surface": {
+    "action_yml_present": false,
+    "action_yaml_present": false,
+    "workflow_call_present": false,
+    "dockerfile_present": false,
+    "ghcr_reference_present": false,
+    "package_json_present": false,
+    "external_action_or_reusable_workflow_caller_status": "NO_KNOWN_LIVE_PROVIDER_SURFACE",
+    "classification": "PASS_BOUNDED_CURRENT_STATE"
+  },
+  "packages": {
+    "inventory": "UNKNOWN_CONNECTOR_NO_PACKAGE_OPERATION",
+    "current_source_controlled_package_producer_evidence": false,
+    "cutover_gate": "BLOCKING",
+    "required_resolution": "prove package inventory empty or enumerate package linkage, transfer behavior, consumers, post-transfer relink and rollback"
+  },
+  "open_pull_requests": [
+    {
+      "number": 335,
+      "draft": true,
+      "head_sha": "8553e2b6e354a7ccb7d273d16f1a2e0cf49b6ad0"
+    },
+    {
+      "number": 317,
+      "draft": true,
+      "head_sha": "6f83c16305a4c7fb8d0303deb55a4ab8ee5827e8"
+    }
+  ],
+  "rollback": {
+    "state": "NOT_PROVEN",
+    "operation": "transfer Oteryn/Oteryn-Game back to blakinio and rename to Oteryn-v2",
+    "missing_proof": "current Oteryn organization policy permits transfer-out/transfer-back before target authority is broadly consumed"
+  },
+  "replay_guard": {
+    "do_not_repeat_ambiguous_transfer": true,
+    "resume_detection": "read both exact coordinates and resolve repository_id 1323412342 before any retry"
+  },
+  "public_status": "NO_GO",
+  "blockers": [
+    "github_packages_inventory",
+    "transfer_back_rollback_permission"
+  ]
+}
