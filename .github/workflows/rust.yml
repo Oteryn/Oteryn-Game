@@ -39,10 +39,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - name: Check out repository
+      - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact revision
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
@@ -97,10 +103,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - name: Check out repository
+      - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact revision
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
@@ -125,10 +137,20 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 60
     steps:
-      - name: Check out repository
+      - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact revision
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: |
+          if ((git rev-parse HEAD).Trim() -ne $env:EXPECTED_SHA) {
+            throw "checked-out revision does not match expected exact SHA"
+          }
 
       - name: Install Rust toolchain
         shell: pwsh
@@ -159,10 +181,16 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - name: Check out repository
+      - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact revision
+        env:
+          EXPECTED_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Check advisories licenses bans and sources
         uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # cargo-deny 0.20.2
