@@ -3,6 +3,7 @@ members = [
     "apps/client",
     "apps/game-server",
     "crates/foundation",
+    "crates/simulation-determinism",
     "crates/diagnostics",
     "crates/client-runtime",
     "crates/platform-contracts",

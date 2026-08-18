@@ -1399,6 +1399,7 @@ name = "oteryn-game-server"
 version = "0.1.0"
 dependencies = [
  "oteryn-foundation",
+ "oteryn-simulation-determinism",
  "tokio",
 ]
 
@@ -1471,6 +1472,13 @@ dependencies = [
  "oteryn-identity",
  "oteryn-platform-client",
  "tokio",
+]
+
+[[package]]
+name = "oteryn-simulation-determinism"
+version = "0.1.0"
+dependencies = [
+ "sha2",
 ]
 
 [[package]]
