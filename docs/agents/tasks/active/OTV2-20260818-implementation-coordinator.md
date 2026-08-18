@@ -4,15 +4,15 @@
 task_id: OTV2-20260818-implementation-coordinator
 title: Coordinate first native implementation wave
 mode: COORDINATE
-status: bootstrap_closeout
+status: sim_allocation_pending_exact_base
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: docs/otv2-20260818-impl-bootstrap-closeout
-pr: 11
+branch: docs/otv2-20260818-sim-allocation
+pr: 12
 base_sha: ed84415f4a55d8c16f703b7c1a130c0e43a1c1a1
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-18T17:18:00+02:00
+updated_at: 2026-08-18T17:28:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -23,40 +23,39 @@ public_contracts:
 depends_on:
   - OTV2-20260805-foundation-preimplementation-contracts
 blocks:
-  - Wave 1 allocation publication
+  - OTV2-IMPL-SIM writes until exact allocation base is merged and bound
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 ```
 
 ## Outcome
 
-Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme on canonical `Oteryn/Oteryn-Game`, beginning with serial Bootstrap and then releasing only dependency-ready bounded worker lanes.
+Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme on canonical `Oteryn/Oteryn-Game`, beginning with serial Bootstrap and then releasing dependency-ready bounded worker lanes under exact-base and path-ownership discipline.
 
 ## Current proven state
 
-- `PROVEN`: coordinator allocation PR #8 merged as `86200e6d044287bcb2fbb122d224e825b9084a7a`.
-- `PROVEN`: exact worker-base reconciliation PR #9 merged as `d9c5ef68e1c88b88b4782219051395eacb0f8e67`.
-- `PROVEN`: Bootstrap final head `43243c4998224517a4c828bc05e735264b3e3394` passed Agent governance, Architecture semantic audit, Merge authority audit and aggregate Merge gate including Linux/Windows/supply-chain gates.
-- `PROVEN`: Bootstrap PR #10 squash-merged as current `main@0809004252db228e8f3fac3cdb6638c3c2a7fbda`.
-- `PROVEN`: post-merge `apps/game-server` is a production package consuming only `oteryn-foundation` + `tokio`; gameplay remains fail-closed.
-- `PROVEN`: Bootstrap delivery branch is absent after merge.
-- `PROVEN`: Bootstrap archive/ownership-release and live-allocation closeout are PR #11; no next worker has write authority before that merge.
-- `PROVEN`: Wave 1 prompts for Foundation/SIM/Domain/Content/QA have been read and require coordinator-owned exact path/base allocations.
-- `PROVEN`: Foundation will introduce high-risk protocol/session/admission/fencing semantics and therefore cannot complete without genuinely independent exact-head review.
+- `PROVEN`: Bootstrap PR #10 merged as `0809004252db228e8f3fac3cdb6638c3c2a7fbda` and PR #11 archived/released Bootstrap as current `main@231d063ff877b41f01a8032018284fc2f910161e`.
+- `PROVEN`: Bootstrap ownership is empty and the real `apps/game-server` production root exists.
+- `PROVEN`: Wave 1 permits Foundation/SIM/Domain/Content/QA after Bootstrap as paths permit.
+- `PROVEN`: root Cargo/workspace/lock/policy/CI mutations must remain serialized; therefore this coordinator releases SIM alone first rather than allowing concurrent root mutations.
+- `PROVEN`: no existing stable SIM profile/revision registry or implementation was found on live main; accepted SIM architecture intentionally leaves concrete implementation artifact/profile selection to implementation evidence.
+- `PROVEN`: SIM allocation is PR #12 and requires a real immediate consumer in `apps/game-server`; no speculative unconsumed crate is authorized.
+- `PROVEN`: SIM may use existing workspace `sha2` without adding third-party dependency graph, but it receives no security-randomness/seed-secrecy authority.
+- `PROVEN`: Foundation remains dependency-ready later but its protocol/session/admission/fencing implementation requires genuinely independent exact-head review. The current historical semantic-audit workflow does not satisfy that gate for arbitrary Foundation code because its deterministic script returns `NOT_APPLICABLE` outside two named historical doc profiles.
 - `PROVEN`: no production/protected/live-data/Platform/external-repository authority is granted.
 
 ## Merge discipline
 
-Stable workspace and registry mutations remain serialized. Bootstrap ownership is released by PR #11. Wave 1 allocation publication is the next coordinator action and will use the exact post-closeout `main` SHA; no sibling branch is consumable merely because it exists.
+The live allocation is currently `allocated_pending_exact_base`. No SIM implementation write may occur until PR #12 is merged and a follow-up coordinator reconciliation binds `worker_base_sha` to that exact merge SHA on `main`. Other Wave 1 workers remain read-only while SIM owns serialized workspace paths.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Bootstrap PR #10 merged as 0809004252db228e8f3fac3cdb6638c3c2a7fbda; PR #11 archives Bootstrap and releases its allocation ownership.
-status: bootstrap_closeout
-branch: docs/otv2-20260818-impl-bootstrap-closeout
+last_progress: Bootstrap lifecycle is fully closed on main@231d063ff877b41f01a8032018284fc2f910161e; PR #12 contains the bounded SIM allocation with real game-server consumption and serialized workspace ownership.
+status: sim_allocation_pending_exact_base
+branch: docs/otv2-20260818-sim-allocation
 head_sha: pending_final_freeze
-pr: 11
+pr: 12
 blocker: null
 owner_action_required: null
-next_action: Merge PR #11 through exact-head governance CI, then publish exact-base non-overlapping Wave 1 allocations for Foundation/SIM/Domain/Content/QA.
+next_action: Merge PR #12 through exact-head governance CI, bind worker_base_sha to that allocation merge, then implement OTV2-IMPL-SIM.
 ```
