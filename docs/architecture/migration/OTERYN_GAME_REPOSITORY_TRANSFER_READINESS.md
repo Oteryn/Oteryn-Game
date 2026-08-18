@@ -2,248 +2,176 @@
 
 Date: 2026-08-18
 Coordination ID: `OTERYN-GAME-TRANSFER-20260818`
-Source repository: `blakinio/Oteryn-v2`
-Target repository: `Oteryn/Oteryn-Game`
-Canonical ecosystem authority: `Oteryn/Oteryn` ADR 0001
+Source: `blakinio/Oteryn-v2`
+Target: `Oteryn/Oteryn-Game`
+Authority: `Oteryn/Oteryn` ADR 0001
 
 ## Decision
 
-**Current verdict: `NO_GO` for the physical transfer/rename.**
+**Physical transfer status: `NO_GO`.**
 
-The previous Wave-1 organization blocker is closed and the previous Actions/reusable-workflow blocker is materially narrowed to a bounded current-state `PASS`. Two material pre-cutover gates remain fail-closed:
+The organization blocker is closed and the previous external Actions/reusable-workflow blocker is narrowed to a current-state PASS. Two material gates remain:
 
-1. current GitHub Packages association/inventory for the source repository/account is not enumerable through the available GitHub connector;
-2. transfer-back rollback permission under the current `Oteryn` organization policy is not yet proven.
+1. GitHub Packages inventory/linkage for the source repository/account is not proven;
+2. current `Oteryn` organization policy permitting transfer-back rollback is not proven.
 
-Do not create an empty `Oteryn/Oteryn-Game` repository. The intended target is the same GitHub repository object, transferred from the personal account into `Oteryn` and renamed to `Oteryn-Game` in the transfer flow.
+Do **not** create an empty `Oteryn/Oteryn-Game`. The intended mutation is transfer of the existing repository object `1323412342` from `blakinio` to `Oteryn`, with `Oteryn-Game` as the new repository name.
 
-## Current live baseline
+## Live baseline
 
-| Item | Current evidence | Classification |
-| --- | --- | --- |
-| source coordinate | `blakinio/Oteryn-v2` | PROVEN |
-| source repository ID | `1323412342` | PROVEN |
-| source default branch | `main` | PROVEN |
-| source visibility | public | PROVEN |
-| source connector permissions | admin/maintain/push/pull/triage | PROVEN |
-| source main at admission | `457df3772a7aaf648c1a048b2db2caa409fcf974` | PROVEN |
-| target coordinate | `Oteryn/Oteryn-Game` | PROVEN target |
-| target current state | 404 / absent | PROVEN |
-| organization GitHub App installation | `154585379` for `Oteryn` | PROVEN |
-| currently visible organization repositories | `Oteryn/Oteryn`, `Oteryn/Oteryn-Atlas` | PROVEN |
-| current source open PRs | draft #335, draft #317 | PROVEN |
+| Fact | Evidence state |
+| --- | --- |
+| `blakinio/Oteryn-v2` exists, repository ID `1323412342` | PROVEN |
+| visibility `public`, default branch `main`, connector admin/write | PROVEN |
+| source main at admission `457df3772a7aaf648c1a048b2db2caa409fcf974` | PROVEN |
+| `Oteryn/Oteryn-Game` absent / 404 | PROVEN |
+| Oteryn GitHub App installation `154585379` active | PROVEN |
+| Oteryn installation currently exposes META + Atlas with admin/write | PROVEN |
+| open source PRs: draft #335 and draft #317 | PROVEN |
+| package inventory | UNKNOWN |
+| transfer-back permission under current Oteryn policy | UNKNOWN |
 
-Every pre-cutover state above must be refreshed immediately before the physical transfer. The SHA is an observation baseline, not future authority.
+All live facts must be refreshed immediately before cutover.
 
-## Transfer shape
+## Transfer semantics
 
-GitHub's current repository-transfer documentation supports transferring a repository owned by a personal account to an organization and optionally changing the repository name in the same transfer flow.
+GitHub supports transferring a personally owned repository to an organization and allows an optional new repository name in that transfer flow. The transfer preserves the repository history and normal repository objects such as issues and pull requests; ordinary Git/web references receive repository redirects. Repository settings, organization policy effects, Actions access and package linkage are still explicit post-transfer verification items rather than assumed preserved state.
 
-Planned mutation:
+The old coordinate `blakinio/Oteryn-v2` must not be reused while redirect compatibility or rollback depends on it.
 
-```text
-blakinio/Oteryn-v2
-        |
-        | transfer owner -> Oteryn
-        | new repository name -> Oteryn-Game
-        v
-Oteryn/Oteryn-Game
-```
+## Actions / reusable-workflow gate
 
-This is preferred over creating a new repository and copying Git data because GitHub transfer preserves the repository object, commit history, issues, pull requests, stars/watchers and normal repository settings. Web and Git references to the old location receive ordinary repository redirects, subject to GitHub's documented exceptions.
+GitHub Actions does not follow ordinary repository redirects for actions or reusable workflows when owner/repository identity changes. Fresh live-source inspection therefore checked whether such a provider surface exists.
 
-The old coordinate `blakinio/Oteryn-v2` must not be reused while redirects/rollback compatibility are required.
+At `main@457df3772a7aaf648c1a048b2db2caa409fcf974`:
 
-## Actions and reusable-workflow gate
+- no `action.yml`;
+- no `action.yaml`;
+- no `workflow_call`;
+- no `Dockerfile` for a Docker action;
+- current workflows are repository-local;
+- repository policy contains no hard-coded source coordinate;
+- repository settings tooling derives the target from `GITHUB_REPOSITORY`;
+- connected-repository search found no `Oteryn-v2/.github/workflows` caller;
+- bounded public search found no exact old-coordinate action/reusable-workflow call.
 
-GitHub does **not** redirect calls to actions or reusable workflows when the owner or repository name changes. Therefore this surface is a cutover blocker only if the source actually hosts an action/reusable workflow or a caller points at such an executable coordinate.
+**Gate: `PASS_BOUNDED_CURRENT_STATE`.** The current repository exposes no hosted Action/reusable-workflow provider that a live caller could invoke using the old coordinate. This is not a claim about deleted historical files or inaccessible private repositories.
 
-Fresh current-state evidence at `main@457df3772a7aaf648c1a048b2db2caa409fcf974`:
+## GitHub Packages / GHCR gate
 
-- recursive tree: no `action.yml`;
-- recursive tree: no `action.yaml`;
-- repository code search: no `workflow_call`;
-- current `.github/workflows/**` are repository-local workflows rather than exported reusable workflows;
-- repository policy contains no hard-coded source repository coordinate;
-- `tools/repository/apply_github_settings.py` derives API target from `GITHUB_REPOSITORY`;
-- `.github/workflows/repository-configuration.yml` operates on the current repository dynamically;
-- recursive tree: no `Dockerfile` for a repository-hosted Docker action;
-- connected-repository search: no `Oteryn-v2/.github/workflows` caller found;
-- public web search: no exact `blakinio/Oteryn-v2/.github/workflows` / `uses: blakinio/Oteryn-v2` result found.
+Current source evidence is negative:
 
-**Verdict: `PASS_BOUNDED_CURRENT_STATE`.** There is no current repository-hosted action or reusable workflow for an external workflow to call by the old coordinate. This does not claim knowledge of deleted historical files or inaccessible private repositories, but those cannot create a live dependency on a provider that is absent from current source.
+- no `ghcr.io` reference;
+- no `Dockerfile`;
+- no `package.json`;
+- no package-publishing workflow identified in the current workflow inventory;
+- bounded public search found no Oteryn-v2 GHCR result.
 
-## Package / GHCR gate
+That does **not** prove the absence of manually or historically published packages currently associated with the repository/account. The available GitHub connector has no Packages-list operation.
 
-Fresh source-tree evidence:
-
-- no `ghcr.io` reference found;
-- no `Dockerfile` found;
-- no `package.json` found;
-- no package-publishing workflow was identified in the current workflow inventory;
-- public exact-term searches found no Oteryn-v2 GHCR reference.
-
-This is strong negative evidence for an active source-controlled package producer, but it is **not** sufficient to prove that no manually or historically published GitHub Package is currently associated with the repository or personal account.
-
-GitHub documents that packages associated with a transferred repository may transfer or may lose their repository link depending on the registry. Therefore the package gate remains:
+GitHub documents registry-dependent behavior when a repository associated with a package is transferred: a package may transfer or may lose its repository link. Therefore:
 
 ```text
-UNKNOWN_PACKAGE_INVENTORY -> NO_GO
+packages.inventory = UNKNOWN
+packages.cutover_gate = BLOCKING
+public_status = NO_GO
 ```
 
-Required evidence before `CUTOVER_READY`:
+Before `CUTOVER_READY`, either prove the package inventory is empty or enumerate every package's registry/type, visibility, repository linkage, Actions access, consumers, expected transfer behavior, relink step and rollback.
 
-- prove repository/user package inventory is empty; **or**
-- enumerate each package, registry/type, visibility, repository linkage, Actions access, consumers, expected transfer behavior, post-transfer relink step and rollback behavior.
+## Open work / cutover lock
 
-The available GitHub connector exposes no Packages-list operation, so this evidence currently requires owner-visible GitHub package state or another authorized GitHub API path with package-read capability. No secret/token use is authorized by this task.
+Current open PRs at admission:
 
-## Releases and generated artifacts
+- #335 — draft Atlas semantic export fixture;
+- #317 — draft entitlement consumer architecture candidate.
 
-The previous Wave-1 inspection found no GitHub Releases for `Oteryn-v2`. The current tree does not introduce a release-publishing workflow in the inspected workflow inventory. This signal is positive but must be refreshed immediately before transfer if a release endpoint becomes available to the executor.
+Immediately before transfer, freeze a short cutover window: refresh `main`, record every open PR head SHA/state, and prevent merge/rebase/head rewrites during the owner transfer action. Immediately after transfer, verify the same PR numbers/head SHAs/states under `Oteryn/Oteryn-Game` before normal work resumes.
 
-GitHub Actions artifacts are run-scoped evidence, not repository identity authority. Historical workflow-run links may redirect as ordinary repository links, but any external executable action/reusable-workflow coordinate would not; the latter provider surface is currently absent as proven above.
+No active PR is closed merely to simplify migration.
 
-## Open work and cutover lock
+## Repository configuration verification
 
-Current open PRs:
-
-- #335 — draft Game-owned Atlas semantic export fixture;
-- #317 — draft architecture candidate for entitlement consumption.
-
-A repository transfer normally preserves pull requests, but cutover must not race a head/base mutation or merge decision.
-
-Immediately before transfer:
-
-1. refresh `main` and exact open PR list;
-2. capture every open PR head SHA and draft/ready state;
-3. require no merge/rebase/head rewrite during the owner transfer click;
-4. after transfer, verify the same PR numbers, base branch, head SHAs and states under `Oteryn/Oteryn-Game` before any further merges;
-5. re-run/observe required checks under the new coordinate as needed; do not infer old pending checks transferred correctly.
-
-No existing PR is closed merely to make migration easier.
-
-## Repository configuration after transfer
-
-Current policy is mostly coordinate-independent:
-
-- repository settings are encoded in `.github/repository-policy.json`;
-- the settings applier uses `GITHUB_REPOSITORY`;
-- repository-configuration workflow is same-repository;
-- main ruleset target is `~DEFAULT_BRANCH`;
-- source uses squash-only merge policy and delete-branch-on-merge.
-
-Post-transfer validation must verify the resulting live settings because organization defaults/policies may affect the transferred repository. In particular verify:
+Current repository policy is mostly coordinate-independent (`GITHUB_REPOSITORY`, `~DEFAULT_BRANCH`, `Merge gate / validate`). After transfer, verify rather than assume:
 
 - repository ID remains `1323412342`;
-- exact owner/name is `Oteryn/Oteryn-Game`;
-- visibility remains public;
-- default branch remains `main`;
-- squash/auto-merge/update-branch settings remain intended;
-- main ruleset and `Merge gate / validate` requirement remain active;
+- exact coordinate is `Oteryn/Oteryn-Game`;
+- visibility remains public and default branch remains `main`;
+- locked pre-transfer `main` SHA is unchanged;
+- squash/auto-merge/update-branch settings are intended;
+- `Protect main` / `Merge gate / validate` protection remains effective;
 - CODEOWNERS/control-plane protection remains effective;
 - Actions permissions remain intended;
-- secrets/webhooks/deploy keys remain associated where GitHub documents preservation, without exposing secret values;
-- GitHub App installation `154585379` can read/write/admin the transferred repository, or owner updates its selected-repository access before further automation.
+- GitHub App installation `154585379` exposes admin/write access;
+- webhooks/secrets/deploy keys/package linkage are in the expected resulting state without exposing secret values.
 
-## Coordinate cleanup classes
+## Coordinate cleanup
 
-### MUST_CHANGE_AT_OR_IMMEDIATELY_AFTER_CUTOVER
+**Post-cutover must change:** target-local governance clauses that hard-code `blakinio/Oteryn-v2`, current branding that should become `Oteryn Game`, and any discovered operational integration keyed to the old slug.
 
-- repository-local governance statements that explicitly restrict writes/merge identity to `blakinio/Oteryn-v2` must be updated in a governed post-transfer PR before ordinary future tasks rely on target-local authority;
-- current-name branding such as `Oteryn v2` -> `Oteryn Game` should be updated after the repository object has the target coordinate;
-- any current operational integration outside GitHub discovered during final preflight that keys on exact repository slug rather than repository ID must be updated.
+**Keep as historical provenance:** archived tasks, evidence and ADR/review references where `blakinio/Oteryn-v2` was the true coordinate at the time.
 
-### SAFE TEMPORARILY THROUGH ORDINARY GITHUB REDIRECT
+**Redirect-safe temporarily:** ordinary Git/web references while the old coordinate is not reused.
 
-- normal Git web links and Git clone/fetch/push references, while the old coordinate is not reused;
-- historical PR/issue/commit links whose old coordinate is provenance.
-
-### DO NOT REWRITE AS MIGRATION CLEANUP
-
-- archived evidence, historical ADR review references and task records where `blakinio/Oteryn-v2` describes the repository's actual historical coordinate at that time.
-
-### NOT REDIRECT-SAFE
-
-- GitHub Actions/reusable-workflow calls to a hosted action/workflow. Current provider surface is proven absent, so no concrete live entry exists at this time.
+**Not redirect-safe:** hosted Action/reusable-workflow calls; no concrete current provider surface exists.
 
 ## Rollback
 
-Candidate rollback after a wrong transfer result but before target-coordinate authority is broadly consumed:
+Candidate rollback before broad target-coordinate adoption:
 
 ```text
 Oteryn/Oteryn-Game
-        |
-        | transfer owner -> blakinio
-        | new repository name -> Oteryn-v2
-        v
-blakinio/Oteryn-v2
+  -> transfer owner back to blakinio
+  -> rename back to Oteryn-v2
+  -> blakinio/Oteryn-v2
 ```
 
-GitHub documentation supports transferring repositories from an organization when the operator has appropriate owner/admin permission. However organization/enterprise policy can restrict transfers.
+Generic GitHub capability is not organization-specific proof. Organization/enterprise policy can restrict repository transfer. Therefore rollback is currently:
 
-Therefore rollback feasibility is currently **`NOT_PROVEN`** until the owner confirms that current `Oteryn` policy permits transfer-out/transfer-back for this repository. Do not treat generic GitHub documentation as organization-specific proof.
+```text
+rollback.state = NOT_PROVEN
+```
 
-Rollback window closes progressively once external systems, package linkage, target-only repository configuration or canonical manifests depend uniquely on the new coordinate. Normal redirects are not a substitute for a proven rollback operation.
+Required proof: the current owner confirms that the current `Oteryn` organization policy permits transfer-out/transfer-back of this repository before target authority is broadly consumed.
 
-## Exact cutover runbook once all gates pass
+## Exact cutover runbook after all gates pass
 
 ### Preflight
 
-- re-read canonical META ADR 0001 and current migration programme state;
-- refresh source repository ID/owner/name/visibility/default branch/main SHA;
-- prove target `Oteryn/Oteryn-Game` still does not exist;
-- refresh open PR heads/states and ensure a brief migration lock;
+- refresh META ADR 0001 and migration programme authority;
+- refresh source owner/name/ID/visibility/default branch/main SHA;
+- prove target still absent;
+- refresh open PR heads/states and acquire brief cutover lock;
 - refresh organization installation/access;
-- resolve package inventory gate;
+- resolve package gate;
 - prove transfer-back rollback permission;
-- confirm no new action/reusable-workflow provider surface (`action.yml`, `action.yaml`, `workflow_call`);
-- confirm no new package/release producer was added;
-- record exact pre-state and mutation fingerprint `transfer:1323412342:blakinio/Oteryn-v2->Oteryn/Oteryn-Game`.
+- recheck `action.yml`, `action.yaml`, `workflow_call` and package/release producer surfaces;
+- persist mutation fingerprint `transfer_repository:1323412342:blakinio/Oteryn-v2->Oteryn/Oteryn-Game`.
 
 ### Owner physical operation
 
-In the GitHub repository transfer UI for `blakinio/Oteryn-v2`:
+In `blakinio/Oteryn-v2`: **Settings -> Danger Zone -> Transfer**. Choose owner `Oteryn`, set new repository name `Oteryn-Game`, review warnings, complete GitHub's confirmation and execute the transfer **once**.
 
-1. Settings -> Danger Zone -> Transfer;
-2. choose organization `Oteryn` as new owner;
-3. set optional new repository name to `Oteryn-Game`;
-4. review GitHub's transfer warnings;
-5. type the current repository name required by the confirmation UI;
-6. execute the transfer once.
+If the UI result is ambiguous, do not retry. First resolve repository ID `1323412342` against both old and target coordinates.
 
-If the UI result is ambiguous, **do not retry**. First read both exact coordinates and resolve repository ID `1323412342`.
+### Immediate post-transfer proof
 
-### Immediate post-transfer verification
-
-- `Oteryn/Oteryn-Game` exists and repository ID is still `1323412342`;
-- old source coordinate does not resolve to a different/reused repository object;
-- owner/name/visibility/archived/default branch are correct;
-- `main` SHA matches the locked pre-transfer SHA;
-- open PR numbers/head SHAs/states are preserved;
-- connector installation access is proven;
-- repository settings/ruleset/Actions behavior are verified;
-- package state exactly matches the planned outcome;
-- no unexpected Pages/deployment/package warning requires rollback;
-- create a dedicated post-transfer governance/coordinate-cleanup task/PR before ordinary future work assumes the new identity.
-
-### Replay guard
-
-Never issue a second transfer based on a timeout, blank page, stale UI or ambiguous message. Read both coordinates and repository ID first.
+- target exists with repository ID `1323412342`;
+- old coordinate does not resolve to a different/reused repository;
+- owner/name/visibility/default branch/main SHA match expected state;
+- open PRs are preserved exactly;
+- GitHub App access works;
+- settings/ruleset/Actions/package state match plan;
+- no unexpected transfer warning/state requires rollback;
+- start a dedicated post-transfer governance/branding/coordinate-cleanup PR before ordinary future work relies on the new target identity.
 
 ## Current blockers
 
 ### P1
 
-1. exact current GitHub Packages inventory/association is not proven;
-2. current `Oteryn` organization transfer-back rollback capability is not proven.
-
-### P2 / post-cutover
-
-- target-local branding and repository-identity governance cleanup;
-- live repository settings/app-access verification after organization ownership applies;
-- old local clones/remotes should be updated to the target URL even while redirects work.
+1. `github_packages_inventory`
+2. `transfer_back_rollback_permission`
 
 ## Next action
 
-Obtain the two owner-visible facts: current package inventory for `blakinio/Oteryn-v2`/`blakinio`, and confirmation that the owner can transfer a repository from `Oteryn` back to `blakinio` if rollback is required before target authority is broadly consumed. Then freeze the readiness head, merge the readiness PR, and move the physical transaction to `CUTOVER_READY` if no new blocker appears.
+Owner provides the current GitHub Packages state for `blakinio/Oteryn-v2` / account `blakinio` and confirms whether the current `Oteryn` policy permits transfer-back rollback. Until both facts are proven, the physical transfer remains `NO_GO` and Draft PR #336 remains the durable readiness record.

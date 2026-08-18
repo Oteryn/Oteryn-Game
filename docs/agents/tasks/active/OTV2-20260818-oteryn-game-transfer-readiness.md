@@ -4,18 +4,18 @@
 task_id: OTV2-20260818-oteryn-game-transfer-readiness
 title: Prepare Oteryn-Game repository transfer and rename
 mode: MIGRATE
-status: validating
+status: blocked
 repository: blakinio/Oteryn-v2
 base_branch: main
 branch: docs/otv2-20260818-oteryn-game-transfer-readiness
 pr: 336
 base_sha: 457df3772a7aaf648c1a048b2db2caa409fcf974
-head_sha: 968bda99dd4caeb4421a717d1e9f536970b72b43
+head_sha: 8b7cee2bf93f073901af7058b9a5897a88978a8e
 final_head_sha: null
 final_head_frozen_at: null
 owner: chat-github-20260818-oteryn-game-transfer-readiness
 created_at: 2026-08-18T09:00:00Z
-updated_at: 2026-08-18T09:12:00Z
+updated_at: 2026-08-18T09:18:00Z
 execution_budget_minutes: 120
 large_budget_reason: cross-owner repository transfer readiness requires current source/target inventory, Actions/package/release impact analysis, rollback, open-work coordination and exact post-transfer verification planning
 owned_paths:
@@ -27,7 +27,7 @@ depends_on:
   - Oteryn/Oteryn ADR 0001 ecosystem topology authority
   - blakinio/Oteryn-Platform OTERYN_ECOSYSTEM_REPOSITORY_MIGRATION programme
 blocks:
-  - physical transfer and rename blakinio/Oteryn-v2 -> Oteryn/Oteryn-Game until package inventory and rollback policy are proven
+  - physical transfer and rename blakinio/Oteryn-v2 -> Oteryn/Oteryn-Game
 cross_repository_coordination_id: OTERYN-GAME-TRANSFER-20260818
 external_repositories:
   - Oteryn/Oteryn
@@ -38,127 +38,128 @@ external_repositories:
 
 ## Outcome
 
-Produce a fail-closed **readiness decision** for transferring the existing repository object `blakinio/Oteryn-v2` to organization `Oteryn` and renaming it to `Oteryn-Game` in the same GitHub transfer operation. This task documents whether physical cutover is safe; it does not perform the transfer while any material gate is unknown.
+Prepare and preserve the current fail-closed readiness state for transferring the **existing repository object** `blakinio/Oteryn-v2` to organization `Oteryn` with target name `Oteryn-Game`. Physical cutover remains forbidden while a material package or rollback gate is unknown.
 
 ## Architecture and source of truth
 
-- **PROVEN:** `Oteryn/Oteryn` ADR 0001 is the canonical ecosystem topology authority and assigns the native Game product to `Oteryn/Oteryn-Game`.
-- **PROVEN:** current source repository ID is `1323412342`, current coordinate is `blakinio/Oteryn-v2`, visibility is public, default branch is `main`, and connector permissions include admin/push/pull.
-- **PROVEN:** current source `main` at admission is `457df3772a7aaf648c1a048b2db2caa409fcf974`.
-- **PROVEN:** exact target `Oteryn/Oteryn-Game` returned 404 at admission.
-- **PROVEN:** GitHub App installation `154585379` for organization `Oteryn` is live and currently exposes `Oteryn/Oteryn` plus `Oteryn/Oteryn-Atlas` with admin/write access.
-- **PROVEN:** current Oteryn-v2 repository policy derives live repository identity from `GITHUB_REPOSITORY`; repository configuration is same-repository/dynamic.
-- **PROVEN:** current recursive source tree contains no `action.yml`, no `action.yaml`, no `Dockerfile`, and no `package.json`; repository code search contains no `workflow_call` and no `ghcr.io` reference.
-- **PROVEN:** connected-repository search found no `Oteryn-v2/.github/workflows` caller; bounded public search found no exact old-coordinate action/reusable-workflow or GHCR result.
-- **PROVEN:** current open source PRs at admission are draft PR #335 and draft PR #317.
-- **UNKNOWN:** GitHub Packages inventory associated with the personal account/repository cannot be enumerated by the available connector; absence of package-producing source paths does not prove absence of manually or historically published packages.
-- **UNKNOWN:** current `Oteryn` organization policy may restrict transfer-out/transfer-back rollback even though source admin access and organization ownership are otherwise available.
+- **PROVEN:** canonical META ADR 0001 assigns the native Game product to target `Oteryn/Oteryn-Game`.
+- **PROVEN:** source repository ID `1323412342` exists as public `blakinio/Oteryn-v2`, default branch `main`, with connector admin/write access.
+- **PROVEN:** source main at admission is `457df3772a7aaf648c1a048b2db2caa409fcf974`.
+- **PROVEN:** target `Oteryn/Oteryn-Game` returned 404 at admission.
+- **PROVEN:** organization installation `154585379` is active and exposes current META/Atlas repositories with admin/write access.
+- **PROVEN:** current live source exposes no `action.yml`, `action.yaml`, `workflow_call`, `Dockerfile`, `package.json` or `ghcr.io` reference; known connected/public caller searches found no old-coordinate Action/reusable-workflow invocation.
+- **PROVEN:** current open PRs at admission are draft #335 and draft #317.
+- **UNKNOWN:** current GitHub Packages inventory/linkage cannot be enumerated by the connected GitHub capability.
+- **UNKNOWN:** current Oteryn organization policy permitting transfer-back rollback has not been proven.
 
 ## Acceptance criteria
 
-- [x] Exact source repository identity/head/permissions recorded.
-- [x] Exact target coordinate absence and organization installation state recorded.
-- [x] Current open PR/work state recorded for cutover revalidation.
-- [x] Repository-hosted Action/reusable-workflow provider surface revalidated on current tree.
-- [x] Known connected/public caller searches executed and bounded truthfully.
-- [x] GitHub Packages inventory classified `UNKNOWN` with the exact missing connector capability and required owner-visible evidence.
-- [x] Transfer-back rollback feasibility classified `NOT_PROVEN` pending current organization-specific proof.
-- [x] Exact preflight/cutover/post-cutover/replay-guard/rollback runbook committed.
-- [x] Machine-readable cutover inventory classifies source/target/provider/package/open-work/rollback state.
-- [x] Draft PR #336 owns exactly the three declared readiness paths.
-- [ ] Full changed-file diff self-review passes with zero material findings.
-- [ ] Exact-head required repository checks pass with clean review hygiene.
-- [ ] Readiness PR is merged and lifecycle closeout archives this readiness task with physical status `NO_GO`.
+- [x] Exact source identity/head/permissions and target absence recorded.
+- [x] Organization integration and current open-work state recorded.
+- [x] Current Action/reusable-workflow provider surface and known caller searches revalidated.
+- [x] GitHub Packages state classified `UNKNOWN` with exact missing evidence.
+- [x] Rollback classified `NOT_PROVEN` with exact organization-specific missing proof.
+- [x] Preflight/cutover/post-cutover/replay-guard/rollback runbook committed.
+- [x] Machine-readable inventory committed and deterministically parsed.
+- [x] Draft PR #336 owns exactly the three declared paths.
+- [ ] Owner proves package inventory/linkage is safe for transfer.
+- [ ] Owner proves current transfer-back rollback permission, or explicitly accepts bounded residual risk.
+- [ ] After blocker resolution, final readiness head is frozen and exact-head self-review/checks pass.
+- [ ] PR #336 transitions to Ready/merge only when the physical transaction may truthfully become `CUTOVER_READY` or when the owner explicitly chooses a terminal `NO_GO` closeout.
 
 ## Excluded scope
 
-- Do not perform the physical transfer or rename from this readiness task.
-- Do not create a new empty `Oteryn/Oteryn-Game` repository; the target must be the transferred existing repository object so history/PRs/settings remain attached.
-- Do not change runtime, protocol, persistence, gameplay, client behavior, production/deployment, packages, secrets or live game state.
-- Do not modify Platform, META, Atlas, Otheryn, Canary, otclient or github-projects-control repositories in this task.
+- No physical repository transfer/rename during current blocked state.
+- No new empty `Oteryn/Oteryn-Game` repository.
+- No runtime, protocol, persistence, gameplay, client, package, deployment, secret or live-state mutation.
+- No writes to META, Platform, Atlas, Otheryn, Canary, otclient or github-projects-control.
 
-## Implementation / findings
+## Findings
 
-The previous Wave-1 external Actions/reusable-workflow blocker is now materially narrowed. The live source is not a repository-hosted Action and exposes no reusable workflow through `workflow_call`. A live caller cannot depend on a current provider surface that does not exist. Known connected/public searches also found no old-coordinate executable caller. The result is intentionally `PASS_BOUNDED_CURRENT_STATE`, not a claim about deleted historical files or inaccessible private repositories.
+The previous Wave-1 external Actions/reusable-workflow blocker is resolved for the current live provider surface: there is no hosted Action or reusable workflow in the current repository for an external caller to invoke by the old coordinate. The proof remains bounded to current state.
 
-Two material cutover gates remain. The connector has no GitHub Packages listing operation, so package association remains fail-closed. Generic transfer documentation also does not prove the current Oteryn organization permits transfer-back, so rollback remains `NOT_PROVEN` until owner-specific evidence exists.
+Package state remains fail-closed because source-controlled producer evidence is absent but repository/account package inventory cannot be listed by the connector. Rollback remains fail-closed because generic GitHub transfer support does not prove the current organization policy permits transfer-back.
+
+A pre-freeze self-review found two documentation-quality issues: the first report draft overgeneralized preservation of repository settings and its merge sequencing was ambiguous. Both were repaired before the final blocked checkpoint; post-transfer settings are now explicitly verified rather than assumed, and PR #336 remains Draft pending the two owner-visible facts.
 
 ## Validation
 
 ### Focused
 
-- current repository/target/access reads: PASS
-- current recursive-tree Action/package-producer surface inspection: PASS
-- connected/public old-coordinate executable caller search: PASS (bounded current-state evidence)
-- machine-readable inventory JSON construction: pending deterministic parse verification
+- exact source/target/access reads: PASS
+- source recursive-tree/provider surface checks: PASS
+- known connected/public caller search: PASS with bounded current-state scope
+- inventory JSON parse: PASS (`schema_version=1`, two open PR records, `public_status=NO_GO`, two blocker identifiers)
 
 ### Component/integration
 
-- repository transfer simulation: NOT_APPLICABLE; no non-mutating transfer dry-run is exposed by the connector
-- package linkage verification: BLOCKED pending owner-visible package inventory or an authorized package-read API path
+- transfer dry run: NOT_APPLICABLE; connector exposes no non-mutating transfer simulation
+- package linkage verification: BLOCKED pending owner-visible inventory or authorized package-read capability
 
 ### E2E
 
-- scenario: NOT_APPLICABLE; this delivery is readiness documentation and intentionally performs no physical repository mutation
+- scenario: NOT_APPLICABLE; this is a fail-closed migration readiness task and no physical mutation is currently authorized
 - result: NOT_APPLICABLE
 
 ### Exact-head CI
 
-- final head: pending freeze after deterministic JSON/full-diff review
-- trigger source: pull request #336
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- last checked head before final wording repair: `8b7cee2bf93f073901af7058b9a5897a88978a8e`
+- Agent governance: SUCCESS (`32120305428`)
+- Architecture semantic audit: SUCCESS (`32120305413`)
+- Merge authority audit: SUCCESS (`32120305435`)
+- Merge gate: SUCCESS (`32120305423`)
+- final blocked head after repair: pending new exact-head generation
 
 ## Self-review
 
-- exact head: pending
 - method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- pre-freeze findings: two documentation/state-precision findings repaired before final blocked checkpoint
+- final exact head: pending after this coherent repair commit
+- final verdict: pending exact-head re-review
 
 ## Independent review
 
-- required: NO; this is fail-closed readiness documentation that does not expand authority, weaken a gate, change protocol/security/durable data or execute the transfer
+- required: NO; this readiness delivery is fail-closed, does not execute transfer or expand/relax authority, and changes no security/protocol/durable-data/runtime behavior
 - exact head: NOT_APPLICABLE
 - method/auditor: NOT_APPLICABLE
-- material findings: NOT_APPLICABLE
 - verdict: NOT_APPLICABLE
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
-- related/superseded PRs: #335 and #317 are unrelated active work preserved for cutover revalidation; this task does not close them
-- protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: pending
+- PR: #336 Draft
+- changed paths: exactly task + readiness report + JSON inventory
+- reviews/threads/comments before final repair: 0 / 0 / 0
+- related active PRs #335 and #317 remain untouched and must be revalidated at physical cutover
+- merge: blocked by owner-visible cutover facts; do not mark Ready merely because documentation CI is green
 
 ## Context checkpoint
 
 ```yaml
-last_progress: committed readiness report and machine-readable cutover inventory and opened Draft PR 336 after fresh source/target/provider/open-work preflight
-status: validating
+last_progress: repaired readiness precision after full-diff review and preserved Draft PR 336 as the fail-closed physical cutover record
+status: blocked
 branch: docs/otv2-20260818-oteryn-game-transfer-readiness
-head_sha: 968bda99dd4caeb4421a717d1e9f536970b72b43
+head_sha: 8b7cee2bf93f073901af7058b9a5897a88978a8e
 pr: 336
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
 ci_check_generation: draft
-ci_checks_for_current_head: 0
-ci_run_ids: []
+ci_checks_for_current_head: 1
+ci_run_ids:
+  - 32120305428
+  - 32120305413
+  - 32120305435
+  - 32120305423
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: completed_success_on_pre_repair_head
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: after readiness closeout, provide current GitHub Packages state for Oteryn-v2/blakinio and confirm current Oteryn policy permits transfer-back rollback before physical cutover
-blocker: physical cutover remains NO_GO because package inventory and transfer-back rollback policy are not proven
-next_action: perform deterministic JSON validation and exact three-file full-diff self-review, then freeze the final readiness head and run repository-required PR checks
+owner_action_required: provide current GitHub Packages state for Oteryn-v2/blakinio and confirm current Oteryn policy permits transfer-back rollback before physical cutover
+blocker: github_packages_inventory and transfer_back_rollback_permission
+next_action: after owner supplies both facts, revalidate live source/target/open-work state, resolve blockers, update readiness to CUTOVER_READY if justified, freeze exact head and run final merge gates
 ```
