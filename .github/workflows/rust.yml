@@ -67,20 +67,24 @@ jobs:
 
       - name: Verify production closure negatives
         run: |
-          cargo +1.94.0 tree --locked -p oteryn-client --edges normal,build > production-tree.txt
+          for package in oteryn-client oteryn-game-server; do
+            cargo +1.94.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
+          done
           python - <<'PY'
           from pathlib import Path
-          tree = Path('production-tree.txt').read_text(encoding='utf-8')
+
           forbidden = (
               'protocol-canary', 'protocol-core', 'protocol-oteryn',
               'transport', 'game-session', 'oteryn-client-domain',
               'oteryn-client-simulation', 'oteryn-synthetic-assets',
               'oteryn-test-support', 'oteryn-synthetic-client-harness',
           )
-          found = [name for name in forbidden if name in tree]
-          if found:
-              raise SystemExit(f'forbidden production closure entries: {found}')
-          print('production closure: PASS')
+          for package in ('oteryn-client', 'oteryn-game-server'):
+              tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
+              found = [name for name in forbidden if name in tree]
+              if found:
+                  raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
+              print(f'{package} production closure: PASS')
           PY
 
   linux:
@@ -107,6 +111,9 @@ jobs:
 
       - name: Run synthetic harness
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
+
+      - name: Smoke native game-server bootstrap
+        run: cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
 
   windows:
     name: Rust / Windows pre-native client
