@@ -5,100 +5,59 @@
     {
       "id": "governance",
       "purpose": "Agent policy, task lifecycle, prompt standards and repository validation",
-      "paths": [
-        "AGENTS.md",
-        "AGENTS.override.md",
-        "docs/agents/**",
-        "tools/agents/**",
-        ".github/workflows/agent-governance.yml"
-      ],
+      "paths": ["AGENTS.md", "AGENTS.override.md", "docs/agents/**", "tools/agents/**", ".github/workflows/agent-governance.yml"],
       "risk": "medium"
     },
     {
       "id": "architecture-contracts",
       "purpose": "Durable ADRs, world/channel ownership and public contracts",
-      "paths": [
-        "docs/architecture/**",
-        "docs/contracts/**"
-      ],
+      "paths": ["docs/architecture/**", "docs/contracts/**"],
       "risk": "high"
     },
     {
       "id": "protocol",
       "purpose": "protocol-oteryn framing, schemas, sequencing, capabilities and reconciliation",
-      "planned_paths": [
-        "crates/protocol-core/**",
-        "crates/protocol-oteryn/**"
-      ],
+      "planned_paths": ["crates/protocol-core/**", "crates/protocol-oteryn/**"],
       "risk": "critical",
-      "cross_repository_dependencies": [
-        "blakinio/Oteryn-Platform"
-      ]
+      "cross_repository_dependencies": ["blakinio/Oteryn-Platform"]
     },
     {
       "id": "server-runtime",
       "purpose": "Authoritative Rust world, channel, instance, simulation and gameplay runtime",
-      "planned_paths": [
-        "services/game-server/**",
-        "crates/world-*/**",
-        "crates/domain-*/**"
-      ],
+      "planned_paths": ["services/game-server/**", "crates/world-*/**", "crates/domain-*/**"],
       "risk": "critical"
     },
     {
       "id": "persistence",
       "purpose": "Character leases, revision fencing, durable state and item transactions",
-      "planned_paths": [
-        "crates/persistence-*/**"
-      ],
+      "planned_paths": ["crates/persistence-*/**"],
       "risk": "critical",
-      "cross_repository_dependencies": [
-        "blakinio/Oteryn-Platform"
-      ]
+      "cross_repository_dependencies": ["blakinio/Oteryn-Platform"]
     },
     {
       "id": "client-runtime",
       "purpose": "Native Rust client composition, renderer, UI, input and state",
-      "planned_paths": [
-        "apps/client/**",
-        "crates/client-*/**"
-      ],
+      "planned_paths": ["apps/client/**", "crates/client-*/**"],
       "risk": "high"
     },
     {
       "id": "content-migration",
       "purpose": "Versioned maps, catalogues, rulesets, scripts and Otheryn behavior fixtures",
-      "planned_paths": [
-        "content/**",
-        "tools/migration/**",
-        "tools/fixtures/**"
-      ],
+      "planned_paths": ["content/**", "tools/migration/**", "tools/fixtures/**"],
       "risk": "high",
-      "cross_repository_dependencies": [
-        "blakinio/Otheryn",
-        "blakinio/otclient"
-      ]
+      "cross_repository_dependencies": ["blakinio/Otheryn", "blakinio/otclient"]
     },
     {
       "id": "platform-integration",
       "purpose": "Identity, Game Gateway, World Registry and Game Session integration",
-      "planned_paths": [
-        "crates/platform-*/**",
-        "docs/contracts/platform-*/**"
-      ],
+      "planned_paths": ["crates/platform-*/**", "docs/contracts/platform-*/**"],
       "risk": "critical",
-      "cross_repository_dependencies": [
-        "blakinio/Oteryn-Platform"
-      ]
+      "cross_repository_dependencies": ["blakinio/Oteryn-Platform"]
     },
     {
       "id": "release-security",
       "purpose": "Packaging, updater, asset provenance, hardening, deployment and operations",
-      "planned_paths": [
-        "tools/release/**",
-        "deploy/**",
-        ".github/workflows/**"
-      ],
+      "planned_paths": ["tools/release/**", "deploy/**", ".github/workflows/**"],
       "risk": "critical"
     }
   ]
