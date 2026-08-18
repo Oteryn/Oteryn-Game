@@ -8,11 +8,11 @@ status: allocating_bootstrap
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/otv2-20260818-implementation-coordinator-allocation
-pr: null
+pr: 8
 base_sha: ed84415f4a55d8c16f703b7c1a130c0e43a1c1a1
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-18T16:10:00+02:00
+updated_at: 2026-08-18T16:24:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -44,7 +44,7 @@ Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme
 
 ## Allocation state
 
-The canonical live allocation is written separately to `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md` in this same coordinator delivery. It must merge to `main` before the Bootstrap worker performs its first implementation write.
+The canonical live allocation is `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md` in PR #8. It must merge to `main` before the Bootstrap worker performs its first implementation write.
 
 ## Merge discipline
 
@@ -53,12 +53,12 @@ Stable workspace policy is serialized under Bootstrap. No sibling-branch output 
 ## Context checkpoint
 
 ```yaml
-last_progress: Live programme and pre-native workspace verified; serial Bootstrap allocation prepared for delivery to main.
+last_progress: PR #8 contains the serial Bootstrap allocation and coordinator task; persistent diff is coordination-only.
 status: allocating_bootstrap
 branch: docs/otv2-20260818-implementation-coordinator-allocation
-head_sha: pending
-pr: null
+head_sha: pending_final_freeze
+pr: 8
 blocker: null
 owner_action_required: null
-next_action: Merge the coordinator allocation to main through exact-head governance CI, then start OTV2-IMPL-BOOTSTRAP from that merged main.
+next_action: Freeze PR #8, complete exact-head governance CI and squash merge, then start OTV2-IMPL-BOOTSTRAP from the merged allocation.
 ```
