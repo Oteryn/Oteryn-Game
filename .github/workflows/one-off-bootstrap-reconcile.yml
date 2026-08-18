@@ -1,4 +1,4 @@
-name: One-off bootstrap reconcile
+name: One-off bootstrap lock reconcile
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  reconcile:
+  reconcile-lock:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -24,7 +24,7 @@ jobs:
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal
 
-      - name: Reconcile lockfile and merge gate
+      - name: Reconcile Cargo.lock exactly
         env:
           BOOTSTRAP_BASE_SHA: d9c5ef68e1c88b88b4782219051395eacb0f8e67
         run: |
@@ -38,11 +38,10 @@ jobs:
           from pathlib import Path
 
           base_sha = os.environ['BOOTSTRAP_BASE_SHA']
-          before_bytes = subprocess.check_output(['git', 'show', f'{base_sha}:Cargo.lock'])
-          after_bytes = Path('Cargo.lock').read_bytes()
-          before = tomllib.loads(before_bytes.decode('utf-8'))
-          after = tomllib.loads(after_bytes.decode('utf-8'))
-
+          before = tomllib.loads(
+              subprocess.check_output(['git', 'show', f'{base_sha}:Cargo.lock']).decode('utf-8')
+          )
+          after = tomllib.loads(Path('Cargo.lock').read_text(encoding='utf-8'))
           before_packages = before.get('package', [])
           after_packages = after.get('package', [])
           if len(after_packages) != len(before_packages) + 1:
@@ -50,7 +49,6 @@ jobs:
                   f'lockfile package cardinality changed unexpectedly: '
                   f'{len(before_packages)} -> {len(after_packages)}'
               )
-
           unmatched = list(after_packages)
           for package in before_packages:
               try:
@@ -60,7 +58,6 @@ jobs:
                       f'existing Cargo.lock package changed unexpectedly: '
                       f"{package.get('name')} {package.get('version')}"
                   ) from error
-
           if len(unmatched) != 1:
               raise SystemExit(f'expected exactly one new lock package, found {len(unmatched)}')
           added = unmatched[0]
@@ -71,75 +68,16 @@ jobs:
           if 'source' in added or 'checksum' in added:
               raise SystemExit('workspace game-server lock entry unexpectedly has registry source/checksum')
           print('Cargo.lock delta: exactly one workspace package — PASS')
-
-          path = Path('.github/workflows/merge-gate.yml')
-          lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
-          closure_marker = '      - name: Verify production closure negatives\n'
-          rust_linux_marker = '  rust_linux:\n'
-          rust_windows_marker = '  rust_windows:\n'
-          smoke_marker = '      - name: Smoke native game-server bootstrap\n'
-
-          closure_positions = [i for i, line in enumerate(lines) if line == closure_marker]
-          if len(closure_positions) != 1:
-              raise SystemExit(f'expected one merge-gate closure block, found {len(closure_positions)}')
-          closure_start = closure_positions[0]
-          rust_linux = next(i for i, line in enumerate(lines) if line == rust_linux_marker)
-          closure_block = [
-              '      - name: Verify production closure negatives\n',
-              '        run: |\n',
-              '          for package in oteryn-client oteryn-game-server; do\n',
-              '            cargo +1.94.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"\n',
-              '          done\n',
-              "          python - <<'PY'\n",
-              '          from pathlib import Path\n',
-              '\n',
-              '          forbidden = (\n',
-              "              'protocol-canary', 'protocol-core', 'protocol-oteryn',\n",
-              "              'transport', 'game-session', 'oteryn-client-domain',\n",
-              "              'oteryn-client-simulation', 'oteryn-synthetic-assets',\n",
-              "              'oteryn-test-support', 'oteryn-synthetic-client-harness',\n",
-              '          )\n',
-              "          for package in ('oteryn-client', 'oteryn-game-server'):\n",
-              "              tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')\n",
-              '              found = [name for name in forbidden if name in tree]\n',
-              '              if found:\n',
-              "                  raise SystemExit(f'{package} production closure contains forbidden entries: {found}')\n",
-              "              print(f'{package} production closure: PASS')\n",
-              '          PY\n',
-              '\n',
-          ]
-          lines[closure_start:rust_linux] = closure_block
-
-          rust_linux = next(i for i, line in enumerate(lines) if line == rust_linux_marker)
-          rust_windows = next(i for i, line in enumerate(lines) if line == rust_windows_marker)
-          if not any(line == smoke_marker for line in lines[rust_linux:rust_windows]):
-              harness_name = '      - name: Run synthetic harness\n'
-              harness_positions = [
-                  i for i in range(rust_linux, rust_windows) if lines[i] == harness_name
-              ]
-              if len(harness_positions) != 1:
-                  raise SystemExit(
-                      f'expected one Linux synthetic harness step, found {len(harness_positions)}'
-                  )
-              insert_at = harness_positions[0] + 2
-              lines[insert_at:insert_at] = [
-                  '\n',
-                  smoke_marker,
-                  '        run: cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke\n',
-              ]
-          path.write_text(''.join(lines), encoding='utf-8')
-          print('merge-gate static native bootstrap checks — PASS')
           PY
 
-      - name: Commit exact reconciliation and remove one-off workflow
+      - name: Commit Cargo.lock only
         env:
           TARGET_BRANCH: ${{ github.head_ref }}
         run: |
           test -n "$TARGET_BRANCH"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git rm .github/workflows/one-off-bootstrap-reconcile.yml
-          git add Cargo.lock .github/workflows/merge-gate.yml
+          git add Cargo.lock
           git diff --cached --check
-          git commit -m 'build(bootstrap): reconcile lock and merge gate'
+          git commit -m 'build(rust): reconcile bootstrap Cargo.lock'
           git push origin "HEAD:$TARGET_BRANCH"
