@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: chat-github-20260818-repository-admin-reconciliation
 created_at: 2026-08-18T14:46:00+02:00
-updated_at: 2026-08-18T15:10:00+02:00
+updated_at: 2026-08-18T15:14:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -45,6 +45,7 @@ Entry alias: `OTGAME-REPOSITORY-ADMIN-RECONCILIATION`.
 - `PROVEN`: the active GitHub connector reports admin/push access to `Oteryn/Oteryn-Game` but exposes no repository-settings/ruleset/secret mutation, no workflow dispatch, and no delete-ref operation.
 - `PROVEN`: owner manually dispatched `Repository configuration` on `main`; `Apply and verify GitHub settings` failed before any apply with `REPO_ADMIN_TOKEN is unavailable.` and process exit code `2`.
 - `PROVEN`: target-local `REPO_ADMIN_TOKEN` is not available to the administration workflow at the failed manual-dispatch run.
+- `PROVEN`: current GitHub fine-grained PAT permission data places the repository-update, Actions-permission, environment administration, vulnerability/security toggle, private-vulnerability-reporting, ruleset and topic endpoints used by the canonical apply script under repository `Administration`; the repository label endpoints used by the script are available under repository `Issues`. A target fine-grained PAT restricted to `Oteryn/Oteryn-Game` therefore needs repository `Administration: read/write` plus `Issues: read/write` for the script's declared calls; implicit metadata read remains GitHub-managed.
 - `UNKNOWN`: exact live Actions default permissions, security toggles, labels and ruleset readback until the canonical administration workflow can execute its authenticated verify path.
 
 ## Acceptance criteria
@@ -53,6 +54,7 @@ Entry alias: `OTGAME-REPOSITORY-ADMIN-RECONCILIATION`.
 - [x] Compare live public repository metadata/merge settings with the canonical policy and record proven drift.
 - [x] Inspect live `main` branch readback and record the current protection signal.
 - [x] Manually dispatch `Repository configuration` on `main` and classify the first actionable failure.
+- [x] Resolve a least-privilege target token shape from current GitHub fine-grained PAT permission data.
 - [ ] Create an authorized target-local `REPO_ADMIN_TOKEN` secret for `Oteryn/Oteryn-Game` without copying/reusing the legacy source secret.
 - [ ] Re-run `Repository configuration` against `main` and obtain a successful apply+verify result.
 - [ ] Verify live repository metadata and merge policy match `.github/repository-policy.json`.
@@ -100,6 +102,15 @@ Process completed with exit code 2.
 
 This is a fail-closed precondition failure from `tools/repository/apply_github_settings.py`: the script exits before repository mutation when `GH_TOKEN`, populated from `${{ secrets.REPO_ADMIN_TOKEN }}`, is empty. The subsequent public live readback remained unchanged, consistent with no apply having occurred.
 
+### Least-privilege target token
+
+Current GitHub fine-grained PAT permission data was checked against every API family invoked by the canonical apply script. The required target token can be restricted to resource owner `Oteryn`, repository `Oteryn-Game`, with repository permissions:
+
+- `Administration`: read and write;
+- `Issues`: read and write.
+
+`Administration` covers the script's repository settings, Actions default workflow permissions, legacy environment removal, repository security toggles, private vulnerability reporting, rulesets and topics. `Issues` covers repository label list/create/update operations. The workflow checkout continues to use its ordinary read-only `GITHUB_TOKEN`; `REPO_ADMIN_TOKEN` does not need repository contents write for this script.
+
 ### Capability exhaustion
 
 Attempted safe routes before requiring owner secret provisioning:
@@ -124,6 +135,7 @@ The existing trusted workflow remains the required execution route. Creating a n
 - canonical policy/apply/workflow inspection: `PASS`.
 - retained migration-branch discovery: `PASS`, both expected branches observed.
 - manual administration dispatch: `FAIL_CLOSED`, missing `REPO_ADMIN_TOKEN`, exit code `2`.
+- least-privilege token permission mapping: `PASS` against current GitHub fine-grained PAT permission data.
 - PR #6 initial governance CI failure: root cause `PR body is missing ## Summary`; PR metadata repaired without moving the then-current head.
 
 ### Component/integration
@@ -171,7 +183,7 @@ The existing trusted workflow remains the required execution route. Creating a n
 ## Context checkpoint
 
 ```yaml
-last_progress: Owner manually dispatched the canonical administration workflow; the apply step failed closed with `REPO_ADMIN_TOKEN is unavailable.` and exit code 2, proving the target credential is missing from workflow context.
+last_progress: Owner manually dispatched the canonical administration workflow; the apply step failed closed with `REPO_ADMIN_TOKEN is unavailable.` and exit code 2. Current GitHub fine-grained PAT mappings were then checked to resolve the least-privilege replacement token shape.
 status: blocked
 branch: docs/otv2-20260818-repository-admin-reconciliation
 head_sha: null
@@ -191,7 +203,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: Create a new target-local authorized repository Actions secret named `REPO_ADMIN_TOKEN` in `Oteryn/Oteryn-Game`; do not copy or reuse the legacy source repository secret. Then rerun `Repository configuration` on `main` once.
+owner_action_required: Create a new fine-grained PAT owned by `Oteryn`, restricted to `Oteryn-Game`, with repository `Administration: read/write` and `Issues: read/write`; save it as the `Oteryn/Oteryn-Game` Actions repository secret `REPO_ADMIN_TOKEN`. Do not copy or reuse the legacy source secret. Then rerun `Repository configuration` on `main` once.
 blocker: Canonical administration workflow executed but failed closed before mutation because `${{ secrets.REPO_ADMIN_TOKEN }}` resolved empty; active connector cannot create repository secrets.
-next_action: Provision target-local `REPO_ADMIN_TOKEN` for `Oteryn/Oteryn-Game` and rerun `Repository configuration` on `main` once.
+next_action: Provision target-local `REPO_ADMIN_TOKEN` with the resolved least-privilege permissions and rerun `Repository configuration` on `main` once.
 ```
