@@ -5,15 +5,15 @@
 - Canonical repository: `Oteryn/Oteryn-Game`
 - Bootstrap delivery PR: `#10`
 - Bootstrap closeout PR: `#11`
-- Bootstrap closeout main: `231d063ff877b41f01a8032018284fc2f910161e`
 - Simulation allocation PR: `#12`
-- State: `SIM_ALLOCATION_PENDING_EXACT_BASE`
+- Simulation allocation merge: `2fc59dd83a3d13e7de8954d4dbcce5415e346389`
+- State: `SIM_ALLOCATED_EXACT_BASE`
 
 ## Authority rule
 
 This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance is higher authority than historical prompt coordinates: all writes target `Oteryn/Oteryn-Game`; `blakinio/Oteryn-v2` remains read-only history.
 
-Only lanes explicitly listed below have worker write authority, and a lane marked `allocated_pending_exact_base` remains read-only until the coordinator binds it to the exact merge SHA containing this allocation on `main`.
+Only lanes explicitly listed as `allocated` have worker write authority. Unmerged sibling branches are never implicit dependencies.
 
 ## Completed allocation — Bootstrap
 
@@ -35,11 +35,12 @@ branch: null
 lane_id: OTV2-IMPL-SIM
 task_id: OTV2-20260818-impl-simulation
 worker_alias: Oteryn: impl simulation
-status: allocated_pending_exact_base
+status: allocated
 execution_mode: serial_workspace_mutation
 allocation_pr: 12
 allocation_generation_base_sha: 231d063ff877b41f01a8032018284fc2f910161e
-worker_base_sha: pending_allocation_merge
+allocation_merge_sha: 2fc59dd83a3d13e7de8954d4dbcce5415e346389
+worker_base_sha: 2fc59dd83a3d13e7de8954d4dbcce5415e346389
 branch: feat/otv2-20260818-impl-simulation
 execution_budget_minutes: 60
 merge_order: 2
@@ -62,6 +63,7 @@ public_contracts:
 dependency_prs:
   - 10
   - 11
+  - 12
 excluded_scope:
   - gameplay formulas, rates, XP curves, loot values or Reference behavior
   - transport, protocol framing, admission, Game Session or CharacterLease
@@ -89,7 +91,7 @@ Required minimum observable outcomes:
 
 ## Other Wave 1 lanes
 
-`FOUNDATION`, `DOMAIN`, `CONTENT` and `QA` are dependency-ready in principle but remain **not allocated** while SIM owns serialized root workspace/lock/policy/CI paths. `FOUNDATION` additionally carries a mandatory genuinely independent exact-head review gate for protocol/session/admission/fencing semantics.
+`FOUNDATION`, `DOMAIN`, `CONTENT` and `QA` remain **not allocated** while SIM owns serialized root workspace/lock/policy/CI paths. `FOUNDATION` additionally carries a mandatory genuinely independent exact-head review gate for protocol/session/admission/fencing semantics.
 
 ## Deferred allocations
 
