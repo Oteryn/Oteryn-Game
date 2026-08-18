@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feat/otv2-20260818-impl-bootstrap
     paths:
       - Cargo.toml
       - Cargo.lock
@@ -34,8 +33,6 @@ jobs:
     name: Rust / policy and metadata
     runs-on: ubuntu-24.04
     timeout-minutes: 25
-    permissions:
-      contents: write
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -44,112 +41,6 @@ jobs:
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
-
-      - name: Patch merge-gate native bootstrap assumptions
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPOSITORY: ${{ github.repository }}
-          TARGET_BRANCH: ${{ github.ref_name }}
-        run: |
-          python - <<'PY'
-          import base64
-          import json
-          import os
-          import urllib.parse
-          import urllib.request
-          from pathlib import Path
-
-          path = Path('.github/workflows/merge-gate.yml')
-          lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
-          closure_marker = '      - name: Verify production closure negatives\n'
-          rust_linux_marker = '  rust_linux:\n'
-          rust_windows_marker = '  rust_windows:\n'
-          smoke_marker = '      - name: Smoke native game-server bootstrap\n'
-
-          closure_positions = [i for i, line in enumerate(lines) if line == closure_marker]
-          if len(closure_positions) != 1:
-              raise SystemExit(f'expected one production-closure block, found {len(closure_positions)}')
-          closure_start = closure_positions[0]
-          rust_linux = next(i for i, line in enumerate(lines) if line == rust_linux_marker)
-          closure_block = [
-              '      - name: Verify production closure negatives\n',
-              '        run: |\n',
-              '          for package in oteryn-client oteryn-game-server; do\n',
-              '            cargo +1.94.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"\n',
-              '          done\n',
-              "          python - <<'PY'\n",
-              '          from pathlib import Path\n',
-              '\n',
-              '          forbidden = (\n',
-              "              'protocol-canary', 'protocol-core', 'protocol-oteryn',\n",
-              "              'transport', 'game-session', 'oteryn-client-domain',\n",
-              "              'oteryn-client-simulation', 'oteryn-synthetic-assets',\n",
-              "              'oteryn-test-support', 'oteryn-synthetic-client-harness',\n",
-              '          )\n',
-              "          for package in ('oteryn-client', 'oteryn-game-server'):\n",
-              "              tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')\n",
-              '              found = [name for name in forbidden if name in tree]\n',
-              '              if found:\n',
-              "                  raise SystemExit(f'{package} production closure contains forbidden entries: {found}')\n",
-              "              print(f'{package} production closure: PASS')\n",
-              '          PY\n',
-              '\n',
-          ]
-          already_dual = any('for package in oteryn-client oteryn-game-server' in line for line in lines[closure_start:rust_linux])
-          if not already_dual:
-              lines[closure_start:rust_linux] = closure_block
-
-          rust_linux = next(i for i, line in enumerate(lines) if line == rust_linux_marker)
-          rust_windows = next(i for i, line in enumerate(lines) if line == rust_windows_marker)
-          if not any(line == smoke_marker for line in lines[rust_linux:rust_windows]):
-              harness_name = '      - name: Run synthetic harness\n'
-              harness_positions = [
-                  i for i in range(rust_linux, rust_windows) if lines[i] == harness_name
-              ]
-              if len(harness_positions) != 1:
-                  raise SystemExit(f'expected one Linux synthetic harness step, found {len(harness_positions)}')
-              insert_at = harness_positions[0] + 2
-              lines[insert_at:insert_at] = [
-                  '\n',
-                  '      - name: Smoke native game-server bootstrap\n',
-                  '        run: cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke\n',
-              ]
-
-          updated = ''.join(lines)
-          original = path.read_text(encoding='utf-8')
-          if updated == original:
-              print('merge-gate bootstrap assumptions already patched.')
-              raise SystemExit(0)
-
-          repository = os.environ['REPOSITORY']
-          branch = os.environ['TARGET_BRANCH']
-          token = os.environ['GH_TOKEN']
-          headers = {
-              'Accept': 'application/vnd.github+json',
-              'Authorization': f'Bearer {token}',
-              'X-GitHub-Api-Version': '2022-11-28',
-              'User-Agent': 'Oteryn-bootstrap-merge-gate-sync',
-          }
-          query = urllib.parse.urlencode({'ref': branch})
-          api_url = f'https://api.github.com/repos/{repository}/contents/.github/workflows/merge-gate.yml?{query}'
-          with urllib.request.urlopen(urllib.request.Request(api_url, headers=headers), timeout=30) as response:
-              current = json.load(response)
-          payload = json.dumps({
-              'message': 'ci(merge-gate): validate native game-server production root',
-              'content': base64.b64encode(updated.encode('utf-8')).decode('ascii'),
-              'sha': current['sha'],
-              'branch': branch,
-          }).encode('utf-8')
-          request = urllib.request.Request(
-              f'https://api.github.com/repos/{repository}/contents/.github/workflows/merge-gate.yml',
-              data=payload,
-              headers={**headers, 'Content-Type': 'application/json'},
-              method='PUT',
-          )
-          with urllib.request.urlopen(request, timeout=30) as response:
-              result = json.load(response)
-          print(f"Updated merge-gate at commit {result['commit']['sha']}")
-          PY
 
       - name: Verify locked metadata
         run: cargo +1.94.0 metadata --locked --format-version 1 >/dev/null
