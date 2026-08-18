@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
 pr: 14
-archive_pr: pending
+archive_pr: 15
 base_sha: 977e98b05738076744540a123d4e35c32cd94c2c
 allocation_base_sha: 2fc59dd83a3d13e7de8954d4dbcce5415e346389
 frozen_head_sha: 7a0d71bbabdd00c54951aa8e0084d62f3dce748b
@@ -68,17 +68,17 @@ Gameplay remains explicitly unavailable in the game-server bootstrap. No gamepla
 
 ## Closeout
 
-SIM path ownership is released by this archive. This archive does not allocate any next implementation lane. Foundation/Domain/Content/QA remain read-only until the coordinator publishes a new exact-base bounded allocation after this closeout merges.
+SIM path ownership is released by this archive. Archive/ownership-release delivery is PR #15. This archive does not allocate any next implementation lane. Foundation/Domain/Content/QA remain read-only until the coordinator publishes a new exact-base bounded allocation after this closeout merges.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #14 merged as 66619daf5837f31f7c54676e9f8351ed4ae220b0 after all exact-head gates passed; post-merge main, SIM crate, game-server consumer and branch disposition are verified.
+last_progress: PR #14 merged as 66619daf5837f31f7c54676e9f8351ed4ae220b0 after all exact-head gates passed; post-merge main, SIM crate, game-server consumer and branch disposition are verified; archive PR #15 is the terminal lifecycle closeout.
 status: completed
 branch: null
 head_sha: 7a0d71bbabdd00c54951aa8e0084d62f3dce748b
 pr: 14
 blocker: null
 owner_action_required: null
-next_action: Coordinator may publish the next dependency-ready Wave 1 allocation only after this archive/ownership-release closeout merges.
+next_action: Coordinator may publish the next dependency-ready Wave 1 allocation only after archive PR #15 merges.
 ```
