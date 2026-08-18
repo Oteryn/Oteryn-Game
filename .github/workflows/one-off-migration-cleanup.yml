@@ -1,0 +1,26 @@
+name: One-off migration residue cleanup
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: github.repository == 'Oteryn/Oteryn-Game' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Remove temporary bootstrap refs
+        shell: bash
+        run: |
+          set -euo pipefail
+          TARGET_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/Oteryn/Oteryn-Game.git"
+          git push "$TARGET_URL" --delete bootstrap/global-object-test
+          git push "$TARGET_URL" --delete bootstrap/prepopulate
+          git push "$TARGET_URL" --delete bootstrap/cleanup-migration-residue
