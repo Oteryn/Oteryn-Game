@@ -1,4 +1,4 @@
-# Oteryn v2 Agent Instructions
+# Oteryn Game Agent Instructions
 
 ## Owner-funded AI and credential budget — highest priority
 
@@ -35,15 +35,15 @@ When instructions overlap, follow the more restrictive safety, ownership and val
 
 ## Repository allowlist — highest priority
 
-- Routine autonomous writes authorized by this repository policy are limited to `blakinio/Oteryn-v2`.
-- `blakinio/Oteryn-Platform`, `blakinio/Otheryn`, `blakinio/otclient`, Canary repositories and all other repositories are read-only unless the owner explicitly authorizes a write task for that exact repository.
-- Before every GitHub write, verify `repository_full_name == blakinio/Oteryn-v2` unless the current owner instruction explicitly authorizes another repository.
+- Routine autonomous writes authorized by this repository policy are limited to `Oteryn/Oteryn-Game`.
+- `blakinio/Oteryn-v2` is the preserved read-only legacy/migration source. `blakinio/Oteryn-Platform`, `blakinio/Otheryn`, `blakinio/otclient`, Canary repositories and all other repositories are read-only unless the owner explicitly authorizes a write task for that exact repository.
+- Before every GitHub write, verify `repository_full_name == Oteryn/Oteryn-Game` unless the current owner instruction explicitly authorizes another repository.
 - Cross-repository work requires one task, branch and PR per repository plus a shared coordination ID and explicit rollout order.
 - Never use a governance edit on an unmerged branch to expand the current task's authority.
 
 ## Product boundary
 
-Oteryn v2 is the greenfield native Rust gameplay stack:
+Oteryn Game is the canonical native Rust gameplay stack, migrated with preserved Git history from `blakinio/Oteryn-v2`:
 
 - an authoritative Rust game server;
 - a native Rust game client;
@@ -53,7 +53,7 @@ Oteryn v2 is the greenfield native Rust gameplay stack:
 
 The existing Oteryn Platform remains the external source of truth for web portal, Identity, OAuth/PKCE, Game Login Tickets, Game Gateway and World Registry until a separately accepted migration changes that boundary.
 
-Otheryn C++ and the current otclient repository are reference/migration sources, not implicit runtime dependencies. `protocol-canary` and legacy Tibia packet compatibility are not part of the target Oteryn v2 runtime.
+Otheryn C++ and the current otclient repository are reference/migration sources, not implicit runtime dependencies. `protocol-canary` and legacy Tibia packet compatibility are not part of the target Oteryn Game runtime.
 
 ## Non-negotiable architecture
 
@@ -118,7 +118,7 @@ Never push feature, fix or documentation task work directly to `main`.
 
 Merge only when:
 
-- base and head repositories are `blakinio/Oteryn-v2` and base is `main`;
+- base and head repositories are `Oteryn/Oteryn-Game` and base is `main`;
 - the changed-file list is within declared scope;
 - acceptance criteria and observable outcomes are satisfied;
 - required focused/component/E2E checks pass;

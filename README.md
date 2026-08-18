@@ -1,6 +1,6 @@
-# Oteryn v2
+# Oteryn Game
 
-Greenfield implementation of the Oteryn game platform runtime, including a native Rust game server, a native Rust game client and project-owned world/content tooling.
+Canonical native Rust game repository for Oteryn, migrated with preserved Git history from `blakinio/Oteryn-v2`, including the game server, native client and project-owned world/content tooling.
 
 ## Architecture baseline
 
@@ -39,7 +39,7 @@ Architecture decisions and implementation programmes are maintained under `docs/
 
 ## Licensing
 
-Oteryn-v2 source code, tooling, schemas, configuration and technical documentation are licensed under the [Mozilla Public License 2.0](LICENSE) unless a more specific notice applies.
+Oteryn Game source code, tooling, schemas, configuration and technical documentation are licensed under the [Mozilla Public License 2.0](LICENSE) unless a more specific notice applies.
 
 Creative game assets are not automatically covered by MPL-2.0 and remain reserved unless separately licensed. The Oteryn names, logos and branding are also outside the software license grant.
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the Oteryn v2 agent-governance bootstrap using stdlib only."""
+"""Validate the Oteryn Game agent-governance bootstrap using stdlib only."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ CONTRACT_PATH = ROOT / "docs/agents/GOVERNANCE_CONTRACT.json"
 LANES_PATH = ROOT / "docs/agents/PROJECT_LANES.json"
 CONTRACT_LOCK_PATH = ROOT / "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json"
 LIMITS_REGISTRY_PATH = ROOT / "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
-EXPECTED_REPOSITORY = "blakinio/Oteryn-v2"
+EXPECTED_REPOSITORY = "Oteryn/Oteryn-Game"
 
 
 def load_json(path: Path, errors: list[str]) -> dict:
@@ -45,7 +45,7 @@ def main() -> int:
     limits_registry = load_json(LIMITS_REGISTRY_PATH, errors)
 
     if contract.get("repository") != EXPECTED_REPOSITORY:
-        errors.append("governance repository must be blakinio/Oteryn-v2")
+        errors.append("governance repository must be Oteryn/Oteryn-Game")
     if contract.get("default_branch") != "main":
         errors.append("default branch must be main")
     if contract.get("task_prefix") != "OTV2":
@@ -53,7 +53,7 @@ def main() -> int:
     if contract.get("merge_method") != "squash":
         errors.append("merge method must be squash")
     if contract.get("write_allowlist") != [EXPECTED_REPOSITORY]:
-        errors.append("write_allowlist must contain only blakinio/Oteryn-v2")
+        errors.append("write_allowlist must contain only Oteryn/Oteryn-Game")
 
     for relative in contract.get("required_documents", []):
         if isinstance(relative, str):
@@ -181,7 +181,7 @@ def main() -> int:
     cross_repo = (ROOT / "docs/agents/CROSS_REPO_CONTRACTS.md").read_text(encoding="utf-8") if (ROOT / "docs/agents/CROSS_REPO_CONTRACTS.md").is_file() else ""
 
     mandatory_phrases = [
-        "blakinio/Oteryn-v2",
+        "Oteryn/Oteryn-Game",
         "protocol-oteryn",
         "multichannel",
         "WorldId",

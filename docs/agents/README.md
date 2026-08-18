@@ -1,6 +1,6 @@
-# Oteryn v2 agent governance
+# Oteryn Game agent governance
 
-This directory is the durable operating system for autonomous and multi-agent work in `blakinio/Oteryn-v2`.
+This directory is the durable operating system for autonomous and multi-agent work in `Oteryn/Oteryn-Game`. The preserved `blakinio/Oteryn-v2` repository is legacy/migration provenance and is read-only by default.
 
 ## Required core
 
