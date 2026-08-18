@@ -8,11 +8,11 @@ status: bootstrap_allocated
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/otv2-20260818-implementation-coordinator-bootstrap-base
-pr: pending
+pr: 9
 base_sha: ed84415f4a55d8c16f703b7c1a130c0e43a1c1a1
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-18T16:27:00+02:00
+updated_at: 2026-08-18T16:28:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -42,7 +42,7 @@ Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme
 
 ## Allocation state
 
-`docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md` now binds `OTV2-IMPL-BOOTSTRAP` to exact merged allocation base `86200e6d044287bcb2fbb122d224e825b9084a7a` and dependency PR #8. Worker writes remain blocked until this base-binding update itself is merged to `main`.
+`docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md` in PR #9 binds `OTV2-IMPL-BOOTSTRAP` to exact merged allocation base `86200e6d044287bcb2fbb122d224e825b9084a7a` and dependency PR #8. Worker writes remain blocked until PR #9 is merged to `main`.
 
 ## Merge discipline
 
@@ -51,12 +51,12 @@ Stable workspace policy is serialized under Bootstrap. No sibling-branch output 
 ## Context checkpoint
 
 ```yaml
-last_progress: Coordinator allocation PR #8 merged; exact Bootstrap base is being rebound to the merged allocation SHA before worker writes.
+last_progress: PR #8 allocation is merged; PR #9 binds Bootstrap to its exact merged base before worker writes.
 status: bootstrap_allocated
 branch: docs/otv2-20260818-implementation-coordinator-bootstrap-base
-head_sha: pending
-pr: pending
+head_sha: pending_final_freeze
+pr: 9
 blocker: null
 owner_action_required: null
-next_action: Merge the exact-base allocation update, then create OTV2-20260818-impl-bootstrap from main at that merged SHA.
+next_action: Complete exact-head governance CI for PR #9, squash merge, then start OTV2-20260818-impl-bootstrap from the merged main.
 ```
