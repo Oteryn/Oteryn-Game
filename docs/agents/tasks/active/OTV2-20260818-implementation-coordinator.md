@@ -8,11 +8,11 @@ status: sim_allocation_pending_exact_base
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/otv2-20260818-sim-allocation
-pr: pending
+pr: 12
 base_sha: ed84415f4a55d8c16f703b7c1a130c0e43a1c1a1
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-18T17:23:00+02:00
+updated_at: 2026-08-18T17:28:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -38,24 +38,24 @@ Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme
 - `PROVEN`: Wave 1 permits Foundation/SIM/Domain/Content/QA after Bootstrap as paths permit.
 - `PROVEN`: root Cargo/workspace/lock/policy/CI mutations must remain serialized; therefore this coordinator releases SIM alone first rather than allowing concurrent root mutations.
 - `PROVEN`: no existing stable SIM profile/revision registry or implementation was found on live main; accepted SIM architecture intentionally leaves concrete implementation artifact/profile selection to implementation evidence.
-- `PROVEN`: SIM is allocated a real immediate consumer in `apps/game-server`; no speculative unconsumed crate is authorized.
+- `PROVEN`: SIM allocation is PR #12 and requires a real immediate consumer in `apps/game-server`; no speculative unconsumed crate is authorized.
 - `PROVEN`: SIM may use existing workspace `sha2` without adding third-party dependency graph, but it receives no security-randomness/seed-secrecy authority.
 - `PROVEN`: Foundation remains dependency-ready later but its protocol/session/admission/fencing implementation requires genuinely independent exact-head review. The current historical semantic-audit workflow does not satisfy that gate for arbitrary Foundation code because its deterministic script returns `NOT_APPLICABLE` outside two named historical doc profiles.
 - `PROVEN`: no production/protected/live-data/Platform/external-repository authority is granted.
 
 ## Merge discipline
 
-The live allocation is currently `allocated_pending_exact_base`. No SIM implementation write may occur until the allocation PR is merged and a follow-up coordinator reconciliation binds `worker_base_sha` to that exact merge SHA on `main`. Other Wave 1 workers remain read-only while SIM owns serialized workspace paths.
+The live allocation is currently `allocated_pending_exact_base`. No SIM implementation write may occur until PR #12 is merged and a follow-up coordinator reconciliation binds `worker_base_sha` to that exact merge SHA on `main`. Other Wave 1 workers remain read-only while SIM owns serialized workspace paths.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Bootstrap lifecycle is fully closed on main@231d063ff877b41f01a8032018284fc2f910161e; a bounded SIM allocation is prepared with real game-server consumption and serialized workspace ownership.
+last_progress: Bootstrap lifecycle is fully closed on main@231d063ff877b41f01a8032018284fc2f910161e; PR #12 contains the bounded SIM allocation with real game-server consumption and serialized workspace ownership.
 status: sim_allocation_pending_exact_base
 branch: docs/otv2-20260818-sim-allocation
 head_sha: pending_final_freeze
-pr: pending
+pr: 12
 blocker: null
 owner_action_required: null
-next_action: Merge the SIM allocation through exact-head governance CI, bind worker_base_sha to that allocation merge, then implement OTV2-IMPL-SIM.
+next_action: Merge PR #12 through exact-head governance CI, bind worker_base_sha to that allocation merge, then implement OTV2-IMPL-SIM.
 ```
