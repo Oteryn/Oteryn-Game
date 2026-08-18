@@ -6,14 +6,17 @@
 - Bootstrap delivery PR: `#10`
 - Bootstrap closeout PR: `#11`
 - Simulation allocation PR: `#12`
-- Simulation allocation merge: `2fc59dd83a3d13e7de8954d4dbcce5415e346389`
-- State: `SIM_ALLOCATED_EXACT_BASE`
+- Simulation exact-base PR: `#13`
+- Simulation delivery PR: `#14`
+- Simulation delivery merge: `66619daf5837f31f7c54676e9f8351ed4ae220b0`
+- Simulation archive PR: `pending`
+- State: `SIM_COMPLETED_CLOSEOUT_PENDING`
 
 ## Authority rule
 
 This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance is higher authority than historical prompt coordinates: all writes target `Oteryn/Oteryn-Game`; `blakinio/Oteryn-v2` remains read-only history.
 
-Only lanes explicitly listed as `allocated` have worker write authority. Unmerged sibling branches are never implicit dependencies.
+Only lanes explicitly listed as `allocated` have worker write authority. During this closeout there is **no active implementation worker allocation**; all later executor aliases remain read-only until the coordinator publishes a new exact-base bounded allocation on `main`.
 
 ## Completed allocation — Bootstrap
 
@@ -29,69 +32,33 @@ owned_paths: []
 branch: null
 ```
 
-## Wave 1 allocation — Simulation
+## Completed allocation — Simulation
 
 ```yaml
 lane_id: OTV2-IMPL-SIM
 task_id: OTV2-20260818-impl-simulation
 worker_alias: Oteryn: impl simulation
-status: allocated
+status: completed
 execution_mode: serial_workspace_mutation
 allocation_pr: 12
-allocation_generation_base_sha: 231d063ff877b41f01a8032018284fc2f910161e
 allocation_merge_sha: 2fc59dd83a3d13e7de8954d4dbcce5415e346389
-worker_base_sha: 2fc59dd83a3d13e7de8954d4dbcce5415e346389
-branch: feat/otv2-20260818-impl-simulation
-execution_budget_minutes: 60
-merge_order: 2
-owned_paths:
-  - docs/agents/tasks/active/OTV2-20260818-impl-simulation.md
-  - Cargo.toml
-  - Cargo.lock
-  - workspace-boundaries.toml
-  - crates/simulation-determinism/**
-  - apps/game-server/**
-  - .github/workflows/rust.yml
-  - .github/workflows/merge-gate.yml
-public_contracts:
-  - docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_CONTRACT.md
-  - docs/architecture/SIM-DETERMINISM-01_AUTHORITATIVE_SIMULATION_ANALYSIS.md
-  - docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md
-  - docs/architecture/DUR-03_ITEM_TRANSACTION_AND_ANTI_DUPLICATION_CONTRACT.md
-  - docs/architecture/DUR-04_CONTENT_WORLD_AND_SCRIPTING_CONTRACT.md
-  - docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md
-dependency_prs:
-  - 10
-  - 11
-  - 12
-excluded_scope:
-  - gameplay formulas, rates, XP curves, loot values or Reference behavior
-  - transport, protocol framing, admission, Game Session or CharacterLease
-  - persistence schemas, durable-value transactions or production database work
-  - process-global mutable gameplay RNG
-  - production deployment or live resources
+exact_base_pr: 13
+worker_base_sha: 977e98b05738076744540a123d4e35c32cd94c2c
+final_head_sha: 7a0d71bbabdd00c54951aa8e0084d62f3dce748b
+delivery_pr: 14
+delivery_merge_sha: 66619daf5837f31f7c54676e9f8351ed4ae220b0
+archive_pr: pending
+owned_paths: []
+branch: null
 ```
 
-### Simulation implementation shape
+SIM delivered a real production `oteryn-simulation-determinism` crate consumed by `apps/game-server`, including checked deterministic numeric semantics, retry/purpose-isolated decision derivation, semantic time, bounded canonical state hashing and exact-head Windows golden fixtures. Gameplay remains fail-closed and no protocol/session/persistence/Reference/security-randomness authority was introduced.
 
-The lane must create a real production `crates/simulation-determinism` library with an immediate consumer in `apps/game-server` in the same delivery. It may use existing workspace `sha2` for deterministic domain-separated decisions/state hashes, but must not add a new third-party dependency or claim cryptographic/security-randomness authority.
+## Next Wave 1 state
 
-The initial profile artifact may define implementation-owned revision `1` only for the semantics implemented and tested in that crate. It must not allocate gameplay command/state/event IDs, Reference formula values or durable database representations.
+`FOUNDATION`, `DOMAIN`, `CONTENT` and `QA` are dependency-ready only in principle and are currently **not allocated**. After this SIM archive/ownership-release closeout merges, the coordinator may publish exactly bounded non-overlapping allocations using the then-current exact `main` SHA.
 
-Required minimum observable outcomes:
-
-- typed `SimulationDeterminismProfileRevision` and explicit profile identity;
-- checked exact integer/fixed-scale arithmetic with named deterministic failure/rounding behavior;
-- stable purpose-isolated retry-stable deterministic gameplay decision derivation;
-- normalized semantic time values with no wall-clock read;
-- canonical ordering/serialization/state-hash evidence independent of unordered insertion order;
-- game-server composition root consumes and exposes the active determinism profile while gameplay remains unavailable;
-- Linux and Windows exact golden fixtures prove cross-target deterministic outputs;
-- workspace role/edge policy remains structurally valid and production closure remains clean.
-
-## Other Wave 1 lanes
-
-`FOUNDATION`, `DOMAIN`, `CONTENT` and `QA` remain **not allocated** while SIM owns serialized root workspace/lock/policy/CI paths. `FOUNDATION` additionally carries a mandatory genuinely independent exact-head review gate for protocol/session/admission/fencing semantics.
+`FOUNDATION` carries a mandatory genuinely independent exact-head review gate when it implements protocol/session/admission/fencing semantics. No coordination record may weaken or bypass that requirement.
 
 ## Deferred allocations
 
