@@ -1,0 +1,75 @@
+name: One-off Oteryn Game history import
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/one-off-history-import.yml
+
+permissions:
+  contents: write
+
+jobs:
+  import-history:
+    if: github.repository == 'Oteryn/Oteryn-Game'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SOURCE_REPOSITORY: blakinio/Oteryn-v2
+      TARGET_REPOSITORY: Oteryn/Oteryn-Game
+      EXPECTED_SOURCE_MAIN: 16afdf31a15bd49d454cdbcdd98fa7ec72213ef9
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Mirror source branches and tags into target
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          SOURCE="$RUNNER_TEMP/source.git"
+          git clone --mirror "https://github.com/${SOURCE_REPOSITORY}.git" "$SOURCE"
+
+          ACTUAL_SOURCE_MAIN="$(git -C "$SOURCE" rev-parse refs/heads/main)"
+          if [[ "$ACTUAL_SOURCE_MAIN" != "$EXPECTED_SOURCE_MAIN" ]]; then
+            echo "Source main moved: expected $EXPECTED_SOURCE_MAIN, got $ACTUAL_SOURCE_MAIN" >&2
+            exit 2
+          fi
+
+          git -C "$SOURCE" fsck --full
+
+          TARGET_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/${TARGET_REPOSITORY}.git"
+          git -C "$SOURCE" remote add target "$TARGET_URL"
+
+          # Push only durable Git repository refs. GitHub pull-request refs are
+          # server-managed and are intentionally retained only in the verified
+          # external backup, not recreated in the new repository.
+          git -C "$SOURCE" push --force --prune target \
+            'refs/heads/*:refs/heads/*' \
+            'refs/tags/*:refs/tags/*'
+
+          SOURCE_MAIN="$(git -C "$SOURCE" rev-parse refs/heads/main)"
+          TARGET_MAIN="$(git ls-remote "$TARGET_URL" refs/heads/main | awk '{print $1}')"
+          test "$SOURCE_MAIN" = "$TARGET_MAIN"
+
+          git -C "$SOURCE" for-each-ref --format='%(objectname) %(refname)' refs/heads refs/tags \
+            | sort > "$RUNNER_TEMP/source-refs.txt"
+          git ls-remote --heads --tags "$TARGET_URL" \
+            | awk '{print $1 " " $2}' \
+            | grep -v '\^{}$' \
+            | sort > "$RUNNER_TEMP/target-refs.txt"
+          diff -u "$RUNNER_TEMP/source-refs.txt" "$RUNNER_TEMP/target-refs.txt"
+
+          SOURCE_HEADS="$(git -C "$SOURCE" for-each-ref --format='%(refname)' refs/heads | wc -l | tr -d ' ')"
+          SOURCE_TAGS="$(git -C "$SOURCE" for-each-ref --format='%(refname)' refs/tags | wc -l | tr -d ' ')"
+
+          {
+            echo "history_import=PASS"
+            echo "source_repository=${SOURCE_REPOSITORY}"
+            echo "target_repository=${TARGET_REPOSITORY}"
+            echo "source_main=${SOURCE_MAIN}"
+            echo "target_main=${TARGET_MAIN}"
+            echo "heads=${SOURCE_HEADS}"
+            echo "tags=${SOURCE_TAGS}"
+            echo "git_fsck=PASS"
+            echo "refs_compare=PASS"
+          } | tee "$RUNNER_TEMP/import-manifest.txt"
