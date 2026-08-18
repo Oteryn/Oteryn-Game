@@ -9,14 +9,14 @@
 - Simulation exact-base PR: `#13`
 - Simulation delivery PR: `#14`
 - Simulation delivery merge: `66619daf5837f31f7c54676e9f8351ed4ae220b0`
-- Simulation archive PR: `pending`
-- State: `SIM_COMPLETED_CLOSEOUT_PENDING`
+- Simulation archive PR: `#15`
+- State: `SIM_COMPLETED_NEXT_ALLOCATION_PENDING`
 
 ## Authority rule
 
 This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance is higher authority than historical prompt coordinates: all writes target `Oteryn/Oteryn-Game`; `blakinio/Oteryn-v2` remains read-only history.
 
-Only lanes explicitly listed as `allocated` have worker write authority. During this closeout there is **no active implementation worker allocation**; all later executor aliases remain read-only until the coordinator publishes a new exact-base bounded allocation on `main`.
+Only lanes explicitly listed as `allocated` have worker write authority. There is currently **no active implementation worker allocation**. All executor aliases remain read-only until the coordinator publishes a new exact-base bounded allocation on `main`.
 
 ## Completed allocation — Bootstrap
 
@@ -47,7 +47,7 @@ worker_base_sha: 977e98b05738076744540a123d4e35c32cd94c2c
 final_head_sha: 7a0d71bbabdd00c54951aa8e0084d62f3dce748b
 delivery_pr: 14
 delivery_merge_sha: 66619daf5837f31f7c54676e9f8351ed4ae220b0
-archive_pr: pending
+archive_pr: 15
 owned_paths: []
 branch: null
 ```
@@ -56,7 +56,7 @@ SIM delivered a real production `oteryn-simulation-determinism` crate consumed b
 
 ## Next Wave 1 state
 
-`FOUNDATION`, `DOMAIN`, `CONTENT` and `QA` are dependency-ready only in principle and are currently **not allocated**. After this SIM archive/ownership-release closeout merges, the coordinator may publish exactly bounded non-overlapping allocations using the then-current exact `main` SHA.
+`FOUNDATION`, `DOMAIN`, `CONTENT` and `QA` are dependency-ready only in principle and are currently **not allocated**. The coordinator may publish a next bounded allocation only from the exact `main` produced by SIM archive PR #15, with non-overlapping owned paths and the applicable merge/review rules.
 
 `FOUNDATION` carries a mandatory genuinely independent exact-head review gate when it implements protocol/session/admission/fencing semantics. No coordination record may weaken or bypass that requirement.
 
