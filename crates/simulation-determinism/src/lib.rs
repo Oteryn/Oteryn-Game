@@ -45,7 +45,9 @@ pub enum ProfileRevisionError {
 impl Display for ProfileRevisionError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Zero => formatter.write_str("simulation determinism profile revision must be non-zero"),
+            Self::Zero => {
+                formatter.write_str("simulation determinism profile revision must be non-zero")
+            }
         }
     }
 }
@@ -158,7 +160,10 @@ impl FixedScale {
         if self.decimals != rhs.decimals {
             return Err(NumericError::ScaleMismatch);
         }
-        let raw = self.raw.checked_add(rhs.raw).ok_or(NumericError::Overflow)?;
+        let raw = self
+            .raw
+            .checked_add(rhs.raw)
+            .ok_or(NumericError::Overflow)?;
         Ok(Self {
             raw,
             decimals: self.decimals,
@@ -206,8 +211,12 @@ impl Display for NumericError {
         match self {
             Self::Overflow => formatter.write_str("checked numeric operation overflowed"),
             Self::DivisionByZero => formatter.write_str("division by zero is invalid"),
-            Self::InvalidScale => formatter.write_str("fixed-scale decimals exceed supported bound"),
-            Self::ScaleMismatch => formatter.write_str("fixed-scale operands have different scales"),
+            Self::InvalidScale => {
+                formatter.write_str("fixed-scale decimals exceed supported bound")
+            }
+            Self::ScaleMismatch => {
+                formatter.write_str("fixed-scale operands have different scales")
+            }
             Self::OutOfRange => formatter.write_str("numeric result is outside the target range"),
         }
     }
@@ -313,8 +322,12 @@ pub enum DecisionError {
 impl Display for DecisionError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::EmptyPurpose => formatter.write_str("deterministic decision purpose must not be empty"),
-            Self::PurposeTooLong => formatter.write_str("deterministic decision purpose exceeds bound"),
+            Self::EmptyPurpose => {
+                formatter.write_str("deterministic decision purpose must not be empty")
+            }
+            Self::PurposeTooLong => {
+                formatter.write_str("deterministic decision purpose exceeds bound")
+            }
         }
     }
 }
@@ -434,7 +447,9 @@ pub enum CanonicalStateError {
 impl Display for CanonicalStateError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            Self::TooManyEntries => formatter.write_str("canonical state entry count exceeds bound"),
+            Self::TooManyEntries => {
+                formatter.write_str("canonical state entry count exceeds bound")
+            }
             Self::EmptyKey => formatter.write_str("canonical state key must not be empty"),
             Self::KeyTooLong => formatter.write_str("canonical state key exceeds bound"),
             Self::ValueTooLong => formatter.write_str("canonical state value exceeds bound"),
@@ -465,20 +480,19 @@ pub fn canonical_state_hash(
 
     let mut ordered = entries.iter().collect::<Vec<_>>();
     ordered.sort_unstable_by(|left, right| left.key.cmp(right.key));
-    if ordered
-        .windows(2)
-        .any(|pair| pair[0].key == pair[1].key)
-    {
+    if ordered.windows(2).any(|pair| pair[0].key == pair[1].key) {
         return Err(CanonicalStateError::DuplicateKey);
     }
 
-    let entry_count = u32::try_from(ordered.len()).map_err(|_| CanonicalStateError::TooManyEntries)?;
+    let entry_count =
+        u32::try_from(ordered.len()).map_err(|_| CanonicalStateError::TooManyEntries)?;
     let mut hasher = Sha256::new();
     hasher.update(STATE_HASH_DOMAIN_V1);
     hasher.update(ACTIVE_PROFILE.revision().get().to_be_bytes());
     hasher.update(entry_count.to_be_bytes());
     for entry in ordered {
-        let key_len = u32::try_from(entry.key.len()).map_err(|_| CanonicalStateError::KeyTooLong)?;
+        let key_len =
+            u32::try_from(entry.key.len()).map_err(|_| CanonicalStateError::KeyTooLong)?;
         let value_len =
             u32::try_from(entry.value.len()).map_err(|_| CanonicalStateError::ValueTooLong)?;
         hasher.update(key_len.to_be_bytes());
@@ -498,8 +512,8 @@ mod tests {
 
     const DECISION_GOLDEN: u64 = 6_434_222_789_762_404_336;
     const STATE_HASH_GOLDEN: [u8; 32] = [
-        212, 203, 199, 227, 26, 211, 106, 78, 162, 232, 70, 94, 79, 126, 101, 233, 173,
-        117, 89, 161, 214, 5, 204, 82, 233, 94, 31, 144, 78, 12, 172, 2,
+        212, 203, 199, 227, 26, 211, 106, 78, 162, 232, 70, 94, 79, 126, 101, 233, 173, 117, 89,
+        161, 214, 5, 204, 82, 233, 94, 31, 144, 78, 12, 172, 2,
     ];
 
     #[test]
@@ -532,11 +546,15 @@ mod tests {
         let positive = FixedScale::new(5, 0)?;
         let negative = FixedScale::new(-5, 0)?;
         assert_eq!(
-            positive.checked_mul_ratio(1, 2, RoundingMode::TowardZero)?.raw(),
+            positive
+                .checked_mul_ratio(1, 2, RoundingMode::TowardZero)?
+                .raw(),
             2
         );
         assert_eq!(
-            positive.checked_mul_ratio(1, 2, RoundingMode::Ceiling)?.raw(),
+            positive
+                .checked_mul_ratio(1, 2, RoundingMode::Ceiling)?
+                .raw(),
             3
         );
         assert_eq!(
@@ -569,11 +587,11 @@ mod tests {
     }
 
     #[test]
-    fn deterministic_decision_is_retry_stable_and_cross_target_golden(
-    ) -> Result<(), DecisionError> {
+    fn deterministic_decision_is_retry_stable_and_cross_target_golden() -> Result<(), DecisionError>
+    {
         let root = GameplayDecisionRoot::from_bytes([
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21,
-            22, 23, 24, 25, 26, 27, 28, 29, 30, 31,
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
+            24, 25, 26, 27, 28, 29, 30, 31,
         ]);
         let occurrence = DecisionOccurrenceId::from_bytes([
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
@@ -599,7 +617,10 @@ mod tests {
         let end = start.checked_add(25)?;
         assert_eq!(end.get(), 35);
         assert_eq!(end.elapsed_since(start)?, 25);
-        assert_eq!(start.elapsed_since(end), Err(SemanticTimeError::BeforeOrigin));
+        assert_eq!(
+            start.elapsed_since(end),
+            Err(SemanticTimeError::BeforeOrigin)
+        );
         assert_eq!(
             SemanticTimeMicros::from_micros(u64::MAX).checked_add(1),
             Err(SemanticTimeError::Overflow)
@@ -608,8 +629,8 @@ mod tests {
     }
 
     #[test]
-    fn canonical_state_hash_is_order_independent_and_cross_target_golden(
-    ) -> Result<(), CanonicalStateError> {
+    fn canonical_state_hash_is_order_independent_and_cross_target_golden()
+    -> Result<(), CanonicalStateError> {
         let forward = [
             CanonicalStateEntry::new(b"z", b"last"),
             CanonicalStateEntry::new(b"a", b"first"),
