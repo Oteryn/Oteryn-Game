@@ -341,13 +341,9 @@ mod tests {
         policy.paths.insert("crates/fixture".to_owned());
         policy.synthetic.insert("fixture".to_owned());
         policy.edges.insert("fixture".to_owned(), BTreeSet::new());
-        policy
-            .edges
-            .get_mut("app")
-            .into_iter()
-            .for_each(|dependencies| {
-                dependencies.insert("fixture".to_owned());
-            });
+        if let Some(dependencies) = policy.edges.get_mut("app") {
+            dependencies.insert("fixture".to_owned());
+        }
 
         assert!(validate_policy_shape(&policy).is_ok());
         assert!(validate_production_closure(&policy).is_err());
