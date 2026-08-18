@@ -6,6 +6,7 @@
 - Bootstrap delivery PR: `#10`
 - Bootstrap closeout PR: `#11`
 - Bootstrap closeout main: `231d063ff877b41f01a8032018284fc2f910161e`
+- Simulation allocation PR: `#12`
 - State: `SIM_ALLOCATION_PENDING_EXACT_BASE`
 
 ## Authority rule
@@ -36,6 +37,7 @@ task_id: OTV2-20260818-impl-simulation
 worker_alias: Oteryn: impl simulation
 status: allocated_pending_exact_base
 execution_mode: serial_workspace_mutation
+allocation_pr: 12
 allocation_generation_base_sha: 231d063ff877b41f01a8032018284fc2f910161e
 worker_base_sha: pending_allocation_merge
 branch: feat/otv2-20260818-impl-simulation
