@@ -1,4 +1,4 @@
-# Oteryn v2 repository map
+# Oteryn Game repository map
 
 Status: bootstrap map; inspect the exact tree before use.
 
@@ -47,9 +47,10 @@ Create paths only when an accepted implementation task owns them. Candidate crat
 
 ## External repositories and authority
 
-| Repository | Oteryn v2 relationship | Default access |
+| Repository | Oteryn Game relationship | Default access |
 |---|---|---|
-| `blakinio/Oteryn-v2` | target native Rust gameplay stack and Oteryn Studio | read/write within task scope |
+| `Oteryn/Oteryn-Game` | canonical native Rust gameplay stack and Oteryn Studio | read/write within task scope |
+| `blakinio/Oteryn-v2` | preserved legacy/migration source for pre-organization history and provenance | read-only |
 | `blakinio/Oteryn-Platform` | web/Identity/Game Gateway/World Registry producer | read-only unless separately authorized |
 | `blakinio/Otheryn` | C++ behavioral/content reference and migration oracle | read-only unless separately authorized |
 | `blakinio/otclient` | existing client/Rust implementation and migration source; FND-01 must inventory and classify it at an exact SHA before designing replacements | read-only unless separately authorized |
@@ -57,7 +58,7 @@ Create paths only when an accepted implementation task owns them. Candidate crat
 | Beats Assets Editor | modern asset/content workflow reference; not a target dependency | external evidence only |
 | upstream Canary/OTClient repositories | external evidence only | read-only |
 
-Cross-repository changes require separate task state and PRs in each authorized repository. `Oteryn-v2` must not silently claim that another repository already implements a planned contract.
+Cross-repository changes require separate task state and PRs in each authorized repository. `Oteryn-Game` must not silently claim that another repository already implements a planned contract.
 
 External editor code, UI and assets require pinned revisions, license/provenance review and explicit implementation-task authority before reuse. Behavioral study and legally permitted compatibility fixtures do not make those projects canonical dependencies.
 

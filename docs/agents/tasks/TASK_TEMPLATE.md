@@ -5,7 +5,7 @@ task_id: OTV2-YYYYMMDD-short-slug
 title: <short title>
 mode: IMPLEMENT | AUDIT | CONTRACT | REPAIR | COORDINATE | MIGRATE | GOVERNANCE
 status: investigating | implementing | validating | ready | waiting | blocked | completed
-repository: blakinio/Oteryn-v2
+repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: <dedicated branch>
 pr: null

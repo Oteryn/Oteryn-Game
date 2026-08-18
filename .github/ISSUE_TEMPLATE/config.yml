@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Private security vulnerability
-    url: https://github.com/blakinio/Oteryn-v2/security/advisories/new
+    url: https://github.com/Oteryn/Oteryn-Game/security/advisories/new
     about: Report vulnerabilities privately. Never open a public issue containing exploit details or secrets.
