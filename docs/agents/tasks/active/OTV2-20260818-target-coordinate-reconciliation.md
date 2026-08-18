@@ -4,18 +4,18 @@
 task_id: OTV2-20260818-target-coordinate-reconciliation
 title: Reconcile Oteryn-Game target repository identity
 mode: MIGRATE
-status: validating
+status: blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/otv2-20260818-target-coordinate-reconciliation
 pr: 4
 base_sha: 16afdf31a15bd49d454cdbcdd98fa7ec72213ef9
-head_sha: a481d2b8b2d24a8dca784ee648ff5b785a6441bf
+head_sha: 6ff9e3e57c24ba510adfac330b7448bfb7a4c1bf
 final_head_sha: null
 final_head_frozen_at: null
 owner: chat-github-20260818-target-coordinate-reconciliation
 created_at: 2026-08-18T11:06:00Z
-updated_at: 2026-08-18T11:15:00Z
+updated_at: 2026-08-18T11:23:00Z
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -36,7 +36,8 @@ depends_on:
   - Oteryn/Oteryn ADR 0001 ecosystem topology authority
   - history-preserving copy main@16afdf31a15bd49d454cdbcdd98fa7ec72213ef9
 blocks:
-  - ordinary autonomous work using target-local governance until this PR merges
+  - ordinary autonomous work using target-local governance until PR 4 merges
+  - exact-head merge gate until target Dependency graph is enabled
 cross_repository_coordination_id: OTERYN-GAME-COPY-20260818
 external_repositories:
   - blakinio/Oteryn-v2
@@ -54,8 +55,8 @@ Reconcile only live repository identity and current governance/navigation surfac
 - all 36 source snapshot branch refs were recreated with the original commit SHAs; target-generated Dependabot refs are post-import state, not source-history mismatch.
 - `blakinio/Oteryn-v2` remains unchanged and continues to exist as the legacy/migration source.
 - verified external backup `Oteryn-v2-full-git-backup-2026-08-18-final.zip` exists on connected Google Drive.
-- the first workflow mirror attempt was fail-closed by missing workflow-file token scope and did not replace source history; exact connector ref creation/update then completed the copy with original SHAs.
-- temporary bootstrap/import/cleanup branches and temporary workflows were removed or closed without merge.
+- the first workflow mirror attempt failed closed on workflow-file token scope; exact connector ref creation/update then completed the history copy with original SHAs.
+- temporary bootstrap/import/cleanup branches and workflows were removed or closed without merge.
 
 ## Acceptance criteria
 
@@ -63,11 +64,13 @@ Reconcile only live repository identity and current governance/navigation surfac
 - [x] `blakinio/Oteryn-v2` is explicitly retained as read-only legacy/migration provenance rather than silently rewritten.
 - [x] current governance README/repository map/task template/project lanes reflect the target coordinate.
 - [x] current repository link metadata (`Cargo.toml`, issue security URL, root README) reflects the target coordinate/name.
-- [x] governance validator expects and passed for `Oteryn/Oteryn-Game` in the one-off exact replacement workflow.
+- [x] governance validator expects and passed for `Oteryn/Oteryn-Game` in the exact replacement workflow and PR merge-gate governance job.
 - [x] archived tasks/evidence/ADRs and immutable historical references were not mass-rewritten.
-- [x] temporary coordinate-reconciliation workflow was removed from the candidate branch before final review.
-- [ ] exact changed-file scope and full-diff self-review pass on one frozen final head.
-- [ ] exact-head applicable PR workflows pass with clean review hygiene.
+- [x] temporary coordinate-reconciliation and dependency-graph probe workflows were removed from the candidate branch.
+- [x] exact changed-file inventory is limited to the 12 declared live governance/navigation/task paths.
+- [x] full-diff self-review repaired one formatting-only churn finding in `PROJECT_LANES.json`; no material finding remains in the candidate diff.
+- [ ] target Dependency graph is enabled so the mandatory dependency-review sub-gate can execute.
+- [ ] one unchanged final head passes the complete merge gate and review hygiene.
 - [ ] squash merge and lifecycle closeout complete.
 
 ## Excluded scope
@@ -82,13 +85,17 @@ No runtime/protocol/persistence/gameplay behavior change. No Platform/META/Atlas
 - source repository existence/identity after copy: PASS (`blakinio/Oteryn-v2`, repository ID `1323412342`)
 - target source-snapshot branch reconstruction: PASS for all 36 source heads at exact source commit SHAs
 - target coordinate replacement workflow: PASS
-- `python tools/agents/validate_governance.py`: PASS inside replacement workflow for target repository identity
+- `python tools/agents/validate_governance.py`: PASS for target repository identity
+- exact PR changed-file inventory: PASS, 12 declared paths
+- full-diff self-review: PASS after repairing unrelated JSON formatting churn
 - temporary workflow removal: PASS
 
 ### Component/integration
 
 - repository-object history preservation: PASS by exact target main/source commit identity and exact recreated branch object SHAs
-- live GitHub repository settings policy reconciliation: NOT_INCLUDED; the target currently has default GitHub settings and source `REPO_ADMIN_TOKEN` is not authorized for reuse/copy
+- target dependency-review infrastructure: BLOCKED; `actions/dependency-review-action` reported `Dependency review is not supported on this repository. Please ensure that Dependency graph is enabled`
+- dependency submission probe with `contents: write`: FAIL_CLOSED with HTTP 404, independently confirming Dependency graph is currently unavailable to repository workflows
+- live GitHub repository settings policy reconciliation: PENDING separate administration-capable path; target still has creation defaults and source `REPO_ADMIN_TOKEN` is not authorized for reuse/copy
 
 ### E2E
 
@@ -97,23 +104,23 @@ No runtime/protocol/persistence/gameplay behavior change. No Platform/META/Atlas
 
 ### Exact-head CI
 
-- final head: pending this checkpoint commit
-- trigger source: pull_request #4
-- workflow/run/job: pending final generation
-- runner assignment: pending
-- classification: pending
-- result: pending
+- successful candidate-generation gates before infrastructure blocker: Agent governance, Architecture semantic audit, Merge authority audit, merge-gate scope/governance/Rust policy/Linux/CodeQL/supply-chain
+- blocking sub-gate: Merge gate / dependency review
+- first actionable failure: target Dependency graph unavailable
+- classification: EXTERNAL_REPOSITORY_CONFIGURATION_BLOCKER
+- final exact-head generation: deferred until owner enables Dependency graph
 
 ## Self-review
 
-- exact head: pending final checkpoint commit
 - method/reviewer: implementing/coordinating agent
-- material findings: pending final full-diff review
-- verdict: pending
+- changed paths: exactly 12 declared paths after temporary workflow removal
+- material findings: 0 open
+- repaired finding: `PROJECT_LANES.json` was initially reformatted wholesale by a JSON serializer; restored original formatting so only repository identity changes
+- verdict: PASS for content; merge readiness remains blocked by repository configuration
 
 ## Independent review
 
-- required: NO; this task changes repository coordinate identity after an explicitly owner-authorized copy, preserves the same number of routine-write repositories, does not weaken a safety gate and executes no security/protocol/durable-data/runtime mutation
+- required: NO; this task substitutes the canonical repository coordinate after an explicitly owner-authorized history-preserving copy, removes routine-write authority from the preserved source, does not increase the number of writable repositories, weaken a safety gate or mutate security/protocol/durable-data/runtime semantics
 - exact head: NOT_APPLICABLE
 - method/auditor: NOT_APPLICABLE
 - verdict: NOT_APPLICABLE
@@ -121,37 +128,38 @@ No runtime/protocol/persistence/gameplay behavior change. No Platform/META/Atlas
 ## PR and closeout
 
 - PR: #4 Draft
-- changed-file review: pending final exact inventory
-- unresolved review threads/comments: pending final check
+- changed-file inventory: exactly 12 declared paths
 - related bootstrap PR #1: closed without merge
 - related cleanup PR #3: closed without merge
-- merge: pending exact-head validation
-- ownership release: pending lifecycle closeout
+- merge: BLOCKED on Dependency graph
+- ownership release: pending lifecycle closeout after merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: target coordinate replacements applied and validated; temporary workflow removed; final candidate task checkpoint prepared
-status: validating
+last_progress: reproduced the only merge-gate failure as target Dependency graph unavailability, attempted a safe contents-write dependency-submission probe which failed closed with HTTP 404, and removed the temporary probe workflow
+status: blocked
 branch: docs/otv2-20260818-target-coordinate-reconciliation
-head_sha: a481d2b8b2d24a8dca784ee648ff5b785a6441bf
+head_sha: 6ff9e3e57c24ba510adfac330b7448bfb7a4c1bf
 pr: 4
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pending_final_checkpoint
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_check_generation: blocked_dependency_graph
+ci_checks_for_current_head: 1
+ci_run_ids:
+  - 32130772231
+ci_job_ids:
+  - 95691334715
+runner_assignment_state: completed_failure_external_configuration
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 1
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
+repair_cycles_for_current_gate: 1
+ci_recovery_actions_for_current_head: 1
 stall_warnings: 0
-owner_action_required: null
-blocker: null
-next_action: inspect the exact final changed-file set and full diff, freeze the resulting head in PR evidence, then complete exact-head workflows and merge if all gates pass
+owner_action_required: enable Dependency graph in Oteryn/Oteryn-Game Settings -> Advanced Security; do not weaken or skip dependency review
+blocker: target Dependency graph is disabled/unavailable and the connected GitHub tool exposes no administration-write operation to enable it
+next_action: after Dependency graph is enabled, refresh PR 4 live head and checks, freeze the exact final candidate and complete merge plus lifecycle closeout
 ```
