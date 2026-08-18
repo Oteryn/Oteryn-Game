@@ -13,6 +13,7 @@ release-role = "production"
 
 [dependencies]
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
+oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
 tokio.workspace = true
 
 [lints]
