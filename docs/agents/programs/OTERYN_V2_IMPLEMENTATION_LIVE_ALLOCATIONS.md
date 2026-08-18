@@ -3,7 +3,8 @@
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Coordinator task: `OTV2-20260818-implementation-coordinator`
 - Canonical repository: `Oteryn/Oteryn-Game`
-- Allocation generation base: `ed84415f4a55d8c16f703b7c1a130c0e43a1c1a1`
+- Allocation PR: `#8`
+- Allocation merge: `86200e6d044287bcb2fbb122d224e825b9084a7a`
 - State: `BOOTSTRAP_ALLOCATED_SERIAL`
 
 ## Authority rule
@@ -20,7 +21,7 @@ task_id: OTV2-20260818-impl-bootstrap
 worker_alias: Oteryn: impl bootstrap
 status: allocated
 execution_mode: serial
-base_sha: ed84415f4a55d8c16f703b7c1a130c0e43a1c1a1
+base_sha: 86200e6d044287bcb2fbb122d224e825b9084a7a
 branch: feat/otv2-20260818-impl-bootstrap
 execution_budget_minutes: 60
 merge_order: 1
@@ -42,8 +43,8 @@ public_contracts:
   - docs/architecture/ADR-0011-pre-native-protocol-fail-closed.md
   - docs/architecture/ADR-0015-gamenode-implementation-shape-not-yet-frozen.md
   - docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md
-dependency_prs: []
-requires_merged_allocation: true
+dependency_prs:
+  - 8
 excluded_scope:
   - gameplay movement/combat/content semantics
   - gameplay protocol/session/admission semantics or public IDs
