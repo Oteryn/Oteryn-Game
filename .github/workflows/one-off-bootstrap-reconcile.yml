@@ -1,9 +1,11 @@
 name: One-off bootstrap reconcile
 
 on:
-  push:
+  pull_request:
     branches:
-      - feat/otv2-20260818-impl-bootstrap
+      - main
+    types:
+      - synchronize
 
 permissions:
   contents: write
@@ -13,9 +15,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
-      - name: Check out bootstrap branch with history
+      - name: Check out exact bootstrap head with history
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
       - name: Install Rust toolchain
@@ -129,11 +132,14 @@ jobs:
           PY
 
       - name: Commit exact reconciliation and remove one-off workflow
+        env:
+          TARGET_BRANCH: ${{ github.head_ref }}
         run: |
+          test -n "$TARGET_BRANCH"
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git rm .github/workflows/one-off-bootstrap-reconcile.yml
           git add Cargo.lock .github/workflows/merge-gate.yml
           git diff --cached --check
           git commit -m 'build(bootstrap): reconcile lock and merge gate'
-          git push origin "HEAD:${GITHUB_REF_NAME}"
+          git push origin "HEAD:$TARGET_BRANCH"
