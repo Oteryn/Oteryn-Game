@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - feat/otv2-20260818-impl-simulation
     paths:
       - Cargo.toml
       - Cargo.lock
@@ -19,6 +20,11 @@ on:
       - 'docs/migration/**'
       - '.github/workflows/rust.yml'
       - '.github/workflows/merge-gate.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'crates/simulation-determinism/**'
   workflow_dispatch:
 
 permissions:
@@ -29,6 +35,97 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  sim-lock-reconcile:
+    name: Rust / SIM lock reconcile
+    if: github.event_name == 'push' && github.ref_name == 'feat/otv2-20260818-impl-simulation'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: write
+    steps:
+      - name: Check out SIM branch with history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Generate exact minimal SIM lock delta
+        env:
+          BASE_LOCK_SHA: 977e98b05738076744540a123d4e35c32cd94c2c
+        run: |
+          git show "$BASE_LOCK_SHA:Cargo.lock" > Cargo.lock
+          cargo +1.94.0 check --workspace
+          python - <<'PY'
+          import os
+          import subprocess
+          import tomllib
+          from pathlib import Path
+
+          base_sha = os.environ['BASE_LOCK_SHA']
+          before = tomllib.loads(subprocess.check_output(['git', 'show', f'{base_sha}:Cargo.lock']).decode())
+          after = tomllib.loads(Path('Cargo.lock').read_text(encoding='utf-8'))
+          before_packages = before['package']
+          after_packages = after['package']
+
+          def identity(package):
+              return (package['name'], package['version'], package.get('source'))
+
+          before_by_id = {identity(package): package for package in before_packages}
+          after_by_id = {identity(package): package for package in after_packages}
+          added = set(after_by_id) - set(before_by_id)
+          removed = set(before_by_id) - set(after_by_id)
+          if removed:
+              raise SystemExit(f'Cargo.lock removed existing packages: {sorted(removed)}')
+          if added != {('oteryn-simulation-determinism', '0.1.0', None)}:
+              raise SystemExit(f'unexpected Cargo.lock package additions: {sorted(added)}')
+
+          changed_existing = []
+          for package_id, before_package in before_by_id.items():
+              after_package = after_by_id[package_id]
+              if before_package != after_package:
+                  changed_existing.append((package_id, before_package, after_package))
+          if len(changed_existing) != 1 or changed_existing[0][0] != ('oteryn-game-server', '0.1.0', None):
+              raise SystemExit(
+                  f'only oteryn-game-server may change among existing lock packages: '
+                  f'{[item[0] for item in changed_existing]}'
+              )
+
+          _, game_before, game_after = changed_existing[0]
+          expected_before = set(game_before.get('dependencies', []))
+          expected_after = expected_before | {'oteryn-simulation-determinism'}
+          if set(game_after.get('dependencies', [])) != expected_after:
+              raise SystemExit(f'unexpected game-server dependency delta: {game_after}')
+          game_without_dependencies = dict(game_after)
+          game_without_dependencies['dependencies'] = game_before.get('dependencies', [])
+          if game_without_dependencies != game_before:
+              raise SystemExit('game-server lock package changed outside dependencies')
+
+          sim = after_by_id[('oteryn-simulation-determinism', '0.1.0', None)]
+          if set(sim.get('dependencies', [])) != {'sha2'}:
+              raise SystemExit(f'unexpected SIM lock dependencies: {sim}')
+          if 'checksum' in sim:
+              raise SystemExit('local SIM lock package unexpectedly has checksum')
+
+          print('Cargo.lock delta: one local SIM package + one game-server edge — PASS')
+          PY
+
+      - name: Commit Cargo.lock only when changed
+        run: |
+          if git diff --quiet -- Cargo.lock; then
+            echo 'Cargo.lock already reconciled.'
+            exit 0
+          fi
+          test "$(git status --short | awk '{print $2}')" = 'Cargo.lock'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add Cargo.lock
+          git diff --cached --check
+          git commit -m 'build(sim): reconcile Cargo.lock'
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
   policy:
     name: Rust / policy and metadata
     runs-on: ubuntu-24.04
@@ -144,6 +241,10 @@ jobs:
       - name: Run synthetic harness
         shell: pwsh
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
+
+      - name: Verify deterministic simulation golden fixtures
+        shell: pwsh
+        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
 
   supply-chain:
     name: Rust / supply chain
