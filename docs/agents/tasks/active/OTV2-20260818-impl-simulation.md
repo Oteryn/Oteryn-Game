@@ -8,12 +8,12 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/otv2-20260818-impl-simulation
-pr: null
+pr: 14
 base_sha: 977e98b05738076744540a123d4e35c32cd94c2c
 allocation_base_sha: 2fc59dd83a3d13e7de8954d4dbcce5415e346389
 owner: worker-otv2-impl-simulation
 created_at: 2026-08-18T17:36:00+02:00
-updated_at: 2026-08-18T17:36:00+02:00
+updated_at: 2026-08-18T17:38:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-impl-simulation.md
@@ -77,12 +77,12 @@ Minimum scope:
 ## Context checkpoint
 
 ```yaml
-last_progress: Exact allocation/base coordination is merged; worker task is persisted before implementation writes.
+last_progress: Exact allocation/base coordination is merged and draft PR #14 is open from exact current main; task metadata is durable before product writes.
 status: implementing
 branch: feat/otv2-20260818-impl-simulation
 head_sha: pending
-pr: null
+pr: 14
 blocker: null
 owner_action_required: null
-next_action: Implement the bounded simulation-determinism crate, game-server consumer, workspace policy and minimal lockfile delta, then open a draft PR.
+next_action: Implement the bounded simulation-determinism crate, game-server consumer, workspace policy and minimal lockfile delta.
 ```
