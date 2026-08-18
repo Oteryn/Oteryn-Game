@@ -1,0 +1,95 @@
+name: Oteryn v2 full Git backup
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/oteryn-v2-full-git-backup.yml
+      - docs/agents/tasks/active/OTV2-20260818-full-git-backup.md
+
+permissions:
+  contents: read
+
+concurrency:
+  group: oteryn-v2-full-git-backup-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  backup:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Create and verify full Git mirror backup
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          OUT="$RUNNER_TEMP/oteryn-v2-full-git-backup"
+          MIRROR="$RUNNER_TEMP/Oteryn-v2.git"
+          mkdir -p "$OUT"
+
+          git clone --mirror "https://github.com/${GITHUB_REPOSITORY}.git" "$MIRROR"
+
+          # Preserve GitHub pull-request refs as additional recovery evidence.
+          git -C "$MIRROR" fetch origin \
+            '+refs/pull/*/head:refs/pull/*/head' \
+            '+refs/pull/*/merge:refs/pull/*/merge'
+
+          git -C "$MIRROR" fsck --full > "$OUT/git-fsck.txt" 2>&1
+          git -C "$MIRROR" show-ref --head | sort > "$OUT/refs.txt"
+          git -C "$MIRROR" count-objects -vH > "$OUT/object-stats.txt"
+
+          LFS_STATUS="git-lfs-not-installed"
+          : > "$OUT/lfs-files.txt"
+          if git lfs version >/dev/null 2>&1; then
+            git -C "$MIRROR" lfs ls-files --all > "$OUT/lfs-files.txt" 2>/dev/null || true
+            if [[ -s "$OUT/lfs-files.txt" ]]; then
+              git -C "$MIRROR" lfs fetch --all
+              LFS_STATUS="fetched-all"
+            else
+              LFS_STATUS="no-lfs-files-observed"
+            fi
+          fi
+
+          MAIN_SHA="$(git -C "$MIRROR" rev-parse refs/heads/main)"
+          REF_COUNT="$(wc -l < "$OUT/refs.txt" | tr -d ' ')"
+          PR_REF_COUNT="$(git -C "$MIRROR" for-each-ref --format='%(refname)' refs/pull | wc -l | tr -d ' ')"
+
+          git -C "$MIRROR" bundle create "$OUT/Oteryn-v2-full.bundle" --all
+          git -C "$MIRROR" bundle verify "$OUT/Oteryn-v2-full.bundle" > "$OUT/bundle-verify.txt" 2>&1
+
+          tar -C "$RUNNER_TEMP" -czf "$OUT/Oteryn-v2-mirror.git.tar.gz" Oteryn-v2.git
+
+          sha256sum \
+            "$OUT/Oteryn-v2-full.bundle" \
+            "$OUT/Oteryn-v2-mirror.git.tar.gz" \
+            > "$OUT/SHA256SUMS"
+
+          {
+            echo "backup_schema=1"
+            echo "repository=${GITHUB_REPOSITORY}"
+            echo "repository_id=1323412342"
+            echo "created_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "main_sha=${MAIN_SHA}"
+            echo "ref_count=${REF_COUNT}"
+            echo "github_pr_ref_count=${PR_REF_COUNT}"
+            echo "git_fsck=PASS"
+            echo "git_bundle_verify=PASS"
+            echo "lfs_status=${LFS_STATUS}"
+            echo "mirror_archive=Oteryn-v2-mirror.git.tar.gz"
+            echo "portable_bundle=Oteryn-v2-full.bundle"
+          } > "$OUT/MANIFEST.txt"
+
+          cat "$OUT/MANIFEST.txt"
+          cat "$OUT/SHA256SUMS"
+
+      - name: Upload verified backup artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: Oteryn-v2-full-git-backup
+          path: ${{ runner.temp }}/oteryn-v2-full-git-backup
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
