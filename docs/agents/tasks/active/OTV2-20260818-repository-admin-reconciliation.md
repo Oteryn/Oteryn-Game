@@ -8,14 +8,14 @@ status: blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/otv2-20260818-repository-admin-reconciliation
-pr: null
+pr: 6
 base_sha: 5d50f56da8216ea33773c34b320c620f26b52f7f
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: chat-github-20260818-repository-admin-reconciliation
 created_at: 2026-08-18T14:46:00+02:00
-updated_at: 2026-08-18T14:46:00+02:00
+updated_at: 2026-08-18T15:10:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -43,7 +43,8 @@ Entry alias: `OTGAME-REPOSITORY-ADMIN-RECONCILIATION`.
 - `PROVEN`: canonical administration workflow is `.github/workflows/repository-configuration.yml` at blob `e3b752f5b4712d07de13e88b909f99e40b3a99b6`; it supports `workflow_dispatch` and requires target secret `REPO_ADMIN_TOKEN`.
 - `PROVEN`: archived coordinate reconciliation explicitly left repository-settings reconciliation as this follow-up and did not copy/reuse the source repository administration token.
 - `PROVEN`: the active GitHub connector reports admin/push access to `Oteryn/Oteryn-Game` but exposes no repository-settings/ruleset/secret mutation, no workflow dispatch, and no delete-ref operation.
-- `UNKNOWN`: presence and validity of a target-local `REPO_ADMIN_TOKEN`; secret values/presence are not exposed by the active connector.
+- `PROVEN`: owner manually dispatched `Repository configuration` on `main`; `Apply and verify GitHub settings` failed before any apply with `REPO_ADMIN_TOKEN is unavailable.` and process exit code `2`.
+- `PROVEN`: target-local `REPO_ADMIN_TOKEN` is not available to the administration workflow at the failed manual-dispatch run.
 - `UNKNOWN`: exact live Actions default permissions, security toggles, labels and ruleset readback until the canonical administration workflow can execute its authenticated verify path.
 
 ## Acceptance criteria
@@ -51,7 +52,9 @@ Entry alias: `OTGAME-REPOSITORY-ADMIN-RECONCILIATION`.
 - [x] Resolve the canonical target policy and apply/verify mechanism from trusted `main`.
 - [x] Compare live public repository metadata/merge settings with the canonical policy and record proven drift.
 - [x] Inspect live `main` branch readback and record the current protection signal.
-- [ ] Run `Repository configuration` against `main` with a target-local authorized `REPO_ADMIN_TOKEN` and obtain a successful apply+verify result.
+- [x] Manually dispatch `Repository configuration` on `main` and classify the first actionable failure.
+- [ ] Create an authorized target-local `REPO_ADMIN_TOKEN` secret for `Oteryn/Oteryn-Game` without copying/reusing the legacy source secret.
+- [ ] Re-run `Repository configuration` against `main` and obtain a successful apply+verify result.
 - [ ] Verify live repository metadata and merge policy match `.github/repository-policy.json`.
 - [ ] Verify Actions default workflow permissions and PR-review authority match policy.
 - [ ] Verify required security features and private vulnerability reporting match policy.
@@ -86,20 +89,31 @@ Live `GET /branches/main` readback at `main@5d50f56da8216ea33773c34b320c620f26b5
 
 The two migration branches intentionally retained by the preceding task are still present.
 
+### Manual administration dispatch
+
+The owner executed the canonical `Repository configuration` workflow on `main`. The `Apply and verify GitHub settings` step produced:
+
+```text
+REPO_ADMIN_TOKEN is unavailable.
+Process completed with exit code 2.
+```
+
+This is a fail-closed precondition failure from `tools/repository/apply_github_settings.py`: the script exits before repository mutation when `GH_TOKEN`, populated from `${{ secrets.REPO_ADMIN_TOKEN }}`, is empty. The subsequent public live readback remained unchanged, consistent with no apply having occurred.
+
 ### Capability exhaustion
 
-Attempted safe routes before declaring the external-operation blocker:
+Attempted safe routes before requiring owner secret provisioning:
 
 1. connected GitHub repository read/write/admin identity: available;
 2. connector repository-settings mutation: unavailable;
 3. connector ruleset/protection mutation: unavailable;
-4. connector Actions `workflow_dispatch`: unavailable;
+4. connector Actions `workflow_dispatch`: unavailable; owner manually dispatched instead;
 5. connector repository secret mutation/readback: unavailable;
 6. generic authenticated admin endpoint through GitHub fetch: rejected by the connector allowlist;
 7. delete-ref: unavailable;
 8. alternate installable plugin exposing GitHub repository administration: none found.
 
-The existing trusted workflow is therefore the required next execution route. Creating a no-op policy/workflow commit solely to generate a `push` event is explicitly forbidden by GitHub-only and anti-stall governance.
+The existing trusted workflow remains the required execution route. Creating a no-op policy/workflow commit solely to generate a `push` event is explicitly forbidden by GitHub-only and anti-stall governance.
 
 ## Validation
 
@@ -109,31 +123,32 @@ The existing trusted workflow is therefore the required next execution route. Cr
 - live `main` readback: `PASS` as drift evidence at `5d50f56da8216ea33773c34b320c620f26b52f7f`; protection signal reports disabled.
 - canonical policy/apply/workflow inspection: `PASS`.
 - retained migration-branch discovery: `PASS`, both expected branches observed.
+- manual administration dispatch: `FAIL_CLOSED`, missing `REPO_ADMIN_TOKEN`, exit code `2`.
+- PR #6 initial governance CI failure: root cause `PR body is missing ## Summary`; PR metadata repaired without moving the then-current head.
 
 ### Component/integration
 
-- canonical `Repository configuration` apply+verify: `BLOCKED` because the active connector exposes neither `workflow_dispatch` nor equivalent repository administration mutation.
+- canonical `Repository configuration` apply+verify: `BLOCKED` on missing target-local `REPO_ADMIN_TOKEN` secret.
 
 ### E2E
 
 - scenario: apply policy to live target and read it back through the canonical verifier.
-- result: `BLOCKED` on workflow dispatch capability before execution.
+- result: `BLOCKED` before mutation because `REPO_ADMIN_TOKEN` is unavailable.
 
 ### Exact-head CI
 
-- final head: `NOT_APPLICABLE` while administration task remains blocked before delivery readiness.
-- trigger source: `NOT_APPLICABLE`.
-- workflow/run/job: `NOT_APPLICABLE`.
-- runner assignment: `NOT_APPLICABLE`.
-- classification: external-operation blocker, not CI failure.
+- final head: `NOT_APPLICABLE` while live administration remains blocked before delivery readiness.
+- trigger source: PR task-record CI is not the administration gate.
+- administration workflow: owner manual dispatch reached the apply step and failed with exit code `2` due to missing secret.
+- classification: `EXTERNAL_CREDENTIAL_BLOCKER`, not repository-code validation failure.
 - result: `BLOCKED`.
 
 ## Self-review
 
-- exact head: pending task-record commit readback.
+- exact head: pending after material blocker checkpoint commit.
 - method/reviewer: implementing/coordinating chat GitHub session.
-- material findings: zero in live-drift classification; unknown admin-only surfaces are explicitly not asserted.
-- verdict: `PASS` for blocker classification and bounded task state.
+- material findings: zero in blocker classification; missing credential is now directly proven rather than inferred.
+- verdict: `PASS` for bounded task state; delivery remains blocked.
 
 ## Independent review
 
@@ -145,8 +160,9 @@ The existing trusted workflow is therefore the required next execution route. Cr
 
 ## PR and closeout
 
+- PR: `#6`, draft until live administration is reconciled.
 - changed-file review: task record only.
-- unresolved review threads: pending PR creation.
+- unresolved review threads: none observed before blocker checkpoint.
 - related/superseded PRs: PR #4/#5 completed predecessor reconciliation; Dependabot PR #2 is unrelated.
 - protected auto-merge: `NOT_APPLICABLE` while task is blocked.
 - merge commit/result: pending.
@@ -155,27 +171,27 @@ The existing trusted workflow is therefore the required next execution route. Cr
 ## Context checkpoint
 
 ```yaml
-last_progress: Proven live target repository drift against canonical policy and exhausted all safe connector-native administration routes.
+last_progress: Owner manually dispatched the canonical administration workflow; the apply step failed closed with `REPO_ADMIN_TOKEN is unavailable.` and exit code 2, proving the target credential is missing from workflow context.
 status: blocked
 branch: docs/otv2-20260818-repository-admin-reconciliation
-head_sha: pending task-record commit readback
-pr: null
+head_sha: null
+pr: 6
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+ci_trigger_source: owner_workflow_dispatch_main
+ci_check_generation: repository_configuration_missing_secret
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: not_applicable
+runner_assignment_state: assigned_and_executed
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 0
+unchanged_state_checks: 1
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: Run the existing `Repository configuration` workflow manually on branch `main` in `Oteryn/Oteryn-Game`; it must execute with a target-local authorized `REPO_ADMIN_TOKEN` and must not reuse/copy the legacy source secret.
-blocker: Active connector has admin repository identity but no workflow-dispatch, repository-settings/ruleset/secret mutation, or delete-ref operation; the trusted apply workflow cannot be started from this session.
-next_action: Dispatch `Repository configuration` on `main` in `Oteryn/Oteryn-Game` once through GitHub Actions.
+owner_action_required: Create a new target-local authorized repository Actions secret named `REPO_ADMIN_TOKEN` in `Oteryn/Oteryn-Game`; do not copy or reuse the legacy source repository secret. Then rerun `Repository configuration` on `main` once.
+blocker: Canonical administration workflow executed but failed closed before mutation because `${{ secrets.REPO_ADMIN_TOKEN }}` resolved empty; active connector cannot create repository secrets.
+next_action: Provision target-local `REPO_ADMIN_TOKEN` for `Oteryn/Oteryn-Game` and rerun `Repository configuration` on `main` once.
 ```
