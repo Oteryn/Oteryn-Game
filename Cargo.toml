@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "apps/client",
+    "apps/game-server",
     "crates/foundation",
     "crates/diagnostics",
     "crates/client-runtime",
