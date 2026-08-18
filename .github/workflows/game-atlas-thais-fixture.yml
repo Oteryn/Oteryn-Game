@@ -1,0 +1,181 @@
+name: Game Atlas Thais Z7 fixture
+
+run-name: Game Atlas Thais Z7 fixture • pull_request • ${{ github.event.pull_request.number }}
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tools/game-atlas-thais-fixture/**'
+      - '.github/workflows/game-atlas-thais-fixture.yml'
+      - 'docs/agents/evidence/OTV2-20260818-dyn-atlas-thais-z7-export-fixture.md'
+      - 'docs/agents/tasks/active/OTV2-20260818-dyn-atlas-thais-z7-export-fixture.md'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-atlas-thais-z7-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  fixture:
+    name: Game Atlas Thais Z7 fixture / validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact Game PR head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Verify exact Game head
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+
+      - name: Check out pinned migration source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: blakinio/Otheryn
+          ref: e417c5e7c22986bf4acef0495eb47f7b72c97cce
+          path: legacy
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify migration map source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C legacy rev-parse HEAD)" = 'e417c5e7c22986bf4acef0495eb47f7b72c97cce'
+          MAP='legacy/vendor/map-analysis/crystalserver/data-global/world/world.otbm'
+          test -f "$MAP"
+          ACTUAL="$(sha256sum "$MAP" | awk '{print $1}')"
+          test "$ACTUAL" = '3bd40d14fefec41f24c4b3ae879e420be1a831ef55b95dcbec721e587a09b034'
+          echo "world_otbm_sha256=$ACTUAL"
+
+      - name: Download exact 15.32 asset source metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          FILE_ID='1Dlo3bS4K1nS3mw4BhPZdlHT7lX5zRAvv'
+          EXPECTED_ZIP_SHA='1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f'
+          URL="https://drive.usercontent.google.com/download?id=${FILE_ID}&export=download&confirm=t"
+          curl -fL --retry 5 --retry-delay 2 "$URL" -o /tmp/15.32.zip
+          ACTUAL_ZIP_SHA="$(sha256sum /tmp/15.32.zip | awk '{print $1}')"
+          test "$ACTUAL_ZIP_SHA" = "$EXPECTED_ZIP_SHA"
+          mkdir -p /tmp/15.32
+          unzip -q /tmp/15.32.zip 'assets/catalog-content.json' 'assets/appearances-*.dat' -d /tmp/15.32
+          CATALOG='/tmp/15.32/assets/catalog-content.json'
+          APPEARANCE='/tmp/15.32/assets/appearances-dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075.dat'
+          test "$(sha256sum "$CATALOG" | awk '{print $1}')" = '35639e000c4c108665a091cfbdf699d549d995b37670bc08de575ab6cd380d85'
+          test "$(sha256sum "$APPEARANCE" | awk '{print $1}')" = 'dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075'
+          echo "asset_zip_sha256=$ACTUAL_ZIP_SHA"
+
+      - name: Compile and run pure producer self-tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile \
+            tools/game-atlas-thais-fixture/export.py \
+            tools/game-atlas-thais-fixture/verify.py \
+            tools/game-atlas-thais-fixture/self_test.py
+          python tools/game-atlas-thais-fixture/self_test.py
+
+      - name: Produce fixture twice independently
+        shell: bash
+        env:
+          PRODUCER_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          MAP="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global/world/world.otbm"
+          for OUT in /tmp/thais-a /tmp/thais-b; do
+            python tools/game-atlas-thais-fixture/export.py \
+              --legacy-root "$GITHUB_WORKSPACE/legacy" \
+              --map "$MAP" \
+              --asset-zip /tmp/15.32.zip \
+              --assets /tmp/15.32/assets \
+              --producer-sha "$PRODUCER_SHA" \
+              --output "$OUT" \
+              > "$OUT.producer-log.json"
+          done
+          diff -rq /tmp/thais-a /tmp/thais-b
+
+      - name: Verify deterministic fixtures
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/game-atlas-thais-fixture/verify.py /tmp/thais-a | tee /tmp/verification.json
+          python tools/game-atlas-thais-fixture/verify.py /tmp/thais-b >/dev/null
+
+      - name: Prove corruption fails closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp -a /tmp/thais-a /tmp/thais-corrupt
+          printf ' ' >> /tmp/thais-corrupt/tiles.jsonl
+          if python tools/game-atlas-thais-fixture/verify.py /tmp/thais-corrupt >/tmp/corruption.log 2>&1; then
+            echo 'ERROR: verifier accepted deliberately corrupted fixture' >&2
+            exit 1
+          fi
+          grep -q 'ERROR:' /tmp/corruption.log
+
+      - name: Record workflow evidence
+        shell: bash
+        env:
+          PRODUCER_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          root = Path('/tmp/thais-a')
+          manifest = json.loads((root / 'manifest.json').read_text(encoding='utf-8'))
+          verification = json.loads(Path('/tmp/verification.json').read_text(encoding='utf-8'))
+          evidence = {
+              'producer_repository': 'blakinio/Oteryn-v2',
+              'producer_head_sha': os.environ['PRODUCER_SHA'],
+              'migration_repository': 'blakinio/Otheryn',
+              'migration_repository_sha': 'e417c5e7c22986bf4acef0495eb47f7b72c97cce',
+              'asset_drive_file_id': '1Dlo3bS4K1nS3mw4BhPZdlHT7lX5zRAvv',
+              'asset_zip_sha256': '1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f',
+              'artifact_digest': manifest['artifact_digest'],
+              'counts': manifest['counts'],
+              'files': manifest['files'],
+              'verification': verification,
+              'canonical_manifest_bytes': (root / 'manifest.json').stat().st_size,
+              'canonical_tiles_bytes': (root / 'tiles.jsonl').stat().st_size,
+              'canonical_diagnostics_bytes': (root / 'diagnostics.json').stat().st_size,
+              'deterministic_double_build': True,
+              'corruption_rejected': True,
+          }
+          Path('/tmp/workflow-evidence.json').write_text(json.dumps(evidence, indent=2, sort_keys=True) + '\n', encoding='utf-8')
+          print(json.dumps(evidence, indent=2, sort_keys=True))
+          PY
+
+      - name: Upload exact semantic fixture artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: dyn-atlas-001-thais-z7-semantic-export-${{ github.event.pull_request.head.sha }}
+          path: |
+            /tmp/thais-a/manifest.json
+            /tmp/thais-a/tiles.jsonl
+            /tmp/thais-a/diagnostics.json
+            /tmp/thais-a/artifact.sha256
+            /tmp/workflow-evidence.json
+          if-no-files-found: error
+          compression-level: 9
+          retention-days: 90
