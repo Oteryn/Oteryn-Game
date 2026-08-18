@@ -9,6 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
 pr: 10
+archive_pr: 11
 base_sha: d9c5ef68e1c88b88b4782219051395eacb0f8e67
 frozen_head_sha: 43243c4998224517a4c828bc05e735264b3e3394
 merge_sha: 0809004252db228e8f3fac3cdb6638c3c2a7fbda
@@ -57,6 +58,7 @@ No gameplay protocol, Game Session/admission, persistence schema, gameplay seman
 - post-merge `main`: exact merge SHA verified and protected;
 - post-merge `apps/game-server/Cargo.toml`: verified as production package with the intended dependency set;
 - delivery branch `feat/otv2-20260818-impl-bootstrap`: absent after merge;
+- archive/ownership-release PR: #11;
 - unresolved review threads: none;
 - independent review: `NOT_REQUIRED` for the frozen bootstrap-only semantic scope.
 
@@ -67,12 +69,12 @@ Bootstrap ownership is released. Later implementation lanes must use a new coord
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #10 merged and post-merge main/server/branch disposition verified; Bootstrap lifecycle is archived and ownership released.
+last_progress: PR #10 merged and post-merge main/server/branch disposition verified; archive/ownership-release is PR #11.
 status: completed
 branch: null
 head_sha: 43243c4998224517a4c828bc05e735264b3e3394
 pr: 10
 blocker: null
 owner_action_required: null
-next_action: Coordinator allocates dependency-ready Wave 1 lanes from the post-Bootstrap main after this closeout merges.
+next_action: Coordinator allocates dependency-ready Wave 1 lanes from the post-Bootstrap main after PR #11 merges.
 ```
