@@ -12,7 +12,7 @@ delivery_pr: 6
 delivery_head_sha: 554bc4f5c7182172d19122565554a7fbe59641fb
 delivery_merge_sha: e9ced1f524c36074e2dd2dd079f3e7d625c75484
 archive_branch: docs/otv2-20260818-repository-admin-reconciliation-archive
-archive_pr: pending
+archive_pr: 7
 owner: null
 created_at: 2026-08-18T14:46:00+02:00
 completed_at: 2026-08-18T16:05:00+02:00
