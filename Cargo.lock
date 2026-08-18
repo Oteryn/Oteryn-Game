@@ -1395,6 +1395,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "oteryn-game-server"
+version = "0.1.0"
+dependencies = [
+ "oteryn-foundation",
+ "tokio",
+]
+
+[[package]]
 name = "oteryn-identity"
 version = "0.1.0"
 dependencies = [
