@@ -21,6 +21,8 @@ jobs:
         run: |
           set -euo pipefail
           TARGET_URL="https://x-access-token:${GITHUB_TOKEN}@github.com/Oteryn/Oteryn-Game.git"
-          git push "$TARGET_URL" --delete bootstrap/global-object-test
-          git push "$TARGET_URL" --delete bootstrap/prepopulate
-          git push "$TARGET_URL" --delete bootstrap/cleanup-migration-residue
+          CLEANUP_REPO="$RUNNER_TEMP/cleanup.git"
+          git init --bare "$CLEANUP_REPO"
+          git -C "$CLEANUP_REPO" push "$TARGET_URL" --delete bootstrap/global-object-test
+          git -C "$CLEANUP_REPO" push "$TARGET_URL" --delete bootstrap/prepopulate
+          git -C "$CLEANUP_REPO" push "$TARGET_URL" --delete bootstrap/cleanup-migration-residue
