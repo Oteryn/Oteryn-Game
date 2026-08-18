@@ -1,0 +1,108 @@
+name: One-off target coordinate reconciliation
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  reconcile:
+    if: github.repository == 'Oteryn/Oteryn-Game' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      TARGET_BRANCH: docs/otv2-20260818-target-coordinate-reconciliation
+    steps:
+      - name: Apply exact target-coordinate reconciliation
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPO="$RUNNER_TEMP/repo"
+          git clone --branch "$TARGET_BRANCH" "https://x-access-token:${GITHUB_TOKEN}@github.com/Oteryn/Oteryn-Game.git" "$REPO"
+          cd "$REPO"
+
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          root = Path('.')
+
+          def reconcile(path: str, old: str, new: str) -> None:
+              p = root / path
+              text = p.read_text(encoding='utf-8')
+              if old in text:
+                  p.write_text(text.replace(old, new), encoding='utf-8')
+              elif new not in text:
+                  raise SystemExit(f'neither expected old nor new text found in {path}: {old!r}')
+
+          reconcile('AGENTS.md', '# Oteryn v2 Agent Instructions', '# Oteryn Game Agent Instructions')
+          reconcile('AGENTS.md', 'Routine autonomous writes authorized by this repository policy are limited to `blakinio/Oteryn-v2`.', 'Routine autonomous writes authorized by this repository policy are limited to `Oteryn/Oteryn-Game`.')
+          reconcile('AGENTS.md', '`blakinio/Oteryn-Platform`, `blakinio/Otheryn`, `blakinio/otclient`, Canary repositories and all other repositories are read-only unless the owner explicitly authorizes a write task for that exact repository.', '`blakinio/Oteryn-v2` is the preserved read-only legacy/migration source. `blakinio/Oteryn-Platform`, `blakinio/Otheryn`, `blakinio/otclient`, Canary repositories and all other repositories are read-only unless the owner explicitly authorizes a write task for that exact repository.')
+          reconcile('AGENTS.md', 'Before every GitHub write, verify `repository_full_name == blakinio/Oteryn-v2` unless the current owner instruction explicitly authorizes another repository.', 'Before every GitHub write, verify `repository_full_name == Oteryn/Oteryn-Game` unless the current owner instruction explicitly authorizes another repository.')
+          reconcile('AGENTS.md', 'Oteryn v2 is the greenfield native Rust gameplay stack:', 'Oteryn Game is the canonical native Rust gameplay stack, migrated with preserved Git history from `blakinio/Oteryn-v2`:')
+          reconcile('AGENTS.md', 'not part of the target Oteryn v2 runtime.', 'not part of the target Oteryn Game runtime.')
+          reconcile('AGENTS.md', '- base and head repositories are `blakinio/Oteryn-v2` and base is `main`;', '- base and head repositories are `Oteryn/Oteryn-Game` and base is `main`;')
+
+          p = root / 'docs/agents/GOVERNANCE_CONTRACT.json'
+          data = json.loads(p.read_text(encoding='utf-8'))
+          data['repository'] = 'Oteryn/Oteryn-Game'
+          data['write_allowlist'] = ['Oteryn/Oteryn-Game']
+          external = data['external_read_only_repositories']
+          if 'blakinio/Oteryn-v2' not in external:
+              external.insert(0, 'blakinio/Oteryn-v2')
+          p.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+
+          p = root / 'docs/agents/PROJECT_LANES.json'
+          data = json.loads(p.read_text(encoding='utf-8'))
+          data['repository'] = 'Oteryn/Oteryn-Game'
+          p.write_text(json.dumps(data, indent=2) + '\n', encoding='utf-8')
+
+          reconcile('docs/agents/README.md', '# Oteryn v2 agent governance', '# Oteryn Game agent governance')
+          reconcile('docs/agents/README.md', 'multi-agent work in `blakinio/Oteryn-v2`.', 'multi-agent work in `Oteryn/Oteryn-Game`. The preserved `blakinio/Oteryn-v2` repository is legacy/migration provenance and is read-only by default.')
+
+          reconcile('docs/agents/REPOSITORY_MAP.md', '# Oteryn v2 repository map', '# Oteryn Game repository map')
+          reconcile('docs/agents/REPOSITORY_MAP.md', '| Repository | Oteryn v2 relationship | Default access |', '| Repository | Oteryn Game relationship | Default access |')
+          reconcile('docs/agents/REPOSITORY_MAP.md', '| `blakinio/Oteryn-v2` | target native Rust gameplay stack and Oteryn Studio | read/write within task scope |', '| `Oteryn/Oteryn-Game` | canonical native Rust gameplay stack and Oteryn Studio | read/write within task scope |\n| `blakinio/Oteryn-v2` | preserved legacy/migration source for pre-organization history and provenance | read-only |')
+          reconcile('docs/agents/REPOSITORY_MAP.md', '`Oteryn-v2` must not silently claim that another repository already implements a planned contract.', '`Oteryn-Game` must not silently claim that another repository already implements a planned contract.')
+
+          reconcile('docs/agents/CROSS_REPO_CONTRACTS.md', 'Oteryn v2 currently interacts with:', 'Oteryn Game currently interacts with:')
+          reconcile('docs/agents/CROSS_REPO_CONTRACTS.md', '- `blakinio/Oteryn-v2` — native Rust game server/client and `protocol-oteryn` consumer/producer;', '- `Oteryn/Oteryn-Game` — canonical native Rust game server/client and `protocol-oteryn` consumer/producer;\n- `blakinio/Oteryn-v2` — preserved read-only legacy/migration source for historical provenance;')
+
+          reconcile('docs/agents/tasks/TASK_TEMPLATE.md', 'repository: blakinio/Oteryn-v2', 'repository: Oteryn/Oteryn-Game')
+
+          reconcile('tools/agents/validate_governance.py', '"""Validate the Oteryn v2 agent-governance bootstrap using stdlib only."""', '"""Validate the Oteryn Game agent-governance bootstrap using stdlib only."""')
+          reconcile('tools/agents/validate_governance.py', 'EXPECTED_REPOSITORY = "blakinio/Oteryn-v2"', 'EXPECTED_REPOSITORY = "Oteryn/Oteryn-Game"')
+          reconcile('tools/agents/validate_governance.py', 'governance repository must be blakinio/Oteryn-v2', 'governance repository must be Oteryn/Oteryn-Game')
+          reconcile('tools/agents/validate_governance.py', 'write_allowlist must contain only blakinio/Oteryn-v2', 'write_allowlist must contain only Oteryn/Oteryn-Game')
+          reconcile('tools/agents/validate_governance.py', '        "blakinio/Oteryn-v2",\n        "protocol-oteryn",', '        "Oteryn/Oteryn-Game",\n        "protocol-oteryn",')
+
+          reconcile('.github/ISSUE_TEMPLATE/config.yml', 'https://github.com/blakinio/Oteryn-v2/security/advisories/new', 'https://github.com/Oteryn/Oteryn-Game/security/advisories/new')
+          reconcile('Cargo.toml', 'repository = "https://github.com/blakinio/Oteryn-v2"', 'repository = "https://github.com/Oteryn/Oteryn-Game"')
+
+          reconcile('README.md', '# Oteryn v2', '# Oteryn Game')
+          reconcile('README.md', 'Greenfield implementation of the Oteryn game platform runtime, including a native Rust game server, a native Rust game client and project-owned world/content tooling.', 'Canonical native Rust game repository for Oteryn, migrated with preserved Git history from `blakinio/Oteryn-v2`, including the game server, native client and project-owned world/content tooling.')
+          reconcile('README.md', 'Oteryn-v2 source code, tooling, schemas, configuration and technical documentation are licensed', 'Oteryn Game source code, tooling, schemas, configuration and technical documentation are licensed')
+          PY
+
+          python tools/agents/validate_governance.py
+
+          git diff --check
+          git status --short
+
+          if git diff --quiet; then
+            echo "Coordinate reconciliation already applied; no commit needed."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add AGENTS.md README.md Cargo.toml .github/ISSUE_TEMPLATE/config.yml \
+            docs/agents/README.md docs/agents/REPOSITORY_MAP.md docs/agents/CROSS_REPO_CONTRACTS.md \
+            docs/agents/GOVERNANCE_CONTRACT.json docs/agents/PROJECT_LANES.json \
+            docs/agents/tasks/TASK_TEMPLATE.md tools/agents/validate_governance.py
+          git commit -m "docs(migration): reconcile Oteryn-Game repository identity"
+          git push origin "HEAD:${TARGET_BRANCH}"
