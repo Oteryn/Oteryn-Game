@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - feat/otv2-20260818-impl-simulation
     paths:
       - Cargo.toml
       - Cargo.lock
@@ -35,37 +34,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  sim-format-repair:
-    name: Rust / SIM format repair
-    if: github.event_name == 'push' && github.ref_name == 'feat/otv2-20260818-impl-simulation'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: write
-    steps:
-      - name: Check out SIM branch
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: true
-
-      - name: Install Rust formatter
-        run: rustup toolchain install 1.94.0 --profile minimal --component rustfmt
-
-      - name: Format only SIM crate and commit when changed
-        run: |
-          cargo +1.94.0 fmt --package oteryn-simulation-determinism
-          if git diff --quiet -- crates/simulation-determinism/src/lib.rs; then
-            echo 'SIM crate is already rustfmt-clean.'
-            exit 0
-          fi
-          test "$(git status --short | awk '{print $2}')" = 'crates/simulation-determinism/src/lib.rs'
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add crates/simulation-determinism/src/lib.rs
-          git diff --cached --check
-          git commit -m 'style(sim): apply rustfmt'
-          git push origin "HEAD:${GITHUB_REF_NAME}"
-
   policy:
     name: Rust / policy and metadata
     runs-on: ubuntu-24.04
