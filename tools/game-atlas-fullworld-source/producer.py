@@ -114,15 +114,96 @@ def native_floor(tile: Any) -> int:
 
 
 def project_tile(runtime: Runtime, tile: Any) -> tuple[dict[str, Any], dict[str, Any]]:
-    """Resolve one tile using the exact qualified Game presentation semantics."""
+    """Resolve one tile while preserving explicitly unresolved appearances.
+
+    For tiles whose visible server IDs all exist in the exact pinned appearance
+    catalogue, this delegates byte-for-byte to the already-qualified DYN
+    producer.  A visible server ID missing from that exact catalogue remains an
+    explicit unresolved presentation with no resolved primitives.  No sprite or
+    appearance is substituted or inferred.
+    """
     if not is_tile(runtime, tile):
         raise ProducerError(f"project_tile requires a Tile, got {type(tile)!r}")
-    return runtime.bounded._tile_record(
-        tile,
-        appearances=runtime.appearances,
-        sheets=runtime.sheets,
-        sheet_for_sprite=runtime.sheet_for_sprite,
-    )
+
+    visible: list[tuple[str, Any]] = []
+    if tile.ground is not None:
+        visible.append(("ground", tile.ground))
+    visible.extend(("tile_item", item) for item in tile.items)
+    missing_ids = {item.server_id for _role, item in visible if item.server_id not in runtime.appearances}
+    if not missing_ids:
+        return runtime.bounded._tile_record(
+            tile,
+            appearances=runtime.appearances,
+            sheets=runtime.sheets,
+            sheet_for_sprite=runtime.sheet_for_sprite,
+        )
+
+    x, y, z = tile.position.x, tile.position.y, tile.position.z
+    floor = native_floor(tile)
+    hook_south = False
+    hook_east = False
+    for _role, item in visible:
+        appearance = runtime.appearances.get(item.server_id)
+        if appearance is None:
+            continue
+        hook_south = hook_south or appearance.hook_direction == 1
+        hook_east = hook_east or appearance.hook_direction == 2
+
+    presentations: list[dict[str, Any]] = []
+    appearance_ids: set[int] = set()
+    sprite_ids: set[int] = set()
+    primitive_count = 0
+    unresolved_count = 0
+    for order, (role, item) in enumerate(visible):
+        appearance_ids.add(item.server_id)
+        appearance = runtime.appearances.get(item.server_id)
+        if appearance is None:
+            unresolved_count += 1
+            primitives: list[dict[str, Any]] = []
+            resolution_state = "UNRESOLVED_APPEARANCE"
+        else:
+            primitives = runtime.bounded._resolved_primitives(
+                item=item,
+                appearance=appearance,
+                x=x,
+                y=y,
+                z=z,
+                hook_south=hook_south,
+                hook_east=hook_east,
+                sheet_for_sprite=runtime.sheet_for_sprite,
+                sheets=runtime.sheets,
+            )
+            primitive_count += len(primitives)
+            sprite_ids.update(primitive["sprite_source_id"] for primitive in primitives)
+            resolution_state = "RESOLVED"
+        presentation = {
+            "canonical_entity_id": None,
+            "entity_identity_state": "UNRESOLVED",
+            "export_record_id": runtime.bounded._stable_id("presentation", x, y, floor, order, item.server_id),
+            "appearance_source_id": item.server_id,
+            "presentation_order": {"order": order, "plane": 0},
+            "resolved_primitives": primitives,
+            "source_role": role,
+        }
+        if resolution_state != "RESOLVED":
+            presentation["presentation_resolution_state"] = resolution_state
+        presentations.append(presentation)
+
+    record = {
+        "position": {"floor": floor, "x": x, "y": y},
+        "presentation": presentations,
+        "record_type": "tile",
+        "source_position": {"legacy_x": x, "legacy_y": y, "legacy_z": z},
+        "tile_record_id": runtime.bounded._stable_id("tile", x, y, floor),
+    }
+    return record, {
+        "appearance_ids": appearance_ids,
+        "primitive_count": primitive_count,
+        "presentation_count": len(presentations),
+        "sprite_ids": sprite_ids,
+        "unresolved_appearance_ids": missing_ids,
+        "unresolved_presentation_count": unresolved_count,
+    }
 
 
 def canonical_tile_bytes(runtime: Runtime, record: dict[str, Any]) -> bytes:
