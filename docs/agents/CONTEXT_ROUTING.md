@@ -4,7 +4,7 @@ Load the smallest context set that can safely execute the task.
 
 ## Always
 
-Read root `AGENTS.md`, `AGENTS.override.md`, `docs/agents/AGENTS.md`, the exact active task checkpoint and live PR/CI state.
+Read root `AGENTS.md`, `docs/agents/AGENTS.md`, the exact active task checkpoint and live PR/CI state.
 
 For Oteryn-v2 foundation or architecture continuation, also read `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` before interpreting progress, blockers or next-action text in long-lived backlog/register/baseline documents.
 

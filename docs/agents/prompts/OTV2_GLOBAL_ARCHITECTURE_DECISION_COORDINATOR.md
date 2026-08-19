@@ -32,7 +32,7 @@ Repository mutation/integration is allowed only when the owner instruction or al
 
 Routine writes are limited to:
 
-- `blakinio/Oteryn-v2`.
+- `Oteryn/Oteryn-Game`.
 
 Other repositories are read-only unless the owner explicitly authorizes an exact write task.
 
@@ -42,7 +42,7 @@ Codex/OpenAI/API/owner-funded AI may be invoked only after explicit owner author
 
 Before mutation or worker integration:
 
-1. read root `AGENTS.md` and `AGENTS.override.md`;
+1. read root `AGENTS.md` and any applicable nearer instructions;
 2. read `docs/agents/AGENTS.md`;
 3. read `docs/agents/MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md`;
 4. read `docs/agents/programs/OTERYN_V2_ARCHITECTURE_PARALLEL_WORK_ALLOCATION.md`;

@@ -14,7 +14,7 @@
 
 ## Authority rule
 
-This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance is higher authority than historical prompt coordinates: all writes target `Oteryn/Oteryn-Game`; `blakinio/Oteryn-v2` remains read-only history.
+This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance is higher authority than historical prompt coordinates: all writes target `Oteryn/Oteryn-Game`; `Oteryn/Oteryn-Game` remains read-only history.
 
 Only lanes explicitly listed as `allocated` have worker write authority. There is currently **no active implementation worker allocation**. All executor aliases remain read-only until the coordinator publishes a new exact-base bounded allocation on `main`.
 

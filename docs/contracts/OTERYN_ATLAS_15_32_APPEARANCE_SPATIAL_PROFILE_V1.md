@@ -3,7 +3,7 @@
 - Contract ID: `oteryn-atlas-15-32-appearance-spatial-v1`
 - Semantic revision: `1`
 - Coordination ID: `OTERYN-GAME-ATLAS-V1-APPEARANCE-15-32`
-- Canonical owner: `Oteryn-Game` (current source lineage: `blakinio/Oteryn-v2`)
+- Canonical owner: `Oteryn-Game` (current source lineage: `Oteryn/Oteryn-Game`)
 - Source label: `15.32` (repository-pinned project label)
 - Status: **PROPOSED until this exact content is merged to protected `main`; ACCEPTED thereafter unless explicitly superseded**
 - Runtime implementation status: `NOT_IMPLEMENTED`

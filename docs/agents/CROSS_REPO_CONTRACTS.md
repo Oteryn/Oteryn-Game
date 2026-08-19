@@ -4,7 +4,7 @@
 
 Oteryn Game currently interacts with:
 
-- `blakinio/Oteryn-Platform` — Identity, OAuth/PKCE, Game Login Ticket, Game Gateway, World Registry and Game Session producer;
+- `Oteryn/Oteryn-Platform` — Identity, OAuth/PKCE, Game Login Ticket, Game Gateway, World Registry and Game Session producer;
 - `Oteryn/Oteryn-Game` — canonical native Rust game server/client and `protocol-oteryn` consumer/producer;
 - `blakinio/Oteryn-v2` — preserved read-only legacy/migration source for historical provenance;
 - `blakinio/Otheryn` — read-only behavioral/content migration source;

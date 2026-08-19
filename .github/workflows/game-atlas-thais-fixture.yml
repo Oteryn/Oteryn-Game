@@ -146,7 +146,7 @@ jobs:
           manifest = json.loads((root / 'manifest.json').read_text(encoding='utf-8'))
           verification = json.loads(Path('/tmp/verification.json').read_text(encoding='utf-8'))
           evidence = {
-              'producer_repository': 'blakinio/Oteryn-v2',
+              'producer_repository': 'Oteryn/Oteryn-Game',
               'producer_head_sha': os.environ['PRODUCER_SHA'],
               'migration_repository': 'blakinio/Otheryn',
               'migration_repository_sha': 'e417c5e7c22986bf4acef0495eb47f7b72c97cce',
