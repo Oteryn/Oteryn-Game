@@ -108,6 +108,6 @@ IMPLEMENTATION_WORKERS_STARTED: NO
 IMPLEMENTATION_AUTHORITY_OUTSIDE_LIVE_COORDINATOR_ALLOCATION: NONE
 ```
 
-After explicit coordinator invocation, the live coordinator may create bounded implementation allocations in `blakinio/Oteryn-v2` under repository governance. Direct workers remain read-only until allocated. Production/protected-environment/live data/session/account, Platform, external-repository, entitlement, Reference-parity and owner-funded-AI authority remain separately governed.
+After explicit coordinator invocation, the live coordinator may create bounded implementation allocations in `Oteryn/Oteryn-Game` under repository governance. Direct workers remain read-only until allocated. Production/protected-environment/live data/session/account, Platform, external-repository, entitlement, Reference-parity and owner-funded-AI authority remain separately governed.
 
 `PRODUCTION_AUTHORITY: NONE`

@@ -29,7 +29,6 @@ Architecture acceptance does not imply implementation or production activation. 
 
 - [Agent governance index](docs/agents/README.md)
 - [Root agent instructions](AGENTS.md)
-- [Mandatory bootstrap override](AGENTS.override.md)
 - [Repository and planned workspace map](docs/agents/REPOSITORY_MAP.md)
 - [Build and test matrix](docs/agents/BUILD_TEST_MATRIX.md)
 

@@ -7,8 +7,8 @@
 - Date: 2026-08-07
 - Coordination ID: `OTV2-CHARACTER-LIFECYCLE-BOUNDARY`
 - Canonical owner-side ADR: `docs/architecture/ADR-0012-character-authority-and-platform-lifecycle-boundary.md`
-- Producer/authority repository: `blakinio/Oteryn-v2`
-- Consumer/orchestrator repository: `blakinio/Oteryn-Platform`
+- Producer/authority repository: `Oteryn/Oteryn-Game`
+- Consumer/orchestrator repository: `Oteryn/Oteryn-Platform`
 
 This contract defines semantic ownership and integration obligations. It deliberately does not select an HTTP/RPC framework, protobuf/JSON schema, transport, framing, authentication envelope or `protocol-oteryn` wire representation.
 

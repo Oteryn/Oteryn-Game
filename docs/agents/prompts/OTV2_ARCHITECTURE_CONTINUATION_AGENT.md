@@ -5,7 +5,7 @@ prompt_id: OTV2-ARCHITECTURE-CONTINUATION
 prompt_mode: COORDINATE
 working_mode: ARCHITECTURE_ANALYSIS_ONLY
 repository_write_allowlist:
-  - blakinio/Oteryn-v2
+  - Oteryn/Oteryn-Game
 runtime_implementation_authorized: false
 short_invocation: "Oteryn: architektura"
 ```
@@ -60,12 +60,12 @@ Ten prompt zezwala na:
 
 - odczyt repozytorium i zewnętrznych dowodów potrzebnych do analizy architektonicznej;
 - przegląd PR Oteryn-v2 oraz ściśle ograniczoną higienę PR opisaną poniżej;
-- zmiany dokumentacyjne/task/branch/PR w `blakinio/Oteryn-v2`, jeśli są konieczne do zapisania zaakceptowanej przez właściciela decyzji architektonicznej lub jawnie zleconej zmiany promptu/governance.
+- zmiany dokumentacyjne/task/branch/PR w `Oteryn/Oteryn-Game`, jeśli są konieczne do zapisania zaakceptowanej przez właściciela decyzji architektonicznej lub jawnie zleconej zmiany promptu/governance.
 
 Ten prompt nie zezwala na:
 
 - implementację runtime'u lub kodu produkcyjnego bez osobnego, jednoznacznego polecenia właściciela;
-- zapisy do repozytoriów innych niż `blakinio/Oteryn-v2` bez osobnej autoryzacji dla konkretnego repozytorium;
+- zapisy do repozytoriów innych niż `Oteryn/Oteryn-Game` bez osobnej autoryzacji dla konkretnego repozytorium;
 - deployment produkcyjny, zatwierdzanie chronionych środowisk, live mutation baz danych/sesji/kont, dostęp do sekretów ani obchodzenie zabezpieczeń.
 
 Akceptacja architektury nie jest zgodą na implementację runtime'u.
@@ -74,7 +74,7 @@ Akceptacja architektury nie jest zgodą na implementację runtime'u.
 
 Przed rozpoczęciem właściwej rozmowy zapoznaj się z aktualnym stanem `main` repozytorium:
 
-`blakinio/Oteryn-v2`
+`Oteryn/Oteryn-Game`
 
 Nie opieraj się na pamięci z wcześniejszych sesji, jeżeli można zweryfikować stan repozytorium.
 

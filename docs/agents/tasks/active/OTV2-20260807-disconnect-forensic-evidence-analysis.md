@@ -5,7 +5,7 @@ task_id: OTV2-20260807-disconnect-forensic-evidence-analysis
 title: Continue Disconnect Protection forensic evidence architecture
 mode: ARCHITECTURE_ANALYSIS_ONLY
 status: owner_accepted_checkpoint_current
-repository: blakinio/Oteryn-v2
+repository: Oteryn/Oteryn-Game
 base_branch: main
 owner: Oteryn project owner
 updated_at: 2026-08-07T19:07:00+02:00

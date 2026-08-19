@@ -22,7 +22,7 @@
       "coordination_id": "OTS-20260804-native-protocol-selection",
       "contract_name": "oteryn-native-gameplay-v1",
       "status": "LOCKED",
-      "canonical_repository": "blakinio/Oteryn-Platform",
+      "canonical_repository": "Oteryn/Oteryn-Platform",
       "canonical_commit": "c0b8703d326a04b43ae8e06f6192b0cb91c859b7",
       "canonical_contract_revision": 2,
       "schema_revision": 2,
@@ -39,17 +39,17 @@
       "platform_side_reconciliation": "PENDING_SEPARATE_EXPLICIT_AUTHORIZATION",
       "producers": [
         {
-          "repository": "blakinio/Oteryn-Platform",
+          "repository": "Oteryn/Oteryn-Platform",
           "status": "EXTERNAL_MERGED_REVISION_RUNTIME_PRODUCER_DISABLED_RECONCILIATION_REQUIRED"
         },
         {
-          "repository": "blakinio/Oteryn-v2",
+          "repository": "Oteryn/Oteryn-Game",
           "status": "HISTORICAL_RECORD_ONLY_NOT_IMPLEMENTED_FROM_THIS_EXTERNAL_REVISION"
         }
       ],
       "consumers": [
         {
-          "repository": "blakinio/Oteryn-v2",
+          "repository": "Oteryn/Oteryn-Game",
           "status": "RECONCILIATION_INPUT_ONLY_NOT_IMPLEMENTED_FROM_THIS_EXTERNAL_REVISION"
         }
       ],
@@ -68,7 +68,7 @@
       "coordination_id": "OTV2-NATIVE-FOUNDATION",
       "contract_name": "protocol-oteryn-v1-foundation",
       "status": "LOCKED",
-      "canonical_repository": "blakinio/Oteryn-v2",
+      "canonical_repository": "Oteryn/Oteryn-Game",
       "canonical_commit": "769ecd2ce2dfe0a7644d8dc1d67c54d40da5d202",
       "canonical_contract_revision": 1,
       "canonical_contract_path": "docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md",
@@ -90,17 +90,17 @@
       },
       "producers": [
         {
-          "repository": "blakinio/Oteryn-v2",
+          "repository": "Oteryn/Oteryn-Game",
           "status": "CANONICAL_CONTRACT_ACCEPTED_RUNTIME_NOT_IMPLEMENTED"
         },
         {
-          "repository": "blakinio/Oteryn-Platform",
+          "repository": "Oteryn/Oteryn-Platform",
           "status": "PENDING_SEPARATELY_AUTHORIZED_RECONCILIATION"
         }
       ],
       "consumers": [
         {
-          "repository": "blakinio/Oteryn-v2",
+          "repository": "Oteryn/Oteryn-Game",
           "status": "CANONICAL_CONTRACT_ACCEPTED_CLIENT_SERVER_RUNTIME_NOT_IMPLEMENTED"
         }
       ],

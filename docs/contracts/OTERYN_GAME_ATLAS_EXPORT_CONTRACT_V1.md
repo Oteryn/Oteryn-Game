@@ -3,7 +3,7 @@
 - Contract ID: `oteryn-game-atlas-export-v1`
 - Semantic revision: `1`
 - Coordination ID: `OTERYN-GAME-ATLAS-V1`
-- Canonical owner: `Oteryn-Game` (current source lineage: `blakinio/Oteryn-v2`)
+- Canonical owner: `Oteryn-Game` (current source lineage: `Oteryn/Oteryn-Game`)
 - Consumer: future `Oteryn-Atlas`
 - Status: **PROPOSED until this exact contract content is merged to protected `main`; ACCEPTED thereafter unless explicitly superseded**
 - Runtime implementation status: `NOT_IMPLEMENTED`
@@ -19,10 +19,10 @@ It intentionally freezes the smallest durable semantics required before Game exp
 
 This contract is derived from the following exact repository evidence:
 
-- `blakinio/Oteryn-Platform@b549e42041eda426bbf88db469862a92df930860`
+- `Oteryn/Oteryn-Platform@b549e42041eda426bbf88db469862a92df930860`
   - `docs/architecture/adr/0041-ecosystem-repository-authority-contracts-and-atlas-integration.md`
   - current temporary cross-repository authority for this topology scope;
-- `blakinio/Oteryn-v2@afcbf8585ba23c506242978c38b2b51f9ea6f1b6`
+- `Oteryn/Oteryn-Game@afcbf8585ba23c506242978c38b2b51f9ea6f1b6`
   - `docs/architecture/ADR-0005-native-world-format-and-oteryn-studio.md`
   - accepted native World/Content, stable identity and bounded legacy-import authority;
 - `blakinio/Otheryn@39cb2ce4ff427e7c3760eb6112b45efc0c1f73b8`

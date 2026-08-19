@@ -3,7 +3,7 @@
 - Contract ID: `oteryn-crystalserver-legacy-spatial-import-v1`
 - Semantic revision: `1`
 - Coordination ID: `OTERYN-GAME-ATLAS-V1-LEGACY-IMPORT`
-- Canonical owner: `Oteryn-Game` (current source lineage: `blakinio/Oteryn-v2`)
+- Canonical owner: `Oteryn-Game` (current source lineage: `Oteryn/Oteryn-Game`)
 - Status: **PROPOSED until this exact content is merged to protected `main`; ACCEPTED thereafter unless explicitly superseded**
 - Runtime implementation status: `NOT_IMPLEMENTED`
 - Production status: `NOT_ENABLED`

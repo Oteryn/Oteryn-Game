@@ -2,7 +2,7 @@
 
 - Status: Owner-accepted architecture-working policy
 - Date: 2026-08-07
-- Applies to: architecture analysis, ADRs, contracts, decision backlogs, continuation agents and architecture PR review in `blakinio/Oteryn-v2`
+- Applies to: architecture analysis, ADRs, contracts, decision backlogs, continuation agents and architecture PR review in `Oteryn/Oteryn-Game`
 - Does not authorize: runtime implementation, production changes or external-repository writes
 
 ## Purpose
