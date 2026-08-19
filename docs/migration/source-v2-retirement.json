@@ -5,18 +5,6 @@
       "source_pr": 317,
       "target_issue": 19,
       "target_pr": 20
-    },
-    {
-      "head": "c522807b5f269ea3c2d4e2943d7670e45ecb84cf",
-      "source_pr": 315,
-      "target_issue": 18,
-      "target_pr": 21
-    },
-    {
-      "head": "5befbce9cd6ac70e91418af11c271fcd3db8d613",
-      "source_pr": 316,
-      "target_issue": 18,
-      "target_pr": 22
     }
   ],
   "branches": [
@@ -553,8 +541,31 @@
     "retirement_target": "ARCHIVED_REFERENCE_ONLY"
   },
   "target": {
-    "main_sha_at_reconciliation": "63a6cb8cb3e69b7c2f792475f24093e90bd7fd81",
+    "main_sha_at_reconciliation": "9e594ceb292cb2a54bf968fb057501b743443728",
     "repository": "Oteryn/Oteryn-Game",
-    "source_main_is_target_ancestor": true
-  }
+    "source_main_is_target_ancestor": true,
+    "dependency_transfer_closeout": "Oteryn/Oteryn-Game#24"
+  },
+  "completed_transfer_dispositions": [
+    {
+      "source_prs": [
+        315,
+        316
+      ],
+      "source_heads": [
+        "c522807b5f269ea3c2d4e2943d7670e45ecb84cf",
+        "5befbce9cd6ac70e91418af11c271fcd3db8d613"
+      ],
+      "superseded_target_prs": [
+        21,
+        22
+      ],
+      "superseded_target_state": "CLOSED_WITHOUT_MERGE",
+      "replacement_target_pr": 24,
+      "replacement_head": "0332990f915b5ae61ef0ab7852c86b0d6c1e3e59",
+      "replacement_merge_sha": "9e594ceb292cb2a54bf968fb057501b743443728",
+      "replacement_merged_at": "2026-08-19T09:27:44Z",
+      "disposition": "SPLIT_CODEQL_BUMPS_SUPERSEDED_BY_ATOMIC_SAME_MAJOR_PIN_UPDATE"
+    }
+  ]
 }
