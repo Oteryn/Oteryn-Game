@@ -78,7 +78,7 @@ Independent review: **NOT_REQUIRED** under the trusted-base risk triggers. This 
 
 ## Cross-repository hand-off
 
-Atlas PR #13 consumed the verified local generation hand-off and was subsequently squash-merged to `Oteryn/Oteryn-Atlas` main as `6a1ca4f4a20182b84aca0a824d038e6d086fa959`.
+Atlas PR #13 consumed the verified local generation hand-off and was subsequently squash-merged to `Oteryn/Oteryn-Atlas` main as `6a1ca4f4d2517bca40e774a7005d6bfefe448e7b`.
 
 Canonical local compiler input remains:
 
