@@ -8,6 +8,7 @@
 - The pull request title becomes the squash-commit title and the pull request body becomes its canonical message.
 - `Merge gate / validate` is the single stable required status check for the current exact PR head and the branch must be up to date.
 - The aggregate merge gate always requires repository/agent governance, Dependency Review and CodeQL, and additionally requires the full Rust policy/Linux/Windows/supply-chain set when Rust/workspace-sensitive paths change.
+- PR metadata edits automatically re-run the exact-head aggregate gate through the standard `pull_request: edited` event. The gate re-resolves live PR metadata and fails closed if the PR head moved after the event was recorded, so title/body repairs do not require `workflow_dispatch` and a previously green required status cannot silently cover later invalid metadata.
 - If an initial PR event is suppressed and no run exists to rerun, recover without changing the head SHA: close and reopen the unchanged pull request. The standard `pull_request: reopened` event re-runs the gate in the ordinary pull-request trust context, and the scope job re-resolves live PR metadata before any repository code executes.
 - Changed-file classification fails closed when GitHub reports more than the 3,000-file files-API cap or when the enumerated file count does not exactly match the pull request metadata.
 - Review conversations must be resolved.
@@ -16,7 +17,7 @@
 - Code Owner approvals are dismissed when new reviewable commits are pushed, so an approval cannot silently cover a later control-plane head.
 - GitHub-generated squash commits are verified. A strict signed-commit rule is deferred because it would prevent the maintainer from squash-merging third-party-authored PRs such as Dependabot updates.
 
-The retained `Agent governance / validate` workflow remains available during the transition to the aggregate gate and for explicit manual governance validation, but it is not the canonical required status after the repository policy is applied.
+The retained `Agent governance / validate` workflow remains available during the transition to the aggregate gate and for explicit manual governance validation, but it is not the canonical required status after the repository policy is applied. It also handles `pull_request: edited` and reads current PR title/body/base/head state from the GitHub API rather than trusting a frozen event-body snapshot; `workflow_dispatch` is retained only as an exact-head break-glass governance recovery path.
 
 ## Protected merge-authority control plane
 
@@ -56,7 +57,7 @@ The PR title and body form the permanent squash commit. Working commits may be i
 - Each workflow declares least-privilege permissions.
 - External actions are pinned to full commit SHAs.
 - Workflows avoid privileged checkout of untrusted pull-request code.
-- Merge-gate recovery does not use `workflow_dispatch` to execute pull-request code. Recovery uses the normal `pull_request: reopened` event on the unchanged head instead.
+- Merge-gate recovery does not use `workflow_dispatch` to execute pull-request code. Metadata changes use the normal `pull_request: edited` path; a genuinely suppressed initial event can still be recovered with `pull_request: reopened` on an unchanged head.
 - The scope job verifies the live open same-repository PR, target branch, exact event head SHA and complete changed-file enumeration before downstream jobs check out the validated head.
 - Dependency Review receives explicit base/head revisions from the validated PR context.
 - Repository-administration changes run only after a protected merge to `main` or an explicit manual dispatch and require `REPO_ADMIN_TOKEN`.

@@ -19,6 +19,11 @@ on:
       - 'docs/migration/**'
       - '.github/workflows/rust.yml'
       - '.github/workflows/merge-gate.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'crates/simulation-determinism/**'
   workflow_dispatch:
 
 permissions:
@@ -31,13 +36,20 @@ concurrency:
 jobs:
   policy:
     name: Rust / policy and metadata
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - name: Check out repository
+      - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
+
+      - name: Verify exact revision
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
@@ -67,31 +79,42 @@ jobs:
 
       - name: Verify production closure negatives
         run: |
-          cargo +1.94.0 tree --locked -p oteryn-client --edges normal,build > production-tree.txt
+          for package in oteryn-client oteryn-game-server; do
+            cargo +1.94.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
+          done
           python - <<'PY'
           from pathlib import Path
-          tree = Path('production-tree.txt').read_text(encoding='utf-8')
+
           forbidden = (
               'protocol-canary', 'protocol-core', 'protocol-oteryn',
               'transport', 'game-session', 'oteryn-client-domain',
               'oteryn-client-simulation', 'oteryn-synthetic-assets',
               'oteryn-test-support', 'oteryn-synthetic-client-harness',
           )
-          found = [name for name in forbidden if name in tree]
-          if found:
-              raise SystemExit(f'forbidden production closure entries: {found}')
-          print('production closure: PASS')
+          for package in ('oteryn-client', 'oteryn-game-server'):
+              tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
+              found = [name for name in forbidden if name in tree]
+              if found:
+                  raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
+              print(f'{package} production closure: PASS')
           PY
 
   linux:
     name: Rust / Linux shared workspace
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
-      - name: Check out repository
+      - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
+
+      - name: Verify exact revision
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
@@ -108,15 +131,29 @@ jobs:
       - name: Run synthetic harness
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
 
+      - name: Smoke native game-server bootstrap
+        run: cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
+
   windows:
     name: Rust / Windows pre-native client
+    if: github.event_name != 'pull_request'
     runs-on: windows-2025
     timeout-minutes: 60
     steps:
-      - name: Check out repository
+      - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
+
+      - name: Verify exact revision
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          if ((git rev-parse HEAD).Trim() -ne $env:EXPECTED_SHA) {
+            throw "checked-out revision does not match expected exact SHA"
+          }
 
       - name: Install Rust toolchain
         shell: pwsh
@@ -138,15 +175,26 @@ jobs:
         shell: pwsh
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
 
+      - name: Verify deterministic simulation golden fixtures
+        shell: pwsh
+        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
+
   supply-chain:
     name: Rust / supply chain
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
-      - name: Check out repository
+      - name: Check out exact revision
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
+
+      - name: Verify exact revision
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Check advisories licenses bans and sources
         uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # cargo-deny 0.20.2
@@ -154,3 +202,32 @@ jobs:
           rust-version: '1.94.0'
           command: check
           arguments: --all-features
+
+  sim-windows-golden:
+    name: Rust / Windows SIM golden exact head
+    if: github.event_name == 'pull_request'
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact pull request head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+
+      - name: Verify exact pull request head
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if ((git rev-parse HEAD).Trim() -ne $env:EXPECTED_SHA) {
+            throw "checked-out revision does not match exact pull request head"
+          }
+
+      - name: Install Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install 1.94.0 --profile minimal
+
+      - name: Verify deterministic simulation golden fixtures
+        shell: pwsh
+        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc

@@ -1,13 +1,14 @@
 {
   "schema_version": "1.0",
-  "repository": "blakinio/Oteryn-v2",
+  "repository": "Oteryn/Oteryn-Game",
   "default_branch": "main",
   "task_prefix": "OTV2",
   "merge_method": "squash",
   "write_allowlist": [
-    "blakinio/Oteryn-v2"
+    "Oteryn/Oteryn-Game"
   ],
   "external_read_only_repositories": [
+    "blakinio/Oteryn-v2",
     "blakinio/Oteryn-Platform",
     "blakinio/Otheryn",
     "blakinio/otclient",

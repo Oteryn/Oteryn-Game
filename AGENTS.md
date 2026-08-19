@@ -1,4 +1,4 @@
-# Oteryn v2 Agent Instructions
+# Oteryn Game Agent Instructions
 
 ## Owner-funded AI and credential budget — highest priority
 
@@ -10,6 +10,17 @@
 - When a genuinely independent review can be satisfied by a fresh separate agent/session that did not implement or materially author the change, prefer that mechanism by default instead of Codex.
 - If an agent judges that Codex would be materially more efficient or effective for a particular implementation, review or audit, the agent MUST first inform the owner, explain the expected advantage, and provide a ready-to-run bounded Codex prompt for that exact task. The agent MUST NOT invoke Codex until the owner explicitly authorizes that exact use.
 - Never weaken, bypass, or falsely mark a review/validation gate as satisfied merely because owner-funded AI use is forbidden.
+
+
+## Central Spark PR pre-review — standing owner authorization
+
+- The owner explicitly authorizes the central controller in `blakinio/github-projects-control` to perform recurring advisory PR pre-review for this repository using exactly `gpt-5.3-codex-spark` through ChatGPT-managed Codex authentication on its trusted private runner. This is a standing, bounded repository-automation exception to the owner-funded AI restriction above; it does **not** authorize repository agents to invoke Codex, OpenAI API, hosted Code Review, or any other AI service themselves.
+- The central controller may inspect only bounded PR metadata/diff text and may post only concrete P0/P1 findings. A clean Spark pass is intentionally silent. Target PR code is not checked out or executed by the Spark runner.
+- Keep a PR Draft while implementation is still in progress. Mark it Ready only when this repository's normal readiness rules already permit that transition. The controller considers only eligible ready, internal, non-bot, exact-head, green-CI, bounded changes.
+- Do not automatically request `@codex review`, enable hosted Codex Automatic Reviews, invoke Codex CLI, use `OPENAI_API_KEY`, or select another model/provider as a fallback. Any such direct AI use still requires separate explicit owner authorization for the current task/use.
+- Spark pre-review is advisory and does not replace self-review, required independent review, required checks, E2E/runtime evidence, branch protection, or any merge gate. Never infer that Spark ran or passed merely because no comment appeared. Do not delay or weaken a repository merge gate solely to manufacture Spark evidence.
+- If the central controller posts a P0/P1 finding before merge, treat it as an unresolved material review finding: address or explicitly disposition it under the repository's normal review rules, then rerun any validation invalidated by the resulting change.
+- `no-spark-review` opts a PR out of the central controller. `spark-review` may force consideration of an otherwise ignored path class, but it never bypasses draft, fork, bot, CI, exact-head, size, model, or safety fences.
 
 ## Instruction order
 
@@ -24,15 +35,15 @@ When instructions overlap, follow the more restrictive safety, ownership and val
 
 ## Repository allowlist — highest priority
 
-- Routine autonomous writes authorized by this repository policy are limited to `blakinio/Oteryn-v2`.
-- `blakinio/Oteryn-Platform`, `blakinio/Otheryn`, `blakinio/otclient`, Canary repositories and all other repositories are read-only unless the owner explicitly authorizes a write task for that exact repository.
-- Before every GitHub write, verify `repository_full_name == blakinio/Oteryn-v2` unless the current owner instruction explicitly authorizes another repository.
+- Routine autonomous writes authorized by this repository policy are limited to `Oteryn/Oteryn-Game`.
+- `blakinio/Oteryn-v2` is the preserved read-only legacy/migration source. `blakinio/Oteryn-Platform`, `blakinio/Otheryn`, `blakinio/otclient`, Canary repositories and all other repositories are read-only unless the owner explicitly authorizes a write task for that exact repository.
+- Before every GitHub write, verify `repository_full_name == Oteryn/Oteryn-Game` unless the current owner instruction explicitly authorizes another repository.
 - Cross-repository work requires one task, branch and PR per repository plus a shared coordination ID and explicit rollout order.
 - Never use a governance edit on an unmerged branch to expand the current task's authority.
 
 ## Product boundary
 
-Oteryn v2 is the greenfield native Rust gameplay stack:
+Oteryn Game is the canonical native Rust gameplay stack, migrated with preserved Git history from `blakinio/Oteryn-v2`:
 
 - an authoritative Rust game server;
 - a native Rust game client;
@@ -42,7 +53,7 @@ Oteryn v2 is the greenfield native Rust gameplay stack:
 
 The existing Oteryn Platform remains the external source of truth for web portal, Identity, OAuth/PKCE, Game Login Tickets, Game Gateway and World Registry until a separately accepted migration changes that boundary.
 
-Otheryn C++ and the current otclient repository are reference/migration sources, not implicit runtime dependencies. `protocol-canary` and legacy Tibia packet compatibility are not part of the target Oteryn v2 runtime.
+Otheryn C++ and the current otclient repository are reference/migration sources, not implicit runtime dependencies. `protocol-canary` and legacy Tibia packet compatibility are not part of the target Oteryn Game runtime.
 
 ## Non-negotiable architecture
 
@@ -107,7 +118,7 @@ Never push feature, fix or documentation task work directly to `main`.
 
 Merge only when:
 
-- base and head repositories are `blakinio/Oteryn-v2` and base is `main`;
+- base and head repositories are `Oteryn/Oteryn-Game` and base is `main`;
 - the changed-file list is within declared scope;
 - acceptance criteria and observable outcomes are satisfied;
 - required focused/component/E2E checks pass;
