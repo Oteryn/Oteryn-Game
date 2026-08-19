@@ -63,3 +63,11 @@ Before this adapter is accepted for the full-world hand-off:
 - no final Atlas publication format;
 - no pixel redistribution decision;
 - no claim that the old bounded physical JSONL package is a permanent serializer.
+
+## Explicit unresolved appearance handling
+
+Full-world qualification found one visible source record whose server ID (`2141`) is absent from the exact pinned 15.32 object-appearance catalogue. The producer does not fail open, delete the presentation, or substitute another appearance/sprite.
+
+For such a record it preserves the normal stable presentation identity and source role, emits `appearance_source_id` unchanged, sets `presentation_resolution_state=UNRESOLVED_APPEARANCE`, and emits an empty `resolved_primitives` list. Resolved records continue to delegate byte-for-byte to the qualified DYN producer path.
+
+The qualified full-world run found exactly one such presentation at legacy position `(33572,32528,14)`. This fact is evidence for the pinned source pair only and must not be generalized to other map/asset revisions.
