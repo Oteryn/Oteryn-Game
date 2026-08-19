@@ -51,7 +51,7 @@ Create paths only when an accepted implementation task owns them. Candidate crat
 |---|---|---|
 | `Oteryn/Oteryn-Game` | canonical native Rust gameplay stack and Oteryn Studio | read/write within task scope |
 | `blakinio/Oteryn-v2` | preserved legacy/migration source for pre-organization history and provenance | read-only |
-| `blakinio/Oteryn-Platform` | web/Identity/Game Gateway/World Registry producer | read-only unless separately authorized |
+| `Oteryn/Oteryn-Platform` | web/Identity/Game Gateway/World Registry producer | read-only unless separately authorized |
 | `blakinio/Otheryn` | C++ behavioral/content reference and migration oracle | read-only unless separately authorized |
 | `blakinio/otclient` | existing client/Rust implementation and migration source; FND-01 must inventory and classify it at an exact SHA before designing replacements | read-only unless separately authorized |
 | Remere's Map Editor | OTBM behavior/fixture/reference tool; not a target dependency | external evidence only |

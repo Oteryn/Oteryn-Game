@@ -5,7 +5,7 @@ task_id: OTV2-20260805-foundation-preimplementation-contracts
 title: Coordinate Oteryn v2 foundation contracts and staged implementation gates
 mode: COORDINATE
 status: ready_for_owner_initiated_implementation
-repository: blakinio/Oteryn-v2
+repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
 pr: null

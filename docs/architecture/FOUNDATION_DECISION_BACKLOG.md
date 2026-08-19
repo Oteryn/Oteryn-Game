@@ -50,7 +50,7 @@ The following are no longer open questions:
    - one project-owned gameplay protocol: `protocol-oteryn`.
 
 2. **Repository ownership and migration order**
-   - the existing Rust client moved from `blakinio/otclient/oteryn-client` into `blakinio/Oteryn-v2`;
+   - the existing Rust client moved from `blakinio/otclient/oteryn-client` into `Oteryn/Oteryn-Game`;
    - client, server, shared Rust types and `protocol-oteryn` have one canonical repository/workspace boundary;
    - `blakinio/otclient` is migration/history evidence and its source marker is complete;
    - `protocol-canary` is not part of the target runtime;
@@ -62,7 +62,7 @@ The following are no longer open questions:
 3. **Identity and Game Gateway boundary**
    - Platform Identity remains the reusable-credential, OAuth/PKCE, MFA and account-security authority;
    - Oteryn v2 does not introduce a second classic login server or password/OAuth authority;
-   - Game Gateway remains in `blakinio/Oteryn-Platform`;
+   - Game Gateway remains in `Oteryn/Oteryn-Platform`;
    - the initial Game Gateway remains implemented in Go;
    - the Rust game server accepts bounded pre-admission material and owns gameplay admission/runtime state;
    - canonical `GameSessionId` is game-domain-owned and issued only after successful authoritative admission.

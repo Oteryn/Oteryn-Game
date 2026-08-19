@@ -2,7 +2,7 @@
 
 ## Workflow
 
-1. Read `AGENTS.md`, `AGENTS.override.md`, and the nearest governing instructions.
+1. Read `AGENTS.md` and the nearest governing instructions.
 2. Search existing tasks, issues, pull requests, ADRs, contracts, and code before creating a new abstraction.
 3. For substantial work, create a bounded `OTV2-*` task record and a dedicated branch.
 4. Open a pull request to `main`; never push feature, fix, architecture, or documentation work directly to `main`.

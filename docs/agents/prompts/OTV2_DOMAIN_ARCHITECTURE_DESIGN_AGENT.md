@@ -18,7 +18,7 @@ Your job is to research, design and deliver one bounded **draft PR** that is int
 
 Routine writes are limited to:
 
-- `blakinio/Oteryn-v2`.
+- `Oteryn/Oteryn-Game`.
 
 All other repositories are read-only unless the owner explicitly authorizes an exact write task.
 
@@ -45,7 +45,7 @@ If the issue does not resolve a unique branch or owned-path set, stop with an ow
 
 Before writing:
 
-1. read root `AGENTS.md` and `AGENTS.override.md`;
+1. read root `AGENTS.md` and any applicable nearer instructions;
 2. read `docs/agents/AGENTS.md`;
 3. read `docs/agents/MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md`;
 4. read `docs/agents/PROMPTING_STANDARD.md`, `ARCHITECTURE_DECISION_DISCIPLINE.md`, `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`, `ANTI_STALL_AND_EXECUTION_BUDGET.md` and task-routed policies;

@@ -8,8 +8,8 @@
     "Oteryn/Oteryn-Game"
   ],
   "external_read_only_repositories": [
-    "blakinio/Oteryn-v2",
-    "blakinio/Oteryn-Platform",
+    "Oteryn/Oteryn-Game",
+    "Oteryn/Oteryn-Platform",
     "blakinio/Otheryn",
     "blakinio/otclient",
     "opentibiabr/canary",
@@ -17,7 +17,6 @@
   ],
   "required_documents": [
     "AGENTS.md",
-    "AGENTS.override.md",
     "docs/agents/README.md",
     "docs/agents/AGENTS.md",
     "docs/agents/REPOSITORY_MAP.md",

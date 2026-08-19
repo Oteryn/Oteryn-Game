@@ -2,7 +2,7 @@
 
 - Programme ID: `OTV2-NATIVE-IMPLEMENTATION`
 - Status: `RELEASE_CANDIDATE`; becomes canonical/released only when PR #314 lawfully merges to `main`.
-- Canonical repository: `blakinio/Oteryn-v2`.
+- Canonical repository: `Oteryn/Oteryn-Game`.
 - Reconciled architecture base: `main@3ed4ca602f389d5a8549e0fc19dcc688a7b7a78c`.
 - External repositories: read-only unless separately owner-authorized.
 - Production/protected-environment/live-data authority: **NONE**.

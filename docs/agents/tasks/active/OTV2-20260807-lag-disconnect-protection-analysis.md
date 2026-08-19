@@ -5,7 +5,7 @@ task_id: OTV2-20260807-lag-disconnect-protection-analysis
 title: Continue Lag / Disconnect Protection architecture analysis
 mode: ARCHITECTURE_ANALYSIS_ONLY
 status: owner_accepted_checkpoint_current
-repository: blakinio/Oteryn-v2
+repository: Oteryn/Oteryn-Game
 base_branch: main
 owner: Oteryn project owner
 updated_at: 2026-08-07T18:01:00+02:00
