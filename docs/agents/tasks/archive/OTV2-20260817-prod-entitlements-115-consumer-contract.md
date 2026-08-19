@@ -11,6 +11,7 @@ target_issue: 19
 target_pr: 20
 reviewed_head: 0dfa0c5cdcd811c63d6926da166550712dfb59fc
 accepted_merge: d40a225e5fedca0396f34b4f2b6c1e343161e6ff
+accepted_contract_path: docs/architecture/PROD-ENTITLEMENTS-01_GAME_CONSUMER_ENFORCEMENT_CONTRACT_CANDIDATE.md
 accepted_contract_blob: 1cb0ab9f1c774746831d1676da415ad39c9cb399
 producer_repository: Oteryn/Oteryn-Platform
 producer_revision: afaa6d1d8340e44b1152b62d6d27e5fd1649804a
@@ -25,7 +26,7 @@ owned_paths: []
 
 The migrated Game-side `PROD-ENTITLEMENTS-01` consumer/enforcement architecture was independently reviewed on the exact final target head and accepted through PR #20. The source candidate semantics were preserved byte-for-byte while the branch was reconciled with current canonical Game `main`.
 
-Target-side canonical acceptance is recorded in `docs/architecture/PROD-ENTITLEMENTS-01_GAME_CONSUMER_ENFORCEMENT_CONTRACT_ACCEPTANCE.md`. The historical migrated `*_CANDIDATE.md` file remains unchanged as provenance; the acceptance overlay is the current lifecycle authority.
+The historical migrated `*_CANDIDATE.md` path and its internal worker-era header remain unchanged intentionally as migration provenance. Target-side lifecycle acceptance is established by completed Issue #19, merged PR #20, the exact accepted blob and the independent exact-head review recorded above; this closeout does not create a second copy of the contract semantics.
 
 The accepted architecture remains fail-closed and paper-only. It authorizes no entitlement runtime implementation, product activation, persistence migration, transport/crypto selection, payment operation, production deployment or live state mutation.
 
