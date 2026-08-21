@@ -74,6 +74,11 @@
       "provenance": {
         "authority": "Oteryn/Oteryn-Game",
         "identity_state": "UNRESOLVED",
+        "legacy_parser_blobs": {
+          "tools/otbm_atlas/assets.py": "25ed2400813bb3ccdc54482967ed05197eb1a850",
+          "tools/otbm_atlas/nodefile.py": "bed6f7a803d9de485c1f03cbdca4be0cb1521d30",
+          "tools/otbm_atlas/semantic.py": "a11343a472145aee4d9cf65c6ce28b3e4a71a2b3"
+        },
         "legacy_repository": "blakinio/Otheryn",
         "legacy_repository_sha": "e417c5e7c22986bf4acef0495eb47f7b72c97cce",
         "source_family": "town",
@@ -82,6 +87,6 @@
     }
   ],
   "schema_version": 1,
-  "semantic_digest": "sha256:1905e91dceedb9a758f015685963097a5fb566af4060c702b2e476ce51ddd619",
+  "semantic_digest": "sha256:753303678a9fb90336040f5741c72edefa45502d2621c54dc70dfa5d16ae7663",
   "semantic_revision": 1
 }
