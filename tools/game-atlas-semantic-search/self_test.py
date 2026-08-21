@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -37,6 +38,21 @@ def fixture_creatures() -> dict[str, object]:
             "resolution_state": "RESOLVED",
         }],
     }
+
+
+def validate_acceptance_fixture() -> None:
+    path = Path(__file__).with_name("fixtures") / "acceptance-source.json"
+    fixture = json.loads(path.read_text(encoding="utf-8"))
+    expected = fixture.pop("semantic_digest")
+    actual = "sha256:" + hashlib.sha256(module.canonical_bytes(fixture)).hexdigest()
+    assert actual == expected == "sha256:1905e91dceedb9a758f015685963097a5fb566af4060c702b2e476ce51ddd619"
+    assert fixture["input_floor_aliases"]["7"] == -7
+    sam = next(record for record in fixture["records"] if record["label"] == "Sam")
+    thais = next(record for record in fixture["records"] if record["label"] == "Thais")
+    assert sam["position"] == {"x": 32361, "y": 32198, "floor": -7}
+    assert "shop" in sam["capabilities"]
+    assert thais["position"] == {"x": 32369, "y": 32241, "floor": -7}
+    assert thais["bounds"] is None
 
 
 def run() -> None:
@@ -81,6 +97,7 @@ def run() -> None:
             pass
         else:
             raise AssertionError("unsupported producer contract did not fail closed")
+    validate_acceptance_fixture()
 
 
 if __name__ == "__main__":
