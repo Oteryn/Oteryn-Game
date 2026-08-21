@@ -99,7 +99,7 @@ Producer requirements:
 - supported kinds only;
 - explicit source provenance;
 - no AID/UID promotion;
-- fail closed on unsupported source contract, malformed records or pinned-map digest mismatch.
+- fail closed on unsupported source contract, malformed records, pinned-map digest mismatch, or pinned legacy parser blob mismatch.
 
 Atlas consumer requirements:
 
@@ -114,6 +114,11 @@ Atlas consumer requirements:
 
 - `blakinio/Otheryn@e417c5e7c22986bf4acef0495eb47f7b72c97cce`
 - `world.otbm` SHA-256 `3bd40d14fefec41f24c4b3ae879e420be1a831ef55b95dcbec721e587a09b034`
+- `tools/otbm_atlas/semantic.py` Git blob `a11343a472145aee4d9cf65c6ce28b3e4a71a2b3`
+- `tools/otbm_atlas/nodefile.py` Git blob `bed6f7a803d9de485c1f03cbdca4be0cb1521d30`
+- `tools/otbm_atlas/assets.py` Git blob `25ed2400813bb3ccdc54482967ed05197eb1a850`
 - existing Game `static-creatures-v1` producer merged on `main`
+
+The exporter verifies the exact parser blobs above before it interprets Town/Waypoint records. This keeps the declared legacy revision reproducible and prevents a different checkout from silently inheriting the pinned provenance.
 
 This profile grants no asset redistribution rights and no production/deployment authority.
