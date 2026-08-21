@@ -24,6 +24,11 @@ LEGACY_IMPORT_PROFILE = "oteryn-crystalserver-legacy-spatial-import-v1"
 LEGACY_REPOSITORY = "blakinio/Otheryn"
 LEGACY_REPOSITORY_SHA = "e417c5e7c22986bf4acef0495eb47f7b72c97cce"
 MAP_SHA256 = "3bd40d14fefec41f24c4b3ae879e420be1a831ef55b95dcbec721e587a09b034"
+LEGACY_PARSER_BLOBS = {
+    "tools/otbm_atlas/semantic.py": "a11343a472145aee4d9cf65c6ce28b3e4a71a2b3",
+    "tools/otbm_atlas/nodefile.py": "bed6f7a803d9de485c1f03cbdca4be0cb1521d30",
+    "tools/otbm_atlas/assets.py": "25ed2400813bb3ccdc54482967ed05197eb1a850",
+}
 MAX_RECORDS = 250_000
 ALLOWED_KINDS = {"npc", "monster", "town", "waypoint", "poi", "teleport", "house", "quest_area", "mechanic"}
 FLOOR_ALIASES = {str(z): -z for z in range(16)}
@@ -44,6 +49,22 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: handle.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def git_blob_sha1(path: Path) -> str:
+    data = path.read_bytes()
+    header = f"blob {len(data)}\0".encode("ascii")
+    return hashlib.sha1(header + data).hexdigest()
+
+
+def validate_legacy_parser_root(legacy_root: Path) -> None:
+    for relative, expected in LEGACY_PARSER_BLOBS.items():
+        path = legacy_root / relative
+        if not path.is_file():
+            raise ExportError(f"missing pinned legacy parser file: {relative}")
+        actual = git_blob_sha1(path)
+        if actual != expected:
+            raise ExportError(f"legacy parser blob mismatch for {relative}: {actual}")
 
 
 def stable_id(kind: str, *parts: object) -> str:
@@ -94,6 +115,7 @@ def _load_fullworld_producer() -> Any:
 
 
 def extract_navigation(legacy_root: Path, map_path: Path) -> list[dict[str, Any]]:
+    validate_legacy_parser_root(legacy_root)
     if sha256_file(map_path) != MAP_SHA256:
         raise ExportError("canonical world.otbm SHA-256 mismatch")
     fullworld = _load_fullworld_producer()
@@ -194,6 +216,7 @@ def build_source(creature_source: dict[str, Any], npc_root: Path, navigation_rec
                 "source_family": source.get("source_family", kind),
                 "legacy_repository": LEGACY_REPOSITORY,
                 "legacy_repository_sha": LEGACY_REPOSITORY_SHA,
+                "legacy_parser_blobs": LEGACY_PARSER_BLOBS,
                 "world_otbm_sha256": MAP_SHA256,
             },
         ))
