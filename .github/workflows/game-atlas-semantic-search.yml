@@ -1,0 +1,44 @@
+name: Game Atlas semantic search
+
+on:
+  pull_request:
+    paths:
+      - 'tools/game-atlas-semantic-search/**'
+      - 'docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md'
+      - '.github/workflows/game-atlas-semantic-search.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/game-atlas-semantic-search/**'
+      - 'docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md'
+      - '.github/workflows/game-atlas-semantic-search.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-atlas-semantic-search-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semantic-search-source:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Compile exporter
+        run: python -m py_compile tools/game-atlas-semantic-search/export.py tools/game-atlas-semantic-search/self_test.py
+
+      - name: Run deterministic and negative tests
+        run: python tools/game-atlas-semantic-search/self_test.py
+
+      - name: Verify authority boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'semantic-search-source-v1' docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md
+          grep -q 'input_floor_aliases' tools/game-atlas-semantic-search/export.py
+          ! grep -R -E 'action_id|unique_id' tools/game-atlas-semantic-search --include='*.json'
