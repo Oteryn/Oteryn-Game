@@ -76,11 +76,15 @@ jobs:
           data = json.load(open('/tmp/semantic-search-source.json', encoding='utf-8'))
           sam = [record for record in data['records'] if record['kind'] == 'npc' and record['label'].casefold() == 'sam']
           thais = [record for record in data['records'] if record['kind'] == 'town' and record['label'].casefold() == 'thais']
+          assert data['semantic_digest'] == 'sha256:0cc0546aff0e9a8f85716dcbe5babc6043e148e946a448b1d87f083410cb1005'
+          assert data['counts'] == {'records': 88684, 'kinds': {'monster': 87565, 'npc': 1068, 'town': 33, 'waypoint': 18}}
           assert len(sam) == 1, len(sam)
+          assert sam[0]['id'] == 'npc:726487438c8308abf291622a52d91b24', sam[0]
           assert sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}, sam[0]
           assert 'shop' in sam[0]['capabilities'], sam[0]
           assert sam[0]['provenance']['service_resolution_state'] == 'RESOLVED', sam[0]
           assert len(thais) == 1, len(thais)
+          assert thais[0]['id'] == 'semantic-record:23716a35099a04179f7b9e3e6c9198ee', thais[0]
           assert thais[0]['position'] == {'x': 32369, 'y': 32241, 'floor': -7}, thais[0]
           assert thais[0]['bounds'] is None, thais[0]
           assert data['input_floor_aliases']['7'] == -7
