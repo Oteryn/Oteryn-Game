@@ -40,6 +40,29 @@ def fixture_creatures() -> dict[str, object]:
     }
 
 
+def navigation_payload(kind: int, label: str, x: int, y: int, z: int, town_id: int | None = None) -> bytes:
+    encoded = label.encode("utf-8")
+    parts = [bytes([kind])]
+    if town_id is not None:
+        parts.append(town_id.to_bytes(4, "little"))
+    parts.extend((len(encoded).to_bytes(2, "little"), encoded, x.to_bytes(2, "little"), y.to_bytes(2, "little"), z.to_bytes(1, "little")))
+    return b"".join(parts)
+
+
+def validate_navigation_decoder() -> None:
+    town = module._decode_navigation_payload(navigation_payload(13, "Thais", 32369, 32241, 7, town_id=4))
+    assert town == {"kind": "town", "label": "Thais", "position": {"x": 32369, "y": 32241, "floor": -7}, "source_family": "town"}
+    waypoint = module._decode_navigation_payload(navigation_payload(16, "Harbour", 32350, 32210, 7))
+    assert waypoint == {"kind": "waypoint", "label": "Harbour", "position": {"x": 32350, "y": 32210, "floor": -7}, "source_family": "waypoint"}
+    assert module._decode_navigation_payload(b"\x05ignored") is None
+    try:
+        module._decode_navigation_payload(b"\x0d\x01")
+    except module.ExportError:
+        pass
+    else:
+        raise AssertionError("truncated Town payload did not fail closed")
+
+
 def validate_acceptance_fixture() -> None:
     path = Path(__file__).with_name("fixtures") / "acceptance-source.json"
     fixture = json.loads(path.read_text(encoding="utf-8"))
@@ -57,6 +80,7 @@ def validate_acceptance_fixture() -> None:
 
 
 def run() -> None:
+    validate_navigation_decoder()
     with tempfile.TemporaryDirectory() as directory:
         root = Path(directory)
         npc_root = root / "npc"
