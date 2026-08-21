@@ -114,6 +114,49 @@ def _load_fullworld_producer() -> Any:
     return module
 
 
+def _take_int(data: bytes, offset: int, size: int) -> tuple[int, int]:
+    end = offset + size
+    if end > len(data):
+        raise ExportError("truncated navigation record")
+    return int.from_bytes(data[offset:end], "little"), end
+
+
+def _take_string(data: bytes, offset: int) -> tuple[str, int]:
+    length, offset = _take_int(data, offset, 2)
+    end = offset + length
+    if end > len(data):
+        raise ExportError("truncated navigation label")
+    try:
+        return data[offset:end].decode("utf-8"), end
+    except UnicodeDecodeError as error:
+        raise ExportError("navigation label is not valid UTF-8") from error
+
+
+def _decode_navigation_payload(data: bytes, town_type: int = 13, waypoint_type: int = 16) -> dict[str, Any] | None:
+    if not data:
+        return None
+    node_type = data[0]
+    offset = 1
+    if node_type == town_type:
+        _town_id, offset = _take_int(data, offset, 4)
+        label, offset = _take_string(data, offset)
+        x, offset = _take_int(data, offset, 2)
+        y, offset = _take_int(data, offset, 2)
+        z, offset = _take_int(data, offset, 1)
+        if offset != len(data):
+            raise ExportError("unexpected bytes in Town record")
+        return {"kind": "town", "label": label, "position": {"x": x, "y": y, "floor": -z}, "source_family": "town"}
+    if node_type == waypoint_type:
+        label, offset = _take_string(data, offset)
+        x, offset = _take_int(data, offset, 2)
+        y, offset = _take_int(data, offset, 2)
+        z, offset = _take_int(data, offset, 1)
+        if offset != len(data):
+            raise ExportError("unexpected bytes in Waypoint record")
+        return {"kind": "waypoint", "label": label, "position": {"x": x, "y": y, "floor": -z}, "source_family": "waypoint"}
+    return None
+
+
 def extract_navigation(legacy_root: Path, map_path: Path) -> list[dict[str, Any]]:
     validate_legacy_parser_root(legacy_root)
     if sha256_file(map_path) != MAP_SHA256:
@@ -122,21 +165,14 @@ def extract_navigation(legacy_root: Path, map_path: Path) -> list[dict[str, Any]
     bounded = fullworld._load_bounded_module()
     _legacy_assets, semantic = bounded._load_legacy_modules(legacy_root)
     records: list[dict[str, Any]] = []
-    for source in semantic.iter_map_records(map_path, strict=True):
-        if isinstance(source, semantic.Town):
-            records.append({
-                "kind": "town",
-                "label": source.name,
-                "position": {"x": int(source.temple.x), "y": int(source.temple.y), "floor": -int(source.temple.z)},
-                "source_family": "town",
-            })
-        elif isinstance(source, semantic.Waypoint):
-            records.append({
-                "kind": "waypoint",
-                "label": source.name,
-                "position": {"x": int(source.position.x), "y": int(source.position.y), "floor": -int(source.position.z)},
-                "source_family": "waypoint",
-            })
+    town_type = int(semantic.NodeType.TOWN)
+    waypoint_type = int(semantic.NodeType.WAYPOINT)
+    for event in semantic.iter_node_events(map_path):
+        if event.kind is not semantic.NodeEventKind.DATA:
+            continue
+        record = _decode_navigation_payload(event.data, town_type, waypoint_type)
+        if record is not None:
+            records.append(record)
     return records
 
 
