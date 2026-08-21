@@ -37,7 +37,7 @@
         "shop",
         "static-placement"
       ],
-      "id": "semantic-record:f03375caff0c58d744881f0c72aa3cd9",
+      "id": "npc:726487438c8308abf291622a52d91b24",
       "kind": "npc",
       "label": "Sam",
       "position": {
@@ -87,6 +87,6 @@
     }
   ],
   "schema_version": 1,
-  "semantic_digest": "sha256:753303678a9fb90336040f5741c72edefa45502d2621c54dc70dfa5d16ae7663",
+  "semantic_digest": "sha256:a4a4703962bd6984d31ef1dafcd27bad475d6b61f570d013560c16a704989bf8",
   "semantic_revision": 1
 }
