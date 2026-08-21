@@ -1,0 +1,104 @@
+name: Game Atlas semantic search
+
+on:
+  pull_request:
+    paths:
+      - 'tools/game-atlas-semantic-search/**'
+      - 'docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md'
+      - '.github/workflows/game-atlas-semantic-search.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/game-atlas-semantic-search/**'
+      - 'docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md'
+      - '.github/workflows/game-atlas-semantic-search.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-atlas-semantic-search-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semantic-search-source:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out exact Game revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact checked-out revision
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Compile exporter
+        run: python -m py_compile tools/game-atlas-semantic-search/export.py tools/game-atlas-semantic-search/self_test.py
+
+      - name: Run deterministic and negative tests
+        run: python tools/game-atlas-semantic-search/self_test.py
+
+      - name: Verify authority boundaries
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q 'semantic-search-source-v1' docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md
+          grep -q 'input_floor_aliases' tools/game-atlas-semantic-search/export.py
+          ! grep -R -E 'action_id|unique_id' tools/game-atlas-semantic-search --include='*.json'
+
+      - name: Check out exact pinned migration evidence
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: blakinio/Otheryn
+          ref: e417c5e7c22986bf4acef0495eb47f7b72c97cce
+          path: legacy
+          persist-credentials: false
+
+      - name: Build real pinned Game creature and semantic sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/game-atlas-creatures/export.py \
+            legacy/vendor/map-analysis/crystalserver/data-global/world \
+            legacy/vendor/map-analysis/crystalserver/data-global/npc \
+            legacy/vendor/map-analysis/crystalserver/data-global/monster \
+            /tmp/static-creatures.json
+          python tools/game-atlas-semantic-search/export.py \
+            --creatures /tmp/static-creatures.json \
+            --npc-root legacy/vendor/map-analysis/crystalserver/data-global/npc \
+            --legacy-root legacy \
+            --map-path legacy/vendor/map-analysis/crystalserver/data-global/world/world.otbm \
+            --output /tmp/semantic-search-source.json
+
+      - name: Qualify Sam and Thais on real pinned data
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          data = json.load(open('/tmp/semantic-search-source.json', encoding='utf-8'))
+          sam = [record for record in data['records'] if record['kind'] == 'npc' and record['label'].casefold() == 'sam']
+          thais = [record for record in data['records'] if record['kind'] == 'town' and record['label'].casefold() == 'thais']
+          assert data['semantic_digest'] == 'sha256:0cc0546aff0e9a8f85716dcbe5babc6043e148e946a448b1d87f083410cb1005'
+          assert data['counts'] == {'records': 88684, 'kinds': {'monster': 87565, 'npc': 1068, 'town': 33, 'waypoint': 18}}
+          assert len(sam) == 1, len(sam)
+          assert sam[0]['id'] == 'npc:726487438c8308abf291622a52d91b24', sam[0]
+          assert sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}, sam[0]
+          assert 'shop' in sam[0]['capabilities'], sam[0]
+          assert sam[0]['provenance']['service_resolution_state'] == 'RESOLVED', sam[0]
+          assert len(thais) == 1, len(thais)
+          assert thais[0]['id'] == 'semantic-record:23716a35099a04179f7b9e3e6c9198ee', thais[0]
+          assert thais[0]['position'] == {'x': 32369, 'y': 32241, 'floor': -7}, thais[0]
+          assert thais[0]['bounds'] is None, thais[0]
+          assert data['input_floor_aliases']['7'] == -7
+          print(json.dumps({
+              'semantic_digest': data['semantic_digest'],
+              'records': data['counts']['records'],
+              'sam_id': sam[0]['id'],
+              'thais_id': thais[0]['id'],
+          }, sort_keys=True))
+          PY

@@ -1,0 +1,92 @@
+{
+  "capability": "semantic-search-source-v1",
+  "contract_id": "oteryn-game-atlas-export-v1",
+  "coordinate_profile": "oteryn-world-spatial-v1",
+  "counts": {
+    "kinds": {
+      "npc": 1,
+      "town": 1
+    },
+    "records": 2
+  },
+  "input_floor_aliases": {
+    "0": 0,
+    "1": -1,
+    "10": -10,
+    "11": -11,
+    "12": -12,
+    "13": -13,
+    "14": -14,
+    "15": -15,
+    "2": -2,
+    "3": -3,
+    "4": -4,
+    "5": -5,
+    "6": -6,
+    "7": -7,
+    "8": -8,
+    "9": -9
+  },
+  "legacy_import_profile": "oteryn-crystalserver-legacy-spatial-import-v1",
+  "profile_id": "oteryn-game-atlas-semantic-search-v1",
+  "records": [
+    {
+      "aliases": [],
+      "bounds": null,
+      "capabilities": [
+        "shop",
+        "static-placement"
+      ],
+      "id": "npc:726487438c8308abf291622a52d91b24",
+      "kind": "npc",
+      "label": "Sam",
+      "position": {
+        "floor": -7,
+        "x": 32361,
+        "y": 32198
+      },
+      "provenance": {
+        "authority": "Oteryn/Oteryn-Game",
+        "legacy_repository": "blakinio/Otheryn",
+        "legacy_repository_sha": "e417c5e7c22986bf4acef0495eb47f7b72c97cce",
+        "origin": "base-map",
+        "resolution_state": "RESOLVED",
+        "service_resolution_state": "RESOLVED",
+        "source_capability": "static-creatures-v1",
+        "source_semantic_digest": "sha256:01921968a6cb4f6ecea237820a053fc5052aaa1da556851f2c2a60d99890b5e1"
+      }
+    },
+    {
+      "aliases": [],
+      "bounds": null,
+      "capabilities": [
+        "navigation",
+        "overlay-point"
+      ],
+      "id": "semantic-record:23716a35099a04179f7b9e3e6c9198ee",
+      "kind": "town",
+      "label": "Thais",
+      "position": {
+        "floor": -7,
+        "x": 32369,
+        "y": 32241
+      },
+      "provenance": {
+        "authority": "Oteryn/Oteryn-Game",
+        "identity_state": "UNRESOLVED",
+        "legacy_parser_blobs": {
+          "tools/otbm_atlas/assets.py": "25ed2400813bb3ccdc54482967ed05197eb1a850",
+          "tools/otbm_atlas/nodefile.py": "bed6f7a803d9de485c1f03cbdca4be0cb1521d30",
+          "tools/otbm_atlas/semantic.py": "a11343a472145aee4d9cf65c6ce28b3e4a71a2b3"
+        },
+        "legacy_repository": "blakinio/Otheryn",
+        "legacy_repository_sha": "e417c5e7c22986bf4acef0495eb47f7b72c97cce",
+        "source_family": "town",
+        "world_otbm_sha256": "3bd40d14fefec41f24c4b3ae879e420be1a831ef55b95dcbec721e587a09b034"
+      }
+    }
+  ],
+  "schema_version": 1,
+  "semantic_digest": "sha256:a4a4703962bd6984d31ef1dafcd27bad475d6b61f570d013560c16a704989bf8",
+  "semantic_revision": 1
+}
