@@ -68,12 +68,14 @@ def validate_acceptance_fixture() -> None:
     fixture = json.loads(path.read_text(encoding="utf-8"))
     expected = fixture.pop("semantic_digest")
     actual = "sha256:" + hashlib.sha256(module.canonical_bytes(fixture)).hexdigest()
-    assert actual == expected == "sha256:753303678a9fb90336040f5741c72edefa45502d2621c54dc70dfa5d16ae7663"
+    assert actual == expected == "sha256:a4a4703962bd6984d31ef1dafcd27bad475d6b61f570d013560c16a704989bf8"
     assert fixture["input_floor_aliases"]["7"] == -7
     sam = next(record for record in fixture["records"] if record["label"] == "Sam")
     thais = next(record for record in fixture["records"] if record["label"] == "Thais")
+    assert sam["id"] == "npc:726487438c8308abf291622a52d91b24"
     assert sam["position"] == {"x": 32361, "y": 32198, "floor": -7}
     assert "shop" in sam["capabilities"]
+    assert thais["id"] == "semantic-record:23716a35099a04179f7b9e3e6c9198ee"
     assert thais["position"] == {"x": 32369, "y": 32241, "floor": -7}
     assert thais["bounds"] is None
     assert thais["provenance"]["legacy_parser_blobs"] == module.LEGACY_PARSER_BLOBS
