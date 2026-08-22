@@ -56,6 +56,19 @@ class ProducerIoTests(unittest.TestCase):
                 with self.assertRaisesRegex(CatalogValidationError, "file size limit"):
                     load_json_file(path)
 
+    def test_builder_rejects_oversized_snapshot_before_publication(self) -> None:
+        source = valid_source()
+        source["entities"][0]["data"]["description"] = "x" * 1500
+        from unittest.mock import patch
+
+        with (
+            patch("producer.MAX_FILE_BYTES", 512),
+            self.assertRaisesRegex(
+                CatalogValidationError, "snapshot exceeds file size limit"
+            ),
+        ):
+            build_snapshot(source)
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

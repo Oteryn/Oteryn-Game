@@ -47,14 +47,29 @@ class CatalogValidationError(ValueError):
     pass
 
 
+_CANONICAL_ENCODER = json.JSONEncoder(
+    ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
+)
+
+
+def _iter_canonical_json_bytes(value: Any):
+    for chunk in _CANONICAL_ENCODER.iterencode(value):
+        yield chunk.encode("utf-8")
+
+
 def canonical_json_bytes(value: Any) -> bytes:
-    return json.dumps(
-        value,
-        ensure_ascii=False,
-        sort_keys=True,
-        separators=(",", ":"),
-        allow_nan=False,
-    ).encode("utf-8")
+    return b"".join(_iter_canonical_json_bytes(value))
+
+
+def _bounded_canonical_digest(value: Any, reserve_bytes: int = 0) -> str:
+    digest = hashlib.sha256()
+    total = 0
+    for chunk in _iter_canonical_json_bytes(value):
+        total += len(chunk)
+        if total + reserve_bytes > MAX_FILE_BYTES:
+            raise CatalogValidationError("snapshot exceeds file size limit")
+        digest.update(chunk)
+    return digest.hexdigest()
 
 
 def _require_string(
@@ -419,11 +434,12 @@ def build_snapshot(source: Any) -> dict:
     semantic, generated_at = _normalize_source(source)
     integrity_payload = dict(semantic)
     integrity_payload["generated_at"] = generated_at
-    payload_hex = hashlib.sha256(canonical_json_bytes(integrity_payload)).hexdigest()
+    payload_hex = _bounded_canonical_digest(integrity_payload)
     digest = f"sha256:{payload_hex}"
     snapshot = dict(integrity_payload)
     snapshot["snapshot_id"] = digest
     snapshot["payload_digest"] = digest
+    _bounded_canonical_digest(snapshot, reserve_bytes=1)
     return snapshot
 
 
@@ -474,9 +490,7 @@ def verify_snapshot(snapshot: Any) -> None:
             raise CatalogValidationError(f"snapshot is not canonical at {key}")
     integrity_payload = dict(semantic)
     integrity_payload["generated_at"] = generated_at
-    expected = (
-        "sha256:" + hashlib.sha256(canonical_json_bytes(integrity_payload)).hexdigest()
-    )
+    expected = "sha256:" + _bounded_canonical_digest(integrity_payload)
     if payload_digest != expected:
         raise CatalogValidationError("payload_digest mismatch")
     if snapshot_id != expected:
@@ -524,14 +538,42 @@ def _atomic_write(path: Path, data: bytes) -> None:
         raise CatalogValidationError(f"cannot write output file: {path}") from exc
 
 
+def _atomic_write_snapshot(path: Path, snapshot: dict) -> str:
+    if not path.parent.exists():
+        raise CatalogValidationError(f"output directory does not exist: {path.parent}")
+    temporary = path.with_name(path.name + ".tmp")
+    digest = hashlib.sha256()
+    total = 0
+    try:
+        with temporary.open("wb") as handle:
+            for chunk in _iter_canonical_json_bytes(snapshot):
+                total += len(chunk)
+                if total + 1 > MAX_FILE_BYTES:
+                    raise CatalogValidationError("snapshot exceeds file size limit")
+                handle.write(chunk)
+                digest.update(chunk)
+            handle.write(b"\n")
+            digest.update(b"\n")
+        temporary.replace(path)
+        return digest.hexdigest()
+    except CatalogValidationError:
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise
+    except OSError as exc:
+        try:
+            temporary.unlink(missing_ok=True)
+        except OSError:
+            pass
+        raise CatalogValidationError(f"cannot write output file: {path}") from exc
+
+
 def write_snapshot_files(snapshot: dict, output: Path) -> None:
     verify_snapshot(snapshot)
-    artifact = canonical_json_bytes(snapshot) + b"\n"
-    if len(artifact) > MAX_FILE_BYTES:
-        raise CatalogValidationError("snapshot exceeds file size limit")
-    artifact_hex = hashlib.sha256(artifact).hexdigest()
+    artifact_hex = _atomic_write_snapshot(output, snapshot)
     sidecar = output.with_suffix(output.suffix + ".sha256")
-    _atomic_write(output, artifact)
     _atomic_write(sidecar, (artifact_hex + "\n").encode("ascii"))
 
 
