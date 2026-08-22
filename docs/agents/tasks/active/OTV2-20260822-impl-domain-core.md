@@ -70,12 +70,12 @@ No PostgreSQL, transactions, wire protocol, UI, entitlement authority, final for
 ## Validation
 
 ### Focused
-- command/run: pending until first RED test is created
-- result: pending
+- command/run: `rustc --edition 2024 --test apps/game-server/src/domain/mod.rs -o target/domain-tests.exe && target/domain-tests.exe`
+- result: PASS — 5 tests; 0 failed
 
 ### Component/integration
 - command/run: `cargo test --workspace` after lawful composition integration
-- result: baseline PASS; lane result pending
+- result: module production compile PASS with `rustc --edition 2024 --crate-type lib -D warnings`; workspace integration remains pending shared lease
 
 ### E2E
 - scenario: `NOT_EVALUATED` until consuming VSL seams are merged
@@ -84,12 +84,12 @@ No PostgreSQL, transactions, wire protocol, UI, entitlement authority, final for
 ## Context checkpoint
 
 ```yaml
-last_progress: exact-base bind #46 merged; isolated domain worktree created from post-bind main; shared-path lease remains with FOUNDATION.
+last_progress: TDD domain kernel is GREEN standalone: UUIDv7 identities, revision-fenced Character lifecycle, explicit item revision context/injected limits, atomic equip claims and read-only container legality; 5/5 tests and production `-D warnings` compile pass.
 status: implementing
 branch: agent/otv2-impl-domain-core-01
 head_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 pr: null
 blocker: shared composition lease is intentionally held by FOUNDATION
 owner_action_required: null
-next_action: write the first failing Character/Item semantic tests inside apps/game-server/src/domain.
+next_action: commit/push the independent domain kernel; defer game-server composition integration until the coordinator advances the shared lease after FOUNDATION.
 ```
