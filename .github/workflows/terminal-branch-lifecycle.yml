@@ -38,10 +38,9 @@ jobs:
       contents: read
       issues: read
       pull-requests: read
-    uses: Oteryn/Oteryn-Platform/.github/workflows/terminal-branch-lifecycle-reusable.yml@c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+    uses: Oteryn/Oteryn-Platform/.github/workflows/terminal-branch-lifecycle-read-reusable.yml@e145f7c03bd0b15f0b0fecc0f6fae7884fe3e0db
     with:
-      operation: read
-      platform_ref: c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+      platform_ref: e145f7c03bd0b15f0b0fecc0f6fae7884fe3e0db
       policy_path: docs/agents/BRANCH_LIFECYCLE_POLICY.json
 
   close:
@@ -50,10 +49,10 @@ jobs:
       contents: write
       issues: read
       pull-requests: read
-    uses: Oteryn/Oteryn-Platform/.github/workflows/terminal-branch-lifecycle-reusable.yml@c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+    uses: Oteryn/Oteryn-Platform/.github/workflows/terminal-branch-lifecycle-reusable.yml@e145f7c03bd0b15f0b0fecc0f6fae7884fe3e0db
     with:
       operation: close
-      platform_ref: c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+      platform_ref: e145f7c03bd0b15f0b0fecc0f6fae7884fe3e0db
       policy_path: docs/agents/BRANCH_LIFECYCLE_POLICY.json
 
   apply:
@@ -62,8 +61,8 @@ jobs:
       contents: write
       issues: read
       pull-requests: read
-    uses: Oteryn/Oteryn-Platform/.github/workflows/terminal-branch-lifecycle-reusable.yml@c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+    uses: Oteryn/Oteryn-Platform/.github/workflows/terminal-branch-lifecycle-reusable.yml@e145f7c03bd0b15f0b0fecc0f6fae7884fe3e0db
     with:
       operation: apply
-      platform_ref: c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+      platform_ref: e145f7c03bd0b15f0b0fecc0f6fae7884fe3e0db
       policy_path: docs/agents/BRANCH_LIFECYCLE_POLICY.json
