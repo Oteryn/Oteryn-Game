@@ -14,13 +14,14 @@
 - Wave 1 allocation PR: `#45`
 - Wave 1 allocation merge: `33cec30b8075c73290d7d76e9f59df4701771650`
 - Wave 1 exact-base PR: `#46`
-- State: `WAVE1_EXACT_BASE_BIND_PENDING`
+- Wave 1 exact-base merge: `fd39c6aa026e82062a8b29af24811d467c115f19`
+- State: `WAVE1_ACTIVE`
 
 ## Authority rule
 
 This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance is higher authority than historical prompt coordinates. All implementation writes governed by this record target the canonical `Oteryn/Oteryn-Game` repository only.
 
-Only lanes explicitly listed as `allocated` **on merged `main`** have worker write authority. The exact-base changes below are not authoritative while coordinator bind PR #46 is unmerged. Unmerged sibling branches are never implicit dependencies.
+Only lanes explicitly listed as `allocated` on merged `main` have worker write authority. PR #46 is merged; all four Wave 1 lanes below are live. Unmerged sibling branches are never implicit dependencies.
 
 ## Completed allocation — Bootstrap
 
@@ -56,103 +57,104 @@ owned_paths: []
 branch: null
 ```
 
-SIM delivered a real production `oteryn-simulation-determinism` crate consumed by `apps/game-server`, including checked deterministic numeric semantics, retry/purpose-isolated decision derivation, semantic time, bounded canonical state hashing and exact-head Windows golden fixtures. Gameplay remains fail-closed and no protocol/session/persistence/Reference/security-randomness authority was introduced.
+## Wave 1 active state
 
-## Wave 1 exact-base bind
+PR #45 reserved the four pairwise non-overlapping primary paths. PR #46 bound all workers to allocation merge `33cec30b8075c73290d7d76e9f59df4701771650` and merged as post-bind main `fd39c6aa026e82062a8b29af24811d467c115f19`. All worker branches/task records were created from that post-bind main.
 
-Allocation PR #45 passed exact-head governance/merge gates and squash-merged as `33cec30b8075c73290d7d76e9f59df4701771650`. Coordinator bind PR #46 records that exact allocation merge as every Wave 1 lane's `worker_base_sha`, matching the established SIM #12 → #13 lifecycle.
-
-No worker may write merely because bind PR #46 exists. Worker authority becomes live only when #46 lawfully merges to `main`. Worker branches/task files must then be created from the resulting post-bind `main` before implementation writes.
-
-### Wave 1 lane — Foundation
+### Foundation
 
 ```yaml
 lane_id: OTV2-IMPL-FOUNDATION
 task_id: OTV2-20260822-impl-foundation-runtime
 worker_alias: Oteryn: impl foundation runtime
-status: allocated
+status: implementing
 risk: XHigh
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 exact_base_pr: 46
+post_bind_main_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 branch: agent/otv2-impl-foundation-runtime-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
+observed_head_sha: 5dd9c528338adc7463ef0e8fa4453b2941d3255f
 owned_paths:
   - apps/game-server/src/foundation/**
   - docs/agents/tasks/active/OTV2-20260822-impl-foundation-runtime.md
-public_contracts_read_only:
-  - docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md
-  - docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md
-  - docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md
-  - docs/contracts/FND-04_REAUTHENTICATED_RECOVERY_GRANT_PROFILE_V1.md
+shared_lease: active
 independent_review_required: true
 ```
 
-Foundation owns the new server-side protocol/runtime/admission module family after bind PR #46 merges. It does **not** receive authority to invent post-15s recovery behavior, resource ceilings, gameplay command/state IDs, persistence semantics or a new crate topology. Protocol/session/admission/fencing delivery requires genuinely independent exact-head review.
+Coordinator verification on 2026-08-22: focused Foundation tests `6/6` PASS and `cargo clippy -p oteryn-game-server --all-targets -- -D warnings` PASS at observed head. This is partial progress only: GameSession/CharacterLease/admission and state snapshot/delta/resync acceptance remain incomplete and must not be represented as delivered.
 
-### Wave 1 lane — Domain
+### Domain
 
 ```yaml
 lane_id: OTV2-IMPL-DOMAIN
 task_id: OTV2-20260822-impl-domain-core
 worker_alias: Oteryn: impl domain core
-status: allocated
+status: implementing
 risk: High
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 exact_base_pr: 46
+post_bind_main_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 branch: agent/otv2-impl-domain-core-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
+observed_head_sha: 28aa20468bf3cb3f2406078d4249525087d16e10
 owned_paths:
   - apps/game-server/src/domain/**
   - docs/agents/tasks/active/OTV2-20260822-impl-domain-core.md
+shared_lease: waiting_for_foundation
 ```
 
-Domain owns protocol/persistence-neutral Character/Item/Inventory/Equipment/Ability-definition semantics required by the accepted first slice. It does not own wire IDs, persistence mechanics, UI or Reference-unknown product values.
+Coordinator verification on 2026-08-22: standalone Domain tests `5/5` PASS and production `rustc --edition 2024 --crate-type lib -D warnings` compile PASS. Workspace composition remains intentionally deferred while FOUNDATION owns the shared lease.
 
-### Wave 1 lane — Content
+### Content
 
 ```yaml
 lane_id: OTV2-IMPL-CONTENT
 task_id: OTV2-20260822-impl-vsl-content
 worker_alias: Oteryn: impl vsl content
-status: allocated
+status: implementing
 risk: High
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 exact_base_pr: 46
+post_bind_main_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 branch: agent/otv2-impl-vsl-content-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
+observed_head_sha: 7b07a8cd9d82e1063700f2e78f8a772d8a6dfcb5
 owned_paths:
   - apps/game-server/src/content/**
   - docs/agents/tasks/active/OTV2-20260822-impl-vsl-content.md
+shared_lease: waiting_for_foundation
 ```
 
-Content owns the minimum typed VSL content/compiler/loader seam and bounded synthetic/evidence fixtures required by accepted Stage-C contracts. It must not select the permanent physical bundle/world encoding or introduce gameplay C++/Blueprint authority.
+Content branch currently contains only its start/task checkpoint; implementation remains unproven.
 
-### Wave 1 lane — QA
+### QA
 
 ```yaml
 lane_id: OTV2-IMPL-QA
 task_id: OTV2-20260822-impl-qa-e2e
 worker_alias: Oteryn: impl qa e2e
-status: allocated
+status: implementing
 risk: High
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 exact_base_pr: 46
+post_bind_main_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 branch: agent/otv2-impl-qa-e2e-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
+observed_head_sha: 63350b3a165cabc378af1b5497e6a506d78f1453
 owned_paths:
   - apps/game-server/tests/**
   - docs/agents/tasks/active/OTV2-20260822-impl-qa-e2e.md
+shared_lease: waiting_for_foundation
 ```
 
-QA owns only real-boundary integration/E2E proof under the server integration-test path. It may evolve incrementally as real seams merge; mocks or test-only success adapters are never terminal proof and may not enter production artifacts.
+QA branch currently contains only its start/task checkpoint; real evidence-shell implementation remains unproven.
 
 ## Serialized shared-mutation lease
-
-The four primary code/test lane paths are non-overlapping. The following composition/workspace paths remain one-writer-at-a-time under the coordinator lease:
 
 ```yaml
 shared_paths:
@@ -161,8 +163,8 @@ shared_paths:
   - Cargo.toml
   - Cargo.lock
   - workspace-boundaries.toml
-lease_state: pending_bind_merge
-initial_lease_owner_after_bind: OTV2-IMPL-FOUNDATION
+lease_state: active
+current_lease_owner: OTV2-IMPL-FOUNDATION
 lease_order:
   - OTV2-IMPL-FOUNDATION
   - OTV2-IMPL-DOMAIN
@@ -170,8 +172,10 @@ lease_order:
   - OTV2-IMPL-QA
 ```
 
-After bind PR #46 merges, FOUNDATION holds the first shared-path lease. The other three lanes remain free to develop only inside their non-overlapping primary paths until the coordinator advances the shared lease. `docs/contracts/**`, stable-ID registries, `.github/workflows/**`, architecture policy/tooling and any new workspace/crate topology remain **not allocated**; any proven need to mutate them requires a separate explicit coordinator allocation update before mutation.
+`docs/contracts/**`, stable-ID registries, `.github/workflows/**`, architecture policy/tooling and any new workspace/crate topology remain not allocated. Any proven need to mutate them requires a separate explicit coordinator allocation update before mutation.
+
+Current live `main` may advance for unrelated coordination/documentation work; workers remain bound to the established allocation/base lifecycle and must reconcile current `main` before integration/merge without silently consuming sibling branches.
 
 ## Deferred allocations
 
-`DURABILITY`, `ABILITY`, `INTERACTION`, `AI`, `CLIENT`, `MOVE`, `COMBAT`, `CHANNEL`, `ANALYTICS` and `CONTENT-FORMAT-SPIKE` remain **not allocated** until their DAG prerequisites are concretely merged and the coordinator publishes a bounded allocation.
+`DURABILITY`, `ABILITY`, `INTERACTION`, `AI`, `CLIENT`, `MOVE`, `COMBAT`, `CHANNEL`, `ANALYTICS` and `CONTENT-FORMAT-SPIKE` remain not allocated until their DAG prerequisites are concretely merged and the coordinator publishes a bounded allocation.
