@@ -4,17 +4,19 @@
 task_id: OTV2-20260822-game-platform-catalog-producer-v1
 title: Add native Game to Platform Game Catalog producer v1
 mode: IMPLEMENT
-status: waiting
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 52
 base_branch: main
-branch: agent/game-platform-catalog-producer-v1
+branch: null
 pr: 57
 base_sha: a2a5da955dd8f580c9e768c8ac6a741db388cb22
-head_sha: null
+head_sha: 34f80e061f9e2b74c4006e2049d1510873466b11
+final_head_sha: 34f80e061f9e2b74c4006e2049d1510873466b11
+merge_sha: 96ea673839f1d93190a40c17ae8036ac82096ded
 owner: chat-github-20260822-game-platform-catalog
 created_at: 2026-08-22T19:52:46+02:00
-updated_at: 2026-08-22T20:50:09+02:00
+updated_at: 2026-08-22T22:29:50+02:00
 execution_budget_minutes: 60
 cross_repository_coordination_id: OTERYN-GAME-PLATFORM-CATALOG-V1
 owned_paths:
@@ -50,10 +52,10 @@ Deliver the first Game-owned deterministic native snapshot producer boundary for
 - [x] Payload digest is independently verifiable, deterministic and provenance-protecting.
 - [x] Bounded counts/string/depth limits are enforced before expensive work.
 - [x] Applicable resource limits registered in `RESOURCE_LIMITS_REGISTRY.json`.
-- [x] Cross-repository lock has a truthful pending PR entry.
+- [x] Cross-repository lock terminalized with the merged canonical commit and contract digest.
 - [x] Focused tests, Ruff, py_compile and governance validation pass before PR creation.
-- [ ] Exact-head PR validation passes.
-- [ ] Whole-diff self-review has zero material findings on final head.
+- [x] Exact-head PR validation passes.
+- [x] Whole-diff self-review has zero unresolved material findings on final head.
 - [x] No production/deployment/live-service mutation performed.
 
 ## Excluded scope
@@ -64,7 +66,7 @@ No Platform consumer mutation, no production publication/activation, no broad na
 
 ### Focused
 - TDD RED: missing `producer`, missing I/O functions, unknown-capability acceptance and mutable `generated_at` integrity were each observed failing before implementation/fix.
-- `python -m unittest discover -s tools/game-platform-catalog -p "test_*.py" -q` -> 18 tests PASS.
+- `python -m unittest discover -s tools/game-platform-catalog -p "test_*.py" -q` -> 19 tests PASS.
 - `ruff check tools/game-platform-catalog` -> PASS after repairing 9 findings.
 - explicit `python -m py_compile ...` -> PASS.
 - CLI produce+verify on `fixtures/unsupported-native-input.json` -> PASS.
@@ -74,15 +76,17 @@ No Platform consumer mutation, no production publication/activation, no broad na
 - `git diff --check` -> PASS after pending-lock registration.
 
 ### E2E
-- `NOT_APPLICABLE` for this producer framework until a real native capability adapter and Platform consumer exist.
-## Context checkpoint
+- `NOT_APPLICABLE`: producer framework exposes no user-facing path and performs no Platform import/activation.
 
-```yaml
-last_progress: producer contract/tool/tests are GREEN and the full fixed v1 resource-limit set is registered
-status: waiting
-head_sha: null
-pr: 57
-blocker: exact-head PR checks and repository-required review state are not yet observed on the lock-bound head
-owner_action_required: null
-next_action: inspect exact-head PR #57 checks/reviews once after pushing the lock-bound head; continue only from material new evidence
-```
+## Terminal closeout
+
+- PR #57 exact final head `34f80e061f9e2b74c4006e2049d1510873466b11`.
+- deterministic independent Architecture semantic audit run `32596697044` -> PASS after Ready transition.
+- Merge gate run `32596254556`, aggregate `Merge gate / validate` -> PASS.
+- Agent governance run `32596254559` -> PASS.
+- review threads -> 0.
+- squash merge -> `96ea673839f1d93190a40c17ae8036ac82096ded`.
+- canonical contract Git-blob SHA-256 -> `9bc87fba5b565e5c7d4d3f6ca7a9bd75d45d8110de64a2a50f8f74d9ba181cad`.
+- cross-repository lock terminalized as `LOCKED`; Platform consumer remains pending.
+- production remains disabled.
+
