@@ -22,6 +22,7 @@ NPC_OUTFIT = re.compile(r'npcConfig\.outfit\s*=\s*\{(.*?)\}', re.DOTALL)
 MONSTER_NAME = re.compile(r'''Game\.createMonsterType\(\s*(?:"([^"]+)"|'([^']+)')\s*\)''')
 MONSTER_OUTFIT = re.compile(r'\bmonster\.outfit\s*=\s*\{(.*?)\}', re.DOTALL)
 VALUE = re.compile(r'\b(lookType|lookHead|lookBody|lookLegs|lookFeet|lookAddons)\s*=\s*(\d+)')
+ROLE_ORDER = ("bank", "travel", "shop", "quest", "blessing", "trainer")
 
 class ExportError(RuntimeError): pass
 
@@ -38,32 +39,53 @@ class Outfit:
     def key(self) -> str:
         return f"{self.look_type}-{self.head}-{self.body}-{self.legs}-{self.feet}-{self.addons}"
 
+@dataclass(frozen=True)
+class Definition:
+    outfit: Outfit
+    roles: tuple[str, ...] = ()
+
 def stable_id(kind: str, *parts: object) -> str:
     payload = "\0".join((kind, *(str(p) for p in parts))).encode("utf-8")
     return f"{kind}:{hashlib.sha256(payload).hexdigest()[:32]}"
+
+def npc_roles(text: str) -> tuple[str, ...]:
+    roles = set()
+    if "npc:parseBank(" in text or "NpcBankGreetCallback" in text: roles.add("bank")
+    if "StdModule.travel" in text: roles.add("travel")
+    if re.search(r'\bnpcConfig\.shop\s*=', text): roles.add("shop")
+    if "Storage.Quest." in text: roles.add("quest")
+    if "StdModule.bless" in text or re.search(r'\bplayer:addBlessing\s*\(', text): roles.add("blessing")
+    if "StdModule.learnSpell" in text: roles.add("trainer")
+    return tuple(role for role in ROLE_ORDER if role in roles)
 
 def _parse_definition(path: Path, kind: str):
     text = path.read_text(encoding="utf-8")
     name_match = (NPC_NAME if kind == "npc" else MONSTER_NAME).search(text)
     if name_match is None: return None
     name = name_match.group(1) if kind == "npc" else (name_match.group(1) or name_match.group(2))
+    roles = npc_roles(text) if kind == "npc" else ()
     block = (NPC_OUTFIT if kind == "npc" else MONSTER_OUTFIT).search(text)
-    if block is None: return name, Outfit(name, 0)
+    if block is None: return name, Definition(Outfit(name, 0), roles)
     values = {key: int(value) for key, value in VALUE.findall(block.group(1))}
-    return name, Outfit(name, values.get("lookType", 0), values.get("lookHead", 0), values.get("lookBody", 0), values.get("lookLegs", 0), values.get("lookFeet", 0), values.get("lookAddons", 0))
+    outfit = Outfit(name, values.get("lookType", 0), values.get("lookHead", 0), values.get("lookBody", 0), values.get("lookLegs", 0), values.get("lookFeet", 0), values.get("lookAddons", 0))
+    return name, Definition(outfit, roles)
 
 def definition_index(root: Path, kind: str):
     candidates = {}
     for path in sorted(root.rglob("*.lua"), key=lambda p: p.relative_to(root).as_posix()):
         parsed = _parse_definition(path, kind)
         if parsed is None: continue
-        name, outfit = parsed; candidates.setdefault(name.casefold(), []).append(outfit)
-    resolved, ambiguous = {}, set()
+        name, definition = parsed; candidates.setdefault(name.casefold(), []).append(definition)
+    resolved, ambiguous, role_ambiguous = {}, set(), set()
     for key, values in candidates.items():
-        unique = {(v.look_type, v.head, v.body, v.legs, v.feet, v.addons): v for v in values}
-        if len(unique) == 1: resolved[key] = next(iter(unique.values()))
+        outfits = {(v.outfit.look_type, v.outfit.head, v.outfit.body, v.outfit.legs, v.outfit.feet, v.outfit.addons): v.outfit for v in values}
+        if len(outfits) == 1:
+            role_sets = {v.roles for v in values}
+            roles = next(iter(role_sets)) if len(role_sets) == 1 else ()
+            if kind == "npc" and len(role_sets) > 1: role_ambiguous.add(key)
+            resolved[key] = Definition(next(iter(outfits.values())), roles)
         else: ambiguous.add(key)
-    return resolved, ambiguous
+    return resolved, ambiguous, role_ambiguous
 
 def _origin(path: Path, world_root: Path) -> str:
     rel = path.relative_to(world_root).as_posix()
@@ -89,17 +111,21 @@ def parse_spawns(world_root: Path, kind: str):
     return records
 
 def export_creatures(world_root: Path, npc_root: Path, monster_root: Path):
-    npc_defs,npc_ambiguous=definition_index(npc_root,"npc"); monster_defs,monster_ambiguous=definition_index(monster_root,"monster")
+    npc_defs,npc_ambiguous,npc_role_ambiguous=definition_index(npc_root,"npc"); monster_defs,monster_ambiguous,_=definition_index(monster_root,"monster")
     groups={"npcs":parse_spawns(world_root,"npc"),"monster_spawns":parse_spawns(world_root,"monster")}; unresolved=ambiguous=0
     for kind,key,defs,conflicts in (("npc","npcs",npc_defs,npc_ambiguous),("monster","monster_spawns",monster_defs,monster_ambiguous)):
         for record in groups[key]:
-            folded=str(record["name"]).casefold(); outfit=defs.get(folded)
+            folded=str(record["name"]).casefold(); definition=defs.get(folded)
+            if kind == "npc" and definition is not None:
+                record["role_resolution_state"] = "AMBIGUOUS" if folded in npc_role_ambiguous else "RESOLVED"
+                if folded not in npc_role_ambiguous and definition.roles: record["roles"] = list(definition.roles)
             if folded in conflicts: record["resolution_state"]="AMBIGUOUS"; ambiguous+=1
-            elif outfit is None or outfit.look_type<=0: record["resolution_state"]="UNRESOLVED"; unresolved+=1
+            elif definition is None or definition.outfit.look_type<=0: record["resolution_state"]="UNRESOLVED"; unresolved+=1
             else:
+                outfit=definition.outfit
                 record["resolution_state"]="RESOLVED"; record["appearance"]={"outfit_key":outfit.key,"look_type":outfit.look_type,"head":outfit.head,"body":outfit.body,"legs":outfit.legs,"feet":outfit.feet,"addons":outfit.addons}; record["entity_id"]=stable_id(f"{kind}-entity",folded)
     for values in groups.values(): values.sort(key=lambda r:(int(r["position"]["floor"]),int(r["position"]["y"]),int(r["position"]["x"]),str(r["name"]).casefold(),str(r["record_id"])))
-    result={"contract_id":CONTRACT_ID,"semantic_revision":1,"capability":CAPABILITY,"coordinate_profile":"oteryn-native-floor-v1","legacy_evidence":{"repository":"blakinio/Otheryn","sha":LEGACY_EVIDENCE_SHA},"npcs":groups["npcs"],"monster_spawns":groups["monster_spawns"],"statistics":{"npcs":len(groups["npcs"]),"monster_spawns":len(groups["monster_spawns"]),"unresolved":unresolved,"ambiguous":ambiguous}}
+    result={"contract_id":CONTRACT_ID,"semantic_revision":1,"capability":CAPABILITY,"npc_role_schema_version":1,"coordinate_profile":"oteryn-native-floor-v1","legacy_evidence":{"repository":"blakinio/Otheryn","sha":LEGACY_EVIDENCE_SHA},"npcs":groups["npcs"],"monster_spawns":groups["monster_spawns"],"statistics":{"npcs":len(groups["npcs"]),"monster_spawns":len(groups["monster_spawns"]),"unresolved":unresolved,"ambiguous":ambiguous}}
     canonical=json.dumps(result,ensure_ascii=False,separators=(",",":"),sort_keys=True).encode("utf-8"); result["semantic_digest"]="sha256:"+hashlib.sha256(canonical).hexdigest(); return result
 
 def main() -> int:
