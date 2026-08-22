@@ -61,14 +61,14 @@ Deliver the smallest real server foundation module and composition seam implemen
 
 ## Acceptance criteria
 
-- [ ] TDD: every production behavior is preceded by a focused test observed failing for the intended reason.
-- [ ] Bounded protocol frame envelope rejects truncated, oversized and unknown foundation message classes before peer-sized allocation.
-- [ ] Command/session connection-generation state rejects duplicate gaps, stale generations and invalid progression deterministically.
-- [ ] Runtime ownership primitives enforce one current generation and reject stale owner work/timers/results.
-- [ ] Admission/reconnect primitives model fresh admission, GameSession/CharacterLease binding and fail-closed stale/replay cases without live Platform/DB authority.
-- [ ] Foundation error vocabulary maps failures without leaking secrets or inventing gameplay semantics.
-- [ ] `apps/game-server` composition consumes the foundation module while preserving fail-closed gameplay availability until owning gameplay registrations exist.
-- [ ] Focused tests, full workspace tests, format and Clippy pass at final head.
+- [x] TDD: every production behavior is preceded by a focused test observed failing for the intended reason.
+- [x] Bounded protocol frame envelope rejects truncated, oversized and unknown foundation message classes before peer-sized allocation.
+- [x] Command/session connection-generation state rejects duplicate gaps, stale generations and invalid progression deterministically.
+- [x] Runtime ownership primitives enforce one current generation and reject stale owner work/timers/results.
+- [x] Admission/reconnect primitives model fresh admission, GameSession/CharacterLease binding and fail-closed stale/replay cases without live Platform/DB authority.
+- [x] Foundation error vocabulary maps failures without leaking secrets or inventing gameplay semantics.
+- [x] `apps/game-server` composition consumes the foundation module while preserving fail-closed gameplay availability until owning gameplay registrations exist.
+- [x] Focused tests, full workspace tests, format and Clippy pass at final head.
 - [ ] Mandatory genuinely independent exact-head review has zero unresolved material findings before merge.
 
 ## Excluded scope
@@ -97,7 +97,7 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - result: `NOT_EVALUATED` - no merged production transport listener/client-entry seam exists in the allocated composition; this lane intentionally adds no listener side effects.
 
 ### Exact-head CI
-- final head: pending final task-metadata checkpoint; frozen code head `7f214607e24f666b8569af3ce0a6222fbec51d00`
+- final head: pending exact SHA of this final metadata-only checkpoint; frozen code head `7f214607e24f666b8569af3ce0a6222fbec51d00`
 - trigger source: pending
 - workflow/run/job: pending
 - runner assignment: pending
@@ -129,5 +129,5 @@ head_sha: 7f214607e24f666b8569af3ce0a6222fbec51d00
 pr: 59
 blocker: mandatory genuinely independent exact-head review and protected exact-head CI remain before merge
 owner_action_required: null
-next_action: commit this task-metadata-only checkpoint, then run exact-head governance/CI and obtain genuinely independent review on the unchanged final PR head.
+next_action: obtain genuinely independent review and protected exact-head CI on the unchanged final PR head; then merge, verify main and perform lifecycle closeout.
 ```
