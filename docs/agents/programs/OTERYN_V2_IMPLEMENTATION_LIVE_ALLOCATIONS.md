@@ -13,14 +13,14 @@
 - Wave 1 allocation source main: `7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2`
 - Wave 1 allocation PR: `#45`
 - Wave 1 allocation merge: `33cec30b8075c73290d7d76e9f59df4701771650`
-- Wave 1 exact-base PR: `pending`
+- Wave 1 exact-base PR: `#46`
 - State: `WAVE1_EXACT_BASE_BIND_PENDING`
 
 ## Authority rule
 
 This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance is higher authority than historical prompt coordinates. All implementation writes governed by this record target the canonical `Oteryn/Oteryn-Game` repository only.
 
-Only lanes explicitly listed as `allocated` **on merged `main`** have worker write authority. The exact-base changes below are not authoritative while this coordinator bind branch/PR is unmerged. Unmerged sibling branches are never implicit dependencies.
+Only lanes explicitly listed as `allocated` **on merged `main`** have worker write authority. The exact-base changes below are not authoritative while coordinator bind PR #46 is unmerged. Unmerged sibling branches are never implicit dependencies.
 
 ## Completed allocation — Bootstrap
 
@@ -60,9 +60,9 @@ SIM delivered a real production `oteryn-simulation-determinism` crate consumed b
 
 ## Wave 1 exact-base bind
 
-Allocation PR #45 passed exact-head governance/merge gates and squash-merged as `33cec30b8075c73290d7d76e9f59df4701771650`. This coordinator bind records that exact allocation merge as every Wave 1 lane's `worker_base_sha`, matching the established SIM #12 → #13 lifecycle.
+Allocation PR #45 passed exact-head governance/merge gates and squash-merged as `33cec30b8075c73290d7d76e9f59df4701771650`. Coordinator bind PR #46 records that exact allocation merge as every Wave 1 lane's `worker_base_sha`, matching the established SIM #12 → #13 lifecycle.
 
-No worker may write merely because this bind branch exists. Worker authority becomes live only when this exact-base bind itself lawfully merges to `main`. Worker branches/task files must then be created from the resulting post-bind `main` before implementation writes.
+No worker may write merely because bind PR #46 exists. Worker authority becomes live only when #46 lawfully merges to `main`. Worker branches/task files must then be created from the resulting post-bind `main` before implementation writes.
 
 ### Wave 1 lane — Foundation
 
@@ -74,7 +74,7 @@ status: allocated
 risk: XHigh
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-exact_base_pr: pending
+exact_base_pr: 46
 branch: agent/otv2-impl-foundation-runtime-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owned_paths:
@@ -88,7 +88,7 @@ public_contracts_read_only:
 independent_review_required: true
 ```
 
-Foundation owns the new server-side protocol/runtime/admission module family after this bind merges. It does **not** receive authority to invent post-15s recovery behavior, resource ceilings, gameplay command/state IDs, persistence semantics or a new crate topology. Protocol/session/admission/fencing delivery requires genuinely independent exact-head review.
+Foundation owns the new server-side protocol/runtime/admission module family after bind PR #46 merges. It does **not** receive authority to invent post-15s recovery behavior, resource ceilings, gameplay command/state IDs, persistence semantics or a new crate topology. Protocol/session/admission/fencing delivery requires genuinely independent exact-head review.
 
 ### Wave 1 lane — Domain
 
@@ -100,7 +100,7 @@ status: allocated
 risk: High
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-exact_base_pr: pending
+exact_base_pr: 46
 branch: agent/otv2-impl-domain-core-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owned_paths:
@@ -120,7 +120,7 @@ status: allocated
 risk: High
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-exact_base_pr: pending
+exact_base_pr: 46
 branch: agent/otv2-impl-vsl-content-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owned_paths:
@@ -140,7 +140,7 @@ status: allocated
 risk: High
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-exact_base_pr: pending
+exact_base_pr: 46
 branch: agent/otv2-impl-qa-e2e-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owned_paths:
@@ -170,7 +170,7 @@ lease_order:
   - OTV2-IMPL-QA
 ```
 
-After this bind merges, FOUNDATION holds the first shared-path lease. The other three lanes remain free to develop only inside their non-overlapping primary paths until the coordinator advances the shared lease. `docs/contracts/**`, stable-ID registries, `.github/workflows/**`, architecture policy/tooling and any new workspace/crate topology remain **not allocated**; any proven need to mutate them requires a separate explicit coordinator allocation update before mutation.
+After bind PR #46 merges, FOUNDATION holds the first shared-path lease. The other three lanes remain free to develop only inside their non-overlapping primary paths until the coordinator advances the shared lease. `docs/contracts/**`, stable-ID registries, `.github/workflows/**`, architecture policy/tooling and any new workspace/crate topology remain **not allocated**; any proven need to mutate them requires a separate explicit coordinator allocation update before mutation.
 
 ## Deferred allocations
 
