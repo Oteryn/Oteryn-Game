@@ -11,7 +11,7 @@
 - Simulation delivery merge: `66619daf5837f31f7c54676e9f8351ed4ae220b0`
 - Simulation archive PR: `#15`
 - Wave 1 allocation source main: `7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2`
-- Wave 1 allocation PR: `pending`
+- Wave 1 allocation PR: `#45`
 - State: `WAVE1_ALLOCATION_PENDING_EXACT_BASE`
 
 ## Authority rule
@@ -58,9 +58,9 @@ SIM delivered a real production `oteryn-simulation-determinism` crate consumed b
 
 ## Wave 1 allocation gate
 
-The coordinator resolved live `main` immediately before this allocation as `7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2` (post-SIM launch-pack PR #44). The four dependency-ready lanes below are path-reserved only. They are deliberately `allocated_pending_exact_base`, so **no Wave 1 worker currently has write authority**.
+The coordinator resolved live `main` immediately before this allocation as `7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2` (post-SIM launch-pack PR #44). The four dependency-ready lanes below are path-reserved only by allocation PR #45. They are deliberately `allocated_pending_exact_base`, so **no Wave 1 worker currently has write authority**.
 
-The exact-base bind MUST be a later coordinator PR created only after this allocation PR merges. That bind must use the exact allocation merge SHA as every Wave 1 worker's `worker_base_sha`. Worker task files are created only after that exact-base bind is merged.
+The exact-base bind MUST be a later coordinator PR created only after allocation PR #45 merges. That bind must use the exact allocation merge SHA as every Wave 1 worker's `worker_base_sha`. Worker task files are created only after that exact-base bind is merged.
 
 ### Reserved lane — Foundation
 
@@ -70,6 +70,7 @@ task_id: OTV2-20260822-impl-foundation-runtime
 worker_alias: Oteryn: impl foundation runtime
 status: allocated_pending_exact_base
 risk: XHigh
+allocation_pr: 45
 branch: agent/otv2-impl-foundation-runtime-01
 allocation_source_main_sha: 7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2
 worker_base_sha: pending_exact_allocation_merge
@@ -94,6 +95,7 @@ task_id: OTV2-20260822-impl-domain-core
 worker_alias: Oteryn: impl domain core
 status: allocated_pending_exact_base
 risk: High
+allocation_pr: 45
 branch: agent/otv2-impl-domain-core-01
 allocation_source_main_sha: 7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2
 worker_base_sha: pending_exact_allocation_merge
@@ -112,6 +114,7 @@ task_id: OTV2-20260822-impl-vsl-content
 worker_alias: Oteryn: impl vsl content
 status: allocated_pending_exact_base
 risk: High
+allocation_pr: 45
 branch: agent/otv2-impl-vsl-content-01
 allocation_source_main_sha: 7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2
 worker_base_sha: pending_exact_allocation_merge
@@ -130,6 +133,7 @@ task_id: OTV2-20260822-impl-qa-e2e
 worker_alias: Oteryn: impl qa e2e
 status: allocated_pending_exact_base
 risk: High
+allocation_pr: 45
 branch: agent/otv2-impl-qa-e2e-01
 allocation_source_main_sha: 7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2
 worker_base_sha: pending_exact_allocation_merge
