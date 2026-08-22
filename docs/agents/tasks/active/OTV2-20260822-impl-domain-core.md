@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-impl-domain-core-01
 issue: 55
-pr: null
+pr: 56
 base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 head_sha: null
 final_head_sha: null
@@ -147,7 +147,7 @@ last_progress: Primary-path DOMAIN scope is implemented and locally green with 1
 status: blocked
 branch: agent/otv2-impl-domain-core-01
 head_sha: null
-pr: null
+pr: 56
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
