@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import functools
 import hashlib
 import importlib.util
 import json
@@ -85,6 +86,13 @@ def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *,
     if manifest.get("source") != appearance_module._source_identity():
         raise RuntimeError("appearance product source identity mismatch")
 
+    # Index files are several MiB and are immutable for one content-addressed
+    # product. The resolver is allowed to read them once; repeated outfit tuples
+    # must not turn that immutable lookup into per-record I/O.
+    loader = getattr(appearance_module, "load_program_indexes", None)
+    if loader is not None and not hasattr(loader, "cache_info"):
+        appearance_module.load_program_indexes = functools.lru_cache(maxsize=2)(loader)
+
     result = copy.deepcopy(static_result)
     previous_digest = result.pop("semantic_digest", None)
     result["static_semantic_digest"] = previous_digest
@@ -94,8 +102,8 @@ def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *,
     result["appearance_source"] = manifest["source"]
 
     # The world contains many repeated placements for the same exact outfit. Resolve
-    # each appearance tuple once so the large verified program catalog is not reparsed
-    # per spawn and every repeated placement receives byte-identical presentation data.
+    # each appearance tuple once so every repeated placement receives byte-identical
+    # presentation data without recomputing color/addon/frame-group selection.
     resolution_cache: dict[tuple[int, int, int, int, int, int], tuple[dict[str, Any] | None, str | None]] = {}
     total_presentation_unresolved = 0
     per_kind: dict[str, dict[str, Any]] = {}
