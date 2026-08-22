@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-22T22:08:00+02:00
+updated_at: 2026-08-22T23:23:18.5699650+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -86,48 +86,51 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Focused
 - command/run: `cargo test -p oteryn-game-server foundation`
-- result: PASS — 30 foundation tests; 0 failed
+- result: PASS - 37 foundation tests; 0 failed after independent-review repair cycle
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: PASS — 33 package tests; 0 failed; full-workspace Clippy `-D warnings` PASS
+- result: PASS - 40 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
 - result: `NOT_EVALUATED` - no merged production transport listener/client-entry seam exists in the allocated composition; this lane intentionally adds no listener side effects.
 
 ### Exact-head CI
-- final head: pending exact SHA of this final metadata-only checkpoint; frozen code head `7f214607e24f666b8569af3ce0a6222fbec51d00`
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
+- superseded reviewed head: `9d5a251adb16076c3b0ebc50ae023677bf571894`
+- superseded evidence: Merge Gate `32595887784`, Agent Governance `32595887792`, Architecture Semantic Audit `32595874707`, Merge Authority Audit `32595874690` - SUCCESS before material review repair
+- final repaired head: pending commit/freeze
 - classification: high-risk foundation
-- result: pending
+- result: pending fresh exact-head CI because material review repair invalidated prior evidence
 
 ## Self-review
 
-- exact head: `7f214607e24f666b8569af3ce0a6222fbec51d00` (code head before task-metadata-only checkpoint)
-- method/reviewer: implementing/coordinating agent full-diff review against Issue #53, FND-02/FND-03/FND-04 and registered limits/errors
-- material findings: 7 repaired before freeze; open material findings: 0
-- verdict: PASS
+- superseded head: `9d5a251adb16076c3b0ebc50ae023677bf571894`
+- repair findings: independent Codex found 5 material issues (3 P1, 2 P2); all repaired in this cycle
+- additional self-review finding: terminal session could replay a committed reconnect attempt; RED reproduced and repaired
+- repaired-tree method: full repair diff review against FND-02/FND-03/FND-04, danger scan, focused/workspace/Clippy/fmt/governance/diff validation
+- open material findings: 0 locally; fresh independent exact-head review still mandatory
+- verdict: PASS for self-review only
 
 ## Independent review
 
-- required: YES — protocol/session/admission/fencing high-risk semantics
-- exact head: pending
-- method/auditor: genuinely independent exact-head reviewer
-- material findings: pending
-- verdict: pending
+- required: YES - protocol/session/admission/fencing high-risk semantics
+- reviewed superseded head: `9d5a251adb16076c3b0ebc50ae023677bf571894`
+- method/auditor: owner-authorized independent Codex review on PR #59
+- result on superseded head: REQUEST_CHANGES - 3 P1 + 2 P2 material findings
+- repaired: bootstrap/resume 65,536-byte hard bound; exact candidate authenticated transport binding; stable terminal reconnect-attempt correlation; monotonic SnapshotId/server-sequence/domain revisions; canonical 32-byte GrantNonce scoped to trusted issuer/profile
+- final repaired head: pending commit/freeze
+- verdict: pending fresh independent exact-head review; prior authorization/evidence does not carry to the repaired SHA
 
 ## Context checkpoint
 
 ```yaml
-last_progress: code head 7f214607 is frozen and locally green after synchronization with main; self-review repaired CommandRef identity, snapshot zero-length semantics/assembly, additive protobuf compatibility, bootstrap generation phase rules, snapshot limit disposition and reconnect-attempt preservation; open material findings 0.
-status: review_pending
+last_progress: independent review on 9d5a251 found five material issues; all five plus one terminal-replay self-review edge case were repaired with focused regression coverage; repaired tree is locally green and awaits final commit/freeze, fresh exact-head CI and fresh independent review.
+status: review_repair_pending
 branch: agent/otv2-impl-foundation-runtime-01
-head_sha: 7f214607e24f666b8569af3ce0a6222fbec51d00
+head_sha: pending-repair-freeze
 pr: 59
-blocker: mandatory genuinely independent exact-head review and protected exact-head CI remain before merge
-owner_action_required: null
-next_action: obtain genuinely independent review and protected exact-head CI on the unchanged final PR head; then merge, verify main and perform lifecycle closeout.
+blocker: fresh exact-head CI and genuinely independent review are mandatory after the material repair cycle
+owner_action_required: fresh owner authorization only if the final independent reviewer must again use owner-funded Codex on the new exact SHA
+next_action: finish final validation, commit and push repaired head while PR remains Draft, verify fresh exact-head CI, then obtain fresh independent exact-head review before merge.
 ```

@@ -4,6 +4,7 @@ use std::collections::BTreeMap;
 pub const PROTOCOL_MAJOR_V1: u32 = 1;
 pub const TRANSPORT_PROFILE_TCP_TLS13_V1: u32 = 1;
 pub const ALPN_OTERYN_GAME_V1: &str = "oteryn-game/1";
+pub const MAX_BOOTSTRAP_PAYLOAD_BYTES: usize = 65_536;
 pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
@@ -286,11 +287,21 @@ pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, Founda
             (_, unknown_wire) => skip_field(input, &mut cursor, unknown_wire)?,
         }
     }
+    let message_type =
+        MessageType::try_from(mt.ok_or(FoundationProtocolError::MalformedEnvelope)?)?;
+    let payload = payload.ok_or(FoundationProtocolError::MalformedEnvelope)?;
+    if matches!(
+        message_type,
+        MessageType::ClientBootstrap | MessageType::ClientResume
+    ) && payload.len() > MAX_BOOTSTRAP_PAYLOAD_BYTES
+    {
+        return Err(FoundationProtocolError::BootstrapLimitExceeded);
+    }
     Ok(WireEnvelopeView {
-        message_type: MessageType::try_from(mt.ok_or(FoundationProtocolError::MalformedEnvelope)?)?,
+        message_type,
         connection_generation: generation.unwrap_or(0),
         server_sequence: sequence.unwrap_or(0),
-        payload: payload.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        payload,
     })
 }
 
@@ -342,7 +353,11 @@ impl StateRevisionTracker {
         domain_id: u32,
         revision: u64,
     ) -> Result<(), FoundationProtocolError> {
-        if domain_id == 0 {
+        if domain_id == 0
+            || self
+                .revision(domain_id)
+                .is_some_and(|current| revision < current)
+        {
             return Err(FoundationProtocolError::StateRevisionMismatch);
         }
         self.revisions.insert(domain_id, revision);
@@ -390,8 +405,12 @@ impl ServerSequenceTracker {
         self.last_applied = sequence;
         Ok(SequenceDecision::Apply)
     }
-    pub fn apply_snapshot_boundary(&mut self, target: u64) {
-        self.last_applied = target
+    pub fn apply_snapshot_boundary(&mut self, target: u64) -> Result<(), FoundationProtocolError> {
+        if target < self.last_applied {
+            return Err(FoundationProtocolError::SnapshotAssemblyInvalid);
+        }
+        self.last_applied = target;
+        Ok(())
     }
 }
 
@@ -424,6 +443,7 @@ impl SnapshotCommitResult {
 #[derive(Debug, Clone, Default)]
 pub struct SnapshotBarrier {
     active: Option<SnapshotAssembly>,
+    highest_snapshot_id: Option<u64>,
 }
 impl SnapshotBarrier {
     pub fn new() -> Self {
@@ -447,9 +467,14 @@ impl SnapshotBarrier {
         {
             return Err(FoundationProtocolError::SnapshotLimitExceeded);
         }
-        if self.active.is_some() {
+        if self.active.is_some()
+            || self
+                .highest_snapshot_id
+                .is_some_and(|highest| id <= highest)
+        {
             return Err(FoundationProtocolError::SnapshotAssemblyInvalid);
         }
+        self.highest_snapshot_id = Some(id);
         self.active = Some(SnapshotAssembly {
             id,
             chunk_count,
@@ -594,6 +619,29 @@ mod tests {
     }
 
     #[test]
+    fn bootstrap_payload_limit_accepts_65536_and_rejects_65537()
+    -> Result<(), FoundationProtocolError> {
+        let mut accepted = vec![0x08, 0x01, 0x22, 0x80, 0x80, 0x04];
+        accepted.resize(6 + 65_536, 0);
+        assert_eq!(decode_wire_envelope(&accepted)?.payload().len(), 65_536);
+
+        let mut rejected = vec![0x08, 0x01, 0x22, 0x81, 0x80, 0x04];
+        rejected.resize(6 + 65_537, 0);
+        assert_eq!(
+            decode_wire_envelope(&rejected),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
+
+        let mut resume = vec![0x08, 0x03, 0x22, 0x81, 0x80, 0x04];
+        resume.resize(6 + 65_537, 0);
+        assert_eq!(
+            decode_wire_envelope(&resume),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn envelope_oracle_bytes_decode_and_validate_direction() -> Result<(), FoundationProtocolError>
     {
         let bytes = [0x08, 0x07, 0x10, 0x01, 0x22, 0x02, 0xaa, 0xbb];
@@ -698,6 +746,28 @@ mod tests {
     }
 
     #[test]
+    fn snapshot_revisions_and_server_sequence_never_roll_back()
+    -> Result<(), FoundationProtocolError> {
+        let mut revisions = StateRevisionTracker::new();
+        revisions.apply_snapshot_revision(7, 5)?;
+        assert_eq!(
+            revisions.apply_snapshot_revision(7, 4),
+            Err(FoundationProtocolError::StateRevisionMismatch)
+        );
+        assert_eq!(revisions.revision(7), Some(5));
+
+        let mut sequence = ServerSequenceTracker::new();
+        assert_eq!(sequence.observe(1)?, SequenceDecision::Apply);
+        assert_eq!(sequence.observe(2)?, SequenceDecision::Apply);
+        assert_eq!(
+            sequence.apply_snapshot_boundary(1),
+            Err(FoundationProtocolError::SnapshotAssemblyInvalid)
+        );
+        assert_eq!(sequence.last_applied(), 2);
+        Ok(())
+    }
+
+    #[test]
     fn state_revision_mismatch_never_guesses_forward() -> Result<(), FoundationProtocolError> {
         let mut revisions = StateRevisionTracker::new();
         revisions.apply_delta(7, 0, 1)?;
@@ -760,6 +830,33 @@ mod tests {
             Err(FoundationProtocolError::SnapshotLimitExceeded)
         );
         assert!(!barrier.is_active());
+        Ok(())
+    }
+
+    #[test]
+    fn snapshot_ids_are_monotonic_across_commit_and_generation_change()
+    -> Result<(), FoundationProtocolError> {
+        let mut barrier = SnapshotBarrier::new();
+        barrier.begin(2, 0, 0, 4, 1)?;
+        barrier.commit(2, 1)?;
+        assert_eq!(
+            barrier.begin(2, 0, 0, 4, 1),
+            Err(FoundationProtocolError::SnapshotAssemblyInvalid)
+        );
+        assert_eq!(
+            barrier.begin(1, 0, 0, 4, 2),
+            Err(FoundationProtocolError::SnapshotAssemblyInvalid)
+        );
+        barrier.begin(3, 1, 1, 5, 2)?;
+        assert_eq!(
+            barrier.chunk(3, 0, &[7], 3),
+            Err(FoundationProtocolError::StaleConnectionGeneration)
+        );
+        assert_eq!(
+            barrier.begin(2, 0, 0, 5, 3),
+            Err(FoundationProtocolError::SnapshotAssemblyInvalid)
+        );
+        barrier.begin(4, 0, 0, 5, 3)?;
         Ok(())
     }
 
