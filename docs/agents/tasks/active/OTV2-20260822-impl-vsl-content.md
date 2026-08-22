@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-vsl-content
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-22T18:11:00+02:00
+updated_at: 2026-08-22T19:38:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - apps/game-server/src/content/**
@@ -49,12 +49,12 @@ Deliver the minimum typed canonical graph plus deterministic compiler/projection
 
 ## Acceptance criteria
 
-- [ ] TDD-first stable namespaced keys/revisions and canonical typed graph validation.
-- [ ] Deterministic compilation is independent of source enumeration order.
-- [ ] Separate server and client-safe projections with negative leakage tests.
-- [ ] Non-production evidence artifact has explicit version, manifest/revision provenance, bounded sections and digest/integrity checks.
-- [ ] Corrupt/truncated/oversized/missing-reference/incompatible artifacts fail before activation.
-- [ ] Staging is separate from activation and valid activation is all-or-nothing.
+- [x] TDD-first stable namespaced keys/revisions and canonical typed graph validation.
+- [x] Deterministic compilation is independent of source enumeration order.
+- [x] Separate server and client-safe projections with negative leakage tests.
+- [x] Non-production evidence artifact has explicit version, manifest/revision provenance, bounded sections and SHA-256 digest/integrity checks.
+- [x] Corrupt/truncated/oversized/missing-reference/incompatible artifacts fail before activation.
+- [x] Staging is separate from activation and valid activation is all-or-nothing.
 ## Implementation plan
 
 1. RED: add focused tests for duplicate/missing keys, deterministic graph ordering, projection leakage and invalid artifact activation.
@@ -70,12 +70,12 @@ No permanent `.omap`/`.owb` contract, compression/chunk/CDN/signing decision, St
 ## Validation
 
 ### Focused
-- command/run: pending until first RED test is created
-- result: pending
+- command/run: `rustc --edition 2024 --test -D warnings apps/game-server/src/content/mod.rs -o target/content-tests.exe && target/content-tests.exe`
+- result: PASS — 7 focused tests; 0 failed; includes deterministic compile, missing/duplicate refs, client-safe leakage, exact manifest provenance, corruption/truncation/oversize/incompatibility and SHA-256 known-vector proof
 
 ### Component/integration
-- command/run: `cargo test --workspace` after lawful composition integration
-- result: baseline PASS; lane result pending
+- command/run: `rustc --edition 2024 --crate-type lib -D warnings apps/game-server/src/content/mod.rs -o target/libcontent_verify.rlib`
+- result: PASS standalone; lawful `apps/game-server` composition and full workspace validation remain pending the serialized shared-path lease
 
 ### E2E
 - scenario: content compile/load/activate evidence consumed by later Movement/Combat; currently `NOT_EVALUATED`
@@ -84,12 +84,12 @@ No permanent `.omap`/`.owb` contract, compression/chunk/CDN/signing decision, St
 ## Context checkpoint
 
 ```yaml
-last_progress: exact-base bind #46 merged; isolated content worktree created from post-bind main; permanent physical-format decisions remain explicitly excluded.
+last_progress: TDD content kernel is GREEN standalone: canonical graph/order and reference validation, explicit server/client-safe projection with leakage rejection, disposable VSL evidence profile v1 with exact revision/compiler/canonicalization/Content-Lock provenance, bounded one-section table, SHA-256 section/artifact integrity, staged validation and atomic activation; 7/7 tests, rustfmt and production -D warnings compile pass.
 status: implementing
 branch: agent/otv2-impl-vsl-content-01
-head_sha: fd39c6aa026e82062a8b29af24811d467c115f19
+head_sha: pending_commit
 pr: null
-blocker: shared composition lease is intentionally held by FOUNDATION
+blocker: shared composition lease is intentionally held by FOUNDATION; full workspace integration is deferred, not bypassed
 owner_action_required: null
-next_action: write the first failing canonical-graph/projection/artifact tests inside apps/game-server/src/content.
+next_action: commit and push the independently validated content kernel, then retain it unchanged until the coordinator advances the shared composition lease.
 ```
