@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-22T23:23:18.5699650+02:00
+updated_at: 2026-08-22T23:27:24.0835060+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -99,7 +99,8 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 ### Exact-head CI
 - superseded reviewed head: `9d5a251adb16076c3b0ebc50ae023677bf571894`
 - superseded evidence: Merge Gate `32595887784`, Agent Governance `32595887792`, Architecture Semantic Audit `32595874707`, Merge Authority Audit `32595874690` - SUCCESS before material review repair
-- final repaired head: pending commit/freeze
+- repaired code head: `5a4fb562726ab73f095039e94304e5473390926b`
+- final PR head: pending metadata-only freeze commit
 - classification: high-risk foundation
 - result: pending fresh exact-head CI because material review repair invalidated prior evidence
 
@@ -119,18 +120,19 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - method/auditor: owner-authorized independent Codex review on PR #59
 - result on superseded head: REQUEST_CHANGES - 3 P1 + 2 P2 material findings
 - repaired: bootstrap/resume 65,536-byte hard bound; exact candidate authenticated transport binding; stable terminal reconnect-attempt correlation; monotonic SnapshotId/server-sequence/domain revisions; canonical 32-byte GrantNonce scoped to trusted issuer/profile
-- final repaired head: pending commit/freeze
+- repaired code head: `5a4fb562726ab73f095039e94304e5473390926b`
+- final PR head: pending metadata-only freeze commit
 - verdict: pending fresh independent exact-head review; prior authorization/evidence does not carry to the repaired SHA
 
 ## Context checkpoint
 
 ```yaml
-last_progress: independent review on 9d5a251 found five material issues; all five plus one terminal-replay self-review edge case were repaired with focused regression coverage; repaired tree is locally green and awaits final commit/freeze, fresh exact-head CI and fresh independent review.
-status: review_repair_pending
+last_progress: independent review on 9d5a251 found five material issues; all five plus one terminal-replay self-review edge case were repaired with regression coverage; repaired code head 5a4fb562 is locally green and frozen; only this metadata checkpoint follows before fresh exact-head CI/review.
+status: review_pending
 branch: agent/otv2-impl-foundation-runtime-01
-head_sha: pending-repair-freeze
+head_sha: pending-final-metadata-freeze
 pr: 59
 blocker: fresh exact-head CI and genuinely independent review are mandatory after the material repair cycle
 owner_action_required: fresh owner authorization only if the final independent reviewer must again use owner-funded Codex on the new exact SHA
-next_action: finish final validation, commit and push repaired head while PR remains Draft, verify fresh exact-head CI, then obtain fresh independent exact-head review before merge.
+next_action: commit this metadata-only checkpoint, push while PR remains Draft, verify fresh exact-head CI on the unchanged final PR head, then obtain fresh independent exact-head review before merge.
 ```
