@@ -37,6 +37,7 @@ Deliver the minimum typed canonical graph plus deterministic compiler/projection
 - `PROVEN`: client projection is allowlisted and non-authoritative; server-only fields must not leak.
 - `PROVEN`: GAME-CHANNEL multiplicity classes used by the fixture are canonical accepted policy vocabulary.
 - `PROVEN`: Issue #54 now tracks this substantial task lifecycle.
+- `PROVEN`: concurrent same-lane remote commits `cdbe599`/`8f791c7` were reviewed; standalone Rust 1.94 tests passed 7/7, but workspace-equivalent strict Clippy failed on 25 findings and the kernel lacked required spawn/channel/loot/XP/relocation/collision/release/pair-activation semantics. Their history is preserved as merge provenance while this broader implementation is retained.
 - `UNKNOWN`: Reference formulas/content values remain test-only fixtures and cannot establish parity.
 - `BLOCKER`: accepted DUR-04/VSL loader/compiler hard maxima are absent from `RESOURCE_LIMITS_REGISTRY.json`; implementation therefore accepts only explicitly injected `evidence:*` limit profiles and cannot claim production acceptance.
 - `BLOCKER`: shared composition/workspace lease remains with FOUNDATION; CONTENT cannot mutate `apps/game-server/src/lib.rs`, Cargo workspace files or the registry until coordinator allocation changes.
@@ -93,7 +94,7 @@ No permanent `.omap`/`.owb` contract, compression/chunk/CDN/signing decision, St
 ## Context checkpoint
 
 ```yaml
-last_progress: primary-path implementation and focused/workspace verification are complete; Issue #54 tracks lifecycle; exact worker code is ready for a draft PR while integration authority remains blocked.
+last_progress: primary-path implementation is complete; concurrent remote same-lane kernel was reviewed and reconciled without force-push; Issue #54 tracks lifecycle; exact worker code is ready for a draft PR while integration authority remains blocked.
 status: implementation_complete_waiting_integration_authority
 branch: agent/otv2-impl-vsl-content-01
 head_sha: pending_commit_and_main_reconcile
