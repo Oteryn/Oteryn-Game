@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-qa-e2e
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-22T18:11:00+02:00
+updated_at: 2026-08-22T19:47:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - apps/game-server/tests/**
@@ -46,12 +46,12 @@ Deliver the smallest reusable evidence/test shell that classifies real-boundary 
 
 ## Acceptance criteria
 
-- [ ] Deterministic scenario identity/config includes exact build/protocol/content/revision/seed/clock/topology/fault evidence fields.
-- [ ] Stable result classification distinguishes `PASS / UNSTABLE / FAIL / BLOCKED / NOT_EVALUATED`.
-- [ ] First-divergence and phase evidence are preserved without rewriting historical failed attempts.
-- [ ] Negative tests prove mock/direct-domain shortcuts cannot satisfy terminal Tier 1/Tier 2 evidence.
-- [ ] Cleanup status and diagnostic artifact references are first-class evidence.
-- [ ] Tests compile only against actually merged product seams; unavailable journeys remain explicit blockers.
+- [x] Deterministic scenario identity/config includes exact build/protocol/content/revision/seed/clock/topology/fault evidence fields.
+- [x] Stable result classification distinguishes `PASS / UNSTABLE / FAIL / BLOCKED / NOT_EVALUATED`.
+- [x] First-divergence and phase evidence are preserved without rewriting historical failed attempts.
+- [x] Negative tests prove mock/direct-domain shortcuts cannot satisfy terminal Tier 1/Tier 2 evidence.
+- [x] Cleanup status and diagnostic artifact references are first-class evidence.
+- [x] Tests compile only against actually merged product seams; unavailable journeys remain explicit `NOT_EVALUATED` blockers.
 ## Implementation plan
 
 1. RED: add integration-test-shell tests for scenario identity, evidence validation and result classification independent of missing product seams.
@@ -67,12 +67,12 @@ No production-default test adapter, no live account/data, no synthetic-client-as
 ## Validation
 
 ### Focused
-- command/run: pending until first RED evidence-shell test is created
-- result: pending
+- command/run: `cargo test -p oteryn-game-server --test evidence_shell`
+- result: PASS — 8 evidence-shell tests; 0 failed; Tier1/Tier2/Tier3 boundary rejection, exact comparison-cell classification, first-divergence, cleanup and physical-attempt retention covered
 
 ### Component/integration
-- command/run: `cargo test -p oteryn-game-server --tests` after lawful test target is present
-- result: pending
+- command/run: `cargo test -p oteryn-game-server --tests` and `cargo clippy -p oteryn-game-server --tests -- -D warnings`
+- result: PASS — 3 existing package tests + 8 evidence-shell tests; Clippy `-D warnings` PASS; scoped `rustfmt --check` PASS on allocated test files
 
 ### E2E
 - scenario: Foundation connect/admit/reconnect becomes countable only after real merged transport/admission seam
@@ -81,12 +81,12 @@ No production-default test adapter, no live account/data, no synthetic-client-as
 ## Context checkpoint
 
 ```yaml
-last_progress: exact-base bind #46 merged; isolated QA worktree created; evidence shell can start without pretending unavailable product journeys exist.
+last_progress: TDD QA evidence shell is GREEN: canonical comparison-cell identity, all ADR phases, Tier boundary proof, anti-mock/direct-domain rejection, first-divergence validation, cleanup gating and PASS/UNSTABLE/FAIL/BLOCKED/NOT_EVALUATED population classification are implemented entirely under the allocated test path; 8/8 focused tests, package tests and Clippy -D warnings pass.
 status: implementing
 branch: agent/otv2-impl-qa-e2e-01
-head_sha: fd39c6aa026e82062a8b29af24811d467c115f19
+head_sha: 58d64130cc0526001bd1c9a00a179e1c39ad6e51
 pr: null
-blocker: real Tier 1/Tier 2 journeys await merged product seams, but evidence-shell implementation is unblocked
+blocker: real Tier 1/Tier 2 Foundation journeys remain `NOT_EVALUATED` until the required production transport/admission/persistence and native-client seams are merged
 owner_action_required: null
-next_action: write the first failing evidence classification and anti-mock terminal-tier tests under apps/game-server/tests.
+next_action: commit and push the evidence shell; later add real journeys only after the coordinator proves their merged prerequisites without rewriting this historical synthetic-shell evidence.
 ```
