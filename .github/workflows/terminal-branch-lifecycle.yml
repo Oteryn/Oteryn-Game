@@ -1,0 +1,69 @@
+name: Terminal Branch Lifecycle
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/terminal-branch-lifecycle.yml"
+      - "docs/agents/BRANCH_LIFECYCLE_POLICY.json"
+      - "docs/architecture/ADR-0017-terminal-source-branch-lifecycle.md"
+      - "docs/agents/TERMINAL_BRANCH_DELETION_APPROVAL.json"
+  pull_request_target:
+    types:
+      - closed
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/terminal-branch-lifecycle.yml"
+      - "docs/agents/BRANCH_LIFECYCLE_POLICY.json"
+      - "docs/architecture/ADR-0017-terminal-source-branch-lifecycle.md"
+      - "docs/agents/TERMINAL_BRANCH_DELETION_APPROVAL.json"
+  schedule:
+    - cron: "31 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: terminal-branch-lifecycle-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  read:
+    if: github.event_name == 'pull_request' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    permissions:
+      contents: read
+      issues: read
+      pull-requests: read
+    uses: Oteryn/Oteryn-Platform/.github/workflows/terminal-branch-lifecycle-reusable.yml@c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+    with:
+      operation: read
+      platform_ref: c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+      policy_path: docs/agents/BRANCH_LIFECYCLE_POLICY.json
+
+  close:
+    if: github.event_name == 'pull_request_target' && github.event.action == 'closed'
+    permissions:
+      contents: write
+      issues: read
+      pull-requests: read
+    uses: Oteryn/Oteryn-Platform/.github/workflows/terminal-branch-lifecycle-reusable.yml@c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+    with:
+      operation: close
+      platform_ref: c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+      policy_path: docs/agents/BRANCH_LIFECYCLE_POLICY.json
+
+  apply:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      issues: read
+      pull-requests: read
+    uses: Oteryn/Oteryn-Platform/.github/workflows/terminal-branch-lifecycle-reusable.yml@c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+    with:
+      operation: apply
+      platform_ref: c67eac6623a88d01ad74b3e2e33bd69d75dc6b5c
+      policy_path: docs/agents/BRANCH_LIFECYCLE_POLICY.json
