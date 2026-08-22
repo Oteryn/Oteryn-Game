@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-vsl-content
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-22T19:38:00+02:00
+updated_at: 2026-08-22T19:41:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - apps/game-server/src/content/**
@@ -87,7 +87,7 @@ No permanent `.omap`/`.owb` contract, compression/chunk/CDN/signing decision, St
 last_progress: TDD content kernel is GREEN standalone: canonical graph/order and reference validation, explicit server/client-safe projection with leakage rejection, disposable VSL evidence profile v1 with exact revision/compiler/canonicalization/Content-Lock provenance, bounded one-section table, SHA-256 section/artifact integrity, staged validation and atomic activation; 7/7 tests, rustfmt and production -D warnings compile pass.
 status: implementing
 branch: agent/otv2-impl-vsl-content-01
-head_sha: pending_commit
+head_sha: cdbe59998806338ab16237aac818a325b948a90c
 pr: null
 blocker: shared composition lease is intentionally held by FOUNDATION; full workspace integration is deferred, not bypassed
 owner_action_required: null
