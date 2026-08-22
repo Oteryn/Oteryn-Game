@@ -1,13 +1,16 @@
 # Oteryn v2 Foundation Programme — Current Status
 
 - Status: **Canonical current execution-status overlay**
-- Date: 2026-08-17
+- Date: 2026-08-22
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
+- Reconciliation issue: `#48`
+- Reconciliation snapshot: `main@79e2f3baf17bd3b2231ab71c5dc5019e9aa0441e`
+- Wave 1 exact-base bind: `fd39c6aa026e82062a8b29af24811d467c115f19`
 - Applies to: current DecisionStatus / DeliveryStatus / ImplementationStatus and the next safe execution gate
 
 ## 1. Reading rule
 
-This document is the maintained current-status source. Accepted ADRs/contracts/owner baselines remain semantic authority for their owned scope. Historical backlog/proposal/candidate prose is not current execution truth when it conflicts with this file or a later explicit owner-acceptance baseline.
+This document is the maintained current-status source. Accepted ADRs/contracts/owner baselines remain semantic authority for their owned scope. Historical backlog/proposal/candidate/checkpoint prose is not current execution truth when it conflicts with this file or a later explicit owner-acceptance baseline.
 
 `ARCHITECTURE_STATUS_MODEL.md` remains normative:
 
@@ -15,23 +18,28 @@ This document is the maintained current-status source. Accepted ADRs/contracts/o
 DecisionStatus != DeliveryStatus != ImplementationStatus
 ```
 
-Architecture acceptance and prompt release never imply runtime implementation, Reference parity or production enablement.
+Architecture acceptance, implementation allocation, an active worker branch and production enablement are separate facts. An unmerged worker branch does not change merged-main `ImplementationStatus` for a gate.
 
 ## 2. Programme headline
 
-The native foundation, durability/content/determinism architecture, complete first gameplay/client/analytics architecture wave, and bounded Stage-C movement/combat/content architecture are owner-accepted and lifecycle-closed.
+The native foundation, durability/content/determinism architecture, complete first gameplay/client/analytics architecture wave, bounded Stage-C movement/combat/content architecture and the Game-side entitlement consumer/enforcement architecture are accepted and lifecycle-closed for their declared paper scopes.
 
-Canonical recent deliveries:
+Implementation is no longer merely released for future invocation:
 
-- `GAME-ABILITY-01`: PR #306 / merge `e2bb284f56f39d8fa01a843d098bcb21d17d77ac`; closeout #307 / `dfc75d1332f710d6ac85009653579f7bc51ccc59`;
-- remaining first-wave acceptance: PR #309 / merge `bf2a2ae279516f62626a5d8f4dc1aeb587535c62`; its terminal task bookkeeping is consolidated into PR #314;
-- Stage-C acceptance: PR #311 / merge `e0ea9ef87c01dec720a22e8df6d54bfd669cb62c`; genuinely independent exact-head review reported zero material findings on `c5d9f839abd8998d42f4f37b203882f03bb51ce0`;
-- Stage-C lifecycle/status closeout: PR #318 / merge `a6a5180d98cf7791e40d9e1d08b25a5c8b4eff96`;
-- final implementation-prompt handoff: PR #314 / merge `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`; the evaluated coordinator programme is released for explicit invocation.
+- `PROVEN`: Bootstrap delivery PR #10 merged as `0809004252db228e8f3fac3cdb6638c3c2a7fbda`; its lifecycle closeout completed through PR #11.
+- `PROVEN`: SIM delivery PR #14 merged as `66619daf5837f31f7c54676e9f8351ed4ae220b0`; its lifecycle closeout completed through PR #15.
+- `PROVEN`: PR #14 delivered the bounded production `oteryn-simulation-determinism` core consumed by `apps/game-server`: profile revision, checked deterministic numeric helpers, purpose-isolated/retry-stable decision derivation, semantic time and canonical state-hash support.
+- `PROVEN`: Wave 1 allocation PR #45 merged as `33cec30b8075c73290d7d76e9f59df4701771650`.
+- `PROVEN`: exact-base bind PR #46 merged as `fd39c6aa026e82062a8b29af24811d467c115f19`.
+- `PROVEN`: FOUNDATION, DOMAIN, CONTENT and QA worker branches/task records exist from the post-bind main and report `status: implementing`.
+- `PROVEN`: Foundation and Domain branches contain implementation commits beyond the exact-base bind; Content and QA are active but remain behind their own acceptance/merge gates.
+- `PROVEN`: later main commit `79e2f3baf17bd3b2231ab71c5dc5019e9aa0441e` (PR #47, independent audit prompt) is disjoint from the implementation allocations and this status reconciliation.
 
-No accepted gameplay/runtime gate below is implemented merely because its architecture or prompt is released.
+Current implementation execution truth is owned operationally by `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md` plus exact worker task/branch/PR/CI state. This architecture overlay summarizes that truth; it does not take over worker ownership.
 
 ## 3. Current three-axis status
+
+The table below reports canonical merged architecture plus merged implementation evidence. Active but unmerged Wave 1 worker code is called out separately in Section 5 and does not promote these rows.
 
 | Gate | DecisionStatus | DeliveryStatus | ImplementationStatus |
 |---|---|---|---|
@@ -51,7 +59,7 @@ No accepted gameplay/runtime gate below is implemented merely because its archit
 | `GAME-CHANNEL-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
 | `GAME-CHAR-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
 | `GAME-ITEM-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
-| `SIM-DETERMINISM-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
+| `SIM-DETERMINISM-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `IMPLEMENTED`* |
 | `GAME-ABILITY-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
 | `GAME-INTERACTION-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
 | `ALPHA-CLIENT-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
@@ -62,10 +70,12 @@ No accepted gameplay/runtime gate below is implemented merely because its archit
 | `VSL-MOVE-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
 | `VSL-COMBAT-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
 | `VSL-CONTENT-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
+| `PROD-ENTITLEMENTS-01` | `ACCEPTED` | `LIFECYCLE_CLOSED` | `NOT_STARTED` |
 | `VSL-01` | `PLANNED` | `PLANNED` | `NOT_STARTED` |
 | `PERF-01` | `PLANNED` | `PLANNED` | `NOT_STARTED` |
 | `OPS-CHANNEL-01` | `PLANNED` | `PLANNED` | `NOT_STARTED` |
-| `PROD-ENTITLEMENTS-01` | `PROPOSED` | `PLANNED` | `NOT_STARTED` |
+
+\* `SIM-DETERMINISM-01 = IMPLEMENTED` means the bounded executor-defined SIM core from PR #14 exists on merged `main`. It is **not** a claim that every full-contract replay envelope, domain consumer, formula descriptor, future external-fact integration or VSL proof is complete. Whole-gate `PROVEN` is deliberately withheld until named downstream evidence exists.
 
 ## 4. Reference evidence/parity
 
@@ -82,65 +92,80 @@ parity: PARITY_PENDING_EVIDENCE
 canonical_digest: null
 ```
 
-Agent A #271 promoted **0/4**. Architecture acceptance and prompt release do not change this.
+Architecture acceptance and implementation activity do not promote Reference evidence or parity.
 
-## 5. Released implementation handoff
+## 5. Active implementation wave
 
-PR #314 merged as `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`; the evaluated implementation coordinator programme is released. Normal owner entry point:
-
-```text
-Oteryn: implementation coordinator
-```
-
-The coordinator must create bounded allocations. Direct worker aliases remain read-only without a live coordinator allocation naming exact lane, paths, dependencies and merge order.
-
-Canonical order:
+At the reconciliation snapshot, the implementation coordinator has already passed the serial Bootstrap and SIM gates and released the post-SIM Wave 1 exact-base allocation.
 
 ```text
-BOOTSTRAP [serial]
-  -> FOUNDATION + SIM + DOMAIN + CONTENT + QA
-  -> DURABILITY after Foundation/Domain
-  -> ABILITY + INTERACTION + AI after Foundation/SIM/Domain/Content
-  -> CLIENT after compatible Foundation seam
-  -> MOVE after Foundation/SIM/Domain/Content/Interaction/Client/QA
-  -> COMBAT only after merged MOVE + Foundation/SIM/Domain/Content/Ability/Interaction/Durability/Client/QA
-
-CHANNEL = later after Foundation/Domain/Durability
-CONTENT-FORMAT-SPIKE = evidence only
-ANALYTICS = later after concrete producer event families exist
+BOOTSTRAP: COMPLETED + LIFECYCLE_CLOSED
+SIM:       COMPLETED + LIFECYCLE_CLOSED
+WAVE1:
+  FOUNDATION -> implementing on agent/otv2-impl-foundation-runtime-01
+  DOMAIN     -> implementing on agent/otv2-impl-domain-core-01
+  CONTENT    -> implementing on agent/otv2-impl-vsl-content-01
+  QA         -> implementing on agent/otv2-impl-qa-e2e-01
 ```
 
-Stable workspace/registry/ID mutations remain serialized.
+The worker branches remain noncanonical until their own required review/CI/merge lifecycle succeeds. Foundation retains mandatory genuinely independent exact-head review for protocol/session/admission/fencing work. Shared composition/workspace mutations remain coordinator-serialized, with Foundation holding the first shared lease under the live allocation.
 
-## 6. Holds that remain binding
+No architecture status document may treat the existence of these branches as proof that FND-02/FND-03/FND-04, Character/Item, Content or QA gates are already implemented on `main`.
 
-Prompt release does not remove lane-specific gates:
+## 6. PROD-ENTITLEMENTS-01 reconciliation
 
-- `PROD-ENTITLEMENTS-01` blocks Premium/VIP/game-consumed entitlement implementation/activation only;
-- exact Reference formulas/mechanics/values remain evidence-gated; test fixtures cannot establish parity;
-- permanent World Project/World Bundle encoding still requires the DUR-04 format spike and later owner decision;
-- concrete finite resource ceilings are required before affected executable acceptance; missing values fail closed;
+`PROD-ENTITLEMENTS-01` is no longer `PROPOSED`.
+
+- Game consumer/enforcement contract acceptance: PR #20, independently reviewed exact head `0dfa0c5cdcd811c63d6926da166550712dfb59fc`, squash merge `d40a225e5fedca0396f34b4f2b6c1e343161e6ff`.
+- Lifecycle closeout: PR #27, squash merge `84f485089b97cfaba1b5c6628ed8e0ba6655dc51`.
+- The historical filename `PROD-ENTITLEMENTS-01_GAME_CONSUMER_ENFORCEMENT_CONTRACT_CANDIDATE.md` is retained as source provenance; the filename does not demote the later accepted decision status.
+
+Acceptance remains architecture-only. Physical persistence/inbox/cursor schema, transport/IDL, crypto/container choice beyond accepted producer/consumer contracts, concrete product catalogue/benefits, numeric lease/skew policy, runtime implementation, payment behavior and production activation remain separately governed.
+
+## 7. FND-04 reconnect/disconnect timing precedence
+
+Later accepted FND-04 architecture supersedes historical checkpoint wording for reconnect/liveness timing.
+
+Canonical rule:
+
+```text
+historical 2s / 5s / 15s reconnect-liveness-grace values -> NON-CANONICAL / DEFERRED
+exact defensive PvE re-entry protection after eligible valid re-entry -> 4 seconds ACCEPTED
+```
+
+FND-04 intentionally leaves probe cadence/hysteresis/control-loss detection, stale transport cleanup, same-session grace, stable-control re-arm threshold, CharacterLease timing and prepared/rate/resource limits to measured registry/OPS/PERF/DUR evidence before implementation activation.
+
+Historical disconnect checkpoint documents remain provenance and must not override the accepted FND-04 A/B/C contract set.
+
+## 8. Holds that remain binding
+
+Implementation progress does not remove lane-specific gates:
+
+- exact Reference formulas/mechanics/values remain evidence-gated; fixtures cannot establish parity;
+- permanent World Project/World Bundle physical encoding still requires the DUR-04 format spike and later owner decision;
+- concrete finite resource ceilings are required before affected executable acceptance; missing required values fail closed;
 - producer event families must exist before ANL-02/03 can claim real metric/detector coverage;
-- protocol/admission/server/client/persistence implementations remain `NOT_STARTED`;
 - QA-E2E Tier 1/2/3 evidence remains mandatory for terminal vertical-slice proof;
 - PERF/OPS retain measured production capacity/orchestration authority;
-- high-risk protocol/session/admission/persistence/item/loot/value/multichannel/fencing changes require genuinely independent exact-head review under root `AGENTS.md`.
+- high-risk protocol/session/admission/persistence/item/loot/value/multichannel/fencing changes require genuinely independent exact-head review under root `AGENTS.md`;
+- entitlement runtime/product activation remains unallocated and production-disabled even though its paper consumer contract is accepted.
 
-## 7. Executor state
-
-After PR #314 / `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`:
+## 9. Executor state
 
 ```text
-EXECUTOR_PROGRAMME: RELEASED
+EXECUTOR_PROGRAMME: RELEASED_AND_ACTIVE
 DEFAULT_ENTRYPOINT: Oteryn: implementation coordinator
 DIRECT_WORKERS: ALLOCATION_GATED
-IMPLEMENTATION_WORKERS_STARTED: NO
+IMPLEMENTATION_WORKERS_STARTED: YES
+BOOTSTRAP: COMPLETED
+SIM: COMPLETED
+WAVE1: IMPLEMENTING
 IMPLEMENTATION_AUTHORITY_OUTSIDE_LIVE_COORDINATOR_ALLOCATION: NONE
 ```
 
-PR #314 did not start implementation. A later explicit coordinator invocation may create bounded allocations; no worker receives write authority until its live allocation exists.
+The exact operational state of an implementation lane must be resolved from live coordinator allocation + worker task/branch/PR/CI evidence, not copied from this summary if the repository has moved since the snapshot.
 
-## 8. Runtime / production authority
+## 10. Runtime / production authority
 
 Nothing here authorizes production deployment, protected-environment approval, live data/session/account mutation, production PostgreSQL migration execution, Platform writes, external-repository mutation, entitlement activation, Reference parity claims or owner-funded AI use.
 
