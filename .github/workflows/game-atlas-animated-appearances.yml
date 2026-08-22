@@ -7,6 +7,7 @@ on:
     branches: [main]
     paths:
       - 'tools/game-atlas-appearances/**'
+      - 'tools/game-atlas-outfit-spatial/**'
       - 'tools/game-atlas-creatures/animated.py'
       - 'tools/game-atlas-creatures/animated_self_test.py'
       - 'tools/game-atlas-fullworld-source/animated.py'
@@ -88,16 +89,19 @@ jobs:
             tools/game-atlas-appearances/export.py \
             tools/game-atlas-appearances/verify.py \
             tools/game-atlas-appearances/self_test.py \
+            tools/game-atlas-outfit-spatial/export.py \
+            tools/game-atlas-outfit-spatial/self_test.py \
             tools/game-atlas-creatures/animated.py \
             tools/game-atlas-creatures/animated_self_test.py \
             tools/game-atlas-fullworld-source/animated.py \
             tools/game-atlas-fullworld-source/animated_self_test.py
           python tools/game-atlas-appearances/self_test.py
+          python tools/game-atlas-outfit-spatial/self_test.py
           python tools/game-atlas-creatures/self_test.py
           python tools/game-atlas-creatures/animated_self_test.py
           python tools/game-atlas-fullworld-source/animated_self_test.py
 
-      - name: Build exact animation product twice
+      - name: Build exact animation and outfit spatial products twice
         shell: bash
         run: |
           set -euo pipefail
@@ -106,6 +110,19 @@ jobs:
           diff -rq /tmp/appearance-a /tmp/appearance-b
           python tools/game-atlas-appearances/verify.py /tmp/appearance-a | tee /tmp/appearance-verify.json
           python tools/game-atlas-appearances/verify.py /tmp/appearance-b >/dev/null
+          python tools/game-atlas-outfit-spatial/export.py /tmp/15.32.zip /tmp/outfit-spatial-a | tee /tmp/outfit-spatial-build.json
+          python tools/game-atlas-outfit-spatial/export.py /tmp/15.32.zip /tmp/outfit-spatial-b >/dev/null
+          diff -rq /tmp/outfit-spatial-a /tmp/outfit-spatial-b
+          python - <<'PY'
+          import importlib.util, json, pathlib, sys
+          path=pathlib.Path('tools/game-atlas-outfit-spatial/export.py')
+          spec=importlib.util.spec_from_file_location('spatial_verify',path); mod=importlib.util.module_from_spec(spec); sys.modules[spec.name]=mod; spec.loader.exec_module(mod)
+          a,_=mod.load_index(pathlib.Path('/tmp/outfit-spatial-a'))
+          b,_=mod.load_index(pathlib.Path('/tmp/outfit-spatial-b'))
+          assert a == b
+          pathlib.Path('/tmp/outfit-spatial-verify.json').write_text(json.dumps({'status':'PASS','product_root':a['product_root'],'statistics':a['statistics']},sort_keys=True)+'\n')
+          print(pathlib.Path('/tmp/outfit-spatial-verify.json').read_text(), end='')
+          PY
 
       - name: Verify exhaustive census and committed root
         shell: bash
@@ -131,7 +148,7 @@ jobs:
           print(json.dumps({'product_root':manifest['product_root'],'census':'PASS'},sort_keys=True))
           PY
 
-      - name: Prove corrupt product fails closed
+      - name: Prove corrupt products fail closed
         shell: bash
         run: |
           set -euo pipefail
@@ -142,6 +159,18 @@ jobs:
             exit 1
           fi
           grep -q 'ERROR:' /tmp/corrupt.log
+          cp -a /tmp/outfit-spatial-a /tmp/outfit-spatial-corrupt
+          printf ' ' >> /tmp/outfit-spatial-corrupt/outfits.jsonl
+          if python - <<'PY' >/tmp/spatial-corrupt.log 2>&1
+          import importlib.util, pathlib, sys
+          path=pathlib.Path('tools/game-atlas-outfit-spatial/export.py')
+          spec=importlib.util.spec_from_file_location('spatial_corrupt',path); mod=importlib.util.module_from_spec(spec); sys.modules[spec.name]=mod; spec.loader.exec_module(mod)
+          mod.load_index(pathlib.Path('/tmp/outfit-spatial-corrupt'))
+          PY
+          then
+            echo 'ERROR: verifier accepted corrupt outfit spatial product' >&2
+            exit 1
+          fi
 
       - name: Resolve real pinned NPC and monster outfits
         shell: bash
@@ -150,7 +179,7 @@ jobs:
           ROOT="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global"
           python tools/game-atlas-creatures/animated.py \
             "$ROOT/world" "$ROOT/npc" "$ROOT/monster" \
-            /tmp/appearance-a /tmp/animated-creatures.json \
+            /tmp/appearance-a /tmp/outfit-spatial-a /tmp/animated-creatures.json \
             | tee /tmp/creature-build.json
           python - <<'PY'
           import json
@@ -158,6 +187,7 @@ jobs:
           data=json.loads(Path('/tmp/animated-creatures.json').read_text())
           assert data['capability']=='animated-creatures-v1'
           assert data['appearance_product_root']=='sha256:0d1c8fc777d1d220a9d7723507fddd72585f7358d35a40209bd7415f1fe057c1'
+          assert data['outfit_spatial_product_root'].startswith('sha256:')
           n=data['statistics']['npc_presentation']
           m=data['statistics']['monster_presentation']
           assert n['resolved_unique_outfits'] > 0
@@ -170,6 +200,7 @@ jobs:
                       assert record.get('presentation_fallback') == 'factual-marker'
           Path('/tmp/creature-evidence.json').write_text(json.dumps({
               'appearance_product_root':data['appearance_product_root'],
+              'outfit_spatial_product_root':data['outfit_spatial_product_root'],
               'semantic_digest':data['semantic_digest'],
               'statistics':data['statistics'],
           },indent=2,sort_keys=True)+'\n')
@@ -187,6 +218,7 @@ jobs:
           from pathlib import Path
           manifest=json.loads(Path('/tmp/appearance-a/manifest.json').read_text())
           verify=json.loads(Path('/tmp/appearance-verify.json').read_text())
+          spatial=json.loads(Path('/tmp/outfit-spatial-verify.json').read_text())
           creature=json.loads(Path('/tmp/creature-evidence.json').read_text())
           evidence={
             'producer_repository':'Oteryn/Oteryn-Game',
@@ -195,6 +227,7 @@ jobs:
             'migration_sha':'e417c5e7c22986bf4acef0495eb47f7b72c97cce',
             'source':manifest['source'],
             'product_root':manifest['product_root'],
+            'outfit_spatial':spatial,
             'statistics':manifest['statistics'],
             'creatures':creature,
             'deterministic_double_build':True,
@@ -215,7 +248,11 @@ jobs:
             /tmp/appearance-a/census.json
             /tmp/appearance-a/object-programs.jsonl
             /tmp/appearance-a/outfit-programs.jsonl
+            /tmp/outfit-spatial-a/product.json
+            /tmp/outfit-spatial-a/manifest.json
+            /tmp/outfit-spatial-a/outfits.jsonl
             /tmp/appearance-verify.json
+            /tmp/outfit-spatial-verify.json
             /tmp/creature-evidence.json
             /tmp/animation-evidence.json
           if-no-files-found: error
