@@ -15,6 +15,7 @@ HERE = Path(__file__).resolve().parent
 APPEARANCE_EXPORT = HERE.parent / "game-atlas-appearances" / "export.py"
 STATIC_EXPORT = HERE / "export.py"
 CAPABILITY = "animated-creatures-v1"
+STATIC_DIRECTION = "south"
 
 
 def _load(path: Path, name: str):
@@ -46,6 +47,36 @@ def _presentation_reason(exc: Exception) -> str:
     return "INVALID_OUTFIT_PRESENTATION"
 
 
+def _static_projection(presentation: dict[str, Any]) -> dict[str, Any]:
+    groups = presentation.get("groups")
+    if not isinstance(groups, list) or not groups:
+        raise RuntimeError("resolved outfit has no frame groups")
+    idle = [group for group in groups if group.get("frame_group", {}).get("semantic") == "outfit-idle"]
+    moving = [group for group in groups if group.get("frame_group", {}).get("semantic") == "outfit-moving"]
+    if len(idle) > 1 or len(moving) > 1:
+        raise RuntimeError("ambiguous static outfit frame group")
+    selected = idle[0] if idle else moving[0] if moving else None
+    if selected is None:
+        raise RuntimeError("no supported static outfit frame group")
+    directions = selected.get("directions", {})
+    if STATIC_DIRECTION not in directions:
+        raise RuntimeError("static south direction is unavailable")
+    phase_count = int(selected.get("phase_count", 1))
+    animation = selected.get("animation") if phase_count > 1 else None
+    return {
+        "animation": animation,
+        "animation_program_id": selected["animation_program_id"],
+        "direction": STATIC_DIRECTION,
+        "enabled_addon_pattern_y": selected["enabled_addon_pattern_y"],
+        "frame_group": selected["frame_group"],
+        "pattern_x": int(directions[STATIC_DIRECTION]),
+        "pattern_z": int(selected["pattern_z"]),
+        "phase_count": phase_count,
+        "selection_policy": "prefer-outfit-idle-else-moving-in-place-v1",
+        "uses_moving_group_in_place": selected["frame_group"]["semantic"] == "outfit-moving",
+    }
+
+
 def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *, appearance_module=None) -> dict[str, Any]:
     appearance_module = appearance_module or _load(APPEARANCE_EXPORT, "game_atlas_appearance_product")
     manifest = json.loads((appearance_product / "manifest.json").read_text(encoding="utf-8"))
@@ -62,6 +93,10 @@ def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *,
     result["appearance_product_root"] = manifest["product_root"]
     result["appearance_source"] = manifest["source"]
 
+    # The world contains many repeated placements for the same exact outfit. Resolve
+    # each appearance tuple once so the large verified program catalog is not reparsed
+    # per spawn and every repeated placement receives byte-identical presentation data.
+    resolution_cache: dict[tuple[int, int, int, int, int, int], tuple[dict[str, Any] | None, str | None]] = {}
     total_presentation_unresolved = 0
     per_kind: dict[str, dict[str, Any]] = {}
     for kind, key in (("npc", "npcs"), ("monster", "monster_spawns")):
@@ -77,27 +112,48 @@ def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *,
                 continue
             raw = record["appearance"]
             try:
-                presentation = appearance_module.resolve_outfit_presentation(
-                    appearance_product,
-                    look_type=int(raw["look_type"]), head=int(raw["head"]), body=int(raw["body"]),
-                    legs=int(raw["legs"]), feet=int(raw["feet"]), addons=int(raw["addons"]),
+                cache_key = (
+                    int(raw["look_type"]), int(raw["head"]), int(raw["body"]),
+                    int(raw["legs"]), int(raw["feet"]), int(raw["addons"]),
                 )
-            except (appearance_module.ProductError, KeyError, TypeError, ValueError) as exc:
+            except (KeyError, TypeError, ValueError) as exc:
+                cache_key = (-1, -1, -1, -1, -1, -1)
                 reason = _presentation_reason(exc)
+                resolved = None
+            else:
+                cached = resolution_cache.get(cache_key)
+                if cached is None:
+                    try:
+                        resolved = appearance_module.resolve_outfit_presentation(
+                            appearance_product,
+                            look_type=cache_key[0], head=cache_key[1], body=cache_key[2],
+                            legs=cache_key[3], feet=cache_key[4], addons=cache_key[5],
+                        )
+                        resolved = {**resolved, "static_projection": _static_projection(resolved)}
+                        cached = (resolved, None)
+                    except (appearance_module.ProductError, KeyError, TypeError, ValueError, RuntimeError) as exc:
+                        cached = (None, _presentation_reason(exc))
+                    resolution_cache[cache_key] = cached
+                resolved, reason = cached
+
+            if resolved is None:
                 record["presentation_resolution_state"] = "UNRESOLVED_APPEARANCE"
-                record["presentation_reason"] = reason
+                record["presentation_reason"] = reason or "INVALID_OUTFIT_PRESENTATION"
                 record["presentation_fallback"] = "factual-marker"
                 unresolved_records += 1
                 total_presentation_unresolved += 1
-                reason_counts[reason] = reason_counts.get(reason, 0) + 1
+                reason_counts[record["presentation_reason"]] = reason_counts.get(record["presentation_reason"], 0) + 1
                 continue
+
             record["presentation_resolution_state"] = "RESOLVED"
-            record["outfit_presentation"] = presentation
+            record["outfit_presentation"] = resolved
             outfit_key = str(raw["outfit_key"])
             resolved_outfits.add(outfit_key)
             resolved_records += 1
-            if any(group.get("animation") is not None and int(group.get("phase_count", 1)) > 1 for group in presentation["groups"]):
+            projection = resolved["static_projection"]
+            if projection.get("animation") is not None and int(projection.get("phase_count", 1)) > 1:
                 animated_outfits.add(outfit_key)
+
         per_kind[kind] = {
             "resolved_presentation_records": resolved_records,
             "unresolved_presentation_records": unresolved_records,
@@ -108,6 +164,7 @@ def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *,
 
     stats = dict(result.get("statistics", {}))
     stats["presentation_unresolved"] = total_presentation_unresolved
+    stats["outfit_resolution_cache_entries"] = len(resolution_cache)
     stats["npc_presentation"] = per_kind["npc"]
     stats["monster_presentation"] = per_kind["monster"]
     result["statistics"] = stats
