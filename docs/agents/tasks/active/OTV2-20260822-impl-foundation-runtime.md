@@ -4,16 +4,16 @@
 task_id: OTV2-20260822-impl-foundation-runtime
 title: Implement native protocol runtime admission foundation
 mode: IMPLEMENT
-status: implementing
+status: review_pending
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-impl-foundation-runtime-01
-pr: null
+pr: 59
 base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-22T18:11:00+02:00
+updated_at: 2026-08-22T22:08:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -25,7 +25,7 @@ shared_lease_paths:
   - Cargo.toml
   - Cargo.lock
   - workspace-boundaries.toml
-```public_contracts:
+public_contracts:
   - docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md
   - docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md
   - docs/architecture/FND-04_IDENTITY_GAME_SESSION_ADMISSION_CHARACTER_LEASE_CONTRACT.md
@@ -86,18 +86,18 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Focused
 - command/run: `cargo test -p oteryn-game-server foundation`
-- result: PASS — 6 focused tests; 0 failed
+- result: PASS — 30 foundation tests; 0 failed
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: PASS — 9 package tests; 0 failed; Clippy `-D warnings` PASS
+- result: PASS — 33 package tests; 0 failed; full-workspace Clippy `-D warnings` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
-- result: pending
+- result: `NOT_EVALUATED` - no merged production transport listener/client-entry seam exists in the allocated composition; this lane intentionally adds no listener side effects.
 
 ### Exact-head CI
-- final head: pending
+- final head: pending final task-metadata checkpoint; frozen code head `7f214607e24f666b8569af3ce0a6222fbec51d00`
 - trigger source: pending
 - workflow/run/job: pending
 - runner assignment: pending
@@ -106,10 +106,10 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- exact head: `7f214607e24f666b8569af3ce0a6222fbec51d00` (code head before task-metadata-only checkpoint)
+- method/reviewer: implementing/coordinating agent full-diff review against Issue #53, FND-02/FND-03/FND-04 and registered limits/errors
+- material findings: 7 repaired before freeze; open material findings: 0
+- verdict: PASS
 
 ## Independent review
 
@@ -122,12 +122,12 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 ## Context checkpoint
 
 ```yaml
-last_progress: baseline workspace tests passed; first TDD foundation kernel is GREEN in production build with bounded frame prefix, CommandId ingress, connection fencing and ownership-generation ordinals; package tests and Clippy -D warnings pass.
-status: implementing
+last_progress: code head 7f214607 is frozen and locally green after synchronization with main; self-review repaired CommandRef identity, snapshot zero-length semantics/assembly, additive protobuf compatibility, bootstrap generation phase rules, snapshot limit disposition and reconnect-attempt preservation; open material findings 0.
+status: review_pending
 branch: agent/otv2-impl-foundation-runtime-01
-head_sha: fd39c6aa026e82062a8b29af24811d467c115f19
-pr: null
-blocker: null
+head_sha: 7f214607e24f666b8569af3ce0a6222fbec51d00
+pr: 59
+blocker: mandatory genuinely independent exact-head review and protected exact-head CI remain before merge
 owner_action_required: null
-next_action: commit the first foundation kernel, then verify accepted crate/dependency guidance for protobuf codegen and TLS before the next RED cycle.
+next_action: commit this task-metadata-only checkpoint, then run exact-head governance/CI and obtain genuinely independent review on the unchanged final PR head.
 ```
