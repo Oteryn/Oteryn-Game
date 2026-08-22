@@ -1,0 +1,777 @@
+use super::FoundationProtocolError;
+use std::collections::BTreeMap;
+
+pub const PROTOCOL_MAJOR_V1: u32 = 1;
+pub const TRANSPORT_PROFILE_TCP_TLS13_V1: u32 = 1;
+pub const ALPN_OTERYN_GAME_V1: &str = "oteryn-game/1";
+pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
+pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
+pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct WireId16([u8; 16]);
+impl WireId16 {
+    pub fn decode(input: &[u8]) -> Result<Self, FoundationProtocolError> {
+        let value: [u8; 16] = input
+            .try_into()
+            .map_err(|_| FoundationProtocolError::InvalidWireIdentifier)?;
+        if value.iter().all(|byte| *byte == 0) {
+            return Err(FoundationProtocolError::InvalidWireIdentifier);
+        }
+        Ok(Self(value))
+    }
+    #[must_use]
+    pub const fn as_bytes(&self) -> &[u8; 16] {
+        &self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct CommandRef {
+    game_session_id: WireId16,
+    command_id: super::CommandId,
+}
+impl CommandRef {
+    #[must_use]
+    pub const fn new(game_session_id: WireId16, command_id: super::CommandId) -> Self {
+        Self {
+            game_session_id,
+            command_id,
+        }
+    }
+    #[must_use]
+    pub const fn game_session_id(self) -> WireId16 {
+        self.game_session_id
+    }
+    #[must_use]
+    pub const fn command_id(self) -> super::CommandId {
+        self.command_id
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ResyncPlan {
+    UpToDate,
+    ReplayFrom(u64),
+    SnapshotRequired,
+}
+#[must_use]
+pub fn plan_resync(last_applied: u64, current: u64, retained_from: u64) -> ResyncPlan {
+    if last_applied == current {
+        return ResyncPlan::UpToDate;
+    }
+    let Some(next) = last_applied.checked_add(1) else {
+        return ResyncPlan::SnapshotRequired;
+    };
+    if last_applied < current && next >= retained_from {
+        ResyncPlan::ReplayFrom(next)
+    } else {
+        ResyncPlan::SnapshotRequired
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Direction {
+    ClientToServer,
+    ServerToClient,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Phase {
+    Bootstrap,
+    PostAdmission,
+    Any,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Sequencing {
+    None,
+    CommandId,
+    ServerSequenced,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum MessageType {
+    ClientBootstrap = 1,
+    ServerAccepted = 2,
+    ClientResume = 3,
+    ServerResumeAccepted = 4,
+    LivenessProbe = 5,
+    LivenessAck = 6,
+    ClientCommand = 7,
+    CommandResult = 8,
+    StateDelta = 9,
+    ResyncRequest = 10,
+    SnapshotBegin = 11,
+    SnapshotChunk = 12,
+    SnapshotCommit = 13,
+    ProtocolError = 14,
+}
+impl MessageType {
+    pub const fn direction(self) -> Direction {
+        match self {
+            Self::ClientBootstrap
+            | Self::ClientResume
+            | Self::LivenessAck
+            | Self::ClientCommand
+            | Self::ResyncRequest => Direction::ClientToServer,
+            _ => Direction::ServerToClient,
+        }
+    }
+    pub const fn phase(self) -> Phase {
+        match self {
+            Self::ClientBootstrap
+            | Self::ServerAccepted
+            | Self::ClientResume
+            | Self::ServerResumeAccepted => Phase::Bootstrap,
+            Self::ProtocolError => Phase::Any,
+            _ => Phase::PostAdmission,
+        }
+    }
+    pub const fn sequencing(self) -> Sequencing {
+        match self {
+            Self::ClientCommand => Sequencing::CommandId,
+            Self::CommandResult | Self::StateDelta => Sequencing::ServerSequenced,
+            _ => Sequencing::None,
+        }
+    }
+}
+impl TryFrom<u32> for MessageType {
+    type Error = FoundationProtocolError;
+    fn try_from(v: u32) -> Result<Self, Self::Error> {
+        Ok(match v {
+            1 => Self::ClientBootstrap,
+            2 => Self::ServerAccepted,
+            3 => Self::ClientResume,
+            4 => Self::ServerResumeAccepted,
+            5 => Self::LivenessProbe,
+            6 => Self::LivenessAck,
+            7 => Self::ClientCommand,
+            8 => Self::CommandResult,
+            9 => Self::StateDelta,
+            10 => Self::ResyncRequest,
+            11 => Self::SnapshotBegin,
+            12 => Self::SnapshotChunk,
+            13 => Self::SnapshotCommit,
+            14 => Self::ProtocolError,
+            _ => return Err(FoundationProtocolError::UnknownMessageType),
+        })
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct WireEnvelopeView<'a> {
+    message_type: MessageType,
+    connection_generation: u64,
+    server_sequence: u64,
+    payload: &'a [u8],
+}
+impl<'a> WireEnvelopeView<'a> {
+    pub const fn message_type(&self) -> MessageType {
+        self.message_type
+    }
+    pub const fn connection_generation(&self) -> u64 {
+        self.connection_generation
+    }
+    pub const fn server_sequence(&self) -> u64 {
+        self.server_sequence
+    }
+    pub const fn payload(&self) -> &'a [u8] {
+        self.payload
+    }
+    pub fn validate(
+        &self,
+        direction: Direction,
+        admitted: bool,
+    ) -> Result<(), FoundationProtocolError> {
+        if self.message_type.direction() != direction {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        if direction == Direction::ClientToServer && self.server_sequence != 0 {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        match (admitted, self.message_type.phase()) {
+            (true, Phase::Bootstrap) | (false, Phase::PostAdmission) => {
+                return Err(FoundationProtocolError::MalformedEnvelope);
+            }
+            (true, Phase::PostAdmission | Phase::Any) if self.connection_generation == 0 => {
+                return Err(FoundationProtocolError::StaleConnectionGeneration);
+            }
+            (false, Phase::Bootstrap | Phase::Any) if self.connection_generation != 0 => {
+                return Err(FoundationProtocolError::MalformedEnvelope);
+            }
+            _ => {}
+        }
+        match self.message_type.sequencing() {
+            Sequencing::ServerSequenced if self.server_sequence == 0 => {
+                Err(FoundationProtocolError::MalformedEnvelope)
+            }
+            Sequencing::None | Sequencing::CommandId if self.server_sequence != 0 => {
+                Err(FoundationProtocolError::MalformedEnvelope)
+            }
+            _ => Ok(()),
+        }
+    }
+}
+fn skip_field(input: &[u8], cursor: &mut usize, wire: u8) -> Result<(), FoundationProtocolError> {
+    let width = match wire {
+        0 => {
+            read_varint(input, cursor)?;
+            return Ok(());
+        }
+        1 => 8,
+        2 => usize::try_from(read_varint(input, cursor)?)
+            .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+        5 => 4,
+        _ => return Err(FoundationProtocolError::MalformedEnvelope),
+    };
+    *cursor = cursor
+        .checked_add(width)
+        .filter(|end| *end <= input.len())
+        .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+    Ok(())
+}
+
+fn read_varint(input: &[u8], cursor: &mut usize) -> Result<u64, FoundationProtocolError> {
+    let mut value = 0u64;
+    for shift in (0..70).step_by(7) {
+        let byte = *input
+            .get(*cursor)
+            .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+        *cursor += 1;
+        if shift == 63 && byte > 1 {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        value |= u64::from(byte & 0x7f) << shift;
+        if byte & 0x80 == 0 {
+            return Ok(value);
+        }
+    }
+    Err(FoundationProtocolError::MalformedEnvelope)
+}
+pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, FoundationProtocolError> {
+    if input.is_empty() || input.len() > super::MAX_WIRE_FRAME_BYTES as usize {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let (mut cursor, mut mt, mut generation, mut sequence, mut payload) =
+        (0usize, None, None, None, None);
+    while cursor < input.len() {
+        let key = read_varint(input, &mut cursor)?;
+        let field = (key >> 3) as u32;
+        let wire = (key & 7) as u8;
+        match (field, wire) {
+            (1, 0) if mt.is_none() => {
+                mt = Some(
+                    u32::try_from(read_varint(input, &mut cursor)?)
+                        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+                )
+            }
+            (2, 0) if generation.is_none() => generation = Some(read_varint(input, &mut cursor)?),
+            (3, 0) if sequence.is_none() => sequence = Some(read_varint(input, &mut cursor)?),
+            (4, 2) if payload.is_none() => {
+                let len = usize::try_from(read_varint(input, &mut cursor)?)
+                    .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+                let end = cursor
+                    .checked_add(len)
+                    .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+                payload = Some(
+                    input
+                        .get(cursor..end)
+                        .ok_or(FoundationProtocolError::MalformedEnvelope)?,
+                );
+                cursor = end;
+            }
+            _ if (1..=4).contains(&field) || field == 0 => {
+                return Err(FoundationProtocolError::MalformedEnvelope);
+            }
+            (_, unknown_wire) => skip_field(input, &mut cursor, unknown_wire)?,
+        }
+    }
+    Ok(WireEnvelopeView {
+        message_type: MessageType::try_from(mt.ok_or(FoundationProtocolError::MalformedEnvelope)?)?,
+        connection_generation: generation.unwrap_or(0),
+        server_sequence: sequence.unwrap_or(0),
+        payload: payload.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+    })
+}
+
+pub fn decode_framed_envelope(
+    frame: &[u8],
+) -> Result<WireEnvelopeView<'_>, FoundationProtocolError> {
+    let prefix = frame
+        .get(..4)
+        .ok_or(FoundationProtocolError::MalformedFrame)?;
+    let length = super::FrameLength::from_prefix(prefix)?;
+    let body = frame
+        .get(4..)
+        .ok_or(FoundationProtocolError::MalformedFrame)?;
+    if body.len() != length.get() as usize {
+        return Err(FoundationProtocolError::MalformedFrame);
+    }
+    decode_wire_envelope(body)
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct StateRevisionTracker {
+    revisions: BTreeMap<u32, u64>,
+}
+impl StateRevisionTracker {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn revision(&self, domain_id: u32) -> Option<u64> {
+        self.revisions.get(&domain_id).copied()
+    }
+    pub fn apply_delta(
+        &mut self,
+        domain_id: u32,
+        base: u64,
+        new: u64,
+    ) -> Result<(), FoundationProtocolError> {
+        if domain_id == 0 || new <= base {
+            return Err(FoundationProtocolError::StateRevisionMismatch);
+        }
+        let current = self.revision(domain_id).unwrap_or(0);
+        if current != base {
+            return Err(FoundationProtocolError::StateRevisionMismatch);
+        }
+        self.revisions.insert(domain_id, new);
+        Ok(())
+    }
+    pub fn apply_snapshot_revision(
+        &mut self,
+        domain_id: u32,
+        revision: u64,
+    ) -> Result<(), FoundationProtocolError> {
+        if domain_id == 0 {
+            return Err(FoundationProtocolError::StateRevisionMismatch);
+        }
+        self.revisions.insert(domain_id, revision);
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SequenceDecision {
+    Apply,
+    Duplicate,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ServerSequenceTracker {
+    last_applied: u64,
+}
+impl Default for ServerSequenceTracker {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+impl ServerSequenceTracker {
+    pub const fn new() -> Self {
+        Self { last_applied: 0 }
+    }
+    pub const fn last_applied(&self) -> u64 {
+        self.last_applied
+    }
+    pub fn next_expected(&self) -> Option<u64> {
+        self.last_applied.checked_add(1)
+    }
+    pub fn observe(&mut self, sequence: u64) -> Result<SequenceDecision, FoundationProtocolError> {
+        if sequence == 0 {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        if sequence <= self.last_applied {
+            return Ok(SequenceDecision::Duplicate);
+        }
+        let expected = self
+            .next_expected()
+            .ok_or(FoundationProtocolError::ServerSequenceGap)?;
+        if sequence != expected {
+            return Err(FoundationProtocolError::ServerSequenceGap);
+        }
+        self.last_applied = sequence;
+        Ok(SequenceDecision::Apply)
+    }
+    pub fn apply_snapshot_boundary(&mut self, target: u64) {
+        self.last_applied = target
+    }
+}
+
+#[derive(Debug, Clone)]
+struct SnapshotAssembly {
+    id: u64,
+    chunk_count: u32,
+    total_bytes: u64,
+    target_sequence: u64,
+    generation: u64,
+    chunks: BTreeMap<u32, Vec<u8>>,
+    received: u64,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SnapshotCommitResult {
+    target_server_sequence: u64,
+    body: Vec<u8>,
+}
+impl SnapshotCommitResult {
+    #[must_use]
+    pub const fn target_server_sequence(&self) -> u64 {
+        self.target_server_sequence
+    }
+    #[must_use]
+    pub fn body(&self) -> &[u8] {
+        &self.body
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+pub struct SnapshotBarrier {
+    active: Option<SnapshotAssembly>,
+}
+impl SnapshotBarrier {
+    pub fn new() -> Self {
+        Self::default()
+    }
+    pub fn is_active(&self) -> bool {
+        self.active.is_some()
+    }
+    pub fn begin(
+        &mut self,
+        id: u64,
+        chunk_count: u32,
+        total_bytes: u64,
+        target_sequence: u64,
+        generation: u64,
+    ) -> Result<(), FoundationProtocolError> {
+        if id == 0
+            || generation == 0
+            || chunk_count > MAX_SNAPSHOT_CHUNKS
+            || total_bytes > MAX_SNAPSHOT_ASSEMBLED_BYTES
+        {
+            return Err(FoundationProtocolError::SnapshotLimitExceeded);
+        }
+        if self.active.is_some() {
+            return Err(FoundationProtocolError::SnapshotAssemblyInvalid);
+        }
+        self.active = Some(SnapshotAssembly {
+            id,
+            chunk_count,
+            total_bytes,
+            target_sequence,
+            generation,
+            chunks: BTreeMap::new(),
+            received: 0,
+        });
+        Ok(())
+    }
+    pub fn chunk(
+        &mut self,
+        id: u64,
+        index: u32,
+        data: &[u8],
+        generation: u64,
+    ) -> Result<(), FoundationProtocolError> {
+        let Some(active) = self.active.as_mut() else {
+            return Err(FoundationProtocolError::SnapshotAssemblyInvalid);
+        };
+        if generation != active.generation {
+            self.active = None;
+            return Err(FoundationProtocolError::StaleConnectionGeneration);
+        }
+        if data.len() > MAX_SNAPSHOT_CHUNK_BYTES {
+            self.active = None;
+            return Err(FoundationProtocolError::SnapshotLimitExceeded);
+        }
+        if id != active.id || index >= active.chunk_count {
+            self.active = None;
+            return Err(FoundationProtocolError::SnapshotAssemblyInvalid);
+        }
+        if let Some(existing) = active.chunks.get(&index) {
+            if existing.as_slice() == data {
+                return Ok(());
+            }
+            self.active = None;
+            return Err(FoundationProtocolError::SnapshotAssemblyInvalid);
+        }
+        let Some(next) = active.received.checked_add(data.len() as u64) else {
+            self.active = None;
+            return Err(FoundationProtocolError::SnapshotLimitExceeded);
+        };
+        if next > active.total_bytes || next > MAX_SNAPSHOT_ASSEMBLED_BYTES {
+            self.active = None;
+            return Err(FoundationProtocolError::SnapshotLimitExceeded);
+        }
+        active.received = next;
+        active.chunks.insert(index, data.to_vec());
+        Ok(())
+    }
+    pub fn commit(
+        &mut self,
+        id: u64,
+        generation: u64,
+    ) -> Result<SnapshotCommitResult, FoundationProtocolError> {
+        let Some(active) = self.active.take() else {
+            return Err(FoundationProtocolError::SnapshotAssemblyInvalid);
+        };
+        if generation != active.generation {
+            return Err(FoundationProtocolError::StaleConnectionGeneration);
+        }
+        if id != active.id
+            || active.received != active.total_bytes
+            || active.chunks.len() != active.chunk_count as usize
+            || (0..active.chunk_count).any(|i| !active.chunks.contains_key(&i))
+        {
+            return Err(FoundationProtocolError::SnapshotAssemblyInvalid);
+        }
+        let capacity = usize::try_from(active.total_bytes)
+            .map_err(|_| FoundationProtocolError::SnapshotLimitExceeded)?;
+        let mut body = Vec::with_capacity(capacity);
+        for index in 0..active.chunk_count {
+            let chunk = active
+                .chunks
+                .get(&index)
+                .ok_or(FoundationProtocolError::SnapshotAssemblyInvalid)?;
+            body.extend_from_slice(chunk);
+        }
+        Ok(SnapshotCommitResult {
+            target_server_sequence: active.target_sequence,
+            body,
+        })
+    }
+    pub fn may_emit_sequenced(&self, sequence: u64, generation: u64) -> bool {
+        self.active
+            .as_ref()
+            .is_none_or(|a| a.generation != generation || sequence <= a.target_sequence)
+    }
+    pub fn discard_for_generation_change(&mut self) {
+        self.active = None
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::foundation::ProtocolDisposition;
+
+    #[test]
+    fn command_ref_scopes_command_id_to_game_session() -> Result<(), FoundationProtocolError> {
+        let mut one = [0u8; 16];
+        one[15] = 1;
+        let mut two = [0u8; 16];
+        two[15] = 2;
+        let command = super::super::CommandId::new(1)
+            .map_err(|_| FoundationProtocolError::InvalidWireIdentifier)?;
+        let a = CommandRef::new(WireId16::decode(&one)?, command);
+        let b = CommandRef::new(WireId16::decode(&two)?, command);
+        assert_ne!(a, b);
+        assert_eq!(a.command_id(), command);
+        assert_eq!(a.game_session_id().as_bytes(), &one);
+        Ok(())
+    }
+
+    #[test]
+    fn empty_snapshot_body_is_valid_when_encoded_length_is_zero()
+    -> Result<(), FoundationProtocolError> {
+        let mut barrier = SnapshotBarrier::new();
+        barrier.begin(41, 0, 0, 9, 1)?;
+        assert_eq!(barrier.commit(41, 1)?.target_server_sequence(), 9);
+        Ok(())
+    }
+
+    #[test]
+    fn frame_length_boundary_property_style() {
+        for raw in [1u32, 2, 255, 65_535, 1_048_575, 1_048_576] {
+            assert_eq!(
+                super::super::FrameLength::new(raw).map(super::super::FrameLength::get),
+                Ok(raw)
+            );
+        }
+        assert_eq!(
+            super::super::FrameLength::new(0),
+            Err(FoundationProtocolError::MalformedFrame)
+        );
+        assert_eq!(
+            super::super::FrameLength::new(1_048_577),
+            Err(FoundationProtocolError::FrameTooLarge)
+        );
+    }
+
+    #[test]
+    fn envelope_oracle_bytes_decode_and_validate_direction() -> Result<(), FoundationProtocolError>
+    {
+        let bytes = [0x08, 0x07, 0x10, 0x01, 0x22, 0x02, 0xaa, 0xbb];
+        let envelope = decode_wire_envelope(&bytes)?;
+        assert_eq!(envelope.message_type(), MessageType::ClientCommand);
+        assert_eq!(envelope.connection_generation(), 1);
+        assert_eq!(envelope.server_sequence(), 0);
+        assert_eq!(envelope.payload(), &[0xaa, 0xbb]);
+        assert_eq!(envelope.validate(Direction::ClientToServer, true), Ok(()));
+        assert_eq!(
+            envelope.validate(Direction::ServerToClient, true),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn additive_unknown_envelope_field_is_safely_ignored() -> Result<(), FoundationProtocolError> {
+        let bytes = [0x08, 0x01, 0x22, 0x00, 0x80, 0x01, 0x01];
+        let envelope = decode_wire_envelope(&bytes)?;
+        assert_eq!(envelope.message_type(), MessageType::ClientBootstrap);
+        assert_eq!(envelope.payload(), &[]);
+        Ok(())
+    }
+
+    #[test]
+    fn bootstrap_phase_requires_pre_admission_zero_generation()
+    -> Result<(), FoundationProtocolError> {
+        let with_generation = [0x08, 0x01, 0x10, 0x01, 0x22, 0x00];
+        let envelope = decode_wire_envelope(&with_generation)?;
+        assert_eq!(
+            envelope.validate(Direction::ClientToServer, false),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        let zero_generation = [0x08, 0x01, 0x22, 0x00];
+        let envelope = decode_wire_envelope(&zero_generation)?;
+        assert_eq!(
+            envelope.validate(Direction::ClientToServer, true),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn unknown_and_truncated_envelopes_fail_closed() {
+        assert_eq!(
+            decode_wire_envelope(&[0x08, 0x63]),
+            Err(FoundationProtocolError::UnknownMessageType)
+        );
+        assert_eq!(
+            decode_wire_envelope(&[0x08]),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+    }
+
+    #[test]
+    fn server_sequence_gap_requests_resync_without_advancing() -> Result<(), FoundationProtocolError>
+    {
+        let mut sequence = ServerSequenceTracker::new();
+        assert_eq!(sequence.observe(1)?, SequenceDecision::Apply);
+        assert_eq!(sequence.observe(1)?, SequenceDecision::Duplicate);
+        assert_eq!(
+            sequence.observe(3),
+            Err(FoundationProtocolError::ServerSequenceGap)
+        );
+        assert_eq!(sequence.next_expected(), Some(2));
+        Ok(())
+    }
+
+    #[test]
+    fn snapshot_barrier_blocks_post_target_sequence_until_commit()
+    -> Result<(), FoundationProtocolError> {
+        let mut barrier = SnapshotBarrier::new();
+        barrier.begin(9, 2, 4, 12, 1)?;
+        assert!(!barrier.may_emit_sequenced(13, 1));
+        barrier.chunk(9, 0, &[1, 2], 1)?;
+        barrier.chunk(9, 1, &[3, 4], 1)?;
+        let committed = barrier.commit(9, 1)?;
+        assert_eq!(committed.target_server_sequence(), 12);
+        assert_eq!(committed.body(), &[1, 2, 3, 4]);
+        assert!(barrier.may_emit_sequenced(13, 1));
+        Ok(())
+    }
+
+    #[test]
+    fn framed_envelope_rejects_truncation_and_oversized_prefix_before_body_access()
+    -> Result<(), FoundationProtocolError> {
+        let valid = [0, 0, 0, 4, 0x08, 0x01, 0x22, 0x00];
+        assert_eq!(
+            decode_framed_envelope(&valid)?.message_type(),
+            MessageType::ClientBootstrap
+        );
+        assert_eq!(
+            decode_framed_envelope(&[0, 0, 0, 5, 0x08, 0x01, 0x22, 0x00]),
+            Err(FoundationProtocolError::MalformedFrame)
+        );
+        assert_eq!(
+            decode_framed_envelope(&[0, 0x10, 0, 1]),
+            Err(FoundationProtocolError::FrameTooLarge)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn state_revision_mismatch_never_guesses_forward() -> Result<(), FoundationProtocolError> {
+        let mut revisions = StateRevisionTracker::new();
+        revisions.apply_delta(7, 0, 1)?;
+        assert_eq!(
+            revisions.apply_delta(7, 0, 2),
+            Err(FoundationProtocolError::StateRevisionMismatch)
+        );
+        assert_eq!(revisions.revision(7), Some(1));
+        Ok(())
+    }
+
+    #[test]
+    fn resync_replays_only_when_contiguous_history_is_retained() {
+        assert_eq!(plan_resync(5, 8, 6), ResyncPlan::ReplayFrom(6));
+        assert_eq!(plan_resync(2, 8, 6), ResyncPlan::SnapshotRequired);
+        assert_eq!(plan_resync(8, 8, 6), ResyncPlan::UpToDate);
+    }
+
+    #[test]
+    fn wire_identifier_requires_exact_nonzero_sixteen_bytes() -> Result<(), FoundationProtocolError>
+    {
+        assert_eq!(
+            WireId16::decode(&[0; 15]),
+            Err(FoundationProtocolError::InvalidWireIdentifier)
+        );
+        assert_eq!(
+            WireId16::decode(&[0; 16]),
+            Err(FoundationProtocolError::InvalidWireIdentifier)
+        );
+        let mut raw = [0u8; 16];
+        raw[15] = 1;
+        assert_eq!(WireId16::decode(&raw)?.as_bytes(), &raw);
+        Ok(())
+    }
+
+    #[test]
+    fn registry_error_dispositions_are_stable_and_safe() {
+        assert_eq!(
+            FoundationProtocolError::MalformedFrame.disposition(),
+            ProtocolDisposition::TransportFatal
+        );
+        assert_eq!(
+            FoundationProtocolError::CommandSequenceGap.disposition(),
+            ProtocolDisposition::ResyncRequired
+        );
+        assert_eq!(
+            FoundationProtocolError::SnapshotLimitExceeded.disposition(),
+            ProtocolDisposition::SessionFatal
+        );
+    }
+
+    #[test]
+    fn oversized_snapshot_chunk_is_a_limit_error_and_discards_assembly()
+    -> Result<(), FoundationProtocolError> {
+        let mut barrier = SnapshotBarrier::new();
+        barrier.begin(7, 1, 524_289, 4, 1)?;
+        let oversized = vec![0u8; 524_289];
+        assert_eq!(
+            barrier.chunk(7, 0, &oversized, 1),
+            Err(FoundationProtocolError::SnapshotLimitExceeded)
+        );
+        assert!(!barrier.is_active());
+        Ok(())
+    }
+
+    #[test]
+    fn generation_change_discards_partial_snapshot() -> Result<(), FoundationProtocolError> {
+        let mut barrier = SnapshotBarrier::new();
+        barrier.begin(1, 1, 1, 4, 1)?;
+        assert_eq!(
+            barrier.chunk(1, 0, &[7], 2),
+            Err(FoundationProtocolError::StaleConnectionGeneration)
+        );
+        assert!(!barrier.is_active());
+        Ok(())
+    }
+}

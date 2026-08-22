@@ -1,5 +1,10 @@
 //! Protocol/runtime authority primitives for the native Oteryn game server.
 
+mod admission;
+mod protocol;
+pub use admission::*;
+pub use protocol::*;
+
 use std::collections::BTreeSet;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
@@ -12,16 +17,64 @@ pub const MAX_OUTSTANDING_COMMANDS: usize = 64;
 pub enum FoundationProtocolError {
     MalformedFrame = 1001,
     FrameTooLarge = 1002,
+    MalformedEnvelope = 1003,
+    UnknownMessageType = 1004,
+    ProtocolMajorMismatch = 1005,
+    TransportProfileMismatch = 1006,
+    CapabilityMismatch = 1007,
+    InvalidWireIdentifier = 1008,
+    PayloadLimitExceeded = 1009,
     StaleConnectionGeneration = 1010,
     CommandOutcomeExpired = 1020,
     CommandSequenceGap = 1021,
     TooManyOutstandingCommands = 1022,
+    ServerSequenceGap = 1030,
+    StateRevisionMismatch = 1031,
+    SnapshotAssemblyInvalid = 1032,
+    SnapshotLimitExceeded = 1033,
+    BootstrapLimitExceeded = 1040,
+    InvalidCapabilitySet = 1041,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u32)]
+pub enum ProtocolDisposition {
+    OperationTerminal = 1,
+    ResyncRequired = 2,
+    SessionFatal = 3,
+    TransportFatal = 4,
 }
 
 impl FoundationProtocolError {
     #[must_use]
     pub const fn code(self) -> u32 {
         self as u32
+    }
+
+    #[must_use]
+    pub const fn disposition(self) -> ProtocolDisposition {
+        match self {
+            Self::MalformedFrame
+            | Self::FrameTooLarge
+            | Self::MalformedEnvelope
+            | Self::StaleConnectionGeneration => ProtocolDisposition::TransportFatal,
+            Self::UnknownMessageType
+            | Self::ProtocolMajorMismatch
+            | Self::TransportProfileMismatch
+            | Self::CapabilityMismatch
+            | Self::InvalidWireIdentifier
+            | Self::SnapshotLimitExceeded
+            | Self::BootstrapLimitExceeded
+            | Self::InvalidCapabilitySet => ProtocolDisposition::SessionFatal,
+            Self::PayloadLimitExceeded | Self::TooManyOutstandingCommands => {
+                ProtocolDisposition::OperationTerminal
+            }
+            Self::CommandOutcomeExpired
+            | Self::CommandSequenceGap
+            | Self::ServerSequenceGap
+            | Self::StateRevisionMismatch
+            | Self::SnapshotAssemblyInvalid => ProtocolDisposition::ResyncRequired,
+        }
     }
 }
 
@@ -30,10 +83,23 @@ impl Display for FoundationProtocolError {
         formatter.write_str(match self {
             Self::MalformedFrame => "malformed protocol frame",
             Self::FrameTooLarge => "protocol frame exceeds hard limit",
+            Self::MalformedEnvelope => "malformed protocol envelope",
+            Self::UnknownMessageType => "unknown foundation message type",
+            Self::ProtocolMajorMismatch => "protocol major mismatch",
+            Self::TransportProfileMismatch => "transport profile mismatch",
+            Self::CapabilityMismatch => "capability mismatch",
+            Self::InvalidWireIdentifier => "invalid wire identifier",
+            Self::PayloadLimitExceeded => "payload exceeds hard limit",
             Self::StaleConnectionGeneration => "connection generation is stale",
             Self::CommandOutcomeExpired => "command outcome is no longer retained",
             Self::CommandSequenceGap => "command sequence contains a gap",
             Self::TooManyOutstandingCommands => "too many commands are outstanding",
+            Self::ServerSequenceGap => "server sequence contains a gap",
+            Self::StateRevisionMismatch => "state revision mismatch",
+            Self::SnapshotAssemblyInvalid => "snapshot assembly is invalid",
+            Self::SnapshotLimitExceeded => "snapshot exceeds hard limit",
+            Self::BootstrapLimitExceeded => "bootstrap payload exceeds hard limit",
+            Self::InvalidCapabilitySet => "invalid capability set",
         })
     }
 }
@@ -177,6 +243,9 @@ impl CommandIngress {
     }
 
     pub fn mark_terminal(&mut self, command_id: CommandId) -> bool {
+        if self.pending.first().copied() != Some(command_id) {
+            return false;
+        }
         self.pending.remove(&command_id)
     }
 
@@ -316,6 +385,23 @@ impl RuntimeExecutionOrdinal {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RuntimeWorkStamp {
+    generation: ScopeOwnershipGeneration,
+    ordinal: RuntimeExecutionOrdinal,
+}
+
+impl RuntimeWorkStamp {
+    #[must_use]
+    pub const fn generation(self) -> ScopeOwnershipGeneration {
+        self.generation
+    }
+    #[must_use]
+    pub const fn ordinal(self) -> RuntimeExecutionOrdinal {
+        self.ordinal
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScopeRuntimeFence {
     generation: ScopeOwnershipGeneration,
     next_ordinal: Option<u64>,
@@ -345,6 +431,19 @@ impl ScopeRuntimeFence {
         let raw = self.next_ordinal.ok_or(GenerationError::Exhausted)?;
         self.next_ordinal = raw.checked_add(1);
         RuntimeExecutionOrdinal::new(raw)
+    }
+
+    #[must_use]
+    pub const fn stamp(&self, ordinal: RuntimeExecutionOrdinal) -> RuntimeWorkStamp {
+        RuntimeWorkStamp {
+            generation: self.generation,
+            ordinal,
+        }
+    }
+
+    #[must_use]
+    pub fn accepts_stamp(&self, stamp: RuntimeWorkStamp) -> bool {
+        stamp.generation == self.generation
     }
 
     pub fn apply_external_grant(
@@ -446,6 +545,32 @@ mod tests {
         assert_eq!(ingress.next_command_id(), Some(CommandId::new(2)?));
         Ok(())
     }
+    #[test]
+    fn later_reserved_command_cannot_commit_before_earlier_command() -> Result<(), CommandIdError> {
+        let mut ingress = CommandIngress::new();
+        let first = CommandId::new(1)?;
+        let second = CommandId::new(2)?;
+        assert_eq!(ingress.reserve(first), IngressDecision::Reserved(first));
+        assert_eq!(ingress.reserve(second), IngressDecision::Reserved(second));
+        assert!(!ingress.mark_terminal(second));
+        assert!(ingress.mark_terminal(first));
+        assert!(ingress.mark_terminal(second));
+        Ok(())
+    }
+
+    #[test]
+    fn stale_runtime_work_stamp_is_rejected_after_owner_replacement() -> Result<(), GenerationError>
+    {
+        let first = ScopeOwnershipGeneration::new(3)?;
+        let mut runtime = ScopeRuntimeFence::from_external_grant(first);
+        let ordinal = runtime.accept_input(first)?;
+        let stamp = runtime.stamp(ordinal);
+        assert!(runtime.accepts_stamp(stamp));
+        runtime.apply_external_grant(ScopeOwnershipGeneration::new(4)?)?;
+        assert!(!runtime.accepts_stamp(stamp));
+        Ok(())
+    }
+
     #[test]
     fn reconnect_advances_generation_and_fences_stale_transport() -> Result<(), GenerationError> {
         let mut fence = ConnectionFence::fresh_admission();
