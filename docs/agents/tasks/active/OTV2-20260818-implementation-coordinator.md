@@ -8,12 +8,12 @@ status: wave1_allocation_pending_exact_base
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-coordinator-allocate-wave1
-pr: pending
+pr: 45
 base_sha: 7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2
-head_sha: pending
+head_sha: null
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-22T17:45:00+02:00
+updated_at: 2026-08-22T18:03:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -48,7 +48,7 @@ Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme
 - `PROVEN`: live `main` was re-resolved immediately before this allocation and still equals `7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2`.
 - `PROVEN`: current server package is `apps/game-server`; `apps/game-server/AGENTS.md` explicitly reserves later coordinator allocation for Foundation protocol/runtime/admission work.
 - `PROVEN`: `crates/protocol-oteryn` is not present on the resolved allocation source and is not a current workspace member; this allocation therefore does not invent a new crate topology.
-- `PROVEN`: Foundation/Domain/Content/QA implementation paths are now reserved in the live record as four non-overlapping module/test families, but remain `allocated_pending_exact_base` and therefore read-only.
+- `PROVEN`: allocation PR #45 reserves Foundation/Domain/Content/QA as four non-overlapping module/test families, but all remain `allocated_pending_exact_base` and therefore read-only.
 - `PROVEN`: shared composition/workspace paths are coordinator-serialized and no stable registry, contract, CI or architecture-policy mutation is granted by this reservation.
 - `PROVEN`: Foundation retains the mandatory genuinely independent exact-head review requirement for protocol/session/admission/fencing semantics; self-review must never be relabeled as independent.
 - `PROVEN`: no production/protected/live-data/Platform/external-repository authority is granted.
@@ -58,7 +58,7 @@ Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme
 ```yaml
 allocation_source_main_sha: 7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2
 allocation_branch: agent/otv2-coordinator-allocate-wave1
-allocation_pr: pending
+allocation_pr: 45
 worker_write_authority: false
 reserved_lanes:
   - lane_id: OTV2-IMPL-FOUNDATION
@@ -100,19 +100,19 @@ shared_lease_order:
 
 ## Merge discipline
 
-The reservation PR must merge before any worker can write. After its exact merge SHA is known, the coordinator must create a separate exact-base bind PR that sets every reserved lane's `worker_base_sha` to that exact allocation merge SHA and changes each lane from `allocated_pending_exact_base` to `allocated`. Only after the bind itself merges may worker task files/branches be created and used for implementation writes.
+Allocation PR #45 must merge before any worker can write. After its exact merge SHA is known, the coordinator must create a separate exact-base bind PR that sets every reserved lane's `worker_base_sha` to that exact allocation merge SHA and changes each lane from `allocated_pending_exact_base` to `allocated`. Only after the bind itself merges may worker task files/branches be created and used for implementation writes.
 
 Wave 1 code paths may then develop in parallel, but shared composition/workspace paths remain one-writer-at-a-time under the coordinator lease. Contract/registry/stable-ID/CI/policy/new-crate mutations are outside this allocation until separately and explicitly granted. FOUNDATION shared composition is first in the lease order and its protocol/session/admission/fencing delivery remains subject to mandatory independent exact-head review.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: live main was re-resolved at 7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2 and four non-overlapping Wave 1 lane reservations plus serialized shared-path ownership were prepared on agent/otv2-coordinator-allocate-wave1.
+last_progress: allocation PR #45 is open from live main 7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2 with four non-overlapping Wave 1 reservations and serialized shared-path ownership.
 status: wave1_allocation_pending_exact_base
 branch: agent/otv2-coordinator-allocate-wave1
-head_sha: pending
-pr: pending
-blocker: allocation PR must merge before exact-base binding
+head_sha: null
+pr: 45
+blocker: allocation PR #45 must pass exact-head governance/merge checks and merge before exact-base binding
 owner_action_required: null
-next_action: open and validate the Wave 1 allocation PR; after lawful merge, bind all four workers to the exact allocation merge SHA in a separate coordinator PR before any worker write.
+next_action: validate PR #45 at its frozen head; after lawful merge, bind all four workers to the exact allocation merge SHA in a separate coordinator PR before any worker write.
 ```
