@@ -2,6 +2,8 @@
 //!
 //! Bootstrap intentionally owns no gameplay listener, protocol, admission or persistence authority.
 
+pub mod foundation;
+
 use oteryn_foundation::CancellationToken;
 use oteryn_simulation_determinism::{SimulationDeterminismProfile, active_profile};
 use std::error::Error;
@@ -9,7 +11,7 @@ use std::fmt::{self, Display, Formatter};
 use tokio::runtime::Builder;
 
 pub const GAMEPLAY_UNAVAILABLE_REASON: &str =
-    "native gameplay foundation is not allocated to the bootstrap lane";
+    "native gameplay domains are not yet integrated with the foundation runtime";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GameplayAvailability {

@@ -86,11 +86,11 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Focused
 - command/run: `cargo test -p oteryn-game-server foundation`
-- result: pending
+- result: PASS — 6 focused tests; 0 failed
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: pending
+- result: PASS — 9 package tests; 0 failed; Clippy `-D warnings` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
@@ -102,7 +102,9 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - workflow/run/job: pending
 - runner assignment: pending
 - classification: high-risk foundation
-- result: pending## Self-review
+- result: pending
+
+## Self-review
 
 - exact head: pending
 - method/reviewer: implementing/coordinating agent
@@ -120,12 +122,12 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 ## Context checkpoint
 
 ```yaml
-last_progress: exact-base bind #46 merged; isolated worktree created; baseline `cargo test --workspace` passed on post-bind main.
+last_progress: baseline workspace tests passed; first TDD foundation kernel is GREEN in production build with bounded frame prefix, CommandId ingress, connection fencing and ownership-generation ordinals; package tests and Clippy -D warnings pass.
 status: implementing
 branch: agent/otv2-impl-foundation-runtime-01
 head_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 pr: null
 blocker: null
 owner_action_required: null
-next_action: write and execute the first failing foundation tests before production code.
+next_action: commit the first foundation kernel, then verify accepted crate/dependency guidance for protobuf codegen and TLS before the next RED cycle.
 ```
