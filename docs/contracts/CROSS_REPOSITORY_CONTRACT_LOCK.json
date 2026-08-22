@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-08T00:56:00+02:00",
+  "updated_at": "2026-08-22T20:50:09+02:00",
   "policy": {
     "canonical_revisions_must_be_merged": true,
     "mutable_pr_heads_are_canonical": false,
@@ -116,6 +116,43 @@
       "accepted_for_fnd02": true,
       "runtime_implemented": false,
       "production_enabled": false
+    },
+    {
+      "coordination_id": "OTERYN-GAME-PLATFORM-CATALOG-V1",
+      "contract_name": "oteryn.game-platform-catalog",
+      "status": "PENDING_CANONICAL_MERGE",
+      "canonical_repository": "Oteryn/Oteryn-Game",
+      "canonical_commit": null,
+      "canonical_contract_path": "docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "schema_version": "1.0.0",
+      "schema_revision": null,
+      "schema_sha256": null,
+      "resource_limits_path": "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
+      "source_issue": 52,
+      "pending_pull_request": 57,
+      "accepted_for_fnd02": false,
+      "producers": [
+        {
+          "repository": "Oteryn/Oteryn-Game",
+          "status": "PENDING_CONTRACT_AND_REFERENCE_PRODUCER_MERGE"
+        }
+      ],
+      "consumers": [
+        {
+          "repository": "Oteryn/Oteryn-Platform",
+          "status": "NOT_IMPLEMENTED_INACTIVE_CONSUMER_PENDING"
+        }
+      ],
+      "rollout_order": [
+        "merge Game contract and deterministic reference producer",
+        "lock the exact merged Game contract revision and schema digest",
+        "implement Platform inactive consumer for schema 1.0.0",
+        "prove cross-repository fixture import and rejection compatibility",
+        "add native capability adapters only from canonical Game content evidence",
+        "activate only through a separately authorized Platform production gate"
+      ],
+      "production_enabled": false,
+      "notes": "Pending entry intentionally leaves merged canonical commit, numeric schema revision and schema digest unset. The current fixture is unsupported/unknown and grants no native content completeness or production activation authority."
     }
   ]
 }
