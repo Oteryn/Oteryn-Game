@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-08-10T14:48:00+02:00",
+  "updated_at": "2026-08-22T20:40:00+02:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -438,6 +438,114 @@
       "allocation_impact": "Package generation must stream/chunk or explicitly split before 256 MiB; privacy/export authorization is checked before inclusion.",
       "client_visible": false,
       "boundary_tests": ["256 MiB maximum package generated only for authorized data", "one byte over requires split/new package", "split packages retain manifest/correlation without leaking unauthorized records"]
+    },
+    {
+      "id": "GAMECAT-V1-FILE-BYTES",
+      "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "resource": "One native Game to Platform catalog input or output snapshot file",
+      "unit": "bytes",
+      "hard_maximum": 268435456,
+      "configurable_range": {"minimum": 268435456, "maximum": 268435456},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check file size before full read/JSON parse and check output bytes before publication.",
+      "client_visible": false,
+      "boundary_tests": ["268,435,456-byte file may proceed to other validation", "268,435,457 rejected before JSON parse", "output over hard maximum rejected before final publication"]
+    },
+    {
+      "id": "GAMECAT-V1-CAPABILITY-COUNT",
+      "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "resource": "Capability manifest or required-capability collection entries",
+      "unit": "entries",
+      "hard_maximum": 256,
+      "configurable_range": {"minimum": 256, "maximum": 256},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound capability collections before sorting, uniqueness and compatibility checks.",
+      "client_visible": false,
+      "boundary_tests": ["256 entries accepted when semantically valid", "257 rejected before unbounded collection work"]
+    },
+    {
+      "id": "GAMECAT-V1-ENTITY-COUNT",
+      "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "resource": "Entity records in one native catalog snapshot",
+      "unit": "entries",
+      "hard_maximum": 200000,
+      "configurable_range": {"minimum": 200000, "maximum": 200000},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject entity count before uniqueness sorting or projection work exceeds the fixed v1 ceiling.",
+      "client_visible": false,
+      "boundary_tests": ["200,000 entities accepted when otherwise valid", "200,001 rejected before unbounded entity processing"]
+    },
+    {
+      "id": "GAMECAT-V1-RELATION-COUNT",
+      "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "resource": "Relation records in one native catalog snapshot",
+      "unit": "entries",
+      "hard_maximum": 1000000,
+      "configurable_range": {"minimum": 1000000, "maximum": 1000000},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject relation count before endpoint validation or canonical sorting exceeds the fixed v1 ceiling.",
+      "client_visible": false,
+      "boundary_tests": ["1,000,000 relations accepted when otherwise valid", "1,000,001 rejected before unbounded relation processing"]
+    },
+    {
+      "id": "GAMECAT-V1-TOMBSTONE-COUNT",
+      "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "resource": "Authoritative tombstone records in one native catalog snapshot",
+      "unit": "entries",
+      "hard_maximum": 200000,
+      "configurable_range": {"minimum": 200000, "maximum": 200000},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound tombstones before contradiction/completeness checks and canonical sorting.",
+      "client_visible": false,
+      "boundary_tests": ["200,000 tombstones accepted only for complete supported capabilities", "200,001 rejected before tombstone processing"]
+    },
+    {
+      "id": "GAMECAT-V1-STRING-BYTES",
+      "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "resource": "One UTF-8 string or object key in the schema-v1 envelope/record data",
+      "unit": "UTF-8 bytes",
+      "hard_maximum": 2048,
+      "configurable_range": {"minimum": 2048, "maximum": 2048},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Measure encoded UTF-8 bytes before retaining, sorting or emitting the string.",
+      "client_visible": false,
+      "boundary_tests": ["2,048 UTF-8 bytes accepted where grammar permits", "2,049 UTF-8 bytes rejected"]
+    },
+    {
+      "id": "GAMECAT-V1-NESTING-DEPTH",
+      "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "resource": "Nested JSON depth inside entity/relation data",
+      "unit": "levels",
+      "hard_maximum": 16,
+      "configurable_range": {"minimum": 16, "maximum": 16},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject before recursion exceeds the fixed v1 semantic-data depth.",
+      "client_visible": false,
+      "boundary_tests": ["depth 16 accepted", "depth 17 rejected deterministically"]
+    },
+    {
+      "id": "GAMECAT-V1-OBJECT-MEMBERS",
+      "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "resource": "Members in one nested entity/relation data object",
+      "unit": "members",
+      "hard_maximum": 4096,
+      "configurable_range": {"minimum": 4096, "maximum": 4096},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound object members before recursive validation and canonical serialization.",
+      "client_visible": false,
+      "boundary_tests": ["4,096 members accepted when otherwise valid", "4,097 rejected before unbounded object work"]
+    },
+    {
+      "id": "GAMECAT-V1-ARRAY-ENTRIES",
+      "owner_contract": "OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
+      "resource": "Entries in one nested entity/relation data array",
+      "unit": "entries",
+      "hard_maximum": 200000,
+      "configurable_range": {"minimum": 200000, "maximum": 200000},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Bound nested arrays before recursive validation and canonical serialization.",
+      "client_visible": false,
+      "boundary_tests": ["200,000 nested entries accepted when otherwise valid", "200,001 rejected before unbounded array work"]
     }
   ]
 }
