@@ -9,39 +9,51 @@ pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct WireId16([u8; 16]);
-impl WireId16 {
-    pub fn decode(input: &[u8]) -> Result<Self, FoundationProtocolError> {
-        let value: [u8; 16] = input
-            .try_into()
-            .map_err(|_| FoundationProtocolError::InvalidWireIdentifier)?;
-        if value.iter().all(|byte| *byte == 0) {
-            return Err(FoundationProtocolError::InvalidWireIdentifier);
-        }
-        Ok(Self(value))
+fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
+    let value: [u8; 16] = input
+        .try_into()
+        .map_err(|_| FoundationProtocolError::InvalidWireIdentifier)?;
+    if value.iter().all(|byte| *byte == 0) || value[6] >> 4 != 7 || value[8] & 0xc0 != 0x80 {
+        return Err(FoundationProtocolError::InvalidWireIdentifier);
     }
-    #[must_use]
-    pub const fn as_bytes(&self) -> &[u8; 16] {
-        &self.0
-    }
+    Ok(value)
 }
+
+macro_rules! foundation_uuid_v7_id {
+    ($name:ident) => {
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        pub struct $name([u8; 16]);
+        impl $name {
+            pub fn decode(input: &[u8]) -> Result<Self, FoundationProtocolError> {
+                decode_uuid_v7(input).map(Self)
+            }
+            #[must_use]
+            pub const fn as_bytes(&self) -> &[u8; 16] {
+                &self.0
+            }
+        }
+    };
+}
+foundation_uuid_v7_id!(CharacterId);
+foundation_uuid_v7_id!(WorldId);
+foundation_uuid_v7_id!(ChannelId);
+foundation_uuid_v7_id!(GameSessionId);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct CommandRef {
-    game_session_id: WireId16,
+    game_session_id: GameSessionId,
     command_id: super::CommandId,
 }
 impl CommandRef {
     #[must_use]
-    pub const fn new(game_session_id: WireId16, command_id: super::CommandId) -> Self {
+    pub const fn new(game_session_id: GameSessionId, command_id: super::CommandId) -> Self {
         Self {
             game_session_id,
             command_id,
         }
     }
     #[must_use]
-    pub const fn game_session_id(self) -> WireId16 {
+    pub const fn game_session_id(self) -> GameSessionId {
         self.game_session_id
     }
     #[must_use]
@@ -587,13 +599,17 @@ mod tests {
     #[test]
     fn command_ref_scopes_command_id_to_game_session() -> Result<(), FoundationProtocolError> {
         let mut one = [0u8; 16];
+        one[6] = 0x70;
+        one[8] = 0x80;
         one[15] = 1;
         let mut two = [0u8; 16];
+        two[6] = 0x70;
+        two[8] = 0x80;
         two[15] = 2;
         let command = super::super::CommandId::new(1)
             .map_err(|_| FoundationProtocolError::InvalidWireIdentifier)?;
-        let a = CommandRef::new(WireId16::decode(&one)?, command);
-        let b = CommandRef::new(WireId16::decode(&two)?, command);
+        let a = CommandRef::new(GameSessionId::decode(&one)?, command);
+        let b = CommandRef::new(GameSessionId::decode(&two)?, command);
         assert_ne!(a, b);
         assert_eq!(a.command_id(), command);
         assert_eq!(a.game_session_id().as_bytes(), &one);
@@ -814,16 +830,18 @@ mod tests {
     fn wire_identifier_requires_exact_nonzero_sixteen_bytes() -> Result<(), FoundationProtocolError>
     {
         assert_eq!(
-            WireId16::decode(&[0; 15]),
+            GameSessionId::decode(&[0; 15]),
             Err(FoundationProtocolError::InvalidWireIdentifier)
         );
         assert_eq!(
-            WireId16::decode(&[0; 16]),
+            GameSessionId::decode(&[0; 16]),
             Err(FoundationProtocolError::InvalidWireIdentifier)
         );
         let mut raw = [0u8; 16];
+        raw[6] = 0x70;
+        raw[8] = 0x80;
         raw[15] = 1;
-        assert_eq!(WireId16::decode(&raw)?.as_bytes(), &raw);
+        assert_eq!(GameSessionId::decode(&raw)?.as_bytes(), &raw);
         Ok(())
     }
 
@@ -893,6 +911,30 @@ mod tests {
             Err(FoundationProtocolError::StaleConnectionGeneration)
         );
         assert!(!barrier.is_active());
+        Ok(())
+    }
+    #[test]
+    fn semantic_wire_ids_require_uuidv7_and_rfc_variant() -> Result<(), FoundationProtocolError> {
+        let mut valid = [0u8; 16];
+        valid[6] = 0x70;
+        valid[8] = 0x80;
+        valid[15] = 1;
+        assert!(GameSessionId::decode(&valid).is_ok());
+        assert!(CharacterId::decode(&valid).is_ok());
+        assert!(WorldId::decode(&valid).is_ok());
+        assert!(ChannelId::decode(&valid).is_ok());
+        let mut wrong_version = valid;
+        wrong_version[6] = 0x40;
+        assert_eq!(
+            GameSessionId::decode(&wrong_version),
+            Err(FoundationProtocolError::InvalidWireIdentifier)
+        );
+        let mut wrong_variant = valid;
+        wrong_variant[8] = 0x00;
+        assert_eq!(
+            GameSessionId::decode(&wrong_variant),
+            Err(FoundationProtocolError::InvalidWireIdentifier)
+        );
         Ok(())
     }
 }

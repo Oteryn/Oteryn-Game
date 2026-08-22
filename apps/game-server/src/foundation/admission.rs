@@ -1,6 +1,6 @@
 use super::{
-    ConnectionFence, ConnectionGeneration, GenerationError, ScopeOwnershipGeneration,
-    ScopeRuntimeFence,
+    ChannelId, CharacterId, ConnectionFence, ConnectionGeneration, GameSessionId, GenerationError,
+    ScopeOwnershipGeneration, ScopeRuntimeFence, WorldId,
 };
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
@@ -69,30 +69,24 @@ struct GrantReplayKey {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FreshAdmissionFacts {
     grant_nonce: [u8; 32],
-    game_session_id: [u8; 16],
-    character_id: [u8; 16],
-    world_id: [u8; 16],
-    channel_id: [u8; 16],
+    game_session_id: GameSessionId,
+    character_id: CharacterId,
+    world_id: WorldId,
+    channel_id: ChannelId,
     character_lease_generation: u64,
     scope_ownership_generation: u64,
 }
 impl FreshAdmissionFacts {
     pub fn new(
         grant_nonce: [u8; 32],
-        game_session_id: [u8; 16],
-        character_id: [u8; 16],
-        world_id: [u8; 16],
-        channel_id: [u8; 16],
+        game_session_id: GameSessionId,
+        character_id: CharacterId,
+        world_id: WorldId,
+        channel_id: ChannelId,
         lease: u64,
         scope: u64,
     ) -> Result<Self, AdmissionError> {
-        if grant_nonce.iter().all(|b| *b == 0)
-            || [game_session_id, character_id, world_id, channel_id]
-                .iter()
-                .any(|id| id.iter().all(|b| *b == 0))
-            || lease == 0
-            || scope == 0
-        {
+        if grant_nonce.iter().all(|b| *b == 0) || lease == 0 || scope == 0 {
             return Err(AdmissionError::InvalidFacts);
         }
         Ok(Self {
@@ -117,22 +111,33 @@ impl FreshAdmissionFacts {
         fn id(v: u64) -> [u8; 16] {
             let mut x = [0u8; 16];
             x[8..].copy_from_slice(&v.to_be_bytes());
+            x[6] = (x[6] & 0x0f) | 0x70;
+            x[8] = (x[8] & 0x3f) | 0x80;
             x
         }
         let mut grant_nonce = [0u8; 32];
         grant_nonce[24..].copy_from_slice(&nonce.to_be_bytes());
-        Self::new(grant_nonce, id(session), id(1), id(2), id(3), lease, scope)
+        let map = |_| AdmissionError::InvalidFacts;
+        Self::new(
+            grant_nonce,
+            GameSessionId::decode(&id(session)).map_err(map)?,
+            CharacterId::decode(&id(1)).map_err(map)?,
+            WorldId::decode(&id(2)).map_err(map)?,
+            ChannelId::decode(&id(3)).map_err(map)?,
+            lease,
+            scope,
+        )
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CharacterLease {
-    character_id: [u8; 16],
+    character_id: CharacterId,
     generation: u64,
 }
 impl CharacterLease {
     #[must_use]
-    pub const fn character_id(self) -> [u8; 16] {
+    pub const fn character_id(self) -> CharacterId {
         self.character_id
     }
     #[must_use]
@@ -153,17 +158,17 @@ pub enum GameSessionState {
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GameSession {
-    game_session_id: [u8; 16],
-    character_id: [u8; 16],
-    world_id: [u8; 16],
-    channel_id: [u8; 16],
+    game_session_id: GameSessionId,
+    character_id: CharacterId,
+    world_id: WorldId,
+    channel_id: ChannelId,
     lease_generation: u64,
     runtime_scope: ScopeRuntimeFence,
     connection: ConnectionFence,
     state: GameSessionState,
 }
 impl GameSession {
-    pub const fn game_session_id(&self) -> [u8; 16] {
+    pub const fn game_session_id(&self) -> GameSessionId {
         self.game_session_id
     }
     pub const fn connection_generation(&self) -> ConnectionGeneration {
@@ -175,7 +180,7 @@ impl GameSession {
     pub const fn accepts_generation(&self, g: ConnectionGeneration) -> bool {
         self.connection.accepts(g)
     }
-    pub const fn character_id(&self) -> [u8; 16] {
+    pub const fn character_id(&self) -> CharacterId {
         self.character_id
     }
     #[must_use]
@@ -185,10 +190,10 @@ impl GameSession {
             generation: self.lease_generation,
         }
     }
-    pub const fn world_id(&self) -> [u8; 16] {
+    pub const fn world_id(&self) -> WorldId {
         self.world_id
     }
-    pub const fn channel_id(&self) -> [u8; 16] {
+    pub const fn channel_id(&self) -> ChannelId {
         self.channel_id
     }
     #[must_use]
@@ -216,6 +221,7 @@ struct CommittedReconnect<T: Copy + Eq> {
 #[derive(Debug)]
 pub struct AdmissionAuthority<T: Copy + Eq> {
     consumed_grants: BTreeSet<GrantReplayKey>,
+    nonreusable_game_session_ids: BTreeSet<GameSessionId>,
     current: Option<GameSession>,
     current_transport: Option<T>,
     prepared: Option<PreparedReconnect<T>>,
@@ -230,6 +236,7 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
     pub fn new() -> Self {
         Self {
             consumed_grants: BTreeSet::new(),
+            nonreusable_game_session_ids: BTreeSet::new(),
             current: None,
             current_transport: None,
             prepared: None,
@@ -252,6 +259,14 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         if self.consumed_grants.contains(&replay_key) {
             return Err(AdmissionError::GrantReplayed);
         }
+        if self
+            .nonreusable_game_session_ids
+            .contains(&facts.game_session_id)
+        {
+            return Err(AdmissionError::InvalidFacts);
+        }
+        self.nonreusable_game_session_ids
+            .insert(facts.game_session_id);
         if self
             .current
             .as_ref()
@@ -737,6 +752,56 @@ mod tests {
                 .connection_generation(),
             first
         );
+        Ok(())
+    }
+    #[test]
+    fn game_session_id_is_never_reused_and_rejection_does_not_consume_nonce()
+    -> Result<(), AdmissionError> {
+        let mut authority = AdmissionAuthority::new();
+        authority.commit_fresh(facts(20, 2000)?, 100u64)?;
+        authority.terminate_current()?;
+        assert_eq!(
+            authority.commit_fresh(facts(21, 2000)?, 101u64),
+            Err(AdmissionError::InvalidFacts)
+        );
+        authority.commit_fresh(facts(21, 2001)?, 102u64)?;
+        Ok(())
+    }
+    #[test]
+    fn fresh_admission_accepts_only_semantic_foundation_ids() -> Result<(), AdmissionError> {
+        let mut raw = [0u8; 16];
+        raw[6] = 0x70;
+        raw[8] = 0x80;
+        raw[15] = 1;
+        let map = |_| AdmissionError::InvalidFacts;
+        let mut nonce = [0u8; 32];
+        nonce[31] = 1;
+        FreshAdmissionFacts::new(
+            nonce,
+            GameSessionId::decode(&raw).map_err(map)?,
+            CharacterId::decode(&raw).map_err(map)?,
+            WorldId::decode(&raw).map_err(map)?,
+            ChannelId::decode(&raw).map_err(map)?,
+            1,
+            1,
+        )?;
+        Ok(())
+    }
+    #[test]
+    fn failed_precommit_session_candidate_is_retired_without_consuming_nonce()
+    -> Result<(), AdmissionError> {
+        let mut authority = AdmissionAuthority::new();
+        authority.commit_fresh(facts(30, 3000)?, 100u64)?;
+        assert_eq!(
+            authority.commit_fresh(facts(31, 3001)?, 101u64),
+            Err(AdmissionError::IncumbentHealthy)
+        );
+        authority.terminate_current()?;
+        assert_eq!(
+            authority.commit_fresh(facts(31, 3001)?, 102u64),
+            Err(AdmissionError::InvalidFacts)
+        );
+        authority.commit_fresh(facts(31, 3002)?, 103u64)?;
         Ok(())
     }
 }
