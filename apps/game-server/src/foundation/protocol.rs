@@ -389,7 +389,7 @@ impl ServerSequenceTracker {
     pub fn next_expected(&self) -> Option<u64> {
         self.last_applied.checked_add(1)
     }
-    pub fn observe(&mut self, sequence: u64) -> Result<SequenceDecision, FoundationProtocolError> {
+    pub fn observe(&self, sequence: u64) -> Result<SequenceDecision, FoundationProtocolError> {
         if sequence == 0 {
             return Err(FoundationProtocolError::MalformedEnvelope);
         }
@@ -402,8 +402,17 @@ impl ServerSequenceTracker {
         if sequence != expected {
             return Err(FoundationProtocolError::ServerSequenceGap);
         }
-        self.last_applied = sequence;
         Ok(SequenceDecision::Apply)
+    }
+    pub fn commit_applied(&mut self, sequence: u64) -> Result<(), FoundationProtocolError> {
+        let expected = self
+            .next_expected()
+            .ok_or(FoundationProtocolError::ServerSequenceGap)?;
+        if sequence != expected {
+            return Err(FoundationProtocolError::ServerSequenceGap);
+        }
+        self.last_applied = sequence;
+        Ok(())
     }
     pub fn apply_snapshot_boundary(&mut self, target: u64) -> Result<(), FoundationProtocolError> {
         if target < self.last_applied {
@@ -702,12 +711,25 @@ mod tests {
     {
         let mut sequence = ServerSequenceTracker::new();
         assert_eq!(sequence.observe(1)?, SequenceDecision::Apply);
+        sequence.commit_applied(1)?;
         assert_eq!(sequence.observe(1)?, SequenceDecision::Duplicate);
         assert_eq!(
             sequence.observe(3),
             Err(FoundationProtocolError::ServerSequenceGap)
         );
         assert_eq!(sequence.next_expected(), Some(2));
+        Ok(())
+    }
+
+    #[test]
+    fn server_sequence_advances_only_after_payload_commit() -> Result<(), FoundationProtocolError> {
+        let mut sequence = ServerSequenceTracker::new();
+        assert_eq!(sequence.observe(1)?, SequenceDecision::Apply);
+        assert_eq!(sequence.last_applied(), 0);
+        assert_eq!(sequence.observe(1)?, SequenceDecision::Apply);
+        sequence.commit_applied(1)?;
+        assert_eq!(sequence.last_applied(), 1);
+        assert_eq!(sequence.observe(1)?, SequenceDecision::Duplicate);
         Ok(())
     }
 
@@ -758,7 +780,9 @@ mod tests {
 
         let mut sequence = ServerSequenceTracker::new();
         assert_eq!(sequence.observe(1)?, SequenceDecision::Apply);
+        sequence.commit_applied(1)?;
         assert_eq!(sequence.observe(2)?, SequenceDecision::Apply);
+        sequence.commit_applied(2)?;
         assert_eq!(
             sequence.apply_snapshot_boundary(1),
             Err(FoundationProtocolError::SnapshotAssemblyInvalid)

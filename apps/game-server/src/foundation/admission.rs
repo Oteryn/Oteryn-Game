@@ -1,4 +1,7 @@
-use super::{ConnectionFence, ConnectionGeneration, GenerationError};
+use super::{
+    ConnectionFence, ConnectionGeneration, GenerationError, ScopeOwnershipGeneration,
+    ScopeRuntimeFence,
+};
 use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
@@ -155,7 +158,7 @@ pub struct GameSession {
     world_id: [u8; 16],
     channel_id: [u8; 16],
     lease_generation: u64,
-    scope_generation: u64,
+    runtime_scope: ScopeRuntimeFence,
     connection: ConnectionFence,
     state: GameSessionState,
 }
@@ -187,6 +190,10 @@ impl GameSession {
     }
     pub const fn channel_id(&self) -> [u8; 16] {
         self.channel_id
+    }
+    #[must_use]
+    pub const fn runtime_scope_generation(&self) -> ScopeOwnershipGeneration {
+        self.runtime_scope.generation()
     }
 }
 
@@ -255,6 +262,8 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         self.consumed_grants.insert(replay_key);
         self.prepared = None;
         self.committed_attempts.clear();
+        let runtime_generation = ScopeOwnershipGeneration::new(facts.scope_ownership_generation)
+            .map_err(|_| AdmissionError::InvalidFacts)?;
         self.current_transport = Some(authenticated_transport);
         self.current = Some(GameSession {
             game_session_id: facts.game_session_id,
@@ -262,7 +271,7 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
             world_id: facts.world_id,
             channel_id: facts.channel_id,
             lease_generation: facts.character_lease_generation,
-            scope_generation: facts.scope_ownership_generation,
+            runtime_scope: ScopeRuntimeFence::from_external_grant(runtime_generation),
             connection: ConnectionFence::fresh_admission(),
             state: GameSessionState::Active,
         });
@@ -280,6 +289,29 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
             return Err(AdmissionError::Terminal);
         }
         s.state = GameSessionState::Reconnectable;
+        self.prepared = None;
+        Ok(())
+    }
+    pub fn observe_runtime_ownership_generation(
+        &mut self,
+        generation: u64,
+    ) -> Result<(), AdmissionError> {
+        let observed =
+            ScopeOwnershipGeneration::new(generation).map_err(|_| AdmissionError::InvalidFacts)?;
+        let s = self.current.as_mut().ok_or(AdmissionError::Terminal)?;
+        if s.state == GameSessionState::Terminal {
+            return Err(AdmissionError::Terminal);
+        }
+        let current = s.runtime_scope.generation();
+        if observed < current {
+            return Err(AdmissionError::StaleRuntime);
+        }
+        if observed == current {
+            return Ok(());
+        }
+        s.runtime_scope
+            .apply_external_grant(observed)
+            .map_err(|_| AdmissionError::StaleRuntime)?;
         self.prepared = None;
         Ok(())
     }
@@ -314,7 +346,7 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         if lease != s.lease_generation {
             return Err(AdmissionError::StaleLease);
         }
-        if scope != s.scope_generation {
+        if scope != s.runtime_scope.generation().get() {
             return Err(AdmissionError::StaleRuntime);
         }
         if let Some(existing) = self.prepared {
@@ -376,7 +408,7 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         if lease != s.lease_generation || lease != prepared.lease_generation {
             return Err(AdmissionError::StaleLease);
         }
-        if scope != s.scope_generation || scope != prepared.scope_generation {
+        if scope != s.runtime_scope.generation().get() || scope != prepared.scope_generation {
             return Err(AdmissionError::StaleRuntime);
         }
         let generation = s
@@ -577,6 +609,43 @@ mod tests {
         assert_eq!(
             authority.commit_reconnect(attempt, 200u64, 7, 11),
             Err(AdmissionError::Terminal)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn reconnect_revalidates_updatable_runtime_ownership_generation() -> Result<(), AdmissionError>
+    {
+        let mut authority = AdmissionAuthority::new();
+        authority.commit_fresh(facts(11, 1100)?, 100u64)?;
+        authority.mark_unexpected_control_loss()?;
+        authority.observe_runtime_ownership_generation(12)?;
+        let attempt = ReconnectAttemptRef::new(24)?;
+        let first = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        assert_eq!(
+            authority.prepare_reconnect(attempt, first, 200u64, 7, 11),
+            Err(AdmissionError::StaleRuntime)
+        );
+        let candidate = authority.prepare_reconnect(attempt, first, 200u64, 7, 12)?;
+        assert_eq!(
+            authority.commit_reconnect(attempt, 200u64, 7, 12)?,
+            candidate
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn runtime_owner_change_supersedes_prepared_reconnect() -> Result<(), AdmissionError> {
+        let mut authority = AdmissionAuthority::new();
+        authority.commit_fresh(facts(12, 1200)?, 100u64)?;
+        authority.mark_unexpected_control_loss()?;
+        let attempt = ReconnectAttemptRef::new(25)?;
+        let first = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        authority.prepare_reconnect(attempt, first, 200u64, 7, 11)?;
+        authority.observe_runtime_ownership_generation(12)?;
+        assert_eq!(
+            authority.commit_reconnect(attempt, 200u64, 7, 12),
+            Err(AdmissionError::AttemptMismatch)
         );
         Ok(())
     }
