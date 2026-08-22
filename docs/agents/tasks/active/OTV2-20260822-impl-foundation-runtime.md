@@ -86,11 +86,11 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Focused
 - command/run: `cargo test -p oteryn-game-server foundation`
-- result: PASS - 42 foundation tests; 0 failed after third independent-review repair plus lost-transport self-review hardening
+- result: PASS - 46 foundation tests; 0 failed after third-review repair plus final FND-ID self-review hardening
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: PASS - 45 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
+- result: PASS - 49 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
@@ -99,7 +99,8 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 ### Exact-head CI
 - second repaired PR head: `c72bb0ce9cd7e982f0720e47571c173d178b5465`
 - superseded evidence: Agent Governance #228, Architecture Semantic Audit #167 and Merge Authority Audit #145 were SUCCESS; Merge Gate #192 was still running when the third material Codex finding invalidated that exact-head evidence
-- third repaired code tree: pending freeze commit
+- third repaired code head: `ed3bc851955974b471d3d9544189e0e8bd1f6456`
+- final FND-ID code head: `99786226bf988840daa0bcde55d8f90f4d744561`
 - classification: high-risk foundation
 - result: pending fresh exact-head CI; no prior exact-head success is reused after this material repair
 
@@ -111,6 +112,9 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - third repair: shared committed-attempt reconciliation now returns success only when both `current_transport` and current `connection_generation` still match the committed attempt; PREPARE and COMMIT use the same helper
 - additional same-invariant self-review finding: `mark_unexpected_control_loss` retained the lost physical transport identity, which could still satisfy the replay helper before another winner appeared; RED reproduced this and both unexpected loss and terminalization now clear `current_transport`
 - TDD evidence: superseded A->B replay RED returned `Ok(ConnectionGeneration(2))` instead of `StaleConnection`; lost-current-transport RED retained `Some(200)` instead of `None`; both regressions are GREEN after repair
+- final self-review findings: raw `[u8; 16]` semantic IDs violated FND-ID strong typing/UUIDv7 trust-boundary validation; successful GameSessionId reuse and failed precommit-candidate reuse were also possible
+- final TDD evidence: semantic-ID API tests first failed on missing typed ID constructors; duplicate GameSessionId was observed accepted; failed precommit candidate was observed reusable after incumbent-race rejection
+- final repair: distinct `GameSessionId`/`CharacterId`/`WorldId`/`ChannelId` UUIDv7+RFC-variant wrappers, `CommandRef`/session/lease typed APIs, and a non-reusable GameSession candidate set reserved before the incumbent race while GrantNonce remains unconsumed on that losing path
 - repaired-tree method: full diff review against FND-02/FND-03/FND-04, focused/package/workspace tests, strict Clippy, fmt check, governance and diff check
 - open material findings: 0 locally; fresh independent exact-head review still mandatory
 - verdict: PASS for self-review only
@@ -123,18 +127,19 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - third reviewed superseded head `c72bb0ce9cd7e982f0720e47571c173d178b5465`: REQUEST_CHANGES - 1 P1; repaired
 - third P1 repair: committed-attempt result replay is current-channel/current-generation fenced; superseded transport/generation receives `StaleConnection` rather than a historical success
 - owner authorization: explicit and bounded to PR #59 independent review plus autonomous repair/re-review/merge/closeout cycle
-- final PR head: pending third-repair freeze commit
+- final product-code head: `99786226bf988840daa0bcde55d8f90f4d744561`
+- final PR head: pending metadata freeze commit
 - verdict: pending fresh genuinely independent exact-head review after this material repair
 
 ## Context checkpoint
 
 ```yaml
-last_progress: third independent Codex review on c72bb0c found one P1 in committed reconnect-attempt replay after supersession; RED reproduced historical generation-2 success after a generation-3 winner. The replay path is now fenced by current transport plus current connection generation. Self-review also found that unexpected control loss retained the lost transport identity; RED reproduced it and control-loss/terminal transitions now clear current_transport. Local code validation is green; final freeze, fresh CI and fresh exact-head Codex review remain.
+last_progress: third-review reconnect replay repair at ed3bc851 is preserved; final self-review then found and TDD-repaired FND-ID strong-typing/UUIDv7 and GameSession candidate non-reuse gaps. Product code head 99786226 is green: Foundation 46/46, game-server 49/49, workspace and strict Clippy PASS. Final metadata freeze, exact-head CI and genuinely independent final review remain.
 status: review_pending
 branch: agent/otv2-impl-foundation-runtime-01
-head_sha: pending-third-repair-freeze
+head_sha: pending-final-metadata-freeze
 pr: 59
-blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the third material repair cycle
+blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the final FND-ID material repair
 owner_action_required: null
-next_action: run final governance/full-diff validation, freeze and push the third repair while PR remains Draft, then obtain fresh exact-head CI and the already authorized Codex re-review; merge only with zero material findings.
+next_action: commit and push this metadata checkpoint, verify exact-head CI, then run a fresh independent exact-head review on the unchanged final PR head; merge only with zero material findings.
 ```
