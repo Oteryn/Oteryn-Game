@@ -14,6 +14,7 @@ from typing import Any
 
 HERE = Path(__file__).resolve().parent
 APPEARANCE_EXPORT = HERE.parent / "game-atlas-appearances" / "export.py"
+OUTFIT_SPATIAL_EXPORT = HERE.parent / "game-atlas-outfit-spatial" / "export.py"
 STATIC_EXPORT = HERE / "export.py"
 CAPABILITY = "animated-creatures-v1"
 STATIC_DIRECTION = "south"
@@ -45,10 +46,14 @@ def _presentation_reason(exc: Exception) -> str:
         return "AMBIGUOUS_OUTFIT_FRAME_GROUP"
     if "no supported outfit frame groups" in text:
         return "UNSUPPORTED_OUTFIT_FRAME_GROUP"
+    if "missing outfit spatial record" in text:
+        return "UNKNOWN_OUTFIT_SPATIAL"
+    if "reverse-addon south" in text:
+        return "UNSUPPORTED_REVERSE_ADDONS_SOUTH"
     return "INVALID_OUTFIT_PRESENTATION"
 
 
-def _static_projection(presentation: dict[str, Any]) -> dict[str, Any]:
+def _static_projection(presentation: dict[str, Any], spatial: dict[str, Any], addons: int) -> dict[str, Any]:
     groups = presentation.get("groups")
     if not isinstance(groups, list) or not groups:
         raise RuntimeError("resolved outfit has no frame groups")
@@ -62,33 +67,57 @@ def _static_projection(presentation: dict[str, Any]) -> dict[str, Any]:
     directions = selected.get("directions", {})
     if STATIC_DIRECTION not in directions:
         raise RuntimeError("static south direction is unavailable")
+    # Exact 15.32 encodes a reverse_addons_south flag for a bounded subset of
+    # outfits, while the pinned migration/reference renderer does not define its
+    # ordering behavior. It is irrelevant when no addon rows are enabled; with
+    # addons present we must fail closed rather than invent the composition order.
+    enabled_addons = [value for value in selected.get("enabled_addon_pattern_y", []) if int(value) > 0]
+    if addons and enabled_addons and bool(spatial.get("reverse_addons", {}).get("south")):
+        raise RuntimeError("reverse-addon south ordering is not proven")
     phase_count = int(selected.get("phase_count", 1))
     animation = selected.get("animation") if phase_count > 1 else None
+    displacement = spatial.get("displacement")
+    if not isinstance(displacement, dict) or not all(isinstance(displacement.get(axis), int) for axis in ("x", "y")):
+        raise RuntimeError("invalid outfit spatial displacement")
     return {
+        "anchor_policy": spatial["anchor_policy"],
+        "animate_always": bool(spatial.get("animate_always")),
         "animation": animation,
         "animation_program_id": selected["animation_program_id"],
         "direction": STATIC_DIRECTION,
+        "displacement": {"x": int(displacement["x"]), "y": int(displacement["y"])},
         "enabled_addon_pattern_y": selected["enabled_addon_pattern_y"],
         "frame_group": selected["frame_group"],
         "pattern_x": int(directions[STATIC_DIRECTION]),
         "pattern_z": int(selected["pattern_z"]),
         "phase_count": phase_count,
         "selection_policy": "prefer-outfit-idle-else-moving-in-place-v1",
+        "spatial_record_id": spatial["spatial_record_id"],
         "uses_moving_group_in_place": selected["frame_group"]["semantic"] == "outfit-moving",
     }
 
 
-def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *, appearance_module=None) -> dict[str, Any]:
+def enrich_creatures(
+    static_result: dict[str, Any],
+    appearance_product: Path,
+    outfit_spatial_product: Path,
+    *,
+    appearance_module=None,
+    spatial_module=None,
+) -> dict[str, Any]:
     appearance_module = appearance_module or _load(APPEARANCE_EXPORT, "game_atlas_appearance_product")
+    spatial_module = spatial_module or _load(OUTFIT_SPATIAL_EXPORT, "game_atlas_outfit_spatial_product")
     manifest = json.loads((appearance_product / "manifest.json").read_text(encoding="utf-8"))
     if manifest.get("capability") != appearance_module.CAPABILITY or manifest.get("contract_id") != appearance_module.CONTRACT_ID:
         raise RuntimeError("unsupported appearance product capability")
     if manifest.get("source") != appearance_module._source_identity():
         raise RuntimeError("appearance product source identity mismatch")
+    spatial_manifest, spatial_index = spatial_module.load_index(outfit_spatial_product)
+    if spatial_manifest.get("source") != manifest.get("source"):
+        raise RuntimeError("outfit spatial product source identity mismatch")
 
-    # Index files are several MiB and are immutable for one content-addressed
-    # product. The resolver is allowed to read them once; repeated outfit tuples
-    # must not turn that immutable lookup into per-record I/O.
+    # Index files are immutable for one content-addressed product. Read them once
+    # per process; repeated outfit tuples must not turn that lookup into per-record I/O.
     loader = getattr(appearance_module, "load_program_indexes", None)
     if loader is not None and not hasattr(loader, "cache_info"):
         appearance_module.load_program_indexes = functools.lru_cache(maxsize=2)(loader)
@@ -100,10 +129,9 @@ def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *,
     result["appearance_capability"] = appearance_module.CAPABILITY
     result["appearance_product_root"] = manifest["product_root"]
     result["appearance_source"] = manifest["source"]
+    result["outfit_spatial_capability"] = spatial_manifest["capability"]
+    result["outfit_spatial_product_root"] = spatial_manifest["product_root"]
 
-    # The world contains many repeated placements for the same exact outfit. Resolve
-    # each appearance tuple once so every repeated placement receives byte-identical
-    # presentation data without recomputing color/addon/frame-group selection.
     resolution_cache: dict[tuple[int, int, int, int, int, int], tuple[dict[str, Any] | None, str | None]] = {}
     total_presentation_unresolved = 0
     per_kind: dict[str, dict[str, Any]] = {}
@@ -132,14 +160,17 @@ def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *,
                 cached = resolution_cache.get(cache_key)
                 if cached is None:
                     try:
-                        resolved = appearance_module.resolve_outfit_presentation(
+                        presentation = appearance_module.resolve_outfit_presentation(
                             appearance_product,
                             look_type=cache_key[0], head=cache_key[1], body=cache_key[2],
                             legs=cache_key[3], feet=cache_key[4], addons=cache_key[5],
                         )
-                        resolved = {**resolved, "static_projection": _static_projection(resolved)}
+                        spatial = spatial_index.get(cache_key[0])
+                        if spatial is None:
+                            raise RuntimeError(f"missing outfit spatial record for lookType {cache_key[0]}")
+                        resolved = {**presentation, "static_projection": _static_projection(presentation, spatial, cache_key[5])}
                         cached = (resolved, None)
-                    except (appearance_module.ProductError, KeyError, TypeError, ValueError, RuntimeError) as exc:
+                    except (appearance_module.ProductError, spatial_module.SpatialError, KeyError, TypeError, ValueError, RuntimeError) as exc:
                         cached = (None, _presentation_reason(exc))
                     resolution_cache[cache_key] = cached
                 resolved, reason = cached
@@ -180,9 +211,19 @@ def enrich_creatures(static_result: dict[str, Any], appearance_product: Path, *,
     return result
 
 
-def export_animated_creatures(world_root: Path, npc_root: Path, monster_root: Path, appearance_product: Path) -> dict[str, Any]:
+def export_animated_creatures(
+    world_root: Path,
+    npc_root: Path,
+    monster_root: Path,
+    appearance_product: Path,
+    outfit_spatial_product: Path,
+) -> dict[str, Any]:
     static_module = _load(STATIC_EXPORT, "game_atlas_static_creatures")
-    return enrich_creatures(static_module.export_creatures(world_root, npc_root, monster_root), appearance_product)
+    return enrich_creatures(
+        static_module.export_creatures(world_root, npc_root, monster_root),
+        appearance_product,
+        outfit_spatial_product,
+    )
 
 
 def main() -> int:
@@ -191,9 +232,16 @@ def main() -> int:
     parser.add_argument("npc_root", type=Path)
     parser.add_argument("monster_root", type=Path)
     parser.add_argument("appearance_product", type=Path)
+    parser.add_argument("outfit_spatial_product", type=Path)
     parser.add_argument("output", type=Path)
     args = parser.parse_args()
-    result = export_animated_creatures(args.world_root, args.npc_root, args.monster_root, args.appearance_product)
+    result = export_animated_creatures(
+        args.world_root,
+        args.npc_root,
+        args.monster_root,
+        args.appearance_product,
+        args.outfit_spatial_product,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"semantic_digest": result["semantic_digest"], **result["statistics"]}, sort_keys=True))
