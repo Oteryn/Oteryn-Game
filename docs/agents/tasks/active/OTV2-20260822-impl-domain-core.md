@@ -18,7 +18,7 @@ allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 exact_base_pr: 46
 owner: chat-github-20260822-domain-core
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-22T20:04:00+02:00
+updated_at: 2026-08-22T20:08:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -118,7 +118,7 @@ No PostgreSQL/schema/transactions, protocol wire IDs, UI, entitlement authority,
 
 ## Self-review
 
-- exact head: pending committed PR head
+- exact head: `d09086b80077caa0c0c829496e4c36a3ab311fa2` (reviewed code head before PR-metadata-only follow-up)
 - method/reviewer: implementing agent; full owned-path diff plus accepted GAME-CHAR/GAME-ITEM/FND-ID/SIM/DUR-03/GAME-CHANNEL contracts
 - material findings: fixed revision-exhaustion partial mutation and two container graph bound gaps before commit; no remaining primary-path material finding identified
 - verdict: PASS for allocated primary-path implementation; terminal delivery remains BLOCKED on shared composition lease
@@ -133,7 +133,7 @@ No PostgreSQL/schema/transactions, protocol wire IDs, UI, entitlement authority,
 
 ## PR and closeout
 
-- changed-file review: primary-path diff reviewed; final PR diff pending commit/push
+- changed-file review: PR #56 contains exactly the two allocated files; primary-path diff reviewed
 - unresolved review threads: pending PR
 - related/superseded PRs: coordinator PR #50 is read-only to this lane and preserves FOUNDATION-first shared lease
 - protected auto-merge: not eligible while shared composition lease is blocked
@@ -165,5 +165,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: Serialized shared composition lease is still held by FOUNDATION; DOMAIN may not mutate apps/game-server/src/lib.rs or other shared paths until the coordinator transfers it.
-next_action: Commit and push the completed primary-path implementation, open one draft delivery PR, then integrate shared composition only after a coordinator lease transfer.
+next_action: Obtain a coordinator transfer of the serialized shared composition lease to DOMAIN, then add the minimal game-server composition in this same task/branch/PR and rerun exact-head validation.
 ```
