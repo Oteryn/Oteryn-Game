@@ -57,20 +57,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          state = json.loads(Path('/runner/.runner').read_text(encoding='utf-8'))
-          expected_name = 'oteryn-synology-game'
-          expected_org = 'https://github.com/Oteryn'
-          if state.get('agentName') != expected_name:
-              raise SystemExit('unexpected persistent runner agentName')
-          if state.get('gitHubUrl') != expected_org:
-              raise SystemExit('unexpected persistent runner organization URL')
-          if state.get('workFolder') not in {'/work', '_work'}:
-              raise SystemExit('unexpected persistent runner workFolder')
-          PY
+          state="$(tr -d '[:space:]' < /runner/.runner)"
+          case "$state" in
+            *'"agentName":"oteryn-synology-game"'*) ;;
+            *) echo 'unexpected persistent runner agentName' >&2; exit 1 ;;
+          esac
+          case "$state" in
+            *'"gitHubUrl":"https://github.com/Oteryn"'*) ;;
+            *) echo 'unexpected persistent runner organization URL' >&2; exit 1 ;;
+          esac
+          case "$state" in
+            *'"workFolder":"/work"'*|*'"workFolder":"_work"'*) ;;
+            *) echo 'unexpected persistent runner workFolder' >&2; exit 1 ;;
+          esac
 
       - name: Verify existing local Canary integration reachability
         shell: bash
