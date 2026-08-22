@@ -1,0 +1,102 @@
+name: Game Atlas static creatures
+
+run-name: Game Atlas static creatures • pull_request • ${{ github.event.pull_request.number }}
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/game-atlas-creatures/export.py'
+      - 'tools/game-atlas-creatures/self_test.py'
+      - 'tools/game-atlas-creatures/README.md'
+      - 'docs/contracts/OTERYN_GAME_ATLAS_NPC_ROLES_V1.md'
+      - '.github/workflows/game-atlas-static-creatures.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-atlas-static-creatures-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Game Atlas static creature producer / exact-source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out exact Game revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+
+      - name: Check out pinned migration evidence
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: blakinio/Otheryn
+          ref: e417c5e7c22986bf4acef0495eb47f7b72c97cce
+          path: legacy
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Verify migration evidence revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C legacy rev-parse HEAD)" = 'e417c5e7c22986bf4acef0495eb47f7b72c97cce'
+          test -d legacy/vendor/map-analysis/crystalserver/data-global/world
+          test -d legacy/vendor/map-analysis/crystalserver/data-global/npc
+          test -d legacy/vendor/map-analysis/crystalserver/data-global/monster
+
+      - name: Compile and run producer self-test
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/game-atlas-creatures/export.py tools/game-atlas-creatures/self_test.py
+          python tools/game-atlas-creatures/self_test.py
+
+      - name: Build exact pinned product twice
+        shell: bash
+        run: |
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global"
+          python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-a.json
+          python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-b.json
+          cmp /tmp/creatures-a.json /tmp/creatures-b.json
+      - name: Verify exact role and creature census
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import collections, json
+          from pathlib import Path
+          data=json.loads(Path('/tmp/creatures-a.json').read_text())
+          assert data['contract_id']=='oteryn-game-atlas-export-v1'
+          assert data['capability']=='static-creatures-v1'
+          assert data['semantic_revision']==1
+          assert data['npc_role_schema_version']==1
+          assert data['statistics']=={'npcs':1068,'monster_spawns':87565,'unresolved':461,'ambiguous':5}
+          assert data['semantic_digest']=='sha256:81505e91d7089f91e71813ec43f97118932db9cc7fd76d291fa399447ee2dfa4'
+          counts=collections.Counter(role for npc in data['npcs'] for role in npc.get('roles',[]))
+          assert dict(counts)=={'bank':25,'travel':51,'shop':313,'quest':432,'blessing':26,'trainer':54}
+          assert sum(bool(npc.get('roles')) for npc in data['npcs'])==705
+          assert sum(npc.get('role_resolution_state')=='AMBIGUOUS' for npc in data['npcs'])==10
+          assert all('roles' not in record and 'role_resolution_state' not in record for record in data['monster_spawns'])
+          print(json.dumps({'semantic_digest':data['semantic_digest'],'roles':dict(counts)},sort_keys=True))
+          PY
