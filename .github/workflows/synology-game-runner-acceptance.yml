@@ -24,9 +24,13 @@ jobs:
       labels: oteryn-game
     env:
       EXPECTED_RUNNER_NAME: oteryn-synology-game
-      EXPECTED_COMPOSE_PROJECT: oteryn-staging
+      EXPECTED_RUNNER_UID: "1001"
+      EXPECTED_ORG_URL: https://github.com/Oteryn
+      CANARY_HOST: 192.168.1.2
+      CANARY_LOGIN_PORT: "7171"
+      CANARY_GAME_PORT: "7172"
     steps:
-      - name: Verify exact Game runner identity
+      - name: Verify exact Game runner identity and least privilege
         env:
           ACTUAL_RUNNER_NAME: ${{ runner.name }}
           ACTUAL_RUNNER_OS: ${{ runner.os }}
@@ -35,54 +39,46 @@ jobs:
           set -euo pipefail
           test "$ACTUAL_RUNNER_NAME" = "$EXPECTED_RUNNER_NAME"
           test "$ACTUAL_RUNNER_OS" = "Linux"
-          test -n "${HOSTNAME:-}"
+          test "$(id -u)" = "$EXPECTED_RUNNER_UID"
+          test "$(id -g)" = "$EXPECTED_RUNNER_UID"
+          test -d /runner
+          test -d /work
+          test -w /runner
+          test -w /work
+          test ! -e /var/run/docker.sock
+          if command -v docker >/dev/null 2>&1; then
+            if docker info >/dev/null 2>&1; then
+              echo 'Game runner unexpectedly has working Docker-host control' >&2
+              exit 1
+            fi
+          fi
 
-      - name: Verify Game runner capability and state separation
+      - name: Verify persistent organization registration identity
         shell: bash
         run: |
           set -euo pipefail
-          docker version >/dev/null
-          docker info >/dev/null
-          docker inspect "$HOSTNAME" >/dev/null
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
 
-          mounts="$(docker inspect "$HOSTNAME" --format '{{range .Mounts}}{{printf "%s|%s\n" .Source .Destination}}{{end}}')"
-          printf '%s\n' "$mounts" | grep -Eq '\|/runner$'
-          printf '%s\n' "$mounts" | grep -Eq '\|/work$'
-          if printf '%s\n' "$mounts" | grep -Eiq '(platform|atlas|staging).*(\|/runner|\|/work)|(/runner|/work).*(platform|atlas|staging)'; then
-            echo 'Game runner reuses Platform/Atlas/staging runner state' >&2
-            exit 1
-          fi
+          state = json.loads(Path('/runner/.runner').read_text(encoding='utf-8'))
+          expected_name = 'oteryn-synology-game'
+          expected_org = 'https://github.com/Oteryn'
+          if state.get('agentName') != expected_name:
+              raise SystemExit('unexpected persistent runner agentName')
+          if state.get('gitHubUrl') != expected_org:
+              raise SystemExit('unexpected persistent runner organization URL')
+          if state.get('workFolder') not in {'/work', '_work'}:
+              raise SystemExit('unexpected persistent runner workFolder')
+          PY
 
-      - name: Verify existing Canary runtime read-only
+      - name: Verify existing local Canary integration reachability
         shell: bash
         run: |
           set -euo pipefail
-          canary_id="$(docker ps -q \
-            --filter "label=com.docker.compose.project=$EXPECTED_COMPOSE_PROJECT" \
-            --filter 'label=com.docker.compose.service=canary')"
-          test -n "$canary_id"
-          test "$(printf '%s\n' "$canary_id" | sed '/^$/d' | wc -l)" -eq 1
-          test "$(docker inspect "$canary_id" --format '{{.State.Running}}')" = "true"
-
-          canary_mounts="$(docker inspect "$canary_id" --format '{{range .Mounts}}{{printf "%s|%s\n" .Type .Destination}}{{end}}')"
-          printf '%s\n' "$canary_mounts" | grep -Eq '^volume\|/data$'
-          if printf '%s\n' "$canary_mounts" | grep -Eq '\|/var/run/docker.sock$'; then
-            echo 'Canary runtime unexpectedly has Docker socket access' >&2
-            exit 1
-          fi
-
-          mariadb_id="$(docker ps -q \
-            --filter "label=com.docker.compose.project=$EXPECTED_COMPOSE_PROJECT" \
-            --filter 'label=com.docker.compose.service=mariadb')"
-          test -n "$mariadb_id"
-          test "$(printf '%s\n' "$mariadb_id" | sed '/^$/d' | wc -l)" -eq 1
-          test "$(docker inspect "$mariadb_id" --format '{{.State.Running}}')" = "true"
-          test "$(docker inspect "$mariadb_id" --format '{{if .State.Health}}{{.State.Health.Status}}{{end}}')" = "healthy"
-
-          canary_networks="$(docker inspect "$canary_id" --format '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}')"
-          mariadb_networks="$(docker inspect "$mariadb_id" --format '{{range $name, $_ := .NetworkSettings.Networks}}{{println $name}}{{end}}')"
-          common_network="$(comm -12 <(printf '%s\n' "$canary_networks" | sort -u) <(printf '%s\n' "$mariadb_networks" | sort -u))"
-          test -n "$common_network"
+          for port in "$CANARY_LOGIN_PORT" "$CANARY_GAME_PORT"; do
+            timeout 5 bash -c "exec 3<>/dev/tcp/$CANARY_HOST/$port; exec 3>&-; exec 3<&-"
+          done
 
       - name: Record sanitized acceptance evidence
         shell: bash
@@ -92,9 +88,11 @@ jobs:
             echo 'GAME_RUNNER_ACCEPTANCE=PASS'
             echo "RUNNER_NAME=${{ runner.name }}"
             echo 'RUNNER_ROUTE=game-runners/oteryn-game'
-            echo 'CANARY_RUNTIME=running'
-            echo 'CANARY_PERSISTENCE=/data volume present'
-            echo 'CANARY_DATABASE_TOPOLOGY=shared Docker network with healthy MariaDB'
+            echo 'RUNNER_SCOPE=organization'
+            echo 'RUNNER_UID_GID=1001:1001'
+            echo 'DOCKER_HOST_CONTROL=ABSENT'
+            echo 'CANARY_LOGIN_REACHABILITY=PASS'
+            echo 'CANARY_GAME_REACHABILITY=PASS'
             echo 'RUNTIME_MUTATION=NONE'
             echo 'ENVIRONMENT_VALUES_EXPOSED=NONE'
           } >> "$GITHUB_STEP_SUMMARY"
