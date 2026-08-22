@@ -24,6 +24,14 @@ pub enum DomainError {
     ContainerDirectLimit,
     ContainerDepthLimit,
     ContainerReachableLimit,
+    ContainerAlreadyAttached,
+    UnsupportedInterpretationContext,
+    UnsupportedDefinitionRevision,
+    LocationSurfaceNotAllowed,
+    MismatchedWorld,
+    InvalidFixtureProfileVersion,
+    UnsupportedFixtureProfileVersion,
+    FixtureProfileCannotActivateProduct,
 }
 
 impl Display for DomainError {
@@ -47,6 +55,22 @@ impl Display for DomainError {
             Self::ContainerDirectLimit => "container direct-entry limit would be exceeded",
             Self::ContainerDepthLimit => "container nesting depth limit would be exceeded",
             Self::ContainerReachableLimit => "container reachable-item limit would be exceeded",
+            Self::ContainerAlreadyAttached => "item already has an immediate container parent",
+            Self::UnsupportedInterpretationContext => {
+                "character interpretation context is incompatible"
+            }
+            Self::UnsupportedDefinitionRevision => "item definition revision is incompatible",
+            Self::LocationSurfaceNotAllowed => {
+                "item definition does not permit this location surface"
+            }
+            Self::MismatchedWorld => "item location is outside the item logical world",
+            Self::InvalidFixtureProfileVersion => "fixture profile version must be non-zero",
+            Self::UnsupportedFixtureProfileVersion => {
+                "fixture profile version is not the expected version"
+            }
+            Self::FixtureProfileCannotActivateProduct => {
+                "fixture-only structural limits cannot activate as product policy"
+            }
         })
     }
 }
@@ -157,6 +181,73 @@ impl<R> CharacterInterpretationContext<R> {
     }
 }
 
+impl<R> CharacterInterpretationContext<R>
+where
+    R: PartialEq,
+{
+    pub fn ensure_compatible(&self, expected: &Self) -> Result<(), DomainError> {
+        if self != expected {
+            return Err(DomainError::UnsupportedInterpretationContext);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CharacterDefinitionRef<K, R> {
+    key: K,
+    revision: R,
+}
+
+impl<K, R> CharacterDefinitionRef<K, R> {
+    #[must_use]
+    pub const fn new(key: K, revision: R) -> Self {
+        Self { key, revision }
+    }
+
+    #[must_use]
+    pub const fn key(&self) -> &K {
+        &self.key
+    }
+
+    #[must_use]
+    pub const fn revision(&self) -> &R {
+        &self.revision
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CharacterBuildState<K, R> {
+    Unselected,
+    Selected {
+        profession: CharacterDefinitionRef<K, R>,
+        promotion: Option<CharacterDefinitionRef<K, R>>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CharacterProgressionFact<K, R, V> {
+    definition: CharacterDefinitionRef<K, R>,
+    value: V,
+}
+
+impl<K, R, V> CharacterProgressionFact<K, R, V> {
+    #[must_use]
+    pub const fn new(definition: CharacterDefinitionRef<K, R>, value: V) -> Self {
+        Self { definition, value }
+    }
+
+    #[must_use]
+    pub const fn definition(&self) -> &CharacterDefinitionRef<K, R> {
+        &self.definition
+    }
+
+    #[must_use]
+    pub const fn value(&self) -> &V {
+        &self.value
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Quiescence {
     actor_absent: bool,
@@ -187,21 +278,27 @@ impl Quiescence {
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CharacterRecord<R> {
+pub struct CharacterRecord<R, B> {
     id: CharacterId,
     lifecycle: CharacterLifecycle,
     revision: CharacterRevision,
     context: CharacterInterpretationContext<R>,
+    build: B,
 }
 
-impl<R> CharacterRecord<R> {
+impl<R, B> CharacterRecord<R, B> {
     #[must_use]
-    pub const fn new(id: CharacterId, context: CharacterInterpretationContext<R>) -> Self {
+    pub const fn new(
+        id: CharacterId,
+        context: CharacterInterpretationContext<R>,
+        build: B,
+    ) -> Self {
         Self {
             id,
             lifecycle: CharacterLifecycle::Active,
             revision: CharacterRevision(1),
             context,
+            build,
         }
     }
 
@@ -221,17 +318,16 @@ impl<R> CharacterRecord<R> {
     pub const fn context(&self) -> &CharacterInterpretationContext<R> {
         &self.context
     }
+    #[must_use]
+    pub const fn build(&self) -> &B {
+        &self.build
+    }
 
     fn verify_revision(&self, expected: CharacterRevision) -> Result<(), DomainError> {
         if expected != self.revision {
             return Err(DomainError::StaleCharacterRevision);
         }
         Ok(())
-    }
-
-    fn advance_revision(&mut self) -> Result<CharacterRevision, DomainError> {
-        self.revision = self.revision.successor()?;
-        Ok(self.revision)
     }
 
     pub fn schedule_deletion(
@@ -241,8 +337,10 @@ impl<R> CharacterRecord<R> {
         self.verify_revision(expected)?;
         match self.lifecycle {
             CharacterLifecycle::Active => {
+                let next_revision = self.revision.successor()?;
                 self.lifecycle = CharacterLifecycle::DeletionScheduled;
-                self.advance_revision()
+                self.revision = next_revision;
+                Ok(next_revision)
             }
             CharacterLifecycle::Retired => Err(DomainError::TerminalLifecycle),
             CharacterLifecycle::DeletionScheduled => Err(DomainError::InvalidLifecycleTransition),
@@ -256,8 +354,10 @@ impl<R> CharacterRecord<R> {
         self.verify_revision(expected)?;
         match self.lifecycle {
             CharacterLifecycle::DeletionScheduled => {
+                let next_revision = self.revision.successor()?;
                 self.lifecycle = CharacterLifecycle::Active;
-                self.advance_revision()
+                self.revision = next_revision;
+                Ok(next_revision)
             }
             CharacterLifecycle::Retired => Err(DomainError::TerminalLifecycle),
             CharacterLifecycle::Active => Err(DomainError::InvalidLifecycleTransition),
@@ -278,8 +378,22 @@ impl<R> CharacterRecord<R> {
         if !quiescence.is_quiescent() {
             return Err(DomainError::NotQuiescent);
         }
+        let next_revision = self.revision.successor()?;
         self.lifecycle = CharacterLifecycle::Retired;
-        self.advance_revision()
+        self.revision = next_revision;
+        Ok(next_revision)
+    }
+}
+
+impl<R, B> CharacterRecord<R, B>
+where
+    R: PartialEq,
+{
+    pub fn ensure_context(
+        &self,
+        expected: &CharacterInterpretationContext<R>,
+    ) -> Result<(), DomainError> {
+        self.context.ensure_compatible(expected)
     }
 }
 
@@ -359,6 +473,18 @@ impl<K, R> ItemDefinitionRef<K, R> {
     }
 }
 
+impl<K, R> ItemDefinitionRef<K, R>
+where
+    R: PartialEq,
+{
+    pub fn ensure_revision(&self, expected: &R) -> Result<(), DomainError> {
+        if &self.revision != expected {
+            return Err(DomainError::UnsupportedDefinitionRevision);
+        }
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemInstance<K, R> {
     id: ItemInstanceId,
@@ -390,6 +516,173 @@ impl<K, R> ItemInstance<K, R> {
     #[must_use]
     pub const fn definition(&self) -> &ItemDefinitionRef<K, R> {
         &self.definition
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ItemLocationSurface {
+    CharacterInventory,
+    CharacterEquipment,
+    Container,
+    Ground,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ItemLocationRef<I, E, C, G, P> {
+    CharacterInventory {
+        character_id: CharacterId,
+        position: I,
+    },
+    CharacterEquipment {
+        character_id: CharacterId,
+        occupancy: E,
+    },
+    Container {
+        parent_item_instance_id: ItemInstanceId,
+        entry: C,
+    },
+    Ground {
+        world_id: WorldId,
+        runtime_scope: G,
+        spatial_position: P,
+    },
+}
+
+impl<I, E, C, G, P> ItemLocationRef<I, E, C, G, P> {
+    #[must_use]
+    pub const fn surface(&self) -> ItemLocationSurface {
+        match self {
+            Self::CharacterInventory { .. } => ItemLocationSurface::CharacterInventory,
+            Self::CharacterEquipment { .. } => ItemLocationSurface::CharacterEquipment,
+            Self::Container { .. } => ItemLocationSurface::Container,
+            Self::Ground { .. } => ItemLocationSurface::Ground,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ItemPlacementPolicy {
+    inventory: bool,
+    equipment: bool,
+    container: bool,
+    ground: bool,
+}
+
+impl ItemPlacementPolicy {
+    #[must_use]
+    pub const fn new(inventory: bool, equipment: bool, container: bool, ground: bool) -> Self {
+        Self {
+            inventory,
+            equipment,
+            container,
+            ground,
+        }
+    }
+
+    pub fn validate<I, E, C, G, P>(
+        self,
+        location: &ItemLocationRef<I, E, C, G, P>,
+    ) -> Result<(), DomainError> {
+        let allowed = match location.surface() {
+            ItemLocationSurface::CharacterInventory => self.inventory,
+            ItemLocationSurface::CharacterEquipment => self.equipment,
+            ItemLocationSurface::Container => self.container,
+            ItemLocationSurface::Ground => self.ground,
+        };
+        if !allowed {
+            return Err(DomainError::LocationSurfaceNotAllowed);
+        }
+        Ok(())
+    }
+}
+
+impl<K, R> ItemInstance<K, R> {
+    pub fn validate_location<I, E, C, G, P>(
+        &self,
+        policy: ItemPlacementPolicy,
+        location: &ItemLocationRef<I, E, C, G, P>,
+    ) -> Result<(), DomainError> {
+        policy.validate(location)?;
+        if let ItemLocationRef::Ground { world_id, .. } = location
+            && *world_id != self.world
+        {
+            return Err(DomainError::MismatchedWorld);
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FixtureProfileVersion(u32);
+
+impl FixtureProfileVersion {
+    pub fn new(value: u32) -> Result<Self, DomainError> {
+        if value == 0 {
+            return Err(DomainError::InvalidFixtureProfileVersion);
+        }
+        Ok(Self(value))
+    }
+
+    #[must_use]
+    pub const fn get(self) -> u32 {
+        self.0
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FixtureProfileActivation {
+    StructuralTest,
+    ProductPolicy,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct StructuralFixtureProfile {
+    version: FixtureProfileVersion,
+    stack_engine_ceiling: EngineCeiling,
+    container_limits: ContainerLimits,
+}
+
+impl StructuralFixtureProfile {
+    #[must_use]
+    pub const fn new(
+        version: FixtureProfileVersion,
+        stack_engine_ceiling: EngineCeiling,
+        container_limits: ContainerLimits,
+    ) -> Self {
+        Self {
+            version,
+            stack_engine_ceiling,
+            container_limits,
+        }
+    }
+
+    pub fn activate(
+        self,
+        expected_version: FixtureProfileVersion,
+        activation: FixtureProfileActivation,
+    ) -> Result<Self, DomainError> {
+        if self.version != expected_version {
+            return Err(DomainError::UnsupportedFixtureProfileVersion);
+        }
+        if activation == FixtureProfileActivation::ProductPolicy {
+            return Err(DomainError::FixtureProfileCannotActivateProduct);
+        }
+        Ok(self)
+    }
+
+    #[must_use]
+    pub const fn version(self) -> FixtureProfileVersion {
+        self.version
+    }
+
+    #[must_use]
+    pub const fn stack_engine_ceiling(self) -> EngineCeiling {
+        self.stack_engine_ceiling
+    }
+
+    #[must_use]
+    pub const fn container_limits(self) -> ContainerLimits {
+        self.container_limits
     }
 }
 
@@ -475,6 +768,9 @@ impl ContainmentLegalityView {
         child: ItemInstanceId,
         container: ItemInstanceId,
     ) -> Result<(), DomainError> {
+        if self.parent_by_child.contains_key(&child) {
+            return Err(DomainError::ContainerAlreadyAttached);
+        }
         self.validate_attach(child, container)?;
         self.parent_by_child.insert(child, container);
         Ok(())
@@ -485,6 +781,9 @@ impl ContainmentLegalityView {
         child: ItemInstanceId,
         container: ItemInstanceId,
     ) -> Result<(), DomainError> {
+        if self.parent_by_child.contains_key(&child) {
+            return Err(DomainError::ContainerAlreadyAttached);
+        }
         if child == container {
             return Err(DomainError::ContainerSelfCycle);
         }
@@ -499,15 +798,23 @@ impl ContainmentLegalityView {
         if direct_entries.saturating_add(1) > self.limits.max_direct_entries {
             return Err(DomainError::ContainerDirectLimit);
         }
-        let new_depth = self.ancestor_count(container).saturating_add(1);
-        if new_depth > self.limits.max_nesting_depth {
+        let deepest_new_depth = self
+            .ancestor_count(container)
+            .saturating_add(1)
+            .saturating_add(self.subtree_max_relative_depth(child));
+        if deepest_new_depth > self.limits.max_nesting_depth {
             return Err(DomainError::ContainerDepthLimit);
         }
-        let reachable_after = self
-            .reachable_descendants(container)
-            .saturating_add(self.subtree_size(child));
-        if reachable_after > self.limits.max_reachable_items {
-            return Err(DomainError::ContainerReachableLimit);
+        let added_subtree = self.subtree_size(child);
+        let mut affected_container = Some(container);
+        while let Some(current) = affected_container {
+            let reachable_after = self
+                .reachable_descendants(current)
+                .saturating_add(added_subtree);
+            if reachable_after > self.limits.max_reachable_items {
+                return Err(DomainError::ContainerReachableLimit);
+            }
+            affected_container = self.parent_by_child.get(&current).copied();
         }
         Ok(())
     }
@@ -554,6 +861,30 @@ impl ContainmentLegalityView {
     fn subtree_size(&self, root: ItemInstanceId) -> usize {
         self.reachable_descendants(root).saturating_add(1)
     }
+
+    fn subtree_max_relative_depth(&self, root: ItemInstanceId) -> usize {
+        self.parent_by_child
+            .keys()
+            .filter_map(|candidate| self.descendant_depth_from(*candidate, root))
+            .max()
+            .unwrap_or(0)
+    }
+
+    fn descendant_depth_from(
+        &self,
+        candidate: ItemInstanceId,
+        root: ItemInstanceId,
+    ) -> Option<usize> {
+        let mut depth = 0usize;
+        let mut current = candidate;
+        loop {
+            if current == root {
+                return Some(depth);
+            }
+            current = *self.parent_by_child.get(&current)?;
+            depth = depth.saturating_add(1);
+        }
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -596,7 +927,9 @@ mod tests {
             "content-v1",
             "starter-v1",
         );
-        let mut character = CharacterRecord::new(CharacterId::from_bytes(uuid_v7(6))?, context);
+        let build = CharacterBuildState::<&str, &str>::Unselected;
+        let mut character =
+            CharacterRecord::new(CharacterId::from_bytes(uuid_v7(6))?, context, build);
         assert_eq!(character.lifecycle(), CharacterLifecycle::Active);
         let revision_one = CharacterRevision::new(1)?;
         let revision_two = character.schedule_deletion(revision_one)?;
@@ -622,6 +955,29 @@ mod tests {
         );
         Ok(())
     }
+    #[test]
+    fn lifecycle_revision_exhaustion_does_not_partially_mutate_state() -> Result<(), DomainError> {
+        let context = CharacterInterpretationContext::new(
+            "fixture-profile",
+            "rules-v1",
+            "content-v1",
+            "starter-v1",
+        );
+        let mut character = CharacterRecord::new(
+            CharacterId::from_bytes(uuid_v7(40))?,
+            context,
+            CharacterBuildState::<&str, &str>::Unselected,
+        );
+        character.revision = CharacterRevision::new(u64::MAX)?;
+        assert_eq!(
+            character.schedule_deletion(character.revision()),
+            Err(DomainError::RevisionExhausted)
+        );
+        assert_eq!(character.lifecycle(), CharacterLifecycle::Active);
+        assert_eq!(character.revision().get(), u64::MAX);
+        Ok(())
+    }
+
     #[test]
     fn item_definition_context_and_stack_limits_are_explicit() -> Result<(), DomainError> {
         let engine = EngineCeiling::new(100)?;
@@ -687,6 +1043,158 @@ mod tests {
         assert_eq!(
             view.validate_attach(e, b),
             Err(DomainError::ContainerDirectLimit)
+        );
+        assert_eq!(
+            view.record_existing_edge(a, d),
+            Err(DomainError::ContainerAlreadyAttached)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn character_build_progression_and_context_are_explicit_and_revision_bound()
+    -> Result<(), DomainError> {
+        let context = CharacterInterpretationContext::new(
+            "profile-v1",
+            "rules-v1",
+            "content-v1",
+            "starter-v1",
+        );
+        let profession = CharacterDefinitionRef::new("fixture:profession.knight", "rules-v1");
+        let build = CharacterBuildState::Selected {
+            profession: profession.clone(),
+            promotion: None,
+        };
+        let character = CharacterRecord::new(
+            CharacterId::from_bytes(uuid_v7(20))?,
+            context.clone(),
+            build,
+        );
+        assert_eq!(
+            character.build(),
+            &CharacterBuildState::Selected {
+                profession,
+                promotion: None
+            }
+        );
+        character.ensure_context(&context)?;
+        let stale = CharacterInterpretationContext::new(
+            "profile-v1",
+            "rules-v0",
+            "content-v1",
+            "starter-v1",
+        );
+        assert_eq!(
+            character.ensure_context(&stale),
+            Err(DomainError::UnsupportedInterpretationContext)
+        );
+
+        let skill = CharacterDefinitionRef::new("fixture:skill.sword", "rules-v1");
+        let fact = CharacterProgressionFact::new(skill, 42_u64);
+        assert_eq!(fact.definition().key(), &"fixture:skill.sword");
+        assert_eq!(fact.definition().revision(), &"rules-v1");
+        assert_eq!(fact.value(), &42);
+        Ok(())
+    }
+
+    #[test]
+    fn item_locations_are_typed_definition_legal_and_world_scoped() -> Result<(), DomainError> {
+        let world = WorldId::from_bytes(uuid_v7(21))?;
+        let other_world = WorldId::from_bytes(uuid_v7(22))?;
+        let definition = ItemDefinitionRef::new("fixture:item.sword", "content-v1");
+        definition.ensure_revision(&"content-v1")?;
+        assert_eq!(
+            definition.ensure_revision(&"content-v0"),
+            Err(DomainError::UnsupportedDefinitionRevision)
+        );
+        let instance =
+            ItemInstance::new(ItemInstanceId::from_bytes(uuid_v7(23))?, world, definition);
+        let policy = ItemPlacementPolicy::new(true, true, false, true);
+        let inventory =
+            ItemLocationRef::<u16, (), u16, &str, (i32, i32, i16)>::CharacterInventory {
+                character_id: CharacterId::from_bytes(uuid_v7(24))?,
+                position: 0,
+            };
+        instance.validate_location(policy, &inventory)?;
+        let container = ItemLocationRef::<u16, (), u16, &str, (i32, i32, i16)>::Container {
+            parent_item_instance_id: ItemInstanceId::from_bytes(uuid_v7(25))?,
+            entry: 0,
+        };
+        assert_eq!(
+            instance.validate_location(policy, &container),
+            Err(DomainError::LocationSurfaceNotAllowed)
+        );
+        let wrong_ground = ItemLocationRef::<u16, (), u16, &str, (i32, i32, i16)>::Ground {
+            world_id: other_world,
+            runtime_scope: "channel-scope",
+            spatial_position: (100, 100, 7),
+        };
+        assert_eq!(
+            instance.validate_location(policy, &wrong_ground),
+            Err(DomainError::MismatchedWorld)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn structural_fixture_profile_is_versioned_and_cannot_become_product_policy()
+    -> Result<(), DomainError> {
+        let version_one = FixtureProfileVersion::new(1)?;
+        let fixture = StructuralFixtureProfile::new(
+            version_one,
+            EngineCeiling::new(100)?,
+            ContainerLimits::new(4, 3, 8)?,
+        );
+        let active = fixture.activate(version_one, FixtureProfileActivation::StructuralTest)?;
+        assert_eq!(active.version().get(), 1);
+        assert_eq!(active.stack_engine_ceiling().get(), 100);
+        assert_eq!(
+            fixture.activate(
+                FixtureProfileVersion::new(2)?,
+                FixtureProfileActivation::StructuralTest
+            ),
+            Err(DomainError::UnsupportedFixtureProfileVersion)
+        );
+        assert_eq!(
+            fixture.activate(version_one, FixtureProfileActivation::ProductPolicy),
+            Err(DomainError::FixtureProfileCannotActivateProduct)
+        );
+        assert_eq!(
+            FixtureProfileVersion::new(0),
+            Err(DomainError::InvalidFixtureProfileVersion)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn containment_checks_detached_subtree_depth_and_ancestor_reachable_limits()
+    -> Result<(), DomainError> {
+        let root = ItemInstanceId::from_bytes(uuid_v7(30))?;
+        let child = ItemInstanceId::from_bytes(uuid_v7(31))?;
+        let grandchild = ItemInstanceId::from_bytes(uuid_v7(32))?;
+        let destination = ItemInstanceId::from_bytes(uuid_v7(33))?;
+        let limits = ContainerLimits::new(4, 2, 4)?;
+        let mut view = ContainmentLegalityView::new(limits);
+        view.record_existing_edge(grandchild, child)?;
+        view.record_existing_edge(child, root)?;
+        assert_eq!(
+            view.validate_attach(root, destination),
+            Err(DomainError::ContainerDepthLimit)
+        );
+
+        let ancestor = ItemInstanceId::from_bytes(uuid_v7(34))?;
+        let destination = ItemInstanceId::from_bytes(uuid_v7(35))?;
+        let existing = ItemInstanceId::from_bytes(uuid_v7(36))?;
+        let subtree = ItemInstanceId::from_bytes(uuid_v7(37))?;
+        let leaf = ItemInstanceId::from_bytes(uuid_v7(38))?;
+        let limits = ContainerLimits::new(3, 4, 3)?;
+        let mut view = ContainmentLegalityView::new(limits);
+        view.record_existing_edge(destination, ancestor)?;
+        view.record_existing_edge(existing, ancestor)?;
+        view.record_existing_edge(leaf, subtree)?;
+        assert_eq!(
+            view.validate_attach(subtree, destination),
+            Err(DomainError::ContainerReachableLimit)
         );
         Ok(())
     }
