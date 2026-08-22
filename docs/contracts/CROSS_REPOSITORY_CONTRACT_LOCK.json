@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-08-22T20:50:09+02:00",
+  "updated_at": "2026-08-22T22:29:50+02:00",
   "policy": {
     "canonical_revisions_must_be_merged": true,
     "mutable_pr_heads_are_canonical": false,
@@ -120,21 +120,20 @@
     {
       "coordination_id": "OTERYN-GAME-PLATFORM-CATALOG-V1",
       "contract_name": "oteryn.game-platform-catalog",
-      "status": "PENDING_CANONICAL_MERGE",
+      "status": "LOCKED",
       "canonical_repository": "Oteryn/Oteryn-Game",
-      "canonical_commit": null,
+      "canonical_commit": "96ea673839f1d93190a40c17ae8036ac82096ded",
       "canonical_contract_path": "docs/contracts/OTERYN_GAME_PLATFORM_CATALOG_EXPORT_V1.md",
       "schema_version": "1.0.0",
-      "schema_revision": null,
-      "schema_sha256": null,
+      "schema_revision": 1,
+      "schema_sha256": "9bc87fba5b565e5c7d4d3f6ca7a9bd75d45d8110de64a2a50f8f74d9ba181cad",
       "resource_limits_path": "docs/contracts/RESOURCE_LIMITS_REGISTRY.json",
       "source_issue": 52,
-      "pending_pull_request": 57,
       "accepted_for_fnd02": false,
       "producers": [
         {
           "repository": "Oteryn/Oteryn-Game",
-          "status": "PENDING_CONTRACT_AND_REFERENCE_PRODUCER_MERGE"
+          "status": "CANONICAL_CONTRACT_MERGED_REFERENCE_PRODUCER_AVAILABLE_NATIVE_CAPABILITIES_UNSUPPORTED_UNTIL_ADAPTERS"
         }
       ],
       "consumers": [
@@ -144,15 +143,16 @@
         }
       ],
       "rollout_order": [
-        "merge Game contract and deterministic reference producer",
-        "lock the exact merged Game contract revision and schema digest",
         "implement Platform inactive consumer for schema 1.0.0",
-        "prove cross-repository fixture import and rejection compatibility",
+        "prove cross-repository fixture validation and rejection compatibility",
         "add native capability adapters only from canonical Game content evidence",
         "activate only through a separately authorized Platform production gate"
       ],
       "production_enabled": false,
-      "notes": "Pending entry intentionally leaves merged canonical commit, numeric schema revision and schema digest unset. The current fixture is unsupported/unknown and grants no native content completeness or production activation authority."
+      "notes": "Canonical Game contract and bounded reference producer merged through PR #57. Current native capability fixture remains unsupported/unknown and grants no content completeness, absence, publication or production activation authority.",
+      "canonical_contract_revision": 1,
+      "source_pull_request": 57,
+      "merged_at": "2026-08-22T20:27:22Z"
     }
   ]
 }
