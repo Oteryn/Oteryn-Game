@@ -117,12 +117,11 @@ fn validate_atomic_attempt_authority<T: Copy + Eq>(
             {
                 return Err(core::AdmissionError::StaleConnection);
             }
-            if session.current_character_lease() != binding.character_lease() {
-                return Err(core::AdmissionError::StaleLease);
-            }
-            if session.current_scope_generation() != binding.scope_generation() {
-                return Err(core::AdmissionError::StaleRuntime);
-            }
+            // The stored COMMIT binding proves which candidate transport and
+            // generation won. CharacterLease and RuntimeScope are current
+            // authority fences and may advance after a successful COMMIT; their
+            // present values are validated above and again against the local
+            // recovered projection before replay is returned.
             Ok(snapshot.disposition())
         }
     }
