@@ -206,10 +206,14 @@ impl ReconnectAttemptJournal<u64> for RecoveryJournal {
         if let Some(disposition) = state.dispositions.get(&key).copied() {
             return Ok(ReconnectAttemptClaim::Existing(disposition));
         }
-        if state.dispositions.iter().any(|((session, _), disposition)| {
-            *session == game_session_id
-                && matches!(disposition, ReconnectAttemptDisposition::Prepared { .. })
-        }) {
+        if state
+            .dispositions
+            .iter()
+            .any(|((session, _), disposition)| {
+                *session == game_session_id
+                    && matches!(disposition, ReconnectAttemptDisposition::Prepared { .. })
+            })
+        {
             state
                 .dispositions
                 .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
