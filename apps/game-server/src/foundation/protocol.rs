@@ -692,8 +692,7 @@ mod tests {
     fn bootstrap_payload_limit_accepts_65536_and_rejects_65537()
     -> Result<(), FoundationProtocolError> {
         let mut accepted = vec![
-            0x08, 0x01, 0x22, 0x80, 0x80, 0x04,
-            0x82, 0x01, 0xfb, 0xff, 0x03,
+            0x08, 0x01, 0x22, 0x80, 0x80, 0x04, 0x82, 0x01, 0xfb, 0xff, 0x03,
         ];
         accepted.resize(6 + 65_536, 0);
         assert_eq!(decode_wire_envelope(&accepted)?.payload().len(), 65_536);
