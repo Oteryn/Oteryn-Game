@@ -2,9 +2,10 @@ use crate::foundation::{
     AdmissionAuthority, AdmissionError, ChannelId, CharacterId, CharacterLease,
     ConnectionGeneration, ControlLossDisposition, FreshAdmissionAuthoritySnapshot,
     FreshAdmissionCommit, FreshAdmissionFacts, FreshAdmissionReplayKey,
-    GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, ReconnectAttemptClaim,
-    ReconnectAttemptDisposition, ReconnectAttemptJournal, ReconnectAttemptRef,
-    ReconnectCommitBinding, ScopeOwnershipGeneration, WorldId,
+    GameSessionAuthoritySnapshot, GameSessionId, GameSessionState,
+    ReconnectAttemptAuthoritySnapshot, ReconnectAttemptClaim, ReconnectAttemptDisposition,
+    ReconnectAttemptJournal, ReconnectAttemptRef, ReconnectCommitBinding, ScopeOwnershipGeneration,
+    WorldId,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -134,6 +135,35 @@ impl ReconnectAttemptJournal<u64> for RecoveryJournal {
             session.current_transport,
             lease,
             session.scope_generation,
+        ))
+    }
+
+    fn reconcile_reconnect_attempt(
+        &self,
+        game_session_id: GameSessionId,
+        attempt: ReconnectAttemptRef,
+    ) -> Result<ReconnectAttemptAuthoritySnapshot<u64>, AdmissionError> {
+        let state = self.state.borrow();
+        let session = state
+            .session
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        if session.commit.game_session_id() != game_session_id {
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
+        let key = (game_session_id, attempt);
+        let lease = CharacterLease::new(session.commit.character_id(), session.lease_generation)?;
+        let snapshot = GameSessionAuthoritySnapshot::new(
+            session.commit,
+            session.state,
+            session.connection_generation,
+            session.current_transport,
+            lease,
+            session.scope_generation,
+        );
+        Ok(ReconnectAttemptAuthoritySnapshot::new(
+            snapshot,
+            state.dispositions.get(&key).copied(),
+            state.bindings.get(&key).copied(),
         ))
     }
 
@@ -440,7 +470,7 @@ fn committed_reconnect_rehydrates_after_process_restart() -> Result<(), Admissio
     assert_eq!(recovered.current_transport(), Some(200));
     assert_eq!(
         recovered.commit_reconnect(attempt, 201, 7, 12),
-        Err(AdmissionError::StaleConnection)
+        Err(AdmissionError::AttemptMismatch)
     );
     assert_eq!(
         recovered.commit_reconnect(attempt, 200, 7, 12)?,
