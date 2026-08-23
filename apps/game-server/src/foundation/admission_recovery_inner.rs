@@ -90,7 +90,10 @@ fn validate_current_authority<T: Copy + Eq>(
     if lease.character_id() != committed.character_id() {
         return Err(AdmissionError::StaleLease);
     }
-    if lease.generation() < committed.character_lease_generation() {
+    // A same-GameSession recovery may reconstruct current placement/runtime
+    // authority, but it cannot adopt a different CharacterLease generation.
+    // Any lease generation change is a superseding character-authority fence.
+    if lease.generation() != committed.character_lease_generation() {
         return Err(AdmissionError::StaleLease);
     }
     if snapshot.current_scope_generation().get() < committed.scope_ownership_generation() {
