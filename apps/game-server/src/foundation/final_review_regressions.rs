@@ -346,8 +346,8 @@ fn facts(nonce: u64) -> Result<FreshAdmissionFacts, AdmissionError> {
 }
 
 #[test]
-fn committed_reconnect_replay_revalidates_authority_after_rehydrate()
--> Result<(), AdmissionError> {
+fn committed_reconnect_replay_revalidates_authority_after_rehydrate() -> Result<(), AdmissionError>
+{
     let journal = ReviewJournal::default();
     let session_id = game_session_id(500)?;
     let mut original = AdmissionAuthority::new(journal.clone());
