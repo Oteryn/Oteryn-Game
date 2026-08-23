@@ -126,9 +126,17 @@ fn validate_snapshot_body(input: &[u8]) -> Result<(), FoundationProtocolError> {
 /// Public snapshot assembly boundary. The private wire assembler verifies chunk
 /// ordering/size/generation; this facade additionally validates the assembled
 /// SnapshotBody state-domain collection before exposing the body to consumers.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct SnapshotBarrier {
     core: super::protocol::SnapshotBarrier,
+}
+
+impl Default for SnapshotBarrier {
+    fn default() -> Self {
+        Self {
+            core: super::protocol::SnapshotBarrier::new(),
+        }
+    }
 }
 
 impl SnapshotBarrier {
