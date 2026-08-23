@@ -113,8 +113,8 @@ jobs:
               '/tools/repository/ @blakinio',
           }
 
-          if policy.get('required_status_check') != 'Merge gate / validate':
-              raise SystemExit('policy required status is not the aggregate merge gate')
+          if policy.get('required_status_check') != 'game-gate':
+              raise SystemExit('policy required status is not the stable game-gate')
           ruleset = policy.get('ruleset', {})
           if ruleset.get('target') != 'branch':
               raise SystemExit('Protect main must target branches')
@@ -128,7 +128,7 @@ jobs:
               item.get('context')
               for item in status_rules[0].get('parameters', {}).get('required_status_checks', [])
           ]
-          if contexts != ['Merge gate / validate']:
+          if contexts != ['game-gate']:
               raise SystemExit(f'unexpected required contexts: {contexts!r}')
           if any(r.get('type') == 'file_path_restriction' for r in ruleset.get('rules', [])):
               raise SystemExit('branch ruleset must not contain file_path_restriction')
@@ -190,6 +190,15 @@ jobs:
 
           if workflow.count('name: Merge gate / validate') != 1:
               raise SystemExit('aggregate required status name must be unique')
+          if workflow.count('name: game-gate') != 1:
+              raise SystemExit('stable game-gate status name must be unique')
+          for fragment in (
+              '    needs: validate',
+              'LEGACY_VALIDATE: ${{ needs.validate.result }}',
+              'run: test "$LEGACY_VALIDATE" = "success"',
+          ):
+              if fragment not in workflow:
+                  raise SystemExit(f'stable game-gate is detached from canonical aggregate: {fragment}')
           if 'workflow_dispatch:' in workflow:
               raise SystemExit('merge gate must not execute PR code through workflow_dispatch')
           if "prefixes = ('.cargo/', 'apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')" not in workflow:
@@ -236,6 +245,22 @@ jobs:
           validator_must_reject(
               original_workflow.replace(aggregate_loop, 'for name in ():', 1),
               'aggregate always-required results bypassed',
+          )
+
+          game_needs = "    needs: validate\n"
+          if game_needs not in original_workflow:
+              raise SystemExit('canonical game-gate dependency not found')
+          validator_must_reject(
+              original_workflow.replace(game_needs, "    needs: scope\n", 1),
+              'stable game-gate detached from legacy aggregate',
+          )
+
+          game_run = '        run: test "$LEGACY_VALIDATE" = "success"'
+          if game_run not in original_workflow:
+              raise SystemExit('canonical game-gate success assertion not found')
+          validator_must_reject(
+              original_workflow.replace(game_run, '        run: true', 1),
+              'stable game-gate success assertion bypassed',
           )
 
           trigger = "  pull_request:\n    branches:\n      - main\n"
