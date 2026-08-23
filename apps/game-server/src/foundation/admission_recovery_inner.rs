@@ -116,6 +116,13 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         &self.reconnect_attempts
     }
 
+    pub(super) fn prepared_reconnect_projection(
+        &self,
+    ) -> Option<(ReconnectAttemptRef, T, ConnectionGeneration)> {
+        self.prepared
+            .map(|prepared| (prepared.attempt, prepared.candidate_transport, prepared.candidate))
+    }
+
     pub(super) fn clear_process_projection(&mut self) {
         if let Some(session) = self.current.as_mut() {
             session.runtime_scope.invalidate();
