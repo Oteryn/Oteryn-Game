@@ -2,9 +2,9 @@ use crate::foundation::{
     AdmissionAuthority, AdmissionError, ChannelId, CharacterId, CharacterLease,
     ConnectionGeneration, ControlLossDisposition, FoundationProtocolError,
     FreshAdmissionAuthoritySnapshot, FreshAdmissionCommit, FreshAdmissionFacts,
-    GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, ReconnectAttemptClaim,
-    ReconnectAttemptDisposition, ReconnectAttemptJournal, ReconnectAttemptRef,
-    ReconnectCommitBinding, ScopeOwnershipGeneration, SnapshotBarrier, WorldId,
+    GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, ReconnectAttemptAuthoritySnapshot,
+    ReconnectAttemptClaim, ReconnectAttemptDisposition, ReconnectAttemptJournal,
+    ReconnectAttemptRef, ReconnectCommitBinding, ScopeOwnershipGeneration, SnapshotBarrier, WorldId,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -31,6 +31,17 @@ impl RacyReplayJournal {
     fn terminate_before_next_lookup(&self) {
         self.state.borrow_mut().terminate_before_next_lookup = true;
     }
+
+    fn current_snapshot(state: &DurableReplayState) -> GameSessionAuthoritySnapshot<u64> {
+        GameSessionAuthoritySnapshot::new(
+            state.commit,
+            state.session_state,
+            state.connection_generation,
+            state.current_transport,
+            state.lease,
+            state.scope,
+        )
+    }
 }
 
 impl ReconnectAttemptJournal<u64> for RacyReplayJournal {
@@ -54,13 +65,30 @@ impl ReconnectAttemptJournal<u64> for RacyReplayJournal {
         if state.commit.game_session_id() != game_session_id {
             return Err(AdmissionError::ReconciliationUnavailable);
         }
-        Ok(GameSessionAuthoritySnapshot::new(
-            state.commit,
-            state.session_state,
-            state.connection_generation,
-            state.current_transport,
-            state.lease,
-            state.scope,
+        Ok(Self::current_snapshot(&state))
+    }
+
+    fn reconcile_reconnect_attempt(
+        &self,
+        game_session_id: GameSessionId,
+        attempt: ReconnectAttemptRef,
+    ) -> Result<ReconnectAttemptAuthoritySnapshot<u64>, AdmissionError> {
+        let mut state = self.state.borrow_mut();
+        if state.commit.game_session_id() != game_session_id || state.attempt != attempt {
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
+        // Model a durable authority transition exactly before the single atomic
+        // read: the returned session and attempt outcome necessarily describe
+        // the same post-transition linearization point.
+        if state.terminate_before_next_lookup {
+            state.terminate_before_next_lookup = false;
+            state.session_state = GameSessionState::Terminal;
+            state.current_transport = None;
+        }
+        Ok(ReconnectAttemptAuthoritySnapshot::new(
+            Self::current_snapshot(&state),
+            Some(state.disposition),
+            None,
         ))
     }
 
@@ -95,14 +123,9 @@ impl ReconnectAttemptJournal<u64> for RacyReplayJournal {
         game_session_id: GameSessionId,
         attempt: ReconnectAttemptRef,
     ) -> Result<Option<ReconnectAttemptDisposition>, AdmissionError> {
-        let mut state = self.state.borrow_mut();
+        let state = self.state.borrow();
         if state.commit.game_session_id() != game_session_id || state.attempt != attempt {
             return Ok(None);
-        }
-        if state.terminate_before_next_lookup {
-            state.terminate_before_next_lookup = false;
-            state.session_state = GameSessionState::Terminal;
-            state.current_transport = None;
         }
         Ok(Some(state.disposition))
     }
