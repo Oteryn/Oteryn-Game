@@ -1,5 +1,5 @@
 use super::FoundationProtocolError;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 pub const PROTOCOL_MAJOR_V1: u32 = 1;
 pub const TRANSPORT_PROFILE_TCP_TLS13_V1: u32 = 1;
@@ -7,6 +7,11 @@ pub const ALPN_OTERYN_GAME_V1: &str = "oteryn-game/1";
 pub const MAX_BOOTSTRAP_PAYLOAD_BYTES: usize = 65_536;
 pub const MAX_ADMISSION_MATERIAL_BYTES: usize = 16_384;
 pub const MAX_RECONNECT_MATERIAL_BYTES: usize = 16_384;
+pub const MAX_CLIENT_BUILD_ID_BYTES: usize = 128;
+pub const MAX_CAPABILITY_COUNT: usize = 128;
+pub const MAX_COMMAND_EXPECTED_REVISIONS: usize = 64;
+pub const MAX_COMMAND_PAYLOAD_BYTES: usize = 65_536;
+pub const MAX_STATE_DOMAINS_PER_SYNC: usize = 256;
 pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
@@ -263,12 +268,141 @@ fn read_varint(input: &[u8], cursor: &mut usize) -> Result<u64, FoundationProtoc
     }
     Err(FoundationProtocolError::MalformedEnvelope)
 }
-fn validate_nested_material_bound(
-    payload: &[u8],
-    bounded_field: u32,
-    hard_maximum: usize,
+fn bounded_length_delimited<'a>(
+    input: &'a [u8],
+    cursor: &mut usize,
+    maximum: usize,
+    limit_error: FoundationProtocolError,
+) -> Result<&'a [u8], FoundationProtocolError> {
+    let len = usize::try_from(read_varint(input, cursor)?)
+        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+    if len > maximum {
+        return Err(limit_error);
+    }
+    let end = cursor
+        .checked_add(len)
+        .filter(|end| *end <= input.len())
+        .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+    let value = input
+        .get(*cursor..end)
+        .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+    *cursor = end;
+    Ok(value)
+}
+
+fn unbounded_length_delimited<'a>(
+    input: &'a [u8],
+    cursor: &mut usize,
+) -> Result<&'a [u8], FoundationProtocolError> {
+    bounded_length_delimited(
+        input,
+        cursor,
+        input.len(),
+        FoundationProtocolError::MalformedEnvelope,
+    )
+}
+
+fn validate_capability(
+    raw: u64,
+    count: &mut usize,
+    previous: &mut Option<u32>,
 ) -> Result<(), FoundationProtocolError> {
+    *count = count
+        .checked_add(1)
+        .ok_or(FoundationProtocolError::BootstrapLimitExceeded)?;
+    if *count > MAX_CAPABILITY_COUNT {
+        return Err(FoundationProtocolError::BootstrapLimitExceeded);
+    }
+    let capability =
+        u32::try_from(raw).map_err(|_| FoundationProtocolError::InvalidCapabilitySet)?;
+    if capability == 0 || previous.is_some_and(|prior| capability <= prior) {
+        return Err(FoundationProtocolError::InvalidCapabilitySet);
+    }
+    *previous = Some(capability);
+    Ok(())
+}
+
+fn validate_capability_field(
+    payload: &[u8],
+    cursor: &mut usize,
+    wire: u8,
+    count: &mut usize,
+    previous: &mut Option<u32>,
+) -> Result<(), FoundationProtocolError> {
+    match wire {
+        0 => validate_capability(read_varint(payload, cursor)?, count, previous),
+        2 => {
+            let packed = unbounded_length_delimited(payload, cursor)?;
+            let mut packed_cursor = 0usize;
+            while packed_cursor < packed.len() {
+                validate_capability(read_varint(packed, &mut packed_cursor)?, count, previous)?;
+            }
+            Ok(())
+        }
+        _ => Err(FoundationProtocolError::MalformedEnvelope),
+    }
+}
+
+fn parse_state_revision_domain_id(input: &[u8]) -> Result<u32, FoundationProtocolError> {
     let mut cursor = 0usize;
+    let mut domain_id = None;
+    while cursor < input.len() {
+        let key = read_varint(input, &mut cursor)?;
+        let field = (key >> 3) as u32;
+        let wire = (key & 7) as u8;
+        match (field, wire) {
+            (1, 0) if domain_id.is_none() => {
+                let raw = read_varint(input, &mut cursor)?;
+                let domain = u32::try_from(raw)
+                    .map_err(|_| FoundationProtocolError::StateRevisionMismatch)?;
+                if domain == 0 {
+                    return Err(FoundationProtocolError::StateRevisionMismatch);
+                }
+                domain_id = Some(domain);
+            }
+            (2, 0) => {
+                read_varint(input, &mut cursor)?;
+            }
+            (1 | 2, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
+            (_, unknown_wire) => skip_field(input, &mut cursor, unknown_wire)?,
+        }
+    }
+    domain_id.ok_or(FoundationProtocolError::StateRevisionMismatch)
+}
+
+fn validate_revision_list(
+    payload: &[u8],
+    cursor: &mut usize,
+    count: &mut usize,
+    maximum: usize,
+    seen_domains: &mut BTreeSet<u32>,
+) -> Result<(), FoundationProtocolError> {
+    *count = count
+        .checked_add(1)
+        .ok_or(FoundationProtocolError::PayloadLimitExceeded)?;
+    if *count > maximum {
+        return Err(FoundationProtocolError::PayloadLimitExceeded);
+    }
+    let revision = unbounded_length_delimited(payload, cursor)?;
+    let domain_id = parse_state_revision_domain_id(revision)?;
+    if !seen_domains.insert(domain_id) {
+        return Err(FoundationProtocolError::StateRevisionMismatch);
+    }
+    Ok(())
+}
+
+fn validate_bootstrap_ingress(
+    message_type: MessageType,
+    payload: &[u8],
+) -> Result<(), FoundationProtocolError> {
+    let (material_field, capabilities_field, build_field, material_maximum) = match message_type {
+        MessageType::ClientBootstrap => (5u32, 4u32, 7u32, MAX_ADMISSION_MATERIAL_BYTES),
+        MessageType::ClientResume => (2u32, 7u32, 8u32, MAX_RECONNECT_MATERIAL_BYTES),
+        _ => return Ok(()),
+    };
+    let mut cursor = 0usize;
+    let mut capability_count = 0usize;
+    let mut previous_capability = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = (key >> 3) as u32;
@@ -276,24 +410,109 @@ fn validate_nested_material_bound(
         if field == 0 {
             return Err(FoundationProtocolError::MalformedEnvelope);
         }
-        if field == bounded_field {
+        if field == material_field {
             if wire != 2 {
                 return Err(FoundationProtocolError::MalformedEnvelope);
             }
-            let len = usize::try_from(read_varint(payload, &mut cursor)?)
-                .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
-            if len > hard_maximum {
-                return Err(FoundationProtocolError::BootstrapLimitExceeded);
+            bounded_length_delimited(
+                payload,
+                &mut cursor,
+                material_maximum,
+                FoundationProtocolError::BootstrapLimitExceeded,
+            )?;
+        } else if field == capabilities_field {
+            validate_capability_field(
+                payload,
+                &mut cursor,
+                wire,
+                &mut capability_count,
+                &mut previous_capability,
+            )?;
+        } else if field == build_field {
+            if wire != 2 {
+                return Err(FoundationProtocolError::MalformedEnvelope);
             }
-            cursor = cursor
-                .checked_add(len)
-                .filter(|end| *end <= payload.len())
-                .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+            let build_id = bounded_length_delimited(
+                payload,
+                &mut cursor,
+                MAX_CLIENT_BUILD_ID_BYTES,
+                FoundationProtocolError::BootstrapLimitExceeded,
+            )?;
+            std::str::from_utf8(build_id)
+                .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
         } else {
             skip_field(payload, &mut cursor, wire)?;
         }
     }
     Ok(())
+}
+
+fn validate_client_command_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let mut revision_count = 0usize;
+    let mut seen_domains = BTreeSet::new();
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = (key >> 3) as u32;
+        let wire = (key & 7) as u8;
+        match (field, wire) {
+            (3, 2) => validate_revision_list(
+                payload,
+                &mut cursor,
+                &mut revision_count,
+                MAX_COMMAND_EXPECTED_REVISIONS,
+                &mut seen_domains,
+            )?,
+            (4, 2) => {
+                bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    MAX_COMMAND_PAYLOAD_BYTES,
+                    FoundationProtocolError::PayloadLimitExceeded,
+                )?;
+            }
+            (3 | 4, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
+            (_, unknown_wire) => skip_field(payload, &mut cursor, unknown_wire)?,
+        }
+    }
+    Ok(())
+}
+
+fn validate_resync_request_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let mut revision_count = 0usize;
+    let mut seen_domains = BTreeSet::new();
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = (key >> 3) as u32;
+        let wire = (key & 7) as u8;
+        match (field, wire) {
+            (2, 2) => validate_revision_list(
+                payload,
+                &mut cursor,
+                &mut revision_count,
+                MAX_STATE_DOMAINS_PER_SYNC,
+                &mut seen_domains,
+            )?,
+            (2, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
+            (_, unknown_wire) => skip_field(payload, &mut cursor, unknown_wire)?,
+        }
+    }
+    Ok(())
+}
+
+fn validate_client_ingress_payload(
+    message_type: MessageType,
+    payload: &[u8],
+) -> Result<(), FoundationProtocolError> {
+    match message_type {
+        MessageType::ClientBootstrap | MessageType::ClientResume => {
+            validate_bootstrap_ingress(message_type, payload)
+        }
+        MessageType::ClientCommand => validate_client_command_ingress(payload),
+        MessageType::ResyncRequest => validate_resync_request_ingress(payload),
+        _ => Ok(()),
+    }
 }
 
 pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, FoundationProtocolError> {
@@ -340,20 +559,11 @@ pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, Founda
     if matches!(
         message_type,
         MessageType::ClientBootstrap | MessageType::ClientResume
-    ) {
-        if payload.len() > MAX_BOOTSTRAP_PAYLOAD_BYTES {
-            return Err(FoundationProtocolError::BootstrapLimitExceeded);
-        }
-        match message_type {
-            MessageType::ClientBootstrap => {
-                validate_nested_material_bound(payload, 5, MAX_ADMISSION_MATERIAL_BYTES)?;
-            }
-            MessageType::ClientResume => {
-                validate_nested_material_bound(payload, 2, MAX_RECONNECT_MATERIAL_BYTES)?;
-            }
-            _ => unreachable!("guarded by pre-admission message type check"),
-        }
+    ) && payload.len() > MAX_BOOTSTRAP_PAYLOAD_BYTES
+    {
+        return Err(FoundationProtocolError::BootstrapLimitExceeded);
     }
+    validate_client_ingress_payload(message_type, payload)?;
     Ok(WireEnvelopeView {
         message_type,
         connection_generation: generation.unwrap_or(0),
@@ -688,13 +898,247 @@ mod tests {
         );
     }
 
+    fn test_varint(mut value: usize) -> Vec<u8> {
+        let mut out = Vec::new();
+        loop {
+            let mut byte = (value & 0x7f) as u8;
+            value >>= 7;
+            if value != 0 {
+                byte |= 0x80;
+            }
+            out.push(byte);
+            if value == 0 {
+                return out;
+            }
+        }
+    }
+
+    fn test_envelope(message_type: u8, payload: &[u8]) -> Vec<u8> {
+        let mut envelope = vec![0x08, message_type, 0x22];
+        envelope.extend(test_varint(payload.len()));
+        envelope.extend_from_slice(payload);
+        envelope
+    }
+
+    fn test_state_revision(domain_id: usize) -> Vec<u8> {
+        let mut nested = vec![0x08];
+        nested.extend(test_varint(domain_id));
+        nested.extend([0x10, 0x01]);
+        nested
+    }
+
+    #[test]
+    fn bootstrap_metadata_limits_cover_build_id_and_capabilities()
+    -> Result<(), FoundationProtocolError> {
+        let build_128 = vec![b'a'; 128];
+        let mut payload = vec![0x3a];
+        payload.extend(test_varint(build_128.len()));
+        payload.extend_from_slice(&build_128);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(1, &payload))?.payload(),
+            payload
+        );
+
+        let build_129 = vec![b'a'; 129];
+        let mut payload = vec![0x3a];
+        payload.extend(test_varint(build_129.len()));
+        payload.extend_from_slice(&build_129);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(1, &payload)),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
+
+        let invalid_utf8 = [0x3a, 0x01, 0xff];
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(1, &invalid_utf8)),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+
+        let resume_build_129 = vec![b'a'; 129];
+        let mut resume_payload = vec![0x42];
+        resume_payload.extend(test_varint(resume_build_129.len()));
+        resume_payload.extend_from_slice(&resume_build_129);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(3, &resume_payload)),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
+
+        let mut packed = Vec::new();
+        for capability in 1..=128usize {
+            packed.extend(test_varint(capability));
+        }
+        let mut payload = vec![0x22];
+        payload.extend(test_varint(packed.len()));
+        payload.extend_from_slice(&packed);
+        assert!(decode_wire_envelope(&test_envelope(1, &payload)).is_ok());
+
+        packed.extend(test_varint(129));
+        let mut payload = vec![0x22];
+        payload.extend(test_varint(packed.len()));
+        payload.extend_from_slice(&packed);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(1, &payload)),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
+        let mut resume_payload = vec![0x3a];
+        resume_payload.extend(test_varint(packed.len()));
+        resume_payload.extend_from_slice(&packed);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(3, &resume_payload)),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
+
+        for invalid_caps in [[1usize, 1usize], [2usize, 1usize]] {
+            let mut packed = Vec::new();
+            for capability in invalid_caps {
+                packed.extend(test_varint(capability));
+            }
+            let mut payload = vec![0x22];
+            payload.extend(test_varint(packed.len()));
+            payload.extend_from_slice(&packed);
+            assert_eq!(
+                decode_wire_envelope(&test_envelope(1, &payload)),
+                Err(FoundationProtocolError::InvalidCapabilitySet)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn client_command_limits_cover_payload_and_expected_revisions()
+    -> Result<(), FoundationProtocolError> {
+        let mut payload = vec![0x22];
+        payload.extend(test_varint(65_536));
+        payload.resize(payload.len() + 65_536, 0);
+        assert!(decode_wire_envelope(&test_envelope(7, &payload)).is_ok());
+
+        let mut payload = vec![0x22];
+        payload.extend(test_varint(65_537));
+        payload.resize(payload.len() + 65_537, 0);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(7, &payload)),
+            Err(FoundationProtocolError::PayloadLimitExceeded)
+        );
+
+        let mut payload = Vec::new();
+        for domain in 1..=64usize {
+            let revision = test_state_revision(domain);
+            payload.push(0x1a);
+            payload.extend(test_varint(revision.len()));
+            payload.extend(revision);
+        }
+        assert!(decode_wire_envelope(&test_envelope(7, &payload)).is_ok());
+
+        let revision = test_state_revision(65);
+        payload.push(0x1a);
+        payload.extend(test_varint(revision.len()));
+        payload.extend(revision);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(7, &payload)),
+            Err(FoundationProtocolError::PayloadLimitExceeded)
+        );
+
+        let revision = test_state_revision(1);
+        let mut duplicate = Vec::new();
+        for _ in 0..2 {
+            duplicate.push(0x1a);
+            duplicate.extend(test_varint(revision.len()));
+            duplicate.extend_from_slice(&revision);
+        }
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(7, &duplicate)),
+            Err(FoundationProtocolError::StateRevisionMismatch)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn resync_domain_count_is_bounded_and_unique() -> Result<(), FoundationProtocolError> {
+        let mut payload = Vec::new();
+        for domain in 1..=256usize {
+            let revision = test_state_revision(domain);
+            payload.push(0x12);
+            payload.extend(test_varint(revision.len()));
+            payload.extend(revision);
+        }
+        assert!(decode_wire_envelope(&test_envelope(10, &payload)).is_ok());
+
+        let revision = test_state_revision(257);
+        payload.push(0x12);
+        payload.extend(test_varint(revision.len()));
+        payload.extend(revision);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(10, &payload)),
+            Err(FoundationProtocolError::PayloadLimitExceeded)
+        );
+
+        let revision = test_state_revision(1);
+        let mut duplicate = Vec::new();
+        for _ in 0..2 {
+            duplicate.push(0x12);
+            duplicate.extend(test_varint(revision.len()));
+            duplicate.extend_from_slice(&revision);
+        }
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(10, &duplicate)),
+            Err(FoundationProtocolError::StateRevisionMismatch)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn nested_admission_material_limits_accept_16384_and_reject_16385()
+    -> Result<(), FoundationProtocolError> {
+        fn varint(mut value: usize) -> Vec<u8> {
+            let mut out = Vec::new();
+            loop {
+                let mut byte = (value & 0x7f) as u8;
+                value >>= 7;
+                if value != 0 {
+                    byte |= 0x80;
+                }
+                out.push(byte);
+                if value == 0 {
+                    return out;
+                }
+            }
+        }
+
+        fn envelope(message_type: u8, material_key: u8, material_len: usize) -> Vec<u8> {
+            let mut payload = vec![material_key];
+            payload.extend(varint(material_len));
+            payload.resize(payload.len() + material_len, 0);
+
+            let mut envelope = vec![0x08, message_type, 0x22];
+            envelope.extend(varint(payload.len()));
+            envelope.extend(payload);
+            envelope
+        }
+
+        for (message_type, material_key) in [(1u8, 0x2a), (3u8, 0x12)] {
+            assert_eq!(
+                decode_wire_envelope(&envelope(message_type, material_key, 16_384))?
+                    .payload()
+                    .len(),
+                16_388
+            );
+            assert_eq!(
+                decode_wire_envelope(&envelope(message_type, material_key, 16_385)),
+                Err(FoundationProtocolError::BootstrapLimitExceeded)
+            );
+        }
+        Ok(())
+    }
+
     #[test]
     fn bootstrap_payload_limit_accepts_65536_and_rejects_65537()
     -> Result<(), FoundationProtocolError> {
-        let mut accepted = vec![
-            0x08, 0x01, 0x22, 0x80, 0x80, 0x04, 0x82, 0x01, 0xfb, 0xff, 0x03,
-        ];
-        accepted.resize(6 + 65_536, 0);
+        // The exact-boundary payload remains syntactically valid protobuf: field 16
+        // is an additive unknown bytes field whose key+length+body total 65,536 bytes.
+        let mut accepted_payload = vec![0x82, 0x01, 0xfb, 0xff, 0x03];
+        accepted_payload.resize(65_536, 0);
+        let mut accepted = vec![0x08, 0x01, 0x22, 0x80, 0x80, 0x04];
+        accepted.extend_from_slice(&accepted_payload);
         assert_eq!(decode_wire_envelope(&accepted)?.payload().len(), 65_536);
 
         let mut rejected = vec![0x08, 0x01, 0x22, 0x81, 0x80, 0x04];
@@ -714,43 +1158,14 @@ mod tests {
     }
 
     #[test]
-    fn nested_admission_material_limit_accepts_16384() -> Result<(), FoundationProtocolError> {
-        let mut bootstrap = vec![0x08, 0x01, 0x22, 0x84, 0x80, 0x01, 0x2a, 0x80, 0x80, 0x01];
-        bootstrap.resize(10 + 16_384, 0);
-        assert_eq!(decode_wire_envelope(&bootstrap)?.payload().len(), 16_388);
-
-        let mut resume = vec![0x08, 0x03, 0x22, 0x84, 0x80, 0x01, 0x12, 0x80, 0x80, 0x01];
-        resume.resize(10 + 16_384, 0);
-        assert_eq!(decode_wire_envelope(&resume)?.payload().len(), 16_388);
-        Ok(())
-    }
-
-    #[test]
-    fn nested_admission_material_limit_rejects_16385_before_credential_work() {
-        let mut bootstrap = vec![0x08, 0x01, 0x22, 0x85, 0x80, 0x01, 0x2a, 0x81, 0x80, 0x01];
-        bootstrap.resize(10 + 16_385, 0);
-        assert_eq!(
-            decode_wire_envelope(&bootstrap),
-            Err(FoundationProtocolError::BootstrapLimitExceeded)
-        );
-
-        let mut resume = vec![0x08, 0x03, 0x22, 0x85, 0x80, 0x01, 0x12, 0x81, 0x80, 0x01];
-        resume.resize(10 + 16_385, 0);
-        assert_eq!(
-            decode_wire_envelope(&resume),
-            Err(FoundationProtocolError::BootstrapLimitExceeded)
-        );
-    }
-
-    #[test]
     fn envelope_oracle_bytes_decode_and_validate_direction() -> Result<(), FoundationProtocolError>
     {
-        let bytes = [0x08, 0x07, 0x10, 0x01, 0x22, 0x02, 0xaa, 0xbb];
+        let bytes = [0x08, 0x07, 0x10, 0x01, 0x22, 0x04, 0x22, 0x02, 0xaa, 0xbb];
         let envelope = decode_wire_envelope(&bytes)?;
         assert_eq!(envelope.message_type(), MessageType::ClientCommand);
         assert_eq!(envelope.connection_generation(), 1);
         assert_eq!(envelope.server_sequence(), 0);
-        assert_eq!(envelope.payload(), &[0xaa, 0xbb]);
+        assert_eq!(envelope.payload(), &[0x22, 0x02, 0xaa, 0xbb]);
         assert_eq!(envelope.validate(Direction::ClientToServer, true), Ok(()));
         assert_eq!(
             envelope.validate(Direction::ServerToClient, true),
