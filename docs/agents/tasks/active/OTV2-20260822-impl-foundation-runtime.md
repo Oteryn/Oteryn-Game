@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-23T10:53:59+02:00
+updated_at: 2026-08-23T15:00:28+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -86,11 +86,11 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Focused
 - command/run: `cargo test -p oteryn-game-server foundation`
-- result: PASS - 57 foundation tests; 0 failed after final pending-PREPARE reconciliation repair
+- result: PASS - 67 foundation tests; 0 failed after the terminal-recovery, generation-rollback and atomic reconnect-fence repairs
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: PASS - 60 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
+- result: PASS - 70 package tests; 0 failed; `cargo +1.94.0 test --locked --workspace` PASS; locked strict workspace Clippy PASS; changed-file `rustfmt --check` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
@@ -203,3 +203,23 @@ This checkpoint supersedes the preceding stale `Context checkpoint` for continua
 - `MERGE`: prohibited until both P1s are repaired, fresh exact-head CI is green and a genuinely independent exact-head review reports zero material findings.
 - `LOCAL CACHE NOTE`: an older dirty Foundation worktree was observed at `7d0a493...` with 24 uncommitted test lines against the obsolete pre-fenced loss API. Do not fold that local diff into the current branch without re-deriving it against `c231b45...`.
 - `CONTINUATION`: start from exact remote head `c231b45...`; add focused RED regressions for both P1s, repair the trusted fresh-admission and reconnect-commit authority seams, run the full Foundation/game-server/workspace/Clippy/fmt/governance/diff gate, commit and push a new exact head, then rerun protected CI and genuinely independent exact-head review.
+
+
+## Continuation checkpoint — 2026-08-23T15:00:28+02:00
+
+This checkpoint supersedes the 13:36 handoff for continuation. Historical review/CI evidence above remains intentionally retained as superseded evidence.
+
+- `PROVEN`: work resumed from remote PR #59 head `b94afb5fbc0446e659b4f0937ec7b9d086b9de1a` in isolated worktree `C:\Users\barte\oteryn-impl-foundation`; no shared/main worktree mutation was used.
+- `RED/P1 fresh terminal recovery`: after durable fresh admission, terminalization and process restart, retrying the consumed grant returned `Ok(GameSession { state: Active, generation: 1, ... })` instead of `Err(GrantReplayed)`.
+- `GREEN/P1 fresh terminal recovery`: `FreshAdmissionAuthoritySnapshot` now requires the trusted fresh seam to return the committed binding plus current authoritative lifecycle state; non-`Active` durable state cannot reconstruct the old session.
+- `RED/P1 reconnect lease fence`: an authoritative CharacterLease advance after PREPARE returned `Ok(ConnectionGeneration(2))` instead of `Err(StaleLease)`.
+- `RED/P1 reconnect runtime fence`: an authoritative RuntimeScope ownership-generation advance after PREPARE returned `Ok(ConnectionGeneration(2))` instead of `Err(StaleRuntime)`.
+- `GREEN/P1 reconnect fences`: `ReconnectAttemptJournal::commit_prepared` now receives expected typed CharacterLease and scope ownership generation and must compare them at the same linearization point as PREPARED -> COMMITTED; mismatch terminally supersedes the candidate. The test journal models journal state and authoritative fences in one shared authority cell.
+- `SELF-REVIEW RED`: lifecycle state alone was insufficient after a successful reconnect: process recovery could replay the original fresh grant and roll an `Active` session from connection generation 2 back to generation 1. The regression reproduced exactly that rollback.
+- `SELF-REVIEW GREEN`: the durable fresh snapshot also carries current authoritative connection generation and reconstruction is allowed only when it still equals the original committed generation. The generation-rollback regression is GREEN.
+- `PROVEN focused`: `cargo test -p oteryn-game-server foundation` -> 67 passed / 0 failed; `cargo test -p oteryn-game-server` -> 70 passed / 0 failed.
+- `PROVEN canonical Rust gates`: Rust/Cargo 1.94.0; `metadata --locked`, architecture workspace check, `build --locked --workspace --all-targets`, strict `clippy --locked --workspace --all-targets -- -D warnings`, `test --locked --workspace`, synthetic client harness and changed-file `rustfmt --check` all PASS.
+- `PROVEN governance`: `python tools/agents/validate_governance.py` PASS after this task-record update.
+- `BASELINE/ENVIRONMENT`: workspace-wide `cargo +1.94.0 fmt --all --check` and `validate_repository_policy.py` are not usable as Windows-checkout evidence because untouched files are checked out with CRLF; repository-policy validation fails on untouched `LICENSE`. `git diff origin/main -- LICENSE` is empty and the same policy failure reproduces in the clean/base worktree. Earlier workspace fmt check passed while Rust sources were temporarily normalized to LF. Exact-head Linux merge-gate CI remains authoritative for these two baseline-sensitive checks.
+- `PROVEN diff`: before task-record update, `git diff --check` PASS and the only product-code diff is `apps/game-server/src/foundation/admission.rs`.
+- `MERGE`: still prohibited. Next steps are freeze commit + push, exact-head protected CI, resolution/re-review of the two P1 threads, then genuinely independent exact-head review with zero material findings. No documentation-only descendant may be added after qualification.
