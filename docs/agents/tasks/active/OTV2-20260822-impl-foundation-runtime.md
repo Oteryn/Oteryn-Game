@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-23T10:34:10+02:00
+updated_at: 2026-08-23T10:53:59+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -86,11 +86,11 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Focused
 - command/run: `cargo test -p oteryn-game-server foundation`
-- result: PASS - 55 foundation tests; 0 failed after final Codex wire/error/attempt-retention repair
+- result: PASS - 57 foundation tests; 0 failed after final pending-PREPARE reconciliation repair
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: PASS - 58 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
+- result: PASS - 60 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
@@ -105,9 +105,11 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - superseded ingress-matrix PR head: `bfd43c6e24e75534cc574df8b7161df736939f4d`
 - superseded exact-head evidence on `bfd43c6...`: Merge Gate #212 / run `32627380787` SUCCESS including Windows/Linux/CodeQL/supply-chain/final validate; Agent Governance #248, Architecture Semantic Audit #179 and Merge Authority Audit #156 SUCCESS
 - superseded independent review on `bfd43c6...`: separate non-authoring Qwen session PASS / 0 material findings, but owner-authorized Codex subsequently returned REQUEST_CHANGES with 1 P1 + 2 P2, so the head is not merge evidence
-- final Codex repair tree: pending freeze commit
+- superseded Codex-repair PR head: `89cfd20d2e6fe02556db7777ea0e6e895bc15701`
+- superseded exact-head evidence on `89cfd20...`: Agent Governance #252/#253, Architecture Semantic Audit #181 and Merge Authority Audit #158 were SUCCESS; Merge Gate #216 had green scope/governance/dependency/policy/CodeQL/supply-chain/Linux with Windows still running when the material final P2 invalidated the head
+- final pending-PREPARE reconciliation tree: pending freeze commit
 - classification: high-risk foundation
-- result: pending fresh exact-head CI; all `bfd43c6...` CI/review evidence is superseded by the material Codex repair
+- result: pending fresh exact-head CI; all `89cfd20...` CI/review evidence is superseded by the material final P2 repair
 
 ## Self-review
 
@@ -133,6 +135,9 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - parallel repair commit `7d0a493ead3c827feb0c8a6ac08d01c949b04bb8` is preserved in ancestry; its narrower `committed_attempts.clear()+insert` bounded-memory fix is intentionally strengthened here with the monotonic terminal high-watermark so superseded/invalidated attempt refs cannot be reused
 - same-class memory self-review also removed unbounded process-local GrantNonce and historical GameSessionId sets from `AdmissionAuthority`; replay consume and never-reused GameSessionId reservation now belong to the trusted atomic game-domain fresh-identity commit seam, modeled by a test ledger without adding live DB authority
 - fresh-history TDD evidence: the desired zero retained session-authority history was observed RED as a missing behavior; replay/no-reuse tests now exercise the trusted ledger seam while local incumbent checks still prevent calling it on rejected admission
+- final Codex review on `89cfd20d2e6fe02556db7777ea0e6e895bc15701` found 1 P2: while newer attempt B was pending in PREPARE, retries of older terminally-superseded A were rejected early as generic `AttemptMismatch` before the high-watermark reconciliation path could return A's stable terminal disposition
+- final P2 RED evidence: both `prepare_reconnect(A, ...)` and `commit_reconnect(A, ...)` during pending B returned `AttemptMismatch` instead of `StaleConnection`; the two focused regressions were observed failing independently
+- final P2 repair: exact-current prepared retries still require the bound candidate transport, but an unrelated pending candidate now consults committed/high-watermark reconciliation first; older/superseded refs return stable terminal `StaleConnection`, genuinely newer concurrent refs remain `AttemptMismatch`, and B remains intact/committable
 - repaired-tree method: full diff review against FND-ID/FND-02/FND-03/FND-04 and Resource Limits Registry, focused/package/workspace tests, strict Clippy, fmt, governance and diff check - all PASS before freeze
 - open material findings: 0 locally; fresh independent exact-head review still mandatory
 - verdict: PASS for self-review only
@@ -148,19 +153,20 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - superseded FND-ID product-code head: `99786226bf988840daa0bcde55d8f90f4d744561`
 - superseded issuer-boundary PR head: `959d083cee9a03a71ac8d5eca54fc897ed372189` - REQUEST_CHANGES, 1 P1 nested ingress limit; repaired
 - superseded ingress-matrix PR head: `bfd43c6e24e75534cc574df8b7161df736939f4d` - Qwen independent PASS 0 findings, then Codex REQUEST_CHANGES with 1 P1 + 2 P2; repaired
-- final product-code head: pending Codex-repair freeze commit
+- superseded Codex-repair PR head: `89cfd20d2e6fe02556db7777ea0e6e895bc15701` - Codex REQUEST_CHANGES with 1 P2 pending-PREPARE reconciliation finding; repaired
+- final product-code head: pending P2-repair freeze commit
 - final PR head: pending freeze commit
 - verdict: pending fresh genuinely independent exact-head review after this material repair
 
 ## Context checkpoint
 
 ```yaml
-last_progress: ingress-matrix head bfd43c6 passed Merge Gate #212 and an independent Qwen review, but owner-authorized Codex found 1 P1 + 2 P2: protobuf field-number narrowing alias, build-id error-category drift and unbounded committed reconnect outcomes. All were reproduced RED and repaired. Same-class memory self-review also externalized GrantNonce/GameSessionId historical replay/no-reuse state from AdmissionAuthority into the trusted atomic durability seam. Foundation 55/55, game-server 58/58, workspace, strict Clippy, fmt, governance and diff-check are green.
+last_progress: final Codex review on 89cfd20 found one P2: an older superseded reconnect attempt lost its stable terminal outcome while a newer candidate was pending. PREPARE and COMMIT regressions independently reproduced `AttemptMismatch` instead of `StaleConnection`; both are GREEN after routing unrelated pending retries through the O(1) high-watermark reconciliation path without disturbing the current candidate. Foundation 57/57, game-server 60/60, workspace and strict Clippy PASS; rustfmt was corrected on test-only line wrapping and admission 23/23 remains GREEN.
 status: review_pending
 branch: agent/otv2-impl-foundation-runtime-01
-head_sha: pending-final-codex-repair-freeze
+head_sha: pending-final-p2-freeze
 pr: 59
-blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the material Codex repair
+blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the material final P2 repair
 owner_action_required: null
-next_action: perform final full-diff/danger/race review, freeze and push this Codex repair, resolve superseded review threads, then obtain fresh exact-head CI and already-authorized independent review; merge only with zero material findings.
+next_action: run final governance/diff/race review, freeze and push the P2 repair, resolve the superseded Codex thread, then obtain fresh exact-head CI and already-authorized Codex review; merge only with zero material findings.
 ```

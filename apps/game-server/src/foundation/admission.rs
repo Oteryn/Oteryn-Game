@@ -415,8 +415,15 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         scope: u64,
     ) -> Result<ConnectionGeneration, AdmissionError> {
         if let Some(existing) = self.prepared {
-            if existing.attempt == attempt && existing.candidate_transport == candidate_transport {
-                return Ok(existing.candidate);
+            if existing.attempt == attempt {
+                return if existing.candidate_transport == candidate_transport {
+                    Ok(existing.candidate)
+                } else {
+                    Err(AdmissionError::AttemptMismatch)
+                };
+            }
+            if let Some(generation) = self.committed_attempt_replay(attempt, candidate_transport)? {
+                return Ok(generation);
             }
             return Err(AdmissionError::AttemptMismatch);
         }
@@ -482,7 +489,13 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
             .prepared
             .as_ref()
             .ok_or(AdmissionError::AttemptMismatch)?;
-        if prepared.attempt != attempt || prepared.candidate_transport != candidate_transport {
+        if prepared.attempt != attempt {
+            if let Some(generation) = self.committed_attempt_replay(attempt, candidate_transport)? {
+                return Ok(generation);
+            }
+            return Err(AdmissionError::AttemptMismatch);
+        }
+        if prepared.candidate_transport != candidate_transport {
             return Err(AdmissionError::AttemptMismatch);
         }
         let s = self.current.as_mut().ok_or(AdmissionError::Terminal)?;
@@ -893,6 +906,66 @@ mod tests {
         assert_eq!(
             authority.prepare_reconnect(attempt, predecessor, 200u64, 7, 12),
             Err(AdmissionError::StaleConnection)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn superseded_prepare_retry_keeps_terminal_outcome_while_newer_prepare_is_pending()
+    -> Result<(), AdmissionError> {
+        let mut authority = AdmissionAuthority::new();
+        admit(&mut authority, 70, 7000, 100u64)?;
+        let generation_one =
+            ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+
+        authority.mark_unexpected_control_loss()?;
+        let attempt_a = ReconnectAttemptRef::new(70)?;
+        let generation_two =
+            authority.prepare_reconnect(attempt_a, generation_one, 200u64, 7, 11)?;
+        authority.commit_reconnect(attempt_a, 200u64, 7, 11)?;
+
+        authority.mark_unexpected_control_loss()?;
+        let attempt_b = ReconnectAttemptRef::new(71)?;
+        let generation_three =
+            authority.prepare_reconnect(attempt_b, generation_two, 300u64, 7, 11)?;
+
+        assert_eq!(
+            authority.prepare_reconnect(attempt_a, generation_two, 200u64, 7, 11),
+            Err(AdmissionError::StaleConnection)
+        );
+        assert_eq!(
+            authority.commit_reconnect(attempt_b, 300u64, 7, 11)?,
+            generation_three
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn superseded_commit_retry_keeps_terminal_outcome_while_newer_prepare_is_pending()
+    -> Result<(), AdmissionError> {
+        let mut authority = AdmissionAuthority::new();
+        admit(&mut authority, 71, 7100, 100u64)?;
+        let generation_one =
+            ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+
+        authority.mark_unexpected_control_loss()?;
+        let attempt_a = ReconnectAttemptRef::new(80)?;
+        let generation_two =
+            authority.prepare_reconnect(attempt_a, generation_one, 200u64, 7, 11)?;
+        authority.commit_reconnect(attempt_a, 200u64, 7, 11)?;
+
+        authority.mark_unexpected_control_loss()?;
+        let attempt_b = ReconnectAttemptRef::new(81)?;
+        let generation_three =
+            authority.prepare_reconnect(attempt_b, generation_two, 300u64, 7, 11)?;
+
+        assert_eq!(
+            authority.commit_reconnect(attempt_a, 200u64, 7, 11),
+            Err(AdmissionError::StaleConnection)
+        );
+        assert_eq!(
+            authority.commit_reconnect(attempt_b, 300u64, 7, 11)?,
+            generation_three
         );
         Ok(())
     }
