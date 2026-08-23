@@ -470,7 +470,7 @@ fn committed_reconnect_rehydrates_after_process_restart() -> Result<(), Admissio
     assert_eq!(recovered.current_transport(), Some(200));
     assert_eq!(
         recovered.commit_reconnect(attempt, 201, 7, 12),
-        Err(AdmissionError::AttemptMismatch)
+        Err(AdmissionError::StaleConnection)
     );
     assert_eq!(
         recovered.commit_reconnect(attempt, 200, 7, 12)?,
