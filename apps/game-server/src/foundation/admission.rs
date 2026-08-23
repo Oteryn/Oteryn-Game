@@ -306,7 +306,7 @@ pub enum GameSessionState {
     Reconnectable,
     Terminal,
 }
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct GameSession {
     game_session_id: GameSessionId,
     character_id: CharacterId,
@@ -363,6 +363,54 @@ struct PreparedReconnect<T: Copy + Eq> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReconnectCommitBinding<T: Copy + Eq> {
+    predecessor_generation: ConnectionGeneration,
+    candidate_generation: ConnectionGeneration,
+    candidate_transport: T,
+    character_lease: CharacterLease,
+    scope_generation: ScopeOwnershipGeneration,
+}
+
+impl<T: Copy + Eq> ReconnectCommitBinding<T> {
+    const fn new(
+        predecessor_generation: ConnectionGeneration,
+        candidate_generation: ConnectionGeneration,
+        candidate_transport: T,
+        character_lease: CharacterLease,
+        scope_generation: ScopeOwnershipGeneration,
+    ) -> Self {
+        Self {
+            predecessor_generation,
+            candidate_generation,
+            candidate_transport,
+            character_lease,
+            scope_generation,
+        }
+    }
+
+    #[must_use]
+    pub const fn predecessor_generation(self) -> ConnectionGeneration {
+        self.predecessor_generation
+    }
+    #[must_use]
+    pub const fn candidate_generation(self) -> ConnectionGeneration {
+        self.candidate_generation
+    }
+    #[must_use]
+    pub const fn candidate_transport(self) -> T {
+        self.candidate_transport
+    }
+    #[must_use]
+    pub const fn character_lease(self) -> CharacterLease {
+        self.character_lease
+    }
+    #[must_use]
+    pub const fn scope_generation(self) -> ScopeOwnershipGeneration {
+        self.scope_generation
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReconnectAttemptDisposition {
     Prepared {
         candidate_generation: ConnectionGeneration,
@@ -386,7 +434,7 @@ pub enum ReconnectAttemptClaim {
 /// infer recency, authority or supersession from its numeric value. Durable
 /// retention/lifecycle policy belongs to the owning game-domain authority; the
 /// Foundation kernel intentionally does not invent a deferred numeric limit.
-pub trait ReconnectAttemptJournal {
+pub trait ReconnectAttemptJournal<T: Copy + Eq> {
     fn lookup(
         &self,
         game_session_id: GameSessionId,
@@ -402,7 +450,7 @@ pub trait ReconnectAttemptJournal {
         &self,
         game_session_id: GameSessionId,
         attempt: ReconnectAttemptRef,
-        candidate_generation: ConnectionGeneration,
+        binding: ReconnectCommitBinding<T>,
     ) -> Result<ReconnectAttemptClaim, AdmissionError>;
 
     /// Atomically gives an unseen losing operation a permanent terminal
@@ -414,20 +462,21 @@ pub trait ReconnectAttemptJournal {
     ) -> Result<ReconnectAttemptDisposition, AdmissionError>;
 
     /// Atomically changes the exact PREPARED operation to COMMITTED only when
-    /// the current authoritative CharacterLease and RuntimeScope ownership
-    /// generation still exactly match the expected fences.
+    /// the complete authoritative reconnect binding is still current.
     ///
-    /// Implementations MUST compare both fences at the same linearization point
-    /// as PREPARED -> COMMITTED. A mismatch permanently supersedes the prepared
-    /// candidate and returns `StaleLease` or `StaleRuntime`; it must never
-    /// publish COMMITTED first and revalidate later.
+    /// At the same linearization point as PREPARED -> COMMITTED, implementations
+    /// MUST revalidate: the exact prepared candidate transport, predecessor and
+    /// candidate generations, reconnectable lifecycle/no-current-controller,
+    /// CharacterLease and RuntimeScope ownership fences. Success must atomically
+    /// make the candidate generation/transport authoritative; the process-local
+    /// state update after this call is only a projection of that committed fact.
+    /// Any superseding lifecycle/controller/fence mismatch must terminalize the
+    /// candidate and fail closed before COMMITTED is published.
     fn commit_prepared(
         &self,
         game_session_id: GameSessionId,
         attempt: ReconnectAttemptRef,
-        candidate_generation: ConnectionGeneration,
-        expected_character_lease: CharacterLease,
-        expected_scope_generation: ScopeOwnershipGeneration,
+        binding: ReconnectCommitBinding<T>,
     ) -> Result<(), AdmissionError>;
 
     /// Atomically makes the exact PREPARED operation terminal after a newer
@@ -441,20 +490,20 @@ pub trait ReconnectAttemptJournal {
 }
 
 #[derive(Debug)]
-pub struct AdmissionAuthority<T: Copy + Eq, J: ReconnectAttemptJournal> {
+pub struct AdmissionAuthority<T: Copy + Eq, J: ReconnectAttemptJournal<T>> {
     current: Option<GameSession>,
     current_transport: Option<T>,
     prepared: Option<PreparedReconnect<T>>,
     reconnect_attempts: J,
 }
 
-impl<T: Copy + Eq, J: ReconnectAttemptJournal + Default> Default for AdmissionAuthority<T, J> {
+impl<T: Copy + Eq, J: ReconnectAttemptJournal<T> + Default> Default for AdmissionAuthority<T, J> {
     fn default() -> Self {
         Self::new(J::default())
     }
 }
 
-impl<T: Copy + Eq, J: ReconnectAttemptJournal> AdmissionAuthority<T, J> {
+impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
     pub const fn new(reconnect_attempts: J) -> Self {
         Self {
             current: None,
@@ -715,9 +764,16 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal> AdmissionAuthority<T, J> {
                 .ok_or(AdmissionError::GenerationExhausted)?,
         )
         .map_err(|_| AdmissionError::GenerationExhausted)?;
+        let commit_binding = ReconnectCommitBinding::new(
+            predecessor,
+            candidate,
+            candidate_transport,
+            s.character_lease(),
+            s.runtime_scope.generation(),
+        );
         match self
             .reconnect_attempts
-            .claim_prepared(game_session_id, attempt, candidate)?
+            .claim_prepared(game_session_id, attempt, commit_binding)?
         {
             ReconnectAttemptClaim::Claimed => {}
             ReconnectAttemptClaim::Existing(disposition) => {
@@ -794,13 +850,17 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal> AdmissionAuthority<T, J> {
         let game_session_id = s.game_session_id;
         let expected_character_lease = s.character_lease();
         let expected_scope_generation = s.runtime_scope.generation();
-        match self.reconnect_attempts.commit_prepared(
-            game_session_id,
-            attempt,
+        let commit_binding = ReconnectCommitBinding::new(
+            prepared.predecessor,
             prepared.candidate,
+            prepared.candidate_transport,
             expected_character_lease,
             expected_scope_generation,
-        ) {
+        );
+        match self
+            .reconnect_attempts
+            .commit_prepared(game_session_id, attempt, commit_binding)
+        {
             Ok(()) => {}
             Err(AdmissionError::StaleLease) => {
                 self.prepared = None;
@@ -844,10 +904,19 @@ mod tests {
 
     type AttemptKey = (GameSessionId, ReconnectAttemptRef);
 
+    #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+    struct TestAuthoritativeSessionBinding {
+        state: GameSessionState,
+        connection_generation: ConnectionGeneration,
+        current_transport: Option<u64>,
+    }
+
     #[derive(Default)]
     struct TestReconnectAuthorityState {
         records: HashMap<AttemptKey, ReconnectAttemptDisposition>,
+        bindings: HashMap<AttemptKey, ReconnectCommitBinding<u64>>,
         authoritative_fences: HashMap<GameSessionId, (CharacterLease, ScopeOwnershipGeneration)>,
+        authoritative_sessions: HashMap<GameSessionId, TestAuthoritativeSessionBinding>,
     }
 
     #[derive(Clone, Default)]
@@ -871,9 +940,26 @@ mod tests {
                 .authoritative_fences
                 .insert(game_session_id, (character_lease, scope_generation));
         }
+
+        fn set_authoritative_session(
+            &self,
+            game_session_id: GameSessionId,
+            state: GameSessionState,
+            connection_generation: ConnectionGeneration,
+            current_transport: Option<u64>,
+        ) {
+            self.state.borrow_mut().authoritative_sessions.insert(
+                game_session_id,
+                TestAuthoritativeSessionBinding {
+                    state,
+                    connection_generation,
+                    current_transport,
+                },
+            );
+        }
     }
 
-    impl ReconnectAttemptJournal for TestReconnectAttemptJournal {
+    impl ReconnectAttemptJournal<u64> for TestReconnectAttemptJournal {
         fn lookup(
             &self,
             game_session_id: GameSessionId,
@@ -891,33 +977,30 @@ mod tests {
             &self,
             game_session_id: GameSessionId,
             attempt: ReconnectAttemptRef,
-            candidate_generation: ConnectionGeneration,
+            binding: ReconnectCommitBinding<u64>,
         ) -> Result<ReconnectAttemptClaim, AdmissionError> {
-            use std::collections::hash_map::Entry;
             let mut state = self.state.borrow_mut();
-            let records = &mut state.records;
-            if let Some(disposition) = records.get(&(game_session_id, attempt)).copied() {
+            let key = (game_session_id, attempt);
+            if let Some(disposition) = state.records.get(&key).copied() {
                 return Ok(ReconnectAttemptClaim::Existing(disposition));
             }
-            if records.iter().any(|((session, _), disposition)| {
+            if state.records.iter().any(|((session, _), disposition)| {
                 *session == game_session_id
                     && matches!(disposition, ReconnectAttemptDisposition::Prepared { .. })
             }) {
-                records.insert(
-                    (game_session_id, attempt),
-                    ReconnectAttemptDisposition::TerminallySuperseded,
-                );
+                state
+                    .records
+                    .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
                 return Ok(ReconnectAttemptClaim::RejectedConcurrent);
             }
-            match records.entry((game_session_id, attempt)) {
-                Entry::Vacant(entry) => {
-                    entry.insert(ReconnectAttemptDisposition::Prepared {
-                        candidate_generation,
-                    });
-                    Ok(ReconnectAttemptClaim::Claimed)
-                }
-                Entry::Occupied(_) => Err(AdmissionError::ReconciliationUnavailable),
-            }
+            state.records.insert(
+                key,
+                ReconnectAttemptDisposition::Prepared {
+                    candidate_generation: binding.candidate_generation(),
+                },
+            );
+            state.bindings.insert(key, binding);
+            Ok(ReconnectAttemptClaim::Claimed)
         }
 
         fn retire_if_unseen(
@@ -925,63 +1008,134 @@ mod tests {
             game_session_id: GameSessionId,
             attempt: ReconnectAttemptRef,
         ) -> Result<ReconnectAttemptDisposition, AdmissionError> {
-            use std::collections::hash_map::Entry;
             let mut state = self.state.borrow_mut();
-            let records = &mut state.records;
-            match records.entry((game_session_id, attempt)) {
-                Entry::Vacant(entry) => {
-                    entry.insert(ReconnectAttemptDisposition::TerminallySuperseded);
-                    Ok(ReconnectAttemptDisposition::TerminallySuperseded)
-                }
-                Entry::Occupied(entry) => Ok(*entry.get()),
+            let key = (game_session_id, attempt);
+            if let Some(disposition) = state.records.get(&key).copied() {
+                return Ok(disposition);
             }
+            state
+                .records
+                .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+            Ok(ReconnectAttemptDisposition::TerminallySuperseded)
         }
 
         fn commit_prepared(
             &self,
             game_session_id: GameSessionId,
             attempt: ReconnectAttemptRef,
-            candidate_generation: ConnectionGeneration,
-            expected_character_lease: CharacterLease,
-            expected_scope_generation: ScopeOwnershipGeneration,
+            binding: ReconnectCommitBinding<u64>,
         ) -> Result<(), AdmissionError> {
             let mut state = self.state.borrow_mut();
-            let authoritative = state
+            let key = (game_session_id, attempt);
+            let disposition = state
+                .records
+                .get(&key)
+                .copied()
+                .ok_or(AdmissionError::ReconciliationUnavailable)?;
+
+            if let ReconnectAttemptDisposition::Committed { generation } = disposition {
+                if generation != binding.candidate_generation()
+                    || state.bindings.get(&key).copied() != Some(binding)
+                {
+                    return Err(AdmissionError::StaleConnection);
+                }
+                let session = state
+                    .authoritative_sessions
+                    .get(&game_session_id)
+                    .copied()
+                    .ok_or(AdmissionError::ReconciliationUnavailable)?;
+                if session.state == GameSessionState::Terminal {
+                    return Err(AdmissionError::Terminal);
+                }
+                return if session.state == GameSessionState::Active
+                    && session.connection_generation == binding.candidate_generation()
+                    && session.current_transport == Some(binding.candidate_transport())
+                {
+                    Ok(())
+                } else {
+                    Err(AdmissionError::StaleConnection)
+                };
+            }
+            if disposition == ReconnectAttemptDisposition::TerminallySuperseded {
+                return Err(AdmissionError::StaleConnection);
+            }
+
+            let ReconnectAttemptDisposition::Prepared {
+                candidate_generation,
+            } = disposition
+            else {
+                return Err(AdmissionError::ReconciliationUnavailable);
+            };
+            if candidate_generation != binding.candidate_generation()
+                || state.bindings.get(&key).copied() != Some(binding)
+            {
+                state
+                    .records
+                    .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+                state.bindings.remove(&key);
+                return Err(AdmissionError::StaleConnection);
+            }
+
+            let session = state
+                .authoritative_sessions
+                .get(&game_session_id)
+                .copied()
+                .ok_or(AdmissionError::ReconciliationUnavailable)?;
+            let fences = state
                 .authoritative_fences
                 .get(&game_session_id)
                 .copied()
                 .ok_or(AdmissionError::ReconciliationUnavailable)?;
-            let record = state
-                .records
-                .get_mut(&(game_session_id, attempt))
-                .ok_or(AdmissionError::ReconciliationUnavailable)?;
-            match *record {
-                ReconnectAttemptDisposition::Prepared {
-                    candidate_generation: prepared,
-                } if prepared == candidate_generation => {
-                    if authoritative.0 != expected_character_lease {
-                        *record = ReconnectAttemptDisposition::TerminallySuperseded;
-                        return Err(AdmissionError::StaleLease);
-                    }
-                    if authoritative.1 != expected_scope_generation {
-                        *record = ReconnectAttemptDisposition::TerminallySuperseded;
-                        return Err(AdmissionError::StaleRuntime);
-                    }
-                    *record = ReconnectAttemptDisposition::Committed {
-                        generation: candidate_generation,
-                    };
-                    Ok(())
-                }
-                ReconnectAttemptDisposition::Committed { generation }
-                    if generation == candidate_generation =>
-                {
-                    Ok(())
-                }
-                ReconnectAttemptDisposition::TerminallySuperseded => {
-                    Err(AdmissionError::StaleConnection)
-                }
-                _ => Err(AdmissionError::ReconciliationUnavailable),
+
+            if session.state == GameSessionState::Terminal {
+                state
+                    .records
+                    .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+                state.bindings.remove(&key);
+                return Err(AdmissionError::Terminal);
             }
+            if session.state != GameSessionState::Reconnectable
+                || session.connection_generation != binding.predecessor_generation()
+                || session.current_transport.is_some()
+                || binding.predecessor_generation().get().checked_add(1)
+                    != Some(binding.candidate_generation().get())
+            {
+                state
+                    .records
+                    .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+                state.bindings.remove(&key);
+                return Err(AdmissionError::StaleConnection);
+            }
+            if fences.0 != binding.character_lease() {
+                state
+                    .records
+                    .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+                state.bindings.remove(&key);
+                return Err(AdmissionError::StaleLease);
+            }
+            if fences.1 != binding.scope_generation() {
+                state
+                    .records
+                    .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+                state.bindings.remove(&key);
+                return Err(AdmissionError::StaleRuntime);
+            }
+
+            state.records.insert(
+                key,
+                ReconnectAttemptDisposition::Committed {
+                    generation: binding.candidate_generation(),
+                },
+            );
+            state.authoritative_sessions.insert(
+                game_session_id,
+                TestAuthoritativeSessionBinding {
+                    state: GameSessionState::Active,
+                    connection_generation: binding.candidate_generation(),
+                    current_transport: Some(binding.candidate_transport()),
+                },
+            );
+            Ok(())
         }
 
         fn retire_prepared(
@@ -991,15 +1145,20 @@ mod tests {
             candidate_generation: ConnectionGeneration,
         ) -> Result<(), AdmissionError> {
             let mut state = self.state.borrow_mut();
-            let record = state
+            let key = (game_session_id, attempt);
+            let disposition = state
                 .records
-                .get_mut(&(game_session_id, attempt))
+                .get(&key)
+                .copied()
                 .ok_or(AdmissionError::ReconciliationUnavailable)?;
-            match *record {
+            match disposition {
                 ReconnectAttemptDisposition::Prepared {
                     candidate_generation: prepared_generation,
                 } if prepared_generation == candidate_generation => {
-                    *record = ReconnectAttemptDisposition::TerminallySuperseded;
+                    state
+                        .records
+                        .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+                    state.bindings.remove(&key);
                     Ok(())
                 }
                 ReconnectAttemptDisposition::TerminallySuperseded => Ok(()),
@@ -1016,10 +1175,17 @@ mod tests {
 
     fn sync_authoritative_fences(authority: &TestAdmissionAuthority) -> Result<(), AdmissionError> {
         let session = authority.current().ok_or(AdmissionError::Terminal)?;
+        let game_session_id = session.game_session_id();
         authority.reconnect_attempts.set_authoritative_fences(
-            session.game_session_id(),
+            game_session_id,
             session.character_lease(),
             session.runtime_scope_generation(),
+        );
+        authority.reconnect_attempts.set_authoritative_session(
+            game_session_id,
+            session.state(),
+            session.connection_generation(),
+            authority.current_transport(),
         );
         Ok(())
     }
@@ -1036,6 +1202,7 @@ mod tests {
             authority.mark_unexpected_control_loss(transport, generation)?,
             ControlLossDisposition::Applied
         );
+        sync_authoritative_fences(authority)?;
         Ok(())
     }
 
@@ -1053,6 +1220,25 @@ mod tests {
 
     fn facts(nonce: u64) -> Result<FreshAdmissionFacts, AdmissionError> {
         FreshAdmissionFacts::for_test(nonce, 7, 11)
+    }
+
+    fn reconnect_binding_for_test(
+        predecessor: u64,
+        candidate: u64,
+        transport: u64,
+    ) -> Result<ReconnectCommitBinding<u64>, AdmissionError> {
+        let admission = facts(999)?;
+        Ok(ReconnectCommitBinding::new(
+            ConnectionGeneration::new(predecessor).map_err(|_| AdmissionError::InvalidFacts)?,
+            ConnectionGeneration::new(candidate).map_err(|_| AdmissionError::InvalidFacts)?,
+            transport,
+            CharacterLease {
+                character_id: admission.character_id,
+                generation: admission.character_lease_generation,
+            },
+            ScopeOwnershipGeneration::new(admission.scope_ownership_generation)
+                .map_err(|_| AdmissionError::InvalidFacts)?,
+        ))
     }
 
     fn active_fresh_snapshot(
@@ -1140,19 +1326,7 @@ mod tests {
         authority.commit_fresh(admission, transport, || {
             active_fresh_snapshot(game_session_id, admission)
         })?;
-        let (game_session_id, character_lease, scope_generation) = {
-            let session = authority.current().ok_or(AdmissionError::Terminal)?;
-            (
-                session.game_session_id(),
-                session.character_lease(),
-                session.runtime_scope_generation(),
-            )
-        };
-        authority.reconnect_attempts.set_authoritative_fences(
-            game_session_id,
-            character_lease,
-            scope_generation,
-        );
+        sync_authoritative_fences(authority)?;
         authority.current().ok_or(AdmissionError::Terminal)
     }
 
@@ -1169,19 +1343,7 @@ mod tests {
         authority.commit_fresh(admission, transport, || {
             ledger.commit(replay_key, admission, || Ok(game_session_id))
         })?;
-        let (game_session_id, character_lease, scope_generation) = {
-            let session = authority.current().ok_or(AdmissionError::Terminal)?;
-            (
-                session.game_session_id(),
-                session.character_lease(),
-                session.runtime_scope_generation(),
-            )
-        };
-        authority.reconnect_attempts.set_authoritative_fences(
-            game_session_id,
-            character_lease,
-            scope_generation,
-        );
+        sync_authoritative_fences(authority)?;
         authority.current().ok_or(AdmissionError::Terminal)
     }
 
@@ -1213,11 +1375,19 @@ mod tests {
         let attempt_c = ReconnectAttemptRef::new(u64::MAX)?;
 
         assert_eq!(
-            journal.claim_prepared(session, attempt_b, generation_two)?,
+            journal.claim_prepared(
+                session,
+                attempt_b,
+                reconnect_binding_for_test(1, 2, 200u64)?
+            )?,
             ReconnectAttemptClaim::Claimed
         );
         assert_eq!(
-            journal.claim_prepared(session, attempt_c, generation_two)?,
+            journal.claim_prepared(
+                session,
+                attempt_c,
+                reconnect_binding_for_test(1, 2, 300u64)?
+            )?,
             ReconnectAttemptClaim::RejectedConcurrent
         );
         assert_eq!(
@@ -1459,6 +1629,119 @@ mod tests {
                 .lookup(game_session_id, attempt)?,
             Some(ReconnectAttemptDisposition::TerminallySuperseded)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn reconnect_commit_revalidates_authoritative_session_binding_inside_atomic_journal_boundary()
+    -> Result<(), AdmissionError> {
+        let mut authority = test_authority();
+        admit(&mut authority, 94, 9400, 100u64)?;
+        lose_current(&mut authority)?;
+        let attempt = ReconnectAttemptRef::new(94)?;
+        let predecessor = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        authority.prepare_reconnect(attempt, predecessor, 200u64, 7, 11)?;
+        let (game_session_id, character_lease, scope_generation) = {
+            let session = authority.current().ok_or(AdmissionError::Terminal)?;
+            (
+                session.game_session_id(),
+                session.character_lease(),
+                session.runtime_scope_generation(),
+            )
+        };
+        authority.reconnect_attempts.set_authoritative_fences(
+            game_session_id,
+            character_lease,
+            scope_generation,
+        );
+        authority.reconnect_attempts.set_authoritative_session(
+            game_session_id,
+            GameSessionState::Active,
+            ConnectionGeneration::new(2).map_err(|_| AdmissionError::InvalidFacts)?,
+            Some(300u64),
+        );
+
+        assert_eq!(
+            authority.commit_reconnect(attempt, 200u64, 7, 11),
+            Err(AdmissionError::StaleConnection)
+        );
+        assert_eq!(
+            authority
+                .current()
+                .ok_or(AdmissionError::Terminal)?
+                .connection_generation(),
+            predecessor
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn reconnect_commit_rejects_recovered_controller_without_generation_change()
+    -> Result<(), AdmissionError> {
+        let mut authority = test_authority();
+        admit(&mut authority, 95, 9500, 100u64)?;
+        lose_current(&mut authority)?;
+        let attempt = ReconnectAttemptRef::new(95)?;
+        let predecessor = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        authority.prepare_reconnect(attempt, predecessor, 200u64, 7, 11)?;
+        let game_session_id = authority
+            .current()
+            .ok_or(AdmissionError::Terminal)?
+            .game_session_id();
+        authority.reconnect_attempts.set_authoritative_session(
+            game_session_id,
+            GameSessionState::Active,
+            predecessor,
+            Some(300u64),
+        );
+
+        assert_eq!(
+            authority.commit_reconnect(attempt, 200u64, 7, 11),
+            Err(AdmissionError::StaleConnection)
+        );
+        assert_eq!(
+            authority
+                .current()
+                .ok_or(AdmissionError::Terminal)?
+                .connection_generation(),
+            predecessor
+        );
+        assert!(authority.prepared.is_none());
+        Ok(())
+    }
+
+    #[test]
+    fn reconnect_commit_rejects_terminal_transition_inside_atomic_journal_boundary()
+    -> Result<(), AdmissionError> {
+        let mut authority = test_authority();
+        admit(&mut authority, 96, 9600, 100u64)?;
+        lose_current(&mut authority)?;
+        let attempt = ReconnectAttemptRef::new(96)?;
+        let predecessor = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        authority.prepare_reconnect(attempt, predecessor, 200u64, 7, 11)?;
+        let game_session_id = authority
+            .current()
+            .ok_or(AdmissionError::Terminal)?
+            .game_session_id();
+        authority.reconnect_attempts.set_authoritative_session(
+            game_session_id,
+            GameSessionState::Terminal,
+            predecessor,
+            None,
+        );
+
+        assert_eq!(
+            authority.commit_reconnect(attempt, 200u64, 7, 11),
+            Err(AdmissionError::Terminal)
+        );
+        assert_eq!(
+            authority
+                .current()
+                .ok_or(AdmissionError::Terminal)?
+                .connection_generation(),
+            predecessor
+        );
+        assert!(authority.prepared.is_none());
         Ok(())
     }
 

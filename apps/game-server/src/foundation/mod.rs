@@ -406,7 +406,26 @@ impl RuntimeWorkStamp {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Ordinal issuance is single-owner state for one scope ownership generation.
+///
+/// ```compile_fail
+/// use oteryn_game_server::foundation::{ScopeOwnershipGeneration, ScopeRuntimeFence};
+///
+/// let generation = ScopeOwnershipGeneration::new(1).unwrap();
+/// let mut owner = ScopeRuntimeFence::from_external_grant(generation);
+/// let mut duplicate = owner;
+/// let _ = owner.accept_input(generation);
+/// let _ = duplicate.accept_input(generation);
+/// ```
+///
+/// ```compile_fail
+/// use oteryn_game_server::foundation::{ScopeOwnershipGeneration, ScopeRuntimeFence};
+///
+/// let generation = ScopeOwnershipGeneration::new(1).unwrap();
+/// let owner = ScopeRuntimeFence::from_external_grant(generation);
+/// let _duplicate = owner.clone();
+/// ```
+#[derive(Debug, PartialEq, Eq)]
 pub struct ScopeRuntimeFence {
     generation: ScopeOwnershipGeneration,
     next_ordinal: Option<u64>,
@@ -422,7 +441,7 @@ impl ScopeRuntimeFence {
     }
 
     #[must_use]
-    pub const fn generation(self) -> ScopeOwnershipGeneration {
+    pub const fn generation(&self) -> ScopeOwnershipGeneration {
         self.generation
     }
 

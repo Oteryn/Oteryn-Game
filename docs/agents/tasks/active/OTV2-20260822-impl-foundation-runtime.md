@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-23T15:00:28+02:00
+updated_at: 2026-08-23T16:10:24+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -86,11 +86,11 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Focused
 - command/run: `cargo test -p oteryn-game-server foundation`
-- result: PASS - 67 foundation tests; 0 failed after the terminal-recovery, generation-rollback and atomic reconnect-fence repairs
+- result: PASS - 70 foundation tests; 0 failed after the full-session reconnect COMMIT and non-copyable runtime-ordinal issuer repairs
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: PASS - 70 package tests; 0 failed; `cargo +1.94.0 test --locked --workspace` PASS; locked strict workspace Clippy PASS; changed-file `rustfmt --check` PASS
+- result: PASS - 73 package tests; 0 failed; `cargo +1.94.0 test --locked --workspace` PASS; locked strict workspace Clippy PASS; changed-file `rustfmt --check` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
@@ -223,3 +223,23 @@ This checkpoint supersedes the 13:36 handoff for continuation. Historical review
 - `BASELINE/ENVIRONMENT`: workspace-wide `cargo +1.94.0 fmt --all --check` and `validate_repository_policy.py` are not usable as Windows-checkout evidence because untouched files are checked out with CRLF; repository-policy validation fails on untouched `LICENSE`. `git diff origin/main -- LICENSE` is empty and the same policy failure reproduces in the clean/base worktree. Earlier workspace fmt check passed while Rust sources were temporarily normalized to LF. Exact-head Linux merge-gate CI remains authoritative for these two baseline-sensitive checks.
 - `PROVEN diff`: before task-record update, `git diff --check` PASS and the only product-code diff is `apps/game-server/src/foundation/admission.rs`.
 - `MERGE`: still prohibited. Next steps are freeze commit + push, exact-head protected CI, resolution/re-review of the two P1 threads, then genuinely independent exact-head review with zero material findings. No documentation-only descendant may be added after qualification.
+
+## Final exact-head repair checkpoint — 2026-08-23T16:10:24+02:00
+
+This checkpoint supersedes the preceding continuation checkpoint for the current repair tree. Historical SHA/review/CI evidence above is retained only as superseded provenance.
+
+- `PROVEN`: repair started from exact remote PR #59 head `681f9a924b899ff47f70f5073fd38b6cf12691e4` in isolated worktree `C:\Users\barte\Documents\ChatGPT\oteryn-governance-exec-20260819\Oteryn-Game-foundation-final`; baseline Foundation was 67/67 PASS before mutation.
+- `INDEPENDENT REVIEW / SUPERSEDED HEAD`: owner-authorized Codex exact-head review of `681f9a9...` found two material issues: P1 reconnect COMMIT could publish `COMMITTED` after authoritative lifecycle/controller/generation changed between process-local checks and the journal linearization point; P2 `ScopeRuntimeFence: Clone + Copy` allowed duplicate `RuntimeExecutionOrdinal` issuance from copied fence state.
+- `RED/P1`: focused regression changed authoritative durable session/controller state after PREPARE but before COMMIT; the old seam returned `Ok(ConnectionGeneration(2))` instead of `Err(StaleConnection)`.
+- `GREEN/P1`: `ReconnectAttemptJournal<T>` now receives an exact `ReconnectCommitBinding<T>` at PREPARE/COMMIT containing predecessor generation, candidate generation, candidate transport, CharacterLease and RuntimeScope generation. The trusted COMMIT seam is required to revalidate reconnectable lifecycle/no-current-controller, exact predecessor/candidate/transport and lease/runtime fences at the PREPARED -> COMMITTED linearization point and atomically publish the candidate generation/transport authority. Process-local state becomes only a projection after that commit.
+- `SAME-CLASS P1`: separate regressions prove an authoritative healthy-controller recovery without generation change fails as `StaleConnection`, and an authoritative terminal transition inside the COMMIT race fails as `Terminal`; neither advances the process-local connection generation.
+- `RED/P2`: a compile-fail doctest copied `ScopeRuntimeFence` and successfully issued from both copies, so the test failed because the invalid program compiled.
+- `GREEN/P2`: `ScopeRuntimeFence` is no longer `Clone` or `Copy`; `GameSession` is likewise non-Clone because it owns that issuer. The compile-fail doctest now passes, preventing duplicated ordinal-issuer state within one ownership generation.
+- `PROVEN focused`: `cargo test -p oteryn-game-server foundation` -> 70 passed / 0 failed; `cargo test -p oteryn-game-server` -> 73 passed / 0 failed; both `ScopeRuntimeFence` compile-fail doctests (move/Copy and explicit `clone()`) PASS.
+- `PROVEN canonical gates`: `cargo +1.94.0 metadata --locked --format-version 1`, architecture workspace check, `build --locked --workspace --all-targets`, strict `clippy --locked --workspace --all-targets -- -D warnings`, `test --locked --workspace`, and `oteryn-synthetic-client-harness` all PASS.
+- `PROVEN formatting/diff`: changed-file `rustfmt +1.94.0 --check apps/game-server/src/foundation/admission.rs` PASS; `mod.rs` PASS with `skip_children=true` to avoid the known untouched Windows CRLF child-module baseline; `git diff --check` PASS. Product-code diff is limited to `apps/game-server/src/foundation/admission.rs` and `apps/game-server/src/foundation/mod.rs`.
+- `PROVEN governance`: `python tools/agents/validate_governance.py` PASS after the final task-record mutation; `git diff --check` PASS.
+- `E2E`: `NOT_EVALUATED` remains correct because no merged production gameplay transport listener/client-entry seam exists and this allocation intentionally adds no listener side effects.
+- `MERGE`: still prohibited until this repair is frozen/pushed as a new exact PR head, protected exact-head CI is green, every material thread is resolved on that head, and a genuinely independent exact-head review reports zero material findings.
+- `FINAL SELF-REVIEW`: PASS on the complete repair diff; zero open material findings. Same-class review added separate healthy-controller/terminal COMMIT races and explicit `Clone` prevention in addition to the original `Copy` regression.
+- `NEXT`: freeze/commit/push once, then do not move the head while fresh CI/review qualify it.
