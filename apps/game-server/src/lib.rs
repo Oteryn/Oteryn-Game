@@ -16,6 +16,10 @@ mod foundation_final_review_regressions;
 #[path = "foundation/final_review_round2_regressions.rs"]
 mod foundation_final_review_round2_regressions;
 
+#[cfg(test)]
+#[path = "foundation/final_review_round2_runtime_rollback.rs"]
+mod foundation_final_review_round2_runtime_rollback;
+
 use oteryn_foundation::CancellationToken;
 use oteryn_simulation_determinism::{SimulationDeterminismProfile, active_profile};
 use std::error::Error;
