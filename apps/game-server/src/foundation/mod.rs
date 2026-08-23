@@ -349,6 +349,11 @@ impl ConnectionFence {
         self.current = successor;
         Ok(successor)
     }
+
+    pub(crate) fn commit_prevalidated_successor(&mut self, successor: ConnectionGeneration) {
+        debug_assert_eq!(self.current.checked_successor().ok(), Some(successor));
+        self.current = successor;
+    }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct ScopeOwnershipGeneration(u64);
