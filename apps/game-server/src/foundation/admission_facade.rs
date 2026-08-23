@@ -9,7 +9,10 @@ use super::{
 /// `load_session` is the process-recovery boundary: it must return one fenced,
 /// internally consistent current snapshot for the requested GameSessionId. It
 /// does not treat that identifier as bearer authority and must fail closed when
-/// current authority cannot be proven.
+/// current authority cannot be proven. For GameNode/process replacement, the
+/// snapshot's RuntimeScope generation must come from the current externally
+/// established FND-03 recovery ownership grant; implementations must never
+/// locally increment, reuse or reconstruct a stale ownership generation.
 pub trait ReconnectAttemptJournal<T: Copy + Eq> {
     fn commit_fresh<F>(
         &self,
