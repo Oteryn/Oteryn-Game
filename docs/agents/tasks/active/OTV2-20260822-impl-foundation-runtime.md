@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-23T16:25:00+02:00
+updated_at: 2026-08-23T17:12:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -252,3 +252,24 @@ This checkpoint supersedes the preceding continuation checkpoint for the current
 - `QUALIFICATION`: all exact-head evidence on `d729f3b...` is now superseded by this necessary main-sync head. Product repair content is unchanged; full local gate, protected exact-head CI, thread verification and genuinely independent exact-head review must be rerun on the resulting merge commit.
 - `LOCAL POLICY BASELINE`: `validate_repository_policy.py` on this Windows checkout still fails only on untouched `LICENSE` newline normalization; `git diff origin/main -- LICENSE` is empty. Exact-head Linux Merge Authority/merge-gate validation is authoritative for this baseline-sensitive check.
 - `MERGE`: prohibited until the new exact head passes those gates.
+
+## Unified GameSession authority repair checkpoint - 2026-08-23T17:10:00+02:00
+
+This checkpoint supersedes all preceding readiness/final-head checkpoints. Earlier SHA/review/CI entries remain historical evidence only.
+
+- `SUPERSEDED EXACT HEAD`: `349430043addf628ecb3c0689226b499ccef5910` had green exact-head governance/architecture/merge-authority checks and independent Qwen PASS, but owner-authorized Codex exact-head review found 2 P1 + 1 P2; it is not merge evidence.
+- `RED/P1 fresh transport`: two `AdmissionAuthority` processes sharing one consumed fresh grant could both become ACTIVE at generation 1 on different authenticated transports. The focused regression expected `GrantReplayed` for transport 200 but observed a second `Ok(GameSession { ... })`.
+- `GREEN/P1 fresh transport`: `FreshAdmissionCommit<T>` now binds the exact initial transport and `FreshAdmissionAuthoritySnapshot<T>` carries current authoritative transport. More importantly, fresh admission is committed/reconciled through the same trusted `ReconnectAttemptJournal<T>` GameSession authority seam that owns lifecycle/reconnect state; local session/transport fields are projection only.
+- `RED/P1 control loss`: after exact control loss, PREPARE succeeded locally but COMMIT failed `StaleConnection` because durable authority still saw ACTIVE/current controller. The old tests hid this with a test-only resynchronization helper.
+- `GREEN/P1 control loss`: `mark_control_loss` is now an atomic authority operation keyed by exact GameSessionId + observed transport + observed connection generation. `Applied` durably publishes `Reconnectable` with no current controller before the local projection changes. The normal loss -> PREPARE -> COMMIT regression passes without any manual synchronization.
+- `SAME-CLASS AUTHORITY REPAIR`: terminalization and RuntimeScope ownership-generation advance also route through the same trusted authority before local projection. All normal-path `sync_authoritative_fences` and the separate `TestFreshIdentityLedger` were removed; only direct test-only setters used to inject adversarial concurrent authority changes remain.
+- `RED/P2 issuer reconstruction`: a compile-fail doctest constructed two `ScopeRuntimeFence` values from the same public `ScopeOwnershipGeneration`; the invalid program compiled, proving duplicate ordinal issuers remained possible despite removal of Clone/Copy.
+- `GREEN/P2 issuer reconstruction`: `ScopeRuntimeFence::from_external_grant` is private to the Foundation owner implementation path. External callers cannot construct/reconstruct the issuer; production has one construction site in fresh GameSession projection and later ownership changes mutate the existing fence. The duplicate-constructor compile-fail test now passes, alongside Copy and Clone compile-fail tests.
+- `PROVEN focused`: Foundation 72/72 PASS; full game-server 75/75 PASS; no manual authority synchronization helper remains; all three new material-finding regressions are GREEN; three `ScopeRuntimeFence` compile-fail doctests PASS.
+- `PROVEN full local gate`: locked metadata PASS; architecture workspace check PASS; workspace all-targets build PASS; strict workspace Clippy `-D warnings` PASS; locked full workspace tests PASS; synthetic client harness PASS; changed-file Rust 2024 rustfmt PASS; governance PASS; `git diff --check` PASS.
+- `PROVEN scope`: product changes remain limited to `apps/game-server/src/foundation/admission.rs` and `apps/game-server/src/foundation/mod.rs`; task evidence is this owned task record. No workflow/policy/registry/contract/new-crate mutation is authored by FOUNDATION.
+- `SELF-REVIEW`: danger scan found no production TODO/FIXME/unsafe/panic/unwrap/expect/unreachable residue; the only `unwrap()` hits are compile-fail doctest examples. Production has exactly one `ScopeRuntimeFence::from_external_grant` construction call.
+- `E2E`: `NOT_EVALUATED` remains accurate because no merged production gameplay listener/client-entry seam exists; this allocation introduces no listener side effects.
+- `MERGE`: prohibited until this repair is committed/pushed as a new frozen exact head, all protected exact-head checks are green, all review threads are resolved, and a fresh genuinely independent exact-head review reports zero material findings.
+- `FINAL SELF-REVIEW`: PASS on the complete current `main...working-tree` Foundation delivery diff; zero open local material findings. Public authority surface, all authority mutation entry points, constructor reachability, test-only mutation hooks and full changed-file set were re-inspected. Normal lifecycle paths contain no manual resynchronization escape hatch.
+- `NEXT`: freeze one commit, push, then qualify only that exact SHA with protected CI and fresh independent review.

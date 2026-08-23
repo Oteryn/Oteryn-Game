@@ -425,6 +425,14 @@ impl RuntimeWorkStamp {
 /// let owner = ScopeRuntimeFence::from_external_grant(generation);
 /// let _duplicate = owner.clone();
 /// ```
+///
+/// ```compile_fail
+/// use oteryn_game_server::foundation::{ScopeOwnershipGeneration, ScopeRuntimeFence};
+///
+/// let generation = ScopeOwnershipGeneration::new(1).unwrap();
+/// let _first = ScopeRuntimeFence::from_external_grant(generation);
+/// let _second = ScopeRuntimeFence::from_external_grant(generation);
+/// ```
 #[derive(Debug, PartialEq, Eq)]
 pub struct ScopeRuntimeFence {
     generation: ScopeOwnershipGeneration,
@@ -433,7 +441,7 @@ pub struct ScopeRuntimeFence {
 
 impl ScopeRuntimeFence {
     #[must_use]
-    pub const fn from_external_grant(generation: ScopeOwnershipGeneration) -> Self {
+    const fn from_external_grant(generation: ScopeOwnershipGeneration) -> Self {
         Self {
             generation,
             next_ordinal: Some(1),
