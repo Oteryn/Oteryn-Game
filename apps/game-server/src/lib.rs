@@ -8,6 +8,10 @@ pub mod foundation;
 #[path = "foundation/recovery_tests.rs"]
 mod foundation_recovery_tests;
 
+#[cfg(test)]
+#[path = "foundation/final_review_regressions.rs"]
+mod foundation_final_review_regressions;
+
 use oteryn_foundation::CancellationToken;
 use oteryn_simulation_determinism::{SimulationDeterminismProfile, active_profile};
 use std::error::Error;
