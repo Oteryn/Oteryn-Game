@@ -31,7 +31,7 @@ impl Display for AdmissionError {
             Self::StaleRuntime => "runtime ownership generation is stale",
             Self::AttemptMismatch => "reconnect attempt does not match prepared candidate",
             Self::ReconciliationUnavailable => {
-                "reconnect attempt requires authoritative reconciliation"
+                "authority outcome requires authoritative reconciliation"
             }
             Self::GenerationExhausted => "connection generation space is exhausted",
             Self::Terminal => "game session is terminal",
@@ -49,6 +49,18 @@ impl ReconnectAttemptRef {
         } else {
             Ok(Self(v))
         }
+    }
+
+    /// Stable durable encoding for exact journal keys. Byte order is an
+    /// encoding detail only; it grants no ordering or recency semantics.
+    #[must_use]
+    pub const fn to_be_bytes(self) -> [u8; 8] {
+        self.0.to_be_bytes()
+    }
+
+    pub fn decode(input: &[u8]) -> Result<Self, AdmissionError> {
+        let bytes: [u8; 8] = input.try_into().map_err(|_| AdmissionError::InvalidFacts)?;
+        Self::new(u64::from_be_bytes(bytes))
     }
 }
 
@@ -126,6 +138,86 @@ impl FreshAdmissionFacts {
             lease,
             scope,
         )
+    }
+}
+
+/// Receipt for the game-domain atomic fresh-admission authority commit.
+///
+/// The trusted commit seam must persist enough information to return this exact
+/// receipt again after a lost response or process recovery. Local runtime state
+/// is only a projection of this committed authority and may be reconstructed.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct FreshAdmissionCommit {
+    game_session_id: GameSessionId,
+    character_id: CharacterId,
+    world_id: WorldId,
+    channel_id: ChannelId,
+    character_lease_generation: u64,
+    scope_ownership_generation: u64,
+    connection_generation: ConnectionGeneration,
+}
+
+impl FreshAdmissionCommit {
+    pub fn from_facts(
+        game_session_id: GameSessionId,
+        facts: FreshAdmissionFacts,
+    ) -> Result<Self, AdmissionError> {
+        let connection_generation = ConnectionFence::fresh_admission().current();
+        ScopeOwnershipGeneration::new(facts.scope_ownership_generation)
+            .map_err(|_| AdmissionError::InvalidFacts)?;
+        Ok(Self {
+            game_session_id,
+            character_id: facts.character_id,
+            world_id: facts.world_id,
+            channel_id: facts.channel_id,
+            character_lease_generation: facts.character_lease_generation,
+            scope_ownership_generation: facts.scope_ownership_generation,
+            connection_generation,
+        })
+    }
+
+    #[must_use]
+    pub const fn game_session_id(self) -> GameSessionId {
+        self.game_session_id
+    }
+
+    #[must_use]
+    pub const fn connection_generation(self) -> ConnectionGeneration {
+        self.connection_generation
+    }
+
+    #[must_use]
+    pub const fn character_id(self) -> CharacterId {
+        self.character_id
+    }
+
+    #[must_use]
+    pub const fn world_id(self) -> WorldId {
+        self.world_id
+    }
+
+    #[must_use]
+    pub const fn channel_id(self) -> ChannelId {
+        self.channel_id
+    }
+
+    #[must_use]
+    pub const fn character_lease_generation(self) -> u64 {
+        self.character_lease_generation
+    }
+
+    #[must_use]
+    pub const fn scope_ownership_generation(self) -> u64 {
+        self.scope_ownership_generation
+    }
+
+    fn matches_facts(self, facts: FreshAdmissionFacts) -> bool {
+        self.character_id == facts.character_id
+            && self.world_id == facts.world_id
+            && self.channel_id == facts.channel_id
+            && self.character_lease_generation == facts.character_lease_generation
+            && self.scope_ownership_generation == facts.scope_ownership_generation
+            && self.connection_generation == ConnectionFence::fresh_admission().current()
     }
 }
 
@@ -346,10 +438,10 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal> AdmissionAuthority<T, J> {
         &mut self,
         facts: FreshAdmissionFacts,
         authenticated_transport: T,
-        commit_fresh_identity: F,
+        commit_fresh_authority: F,
     ) -> Result<&GameSession, AdmissionError>
     where
-        F: FnOnce() -> Result<GameSessionId, AdmissionError>,
+        F: FnOnce() -> Result<FreshAdmissionCommit, AdmissionError>,
     {
         if self
             .current
@@ -358,21 +450,35 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal> AdmissionAuthority<T, J> {
         {
             return Err(AdmissionError::IncumbentHealthy);
         }
-        let runtime_generation = ScopeOwnershipGeneration::new(facts.scope_ownership_generation)
+        ScopeOwnershipGeneration::new(facts.scope_ownership_generation)
             .map_err(|_| AdmissionError::InvalidFacts)?;
         self.retire_prepared_candidate()?;
-        // This trusted seam represents the game-domain atomic identity boundary:
-        // GrantNonce replay/consume and never-reused GameSessionId reservation live
-        // in fenced durable authority rather than an unbounded process-local history.
-        let game_session_id = commit_fresh_identity()?;
 
+        // This trusted seam is the atomic fresh-admission authority boundary.
+        // It must consume/reconcile the GrantNonce, reserve a never-reused
+        // GameSessionId and commit the complete initial logical binding in one
+        // transaction, returning the same receipt after a lost response.
+        let committed = commit_fresh_authority()?;
+        if !committed.matches_facts(facts) {
+            return Err(AdmissionError::InvalidFacts);
+        }
+        if self.current.as_ref().is_some_and(|session| {
+            session.state == GameSessionState::Terminal
+                && session.game_session_id == committed.game_session_id
+        }) {
+            return Err(AdmissionError::GrantReplayed);
+        }
+
+        let runtime_generation =
+            ScopeOwnershipGeneration::new(committed.scope_ownership_generation)
+                .map_err(|_| AdmissionError::InvalidFacts)?;
         self.current_transport = Some(authenticated_transport);
         self.current = Some(GameSession {
-            game_session_id,
-            character_id: facts.character_id,
-            world_id: facts.world_id,
-            channel_id: facts.channel_id,
-            lease_generation: facts.character_lease_generation,
+            game_session_id: committed.game_session_id,
+            character_id: committed.character_id,
+            world_id: committed.world_id,
+            channel_id: committed.channel_id,
+            lease_generation: committed.character_lease_generation,
             runtime_scope: ScopeRuntimeFence::from_external_grant(runtime_generation),
             connection: ConnectionFence::fresh_admission(),
             state: GameSessionState::Active,
@@ -806,7 +912,7 @@ mod tests {
 
     #[derive(Default)]
     struct TestFreshIdentityLedger {
-        consumed_grants: std::collections::BTreeSet<GrantReplayKey>,
+        committed_grants: std::collections::BTreeMap<GrantReplayKey, FreshAdmissionCommit>,
         committed_session_ids: std::collections::BTreeSet<GameSessionId>,
     }
 
@@ -814,21 +920,23 @@ mod tests {
         fn commit<F>(
             &mut self,
             replay_key: GrantReplayKey,
+            facts: FreshAdmissionFacts,
             issue_game_session_id: F,
-        ) -> Result<GameSessionId, AdmissionError>
+        ) -> Result<FreshAdmissionCommit, AdmissionError>
         where
             F: FnOnce() -> Result<GameSessionId, AdmissionError>,
         {
-            if self.consumed_grants.contains(&replay_key) {
-                return Err(AdmissionError::GrantReplayed);
+            if let Some(committed) = self.committed_grants.get(&replay_key) {
+                return Ok(*committed);
             }
             let game_session_id = issue_game_session_id()?;
             if self.committed_session_ids.contains(&game_session_id) {
                 return Err(AdmissionError::InvalidFacts);
             }
+            let committed = FreshAdmissionCommit::from_facts(game_session_id, facts)?;
             self.committed_session_ids.insert(game_session_id);
-            self.consumed_grants.insert(replay_key);
-            Ok(game_session_id)
+            self.committed_grants.insert(replay_key, committed);
+            Ok(committed)
         }
     }
 
@@ -838,8 +946,11 @@ mod tests {
         session: u64,
         transport: u64,
     ) -> Result<&GameSession, AdmissionError> {
+        let admission = facts(nonce)?;
         let game_session_id = game_session_id(session)?;
-        authority.commit_fresh(facts(nonce)?, transport, || Ok(game_session_id))
+        authority.commit_fresh(admission, transport, || {
+            FreshAdmissionCommit::from_facts(game_session_id, admission)
+        })
     }
 
     fn admit_with_ledger<'a>(
@@ -853,8 +964,26 @@ mod tests {
         let replay_key = admission.replay_key();
         let game_session_id = game_session_id(session)?;
         authority.commit_fresh(admission, transport, || {
-            ledger.commit(replay_key, || Ok(game_session_id))
+            ledger.commit(replay_key, admission, || Ok(game_session_id))
         })
+    }
+
+    #[test]
+    fn reconnect_attempt_ref_has_stable_durable_encoding() -> Result<(), AdmissionError> {
+        let attempt = ReconnectAttemptRef::new(0x0102_0304_0506_0708)?;
+        let encoded = attempt.to_be_bytes();
+        assert_eq!(encoded, [1, 2, 3, 4, 5, 6, 7, 8]);
+        assert_eq!(ReconnectAttemptRef::decode(&encoded)?, attempt);
+        assert_eq!(
+            ReconnectAttemptRef::decode(&[0u8; 8]),
+            Err(AdmissionError::InvalidFacts)
+        );
+        let short = [1u8; 7];
+        assert_eq!(
+            ReconnectAttemptRef::decode(&short),
+            Err(AdmissionError::InvalidFacts)
+        );
+        Ok(())
     }
 
     #[test]
@@ -906,6 +1035,34 @@ mod tests {
             admit_with_ledger(&mut authority, &mut ledger, 1, 101, 100u64),
             Err(AdmissionError::GrantReplayed)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_admission_lost_commit_response_can_reconstruct_the_same_session()
+    -> Result<(), AdmissionError> {
+        let mut authority = test_authority();
+        let mut ledger = TestFreshIdentityLedger::default();
+        let admission = facts(90)?;
+        let replay_key = admission.replay_key();
+        let session_id = game_session_id(900)?;
+
+        let lost_response = authority.commit_fresh(admission, 100u64, || {
+            let committed = ledger.commit(replay_key, admission, || Ok(session_id))?;
+            assert_eq!(committed.game_session_id(), session_id);
+            Err(AdmissionError::ReconciliationUnavailable)
+        });
+        assert_eq!(
+            lost_response.map(|_| ()),
+            Err(AdmissionError::ReconciliationUnavailable)
+        );
+        assert!(authority.current().is_none());
+
+        let recovered = authority.commit_fresh(admission, 100u64, || {
+            ledger.commit(replay_key, admission, || Ok(session_id))
+        })?;
+        assert_eq!(recovered.game_session_id(), session_id);
+        assert_eq!(recovered.connection_generation().get(), 1);
         Ok(())
     }
 
@@ -1421,7 +1578,7 @@ mod tests {
         let first = facts(40)?;
         let first_key = first.replay_key();
         authority.commit_fresh(first, 100u64, || {
-            ledger.commit(first_key, || {
+            ledger.commit(first_key, first, || {
                 issue_calls.set(issue_calls.get() + 1);
                 game_session_id(4000)
             })
@@ -1431,7 +1588,7 @@ mod tests {
         assert_eq!(
             authority.commit_fresh(facts(41)?, 101u64, || {
                 issue_calls.set(issue_calls.get() + 1);
-                game_session_id(4100)
+                FreshAdmissionCommit::from_facts(game_session_id(4100)?, facts(41)?)
             }),
             Err(AdmissionError::IncumbentHealthy)
         );
@@ -1440,7 +1597,7 @@ mod tests {
         authority.terminate_current()?;
         assert_eq!(
             authority.commit_fresh(facts(40)?, 102u64, || {
-                ledger.commit(first_key, || {
+                ledger.commit(first_key, first, || {
                     issue_calls.set(issue_calls.get() + 1);
                     game_session_id(4200)
                 })
@@ -1462,7 +1619,7 @@ mod tests {
         assert_eq!(
             authority.commit_fresh(facts(31)?, 101u64, || {
                 issue_calls.set(issue_calls.get() + 1);
-                game_session_id(3001)
+                FreshAdmissionCommit::from_facts(game_session_id(3001)?, facts(31)?)
             }),
             Err(AdmissionError::IncumbentHealthy)
         );
@@ -1471,7 +1628,7 @@ mod tests {
         authority.terminate_current()?;
         authority.commit_fresh(facts(31)?, 102u64, || {
             issue_calls.set(issue_calls.get() + 1);
-            game_session_id(3001)
+            FreshAdmissionCommit::from_facts(game_session_id(3001)?, facts(31)?)
         })?;
         assert_eq!(issue_calls.get(), 1);
         Ok(())

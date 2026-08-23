@@ -148,8 +148,14 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - control-loss repair: every loss observation now carries exact transport identity plus `ConnectionGeneration`; only the current pair may mutate session state, while stale callbacks return `ControlLossDisposition::StaleIgnored` without touching authority; the exact-current loss still returns `Applied` and transitions to `Reconnectable`
 - current GREEN evidence after both material repairs: Foundation 61/61 PASS; full game-server 64/64 PASS; `cargo test --workspace` PASS; strict workspace Clippy PASS; scoped fmt PASS; governance PASS; semantic scan finds no numeric high-watermark/no-arg loss callback remnants; diff-check PASS
 - cross-process self-review additionally strengthened `ReconnectAttemptJournal::claim_prepared`: across one GameSession it atomically permits at most one distinct PREPARED attempt and terminalizes a competing distinct claim without disturbing the incumbent candidate
-- open material findings: both currently known P1 findings are repaired locally; fresh independent exact-head review is still mandatory before claiming zero material findings
-- verdict: PASS for self-review only; ready to freeze the repair head
+- exact-head Codex review of `a408d39502fd4df0eda8806b91d3bf7413c0b6ab` found 1 P1 + 1 P2 after the prior repair freeze: the fresh-admission durable seam committed only identity before local session activation, and `ReconnectAttemptRef` exposed no stable durable encoding for journal keys
+- fresh-admission P1 RED evidence: `fresh_admission_lost_commit_response_can_reconstruct_the_same_session` simulated a durable consume/session-ID commit whose response was lost before local activation; retry failed as `GrantReplayed` while no local GameSession existed
+- fresh-admission P1 repair: `FreshAdmissionCommit` is now the trusted atomic authority receipt containing the complete initial logical binding (`GameSessionId`, Character/World/Channel, lease/scope generations and connection generation 1); the trusted seam must return the same receipt after lost response/recovery, and the kernel validates it against current admission facts before reconstructing local ACTIVE state
+- reconnect-ref P2 RED evidence: the focused stable-encoding test failed to compile because the public opaque ref exposed neither durable bytes nor decode; this proved an external journal adapter could not form a stable collision-free recovery key from the public API
+- reconnect-ref P2 repair: exact refs now encode/decode as fixed 8-byte big-endian values; the API documentation explicitly states byte order is encoding only and grants no ordering/recency semantics
+- current GREEN evidence after the `a408d395...` findings: Foundation 63/63 PASS; full game-server 66/66 PASS; `cargo test --workspace` PASS; strict workspace Clippy PASS; scoped fmt PASS; governance PASS; diff-check PASS; repair danger scan clean
+- open material findings: both `a408d395...` findings are repaired locally; fresh independent exact-head review is still mandatory before claiming zero material findings
+- verdict: PASS for self-review only; ready to freeze the final repair head
 
 ## Independent review
 
@@ -165,19 +171,21 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - superseded Codex-repair PR head: `89cfd20d2e6fe02556db7777ea0e6e895bc15701` - Codex REQUEST_CHANGES with 1 P2 pending-PREPARE reconciliation finding; repaired
 - superseded concurrent-loser repair product head: `11d1f89f62d5b94f63577287acf86934c3ab0318`; Codex REQUEST_CHANGES with 1 P1 against numeric ordering of opaque `ReconnectAttemptRef`
 - merge-only PR head before current local repair: `dbe7b50c7f5dad627c2a569b726c7e6a53f86b00` on `main@c4c407d096a3252fd2850abbd616944c97297ce6`; review reported two material P1s applicable to its admission code: numeric ordering of opaque reconnect refs and unfenced stale control-loss callbacks
-- final product-code head: `7abe6fd5e737ce78d7d9fefa7ef69c230144de7d` (`fix(server): harden reconnect authority fencing`)
-- final PR head: documentation-only checkpoint descendant of `7abe6fd...`; GitHub remote head is authoritative after push
-- verdict: product code locally validated; pending fresh protected exact-head CI and genuinely independent exact-head review
+- superseded repair product head: `7abe6fd5e737ce78d7d9fefa7ef69c230144de7d` (`fix(server): harden reconnect authority fencing`)
+- reviewed exact head `a408d39502fd4df0eda8806b91d3bf7413c0b6ab`: REQUEST_CHANGES - 1 P1 atomic fresh-admission authority boundary + 1 P2 stable reconnect-ref encoding; both repaired locally with RED/GREEN evidence
+- final product-code head: pending freeze commit containing the two `a408d395...` review repairs
+- final PR head: pending same repair/evidence freeze commit; no documentation-only descendant will be added after qualification
+- verdict: repaired tree locally validated; pending fresh protected exact-head CI and genuinely independent exact-head review
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Both applicable P1 repairs are frozen in product-code commit 7abe6fd5e737ce78d7d9fefa7ef69c230144de7d: opaque ReconnectAttemptRef history now uses exact-key trusted ReconnectAttemptJournal reconciliation with one PREPARED candidate per GameSession, and control-loss observations are fenced to exact current transport plus ConnectionGeneration. TDD RED/GREEN evidence covers u64::MAX poisoning and delayed predecessor loss. Final local product-code gate: Foundation 61/61, game-server 64/64, workspace, strict Clippy, fmt, governance, semantic scan and diff-check all PASS.
-status: product_code_frozen
+last_progress: Final exact-head Codex review of a408d395 found 1 P1 and 1 P2. P1: durable fresh admission committed only nonce/session identity before local ACTIVE binding, so a crash/lost response could strand a consumed grant with no reconstructable session; RED retry returned GrantReplayed. P2: opaque ReconnectAttemptRef had no stable public durable encoding; RED compile evidence showed no to_be_bytes/decode API. Local repair adds reconstructable FreshAdmissionCommit receipts and fixed 8-byte equality-key encoding with no ordering semantics. Final local gate: Foundation 63/63, game-server 66/66, workspace, strict Clippy, fmt, governance and diff-check PASS.
+status: final_review_repair_ready_to_freeze
 branch: agent/otv2-impl-foundation-runtime-01
-product_code_sha: 7abe6fd5e737ce78d7d9fefa7ef69c230144de7d
+head_sha: a408d39502fd4df0eda8806b91d3bf7413c0b6ab-plus-uncommitted-final-review-repair
 pr: 59
-blocker: final documentation-only descendant must be pushed/verified, then protected exact-head CI and genuinely independent exact-head review must both be green with zero material findings
+blocker: repair must be committed/pushed as the new exact head, then protected exact-head CI and genuinely independent exact-head review must both be clean
 owner_action_required: null
-next_action: commit/push this task-record-only checkpoint, verify the final remote PR head on GitHub, update PR #59 evidence, resolve repaired P1 threads, request fresh exact-head Codex review, and merge only when every exact-head gate is green.
+next_action: freeze/push the P1+P2 repair on the authorized branch, update PR #59 without moving the head again, resolve superseded review threads, request fresh exact-head independent review, and squash merge only after every exact-head gate is green.
 ```
