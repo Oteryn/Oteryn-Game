@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-23T00:16:11+02:00
+updated_at: 2026-08-23T09:25:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -86,21 +86,21 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Focused
 - command/run: `cargo test -p oteryn-game-server foundation`
-- result: PASS - 46 foundation tests; 0 failed after third-review repair plus final FND-ID self-review hardening
+- result: PASS - 47 foundation tests; 0 failed after final FND-ID/FND-04A issuer-boundary repair
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: PASS - 49 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
+- result: PASS - 50 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
 - result: `NOT_EVALUATED` - no merged production transport listener/client-entry seam exists in the allocated composition; this lane intentionally adds no listener side effects.
 
 ### Exact-head CI
-- second repaired PR head: `c72bb0ce9cd7e982f0720e47571c173d178b5465`
-- superseded evidence: Agent Governance #228, Architecture Semantic Audit #167 and Merge Authority Audit #145 were SUCCESS; Merge Gate #192 was still running when the third material Codex finding invalidated that exact-head evidence
 - third repaired code head: `ed3bc851955974b471d3d9544189e0e8bd1f6456`
-- final FND-ID code head: `99786226bf988840daa0bcde55d8f90f4d744561`
+- superseded FND-ID PR head: `1ab4cd321a551597b8cdda20845af216790654c9`
+- superseded exact-head evidence on `1ab4cd3...`: Merge Gate #196 / run `32602950356`, Architecture Semantic Audit #170 / `32602950354`, Agent Governance #232 / `32602950353`, Merge Authority Audit #148 / `32602950360` - SUCCESS before the issuer-boundary self-review repair
+- final issuer-boundary code tree: pending freeze commit
 - classification: high-risk foundation
 - result: pending fresh exact-head CI; no prior exact-head success is reused after this material repair
 
@@ -112,10 +112,12 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - third repair: shared committed-attempt reconciliation now returns success only when both `current_transport` and current `connection_generation` still match the committed attempt; PREPARE and COMMIT use the same helper
 - additional same-invariant self-review finding: `mark_unexpected_control_loss` retained the lost physical transport identity, which could still satisfy the replay helper before another winner appeared; RED reproduced this and both unexpected loss and terminalization now clear `current_transport`
 - TDD evidence: superseded A->B replay RED returned `Ok(ConnectionGeneration(2))` instead of `StaleConnection`; lost-current-transport RED retained `Some(200)` instead of `None`; both regressions are GREEN after repair
-- final self-review findings: raw `[u8; 16]` semantic IDs violated FND-ID strong typing/UUIDv7 trust-boundary validation; successful GameSessionId reuse and failed precommit-candidate reuse were also possible
-- final TDD evidence: semantic-ID API tests first failed on missing typed ID constructors; duplicate GameSessionId was observed accepted; failed precommit candidate was observed reusable after incumbent-race rejection
-- final repair: distinct `GameSessionId`/`CharacterId`/`WorldId`/`ChannelId` UUIDv7+RFC-variant wrappers, `CommandRef`/session/lease typed APIs, and a non-reusable GameSession candidate set reserved before the incumbent race while GrantNonce remains unconsumed on that losing path
-- repaired-tree method: full diff review against FND-02/FND-03/FND-04, focused/package/workspace tests, strict Clippy, fmt check, governance and diff check
+- FND-ID self-review findings: raw `[u8; 16]` semantic IDs violated strong typing/UUIDv7 trust-boundary validation; successful GameSessionId reuse was also possible
+- FND-ID repair: distinct `GameSessionId`/`CharacterId`/`WorldId`/`ChannelId` UUIDv7+RFC-variant wrappers and typed `CommandRef`/session/lease APIs
+- final issuer-boundary self-review finding: `FreshAdmissionFacts` still carried a GameSessionId and the precommit candidate set reserved it before incumbent arbitration, contradicting FND-04A and the owner-accepted GameSessionId issuer baseline: Platform/grant material is not GameSessionId and the canonical ID is game-domain issued only at successful final admission
+- final TDD evidence: desired `commit_fresh(..., issue_game_session_id)` test was observed RED because the issuer seam did not exist; after repair admission is 18/18 and issuer call count remains zero for incumbent/replay rejection while the same unconsumed grant can retry after the blocker clears
+- final repair: GameSessionId was removed from `FreshAdmissionFacts`; `commit_fresh` invokes a game-domain issuer seam only after replay/incumbent/runtime preconditions, records only committed IDs for no-reuse checking, consumes GrantNonce only on successful admission, and leaves rejected/colliding attempts retryable with a fresh canonical ID
+- repaired-tree method: full diff review against FND-ID/FND-02/FND-03/FND-04, focused/package/workspace tests, strict Clippy, fmt, governance and diff check - all PASS before freeze
 - open material findings: 0 locally; fresh independent exact-head review still mandatory
 - verdict: PASS for self-review only
 
@@ -127,19 +129,20 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - third reviewed superseded head `c72bb0ce9cd7e982f0720e47571c173d178b5465`: REQUEST_CHANGES - 1 P1; repaired
 - third P1 repair: committed-attempt result replay is current-channel/current-generation fenced; superseded transport/generation receives `StaleConnection` rather than a historical success
 - owner authorization: explicit and bounded to PR #59 independent review plus autonomous repair/re-review/merge/closeout cycle
-- final product-code head: `99786226bf988840daa0bcde55d8f90f4d744561`
-- final PR head: pending metadata freeze commit
+- superseded FND-ID product-code head: `99786226bf988840daa0bcde55d8f90f4d744561`
+- final issuer-boundary product-code head: pending freeze commit
+- final PR head: pending freeze commit
 - verdict: pending fresh genuinely independent exact-head review after this material repair
 
 ## Context checkpoint
 
 ```yaml
-last_progress: third-review reconnect replay repair at ed3bc851 is preserved; final self-review then found and TDD-repaired FND-ID strong-typing/UUIDv7 and GameSession candidate non-reuse gaps. Product code head 99786226 is green: Foundation 46/46, game-server 49/49, workspace and strict Clippy PASS. Final metadata freeze, exact-head CI and genuinely independent final review remain.
+last_progress: the 1ab4cd3 FND-ID candidate passed exact-head CI but final self-review found a material issuer-boundary defect: pre-admission facts still carried GameSessionId even though FND-04A requires game-domain issuance only at successful admission. RED confirmed the missing issuer seam. The repair removes GameSessionId from grant-derived facts and calls the game-domain issuer only after all rejectable preconditions. Foundation 47/47, game-server 50/50, full workspace, strict Clippy, fmt, governance and diff-check are green; only fresh exact-head CI and independent review remain before merge.
 status: review_pending
 branch: agent/otv2-impl-foundation-runtime-01
-head_sha: pending-final-metadata-freeze
+head_sha: pending-issuer-boundary-freeze
 pr: 59
-blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the final FND-ID material repair
+blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the issuer-boundary material repair
 owner_action_required: null
-next_action: commit and push this metadata checkpoint, verify exact-head CI, then run a fresh independent exact-head review on the unchanged final PR head; merge only with zero material findings.
+next_action: freeze and push the issuer-boundary repair now, then obtain fresh exact-head CI and the already authorized Codex review; merge only with zero material findings.
 ```
