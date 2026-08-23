@@ -6,7 +6,7 @@
 - All changes reach `main` through a pull request.
 - Squash is the only allowed merge method.
 - The pull request title becomes the squash-commit title and the pull request body becomes its canonical message.
-- `Merge gate / validate` is the single stable required status check for the current exact PR head and the branch must be up to date.
+- `game-gate` is the single stable required status check for the current exact PR head and the branch must be up to date.
 - The aggregate merge gate always requires repository/agent governance, Dependency Review and CodeQL, and additionally requires the full Rust policy/Linux/Windows/supply-chain set when Rust/workspace-sensitive paths change.
 - PR metadata edits automatically re-run the exact-head aggregate gate through the standard `pull_request: edited` event. The gate re-resolves live PR metadata and fails closed if the PR head moved after the event was recorded, so title/body repairs do not require `workflow_dispatch` and a previously green required status cannot silently cover later invalid metadata.
 - If an initial PR event is suppressed and no run exists to rerun, recover without changing the head SHA: close and reopen the unchanged pull request. The standard `pull_request: reopened` event re-runs the gate in the ordinary pull-request trust context, and the scope job re-resolves live PR metadata before any repository code executes.
