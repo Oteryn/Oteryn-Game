@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-23T17:12:00+02:00
+updated_at: 2026-08-23T17:39:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -273,3 +273,21 @@ This checkpoint supersedes all preceding readiness/final-head checkpoints. Earli
 - `MERGE`: prohibited until this repair is committed/pushed as a new frozen exact head, all protected exact-head checks are green, all review threads are resolved, and a fresh genuinely independent exact-head review reports zero material findings.
 - `FINAL SELF-REVIEW`: PASS on the complete current `main...working-tree` Foundation delivery diff; zero open local material findings. Public authority surface, all authority mutation entry points, constructor reachability, test-only mutation hooks and full changed-file set were re-inspected. Normal lifecycle paths contain no manual resynchronization escape hatch.
 - `NEXT`: freeze one commit, push, then qualify only that exact SHA with protected CI and fresh independent review.
+
+## Durable reconciliation repair checkpoint - 2026-08-23T17:34:00+02:00
+
+This checkpoint supersedes the 17:10 readiness claim. All evidence bound to `3a28ae64b9ae9ad067639bfc916befc08b38b743` is historical only.
+
+- `SUPERSEDED EXACT HEAD`: `3a28ae64b9ae9ad067639bfc916befc08b38b743` passed local full gates, protected Linux/policy/security checks and an independent Qwen review, but fresh owner-authorized Codex exact-head review found 3 P1 findings; it is not merge evidence.
+- `RED/P1 durable fresh replay key`: a production authority implementor could not derive or serialize the consumed GrantNonce because `FreshAdmissionFacts` fields were private and `replay_key()` existed only under `cfg(test)`. External doctest compilation failed with no public `FreshAdmissionReplayKey`/`replay_key` API.
+- `GREEN/P1 durable fresh replay key`: `FreshAdmissionReplayKey` is public, typed and serializes to a stable 33-byte domain-tag + exact 32-byte GrantNonce representation. `FreshAdmissionFacts::replay_key()` is production-public; decode rejects wrong tag, wrong length and zero nonce. Public doctest and focused round-trip/namespace regression PASS.
+- `RED/P1 control-loss ambiguity`: the trusted authority durably applied loss but returned `ReconciliationUnavailable`; exact retry then returned `StaleIgnored`, leaving the local projection unable to become reconnectable.
+- `GREEN/P1 control-loss ambiguity`: `AdmissionAuthority` retains the exact pending `(transport, generation)` operation, immediately removes local controller authority on ambiguity, blocks reconnect while unresolved, and exact retry reconciles the durable receipt as `Applied`. The trusted seam contract now requires exact already-applied loss replay to reconcile as `Applied`; the test authority retains the exact prior loss identity instead of accepting arbitrary same-generation transports.
+- `RED/P1 runtime-fence ambiguity`: the trusted authority committed ownership generation 12 but lost the response; local generation remained 11 and retry failed `StaleRuntime`.
+- `GREEN/P1 runtime-fence ambiguity`: `advance_runtime_scope` now returns/reconciles the current authoritative `ScopeOwnershipGeneration`. On any ambiguous/failed authority response the local `ScopeRuntimeFence` is invalidated immediately, preventing new ordinals and old stamped work from retaining authority. Exact retry reloads/applies authoritative generation 12 and resumes only under the current fence.
+- `SAME-CLASS FND-03`: `ScopeRuntimeFence::accepts_stamp` now requires the fence to remain valid in addition to generation equality, so ambiguity/fencing rejects old-generation stamps as required by FND-03 stale-work semantics.
+- `PROVEN focused`: all three latest Codex regressions are GREEN; public replay-key doctest PASS; Foundation suite 75/75 PASS; three non-duplicable runtime-fence compile-fail doctests remain PASS.
+- `SAME-CLASS TERMINALITY`: terminalization already fails closed locally on ambiguous authority outcome and may be retried idempotently through the same trusted terminal seam; process recovery remains governed by durable current lifecycle returned by fresh reconciliation.
+- `PROVEN full local gate`: locked metadata PASS; architecture workspace check PASS; workspace all-targets build PASS; strict workspace Clippy `-D warnings` PASS; locked full workspace tests PASS; synthetic client harness PASS; changed-file Rust 2024 rustfmt PASS; governance PASS; `git diff --check` PASS.
+- `FINAL SELF-REVIEW`: PASS on the complete current repair diff; zero open local material findings. Public durable replay API, control-loss ambiguity, RuntimeScope ambiguity, terminal fail-closed behavior, stale-work rejection, reconnect blocking and absence of legacy manual sync/split-ledger paths were re-inspected.
+- `MERGE`: prohibited until this repair is frozen/pushed as a new exact head and fresh protected exact-head CI plus genuinely independent exact-head review both complete with zero material findings.

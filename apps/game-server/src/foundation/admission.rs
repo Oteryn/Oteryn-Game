@@ -67,19 +67,67 @@ impl ReconnectAttemptRef {
 pub const PRE_ADMISSION_TRUSTED_ISSUER: &str = "urn:oteryn:platform:game-admission";
 pub const PRE_ADMISSION_PROFILE: &str = "oteryn-pre-admission-v1";
 
-#[cfg(test)]
+/// Stable durable replay identity for one accepted pre-admission grant.
+///
+/// This type is semantically namespaced by `PRE_ADMISSION_TRUSTED_ISSUER` and
+/// `PRE_ADMISSION_PROFILE`; its byte encoding is exactly the canonical 32-byte
+/// GrantNonce and grants no ordering semantics. Persistence adapters should keep
+/// this typed namespace distinct from unrelated nonce/key domains.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-enum AdmissionGrantTrustScope {
-    OterynPreAdmissionV1,
+pub struct FreshAdmissionReplayKey([u8; 32]);
+
+const FRESH_ADMISSION_REPLAY_KEY_TAG: u8 = 1;
+
+impl FreshAdmissionReplayKey {
+    #[must_use]
+    pub const fn to_bytes(self) -> [u8; 33] {
+        let mut encoded = [0u8; 33];
+        encoded[0] = FRESH_ADMISSION_REPLAY_KEY_TAG;
+        let mut index = 0;
+        while index < 32 {
+            encoded[index + 1] = self.0[index];
+            index += 1;
+        }
+        encoded
+    }
+
+    pub fn decode(input: &[u8]) -> Result<Self, AdmissionError> {
+        let encoded: [u8; 33] = input.try_into().map_err(|_| AdmissionError::InvalidFacts)?;
+        if encoded[0] != FRESH_ADMISSION_REPLAY_KEY_TAG {
+            return Err(AdmissionError::InvalidFacts);
+        }
+        let mut nonce = [0u8; 32];
+        nonce.copy_from_slice(&encoded[1..]);
+        if nonce.iter().all(|byte| *byte == 0) {
+            return Err(AdmissionError::InvalidFacts);
+        }
+        Ok(Self(nonce))
+    }
+
+    #[must_use]
+    pub const fn trusted_issuer(self) -> &'static str {
+        PRE_ADMISSION_TRUSTED_ISSUER
+    }
+
+    #[must_use]
+    pub const fn profile(self) -> &'static str {
+        PRE_ADMISSION_PROFILE
+    }
 }
 
 #[cfg(test)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-struct GrantReplayKey {
-    trust_scope: AdmissionGrantTrustScope,
-    nonce: [u8; 32],
-}
+type GrantReplayKey = FreshAdmissionReplayKey;
 
+/// A production authority adapter can derive a stable, typed durable replay key
+/// without accessing private grant fields.
+///
+/// ```
+/// use oteryn_game_server::foundation::{FreshAdmissionFacts, FreshAdmissionReplayKey};
+///
+/// fn durable_key(facts: FreshAdmissionFacts) -> [u8; 33] {
+///     facts.replay_key().to_bytes()
+/// }
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct FreshAdmissionFacts {
     grant_nonce: [u8; 32],
@@ -110,12 +158,9 @@ impl FreshAdmissionFacts {
             scope_ownership_generation: scope,
         })
     }
-    #[cfg(test)]
-    fn replay_key(&self) -> GrantReplayKey {
-        GrantReplayKey {
-            trust_scope: AdmissionGrantTrustScope::OterynPreAdmissionV1,
-            nonce: self.grant_nonce,
-        }
+    #[must_use]
+    pub const fn replay_key(&self) -> FreshAdmissionReplayKey {
+        FreshAdmissionReplayKey(self.grant_nonce)
     }
 
     #[cfg(test)]
@@ -468,7 +513,10 @@ pub trait ReconnectAttemptJournal<T: Copy + Eq> {
 
     /// Atomically publishes unexpected control loss only for the exact current
     /// authenticated transport and generation. `Applied` means the durable
-    /// GameSession is now reconnectable with no current controller.
+    /// GameSession is now reconnectable with no current controller. The exact
+    /// same `(transport, generation)` observation MUST reconcile as `Applied`
+    /// after a committed transition whose response was lost; unrelated stale
+    /// observations remain `StaleIgnored`.
     fn mark_control_loss(
         &self,
         game_session_id: GameSessionId,
@@ -486,12 +534,16 @@ pub trait ReconnectAttemptJournal<T: Copy + Eq> {
 
     /// Atomically advances the authoritative RuntimeScope generation from the
     /// exact expected current generation and supersedes any PREPARED reconnect.
+    /// Applies/reconciles a monotonic RuntimeScope ownership observation and
+    /// returns the current authoritative generation. An implementation must
+    /// return the already-current generation when an identical prior transition
+    /// committed but its response was lost.
     fn advance_runtime_scope(
         &self,
         game_session_id: GameSessionId,
         expected_current: ScopeOwnershipGeneration,
         observed: ScopeOwnershipGeneration,
-    ) -> Result<(), AdmissionError>;
+    ) -> Result<ScopeOwnershipGeneration, AdmissionError>;
 
     fn lookup(
         &self,
@@ -552,6 +604,8 @@ pub struct AdmissionAuthority<T: Copy + Eq, J: ReconnectAttemptJournal<T>> {
     current: Option<GameSession>,
     current_transport: Option<T>,
     prepared: Option<PreparedReconnect<T>>,
+    control_loss_pending: Option<(T, ConnectionGeneration)>,
+    runtime_scope_reconciliation_pending: bool,
     reconnect_attempts: J,
 }
 
@@ -567,6 +621,8 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
             current: None,
             current_transport: None,
             prepared: None,
+            control_loss_pending: None,
+            runtime_scope_reconciliation_pending: false,
             reconnect_attempts,
         }
     }
@@ -656,6 +712,8 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
             ScopeOwnershipGeneration::new(committed.scope_ownership_generation)
                 .map_err(|_| AdmissionError::InvalidFacts)?;
         self.current_transport = Some(authenticated_transport);
+        self.control_loss_pending = None;
+        self.runtime_scope_reconciliation_pending = false;
         self.current = Some(GameSession {
             game_session_id: committed.game_session_id,
             character_id: committed.character_id,
@@ -673,12 +731,28 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         let s = self.current.as_ref().ok_or(AdmissionError::Terminal)?;
         let game_session_id = s.game_session_id;
         let generation = s.connection_generation();
-        self.reconnect_attempts
-            .terminate_session(game_session_id, generation)?;
+        match self
+            .reconnect_attempts
+            .terminate_session(game_session_id, generation)
+        {
+            Ok(()) => {}
+            Err(AdmissionError::ReconciliationUnavailable) => {
+                let s = self.current.as_mut().ok_or(AdmissionError::Terminal)?;
+                s.state = GameSessionState::Terminal;
+                self.prepared = None;
+                self.current_transport = None;
+                self.control_loss_pending = None;
+                self.runtime_scope_reconciliation_pending = false;
+                return Err(AdmissionError::ReconciliationUnavailable);
+            }
+            Err(error) => return Err(error),
+        }
         let s = self.current.as_mut().ok_or(AdmissionError::Terminal)?;
         s.state = GameSessionState::Terminal;
         self.prepared = None;
         self.current_transport = None;
+        self.control_loss_pending = None;
+        self.runtime_scope_reconciliation_pending = false;
         Ok(())
     }
 
@@ -691,24 +765,50 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         if s.state == GameSessionState::Terminal {
             return Err(AdmissionError::Terminal);
         }
-        if self.current_transport != Some(observed_transport)
-            || s.connection_generation() != observed_generation
-        {
-            return Ok(ControlLossDisposition::StaleIgnored);
+        let observed = (observed_transport, observed_generation);
+        match self.control_loss_pending {
+            Some(pending) if pending != observed => {
+                return Err(AdmissionError::ReconciliationUnavailable);
+            }
+            None => {
+                if self.current_transport != Some(observed_transport)
+                    || s.connection_generation() != observed_generation
+                {
+                    return Ok(ControlLossDisposition::StaleIgnored);
+                }
+            }
+            Some(_) => {}
         }
         let game_session_id = s.game_session_id;
-        let disposition = self.reconnect_attempts.mark_control_loss(
+        match self.reconnect_attempts.mark_control_loss(
             game_session_id,
             observed_transport,
             observed_generation,
-        )?;
-        if disposition == ControlLossDisposition::Applied {
-            let s = self.current.as_mut().ok_or(AdmissionError::Terminal)?;
-            s.state = GameSessionState::Reconnectable;
-            self.prepared = None;
-            self.current_transport = None;
+        ) {
+            Ok(ControlLossDisposition::Applied) => {
+                let s = self.current.as_mut().ok_or(AdmissionError::Terminal)?;
+                s.state = GameSessionState::Reconnectable;
+                self.prepared = None;
+                self.current_transport = None;
+                self.control_loss_pending = None;
+                Ok(ControlLossDisposition::Applied)
+            }
+            Ok(ControlLossDisposition::StaleIgnored)
+                if self.control_loss_pending == Some(observed) =>
+            {
+                Err(AdmissionError::ReconciliationUnavailable)
+            }
+            Ok(ControlLossDisposition::StaleIgnored) => Ok(ControlLossDisposition::StaleIgnored),
+            Err(AdmissionError::ReconciliationUnavailable) => {
+                // The durable outcome is unknown. Fence local controller authority
+                // immediately and retain the exact operation identity for retry.
+                self.current_transport = None;
+                self.prepared = None;
+                self.control_loss_pending = Some(observed);
+                Err(AdmissionError::ReconciliationUnavailable)
+            }
+            Err(error) => Err(error),
         }
-        Ok(disposition)
     }
 
     pub fn observe_runtime_ownership_generation(
@@ -721,21 +821,44 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         if s.state == GameSessionState::Terminal {
             return Err(AdmissionError::Terminal);
         }
-        let current = s.runtime_scope.generation();
-        if observed < current {
+        let local_current = s.runtime_scope.generation();
+        if observed < local_current {
             return Err(AdmissionError::StaleRuntime);
         }
         let game_session_id = s.game_session_id;
-        self.reconnect_attempts
-            .advance_runtime_scope(game_session_id, current, observed)?;
-        if observed == current {
+        let authoritative = match self.reconnect_attempts.advance_runtime_scope(
+            game_session_id,
+            local_current,
+            observed,
+        ) {
+            Ok(authoritative) => authoritative,
+            Err(error) => {
+                let s = self.current.as_mut().ok_or(AdmissionError::Terminal)?;
+                s.runtime_scope.invalidate();
+                self.prepared = None;
+                self.runtime_scope_reconciliation_pending = true;
+                return Err(error);
+            }
+        };
+        if authoritative < local_current {
+            let s = self.current.as_mut().ok_or(AdmissionError::Terminal)?;
+            s.runtime_scope.invalidate();
+            self.prepared = None;
+            self.runtime_scope_reconciliation_pending = true;
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
+        if authoritative == local_current {
+            if self.runtime_scope_reconciliation_pending {
+                return Err(AdmissionError::ReconciliationUnavailable);
+            }
             return Ok(());
         }
         let s = self.current.as_mut().ok_or(AdmissionError::Terminal)?;
         s.runtime_scope
-            .apply_external_grant(observed)
+            .apply_external_grant(authoritative)
             .map_err(|_| AdmissionError::StaleRuntime)?;
         self.prepared = None;
+        self.runtime_scope_reconciliation_pending = false;
         Ok(())
     }
 
@@ -790,6 +913,9 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         lease: u64,
         scope: u64,
     ) -> Result<ConnectionGeneration, AdmissionError> {
+        if self.control_loss_pending.is_some() || self.runtime_scope_reconciliation_pending {
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
         if let Some(existing) = self.prepared {
             if existing.attempt == attempt {
                 return if existing.candidate_transport == candidate_transport {
@@ -968,6 +1094,8 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         s.state = GameSessionState::Active;
         self.prepared = None;
         self.current_transport = Some(candidate_transport);
+        self.control_loss_pending = None;
+        self.runtime_scope_reconciliation_pending = false;
         Ok(prepared.candidate)
     }
 }
@@ -993,6 +1121,9 @@ mod tests {
         committed_grants: std::collections::BTreeMap<GrantReplayKey, FreshAdmissionCommit<u64>>,
         committed_session_ids: std::collections::BTreeSet<GameSessionId>,
         fail_next_fresh_response_after_commit: bool,
+        fail_next_control_loss_response_after_commit: bool,
+        fail_next_runtime_scope_response_after_commit: bool,
+        last_control_losses: HashMap<GameSessionId, (u64, ConnectionGeneration)>,
         records: HashMap<AttemptKey, ReconnectAttemptDisposition>,
         bindings: HashMap<AttemptKey, ReconnectCommitBinding<u64>>,
         authoritative_fences: HashMap<GameSessionId, (CharacterLease, ScopeOwnershipGeneration)>,
@@ -1025,6 +1156,18 @@ mod tests {
             self.state
                 .borrow_mut()
                 .fail_next_fresh_response_after_commit = true;
+        }
+
+        fn fail_next_control_loss_response_after_commit(&self) {
+            self.state
+                .borrow_mut()
+                .fail_next_control_loss_response_after_commit = true;
+        }
+
+        fn fail_next_runtime_scope_response_after_commit(&self) {
+            self.state
+                .borrow_mut()
+                .fail_next_runtime_scope_response_after_commit = true;
         }
 
         fn set_authoritative_session(
@@ -1122,6 +1265,18 @@ mod tests {
             if session.state == GameSessionState::Terminal {
                 return Err(AdmissionError::Terminal);
             }
+            if session.state == GameSessionState::Reconnectable
+                && session.connection_generation == observed_generation
+                && session.current_transport.is_none()
+            {
+                return if state.last_control_losses.get(&game_session_id).copied()
+                    == Some((observed_transport, observed_generation))
+                {
+                    Ok(ControlLossDisposition::Applied)
+                } else {
+                    Ok(ControlLossDisposition::StaleIgnored)
+                };
+            }
             if session.current_transport != Some(observed_transport)
                 || session.connection_generation != observed_generation
             {
@@ -1135,6 +1290,9 @@ mod tests {
                     current_transport: None,
                 },
             );
+            state
+                .last_control_losses
+                .insert(game_session_id, (observed_transport, observed_generation));
             let prepared_keys: Vec<_> = state
                 .records
                 .iter()
@@ -1149,6 +1307,10 @@ mod tests {
                     .records
                     .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
                 state.bindings.remove(&key);
+            }
+            if state.fail_next_control_loss_response_after_commit {
+                state.fail_next_control_loss_response_after_commit = false;
+                return Err(AdmissionError::ReconciliationUnavailable);
             }
             Ok(ControlLossDisposition::Applied)
         }
@@ -1198,7 +1360,7 @@ mod tests {
             game_session_id: GameSessionId,
             expected_current: ScopeOwnershipGeneration,
             observed: ScopeOwnershipGeneration,
-        ) -> Result<(), AdmissionError> {
+        ) -> Result<ScopeOwnershipGeneration, AdmissionError> {
             let mut state = self.state.borrow_mut();
             let session = state
                 .authoritative_sessions
@@ -1213,12 +1375,17 @@ mod tests {
                 .get(&game_session_id)
                 .copied()
                 .ok_or(AdmissionError::ReconciliationUnavailable)?;
-            if fences.1 != expected_current || observed < expected_current {
+            let authoritative = fences.1;
+            if observed < expected_current {
                 return Err(AdmissionError::StaleRuntime);
             }
-            if observed == expected_current {
-                return Ok(());
+            if authoritative < expected_current {
+                return Err(AdmissionError::ReconciliationUnavailable);
             }
+            if authoritative >= observed {
+                return Ok(authoritative);
+            }
+
             state
                 .authoritative_fences
                 .insert(game_session_id, (fences.0, observed));
@@ -1237,7 +1404,11 @@ mod tests {
                     .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
                 state.bindings.remove(&key);
             }
-            Ok(())
+            if state.fail_next_runtime_scope_response_after_commit {
+                state.fail_next_runtime_scope_response_after_commit = false;
+                return Err(AdmissionError::ReconciliationUnavailable);
+            }
+            Ok(observed)
         }
 
         fn lookup(
@@ -1534,6 +1705,36 @@ mod tests {
     }
 
     #[test]
+    fn fresh_admission_replay_key_has_stable_durable_encoding() -> Result<(), AdmissionError> {
+        let facts = facts(0x0102_0304_0506_0708)?;
+        let key = facts.replay_key();
+        let encoded = key.to_bytes();
+        assert_eq!(encoded.len(), 33);
+        assert_eq!(encoded[0], FRESH_ADMISSION_REPLAY_KEY_TAG);
+        assert_eq!(FreshAdmissionReplayKey::decode(&encoded)?, key);
+        assert_eq!(key.trusted_issuer(), PRE_ADMISSION_TRUSTED_ISSUER);
+        assert_eq!(key.profile(), PRE_ADMISSION_PROFILE);
+
+        let mut wrong_tag = encoded;
+        wrong_tag[0] = 0xff;
+        assert_eq!(
+            FreshAdmissionReplayKey::decode(&wrong_tag),
+            Err(AdmissionError::InvalidFacts)
+        );
+        let mut zero_nonce = [0u8; 33];
+        zero_nonce[0] = FRESH_ADMISSION_REPLAY_KEY_TAG;
+        assert_eq!(
+            FreshAdmissionReplayKey::decode(&zero_nonce),
+            Err(AdmissionError::InvalidFacts)
+        );
+        assert_eq!(
+            FreshAdmissionReplayKey::decode(&encoded[..32]),
+            Err(AdmissionError::InvalidFacts)
+        );
+        Ok(())
+    }
+
+    #[test]
     fn reconnect_journal_serializes_distinct_prepares_per_session() -> Result<(), AdmissionError> {
         let journal = TestReconnectAttemptJournal::default();
         let session = game_session_id(9000)?;
@@ -1716,6 +1917,89 @@ mod tests {
                 .current()
                 .ok_or(AdmissionError::Terminal)?
                 .accepts_generation(first)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn control_loss_lost_response_reconciles_on_exact_retry() -> Result<(), AdmissionError> {
+        let journal = TestReconnectAttemptJournal::default();
+        let mut authority = AdmissionAuthority::new(journal.clone());
+        admit(&mut authority, 97, 9700, 100u64)?;
+        let generation_one =
+            ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        journal.fail_next_control_loss_response_after_commit();
+
+        assert_eq!(
+            authority.mark_unexpected_control_loss(100u64, generation_one),
+            Err(AdmissionError::ReconciliationUnavailable)
+        );
+        assert_eq!(authority.current_transport(), None);
+        assert_eq!(
+            authority.prepare_reconnect(
+                ReconnectAttemptRef::new(970)?,
+                generation_one,
+                200u64,
+                7,
+                11,
+            ),
+            Err(AdmissionError::ReconciliationUnavailable)
+        );
+
+        assert_eq!(
+            authority.mark_unexpected_control_loss(100u64, generation_one)?,
+            ControlLossDisposition::Applied
+        );
+        assert_eq!(authority.current_transport(), None);
+        assert_eq!(
+            authority.current().map(GameSession::state),
+            Some(GameSessionState::Reconnectable)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn runtime_scope_lost_response_reconciles_authoritative_generation()
+    -> Result<(), AdmissionError> {
+        let journal = TestReconnectAttemptJournal::default();
+        let mut authority = AdmissionAuthority::new(journal.clone());
+        admit(&mut authority, 98, 9800, 100u64)?;
+        let generation_eleven =
+            ScopeOwnershipGeneration::new(11).map_err(|_| AdmissionError::InvalidFacts)?;
+        let old_stamp = {
+            let session = authority.current.as_mut().ok_or(AdmissionError::Terminal)?;
+            let ordinal = session
+                .runtime_scope
+                .accept_input(generation_eleven)
+                .map_err(|_| AdmissionError::StaleRuntime)?;
+            session.runtime_scope.stamp(ordinal)
+        };
+        journal.fail_next_runtime_scope_response_after_commit();
+
+        assert_eq!(
+            authority.observe_runtime_ownership_generation(12),
+            Err(AdmissionError::ReconciliationUnavailable)
+        );
+        assert_eq!(
+            authority
+                .current()
+                .map(GameSession::runtime_scope_generation),
+            Some(generation_eleven)
+        );
+        assert!(
+            !authority
+                .current()
+                .ok_or(AdmissionError::Terminal)?
+                .runtime_scope
+                .accepts_stamp(old_stamp)
+        );
+
+        authority.observe_runtime_ownership_generation(12)?;
+        assert_eq!(
+            authority
+                .current()
+                .map(GameSession::runtime_scope_generation),
+            Some(ScopeOwnershipGeneration::new(12).map_err(|_| AdmissionError::InvalidFacts)?)
         );
         Ok(())
     }

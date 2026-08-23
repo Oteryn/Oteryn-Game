@@ -475,7 +475,11 @@ impl ScopeRuntimeFence {
 
     #[must_use]
     pub fn accepts_stamp(&self, stamp: RuntimeWorkStamp) -> bool {
-        stamp.generation == self.generation
+        self.next_ordinal.is_some() && stamp.generation == self.generation
+    }
+
+    fn invalidate(&mut self) {
+        self.next_ordinal = None;
     }
 
     pub fn apply_external_grant(
