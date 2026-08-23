@@ -6,9 +6,13 @@ mod admission {
 }
 mod admission_facade;
 mod protocol;
+mod snapshot_facade;
 pub use admission::*;
-pub use admission_facade::{AdmissionAuthority, ReconnectAttemptJournal};
+pub use admission_facade::{
+    AdmissionAuthority, ReconnectAttemptAuthoritySnapshot, ReconnectAttemptJournal,
+};
 pub use protocol::*;
+pub use snapshot_facade::SnapshotBarrier;
 
 use std::collections::BTreeSet;
 use std::error::Error;
