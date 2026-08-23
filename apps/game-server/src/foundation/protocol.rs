@@ -5,6 +5,8 @@ pub const PROTOCOL_MAJOR_V1: u32 = 1;
 pub const TRANSPORT_PROFILE_TCP_TLS13_V1: u32 = 1;
 pub const ALPN_OTERYN_GAME_V1: &str = "oteryn-game/1";
 pub const MAX_BOOTSTRAP_PAYLOAD_BYTES: usize = 65_536;
+pub const MAX_ADMISSION_MATERIAL_BYTES: usize = 16_384;
+pub const MAX_RECONNECT_MATERIAL_BYTES: usize = 16_384;
 pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
@@ -261,6 +263,39 @@ fn read_varint(input: &[u8], cursor: &mut usize) -> Result<u64, FoundationProtoc
     }
     Err(FoundationProtocolError::MalformedEnvelope)
 }
+fn validate_nested_material_bound(
+    payload: &[u8],
+    bounded_field: u32,
+    hard_maximum: usize,
+) -> Result<(), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = (key >> 3) as u32;
+        let wire = (key & 7) as u8;
+        if field == 0 {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        if field == bounded_field {
+            if wire != 2 {
+                return Err(FoundationProtocolError::MalformedEnvelope);
+            }
+            let len = usize::try_from(read_varint(payload, &mut cursor)?)
+                .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+            if len > hard_maximum {
+                return Err(FoundationProtocolError::BootstrapLimitExceeded);
+            }
+            cursor = cursor
+                .checked_add(len)
+                .filter(|end| *end <= payload.len())
+                .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+        } else {
+            skip_field(payload, &mut cursor, wire)?;
+        }
+    }
+    Ok(())
+}
+
 pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, FoundationProtocolError> {
     if input.is_empty() || input.len() > super::MAX_WIRE_FRAME_BYTES as usize {
         return Err(FoundationProtocolError::MalformedEnvelope);
@@ -305,9 +340,19 @@ pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, Founda
     if matches!(
         message_type,
         MessageType::ClientBootstrap | MessageType::ClientResume
-    ) && payload.len() > MAX_BOOTSTRAP_PAYLOAD_BYTES
-    {
-        return Err(FoundationProtocolError::BootstrapLimitExceeded);
+    ) {
+        if payload.len() > MAX_BOOTSTRAP_PAYLOAD_BYTES {
+            return Err(FoundationProtocolError::BootstrapLimitExceeded);
+        }
+        match message_type {
+            MessageType::ClientBootstrap => {
+                validate_nested_material_bound(payload, 5, MAX_ADMISSION_MATERIAL_BYTES)?;
+            }
+            MessageType::ClientResume => {
+                validate_nested_material_bound(payload, 2, MAX_RECONNECT_MATERIAL_BYTES)?;
+            }
+            _ => unreachable!("guarded by pre-admission message type check"),
+        }
     }
     Ok(WireEnvelopeView {
         message_type,
@@ -646,7 +691,10 @@ mod tests {
     #[test]
     fn bootstrap_payload_limit_accepts_65536_and_rejects_65537()
     -> Result<(), FoundationProtocolError> {
-        let mut accepted = vec![0x08, 0x01, 0x22, 0x80, 0x80, 0x04];
+        let mut accepted = vec![
+            0x08, 0x01, 0x22, 0x80, 0x80, 0x04,
+            0x82, 0x01, 0xfb, 0xff, 0x03,
+        ];
         accepted.resize(6 + 65_536, 0);
         assert_eq!(decode_wire_envelope(&accepted)?.payload().len(), 65_536);
 
@@ -664,6 +712,35 @@ mod tests {
             Err(FoundationProtocolError::BootstrapLimitExceeded)
         );
         Ok(())
+    }
+
+    #[test]
+    fn nested_admission_material_limit_accepts_16384() -> Result<(), FoundationProtocolError> {
+        let mut bootstrap = vec![0x08, 0x01, 0x22, 0x84, 0x80, 0x01, 0x2a, 0x80, 0x80, 0x01];
+        bootstrap.resize(10 + 16_384, 0);
+        assert_eq!(decode_wire_envelope(&bootstrap)?.payload().len(), 16_388);
+
+        let mut resume = vec![0x08, 0x03, 0x22, 0x84, 0x80, 0x01, 0x12, 0x80, 0x80, 0x01];
+        resume.resize(10 + 16_384, 0);
+        assert_eq!(decode_wire_envelope(&resume)?.payload().len(), 16_388);
+        Ok(())
+    }
+
+    #[test]
+    fn nested_admission_material_limit_rejects_16385_before_credential_work() {
+        let mut bootstrap = vec![0x08, 0x01, 0x22, 0x85, 0x80, 0x01, 0x2a, 0x81, 0x80, 0x01];
+        bootstrap.resize(10 + 16_385, 0);
+        assert_eq!(
+            decode_wire_envelope(&bootstrap),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
+
+        let mut resume = vec![0x08, 0x03, 0x22, 0x85, 0x80, 0x01, 0x12, 0x81, 0x80, 0x01];
+        resume.resize(10 + 16_385, 0);
+        assert_eq!(
+            decode_wire_envelope(&resume),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
     }
 
     #[test]
