@@ -6,6 +6,7 @@ use crate::foundation::{
     ReconnectAttemptRef, ReconnectCommitBinding, ScopeOwnershipGeneration, WorldId,
 };
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::rc::Rc;
 
 #[derive(Debug, Clone, Copy)]
@@ -19,9 +20,13 @@ struct DurableSession {
     scope_generation: ScopeOwnershipGeneration,
 }
 
+type AttemptKey = (GameSessionId, ReconnectAttemptRef);
+
 #[derive(Default)]
 struct RecoveryState {
     session: Option<DurableSession>,
+    dispositions: HashMap<AttemptKey, ReconnectAttemptDisposition>,
+    bindings: HashMap<AttemptKey, ReconnectCommitBinding<u64>>,
 }
 
 #[derive(Clone, Default)]
@@ -38,6 +43,21 @@ impl RecoveryJournal {
             .ok_or(AdmissionError::ReconciliationUnavailable)?
             .lease_generation = generation;
         Ok(())
+    }
+
+    fn commit_stored_attempt(
+        &self,
+        game_session_id: GameSessionId,
+        attempt: ReconnectAttemptRef,
+    ) -> Result<(), AdmissionError> {
+        let binding = self
+            .state
+            .borrow()
+            .bindings
+            .get(&(game_session_id, attempt))
+            .copied()
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        self.commit_prepared(game_session_id, attempt, binding)
     }
 }
 
@@ -84,19 +104,56 @@ impl ReconnectAttemptJournal<u64> for RecoveryJournal {
 
     fn mark_control_loss(
         &self,
-        _game_session_id: GameSessionId,
-        _observed_transport: u64,
-        _observed_generation: ConnectionGeneration,
+        game_session_id: GameSessionId,
+        observed_transport: u64,
+        observed_generation: ConnectionGeneration,
     ) -> Result<ControlLossDisposition, AdmissionError> {
-        Err(AdmissionError::ReconciliationUnavailable)
+        let mut state = self.state.borrow_mut();
+        let session = state
+            .session
+            .as_mut()
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        if session.commit.game_session_id() != game_session_id {
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
+        if session.state == GameSessionState::Terminal {
+            return Err(AdmissionError::Terminal);
+        }
+        if session.state == GameSessionState::Reconnectable
+            && session.connection_generation == observed_generation
+            && session.current_transport.is_none()
+        {
+            return Ok(ControlLossDisposition::Applied);
+        }
+        if session.state != GameSessionState::Active
+            || session.connection_generation != observed_generation
+            || session.current_transport != Some(observed_transport)
+        {
+            return Ok(ControlLossDisposition::StaleIgnored);
+        }
+        session.state = GameSessionState::Reconnectable;
+        session.current_transport = None;
+        Ok(ControlLossDisposition::Applied)
     }
 
     fn terminate_session(
         &self,
-        _game_session_id: GameSessionId,
-        _expected_generation: ConnectionGeneration,
+        game_session_id: GameSessionId,
+        expected_generation: ConnectionGeneration,
     ) -> Result<(), AdmissionError> {
-        Err(AdmissionError::ReconciliationUnavailable)
+        let mut state = self.state.borrow_mut();
+        let session = state
+            .session
+            .as_mut()
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        if session.commit.game_session_id() != game_session_id
+            || session.connection_generation != expected_generation
+        {
+            return Err(AdmissionError::StaleConnection);
+        }
+        session.state = GameSessionState::Terminal;
+        session.current_transport = None;
+        Ok(())
     }
 
     fn advance_runtime_scope(
@@ -127,45 +184,140 @@ impl ReconnectAttemptJournal<u64> for RecoveryJournal {
 
     fn lookup(
         &self,
-        _game_session_id: GameSessionId,
-        _attempt: ReconnectAttemptRef,
+        game_session_id: GameSessionId,
+        attempt: ReconnectAttemptRef,
     ) -> Result<Option<ReconnectAttemptDisposition>, AdmissionError> {
-        Ok(None)
+        Ok(self
+            .state
+            .borrow()
+            .dispositions
+            .get(&(game_session_id, attempt))
+            .copied())
     }
 
     fn claim_prepared(
         &self,
-        _game_session_id: GameSessionId,
-        _attempt: ReconnectAttemptRef,
-        _binding: ReconnectCommitBinding<u64>,
+        game_session_id: GameSessionId,
+        attempt: ReconnectAttemptRef,
+        binding: ReconnectCommitBinding<u64>,
     ) -> Result<ReconnectAttemptClaim, AdmissionError> {
-        Err(AdmissionError::ReconciliationUnavailable)
+        let mut state = self.state.borrow_mut();
+        let key = (game_session_id, attempt);
+        if let Some(disposition) = state.dispositions.get(&key).copied() {
+            return Ok(ReconnectAttemptClaim::Existing(disposition));
+        }
+        if state.dispositions.iter().any(|((session, _), disposition)| {
+            *session == game_session_id
+                && matches!(disposition, ReconnectAttemptDisposition::Prepared { .. })
+        }) {
+            state
+                .dispositions
+                .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+            return Ok(ReconnectAttemptClaim::RejectedConcurrent);
+        }
+        state.dispositions.insert(
+            key,
+            ReconnectAttemptDisposition::Prepared {
+                candidate_generation: binding.candidate_generation(),
+            },
+        );
+        state.bindings.insert(key, binding);
+        Ok(ReconnectAttemptClaim::Claimed)
     }
 
     fn retire_if_unseen(
         &self,
-        _game_session_id: GameSessionId,
-        _attempt: ReconnectAttemptRef,
+        game_session_id: GameSessionId,
+        attempt: ReconnectAttemptRef,
     ) -> Result<ReconnectAttemptDisposition, AdmissionError> {
-        Err(AdmissionError::ReconciliationUnavailable)
+        let mut state = self.state.borrow_mut();
+        let key = (game_session_id, attempt);
+        if let Some(disposition) = state.dispositions.get(&key).copied() {
+            return Ok(disposition);
+        }
+        state
+            .dispositions
+            .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+        Ok(ReconnectAttemptDisposition::TerminallySuperseded)
     }
 
     fn commit_prepared(
         &self,
-        _game_session_id: GameSessionId,
-        _attempt: ReconnectAttemptRef,
-        _binding: ReconnectCommitBinding<u64>,
+        game_session_id: GameSessionId,
+        attempt: ReconnectAttemptRef,
+        binding: ReconnectCommitBinding<u64>,
     ) -> Result<(), AdmissionError> {
-        Err(AdmissionError::ReconciliationUnavailable)
+        let mut state = self.state.borrow_mut();
+        let key = (game_session_id, attempt);
+        let disposition = state
+            .dispositions
+            .get(&key)
+            .copied()
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        if let ReconnectAttemptDisposition::Committed { generation } = disposition {
+            return if generation == binding.candidate_generation() {
+                Ok(())
+            } else {
+                Err(AdmissionError::StaleConnection)
+            };
+        }
+        if disposition == ReconnectAttemptDisposition::TerminallySuperseded
+            || state.bindings.get(&key).copied() != Some(binding)
+        {
+            return Err(AdmissionError::StaleConnection);
+        }
+
+        let session = state
+            .session
+            .as_mut()
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        if session.commit.game_session_id() != game_session_id
+            || session.state != GameSessionState::Reconnectable
+            || session.current_transport.is_some()
+            || session.connection_generation != binding.predecessor_generation()
+        {
+            return Err(AdmissionError::StaleConnection);
+        }
+        if session.lease_generation != binding.character_lease().generation() {
+            return Err(AdmissionError::StaleLease);
+        }
+        if session.scope_generation != binding.scope_generation() {
+            return Err(AdmissionError::StaleRuntime);
+        }
+
+        session.state = GameSessionState::Active;
+        session.connection_generation = binding.candidate_generation();
+        session.current_transport = Some(binding.candidate_transport());
+        state.dispositions.insert(
+            key,
+            ReconnectAttemptDisposition::Committed {
+                generation: binding.candidate_generation(),
+            },
+        );
+        Ok(())
     }
 
     fn retire_prepared(
         &self,
-        _game_session_id: GameSessionId,
-        _attempt: ReconnectAttemptRef,
-        _candidate_generation: ConnectionGeneration,
+        game_session_id: GameSessionId,
+        attempt: ReconnectAttemptRef,
+        candidate_generation: ConnectionGeneration,
     ) -> Result<(), AdmissionError> {
-        Err(AdmissionError::ReconciliationUnavailable)
+        let mut state = self.state.borrow_mut();
+        let key = (game_session_id, attempt);
+        match state.dispositions.get(&key).copied() {
+            Some(ReconnectAttemptDisposition::Prepared {
+                candidate_generation: current,
+            }) if current == candidate_generation => {
+                state
+                    .dispositions
+                    .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+                state.bindings.remove(&key);
+                Ok(())
+            }
+            Some(ReconnectAttemptDisposition::TerminallySuperseded) => Ok(()),
+            _ => Err(AdmissionError::ReconciliationUnavailable),
+        }
     }
 }
 
@@ -213,5 +365,44 @@ fn fresh_reconciliation_restores_current_runtime_and_lease_authority() -> Result
     assert_eq!(recovered_session.runtime_scope_generation().get(), 12);
     assert_eq!(recovered_session.character_lease().generation(), 8);
     assert_eq!(recovered_session.game_session_id(), session_id);
+    Ok(())
+}
+
+#[test]
+fn committed_reconnect_rehydrates_after_process_restart() -> Result<(), AdmissionError> {
+    let journal = RecoveryJournal::default();
+    let admission = facts(2)?;
+    let session_id = game_session_id(200)?;
+    let mut original = AdmissionAuthority::new(journal.clone());
+    original.commit_fresh(admission, 100, || Ok(session_id))?;
+    let generation_one = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+    assert_eq!(
+        original.mark_unexpected_control_loss(100, generation_one)?,
+        ControlLossDisposition::Applied
+    );
+    let attempt = ReconnectAttemptRef::new(2)?;
+    let generation_two = original.prepare_reconnect(attempt, generation_one, 200, 7, 11)?;
+
+    journal.commit_stored_attempt(session_id, attempt)?;
+    drop(original);
+
+    let mut recovered = AdmissionAuthority::new(journal.clone());
+    recovered.rehydrate_session(session_id)?;
+    assert_eq!(
+        recovered
+            .current()
+            .ok_or(AdmissionError::Terminal)?
+            .connection_generation(),
+        generation_two
+    );
+    assert_eq!(recovered.current_transport(), Some(200));
+    assert_eq!(
+        recovered.commit_reconnect(attempt, 201, 7, 11),
+        Err(AdmissionError::StaleConnection)
+    );
+    assert_eq!(
+        recovered.commit_reconnect(attempt, 200, 7, 11)?,
+        generation_two
+    );
     Ok(())
 }
