@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-23T16:10:24+02:00
+updated_at: 2026-08-23T16:25:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -243,3 +243,12 @@ This checkpoint supersedes the preceding continuation checkpoint for the current
 - `MERGE`: still prohibited until this repair is frozen/pushed as a new exact PR head, protected exact-head CI is green, every material thread is resolved on that head, and a genuinely independent exact-head review reports zero material findings.
 - `FINAL SELF-REVIEW`: PASS on the complete repair diff; zero open material findings. Same-class review added separate healthy-controller/terminal COMMIT races and explicit `Clone` prevention in addition to the original `Copy` regression.
 - `NEXT`: freeze/commit/push once, then do not move the head while fresh CI/review qualify it.
+
+## Main governance drift integration checkpoint ? 2026-08-23T16:25:00+02:00
+
+- `PROVEN`: frozen Foundation repair head `d729f3bdb461ad9171aac2b30e9bb9af2de0f49a` passed the complete local product gate and self-review, but exact-head Merge Authority Audit #172 failed before product inspection because its inherited repository policy still declared the superseded required status instead of `game-gate`.
+- `PROVEN`: canonical `main` advanced from `c4c407d096a3252fd2850abbd616944c97297ce6` to `099e147031ce9320586602b98c62df1c4311bbe8` via merged PR #69 (`ci(governance): promote stable game-gate`), which owns exactly that control-plane transition.
+- `AUTHORITY`: FOUNDATION does not hand-edit `.github/**` or repository policy. Current `main@099e147...` is merged into this branch as authoritative upstream state; the merge is conflict-free and imports only the PR #69 governance/workflow/policy files.
+- `QUALIFICATION`: all exact-head evidence on `d729f3b...` is now superseded by this necessary main-sync head. Product repair content is unchanged; full local gate, protected exact-head CI, thread verification and genuinely independent exact-head review must be rerun on the resulting merge commit.
+- `LOCAL POLICY BASELINE`: `validate_repository_policy.py` on this Windows checkout still fails only on untouched `LICENSE` newline normalization; `git diff origin/main -- LICENSE` is empty. Exact-head Linux Merge Authority/merge-gate validation is authoritative for this baseline-sensitive check.
+- `MERGE`: prohibited until the new exact head passes those gates.
