@@ -1,8 +1,13 @@
 //! Protocol/runtime authority primitives for the native Oteryn game server.
 
-mod admission;
+mod admission {
+    include!("admission.rs");
+    include!("admission_recovery_inner.rs");
+}
+mod admission_facade;
 mod protocol;
 pub use admission::*;
+pub use admission_facade::{AdmissionAuthority, ReconnectAttemptJournal};
 pub use protocol::*;
 
 use std::collections::BTreeSet;
