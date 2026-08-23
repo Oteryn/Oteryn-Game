@@ -1,10 +1,10 @@
 use crate::foundation::{
     AdmissionAuthority, AdmissionError, ChannelId, CharacterId, CharacterLease,
-    ConnectionGeneration, ControlLossDisposition, FreshAdmissionAuthoritySnapshot,
-    FreshAdmissionCommit, FreshAdmissionFacts, GameSessionAuthoritySnapshot, GameSessionId,
-    GameSessionState, ReconnectAttemptClaim, ReconnectAttemptDisposition,
-    ReconnectAttemptJournal, ReconnectAttemptRef, ReconnectCommitBinding, ScopeOwnershipGeneration,
-    SnapshotBarrier, WorldId,
+    ConnectionGeneration, ControlLossDisposition, FoundationProtocolError,
+    FreshAdmissionAuthoritySnapshot, FreshAdmissionCommit, FreshAdmissionFacts,
+    GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, ReconnectAttemptClaim,
+    ReconnectAttemptDisposition, ReconnectAttemptJournal, ReconnectAttemptRef,
+    ReconnectCommitBinding, ScopeOwnershipGeneration, SnapshotBarrier, WorldId,
 };
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -239,18 +239,16 @@ fn snapshot_body(domain_count: usize) -> Vec<u8> {
 }
 
 #[test]
-fn assembled_snapshot_body_rejects_more_than_256_state_domains() {
+fn assembled_snapshot_body_rejects_more_than_256_state_domains()
+-> Result<(), FoundationProtocolError> {
     let body = snapshot_body(257);
     let mut barrier = SnapshotBarrier::new();
-    barrier
-        .begin(1, 1, body.len() as u64, 10, 1)
-        .expect("bounded snapshot begin must succeed");
-    barrier
-        .chunk(1, 0, &body, 1)
-        .expect("bounded snapshot chunk must succeed");
+    barrier.begin(1, 1, body.len() as u64, 10, 1)?;
+    barrier.chunk(1, 0, &body, 1)?;
 
     assert_eq!(
         barrier.commit(1, 1),
-        Err(crate::foundation::FoundationProtocolError::SnapshotLimitExceeded)
+        Err(FoundationProtocolError::SnapshotLimitExceeded)
     );
+    Ok(())
 }
