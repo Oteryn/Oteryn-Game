@@ -283,6 +283,70 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
             .prepare_reconnect(attempt, predecessor, candidate_transport, lease, scope)
     }
 
+    fn revalidate_current_session_authority(&mut self) -> Result<(), core::AdmissionError> {
+        let (
+            game_session_id,
+            character_id,
+            world_id,
+            channel_id,
+            session_state,
+            connection_generation,
+            character_lease,
+            scope_generation,
+            current_transport,
+        ) = {
+            let session = self.core.current().ok_or(core::AdmissionError::Terminal)?;
+            (
+                session.game_session_id(),
+                session.character_id(),
+                session.world_id(),
+                session.channel_id(),
+                session.state(),
+                session.connection_generation(),
+                session.character_lease(),
+                session.runtime_scope_generation(),
+                self.core.current_transport(),
+            )
+        };
+
+        let snapshot = match self.core.journal().load_session(game_session_id) {
+            Ok(snapshot) => snapshot,
+            Err(error) => {
+                self.core.clear_process_projection();
+                return Err(error);
+            }
+        };
+        let committed = snapshot.commit();
+        if committed.game_session_id() != game_session_id
+            || committed.character_id() != character_id
+            || committed.world_id() != world_id
+            || committed.channel_id() != channel_id
+        {
+            self.core.clear_process_projection();
+            return Err(core::AdmissionError::ReconciliationUnavailable);
+        }
+        if snapshot.session_state() == core::GameSessionState::Terminal {
+            self.core.clear_process_projection();
+            return Err(core::AdmissionError::Terminal);
+        }
+        if snapshot.current_character_lease() != character_lease {
+            self.core.clear_process_projection();
+            return Err(core::AdmissionError::StaleLease);
+        }
+        if snapshot.current_scope_generation() != scope_generation {
+            self.core.clear_process_projection();
+            return Err(core::AdmissionError::StaleRuntime);
+        }
+        if snapshot.session_state() != session_state
+            || snapshot.current_connection_generation() != connection_generation
+            || snapshot.current_transport() != current_transport
+        {
+            self.core.clear_process_projection();
+            return Err(core::AdmissionError::StaleConnection);
+        }
+        Ok(())
+    }
+
     pub fn commit_reconnect(
         &mut self,
         attempt: core::ReconnectAttemptRef,
@@ -290,6 +354,12 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         lease: u64,
         scope: u64,
     ) -> Result<ConnectionGeneration, core::AdmissionError> {
+        // A recovered COMMITTED attempt may be replayed only while the durable
+        // GameSession binding still matches this process projection. Re-read the
+        // current fenced authority immediately before attempt reconciliation so
+        // a terminal/control-loss/new-controller transition that happened after
+        // rehydration cannot be masked by a stable COMMITTED journal outcome.
+        self.revalidate_current_session_authority()?;
         self.core
             .commit_reconnect(attempt, candidate_transport, lease, scope)
     }
