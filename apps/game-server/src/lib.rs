@@ -4,6 +4,10 @@
 
 pub mod foundation;
 
+#[cfg(test)]
+#[path = "foundation/recovery_tests.rs"]
+mod foundation_recovery_tests;
+
 use oteryn_foundation::CancellationToken;
 use oteryn_simulation_determinism::{SimulationDeterminismProfile, active_profile};
 use std::error::Error;
