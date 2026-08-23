@@ -84,7 +84,8 @@ impl ReconnectAttemptJournal<u64> for RollbackJournal {
         let game_session_id = issue_game_session_id()?;
         let commit =
             FreshAdmissionCommit::from_facts(game_session_id, facts, authenticated_transport)?;
-        let lease = CharacterLease::new(commit.character_id(), commit.character_lease_generation())?;
+        let lease =
+            CharacterLease::new(commit.character_id(), commit.character_lease_generation())?;
         let scope = ScopeOwnershipGeneration::new(commit.scope_ownership_generation())
             .map_err(|_| AdmissionError::InvalidFacts)?;
         state.session = Some(SessionState {
@@ -203,7 +204,9 @@ impl ReconnectAttemptJournal<u64> for RollbackJournal {
         attempt: ReconnectAttemptRef,
     ) -> Result<Option<ReconnectAttemptDisposition>, AdmissionError> {
         let state = self.state.borrow();
-        Ok((state.attempt == Some(attempt)).then_some(state.disposition).flatten())
+        Ok((state.attempt == Some(attempt))
+            .then_some(state.disposition)
+            .flatten())
     }
 
     fn claim_prepared(
