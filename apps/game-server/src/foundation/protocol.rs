@@ -9,9 +9,12 @@ pub const MAX_ADMISSION_MATERIAL_BYTES: usize = 16_384;
 pub const MAX_RECONNECT_MATERIAL_BYTES: usize = 16_384;
 pub const MAX_CLIENT_BUILD_ID_BYTES: usize = 128;
 pub const MAX_CAPABILITY_COUNT: usize = 128;
+pub const MAX_ORDINARY_REPEATED_ENTRIES: usize = 4_096;
 pub const MAX_COMMAND_EXPECTED_REVISIONS: usize = 64;
 pub const MAX_COMMAND_PAYLOAD_BYTES: usize = 65_536;
+pub const MAX_COMMAND_RESULT_PAYLOAD_BYTES: usize = 65_536;
 pub const MAX_STATE_DOMAINS_PER_SYNC: usize = 256;
+pub const MAX_STATE_DELTA_PAYLOAD_BYTES: usize = 262_144;
 pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
@@ -511,6 +514,136 @@ fn validate_resync_request_ingress(payload: &[u8]) -> Result<(), FoundationProto
     Ok(())
 }
 
+fn validate_server_capabilities_ingress(
+    message_type: MessageType,
+    payload: &[u8],
+) -> Result<(), FoundationProtocolError> {
+    let capabilities_field = match message_type {
+        MessageType::ServerAccepted => 10u32,
+        MessageType::ServerResumeAccepted => 6u32,
+        _ => return Ok(()),
+    };
+    let mut cursor = 0usize;
+    let mut capability_count = 0usize;
+    let mut previous_capability = None;
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        if field == capabilities_field {
+            validate_capability_field(
+                payload,
+                &mut cursor,
+                wire,
+                &mut capability_count,
+                &mut previous_capability,
+            )?;
+        } else {
+            skip_field(payload, &mut cursor, wire)?;
+        }
+    }
+    Ok(())
+}
+
+fn validate_command_result_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    let mut revision_count = 0usize;
+    let mut seen_domains = BTreeSet::new();
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match (field, wire) {
+            (4, 2) => validate_revision_list(
+                payload,
+                &mut cursor,
+                &mut revision_count,
+                MAX_ORDINARY_REPEATED_ENTRIES,
+                &mut seen_domains,
+            )?,
+            (5, 2) => {
+                bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    MAX_COMMAND_RESULT_PAYLOAD_BYTES,
+                    FoundationProtocolError::PayloadLimitExceeded,
+                )?;
+            }
+            (4 | 5, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
+            (_, unknown_wire) => skip_field(payload, &mut cursor, unknown_wire)?,
+        }
+    }
+    Ok(())
+}
+
+fn validate_state_delta_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match (field, wire) {
+            (5, 2) => {
+                bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    MAX_STATE_DELTA_PAYLOAD_BYTES,
+                    FoundationProtocolError::PayloadLimitExceeded,
+                )?;
+            }
+            (5, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
+            (_, unknown_wire) => skip_field(payload, &mut cursor, unknown_wire)?,
+        }
+    }
+    Ok(())
+}
+
+fn validate_snapshot_begin_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match (field, wire) {
+            (2, 0) => {
+                if read_varint(payload, &mut cursor)? > u64::from(MAX_SNAPSHOT_CHUNKS) {
+                    return Err(FoundationProtocolError::SnapshotLimitExceeded);
+                }
+            }
+            (3, 0) => {
+                if read_varint(payload, &mut cursor)? > MAX_SNAPSHOT_ASSEMBLED_BYTES {
+                    return Err(FoundationProtocolError::SnapshotLimitExceeded);
+                }
+            }
+            (2 | 3, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
+            (_, unknown_wire) => skip_field(payload, &mut cursor, unknown_wire)?,
+        }
+    }
+    Ok(())
+}
+
+fn validate_snapshot_chunk_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
+    let mut cursor = 0usize;
+    while cursor < payload.len() {
+        let key = read_varint(payload, &mut cursor)?;
+        let field = decode_field_number(key)?;
+        let wire = (key & 7) as u8;
+        match (field, wire) {
+            (3, 2) => {
+                bounded_length_delimited(
+                    payload,
+                    &mut cursor,
+                    MAX_SNAPSHOT_CHUNK_BYTES,
+                    FoundationProtocolError::SnapshotLimitExceeded,
+                )?;
+            }
+            (3, _) | (0, _) => return Err(FoundationProtocolError::MalformedEnvelope),
+            (_, unknown_wire) => skip_field(payload, &mut cursor, unknown_wire)?,
+        }
+    }
+    Ok(())
+}
+
 fn validate_client_ingress_payload(
     message_type: MessageType,
     payload: &[u8],
@@ -521,6 +654,22 @@ fn validate_client_ingress_payload(
         }
         MessageType::ClientCommand => validate_client_command_ingress(payload),
         MessageType::ResyncRequest => validate_resync_request_ingress(payload),
+        _ => Ok(()),
+    }
+}
+
+fn validate_server_ingress_payload(
+    message_type: MessageType,
+    payload: &[u8],
+) -> Result<(), FoundationProtocolError> {
+    match message_type {
+        MessageType::ServerAccepted | MessageType::ServerResumeAccepted => {
+            validate_server_capabilities_ingress(message_type, payload)
+        }
+        MessageType::CommandResult => validate_command_result_ingress(payload),
+        MessageType::StateDelta => validate_state_delta_ingress(payload),
+        MessageType::SnapshotBegin => validate_snapshot_begin_ingress(payload),
+        MessageType::SnapshotChunk => validate_snapshot_chunk_ingress(payload),
         _ => Ok(()),
     }
 }
@@ -573,7 +722,10 @@ pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, Founda
     {
         return Err(FoundationProtocolError::BootstrapLimitExceeded);
     }
-    validate_client_ingress_payload(message_type, payload)?;
+    match message_type.direction() {
+        Direction::ClientToServer => validate_client_ingress_payload(message_type, payload)?,
+        Direction::ServerToClient => validate_server_ingress_payload(message_type, payload)?,
+    }
     Ok(WireEnvelopeView {
         message_type,
         connection_generation: generation.unwrap_or(0),
