@@ -495,7 +495,12 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
                 .binding()
                 .ok_or(core::AdmissionError::ReconciliationUnavailable)?;
             if binding.candidate_transport() != candidate_transport {
-                return Err(core::AdmissionError::AttemptMismatch);
+                return match disposition {
+                    Some(core::ReconnectAttemptDisposition::Committed { .. }) => {
+                        Err(core::AdmissionError::StaleConnection)
+                    }
+                    _ => Err(core::AdmissionError::AttemptMismatch),
+                };
             }
         }
         Ok(disposition)
