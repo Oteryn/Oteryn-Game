@@ -451,6 +451,10 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         s.state = GameSessionState::Active;
         self.prepared = None;
         self.current_transport = Some(candidate_transport);
+        // Only the currently replayable committed winner needs a retained success
+        // outcome. Any older attempt is terminally superseded by this newer
+        // connection generation and must not retain per-attempt memory forever.
+        self.committed_attempts.clear();
         self.committed_attempts.insert(
             attempt,
             CommittedReconnect {
@@ -687,12 +691,33 @@ mod tests {
 
         assert_eq!(
             authority.commit_reconnect(attempt_a, 200u64, 7, 11),
-            Err(AdmissionError::StaleConnection)
+            Err(AdmissionError::AttemptMismatch)
         );
         assert_eq!(
             authority.prepare_reconnect(attempt_a, generation_three, 200u64, 7, 11),
-            Err(AdmissionError::StaleConnection)
+            Err(AdmissionError::IncumbentHealthy)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn committed_reconnect_reconciliation_retains_only_current_winner() -> Result<(), AdmissionError>
+    {
+        let mut authority = AdmissionAuthority::new();
+        admit(&mut authority, 31, 3100, 100u64)?;
+        let mut predecessor =
+            ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        for (attempt_raw, transport) in [(41u64, 200u64), (42u64, 300u64), (43u64, 400u64)] {
+            authority.mark_unexpected_control_loss()?;
+            let attempt = ReconnectAttemptRef::new(attempt_raw)?;
+            let candidate = authority.prepare_reconnect(attempt, predecessor, transport, 7, 11)?;
+            assert_eq!(
+                authority.commit_reconnect(attempt, transport, 7, 11)?,
+                candidate
+            );
+            predecessor = candidate;
+            assert_eq!(authority.committed_attempts.len(), 1);
+        }
         Ok(())
     }
 

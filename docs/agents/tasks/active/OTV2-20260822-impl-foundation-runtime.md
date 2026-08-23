@@ -90,7 +90,7 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: PASS - 54 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
+- result: PASS - 56 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
@@ -102,7 +102,7 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - superseded exact-head evidence on `1ab4cd3...`: Merge Gate #196 / run `32602950356`, Architecture Semantic Audit #170 / `32602950354`, Agent Governance #232 / `32602950353`, Merge Authority Audit #148 / `32602950360` - SUCCESS before the issuer-boundary self-review repair
 - superseded issuer-boundary PR head: `959d083cee9a03a71ac8d5eca54fc897ed372189`
 - superseded exact-head evidence on `959d083...`: Merge Gate #204 / run `32626162871` SUCCESS plus Architecture Semantic Audit #176 / `32626124677`, Agent Governance #240/#241, Merge Authority Audit #153; later #203/#205 were cancelled lifecycle reruns
-- final FND-02 ingress-limit code tree: pending freeze commit
+- final review-repair code tree: pending freeze commit
 - classification: high-risk foundation
 - result: pending fresh exact-head CI; all `959d083...` CI/review evidence is superseded by the material ingress-limit repair
 
@@ -125,6 +125,12 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - final FND-02 repair: a zero-copy ingress validator enforces outer bootstrap 65,536 plus nested material 16,384, build-id 128/UTF-8, capability 128 sorted/unique, command payload 65,536, command expected revisions 64 unique, and resync domains 256 unique before deep parse/materialization; bounded domain sets never exceed the registered count
 - matrix classification: server-receive repeated fields have specific ceilings lower than `FND02-ORDINARY-REPEATED-ENTRIES=4096`; parsed nested `StateRevision` is non-recursive and therefore below depth 32; server-outbound CommandResult/StateDelta/Snapshot limits remain covered by their existing producer/barrier primitives rather than peer-ingress allocation paths
 - repaired-tree method: full diff review against FND-ID/FND-02/FND-03/FND-04 and Resource Limits Registry, focused/package/workspace tests, strict Clippy, fmt, governance and diff check - all PASS before freeze
+- fifth/current independent Codex review on `bfd43c6e24e75534cc574df8b7161df736939f4d`: REQUEST_CHANGES - 1 P1 + 2 P2; all three reproduced with focused RED regressions before production changes
+- P1 repair: every custom protobuf scanner now validates the legal field-number range `1..=2^29-1` before any narrowing, preventing out-of-range keys from aliasing authority-relevant envelope/bootstrap/command/resync/StateRevision fields
+- P2 build-id repair: the accepted 128-byte `client_build_id` ceiling now rejects 129 bytes as `MALFORMED_ENVELOPE` / `INVALID_INPUT`, matching `FND02-CLIENT-BUILD-ID-BYTES` instead of misclassifying it as capacity exhaustion
+- P2 reconnect-retention repair: successful reconnect reconciliation retains only the currently replayable committed winner; each newer committed generation terminally supersedes older attempt outcomes, keeping in-process retention constant-size without inventing a deferred registry number while preserving exact-current-transport/current-generation lost-response replay
+- fifth-cycle RED evidence: focused Foundation run had exactly 3 failures (illegal protobuf field-number alias accepted, 129-byte build-id returned `BootstrapLimitExceeded`, reconnect committed-attempt map grew to 2); the other 50 tests passed
+- fifth-cycle GREEN evidence after scoped repair: Foundation 53/53 PASS; game-server 56/56 PASS; full workspace PASS; strict Clippy PASS; scoped rustfmt PASS; governance PASS; diff-check PASS
 - open material findings: 0 locally; fresh independent exact-head review still mandatory
 - verdict: PASS for self-review only
 
@@ -138,19 +144,21 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - owner authorization: explicit and bounded to PR #59 independent review plus autonomous repair/re-review/merge/closeout cycle
 - superseded FND-ID product-code head: `99786226bf988840daa0bcde55d8f90f4d744561`
 - superseded issuer-boundary PR head: `959d083cee9a03a71ac8d5eca54fc897ed372189` - REQUEST_CHANGES, 1 P1 nested ingress limit; repaired
-- final ingress-limit product-code head: pending freeze commit
+- superseded ingress/resource-matrix head `bfd43c6e24e75534cc574df8b7161df736939f4d`: REQUEST_CHANGES on fresh Codex review - 1 P1 illegal protobuf field-number narrowing, 1 P2 build-id failure-category mismatch, 1 P2 unbounded retained reconnect-attempt outcomes
+- all three `bfd43c6e...` findings were reproduced RED and repaired without contract/registry/workflow/new-crate mutation; exact repair head is pending freeze commit
+- final product-code/task head: pending freeze commit
 - final PR head: pending freeze commit
-- verdict: pending fresh genuinely independent exact-head review after this material repair
+- verdict: pending fresh genuinely independent exact-head review after this material three-finding repair
 
 ## Context checkpoint
 
 ```yaml
-last_progress: issuer-boundary head 959d083 passed an exact-head Merge Gate run but fresh Codex review found one P1: nested admission/reconnect material could exceed 16,384 bytes under the 65,536-byte outer bootstrap limit. RED reproduced it. The zero-copy fix is GREEN. A same-class Resource Limits matrix audit then added RED/GREEN coverage for build-id/capabilities, ClientCommand payload+expected revisions and ResyncRequest domains. Foundation 51/51, game-server 54/54, workspace, strict Clippy, fmt, governance and diff-check are green.
+last_progress: Fresh Codex review of bfd43c6e found three material issues (P1 illegal protobuf field-number narrowing; P2 build-id error-category mismatch; P2 unbounded reconnect-attempt outcome retention). Focused RED reproduced exactly those three failures with the other 50 Foundation tests passing. The scoped repair is GREEN: Foundation 53/53, game-server 56/56, full workspace, strict Clippy, scoped rustfmt, governance and diff-check all pass.
 status: review_pending
 branch: agent/otv2-impl-foundation-runtime-01
-head_sha: pending-ingress-limit-freeze
+head_sha: pending-final-review-repair-freeze
 pr: 59
-blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the material FND-02 ingress-limit repair
+blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the material three-finding repair; all three bfd43c6e review threads must be resolved against the frozen repair SHA
 owner_action_required: null
-next_action: freeze and push the complete server-ingress limit repair, resolve the superseded P1 thread, then obtain fresh exact-head CI and already-authorized Codex review; merge only with zero material findings.
+next_action: freeze source plus task record in one commit, verify remote has not moved, fast-forward push, reply/resolve the three bfd43c6e findings with RED/GREEN evidence, then obtain fresh exact-head CI and independent review; merge only with zero unresolved material findings.
 ```

@@ -268,6 +268,19 @@ fn read_varint(input: &[u8], cursor: &mut usize) -> Result<u64, FoundationProtoc
     }
     Err(FoundationProtocolError::MalformedEnvelope)
 }
+const MAX_PROTOBUF_FIELD_NUMBER: u64 = (1u64 << 29) - 1;
+
+fn read_field_key(input: &[u8], cursor: &mut usize) -> Result<(u32, u8), FoundationProtocolError> {
+    let key = read_varint(input, cursor)?;
+    let raw_field = key >> 3;
+    if !(1..=MAX_PROTOBUF_FIELD_NUMBER).contains(&raw_field) {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    let field = u32::try_from(raw_field).map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+    let wire = (key & 7) as u8;
+    Ok((field, wire))
+}
+
 fn bounded_length_delimited<'a>(
     input: &'a [u8],
     cursor: &mut usize,
@@ -347,9 +360,7 @@ fn parse_state_revision_domain_id(input: &[u8]) -> Result<u32, FoundationProtoco
     let mut cursor = 0usize;
     let mut domain_id = None;
     while cursor < input.len() {
-        let key = read_varint(input, &mut cursor)?;
-        let field = (key >> 3) as u32;
-        let wire = (key & 7) as u8;
+        let (field, wire) = read_field_key(input, &mut cursor)?;
         match (field, wire) {
             (1, 0) if domain_id.is_none() => {
                 let raw = read_varint(input, &mut cursor)?;
@@ -404,9 +415,7 @@ fn validate_bootstrap_ingress(
     let mut capability_count = 0usize;
     let mut previous_capability = None;
     while cursor < payload.len() {
-        let key = read_varint(payload, &mut cursor)?;
-        let field = (key >> 3) as u32;
-        let wire = (key & 7) as u8;
+        let (field, wire) = read_field_key(payload, &mut cursor)?;
         if field == 0 {
             return Err(FoundationProtocolError::MalformedEnvelope);
         }
@@ -436,7 +445,7 @@ fn validate_bootstrap_ingress(
                 payload,
                 &mut cursor,
                 MAX_CLIENT_BUILD_ID_BYTES,
-                FoundationProtocolError::BootstrapLimitExceeded,
+                FoundationProtocolError::MalformedEnvelope,
             )?;
             std::str::from_utf8(build_id)
                 .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
@@ -452,9 +461,7 @@ fn validate_client_command_ingress(payload: &[u8]) -> Result<(), FoundationProto
     let mut revision_count = 0usize;
     let mut seen_domains = BTreeSet::new();
     while cursor < payload.len() {
-        let key = read_varint(payload, &mut cursor)?;
-        let field = (key >> 3) as u32;
-        let wire = (key & 7) as u8;
+        let (field, wire) = read_field_key(payload, &mut cursor)?;
         match (field, wire) {
             (3, 2) => validate_revision_list(
                 payload,
@@ -483,9 +490,7 @@ fn validate_resync_request_ingress(payload: &[u8]) -> Result<(), FoundationProto
     let mut revision_count = 0usize;
     let mut seen_domains = BTreeSet::new();
     while cursor < payload.len() {
-        let key = read_varint(payload, &mut cursor)?;
-        let field = (key >> 3) as u32;
-        let wire = (key & 7) as u8;
+        let (field, wire) = read_field_key(payload, &mut cursor)?;
         match (field, wire) {
             (2, 2) => validate_revision_list(
                 payload,
@@ -522,9 +527,7 @@ pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, Founda
     let (mut cursor, mut mt, mut generation, mut sequence, mut payload) =
         (0usize, None, None, None, None);
     while cursor < input.len() {
-        let key = read_varint(input, &mut cursor)?;
-        let field = (key >> 3) as u32;
-        let wire = (key & 7) as u8;
+        let (field, wire) = read_field_key(input, &mut cursor)?;
         match (field, wire) {
             (1, 0) if mt.is_none() => {
                 mt = Some(
@@ -945,7 +948,7 @@ mod tests {
         payload.extend_from_slice(&build_129);
         assert_eq!(
             decode_wire_envelope(&test_envelope(1, &payload)),
-            Err(FoundationProtocolError::BootstrapLimitExceeded)
+            Err(FoundationProtocolError::MalformedEnvelope)
         );
 
         let invalid_utf8 = [0x3a, 0x01, 0xff];
@@ -960,7 +963,7 @@ mod tests {
         resume_payload.extend_from_slice(&resume_build_129);
         assert_eq!(
             decode_wire_envelope(&test_envelope(3, &resume_payload)),
-            Err(FoundationProtocolError::BootstrapLimitExceeded)
+            Err(FoundationProtocolError::MalformedEnvelope)
         );
 
         let mut packed = Vec::new();
@@ -1153,6 +1156,59 @@ mod tests {
         assert_eq!(
             decode_wire_envelope(&resume),
             Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn illegal_protobuf_field_numbers_fail_closed_before_aliasing()
+    -> Result<(), FoundationProtocolError> {
+        fn keyed(field: usize, wire: usize) -> Vec<u8> {
+            test_varint((field << 3) | wire)
+        }
+
+        // A field number above u32::MAX used to wrap to canonical envelope fields 1 and 4.
+        let mut envelope = keyed((1usize << 32) + 1, 0);
+        envelope.push(1);
+        envelope.extend(keyed((1usize << 32) + 4, 2));
+        envelope.push(0);
+        assert_eq!(
+            decode_wire_envelope(&envelope),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+
+        // The same narrowing must not alias authority-relevant nested bootstrap fields.
+        let mut bootstrap = keyed((1usize << 32) + 7, 2);
+        bootstrap.push(1);
+        bootstrap.push(b'a');
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(1, &bootstrap)),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+
+        // Nor ClientCommand payload or ResyncRequest revision-list fields.
+        let mut command = keyed((1usize << 32) + 4, 2);
+        command.push(0);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(7, &command)),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+        let mut resync = keyed((1usize << 32) + 2, 2);
+        resync.push(0);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(10, &resync)),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+
+        // And a nested StateRevision cannot alias domain_id with an illegal field number.
+        let mut revision = keyed((1usize << 32) + 1, 0);
+        revision.push(1);
+        let mut command = vec![0x1a];
+        command.extend(test_varint(revision.len()));
+        command.extend(revision);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(7, &command)),
+            Err(FoundationProtocolError::MalformedEnvelope)
         );
         Ok(())
     }
