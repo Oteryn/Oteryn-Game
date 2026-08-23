@@ -237,6 +237,10 @@ impl<T: Copy + Eq> ReconnectAttemptTracker<T> {
     }
 
     fn reserve_new(&mut self, attempt: ReconnectAttemptRef) -> Result<(), AdmissionError> {
+        self.retire_new(attempt)
+    }
+
+    fn retire_new(&mut self, attempt: ReconnectAttemptRef) -> Result<(), AdmissionError> {
         if attempt.get() <= self.high_watermark {
             return Err(AdmissionError::StaleConnection);
         }
@@ -254,7 +258,7 @@ impl<T: Copy + Eq> ReconnectAttemptTracker<T> {
         generation: ConnectionGeneration,
         transport: T,
     ) {
-        debug_assert_eq!(attempt.get(), self.high_watermark);
+        debug_assert!(attempt.get() <= self.high_watermark);
         self.latest_committed = Some(CommittedReconnect {
             attempt,
             generation,
@@ -425,7 +429,8 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
             if let Some(generation) = self.committed_attempt_replay(attempt, candidate_transport)? {
                 return Ok(generation);
             }
-            return Err(AdmissionError::AttemptMismatch);
+            self.committed_attempts.retire_new(attempt)?;
+            return Err(AdmissionError::StaleConnection);
         }
         if let Some(generation) = self.committed_attempt_replay(attempt, candidate_transport)? {
             return Ok(generation);
@@ -970,6 +975,33 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn rejected_concurrent_reconnect_ref_is_terminally_retired() -> Result<(), AdmissionError> {
+        let mut authority = AdmissionAuthority::new();
+        admit(&mut authority, 72, 7200, 100u64)?;
+        authority.mark_unexpected_control_loss()?;
+        let generation_one =
+            ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        let attempt_b = ReconnectAttemptRef::new(90)?;
+        let attempt_c = ReconnectAttemptRef::new(91)?;
+        let generation_two =
+            authority.prepare_reconnect(attempt_b, generation_one, 200u64, 7, 11)?;
+
+        assert_eq!(
+            authority.prepare_reconnect(attempt_c, generation_one, 300u64, 7, 11),
+            Err(AdmissionError::StaleConnection)
+        );
+        assert_eq!(
+            authority.commit_reconnect(attempt_b, 200u64, 7, 11)?,
+            generation_two
+        );
+        authority.mark_unexpected_control_loss()?;
+        assert_eq!(
+            authority.prepare_reconnect(attempt_c, generation_two, 300u64, 7, 11),
+            Err(AdmissionError::StaleConnection)
+        );
+        Ok(())
+    }
     #[test]
     fn lost_commit_response_reconciliation_is_idempotent() -> Result<(), AdmissionError> {
         let mut authority = AdmissionAuthority::new();
