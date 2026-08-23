@@ -46,6 +46,18 @@ impl RecoveryJournal {
         Ok(())
     }
 
+    fn set_current_scope(&self, generation: u64) -> Result<(), AdmissionError> {
+        let generation = ScopeOwnershipGeneration::new(generation)
+            .map_err(|_| AdmissionError::InvalidFacts)?;
+        self.state
+            .borrow_mut()
+            .session
+            .as_mut()
+            .ok_or(AdmissionError::ReconciliationUnavailable)?
+            .scope_generation = generation;
+        Ok(())
+    }
+
     fn commit_stored_attempt(
         &self,
         game_session_id: GameSessionId,
@@ -385,11 +397,16 @@ fn fresh_reconciliation_restores_current_runtime_and_lease_authority() -> Result
     original.observe_runtime_ownership_generation(12)?;
     journal.set_current_lease(8)?;
     drop(original);
+    journal.advance_runtime_scope(
+        session_id,
+        ScopeOwnershipGeneration::new(12).map_err(|_| AdmissionError::InvalidFacts)?,
+        ScopeOwnershipGeneration::new(13).map_err(|_| AdmissionError::InvalidFacts)?,
+    )?;
 
     let mut recovered = AdmissionAuthority::new(journal.clone());
     let recovered_session = recovered.commit_fresh(admission, 100, || game_session_id(101))?;
 
-    assert_eq!(recovered_session.runtime_scope_generation().get(), 12);
+    assert_eq!(recovered_session.runtime_scope_generation().get(), 13);
     assert_eq!(recovered_session.character_lease().generation(), 8);
     assert_eq!(recovered_session.game_session_id(), session_id);
     Ok(())
@@ -412,24 +429,92 @@ fn committed_reconnect_rehydrates_after_process_restart() -> Result<(), Admissio
 
     journal.commit_stored_attempt(session_id, attempt)?;
     drop(original);
+    journal.advance_runtime_scope(
+        session_id,
+        ScopeOwnershipGeneration::new(11).map_err(|_| AdmissionError::InvalidFacts)?,
+        ScopeOwnershipGeneration::new(12).map_err(|_| AdmissionError::InvalidFacts)?,
+    )?;
 
     let mut recovered = AdmissionAuthority::new(journal.clone());
-    recovered.rehydrate_session(session_id)?;
-    assert_eq!(
-        recovered
-            .current()
-            .ok_or(AdmissionError::Terminal)?
-            .connection_generation(),
-        generation_two
-    );
+    let recovered_session = recovered.rehydrate_session(session_id)?;
+    assert_eq!(recovered_session.runtime_scope_generation().get(), 12);
+    assert_eq!(recovered_session.connection_generation(), generation_two);
     assert_eq!(recovered.current_transport(), Some(200));
     assert_eq!(
-        recovered.commit_reconnect(attempt, 201, 7, 11),
+        recovered.commit_reconnect(attempt, 201, 7, 12),
         Err(AdmissionError::StaleConnection)
     );
     assert_eq!(
-        recovered.commit_reconnect(attempt, 200, 7, 11)?,
+        recovered.commit_reconnect(attempt, 200, 7, 12)?,
         generation_two
     );
+    Ok(())
+}
+
+#[test]
+fn rehydrate_missing_session_fails_closed() -> Result<(), AdmissionError> {
+    let journal = RecoveryJournal::default();
+    let mut recovered = AdmissionAuthority::new(journal);
+    assert!(matches!(
+        recovered.rehydrate_session(game_session_id(300)?),
+        Err(AdmissionError::ReconciliationUnavailable)
+    ));
+    Ok(())
+}
+
+#[test]
+fn rehydrate_terminal_session_cannot_revive_control() -> Result<(), AdmissionError> {
+    let journal = RecoveryJournal::default();
+    let admission = facts(3)?;
+    let session_id = game_session_id(301)?;
+    let mut original = AdmissionAuthority::new(journal.clone());
+    original.commit_fresh(admission, 100, || Ok(session_id))?;
+    journal.terminate_session(
+        session_id,
+        ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?,
+    )?;
+    drop(original);
+
+    let mut recovered = AdmissionAuthority::new(journal);
+    assert!(matches!(
+        recovered.rehydrate_session(session_id),
+        Err(AdmissionError::Terminal)
+    ));
+    Ok(())
+}
+
+#[test]
+fn rehydrate_rejects_rolled_back_character_lease() -> Result<(), AdmissionError> {
+    let journal = RecoveryJournal::default();
+    let admission = facts(4)?;
+    let session_id = game_session_id(302)?;
+    let mut original = AdmissionAuthority::new(journal.clone());
+    original.commit_fresh(admission, 100, || Ok(session_id))?;
+    journal.set_current_lease(6)?;
+    drop(original);
+
+    let mut recovered = AdmissionAuthority::new(journal);
+    assert!(matches!(
+        recovered.rehydrate_session(session_id),
+        Err(AdmissionError::StaleLease)
+    ));
+    Ok(())
+}
+
+#[test]
+fn rehydrate_rejects_rolled_back_runtime_generation() -> Result<(), AdmissionError> {
+    let journal = RecoveryJournal::default();
+    let admission = facts(5)?;
+    let session_id = game_session_id(303)?;
+    let mut original = AdmissionAuthority::new(journal.clone());
+    original.commit_fresh(admission, 100, || Ok(session_id))?;
+    journal.set_current_scope(10)?;
+    drop(original);
+
+    let mut recovered = AdmissionAuthority::new(journal);
+    assert!(matches!(
+        recovered.rehydrate_session(session_id),
+        Err(AdmissionError::StaleRuntime)
+    ));
     Ok(())
 }
