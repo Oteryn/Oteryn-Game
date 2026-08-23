@@ -149,12 +149,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
         attempt: core::ReconnectAttemptRef,
         binding: core::ReconnectCommitBinding<T>,
     ) -> Result<core::ReconnectAttemptClaim, core::AdmissionError> {
-        <J as ReconnectAttemptJournal<T>>::claim_prepared(
-            self,
-            game_session_id,
-            attempt,
-            binding,
-        )
+        <J as ReconnectAttemptJournal<T>>::claim_prepared(self, game_session_id, attempt, binding)
     }
 
     fn retire_if_unseen(
@@ -171,12 +166,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
         attempt: core::ReconnectAttemptRef,
         binding: core::ReconnectCommitBinding<T>,
     ) -> Result<(), core::AdmissionError> {
-        <J as ReconnectAttemptJournal<T>>::commit_prepared(
-            self,
-            game_session_id,
-            attempt,
-            binding,
-        )
+        <J as ReconnectAttemptJournal<T>>::commit_prepared(self, game_session_id, attempt, binding)
     }
 
     fn retire_prepared(
@@ -252,7 +242,8 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         game_session_id: core::GameSessionId,
     ) -> Result<&core::GameSession, core::AdmissionError> {
         let snapshot = self.core.journal().load_session(game_session_id)?;
-        self.core.install_rehydrated_session(game_session_id, snapshot)
+        self.core
+            .install_rehydrated_session(game_session_id, snapshot)
     }
 
     pub fn terminate_current(&mut self) -> Result<(), core::AdmissionError> {
