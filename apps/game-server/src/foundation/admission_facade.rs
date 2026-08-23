@@ -1,5 +1,7 @@
 use super::admission as core;
-use super::{ConnectionGeneration, GameSessionAuthoritySnapshot, ScopeOwnershipGeneration};
+use super::{
+    ConnectionGeneration, GameSessionAuthoritySnapshot, GameSessionId, ScopeOwnershipGeneration,
+};
 
 /// Trusted durable GameSession authority used by the public Foundation admission
 /// facade.
@@ -16,62 +18,62 @@ pub trait ReconnectAttemptJournal<T: Copy + Eq> {
         issue_game_session_id: F,
     ) -> Result<core::FreshAdmissionAuthoritySnapshot<T>, core::AdmissionError>
     where
-        F: FnOnce() -> Result<core::GameSessionId, core::AdmissionError>;
+        F: FnOnce() -> Result<GameSessionId, core::AdmissionError>;
 
     fn load_session(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
     ) -> Result<GameSessionAuthoritySnapshot<T>, core::AdmissionError>;
 
     fn mark_control_loss(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         observed_transport: T,
         observed_generation: ConnectionGeneration,
     ) -> Result<core::ControlLossDisposition, core::AdmissionError>;
 
     fn terminate_session(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         expected_generation: ConnectionGeneration,
     ) -> Result<(), core::AdmissionError>;
 
     fn advance_runtime_scope(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         expected_current: ScopeOwnershipGeneration,
         observed: ScopeOwnershipGeneration,
     ) -> Result<ScopeOwnershipGeneration, core::AdmissionError>;
 
     fn lookup(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
     ) -> Result<Option<core::ReconnectAttemptDisposition>, core::AdmissionError>;
 
     fn claim_prepared(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
         binding: core::ReconnectCommitBinding<T>,
     ) -> Result<core::ReconnectAttemptClaim, core::AdmissionError>;
 
     fn retire_if_unseen(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
     ) -> Result<core::ReconnectAttemptDisposition, core::AdmissionError>;
 
     fn commit_prepared(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
         binding: core::ReconnectCommitBinding<T>,
     ) -> Result<(), core::AdmissionError>;
 
     fn retire_prepared(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
         candidate_generation: ConnectionGeneration,
     ) -> Result<(), core::AdmissionError>;
@@ -85,7 +87,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
         issue_game_session_id: F,
     ) -> Result<core::FreshAdmissionAuthoritySnapshot<T>, core::AdmissionError>
     where
-        F: FnOnce() -> Result<core::GameSessionId, core::AdmissionError>,
+        F: FnOnce() -> Result<GameSessionId, core::AdmissionError>,
     {
         <J as ReconnectAttemptJournal<T>>::commit_fresh(
             self,
@@ -97,7 +99,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
 
     fn mark_control_loss(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         observed_transport: T,
         observed_generation: ConnectionGeneration,
     ) -> Result<core::ControlLossDisposition, core::AdmissionError> {
@@ -111,7 +113,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
 
     fn terminate_session(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         expected_generation: ConnectionGeneration,
     ) -> Result<(), core::AdmissionError> {
         <J as ReconnectAttemptJournal<T>>::terminate_session(
@@ -123,7 +125,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
 
     fn advance_runtime_scope(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         expected_current: ScopeOwnershipGeneration,
         observed: ScopeOwnershipGeneration,
     ) -> Result<ScopeOwnershipGeneration, core::AdmissionError> {
@@ -137,7 +139,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
 
     fn lookup(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
     ) -> Result<Option<core::ReconnectAttemptDisposition>, core::AdmissionError> {
         <J as ReconnectAttemptJournal<T>>::lookup(self, game_session_id, attempt)
@@ -145,7 +147,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
 
     fn claim_prepared(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
         binding: core::ReconnectCommitBinding<T>,
     ) -> Result<core::ReconnectAttemptClaim, core::AdmissionError> {
@@ -154,7 +156,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
 
     fn retire_if_unseen(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
     ) -> Result<core::ReconnectAttemptDisposition, core::AdmissionError> {
         <J as ReconnectAttemptJournal<T>>::retire_if_unseen(self, game_session_id, attempt)
@@ -162,7 +164,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
 
     fn commit_prepared(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
         binding: core::ReconnectCommitBinding<T>,
     ) -> Result<(), core::AdmissionError> {
@@ -171,7 +173,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> core::ReconnectAttemptJournal<
 
     fn retire_prepared(
         &self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
         attempt: core::ReconnectAttemptRef,
         candidate_generation: ConnectionGeneration,
     ) -> Result<(), core::AdmissionError> {
@@ -220,7 +222,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         issue_game_session_id: F,
     ) -> Result<&core::GameSession, core::AdmissionError>
     where
-        F: FnOnce() -> Result<core::GameSessionId, core::AdmissionError>,
+        F: FnOnce() -> Result<GameSessionId, core::AdmissionError>,
     {
         let game_session_id = self
             .core
@@ -239,7 +241,7 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
 
     pub fn rehydrate_session(
         &mut self,
-        game_session_id: core::GameSessionId,
+        game_session_id: GameSessionId,
     ) -> Result<&core::GameSession, core::AdmissionError> {
         let snapshot = self.core.journal().load_session(game_session_id)?;
         self.core
