@@ -1,9 +1,10 @@
 use crate::foundation::{
-    AdmissionAuthority, AdmissionError, ChannelId, CharacterId, ConnectionGeneration,
-    ControlLossDisposition, FreshAdmissionAuthoritySnapshot, FreshAdmissionCommit,
-    FreshAdmissionFacts, FreshAdmissionReplayKey, GameSessionId, GameSessionState,
-    ReconnectAttemptClaim, ReconnectAttemptDisposition, ReconnectAttemptJournal,
-    ReconnectAttemptRef, ReconnectCommitBinding, ScopeOwnershipGeneration, WorldId,
+    AdmissionAuthority, AdmissionError, ChannelId, CharacterId, CharacterLease,
+    ConnectionGeneration, ControlLossDisposition, FreshAdmissionAuthoritySnapshot,
+    FreshAdmissionCommit, FreshAdmissionFacts, FreshAdmissionReplayKey, GameSessionAuthoritySnapshot,
+    GameSessionId, GameSessionState, ReconnectAttemptClaim, ReconnectAttemptDisposition,
+    ReconnectAttemptJournal, ReconnectAttemptRef, ReconnectCommitBinding, ScopeOwnershipGeneration,
+    WorldId,
 };
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -100,6 +101,28 @@ impl ReconnectAttemptJournal<u64> for RecoveryJournal {
             scope_generation,
         });
         Ok(FreshAdmissionAuthoritySnapshot::active(commit))
+    }
+
+    fn load_session(
+        &self,
+        game_session_id: GameSessionId,
+    ) -> Result<GameSessionAuthoritySnapshot<u64>, AdmissionError> {
+        let state = self.state.borrow();
+        let session = state
+            .session
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        if session.commit.game_session_id() != game_session_id {
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
+        let lease = CharacterLease::new(session.commit.character_id(), session.lease_generation)?;
+        Ok(GameSessionAuthoritySnapshot::new(
+            session.commit,
+            session.state,
+            session.connection_generation,
+            session.current_transport,
+            lease,
+            session.scope_generation,
+        ))
     }
 
     fn mark_control_loss(
