@@ -84,9 +84,7 @@ fn validate_atomic_attempt_authority<T: Copy + Eq>(
             }
             Ok(None)
         }
-        Some(core::ReconnectAttemptDisposition::TerminallySuperseded) => {
-            Ok(snapshot.disposition())
-        }
+        Some(core::ReconnectAttemptDisposition::TerminallySuperseded) => Ok(snapshot.disposition()),
         Some(core::ReconnectAttemptDisposition::Prepared {
             candidate_generation,
         }) => {
