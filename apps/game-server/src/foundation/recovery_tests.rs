@@ -30,13 +30,14 @@ struct RecoveryJournal {
 }
 
 impl RecoveryJournal {
-    fn set_current_lease(&self, generation: u64) {
+    fn set_current_lease(&self, generation: u64) -> Result<(), AdmissionError> {
         self.state
             .borrow_mut()
             .session
             .as_mut()
-            .expect("test durable session exists")
+            .ok_or(AdmissionError::ReconciliationUnavailable)?
             .lease_generation = generation;
+        Ok(())
     }
 }
 
@@ -203,7 +204,7 @@ fn fresh_reconciliation_restores_current_runtime_and_lease_authority() -> Result
     let mut original = AdmissionAuthority::new(journal.clone());
     original.commit_fresh(admission, 100, || Ok(session_id))?;
     original.observe_runtime_ownership_generation(12)?;
-    journal.set_current_lease(8);
+    journal.set_current_lease(8)?;
     drop(original);
 
     let mut recovered = AdmissionAuthority::new(journal.clone());
