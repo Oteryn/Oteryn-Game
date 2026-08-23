@@ -189,3 +189,17 @@ blocker: repair must be committed/pushed as the new exact head, then protected e
 owner_action_required: null
 next_action: freeze/push the P1+P2 repair on the authorized branch, update PR #59 without moving the head again, resolve superseded review threads, request fresh exact-head independent review, and squash merge only after every exact-head gate is green.
 ```
+
+## Handoff checkpoint — 2026-08-23T13:36:00+02:00
+
+This checkpoint supersedes the preceding stale `Context checkpoint` for continuation purposes; GitHub live state remains authoritative.
+
+- `PROVEN`: `main` is `c4c407d096a3252fd2850abbd616944c97297ce6`.
+- `PROVEN`: Issue #53 is OPEN.
+- `PROVEN`: PR #59 is OPEN, mergeable, not merged; branch `agent/otv2-impl-foundation-runtime-01` head is `c231b45d102e05807430f0a0b1d1f41ca9d2d4e6`.
+- `PROVEN`: exact-head workflows are green: Agent Governance #267, Merge Gate #229, Merge Authority Audit #165 and Architecture Semantic Audit #188. Merge Gate #228 is cancelled/superseded.
+- `BLOCKER P1` `PRRT_kwDOT8SzxM6be0V4`: a consumed fresh-admission grant can reconstruct its initial receipt as ACTIVE after process recovery even when that GameSession later became terminal. Durable authority must expose/revalidate current lifecycle state before reconstruction so terminal sessions cannot revive.
+- `BLOCKER P1` `PRRT_kwDOT8SzxM6be0V5`: reconnect COMMIT does not atomically revalidate current CharacterLease and RuntimeScope ownership generations inside the trusted commit seam. An external fence advance between PREPARE and COMMIT can therefore allow a stale authority switch.
+- `MERGE`: prohibited until both P1s are repaired, fresh exact-head CI is green and a genuinely independent exact-head review reports zero material findings.
+- `LOCAL CACHE NOTE`: an older dirty Foundation worktree was observed at `7d0a493...` with 24 uncommitted test lines against the obsolete pre-fenced loss API. Do not fold that local diff into the current branch without re-deriving it against `c231b45...`.
+- `CONTINUATION`: start from exact remote head `c231b45...`; add focused RED regressions for both P1s, repair the trusted fresh-admission and reconnect-commit authority seams, run the full Foundation/game-server/workspace/Clippy/fmt/governance/diff gate, commit and push a new exact head, then rerun protected CI and genuinely independent exact-head review.
