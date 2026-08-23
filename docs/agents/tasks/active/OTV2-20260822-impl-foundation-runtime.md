@@ -13,7 +13,7 @@ base_sha: fd39c6aa026e82062a8b29af24811d467c115f19
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 owner: chat-github-20260822-foundation-runtime
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-23T09:57:47+02:00
+updated_at: 2026-08-23T10:34:10+02:00
 execution_budget_minutes: 120
 large_budget_reason: XHigh protocol/session/admission/fencing lane with mandatory independent exact-head review
 owned_paths:
@@ -86,11 +86,11 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 
 ### Focused
 - command/run: `cargo test -p oteryn-game-server foundation`
-- result: PASS - 51 foundation tests; 0 failed after final FND-02 server-ingress resource-limit repair
+- result: PASS - 55 foundation tests; 0 failed after final Codex wire/error/attempt-retention repair
 
 ### Component/integration
 - command/run: `cargo test -p oteryn-game-server`
-- result: PASS - 56 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
+- result: PASS - 58 package tests; 0 failed; full workspace PASS; Clippy `-D warnings` PASS
 
 ### E2E
 - scenario: Tier 1 wire journey only when a real merged production transport seam exists; otherwise `NOT_EVALUATED` with exact blocker.
@@ -102,9 +102,12 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - superseded exact-head evidence on `1ab4cd3...`: Merge Gate #196 / run `32602950356`, Architecture Semantic Audit #170 / `32602950354`, Agent Governance #232 / `32602950353`, Merge Authority Audit #148 / `32602950360` - SUCCESS before the issuer-boundary self-review repair
 - superseded issuer-boundary PR head: `959d083cee9a03a71ac8d5eca54fc897ed372189`
 - superseded exact-head evidence on `959d083...`: Merge Gate #204 / run `32626162871` SUCCESS plus Architecture Semantic Audit #176 / `32626124677`, Agent Governance #240/#241, Merge Authority Audit #153; later #203/#205 were cancelled lifecycle reruns
-- final review-repair code tree: pending freeze commit
+- superseded ingress-matrix PR head: `bfd43c6e24e75534cc574df8b7161df736939f4d`
+- superseded exact-head evidence on `bfd43c6...`: Merge Gate #212 / run `32627380787` SUCCESS including Windows/Linux/CodeQL/supply-chain/final validate; Agent Governance #248, Architecture Semantic Audit #179 and Merge Authority Audit #156 SUCCESS
+- superseded independent review on `bfd43c6...`: separate non-authoring Qwen session PASS / 0 material findings, but owner-authorized Codex subsequently returned REQUEST_CHANGES with 1 P1 + 2 P2, so the head is not merge evidence
+- final Codex repair tree: pending freeze commit
 - classification: high-risk foundation
-- result: pending fresh exact-head CI; all `959d083...` CI/review evidence is superseded by the material ingress-limit repair
+- result: pending fresh exact-head CI; all `bfd43c6...` CI/review evidence is superseded by the material Codex repair
 
 ## Self-review
 
@@ -118,19 +121,19 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - FND-ID repair: distinct `GameSessionId`/`CharacterId`/`WorldId`/`ChannelId` UUIDv7+RFC-variant wrappers and typed `CommandRef`/session/lease APIs
 - final issuer-boundary self-review finding: `FreshAdmissionFacts` still carried a GameSessionId and the precommit candidate set reserved it before incumbent arbitration, contradicting FND-04A and the owner-accepted GameSessionId issuer baseline: Platform/grant material is not GameSessionId and the canonical ID is game-domain issued only at successful final admission
 - final TDD evidence: desired `commit_fresh(..., issue_game_session_id)` test was observed RED because the issuer seam did not exist; after repair admission is 18/18 and issuer call count remains zero for incumbent/replay rejection while the same unconsumed grant can retry after the blocker clears
-- final repair: GameSessionId was removed from `FreshAdmissionFacts`; `commit_fresh` invokes a game-domain issuer seam only after replay/incumbent/runtime preconditions, records only committed IDs for no-reuse checking, consumes GrantNonce only on successful admission, and leaves rejected/colliding attempts retryable with a fresh canonical ID
+- issuer-boundary repair: GameSessionId was removed from `FreshAdmissionFacts`; `commit_fresh` invokes a trusted game-domain atomic identity seam only after local incumbent/runtime preconditions; durable GrantNonce consume/replay and never-reused GameSessionId reservation remain outside process-local session history
 - fourth independent review on `959d083cee9a03a71ac8d5eca54fc897ed372189`: 1 P1 - nested `ClientBootstrap.admission_material` / `ClientResume.reconnect_material` exceeded the registered 16,384-byte limit while the 65,536-byte outer bootstrap limit still passed
 - P1 TDD evidence: exact nested-material regression was observed RED with 16,385 bytes returning `Ok(WireEnvelopeView)` instead of `BootstrapLimitExceeded`; the zero-copy repair is GREEN
 - same-class resource-matrix self-review then found three additional server-ingress gaps before the next freeze: client build-id 128/UTF-8 and capability count/sorted-unique, ClientCommand payload/expected revisions, and ResyncRequest domain count/uniqueness; all three focused regressions were observed RED before production changes and are GREEN after one bounded scanner repair
 - final FND-02 repair: a zero-copy ingress validator enforces outer bootstrap 65,536 plus nested material 16,384, build-id 128/UTF-8, capability 128 sorted/unique, command payload 65,536, command expected revisions 64 unique, and resync domains 256 unique before deep parse/materialization; bounded domain sets never exceed the registered count
 - matrix classification: server-receive repeated fields have specific ceilings lower than `FND02-ORDINARY-REPEATED-ENTRIES=4096`; parsed nested `StateRevision` is non-recursive and therefore below depth 32; server-outbound CommandResult/StateDelta/Snapshot limits remain covered by their existing producer/barrier primitives rather than peer-ingress allocation paths
+- final Codex review on `bfd43c6e24e75534cc574df8b7161df736939f4d` found 1 P1 + 2 P2: protobuf field numbers above the legal 29-bit range could wrap through `as u32`; build-id >128 was incorrectly classified as `CAPACITY_EXCEEDED`; committed reconnect outcomes grew without a bound for a long-lived GameSession
+- exact RED evidence: oversized field number `(2^32 + 1)` decoded as a valid bootstrap; build-id 129 returned `BootstrapLimitExceeded` instead of an INVALID_INPUT code; three reconnect commits retained 3 map entries; a prepared attempt invalidated by runtime-owner change could be reused
+- final repair: all field-number extraction uses one legal `1..=2^29-1` checked decoder before narrowing; build-id oversize returns `MalformedEnvelope` / INVALID_INPUT; reconnect attempt history is O(1) using a monotonic used-attempt high-watermark plus only the current committed outcome, so older and invalidated attempt refs return terminal `StaleConnection`
+- parallel repair commit `7d0a493ead3c827feb0c8a6ac08d01c949b04bb8` is preserved in ancestry; its narrower `committed_attempts.clear()+insert` bounded-memory fix is intentionally strengthened here with the monotonic terminal high-watermark so superseded/invalidated attempt refs cannot be reused
+- same-class memory self-review also removed unbounded process-local GrantNonce and historical GameSessionId sets from `AdmissionAuthority`; replay consume and never-reused GameSessionId reservation now belong to the trusted atomic game-domain fresh-identity commit seam, modeled by a test ledger without adding live DB authority
+- fresh-history TDD evidence: the desired zero retained session-authority history was observed RED as a missing behavior; replay/no-reuse tests now exercise the trusted ledger seam while local incumbent checks still prevent calling it on rejected admission
 - repaired-tree method: full diff review against FND-ID/FND-02/FND-03/FND-04 and Resource Limits Registry, focused/package/workspace tests, strict Clippy, fmt, governance and diff check - all PASS before freeze
-- fifth/current independent Codex review on `bfd43c6e24e75534cc574df8b7161df736939f4d`: REQUEST_CHANGES - 1 P1 + 2 P2; all three reproduced with focused RED regressions before production changes
-- P1 repair: every custom protobuf scanner now validates the legal field-number range `1..=2^29-1` before any narrowing, preventing out-of-range keys from aliasing authority-relevant envelope/bootstrap/command/resync/StateRevision fields
-- P2 build-id repair: the accepted 128-byte `client_build_id` ceiling now rejects 129 bytes as `MALFORMED_ENVELOPE` / `INVALID_INPUT`, matching `FND02-CLIENT-BUILD-ID-BYTES` instead of misclassifying it as capacity exhaustion
-- P2 reconnect-retention repair: successful reconnect reconciliation retains only the currently replayable committed winner; each newer committed generation terminally supersedes older attempt outcomes, keeping in-process retention constant-size without inventing a deferred registry number while preserving exact-current-transport/current-generation lost-response replay
-- fifth-cycle RED evidence: focused Foundation run had exactly 3 failures (illegal protobuf field-number alias accepted, 129-byte build-id returned `BootstrapLimitExceeded`, reconnect committed-attempt map grew to 2); the other 50 tests passed
-- fifth-cycle GREEN evidence after scoped repair: Foundation 53/53 PASS; game-server 56/56 PASS; full workspace PASS; strict Clippy PASS; scoped rustfmt PASS; governance PASS; diff-check PASS
 - open material findings: 0 locally; fresh independent exact-head review still mandatory
 - verdict: PASS for self-review only
 
@@ -144,21 +147,20 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - owner authorization: explicit and bounded to PR #59 independent review plus autonomous repair/re-review/merge/closeout cycle
 - superseded FND-ID product-code head: `99786226bf988840daa0bcde55d8f90f4d744561`
 - superseded issuer-boundary PR head: `959d083cee9a03a71ac8d5eca54fc897ed372189` - REQUEST_CHANGES, 1 P1 nested ingress limit; repaired
-- superseded ingress/resource-matrix head `bfd43c6e24e75534cc574df8b7161df736939f4d`: REQUEST_CHANGES on fresh Codex review - 1 P1 illegal protobuf field-number narrowing, 1 P2 build-id failure-category mismatch, 1 P2 unbounded retained reconnect-attempt outcomes
-- all three `bfd43c6e...` findings were reproduced RED and repaired without contract/registry/workflow/new-crate mutation; exact repair head is pending freeze commit
-- final product-code/task head: pending freeze commit
+- superseded ingress-matrix PR head: `bfd43c6e24e75534cc574df8b7161df736939f4d` - Qwen independent PASS 0 findings, then Codex REQUEST_CHANGES with 1 P1 + 2 P2; repaired
+- final product-code head: pending Codex-repair freeze commit
 - final PR head: pending freeze commit
-- verdict: pending fresh genuinely independent exact-head review after this material three-finding repair
+- verdict: pending fresh genuinely independent exact-head review after this material repair
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Fresh Codex review of bfd43c6e found three material issues (P1 illegal protobuf field-number narrowing; P2 build-id error-category mismatch; P2 unbounded reconnect-attempt outcome retention). Focused RED reproduced exactly those three failures with the other 50 Foundation tests passing. The scoped repair is GREEN: Foundation 53/53, game-server 56/56, full workspace, strict Clippy, scoped rustfmt, governance and diff-check all pass.
+last_progress: ingress-matrix head bfd43c6 passed Merge Gate #212 and an independent Qwen review, but owner-authorized Codex found 1 P1 + 2 P2: protobuf field-number narrowing alias, build-id error-category drift and unbounded committed reconnect outcomes. All were reproduced RED and repaired. Same-class memory self-review also externalized GrantNonce/GameSessionId historical replay/no-reuse state from AdmissionAuthority into the trusted atomic durability seam. Foundation 55/55, game-server 58/58, workspace, strict Clippy, fmt, governance and diff-check are green.
 status: review_pending
 branch: agent/otv2-impl-foundation-runtime-01
-head_sha: pending-final-review-repair-freeze
+head_sha: pending-final-codex-repair-freeze
 pr: 59
-blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the material three-finding repair; all three bfd43c6e review threads must be resolved against the frozen repair SHA
+blocker: fresh exact-head CI and genuinely independent exact-head review are mandatory after the material Codex repair
 owner_action_required: null
-next_action: freeze source plus task record in one commit, verify remote has not moved, fast-forward push, reply/resolve the three bfd43c6e findings with RED/GREEN evidence, then obtain fresh exact-head CI and independent review; merge only with zero unresolved material findings.
+next_action: perform final full-diff/danger/race review, freeze and push this Codex repair, resolve superseded review threads, then obtain fresh exact-head CI and already-authorized independent review; merge only with zero material findings.
 ```

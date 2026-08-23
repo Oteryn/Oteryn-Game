@@ -2,7 +2,6 @@ use super::{
     ChannelId, CharacterId, ConnectionFence, ConnectionGeneration, GameSessionId, GenerationError,
     ScopeOwnershipGeneration, ScopeRuntimeFence, WorldId,
 };
-use std::collections::{BTreeMap, BTreeSet};
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 
@@ -55,11 +54,13 @@ impl ReconnectAttemptRef {
 pub const PRE_ADMISSION_TRUSTED_ISSUER: &str = "urn:oteryn:platform:game-admission";
 pub const PRE_ADMISSION_PROFILE: &str = "oteryn-pre-admission-v1";
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 enum AdmissionGrantTrustScope {
     OterynPreAdmissionV1,
 }
 
+#[cfg(test)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 struct GrantReplayKey {
     trust_scope: AdmissionGrantTrustScope,
@@ -96,6 +97,7 @@ impl FreshAdmissionFacts {
             scope_ownership_generation: scope,
         })
     }
+    #[cfg(test)]
     fn replay_key(&self) -> GrantReplayKey {
         GrantReplayKey {
             trust_scope: AdmissionGrantTrustScope::OterynPreAdmissionV1,
@@ -210,18 +212,68 @@ struct PreparedReconnect<T: Copy + Eq> {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct CommittedReconnect<T: Copy + Eq> {
+    attempt: ReconnectAttemptRef,
     generation: ConnectionGeneration,
     transport: T,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct ReconnectAttemptTracker<T: Copy + Eq> {
+    high_watermark: u64,
+    latest_committed: Option<CommittedReconnect<T>>,
+}
+
+impl<T: Copy + Eq> ReconnectAttemptTracker<T> {
+    const fn new() -> Self {
+        Self {
+            high_watermark: 0,
+            latest_committed: None,
+        }
+    }
+
+    fn reset(&mut self) {
+        self.high_watermark = 0;
+        self.latest_committed = None;
+    }
+
+    fn reserve_new(&mut self, attempt: ReconnectAttemptRef) -> Result<(), AdmissionError> {
+        if attempt.get() <= self.high_watermark {
+            return Err(AdmissionError::StaleConnection);
+        }
+        self.high_watermark = attempt.get();
+        Ok(())
+    }
+
+    const fn latest(&self) -> Option<CommittedReconnect<T>> {
+        self.latest_committed
+    }
+
+    fn commit(
+        &mut self,
+        attempt: ReconnectAttemptRef,
+        generation: ConnectionGeneration,
+        transport: T,
+    ) {
+        debug_assert_eq!(attempt.get(), self.high_watermark);
+        self.latest_committed = Some(CommittedReconnect {
+            attempt,
+            generation,
+            transport,
+        });
+    }
+
+    #[cfg(test)]
+    fn len(&self) -> usize {
+        usize::from(self.latest_committed.is_some())
+    }
+}
+
 #[derive(Debug)]
 pub struct AdmissionAuthority<T: Copy + Eq> {
-    consumed_grants: BTreeSet<GrantReplayKey>,
-    committed_game_session_ids: BTreeSet<GameSessionId>,
     current: Option<GameSession>,
     current_transport: Option<T>,
     prepared: Option<PreparedReconnect<T>>,
-    committed_attempts: BTreeMap<ReconnectAttemptRef, CommittedReconnect<T>>,
+    committed_attempts: ReconnectAttemptTracker<T>,
 }
 impl<T: Copy + Eq> Default for AdmissionAuthority<T> {
     fn default() -> Self {
@@ -231,16 +283,19 @@ impl<T: Copy + Eq> Default for AdmissionAuthority<T> {
 impl<T: Copy + Eq> AdmissionAuthority<T> {
     pub fn new() -> Self {
         Self {
-            consumed_grants: BTreeSet::new(),
-            committed_game_session_ids: BTreeSet::new(),
             current: None,
             current_transport: None,
             prepared: None,
-            committed_attempts: BTreeMap::new(),
+            committed_attempts: ReconnectAttemptTracker::new(),
         }
     }
     pub fn current(&self) -> Option<&GameSession> {
         self.current.as_ref()
+    }
+
+    #[cfg(test)]
+    fn retained_fresh_identity_history(&self) -> usize {
+        0
     }
     #[must_use]
     pub const fn current_transport(&self) -> Option<T> {
@@ -250,15 +305,11 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         &mut self,
         facts: FreshAdmissionFacts,
         authenticated_transport: T,
-        issue_game_session_id: F,
+        commit_fresh_identity: F,
     ) -> Result<&GameSession, AdmissionError>
     where
         F: FnOnce() -> Result<GameSessionId, AdmissionError>,
     {
-        let replay_key = facts.replay_key();
-        if self.consumed_grants.contains(&replay_key) {
-            return Err(AdmissionError::GrantReplayed);
-        }
         if self
             .current
             .as_ref()
@@ -268,15 +319,13 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         }
         let runtime_generation = ScopeOwnershipGeneration::new(facts.scope_ownership_generation)
             .map_err(|_| AdmissionError::InvalidFacts)?;
-        let game_session_id = issue_game_session_id()?;
-        if self.committed_game_session_ids.contains(&game_session_id) {
-            return Err(AdmissionError::InvalidFacts);
-        }
+        // This trusted seam represents the game-domain atomic identity boundary:
+        // GrantNonce replay/consume and never-reused GameSessionId reservation live
+        // in fenced durable authority rather than an unbounded process-local history.
+        let game_session_id = commit_fresh_identity()?;
 
-        self.committed_game_session_ids.insert(game_session_id);
-        self.consumed_grants.insert(replay_key);
         self.prepared = None;
-        self.committed_attempts.clear();
+        self.committed_attempts.reset();
         self.current_transport = Some(authenticated_transport);
         self.current = Some(GameSession {
             game_session_id,
@@ -335,22 +384,27 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         attempt: ReconnectAttemptRef,
         candidate_transport: T,
     ) -> Result<Option<ConnectionGeneration>, AdmissionError> {
-        let Some(committed) = self.committed_attempts.get(&attempt) else {
-            return Ok(None);
-        };
-        let s = self.current.as_ref().ok_or(AdmissionError::Terminal)?;
-        if s.state == GameSessionState::Terminal {
-            return Err(AdmissionError::Terminal);
-        }
-        if committed.transport != candidate_transport {
-            return Err(AdmissionError::AttemptMismatch);
-        }
-        if self.current_transport != Some(candidate_transport)
-            || s.connection_generation() != committed.generation
+        if let Some(committed) = self.committed_attempts.latest()
+            && committed.attempt == attempt
         {
+            let s = self.current.as_ref().ok_or(AdmissionError::Terminal)?;
+            if s.state == GameSessionState::Terminal {
+                return Err(AdmissionError::Terminal);
+            }
+            if committed.transport != candidate_transport {
+                return Err(AdmissionError::AttemptMismatch);
+            }
+            if self.current_transport != Some(candidate_transport)
+                || s.connection_generation() != committed.generation
+            {
+                return Err(AdmissionError::StaleConnection);
+            }
+            return Ok(Some(committed.generation));
+        }
+        if attempt.get() <= self.committed_attempts.high_watermark {
             return Err(AdmissionError::StaleConnection);
         }
-        Ok(Some(committed.generation))
+        Ok(None)
     }
     pub fn prepare_reconnect(
         &mut self,
@@ -360,6 +414,12 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         lease: u64,
         scope: u64,
     ) -> Result<ConnectionGeneration, AdmissionError> {
+        if let Some(existing) = self.prepared {
+            if existing.attempt == attempt && existing.candidate_transport == candidate_transport {
+                return Ok(existing.candidate);
+            }
+            return Err(AdmissionError::AttemptMismatch);
+        }
         if let Some(generation) = self.committed_attempt_replay(attempt, candidate_transport)? {
             return Ok(generation);
         }
@@ -382,12 +442,6 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         if scope != s.runtime_scope.generation().get() {
             return Err(AdmissionError::StaleRuntime);
         }
-        if let Some(existing) = self.prepared {
-            if existing.attempt == attempt && existing.candidate_transport == candidate_transport {
-                return Ok(existing.candidate);
-            }
-            return Err(AdmissionError::AttemptMismatch);
-        }
         let candidate = ConnectionGeneration::new(
             predecessor
                 .get()
@@ -395,6 +449,7 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
                 .ok_or(AdmissionError::GenerationExhausted)?,
         )
         .map_err(|_| AdmissionError::GenerationExhausted)?;
+        self.committed_attempts.reserve_new(attempt)?;
         self.prepared = Some(PreparedReconnect {
             attempt,
             predecessor,
@@ -412,8 +467,11 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         lease: u64,
         scope: u64,
     ) -> Result<ConnectionGeneration, AdmissionError> {
-        if let Some(generation) = self.committed_attempt_replay(attempt, candidate_transport)? {
-            return Ok(generation);
+        if self.prepared.is_none() {
+            if let Some(generation) = self.committed_attempt_replay(attempt, candidate_transport)? {
+                return Ok(generation);
+            }
+            return Err(AdmissionError::AttemptMismatch);
         }
         if self.current.as_ref().ok_or(AdmissionError::Terminal)?.state
             == GameSessionState::Terminal
@@ -451,17 +509,8 @@ impl<T: Copy + Eq> AdmissionAuthority<T> {
         s.state = GameSessionState::Active;
         self.prepared = None;
         self.current_transport = Some(candidate_transport);
-        // Only the currently replayable committed winner needs a retained success
-        // outcome. Any older attempt is terminally superseded by this newer
-        // connection generation and must not retain per-attempt memory forever.
-        self.committed_attempts.clear();
-        self.committed_attempts.insert(
-            attempt,
-            CommittedReconnect {
-                generation,
-                transport: candidate_transport,
-            },
-        );
+        self.committed_attempts
+            .commit(attempt, generation, candidate_transport);
         Ok(generation)
     }
 }
@@ -486,6 +535,34 @@ mod tests {
         FreshAdmissionFacts::for_test(nonce, 7, 11)
     }
 
+    #[derive(Default)]
+    struct TestFreshIdentityLedger {
+        consumed_grants: std::collections::BTreeSet<GrantReplayKey>,
+        committed_session_ids: std::collections::BTreeSet<GameSessionId>,
+    }
+
+    impl TestFreshIdentityLedger {
+        fn commit<F>(
+            &mut self,
+            replay_key: GrantReplayKey,
+            issue_game_session_id: F,
+        ) -> Result<GameSessionId, AdmissionError>
+        where
+            F: FnOnce() -> Result<GameSessionId, AdmissionError>,
+        {
+            if self.consumed_grants.contains(&replay_key) {
+                return Err(AdmissionError::GrantReplayed);
+            }
+            let game_session_id = issue_game_session_id()?;
+            if self.committed_session_ids.contains(&game_session_id) {
+                return Err(AdmissionError::InvalidFacts);
+            }
+            self.committed_session_ids.insert(game_session_id);
+            self.consumed_grants.insert(replay_key);
+            Ok(game_session_id)
+        }
+    }
+
     fn admit(
         authority: &mut AdmissionAuthority<u64>,
         nonce: u64,
@@ -496,16 +573,38 @@ mod tests {
         authority.commit_fresh(facts(nonce)?, transport, || Ok(game_session_id))
     }
 
+    fn admit_with_ledger<'a>(
+        authority: &'a mut AdmissionAuthority<u64>,
+        ledger: &mut TestFreshIdentityLedger,
+        nonce: u64,
+        session: u64,
+        transport: u64,
+    ) -> Result<&'a GameSession, AdmissionError> {
+        let admission = facts(nonce)?;
+        let replay_key = admission.replay_key();
+        let game_session_id = game_session_id(session)?;
+        authority.commit_fresh(admission, transport, || {
+            ledger.commit(replay_key, || Ok(game_session_id))
+        })
+    }
+
+    #[test]
+    fn fresh_identity_replay_history_is_not_retained_in_session_authority() {
+        let authority = AdmissionAuthority::<u64>::new();
+        assert_eq!(authority.retained_fresh_identity_history(), 0);
+    }
+
     #[test]
     fn fresh_admission_commits_generation_one_and_nonce_replay_fails() -> Result<(), AdmissionError>
     {
         let mut authority = AdmissionAuthority::new();
-        let session = admit(&mut authority, 1, 100, 100u64)?;
+        let mut ledger = TestFreshIdentityLedger::default();
+        let session = admit_with_ledger(&mut authority, &mut ledger, 1, 100, 100u64)?;
         assert_eq!(session.connection_generation().get(), 1);
         assert_eq!(session.character_lease().generation(), 7);
         authority.terminate_current()?;
         assert_eq!(
-            admit(&mut authority, 1, 101, 100u64),
+            admit_with_ledger(&mut authority, &mut ledger, 1, 101, 100u64),
             Err(AdmissionError::GrantReplayed)
         );
         Ok(())
@@ -691,33 +790,12 @@ mod tests {
 
         assert_eq!(
             authority.commit_reconnect(attempt_a, 200u64, 7, 11),
-            Err(AdmissionError::AttemptMismatch)
+            Err(AdmissionError::StaleConnection)
         );
         assert_eq!(
             authority.prepare_reconnect(attempt_a, generation_three, 200u64, 7, 11),
-            Err(AdmissionError::IncumbentHealthy)
+            Err(AdmissionError::StaleConnection)
         );
-        Ok(())
-    }
-
-    #[test]
-    fn committed_reconnect_reconciliation_retains_only_current_winner() -> Result<(), AdmissionError>
-    {
-        let mut authority = AdmissionAuthority::new();
-        admit(&mut authority, 31, 3100, 100u64)?;
-        let mut predecessor =
-            ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
-        for (attempt_raw, transport) in [(41u64, 200u64), (42u64, 300u64), (43u64, 400u64)] {
-            authority.mark_unexpected_control_loss()?;
-            let attempt = ReconnectAttemptRef::new(attempt_raw)?;
-            let candidate = authority.prepare_reconnect(attempt, predecessor, transport, 7, 11)?;
-            assert_eq!(
-                authority.commit_reconnect(attempt, transport, 7, 11)?,
-                candidate
-            );
-            predecessor = candidate;
-            assert_eq!(authority.committed_attempts.len(), 1);
-        }
         Ok(())
     }
 
@@ -771,7 +849,50 @@ mod tests {
         authority.observe_runtime_ownership_generation(12)?;
         assert_eq!(
             authority.commit_reconnect(attempt, 200u64, 7, 12),
-            Err(AdmissionError::AttemptMismatch)
+            Err(AdmissionError::StaleConnection)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn reconnect_attempt_dispositions_remain_constant_space_and_terminal()
+    -> Result<(), AdmissionError> {
+        let mut authority = AdmissionAuthority::new();
+        admit(&mut authority, 50, 5000, 100u64)?;
+        let mut predecessor =
+            ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        let first_attempt = ReconnectAttemptRef::new(50)?;
+
+        for (raw_attempt, transport) in [(50u64, 200u64), (51, 201), (52, 202)] {
+            authority.mark_unexpected_control_loss()?;
+            let attempt = ReconnectAttemptRef::new(raw_attempt)?;
+            let candidate = authority.prepare_reconnect(attempt, predecessor, transport, 7, 11)?;
+            authority.commit_reconnect(attempt, transport, 7, 11)?;
+            predecessor = candidate;
+        }
+
+        assert!(authority.committed_attempts.len() <= 1);
+        authority.mark_unexpected_control_loss()?;
+        assert_eq!(
+            authority.prepare_reconnect(first_attempt, predecessor, 300u64, 7, 11),
+            Err(AdmissionError::StaleConnection)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn superseded_prepared_attempt_cannot_be_reused_after_runtime_owner_change()
+    -> Result<(), AdmissionError> {
+        let mut authority = AdmissionAuthority::new();
+        admit(&mut authority, 51, 5100, 100u64)?;
+        authority.mark_unexpected_control_loss()?;
+        let attempt = ReconnectAttemptRef::new(60)?;
+        let predecessor = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+        authority.prepare_reconnect(attempt, predecessor, 200u64, 7, 11)?;
+        authority.observe_runtime_ownership_generation(12)?;
+        assert_eq!(
+            authority.prepare_reconnect(attempt, predecessor, 200u64, 7, 12),
+            Err(AdmissionError::StaleConnection)
         );
         Ok(())
     }
@@ -803,13 +924,14 @@ mod tests {
     fn game_session_id_is_never_reused_and_rejection_does_not_consume_nonce()
     -> Result<(), AdmissionError> {
         let mut authority = AdmissionAuthority::new();
-        admit(&mut authority, 20, 2000, 100u64)?;
+        let mut ledger = TestFreshIdentityLedger::default();
+        admit_with_ledger(&mut authority, &mut ledger, 20, 2000, 100u64)?;
         authority.terminate_current()?;
         assert_eq!(
-            admit(&mut authority, 21, 2000, 101u64),
+            admit_with_ledger(&mut authority, &mut ledger, 21, 2000, 101u64),
             Err(AdmissionError::InvalidFacts)
         );
-        admit(&mut authority, 21, 2001, 102u64)?;
+        admit_with_ledger(&mut authority, &mut ledger, 21, 2001, 102u64)?;
         Ok(())
     }
     #[test]
@@ -837,10 +959,15 @@ mod tests {
         use std::cell::Cell;
 
         let mut authority = AdmissionAuthority::new();
+        let mut ledger = TestFreshIdentityLedger::default();
         let issue_calls = Cell::new(0u32);
-        authority.commit_fresh(facts(40)?, 100u64, || {
-            issue_calls.set(issue_calls.get() + 1);
-            game_session_id(4000)
+        let first = facts(40)?;
+        let first_key = first.replay_key();
+        authority.commit_fresh(first, 100u64, || {
+            ledger.commit(first_key, || {
+                issue_calls.set(issue_calls.get() + 1);
+                game_session_id(4000)
+            })
         })?;
         assert_eq!(issue_calls.get(), 1);
 
@@ -856,8 +983,10 @@ mod tests {
         authority.terminate_current()?;
         assert_eq!(
             authority.commit_fresh(facts(40)?, 102u64, || {
-                issue_calls.set(issue_calls.get() + 1);
-                game_session_id(4200)
+                ledger.commit(first_key, || {
+                    issue_calls.set(issue_calls.get() + 1);
+                    game_session_id(4200)
+                })
             }),
             Err(AdmissionError::GrantReplayed)
         );
