@@ -195,8 +195,8 @@ fn facts(nonce: u64) -> Result<FreshAdmissionFacts, AdmissionError> {
 }
 
 #[test]
-fn fresh_reconciliation_restores_current_runtime_and_lease_authority()
--> Result<(), AdmissionError> {
+fn fresh_reconciliation_restores_current_runtime_and_lease_authority() -> Result<(), AdmissionError>
+{
     let journal = RecoveryJournal::default();
     let admission = facts(1)?;
     let session_id = game_session_id(100)?;
@@ -207,8 +207,7 @@ fn fresh_reconciliation_restores_current_runtime_and_lease_authority()
     drop(original);
 
     let mut recovered = AdmissionAuthority::new(journal.clone());
-    let recovered_session =
-        recovered.commit_fresh(admission, 100, || game_session_id(101))?;
+    let recovered_session = recovered.commit_fresh(admission, 100, || game_session_id(101))?;
 
     assert_eq!(recovered_session.runtime_scope_generation().get(), 12);
     assert_eq!(recovered_session.character_lease().generation(), 8);
