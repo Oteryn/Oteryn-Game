@@ -46,11 +46,7 @@ fn length_delimited<'a>(
     Ok(value)
 }
 
-fn skip_field(
-    input: &[u8],
-    cursor: &mut usize,
-    wire: u8,
-) -> Result<(), FoundationProtocolError> {
+fn skip_field(input: &[u8], cursor: &mut usize, wire: u8) -> Result<(), FoundationProtocolError> {
     let width = match wire {
         0 => {
             read_varint(input, cursor)?;
