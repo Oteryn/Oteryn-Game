@@ -47,8 +47,8 @@ impl RecoveryJournal {
     }
 
     fn set_current_scope(&self, generation: u64) -> Result<(), AdmissionError> {
-        let generation = ScopeOwnershipGeneration::new(generation)
-            .map_err(|_| AdmissionError::InvalidFacts)?;
+        let generation =
+            ScopeOwnershipGeneration::new(generation).map_err(|_| AdmissionError::InvalidFacts)?;
         self.state
             .borrow_mut()
             .session
