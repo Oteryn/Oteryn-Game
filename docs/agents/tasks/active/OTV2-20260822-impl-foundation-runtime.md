@@ -165,19 +165,19 @@ No movement/combat/inventory/chat/content IDs; no PostgreSQL schema; no producti
 - superseded Codex-repair PR head: `89cfd20d2e6fe02556db7777ea0e6e895bc15701` - Codex REQUEST_CHANGES with 1 P2 pending-PREPARE reconciliation finding; repaired
 - superseded concurrent-loser repair product head: `11d1f89f62d5b94f63577287acf86934c3ab0318`; Codex REQUEST_CHANGES with 1 P1 against numeric ordering of opaque `ReconnectAttemptRef`
 - merge-only PR head before current local repair: `dbe7b50c7f5dad627c2a569b726c7e6a53f86b00` on `main@c4c407d096a3252fd2850abbd616944c97297ce6`; review reported two material P1s applicable to its admission code: numeric ordering of opaque reconnect refs and unfenced stale control-loss callbacks
-- final product-code head: pending opaque-ID journal + control-loss fencing repair freeze commit
-- final PR head: pending freeze commit
-- verdict: pending full validation and fresh genuinely independent exact-head review after this material repair
+- final product-code head: `7abe6fd5e737ce78d7d9fefa7ef69c230144de7d` (`fix(server): harden reconnect authority fencing`)
+- final PR head: documentation-only checkpoint descendant of `7abe6fd...`; GitHub remote head is authoritative after push
+- verdict: product code locally validated; pending fresh protected exact-head CI and genuinely independent exact-head review
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Two applicable P1s are locally repaired on top of dbe7b50: numeric ordering of opaque ReconnectAttemptRef has been replaced by exact-key trusted ReconnectAttemptJournal reconciliation, and unexpected control-loss observations are now fenced to exact current transport plus ConnectionGeneration so stale predecessor callbacks are ignored. Cross-process journal claiming also serializes one distinct PREPARED attempt per GameSession. TDD RED/GREEN evidence exists for u64::MAX poisoning and delayed predecessor loss. Final local gate: Foundation 61/61, game-server 64/64, workspace, strict Clippy, fmt, governance, semantic scan and diff-check all PASS.
-status: ready_for_repair_freeze
+last_progress: Both applicable P1 repairs are frozen in product-code commit 7abe6fd5e737ce78d7d9fefa7ef69c230144de7d: opaque ReconnectAttemptRef history now uses exact-key trusted ReconnectAttemptJournal reconciliation with one PREPARED candidate per GameSession, and control-loss observations are fenced to exact current transport plus ConnectionGeneration. TDD RED/GREEN evidence covers u64::MAX poisoning and delayed predecessor loss. Final local product-code gate: Foundation 61/61, game-server 64/64, workspace, strict Clippy, fmt, governance, semantic scan and diff-check all PASS.
+status: product_code_frozen
 branch: agent/otv2-impl-foundation-runtime-01
-head_sha: dbe7b50c7f5dad627c2a569b726c7e6a53f86b00-plus-uncommitted-final-p1-repairs
+product_code_sha: 7abe6fd5e737ce78d7d9fefa7ef69c230144de7d
 pr: 59
-blocker: repair must be committed/pushed and then receive fresh protected exact-head CI plus genuinely independent exact-head review with zero material findings
+blocker: final documentation-only descendant must be pushed/verified, then protected exact-head CI and genuinely independent exact-head review must both be green with zero material findings
 owner_action_required: null
-next_action: freeze/commit/push the final P1 repairs, verify remote head, update PR #59 and review threads, request fresh exact-head Codex review, and merge only when all exact-head gates are green with zero unresolved material findings.
+next_action: commit/push this task-record-only checkpoint, verify the final remote PR head on GitHub, update PR #59 evidence, resolve repaired P1 threads, request fresh exact-head Codex review, and merge only when every exact-head gate is green.
 ```
