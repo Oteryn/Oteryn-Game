@@ -19,17 +19,19 @@
 - Foundation delivery merge: `a70318484b1ffdd328b53cdc70a4386a516d0109`
 - Foundation closeout PR: `#74`
 - Foundation closeout merge: `1f69677b40851551953caf853c08b37ce7b29c68`
-- Coordinator reconciliation PR: `#76`
-- Coordinator reconciliation merge: `6945e962035bac83d1f19b00984df5b82719ebb9`
-- State: `WAVE1_DOMAIN_COMPOSITION_ACTIVE`
+- Foundation post-merge audit PR: `#81`
+- Foundation post-merge audit merge: `55e30e23c3d5775ce760c6b210ea77f152b359ae`
+- Domain delivery PR: `#56`
+- Domain delivery merge: `0facd7f89edc1b0685e67c5531839e8e6f04c466`
+- State: `WAVE1_CONTENT_LEASE_TRANSFER_PENDING_CLOSEOUT_MERGE`
 
 ## Authority rule
 
 This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance, active task/PR/CI state and merged `main` outrank stale coordination prose.
 
-PR #76 lawfully merged the serialized shared-path transfer from completed/released FOUNDATION to DOMAIN. DOMAIN now holds that shared composition lease. This post-merge status reconciliation is descriptive only: DOMAIN does not need this follow-up change to merge before exercising authority already granted on `main@6945e962035bac83d1f19b00984df5b82719ebb9`.
+DOMAIN product delivery is merged, but this closeout/lease-transfer revision is not authoritative until its own PR merges to `main`. Before that merge, CONTENT still may not mutate serialized shared paths. After lawful closeout merge, DOMAIN lifecycle ownership is released and the established next shared turn transfers to CONTENT.
 
-Unmerged sibling output is never an implicit dependency. Stable registries/contracts, `.github/workflows/**`, architecture policy/tooling and new workspace/crate topology remain unallocated unless this record or a later merged coordinator allocation explicitly grants them.
+Unmerged sibling output is never an implicit dependency. Stable registries/contracts, `.github/workflows/**`, architecture policy/tooling and new workspace/crate topology remain unallocated unless a later merged coordinator allocation explicitly grants them.
 
 ## Completed allocation — Bootstrap
 
@@ -84,45 +86,45 @@ delivery_merge_sha: a70318484b1ffdd328b53cdc70a4386a516d0109
 archive_pr: 74
 archive_merge_sha: 1f69677b40851551953caf853c08b37ce7b29c68
 independent_review_required: true
-independent_review_terminal: passed
+historical_pre_merge_independent_exact_head_gate: NOT_PROVEN
+post_merge_independent_audit: PASS
+post_merge_audit_issue: 77
+post_merge_audit_pr: 81
+post_merge_audit_merge_sha: 55e30e23c3d5775ce760c6b210ea77f152b359ae
+post_merge_material_findings:
+  P0: 0
+  P1: 0
+  P2: 0
 owned_paths: []
 branch: null
 shared_lease: released
 ```
 
-Foundation FND-02/FND-03/FND-04 primitives are merged and lifecycle-closed. The merged composition root still reports gameplay unavailable and intentionally has no production gameplay listener/client-entry side effects; Foundation completion therefore does not by itself satisfy CLIENT or gameplay-VSL integration readiness.
+Foundation product implementation is byte-equivalent to its final PR tree and passed the post-merge independent audit with zero P0/P1/P2 implementation findings. Retained history does **not** prove the mandatory independent review was completed on the final pre-merge head; the historical gate therefore remains `NOT_PROVEN` and is not retroactively rewritten.
 
-## Active Wave 1 — Domain
+## Domain delivery — lifecycle closeout pending this PR merge
 
 ```yaml
 lane_id: OTV2-IMPL-DOMAIN
 task_id: OTV2-20260822-impl-domain-core
 worker_alias: Oteryn: impl domain core
-status: shared_composition_active
+status: completed_pending_archive_merge
 risk: High
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 exact_base_pr: 46
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-branch: agent/otv2-impl-domain-core-01
-pr: 56
-observed_head_sha: 674d1ccd637f3565c25750e5d5fe6c56df6fde32
-relative_to_main_6945e962:
-  ahead_by: 5
-  behind_by: 9
-owned_paths:
-  - apps/game-server/src/domain/**
-  - docs/agents/tasks/active/OTV2-20260822-impl-domain-core.md
-shared_lease: active
-shared_paths:
-  - apps/game-server/src/lib.rs
-  - apps/game-server/Cargo.toml
-  - Cargo.toml
-  - Cargo.lock
-  - workspace-boundaries.toml
+final_head_sha: a76c999a2b03c4271fda9b4395cc3d76c346987b
+delivery_pr: 56
+delivery_merge_sha: 0facd7f89edc1b0685e67c5531839e8e6f04c466
+issue: 55
+issue_state: completed
+source_branch_present: false
+owned_paths_after_this_record_merges: []
+shared_lease_after_this_record_merges: released
 ```
 
-DOMAIN has a substantial Character/Item semantic core and focused/workspace validation evidence, but PR #56 remains Draft and behind current `main`. It may now reconcile current `main` and make only the minimum contract-valid shared composition change required to compile its real module through `apps/game-server`, then rerun exact-head validation/self-review before readiness.
+DOMAIN is merged into the production game-server crate. Its exact-head tests/Clippy/security gate, whole-diff self-review and genuinely independent exact-head review are clean. Runtime/Tier E2E remains `NOT_EVALUATED` because DOMAIN introduced no production gameplay listener/client journey.
 
 ## Active Wave 1 — Content
 
@@ -130,7 +132,7 @@ DOMAIN has a substantial Character/Item semantic core and focused/workspace vali
 lane_id: OTV2-IMPL-CONTENT
 task_id: OTV2-20260822-impl-vsl-content
 worker_alias: Oteryn: impl vsl content
-status: implementing_primary_path_waiting_shared_lease
+status: shared_composition_ready_after_closeout_merge
 risk: High
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
@@ -139,14 +141,19 @@ worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 branch: agent/otv2-impl-vsl-content-01
 pr: 58
 observed_head_sha: ec68df7a461a011a6480898c9a6d9ee60703189e
+relative_to_domain_merged_main:
+  ahead_by: 7
+  behind_by: 12
 owned_paths:
   - apps/game-server/src/content/**
   - docs/agents/tasks/active/OTV2-20260822-impl-vsl-content.md
-shared_lease: waiting_for_domain
+shared_lease_after_this_record_merges: active
 registered_production_vsl_limits: not_found
+production_activation: forbidden
+permanent_format_selection: forbidden
 ```
 
-CONTENT has a bounded semantic graph/compiler/loader evidence seam, but PR #58 remains Draft. CONTENT must remain on explicit finite non-production evidence profiles until accepted DUR-04/VSL hard maxima exist in `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`; it receives no authority here to choose a permanent World Project/Bundle encoding or production activation policy.
+After this closeout revision merges, CONTENT may reconcile current `main` and use the serialized shared paths only for the minimum evidence-only/fail-closed composition of its existing semantic/compiler/loader seam. Missing accepted DUR-04/VSL hard maxima continue to block production VSL activation. This lease does not authorize choosing permanent World Project/Bundle encoding, mutating registries/contracts/workflows, broad content import or claiming Reference parity.
 
 ## Active Wave 1 — QA
 
@@ -166,12 +173,12 @@ checkpoint_head_sha: 58d64130cc0526001bd1c9a00a179e1c39ad6e51
 owned_paths:
   - apps/game-server/tests/**
   - docs/agents/tasks/active/OTV2-20260822-impl-qa-e2e.md
-shared_lease_for_current_shell: not_required
+shared_lease: waiting_for_content_if_needed
 ```
 
-QA contains a real test-side evidence shell with focused/component validation, but no delivery PR and no real Tier 1/Tier 2 Foundation journey. Its synthetic-shell evidence remains valid only for the shell; Tier 1/Tier 2 stay `NOT_EVALUATED` until production transport/admission/persistence and native-client boundaries actually exist. QA may continue inside its non-overlapping primary paths while DOMAIN owns serialized shared composition.
+QA contains a real test-side evidence shell with focused/component validation, but no delivery PR and no real Tier 1/Tier 2 gameplay journey. Synthetic-shell evidence remains valid only for the shell; Tier 1/Tier 2 stay `NOT_EVALUATED` until the required merged production seams exist.
 
-## Serialized shared-mutation lease
+## Serialized shared-mutation lease candidate
 
 ```yaml
 shared_paths:
@@ -180,50 +187,51 @@ shared_paths:
   - Cargo.toml
   - Cargo.lock
   - workspace-boundaries.toml
-lease_state: active
-current_owner: OTV2-IMPL-DOMAIN
-previous_owner: OTV2-IMPL-FOUNDATION
-previous_owner_status: completed_and_released
-remaining_order:
-  - OTV2-IMPL-CONTENT
+lease_state: transfer_pending_closeout_merge
+current_owner_on_main: OTV2-IMPL-DOMAIN
+current_owner_after_this_record_merges: OTV2-IMPL-CONTENT
+previous_owner_after_merge: OTV2-IMPL-DOMAIN
+previous_owner_status_after_merge: completed_and_released
+remaining_order_after_content:
   - OTV2-IMPL-QA
 ```
 
-After DOMAIN itself reaches terminal merge/archive and releases the lease, the coordinator will decide whether CONTENT needs the next shared turn; QA receives a shared turn only if a concrete test-composition need is proven.
+The lease transfer is effective only after this closeout PR lawfully merges. CONTENT receives no stable-ID/registry/contract/workflow/new-crate or production authority through this transfer.
 
-## Deferred allocations and concrete blockers
+## Deferred allocations and concrete readiness
 
 ```yaml
 OTV2-IMPL-DURABILITY:
-  status: not_allocated
-  blocker: DOMAIN concrete consumer/composition is not yet merged
+  status: dependency_ready_pending_new_allocation
+  write_authority: none
+  evidence: FOUNDATION and DOMAIN concrete merged seams now exist
 OTV2-IMPL-ABILITY:
   status: not_allocated
-  blocker: DOMAIN and CONTENT are not yet merged/integration-ready
+  blocker: CONTENT not yet merged/integration-ready
 OTV2-IMPL-INTERACTION:
   status: not_allocated
-  blocker: DOMAIN and CONTENT are not yet merged/integration-ready
+  blocker: CONTENT not yet merged/integration-ready
 OTV2-IMPL-AI:
   status: not_allocated
-  blocker: DOMAIN and CONTENT are not yet merged/integration-ready
+  blocker: CONTENT not yet merged/integration-ready
 OTV2-IMPL-CLIENT:
   status: not_allocated
-  blocker: current merged game-server composition is explicitly GameplayAvailability::UnavailableBootstrap and no production gameplay listener/client-entry seam is merged
+  blocker: merged game-server still exposes fail-closed gameplay availability with no production gameplay listener/client-entry seam
 OTV2-IMPL-MOVE:
   status: not_allocated
   blocker: Interaction, Client and real QA E2E prerequisites are not integration-ready
 OTV2-IMPL-COMBAT:
   status: not_allocated
-  blocker: Movement and the remaining generic/value prerequisites are not merged
+  blocker: Movement and remaining generic/value prerequisites are not merged
 OTV2-IMPL-CHANNEL:
   status: not_allocated
-  blocker: DOMAIN and DURABILITY are not merged
+  blocker: DURABILITY not yet allocated/merged
 OTV2-CONTENT-FORMAT-SPIKE:
   status: not_allocated
-  blocker: CONTENT semantic/compiler seam is not merged; permanent-format decision remains separately owner-gated
+  blocker: CONTENT semantic/compiler seam not yet merged; permanent-format decision remains separately owner-gated
 OTV2-IMPL-ANALYTICS:
   status: not_allocated
   blocker: concrete producer event registrations do not yet exist
 ```
 
-No production/protected/live-data/Platform/external-repository authority is introduced by this reconciliation.
+No production/protected/live-data/Platform/external-repository authority is introduced by this closeout or lease transfer.
