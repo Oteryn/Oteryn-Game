@@ -313,3 +313,7 @@ Read the four canonical baseline documents listed in the task metadata and verif
 Do **not** restart the already accepted timing, re-entry, instance-recovery or telemetry discussions.
 
 Continue only with an unresolved architecture decision and keep the work analysis-only unless the owner explicitly requests implementation.
+
+## Lifecycle disposition (v3.10 audit)
+
+Archived by the v3.10 Doc/Agent IA lifecycle audit because this architecture checkpoint declares no live owning GitHub Issue or PR, and exact task-ID issue search returned no live owner. The canonical architecture files named in the packet plus live GitHub/current main supersede this historical projection.

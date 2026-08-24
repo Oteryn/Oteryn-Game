@@ -116,3 +116,7 @@ executor_programme: RELEASED
 ```
 
 `PRODUCTION_AUTHORITY: NONE`
+
+## Lifecycle disposition (v3.10 audit)
+
+Archived by the v3.10 Doc/Agent IA lifecycle audit because this non-owning checkpoint declares no live owning GitHub Issue or PR, and exact task-ID issue search returned no live owner. Current architecture/programme status and live GitHub state supersede this historical projection.

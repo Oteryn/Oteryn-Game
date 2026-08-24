@@ -29,3 +29,13 @@ Worker prompts have exclusive paths/contracts, precise inputs/outputs, no coordi
 ## Audit prompts
 
 Auditors are read-only unless repair is separately authorized. They must challenge completeness, inspect exact source/live state and classify every finding with evidence and severity.
+
+## Retained prompt lifecycle
+
+Every retained execution prompt under `docs/agents/prompts/*.md`, except the directory `README.md`, must have exactly one entry in `docs/agents/PROMPT_LIFECYCLE.json`.
+
+The lifecycle registry supplies dispatch metadata that older prompt bodies do not consistently carry inline: stable `prompt_id`, lifecycle-registry `version`, `status`, lifecycle owner, bounded scope and supersession semantics. Registry version `1.0` means first registration in that lifecycle registry; it does not retroactively claim that an older prompt document historically used that version.
+
+`reusable` means only that the prompt may be resolved from current `main`. It does not grant a branch, owned paths or write authority; the prompt's live allocation/owner prerequisites still apply. `retired` means provenance-only: the file may remain in Git history or the prompt directory, but it must not be dispatched as executable work and must name its successor in the lifecycle registry.
+
+A prompt is superseded only by an explicit registry entry. A completed task that previously used a reusable executor does not by itself retire the executor; a new invocation must still satisfy all current live-allocation and governance gates.

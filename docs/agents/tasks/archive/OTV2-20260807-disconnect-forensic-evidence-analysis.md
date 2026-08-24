@@ -171,3 +171,7 @@ Do not silently freeze:
 - No permanent full-session movement surveillance is introduced.
 - Game Intelligence remains read-only/investigative and cannot autonomously ban or mutate gameplay.
 - Continue future owner decisions one concrete unresolved question at a time.
+
+## Lifecycle disposition (v3.10 audit)
+
+Archived by the v3.10 Doc/Agent IA lifecycle audit because this architecture checkpoint declares no live owning GitHub Issue or PR, and exact task-ID issue search returned no live owner. The canonical architecture files named in the packet plus live GitHub/current main supersede this historical projection.

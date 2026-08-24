@@ -162,3 +162,7 @@ owner_action_required: null
 blocker: real Tier 1/Tier 2 gameplay journeys remain NOT_EVALUATED until the supported production gameplay listener/client-entry path exists; this does not block merging the truthful evidence shell.
 next_action: observe exact-head PR #98 checks and repair only a verified current-head failure before merge.
 ```
+
+## Lifecycle disposition (v3.10 audit)
+
+Archived by the v3.10 Doc/Agent IA lifecycle audit because Issue #91 is closed completed and PR #98 is squash-merged as dc22e0da8efcc6f4458416191261063b295af5b4. The historical status fields above are preserved as the final pre-close snapshot and are not current authority.

@@ -13,6 +13,8 @@ CONTRACT_PATH = ROOT / "docs/agents/GOVERNANCE_CONTRACT.json"
 LANES_PATH = ROOT / "docs/agents/PROJECT_LANES.json"
 CONTRACT_LOCK_PATH = ROOT / "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json"
 LIMITS_REGISTRY_PATH = ROOT / "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
+PROMPT_LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
+HANDOVER_LIFECYCLE_PATH = ROOT / "docs/agents/HANDOVER_LIFECYCLE.json"
 EXPECTED_REPOSITORY = "Oteryn/Oteryn-Game"
 
 
@@ -37,12 +39,163 @@ def require_file(relative: str, errors: list[str]) -> None:
         errors.append(f"missing required file: {relative}")
 
 
+def validate_prompt_lifecycle(registry: dict, errors: list[str]) -> None:
+    prompts_dir = ROOT / "docs/agents/prompts"
+    actual = {
+        path.relative_to(ROOT).as_posix()
+        for path in prompts_dir.glob("*.md")
+        if path.name != "README.md"
+    }
+    entries = registry.get("prompts", [])
+    if not isinstance(entries, list):
+        errors.append("prompt lifecycle registry prompts must be a list")
+        return
+
+    seen_ids: set[str] = set()
+    seen_paths: set[str] = set()
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            errors.append(f"prompt lifecycle entry {index} must be an object")
+            continue
+        prompt_id = entry.get("prompt_id")
+        path = entry.get("path")
+        version = entry.get("version")
+        status = entry.get("status")
+        owner = entry.get("owner")
+        scope = entry.get("scope")
+        reusable = entry.get("reusable")
+        superseded_by = entry.get("superseded_by")
+        supersession_rule = entry.get("supersession_rule")
+
+        if not isinstance(prompt_id, str) or not prompt_id:
+            errors.append(f"prompt lifecycle entry {index} has invalid prompt_id")
+            continue
+        if prompt_id in seen_ids:
+            errors.append(f"duplicate prompt lifecycle id: {prompt_id}")
+        seen_ids.add(prompt_id)
+        if not isinstance(path, str) or not path:
+            errors.append(f"prompt {prompt_id} has invalid path")
+            continue
+        if path in seen_paths:
+            errors.append(f"duplicate prompt lifecycle path: {path}")
+        seen_paths.add(path)
+        if not isinstance(version, str) or re.fullmatch(r"\d+\.\d+", version) is None:
+            errors.append(f"prompt {prompt_id} has invalid version")
+        if status not in {"reusable", "retired"}:
+            errors.append(f"prompt {prompt_id} has unsupported status: {status}")
+        if not isinstance(owner, str) or not owner.strip():
+            errors.append(f"prompt {prompt_id} must define owner")
+        if not isinstance(scope, str) or not scope.strip():
+            errors.append(f"prompt {prompt_id} must define scope")
+        if not isinstance(reusable, bool):
+            errors.append(f"prompt {prompt_id} reusable must be boolean")
+        if not isinstance(supersession_rule, str) or not supersession_rule.strip():
+            errors.append(f"prompt {prompt_id} must define supersession_rule")
+        if status == "retired":
+            if reusable is not False:
+                errors.append(f"retired prompt {prompt_id} cannot be reusable")
+            if not isinstance(superseded_by, str) or not superseded_by.strip():
+                errors.append(f"retired prompt {prompt_id} must name superseded_by")
+        elif superseded_by is not None and (not isinstance(superseded_by, str) or not superseded_by.strip()):
+            errors.append(f"prompt {prompt_id} superseded_by must be null or a non-empty string")
+
+    missing = sorted(actual - seen_paths)
+    extra = sorted(seen_paths - actual)
+    if missing:
+        errors.append(f"prompt lifecycle registry missing paths: {', '.join(missing)}")
+    if extra:
+        errors.append(f"prompt lifecycle registry has unknown paths: {', '.join(extra)}")
+
+
+def validate_handover_lifecycle(registry: dict, errors: list[str]) -> None:
+    roots = [ROOT / "docs/agents/evidence", ROOT / "docs/agents/reports"]
+    actual: set[str] = set()
+    for directory in roots:
+        if not directory.is_dir():
+            continue
+        for path in directory.glob("*.md"):
+            lowered = path.name.lower()
+            if "handoff" in lowered or "handover" in lowered:
+                actual.add(path.relative_to(ROOT).as_posix())
+
+    entries = registry.get("handovers", [])
+    if not isinstance(entries, list):
+        errors.append("handover lifecycle registry handovers must be a list")
+        return
+    seen_ids: set[str] = set()
+    seen_paths: set[str] = set()
+    for index, entry in enumerate(entries):
+        if not isinstance(entry, dict):
+            errors.append(f"handover lifecycle entry {index} must be an object")
+            continue
+        handover_id = entry.get("handover_id")
+        path = entry.get("path")
+        if not isinstance(handover_id, str) or not handover_id:
+            errors.append(f"handover lifecycle entry {index} has invalid handover_id")
+            continue
+        if handover_id in seen_ids:
+            errors.append(f"duplicate handover lifecycle id: {handover_id}")
+        seen_ids.add(handover_id)
+        if not isinstance(path, str) or not path:
+            errors.append(f"handover {handover_id} has invalid path")
+            continue
+        if path in seen_paths:
+            errors.append(f"duplicate handover lifecycle path: {path}")
+        seen_paths.add(path)
+        if entry.get("status") != "historical":
+            errors.append(f"handover {handover_id} must have historical status")
+        if entry.get("authoritative") is not False:
+            errors.append(f"handover {handover_id} must be explicitly non-authoritative")
+        expiry_rule = entry.get("expiry_rule")
+        if not isinstance(expiry_rule, str) or not expiry_rule.strip():
+            errors.append(f"handover {handover_id} must define expiry_rule")
+        superseded_by = entry.get("superseded_by")
+        if not isinstance(superseded_by, list) or not superseded_by or not all(
+            isinstance(value, str) and value.strip() for value in superseded_by
+        ):
+            errors.append(f"handover {handover_id} must define superseded_by")
+
+    missing = sorted(actual - seen_paths)
+    extra = sorted(seen_paths - actual)
+    if missing:
+        errors.append(f"handover lifecycle registry missing paths: {', '.join(missing)}")
+    if extra:
+        errors.append(f"handover lifecycle registry has unknown paths: {', '.join(extra)}")
+
+
+def validate_active_task_packets(errors: list[str]) -> None:
+    active_dir = ROOT / "docs/agents/tasks/active"
+    if not active_dir.is_dir():
+        return
+    terminal_statuses = {"completed", "closed", "merged", "terminal", "archived", "done"}
+    for path in sorted(active_dir.glob("*.md")):
+        if path.name == "README.md":
+            continue
+        relative = path.relative_to(ROOT).as_posix()
+        text = path.read_text(encoding="utf-8")
+        issue = re.search(r"(?m)^issue:\s*([1-9][0-9]*)\s*$", text)
+        pr = re.search(r"(?m)^pr:\s*([1-9][0-9]*)\s*$", text)
+        if issue is None and pr is None:
+            errors.append(f"active task packet {relative} must name a positive issue or pr")
+        status_match = re.search(r"(?m)^status:\s*([^\n#]+?)\s*$", text)
+        if status_match is not None:
+            status = status_match.group(1).strip().strip('"\'').lower()
+            if status in terminal_statuses:
+                errors.append(f"active task packet {relative} has terminal status {status}")
+
+
 def main() -> int:
     errors: list[str] = []
     contract = load_json(CONTRACT_PATH, errors)
     lanes = load_json(LANES_PATH, errors)
     contract_lock = load_json(CONTRACT_LOCK_PATH, errors)
     limits_registry = load_json(LIMITS_REGISTRY_PATH, errors)
+    prompt_lifecycle = load_json(PROMPT_LIFECYCLE_PATH, errors)
+    handover_lifecycle = load_json(HANDOVER_LIFECYCLE_PATH, errors)
+
+    validate_prompt_lifecycle(prompt_lifecycle, errors)
+    validate_handover_lifecycle(handover_lifecycle, errors)
+    validate_active_task_packets(errors)
 
     if contract.get("repository") != EXPECTED_REPOSITORY:
         errors.append("governance repository must be Oteryn/Oteryn-Game")
