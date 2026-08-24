@@ -1090,6 +1090,7 @@ impl StagedContentPair {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg(test)]
 pub struct ActiveContent {
     content_revision: RevisionToken,
     server_artifact_digest: [u8; 32],
@@ -1098,6 +1099,7 @@ pub struct ActiveContent {
     client_body_digest: [u8; 32],
 }
 
+#[cfg(test)]
 impl ActiveContent {
     pub fn content_revision(&self) -> &str {
         self.content_revision.as_str()
@@ -1105,10 +1107,12 @@ impl ActiveContent {
 }
 
 #[derive(Debug, Default)]
+#[cfg(test)]
 pub struct ActivationSlot {
     active: Option<ActiveContent>,
 }
 
+#[cfg(test)]
 impl ActivationSlot {
     pub const fn new() -> Self {
         Self { active: None }
