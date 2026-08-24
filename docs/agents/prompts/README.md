@@ -31,6 +31,12 @@ The coordinator resolves live `main`, performs the serial bootstrap gate first, 
 
 These preparation prompts are deliberately isolated by domain. They may run concurrently only after each agent verifies live Issue/task ownership and disjoint paths. They do not grant implementation authority. Release Durability/Ability/Interaction/AI/Server Seam independently when their own master-plan gates close; do not wait for unrelated preparation work merely for symmetry.
 
+### Next-wave blocker closure
+
+- `OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md` â€” owner-authorized blocker-closure coordinator for #93/#115/#116/#123. **Short invocation: `Oteryn: close next-wave blockers`.**
+
+This coordinator may accept conservative evidence-backed first-slice hard maxima only inside the bounded owner authorization recorded by Issue #128, serializes registry canonicalization, and may carry the #115 Foundation verifier/consumer blocker through its separately allocated implementation lifecycle. It grants no Server Seam/gameplay implementation or production/Platform/external-repository authority.
+
 ### Direct worker aliases
 
 Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A worker MUST verify a live coordinator allocation naming its lane and exact owned paths before any write. Without that allocation it remains read-only and does not create its own scope.

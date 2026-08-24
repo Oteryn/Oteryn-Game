@@ -19,6 +19,17 @@
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
     },
     {
+      "prompt_id": "OTV2_CLOSE_NEXT_WAVE_BLOCKERS",
+      "path": "docs/agents/prompts/OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "implementation-programme",
+      "scope": "Owner-authorized coordinator for #93/#115/#116/#123 blocker closure, evidence-backed first-slice numeric acceptance, serialized registry canonicalization and bounded #115 verifier/consumer closure.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+    },
+    {
       "prompt_id": "OTV2_CONTENT_FORMAT_SPIKE",
       "path": "docs/agents/prompts/OTV2_CONTENT_FORMAT_SPIKE.md",
       "version": "1.0",
