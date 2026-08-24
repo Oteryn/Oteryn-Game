@@ -5,9 +5,12 @@
 - Canonical repository: `Oteryn/Oteryn-Game`
 - Bootstrap delivery PR: `#10`
 - Bootstrap closeout PR: `#11`
+- Simulation allocation PR: `#12`
+- Simulation exact-base PR: `#13`
 - Simulation delivery PR: `#14`
 - Simulation delivery merge: `66619daf5837f31f7c54676e9f8351ed4ae220b0`
 - Simulation archive PR: `#15`
+- Wave 1 allocation source main: `7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2`
 - Wave 1 allocation PR: `#45`
 - Wave 1 allocation merge: `33cec30b8075c73290d7d76e9f59df4701771650`
 - Wave 1 exact-base PR: `#46`
@@ -30,7 +33,9 @@ Unmerged sibling output is never an implicit dependency. Stable registries/contr
 
 ```yaml
 lane_id: OTV2-IMPL-BOOTSTRAP
+task_id: OTV2-20260818-impl-bootstrap
 status: completed
+final_head_sha: 43243c4998224517a4c828bc05e735264b3e3394
 delivery_pr: 10
 delivery_merge_sha: 0809004252db228e8f3fac3cdb6638c3c2a7fbda
 archive_pr: 11
@@ -45,6 +50,11 @@ lane_id: OTV2-IMPL-SIM
 task_id: OTV2-20260818-impl-simulation
 worker_alias: Oteryn: impl simulation
 status: completed
+execution_mode: serial_workspace_mutation
+allocation_pr: 12
+allocation_merge_sha: 2fc59dd83a3d13e7de8954d4dbcce5415e346389
+exact_base_pr: 13
+worker_base_sha: 977e98b05738076744540a123d4e35c32cd94c2c
 final_head_sha: 7a0d71bbabdd00c54951aa8e0084d62f3dce748b
 delivery_pr: 14
 delivery_merge_sha: 66619daf5837f31f7c54676e9f8351ed4ae220b0
@@ -128,7 +138,7 @@ owned_paths:
   - apps/game-server/src/content/**
   - docs/agents/tasks/active/OTV2-20260822-impl-vsl-content.md
 shared_lease: waiting_for_domain
-production_vsl_limits: absent
+registered_production_vsl_limits: not_found
 ```
 
 CONTENT has a bounded semantic graph/compiler/loader evidence seam, but PR #58 remains Draft. DOMAIN holds the next serialized composition turn after this record merges. CONTENT must remain on explicit finite non-production evidence profiles until accepted DUR-04/VSL hard maxima exist in `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`; it receives no authority here to choose a permanent World Project/Bundle encoding or production activation policy.
