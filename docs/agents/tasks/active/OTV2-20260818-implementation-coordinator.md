@@ -8,7 +8,7 @@ status: wave1_content_lease_transfer_pending_closeout_merge
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: chore/domain-closeout-content-lease-20260824
-pr: null
+pr: 82
 base_sha: 0facd7f89edc1b0685e67c5531839e8e6f04c466
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
@@ -45,7 +45,7 @@ Coordinate the active native implementation programme, serialize shared composit
 - `PROVEN`: FOUNDATION implementation is merged and its post-merge independent audit is `PASS` with zero P0/P1/P2, while the historical pre-merge independent exact-head gate is correctly `NOT_PROVEN`; no retroactive compliance is claimed.
 - `PROVEN`: DOMAIN PR #56 frozen head `a76c999a2b03c4271fda9b4395cc3d76c346987b` passed full local integration validation, exact-head Merge Gate #329, Agent Governance #373, Merge Authority #248, Ready-state Architecture Audit #273, whole-diff self-review and genuinely independent exact-head review, then squash-merged as `0facd7f89edc1b0685e67c5531839e8e6f04c466`.
 - `PROVEN`: Issue #55 is closed/completed and the DOMAIN source branch is absent after merge.
-- `PROVEN`: this closeout branch adds a terminal DOMAIN archive record and removes its active task lock; those lifecycle changes become canonical only after the closeout PR merges.
+- `PROVEN`: PR #82 adds the terminal DOMAIN archive record and removes its active task lock; those lifecycle changes become canonical only after PR #82 merges.
 - `PROVEN`: CONTENT PR #58 remains Draft at `ec68df7a461a011a6480898c9a6d9ee60703189e`, 7 commits ahead / 12 behind DOMAIN-merged main and still changes only `apps/game-server/src/content/**` plus its task record.
 - `PROVEN`: accepted DUR-04/VSL production hard maxima remain absent; CONTENT may only remain evidence-only/non-production until those values are separately accepted.
 - `PROVEN`: QA still has only its evidence shell and no PR; real Tier 1/Tier 2 gameplay journeys remain `NOT_EVALUATED`.
@@ -53,9 +53,9 @@ Coordinate the active native implementation programme, serialize shared composit
 
 ## Coordinator decision
 
-This closeout prepares the established serialized shared-path handoff from completed DOMAIN to CONTENT.
+PR #82 prepares the established serialized shared-path handoff from completed DOMAIN to CONTENT.
 
-The transfer is conditional on this closeout PR merging. Before merge, DOMAIN remains the canonical shared lease owner on `main`; after merge, CONTENT becomes the one-writer owner for the shared paths below:
+The transfer is conditional on PR #82 merging. Before merge, DOMAIN remains the canonical shared lease owner on `main`; after merge, CONTENT becomes the one-writer owner for the shared paths below:
 
 ```yaml
 shared_paths:
@@ -86,12 +86,12 @@ Independent review is `NOT_REQUIRED` for this closeout because it follows an alr
 ## Context checkpoint
 
 ```yaml
-last_progress: DOMAIN PR #56 merged as 0facd7f89edc1b0685e67c5531839e8e6f04c466 after exact-head CI, self-review and independent review; Issue #55 closed and source branch deleted; closeout branch archives DOMAIN, releases its active lock, corrects Foundation provenance and stages the existing shared-lease handoff to CONTENT.
+last_progress: DOMAIN PR #56 merged as 0facd7f89edc1b0685e67c5531839e8e6f04c466 after exact-head CI, self-review and independent review; Issue #55 closed and source branch deleted; PR #82 archives DOMAIN, releases its active lock, corrects Foundation provenance and stages the existing shared-lease handoff to CONTENT.
 status: wave1_content_lease_transfer_pending_closeout_merge
 branch: chore/domain-closeout-content-lease-20260824
 head_sha: null
-pr: null
-blocker: closeout PR must pass exact-head repository checks and merge before CONTENT may mutate shared composition paths
+pr: 82
+blocker: PR #82 must pass exact-head repository checks and merge before CONTENT may mutate shared composition paths
 owner_action_required: null
-next_action: open and qualify the DOMAIN closeout / CONTENT lease-transfer PR; after merge, reconcile CONTENT PR #58 against current main and perform only the authorized evidence-only shared composition.
+next_action: qualify and merge PR #82 if clean; then reconcile CONTENT PR #58 against current main and perform only the authorized evidence-only shared composition.
 ```
