@@ -123,6 +123,55 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
             .map(|prepared| (prepared.attempt, prepared.candidate_transport, prepared.candidate))
     }
 
+    pub(super) fn restore_reconciled_prepared_projection(
+        &mut self,
+        attempt: ReconnectAttemptRef,
+        binding: ReconnectCommitBinding<T>,
+    ) -> Result<ConnectionGeneration, AdmissionError> {
+        if self.control_loss_pending.is_some() || self.runtime_scope_reconciliation_pending {
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
+
+        let session = self.current.as_ref().ok_or(AdmissionError::Terminal)?;
+        if session.state == GameSessionState::Terminal {
+            return Err(AdmissionError::Terminal);
+        }
+        if session.state != GameSessionState::Reconnectable
+            || self.current_transport.is_some()
+            || session.connection_generation() != binding.predecessor_generation()
+            || binding
+                .predecessor_generation()
+                .get()
+                .checked_add(1)
+                != Some(binding.candidate_generation().get())
+        {
+            return Err(AdmissionError::StaleConnection);
+        }
+        if session.character_lease() != binding.character_lease() {
+            return Err(AdmissionError::StaleLease);
+        }
+        if session.runtime_scope_generation() != binding.scope_generation() {
+            return Err(AdmissionError::StaleRuntime);
+        }
+
+        let prepared = PreparedReconnect {
+            attempt,
+            predecessor: binding.predecessor_generation(),
+            candidate: binding.candidate_generation(),
+            candidate_transport: binding.candidate_transport(),
+            lease_generation: binding.character_lease().generation(),
+            scope_generation: binding.scope_generation().get(),
+        };
+        match self.prepared {
+            Some(current) if current == prepared => Ok(prepared.candidate),
+            Some(_) => Err(AdmissionError::ReconciliationUnavailable),
+            None => {
+                self.prepared = Some(prepared);
+                Ok(prepared.candidate)
+            }
+        }
+    }
+
     pub(super) fn clear_process_projection(&mut self) {
         if let Some(session) = self.current.as_mut() {
             session.runtime_scope.invalidate();

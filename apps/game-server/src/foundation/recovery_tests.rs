@@ -26,9 +26,15 @@ type AttemptKey = (GameSessionId, ReconnectAttemptRef);
 
 #[derive(Debug, Clone, Copy)]
 enum ClaimAuthorityMutation {
-    RecoveredController { transport: u64 },
-    CharacterLease { generation: u64 },
-    RuntimeScope { generation: ScopeOwnershipGeneration },
+    RecoveredController {
+        transport: u64,
+    },
+    CharacterLease {
+        generation: u64,
+    },
+    RuntimeScope {
+        generation: ScopeOwnershipGeneration,
+    },
 }
 
 #[derive(Default)]
@@ -304,6 +310,46 @@ impl ReconnectAttemptJournal<u64> for RecoveryJournal {
                     session.scope_generation = generation;
                 }
             }
+        }
+
+        let session = state
+            .session
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        if session.commit.game_session_id() != game_session_id {
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
+
+        let claim_error = if session.state == GameSessionState::Terminal {
+            Some(AdmissionError::Terminal)
+        } else if session.state == GameSessionState::Active
+            && session.current_transport.is_some()
+        {
+            Some(AdmissionError::IncumbentHealthy)
+        } else if session.state != GameSessionState::Reconnectable
+            || session.current_transport.is_some()
+            || session.connection_generation != binding.predecessor_generation()
+            || binding
+                .predecessor_generation()
+                .get()
+                .checked_add(1)
+                != Some(binding.candidate_generation().get())
+        {
+            Some(AdmissionError::StaleConnection)
+        } else if binding.character_lease().character_id() != session.commit.character_id()
+            || binding.character_lease().generation() != session.lease_generation
+        {
+            Some(AdmissionError::StaleLease)
+        } else if binding.scope_generation() != session.scope_generation {
+            Some(AdmissionError::StaleRuntime)
+        } else {
+            None
+        };
+        if let Some(error) = claim_error {
+            state
+                .dispositions
+                .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+            state.bindings.remove(&key);
+            return Err(error);
         }
 
         if state
@@ -606,8 +652,7 @@ fn prepared_reconnect_commits_after_process_replacement() -> Result<(), Admissio
     let session_id = game_session_id(400)?;
     let mut original = AdmissionAuthority::new(journal.clone());
     original.commit_fresh(facts(7)?, 100, || Ok(session_id))?;
-    let generation_one =
-        ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+    let generation_one = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
     assert_eq!(
         original.mark_unexpected_control_loss(100, generation_one)?,
         ControlLossDisposition::Applied
@@ -638,18 +683,17 @@ fn prepared_reconnect_commits_after_process_replacement() -> Result<(), Admissio
 }
 
 #[test]
-fn prepare_claim_revalidates_recovered_controller_at_linearization_point(
-) -> Result<(), AdmissionError> {
+fn prepare_claim_revalidates_recovered_controller_at_linearization_point()
+-> Result<(), AdmissionError> {
     let journal = RecoveryJournal::default();
     let session_id = game_session_id(401)?;
     let mut original = AdmissionAuthority::new(journal.clone());
     original.commit_fresh(facts(8)?, 100, || Ok(session_id))?;
-    let generation_one =
-        ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+    let generation_one = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
     original.mark_unexpected_control_loss(100, generation_one)?;
-    journal.mutate_authority_before_next_claim(
-        ClaimAuthorityMutation::RecoveredController { transport: 300 },
-    );
+    journal.mutate_authority_before_next_claim(ClaimAuthorityMutation::RecoveredController {
+        transport: 300,
+    });
     let attempt = ReconnectAttemptRef::new(8)?;
 
     assert_eq!(
@@ -672,18 +716,17 @@ fn prepare_claim_revalidates_recovered_controller_at_linearization_point(
 }
 
 #[test]
-fn prepare_claim_revalidates_character_lease_at_linearization_point(
-) -> Result<(), AdmissionError> {
+fn prepare_claim_revalidates_character_lease_at_linearization_point() -> Result<(), AdmissionError>
+{
     let journal = RecoveryJournal::default();
     let session_id = game_session_id(402)?;
     let mut original = AdmissionAuthority::new(journal.clone());
     original.commit_fresh(facts(9)?, 100, || Ok(session_id))?;
-    let generation_one =
-        ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+    let generation_one = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
     original.mark_unexpected_control_loss(100, generation_one)?;
-    journal.mutate_authority_before_next_claim(
-        ClaimAuthorityMutation::CharacterLease { generation: 8 },
-    );
+    journal.mutate_authority_before_next_claim(ClaimAuthorityMutation::CharacterLease {
+        generation: 8,
+    });
     let attempt = ReconnectAttemptRef::new(9)?;
 
     assert_eq!(
@@ -707,22 +750,18 @@ fn prepare_claim_revalidates_character_lease_at_linearization_point(
 }
 
 #[test]
-fn prepare_claim_revalidates_runtime_scope_at_linearization_point(
-) -> Result<(), AdmissionError> {
+fn prepare_claim_revalidates_runtime_scope_at_linearization_point() -> Result<(), AdmissionError> {
     let journal = RecoveryJournal::default();
     let session_id = game_session_id(403)?;
     let mut original = AdmissionAuthority::new(journal.clone());
     original.commit_fresh(facts(10)?, 100, || Ok(session_id))?;
-    let generation_one =
-        ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+    let generation_one = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
     original.mark_unexpected_control_loss(100, generation_one)?;
     let scope_twelve =
         ScopeOwnershipGeneration::new(12).map_err(|_| AdmissionError::InvalidFacts)?;
-    journal.mutate_authority_before_next_claim(
-        ClaimAuthorityMutation::RuntimeScope {
-            generation: scope_twelve,
-        },
-    );
+    journal.mutate_authority_before_next_claim(ClaimAuthorityMutation::RuntimeScope {
+        generation: scope_twelve,
+    });
     let superseded_attempt = ReconnectAttemptRef::new(10)?;
 
     assert_eq!(

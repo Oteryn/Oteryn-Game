@@ -194,6 +194,12 @@ pub trait ReconnectAttemptJournal<T: Copy + Eq> {
         attempt: core::ReconnectAttemptRef,
     ) -> Result<Option<core::ReconnectAttemptDisposition>, core::AdmissionError>;
 
+    /// At the same transaction/lock/fenced linearization point as a new
+    /// PREPARED disposition and binding are written, implementations MUST prove
+    /// that the GameSession remains reconnectable with no current controller,
+    /// and that predecessor, strict-successor candidate, CharacterLease and
+    /// RuntimeScope ownership exactly match the supplied binding. A stale
+    /// candidate must never be published as PREPARED.
     fn claim_prepared(
         &self,
         game_session_id: GameSessionId,
@@ -503,6 +509,18 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
                     }
                     _ => Err(core::AdmissionError::AttemptMismatch),
                 };
+            }
+            if matches!(
+                disposition,
+                Some(core::ReconnectAttemptDisposition::Prepared { .. })
+            ) {
+                if let Err(error) = self
+                    .core
+                    .restore_reconciled_prepared_projection(attempt, binding)
+                {
+                    self.core.clear_process_projection();
+                    return Err(error);
+                }
             }
         }
         Ok(disposition)

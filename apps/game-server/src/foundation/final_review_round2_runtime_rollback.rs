@@ -211,13 +211,42 @@ impl ReconnectAttemptJournal<u64> for RollbackJournal {
 
     fn claim_prepared(
         &self,
-        _game_session_id: GameSessionId,
+        game_session_id: GameSessionId,
         attempt: ReconnectAttemptRef,
         binding: ReconnectCommitBinding<u64>,
     ) -> Result<ReconnectAttemptClaim, AdmissionError> {
         let mut state = self.state.borrow_mut();
         if state.attempt.is_some() {
             return Err(AdmissionError::ReconciliationUnavailable);
+        }
+        let session = state
+            .session
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        if session.commit.game_session_id() != game_session_id {
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
+        if session.state == GameSessionState::Terminal {
+            return Err(AdmissionError::Terminal);
+        }
+        if session.state == GameSessionState::Active && session.transport.is_some() {
+            return Err(AdmissionError::IncumbentHealthy);
+        }
+        if session.state != GameSessionState::Reconnectable
+            || session.transport.is_some()
+            || session.generation != binding.predecessor_generation()
+            || binding
+                .predecessor_generation()
+                .get()
+                .checked_add(1)
+                != Some(binding.candidate_generation().get())
+        {
+            return Err(AdmissionError::StaleConnection);
+        }
+        if session.lease != binding.character_lease() {
+            return Err(AdmissionError::StaleLease);
+        }
+        if session.scope != binding.scope_generation() {
+            return Err(AdmissionError::StaleRuntime);
         }
         state.attempt = Some(attempt);
         state.disposition = Some(ReconnectAttemptDisposition::Prepared {

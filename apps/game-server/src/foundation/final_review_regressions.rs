@@ -244,6 +244,57 @@ impl ReconnectAttemptJournal<u64> for ReviewJournal {
         if let Some(disposition) = state.dispositions.get(&key).copied() {
             return Ok(ReconnectAttemptClaim::Existing(disposition));
         }
+        let session = state
+            .session
+            .ok_or(AdmissionError::ReconciliationUnavailable)?;
+        if session.commit.game_session_id() != game_session_id {
+            return Err(AdmissionError::ReconciliationUnavailable);
+        }
+        let claim_error = if session.state == GameSessionState::Terminal {
+            Some(AdmissionError::Terminal)
+        } else if session.state == GameSessionState::Active
+            && session.current_transport.is_some()
+        {
+            Some(AdmissionError::IncumbentHealthy)
+        } else if session.state != GameSessionState::Reconnectable
+            || session.current_transport.is_some()
+            || session.connection_generation != binding.predecessor_generation()
+            || binding
+                .predecessor_generation()
+                .get()
+                .checked_add(1)
+                != Some(binding.candidate_generation().get())
+        {
+            Some(AdmissionError::StaleConnection)
+        } else if binding.character_lease().character_id() != session.commit.character_id()
+            || binding.character_lease().generation() != session.lease_generation
+        {
+            Some(AdmissionError::StaleLease)
+        } else if binding.scope_generation() != session.scope_generation {
+            Some(AdmissionError::StaleRuntime)
+        } else {
+            None
+        };
+        if let Some(error) = claim_error {
+            state
+                .dispositions
+                .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+            state.bindings.remove(&key);
+            return Err(error);
+        }
+        if state
+            .dispositions
+            .iter()
+            .any(|((session_id, _), disposition)| {
+                *session_id == game_session_id
+                    && matches!(disposition, ReconnectAttemptDisposition::Prepared { .. })
+            })
+        {
+            state
+                .dispositions
+                .insert(key, ReconnectAttemptDisposition::TerminallySuperseded);
+            return Ok(ReconnectAttemptClaim::RejectedConcurrent);
+        }
         state.dispositions.insert(
             key,
             ReconnectAttemptDisposition::Prepared {
