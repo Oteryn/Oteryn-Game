@@ -29,13 +29,13 @@
 - Domain delivery merge: `0facd7f89edc1b0685e67c5531839e8e6f04c466`
 - Content evidence delivery PR: `#58`
 - Content evidence delivery merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`
-- State: `WAVE1_CONTENT_EVIDENCE_MERGED_PRODUCTION_BLOCKED`
+- State: `WAVE1_CONTENT_P0_REPAIR_ALLOCATION_PENDING_MERGE`
 
 ## Authority rule
 
 This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance, active task/PR/CI state and merged `main` outrank stale coordination prose.
 
-PR #82 merged and transferred the serialized shared composition lease to CONTENT. CONTENT used that authority only for minimum evidence-only composition in PR #58, which has now merged. Production VSL activation, permanent format selection and registry/contract mutation remain unauthorized.
+PR #58 merged the bounded CONTENT evidence seam, but a later genuinely independent exact-tree review reproduced a P0 activation-boundary defect: the production public module exports `ActivationSlot::stage_and_activate` for an explicitly non-production evidence artifact. Issue #85 tracks a bounded repair. This allocation candidate grants no repair write authority until it lawfully merges; production VSL activation, permanent format selection and registry/contract mutation remain unauthorized.
 
 Unmerged sibling output is never an implicit dependency. Stable registries/contracts, `.github/workflows/**`, architecture policy/tooling and new workspace/crate topology remain unallocated unless a later merged coordinator allocation explicitly grants them.
 
@@ -136,7 +136,7 @@ DOMAIN is merged into `apps/game-server`, its Issue is completed, its branch is 
 lane_id: OTV2-IMPL-CONTENT
 task_id: OTV2-20260822-impl-vsl-content
 worker_alias: Oteryn: impl vsl content
-status: evidence_delivery_merged_production_blocked
+status: evidence_delivery_merged_at_risk_repair_pending
 risk: High
 final_head_sha: ab0b4241c107bfb2c6052e58aec241da130774c7
 delivery_pr: 58
@@ -149,10 +149,30 @@ shared_lease: released
 registered_production_vsl_limits: not_found
 production_activation: forbidden
 permanent_format_selection: forbidden
-future_write_authority: requires_new_coordinator_allocation
+future_write_authority: bounded_repair_after_this_allocation_merges
 ```
 
-The bounded non-production VSL evidence seam is merged and composed through `apps/game-server`. Exact-head `game-gate`, whole-diff self-review and genuinely independent exact-head review were clean. `OrdinaryRelease` and gameplay availability remain fail-closed. Issue #54 stays open only for production acceptance: accepted DUR-04/VSL hard maxima and production activation authority are still absent and are not inferred by this programme.
+The bounded non-production VSL evidence seam is merged and composed through `apps/game-server`. Pre-merge checks and the recorded pre-merge review were green, but a later independent exact-tree review found a reproducible P0 in the public activation boundary. Therefore current safety state is AT_RISK until Issue #85 is repaired and independently re-reviewed. The separate Issue #54 production blocker remains unchanged: accepted DUR-04/VSL hard maxima and production activation authority are absent.
+
+## Active repair candidate - Content evidence activation fence
+
+```yaml
+lane_id: OTV2-REPAIR-CONTENT-ACTIVATION-FENCE
+task_id: OTV2-20260824-content-evidence-activation-fence-repair
+status: allocation_pending_merge
+risk: High
+issue: 85
+branch_after_allocation_merge: repair/content-evidence-activation-fence-20260824
+owned_paths_after_allocation_merge:
+  - apps/game-server/src/content/mod.rs
+  - apps/game-server/src/content/artifact.rs
+  - docs/agents/tasks/active/OTV2-20260824-content-evidence-activation-fence-repair.md
+shared_lease: not_required
+contracts_registry_workflows_cargo_authority: none
+independent_exact_head_review: required
+```
+
+This repair is limited to removing the non-production activation state machine from the production public API while retaining it under `cfg(test)` for evidence-state tests. A compile-fail regression must prove `content::ActivationSlot` is unavailable to production consumers. No parser format, content values, limits, permanent format or production activation authority may change.
 
 ## Active Wave 1 — QA
 
@@ -204,13 +224,13 @@ OTV2-IMPL-DURABILITY:
   write_authority: none
   evidence: FOUNDATION and DOMAIN concrete merged seams now exist
 OTV2-IMPL-ABILITY:
-  status: dependency_ready_pending_new_allocation
+  status: dependency_ready_held_by_content_p0_repair
   write_authority: none
 OTV2-IMPL-INTERACTION:
-  status: dependency_ready_pending_new_allocation
+  status: dependency_ready_held_by_content_p0_repair
   write_authority: none
 OTV2-IMPL-AI:
-  status: dependency_ready_pending_new_allocation
+  status: dependency_ready_held_by_content_p0_repair
   write_authority: none
 OTV2-IMPL-CLIENT:
   status: not_allocated
@@ -225,7 +245,7 @@ OTV2-IMPL-CHANNEL:
   status: not_allocated
   blocker: DURABILITY not yet allocated/merged
 OTV2-CONTENT-FORMAT-SPIKE:
-  status: dependency_ready_pending_new_allocation
+  status: dependency_ready_held_by_content_p0_repair
   write_authority: none
   note: evidence-only spike; permanent-format decision remains separately owner-gated
 OTV2-IMPL-ANALYTICS:
