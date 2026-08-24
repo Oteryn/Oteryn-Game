@@ -316,10 +316,7 @@ impl ReconnectAttemptJournal<u64> for RecoveryJournal {
                     session.current_transport = Some(binding.candidate_transport());
                 }
             }
-            if matches!(
-                mutation,
-                ClaimAuthorityMutation::PeerCommittedSameBinding
-            ) {
+            if matches!(mutation, ClaimAuthorityMutation::PeerCommittedSameBinding) {
                 let disposition = ReconnectAttemptDisposition::Committed {
                     generation: binding.candidate_generation(),
                 };
