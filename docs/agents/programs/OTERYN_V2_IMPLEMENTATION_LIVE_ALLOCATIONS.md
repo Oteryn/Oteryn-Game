@@ -264,29 +264,41 @@ CONTENT no longer needs the serialized shared paths for its merged evidence seam
 - `RECOMMENDATION`: immediate parallel preparation is QA reconciliation, DURABILITY topology/allocation, CONTENT-FORMAT-SPIKE allocation and the Wave-2 resource-limit decision packet. Ability/Interaction/AI implementation follows only after their required numeric bounds are accepted or explicitly fenced out of the executable slice.
 - `RECOMMENDATION`: use one game-server-local durability module plus one game-owned migration ledger for the first implementation increment unless implementation evidence proves a dedicated immediate-consumer crate is necessary; any Cargo/workspace/migration paths still require explicit serialized allocation.
 
-## Active allocation candidate — Content Format Spike
+## Completed preparation - Content Format Spike
 
 ```yaml
 lane_id: OTV2-CONTENT-FORMAT-SPIKE
 task_id: OTV2-20260824-content-format-spike
 worker_alias: Oteryn: content format spike
-status: allocation_pending_merge
+status: completed_released_owner_format_decision_pending
 risk: Medium
 issue: 95
+issue_state: completed
 allocation_pr: 112
-worker_branch_after_merge: spike/content-format-evidence-20260824
-owned_paths_after_merge:
-  - tools/content-format-spike/**
-  - docs/agents/evidence/OTV2-20260824-content-format-spike.md
-  - docs/agents/evidence/OTV2-20260824-content-format-spike-results.json
-  - docs/agents/tasks/active/OTV2-20260824-content-format-spike.md
+allocation_merge_sha: 22a3eb866dae19d048969edff1e1fa5012a429b6
+delivery_pr: 125
+delivery_final_head_sha: 8c2f957f972b2dafa4bf22f239ab6a446c06b23a
+delivery_merge_sha: a909f432cfa887c7e99191f18bd9cbb5ca58fc7a
+results_sha256: afb871a435dd5d4333087fdb6456568c5ac01784dc25118448618d3b16da464e
+dossier_sha256: 68aedf28ee8425b36969829239e0893fb65e589a3b14f4bc01d8def7c8718afd
+independent_exact_head_review: PASS
+independent_review_packet_sha256: 18786ac8ca57b215a9ada3e6c8d512a92dc7fd1526072c3b8be8d40940f38f4c
+independent_review_response_sha256: e2c63281f316bb829c07263234b08dfe27965f5a2d0153136ed1fcea0a0b0f53
+exact_head_ci:
+  agent_governance_run: 32774705978
+  architecture_semantic_audit_run: 32774705997
+  merge_authority_audit_run: 32774706008
+  merge_gate_run: 32774706140
+  merge_gate_validate_job: 97585439345
+  game_gate_job: 97585462248
+owned_paths: []
+branch: null
 shared_lease: not_required
-contracts_registry_workflows_cargo_authority: none
-production_runtime_authority: none
-permanent_format_selection: forbidden
+write_authority: none
+permanent_format_selection: owner_decision_pending
 ```
 
-This allocation activates only after PR #112 merges. It is a fresh live projection after the v3.10 lifecycle audit; it does not revive the archived implementation-coordinator packet.
+The evidence spike is terminally delivered and ownership is released. It compares three bounded physical-representation candidates but does not select a permanent World Project or World Bundle format. `SPIKE_RESULT != OWNER_FORMAT_DECISION` remains binding; the separate owner action is to select, rework, or defer the permanent formats using the dossier and any later Studio/import/runtime evidence.
 
 ## Deferred allocations and concrete readiness
 
@@ -340,11 +352,16 @@ OTV2-IMPL-CHANNEL:
   status: not_allocated
   blocker: DURABILITY not yet allocated/merged
 OTV2-CONTENT-FORMAT-SPIKE:
-  status: allocation_pending_merge
-  write_authority: activates_only_after_pr_112_merge
-  worker_branch_after_merge: spike/content-format-evidence-20260824
-  task: OTV2-20260824-content-format-spike
-  note: evidence-only spike; consume docs/migration/CRYSTAL_WORLD_CONTENT_MIGRATION_DESIGN_CHECKPOINT.md as non-authoritative migration evidence; permanent-format decision remains separately owner-gated
+  status: completed_released_owner_format_decision_pending
+  write_authority: none
+  issue: 95
+  issue_state: completed
+  delivery_pr: 125
+  delivery_merge_sha: a909f432cfa887c7e99191f18bd9cbb5ca58fc7a
+  evidence_dossier: docs/agents/evidence/OTV2-20260824-content-format-spike.md
+  evidence_results: docs/agents/evidence/OTV2-20260824-content-format-spike-results.json
+  permanent_format_selection: owner_decision_pending
+  note: evidence-only spike is complete; no production activation or permanent-format authority follows automatically
 OTV2-IMPL-ANALYTICS:
   status: not_allocated
   blocker: concrete producer event registrations do not yet exist
