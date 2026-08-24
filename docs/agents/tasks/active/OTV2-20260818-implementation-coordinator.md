@@ -48,7 +48,7 @@ Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme
 - `PROVEN`: CONTENT PR #58 is Draft at observed head `ec68df7a461a011a6480898c9a6d9ee60703189e`; relative to the reconciliation base its branch is 7 commits ahead / 8 behind and changes only its allocated Content/task paths.
 - `PROVEN`: QA branch `agent/otv2-impl-qa-e2e-01` exists and is 3 commits ahead / 11 behind the reconciliation base. Its task checkpoint records head `58d64130cc0526001bd1c9a00a179e1c39ad6e51`, 8/8 focused evidence-shell tests PASS and real Tier 1/Tier 2 journeys `NOT_EVALUATED`; it has no PR.
 - `PROVEN`: current `RESOURCE_LIMITS_REGISTRY.json` requires registered hard maxima before affected executable acceptance; no DUR-04/VSL production hard-max entry was found, consistent with CONTENT PR #58's explicit production-limit blocker.
-- `PROVEN`: stale coordinator PR #50 is still open but is non-mergeable and describes an obsolete pre-Foundation-completion snapshot; it must be superseded rather than forced onto current main.
+- `PROVEN`: predecessor coordinator PR #50 is closed unmerged and has an explicit supersession comment linking PR #76; its obsolete pre-Foundation-completion snapshot is not current authority.
 
 ## Coordinator decision
 
@@ -118,12 +118,12 @@ Independent review is `NOT_REQUIRED` for this bounded coordination reconciliatio
 ## Context checkpoint
 
 ```yaml
-last_progress: Foundation delivery and closeout are merged and verified; live Domain, Content and QA branches were reconciled against main@1f69677b40851551953caf853c08b37ce7b29c68; coordinator PR #76 now prepares the serialized shared-path transfer to DOMAIN while preserving Content's missing-limit hold, QA's truthful NOT_EVALUATED real-E2E state and the CLIENT gameplay-entry blocker.
+last_progress: Foundation delivery and closeout are merged and verified; live Domain, Content and QA branches were reconciled against main@1f69677b40851551953caf853c08b37ce7b29c68; PR #50 was closed unmerged as superseded; coordinator PR #76 now prepares the serialized shared-path transfer to DOMAIN while preserving Content's missing-limit hold, QA's truthful NOT_EVALUATED real-E2E state and the CLIENT gameplay-entry blocker.
 status: wave1_domain_lease_transfer_pending_merge
 branch: agent/otv2-coordinator-wave1-reconcile-02
 head_sha: null
 pr: 76
 blocker: coordinator PR #76 must pass exact-head repository checks and merge before DOMAIN may mutate shared composition/workspace paths
 owner_action_required: null
-next_action: qualify coordinator PR #76, supersede stale PR #50, merge the exact validated head if all gates are green, then advance DOMAIN PR #56 against the merged reconciliation base.
+next_action: qualify coordinator PR #76, merge the exact validated head if all gates are green, then advance DOMAIN PR #56 against the merged reconciliation base.
 ```
