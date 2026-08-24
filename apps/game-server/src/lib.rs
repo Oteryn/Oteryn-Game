@@ -1,6 +1,26 @@
-//! Foundation-only composition root for the native Oteryn Game Server.
+//! Native Oteryn Game Server composition root.
 //!
-//! Bootstrap intentionally owns no gameplay listener, protocol, admission or persistence authority.
+//! Foundation and the protocol/runtime/admission seam are merged. Domain semantics are composed
+//! here while executable gameplay remains fail-closed until the later integration gates.
+
+pub mod domain;
+pub mod foundation;
+
+#[cfg(test)]
+#[path = "foundation/recovery_tests.rs"]
+mod foundation_recovery_tests;
+
+#[cfg(test)]
+#[path = "foundation/final_review_regressions.rs"]
+mod foundation_final_review_regressions;
+
+#[cfg(test)]
+#[path = "foundation/final_review_round2_regressions.rs"]
+mod foundation_final_review_round2_regressions;
+
+#[cfg(test)]
+#[path = "foundation/final_review_round2_runtime_rollback.rs"]
+mod foundation_final_review_round2_runtime_rollback;
 
 use oteryn_foundation::CancellationToken;
 use oteryn_simulation_determinism::{SimulationDeterminismProfile, active_profile};
@@ -9,7 +29,7 @@ use std::fmt::{self, Display, Formatter};
 use tokio::runtime::Builder;
 
 pub const GAMEPLAY_UNAVAILABLE_REASON: &str =
-    "native gameplay foundation is not allocated to the bootstrap lane";
+    "native gameplay transport and executable gameplay slices are not yet integrated";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum GameplayAvailability {
