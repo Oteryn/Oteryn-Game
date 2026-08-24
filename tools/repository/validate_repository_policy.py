@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = ROOT / ".github/repository-policy.json"
 USES_LINE = re.compile(r"^\s*uses:\s*([^@\s]+)@([^\s#]+)", re.MULTILINE)
 CANONICAL_MPL_2_0_GIT_BLOB_SHA = "d0a1fa1482eea82e19510e7920cbe3a03e41f691"
-EXPECTED_REQUIRED_STATUS = "Merge gate / validate"
+EXPECTED_REQUIRED_STATUS = "game-gate"
 EXPECTED_CONTROL_PLANE_PATHS = [
     ".github/workflows/*",
     ".github/workflows/**/*",
@@ -318,6 +318,19 @@ def main() -> int:
                 "merge gate aggregate validate job must exactly match the canonical "
                 "needs/result wiring and fail-closed implementation"
             )
+        game_gate_block = indented_yaml_mapping_block(text, "game_gate", 2)
+        if game_gate_block is None:
+            errors.append("merge gate must publish the stable game-gate aggregate")
+        else:
+            for fragment in (
+                "    name: game-gate\n",
+                "    if: always()\n",
+                "    needs: validate\n",
+                "          LEGACY_VALIDATE: ${{ needs.validate.result }}\n",
+                "        run: test \"$LEGACY_VALIDATE\" = \"success\"\n",
+            ):
+                if fragment not in game_gate_block:
+                    errors.append(f"game-gate aggregate missing canonical fragment: {fragment.strip()}")
         for required_fragment in (
             "pull request head moved after event head was resolved",
             "changed_files = pull.get('changed_files')",

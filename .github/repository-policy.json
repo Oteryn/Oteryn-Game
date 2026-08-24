@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "ruleset_name": "Protect main",
-  "required_status_check": "Merge gate / validate",
+  "required_status_check": "game-gate",
   "licensing": {
     "spdx_id": "MPL-2.0",
     "license_file": "LICENSE",
@@ -115,7 +115,7 @@
           "do_not_enforce_on_create": false,
           "required_status_checks": [
             {
-              "context": "Merge gate / validate"
+              "context": "game-gate"
             }
           ],
           "strict_required_status_checks_policy": true
