@@ -75,15 +75,29 @@ A moving outfit frame group may be presented **in place** as appearance animatio
 
 ## Creature handoff
 
-`tools/game-atlas-creatures/animated.py` layers verified pixel-presentation metadata onto the existing factual static creature export. It preserves the original placement/outfit-definition resolution and adds a separate `presentation_resolution_state`: `RESOLVED` includes Game-owned `outfit_presentation`; `UNRESOLVED_APPEARANCE` retains `presentation_fallback=factual-marker`; already unresolved/ambiguous creature definitions remain factual marker fallbacks. The enriched capability is `animated-creatures-v1` and records the exact `appearance_product_root`.
+`tools/game-atlas-creatures/animated.py` layers verified pixel-presentation metadata onto the existing factual static creature export. It preserves the original placement/outfit-definition resolution and adds a separate `presentation_resolution_state`: `RESOLVED` includes Game-owned `outfit_presentation`; `UNRESOLVED_APPEARANCE` retains `presentation_fallback=factual-marker`; already unresolved/ambiguous creature definitions remain factual marker fallbacks. The enriched capability remains `animated-creatures-v1` and records the exact `appearance_product_root`.
 
-Every resolved creature presentation also contains a Game-owned `static_projection`. The selection policy is `prefer-outfit-idle-else-moving-in-place-v1`: choose the unique `outfit-idle` frame group when present; only if idle is absent choose the unique `outfit-moving` group and explicitly mark `uses_moving_group_in_place=true`. The projection fixes the verified static south direction/pattern index, pattern-z, enabled addon rows, program identity, phase count and animation descriptor. Atlas therefore does not choose a creature frame group or direction. Repeated identical outfit tuples are resolution-cached, and the immutable program indexes are read once per enrichment process; this is a performance optimization only and does not alter content identities.
+Every resolved creature presentation contains the existing Game-owned `static_projection` unchanged. Its selection policy is `prefer-outfit-idle-else-moving-in-place-v1`: choose the unique `outfit-idle` frame group when present; only if idle is absent choose the unique `outfit-moving` group and explicitly mark `uses_moving_group_in_place=true`. The projection fixes the verified static south direction/pattern index, pattern-z, enabled addon rows, program identity, phase count and animation descriptor. Atlas therefore does not choose a creature frame group or direction.
+
+The same presentation now carries a separate moving-in-place decision:
+
+- `moving_in_place_resolution_state=RESOLVED` means `moving_in_place_projection` is present and is derived only from the unique authoritative `outfit-moving` frame group;
+- that projection fixes Game-owned south, the authoritative south pattern index, pattern-z, enabled addon rows, animation program, exact phase count/timing, displacement, anchor policy and spatial record identity;
+- its selection policy is `unique-outfit-moving-fixed-south-in-place-v1` and `uses_moving_group_in_place=true`;
+- Atlas may advance only the published phase program while keeping the factual creature `record_id`, X, Y and floor unchanged;
+- `moving_in_place_resolution_state=FALLBACK_STATIC` means no moving projection is published. `moving_in_place_reason` records why moving playback is unsupported and Atlas MUST preserve the already verified static/reference presentation instead of inventing motion.
+
+Current fail-closed moving reasons include `NO_MOVING_FRAME_GROUP`, `AMBIGUOUS_MOVING_FRAME_GROUP`, `UNSUPPORTED_MOVING_DIRECTION`, `UNSUPPORTED_MOVING_TIMING`, `UNSUPPORTED_REVERSE_ADDONS_SOUTH`, `INVALID_OUTFIT_SPATIAL`, and `INVALID_MOVING_IN_PLACE_PROJECTION`. These reasons are presentation metadata only; they do not alter factual creature placement.
+
+A resolved moving-in-place projection MUST match the exact source group program/direction/addon/timing fields and MUST use the same displacement, anchor policy and spatial record identity as the verified static projection. `validate_animated_creatures` enforces these invariants and rejects corrupted projections. Repeated identical outfit tuples remain resolution-cached, and immutable program indexes are read once per enrichment process; this is a performance optimization only and does not alter content identities.
+
+The producer reports NPC and monster counts for resolved moving-in-place records, dynamically multi-phase moving records, static-fallback moving records, unique outfits in each class, and fallback reason counts. Those census fields are evidence; they do not create support by inference.
 
 ## Validation and fail-closed rules
 
 The producer verifies exact ZIP/catalog/appearance identities before accepting the real source. It bounds appearance/group/pattern/layer/phase/reference counts, validates sprite catalogue coverage and frame cardinality, and rejects malformed timing/loop metadata. Product verification recomputes every file digest, every per-program content identity and the complete product root.
 
-Required CI builds the exact 15.32 product twice and requires byte-identical trees, verifies the exhaustive census against committed evidence, proves deliberate product corruption fails closed, and enriches real pinned NPC/monster source records.
+Required CI builds the exact 15.32 product twice and requires byte-identical trees, verifies the exhaustive census against committed evidence, proves deliberate product corruption fails closed, enriches real pinned NPC/monster source records, validates the moving/static handoff, and records the exact moving-in-place support census including ordinary-creature fixtures.
 
 ## Rights boundary
 
