@@ -20,6 +20,17 @@ Canonical implementation order and dependencies are defined by:
 
 The coordinator resolves live `main`, performs the serial bootstrap gate first, creates exact worker allocations and only then releases non-overlapping implementation lanes. This is the recommended way to start implementation.
 
+### Next-wave parallel preparation
+
+- `OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md` — preparation-wave launcher/matrix. **Short invocation: `Oteryn: next-wave prep swarm`.**
+- `OTV2_PREP_WAVE2_RESOURCE_LIMITS.md` — Issue #93 resource-limit decision preparation. `Oteryn: prep resource limits`.
+- `OTV2_PREP_DURABILITY_TOPOLOGY.md` — Issue #94 Durability topology preparation. `Oteryn: prep durability topology`.
+- `OTV2_CONTENT_FORMAT_SPIKE.md` — Issue #95 evidence-only Content format spike. `Oteryn: content format spike`.
+- `OTV2_PREP_SERVER_SEAM.md` — Issue #96 production gameplay server-seam preparation. `Oteryn: prep server seam`.
+- `OTV2_PREP_PROGRAMME_STATUS.md` — Issue #97 maintained programme-status reconciliation. `Oteryn: prep programme status`.
+
+These preparation prompts are deliberately isolated by domain. They may run concurrently only after each agent verifies live Issue/task ownership and disjoint paths. They do not grant implementation authority. Release Durability/Ability/Interaction/AI/Server Seam independently when their own master-plan gates close; do not wait for unrelated preparation work merely for symmetry.
+
 ### Direct worker aliases
 
 Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A worker MUST verify a live coordinator allocation naming its lane and exact owned paths before any write. Without that allocation it remains read-only and does not create its own scope.
