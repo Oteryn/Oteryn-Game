@@ -13,9 +13,9 @@ mod digest;
 mod fixture;
 mod model;
 
-pub use artifact::{ArtifactExpectation, ProjectionClass, StagedArtifact, StagedContentPair};
 #[cfg(test)]
 pub(crate) use artifact::{ActivationSlot, ActiveContent};
+pub use artifact::{ArtifactExpectation, ProjectionClass, StagedArtifact, StagedContentPair};
 pub use compiler::{CompiledContent, compile};
 pub use fixture::synthetic_vsl_fixture;
 pub use model::*;
