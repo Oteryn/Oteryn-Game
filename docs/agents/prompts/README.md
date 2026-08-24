@@ -14,11 +14,28 @@ Canonical implementation order and dependencies are defined by:
 
 - `../programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`.
 
+The current next-wave execution map is supplemented by:
+
+- `../../superpowers/plans/2026-08-24-oteryn-game-next-wave-master-plan.md`;
+- `../../superpowers/plans/2026-08-24-oteryn-game-next-wave-master-plan-hardening.md`.
+
 ### Normal entry point
 
 - `OTV2_IMPLEMENTATION_COORDINATOR.md` — implementation coordinator. **Normal short invocation: `Oteryn: implementation coordinator`.**
 
 The coordinator resolves live `main`, performs the serial bootstrap gate first, creates exact worker allocations and only then releases non-overlapping implementation lanes. This is the recommended way to start implementation.
+
+### Next-wave preparation aliases
+
+These are preparation/decision lanes. They do not grant runtime implementation authority and still require an exact coordinator allocation before writes.
+
+- `OTV2_PREP_WAVE2_RESOURCE_LIMITS.md` — `Oteryn: prep resource limits` (#93).
+- `OTV2_PREP_DURABILITY_TOPOLOGY.md` — `Oteryn: prep durability topology` (#94).
+- `OTV2_CONTENT_FORMAT_SPIKE.md` — `Oteryn: content format spike` (#95, evidence only).
+- `OTV2_PREP_GAMEPLAY_SERVER_SEAM.md` — `Oteryn: prep server seam` (#96).
+- `OTV2_PREP_PROGRAMME_STATUS.md` — `Oteryn: prep programme status` (#97).
+
+These five preparation lanes may be prepared/run concurrently only after the coordinator verifies exact non-overlapping allocations and current live state. Their completion does not automatically release later implementation lanes; each later lane must satisfy its own Definition of Ready.
 
 ### Direct worker aliases
 
@@ -33,6 +50,7 @@ Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A
 - `OTV2_IMPL_GAME_ABILITY.md` — `Oteryn: impl ability`.
 - `OTV2_IMPL_GAME_INTERACTION.md` — `Oteryn: impl interaction`.
 - `OTV2_IMPL_GAME_AI.md` — `Oteryn: impl ai`.
+- `OTV2_IMPL_GAMEPLAY_SERVER_SEAM.md` — `Oteryn: impl server seam`.
 - `OTV2_IMPL_NATIVE_CLIENT.md` — `Oteryn: impl client`.
 - `OTV2_IMPL_QA_E2E.md` — `Oteryn: impl qa`.
 - `OTV2_IMPL_VSL_MOVEMENT.md` — `Oteryn: impl movement`.
