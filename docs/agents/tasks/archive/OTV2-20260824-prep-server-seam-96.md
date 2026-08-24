@@ -4,31 +4,28 @@
 task_id: OTV2-20260824-prep-server-seam-96
 title: Prepare production gameplay server listener seam
 mode: COORDINATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 issue: 96
 base_branch: main
-branch: docs/otv2-prep-server-seam-96
+branch: null
 pr: 117
 base_sha: 9369abaca8f28a02534b57dfd82ac1fbebecb02e
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
-owner: chat-github-20260824-prep-server-seam
+head_sha: 2535e2a868c5a5893b9cf55a1ef73af09c4fa2f3
+final_head_sha: 2535e2a868c5a5893b9cf55a1ef73af09c4fa2f3
+final_head_frozen_at: 2026-08-24T21:39:34+02:00
+owner: released
 created_at: 2026-08-24T20:30:00+02:00
-updated_at: 2026-08-24T21:23:00+02:00
+updated_at: 2026-08-24T21:43:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
-owned_paths:
-  - docs/architecture/reviews/OTERYN_GAME_PRODUCTION_GAMEPLAY_SERVER_SEAM_PLAN_2026-08-24.md
-  - docs/agents/tasks/active/OTV2-20260824-prep-server-seam-96.md
+owned_paths: []
 public_contracts: []
 depends_on:
   - Oteryn-Game#94
   - Oteryn-Game#115
   - Oteryn-Game#116
-blocks:
-  - OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM
+blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 external_repositories: []
 ```
@@ -41,7 +38,7 @@ Terminal preparation verdict: `BLOCKED_BEFORE_SERVER_SEAM_ALLOCATION` with exact
 
 ## Architecture and source of truth
 
-- **PROVEN:** exact rebased task base is `main@9369abaca8f28a02534b57dfd82ac1fbebecb02e`; Issue #96 remains open and no active Server Seam implementation PR/branch was found at preflight.
+- **PROVEN:** exact rebased task base is `main@9369abaca8f28a02534b57dfd82ac1fbebecb02e`; Issue #96 was closed completed by delivery PR #117; no Server Seam implementation authority was granted by this preparation task.
 - **PROVEN:** intervening `main` changes after the initial candidate were disjoint preparation allocations for Content Format Spike and Wave-2 resource limits; this task was rebased before final-head validation.
 - **PROVEN:** the bounded Foundation implementation from PR #59 is merged: FND-02 ingress/framing, FND-03 generation/ordinal fencing and FND-04 admission/session/lease/reconnect semantics; `apps/game-server` ordinary execution remains explicitly gameplay-unavailable.
 - **PROVEN:** NET-TRANSPORT-01 registers only TCP + TLS 1.3 profile `1`; QUIC runtime remains unavailable/unregistered.
@@ -75,6 +72,22 @@ Decision packet: `docs/architecture/reviews/OTERYN_GAME_PRODUCTION_GAMEPLAY_SERV
 
 Preparation result is intentionally fail-closed. The eventual Server Seam worker must not start until #115, the #94 journal dependency, #116 and the shared-path lease are all satisfied on merged `main`.
 
+## Verified delivery
+
+- delivery PR: #117
+- exact delivery head: `2535e2a868c5a5893b9cf55a1ef73af09c4fa2f3`
+- delivery squash merge: `4079804b7f1f29cc2b7db2e746d4da2861bff084`
+- merge time: `2026-08-24T21:42:35+02:00`
+- changed delivery paths: exactly the decision packet and this task record
+- exact-head Agent governance run `32769469387`: PASS
+- exact-head Architecture semantic audit run `32769469461`: PASS
+- exact-head Merge authority audit run `32769469492`: PASS
+- exact-head Merge gate run `32769469639`: PASS, including canonical merge-gate aggregation
+- unresolved review threads before merge: 0
+- source branch `docs/otv2-prep-server-seam-96`: absent after merge
+- Issue #96: closed with state reason `completed`
+- runtime/component/E2E: `NOT_APPLICABLE` — preparation documentation only
+
 ## Validation
 
 ### Focused
@@ -96,19 +109,18 @@ Preparation result is intentionally fail-closed. The eventual Server Seam worker
 
 ### Exact-head CI
 
-- final head: recorded by PR #117/check evidence after the final content commit; do not self-reference it in this commit.
-- trigger source: PR #117
-- workflow/run/job: pending exact-head checks
-- runner assignment: pending exact-head checks
+- final head: `2535e2a868c5a5893b9cf55a1ef73af09c4fa2f3`
+- trigger source: pull request #117
+- runs: `32769469387`, `32769469461`, `32769469492`, `32769469639`
 - classification: documentation/preparation only
-- result: pending
+- result: PASS
 
 ## Self-review
 
-- exact head: repeat against final PR #117 head after this commit
-- method/reviewer: implementing/coordinating agent
-- material findings: 2 candidate findings repaired before publication: avoid overstating whole FND-03 implementation; avoid inventing an unsupported-gameplay error semantic.
-- verdict: candidate diff PASS; final exact-head PR diff review required before readiness.
+- exact head: `2535e2a868c5a5893b9cf55a1ef73af09c4fa2f3`
+- method/reviewer: implementing/coordinating agent whole-diff review
+- material findings: 2 candidate findings were repaired before final freeze; zero material findings remained on the final exact head
+- verdict: PASS
 
 ## Independent review
 
@@ -120,37 +132,46 @@ Preparation result is intentionally fail-closed. The eventual Server Seam worker
 
 ## PR and closeout
 
-- changed-file review: pending exact-head PR diff
-- unresolved review threads: pending
+- changed-file review: PASS — exactly two declared preparation paths
+- unresolved review threads: 0
 - related/superseded PRs: none for Issue #96 preparation
-- protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: pending after terminal preparation delivery
+- squash merge: PASS — `4079804b7f1f29cc2b7db2e746d4da2861bff084`
+- Issue #96: closed completed
+- source branch: deleted/absent
+- ownership release: PASS — `owned_paths: []`
+
+## Ownership release
+
+The preparation-owned decision packet and task-record paths are released. This closeout grants no runtime, Cargo, registry, production, secret, Platform or external-repository write authority. The conditional Server Seam implementation remains separately blocked on #94, #115, #116 and an explicit serialized shared-path lease.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Rebased onto current main and published PR #117 with conditional Server Seam topology plus tracked blockers #94/#115/#116
-status: validating
-branch: docs/otv2-prep-server-seam-96
-head_sha: recorded externally by PR #117 after final commit
+last_progress: PR #117 exact head 2535e2a868c5a5893b9cf55a1ef73af09c4fa2f3 passed all required gates and squash-merged as 4079804b7f1f29cc2b7db2e746d4da2861bff084; Issue #96 closed completed
+status: completed
+branch: null
+head_sha: 2535e2a868c5a5893b9cf55a1ef73af09c4fa2f3
 pr: 117
-final_head_sha: recorded externally by PR/check evidence
-final_head_frozen_at: after this content commit
+final_head_sha: 2535e2a868c5a5893b9cf55a1ef73af09c4fa2f3
+final_head_frozen_at: 2026-08-24T21:39:34+02:00
 ci_trigger_source: pull_request
-ci_check_generation: pending
-ci_checks_for_current_head: 0
-ci_run_ids: []
+ci_check_generation: exact_head_2535e2a868c5a5893b9cf55a1ef73af09c4fa2f3
+ci_checks_for_current_head: 4
+ci_run_ids:
+  - 32769469387
+  - 32769469461
+  - 32769469492
+  - 32769469639
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: completed
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 4
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
-blocker: Server Seam implementation waits for #115, the #94 durable journal dependency, #116 and a serialized shared-path lease
-next_action: perform exact-head PR diff/review-thread/CI validation and merge the preparation delivery if all gates pass
+owner_action_required: none for this completed preparation task; downstream implementation prerequisites remain tracked in #94, #115 and #116
+blocker: none for this completed preparation task
+next_action: none — task lifecycle closed; Server Seam implementation remains a separate conditional downstream task
 ```
