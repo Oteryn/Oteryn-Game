@@ -73,12 +73,12 @@ The allocation deliberately separates preparation from implementation. The prepa
 ### Focused
 
 - command/run: `python tools/agents/validate_governance.py`
-- result: `PASS` ? Governance validation passed for 25 required policy documents and 9 project lanes.
+- result: `PASS`: Governance validation passed for 25 required policy documents and 9 project lanes.
 
 ### Component/integration
 
 - command/run: `git diff --check`
-- result: `PASS` ? no whitespace errors.
+- result: `PASS`: no whitespace errors.
 
 ### E2E
 
