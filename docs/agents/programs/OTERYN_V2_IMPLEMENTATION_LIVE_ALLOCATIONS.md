@@ -278,8 +278,18 @@ OTV2-IMPL-CHANNEL:
   status: not_allocated
   blocker: DURABILITY not yet allocated/merged
 OTV2-CONTENT-FORMAT-SPIKE:
-  status: dependency_ready_pending_new_allocation
-  write_authority: none
+  status: allocation_pending_merge
+  issue: 95
+  allocation_branch: coord/content-format-spike-allocation-20260824
+  task_id: OTV2-20260824-content-format-spike
+  implementation_branch_after_allocation_merge: spike/content-format-representations-20260824
+  write_authority: activates_only_after_allocation_merge
+  owned_paths_after_allocation_merge:
+    - tools/content-format-spike/**
+    - docs/agents/evidence/OTV2-CONTENT-FORMAT-SPIKE.md
+    - docs/agents/evidence/OTV2-CONTENT-FORMAT-SPIKE-results.json
+    - docs/agents/tasks/active/OTV2-20260824-content-format-spike.md
+  forbidden_paths: runtime, Cargo/workspace, workflows, registries, architecture contracts
   note: evidence-only spike; consume docs/migration/CRYSTAL_WORLD_CONTENT_MIGRATION_DESIGN_CHECKPOINT.md as non-authoritative migration evidence; permanent-format decision remains separately owner-gated
 OTV2-IMPL-ANALYTICS:
   status: not_allocated
