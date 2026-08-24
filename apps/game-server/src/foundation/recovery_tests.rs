@@ -35,6 +35,7 @@ enum ClaimAuthorityMutation {
     RuntimeScope {
         generation: ScopeOwnershipGeneration,
     },
+    PeerCommittedSameBinding,
 }
 
 #[derive(Default)]
@@ -309,6 +310,22 @@ impl ReconnectAttemptJournal<u64> for RecoveryJournal {
                 ClaimAuthorityMutation::RuntimeScope { generation } => {
                     session.scope_generation = generation;
                 }
+                ClaimAuthorityMutation::PeerCommittedSameBinding => {
+                    session.state = GameSessionState::Active;
+                    session.connection_generation = binding.candidate_generation();
+                    session.current_transport = Some(binding.candidate_transport());
+                }
+            }
+            if matches!(
+                mutation,
+                ClaimAuthorityMutation::PeerCommittedSameBinding
+            ) {
+                let disposition = ReconnectAttemptDisposition::Committed {
+                    generation: binding.candidate_generation(),
+                };
+                state.dispositions.insert(key, disposition);
+                state.bindings.insert(key, binding);
+                return Ok(ReconnectAttemptClaim::Existing(disposition));
             }
         }
 
@@ -782,6 +799,37 @@ fn prepare_claim_revalidates_runtime_scope_at_linearization_point() -> Result<()
     assert_eq!(
         recovered.prepare_reconnect(current_attempt, generation_one, 201, 7, 12)?,
         ConnectionGeneration::new(2).map_err(|_| AdmissionError::InvalidFacts)?
+    );
+    Ok(())
+}
+
+#[test]
+fn prepare_reconciles_peer_commit_between_initial_read_and_claim() -> Result<(), AdmissionError> {
+    let journal = RecoveryJournal::default();
+    let session_id = game_session_id(404)?;
+    let mut original = AdmissionAuthority::new(journal.clone());
+    original.commit_fresh(facts(11)?, 100, || Ok(session_id))?;
+    let generation_one = ConnectionGeneration::new(1).map_err(|_| AdmissionError::InvalidFacts)?;
+    original.mark_unexpected_control_loss(100, generation_one)?;
+    journal.mutate_authority_before_next_claim(ClaimAuthorityMutation::PeerCommittedSameBinding);
+    let attempt = ReconnectAttemptRef::new(12)?;
+    let generation_two = ConnectionGeneration::new(2).map_err(|_| AdmissionError::InvalidFacts)?;
+
+    assert_eq!(
+        original.prepare_reconnect(attempt, generation_one, 200, 7, 11)?,
+        generation_two
+    );
+    let current = original.current().ok_or(AdmissionError::Terminal)?;
+    assert_eq!(current.state(), GameSessionState::Active);
+    assert_eq!(current.connection_generation(), generation_two);
+    assert_eq!(original.current_transport(), Some(200));
+    assert_eq!(
+        journal
+            .reconcile_reconnect_attempt(session_id, attempt)?
+            .disposition(),
+        Some(ReconnectAttemptDisposition::Committed {
+            generation: generation_two,
+        })
     );
     Ok(())
 }
