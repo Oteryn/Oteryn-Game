@@ -196,6 +196,7 @@ status: allocation_pending_merge
 risk: High
 issue: 94
 allocation_task: OTV2-20260824-durability-topology-prep-allocation
+allocation_pr: 118
 branch_after_allocation_merge: docs/otv2-prep-durability-topology-94
 owned_paths_after_allocation_merge:
   - docs/architecture/reviews/OTERYN_GAME_DURABILITY_TOPOLOGY_DECISION_PACKET_2026-08-24.md

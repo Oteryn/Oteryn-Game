@@ -10,7 +10,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/otv2-prep-durability-topology-94
 issue: 94
-allocation_pr: pending
+allocation_pr: 118
 pr: null
 allocation_base_sha: 22a3eb866dae19d048969edff1e1fa5012a429b6
 worker_base_sha: pending_allocation_merge
@@ -118,7 +118,7 @@ Pending allocation merge.
 ## Context checkpoint
 
 ```yaml
-last_progress: coordinator allocation candidate created; worker remains read-only until that allocation merges
+last_progress: coordinator allocation PR #118 is open; worker remains read-only until that allocation merges
 status: allocation_pending_merge
 branch: docs/otv2-prep-durability-topology-94
 head_sha: null

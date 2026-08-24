@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/durability-topology-prep-allocation-20260824
 issue: 94
-pr: null
+pr: 118
 base_sha: 22a3eb866dae19d048969edff1e1fa5012a429b6
 head_sha: null
 final_head_sha: null
@@ -121,11 +121,11 @@ The allocation deliberately separates preparation from implementation. The prepa
 ## Context checkpoint
 
 ```yaml
-last_progress: exact `main@22a3eb866dae19d048969edff1e1fa5012a429b6`, Issue #94 and concurrent Content Format Spike allocation verified; three-file allocation diff passes governance and diff-check with zero material self-review findings
+last_progress: PR #118 opened from exact `main@22a3eb866dae19d048969edff1e1fa5012a429b6`; three-file allocation diff passes governance and diff-check with zero material self-review findings
 status: validating
 branch: coord/durability-topology-prep-allocation-20260824
 head_sha: null
-pr: null
+pr: 118
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -143,5 +143,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: allocation must merge before the preparation worker writes its packet
-next_action: commit and open the bounded allocation PR, bind its number, then require exact-head game-gate before squash merge
+next_action: freeze the PR #118 exact head, record whole-diff self-review evidence and require exact-head game-gate before squash merge
 ```
