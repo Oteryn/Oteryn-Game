@@ -119,10 +119,11 @@ No PostgreSQL/schema/transactions, protocol wire IDs, UI, entitlement authority,
 
 ## Self-review
 
-- exact head: `d09086b80077caa0c0c829496e4c36a3ab311fa2` (reviewed code head before PR-metadata-only follow-up)
-- method/reviewer: implementing agent; full owned-path diff plus accepted GAME-CHAR/GAME-ITEM/FND-ID/SIM/DUR-03/GAME-CHANNEL contracts
-- material findings: fixed revision-exhaustion partial mutation and two container graph bound gaps before commit; no remaining primary-path material finding identified
-- verdict: PASS for allocated primary-path implementation; terminal delivery remains BLOCKED on shared composition lease
+- exact head: recorded in immutable PR review evidence after the final content head is frozen; do not self-reference a commit from this file
+- method/reviewer: implementation coordinator takeover; complete three-file diff plus accepted GAME-CHAR/GAME-ITEM/FND-ID/SIM/DUR-03/GAME-CHANNEL boundaries
+- prior repaired findings: lifecycle revision-exhaustion partial mutation, two containment bound gaps, and integration-time `clippy::double_must_use`
+- current material findings: pending final exact-head whole-diff self-review
+- verdict: pending final exact-head whole-diff self-review
 
 ## Independent review
 
@@ -134,12 +135,12 @@ No PostgreSQL/schema/transactions, protocol wire IDs, UI, entitlement authority,
 
 ## PR and closeout
 
-- changed-file review: PR #56 contains exactly the two allocated files; primary-path diff reviewed
-- unresolved review threads: pending PR
-- related/superseded PRs: coordinator PR #50 is read-only to this lane and preserves FOUNDATION-first shared lease
-- protected auto-merge: not eligible while shared composition lease is blocked
+- changed-file scope: exactly `apps/game-server/src/domain/mod.rs`, `apps/game-server/src/lib.rs`, and this task record
+- unresolved review threads: must be zero on the final exact head
+- related coordinator lineage: stale PR #50 closed unmerged; PR #76 transferred the shared lease; PR #78 recorded DOMAIN lease active
+- protected merge: not eligible until final exact-head self-review, genuinely independent exact-head review and required CI are all clean
 - merge commit/result: pending
-- ownership release: pending
+- ownership release: pending post-merge archive/closeout
 
 ## Context checkpoint
 
@@ -166,5 +167,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: final exact-head self-review, genuinely independent exact-head review, and repository CI remain before readiness/merge
-next_action: push the final policy-corrected candidate, update PR metadata, freeze the exact head in PR evidence, self-review the full diff, obtain a qualifying independent exact-head review, and require exact-head repository gates before merge.
+next_action: push this final lifecycle-metadata correction, freeze the resulting exact head in PR evidence, self-review the full three-file diff, obtain a qualifying independent exact-head review, and require exact-head repository gates before merge.
 ```
