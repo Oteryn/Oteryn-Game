@@ -1,7 +1,7 @@
 # Oteryn v2 Implementation Live Allocations
 
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
-- Coordinator task: `NONE` - Durability topology preparation terminal; a fresh coordinator task is required for future allocation
+- Coordinator task: `OTV2-20260825-close-next-wave-blockers` - Issue #131 active coordinator allocation
 - Canonical repository: `Oteryn/Oteryn-Game`
 - Bootstrap delivery PR: `#10`
 - Bootstrap closeout PR: `#11`
@@ -31,7 +31,7 @@
 - Content evidence delivery merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`
 - Content activation repair PR: `#87`
 - Content activation repair merge: `db95bc720529b643531c79f708086f69dd612d22`
-- State: `PARALLEL_PREPARATION_ACTIVE_DURABILITY_TOPOLOGY_COMPLETE_HARD_MAX_BLOCKED`
+- State: `NEXT_WAVE_BLOCKER_CLOSURE_COORDINATOR_ALLOCATION_ACTIVE`
 
 ## Authority rule
 
@@ -40,6 +40,33 @@ This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_
 PR #58 merged the bounded CONTENT evidence seam. A later genuinely independent exact-tree review reproduced a P0 activation-boundary defect, which Issue #85 and PR #87 repaired by removing the non-production activation state machine from the production public API. The repair is merged and independently re-reviewed; production VSL activation, permanent format selection and registry/contract mutation remain unauthorized.
 
 Unmerged sibling output is never an implicit dependency. Stable registries/contracts, `.github/workflows/**`, architecture policy/tooling and new workspace/crate topology remain unallocated unless a later merged coordinator allocation explicitly grants them.
+
+## Active coordinator — close next-wave blockers
+
+```yaml
+lane_id: OTV2-CLOSE-NEXT-WAVE-BLOCKERS
+task_id: OTV2-20260825-close-next-wave-blockers
+issue: 131
+worker_alias: Oteryn: close next-wave blockers
+status: allocation_pr_open
+allocation_pr: 132
+base_sha: 9cc23cdbfe68d0a0f13df054874929b5e5dbe418
+branch: coord/close-next-wave-blockers-131
+owned_paths:
+  - docs/agents/tasks/active/OTV2-20260825-close-next-wave-blockers.md
+  - docs/superpowers/plans/2026-08-25-oteryn-close-next-wave-blockers-implementation-plan.md
+  - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
+shared_lease: not_acquired_child_paths_remain_unallocated
+depends_on:
+  - issue:128
+blocks:
+  - issue:93
+  - issue:115
+  - issue:116
+  - issue:123
+```
+
+This allocation grants only coordinator documentation. The resource registry, Foundation/Cargo paths and every product implementation path remain released until a separately merged child allocation acquires one exact serialized lease. Issue #131 may coordinate child lifecycles but may not consume unmerged sibling output.
 
 ## Completed allocation — Bootstrap
 
