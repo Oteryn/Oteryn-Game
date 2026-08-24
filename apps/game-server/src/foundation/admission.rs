@@ -995,7 +995,18 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         match claim {
             ReconnectAttemptClaim::Claimed => {}
             ReconnectAttemptClaim::Existing(disposition) => {
-                return self.reconcile_known_disposition(disposition, candidate_transport);
+                let reconciled = self.reconcile_known_disposition(disposition, candidate_transport);
+                if matches!(
+                    disposition,
+                    ReconnectAttemptDisposition::Committed { .. }
+                ) && reconciled.is_err()
+                {
+                    // A peer may have committed this exact attempt after our last
+                    // durable read. The reconnectable predecessor projection is
+                    // stale and must not survive into the facade's atomic retry.
+                    self.clear_process_projection();
+                }
+                return reconciled;
             }
             ReconnectAttemptClaim::RejectedConcurrent => {
                 return Err(AdmissionError::StaleConnection);
