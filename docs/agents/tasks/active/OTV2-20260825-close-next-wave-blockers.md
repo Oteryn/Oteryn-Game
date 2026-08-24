@@ -4,19 +4,19 @@
 task_id: OTV2-20260825-close-next-wave-blockers
 title: Close next-wave blockers coordinator allocation
 mode: COORDINATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/close-next-wave-blockers-131
 issue: 131
-pr: null
+pr: 132
 base_sha: 9cc23cdbfe68d0a0f13df054874929b5e5dbe418
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT coordinator session for Issue #131
 created_at: 2026-08-25T00:55:13+02:00
-updated_at: 2026-08-25T00:57:55+02:00
+updated_at: 2026-08-25T00:58:42+02:00
 execution_budget_minutes: 120
 large_budget_reason: Four independent blocker lifecycles require evidence, a serialized registry mutation, one TDD security implementation, exact-head review/CI, merges and terminal ownership reconciliation.
 owned_paths:
@@ -116,11 +116,11 @@ Coordinator preflight is complete. The only current open PRs are unrelated Depen
 ## Context checkpoint
 
 ```yaml
-last_progress: Coordinator plan/task/live allocation validate cleanly after repairing the required Issue field.
-status: implementing
+last_progress: PR #132 is open; all final task/PR metadata except immutable exact-head evidence is prepared.
+status: validating
 branch: coord/close-next-wave-blockers-131
 head_sha: null
-pr: null
+pr: 132
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -138,5 +138,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Commit, push and open the coordinator allocation PR.
+next_action: Freeze the exact head, run protected CI and merge PR #132.
 ```

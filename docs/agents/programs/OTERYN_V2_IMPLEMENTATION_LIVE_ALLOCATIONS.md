@@ -48,7 +48,8 @@ lane_id: OTV2-CLOSE-NEXT-WAVE-BLOCKERS
 task_id: OTV2-20260825-close-next-wave-blockers
 issue: 131
 worker_alias: Oteryn: close next-wave blockers
-status: allocation_pr_preparation
+status: allocation_pr_open
+allocation_pr: 132
 base_sha: 9cc23cdbfe68d0a0f13df054874929b5e5dbe418
 branch: coord/close-next-wave-blockers-131
 owned_paths:
