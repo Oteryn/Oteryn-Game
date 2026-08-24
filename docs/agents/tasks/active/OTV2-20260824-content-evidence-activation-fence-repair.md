@@ -10,7 +10,7 @@ base_branch: main
 branch: repair/content-evidence-activation-fence-20260824
 issue: 85
 allocation_pr: 86
-pr: null
+pr: 87
 allocation_base_sha: d9d927acfcebe0c61c0e8e826bae170767b12730
 worker_base_sha: 19329df11eb5c605e338a472c277ac023a8d7c43
 owner: chat-github-20260818-implementation-coordinator
@@ -62,7 +62,7 @@ last_progress: allocation PR #86 merged as 19329df11eb5c605e338a472c277ac023a8d7
 status: review_pending
 branch: repair/content-evidence-activation-fence-20260824
 head_sha: pending_final_freeze
-pr: null
+pr: 87
 blocker: mandatory whole-diff self-review, genuinely independent exact-head review and exact-head repository CI remain before merge
 owner_action_required: null
 next_action: commit and push only the two code files plus this repair task, open the repair PR, freeze exact head, review it independently, require exact-head game-gate and merge only if clean
