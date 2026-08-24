@@ -81,13 +81,14 @@ Future production work requires an owner-accepted architecture/registry decision
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #58 evidence seam is merged, but a later independent exact-tree review found a reproducible P0 in the public activation boundary; Issue #85 created and fresh repair allocation is pending merge
+last_progress: PR #58 evidence seam is merged and its post-merge activation-boundary P0 is terminally repaired by PR #87 merge db95bc720529b643531c79f708086f69dd612d22; Issue #85 is closed completed and repair ownership is released
 status: evidence_delivery_merged_repair_complete_production_blocked
 branch: null
 head_sha: ab0b4241c107bfb2c6052e58aec241da130774c7
 pr: 58
 repair_issue: 85
-blocker: repair allocation must merge before code mutation; production acceptance remains separately blocked by missing DUR-04/VSL maxima and production activation authority
-owner_action_required: production CONTENT limits/authority only; no owner action is required for the bounded fail-closed repair
-next_action: after repair allocation merges, implement #85 via TDD and exact-head independent review, then correct terminal evidence state
+repair_merge_sha: db95bc720529b643531c79f708086f69dd612d22
+blocker: accepted DUR-04/VSL production hard maxima and production activation authority remain absent
+owner_action_required: production CONTENT limits/authority only, through a fresh architecture/registry decision and coordinator allocation
+next_action: no further CONTENT implementation work until that separate production decision is authorized
 ```
