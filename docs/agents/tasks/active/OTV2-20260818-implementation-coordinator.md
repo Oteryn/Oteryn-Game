@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/next-wave-readiness-reconcile-20260824
 pr: 92
-base_sha: 21557bea0787059a600b810617ee29ed201037fc
+base_sha: 91d5865b1a33598d24391e3692d588462faf7c18
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00

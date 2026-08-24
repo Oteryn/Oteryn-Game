@@ -280,7 +280,7 @@ OTV2-IMPL-CHANNEL:
 OTV2-CONTENT-FORMAT-SPIKE:
   status: dependency_ready_pending_new_allocation
   write_authority: none
-  note: evidence-only spike; permanent-format decision remains separately owner-gated
+  note: evidence-only spike; consume docs/migration/CRYSTAL_WORLD_CONTENT_MIGRATION_DESIGN_CHECKPOINT.md as non-authoritative migration evidence; permanent-format decision remains separately owner-gated
 OTV2-IMPL-ANALYTICS:
   status: not_allocated
   blocker: concrete producer event registrations do not yet exist
