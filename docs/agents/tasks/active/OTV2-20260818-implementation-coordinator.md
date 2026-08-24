@@ -4,16 +4,16 @@
 task_id: OTV2-20260818-implementation-coordinator
 title: Coordinate first native implementation wave
 mode: COORDINATE
-status: wave1_domain_lease_transfer_pending_merge
+status: wave1_domain_composition_active
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: agent/otv2-coordinator-wave1-reconcile-02
-pr: 76
-base_sha: 1f69677b40851551953caf853c08b37ce7b29c68
+branch: agent/otv2-coordinator-domain-lease-active
+pr: 78
+base_sha: 6945e962035bac83d1f19b00984df5b82719ebb9
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-24T09:59:00+02:00
+updated_at: 2026-08-24T10:06:33+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -28,6 +28,7 @@ depends_on:
   - Oteryn-Game#46
   - Oteryn-Game#59
   - Oteryn-Game#74
+  - Oteryn-Game#76
   - OTV2-20260818-impl-simulation
 blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
@@ -35,30 +36,37 @@ cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 
 ## Outcome
 
-Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme on canonical `Oteryn/Oteryn-Game`, release only dependency-ready bounded lanes, serialize shared composition/registry mutations and continue until the current implementation wave reaches a real terminal condition.
+Coordinate the active native implementation programme, serialize shared composition/registry mutations, integrate only dependency-ready lanes and keep current execution truth durable in GitHub rather than chat.
 
 ## Current proven state
 
-- `PROVEN`: Bootstrap and SIM are completed and lifecycle-closed; SIM is consumed by `apps/game-server`.
-- `PROVEN`: Wave 1 allocation PR #45 merged as `33cec30b8075c73290d7d76e9f59df4701771650` and exact-base PR #46 merged as `fd39c6aa026e82062a8b29af24811d467c115f19`.
-- `PROVEN`: FOUNDATION delivery PR #59 passed its required high-risk review/gates, squash-merged as `a70318484b1ffdd328b53cdc70a4386a516d0109`, then closeout PR #74 merged as `1f69677b40851551953caf853c08b37ce7b29c68`; Foundation ownership and its shared lease are released.
-- `PROVEN`: current reconciliation base is `main@1f69677b40851551953caf853c08b37ce7b29c68`.
-- `PROVEN`: merged `apps/game-server/src/lib.rs` composes Foundation but still reports `GameplayAvailability::UnavailableBootstrap` because native gameplay domains are not integrated; no production gameplay listener/client-entry seam is merged.
-- `PROVEN`: DOMAIN PR #56 is Draft at observed head `674d1ccd637f3565c25750e5d5fe6c56df6fde32`; relative to the reconciliation base its branch is 5 commits ahead / 8 behind and changes only its allocated Domain/task paths.
-- `PROVEN`: CONTENT PR #58 is Draft at observed head `ec68df7a461a011a6480898c9a6d9ee60703189e`; relative to the reconciliation base its branch is 7 commits ahead / 8 behind and changes only its allocated Content/task paths.
-- `PROVEN`: QA branch `agent/otv2-impl-qa-e2e-01` exists and is 3 commits ahead / 11 behind the reconciliation base. Its task checkpoint records head `58d64130cc0526001bd1c9a00a179e1c39ad6e51`, 8/8 focused evidence-shell tests PASS and real Tier 1/Tier 2 journeys `NOT_EVALUATED`; it has no PR.
-- `PROVEN`: current `RESOURCE_LIMITS_REGISTRY.json` requires registered hard maxima before affected executable acceptance; no DUR-04/VSL production hard-max entry was found, consistent with CONTENT PR #58's explicit production-limit blocker.
-- `PROVEN`: predecessor coordinator PR #50 is closed unmerged and has an explicit supersession comment linking PR #76; its obsolete pre-Foundation-completion snapshot is not current authority.
+- `PROVEN`: Bootstrap and SIM are completed and lifecycle-closed.
+- `PROVEN`: FOUNDATION delivery PR #59 merged as `a70318484b1ffdd328b53cdc70a4386a516d0109`; closeout PR #74 merged as `1f69677b40851551953caf853c08b37ce7b29c68` and released Foundation ownership.
+- `PROVEN`: coordinator reconciliation PR #76 passed exact-head required workflows and mandatory self-review, then squash-merged as `6945e962035bac83d1f19b00984df5b82719ebb9`.
+- `PROVEN`: PR #76 lawfully transferred the serialized shared composition lease to `OTV2-IMPL-DOMAIN`; DOMAIN does not need this descriptive follow-up PR #78 to merge before using that already-merged authority.
+- `PROVEN`: DOMAIN PR #56 remains Draft at `674d1ccd637f3565c25750e5d5fe6c56df6fde32`, currently 5 commits ahead / 9 behind `main@6945e962035bac83d1f19b00984df5b82719ebb9`; its existing diff remains limited to the allocated Domain/task paths.
+- `PROVEN`: CONTENT PR #58 remains Draft at observed head `ec68df7a461a011a6480898c9a6d9ee60703189e`; its production activation remains held by missing accepted DUR-04/VSL hard maxima and shared lease order.
+- `PROVEN`: QA branch exists with the test-side evidence shell, no PR, and real Tier 1/Tier 2 journeys remain `NOT_EVALUATED`.
+- `PROVEN`: merged `apps/game-server/src/lib.rs` still reports `GameplayAvailability::UnavailableBootstrap`; CLIENT is therefore not dependency-ready.
+- `PROVEN`: predecessor coordinator PR #50 is closed unmerged and superseded.
 
-## Coordinator decision
+## Active coordinator decision
 
-FOUNDATION is terminal and cannot continue holding the serialized shared-path turn. This reconciliation therefore prepares the next lawful lease transfer to DOMAIN.
+DOMAIN now owns the serialized shared composition turn for:
 
-The transfer becomes authoritative only after coordinator PR #76 itself merges to `main`. Before that merge, DOMAIN remains forbidden from mutating shared composition/workspace paths. After merge, DOMAIN may reconcile current `main` and add only the minimum contract-valid composition required to compile its real semantic core through `apps/game-server`, then rerun exact-head validation and close its own Draft/merge gates.
+```yaml
+shared_paths:
+  - apps/game-server/src/lib.rs
+  - apps/game-server/Cargo.toml
+  - Cargo.toml
+  - Cargo.lock
+  - workspace-boundaries.toml
+current_owner: OTV2-IMPL-DOMAIN
+```
 
-CONTENT stays second in the shared lease order. Its current evidence-only compiler/loader work may continue inside `apps/game-server/src/content/**`, but production VSL activation and permanent format selection remain blocked by missing accepted DUR-04/VSL limits and the separate format-decision gate.
+The allowed next DOMAIN step is bounded: reconcile PR #56 with current `main`, then make only the minimum contract-valid composition necessary to compile the existing semantic core through `apps/game-server`. Registries/contracts/workflows/new crate topology remain outside the lane. After the exact final head is validated/reviewed and merged/archived, the coordinator may transfer the shared turn to CONTENT.
 
-QA may continue in its non-overlapping `apps/game-server/tests/**` primary path without waiting for DOMAIN's shared lease. It must reconcile current main before delivery and may add real journeys only against merged production seams; its synthetic evidence shell cannot be represented as Tier 1/Tier 2 PASS.
+QA may continue independently inside `apps/game-server/tests/**`, but its shell cannot be represented as real Tier 1/Tier 2 PASS. CONTENT may continue inside `apps/game-server/src/content/**` while waiting for the shared turn and accepted production limits.
 
 ## Dependency release assessment
 
@@ -77,53 +85,30 @@ OTV2-IMPL-AI:
   blocker: DOMAIN and CONTENT not yet merged/integration-ready
 OTV2-IMPL-CLIENT:
   ready: false
-  blocker: merged game-server remains GameplayAvailability::UnavailableBootstrap with no production gameplay listener/client-entry seam
+  blocker: merged game-server still exposes GameplayAvailability::UnavailableBootstrap with no production gameplay listener/client-entry seam
 OTV2-IMPL-MOVE:
   ready: false
   blocker: Interaction, Client and real QA-E2E prerequisites not integration-ready
 OTV2-IMPL-COMBAT:
   ready: false
-  blocker: Movement plus remaining generic/value prerequisites not merged
+  blocker: Movement and remaining generic/value prerequisites not merged
 ```
 
-No new Wave 2 worker is allocated by this reconciliation.
-
-## Serialized shared lease candidate
-
-```yaml
-shared_paths:
-  - apps/game-server/src/lib.rs
-  - apps/game-server/Cargo.toml
-  - Cargo.toml
-  - Cargo.lock
-  - workspace-boundaries.toml
-lease_state: transfer_pending_coordinator_pr_merge
-previous_owner: OTV2-IMPL-FOUNDATION
-previous_owner_status: completed_and_released
-next_owner_after_merge: OTV2-IMPL-DOMAIN
-remaining_order:
-  - OTV2-IMPL-DOMAIN
-  - OTV2-IMPL-CONTENT
-  - OTV2-IMPL-QA
-```
-
-Stable registries/contracts, architecture policies, `.github/workflows/**` and new workspace/crate topology remain outside the lease unless separately allocated.
+No new Wave 2 worker is allocated yet.
 
 ## Validation / merge posture
 
-This coordinator change is documentation/allocation state only. Runtime/component/E2E is `NOT_APPLICABLE` because it changes no executable behavior. It still requires the repository's exact-head governance/dependency/CodeQL/aggregate merge gate and mandatory whole-diff self-review before merge.
-
-Independent review is `NOT_REQUIRED` for this bounded coordination reconciliation: it transfers an already-established serialized lease after the previous owner completed and releases no production/security/protocol/durable-value authority.
+PR #78 only removes stale post-merge `pending` wording from coordinator-owned documentation. Runtime/component/E2E is `NOT_APPLICABLE`; exact-head repository governance/merge checks and self-review remain required. Independent review is `NOT_REQUIRED` because no authority is widened beyond the already-merged PR #76 lease transfer.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Foundation delivery and closeout are merged and verified; live Domain, Content and QA branches were reconciled against main@1f69677b40851551953caf853c08b37ce7b29c68; PR #50 was closed unmerged as superseded; coordinator PR #76 now prepares the serialized shared-path transfer to DOMAIN while preserving Content's missing-limit hold, QA's truthful NOT_EVALUATED real-E2E state and the CLIENT gameplay-entry blocker.
-status: wave1_domain_lease_transfer_pending_merge
-branch: agent/otv2-coordinator-wave1-reconcile-02
+last_progress: PR #76 merged as 6945e962035bac83d1f19b00984df5b82719ebb9 and activated the DOMAIN shared composition lease; post-merge status PR #78 records that state; Domain PR #56 is confirmed 5 ahead / 9 behind current main and remains Draft awaiting reconciliation plus minimal game-server composition.
+status: wave1_domain_composition_active
+branch: agent/otv2-coordinator-domain-lease-active
 head_sha: null
-pr: 76
-blocker: coordinator PR #76 must pass exact-head repository checks and merge before DOMAIN may mutate shared composition/workspace paths
+pr: 78
+blocker: null
 owner_action_required: null
-next_action: qualify coordinator PR #76, merge the exact validated head if all gates are green, then advance DOMAIN PR #56 against the merged reconciliation base.
+next_action: reconcile and qualify DOMAIN PR #56 against current main with its minimal shared composition, then merge/archive it if all exact-head gates are clean.
 ```
