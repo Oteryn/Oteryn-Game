@@ -1,7 +1,7 @@
 # Oteryn v2 Implementation Live Allocations
 
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
-- Coordinator task: `OTV2-20260818-implementation-coordinator`
+- Coordinator task: `OTV2-20260824-durability-topology-prep-allocation`
 - Canonical repository: `Oteryn/Oteryn-Game`
 - Bootstrap delivery PR: `#10`
 - Bootstrap closeout PR: `#11`
@@ -31,7 +31,7 @@
 - Content evidence delivery merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`
 - Content activation repair PR: `#87`
 - Content activation repair merge: `db95bc720529b643531c79f708086f69dd612d22`
-- State: `CONTENT_FORMAT_SPIKE_ALLOCATION_PENDING_MERGE`
+- State: `PARALLEL_PREPARATION_ACTIVE_DURABILITY_ALLOCATION_PENDING_MERGE`
 
 ## Authority rule
 
@@ -186,6 +186,28 @@ material_findings:
 
 The repair closes the reproduced public activation-boundary P0. Production consumers cannot import `content::ActivationSlot`; the internal evidence activation state machine remains test-only. No parser format, content values, product limits, permanent format or production activation authority changed.
 
+## Durability topology preparation allocation candidate
+
+```yaml
+lane_id: OTV2-PREP-DURABILITY-TOPOLOGY
+task_id: OTV2-20260824-prep-durability-topology
+worker_alias: Oteryn: prep durability topology
+status: allocation_pending_merge
+risk: High
+issue: 94
+allocation_task: OTV2-20260824-durability-topology-prep-allocation
+allocation_pr: 118
+branch_after_allocation_merge: docs/otv2-prep-durability-topology-94
+owned_paths_after_allocation_merge:
+  - docs/architecture/reviews/OTERYN_GAME_DURABILITY_TOPOLOGY_DECISION_PACKET_2026-08-24.md
+  - docs/agents/tasks/active/OTV2-20260824-prep-durability-topology.md
+shared_lease: not_required
+runtime_ddl_migration_dependency_cargo_registry_workflow_authority: none
+implementation_authority: none
+```
+
+This allocation becomes effective only after its coordinator PR merges. The worker may persist the Issue #94 topology packet and its own task state, but it may not write any proposed runtime, SQL/DDL, migration, dependency, Cargo/workspace, resource-registry, workflow or production path. `OTV2-IMPL-DURABILITY` remains separately unallocated until the packet is accepted and every first-increment DUR-03 hard-max blocker is closed or explicitly excluded fail-closed.
+
 ## Active Wave 1 — QA
 
 ```yaml
@@ -265,8 +287,17 @@ This allocation activates only after PR #112 merges. It is a fresh live projecti
 ## Deferred allocations and concrete readiness
 
 ```yaml
+OTV2-PREP-DURABILITY-TOPOLOGY:
+  status: allocation_pending_merge
+  write_authority: none_until_allocation_merge
+  issue: 94
+  task_id: OTV2-20260824-prep-durability-topology
+  branch_after_allocation_merge: docs/otv2-prep-durability-topology-94
+  owned_paths_after_allocation_merge:
+    - docs/architecture/reviews/OTERYN_GAME_DURABILITY_TOPOLOGY_DECISION_PACKET_2026-08-24.md
+    - docs/agents/tasks/active/OTV2-20260824-prep-durability-topology.md
 OTV2-IMPL-DURABILITY:
-  status: dependency_ready_topology_preflight_pending_allocation
+  status: blocked_pending_topology_packet_and_applicable_dur03_hard_max_closure
   write_authority: none
   evidence: FOUNDATION and DOMAIN concrete merged seams exist; PostgreSQL is accepted but no Rust DB/migration topology exists on main
 OTV2-IMPL-ABILITY:
