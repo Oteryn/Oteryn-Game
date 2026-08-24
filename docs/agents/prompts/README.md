@@ -20,6 +20,18 @@ Canonical implementation order and dependencies are defined by:
 
 The coordinator resolves live `main`, performs the serial bootstrap gate first, creates exact worker allocations and only then releases non-overlapping implementation lanes. This is the recommended way to start implementation.
 
+### Next-wave preparation aliases
+
+These aliases are for preparation/decision work only. They still require an exact coordinator allocation before any repository write and do not grant runtime implementation authority.
+
+- `OTV2_PREP_WAVE2_RESOURCE_LIMITS.md` — `Oteryn: prep resource limits` (#93).
+- `OTV2_PREP_DURABILITY_TOPOLOGY.md` — `Oteryn: prep durability topology` (#94).
+- `OTV2_CONTENT_FORMAT_SPIKE.md` — `Oteryn: content format spike` (#95, evidence only).
+- `OTV2_PREP_GAMEPLAY_SERVER_SEAM.md` — `Oteryn: prep server seam` (#96).
+- `OTV2_PREP_PROGRAMME_STATUS.md` — `Oteryn: prep programme status` (#97).
+
+The five preparation lanes may run concurrently only when the implementation coordinator has merged exact non-overlapping allocations and current live state still permits it. Completion of one preparation lane releases only the downstream lane whose own Definition of Ready is satisfied.
+
 ### Direct worker aliases
 
 Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A worker MUST verify a live coordinator allocation naming its lane and exact owned paths before any write. Without that allocation it remains read-only and does not create its own scope.
