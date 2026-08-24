@@ -8,8 +8,8 @@ status: next_wave_readiness_prepared_allocations_pending
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/next-wave-readiness-reconcile-20260824
-pr: null
-base_sha: c28e09ccf863f05cd8aeeb9c4b9b0ca7e1e90efb
+pr: 92
+base_sha: 21557bea0787059a600b810617ee29ed201037fc
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
