@@ -709,7 +709,6 @@ where
         &self.primary
     }
 
-    #[must_use]
     pub fn claims(&self) -> impl Iterator<Item = &S> {
         self.claims.iter()
     }
