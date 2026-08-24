@@ -31,7 +31,7 @@
 - Content evidence delivery merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`
 - Content activation repair PR: `#87`
 - Content activation repair merge: `db95bc720529b643531c79f708086f69dd612d22`
-- State: `NEXT_WAVE_READINESS_PREPARED_ALLOCATIONS_PENDING`
+- State: `CONTENT_FORMAT_SPIKE_ALLOCATION_PENDING_MERGE`
 
 ## Authority rule
 
@@ -238,6 +238,30 @@ CONTENT no longer needs the serialized shared paths for its merged evidence seam
 - `RECOMMENDATION`: immediate parallel preparation is QA reconciliation, DURABILITY topology/allocation, CONTENT-FORMAT-SPIKE allocation and the Wave-2 resource-limit decision packet. Ability/Interaction/AI implementation follows only after their required numeric bounds are accepted or explicitly fenced out of the executable slice.
 - `RECOMMENDATION`: use one game-server-local durability module plus one game-owned migration ledger for the first implementation increment unless implementation evidence proves a dedicated immediate-consumer crate is necessary; any Cargo/workspace/migration paths still require explicit serialized allocation.
 
+## Active allocation candidate — Content Format Spike
+
+```yaml
+lane_id: OTV2-CONTENT-FORMAT-SPIKE
+task_id: OTV2-20260824-content-format-spike
+worker_alias: Oteryn: content format spike
+status: allocation_pending_merge
+risk: Medium
+issue: 95
+allocation_pr: 112
+worker_branch_after_merge: spike/content-format-evidence-20260824
+owned_paths_after_merge:
+  - tools/content-format-spike/**
+  - docs/agents/evidence/OTV2-20260824-content-format-spike.md
+  - docs/agents/evidence/OTV2-20260824-content-format-spike-results.json
+  - docs/agents/tasks/active/OTV2-20260824-content-format-spike.md
+shared_lease: not_required
+contracts_registry_workflows_cargo_authority: none
+production_runtime_authority: none
+permanent_format_selection: forbidden
+```
+
+This allocation activates only after PR #112 merges. It is a fresh live projection after the v3.10 lifecycle audit; it does not revive the archived implementation-coordinator packet.
+
 ## Deferred allocations and concrete readiness
 
 ```yaml
@@ -278,8 +302,10 @@ OTV2-IMPL-CHANNEL:
   status: not_allocated
   blocker: DURABILITY not yet allocated/merged
 OTV2-CONTENT-FORMAT-SPIKE:
-  status: dependency_ready_pending_new_allocation
-  write_authority: none
+  status: allocation_pending_merge
+  write_authority: activates_only_after_pr_112_merge
+  worker_branch_after_merge: spike/content-format-evidence-20260824
+  task: OTV2-20260824-content-format-spike
   note: evidence-only spike; consume docs/migration/CRYSTAL_WORLD_CONTENT_MIGRATION_DESIGN_CHECKPOINT.md as non-authoritative migration evidence; permanent-format decision remains separately owner-gated
 OTV2-IMPL-ANALYTICS:
   status: not_allocated
