@@ -19,6 +19,10 @@
 - Foundation delivery merge: `a70318484b1ffdd328b53cdc70a4386a516d0109`
 - Foundation closeout PR: `#74`
 - Foundation closeout merge: `1f69677b40851551953caf853c08b37ce7b29c68`
+- Coordinator DOMAIN lease-transfer PR: `#76`
+- Coordinator DOMAIN lease-transfer merge: `6945e962035bac83d1f19b00984df5b82719ebb9`
+- Coordinator DOMAIN lease-active PR: `#78`
+- Coordinator DOMAIN lease-active merge: `3988e4263569d6c90bf6e794688b810073ad5184`
 - Foundation post-merge audit PR: `#81`
 - Foundation post-merge audit merge: `55e30e23c3d5775ce760c6b210ea77f152b359ae`
 - Domain delivery PR: `#56`
