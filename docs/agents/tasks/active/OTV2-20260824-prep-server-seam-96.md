@@ -10,7 +10,7 @@ issue: 96
 base_branch: main
 branch: docs/otv2-prep-server-seam-96
 pr: 117
-base_sha: 22a3eb866dae19d048969edff1e1fa5012a429b6
+base_sha: 9369abaca8f28a02534b57dfd82ac1fbebecb02e
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -41,8 +41,8 @@ Terminal preparation verdict: `BLOCKED_BEFORE_SERVER_SEAM_ALLOCATION` with exact
 
 ## Architecture and source of truth
 
-- **PROVEN:** exact rebased task base is `main@22a3eb866dae19d048969edff1e1fa5012a429b6`; Issue #96 remains open and no active Server Seam implementation PR/branch was found at preflight.
-- **PROVEN:** intervening `main` change after the initial candidate was the disjoint Content Format Spike allocation; this task was rebased before final-head validation.
+- **PROVEN:** exact rebased task base is `main@9369abaca8f28a02534b57dfd82ac1fbebecb02e`; Issue #96 remains open and no active Server Seam implementation PR/branch was found at preflight.
+- **PROVEN:** intervening `main` changes after the initial candidate were disjoint preparation allocations for Content Format Spike and Wave-2 resource limits; this task was rebased before final-head validation.
 - **PROVEN:** the bounded Foundation implementation from PR #59 is merged: FND-02 ingress/framing, FND-03 generation/ordinal fencing and FND-04 admission/session/lease/reconnect semantics; `apps/game-server` ordinary execution remains explicitly gameplay-unavailable.
 - **PROVEN:** NET-TRANSPORT-01 registers only TCP + TLS 1.3 profile `1`; QUIC runtime remains unavailable/unregistered.
 - **PROVEN:** `protocol.rs` has inbound framing/envelope validation but no production Foundation outbound encoder for required server admission/recovery responses.

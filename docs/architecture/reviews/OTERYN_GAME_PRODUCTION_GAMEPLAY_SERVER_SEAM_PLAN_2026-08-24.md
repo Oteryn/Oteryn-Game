@@ -3,7 +3,7 @@
 - Date: 2026-08-24
 - Issue: Oteryn/Oteryn-Game#96
 - Preparation task: `OTV2-20260824-prep-server-seam-96`
-- Base: `main@22a3eb866dae19d048969edff1e1fa5012a429b6`
+- Base: `main@9369abaca8f28a02534b57dfd82ac1fbebecb02e`
 - Status: `BLOCKED_BEFORE_IMPLEMENTATION_ALLOCATION`
 - Scope: architecture/preparation only; no runtime, Cargo, registry, deployment, secret or production-port mutation
 
