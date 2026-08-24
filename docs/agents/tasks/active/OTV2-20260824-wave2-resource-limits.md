@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: chat-github-20260824-wave2-resource-limits
 created_at: 2026-08-24T21:01:00+02:00
-updated_at: 2026-08-24T21:15:00+02:00
+updated_at: 2026-08-24T21:18:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -43,15 +43,18 @@ Produce the bounded Issue #93 decision packet required by the next-wave master p
 
 The worker owns only the decision-packet path above. `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`, coordinator programme overlays, runtime code, Cargo/workspace files and workflows are not worker-owned.
 
+Once this allocation PR is merged, this exact task record supersedes the older deferred `OTV2-WAVE2-RESOURCE-LIMITS: write_authority: none` wording in `OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md` **only for the single packet path listed in `owned_paths`**. The older no-write posture remains binding for the registry, runtime, shared/Cargo/workspace paths, workflows and every other unallocated surface.
+
 ## Architecture and source of truth
 
 - `PROVEN`: Issue #93 requires this packet and forbids worker-invented numeric limits.
 - `PROVEN`: `RESOURCE_LIMITS_REGISTRY.json` requires every externally controlled count/depth/length/byte size to have an absolute hard maximum before implementation acceptance; missing required values fail review rather than imply unlimited capacity.
 - `PROVEN`: GAME-ABILITY-01, GAME-INTERACTION-01, GAME-AI-01 and VSL-MOVE-01 are owner-accepted for their bounded architecture scopes, while concrete numeric gameplay maxima remain deliberately unresolved.
 - `PROVEN`: the next-wave master plan names the exact packet path owned by this task.
+- `PROVEN`: the live allocation ledger's older `write_authority: none` remains authoritative outside this exact-path allocation and is not rewritten by this task.
 - `DERIVED`: registry mutation is a later serialized coordinator action after accepted evidence/owner decision.
 - `UNKNOWN`: exact numeric maxima for currently unregistered gameplay dimensions until accepted evidence or explicit owner disposition exists.
-- `CONFLICT`: none known at allocation time.
+- `CONFLICT`: none after the exact-path authority precedence above is applied.
 
 ## Acceptance criteria
 
@@ -113,7 +116,7 @@ No runtime/client/server/protocol/content implementation; no stable protocol/eve
 ## Context checkpoint
 
 ```yaml
-last_progress: coordinator rebased allocation onto current main after parallel Content Format Spike allocation merged
+last_progress: coordinator rebased allocation onto current main and made exact-path authority precedence explicit against the older deferred live-ledger wording
 status: investigating
 branch: docs/wave2-resource-limits-20260824
 head_sha: null
