@@ -4,16 +4,16 @@
 task_id: OTV2-20260818-implementation-coordinator
 title: Coordinate first native implementation wave
 mode: COORDINATE
-status: wave1_exact_base_bind_pending
+status: wave1_domain_composition_active
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: agent/otv2-coordinator-bind-wave1-base
-pr: 46
-base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
+branch: agent/otv2-coordinator-domain-lease-active
+pr: 78
+base_sha: 6945e962035bac83d1f19b00984df5b82719ebb9
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-22T18:09:00+02:00
+updated_at: 2026-08-24T10:06:33+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -23,73 +23,92 @@ public_contracts:
   - docs/agents/prompts/OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH.md
   - docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md
 depends_on:
-  - OTV2-20260805-foundation-preimplementation-contracts
   - Oteryn-Game#44
   - Oteryn-Game#45
-blocks:
-  - OTV2-20260822-impl-foundation-runtime
-  - OTV2-20260822-impl-domain-core
-  - OTV2-20260822-impl-vsl-content
-  - OTV2-20260822-impl-qa-e2e
+  - Oteryn-Game#46
+  - Oteryn-Game#59
+  - Oteryn-Game#74
+  - Oteryn-Game#76
+  - OTV2-20260818-impl-simulation
+blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 ```
 
 ## Outcome
 
-Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme on canonical `Oteryn/Oteryn-Game`, releasing only dependency-ready bounded worker lanes under exact-base, path-ownership, serialized-shared-mutation and review discipline.
+Coordinate the active native implementation programme, serialize shared composition/registry mutations, integrate only dependency-ready lanes and keep current execution truth durable in GitHub rather than chat.
 
 ## Current proven state
 
-- `PROVEN`: Bootstrap lifecycle is completed and archived.
-- `PROVEN`: SIM lifecycle is completed and archived; its production deterministic simulation crate is consumed by `apps/game-server`.
-- `PROVEN`: post-SIM Wave 1 launch pack PR #44 merged as `7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2`.
-- `PROVEN`: Wave 1 allocation PR #45 passed exact-head Agent governance, Architecture semantic audit, Merge authority audit and aggregate Merge gate, then squash-merged as `33cec30b8075c73290d7d76e9f59df4701771650`.
-- `PROVEN`: PR #45 reserves four pairwise non-overlapping primary paths: `apps/game-server/src/foundation/**`, `apps/game-server/src/domain/**`, `apps/game-server/src/content/**`, and `apps/game-server/tests/**`.
-- `PROVEN`: historical SIM PR #13 bound `worker_base_sha` to the exact allocation merge SHA before implementation; Wave 1 exact-base PR #46 follows the same lifecycle.
-- `PROVEN`: current server package is `apps/game-server`; `crates/protocol-oteryn` is not present on the allocation baseline, so no speculative new crate topology is introduced.
-- `PROVEN`: shared composition/workspace paths remain coordinator-serialized, with FOUNDATION first after bind.
-- `PROVEN`: stable contract/registry/CI/policy/new-crate mutations remain outside the Wave 1 allocation until separately granted.
-- `PROVEN`: Foundation retains mandatory genuinely independent exact-head review for protocol/session/admission/fencing delivery.
-- `PROVEN`: no production/protected/live-data/Platform/external-repository authority is granted.
+- `PROVEN`: Bootstrap and SIM are completed and lifecycle-closed.
+- `PROVEN`: FOUNDATION delivery PR #59 merged as `a70318484b1ffdd328b53cdc70a4386a516d0109`; closeout PR #74 merged as `1f69677b40851551953caf853c08b37ce7b29c68` and released Foundation ownership.
+- `PROVEN`: coordinator reconciliation PR #76 passed exact-head required workflows and mandatory self-review, then squash-merged as `6945e962035bac83d1f19b00984df5b82719ebb9`.
+- `PROVEN`: PR #76 lawfully transferred the serialized shared composition lease to `OTV2-IMPL-DOMAIN`; DOMAIN does not need this descriptive follow-up PR #78 to merge before using that already-merged authority.
+- `PROVEN`: DOMAIN PR #56 remains Draft at `674d1ccd637f3565c25750e5d5fe6c56df6fde32`, currently 5 commits ahead / 9 behind `main@6945e962035bac83d1f19b00984df5b82719ebb9`; its existing diff remains limited to the allocated Domain/task paths.
+- `PROVEN`: CONTENT PR #58 remains Draft at observed head `ec68df7a461a011a6480898c9a6d9ee60703189e`; its production activation remains held by missing accepted DUR-04/VSL hard maxima and shared lease order.
+- `PROVEN`: QA branch exists with the test-side evidence shell, no PR, and real Tier 1/Tier 2 journeys remain `NOT_EVALUATED`.
+- `PROVEN`: merged `apps/game-server/src/lib.rs` still reports `GameplayAvailability::UnavailableBootstrap`; CLIENT is therefore not dependency-ready.
+- `PROVEN`: predecessor coordinator PR #50 is closed unmerged and superseded.
 
-## Exact-base bind
+## Active coordinator decision
+
+DOMAIN now owns the serialized shared composition turn for:
 
 ```yaml
-allocation_pr: 45
-allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-bind_branch: agent/otv2-coordinator-bind-wave1-base
-bind_pr: 46
-bind_write_authority_before_merge: false
-worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-lanes:
-  - OTV2-IMPL-FOUNDATION
-  - OTV2-IMPL-DOMAIN
-  - OTV2-IMPL-CONTENT
-  - OTV2-IMPL-QA
-serialized_shared_paths:
+shared_paths:
   - apps/game-server/src/lib.rs
   - apps/game-server/Cargo.toml
   - Cargo.toml
   - Cargo.lock
   - workspace-boundaries.toml
-initial_shared_lease_owner_after_bind: OTV2-IMPL-FOUNDATION
+current_owner: OTV2-IMPL-DOMAIN
 ```
 
-## Merge discipline
+The allowed next DOMAIN step is bounded: reconcile PR #56 with current `main`, then make only the minimum contract-valid composition necessary to compile the existing semantic core through `apps/game-server`. Registries/contracts/workflows/new crate topology remain outside the lane. After the exact final head is validated/reviewed and merged/archived, the coordinator may transfer the shared turn to CONTENT.
 
-Exact-base PR #46 is coordination-only. While it is unmerged, all four worker lanes remain read-only because canonical `main` still contains their `allocated_pending_exact_base` state. After lawful exact-head merge, create every worker branch/task from the resulting post-bind `main`; the live record keeps `worker_base_sha` equal to exact allocation merge `33cec30b8075c73290d7d76e9f59df4701771650`, matching the established SIM #12 → #13 convention.
+QA may continue independently inside `apps/game-server/tests/**`, but its shell cannot be represented as real Tier 1/Tier 2 PASS. CONTENT may continue inside `apps/game-server/src/content/**` while waiting for the shared turn and accepted production limits.
 
-Wave 1 workers may then develop their primary paths in parallel. Shared composition/workspace mutations remain serialized, starting with FOUNDATION. Any stable registry/contract/CI/policy/new-crate mutation requires an explicit coordinator reallocation before write.
+## Dependency release assessment
+
+```yaml
+OTV2-IMPL-DURABILITY:
+  ready: false
+  blocker: DOMAIN concrete composition/consumer not yet merged
+OTV2-IMPL-ABILITY:
+  ready: false
+  blocker: DOMAIN and CONTENT not yet merged/integration-ready
+OTV2-IMPL-INTERACTION:
+  ready: false
+  blocker: DOMAIN and CONTENT not yet merged/integration-ready
+OTV2-IMPL-AI:
+  ready: false
+  blocker: DOMAIN and CONTENT not yet merged/integration-ready
+OTV2-IMPL-CLIENT:
+  ready: false
+  blocker: merged game-server still exposes GameplayAvailability::UnavailableBootstrap with no production gameplay listener/client-entry seam
+OTV2-IMPL-MOVE:
+  ready: false
+  blocker: Interaction, Client and real QA-E2E prerequisites not integration-ready
+OTV2-IMPL-COMBAT:
+  ready: false
+  blocker: Movement and remaining generic/value prerequisites not merged
+```
+
+No new Wave 2 worker is allocated yet.
+
+## Validation / merge posture
+
+PR #78 only removes stale post-merge `pending` wording from coordinator-owned documentation. Runtime/component/E2E is `NOT_APPLICABLE`; exact-head repository governance/merge checks and self-review remain required. Independent review is `NOT_REQUIRED` because no authority is widened beyond the already-merged PR #76 lease transfer.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Wave 1 allocation PR #45 passed exact-head gates and merged as 33cec30b8075c73290d7d76e9f59df4701771650; exact-base PR #46 binds all four workers to that exact allocation merge.
-status: wave1_exact_base_bind_pending
-branch: agent/otv2-coordinator-bind-wave1-base
+last_progress: PR #76 merged as 6945e962035bac83d1f19b00984df5b82719ebb9 and activated the DOMAIN shared composition lease; post-merge status PR #78 records that state; Domain PR #56 is confirmed 5 ahead / 9 behind current main and remains Draft awaiting reconciliation plus minimal game-server composition.
+status: wave1_domain_composition_active
+branch: agent/otv2-coordinator-domain-lease-active
 head_sha: null
-pr: 46
-blocker: exact-base PR #46 must pass exact-head governance/merge checks and merge before any worker write
+pr: 78
+blocker: null
 owner_action_required: null
-next_action: validate PR #46 at frozen head; after lawful merge, create four worker branches/tasks from resulting main and release non-overlapping implementation writes.
+next_action: reconcile and qualify DOMAIN PR #56 against current main with its minimal shared composition, then merge/archive it if all exact-head gates are clean.
 ```
