@@ -371,7 +371,7 @@ After the DUR-03 hard-max gate is closed, the coordinator may prepare `Oteryn: i
 
 ```yaml
 lane_id: OTV2-IMPL-DURABILITY
-base_sha: <exact then-current main SHA recorded by the coordinator>
+base_sha_policy: resolve_exact_live_main_at_allocation_time
 primary_owned_paths:
   - apps/game-server/src/durability/**
   - apps/game-server/src/bin/oteryn-game-migrate.rs
@@ -396,7 +396,7 @@ independent_exact_head_review: required
 real_postgresql_db_e2e: required
 ```
 
-The literal `<exact then-current main SHA recorded by the coordinator>` above is an allocation schema field, not a placeholder value for this packet: repository policy requires that SHA to be taken from GitHub at the future allocation event and forbids pre-selecting a stale future SHA now.
+The future coordinator resolves and records the full exact `base_sha` from live GitHub `main` at allocation time; this packet intentionally does not pre-select a future SHA.
 
 ## 16. Final disposition
 
