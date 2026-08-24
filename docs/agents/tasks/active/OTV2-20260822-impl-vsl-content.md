@@ -3,8 +3,8 @@
 ```yaml
 task_id: OTV2-20260822-impl-vsl-content
 title: Implement minimal native VSL content compiler loader seam
-mode: REPAIR_PENDING_ALLOCATION
-status: evidence_delivery_merged_at_risk_post_merge_p0
+mode: BLOCKED_OWNER_DECISION
+status: evidence_delivery_merged_repair_complete_production_blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
@@ -15,11 +15,15 @@ final_head_sha: ab0b4241c107bfb2c6052e58aec241da130774c7
 evidence_delivery_merge_sha: 8f99f25d0b1b3472d40504cd54b463cf752ebe7a
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-08-24T14:10:00+02:00
+updated_at: 2026-08-24T15:40:00+02:00
 owned_paths: []
 shared_lease: released
 repair_issue: 85
-future_write_authority: pending_repair_allocation_merge
+repair_issue_state: completed
+repair_pr: 87
+repair_final_head_sha: c9d3570f528acc8e22e3055e4f8de712e9057abd
+repair_merge_sha: db95bc720529b643531c79f708086f69dd612d22
+future_write_authority: requires_new_coordinator_allocation
 ```
 
 ## Delivered evidence seam
@@ -39,17 +43,17 @@ future_write_authority: pending_repair_allocation_merge
 - squash merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`;
 - exact-head Merge Gate / `game-gate`: `SUCCESS`;
 - whole-diff self-review: `PASS`;
-- pre-merge genuinely independent exact-head review: recorded `PASS`; a later independent exact-tree review reproduced a P0 activation-boundary defect, so that historical PASS no longer represents current safety state;
+- pre-merge genuinely independent exact-head review: historical PASS; later post-merge review found one P0 which is now repaired and separately evidenced below;
 - Ready-state Architecture semantic audit: `SUCCESS`;
 - source branch: absent after merge.
 
-## Post-merge P0 - evidence activation boundary
+## Resolved post-merge P0 - evidence activation boundary
 
-A later independent exact-tree review of merged PR #58 found that `content::ActivationSlot::stage_and_activate` is exported by the production public module even though its artifacts are explicitly `VSL_BUNDLE_EVIDENCE_PROFILE/v1/non-production` and DUR-04 production activation authority is `NONE`.
+A later independent exact-tree review of merged PR #58 found that `content::ActivationSlot::stage_and_activate` was exported by the production public module even though its artifacts are explicitly non-production and DUR-04 production activation authority is `NONE`.
 
-Root-cause reproduction on the merged tree is deterministic: a `compile_fail` doctest attempting `use oteryn_game_server::content::ActivationSlot` unexpectedly compiled, proving the public production surface was open. The bounded repair in Issue #85 must make that doctest fail-to-compile as intended by restricting `ActiveContent`/`ActivationSlot` and their impls to `cfg(test)` while leaving staging/parser/compiler evidence behavior intact.
+Issue #85 reproduced that defect with a compile-fail regression, allocation PR #86 granted the bounded repair, and PR #87 fixed the boundary by keeping `ActiveContent` / `ActivationSlot` and their impls under `#[cfg(test)]` only. Final repair head `c9d3570f528acc8e22e3055e4f8de712e9057abd` passed fresh independent review with P0=0/P1=0/P2=0 and exact-head `game-gate`, then squash-merged as `db95bc720529b643531c79f708086f69dd612d22`. Issue #85 is closed completed and its source branch is absent.
 
-This defect is distinct from Issue #54: repairing it does not grant production VSL limits, permanent-format authority or production activation.
+The repair changes only the public activation fence; it does not grant production VSL limits, permanent-format authority or production activation.
 
 ## Production acceptance blocker
 
@@ -68,7 +72,7 @@ Future production work requires an owner-accepted architecture/registry decision
 - [x] deterministic non-production evidence bytes plus integrity checks;
 - [x] corrupt/truncated/oversized/unknown-critical/incompatible artifacts rejected before activation;
 - [x] evidence staging and test-only all-or-nothing activation semantics exist;
-- [ ] production public API excludes non-production activation publication - P0 repair Issue #85 pending;
+- [x] production public API excludes non-production activation publication — repaired by Issue #85 / PR #87;
 - [x] exact-head focused/component/workspace validation and whole-diff review;
 - [x] genuinely independent exact-head review for parser/item/loot/value semantics;
 - [x] evidence-only composition through the production game-server crate;
@@ -78,7 +82,7 @@ Future production work requires an owner-accepted architecture/registry decision
 
 ```yaml
 last_progress: PR #58 evidence seam is merged, but a later independent exact-tree review found a reproducible P0 in the public activation boundary; Issue #85 created and fresh repair allocation is pending merge
-status: evidence_delivery_merged_at_risk_post_merge_p0
+status: evidence_delivery_merged_repair_complete_production_blocked
 branch: null
 head_sha: ab0b4241c107bfb2c6052e58aec241da130774c7
 pr: 58
