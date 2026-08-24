@@ -1089,7 +1089,6 @@ mod tests {
         nested
     }
 
-
     fn push_test_varint_field(payload: &mut Vec<u8>, field: usize, value: usize) {
         payload.extend(test_varint(field << 3));
         payload.extend(test_varint(value));
@@ -1163,11 +1162,7 @@ mod tests {
         push_test_varint_field(&mut payload, 4, connection_generation);
         push_test_varint_field(&mut payload, 6, next_command_id);
         push_test_varint_field(&mut payload, 7, PROTOCOL_MAJOR_V1 as usize);
-        push_test_varint_field(
-            &mut payload,
-            8,
-            TRANSPORT_PROFILE_TCP_TLS13_V1 as usize,
-        );
+        push_test_varint_field(&mut payload, 8, TRANSPORT_PROFILE_TCP_TLS13_V1 as usize);
         push_test_varint_field(&mut payload, 9, schema_revision);
         for capability in selected_capabilities {
             push_test_varint_field(&mut payload, 10, *capability);
@@ -1243,19 +1238,13 @@ mod tests {
         let world = test_uuid_v7(2);
         let channel = test_uuid_v7(3);
         for (message_type, payload) in [
-            (
-                1,
-                test_client_bootstrap_payload(1, 1, 1, &short, &[]),
-            ),
+            (1, test_client_bootstrap_payload(1, 1, 1, &short, &[])),
             (3, test_client_resume_payload(1, 1, 1, &nil, &[])),
             (
                 2,
                 test_server_accepted_payload(1, 1, 1, [&nil, &world, &channel], &[]),
             ),
-            (
-                4,
-                test_server_resume_accepted_payload(2, 1, 1, &short, &[]),
-            ),
+            (4, test_server_resume_accepted_payload(2, 1, 1, &short, &[])),
         ] {
             assert_eq!(
                 decode_wire_envelope(&test_envelope(message_type, &payload)),
@@ -1314,16 +1303,20 @@ mod tests {
         let session = test_uuid_v7(1);
         let world = test_uuid_v7(2);
         let channel = test_uuid_v7(3);
-        assert!(decode_wire_envelope(&test_envelope(
-            1,
-            &test_client_bootstrap_payload(1, 1, 1, &session, &[777])
-        ))
-        .is_ok());
-        assert!(decode_wire_envelope(&test_envelope(
-            3,
-            &test_client_resume_payload(1, 1, 1, &session, &[777])
-        ))
-        .is_ok());
+        assert!(
+            decode_wire_envelope(&test_envelope(
+                1,
+                &test_client_bootstrap_payload(1, 1, 1, &session, &[777])
+            ))
+            .is_ok()
+        );
+        assert!(
+            decode_wire_envelope(&test_envelope(
+                3,
+                &test_client_resume_payload(1, 1, 1, &session, &[777])
+            ))
+            .is_ok()
+        );
         assert_eq!(
             decode_wire_envelope(&test_envelope(
                 2,
@@ -1375,8 +1368,7 @@ mod tests {
             Err(FoundationProtocolError::MalformedEnvelope)
         );
 
-        let mut accepted =
-            test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[]);
+        let mut accepted = test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[]);
         push_test_varint_field(&mut accepted, 4, 1);
         assert_eq!(
             decode_wire_envelope(&test_envelope(2, &accepted)),
