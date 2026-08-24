@@ -33,6 +33,8 @@ fn real_tier1() -> BoundaryEvidence {
         normal_networking: true,
         server_legality_checks: true,
         native_client: false,
+        production_default_artifacts: false,
+        test_adapter_present: false,
         direct_domain_mutation: false,
     }
 }
@@ -40,11 +42,21 @@ fn real_tier1() -> BoundaryEvidence {
 fn real_tier2() -> BoundaryEvidence {
     BoundaryEvidence {
         native_client: true,
+        test_adapter_present: true,
         ..real_tier1()
     }
 }
 
-fn phases() -> Vec<PhaseEvidence> {
+fn real_tier3() -> BoundaryEvidence {
+    BoundaryEvidence {
+        native_client: true,
+        production_default_artifacts: true,
+        test_adapter_present: false,
+        ..real_tier1()
+    }
+}
+
+fn phases(tier: ExecutionTier) -> Vec<PhaseEvidence> {
     vec![
         PhaseEvidence::passed(Phase::Environment),
         PhaseEvidence::passed(Phase::Identity),
@@ -58,10 +70,15 @@ fn phases() -> Vec<PhaseEvidence> {
         PhaseEvidence::passed(Phase::Gameplay),
         PhaseEvidence::passed(Phase::Persistence),
         PhaseEvidence::passed(Phase::AuditOutbox),
-        PhaseEvidence::not_applicable(
-            Phase::ClientPresentation,
-            "Tier 1 has no native-client presentation",
-        ),
+        match tier {
+            ExecutionTier::Tier1HeadlessSystem => PhaseEvidence::not_applicable(
+                Phase::ClientPresentation,
+                "Tier 1 has no native-client presentation",
+            ),
+            ExecutionTier::Tier2NativeClient | ExecutionTier::Tier3ProductionSmoke => {
+                PhaseEvidence::passed(Phase::ClientPresentation)
+            }
+        },
         PhaseEvidence::passed(Phase::Cleanup),
     ]
 }
@@ -76,7 +93,7 @@ fn attempt(
         attempt_id: id,
         cell: cell(tier),
         boundary,
-        phases: phases(),
+        phases: phases(tier),
         first_divergence: None,
         failure_class: None,
         cleanup,
@@ -88,6 +105,25 @@ fn attempt(
         duration_millis: 125,
         outcome,
     }
+}
+
+fn failed_attempt(
+    id: &'static str,
+    outcome: AttemptOutcome,
+    phase: Phase,
+    failure_class: &'static str,
+) -> AttemptEvidence {
+    let mut evidence = attempt(
+        id,
+        ExecutionTier::Tier1HeadlessSystem,
+        real_tier1(),
+        outcome,
+        CleanupStatus::Complete,
+    );
+    evidence.phases[phase as usize].status = PhaseStatus::Failed;
+    evidence.first_divergence = Some(phase);
+    evidence.failure_class = Some(failure_class);
+    evidence
 }
 
 #[test]
@@ -155,12 +191,11 @@ fn population_classification_matches_adr_contract() {
         AttemptOutcome::Passed,
         CleanupStatus::Complete,
     );
-    let fail = attempt(
+    let fail = failed_attempt(
         "fail-1",
-        ExecutionTier::Tier1HeadlessSystem,
-        real_tier1(),
         AttemptOutcome::ProductFailure,
-        CleanupStatus::Complete,
+        Phase::Gameplay,
+        "product-divergence",
     );
 
     assert_eq!(
@@ -227,19 +262,13 @@ fn mismatched_comparison_cell_blocks_population() {
 }
 #[test]
 fn first_divergence_must_match_earliest_failed_phase() {
-    let mut evidence = attempt(
+    let mut evidence = failed_attempt(
         "divergence",
-        ExecutionTier::Tier1HeadlessSystem,
-        real_tier1(),
         AttemptOutcome::ProductFailure,
-        CleanupStatus::Complete,
+        Phase::Admission,
+        "product-divergence",
     );
-    evidence.phases = vec![
-        PhaseEvidence::passed(Phase::Environment),
-        PhaseEvidence::failed(Phase::Admission),
-        PhaseEvidence::failed(Phase::Gameplay),
-        PhaseEvidence::passed(Phase::Cleanup),
-    ];
+    evidence.phases[Phase::Gameplay as usize].status = PhaseStatus::Failed;
     evidence.first_divergence = Some(Phase::Gameplay);
 
     assert_eq!(
@@ -247,6 +276,7 @@ fn first_divergence_must_match_earliest_failed_phase() {
         Err(EvidenceError::FirstDivergenceMismatch),
     );
 }
+
 #[test]
 fn tier3_requires_native_client_boundary() {
     let mut production = real_tier2();
@@ -277,15 +307,157 @@ fn incomplete_cleanup_and_infrastructure_failure_remain_explicit() {
         PopulationClassification::Blocked,
     );
 
-    let infrastructure = attempt(
+    let infrastructure = failed_attempt(
         "infrastructure-failure",
-        ExecutionTier::Tier1HeadlessSystem,
-        real_tier1(),
         AttemptOutcome::InfrastructureFailure,
-        CleanupStatus::Complete,
+        Phase::Environment,
+        "infrastructure-runner",
     );
     assert_eq!(
         classify_population(std::slice::from_ref(&infrastructure), 1).classification,
         PopulationClassification::Fail,
     );
+}
+
+#[test]
+fn missing_build_features_is_incomplete_evidence() {
+    let mut evidence = attempt(
+        "missing-build-features",
+        ExecutionTier::Tier1HeadlessSystem,
+        real_tier1(),
+        AttemptOutcome::Passed,
+        CleanupStatus::Complete,
+    );
+    evidence.cell.build_features = "";
+
+    assert_eq!(
+        validate_attempt(&evidence),
+        Err(EvidenceError::EvidenceIncomplete),
+    );
+}
+
+#[test]
+fn partial_phase_list_cannot_pass_as_e2e() {
+    let mut evidence = attempt(
+        "partial-phases",
+        ExecutionTier::Tier1HeadlessSystem,
+        real_tier1(),
+        AttemptOutcome::Passed,
+        CleanupStatus::Complete,
+    );
+    evidence.phases = vec![
+        PhaseEvidence::passed(Phase::Environment),
+        PhaseEvidence::passed(Phase::Cleanup),
+    ];
+    assert_eq!(
+        validate_attempt(&evidence),
+        Err(EvidenceError::EvidenceIncomplete),
+    );
+}
+
+#[test]
+fn failed_attempt_requires_failure_evidence() {
+    let evidence = attempt(
+        "missing-failure-evidence",
+        ExecutionTier::Tier1HeadlessSystem,
+        real_tier1(),
+        AttemptOutcome::ProductFailure,
+        CleanupStatus::Complete,
+    );
+
+    assert_eq!(
+        validate_attempt(&evidence),
+        Err(EvidenceError::EvidenceIncomplete),
+    );
+}
+
+#[test]
+fn duplicate_attempt_ids_block_population() {
+    let first = attempt(
+        "same-physical-attempt",
+        ExecutionTier::Tier1HeadlessSystem,
+        real_tier1(),
+        AttemptOutcome::Passed,
+        CleanupStatus::Complete,
+    );
+    let second = first.clone();
+
+    let report = classify_population(&[first, second], 2);
+    assert_eq!(report.classification, PopulationClassification::Blocked);
+}
+
+#[test]
+fn tier3_rejects_tier2_boundary_as_production_binary_proof() {
+    let evidence = attempt(
+        "tier3-instrumented-client",
+        ExecutionTier::Tier3ProductionSmoke,
+        real_tier2(),
+        AttemptOutcome::Passed,
+        CleanupStatus::Complete,
+    );
+
+    assert_eq!(
+        validate_attempt(&evidence),
+        Err(EvidenceError::TierBoundaryNotSatisfied),
+    );
+}
+
+#[test]
+fn tier2_requires_client_presentation_evidence() {
+    let mut evidence = attempt(
+        "tier2-no-presentation",
+        ExecutionTier::Tier2NativeClient,
+        real_tier2(),
+        AttemptOutcome::Passed,
+        CleanupStatus::Complete,
+    );
+    evidence.phases[Phase::ClientPresentation as usize].status =
+        PhaseStatus::NotApplicable("presentation omitted");
+
+    assert_eq!(
+        validate_attempt(&evidence),
+        Err(EvidenceError::EvidenceIncomplete),
+    );
+}
+
+#[test]
+fn cleanup_phase_must_match_complete_cleanup_summary() {
+    let evidence = failed_attempt(
+        "cleanup-summary-mismatch",
+        AttemptOutcome::InfrastructureFailure,
+        Phase::Cleanup,
+        "cleanup-failure",
+    );
+
+    assert_eq!(
+        validate_attempt(&evidence),
+        Err(EvidenceError::CleanupIncomplete),
+    );
+}
+
+#[test]
+fn tier1_rejects_native_client_mislabeled_as_headless() {
+    let evidence = attempt(
+        "tier1-native-client",
+        ExecutionTier::Tier1HeadlessSystem,
+        real_tier2(),
+        AttemptOutcome::Passed,
+        CleanupStatus::Complete,
+    );
+    assert_eq!(
+        validate_attempt(&evidence),
+        Err(EvidenceError::TierBoundaryNotSatisfied),
+    );
+}
+
+#[test]
+fn tier3_accepts_production_default_native_boundary() {
+    let evidence = attempt(
+        "tier3-production",
+        ExecutionTier::Tier3ProductionSmoke,
+        real_tier3(),
+        AttemptOutcome::Passed,
+        CleanupStatus::Complete,
+    );
+    assert_eq!(validate_attempt(&evidence), Ok(()));
 }

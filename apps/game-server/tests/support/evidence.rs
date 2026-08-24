@@ -66,14 +66,6 @@ impl PhaseEvidence {
     }
 
     #[must_use]
-    pub const fn failed(phase: Phase) -> Self {
-        Self {
-            phase,
-            status: PhaseStatus::Failed,
-        }
-    }
-
-    #[must_use]
     pub const fn not_applicable(phase: Phase, reason: &'static str) -> Self {
         Self {
             phase,
@@ -91,6 +83,8 @@ pub struct BoundaryEvidence {
     pub normal_networking: bool,
     pub server_legality_checks: bool,
     pub native_client: bool,
+    pub production_default_artifacts: bool,
+    pub test_adapter_present: bool,
     pub direct_domain_mutation: bool,
 }
 
@@ -163,7 +157,11 @@ pub fn validate_attempt(attempt: &AttemptEvidence) -> Result<(), EvidenceError> 
     }
     validate_identity(attempt)?;
     validate_phases(attempt)?;
-    if attempt.cleanup != CleanupStatus::Complete {
+    let cleanup_phase_passed = attempt
+        .phases
+        .last()
+        .is_some_and(|phase| phase.phase == Phase::Cleanup && phase.status == PhaseStatus::Passed);
+    if attempt.cleanup != CleanupStatus::Complete || !cleanup_phase_passed {
         return Err(EvidenceError::CleanupIncomplete);
     }
     Ok(())
@@ -177,9 +175,13 @@ fn tier_boundary_satisfied(tier: ExecutionTier, boundary: BoundaryEvidence) -> b
         && boundary.normal_networking
         && boundary.server_legality_checks;
     match tier {
-        ExecutionTier::Tier1HeadlessSystem => system,
-        ExecutionTier::Tier2NativeClient | ExecutionTier::Tier3ProductionSmoke => {
-            system && boundary.native_client
+        ExecutionTier::Tier1HeadlessSystem => system && !boundary.native_client,
+        ExecutionTier::Tier2NativeClient => system && boundary.native_client,
+        ExecutionTier::Tier3ProductionSmoke => {
+            system
+                && boundary.native_client
+                && boundary.production_default_artifacts
+                && !boundary.test_adapter_present
         }
     }
 }
@@ -196,6 +198,7 @@ fn validate_identity(attempt: &AttemptEvidence) -> Result<(), EvidenceError> {
         cell.database_image,
         cell.operating_system,
         cell.target_triple,
+        cell.build_features,
         cell.clock_mode,
         cell.fault_profile,
         cell.topology,
@@ -215,19 +218,48 @@ fn validate_identity(attempt: &AttemptEvidence) -> Result<(), EvidenceError> {
     Ok(())
 }
 
+const CANONICAL_PHASES: [Phase; 14] = [
+    Phase::Environment,
+    Phase::Identity,
+    Phase::WorldDiscovery,
+    Phase::Gateway,
+    Phase::GameSession,
+    Phase::Transport,
+    Phase::Admission,
+    Phase::CharacterLease,
+    Phase::WorldEntry,
+    Phase::Gameplay,
+    Phase::Persistence,
+    Phase::AuditOutbox,
+    Phase::ClientPresentation,
+    Phase::Cleanup,
+];
+
 fn validate_phases(attempt: &AttemptEvidence) -> Result<(), EvidenceError> {
-    if attempt.phases.is_empty() {
+    if attempt.phases.len() != CANONICAL_PHASES.len() {
         return Err(EvidenceError::EvidenceIncomplete);
     }
-    let mut previous = None;
-    for phase in &attempt.phases {
+    for (phase, expected) in attempt.phases.iter().zip(CANONICAL_PHASES) {
+        if phase.phase != expected {
+            return Err(EvidenceError::PhaseOrderInvalid);
+        }
         if matches!(phase.status, PhaseStatus::NotApplicable(reason) if reason.is_empty()) {
             return Err(EvidenceError::EvidenceIncomplete);
         }
-        if previous.is_some_and(|earlier| phase.phase <= earlier) {
-            return Err(EvidenceError::PhaseOrderInvalid);
+    }
+
+    let presentation = attempt.phases[12].status;
+    match attempt.cell.tier {
+        ExecutionTier::Tier1HeadlessSystem => {
+            if !matches!(presentation, PhaseStatus::NotApplicable(reason) if !reason.is_empty()) {
+                return Err(EvidenceError::EvidenceIncomplete);
+            }
         }
-        previous = Some(phase.phase);
+        ExecutionTier::Tier2NativeClient | ExecutionTier::Tier3ProductionSmoke => {
+            if presentation != PhaseStatus::Passed {
+                return Err(EvidenceError::EvidenceIncomplete);
+            }
+        }
     }
 
     let earliest_failure = attempt
@@ -238,8 +270,22 @@ fn validate_phases(attempt: &AttemptEvidence) -> Result<(), EvidenceError> {
     if earliest_failure != attempt.first_divergence {
         return Err(EvidenceError::FirstDivergenceMismatch);
     }
-    if attempt.outcome == AttemptOutcome::Passed && earliest_failure.is_some() {
-        return Err(EvidenceError::FirstDivergenceMismatch);
+
+    match attempt.outcome {
+        AttemptOutcome::Passed => {
+            if earliest_failure.is_some() || attempt.failure_class.is_some() {
+                return Err(EvidenceError::EvidenceIncomplete);
+            }
+        }
+        AttemptOutcome::ProductFailure | AttemptOutcome::InfrastructureFailure => {
+            if earliest_failure.is_none()
+                || attempt
+                    .failure_class
+                    .is_none_or(|failure_class| failure_class.is_empty())
+            {
+                return Err(EvidenceError::EvidenceIncomplete);
+            }
+        }
     }
     Ok(())
 }
@@ -259,7 +305,13 @@ pub fn classify_population(attempts: &[AttemptEvidence], minimum: usize) -> Popu
             attempt_ids,
         };
     };
-    if attempts.iter().any(|attempt| attempt.cell != first.cell)
+    let duplicate_attempt_id = attempts.iter().enumerate().any(|(index, attempt)| {
+        attempts[..index]
+            .iter()
+            .any(|earlier| earlier.attempt_id == attempt.attempt_id)
+    });
+    if duplicate_attempt_id
+        || attempts.iter().any(|attempt| attempt.cell != first.cell)
         || attempts
             .iter()
             .any(|attempt| validate_attempt(attempt).is_err())
