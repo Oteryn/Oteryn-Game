@@ -488,3 +488,17 @@ jobs:
               raise SystemExit(1)
           print('All applicable merge gates passed on the exact pull request head.')
           PY
+
+  game_gate:
+    name: game-gate
+    if: always()
+    needs: validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Require canonical aggregate success
+        env:
+          LEGACY_VALIDATE: ${{ needs.validate.result }}
+        run: test "$LEGACY_VALIDATE" = "success"

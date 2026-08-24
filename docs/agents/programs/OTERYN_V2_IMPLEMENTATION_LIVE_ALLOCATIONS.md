@@ -14,13 +14,32 @@
 - Wave 1 allocation PR: `#45`
 - Wave 1 allocation merge: `33cec30b8075c73290d7d76e9f59df4701771650`
 - Wave 1 exact-base PR: `#46`
-- State: `WAVE1_EXACT_BASE_BIND_PENDING`
+- Wave 1 exact-base merge: `fd39c6aa026e82062a8b29af24811d467c115f19`
+- Foundation delivery PR: `#59`
+- Foundation delivery merge: `a70318484b1ffdd328b53cdc70a4386a516d0109`
+- Foundation closeout PR: `#74`
+- Foundation closeout merge: `1f69677b40851551953caf853c08b37ce7b29c68`
+- Coordinator DOMAIN lease-transfer PR: `#76`
+- Coordinator DOMAIN lease-transfer merge: `6945e962035bac83d1f19b00984df5b82719ebb9`
+- Coordinator DOMAIN lease-active PR: `#78`
+- Coordinator DOMAIN lease-active merge: `3988e4263569d6c90bf6e794688b810073ad5184`
+- Foundation post-merge audit PR: `#81`
+- Foundation post-merge audit merge: `55e30e23c3d5775ce760c6b210ea77f152b359ae`
+- Domain delivery PR: `#56`
+- Domain delivery merge: `0facd7f89edc1b0685e67c5531839e8e6f04c466`
+- Content evidence delivery PR: `#58`
+- Content evidence delivery merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`
+- Content activation repair PR: `#87`
+- Content activation repair merge: `db95bc720529b643531c79f708086f69dd612d22`
+- State: `NEXT_WAVE_READINESS_PREPARED_ALLOCATIONS_PENDING`
 
 ## Authority rule
 
-This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance is higher authority than historical prompt coordinates. All implementation writes governed by this record target the canonical `Oteryn/Oteryn-Game` repository only.
+This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance, active task/PR/CI state and merged `main` outrank stale coordination prose.
 
-Only lanes explicitly listed as `allocated` **on merged `main`** have worker write authority. The exact-base changes below are not authoritative while coordinator bind PR #46 is unmerged. Unmerged sibling branches are never implicit dependencies.
+PR #58 merged the bounded CONTENT evidence seam. A later genuinely independent exact-tree review reproduced a P0 activation-boundary defect, which Issue #85 and PR #87 repaired by removing the non-production activation state machine from the production public API. The repair is merged and independently re-reviewed; production VSL activation, permanent format selection and registry/contract mutation remain unauthorized.
+
+Unmerged sibling output is never an implicit dependency. Stable registries/contracts, `.github/workflows/**`, architecture policy/tooling and new workspace/crate topology remain unallocated unless a later merged coordinator allocation explicitly grants them.
 
 ## Completed allocation — Bootstrap
 
@@ -56,103 +75,141 @@ owned_paths: []
 branch: null
 ```
 
-SIM delivered a real production `oteryn-simulation-determinism` crate consumed by `apps/game-server`, including checked deterministic numeric semantics, retry/purpose-isolated decision derivation, semantic time, bounded canonical state hashing and exact-head Windows golden fixtures. Gameplay remains fail-closed and no protocol/session/persistence/Reference/security-randomness authority was introduced.
+SIM delivered the bounded production `oteryn-simulation-determinism` core consumed by `apps/game-server`. Whole-contract/VSL proof remains separately evidence-gated.
 
-## Wave 1 exact-base bind
-
-Allocation PR #45 passed exact-head governance/merge gates and squash-merged as `33cec30b8075c73290d7d76e9f59df4701771650`. Coordinator bind PR #46 records that exact allocation merge as every Wave 1 lane's `worker_base_sha`, matching the established SIM #12 → #13 lifecycle.
-
-No worker may write merely because bind PR #46 exists. Worker authority becomes live only when #46 lawfully merges to `main`. Worker branches/task files must then be created from the resulting post-bind `main` before implementation writes.
-
-### Wave 1 lane — Foundation
+## Completed allocation — Foundation
 
 ```yaml
 lane_id: OTV2-IMPL-FOUNDATION
 task_id: OTV2-20260822-impl-foundation-runtime
 worker_alias: Oteryn: impl foundation runtime
-status: allocated
+status: completed
 risk: XHigh
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 exact_base_pr: 46
-branch: agent/otv2-impl-foundation-runtime-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-owned_paths:
-  - apps/game-server/src/foundation/**
-  - docs/agents/tasks/active/OTV2-20260822-impl-foundation-runtime.md
-public_contracts_read_only:
-  - docs/architecture/FND-02_PROTOCOL_OTERYN_V1_CONTRACT.md
-  - docs/architecture/FND-03_RUNTIME_EXECUTION_CONTRACT.md
-  - docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md
-  - docs/contracts/FND-04_REAUTHENTICATED_RECOVERY_GRANT_PROFILE_V1.md
+delivery_pr: 59
+delivery_merge_sha: a70318484b1ffdd328b53cdc70a4386a516d0109
+archive_pr: 74
+archive_merge_sha: 1f69677b40851551953caf853c08b37ce7b29c68
 independent_review_required: true
+historical_pre_merge_independent_exact_head_gate: NOT_PROVEN
+post_merge_independent_audit: PASS
+post_merge_audit_issue: 77
+post_merge_audit_pr: 81
+post_merge_audit_merge_sha: 55e30e23c3d5775ce760c6b210ea77f152b359ae
+post_merge_material_findings:
+  P0: 0
+  P1: 0
+  P2: 0
+owned_paths: []
+branch: null
+shared_lease: released
 ```
 
-Foundation owns the new server-side protocol/runtime/admission module family after bind PR #46 merges. It does **not** receive authority to invent post-15s recovery behavior, resource ceilings, gameplay command/state IDs, persistence semantics or a new crate topology. Protocol/session/admission/fencing delivery requires genuinely independent exact-head review.
+Foundation product implementation is byte-equivalent to its final PR tree and passed the post-merge independent audit with zero P0/P1/P2 implementation findings. Retained history does **not** prove the mandatory independent review was completed on the final pre-merge head; the historical gate therefore remains `NOT_PROVEN` and is not retroactively rewritten.
 
-### Wave 1 lane — Domain
+## Completed allocation — Domain
 
 ```yaml
 lane_id: OTV2-IMPL-DOMAIN
 task_id: OTV2-20260822-impl-domain-core
 worker_alias: Oteryn: impl domain core
-status: allocated
+status: completed
 risk: High
-allocation_pr: 45
-allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-exact_base_pr: 46
-branch: agent/otv2-impl-domain-core-01
-worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-owned_paths:
-  - apps/game-server/src/domain/**
-  - docs/agents/tasks/active/OTV2-20260822-impl-domain-core.md
+final_head_sha: a76c999a2b03c4271fda9b4395cc3d76c346987b
+delivery_pr: 56
+delivery_merge_sha: 0facd7f89edc1b0685e67c5531839e8e6f04c466
+closeout_pr: 82
+closeout_merge_sha: 30c733c8c8cb4a1fbcf63010bcb6709a9109dde6
+issue: 55
+issue_state: completed
+owned_paths: []
+branch: null
+shared_lease: released
 ```
 
-Domain owns protocol/persistence-neutral Character/Item/Inventory/Equipment/Ability-definition semantics required by the accepted first slice. It does not own wire IDs, persistence mechanics, UI or Reference-unknown product values.
+DOMAIN is merged into `apps/game-server`, its Issue is completed, its branch is absent and its serialized shared lease was released by PR #82.
 
-### Wave 1 lane — Content
+## Content evidence delivery — production acceptance blocked
 
 ```yaml
 lane_id: OTV2-IMPL-CONTENT
 task_id: OTV2-20260822-impl-vsl-content
 worker_alias: Oteryn: impl vsl content
-status: allocated
+status: evidence_delivery_merged_repair_complete_production_blocked
 risk: High
-allocation_pr: 45
-allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-exact_base_pr: 46
-branch: agent/otv2-impl-vsl-content-01
-worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-owned_paths:
-  - apps/game-server/src/content/**
-  - docs/agents/tasks/active/OTV2-20260822-impl-vsl-content.md
+final_head_sha: ab0b4241c107bfb2c6052e58aec241da130774c7
+delivery_pr: 58
+delivery_merge_sha: 8f99f25d0b1b3472d40504cd54b463cf752ebe7a
+issue: 54
+issue_state: open_blocked
+source_branch_present: false
+owned_paths: []
+shared_lease: released
+registered_production_vsl_limits: not_found
+production_activation: forbidden
+permanent_format_selection: forbidden
+repair_issue: 85
+repair_issue_state: completed
+repair_pr: 87
+repair_final_head_sha: c9d3570f528acc8e22e3055e4f8de712e9057abd
+repair_merge_sha: db95bc720529b643531c79f708086f69dd612d22
+future_write_authority: requires_new_coordinator_allocation
 ```
 
-Content owns the minimum typed VSL content/compiler/loader seam and bounded synthetic/evidence fixtures required by accepted Stage-C contracts. It must not select the permanent physical bundle/world encoding or introduce gameplay C++/Blueprint authority.
+The bounded non-production VSL evidence seam is merged and composed through `apps/game-server`. Pre-merge checks were green; a later exact-tree review found one P0 in the public activation boundary. Issue #85 reproduced it and PR #87 repaired it on exact head `c9d3570f528acc8e22e3055e4f8de712e9057abd` with fresh independent review P0=0/P1=0/P2=0 and exact-head `game-gate`, then merged as `db95bc720529b643531c79f708086f69dd612d22`. The evidence seam is no longer AT_RISK for that defect. The separate Issue #54 production blocker remains unchanged: accepted DUR-04/VSL hard maxima and production activation authority are absent.
 
-### Wave 1 lane — QA
+## Completed repair — Content evidence activation fence
+
+```yaml
+lane_id: OTV2-REPAIR-CONTENT-ACTIVATION-FENCE
+task_id: OTV2-20260824-content-evidence-activation-fence-repair
+status: completed
+risk: High
+issue: 85
+issue_state: completed
+allocation_pr: 86
+implementation_pr: 87
+final_head_sha: c9d3570f528acc8e22e3055e4f8de712e9057abd
+merge_sha: db95bc720529b643531c79f708086f69dd612d22
+owned_paths: []
+branch: null
+shared_lease: not_required
+independent_exact_head_review: PASS
+material_findings:
+  P0: 0
+  P1: 0
+  P2: 0
+```
+
+The repair closes the reproduced public activation-boundary P0. Production consumers cannot import `content::ActivationSlot`; the internal evidence activation state machine remains test-only. No parser format, content values, product limits, permanent format or production activation authority changed.
+
+## Active Wave 1 — QA
 
 ```yaml
 lane_id: OTV2-IMPL-QA
 task_id: OTV2-20260822-impl-qa-e2e
 worker_alias: Oteryn: impl qa e2e
-status: allocated
+status: implementing_primary_path_no_pr
 risk: High
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 exact_base_pr: 46
-branch: agent/otv2-impl-qa-e2e-01
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
+branch: agent/otv2-impl-qa-e2e-01
+pr: null
+checkpoint_head_sha: 58d64130cc0526001bd1c9a00a179e1c39ad6e51
 owned_paths:
   - apps/game-server/tests/**
   - docs/agents/tasks/active/OTV2-20260822-impl-qa-e2e.md
+shared_lease: not_assigned_pending_concrete_need
 ```
 
-QA owns only real-boundary integration/E2E proof under the server integration-test path. It may evolve incrementally as real seams merge; mocks or test-only success adapters are never terminal proof and may not enter production artifacts.
+QA contains a real test-side evidence shell with focused/component validation, but no delivery PR and no real Tier 1/Tier 2 gameplay journey. Synthetic-shell evidence remains valid only for the shell; Tier 1/Tier 2 stay `NOT_EVALUATED` until the required merged production seams exist.
 
 ## Serialized shared-mutation lease
-
-The four primary code/test lane paths are non-overlapping. The following composition/workspace paths remain one-writer-at-a-time under the coordinator lease:
 
 ```yaml
 shared_paths:
@@ -161,17 +218,72 @@ shared_paths:
   - Cargo.toml
   - Cargo.lock
   - workspace-boundaries.toml
-lease_state: pending_bind_merge
-initial_lease_owner_after_bind: OTV2-IMPL-FOUNDATION
-lease_order:
-  - OTV2-IMPL-FOUNDATION
-  - OTV2-IMPL-DOMAIN
-  - OTV2-IMPL-CONTENT
-  - OTV2-IMPL-QA
+lease_state: released_unassigned
+current_owner: null
+previous_owner: OTV2-IMPL-CONTENT
+previous_owner_status: evidence_delivery_merged_repair_complete_production_blocked
+next_candidate: OTV2-IMPL-QA
+next_candidate_authority: not_granted_pending_concrete_need
 ```
 
-After bind PR #46 merges, FOUNDATION holds the first shared-path lease. The other three lanes remain free to develop only inside their non-overlapping primary paths until the coordinator advances the shared lease. `docs/contracts/**`, stable-ID registries, `.github/workflows/**`, architecture policy/tooling and any new workspace/crate topology remain **not allocated**; any proven need to mutate them requires a separate explicit coordinator allocation update before mutation.
+CONTENT no longer needs the serialized shared paths for its merged evidence seam. QA does not receive them implicitly; a later coordinator action must prove a concrete shared-path need before granting another one-writer turn.
 
-## Deferred allocations
+## Next-wave readiness findings
 
-`DURABILITY`, `ABILITY`, `INTERACTION`, `AI`, `CLIENT`, `MOVE`, `COMBAT`, `CHANNEL`, `ANALYTICS` and `CONTENT-FORMAT-SPIKE` remain **not allocated** until their DAG prerequisites are concretely merged and the coordinator publishes a bounded allocation.
+- `PROVEN`: CONTENT repair #87 and closeout #89 are terminal; the prior P0 no longer blocks downstream preparation.
+- `PROVEN`: QA remains an allocated branch-only evidence shell with no PR; Tier 1/Tier 2 remain `NOT_EVALUATED`.
+- `PROVEN`: accepted DUR-02 selects PostgreSQL / one game-owned migration history but intentionally leaves the Rust driver, migration library and physical DDL to a separately authorized implementation task. Current main has no database client dependency or migration ledger.
+- `PROVEN`: accepted GAME-ABILITY, GAME-INTERACTION, GAME-AI and VSL-MOVE contracts require finite resource bounds while deliberately deferring exact numeric maxima; current resource registry contains no owning lane-specific entries for those required work dimensions.
+- `PROVEN`: `apps/game-server` remains fail-closed with no production gameplay listener/client-entry seam, so CLIENT cannot be released yet.
+- `RECOMMENDATION`: immediate parallel preparation is QA reconciliation, DURABILITY topology/allocation, CONTENT-FORMAT-SPIKE allocation and the Wave-2 resource-limit decision packet. Ability/Interaction/AI implementation follows only after their required numeric bounds are accepted or explicitly fenced out of the executable slice.
+- `RECOMMENDATION`: use one game-server-local durability module plus one game-owned migration ledger for the first implementation increment unless implementation evidence proves a dedicated immediate-consumer crate is necessary; any Cargo/workspace/migration paths still require explicit serialized allocation.
+
+## Deferred allocations and concrete readiness
+
+```yaml
+OTV2-IMPL-DURABILITY:
+  status: dependency_ready_topology_preflight_pending_allocation
+  write_authority: none
+  evidence: FOUNDATION and DOMAIN concrete merged seams exist; PostgreSQL is accepted but no Rust DB/migration topology exists on main
+OTV2-IMPL-ABILITY:
+  status: architecture_ready_resource_limits_pending_allocation
+  write_authority: none
+  blocker: accepted GAME-ABILITY requires concrete registered hard maxima before executable acceptance
+OTV2-IMPL-INTERACTION:
+  status: architecture_ready_resource_limits_pending_allocation
+  write_authority: none
+  blocker: accepted GAME-INTERACTION keeps numeric cascade/resource/retry bounds owner-task controlled
+OTV2-IMPL-AI:
+  status: architecture_ready_resource_limits_pending_allocation
+  write_authority: none
+  blocker: accepted GAME-AI requires concrete registered AI/path/spawn/retry hard maxima before executable acceptance
+OTV2-WAVE2-RESOURCE-LIMITS:
+  status: owner_decision_packet_required
+  write_authority: none
+  blocker: accepted Ability/Interaction/AI/Movement contracts intentionally defer numeric hard maxima; required values must be accepted/registered before executable acceptance
+OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM:
+  status: not_allocated
+  write_authority: none
+  blocker: Foundation protocol/runtime/admission semantics are merged, but apps/game-server has no production gameplay listener/client-entry transport seam
+OTV2-IMPL-CLIENT:
+  status: not_allocated
+  blocker: merged game-server still exposes fail-closed gameplay availability with no production gameplay listener/client-entry seam
+OTV2-IMPL-MOVE:
+  status: not_allocated
+  blocker: Interaction, Client and real QA E2E prerequisites are not integration-ready
+OTV2-IMPL-COMBAT:
+  status: not_allocated
+  blocker: Movement and remaining generic/value prerequisites are not merged
+OTV2-IMPL-CHANNEL:
+  status: not_allocated
+  blocker: DURABILITY not yet allocated/merged
+OTV2-CONTENT-FORMAT-SPIKE:
+  status: dependency_ready_pending_new_allocation
+  write_authority: none
+  note: evidence-only spike; consume docs/migration/CRYSTAL_WORLD_CONTENT_MIGRATION_DESIGN_CHECKPOINT.md as non-authoritative migration evidence; permanent-format decision remains separately owner-gated
+OTV2-IMPL-ANALYTICS:
+  status: not_allocated
+  blocker: concrete producer event registrations do not yet exist
+```
+
+No production/protected/live-data/Platform/external-repository authority is introduced by this closeout or lease transfer.
