@@ -31,7 +31,7 @@
 - Content evidence delivery merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`
 - Content activation repair PR: `#87`
 - Content activation repair merge: `db95bc720529b643531c79f708086f69dd612d22`
-- State: `WAVE1_CONTENT_EVIDENCE_SAFE_PRODUCTION_BLOCKED`
+- State: `NEXT_WAVE_READINESS_PREPARED_ALLOCATIONS_PENDING`
 
 ## Authority rule
 
@@ -221,29 +221,50 @@ shared_paths:
 lease_state: released_unassigned
 current_owner: null
 previous_owner: OTV2-IMPL-CONTENT
-previous_owner_status: evidence_delivery_merged_production_blocked
+previous_owner_status: evidence_delivery_merged_repair_complete_production_blocked
 next_candidate: OTV2-IMPL-QA
 next_candidate_authority: not_granted_pending_concrete_need
 ```
 
 CONTENT no longer needs the serialized shared paths for its merged evidence seam. QA does not receive them implicitly; a later coordinator action must prove a concrete shared-path need before granting another one-writer turn.
 
+## Next-wave readiness findings
+
+- `PROVEN`: CONTENT repair #87 and closeout #89 are terminal; the prior P0 no longer blocks downstream preparation.
+- `PROVEN`: QA remains an allocated branch-only evidence shell with no PR; Tier 1/Tier 2 remain `NOT_EVALUATED`.
+- `PROVEN`: accepted DUR-02 selects PostgreSQL / one game-owned migration history but intentionally leaves the Rust driver, migration library and physical DDL to a separately authorized implementation task. Current main has no database client dependency or migration ledger.
+- `PROVEN`: accepted GAME-ABILITY, GAME-INTERACTION, GAME-AI and VSL-MOVE contracts require finite resource bounds while deliberately deferring exact numeric maxima; current resource registry contains no owning lane-specific entries for those required work dimensions.
+- `PROVEN`: `apps/game-server` remains fail-closed with no production gameplay listener/client-entry seam, so CLIENT cannot be released yet.
+- `RECOMMENDATION`: immediate parallel preparation is QA reconciliation, DURABILITY topology/allocation, CONTENT-FORMAT-SPIKE allocation and the Wave-2 resource-limit decision packet. Ability/Interaction/AI implementation follows only after their required numeric bounds are accepted or explicitly fenced out of the executable slice.
+- `RECOMMENDATION`: use one game-server-local durability module plus one game-owned migration ledger for the first implementation increment unless implementation evidence proves a dedicated immediate-consumer crate is necessary; any Cargo/workspace/migration paths still require explicit serialized allocation.
+
 ## Deferred allocations and concrete readiness
 
 ```yaml
 OTV2-IMPL-DURABILITY:
-  status: dependency_ready_pending_new_allocation
+  status: dependency_ready_topology_preflight_pending_allocation
   write_authority: none
-  evidence: FOUNDATION and DOMAIN concrete merged seams now exist
+  evidence: FOUNDATION and DOMAIN concrete merged seams exist; PostgreSQL is accepted but no Rust DB/migration topology exists on main
 OTV2-IMPL-ABILITY:
-  status: dependency_ready_pending_new_allocation
+  status: architecture_ready_resource_limits_pending_allocation
   write_authority: none
+  blocker: accepted GAME-ABILITY requires concrete registered hard maxima before executable acceptance
 OTV2-IMPL-INTERACTION:
-  status: dependency_ready_pending_new_allocation
+  status: architecture_ready_resource_limits_pending_allocation
   write_authority: none
+  blocker: accepted GAME-INTERACTION keeps numeric cascade/resource/retry bounds owner-task controlled
 OTV2-IMPL-AI:
-  status: dependency_ready_pending_new_allocation
+  status: architecture_ready_resource_limits_pending_allocation
   write_authority: none
+  blocker: accepted GAME-AI requires concrete registered AI/path/spawn/retry hard maxima before executable acceptance
+OTV2-WAVE2-RESOURCE-LIMITS:
+  status: owner_decision_packet_required
+  write_authority: none
+  blocker: accepted Ability/Interaction/AI/Movement contracts intentionally defer numeric hard maxima; required values must be accepted/registered before executable acceptance
+OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM:
+  status: not_allocated
+  write_authority: none
+  blocker: Foundation protocol/runtime/admission semantics are merged, but apps/game-server has no production gameplay listener/client-entry transport seam
 OTV2-IMPL-CLIENT:
   status: not_allocated
   blocker: merged game-server still exposes fail-closed gameplay availability with no production gameplay listener/client-entry seam

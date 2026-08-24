@@ -4,12 +4,12 @@
 task_id: OTV2-20260818-implementation-coordinator
 title: Coordinate first native implementation wave
 mode: COORDINATE
-status: content_p0_repair_complete_production_blocked
+status: next_wave_readiness_prepared_allocations_pending
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: chore/content-activation-repair-closeout-20260824
-pr: 89
-base_sha: db95bc720529b643531c79f708086f69dd612d22
+branch: coord/next-wave-readiness-reconcile-20260824
+pr: null
+base_sha: c28e09ccf863f05cd8aeeb9c4b9b0ca7e1e90efb
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
@@ -28,6 +28,7 @@ depends_on:
   - Oteryn-Game#84
   - Oteryn-Game#86
   - Oteryn-Game#87
+  - Oteryn-Game#89
 blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 ```
@@ -38,22 +39,27 @@ Coordinate the active native implementation programme, serialize shared mutation
 
 ## Current proven state
 
-- `PROVEN`: FOUNDATION and DOMAIN are merged and lifecycle-released.
-- `PROVEN`: CONTENT evidence PR #58 merged as `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`; PR #84 released its shared-path ownership while retaining Issue #54 as a production-only blocker.
-- `PROVEN`: post-merge review found one activation-boundary P0; Issue #85 reproduced it and allocation PR #86 merged as `19329df11eb5c605e338a472c277ac023a8d7c43`.
-- `PROVEN`: repair PR #87 final head `c9d3570f528acc8e22e3055e4f8de712e9057abd` passed compile-fail TDD, 129/129 game-server tests, strict Clippy, fresh genuinely independent review with P0=0/P1=0/P2=0, exact-head repository workflows and `game-gate`, then squash-merged as `db95bc720529b643531c79f708086f69dd612d22`.
-- `PROVEN`: Issue #85 is closed completed and repair source branch is absent; the repair task is archived by this closeout candidate.
-- `PROVEN`: Issue #54 remains separately blocked by missing accepted DUR-04/VSL production hard maxima and production activation authority.
-- `PROVEN`: QA still has an evidence shell only; real Tier 1/Tier 2 gameplay journeys remain `NOT_EVALUATED`.
-- `DERIVED`: DURABILITY, ABILITY, INTERACTION, AI and the evidence-only content-format spike are dependency-ready under the canonical DAG, but none receives write authority from this closeout.
+- `PROVEN`: FOUNDATION, SIM, DOMAIN and the repaired non-production CONTENT evidence seam are merged; Content repair #87 and closeout #89 are terminal.
+- `PROVEN`: Issue #54 remains separately owner-gated for production Content hard maxima/activation and does not block evidence-only downstream preparation.
+- `PROVEN`: QA has an allocated branch-only evidence shell at checkpoint `58d64130cc0526001bd1c9a00a179e1c39ad6e51`, no PR, and real Tier 1/Tier 2 remain `NOT_EVALUATED`.
+- `PROVEN`: DUR-02 selects PostgreSQL and one game-owned migration history, but current `main` has no Rust PostgreSQL dependency or migration ledger; exact driver/migration library/DDL remain implementation choices requiring an explicit allocation.
+- `PROVEN`: accepted GAME-ABILITY, GAME-INTERACTION, GAME-AI and VSL-MOVE require finite resource bounds while deliberately deferring exact numeric maxima; current Resource Limits Registry has no owning lane-specific entries for those required dimensions.
+- `PROVEN`: the game-server still exposes only `GameplayAvailability::UnavailableBootstrap`; there is no production gameplay listener/client-entry seam, so CLIENT remains blocked.
+- `DERIVED`: immediate safe parallel preparation is QA reconciliation, DURABILITY topology/allocation, CONTENT-FORMAT-SPIKE allocation and a Wave-2 resource-limit decision packet.
+- `DERIVED`: Ability/Interaction/AI are architecture-ready but not executable-acceptance-ready until applicable numeric hard maxima are accepted/registered or the allocated slice explicitly excludes those dimensions fail-closed.
 
 ## Coordinator decision
 
-The CONTENT activation-boundary P0 is terminally repaired. Repair ownership is released and there is no active CONTENT code allocation.
+Do not release all dependency-ready lanes simultaneously. The next wave is split into preparation gates and implementation lanes:
 
-Issue #54 remains a blocked owner/architecture decision, not permission to continue coding. Production CONTENT requires accepted DUR-04/VSL hard maxima, production activation authority and a fresh coordinator allocation. No numeric limit or permanent World Project/Bundle format is inferred here.
+1. QA keeps its existing primary-path allocation and must be reconciled onto current `main`, delivered as an evidence-shell PR and remain truthful that Tier 1/Tier 2 are not yet proven.
+2. DURABILITY requires a coordinator-owned topology preflight/allocation before writes. Recommended first increment is one game-server-local durability module plus one game-owned migration ledger, avoiding a speculative new workspace crate; any DB dependency, migration directory and Cargo/shared mutations must be explicitly allocated.
+3. CONTENT-FORMAT-SPIKE may receive an evidence-only allocation now; it cannot select the permanent format.
+4. Wave-2 resource limits are an owner/evidence decision packet. The coordinator may register exact values only after accepted evidence/owner decision; workers may not invent them.
+5. Ability/Interaction/AI primary implementation can run in parallel only after their applicable resource-limit gate is satisfied or their executable slice is explicitly narrower and fail-closed.
+6. A separate production gameplay listener/client-entry seam must merge before CLIENT is released. Movement follows Interaction + Client + real QA; Combat follows Movement + Ability + Durability + the remaining accepted prerequisites.
 
-No downstream lane is automatically allocated by this closeout. Dependency-ready means only that the DAG prerequisite is satisfied; a separate coordinator action must grant exact paths, branch and write authority before implementation.
+No write authority is granted by this reconciliation.
 
 ## Validation / merge posture
 
@@ -64,12 +70,12 @@ Independent implementation review is `NOT_REQUIRED` because the executable repai
 ## Context checkpoint
 
 ```yaml
-last_progress: repair PR #87 merged as db95bc720529b643531c79f708086f69dd612d22 from exact head c9d3570f528acc8e22e3055e4f8de712e9057abd; Issue #85 closed completed; repair branch deleted; closeout archives repair evidence and releases repair ownership
-status: content_p0_repair_complete_production_blocked
-branch: chore/content-activation-repair-closeout-20260824
-head_sha: null
-pr: 89
-blocker: Issue #54 only — accepted DUR-04/VSL production hard maxima and production activation authority are absent
-owner_action_required: production CONTENT limits/authority only if and when production CONTENT is to continue
-next_action: merge this lifecycle closeout if exact-head gates are clean, then allocate the next dependency-ready lane separately
+last_progress: Content repair #87 and closeout #89 are terminal; next-wave audit verified QA branch-only status, missing Durability DB/migration topology, missing lane-specific Ability/Interaction/AI/Movement resource maxima, and missing production gameplay listener/client-entry seam
+status: next_wave_readiness_prepared_allocations_pending
+branch: coord/next-wave-readiness-reconcile-20260824
+head_sha: pending_final_freeze
+pr: null
+blocker: next implementation allocations must respect the explicit topology/resource/server-seam gates; production Content Issue #54 remains separately owner-gated
+owner_action_required: exact Wave-2 resource hard maxima require accepted evidence/owner decision; production Content limits/activation remain separately owner-gated
+next_action: merge this readiness reconciliation, then reconcile QA and prepare separate Durability topology, Content Format Spike and resource-limit decision allocations before releasing generic engine workers
 ```
