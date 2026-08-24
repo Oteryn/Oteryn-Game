@@ -8,7 +8,7 @@ status: content_p0_repair_complete_production_blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: chore/content-activation-repair-closeout-20260824
-pr: null
+pr: 89
 base_sha: db95bc720529b643531c79f708086f69dd612d22
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
@@ -68,7 +68,7 @@ last_progress: repair PR #87 merged as db95bc720529b643531c79f708086f69dd612d22 
 status: content_p0_repair_complete_production_blocked
 branch: chore/content-activation-repair-closeout-20260824
 head_sha: null
-pr: null
+pr: 89
 blocker: Issue #54 only — accepted DUR-04/VSL production hard maxima and production activation authority are absent
 owner_action_required: production CONTENT limits/authority only if and when production CONTENT is to continue
 next_action: merge this lifecycle closeout if exact-head gates are clean, then allocate the next dependency-ready lane separately
