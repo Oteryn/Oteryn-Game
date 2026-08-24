@@ -1089,6 +1089,301 @@ mod tests {
         nested
     }
 
+
+    fn push_test_varint_field(payload: &mut Vec<u8>, field: usize, value: usize) {
+        payload.extend(test_varint(field << 3));
+        payload.extend(test_varint(value));
+    }
+
+    fn push_test_bytes_field(payload: &mut Vec<u8>, field: usize, value: &[u8]) {
+        payload.extend(test_varint((field << 3) | 2));
+        payload.extend(test_varint(value.len()));
+        payload.extend_from_slice(value);
+    }
+
+    fn test_uuid_v7(marker: u8) -> [u8; 16] {
+        let mut id = [0u8; 16];
+        id[6] = 0x70;
+        id[8] = 0x80;
+        id[15] = marker;
+        id
+    }
+
+    fn test_client_bootstrap_payload(
+        protocol_major: usize,
+        transport_profile: usize,
+        schema_revision: usize,
+        character_id: &[u8],
+        supported_capabilities: &[usize],
+    ) -> Vec<u8> {
+        let mut payload = Vec::new();
+        push_test_varint_field(&mut payload, 1, protocol_major);
+        push_test_varint_field(&mut payload, 2, transport_profile);
+        push_test_varint_field(&mut payload, 3, schema_revision);
+        for capability in supported_capabilities {
+            push_test_varint_field(&mut payload, 4, *capability);
+        }
+        push_test_bytes_field(&mut payload, 5, &[0xaa]);
+        push_test_bytes_field(&mut payload, 6, character_id);
+        push_test_bytes_field(&mut payload, 7, b"test-client");
+        payload
+    }
+
+    fn test_client_resume_payload(
+        protocol_major: usize,
+        transport_profile: usize,
+        schema_revision: usize,
+        game_session_id: &[u8],
+        supported_capabilities: &[usize],
+    ) -> Vec<u8> {
+        let mut payload = Vec::new();
+        push_test_bytes_field(&mut payload, 1, game_session_id);
+        push_test_bytes_field(&mut payload, 2, &[0xbb]);
+        push_test_varint_field(&mut payload, 4, protocol_major);
+        push_test_varint_field(&mut payload, 5, transport_profile);
+        push_test_varint_field(&mut payload, 6, schema_revision);
+        for capability in supported_capabilities {
+            push_test_varint_field(&mut payload, 7, *capability);
+        }
+        push_test_bytes_field(&mut payload, 8, b"test-client");
+        payload
+    }
+
+    fn test_server_accepted_payload(
+        connection_generation: usize,
+        next_command_id: usize,
+        schema_revision: usize,
+        ids: [&[u8]; 3],
+        selected_capabilities: &[usize],
+    ) -> Vec<u8> {
+        let mut payload = Vec::new();
+        push_test_bytes_field(&mut payload, 1, ids[0]);
+        push_test_bytes_field(&mut payload, 2, ids[1]);
+        push_test_bytes_field(&mut payload, 3, ids[2]);
+        push_test_varint_field(&mut payload, 4, connection_generation);
+        push_test_varint_field(&mut payload, 6, next_command_id);
+        push_test_varint_field(&mut payload, 7, PROTOCOL_MAJOR_V1 as usize);
+        push_test_varint_field(
+            &mut payload,
+            8,
+            TRANSPORT_PROFILE_TCP_TLS13_V1 as usize,
+        );
+        push_test_varint_field(&mut payload, 9, schema_revision);
+        for capability in selected_capabilities {
+            push_test_varint_field(&mut payload, 10, *capability);
+        }
+        payload
+    }
+
+    fn test_server_resume_accepted_payload(
+        connection_generation: usize,
+        next_command_id: usize,
+        schema_revision: usize,
+        game_session_id: &[u8],
+        selected_capabilities: &[usize],
+    ) -> Vec<u8> {
+        let mut payload = Vec::new();
+        push_test_bytes_field(&mut payload, 1, game_session_id);
+        push_test_varint_field(&mut payload, 2, connection_generation);
+        push_test_varint_field(&mut payload, 4, next_command_id);
+        push_test_varint_field(&mut payload, 5, schema_revision);
+        for capability in selected_capabilities {
+            push_test_varint_field(&mut payload, 6, *capability);
+        }
+        payload
+    }
+
+    #[test]
+    fn client_handshakes_require_v1_protocol_profile_and_schema_semantics() {
+        let id = test_uuid_v7(1);
+        for (message_type, payload, expected) in [
+            (
+                1,
+                test_client_bootstrap_payload(2, 1, 1, &id, &[]),
+                FoundationProtocolError::ProtocolMajorMismatch,
+            ),
+            (
+                1,
+                test_client_bootstrap_payload(1, 2, 1, &id, &[]),
+                FoundationProtocolError::TransportProfileMismatch,
+            ),
+            (
+                1,
+                test_client_bootstrap_payload(1, 1, 0, &id, &[]),
+                FoundationProtocolError::MalformedEnvelope,
+            ),
+            (
+                3,
+                test_client_resume_payload(2, 1, 1, &id, &[]),
+                FoundationProtocolError::ProtocolMajorMismatch,
+            ),
+            (
+                3,
+                test_client_resume_payload(1, 2, 1, &id, &[]),
+                FoundationProtocolError::TransportProfileMismatch,
+            ),
+            (
+                3,
+                test_client_resume_payload(1, 1, 0, &id, &[]),
+                FoundationProtocolError::MalformedEnvelope,
+            ),
+        ] {
+            assert_eq!(
+                decode_wire_envelope(&test_envelope(message_type, &payload)),
+                Err(expected)
+            );
+        }
+    }
+
+    #[test]
+    fn handshake_ingress_requires_exact_non_nil_uuidv7_identities() {
+        let valid = test_uuid_v7(1);
+        let nil = [0u8; 16];
+        let short = [0u8; 15];
+        let world = test_uuid_v7(2);
+        let channel = test_uuid_v7(3);
+        for (message_type, payload) in [
+            (
+                1,
+                test_client_bootstrap_payload(1, 1, 1, &short, &[]),
+            ),
+            (3, test_client_resume_payload(1, 1, 1, &nil, &[])),
+            (
+                2,
+                test_server_accepted_payload(1, 1, 1, [&nil, &world, &channel], &[]),
+            ),
+            (
+                4,
+                test_server_resume_accepted_payload(2, 1, 1, &short, &[]),
+            ),
+        ] {
+            assert_eq!(
+                decode_wire_envelope(&test_envelope(message_type, &payload)),
+                Err(FoundationProtocolError::InvalidWireIdentifier)
+            );
+        }
+        assert!(
+            decode_wire_envelope(&test_envelope(
+                2,
+                &test_server_accepted_payload(1, 1, 1, [&valid, &world, &channel], &[])
+            ))
+            .is_ok()
+        );
+    }
+
+    #[test]
+    fn accepted_messages_require_nonzero_authority_counters_and_schema() {
+        let session = test_uuid_v7(1);
+        let world = test_uuid_v7(2);
+        let channel = test_uuid_v7(3);
+        for (message_type, payload) in [
+            (
+                2,
+                test_server_accepted_payload(0, 1, 1, [&session, &world, &channel], &[]),
+            ),
+            (
+                2,
+                test_server_accepted_payload(1, 0, 1, [&session, &world, &channel], &[]),
+            ),
+            (
+                2,
+                test_server_accepted_payload(1, 1, 0, [&session, &world, &channel], &[]),
+            ),
+            (
+                4,
+                test_server_resume_accepted_payload(0, 1, 1, &session, &[]),
+            ),
+            (
+                4,
+                test_server_resume_accepted_payload(2, 0, 1, &session, &[]),
+            ),
+            (
+                4,
+                test_server_resume_accepted_payload(2, 1, 0, &session, &[]),
+            ),
+        ] {
+            assert_eq!(
+                decode_wire_envelope(&test_envelope(message_type, &payload)),
+                Err(FoundationProtocolError::MalformedEnvelope)
+            );
+        }
+    }
+
+    #[test]
+    fn selected_capabilities_are_registry_closed_but_supported_unknowns_are_additive() {
+        let session = test_uuid_v7(1);
+        let world = test_uuid_v7(2);
+        let channel = test_uuid_v7(3);
+        assert!(decode_wire_envelope(&test_envelope(
+            1,
+            &test_client_bootstrap_payload(1, 1, 1, &session, &[777])
+        ))
+        .is_ok());
+        assert!(decode_wire_envelope(&test_envelope(
+            3,
+            &test_client_resume_payload(1, 1, 1, &session, &[777])
+        ))
+        .is_ok());
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(
+                2,
+                &test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[1])
+            )),
+            Err(FoundationProtocolError::CapabilityMismatch)
+        );
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(
+                4,
+                &test_server_resume_accepted_payload(2, 1, 1, &session, &[1])
+            )),
+            Err(FoundationProtocolError::CapabilityMismatch)
+        );
+    }
+
+    #[test]
+    fn semantic_handshakes_preserve_same_major_and_additive_unknown_field_compatibility()
+    -> Result<(), FoundationProtocolError> {
+        let session = test_uuid_v7(1);
+        let world = test_uuid_v7(2);
+        let channel = test_uuid_v7(3);
+        let mut payloads = [
+            test_client_bootstrap_payload(1, 1, 2, &session, &[]),
+            test_client_resume_payload(1, 1, 2, &session, &[]),
+            test_server_accepted_payload(1, 1, 2, [&session, &world, &channel], &[]),
+            test_server_resume_accepted_payload(2, 1, 2, &session, &[]),
+        ];
+        for (index, payload) in payloads.iter_mut().enumerate() {
+            push_test_bytes_field(payload, 16, b"future-addition");
+            let message_type = [1u8, 3, 2, 4][index];
+            assert_eq!(
+                decode_wire_envelope(&test_envelope(message_type, payload))?.payload(),
+                payload
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn duplicate_singular_handshake_fields_fail_closed() {
+        let session = test_uuid_v7(1);
+        let world = test_uuid_v7(2);
+        let channel = test_uuid_v7(3);
+        let mut bootstrap = test_client_bootstrap_payload(1, 1, 1, &session, &[]);
+        push_test_varint_field(&mut bootstrap, 1, 1);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(1, &bootstrap)),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+
+        let mut accepted =
+            test_server_accepted_payload(1, 1, 1, [&session, &world, &channel], &[]);
+        push_test_varint_field(&mut accepted, 4, 1);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(2, &accepted)),
+            Err(FoundationProtocolError::MalformedEnvelope)
+        );
+    }
+
     #[test]
     fn protobuf_field_numbers_cannot_wrap_into_known_fields() -> Result<(), FoundationProtocolError>
     {
