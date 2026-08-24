@@ -24,3 +24,7 @@ final_review_head: ce891601498729e4b7e8711e88340f62002a21ba
 ## Scope released
 
 Foundation ownership and the serialized shared lease are released. This record supersedes the former active task state.
+
+## Lifecycle note
+
+PR #74 records this archival closeout after the product implementation landed.
