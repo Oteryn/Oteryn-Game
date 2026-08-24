@@ -4,7 +4,7 @@
 task_id: OTV2-20260824-content-evidence-activation-fence-repair
 title: Repair non-production CONTENT activation boundary
 mode: IMPLEMENT
-status: allocation_pending_merge
+status: review_pending
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: repair/content-evidence-activation-fence-20260824
@@ -12,7 +12,7 @@ issue: 85
 allocation_pr: 86
 pr: null
 allocation_base_sha: d9d927acfcebe0c61c0e8e826bae170767b12730
-worker_base_sha: pending_allocation_merge
+worker_base_sha: 19329df11eb5c605e338a472c277ac023a8d7c43
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-24T14:10:00+02:00
 updated_at: 2026-08-24T14:10:00+02:00
@@ -40,12 +40,12 @@ The defect was independently reproduced after merge. A TDD `compile_fail` doctes
 
 ## Acceptance
 
-- [ ] observed RED on merged-tree production API import;
-- [ ] GREEN compile-fail doctest after the fence;
-- [ ] game-server focused tests PASS;
-- [ ] package strict Clippy PASS;
-- [ ] full workspace tests and strict Clippy PASS;
-- [ ] architecture-check, governance and `git diff --check` PASS;
+- [x] observed RED on merged-tree production API import;
+- [x] GREEN compile-fail doctest after the fence;
+- [x] game-server focused tests PASS;
+- [x] package strict Clippy PASS;
+- [x] full workspace tests and strict Clippy PASS;
+- [x] architecture-check, governance and `git diff --check` PASS;
 - [ ] mandatory whole-diff self-review PASS on frozen exact head;
 - [ ] genuinely independent exact-head review PASS with P0=0/P1=0/P2=0;
 - [ ] exact-head repository `game-gate` PASS;
@@ -58,12 +58,12 @@ Independent exact-head review is **REQUIRED** because this repair closes a previ
 ## Context checkpoint
 
 ```yaml
-last_progress: Issue #85 created and allocation candidate prepared; no repair code authority exists until the coordinator allocation PR merges
-status: allocation_pending_merge
+last_progress: allocation PR #86 merged as 19329df11eb5c605e338a472c277ac023a8d7c43; RED was reproduced on the merged CONTENT tree; the minimal cfg(test) fence makes the compile-fail regression GREEN; doc tests, game-server 129/129, package/workspace strict Clippy, full workspace tests, architecture-check, governance and diff-check pass locally
+status: review_pending
 branch: repair/content-evidence-activation-fence-20260824
-head_sha: null
+head_sha: pending_final_freeze
 pr: null
-blocker: coordinator allocation PR must merge first
+blocker: mandatory whole-diff self-review, genuinely independent exact-head review and exact-head repository CI remain before merge
 owner_action_required: null
-next_action: after allocation merge, branch from exact merged allocation base, reproduce RED, apply only the cfg(test) activation fence, validate/review and merge
+next_action: commit and push only the two code files plus this repair task, open the repair PR, freeze exact head, review it independently, require exact-head game-gate and merge only if clean
 ```
