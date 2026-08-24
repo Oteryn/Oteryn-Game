@@ -549,9 +549,7 @@ fn validate_bootstrap_ingress(
                 16,
                 FoundationProtocolError::InvalidWireIdentifier,
             )?;
-            decode_uuid_v7(
-                identity.ok_or(FoundationProtocolError::InvalidWireIdentifier)?,
-            )?;
+            decode_uuid_v7(identity.ok_or(FoundationProtocolError::InvalidWireIdentifier)?)?;
         } else if field == build_field {
             read_singular_bytes(
                 payload,
@@ -566,12 +564,7 @@ fn validate_bootstrap_ingress(
                 return Err(FoundationProtocolError::MalformedEnvelope);
             }
         } else if sequence_field == Some(field) {
-            read_singular_varint(
-                payload,
-                &mut cursor,
-                wire,
-                &mut last_applied_sequence,
-            )?;
+            read_singular_varint(payload, &mut cursor, wire, &mut last_applied_sequence)?;
         } else {
             skip_field(payload, &mut cursor, wire)?;
         }
@@ -583,9 +576,7 @@ fn validate_bootstrap_ingress(
     if transport_profile != Some(u64::from(TRANSPORT_PROFILE_TCP_TLS13_V1)) {
         return Err(FoundationProtocolError::TransportProfileMismatch);
     }
-    if !schema_revision
-        .is_some_and(|revision| (1..=u64::from(u32::MAX)).contains(&revision))
-    {
+    if !schema_revision.is_some_and(|revision| (1..=u64::from(u32::MAX)).contains(&revision)) {
         return Err(FoundationProtocolError::MalformedEnvelope);
     }
     if material.is_none() {
@@ -723,19 +714,9 @@ fn validate_server_acceptance_ingress(
             decode_uuid_v7(identity)?;
             identity_seen[index] = true;
         } else if field == generation_field {
-            read_singular_varint(
-                payload,
-                &mut cursor,
-                wire,
-                &mut connection_generation,
-            )?;
+            read_singular_varint(payload, &mut cursor, wire, &mut connection_generation)?;
         } else if field == sequence_field {
-            read_singular_varint(
-                payload,
-                &mut cursor,
-                wire,
-                &mut current_server_sequence,
-            )?;
+            read_singular_varint(payload, &mut cursor, wire, &mut current_server_sequence)?;
         } else if field == next_command_field {
             read_singular_varint(payload, &mut cursor, wire, &mut next_command_id)?;
         } else if protocol_field == Some(field) {
@@ -764,10 +745,9 @@ fn validate_server_acceptance_ingress(
     {
         return Err(FoundationProtocolError::InvalidWireIdentifier);
     }
-    if !connection_generation.is_some_and(|generation| generation != 0)
-        || !next_command_id.is_some_and(|command_id| command_id != 0)
-        || !schema_revision
-            .is_some_and(|revision| (1..=u64::from(u32::MAX)).contains(&revision))
+    if connection_generation.is_none_or(|generation| generation == 0)
+        || next_command_id.is_none_or(|command_id| command_id == 0)
+        || !schema_revision.is_some_and(|revision| (1..=u64::from(u32::MAX)).contains(&revision))
     {
         return Err(FoundationProtocolError::MalformedEnvelope);
     }
