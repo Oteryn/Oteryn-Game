@@ -33,6 +33,7 @@ Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A
 - `OTV2_IMPL_GAME_ABILITY.md` — `Oteryn: impl ability`.
 - `OTV2_IMPL_GAME_INTERACTION.md` — `Oteryn: impl interaction`.
 - `OTV2_IMPL_GAME_AI.md` — `Oteryn: impl ai`.
+- `OTV2_IMPL_SERVER_SEAM.md` — `Oteryn: impl server seam` (production gameplay listener/client-entry integration; requires the exact #96-derived coordinator allocation).
 - `OTV2_IMPL_NATIVE_CLIENT.md` — `Oteryn: impl client`.
 - `OTV2_IMPL_QA_E2E.md` — `Oteryn: impl qa`.
 - `OTV2_IMPL_VSL_MOVEMENT.md` — `Oteryn: impl movement`.

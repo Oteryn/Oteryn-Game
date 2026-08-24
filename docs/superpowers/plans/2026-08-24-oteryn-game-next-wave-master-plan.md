@@ -16,6 +16,7 @@
 
 - Canonical repository: `Oteryn/Oteryn-Game`.
 - Authoring snapshot: `main@dc22e0da8efcc6f4458416191261063b295af5b4` after QA shell PR #98.
+- This document is an orchestration-level master plan, not a lane implementation plan. No runtime implementation worker executes code directly from this document; every concrete implementation lane first gets a lane-specific child Superpowers plan after its exact allocation/topology is known.
 - No worker writes without a merged coordinator allocation naming exact owned paths, branch, task, base SHA and exclusions.
 - One substantial task = one branch = one PR. No direct pushes to `main`.
 - Public registries, stable IDs, shared workspace paths, Cargo topology, architecture policy and workflows are serialized coordinator mutations even when code workers otherwise run in parallel.
@@ -62,20 +63,21 @@
                      |                                                  |
                      +--> Interaction ------------------+               |
                                                        |               |
-#96 server seam ------------------> Native Client ------+--> Movement --+
+#96 prep -> Server Seam impl ------> Native Client ------+--> Movement --+
                                                        |       ^
 QA shell #98 ------------------------------------------+-------|
                                                                |
                                   real Tier 1/2 QA -------------+
 
-#93 also releases AI in parallel, but AI is not a hard dependency of first Movement/Combat.
+#93 has two lawful release moments: the applicable Ability/Interaction/AI subset may close early, while every Movement-exercised dimension must close before Movement allocation. AI is not a hard dependency of first Movement/Combat.
+#96 preparation is followed by a dedicated allocated Server Seam implementation worker; that worker may overlap path-disjoint generic engines.
 #95 Content Format Spike is evidence-only and not on the first gameplay critical path.
-#97 status reconciliation is documentation hygiene and may run in parallel with preparation.
+#97 status reconciliation is documentation hygiene and may run in parallel with preparation; neither #95 nor #97 is a global barrier to a path-disjoint lane whose own gate is already satisfied.
 ```
 
 ### Parallelism rule
 
-The coordinator may run the preparation work for #93, #94, #95, #96 and #97 concurrently because they produce decision/evidence/status artifacts rather than overlapping runtime mutations. Executable Ability/Interaction/AI/Durability/Server-Seam work starts only after each lane's own decision/allocation gate is merged.
+The coordinator may run the preparation work for #93, #94, #95, #96 and #97 concurrently because they produce decision/evidence/status artifacts rather than overlapping runtime mutations. Executable Ability/Interaction/AI/Durability/Server-Seam work starts only after each lane's own decision/allocation gate is merged. Preparation-wave completeness is tracked separately from lane release: unfinished #95 or #97 must not delay a path-disjoint implementation lane that already satisfies its own Definition of Ready.
 
 ### Maximum useful implementation concurrency
 
@@ -167,7 +169,7 @@ Interaction minimum inventory: cascade depth, fan-out, total descendant work, ou
 
 AI minimum inventory: authored/evaluation work, candidate/perception/memory work, pending timers/operations, path queue/search/route limits, repath/retry work, spawn work and postponed occupancy retries.
 
-Movement inventory for later registration: movement work per cycle, occupancy/query results, relocation depth/work, visibility/interest counts, snapshot extensions and auxiliary path/spatial proposals.
+Movement inventory for staged closure before Movement allocation: movement work per cycle, occupancy/query results, relocation depth/work, visibility/interest counts, snapshot extensions and auxiliary path/spatial proposals. Inventory may be prepared with the first #93 decision packet, but every Movement dimension exercised by the first slice must later be accepted/registered or explicitly excluded fail-closed before the coordinator may allocate Movement.
 
 - [ ] **Step 2: Reject accidental product policy**
 
@@ -190,9 +192,13 @@ Do not copy generic FND frame/count ceilings into gameplay semantic work limits 
 
 If exact values receive accepted evidence/owner approval, update `RESOURCE_LIMITS_REGISTRY.json` in a separate serialized coordinator mutation. Validate JSON, registry policy, governance and boundary-test obligations before any engine allocation consumes the new entries.
 
-- [ ] **Step 4: Release or narrow engine lanes**
+- [ ] **Step 4: Release or narrow generic-engine lanes**
 
-Ability, Interaction and AI may receive implementation allocations only when every resource dimension exercised by their first slice is either registered with an accepted hard maximum or explicitly excluded fail-closed from that slice.
+Ability, Interaction and AI may receive implementation allocations as soon as every resource dimension exercised by their own first slice is either registered with an accepted hard maximum or explicitly excluded fail-closed from that slice. They do not wait for unrelated Movement-only dimensions to close.
+
+- [ ] **Step 5: Close the Movement resource gate before Movement allocation**
+
+Before the coordinator allocates `Oteryn: impl movement`, re-read the #93 inventory against the exact proposed Movement child plan. Every Movement-exercised count/depth/work/size dimension must then be `REGISTERED_EXACT` or explicitly excluded fail-closed from that slice. If accepted evidence or an owner decision is still missing, keep Movement blocked and continue the #93 decision/serialized-registry lifecycle rather than letting the Movement worker choose a number.
 
 ---
 
@@ -242,7 +248,7 @@ atomic durable audit/outbox where required
 
 - [ ] **Step 4: Produce the exact implementation allocation proposal**
 
-List every runtime, migration, test, Cargo/lockfile and shared path needed by the first increment. Mark DUR-03 resource dimensions that remain blocked by hard-max decisions. Only a later merged coordinator allocation converts this topology decision into write authority.
+List every runtime, migration, test, Cargo/lockfile and shared path needed by the first increment. Mark DUR-03 resource dimensions that remain blocked by hard-max decisions. Any such missing bound is an explicit blocker: route it through #93 or a separately owner-approved numeric decision/serialized-registry task before Durability implementation allocation. Only a later merged coordinator allocation converts this topology decision into write authority.
 
 ---
 
@@ -291,6 +297,8 @@ Run dependency/supply-chain review for prototype libraries, malformed/corruption
 **Files:**
 - Create: `docs/architecture/reviews/OTERYN_GAME_PRODUCTION_GAMEPLAY_SERVER_SEAM_PLAN_2026-08-24.md`
 - Create/update the exact coordinator task/allocation record for #96
+- Create before runtime code, after the exact implementation allocation is known: `docs/superpowers/plans/2026-08-24-oteryn-production-gameplay-server-seam.md`
+- Prompt: `docs/agents/prompts/OTV2_IMPL_SERVER_SEAM.md`
 - Runtime paths are fixed by that allocation; no worker chooses them ad hoc
 
 **Interfaces:**
@@ -311,9 +319,15 @@ connect -> frame/decode -> admission -> GameSession -> reconnect/resume -> resyn
 
 Unsupported gameplay remains explicitly unavailable until owning command/state registrations exist.
 
-- [ ] **Step 3: Implement only after allocation**
+- [ ] **Step 3: Create the child plan and launch only after allocation**
 
-Use TDD for malformed/oversized/unknown-message, stale generation, reconnect/fencing and authority-before-mutation negatives. Protocol/session/admission/fencing changes require genuinely independent exact-head review.
+After the #96 decision and exact `OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM` allocation merge, create the lane-specific child plan from the now-known runtime/test/Cargo paths. Then invoke:
+
+```text
+Oteryn: impl server seam
+```
+
+The worker must verify that exact merged allocation and child plan before any write. Use TDD for malformed/oversized/unknown-message, stale generation, reconnect/fencing and authority-before-mutation negatives. Protocol/session/admission/fencing changes require genuinely independent exact-head review.
 
 - [ ] **Step 4: Unlock QA Tier 1 and Client readiness**
 
@@ -669,6 +683,7 @@ Analytics cannot invent producer schemas, mutate gameplay or turn incomplete tel
 | `Oteryn: impl ability` | #93 applicable limits satisfied + exact allocation | Durability, Interaction, AI |
 | `Oteryn: impl interaction` | #93 applicable limits satisfied + exact allocation | Durability, Ability, AI |
 | `Oteryn: impl ai` | #93 applicable limits satisfied + exact allocation | Durability, Ability, Interaction |
+| `Oteryn: impl server seam` | #96 decision accepted + exact `OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM` allocation + child plan | Durability, Ability, Interaction, AI when owned paths/shared leases are disjoint |
 | `Oteryn: impl client` | production server seam #96 implementation merged/verified + exact Client allocation | QA Tier-1 expansion and non-overlapping generic work |
 | `Oteryn: impl qa` | new exact QA allocation; Tier 1 after server seam, Tier 2 after Client | Client/integration as coordinated; never fake unavailable evidence |
 | `Oteryn: impl movement` | Interaction + Client + QA + all canonical Movement predecessors integration-ready | no competing mutation of its shared protocol/registry/composition paths |
@@ -745,10 +760,12 @@ Before each merge, the coordinator re-reads current `main`, PR head, changed pat
 
 ## 7. Wave Exit Criteria
 
-### Preparation Wave exit
+### Preparation Wave completeness (not a global lane-release barrier)
+
+This checklist records whether all preparation work is complete. It is not a prerequisite bundle for every implementation lane: #95/#97 may remain in progress while a path-disjoint lane starts after its own Definition of Ready is satisfied.
 
 - [ ] #97 maintained status reflects merged QA #98 and current implementation truth.
-- [ ] #93 produces accepted applicable hard-max decisions/registrations for first Ability/Interaction/AI slices, or explicitly narrows those slices fail-closed.
+- [ ] #93 produces accepted applicable hard-max decisions/registrations for first Ability/Interaction/AI slices, or explicitly narrows those slices fail-closed; its Movement subset remains open/continued until every Movement-exercised dimension closes before Movement allocation.
 - [ ] #94 freezes first Durability topology and exact implementation allocation proposal.
 - [ ] #95 produces bounded format evidence without a permanent-format decision.
 - [ ] #96 freezes the production server-seam implementation boundary and exact allocation proposal.
@@ -788,8 +805,9 @@ Before using this master plan to release a wave, the coordinator must recheck:
 
 - [ ] `main` has not invalidated the snapshot or dependency assumptions.
 - [ ] Live allocations and open PRs do not already supersede a planned step.
-- [ ] Every child implementation gets its own lane-specific Superpowers plan with exact files/tests after topology/allocation is known.
+- [ ] Every child implementation gets its own lane-specific Superpowers plan with exact files/tests after topology/allocation is known; this includes the production Server Seam integration task.
 - [ ] No step asks an implementation worker to make an unresolved owner/architecture/numeric decision.
+- [ ] #93 is revalidated against the exact Movement child plan and every Movement-exercised dimension is closed before Movement allocation.
 - [ ] Movement and Combat remain serial integration gates.
 - [ ] QA evidence classifications remain truthful.
 - [ ] Production Content, permanent World format, Channel/Analytics and Reference parity remain outside the first gameplay critical path unless separately accepted and allocated.
@@ -798,17 +816,16 @@ Before using this master plan to release a wave, the coordinator must recheck:
 
 Execute in this order while allowing the explicitly disjoint preparation work to overlap:
 
-1. Re-read current `main`, live allocations and open PRs.
-2. Reconcile status through #97 if it has not already merged.
-3. Drive #93 hard-max decision packet and accepted registry update where evidence permits.
-4. Drive #94 Durability topology decision and then create the exact Durability implementation allocation.
-5. Allocate/run #95 Content Format Spike as evidence-only work.
-6. Drive #96 production server-seam plan/allocation.
-7. Once #93/#94 gates are satisfied, release Durability + Ability + Interaction + AI as separate, path-disjoint implementation PRs.
-8. Implement/merge the server seam; then allocate Client.
-9. Expand QA to real Tier 1 and Tier 2 as physical seams become available.
-10. Allocate Movement only when its canonical prerequisites are merged/integration-ready.
-11. Allocate Combat only after Movement plus Ability/Interaction/Durability and the remaining canonical prerequisites are merged/integration-ready.
-12. Defer Channel, Analytics and permanent Content-format adoption to their explicit gates rather than allowing first-VSL scope creep.
+1. Re-read current `main`, live allocations, active tasks/leases and open PRs.
+2. Drive the path-disjoint #93/#94/#95/#96/#97 preparation work concurrently where exact allocations permit; do not treat unfinished #95/#97 as a global barrier.
+3. As soon as the applicable #93 subset is accepted/registered or fail-closed-excluded, release Ability / Interaction / AI independently with exact non-overlapping allocations.
+4. Close #94 and create the exact Durability allocation; route any unresolved exercised DUR-03 hard maximum through #93 or a separately owner-approved numeric/registry decision before releasing Durability.
+5. After #96 is accepted, create the exact `OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM` allocation and child plan, then launch `Oteryn: impl server seam`. Run it alongside path-disjoint generic engines when shared leases allow.
+6. Run #95 Content Format Spike as evidence-only work and #97 status reconciliation whenever their own allocations permit, without holding already-ready unrelated runtime lanes.
+7. Merge and verify the Server Seam, then allocate Client and a fresh QA Tier-1 expansion; after Client merges, prove the required Tier-2 native-client capability.
+8. Before Movement allocation, re-read #93 against the exact Movement child plan and close every Movement-exercised resource dimension; then require all canonical Movement predecessors on `main`.
+9. Allocate/merge Movement as the first serial gameplay integration gate with real Tier 1/Tier 2 evidence.
+10. Allocate Combat only after Movement plus Ability/Interaction/Durability and the remaining canonical prerequisites are merged/integration-ready.
+11. Defer Channel, Analytics and permanent Content-format adoption to their explicit gates rather than allowing first-VSL scope creep.
 
 This master plan is an execution map, not a grant of write authority. Every executable step still requires the live coordinator allocation mandated by repository governance.
