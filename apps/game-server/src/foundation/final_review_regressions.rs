@@ -252,17 +252,12 @@ impl ReconnectAttemptJournal<u64> for ReviewJournal {
         }
         let claim_error = if session.state == GameSessionState::Terminal {
             Some(AdmissionError::Terminal)
-        } else if session.state == GameSessionState::Active
-            && session.current_transport.is_some()
-        {
+        } else if session.state == GameSessionState::Active && session.current_transport.is_some() {
             Some(AdmissionError::IncumbentHealthy)
         } else if session.state != GameSessionState::Reconnectable
             || session.current_transport.is_some()
             || session.connection_generation != binding.predecessor_generation()
-            || binding
-                .predecessor_generation()
-                .get()
-                .checked_add(1)
+            || binding.predecessor_generation().get().checked_add(1)
                 != Some(binding.candidate_generation().get())
         {
             Some(AdmissionError::StaleConnection)

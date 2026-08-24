@@ -234,10 +234,7 @@ impl ReconnectAttemptJournal<u64> for RollbackJournal {
         if session.state != GameSessionState::Reconnectable
             || session.transport.is_some()
             || session.generation != binding.predecessor_generation()
-            || binding
-                .predecessor_generation()
-                .get()
-                .checked_add(1)
+            || binding.predecessor_generation().get().checked_add(1)
                 != Some(binding.candidate_generation().get())
         {
             return Err(AdmissionError::StaleConnection);

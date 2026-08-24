@@ -513,14 +513,12 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
             if matches!(
                 disposition,
                 Some(core::ReconnectAttemptDisposition::Prepared { .. })
-            ) {
-                if let Err(error) = self
-                    .core
-                    .restore_reconciled_prepared_projection(attempt, binding)
-                {
-                    self.core.clear_process_projection();
-                    return Err(error);
-                }
+            ) && let Err(error) = self
+                .core
+                .restore_reconciled_prepared_projection(attempt, binding)
+            {
+                self.core.clear_process_projection();
+                return Err(error);
             }
         }
         Ok(disposition)
