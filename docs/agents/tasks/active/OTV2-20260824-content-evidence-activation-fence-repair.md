@@ -9,6 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: repair/content-evidence-activation-fence-20260824
 issue: 85
+allocation_pr: 86
 pr: null
 allocation_base_sha: d9d927acfcebe0c61c0e8e826bae170767b12730
 worker_base_sha: pending_allocation_merge

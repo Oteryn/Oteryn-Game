@@ -162,6 +162,7 @@ task_id: OTV2-20260824-content-evidence-activation-fence-repair
 status: allocation_pending_merge
 risk: High
 issue: 85
+allocation_pr: 86
 branch_after_allocation_merge: repair/content-evidence-activation-fence-20260824
 owned_paths_after_allocation_merge:
   - apps/game-server/src/content/mod.rs

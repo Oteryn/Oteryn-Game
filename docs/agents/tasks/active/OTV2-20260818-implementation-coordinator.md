@@ -8,7 +8,7 @@ status: content_post_merge_p0_repair_allocation_pending
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/content-activation-fence-repair-allocation-20260824
-pr: null
+pr: 86
 base_sha: d9d927acfcebe0c61c0e8e826bae170767b12730
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
@@ -85,7 +85,7 @@ last_progress: post-merge independent review of CONTENT found a reproducible act
 status: content_post_merge_p0_repair_allocation_pending
 branch: coord/content-activation-fence-repair-allocation-20260824
 head_sha: null
-pr: null
+pr: 86
 blocker: repair code authority is not active until this allocation PR merges
 owner_action_required: null
 next_action: merge this bounded allocation after exact-head governance/self-review, then implement #85 via TDD, independent review and exact-head CI before releasing CONTENT-dependent lanes
