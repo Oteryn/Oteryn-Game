@@ -126,11 +126,11 @@ No PostgreSQL/schema/transactions, protocol wire IDs, UI, entitlement authority,
 
 ## Independent review
 
-- required: NO ? this change is semantic-model-only and does not alter durable-value ownership, persistence, security/session authority or protocol authority
-- exact head: NOT_APPLICABLE
-- method/auditor: NOT_APPLICABLE
-- material findings: NOT_APPLICABLE
-- verdict: NOT_APPLICABLE
+- required: YES — coordinator policy requires genuinely independent exact-head review for item semantic changes.
+- exact head: pending final pushed head
+- method/auditor: pending qualifying independent reviewer/audit mechanism
+- material findings: pending
+- verdict: pending
 
 ## PR and closeout
 
@@ -165,6 +165,6 @@ repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: final exact-head self-review and repository CI remain before readiness/merge
-next_action: commit and push the integrated candidate, update PR metadata, freeze the exact head in PR evidence, self-review the full diff, and require exact-head repository gates before merge.
+blocker: final exact-head self-review, genuinely independent exact-head review, and repository CI remain before readiness/merge
+next_action: push the final policy-corrected candidate, update PR metadata, freeze the exact head in PR evidence, self-review the full diff, obtain a qualifying independent exact-head review, and require exact-head repository gates before merge.
 ```
