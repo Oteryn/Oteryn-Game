@@ -524,6 +524,49 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         Ok(disposition)
     }
 
+    fn reconcile_committed_after_cleared_claim(
+        &mut self,
+        game_session_id: GameSessionId,
+        attempt: core::ReconnectAttemptRef,
+        candidate_transport: T,
+    ) -> Result<Option<ConnectionGeneration>, core::AdmissionError> {
+        let authority = match self
+            .core
+            .journal()
+            .reconcile_reconnect_attempt(game_session_id, attempt)
+        {
+            Ok(authority) => authority,
+            Err(error) => {
+                self.core.clear_process_projection();
+                return Err(error);
+            }
+        };
+        let disposition = match validate_atomic_attempt_authority(game_session_id, authority) {
+            Ok(disposition) => disposition,
+            Err(error) => {
+                self.core.clear_process_projection();
+                return Err(error);
+            }
+        };
+        let Some(core::ReconnectAttemptDisposition::Committed { generation }) = disposition else {
+            return Ok(None);
+        };
+        let binding = authority
+            .binding()
+            .ok_or(core::AdmissionError::ReconciliationUnavailable)?;
+        if binding.candidate_transport() != candidate_transport {
+            return Err(core::AdmissionError::StaleConnection);
+        }
+        if let Err(error) = self
+            .core
+            .install_rehydrated_session(game_session_id, authority.session())
+        {
+            self.core.clear_process_projection();
+            return Err(error);
+        }
+        Ok(Some(generation))
+    }
+
     pub fn prepare_reconnect(
         &mut self,
         attempt: core::ReconnectAttemptRef,
@@ -555,8 +598,27 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
             }
             None => {}
         }
-        self.core
+        let game_session_id = self
+            .core
+            .current()
+            .ok_or(core::AdmissionError::Terminal)?
+            .game_session_id();
+        match self
+            .core
             .prepare_reconnect(attempt, predecessor, candidate_transport, lease, scope)
+        {
+            Err(core::AdmissionError::StaleConnection) if self.core.current().is_none() => {
+                match self.reconcile_committed_after_cleared_claim(
+                    game_session_id,
+                    attempt,
+                    candidate_transport,
+                )? {
+                    Some(generation) => Ok(generation),
+                    None => Err(core::AdmissionError::StaleConnection),
+                }
+            }
+            result => result,
+        }
     }
 
     pub fn commit_reconnect(
