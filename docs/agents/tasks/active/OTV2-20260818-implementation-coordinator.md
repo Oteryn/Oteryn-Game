@@ -4,16 +4,16 @@
 task_id: OTV2-20260818-implementation-coordinator
 title: Coordinate first native implementation wave
 mode: COORDINATE
-status: wave1_exact_base_bind_pending
+status: wave1_domain_lease_transfer_pending_merge
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: agent/otv2-coordinator-bind-wave1-base
-pr: 46
-base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
+branch: agent/otv2-coordinator-wave1-reconcile-02
+pr: 76
+base_sha: 1f69677b40851551953caf853c08b37ce7b29c68
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-22T18:09:00+02:00
+updated_at: 2026-08-24T09:59:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -23,73 +23,107 @@ public_contracts:
   - docs/agents/prompts/OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH.md
   - docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md
 depends_on:
-  - OTV2-20260805-foundation-preimplementation-contracts
   - Oteryn-Game#44
   - Oteryn-Game#45
-blocks:
-  - OTV2-20260822-impl-foundation-runtime
-  - OTV2-20260822-impl-domain-core
-  - OTV2-20260822-impl-vsl-content
-  - OTV2-20260822-impl-qa-e2e
+  - Oteryn-Game#46
+  - Oteryn-Game#59
+  - Oteryn-Game#74
+  - OTV2-20260818-impl-simulation
+blocks: []
 cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
 ```
 
 ## Outcome
 
-Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme on canonical `Oteryn/Oteryn-Game`, releasing only dependency-ready bounded worker lanes under exact-base, path-ownership, serialized-shared-mutation and review discipline.
+Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme on canonical `Oteryn/Oteryn-Game`, release only dependency-ready bounded lanes, serialize shared composition/registry mutations and continue until the current implementation wave reaches a real terminal condition.
 
 ## Current proven state
 
-- `PROVEN`: Bootstrap lifecycle is completed and archived.
-- `PROVEN`: SIM lifecycle is completed and archived; its production deterministic simulation crate is consumed by `apps/game-server`.
-- `PROVEN`: post-SIM Wave 1 launch pack PR #44 merged as `7694c8a5e1ebc1dbffa937adf6b5cb775f7745f2`.
-- `PROVEN`: Wave 1 allocation PR #45 passed exact-head Agent governance, Architecture semantic audit, Merge authority audit and aggregate Merge gate, then squash-merged as `33cec30b8075c73290d7d76e9f59df4701771650`.
-- `PROVEN`: PR #45 reserves four pairwise non-overlapping primary paths: `apps/game-server/src/foundation/**`, `apps/game-server/src/domain/**`, `apps/game-server/src/content/**`, and `apps/game-server/tests/**`.
-- `PROVEN`: historical SIM PR #13 bound `worker_base_sha` to the exact allocation merge SHA before implementation; Wave 1 exact-base PR #46 follows the same lifecycle.
-- `PROVEN`: current server package is `apps/game-server`; `crates/protocol-oteryn` is not present on the allocation baseline, so no speculative new crate topology is introduced.
-- `PROVEN`: shared composition/workspace paths remain coordinator-serialized, with FOUNDATION first after bind.
-- `PROVEN`: stable contract/registry/CI/policy/new-crate mutations remain outside the Wave 1 allocation until separately granted.
-- `PROVEN`: Foundation retains mandatory genuinely independent exact-head review for protocol/session/admission/fencing delivery.
-- `PROVEN`: no production/protected/live-data/Platform/external-repository authority is granted.
+- `PROVEN`: Bootstrap and SIM are completed and lifecycle-closed; SIM is consumed by `apps/game-server`.
+- `PROVEN`: Wave 1 allocation PR #45 merged as `33cec30b8075c73290d7d76e9f59df4701771650` and exact-base PR #46 merged as `fd39c6aa026e82062a8b29af24811d467c115f19`.
+- `PROVEN`: FOUNDATION delivery PR #59 passed its required high-risk review/gates, squash-merged as `a70318484b1ffdd328b53cdc70a4386a516d0109`, then closeout PR #74 merged as `1f69677b40851551953caf853c08b37ce7b29c68`; Foundation ownership and its shared lease are released.
+- `PROVEN`: current reconciliation base is `main@1f69677b40851551953caf853c08b37ce7b29c68`.
+- `PROVEN`: merged `apps/game-server/src/lib.rs` composes Foundation but still reports `GameplayAvailability::UnavailableBootstrap` because native gameplay domains are not integrated; no production gameplay listener/client-entry seam is merged.
+- `PROVEN`: DOMAIN PR #56 is Draft at observed head `674d1ccd637f3565c25750e5d5fe6c56df6fde32`; relative to the reconciliation base its branch is 5 commits ahead / 8 behind and changes only its allocated Domain/task paths.
+- `PROVEN`: CONTENT PR #58 is Draft at observed head `ec68df7a461a011a6480898c9a6d9ee60703189e`; relative to the reconciliation base its branch is 7 commits ahead / 8 behind and changes only its allocated Content/task paths.
+- `PROVEN`: QA branch `agent/otv2-impl-qa-e2e-01` exists and is 3 commits ahead / 11 behind the reconciliation base. Its task checkpoint records head `58d64130cc0526001bd1c9a00a179e1c39ad6e51`, 8/8 focused evidence-shell tests PASS and real Tier 1/Tier 2 journeys `NOT_EVALUATED`; it has no PR.
+- `PROVEN`: current `RESOURCE_LIMITS_REGISTRY.json` requires registered hard maxima before affected executable acceptance; no DUR-04/VSL production hard-max entry was found, consistent with CONTENT PR #58's explicit production-limit blocker.
+- `PROVEN`: predecessor coordinator PR #50 is closed unmerged and has an explicit supersession comment linking PR #76; its obsolete pre-Foundation-completion snapshot is not current authority.
 
-## Exact-base bind
+## Coordinator decision
+
+FOUNDATION is terminal and cannot continue holding the serialized shared-path turn. This reconciliation therefore prepares the next lawful lease transfer to DOMAIN.
+
+The transfer becomes authoritative only after coordinator PR #76 itself merges to `main`. Before that merge, DOMAIN remains forbidden from mutating shared composition/workspace paths. After merge, DOMAIN may reconcile current `main` and add only the minimum contract-valid composition required to compile its real semantic core through `apps/game-server`, then rerun exact-head validation and close its own Draft/merge gates.
+
+CONTENT stays second in the shared lease order. Its current evidence-only compiler/loader work may continue inside `apps/game-server/src/content/**`, but production VSL activation and permanent format selection remain blocked by missing accepted DUR-04/VSL limits and the separate format-decision gate.
+
+QA may continue in its non-overlapping `apps/game-server/tests/**` primary path without waiting for DOMAIN's shared lease. It must reconcile current main before delivery and may add real journeys only against merged production seams; its synthetic evidence shell cannot be represented as Tier 1/Tier 2 PASS.
+
+## Dependency release assessment
 
 ```yaml
-allocation_pr: 45
-allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-bind_branch: agent/otv2-coordinator-bind-wave1-base
-bind_pr: 46
-bind_write_authority_before_merge: false
-worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-lanes:
-  - OTV2-IMPL-FOUNDATION
-  - OTV2-IMPL-DOMAIN
-  - OTV2-IMPL-CONTENT
-  - OTV2-IMPL-QA
-serialized_shared_paths:
+OTV2-IMPL-DURABILITY:
+  ready: false
+  blocker: DOMAIN concrete composition/consumer not yet merged
+OTV2-IMPL-ABILITY:
+  ready: false
+  blocker: DOMAIN and CONTENT not yet merged/integration-ready
+OTV2-IMPL-INTERACTION:
+  ready: false
+  blocker: DOMAIN and CONTENT not yet merged/integration-ready
+OTV2-IMPL-AI:
+  ready: false
+  blocker: DOMAIN and CONTENT not yet merged/integration-ready
+OTV2-IMPL-CLIENT:
+  ready: false
+  blocker: merged game-server remains GameplayAvailability::UnavailableBootstrap with no production gameplay listener/client-entry seam
+OTV2-IMPL-MOVE:
+  ready: false
+  blocker: Interaction, Client and real QA-E2E prerequisites not integration-ready
+OTV2-IMPL-COMBAT:
+  ready: false
+  blocker: Movement plus remaining generic/value prerequisites not merged
+```
+
+No new Wave 2 worker is allocated by this reconciliation.
+
+## Serialized shared lease candidate
+
+```yaml
+shared_paths:
   - apps/game-server/src/lib.rs
   - apps/game-server/Cargo.toml
   - Cargo.toml
   - Cargo.lock
   - workspace-boundaries.toml
-initial_shared_lease_owner_after_bind: OTV2-IMPL-FOUNDATION
+lease_state: transfer_pending_coordinator_pr_merge
+previous_owner: OTV2-IMPL-FOUNDATION
+previous_owner_status: completed_and_released
+next_owner_after_merge: OTV2-IMPL-DOMAIN
+remaining_order:
+  - OTV2-IMPL-DOMAIN
+  - OTV2-IMPL-CONTENT
+  - OTV2-IMPL-QA
 ```
 
-## Merge discipline
+Stable registries/contracts, architecture policies, `.github/workflows/**` and new workspace/crate topology remain outside the lease unless separately allocated.
 
-Exact-base PR #46 is coordination-only. While it is unmerged, all four worker lanes remain read-only because canonical `main` still contains their `allocated_pending_exact_base` state. After lawful exact-head merge, create every worker branch/task from the resulting post-bind `main`; the live record keeps `worker_base_sha` equal to exact allocation merge `33cec30b8075c73290d7d76e9f59df4701771650`, matching the established SIM #12 → #13 convention.
+## Validation / merge posture
 
-Wave 1 workers may then develop their primary paths in parallel. Shared composition/workspace mutations remain serialized, starting with FOUNDATION. Any stable registry/contract/CI/policy/new-crate mutation requires an explicit coordinator reallocation before write.
+This coordinator change is documentation/allocation state only. Runtime/component/E2E is `NOT_APPLICABLE` because it changes no executable behavior. It still requires the repository's exact-head governance/dependency/CodeQL/aggregate merge gate and mandatory whole-diff self-review before merge.
+
+Independent review is `NOT_REQUIRED` for this bounded coordination reconciliation: it transfers an already-established serialized lease after the previous owner completed and releases no production/security/protocol/durable-value authority.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Wave 1 allocation PR #45 passed exact-head gates and merged as 33cec30b8075c73290d7d76e9f59df4701771650; exact-base PR #46 binds all four workers to that exact allocation merge.
-status: wave1_exact_base_bind_pending
-branch: agent/otv2-coordinator-bind-wave1-base
+last_progress: Foundation delivery and closeout are merged and verified; live Domain, Content and QA branches were reconciled against main@1f69677b40851551953caf853c08b37ce7b29c68; PR #50 was closed unmerged as superseded; coordinator PR #76 now prepares the serialized shared-path transfer to DOMAIN while preserving Content's missing-limit hold, QA's truthful NOT_EVALUATED real-E2E state and the CLIENT gameplay-entry blocker.
+status: wave1_domain_lease_transfer_pending_merge
+branch: agent/otv2-coordinator-wave1-reconcile-02
 head_sha: null
-pr: 46
-blocker: exact-base PR #46 must pass exact-head governance/merge checks and merge before any worker write
+pr: 76
+blocker: coordinator PR #76 must pass exact-head repository checks and merge before DOMAIN may mutate shared composition/workspace paths
 owner_action_required: null
-next_action: validate PR #46 at frozen head; after lawful merge, create four worker branches/tasks from resulting main and release non-overlapping implementation writes.
+next_action: qualify coordinator PR #76, merge the exact validated head if all gates are green, then advance DOMAIN PR #56 against the merged reconciliation base.
 ```
