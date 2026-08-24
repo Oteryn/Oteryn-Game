@@ -174,37 +174,137 @@ jobs:
 
       - name: Resolve real pinned NPC and monster outfits
         shell: bash
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.sha }}
         run: |
           set -euo pipefail
           ROOT="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global"
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          git show "$BASE_SHA:tools/game-atlas-creatures/animated.py" > tools/game-atlas-creatures/_animated_baseline.py
+          python tools/game-atlas-creatures/_animated_baseline.py \
+            "$ROOT/world" "$ROOT/npc" "$ROOT/monster" \
+            /tmp/appearance-a /tmp/outfit-spatial-a /tmp/animated-creatures-baseline.json \
+            >/tmp/creature-baseline-build.json
+          rm tools/game-atlas-creatures/_animated_baseline.py
           python tools/game-atlas-creatures/animated.py \
             "$ROOT/world" "$ROOT/npc" "$ROOT/monster" \
             /tmp/appearance-a /tmp/outfit-spatial-a /tmp/animated-creatures.json \
             | tee /tmp/creature-build.json
+          python tools/game-atlas-creatures/animated.py \
+            "$ROOT/world" "$ROOT/npc" "$ROOT/monster" \
+            /tmp/appearance-a /tmp/outfit-spatial-a /tmp/animated-creatures-b.json \
+            >/tmp/creature-build-b.json
+          cmp /tmp/animated-creatures.json /tmp/animated-creatures-b.json
+          test ! -e tools/game-atlas-creatures/_animated_baseline.py
           python - <<'PY'
+          import copy
+          import importlib.util
           import json
           from pathlib import Path
+          import sys
+
+          baseline=json.loads(Path('/tmp/animated-creatures-baseline.json').read_text())
           data=json.loads(Path('/tmp/animated-creatures.json').read_text())
           assert data['capability']=='animated-creatures-v1'
           assert data['appearance_product_root']=='sha256:0d1c8fc777d1d220a9d7723507fddd72585f7358d35a40209bd7415f1fe057c1'
-          assert data['outfit_spatial_product_root'].startswith('sha256:')
+          assert data['outfit_spatial_product_root']=='sha256:62fdd7d0ce02652582f03bf971455f4a2f9ec1e472eaebfec5af739cf11a921e'
+
+          for key in ('npcs','monster_spawns'):
+              old_records=baseline[key]
+              new_records=data[key]
+              assert len(old_records)==len(new_records)
+              assert [record['record_id'] for record in old_records] == [record['record_id'] for record in new_records]
+              for old,new in zip(old_records,new_records,strict=True):
+                  for field,value in old.items():
+                      if field!='outfit_presentation':
+                          assert new.get(field)==value, (key,new['record_id'],field)
+                  if old.get('presentation_resolution_state')=='RESOLVED':
+                      old_p=old['outfit_presentation']; new_p=new['outfit_presentation']
+                      assert new_p['outfit_presentation_id']==old_p['outfit_presentation_id']
+                      assert new_p['groups']==old_p['groups']
+                      assert new_p['static_projection']==old_p['static_projection']
+                      state=new_p['moving_in_place_resolution_state']
+                      assert state in ('RESOLVED','FALLBACK_STATIC')
+                      if state=='RESOLVED':
+                          moving=new_p['moving_in_place_projection']
+                          static=new_p['static_projection']
+                          assert moving['frame_group']['semantic']=='outfit-moving'
+                          assert moving['selection_policy']=='unique-outfit-moving-fixed-south-in-place-v1'
+                          assert moving['direction']=='south'
+                          assert moving['uses_moving_group_in_place'] is True
+                          assert moving['displacement']==static['displacement']
+                          assert moving['anchor_policy']==static['anchor_policy']
+                          assert moving['spatial_record_id']==static['spatial_record_id']
+                      else:
+                          assert 'moving_in_place_projection' not in new_p
+                          assert isinstance(new_p.get('moving_in_place_reason'),str) and new_p['moving_in_place_reason']
+                  else:
+                      assert new==old
+
           n=data['statistics']['npc_presentation']
           m=data['statistics']['monster_presentation']
-          assert n['resolved_unique_outfits'] > 0
-          assert m['resolved_unique_outfits'] > 0
-          assert n['resolved_animated_unique_outfits'] > 0
-          assert m['resolved_animated_unique_outfits'] > 0
-          for key in ('npcs','monster_spawns'):
-              for record in data[key]:
-                  if record.get('presentation_resolution_state') == 'UNRESOLVED_APPEARANCE':
-                      assert record.get('presentation_fallback') == 'factual-marker'
+          assert n['resolved_moving_in_place_records'] + n['fallback_static_moving_in_place_records'] == n['resolved_presentation_records']
+          assert m['resolved_moving_in_place_records'] + m['fallback_static_moving_in_place_records'] == m['resolved_presentation_records']
+          assert n['resolved_moving_in_place_records'] > 0
+          assert m['resolved_moving_in_place_records'] > 0
+
+          ordinary={}
+          records=data['npcs']+data['monster_spawns']
+          for name in ('Sheep','Pig','Chicken'):
+              record=next(r for r in records if r.get('name')==name and r.get('presentation_resolution_state')=='RESOLVED' and r['outfit_presentation'].get('moving_in_place_resolution_state')=='RESOLVED')
+              static=record['outfit_presentation']['static_projection']
+              moving=record['outfit_presentation']['moving_in_place_projection']
+              assert moving['direction']=='south' and moving['pattern_x']==2
+              assert moving['phase_count']==8
+              assert len(moving['animation']['presentation_durations_ms'])==8
+              assert moving['displacement']==static['displacement']
+              ordinary[name]={
+                  'kind':record['kind'],
+                  'record_id':record['record_id'],
+                  'look_type':record['appearance']['look_type'],
+                  'position':record['position'],
+                  'phase_count':moving['phase_count'],
+                  'south_pattern_x':moving['pattern_x'],
+                  'displacement':moving['displacement'],
+              }
+
+          strange=next(r for r in data['npcs'] if r.get('name')=='Strange Pipe' and r.get('presentation_resolution_state')=='RESOLVED')
+          strange_p=strange['outfit_presentation']
+          assert strange_p['moving_in_place_resolution_state']=='FALLBACK_STATIC'
+          assert strange_p['moving_in_place_reason']=='NO_MOVING_FRAME_GROUP'
+          assert 'moving_in_place_projection' not in strange_p
+          assert isinstance(strange_p.get('static_projection'),dict)
+
+          path=Path('tools/game-atlas-creatures/animated.py')
+          spec=importlib.util.spec_from_file_location('creature_validator',path)
+          mod=importlib.util.module_from_spec(spec); sys.modules[spec.name]=mod; spec.loader.exec_module(mod)
+          mod.validate_animated_creatures(data)
+          corrupt=copy.deepcopy(data)
+          target=next(r for r in corrupt['monster_spawns'] if r.get('presentation_resolution_state')=='RESOLVED' and r['outfit_presentation'].get('moving_in_place_resolution_state')=='RESOLVED')
+          target['outfit_presentation']['moving_in_place_projection']['pattern_x']=999
+          try:
+              mod.validate_animated_creatures(corrupt)
+          except RuntimeError:
+              pass
+          else:
+              raise AssertionError('corrupt moving-in-place projection was accepted')
+
           Path('/tmp/creature-evidence.json').write_text(json.dumps({
               'appearance_product_root':data['appearance_product_root'],
               'outfit_spatial_product_root':data['outfit_spatial_product_root'],
               'semantic_digest':data['semantic_digest'],
               'statistics':data['statistics'],
+              'ordinary_creatures':ordinary,
+              'strange_pipe_fallback':{
+                  'record_id':strange['record_id'],
+                  'reason':strange_p['moving_in_place_reason'],
+              },
+              'deterministic_double_build':True,
+              'static_projection_compatible_with_pr_base':True,
+              'factual_record_fields_compatible_with_pr_base':True,
+              'corruption_rejected':True,
           },indent=2,sort_keys=True)+'\n')
-          print(json.dumps({'npc':n,'monster':m},sort_keys=True))
+          print(json.dumps({'npc':n,'monster':m,'ordinary_creatures':ordinary,'strange_pipe_fallback':strange_p['moving_in_place_reason']},sort_keys=True))
           PY
 
       - name: Record exact-head evidence
