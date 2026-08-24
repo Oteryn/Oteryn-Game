@@ -142,7 +142,7 @@ All eight DUR-03 section-28 resource families are `OWNER_DECISION_REQUIRED` unti
 ## Context checkpoint
 
 ```yaml
-last_progress: Issue #94 topology packet written from exact allocation merge 58459c275ba62714741e6794b92d8935b140a37c; topology is complete and implementation release is truthfully blocked on DUR-03 hard-max owner decisions
+last_progress: PR #122 opened for the exact two-file Issue #94 packet; topology preparation is complete and implementation release remains truthfully blocked on DUR-03 hard-max owner decisions
 status: validating
 branch: docs/otv2-prep-durability-topology-94
 head_sha: null
@@ -164,5 +164,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: DUR-03 hard-max acceptance belongs to a separate Durability-specific owner decision task; no owner action is required to merge this truthful preparation packet
 blocker: OTV2-IMPL-DURABILITY remains blocked; preparation packet itself has no blocker before PR validation
-next_action: open the exact two-file preparation PR, bind whole-diff self-review to its head, pass game-gate, squash merge, then archive/release the worker task and close Issue #94 preparation
+next_action: bind whole-diff self-review to PR #122 exact head, pass game-gate, squash merge, then archive/release the worker task and close Issue #94 preparation
 ```
