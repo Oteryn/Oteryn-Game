@@ -17,6 +17,8 @@ APPEARANCE_EXPORT = HERE.parent / "game-atlas-appearances" / "export.py"
 OUTFIT_SPATIAL_EXPORT = HERE.parent / "game-atlas-outfit-spatial" / "export.py"
 STATIC_EXPORT = HERE / "export.py"
 CAPABILITY = "animated-creatures-v1"
+PLAYBACK_PROJECTION_CAPABILITY = "creature-moving-in-place-v1"
+PLAYBACK_SELECTION_POLICY = "prefer-outfit-moving-in-place-else-static-v1"
 STATIC_DIRECTION = "south"
 
 
@@ -67,10 +69,6 @@ def _static_projection(presentation: dict[str, Any], spatial: dict[str, Any], ad
     directions = selected.get("directions", {})
     if STATIC_DIRECTION not in directions:
         raise RuntimeError("static south direction is unavailable")
-    # Exact 15.32 encodes a reverse_addons_south flag for a bounded subset of
-    # outfits, while the pinned migration/reference renderer does not define its
-    # ordering behavior. It is irrelevant when no addon rows are enabled; with
-    # addons present we must fail closed rather than invent the composition order.
     enabled_addons = [value for value in selected.get("enabled_addon_pattern_y", []) if int(value) > 0]
     if addons and enabled_addons and bool(spatial.get("reverse_addons", {}).get("south")):
         raise RuntimeError("reverse-addon south ordering is not proven")
@@ -97,6 +95,131 @@ def _static_projection(presentation: dict[str, Any], spatial: dict[str, Any], ad
     }
 
 
+def _playback_fallback(
+    presentation: dict[str, Any],
+    static_projection: dict[str, Any],
+    reason: str,
+) -> dict[str, Any]:
+    projection = copy.deepcopy(static_projection)
+    projection.update({
+        "outfit_presentation_id": presentation["outfit_presentation_id"],
+        "selection_policy": PLAYBACK_SELECTION_POLICY,
+        "playback_resolution_state": "FALLBACK_STATIC_PROJECTION",
+        "playback_reason": reason,
+        "presentation_mode": "static-fallback",
+        "world_position_policy": "UNCHANGED",
+    })
+    return projection
+
+
+def _playback_projection(
+    presentation: dict[str, Any],
+    spatial: dict[str, Any],
+    addons: int,
+    static_projection: dict[str, Any],
+) -> dict[str, Any]:
+    groups = presentation.get("groups")
+    if not isinstance(groups, list):
+        return _playback_fallback(presentation, static_projection, "MOVING_GROUP_MALFORMED")
+    moving = [group for group in groups if group.get("frame_group", {}).get("semantic") == "outfit-moving"]
+    if not moving:
+        return _playback_fallback(presentation, static_projection, "MOVING_GROUP_UNAVAILABLE")
+    if len(moving) != 1:
+        return _playback_fallback(presentation, static_projection, "AMBIGUOUS_MOVING_GROUP")
+    selected = moving[0]
+    try:
+        directions = selected.get("directions", {})
+        if not isinstance(directions, dict) or STATIC_DIRECTION not in directions:
+            return _playback_fallback(presentation, static_projection, "MOVING_DIRECTION_UNAVAILABLE")
+        enabled_rows = selected.get("enabled_addon_pattern_y", [])
+        if not isinstance(enabled_rows, list):
+            return _playback_fallback(presentation, static_projection, "MOVING_GROUP_MALFORMED")
+        enabled_addons = [value for value in enabled_rows if int(value) > 0]
+        if addons and enabled_addons and bool(spatial.get("reverse_addons", {}).get("south")):
+            return _playback_fallback(presentation, static_projection, "MOVING_REVERSE_ADDONS_UNPROVEN")
+        phase_count = int(selected.get("phase_count", 1))
+        if phase_count <= 0:
+            return _playback_fallback(presentation, static_projection, "MOVING_GROUP_MALFORMED")
+        animation = selected.get("animation") if phase_count > 1 else None
+        if phase_count > 1 and not isinstance(animation, dict):
+            return _playback_fallback(presentation, static_projection, "MOVING_TIMING_UNAVAILABLE")
+        displacement = spatial.get("displacement")
+        if not isinstance(displacement, dict) or not all(isinstance(displacement.get(axis), int) for axis in ("x", "y")):
+            return _playback_fallback(presentation, static_projection, "MOVING_SPATIAL_UNAVAILABLE")
+        return {
+            "anchor_policy": spatial["anchor_policy"],
+            "animate_always": bool(spatial.get("animate_always")),
+            "animation": animation,
+            "animation_program_id": selected["animation_program_id"],
+            "direction": STATIC_DIRECTION,
+            "displacement": {"x": int(displacement["x"]), "y": int(displacement["y"])},
+            "enabled_addon_pattern_y": enabled_rows,
+            "frame_group": selected["frame_group"],
+            "outfit_presentation_id": presentation["outfit_presentation_id"],
+            "pattern_x": int(directions[STATIC_DIRECTION]),
+            "pattern_z": int(selected["pattern_z"]),
+            "phase_count": phase_count,
+            "playback_resolution_state": "RESOLVED_MOVING_IN_PLACE",
+            "presentation_mode": "moving-in-place",
+            "selection_policy": PLAYBACK_SELECTION_POLICY,
+            "spatial_record_id": spatial["spatial_record_id"],
+            "uses_moving_group_in_place": True,
+            "world_position_policy": "UNCHANGED",
+        }
+    except (KeyError, TypeError, ValueError):
+        return _playback_fallback(presentation, static_projection, "MOVING_GROUP_MALFORMED")
+
+
+def verify_enriched_creatures(
+    result: dict[str, Any],
+    outfit_spatial_product: Path,
+    *,
+    spatial_module=None,
+) -> dict[str, int]:
+    if result.get("capability") != CAPABILITY:
+        raise RuntimeError("unsupported animated creature capability")
+    if result.get("playback_projection_capability") != PLAYBACK_PROJECTION_CAPABILITY:
+        raise RuntimeError("unsupported creature playback projection capability")
+    body = copy.deepcopy(result)
+    actual_digest = body.pop("semantic_digest", None)
+    expected_digest = "sha256:" + hashlib.sha256(_canonical(body)).hexdigest()
+    if actual_digest != expected_digest:
+        raise RuntimeError("animated creature semantic digest mismatch")
+
+    spatial_module = spatial_module or _load(OUTFIT_SPATIAL_EXPORT, "game_atlas_outfit_spatial_verify")
+    spatial_manifest, spatial_index = spatial_module.load_index(outfit_spatial_product)
+    if spatial_manifest.get("product_root") != result.get("outfit_spatial_product_root"):
+        raise RuntimeError("animated creature outfit spatial root mismatch")
+    resolved = 0
+    moving = 0
+    fallback = 0
+    for key in ("npcs", "monster_spawns"):
+        for record in result.get(key, []):
+            if record.get("presentation_resolution_state") != "RESOLVED":
+                continue
+            raw = record.get("appearance")
+            presentation = record.get("outfit_presentation")
+            if not isinstance(raw, dict) or not isinstance(presentation, dict):
+                raise RuntimeError("resolved creature is missing outfit presentation")
+            look_type = int(raw["look_type"])
+            addons = int(raw["addons"])
+            spatial = spatial_index.get(look_type)
+            if spatial is None:
+                raise RuntimeError(f"missing outfit spatial record for lookType {look_type}")
+            expected_static = _static_projection(presentation, spatial, addons)
+            if presentation.get("static_projection") != expected_static:
+                raise RuntimeError("corrupt static creature projection")
+            expected_playback = _playback_projection(presentation, spatial, addons, expected_static)
+            if presentation.get("playback_projection") != expected_playback:
+                raise RuntimeError("corrupt creature playback projection")
+            resolved += 1
+            if expected_playback["playback_resolution_state"] == "RESOLVED_MOVING_IN_PLACE":
+                moving += 1
+            else:
+                fallback += 1
+    return {"resolved": resolved, "moving": moving, "fallback": fallback}
+
+
 def enrich_creatures(
     static_result: dict[str, Any],
     appearance_product: Path,
@@ -116,8 +239,6 @@ def enrich_creatures(
     if spatial_manifest.get("source") != manifest.get("source"):
         raise RuntimeError("outfit spatial product source identity mismatch")
 
-    # Index files are immutable for one content-addressed product. Read them once
-    # per process; repeated outfit tuples must not turn that lookup into per-record I/O.
     loader = getattr(appearance_module, "load_program_indexes", None)
     if loader is not None and not hasattr(loader, "cache_info"):
         appearance_module.load_program_indexes = functools.lru_cache(maxsize=2)(loader)
@@ -126,6 +247,7 @@ def enrich_creatures(
     previous_digest = result.pop("semantic_digest", None)
     result["static_semantic_digest"] = previous_digest
     result["capability"] = CAPABILITY
+    result["playback_projection_capability"] = PLAYBACK_PROJECTION_CAPABILITY
     result["appearance_capability"] = appearance_module.CAPABILITY
     result["appearance_product_root"] = manifest["product_root"]
     result["appearance_source"] = manifest["source"]
@@ -138,9 +260,14 @@ def enrich_creatures(
     for kind, key in (("npc", "npcs"), ("monster", "monster_spawns")):
         resolved_outfits: set[str] = set()
         animated_outfits: set[str] = set()
+        moving_playback_outfits: set[str] = set()
+        animated_moving_playback_outfits: set[str] = set()
         resolved_records = 0
         unresolved_records = 0
+        moving_playback_records = 0
+        fallback_playback_records = 0
         reason_counts: dict[str, int] = {}
+        playback_reason_counts: dict[str, int] = {}
         for record in result.get(key, []):
             if record.get("resolution_state") != "RESOLVED" or not isinstance(record.get("appearance"), dict):
                 record["presentation_resolution_state"] = "FALLBACK_MARKER"
@@ -168,7 +295,13 @@ def enrich_creatures(
                         spatial = spatial_index.get(cache_key[0])
                         if spatial is None:
                             raise RuntimeError(f"missing outfit spatial record for lookType {cache_key[0]}")
-                        resolved = {**presentation, "static_projection": _static_projection(presentation, spatial, cache_key[5])}
+                        static_projection = _static_projection(presentation, spatial, cache_key[5])
+                        playback_projection = _playback_projection(presentation, spatial, cache_key[5], static_projection)
+                        resolved = {
+                            **presentation,
+                            "static_projection": static_projection,
+                            "playback_projection": playback_projection,
+                        }
                         cached = (resolved, None)
                     except (appearance_module.ProductError, spatial_module.SpatialError, KeyError, TypeError, ValueError, RuntimeError) as exc:
                         cached = (None, _presentation_reason(exc))
@@ -192,13 +325,28 @@ def enrich_creatures(
             projection = resolved["static_projection"]
             if projection.get("animation") is not None and int(projection.get("phase_count", 1)) > 1:
                 animated_outfits.add(outfit_key)
+            playback = resolved["playback_projection"]
+            if playback["playback_resolution_state"] == "RESOLVED_MOVING_IN_PLACE":
+                moving_playback_records += 1
+                moving_playback_outfits.add(outfit_key)
+                if playback.get("animation") is not None and int(playback.get("phase_count", 1)) > 1:
+                    animated_moving_playback_outfits.add(outfit_key)
+            else:
+                fallback_playback_records += 1
+                playback_reason = str(playback.get("playback_reason", "UNKNOWN_PLAYBACK_FALLBACK"))
+                playback_reason_counts[playback_reason] = playback_reason_counts.get(playback_reason, 0) + 1
 
         per_kind[kind] = {
             "resolved_presentation_records": resolved_records,
             "unresolved_presentation_records": unresolved_records,
             "resolved_unique_outfits": len(resolved_outfits),
             "resolved_animated_unique_outfits": len(animated_outfits),
+            "resolved_moving_playback_records": moving_playback_records,
+            "fallback_static_playback_records": fallback_playback_records,
+            "resolved_moving_playback_unique_outfits": len(moving_playback_outfits),
+            "resolved_animated_moving_playback_unique_outfits": len(animated_moving_playback_outfits),
             "presentation_reason_counts": dict(sorted(reason_counts.items())),
+            "playback_reason_counts": dict(sorted(playback_reason_counts.items())),
         }
 
     stats = dict(result.get("statistics", {}))
@@ -242,6 +390,7 @@ def main() -> int:
         args.appearance_product,
         args.outfit_spatial_product,
     )
+    verify_enriched_creatures(result, args.outfit_spatial_product)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(json.dumps({"semantic_digest": result["semantic_digest"], **result["statistics"]}, sort_keys=True))
