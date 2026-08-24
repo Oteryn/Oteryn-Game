@@ -8,12 +8,12 @@ status: wave1_domain_composition_active
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-coordinator-domain-lease-active
-pr: null
+pr: 78
 base_sha: 6945e962035bac83d1f19b00984df5b82719ebb9
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-24T10:04:13+02:00
+updated_at: 2026-08-24T10:06:33+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -43,7 +43,7 @@ Coordinate the active native implementation programme, serialize shared composit
 - `PROVEN`: Bootstrap and SIM are completed and lifecycle-closed.
 - `PROVEN`: FOUNDATION delivery PR #59 merged as `a70318484b1ffdd328b53cdc70a4386a516d0109`; closeout PR #74 merged as `1f69677b40851551953caf853c08b37ce7b29c68` and released Foundation ownership.
 - `PROVEN`: coordinator reconciliation PR #76 passed exact-head required workflows and mandatory self-review, then squash-merged as `6945e962035bac83d1f19b00984df5b82719ebb9`.
-- `PROVEN`: PR #76 lawfully transferred the serialized shared composition lease to `OTV2-IMPL-DOMAIN`; DOMAIN does not need this descriptive follow-up to merge before using that already-merged authority.
+- `PROVEN`: PR #76 lawfully transferred the serialized shared composition lease to `OTV2-IMPL-DOMAIN`; DOMAIN does not need this descriptive follow-up PR #78 to merge before using that already-merged authority.
 - `PROVEN`: DOMAIN PR #56 remains Draft at `674d1ccd637f3565c25750e5d5fe6c56df6fde32`, currently 5 commits ahead / 9 behind `main@6945e962035bac83d1f19b00984df5b82719ebb9`; its existing diff remains limited to the allocated Domain/task paths.
 - `PROVEN`: CONTENT PR #58 remains Draft at observed head `ec68df7a461a011a6480898c9a6d9ee60703189e`; its production activation remains held by missing accepted DUR-04/VSL hard maxima and shared lease order.
 - `PROVEN`: QA branch exists with the test-side evidence shell, no PR, and real Tier 1/Tier 2 journeys remain `NOT_EVALUATED`.
@@ -98,16 +98,16 @@ No new Wave 2 worker is allocated yet.
 
 ## Validation / merge posture
 
-This follow-up only removes stale post-merge `pending` wording from coordinator-owned documentation. Runtime/component/E2E is `NOT_APPLICABLE`; exact-head repository governance/merge checks and self-review remain required. Independent review is `NOT_REQUIRED` because no authority is widened beyond the already-merged PR #76 lease transfer.
+PR #78 only removes stale post-merge `pending` wording from coordinator-owned documentation. Runtime/component/E2E is `NOT_APPLICABLE`; exact-head repository governance/merge checks and self-review remain required. Independent review is `NOT_REQUIRED` because no authority is widened beyond the already-merged PR #76 lease transfer.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #76 merged as 6945e962035bac83d1f19b00984df5b82719ebb9 and activated the DOMAIN shared composition lease; Domain PR #56 is confirmed 5 ahead / 9 behind current main and remains Draft awaiting reconciliation plus minimal game-server composition.
+last_progress: PR #76 merged as 6945e962035bac83d1f19b00984df5b82719ebb9 and activated the DOMAIN shared composition lease; post-merge status PR #78 records that state; Domain PR #56 is confirmed 5 ahead / 9 behind current main and remains Draft awaiting reconciliation plus minimal game-server composition.
 status: wave1_domain_composition_active
 branch: agent/otv2-coordinator-domain-lease-active
 head_sha: null
-pr: null
+pr: 78
 blocker: null
 owner_action_required: null
 next_action: reconcile and qualify DOMAIN PR #56 against current main with its minimal shared composition, then merge/archive it if all exact-head gates are clean.
