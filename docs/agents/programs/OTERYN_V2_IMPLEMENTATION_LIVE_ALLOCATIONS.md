@@ -27,13 +27,15 @@
 - Foundation post-merge audit merge: `55e30e23c3d5775ce760c6b210ea77f152b359ae`
 - Domain delivery PR: `#56`
 - Domain delivery merge: `0facd7f89edc1b0685e67c5531839e8e6f04c466`
-- State: `WAVE1_CONTENT_LEASE_TRANSFER_PENDING_CLOSEOUT_MERGE`
+- Content evidence delivery PR: `#58`
+- Content evidence delivery merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`
+- State: `WAVE1_CONTENT_EVIDENCE_MERGED_PRODUCTION_BLOCKED`
 
 ## Authority rule
 
 This record is the live coordinator allocation required by `OTV2_IMPLEMENTATION_COORDINATOR.md`. Root governance, active task/PR/CI state and merged `main` outrank stale coordination prose.
 
-DOMAIN product delivery is merged, but this closeout/lease-transfer revision is not authoritative until its own PR merges to `main`. Before that merge, CONTENT still may not mutate serialized shared paths. After lawful closeout merge, DOMAIN lifecycle ownership is released and the established next shared turn transfers to CONTENT.
+PR #82 merged and transferred the serialized shared composition lease to CONTENT. CONTENT used that authority only for minimum evidence-only composition in PR #58, which has now merged. Production VSL activation, permanent format selection and registry/contract mutation remain unauthorized.
 
 Unmerged sibling output is never an implicit dependency. Stable registries/contracts, `.github/workflows/**`, architecture policy/tooling and new workspace/crate topology remain unallocated unless a later merged coordinator allocation explicitly grants them.
 
@@ -106,58 +108,51 @@ shared_lease: released
 
 Foundation product implementation is byte-equivalent to its final PR tree and passed the post-merge independent audit with zero P0/P1/P2 implementation findings. Retained history does **not** prove the mandatory independent review was completed on the final pre-merge head; the historical gate therefore remains `NOT_PROVEN` and is not retroactively rewritten.
 
-## Domain delivery — lifecycle closeout pending this PR merge
+## Completed allocation — Domain
 
 ```yaml
 lane_id: OTV2-IMPL-DOMAIN
 task_id: OTV2-20260822-impl-domain-core
 worker_alias: Oteryn: impl domain core
-status: completed_pending_archive_merge
+status: completed
 risk: High
-allocation_pr: 45
-allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-exact_base_pr: 46
-worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 final_head_sha: a76c999a2b03c4271fda9b4395cc3d76c346987b
 delivery_pr: 56
 delivery_merge_sha: 0facd7f89edc1b0685e67c5531839e8e6f04c466
+closeout_pr: 82
+closeout_merge_sha: 30c733c8c8cb4a1fbcf63010bcb6709a9109dde6
 issue: 55
 issue_state: completed
-source_branch_present: false
-owned_paths_after_this_record_merges: []
-shared_lease_after_this_record_merges: released
+owned_paths: []
+branch: null
+shared_lease: released
 ```
 
-DOMAIN is merged into the production game-server crate. Its exact-head tests/Clippy/security gate, whole-diff self-review and genuinely independent exact-head review are clean. Runtime/Tier E2E remains `NOT_EVALUATED` because DOMAIN introduced no production gameplay listener/client journey.
+DOMAIN is merged into `apps/game-server`, its Issue is completed, its branch is absent and its serialized shared lease was released by PR #82.
 
-## Active Wave 1 — Content
+## Content evidence delivery — production acceptance blocked
 
 ```yaml
 lane_id: OTV2-IMPL-CONTENT
 task_id: OTV2-20260822-impl-vsl-content
 worker_alias: Oteryn: impl vsl content
-status: shared_composition_ready_after_closeout_merge
+status: evidence_delivery_merged_production_blocked
 risk: High
-allocation_pr: 45
-allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-exact_base_pr: 46
-worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-branch: agent/otv2-impl-vsl-content-01
-pr: 58
-observed_head_sha: ec68df7a461a011a6480898c9a6d9ee60703189e
-relative_to_domain_merged_main:
-  ahead_by: 7
-  behind_by: 12
-owned_paths:
-  - apps/game-server/src/content/**
-  - docs/agents/tasks/active/OTV2-20260822-impl-vsl-content.md
-shared_lease_after_this_record_merges: active
+final_head_sha: ab0b4241c107bfb2c6052e58aec241da130774c7
+delivery_pr: 58
+delivery_merge_sha: 8f99f25d0b1b3472d40504cd54b463cf752ebe7a
+issue: 54
+issue_state: open_blocked
+source_branch_present: false
+owned_paths: []
+shared_lease: released
 registered_production_vsl_limits: not_found
 production_activation: forbidden
 permanent_format_selection: forbidden
+future_write_authority: requires_new_coordinator_allocation
 ```
 
-After this closeout revision merges, CONTENT may reconcile current `main` and use the serialized shared paths only for the minimum evidence-only/fail-closed composition of its existing semantic/compiler/loader seam. Missing accepted DUR-04/VSL hard maxima continue to block production VSL activation. This lease does not authorize choosing permanent World Project/Bundle encoding, mutating registries/contracts/workflows, broad content import or claiming Reference parity.
+The bounded non-production VSL evidence seam is merged and composed through `apps/game-server`. Exact-head `game-gate`, whole-diff self-review and genuinely independent exact-head review were clean. `OrdinaryRelease` and gameplay availability remain fail-closed. Issue #54 stays open only for production acceptance: accepted DUR-04/VSL hard maxima and production activation authority are still absent and are not inferred by this programme.
 
 ## Active Wave 1 — QA
 
@@ -177,12 +172,12 @@ checkpoint_head_sha: 58d64130cc0526001bd1c9a00a179e1c39ad6e51
 owned_paths:
   - apps/game-server/tests/**
   - docs/agents/tasks/active/OTV2-20260822-impl-qa-e2e.md
-shared_lease: waiting_for_content_if_needed
+shared_lease: not_assigned_pending_concrete_need
 ```
 
 QA contains a real test-side evidence shell with focused/component validation, but no delivery PR and no real Tier 1/Tier 2 gameplay journey. Synthetic-shell evidence remains valid only for the shell; Tier 1/Tier 2 stay `NOT_EVALUATED` until the required merged production seams exist.
 
-## Serialized shared-mutation lease candidate
+## Serialized shared-mutation lease
 
 ```yaml
 shared_paths:
@@ -191,16 +186,15 @@ shared_paths:
   - Cargo.toml
   - Cargo.lock
   - workspace-boundaries.toml
-lease_state: transfer_pending_closeout_merge
-current_owner_on_main: OTV2-IMPL-DOMAIN
-current_owner_after_this_record_merges: OTV2-IMPL-CONTENT
-previous_owner_after_merge: OTV2-IMPL-DOMAIN
-previous_owner_status_after_merge: completed_and_released
-remaining_order_after_content:
-  - OTV2-IMPL-QA
+lease_state: released_unassigned
+current_owner: null
+previous_owner: OTV2-IMPL-CONTENT
+previous_owner_status: evidence_delivery_merged_production_blocked
+next_candidate: OTV2-IMPL-QA
+next_candidate_authority: not_granted_pending_concrete_need
 ```
 
-The lease transfer is effective only after this closeout PR lawfully merges. CONTENT receives no stable-ID/registry/contract/workflow/new-crate or production authority through this transfer.
+CONTENT no longer needs the serialized shared paths for its merged evidence seam. QA does not receive them implicitly; a later coordinator action must prove a concrete shared-path need before granting another one-writer turn.
 
 ## Deferred allocations and concrete readiness
 
@@ -210,14 +204,14 @@ OTV2-IMPL-DURABILITY:
   write_authority: none
   evidence: FOUNDATION and DOMAIN concrete merged seams now exist
 OTV2-IMPL-ABILITY:
-  status: not_allocated
-  blocker: CONTENT not yet merged/integration-ready
+  status: dependency_ready_pending_new_allocation
+  write_authority: none
 OTV2-IMPL-INTERACTION:
-  status: not_allocated
-  blocker: CONTENT not yet merged/integration-ready
+  status: dependency_ready_pending_new_allocation
+  write_authority: none
 OTV2-IMPL-AI:
-  status: not_allocated
-  blocker: CONTENT not yet merged/integration-ready
+  status: dependency_ready_pending_new_allocation
+  write_authority: none
 OTV2-IMPL-CLIENT:
   status: not_allocated
   blocker: merged game-server still exposes fail-closed gameplay availability with no production gameplay listener/client-entry seam
@@ -231,8 +225,9 @@ OTV2-IMPL-CHANNEL:
   status: not_allocated
   blocker: DURABILITY not yet allocated/merged
 OTV2-CONTENT-FORMAT-SPIKE:
-  status: not_allocated
-  blocker: CONTENT semantic/compiler seam not yet merged; permanent-format decision remains separately owner-gated
+  status: dependency_ready_pending_new_allocation
+  write_authority: none
+  note: evidence-only spike; permanent-format decision remains separately owner-gated
 OTV2-IMPL-ANALYTICS:
   status: not_allocated
   blocker: concrete producer event registrations do not yet exist
