@@ -79,3 +79,7 @@ blocker: next implementation allocations must respect the explicit topology/reso
 owner_action_required: exact Wave-2 resource hard maxima require accepted evidence/owner decision; production Content limits/activation remain separately owner-gated
 next_action: merge this readiness reconciliation, then reconcile QA and prepare separate Durability topology, Content Format Spike and resource-limit decision allocations before releasing generic engine workers
 ```
+
+## Lifecycle disposition (v3.10 audit)
+
+Archived by the v3.10 Doc/Agent IA lifecycle audit because its recorded PR #92 is terminal and squash-merged as cd3be61b4caa8f4229964c0dfd9e89cb378e981b, while the packet declares no live owning Issue. Future coordinator work requires a fresh live authority/task projection rather than this completed reconciliation snapshot.
