@@ -19,6 +19,10 @@ pub const MAX_SNAPSHOT_CHUNKS: u32 = 256;
 pub const MAX_SNAPSHOT_CHUNK_BYTES: usize = 524_288;
 pub const MAX_SNAPSHOT_ASSEMBLED_BYTES: u64 = 16_777_216;
 
+// PROTOCOL_OTERYN_V1_REGISTRY.json currently registers no optional capabilities.
+// Keep this sorted when a later owning gate allocates an additive capability ID.
+const REGISTERED_CAPABILITY_IDS_V1: &[u32] = &[];
+
 fn decode_uuid_v7(input: &[u8]) -> Result<[u8; 16], FoundationProtocolError> {
     let value: [u8; 16] = input
         .try_into()
@@ -319,6 +323,7 @@ fn validate_capability(
     raw: u64,
     count: &mut usize,
     previous: &mut Option<u32>,
+    must_be_registered: bool,
 ) -> Result<(), FoundationProtocolError> {
     *count = count
         .checked_add(1)
@@ -331,6 +336,13 @@ fn validate_capability(
     if capability == 0 || previous.is_some_and(|prior| capability <= prior) {
         return Err(FoundationProtocolError::InvalidCapabilitySet);
     }
+    if must_be_registered
+        && REGISTERED_CAPABILITY_IDS_V1
+            .binary_search(&capability)
+            .is_err()
+    {
+        return Err(FoundationProtocolError::CapabilityMismatch);
+    }
     *previous = Some(capability);
     Ok(())
 }
@@ -341,14 +353,25 @@ fn validate_capability_field(
     wire: u8,
     count: &mut usize,
     previous: &mut Option<u32>,
+    must_be_registered: bool,
 ) -> Result<(), FoundationProtocolError> {
     match wire {
-        0 => validate_capability(read_varint(payload, cursor)?, count, previous),
+        0 => validate_capability(
+            read_varint(payload, cursor)?,
+            count,
+            previous,
+            must_be_registered,
+        ),
         2 => {
             let packed = unbounded_length_delimited(payload, cursor)?;
             let mut packed_cursor = 0usize;
             while packed_cursor < packed.len() {
-                validate_capability(read_varint(packed, &mut packed_cursor)?, count, previous)?;
+                validate_capability(
+                    read_varint(packed, &mut packed_cursor)?,
+                    count,
+                    previous,
+                    must_be_registered,
+                )?;
             }
             Ok(())
         }
@@ -404,35 +427,98 @@ fn validate_revision_list(
     Ok(())
 }
 
+fn read_singular_varint(
+    payload: &[u8],
+    cursor: &mut usize,
+    wire: u8,
+    value: &mut Option<u64>,
+) -> Result<(), FoundationProtocolError> {
+    if wire != 0 || value.is_some() {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    *value = Some(read_varint(payload, cursor)?);
+    Ok(())
+}
+
+fn read_singular_bytes<'a>(
+    payload: &'a [u8],
+    cursor: &mut usize,
+    wire: u8,
+    value: &mut Option<&'a [u8]>,
+    maximum: usize,
+    limit_error: FoundationProtocolError,
+) -> Result<(), FoundationProtocolError> {
+    if wire != 2 || value.is_some() {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    *value = Some(bounded_length_delimited(
+        payload,
+        cursor,
+        maximum,
+        limit_error,
+    )?);
+    Ok(())
+}
+
 fn validate_bootstrap_ingress(
     message_type: MessageType,
     payload: &[u8],
 ) -> Result<(), FoundationProtocolError> {
-    let (material_field, capabilities_field, build_field, material_maximum) = match message_type {
-        MessageType::ClientBootstrap => (5u32, 4u32, 7u32, MAX_ADMISSION_MATERIAL_BYTES),
-        MessageType::ClientResume => (2u32, 7u32, 8u32, MAX_RECONNECT_MATERIAL_BYTES),
+    let (
+        protocol_field,
+        transport_field,
+        schema_field,
+        capabilities_field,
+        material_field,
+        identity_field,
+        build_field,
+        sequence_field,
+        material_maximum,
+    ) = match message_type {
+        MessageType::ClientBootstrap => (
+            1u32,
+            2u32,
+            3u32,
+            4u32,
+            5u32,
+            6u32,
+            7u32,
+            None,
+            MAX_ADMISSION_MATERIAL_BYTES,
+        ),
+        MessageType::ClientResume => (
+            4u32,
+            5u32,
+            6u32,
+            7u32,
+            2u32,
+            1u32,
+            8u32,
+            Some(3u32),
+            MAX_RECONNECT_MATERIAL_BYTES,
+        ),
         _ => return Ok(()),
     };
     let mut cursor = 0usize;
+    let mut protocol_major = None;
+    let mut transport_profile = None;
+    let mut schema_revision = None;
+    let mut last_applied_sequence = None;
+    let mut material = None;
+    let mut identity = None;
+    let mut build_id = None;
     let mut capability_count = 0usize;
     let mut previous_capability = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
         let wire = (key & 7) as u8;
-        if field == 0 {
-            return Err(FoundationProtocolError::MalformedEnvelope);
-        }
-        if field == material_field {
-            if wire != 2 {
-                return Err(FoundationProtocolError::MalformedEnvelope);
-            }
-            bounded_length_delimited(
-                payload,
-                &mut cursor,
-                material_maximum,
-                FoundationProtocolError::BootstrapLimitExceeded,
-            )?;
+        if field == protocol_field {
+            read_singular_varint(payload, &mut cursor, wire, &mut protocol_major)?;
+        } else if field == transport_field {
+            read_singular_varint(payload, &mut cursor, wire, &mut transport_profile)?;
+        } else if field == schema_field {
+            read_singular_varint(payload, &mut cursor, wire, &mut schema_revision)?;
         } else if field == capabilities_field {
             validate_capability_field(
                 payload,
@@ -440,22 +526,76 @@ fn validate_bootstrap_ingress(
                 wire,
                 &mut capability_count,
                 &mut previous_capability,
+                false,
             )?;
-        } else if field == build_field {
-            if wire != 2 {
-                return Err(FoundationProtocolError::MalformedEnvelope);
-            }
-            let build_id = bounded_length_delimited(
+        } else if field == material_field {
+            read_singular_bytes(
                 payload,
                 &mut cursor,
+                wire,
+                &mut material,
+                material_maximum,
+                FoundationProtocolError::BootstrapLimitExceeded,
+            )?;
+            if material.is_some_and(|value| value.is_empty()) {
+                return Err(FoundationProtocolError::MalformedEnvelope);
+            }
+        } else if field == identity_field {
+            read_singular_bytes(
+                payload,
+                &mut cursor,
+                wire,
+                &mut identity,
+                16,
+                FoundationProtocolError::InvalidWireIdentifier,
+            )?;
+            decode_uuid_v7(
+                identity.ok_or(FoundationProtocolError::InvalidWireIdentifier)?,
+            )?;
+        } else if field == build_field {
+            read_singular_bytes(
+                payload,
+                &mut cursor,
+                wire,
+                &mut build_id,
                 MAX_CLIENT_BUILD_ID_BYTES,
                 FoundationProtocolError::MalformedEnvelope,
             )?;
-            std::str::from_utf8(build_id)
-                .map_err(|_| FoundationProtocolError::MalformedEnvelope)?;
+            let value = build_id.ok_or(FoundationProtocolError::MalformedEnvelope)?;
+            if value.is_empty() || std::str::from_utf8(value).is_err() {
+                return Err(FoundationProtocolError::MalformedEnvelope);
+            }
+        } else if sequence_field == Some(field) {
+            read_singular_varint(
+                payload,
+                &mut cursor,
+                wire,
+                &mut last_applied_sequence,
+            )?;
         } else {
             skip_field(payload, &mut cursor, wire)?;
         }
+    }
+
+    if protocol_major != Some(u64::from(PROTOCOL_MAJOR_V1)) {
+        return Err(FoundationProtocolError::ProtocolMajorMismatch);
+    }
+    if transport_profile != Some(u64::from(TRANSPORT_PROFILE_TCP_TLS13_V1)) {
+        return Err(FoundationProtocolError::TransportProfileMismatch);
+    }
+    if !schema_revision
+        .is_some_and(|revision| (1..=u64::from(u32::MAX)).contains(&revision))
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if material.is_none() {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if identity.is_none() {
+        return Err(FoundationProtocolError::InvalidWireIdentifier);
+    }
+    if build_id.is_none() {
+        return Err(FoundationProtocolError::MalformedEnvelope);
     }
     Ok(())
 }
@@ -514,33 +654,130 @@ fn validate_resync_request_ingress(payload: &[u8]) -> Result<(), FoundationProto
     Ok(())
 }
 
-fn validate_server_capabilities_ingress(
+const SERVER_ACCEPTED_IDENTITY_FIELDS: &[u32] = &[1, 2, 3];
+const SERVER_RESUME_ACCEPTED_IDENTITY_FIELDS: &[u32] = &[1];
+
+fn validate_server_acceptance_ingress(
     message_type: MessageType,
     payload: &[u8],
 ) -> Result<(), FoundationProtocolError> {
-    let capabilities_field = match message_type {
-        MessageType::ServerAccepted => 10u32,
-        MessageType::ServerResumeAccepted => 6u32,
+    let (
+        identity_fields,
+        generation_field,
+        sequence_field,
+        next_command_field,
+        protocol_field,
+        transport_field,
+        schema_field,
+        capabilities_field,
+    ) = match message_type {
+        MessageType::ServerAccepted => (
+            SERVER_ACCEPTED_IDENTITY_FIELDS,
+            4u32,
+            5u32,
+            6u32,
+            Some(7u32),
+            Some(8u32),
+            9u32,
+            10u32,
+        ),
+        MessageType::ServerResumeAccepted => (
+            SERVER_RESUME_ACCEPTED_IDENTITY_FIELDS,
+            2u32,
+            3u32,
+            4u32,
+            None,
+            None,
+            5u32,
+            6u32,
+        ),
         _ => return Ok(()),
     };
     let mut cursor = 0usize;
+    let mut identity_seen = [false; 3];
+    let mut connection_generation = None;
+    let mut current_server_sequence = None;
+    let mut next_command_id = None;
+    let mut protocol_major = None;
+    let mut transport_profile = None;
+    let mut schema_revision = None;
     let mut capability_count = 0usize;
     let mut previous_capability = None;
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
         let wire = (key & 7) as u8;
-        if field == capabilities_field {
+        if let Some(index) = identity_fields
+            .iter()
+            .position(|identity_field| *identity_field == field)
+        {
+            if wire != 2 || identity_seen[index] {
+                return Err(FoundationProtocolError::MalformedEnvelope);
+            }
+            let identity = bounded_length_delimited(
+                payload,
+                &mut cursor,
+                16,
+                FoundationProtocolError::InvalidWireIdentifier,
+            )?;
+            decode_uuid_v7(identity)?;
+            identity_seen[index] = true;
+        } else if field == generation_field {
+            read_singular_varint(
+                payload,
+                &mut cursor,
+                wire,
+                &mut connection_generation,
+            )?;
+        } else if field == sequence_field {
+            read_singular_varint(
+                payload,
+                &mut cursor,
+                wire,
+                &mut current_server_sequence,
+            )?;
+        } else if field == next_command_field {
+            read_singular_varint(payload, &mut cursor, wire, &mut next_command_id)?;
+        } else if protocol_field == Some(field) {
+            read_singular_varint(payload, &mut cursor, wire, &mut protocol_major)?;
+        } else if transport_field == Some(field) {
+            read_singular_varint(payload, &mut cursor, wire, &mut transport_profile)?;
+        } else if field == schema_field {
+            read_singular_varint(payload, &mut cursor, wire, &mut schema_revision)?;
+        } else if field == capabilities_field {
             validate_capability_field(
                 payload,
                 &mut cursor,
                 wire,
                 &mut capability_count,
                 &mut previous_capability,
+                true,
             )?;
         } else {
             skip_field(payload, &mut cursor, wire)?;
         }
+    }
+
+    if identity_seen[..identity_fields.len()]
+        .iter()
+        .any(|seen| !seen)
+    {
+        return Err(FoundationProtocolError::InvalidWireIdentifier);
+    }
+    if !connection_generation.is_some_and(|generation| generation != 0)
+        || !next_command_id.is_some_and(|command_id| command_id != 0)
+        || !schema_revision
+            .is_some_and(|revision| (1..=u64::from(u32::MAX)).contains(&revision))
+    {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if protocol_field.is_some() && protocol_major != Some(u64::from(PROTOCOL_MAJOR_V1)) {
+        return Err(FoundationProtocolError::ProtocolMajorMismatch);
+    }
+    if transport_field.is_some()
+        && transport_profile != Some(u64::from(TRANSPORT_PROFILE_TCP_TLS13_V1))
+    {
+        return Err(FoundationProtocolError::TransportProfileMismatch);
     }
     Ok(())
 }
@@ -664,7 +901,7 @@ fn validate_server_ingress_payload(
 ) -> Result<(), FoundationProtocolError> {
     match message_type {
         MessageType::ServerAccepted | MessageType::ServerResumeAccepted => {
-            validate_server_capabilities_ingress(message_type, payload)
+            validate_server_acceptance_ingress(message_type, payload)
         }
         MessageType::CommandResult => validate_command_result_ingress(payload),
         MessageType::StateDelta => validate_state_delta_ingress(payload),
@@ -1115,6 +1352,26 @@ mod tests {
         character_id: &[u8],
         supported_capabilities: &[usize],
     ) -> Vec<u8> {
+        test_client_bootstrap_payload_with_material_and_build(
+            protocol_major,
+            transport_profile,
+            schema_revision,
+            character_id,
+            supported_capabilities,
+            &[0xaa],
+            b"test-client",
+        )
+    }
+
+    fn test_client_bootstrap_payload_with_material_and_build(
+        protocol_major: usize,
+        transport_profile: usize,
+        schema_revision: usize,
+        character_id: &[u8],
+        supported_capabilities: &[usize],
+        admission_material: &[u8],
+        client_build_id: &[u8],
+    ) -> Vec<u8> {
         let mut payload = Vec::new();
         push_test_varint_field(&mut payload, 1, protocol_major);
         push_test_varint_field(&mut payload, 2, transport_profile);
@@ -1122,9 +1379,9 @@ mod tests {
         for capability in supported_capabilities {
             push_test_varint_field(&mut payload, 4, *capability);
         }
-        push_test_bytes_field(&mut payload, 5, &[0xaa]);
+        push_test_bytes_field(&mut payload, 5, admission_material);
         push_test_bytes_field(&mut payload, 6, character_id);
-        push_test_bytes_field(&mut payload, 7, b"test-client");
+        push_test_bytes_field(&mut payload, 7, client_build_id);
         payload
     }
 
@@ -1135,9 +1392,27 @@ mod tests {
         game_session_id: &[u8],
         supported_capabilities: &[usize],
     ) -> Vec<u8> {
+        test_client_resume_payload_with_material(
+            protocol_major,
+            transport_profile,
+            schema_revision,
+            game_session_id,
+            supported_capabilities,
+            &[0xbb],
+        )
+    }
+
+    fn test_client_resume_payload_with_material(
+        protocol_major: usize,
+        transport_profile: usize,
+        schema_revision: usize,
+        game_session_id: &[u8],
+        supported_capabilities: &[usize],
+        reconnect_material: &[u8],
+    ) -> Vec<u8> {
         let mut payload = Vec::new();
         push_test_bytes_field(&mut payload, 1, game_session_id);
-        push_test_bytes_field(&mut payload, 2, &[0xbb]);
+        push_test_bytes_field(&mut payload, 2, reconnect_material);
         push_test_varint_field(&mut payload, 4, protocol_major);
         push_test_varint_field(&mut payload, 5, transport_profile);
         push_test_varint_field(&mut payload, 6, schema_revision);
@@ -1404,9 +1679,16 @@ mod tests {
     fn bootstrap_metadata_limits_cover_build_id_and_capabilities()
     -> Result<(), FoundationProtocolError> {
         let build_128 = vec![b'a'; 128];
-        let mut payload = vec![0x3a];
-        payload.extend(test_varint(build_128.len()));
-        payload.extend_from_slice(&build_128);
+        let id = test_uuid_v7(1);
+        let payload = test_client_bootstrap_payload_with_material_and_build(
+            1,
+            1,
+            1,
+            &id,
+            &[],
+            &[0xaa],
+            &build_128,
+        );
         assert_eq!(
             decode_wire_envelope(&test_envelope(1, &payload))?.payload(),
             payload
@@ -1440,7 +1722,8 @@ mod tests {
         for capability in 1..=128usize {
             packed.extend(test_varint(capability));
         }
-        let mut payload = vec![0x22];
+        let mut payload = test_client_bootstrap_payload(1, 1, 1, &id, &[]);
+        payload.push(0x22);
         payload.extend(test_varint(packed.len()));
         payload.extend_from_slice(&packed);
         assert!(decode_wire_envelope(&test_envelope(1, &payload)).is_ok());
@@ -1560,58 +1843,58 @@ mod tests {
     }
 
     #[test]
-    fn nested_admission_material_limits_accept_16384_and_reject_16385()
-    -> Result<(), FoundationProtocolError> {
-        fn varint(mut value: usize) -> Vec<u8> {
-            let mut out = Vec::new();
-            loop {
-                let mut byte = (value & 0x7f) as u8;
-                value >>= 7;
-                if value != 0 {
-                    byte |= 0x80;
-                }
-                out.push(byte);
-                if value == 0 {
-                    return out;
-                }
-            }
-        }
+    fn nested_admission_material_limits_accept_16384_and_reject_16385() {
+        let id = test_uuid_v7(1);
+        let accepted_material = vec![0u8; 16_384];
+        let rejected_material = vec![0u8; 16_385];
 
-        fn envelope(message_type: u8, material_key: u8, material_len: usize) -> Vec<u8> {
-            let mut payload = vec![material_key];
-            payload.extend(varint(material_len));
-            payload.resize(payload.len() + material_len, 0);
+        let accepted_bootstrap = test_client_bootstrap_payload_with_material_and_build(
+            1,
+            1,
+            1,
+            &id,
+            &[],
+            &accepted_material,
+            b"test-client",
+        );
+        assert!(decode_wire_envelope(&test_envelope(1, &accepted_bootstrap)).is_ok());
+        let rejected_bootstrap = test_client_bootstrap_payload_with_material_and_build(
+            1,
+            1,
+            1,
+            &id,
+            &[],
+            &rejected_material,
+            b"test-client",
+        );
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(1, &rejected_bootstrap)),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
 
-            let mut envelope = vec![0x08, message_type, 0x22];
-            envelope.extend(varint(payload.len()));
-            envelope.extend(payload);
-            envelope
-        }
-
-        for (message_type, material_key) in [(1u8, 0x2a), (3u8, 0x12)] {
-            assert_eq!(
-                decode_wire_envelope(&envelope(message_type, material_key, 16_384))?
-                    .payload()
-                    .len(),
-                16_388
-            );
-            assert_eq!(
-                decode_wire_envelope(&envelope(message_type, material_key, 16_385)),
-                Err(FoundationProtocolError::BootstrapLimitExceeded)
-            );
-        }
-        Ok(())
+        let accepted_resume =
+            test_client_resume_payload_with_material(1, 1, 1, &id, &[], &accepted_material);
+        assert!(decode_wire_envelope(&test_envelope(3, &accepted_resume)).is_ok());
+        let rejected_resume =
+            test_client_resume_payload_with_material(1, 1, 1, &id, &[], &rejected_material);
+        assert_eq!(
+            decode_wire_envelope(&test_envelope(3, &rejected_resume)),
+            Err(FoundationProtocolError::BootstrapLimitExceeded)
+        );
     }
 
     #[test]
     fn bootstrap_payload_limit_accepts_65536_and_rejects_65537()
     -> Result<(), FoundationProtocolError> {
-        // The exact-boundary payload remains syntactically valid protobuf: field 16
-        // is an additive unknown bytes field whose key+length+body total 65,536 bytes.
-        let mut accepted_payload = vec![0x82, 0x01, 0xfb, 0xff, 0x03];
+        // The exact-boundary payload remains semantically valid and uses field 16
+        // as an additive unknown bytes field to reach exactly 65,536 bytes.
+        let id = test_uuid_v7(1);
+        let mut accepted_payload = test_client_bootstrap_payload(1, 1, 1, &id, &[]);
+        let unknown_bytes = 65_536 - accepted_payload.len() - 5;
+        accepted_payload.extend([0x82, 0x01]);
+        accepted_payload.extend(test_varint(unknown_bytes));
         accepted_payload.resize(65_536, 0);
-        let mut accepted = vec![0x08, 0x01, 0x22, 0x80, 0x80, 0x04];
-        accepted.extend_from_slice(&accepted_payload);
+        let accepted = test_envelope(1, &accepted_payload);
         assert_eq!(decode_wire_envelope(&accepted)?.payload().len(), 65_536);
 
         let mut rejected = vec![0x08, 0x01, 0x22, 0x81, 0x80, 0x04];
@@ -1649,23 +1932,28 @@ mod tests {
 
     #[test]
     fn additive_unknown_envelope_field_is_safely_ignored() -> Result<(), FoundationProtocolError> {
-        let bytes = [0x08, 0x01, 0x22, 0x00, 0x80, 0x01, 0x01];
+        let payload = test_client_bootstrap_payload(1, 1, 1, &test_uuid_v7(1), &[]);
+        let mut bytes = test_envelope(1, &payload);
+        bytes.extend([0x80, 0x01, 0x01]);
         let envelope = decode_wire_envelope(&bytes)?;
         assert_eq!(envelope.message_type(), MessageType::ClientBootstrap);
-        assert_eq!(envelope.payload(), &[]);
+        assert_eq!(envelope.payload(), payload);
         Ok(())
     }
 
     #[test]
     fn bootstrap_phase_requires_pre_admission_zero_generation()
     -> Result<(), FoundationProtocolError> {
-        let with_generation = [0x08, 0x01, 0x10, 0x01, 0x22, 0x00];
+        let payload = test_client_bootstrap_payload(1, 1, 1, &test_uuid_v7(1), &[]);
+        let mut with_generation = vec![0x08, 0x01, 0x10, 0x01, 0x22];
+        with_generation.extend(test_varint(payload.len()));
+        with_generation.extend_from_slice(&payload);
         let envelope = decode_wire_envelope(&with_generation)?;
         assert_eq!(
             envelope.validate(Direction::ClientToServer, false),
             Err(FoundationProtocolError::MalformedEnvelope)
         );
-        let zero_generation = [0x08, 0x01, 0x22, 0x00];
+        let zero_generation = test_envelope(1, &payload);
         let envelope = decode_wire_envelope(&zero_generation)?;
         assert_eq!(
             envelope.validate(Direction::ClientToServer, true),
@@ -1731,13 +2019,13 @@ mod tests {
     #[test]
     fn framed_envelope_rejects_truncation_and_oversized_prefix_before_body_access()
     -> Result<(), FoundationProtocolError> {
-        let valid = [0, 0, 0, 4, 0x08, 0x01, 0x22, 0x00];
+        let valid = [0, 0, 0, 4, 0x08, 0x0e, 0x22, 0x00];
         assert_eq!(
             decode_framed_envelope(&valid)?.message_type(),
-            MessageType::ClientBootstrap
+            MessageType::ProtocolError
         );
         assert_eq!(
-            decode_framed_envelope(&[0, 0, 0, 5, 0x08, 0x01, 0x22, 0x00]),
+            decode_framed_envelope(&[0, 0, 0, 5, 0x08, 0x0e, 0x22, 0x00]),
             Err(FoundationProtocolError::MalformedFrame)
         );
         assert_eq!(
