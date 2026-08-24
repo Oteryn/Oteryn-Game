@@ -100,6 +100,17 @@ class ProductTests(unittest.TestCase):
         self.assertEqual(resolved["colors_rgb"]["head"], [255, 255, 255])
         self.assertTrue(resolved["outfit_presentation_id"].startswith("outfit-presentation:sha256:"))
 
+    def test_outfit_direction_width_two_fails_closed(self):
+        catalog = json.dumps([{"type":"sprite","file":"sheet.bin","firstspriteid":1,"lastspriteid":500,"spritetype":0}], separators=(",", ":")).encode()
+        idle = frame_group(0, 4, 1, 1, 1, list(range(50, 54)))
+        moving = frame_group(1, 2, 1, 1, 1, list(range(100, 116)), [(100, 100)] * 8)
+        data = field_bytes(2, appearance(201, [idle, moving]))
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            subject.write_product(subject.build_product_from_bytes(catalog, data), root)
+            with self.assertRaisesRegex(subject.ProductError, "unsupported direction pattern width 2"):
+                subject.resolve_outfit_presentation(root, look_type=201, head=0, body=0, legs=0, feet=0, addons=0)
+
     def test_object_variant_ref_rejects_out_of_range_pattern(self):
         catalog, data = source()
         with tempfile.TemporaryDirectory() as tmp:

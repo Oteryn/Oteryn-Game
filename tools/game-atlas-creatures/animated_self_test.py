@@ -136,6 +136,17 @@ def main():
         unsupported=first['npcs'][6]['outfit_presentation']['playback_projection']
         assert unsupported['playback_resolution_state']=='FALLBACK_STATIC_PROJECTION'
         assert unsupported['playback_reason']=='MOVING_DIRECTION_UNAVAILABLE'
+        spatial_row=FakeSpatial.load_index(spatial)[1][128]
+        ambiguous_source=copy.deepcopy(first['npcs'][0]['outfit_presentation'])
+        ambiguous_source['groups'].append(copy.deepcopy(ambiguous_source['groups'][1]))
+        ambiguous=module._playback_projection(ambiguous_source,spatial_row,1,projection)
+        assert ambiguous['playback_resolution_state']=='FALLBACK_STATIC_PROJECTION'
+        assert ambiguous['playback_reason']=='AMBIGUOUS_MOVING_GROUP'
+        malformed_source=copy.deepcopy(first['npcs'][0]['outfit_presentation'])
+        malformed_source['groups'][1]['animation']=None
+        malformed=module._playback_projection(malformed_source,spatial_row,1,projection)
+        assert malformed['playback_resolution_state']=='FALLBACK_STATIC_PROJECTION'
+        assert malformed['playback_reason']=='MOVING_TIMING_UNAVAILABLE'
         assert first['statistics']['npc_presentation']['resolved_moving_playback_records']==3
         assert first['statistics']['npc_presentation']['fallback_static_playback_records']==2
         module.verify_enriched_creatures(first,spatial,spatial_module=FakeSpatial)
