@@ -8,7 +8,7 @@ status: wave1_content_evidence_merged_production_blocked
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: chore/content-evidence-delivery-reconcile-20260824
-pr: null
+pr: 84
 base_sha: 8f99f25d0b1b3472d40504cd54b463cf752ebe7a
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
@@ -72,7 +72,7 @@ last_progress: CONTENT evidence PR #58 merged as 8f99f25d0b1b3472d40504cd54b463c
 status: wave1_content_evidence_merged_production_blocked
 branch: chore/content-evidence-delivery-reconcile-20260824
 head_sha: null
-pr: null
+pr: 84
 blocker: accepted DUR-04/VSL production hard maxima and production activation authority are absent; no implementation write authority exists for that blocked follow-up
 owner_action_required: accept production VSL hard maxima and production activation authority only when ready to authorize production CONTENT
 next_action: merge this status reconciliation if exact-head checks are clean; then allocate the next dependency-ready lane separately rather than extending CONTENT implicitly
