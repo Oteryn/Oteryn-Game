@@ -4,25 +4,22 @@
 task_id: OTV2-20260824-durability-topology-prep-allocation
 title: Allocate Issue #94 Durability topology preparation
 mode: COORDINATE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: coord/durability-topology-prep-allocation-20260824
+branch: null
 issue: 94
 pr: 118
 base_sha: 22a3eb866dae19d048969edff1e1fa5012a429b6
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
-owner: chat-github-20260824-durability-topology-coordinator
+head_sha: 97b5569279dfcfc65c51c619884546b5c4e17ed3
+final_head_sha: 97b5569279dfcfc65c51c619884546b5c4e17ed3
+final_head_frozen_at: 2026-08-24T19:44:34Z
+owner: null
 created_at: 2026-08-24T21:00:00+02:00
 updated_at: 2026-08-24T21:00:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
-owned_paths:
-  - docs/agents/tasks/active/OTV2-20260824-durability-topology-prep-allocation.md
-  - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
-  - docs/agents/tasks/active/OTV2-20260824-prep-durability-topology.md
+owned_paths: []
 public_contracts:
   - docs/agents/prompts/OTV2_PREP_DURABILITY_TOPOLOGY.md
   - docs/superpowers/plans/2026-08-24-oteryn-game-next-wave-master-plan.md
@@ -51,14 +48,14 @@ Merge one docs-only coordinator allocation that grants the Issue #94 preparation
 
 ## Acceptance criteria
 
-- [ ] Allocation grants only `docs/architecture/reviews/OTERYN_GAME_DURABILITY_TOPOLOGY_DECISION_PACKET_2026-08-24.md` and `docs/agents/tasks/active/OTV2-20260824-prep-durability-topology.md` after merge.
-- [ ] Worker branch is fixed as `docs/otv2-prep-durability-topology-94` from the exact allocation merge base.
-- [ ] `OTV2-IMPL-DURABILITY` remains without runtime/DDL/Cargo/registry write authority.
-- [ ] No shared serialized workspace lease is assigned by this preparation allocation.
+- [x] Allocation grants only `docs/architecture/reviews/OTERYN_GAME_DURABILITY_TOPOLOGY_DECISION_PACKET_2026-08-24.md` and `docs/agents/tasks/active/OTV2-20260824-prep-durability-topology.md` after merge.
+- [x] Worker branch is fixed as `docs/otv2-prep-durability-topology-94` from the exact allocation merge base.
+- [x] `OTV2-IMPL-DURABILITY` remains without runtime/DDL/Cargo/registry write authority.
+- [x] No shared serialized workspace lease is assigned by this preparation allocation.
 - [x] `python tools/agents/validate_governance.py` passes.
 - [x] `git diff --check` passes.
 - [x] Mandatory whole-diff coordinator self-review passes; exact final head will be bound in immutable PR review evidence after PR metadata is recorded.
-- [ ] Exact-head repository required checks including `game-gate` pass before squash merge.
+- [x] Exact-head repository required checks including `game-gate` pass before squash merge.
 
 ## Excluded scope
 
@@ -87,16 +84,16 @@ The allocation deliberately separates preparation from implementation. The prepa
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: `97b5569279dfcfc65c51c619884546b5c4e17ed3`
+- trigger source: PR #118
+- workflow/run/job: Merge gate run `32769885118`; `game-gate` job `97567950841`
+- runner assignment: GitHub-hosted Actions
+- classification: exact-head canonical aggregate
+- result: `SUCCESS`
 
 ## Self-review
 
-- exact head: to be bound in immutable PR review evidence after the final metadata commit
+- exact head: `97b5569279dfcfc65c51c619884546b5c4e17ed3`; final self-review submitted 2026-08-24T19:44:34Z
 - method/reviewer: coordinating agent whole-diff review against Issue #94, root/docs agent governance and concurrent Content Format Spike allocation
 - material findings: `P0=0 / P1=0 / P2=0`; allocation is path-bounded and preserves all implementation/resource-limit gates
 - verdict: `PASS`
@@ -111,37 +108,37 @@ The allocation deliberately separates preparation from implementation. The prepa
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
-- related/superseded PRs: Issue #94; archived prior implementation coordinator snapshot
-- protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: after allocation merge, this coordinator allocation owns no worker implementation paths; later lifecycle archive is coordinator-owned
+- changed-file review: `PASS` - exactly three bounded allocation/task documentation paths
+- unresolved review threads: `0`
+- related/superseded PRs: Issue #94; allocation PR #118
+- protected auto-merge: not used
+- merge commit/result: PR #118 squash merged as `58459c275ba62714741e6794b92d8935b140a37c`
+- ownership release: completed; allocation branch is absent
 
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #118 opened from exact `main@22a3eb866dae19d048969edff1e1fa5012a429b6`; three-file allocation diff passes governance and diff-check with zero material self-review findings
-status: validating
-branch: coord/durability-topology-prep-allocation-20260824
-head_sha: null
+last_progress: allocation PR #118 passed exact-head game-gate and squash-merged as 58459c275ba62714741e6794b92d8935b140a37c; worker PR #122 then delivered the packet as c92d2d0615ae1e969003d152b4b0dfa87acfb72d; allocation ownership is released
+status: completed
+branch: null
+head_sha: 97b5569279dfcfc65c51c619884546b5c4e17ed3
 pr: 118
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+final_head_sha: 97b5569279dfcfc65c51c619884546b5c4e17ed3
+final_head_frozen_at: 2026-08-24T19:44:34Z
+ci_trigger_source: pull_request_118
+ci_check_generation: merge_gate_run_32769885118
+ci_checks_for_current_head: 1
+ci_run_ids: [32769885118]
+ci_job_ids: [97567950841]
+runner_assignment_state: completed
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: 1
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: allocation must merge before the preparation worker writes its packet
-next_action: freeze the PR #118 exact head, record whole-diff self-review evidence and require exact-head game-gate before squash merge
+blocker: none
+next_action: none_terminal
 ```
