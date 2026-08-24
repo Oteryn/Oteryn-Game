@@ -8,12 +8,12 @@ status: wave1_domain_lease_transfer_pending_merge
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-coordinator-wave1-reconcile-02
-pr: null
+pr: 76
 base_sha: 1f69677b40851551953caf853c08b37ce7b29c68
 head_sha: null
 owner: chat-github-20260818-implementation-coordinator
 created_at: 2026-08-18T16:10:00+02:00
-updated_at: 2026-08-24T09:52:00+02:00
+updated_at: 2026-08-24T09:59:00+02:00
 execution_budget_minutes: 60
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260818-implementation-coordinator.md
@@ -54,7 +54,7 @@ Coordinate the explicitly invoked `Oteryn: implementation coordinator` programme
 
 FOUNDATION is terminal and cannot continue holding the serialized shared-path turn. This reconciliation therefore prepares the next lawful lease transfer to DOMAIN.
 
-The transfer becomes authoritative only after the coordinator reconciliation PR itself merges to `main`. Before that merge, DOMAIN remains forbidden from mutating shared composition/workspace paths. After merge, DOMAIN may reconcile current `main` and add only the minimum contract-valid composition required to compile its real semantic core through `apps/game-server`, then rerun exact-head validation and close its own Draft/merge gates.
+The transfer becomes authoritative only after coordinator PR #76 itself merges to `main`. Before that merge, DOMAIN remains forbidden from mutating shared composition/workspace paths. After merge, DOMAIN may reconcile current `main` and add only the minimum contract-valid composition required to compile its real semantic core through `apps/game-server`, then rerun exact-head validation and close its own Draft/merge gates.
 
 CONTENT stays second in the shared lease order. Its current evidence-only compiler/loader work may continue inside `apps/game-server/src/content/**`, but production VSL activation and permanent format selection remain blocked by missing accepted DUR-04/VSL limits and the separate format-decision gate.
 
@@ -118,12 +118,12 @@ Independent review is `NOT_REQUIRED` for this bounded coordination reconciliatio
 ## Context checkpoint
 
 ```yaml
-last_progress: Foundation delivery and closeout are merged and verified; live Domain, Content and QA branches were reconciled against main@1f69677b40851551953caf853c08b37ce7b29c68; a successor coordinator branch now prepares the serialized shared-path transfer to DOMAIN while preserving Content's missing-limit hold, QA's truthful NOT_EVALUATED real-E2E state and the CLIENT gameplay-entry blocker.
+last_progress: Foundation delivery and closeout are merged and verified; live Domain, Content and QA branches were reconciled against main@1f69677b40851551953caf853c08b37ce7b29c68; coordinator PR #76 now prepares the serialized shared-path transfer to DOMAIN while preserving Content's missing-limit hold, QA's truthful NOT_EVALUATED real-E2E state and the CLIENT gameplay-entry blocker.
 status: wave1_domain_lease_transfer_pending_merge
 branch: agent/otv2-coordinator-wave1-reconcile-02
 head_sha: null
-pr: null
-blocker: coordinator reconciliation must pass exact-head repository checks and merge before DOMAIN may mutate shared composition/workspace paths
+pr: 76
+blocker: coordinator PR #76 must pass exact-head repository checks and merge before DOMAIN may mutate shared composition/workspace paths
 owner_action_required: null
-next_action: open and qualify the coordinator reconciliation PR, supersede stale PR #50, merge the exact validated head if all gates are green, then advance DOMAIN PR #56 against the merged reconciliation base.
+next_action: qualify coordinator PR #76, supersede stale PR #50, merge the exact validated head if all gates are green, then advance DOMAIN PR #56 against the merged reconciliation base.
 ```
