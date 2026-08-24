@@ -88,3 +88,22 @@ Required CI builds the exact 15.32 product twice and requires byte-identical tre
 ## Rights boundary
 
 This contract does not widen pixel redistribution rights. The Atlas repository's current exact-15.32 attestation authorizes the bounded public DYN-ATLAS-001/Thais Z7 proof only. Metadata/product generation and private validation may proceed, but unrestricted full-world public redistribution of exact 15.32 derived pixels must not be claimed authorized unless separately evidenced.
+
+## Creature moving-in-place playback projection extension
+
+`animated-creatures-v1` remains backward-compatible and preserves its existing
+`static_projection` semantics. Producers that implement Game Issue #127 additionally
+publish top-level `playback_projection_capability = creature-moving-in-place-v1` and,
+for every resolved creature outfit presentation, a separate `playback_projection`.
+
+A resolved moving projection is Game-owned and binds the unique `outfit-moving`
+program, fixed `south` presentation direction, concrete pattern X/Z, enabled addon
+rows, authoritative animation timing, displacement/spatial identity and the parent
+`outfit_presentation_id`. It declares `presentation_mode = moving-in-place` and
+`world_position_policy = UNCHANGED`; it never changes record identity, X, Y or floor.
+
+If a moving group is absent, ambiguous, malformed or otherwise unsupported at this
+projection boundary, the producer does not invent movement semantics. It publishes
+`FALLBACK_STATIC_PROJECTION` with an explicit `playback_reason` and reuses the already
+verified static projection. Atlas must require the sub-capability before consuming
+moving playback and must not infer frame-group or direction semantics from sprites.
