@@ -1,8 +1,11 @@
 use base64::Engine;
 use ed25519_dalek::{Signature, VerifyingKey};
 use serde::de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor};
+use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
+
+use super::{ChannelId, CharacterId, FreshAdmissionFacts, WorldId};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NumericDateError {
@@ -14,45 +17,30 @@ pub enum NumericDateError {
 pub const MAX_COMPACT_JWS_BYTES: usize = 4_096;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Fnd04VerificationError {
+enum Fnd04VerificationError {
     Malformed,
     AuthenticationFailed,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct CompactJws {
+struct CompactJws {
     protected_header_segment: String,
     payload_segment: String,
     signature_segment: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ProtectedHeader {
+struct ProtectedHeader {
     kid: String,
     typ: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FixedTrustContext {
+struct FixedTrustContext {
     keys: BTreeMap<String, [u8; 32]>,
 }
 
-impl FixedTrustContext {
-    pub fn new<I, K>(keys: I) -> Self
-    where
-        I: IntoIterator<Item = (K, [u8; 32])>,
-        K: Into<String>,
-    {
-        Self {
-            keys: keys
-                .into_iter()
-                .map(|(key_id, public_key)| (key_id.into(), public_key))
-                .collect(),
-        }
-    }
-}
-
-pub fn parse_protected_header(
+fn parse_protected_header(
     compact_jws: &CompactJws,
 ) -> Result<ProtectedHeader, Fnd04VerificationError> {
     let protected_header = decode_canonical_base64url(&compact_jws.protected_header_segment, 512)?;
@@ -104,7 +92,7 @@ pub fn parse_protected_header(
     })
 }
 
-pub fn verify_compact_signature(
+fn verify_compact_signature(
     compact_jws: &CompactJws,
     protected_header: &ProtectedHeader,
     trust_context: &FixedTrustContext,
@@ -128,7 +116,7 @@ pub fn verify_compact_signature(
         .map_err(|_| Fnd04VerificationError::AuthenticationFailed)
 }
 
-pub fn parse_compact_jws(token: &str) -> Result<CompactJws, Fnd04VerificationError> {
+fn parse_compact_jws(token: &str) -> Result<CompactJws, Fnd04VerificationError> {
     if token.len() > MAX_COMPACT_JWS_BYTES || !token.is_ascii() {
         return Err(Fnd04VerificationError::Malformed);
     }
@@ -347,12 +335,721 @@ impl NumericDate {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Fnd04ConsumerError {
+    FreshMalformed,
+    FreshAuthenticationFailed,
+    FreshBindingMismatch,
+    FreshRevisionUnsupported,
+    FreshNotYetValid,
+    FreshExpired,
+    FreshSecurityEvidenceStale,
+    FreshSecurityStateRevoked,
+    FreshWorldStale,
+    RecoveryMalformed,
+    RecoveryAuthenticationFailed,
+    RecoveryBindingMismatch,
+    RecoveryRevisionUnsupported,
+    RecoveryNotYetValid,
+    RecoveryExpired,
+    RecoverySecurityEvidenceStale,
+    RecoverySecurityStateRevoked,
+    RecoveryWorldStale,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum GrantKind {
+    Fresh,
+    Recovery,
+}
+
+impl GrantKind {
+    const fn malformed(self) -> Fnd04ConsumerError {
+        match self {
+            Self::Fresh => Fnd04ConsumerError::FreshMalformed,
+            Self::Recovery => Fnd04ConsumerError::RecoveryMalformed,
+        }
+    }
+    const fn authentication_failed(self) -> Fnd04ConsumerError {
+        match self {
+            Self::Fresh => Fnd04ConsumerError::FreshAuthenticationFailed,
+            Self::Recovery => Fnd04ConsumerError::RecoveryAuthenticationFailed,
+        }
+    }
+    const fn binding_mismatch(self) -> Fnd04ConsumerError {
+        match self {
+            Self::Fresh => Fnd04ConsumerError::FreshBindingMismatch,
+            Self::Recovery => Fnd04ConsumerError::RecoveryBindingMismatch,
+        }
+    }
+    const fn revision_unsupported(self) -> Fnd04ConsumerError {
+        match self {
+            Self::Fresh => Fnd04ConsumerError::FreshRevisionUnsupported,
+            Self::Recovery => Fnd04ConsumerError::RecoveryRevisionUnsupported,
+        }
+    }
+    const fn not_yet_valid(self) -> Fnd04ConsumerError {
+        match self {
+            Self::Fresh => Fnd04ConsumerError::FreshNotYetValid,
+            Self::Recovery => Fnd04ConsumerError::RecoveryNotYetValid,
+        }
+    }
+    const fn expired(self) -> Fnd04ConsumerError {
+        match self {
+            Self::Fresh => Fnd04ConsumerError::FreshExpired,
+            Self::Recovery => Fnd04ConsumerError::RecoveryExpired,
+        }
+    }
+    const fn evidence_stale(self) -> Fnd04ConsumerError {
+        match self {
+            Self::Fresh => Fnd04ConsumerError::FreshSecurityEvidenceStale,
+            Self::Recovery => Fnd04ConsumerError::RecoverySecurityEvidenceStale,
+        }
+    }
+    const fn security_revoked(self) -> Fnd04ConsumerError {
+        match self {
+            Self::Fresh => Fnd04ConsumerError::FreshSecurityStateRevoked,
+            Self::Recovery => Fnd04ConsumerError::RecoverySecurityStateRevoked,
+        }
+    }
+    const fn world_stale(self) -> Fnd04ConsumerError {
+        match self {
+            Self::Fresh => Fnd04ConsumerError::FreshWorldStale,
+            Self::Recovery => Fnd04ConsumerError::RecoveryWorldStale,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CurrentEvidence {
+    source_observed_at: i64,
+    clock_uncertainty_seconds: u8,
+    source_revision: u64,
+    accepted_revision_floor: u64,
+    enabled: bool,
+    minimum_generation: u64,
+}
+
+impl CurrentEvidence {
+    pub const fn new(
+        source_observed_at: i64,
+        clock_uncertainty_seconds: u8,
+        source_revision: u64,
+        accepted_revision_floor: u64,
+        enabled: bool,
+        minimum_generation: u64,
+    ) -> Self {
+        Self {
+            source_observed_at,
+            clock_uncertainty_seconds,
+            source_revision,
+            accepted_revision_floor,
+            enabled,
+            minimum_generation,
+        }
+    }
+
+    fn is_current(self, now: i64) -> bool {
+        self.source_revision != 0
+            && self.accepted_revision_floor != 0
+            && self.source_revision >= self.accepted_revision_floor
+            && now
+                .checked_sub(self.source_observed_at)
+                .and_then(|age| age.checked_add(i64::from(self.clock_uncertainty_seconds)))
+                .is_some_and(|upper_age| (0..=5).contains(&upper_age))
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TrustEvidence {
+    source_observed_at: i64,
+    clock_uncertainty_seconds: u8,
+    source_revision: u64,
+    accepted_revision_floor: u64,
+    trusted: bool,
+}
+
+impl TrustEvidence {
+    pub const fn new(
+        source_observed_at: i64,
+        clock_uncertainty_seconds: u8,
+        source_revision: u64,
+        accepted_revision_floor: u64,
+        trusted: bool,
+    ) -> Self {
+        Self {
+            source_observed_at,
+            clock_uncertainty_seconds,
+            source_revision,
+            accepted_revision_floor,
+            trusted,
+        }
+    }
+
+    fn has_current_provenance(self, now: i64) -> bool {
+        self.source_revision != 0
+            && self.accepted_revision_floor != 0
+            && self.source_revision >= self.accepted_revision_floor
+            && now
+                .checked_sub(self.source_observed_at)
+                .and_then(|age| age.checked_add(i64::from(self.clock_uncertainty_seconds)))
+                .is_some_and(|upper_age| (0..=5).contains(&upper_age))
+    }
+
+    const fn is_trusted(self) -> bool {
+        self.trusted
+    }
+}
+
+#[derive(Debug, Clone)]
+struct ProfileTrustContext {
+    keys: BTreeMap<String, [u8; 32]>,
+    evidence: TrustEvidence,
+}
+
+impl ProfileTrustContext {
+    fn new<I, K>(keys: I, evidence: TrustEvidence) -> Result<Self, Fnd04ConsumerError>
+    where
+        I: IntoIterator<Item = (K, [u8; 32])>,
+        K: Into<String>,
+    {
+        let mut fixed = BTreeMap::new();
+        for (kid, key) in keys {
+            let kid = kid.into();
+            if !valid_kid(&kid) || fixed.insert(kid, key).is_some() {
+                return Err(Fnd04ConsumerError::FreshMalformed);
+            }
+        }
+        if fixed.is_empty() {
+            return Err(Fnd04ConsumerError::FreshMalformed);
+        }
+        Ok(Self {
+            keys: fixed,
+            evidence,
+        })
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct FreshTrustContext(ProfileTrustContext);
+
+impl FreshTrustContext {
+    pub fn new<I, K>(keys: I, evidence: TrustEvidence) -> Result<Self, Fnd04ConsumerError>
+    where
+        I: IntoIterator<Item = (K, [u8; 32])>,
+        K: Into<String>,
+    {
+        ProfileTrustContext::new(keys, evidence).map(Self)
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct RecoveryTrustContext(ProfileTrustContext);
+
+impl RecoveryTrustContext {
+    pub fn new<I, K>(keys: I, evidence: TrustEvidence) -> Result<Self, Fnd04ConsumerError>
+    where
+        I: IntoIterator<Item = (K, [u8; 32])>,
+        K: Into<String>,
+    {
+        ProfileTrustContext::new(keys, evidence).map(Self)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FreshCurrentEvidence {
+    pub security: CurrentEvidence,
+    pub account_id: String,
+    pub character_id: CharacterId,
+    pub world_id: WorldId,
+    pub channel_id: ChannelId,
+    pub character_lease_generation: u64,
+    pub route_revision: String,
+    pub runtime_observation_revision: String,
+    pub scope_ownership_generation: u64,
+    pub ruleset_revision: String,
+    pub content_revision: String,
+    pub map_revision: String,
+    pub world_policy_revision: String,
+    pub offer_revision: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoveryCurrentEvidence {
+    pub security: CurrentEvidence,
+    pub account_id: String,
+    pub character_id: CharacterId,
+    pub world_id: WorldId,
+    pub ruleset_revision: String,
+    pub content_revision: String,
+    pub map_revision: String,
+    pub world_policy_revision: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerifiedRecoveryFacts {
+    grant_nonce: [u8; 32],
+    account_id: String,
+    character_id: CharacterId,
+    world_id: WorldId,
+}
+
+impl VerifiedRecoveryFacts {
+    #[must_use]
+    pub const fn grant_nonce(&self) -> [u8; 32] {
+        self.grant_nonce
+    }
+    #[must_use]
+    pub fn account_id(&self) -> &str {
+        &self.account_id
+    }
+    #[must_use]
+    pub const fn character_id(&self) -> CharacterId {
+        self.character_id
+    }
+    #[must_use]
+    pub const fn world_id(&self) -> WorldId {
+        self.world_id
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Claims {
+    issuer: String,
+    audience: String,
+    profile: String,
+    purpose: String,
+    nonce: [u8; 32],
+    account_id: String,
+    character: [u8; 16],
+    world: [u8; 16],
+    channel: Option<[u8; 16]>,
+    account_security_generation: u64,
+    scope_ownership_generation: Option<u64>,
+    route_revision: Option<String>,
+    runtime_observation_revision: Option<String>,
+    protocol_major: u64,
+    transport_profile: u64,
+    ruleset_revision: String,
+    content_revision: String,
+    map_revision: String,
+    world_policy_revision: String,
+    offer_revision: Option<String>,
+    iat: i64,
+    nbf: i64,
+    exp: i64,
+}
+
+pub fn verify_fresh_grant(
+    token: &str,
+    now: i64,
+    trust: &FreshTrustContext,
+    current: &FreshCurrentEvidence,
+) -> Result<FreshAdmissionFacts, Fnd04ConsumerError> {
+    let kind = GrantKind::Fresh;
+    let (header, payload) = authenticate(token, now, &trust.0, kind)?;
+    let claims = parse_claims(&payload, kind)?;
+    validate_bindings(&header, &claims, kind)?;
+    validate_time(&claims, now, kind)?;
+    if !current.security.is_current(now) {
+        return Err(kind.evidence_stale());
+    }
+    check_trust_evidence(trust.0.evidence, now, kind)?;
+    if !current.security.enabled
+        || claims.account_security_generation < current.security.minimum_generation
+    {
+        return Err(kind.security_revoked());
+    }
+    if claims.protocol_major != 1 || claims.transport_profile != 1 {
+        return Err(kind.revision_unsupported());
+    }
+    let (Some(channel), Some(scope), Some(route), Some(runtime), Some(offer)) = (
+        claims.channel,
+        claims.scope_ownership_generation,
+        claims.route_revision.as_ref(),
+        claims.runtime_observation_revision.as_ref(),
+        claims.offer_revision.as_ref(),
+    ) else {
+        return Err(kind.malformed());
+    };
+    let character = CharacterId::decode(&claims.character).map_err(|_| kind.malformed())?;
+    let world = WorldId::decode(&claims.world).map_err(|_| kind.malformed())?;
+    let channel = ChannelId::decode(&channel).map_err(|_| kind.malformed())?;
+    if claims.account_id != current.account_id || character != current.character_id {
+        return Err(kind.binding_mismatch());
+    }
+    if world != current.world_id || channel != current.channel_id {
+        return Err(kind.world_stale());
+    }
+    if scope != current.scope_ownership_generation
+        || route != &current.route_revision
+        || runtime != &current.runtime_observation_revision
+        || claims.ruleset_revision != current.ruleset_revision
+        || claims.content_revision != current.content_revision
+        || claims.map_revision != current.map_revision
+        || claims.world_policy_revision != current.world_policy_revision
+        || offer != &current.offer_revision
+    {
+        return Err(kind.revision_unsupported());
+    }
+    FreshAdmissionFacts::new(
+        claims.nonce,
+        character,
+        world,
+        channel,
+        current.character_lease_generation,
+        scope,
+    )
+    .map_err(|_| kind.malformed())
+}
+
+pub fn verify_recovery_grant(
+    token: &str,
+    now: i64,
+    trust: &RecoveryTrustContext,
+    current: &RecoveryCurrentEvidence,
+) -> Result<VerifiedRecoveryFacts, Fnd04ConsumerError> {
+    let kind = GrantKind::Recovery;
+    let (header, payload) = authenticate(token, now, &trust.0, kind)?;
+    let claims = parse_claims(&payload, kind)?;
+    validate_bindings(&header, &claims, kind)?;
+    validate_time(&claims, now, kind)?;
+    if !current.security.is_current(now) {
+        return Err(kind.evidence_stale());
+    }
+    check_trust_evidence(trust.0.evidence, now, kind)?;
+    if !current.security.enabled
+        || claims.account_security_generation < current.security.minimum_generation
+    {
+        return Err(kind.security_revoked());
+    }
+    if claims.protocol_major != 1 || claims.transport_profile != 1 {
+        return Err(kind.revision_unsupported());
+    }
+    let character = CharacterId::decode(&claims.character).map_err(|_| kind.malformed())?;
+    let world = WorldId::decode(&claims.world).map_err(|_| kind.malformed())?;
+    if claims.account_id != current.account_id || character != current.character_id {
+        return Err(kind.binding_mismatch());
+    }
+    if world != current.world_id {
+        return Err(kind.world_stale());
+    }
+    if claims.ruleset_revision != current.ruleset_revision
+        || claims.content_revision != current.content_revision
+        || claims.map_revision != current.map_revision
+        || claims.world_policy_revision != current.world_policy_revision
+    {
+        return Err(kind.revision_unsupported());
+    }
+    Ok(VerifiedRecoveryFacts {
+        grant_nonce: claims.nonce,
+        account_id: claims.account_id,
+        character_id: character,
+        world_id: world,
+    })
+}
+
+fn authenticate(
+    token: &str,
+    now: i64,
+    trust: &ProfileTrustContext,
+    kind: GrantKind,
+) -> Result<(ProtectedHeader, Vec<u8>), Fnd04ConsumerError> {
+    let compact = parse_compact_jws(token).map_err(|_| kind.malformed())?;
+    let header = parse_protected_header(&compact).map_err(|error| match error {
+        Fnd04VerificationError::Malformed => kind.malformed(),
+        Fnd04VerificationError::AuthenticationFailed => kind.authentication_failed(),
+    })?;
+    check_trust_evidence(trust.evidence, now, kind)?;
+    let fixed = FixedTrustContext {
+        keys: trust.keys.clone(),
+    };
+    verify_compact_signature(&compact, &header, &fixed).map_err(|error| match error {
+        Fnd04VerificationError::Malformed => kind.malformed(),
+        Fnd04VerificationError::AuthenticationFailed => kind.authentication_failed(),
+    })?;
+    decode_canonical_base64url(&compact.payload_segment, 3_072)
+        .map_err(|_| kind.malformed())
+        .map(|payload| (header, payload))
+}
+
+fn check_trust_evidence(
+    evidence: TrustEvidence,
+    now: i64,
+    kind: GrantKind,
+) -> Result<(), Fnd04ConsumerError> {
+    if !evidence.has_current_provenance(now) {
+        return Err(kind.evidence_stale());
+    }
+    if !evidence.is_trusted() {
+        return Err(kind.authentication_failed());
+    }
+    Ok(())
+}
+
+fn parse_claims(payload: &[u8], kind: GrantKind) -> Result<Claims, Fnd04ConsumerError> {
+    let object = serde_json::from_slice::<Value>(payload).map_err(|_| kind.malformed())?;
+    let object = object.as_object().ok_or_else(|| kind.malformed())?;
+    let required: &[&str] = match kind {
+        GrantKind::Fresh => &[
+            "iss",
+            "aud",
+            "iat",
+            "nbf",
+            "exp",
+            "jti",
+            "profile",
+            "purpose",
+            "attempt_ref",
+            "account_id",
+            "character_id",
+            "world_id",
+            "channel_id",
+            "account_security_generation",
+            "route_revision",
+            "runtime_observation_revision",
+            "scope_ownership_generation",
+            "protocol_major",
+            "transport_profile",
+            "ruleset_revision",
+            "content_revision",
+            "map_revision",
+            "world_policy_revision",
+            "offer_revision",
+        ],
+        GrantKind::Recovery => &[
+            "iss",
+            "aud",
+            "iat",
+            "nbf",
+            "exp",
+            "jti",
+            "profile",
+            "purpose",
+            "attempt_ref",
+            "account_id",
+            "character_id",
+            "world_id",
+            "account_security_generation",
+            "protocol_major",
+            "transport_profile",
+            "ruleset_revision",
+            "content_revision",
+            "map_revision",
+            "world_policy_revision",
+        ],
+    };
+    if object.len() != required.len() || required.iter().any(|name| !object.contains_key(*name)) {
+        return Err(kind.malformed());
+    }
+    let string = |name: &str, maximum: usize| -> Result<String, Fnd04ConsumerError> {
+        let value = object
+            .get(name)
+            .and_then(Value::as_str)
+            .filter(|value| visible_ascii(value, maximum))
+            .ok_or_else(|| kind.malformed())?;
+        Ok(value.to_owned())
+    };
+    let numeric = |name: &str| -> Result<i64, Fnd04ConsumerError> {
+        object
+            .get(name)
+            .and_then(Value::as_i64)
+            .ok_or_else(|| kind.malformed())
+    };
+    let nonce_string = string("jti", 43)?;
+    let nonce = decode_canonical_base64url(&nonce_string, 32).map_err(|_| kind.malformed())?;
+    let nonce: [u8; 32] = nonce.try_into().map_err(|_| kind.malformed())?;
+    let account_id = string("account_id", 36)?;
+    if canonical_uuid(&account_id, false).is_none() {
+        return Err(kind.malformed());
+    }
+    let attempt = string("attempt_ref", 36)?;
+    if canonical_uuid(&attempt, true).is_none() {
+        return Err(kind.malformed());
+    }
+    let character =
+        canonical_uuid(&string("character_id", 36)?, true).ok_or_else(|| kind.malformed())?;
+    let world = canonical_uuid(&string("world_id", 36)?, true).ok_or_else(|| kind.malformed())?;
+    let channel = match kind {
+        GrantKind::Fresh => {
+            Some(canonical_uuid(&string("channel_id", 36)?, true).ok_or_else(|| kind.malformed())?)
+        }
+        GrantKind::Recovery => None,
+    };
+    let generation = parse_generation(&string("account_security_generation", 20)?)
+        .ok_or_else(|| kind.malformed())?;
+    let scope = match kind {
+        GrantKind::Fresh => Some(
+            parse_generation(&string("scope_ownership_generation", 20)?)
+                .ok_or_else(|| kind.malformed())?,
+        ),
+        GrantKind::Recovery => None,
+    };
+    let revision = |name: &str| {
+        string(name, 64).and_then(|value| {
+            if valid_revision(&value) {
+                Ok(value)
+            } else {
+                Err(kind.malformed())
+            }
+        })
+    };
+    Ok(Claims {
+        issuer: string("iss", 128)?,
+        audience: string("aud", 128)?,
+        profile: string("profile", 64)?,
+        purpose: string("purpose", 64)?,
+        nonce,
+        account_id,
+        character,
+        world,
+        channel,
+        account_security_generation: generation,
+        scope_ownership_generation: scope,
+        route_revision: if kind == GrantKind::Fresh {
+            Some(revision("route_revision")?)
+        } else {
+            None
+        },
+        runtime_observation_revision: if kind == GrantKind::Fresh {
+            Some(revision("runtime_observation_revision")?)
+        } else {
+            None
+        },
+        protocol_major: object
+            .get("protocol_major")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| kind.malformed())?,
+        transport_profile: object
+            .get("transport_profile")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| kind.malformed())?,
+        ruleset_revision: revision("ruleset_revision")?,
+        content_revision: revision("content_revision")?,
+        map_revision: revision("map_revision")?,
+        world_policy_revision: revision("world_policy_revision")?,
+        offer_revision: if kind == GrantKind::Fresh {
+            Some(revision("offer_revision")?)
+        } else {
+            None
+        },
+        iat: numeric("iat")?,
+        nbf: numeric("nbf")?,
+        exp: numeric("exp")?,
+    })
+}
+
+fn validate_bindings(
+    header: &ProtectedHeader,
+    claims: &Claims,
+    kind: GrantKind,
+) -> Result<(), Fnd04ConsumerError> {
+    let (issuer, audience, typ, purpose, profile) = match kind {
+        GrantKind::Fresh => (
+            "urn:oteryn:platform:game-admission",
+            "urn:oteryn:game:admission",
+            "oteryn-admission+jwt",
+            "fresh_entry",
+            "oteryn-pre-admission-v1",
+        ),
+        GrantKind::Recovery => (
+            "urn:oteryn:platform:game-recovery",
+            "urn:oteryn:game:recovery",
+            "oteryn-recovery+jwt",
+            "existing_actor_recovery",
+            "oteryn-reauth-recovery-v1",
+        ),
+    };
+    if claims.issuer != issuer
+        || claims.audience != audience
+        || header.typ != typ
+        || claims.purpose != purpose
+    {
+        return Err(kind.binding_mismatch());
+    }
+    if claims.profile != profile {
+        return Err(kind.revision_unsupported());
+    }
+    Ok(())
+}
+
+fn validate_time(claims: &Claims, now: i64, kind: GrantKind) -> Result<(), Fnd04ConsumerError> {
+    match NumericDate::validate(now, claims.iat, claims.nbf, claims.exp) {
+        Ok(()) => Ok(()),
+        Err(NumericDateError::Malformed) => Err(kind.malformed()),
+        Err(NumericDateError::NotYetValid) => Err(kind.not_yet_valid()),
+        Err(NumericDateError::Expired) => Err(kind.expired()),
+    }
+}
+
+fn valid_kid(value: &str) -> bool {
+    (1..=64).contains(&value.len())
+        && value.is_ascii()
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
+}
+fn visible_ascii(value: &str, maximum: usize) -> bool {
+    !value.is_empty()
+        && value.len() <= maximum
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_graphic() && !byte.is_ascii_whitespace())
+}
+fn valid_revision(value: &str) -> bool {
+    (1..=64).contains(&value.len())
+        && value.is_ascii()
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b':' | b'-'))
+}
+fn parse_generation(value: &str) -> Option<u64> {
+    if value.is_empty()
+        || (value.len() > 1 && value.starts_with('0'))
+        || !value.bytes().all(|byte| byte.is_ascii_digit())
+    {
+        None
+    } else {
+        value.parse().ok().filter(|value: &u64| *value != 0)
+    }
+}
+fn canonical_uuid(value: &str, require_v7: bool) -> Option<[u8; 16]> {
+    if value.len() != 36
+        || !matches!(value.as_bytes().get(8), Some(b'-'))
+        || !matches!(value.as_bytes().get(13), Some(b'-'))
+        || !matches!(value.as_bytes().get(18), Some(b'-'))
+        || !matches!(value.as_bytes().get(23), Some(b'-'))
+    {
+        return None;
+    }
+    let mut bytes = [0; 16];
+    let mut input = value.bytes().filter(|byte| *byte != b'-');
+    for byte in &mut bytes {
+        let high = hex(input.next()?)?;
+        let low = hex(input.next()?)?;
+        *byte = (high << 4) | low;
+    }
+    if input.next().is_some()
+        || bytes.iter().all(|byte| *byte == 0)
+        || (bytes[8] & 0xc0) != 0x80
+        || (require_v7 && (bytes[6] >> 4) != 7)
+    {
+        None
+    } else {
+        Some(bytes)
+    }
+}
+fn hex(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        _ => None,
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{
-        FixedTrustContext, Fnd04VerificationError, NumericDate, NumericDateError,
-        parse_compact_jws, parse_protected_header, verify_compact_signature,
-    };
+    use super::*;
     use base64::Engine;
     use ed25519_dalek::{Signer, SigningKey};
 
@@ -439,8 +1136,16 @@ mod tests {
         let token = format!("{signing_input}.{signature}");
         let compact_jws = parse_compact_jws(&token)?;
         let protected_header = parse_protected_header(&compact_jws)?;
-        let trusted = FixedTrustContext::new([("fresh", signing_key.verifying_key().to_bytes())]);
-        let untrusted = FixedTrustContext::new([("other", signing_key.verifying_key().to_bytes())]);
+        let trusted = FixedTrustContext {
+            keys: [("fresh".to_owned(), signing_key.verifying_key().to_bytes())]
+                .into_iter()
+                .collect(),
+        };
+        let untrusted = FixedTrustContext {
+            keys: [("other".to_owned(), signing_key.verifying_key().to_bytes())]
+                .into_iter()
+                .collect(),
+        };
 
         assert!(verify_compact_signature(&compact_jws, &protected_header, &trusted).is_ok());
         assert_eq!(
@@ -450,8 +1155,223 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn fresh_consumer_returns_facts_only_after_fixed_context_and_current_evidence_match()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[9; 32]);
+        let trust = FreshTrustContext::new(
+            [("fresh-1", signing_key.verifying_key().to_bytes())],
+            trusted_evidence(100),
+        )?;
+        let current = FreshCurrentEvidence::for_test(100)?;
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+
+        let facts = verify_fresh_grant(&grant, 100, &trust, &current)?;
+
+        assert_eq!(facts.replay_key().to_bytes()[1..], [7; 32]);
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_consumer_classifies_explicit_current_key_revocation_as_authentication_failure()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[10; 32]);
+        let trust = FreshTrustContext::new(
+            [("fresh-1", signing_key.verifying_key().to_bytes())],
+            TrustEvidence::new(100, 0, 2, 2, false),
+        )?;
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+
+        assert_eq!(
+            verify_fresh_grant(&grant, 100, &trust, &FreshCurrentEvidence::for_test(100)?),
+            Err(Fnd04ConsumerError::FreshAuthenticationFailed),
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn recovery_consumer_returns_non_authoritative_facts_from_only_recovery_context()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[11; 32]);
+        let trust = RecoveryTrustContext::new(
+            [("recovery-1", signing_key.verifying_key().to_bytes())],
+            trusted_evidence(100),
+        )?;
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"recovery-1","typ":"oteryn-recovery+jwt"}"#,
+            recovery_payload(),
+        );
+
+        let facts = verify_recovery_grant(
+            &grant,
+            100,
+            &trust,
+            &RecoveryCurrentEvidence::for_test(100)?,
+        )?;
+
+        assert_eq!(facts.grant_nonce(), [8; 32]);
+        assert_eq!(facts.account_id(), "00000000-0000-4000-8000-000000000001");
+        Ok(())
+    }
+
+    #[test]
+    fn invalid_signature_masks_authenticated_schema_and_profile_classifications()
+    -> Result<(), Fnd04ConsumerError> {
+        let trusted_key = SigningKey::from_bytes(&[12; 32]);
+        let untrusted_key = SigningKey::from_bytes(&[13; 32]);
+        let trust = FreshTrustContext::new(
+            [("fresh-1", trusted_key.verifying_key().to_bytes())],
+            trusted_evidence(100),
+        )?;
+        let malformed_schema = fresh_payload().replace(
+            r#",\"offer_revision\":\"offer-1\""#,
+            r#",\"unknown\":\"offer-1\""#,
+        );
+        let unsupported_profile =
+            fresh_payload().replace("oteryn-pre-admission-v1", "oteryn-pre-admission-v2");
+        for payload in [malformed_schema, unsupported_profile] {
+            let grant = signed_token(
+                &untrusted_key,
+                r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+                payload,
+            );
+            assert_eq!(
+                verify_fresh_grant(&grant, 100, &trust, &FreshCurrentEvidence::for_test(100)?),
+                Err(Fnd04ConsumerError::FreshAuthenticationFailed),
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn authenticated_unsupported_profile_is_not_reinterpreted_as_fresh_admission()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[14; 32]);
+        let trust = FreshTrustContext::new(
+            [("fresh-1", signing_key.verifying_key().to_bytes())],
+            trusted_evidence(100),
+        )?;
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload().replace("oteryn-pre-admission-v1", "oteryn-pre-admission-v2"),
+        );
+
+        assert_eq!(
+            verify_fresh_grant(&grant, 100, &trust, &FreshCurrentEvidence::for_test(100)?),
+            Err(Fnd04ConsumerError::FreshRevisionUnsupported),
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn stale_current_security_evidence_fails_before_any_fresh_facts_are_returned()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[15; 32]);
+        let trust = FreshTrustContext::new(
+            [("fresh-1", signing_key.verifying_key().to_bytes())],
+            trusted_evidence(100),
+        )?;
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        let mut current = FreshCurrentEvidence::for_test(100)?;
+        current.security = CurrentEvidence::new(94, 0, 1, 1, true, 1);
+
+        assert_eq!(
+            verify_fresh_grant(&grant, 100, &trust, &current),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale),
+        );
+        Ok(())
+    }
+
     fn compact_token(header: &str) -> String {
         let encoded_header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(header);
         format!("{encoded_header}.e30.AA")
+    }
+
+    fn trusted_evidence(now: i64) -> TrustEvidence {
+        TrustEvidence::new(now, 0, 1, 1, true)
+    }
+
+    fn fresh_payload() -> String {
+        let nonce = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([7; 32]);
+        format!(
+            r#"{{"iss":"urn:oteryn:platform:game-admission","aud":"urn:oteryn:game:admission","iat":100,"nbf":100,"exp":110,"jti":"{nonce}","profile":"oteryn-pre-admission-v1","purpose":"fresh_entry","attempt_ref":"00000000-0000-7000-8000-000000000001","account_id":"00000000-0000-4000-8000-000000000001","character_id":"00000000-0000-7000-8000-000000000002","world_id":"00000000-0000-7000-8000-000000000003","channel_id":"00000000-0000-7000-8000-000000000004","account_security_generation":"1","route_revision":"route-1","runtime_observation_revision":"runtime-1","scope_ownership_generation":"1","protocol_major":1,"transport_profile":1,"ruleset_revision":"rules-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1","offer_revision":"offer-1"}}"#
+        )
+    }
+
+    fn signed_token(signing_key: &SigningKey, header: &str, payload: String) -> String {
+        let encoded_header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(header);
+        let encoded_payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(payload);
+        let signing_input = format!("{encoded_header}.{encoded_payload}");
+        let signature = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(signing_key.sign(signing_input.as_bytes()).to_bytes());
+        format!("{signing_input}.{signature}")
+    }
+
+    fn recovery_payload() -> String {
+        let nonce = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([8; 32]);
+        format!(
+            r#"{{"iss":"urn:oteryn:platform:game-recovery","aud":"urn:oteryn:game:recovery","iat":100,"nbf":100,"exp":110,"jti":"{nonce}","profile":"oteryn-reauth-recovery-v1","purpose":"existing_actor_recovery","attempt_ref":"00000000-0000-7000-8000-000000000001","account_id":"00000000-0000-4000-8000-000000000001","character_id":"00000000-0000-7000-8000-000000000002","world_id":"00000000-0000-7000-8000-000000000003","account_security_generation":"1","protocol_major":1,"transport_profile":1,"ruleset_revision":"rules-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1"}}"#
+        )
+    }
+
+    impl FreshCurrentEvidence {
+        fn for_test(now: i64) -> Result<Self, Fnd04ConsumerError> {
+            let id = |last: u8| {
+                let mut value = [0u8; 16];
+                value[6] = 0x70;
+                value[8] = 0x80;
+                value[15] = last;
+                value
+            };
+            Ok(Self {
+                security: CurrentEvidence::new(now, 0, 1, 1, true, 1),
+                account_id: "00000000-0000-4000-8000-000000000001".to_owned(),
+                character_id: CharacterId::decode(&id(2))
+                    .map_err(|_| Fnd04ConsumerError::FreshMalformed)?,
+                world_id: WorldId::decode(&id(3))
+                    .map_err(|_| Fnd04ConsumerError::FreshMalformed)?,
+                channel_id: ChannelId::decode(&id(4))
+                    .map_err(|_| Fnd04ConsumerError::FreshMalformed)?,
+                character_lease_generation: 1,
+                route_revision: "route-1".to_owned(),
+                runtime_observation_revision: "runtime-1".to_owned(),
+                scope_ownership_generation: 1,
+                ruleset_revision: "rules-1".to_owned(),
+                content_revision: "content-1".to_owned(),
+                map_revision: "map-1".to_owned(),
+                world_policy_revision: "policy-1".to_owned(),
+                offer_revision: "offer-1".to_owned(),
+            })
+        }
+    }
+
+    impl RecoveryCurrentEvidence {
+        fn for_test(now: i64) -> Result<Self, Fnd04ConsumerError> {
+            let fresh = FreshCurrentEvidence::for_test(now)?;
+            Ok(Self {
+                security: fresh.security,
+                account_id: fresh.account_id,
+                character_id: fresh.character_id,
+                world_id: fresh.world_id,
+                ruleset_revision: fresh.ruleset_revision,
+                content_revision: fresh.content_revision,
+                map_revision: fresh.map_revision,
+                world_policy_revision: fresh.world_policy_revision,
+            })
+        }
     }
 }

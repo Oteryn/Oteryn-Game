@@ -12,7 +12,11 @@ pub use admission::*;
 pub use admission_facade::{
     AdmissionAuthority, ReconnectAttemptAuthoritySnapshot, ReconnectAttemptJournal,
 };
-pub use fnd04_verifier::{NumericDate, NumericDateError};
+pub use fnd04_verifier::{
+    CurrentEvidence, Fnd04ConsumerError, FreshCurrentEvidence, FreshTrustContext, NumericDate,
+    NumericDateError, RecoveryCurrentEvidence, RecoveryTrustContext, VerifiedRecoveryFacts,
+    verify_fresh_grant, verify_recovery_grant,
+};
 pub use protocol::*;
 pub use snapshot_facade::SnapshotBarrier;
 
