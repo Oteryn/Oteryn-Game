@@ -8,14 +8,15 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/work-delivery-orchestration-154
-pr: null
+issue: 155
+pr: 158
 base_sha: 2d9625a97d3e172303108aff21fcc61dae3e74fe
-head_sha: 5e3bd62bec17fb362ab16a3c1b1062fde500917e
+head_sha: f1fe4881dadeb86cef6a300f20ac48b373e647fa
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT supervising architecture session
 created_at: 2026-08-25T20:35:24Z
-updated_at: 2026-08-25T20:39:00Z
+updated_at: 2026-08-25T20:49:00Z
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -96,12 +97,12 @@ Prompt evaluation against `PROMPT_EVAL_STANDARD.md` on the assembled branch: `PA
 ### Focused
 
 - command/run: prompt evaluation against `docs/agents/PROMPT_EVAL_STANDARD.md`
-- result: `PASS` on assembled branch before PR creation
+- result: `PASS` on assembled branch
 
 ### Component/integration
 
 - command/run: `python tools/agents/validate_governance.py`; architecture/repository checks selected by exact-head CI
-- result: pending exact-head PR checks
+- result: prior exact head `f1fe4881dadeb86cef6a300f20ac48b373e647fa` reached governance validation and failed solely because the active task packet lacked positive top-level `issue`/`pr`; this revision binds `issue: 155` and `pr: 158`, requiring a fresh exact-head run
 
 ### E2E
 
@@ -110,9 +111,9 @@ Prompt evaluation against `PROMPT_EVAL_STANDARD.md` on the assembled branch: `PA
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pull request
-- workflow/run/job: pending
+- final head: pending after this task-record repair
+- trigger source: pull request synchronize
+- workflow/run/job: pending fresh exact-head generation
 - runner assignment: pending
 - classification: pending
 - result: pending
@@ -121,7 +122,7 @@ Prompt evaluation against `PROMPT_EVAL_STANDARD.md` on the assembled branch: `PA
 
 - exact head: pending final PR head
 - method/reviewer: implementing/coordinating ChatGPT architecture session
-- material findings: changed-path scope is seven intended docs/governance files; no `apps/**`, Cargo, registry, workflow, production or external-repository path is changed; final exact-head review remains pending after PR creation
+- material findings: changed-path scope remains seven intended docs/governance files; the only CI finding on prior head was missing task `issue`/`pr`, repaired here; no `apps/**`, Cargo, registry, workflow, production or external-repository path is changed
 - verdict: pending final PR head
 
 ## Independent review
@@ -134,7 +135,7 @@ Prompt evaluation against `PROMPT_EVAL_STANDARD.md` on the assembled branch: `PA
 
 ## PR and closeout
 
-- changed-file review: seven intended docs/governance paths on pre-PR compare; final readback pending
+- changed-file review: seven intended docs/governance paths; final exact-head readback pending
 - unresolved review threads: pending
 - related/superseded PRs: PR #152 terminal closeout; PR #153 duplicate closed without merge
 - protected auto-merge: pending
@@ -144,15 +145,15 @@ Prompt evaluation against `PROMPT_EVAL_STANDARD.md` on the assembled branch: `PA
 ## Context checkpoint
 
 ```yaml
-last_progress: prompt index/lifecycle and canonical QA allocation state reconciled; prompt evaluation PASS
+last_progress: fixed governance task binding after exact CI diagnostic
 status: validating
 branch: docs/work-delivery-orchestration-154
-head_sha: 5e3bd62bec17fb362ab16a3c1b1062fde500917e
-pr: null
+head_sha: f1fe4881dadeb86cef6a300f20ac48b373e647fa
+pr: 158
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+ci_trigger_source: pull_request
+ci_check_generation: prior_head_failed_task_binding
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -161,10 +162,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: open the exact-head pull request and inspect repository-required validation/review classification
+next_action: qualify the fresh exact PR head; do not mutate it unless new material evidence requires repair
 ```
