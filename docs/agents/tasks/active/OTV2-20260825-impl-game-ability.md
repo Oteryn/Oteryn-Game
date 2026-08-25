@@ -4,19 +4,19 @@
 task_id: OTV2-20260825-impl-game-ability
 title: Implement bounded ability occurrence and effect-plan engine
 mode: IMPLEMENT
-status: waiting
+status: active
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-ability-engine
 issue: 166
 pr: null
-base_sha: null
-head_sha: null
+base_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
+head_sha: 06f3e7a872d9848fb4733abc304fb73c4d5ca483
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: impl ability
 created_at: 2026-08-25T23:24:03+02:00
-updated_at: 2026-08-25T23:24:03+02:00
+updated_at: 2026-08-26T00:15:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: revision-bound idempotent effect pipeline with deterministic boundary proof
 owned_paths:
@@ -65,13 +65,13 @@ No formula/geometry/retarget/multihit/channel/timer/cooldown/condition/reaction 
 
 ### Focused
 
-- command/run: pending allocation merge
-- result: pending
+- command/run: PATH=/tmp/oteryn-rust/rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin:$PATH cargo test --locked -p oteryn-game-server --test ability_engine
+- result: PASS — 8 passed, 0 failed
 
 ### Component/integration
 
-- command/run: pending allocation merge
-- result: pending
+- command/run: PATH=/tmp/oteryn-rust/rustup/toolchains/1.94.0-x86_64-unknown-linux-gnu/bin:$PATH cargo clippy --locked -p oteryn-game-server --test ability_engine -- -D warnings
+- result: PASS — focused integration target compiles cleanly with `-D warnings`
 
 ### E2E
 
@@ -81,13 +81,14 @@ No formula/geometry/retarget/multihit/channel/timer/cooldown/condition/reaction 
 ## Context checkpoint
 
 ```yaml
-last_progress: task packet created; no worker authority before allocation merge
-status: waiting
+last_progress: rustfmt 1.94 correction applied mechanically to the Ability plan and focused harness; format check, focused test (8 passed) and Clippy -D warnings pass at worker head 57a61917215bd14857abfa81be62836bfc1d1ee3
+status: active
 branch: impl/game-ability-engine
-head_sha: null
+base_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
+head_sha: 57a61917215bd14857abfa81be62836bfc1d1ee3
 pr: null
 final_head_sha: null
 owner_action_required: null
-blocker: allocation authority is unmerged
-next_action: coordinator merges exact allocation then records worker base SHA
+blocker: null
+next_action: coordinator runs exact-head CI/review for 57a61917215bd14857abfa81be62836bfc1d1ee3 before integration
 ```
