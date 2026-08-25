@@ -294,28 +294,32 @@ implementation_authority: none
 
 Issue #94 preparation is complete: the merged packet freezes SQLx 0.9.0, a game-server-local Durability module, one game-owned migration ledger, dedicated migration execution, fail-closed schema compatibility, isolated PostgreSQL DB-E2E and the PREPARE -> DB COMMIT/CLASSIFY -> RECONCILE boundary. Issue #123 is now completed for the current journal-only first slice through explicit fail-closed DUR03 exclusions; Durability implementation, DDL/migrations and Cargo dependency mutation still require a fresh exact allocation.
 
-## Active Wave 1 — QA
+## Completed Wave 1 — QA evidence shell
 
 ```yaml
 lane_id: OTV2-IMPL-QA
 task_id: OTV2-20260822-impl-qa-e2e
 worker_alias: Oteryn: impl qa e2e
-status: implementing_primary_path_no_pr
+status: completed_shell_released_physical_tiers_pending
 risk: High
+issue: 91
+issue_state: completed
 allocation_pr: 45
 allocation_merge_sha: 33cec30b8075c73290d7d76e9f59df4701771650
 exact_base_pr: 46
 worker_base_sha: 33cec30b8075c73290d7d76e9f59df4701771650
-branch: agent/otv2-impl-qa-e2e-01
-pr: null
-checkpoint_head_sha: 58d64130cc0526001bd1c9a00a179e1c39ad6e51
-owned_paths:
-  - apps/game-server/tests/**
-  - docs/agents/tasks/active/OTV2-20260822-impl-qa-e2e.md
-shared_lease: not_assigned_pending_concrete_need
+delivery_pr: 98
+delivery_final_head_sha: 8c736d4c3aff0e91694748a254df1a20b3dcf176
+delivery_merge_sha: dc22e0da8efcc6f4458416191261063b295af5b4
+focused_evidence_shell_tests: 17/17_PASS
+physical_tier_1: NOT_EVALUATED
+physical_tier_2: NOT_EVALUATED
+owned_paths: []
+branch: null
+shared_lease: released
 ```
 
-QA contains a real test-side evidence shell with focused/component validation, but no delivery PR and no real Tier 1/Tier 2 gameplay journey. Synthetic-shell evidence remains valid only for the shell; Tier 1/Tier 2 stay `NOT_EVALUATED` until the required merged production seams exist.
+The QA evidence shell is merged and its original allocation is terminal/released. Its focused evidence-classification tests and exact-head repository gates passed on PR #98. This does not fabricate physical gameplay proof: Tier 1 still requires the real production server/protocol boundary and Tier 2 requires the native Client boundary. Any future physical-journey QA mutation needs a fresh exact allocation after those production seams exist.
 
 ## Serialized shared-mutation lease
 
@@ -343,7 +347,7 @@ The FND-04 verifier completed its serialized shared-path turn through PR #151. T
 - `PROVEN`: Durability's current journal-only first slice explicitly excludes DUR03-RL-01..08 fail-closed, so Issue #123 is no longer its resource-gate blocker. Rust driver, migration library, physical DDL and implementation still require a separate allocation.
 - `PROVEN`: Server Seam preparation blockers #115 and #116 are closed, but no production gameplay listener/socket/port/certificate/deployment authority has been allocated; CLIENT therefore remains unreleased.
 - `PROVEN`: Movement-only resource closure remains non-current under Issue #139 and Movement also still depends on Interaction, Client and real QA integration readiness.
-- `PROVEN`: QA remains an allocated branch-only evidence shell with no delivery PR; Tier 1/Tier 2 remain `NOT_EVALUATED`.
+- `PROVEN`: QA evidence shell is merged through PR #98 / `dc22e0da8efcc6f4458416191261063b295af5b4`; Issue #91 is completed and its original ownership is released. Physical gameplay Tier 1/Tier 2 remain `NOT_EVALUATED` until required real Server Seam/Client boundaries exist.
 - `PROVEN`: the serialized Foundation/Cargo lease used by FND-04 is released and unassigned; no downstream lane inherits it.
 - `RECOMMENDATION`: downstream implementation lanes may now be evaluated against their own prerequisites, but each requires a fresh exact allocation and no work is started by this terminal blocker closeout.
 
