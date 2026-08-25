@@ -54,7 +54,7 @@ allocation_merge_sha: 8b6f8e6c0ab0f849a87a7a3a8eb97d8367649d26
 base_sha: 9cc23cdbfe68d0a0f13df054874929b5e5dbe418
 branch: null
 current_child_issue: 115
-current_child_allocation_pr: null
+current_child_allocation_pr: 145
 current_child_allocation_branch: coord/allocate-fnd04-verifier-115
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260825-close-next-wave-blockers.md
