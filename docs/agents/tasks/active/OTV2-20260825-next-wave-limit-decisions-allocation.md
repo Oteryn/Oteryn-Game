@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/allocate-next-wave-limit-decisions-133
 issue: 133
-pr: null
+pr: 137
 base_sha: 91b73a7566a59991ebf7d471eacb3a858b755c9c
 head_sha: null
 final_head_sha: null
@@ -117,11 +117,11 @@ The originally staged branch incorrectly archived the still-active parent #131 t
 ## Context checkpoint
 
 ```yaml
-last_progress: Corrected allocation diff passes governance, diff-check and whole-diff self-review; final commit/PR/CI remain.
+last_progress: PR #137 is open on the corrected allocation tree; final metadata is recorded before freezing the exact head.
 status: validating
 branch: coord/allocate-next-wave-limit-decisions-133
 head_sha: null
-pr: null
+pr: 137
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -139,5 +139,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Create the final allocation commit, force-with-lease update the rebased branch, open its PR, and run exact-head CI.
+next_action: Freeze the exact PR #137 head, record self-review evidence, and require exact-head CI including game-gate before merge.
 ```

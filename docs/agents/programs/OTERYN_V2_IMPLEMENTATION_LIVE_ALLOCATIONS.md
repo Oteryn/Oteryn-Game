@@ -54,6 +54,7 @@ allocation_merge_sha: 8b6f8e6c0ab0f849a87a7a3a8eb97d8367649d26
 base_sha: 9cc23cdbfe68d0a0f13df054874929b5e5dbe418
 branch: null
 current_child_issue: 133
+current_child_allocation_pr: 137
 current_child_allocation_branch: coord/allocate-next-wave-limit-decisions-133
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260825-close-next-wave-blockers.md
@@ -79,6 +80,7 @@ task_id: OTV2-20260825-next-wave-limit-decisions
 allocation_task: OTV2-20260825-next-wave-limit-decisions-allocation
 issue: 133
 status: allocation_pending_merge
+allocation_pr: 137
 risk: Medium
 allocation_branch: coord/allocate-next-wave-limit-decisions-133
 branch_after_allocation_merge: arch/next-wave-limit-decisions-133
