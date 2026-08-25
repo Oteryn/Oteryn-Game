@@ -1,0 +1,87 @@
+# OTV2-20260825-fnd04-verifier-consumer
+
+```yaml
+task_id: OTV2-20260825-fnd04-verifier-consumer
+title: Implement production FND-04 verifier consumer seam
+mode: IMPLEMENT
+status: waiting
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: feat/fnd04-verifier-consumer-115
+issue: 115
+pr: null
+base_sha: null
+head_sha: null
+final_head_sha: null
+final_head_frozen_at: null
+owner: ChatGPT security implementation worker for Issue #115
+created_at: 2026-08-25T10:52:00+02:00
+updated_at: 2026-08-25T10:52:00+02:00
+execution_budget_minutes: 120
+large_budget_reason: Security-sensitive JWS/Ed25519 verifier requires bounded parser, purpose separation, authoritative current-evidence checks, full TDD, supply-chain validation and independent exact-head review.
+owned_paths:
+  - apps/game-server/src/foundation/fnd04_verifier.rs
+  - apps/game-server/src/foundation/mod.rs
+  - apps/game-server/Cargo.toml
+  - Cargo.toml
+  - Cargo.lock
+  - docs/architecture/reviews/OTERYN_GAME_FND04_VERIFIER_CONSUMER_DELIVERY_2026-08-25.md
+  - docs/agents/tasks/active/OTV2-20260825-fnd04-verifier-consumer.md
+public_contracts:
+  - docs/contracts/FND-04_PRE_ADMISSION_GRANT_PROFILE_V1.md
+  - docs/contracts/FND-04_REAUTHENTICATED_RECOVERY_GRANT_PROFILE_V1.md
+depends_on:
+  - issue:115
+  - issue:128
+  - issue:131
+  - task:OTV2-20260825-fnd04-verifier-allocation
+blocks:
+  - issue:115
+cross_repository_coordination_id: OTV2-NATIVE-FOUNDATION
+external_repositories: []
+```
+
+## Outcome
+
+Implement a Game-owned verifier/consumer seam that uses a verifier-fixed fresh/recovery trust context, validates bounded JWS Compact tokens with exact `Ed25519`, and combines authenticated claims with caller-provided current security/game evidence before returning trusted typed facts.
+
+## Acceptance criteria
+
+- [ ] Fresh and recovery profiles are purpose-separated with no reinterpretation/fallback.
+- [ ] Token/header/payload/base64/JSON bounds and duplicate-member rejection match accepted profiles.
+- [ ] Algorithm/key/trust/signature classification precedes semantic payload disclosure.
+- [ ] Current security/trust evidence proves source-age <=5s and non-rollback floors.
+- [ ] Fresh success returns existing `FreshAdmissionFacts`; recovery success returns non-authoritative typed facts only.
+- [ ] Verification alone creates/revives/rebinds no GameSession and consumes no replay nonce.
+- [ ] Only direct standards-conformant dependencies are added and pinned through workspace/app Cargo + lockfile.
+- [ ] Focused tests, package/workspace tests, strict Clippy/rustfmt, governance/architecture and diff checks pass.
+- [ ] Fresh non-authoring local `qwen2.5-coder:14b` review is bound to the final exact PR head with zero material findings.
+- [ ] Exact-head repository CI including `game-gate` passes before squash merge.
+
+## Excluded scope
+
+No listener/socket bind, production port/TLS cert/private key/KMS selection, no durable journal implementation, no direct replay consumption, no GameSession creation/revival/rebind in the verifier, no gameplay/Durability/client implementation, no Platform/external-repository mutation.
+
+## Validation
+
+- TDD: pending RED/GREEN cycles after allocation merge
+- package/workspace: pending
+- supply chain: pending
+- independent review: REQUIRED, fresh non-authoring local model on exact final head
+- E2E: verifier-only focused security integration; no live network/account/session path
+
+## Context checkpoint
+
+```yaml
+last_progress: Worker task prepared; no code/Cargo authority exists until the allocation PR merges.
+status: waiting
+branch: feat/fnd04-verifier-consumer-115
+head_sha: null
+pr: null
+final_head_sha: null
+final_head_frozen_at: null
+independent_review_required: true
+owner_action_required: null
+blocker: allocation_not_merged
+next_action: After allocation merge, create the exact-base worker branch, baseline tests, then write the first failing verifier test before production code.
+```
