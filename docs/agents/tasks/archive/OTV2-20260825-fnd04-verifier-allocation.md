@@ -4,19 +4,19 @@
 task_id: OTV2-20260825-fnd04-verifier-allocation
 title: Allocate production FND-04 verifier consumer
 mode: COORDINATE
-status: validating
+status: completed_released
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/allocate-fnd04-verifier-115
 issue: 115
 pr: 145
 base_sha: c1020b2db62ecfa18c411bee56fa004430b28923
-head_sha: 43ddf1001fcf82c11afc1b38bbcd734e85c29ea4
-final_head_sha: null
+head_sha: c047720b4787b74436cae62d912bcbaa1669c1c8
+final_head_sha: c047720b4787b74436cae62d912bcbaa1669c1c8
 final_head_frozen_at: null
 owner: ChatGPT coordinator for Issue #131
 created_at: 2026-08-25T10:52:00+02:00
-updated_at: 2026-08-25T12:33:00+02:00
+updated_at: 2026-08-25T21:04:03+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -78,8 +78,8 @@ Current durable state:
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #145 is open for the sole remaining blocker #115. Allocation content is complete and the previous exact-head generation was green; this metadata commit records the handoff and requires fresh exact-head CI before merge.
-status: validating
+last_progress: PR #145 completed exact-head green and merged as 12d1920b19d09dd3ce76e8910cc7bde401e63428; implementation PR #151 later completed #115.
+status: completed_released
 branch: coord/allocate-fnd04-verifier-115
 head_sha: 43ddf1001fcf82c11afc1b38bbcd734e85c29ea4
 pr: 145
@@ -90,5 +90,12 @@ ci_check_generation: prior_head_43ddf100
 ci_checks_for_current_head: 0
 owner_action_required: null
 blocker: null
-next_action: Wait for the new exact-head PR #145 CI generation created by this metadata commit. If all required checks including game-gate are green and review threads are empty, squash-merge PR #145; then create `feat/fnd04-verifier-consumer-115` from the exact allocation merge SHA, baseline-test it, and begin implementation with a failing verifier test before any production code.
+next_action: none
 ```
+
+
+## Terminal lifecycle reconciliation — 2026-08-25
+
+Allocation PR #145 exact-head green on c047720b4787b74436cae62d912bcbaa1669c1c8 and merged as 12d1920b19d09dd3ce76e8910cc7bde401e63428.
+
+This archive placement is merge-conditioned on the terminal closeout PR. GitHub merged-main, issue, PR and exact-head check state remain authoritative.
