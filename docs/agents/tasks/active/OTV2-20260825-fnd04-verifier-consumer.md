@@ -64,16 +64,16 @@ No listener/socket bind, production port/TLS cert/private key/KMS selection, no 
 
 ## Validation
 
-- TDD: pending RED/GREEN cycles after allocation merge
-- package/workspace: pending
-- supply chain: pending
+- TDD: RED/GREEN cycles complete; per-`kid` revocation and non-rollback-floor regressions are green
+- package/workspace: green locally; exact-head repository CI required
+- supply chain: locked workspace; no repair dependencies added
 - independent review: REQUIRED, fresh non-authoring local model on exact final head
 - E2E: verifier-only focused security integration; no live network/account/session path
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Bounded parser checkpoint has been completed into separate fresh/recovery typed consumers. The branch is awaiting independent exact-head security review and repository CI.
+last_progress: Separate fresh/recovery typed consumers now make trust decisions per kid and reject evidence below durable, source-owned non-rollback floors. The branch is awaiting independent exact-head security review and repository CI.
 status: ready_for_review
 branch: feat/fnd04-verifier-consumer-115
 head_sha: pending_remote_freeze

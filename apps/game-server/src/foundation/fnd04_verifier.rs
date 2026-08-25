@@ -345,7 +345,10 @@ pub enum Fnd04ConsumerError {
     FreshExpired,
     FreshSecurityEvidenceStale,
     FreshSecurityStateRevoked,
+    FreshAccountCharacterConflict,
     FreshWorldStale,
+    FreshRouteStale,
+    FreshRuntimeStale,
     RecoveryMalformed,
     RecoveryAuthenticationFailed,
     RecoveryBindingMismatch,
@@ -420,7 +423,7 @@ impl GrantKind {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CurrentEvidence {
     source_observed_at: i64,
     clock_uncertainty_seconds: u8,
@@ -428,16 +431,23 @@ pub struct CurrentEvidence {
     accepted_revision_floor: u64,
     enabled: bool,
     minimum_generation: u64,
+    account_id: String,
+    kind: GrantKind,
 }
 
 impl CurrentEvidence {
-    pub const fn new(
+    /// Creates evidence emitted by the authoritative account-security adapter for a fresh grant.
+    ///
+    /// `accepted_revision_floor` must come from durable, non-rollback account-security state;
+    /// callers must not derive it from the token being checked.
+    pub fn fresh(
         source_observed_at: i64,
         clock_uncertainty_seconds: u8,
         source_revision: u64,
         accepted_revision_floor: u64,
         enabled: bool,
         minimum_generation: u64,
+        account_id: impl Into<String>,
     ) -> Self {
         Self {
             source_observed_at,
@@ -446,10 +456,37 @@ impl CurrentEvidence {
             accepted_revision_floor,
             enabled,
             minimum_generation,
+            account_id: account_id.into(),
+            kind: GrantKind::Fresh,
         }
     }
 
-    fn is_current(self, now: i64) -> bool {
+    /// Creates evidence emitted by the authoritative account-security adapter for a recovery grant.
+    ///
+    /// `accepted_revision_floor` must come from durable, non-rollback account-security state;
+    /// callers must not derive it from the token being checked.
+    pub fn recovery(
+        source_observed_at: i64,
+        clock_uncertainty_seconds: u8,
+        source_revision: u64,
+        accepted_revision_floor: u64,
+        enabled: bool,
+        minimum_generation: u64,
+        account_id: impl Into<String>,
+    ) -> Self {
+        Self {
+            source_observed_at,
+            clock_uncertainty_seconds,
+            source_revision,
+            accepted_revision_floor,
+            enabled,
+            minimum_generation,
+            account_id: account_id.into(),
+            kind: GrantKind::Recovery,
+        }
+    }
+
+    fn is_current_for(&self, now: i64, kind: GrantKind, account_id: &str) -> bool {
         self.source_revision != 0
             && self.accepted_revision_floor != 0
             && self.source_revision >= self.accepted_revision_floor
@@ -457,25 +494,33 @@ impl CurrentEvidence {
                 .checked_sub(self.source_observed_at)
                 .and_then(|age| age.checked_add(i64::from(self.clock_uncertainty_seconds)))
                 .is_some_and(|upper_age| (0..=5).contains(&upper_age))
+            && self.kind == kind
+            && self.account_id == account_id
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TrustEvidence {
     source_observed_at: i64,
     clock_uncertainty_seconds: u8,
     source_revision: u64,
     accepted_revision_floor: u64,
     trusted: bool,
+    key_id: String,
 }
 
 impl TrustEvidence {
-    pub const fn new(
+    /// Creates a decision for one exact `kid` from the authoritative signing-trust adapter.
+    ///
+    /// The decision's revision floor is durable, scoped to that key and profile, and is never
+    /// derived from the candidate grant.
+    pub fn new(
         source_observed_at: i64,
         clock_uncertainty_seconds: u8,
         source_revision: u64,
         accepted_revision_floor: u64,
         trusted: bool,
+        key_id: impl Into<String>,
     ) -> Self {
         Self {
             source_observed_at,
@@ -483,10 +528,11 @@ impl TrustEvidence {
             source_revision,
             accepted_revision_floor,
             trusted,
+            key_id: key_id.into(),
         }
     }
 
-    fn has_current_provenance(self, now: i64) -> bool {
+    fn has_current_provenance(&self, now: i64) -> bool {
         self.source_revision != 0
             && self.accepted_revision_floor != 0
             && self.source_revision >= self.accepted_revision_floor
@@ -496,37 +542,50 @@ impl TrustEvidence {
                 .is_some_and(|upper_age| (0..=5).contains(&upper_age))
     }
 
-    const fn is_trusted(self) -> bool {
+    const fn is_trusted(&self) -> bool {
         self.trusted
     }
 }
 
 #[derive(Debug, Clone)]
 struct ProfileTrustContext {
-    keys: BTreeMap<String, [u8; 32]>,
+    keys: BTreeMap<String, TrustedKey>,
+}
+
+#[derive(Debug, Clone)]
+struct TrustedKey {
+    public_key: [u8; 32],
     evidence: TrustEvidence,
 }
 
 impl ProfileTrustContext {
-    fn new<I, K>(keys: I, evidence: TrustEvidence) -> Result<Self, Fnd04ConsumerError>
+    fn new<I, K>(keys: I, kind: GrantKind) -> Result<Self, Fnd04ConsumerError>
     where
-        I: IntoIterator<Item = (K, [u8; 32])>,
+        I: IntoIterator<Item = (K, [u8; 32], TrustEvidence)>,
         K: Into<String>,
     {
         let mut fixed = BTreeMap::new();
-        for (kid, key) in keys {
+        for (kid, key, evidence) in keys {
             let kid = kid.into();
-            if !valid_kid(&kid) || fixed.insert(kid, key).is_some() {
-                return Err(Fnd04ConsumerError::FreshMalformed);
+            if !valid_kid(&kid)
+                || evidence.key_id != kid
+                || fixed
+                    .insert(
+                        kid,
+                        TrustedKey {
+                            public_key: key,
+                            evidence,
+                        },
+                    )
+                    .is_some()
+            {
+                return Err(kind.malformed());
             }
         }
         if fixed.is_empty() {
-            return Err(Fnd04ConsumerError::FreshMalformed);
+            return Err(kind.malformed());
         }
-        Ok(Self {
-            keys: fixed,
-            evidence,
-        })
+        Ok(Self { keys: fixed })
     }
 }
 
@@ -534,12 +593,12 @@ impl ProfileTrustContext {
 pub struct FreshTrustContext(ProfileTrustContext);
 
 impl FreshTrustContext {
-    pub fn new<I, K>(keys: I, evidence: TrustEvidence) -> Result<Self, Fnd04ConsumerError>
+    pub fn new<I, K>(keys: I) -> Result<Self, Fnd04ConsumerError>
     where
-        I: IntoIterator<Item = (K, [u8; 32])>,
+        I: IntoIterator<Item = (K, [u8; 32], TrustEvidence)>,
         K: Into<String>,
     {
-        ProfileTrustContext::new(keys, evidence).map(Self)
+        ProfileTrustContext::new(keys, GrantKind::Fresh).map(Self)
     }
 }
 
@@ -547,12 +606,12 @@ impl FreshTrustContext {
 pub struct RecoveryTrustContext(ProfileTrustContext);
 
 impl RecoveryTrustContext {
-    pub fn new<I, K>(keys: I, evidence: TrustEvidence) -> Result<Self, Fnd04ConsumerError>
+    pub fn new<I, K>(keys: I) -> Result<Self, Fnd04ConsumerError>
     where
-        I: IntoIterator<Item = (K, [u8; 32])>,
+        I: IntoIterator<Item = (K, [u8; 32], TrustEvidence)>,
         K: Into<String>,
     {
-        ProfileTrustContext::new(keys, evidence).map(Self)
+        ProfileTrustContext::new(keys, GrantKind::Recovery).map(Self)
     }
 }
 
@@ -651,10 +710,12 @@ pub fn verify_fresh_grant(
     let claims = parse_claims(&payload, kind)?;
     validate_bindings(&header, &claims, kind)?;
     validate_time(&claims, now, kind)?;
-    if !current.security.is_current(now) {
+    if !current
+        .security
+        .is_current_for(now, kind, &current.account_id)
+    {
         return Err(kind.evidence_stale());
     }
-    check_trust_evidence(trust.0.evidence, now, kind)?;
     if !current.security.enabled
         || claims.account_security_generation < current.security.minimum_generation
     {
@@ -676,15 +737,20 @@ pub fn verify_fresh_grant(
     let world = WorldId::decode(&claims.world).map_err(|_| kind.malformed())?;
     let channel = ChannelId::decode(&channel).map_err(|_| kind.malformed())?;
     if claims.account_id != current.account_id || character != current.character_id {
-        return Err(kind.binding_mismatch());
+        return Err(Fnd04ConsumerError::FreshAccountCharacterConflict);
     }
     if world != current.world_id || channel != current.channel_id {
         return Err(kind.world_stale());
     }
     if scope != current.scope_ownership_generation
-        || route != &current.route_revision
         || runtime != &current.runtime_observation_revision
-        || claims.ruleset_revision != current.ruleset_revision
+    {
+        return Err(Fnd04ConsumerError::FreshRuntimeStale);
+    }
+    if route != &current.route_revision {
+        return Err(Fnd04ConsumerError::FreshRouteStale);
+    }
+    if claims.ruleset_revision != current.ruleset_revision
         || claims.content_revision != current.content_revision
         || claims.map_revision != current.map_revision
         || claims.world_policy_revision != current.world_policy_revision
@@ -714,10 +780,12 @@ pub fn verify_recovery_grant(
     let claims = parse_claims(&payload, kind)?;
     validate_bindings(&header, &claims, kind)?;
     validate_time(&claims, now, kind)?;
-    if !current.security.is_current(now) {
+    if !current
+        .security
+        .is_current_for(now, kind, &current.account_id)
+    {
         return Err(kind.evidence_stale());
     }
-    check_trust_evidence(trust.0.evidence, now, kind)?;
     if !current.security.enabled
         || claims.account_security_generation < current.security.minimum_generation
     {
@@ -760,9 +828,15 @@ fn authenticate(
         Fnd04VerificationError::Malformed => kind.malformed(),
         Fnd04VerificationError::AuthenticationFailed => kind.authentication_failed(),
     })?;
-    check_trust_evidence(trust.evidence, now, kind)?;
+    let selected = trust
+        .keys
+        .get(&header.kid)
+        .ok_or_else(|| kind.authentication_failed())?;
+    check_trust_evidence(&selected.evidence, now, kind)?;
     let fixed = FixedTrustContext {
-        keys: trust.keys.clone(),
+        keys: [(header.kid.clone(), selected.public_key)]
+            .into_iter()
+            .collect(),
     };
     verify_compact_signature(&compact, &header, &fixed).map_err(|error| match error {
         Fnd04VerificationError::Malformed => kind.malformed(),
@@ -774,7 +848,7 @@ fn authenticate(
 }
 
 fn check_trust_evidence(
-    evidence: TrustEvidence,
+    evidence: &TrustEvidence,
     now: i64,
     kind: GrantKind,
 ) -> Result<(), Fnd04ConsumerError> {
@@ -1159,10 +1233,11 @@ mod tests {
     fn fresh_consumer_returns_facts_only_after_fixed_context_and_current_evidence_match()
     -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[9; 32]);
-        let trust = FreshTrustContext::new(
-            [("fresh-1", signing_key.verifying_key().to_bytes())],
-            trusted_evidence(100),
-        )?;
+        let trust = FreshTrustContext::new([(
+            "fresh-1",
+            signing_key.verifying_key().to_bytes(),
+            trusted_evidence(100, "fresh-1"),
+        )])?;
         let current = FreshCurrentEvidence::for_test(100)?;
         let grant = signed_token(
             &signing_key,
@@ -1180,10 +1255,11 @@ mod tests {
     fn fresh_consumer_classifies_explicit_current_key_revocation_as_authentication_failure()
     -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[10; 32]);
-        let trust = FreshTrustContext::new(
-            [("fresh-1", signing_key.verifying_key().to_bytes())],
-            TrustEvidence::new(100, 0, 2, 2, false),
-        )?;
+        let trust = FreshTrustContext::new([(
+            "fresh-1",
+            signing_key.verifying_key().to_bytes(),
+            TrustEvidence::new(100, 0, 2, 2, false, "fresh-1"),
+        )])?;
         let grant = signed_token(
             &signing_key,
             r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
@@ -1198,13 +1274,82 @@ mod tests {
     }
 
     #[test]
+    fn revoked_kid_is_rejected_while_a_different_current_kid_remains_usable()
+    -> Result<(), Fnd04ConsumerError> {
+        let active = SigningKey::from_bytes(&[16; 32]);
+        let revoked = SigningKey::from_bytes(&[17; 32]);
+        let trust = FreshTrustContext::new([
+            (
+                "active-1",
+                active.verifying_key().to_bytes(),
+                trusted_evidence(100, "active-1"),
+            ),
+            (
+                "revoked-1",
+                revoked.verifying_key().to_bytes(),
+                TrustEvidence::new(100, 0, 2, 2, false, "revoked-1"),
+            ),
+        ])?;
+        let current = FreshCurrentEvidence::for_test(100)?;
+        let revoked_grant = signed_token(
+            &revoked,
+            r#"{"alg":"Ed25519","kid":"revoked-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        assert_eq!(
+            verify_fresh_grant(&revoked_grant, 100, &trust, &current),
+            Err(Fnd04ConsumerError::FreshAuthenticationFailed),
+        );
+
+        let active_grant = signed_token(
+            &active,
+            r#"{"alg":"Ed25519","kid":"active-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        assert!(verify_fresh_grant(&active_grant, 100, &trust, &current).is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn evidence_below_its_nonrollback_floor_fails_closed() -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[18; 32]);
+        let trust = FreshTrustContext::new([(
+            "fresh-1",
+            signing_key.verifying_key().to_bytes(),
+            trusted_evidence(100, "fresh-1"),
+        )])?;
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        let mut current = FreshCurrentEvidence::for_test(100)?;
+        current.security = CurrentEvidence::fresh(
+            100,
+            0,
+            1,
+            2,
+            true,
+            1,
+            "00000000-0000-4000-8000-000000000001",
+        );
+
+        assert_eq!(
+            verify_fresh_grant(&grant, 100, &trust, &current),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale),
+        );
+        Ok(())
+    }
+
+    #[test]
     fn recovery_consumer_returns_non_authoritative_facts_from_only_recovery_context()
     -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[11; 32]);
-        let trust = RecoveryTrustContext::new(
-            [("recovery-1", signing_key.verifying_key().to_bytes())],
-            trusted_evidence(100),
-        )?;
+        let trust = RecoveryTrustContext::new([(
+            "recovery-1",
+            signing_key.verifying_key().to_bytes(),
+            trusted_evidence(100, "recovery-1"),
+        )])?;
         let grant = signed_token(
             &signing_key,
             r#"{"alg":"Ed25519","kid":"recovery-1","typ":"oteryn-recovery+jwt"}"#,
@@ -1228,10 +1373,11 @@ mod tests {
     -> Result<(), Fnd04ConsumerError> {
         let trusted_key = SigningKey::from_bytes(&[12; 32]);
         let untrusted_key = SigningKey::from_bytes(&[13; 32]);
-        let trust = FreshTrustContext::new(
-            [("fresh-1", trusted_key.verifying_key().to_bytes())],
-            trusted_evidence(100),
-        )?;
+        let trust = FreshTrustContext::new([(
+            "fresh-1",
+            trusted_key.verifying_key().to_bytes(),
+            trusted_evidence(100, "fresh-1"),
+        )])?;
         let malformed_schema = fresh_payload().replace(
             r#",\"offer_revision\":\"offer-1\""#,
             r#",\"unknown\":\"offer-1\""#,
@@ -1256,10 +1402,11 @@ mod tests {
     fn authenticated_unsupported_profile_is_not_reinterpreted_as_fresh_admission()
     -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[14; 32]);
-        let trust = FreshTrustContext::new(
-            [("fresh-1", signing_key.verifying_key().to_bytes())],
-            trusted_evidence(100),
-        )?;
+        let trust = FreshTrustContext::new([(
+            "fresh-1",
+            signing_key.verifying_key().to_bytes(),
+            trusted_evidence(100, "fresh-1"),
+        )])?;
         let grant = signed_token(
             &signing_key,
             r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
@@ -1277,17 +1424,19 @@ mod tests {
     fn stale_current_security_evidence_fails_before_any_fresh_facts_are_returned()
     -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[15; 32]);
-        let trust = FreshTrustContext::new(
-            [("fresh-1", signing_key.verifying_key().to_bytes())],
-            trusted_evidence(100),
-        )?;
+        let trust = FreshTrustContext::new([(
+            "fresh-1",
+            signing_key.verifying_key().to_bytes(),
+            trusted_evidence(100, "fresh-1"),
+        )])?;
         let grant = signed_token(
             &signing_key,
             r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
             fresh_payload(),
         );
         let mut current = FreshCurrentEvidence::for_test(100)?;
-        current.security = CurrentEvidence::new(94, 0, 1, 1, true, 1);
+        current.security =
+            CurrentEvidence::fresh(94, 0, 1, 1, true, 1, "00000000-0000-4000-8000-000000000001");
 
         assert_eq!(
             verify_fresh_grant(&grant, 100, &trust, &current),
@@ -1301,8 +1450,8 @@ mod tests {
         format!("{encoded_header}.e30.AA")
     }
 
-    fn trusted_evidence(now: i64) -> TrustEvidence {
-        TrustEvidence::new(now, 0, 1, 1, true)
+    fn trusted_evidence(now: i64, kid: &str) -> TrustEvidence {
+        TrustEvidence::new(now, 0, 1, 1, true, kid)
     }
 
     fn fresh_payload() -> String {
@@ -1338,7 +1487,15 @@ mod tests {
                 value
             };
             Ok(Self {
-                security: CurrentEvidence::new(now, 0, 1, 1, true, 1),
+                security: CurrentEvidence::fresh(
+                    now,
+                    0,
+                    1,
+                    1,
+                    true,
+                    1,
+                    "00000000-0000-4000-8000-000000000001",
+                ),
                 account_id: "00000000-0000-4000-8000-000000000001".to_owned(),
                 character_id: CharacterId::decode(&id(2))
                     .map_err(|_| Fnd04ConsumerError::FreshMalformed)?,
@@ -1363,7 +1520,15 @@ mod tests {
         fn for_test(now: i64) -> Result<Self, Fnd04ConsumerError> {
             let fresh = FreshCurrentEvidence::for_test(now)?;
             Ok(Self {
-                security: fresh.security,
+                security: CurrentEvidence::recovery(
+                    now,
+                    0,
+                    1,
+                    1,
+                    true,
+                    1,
+                    "00000000-0000-4000-8000-000000000001",
+                ),
                 account_id: fresh.account_id,
                 character_id: fresh.character_id,
                 world_id: fresh.world_id,
