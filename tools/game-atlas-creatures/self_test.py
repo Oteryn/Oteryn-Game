@@ -10,6 +10,13 @@ SPEC = importlib.util.spec_from_file_location("creature_export", HERE / "export.
 assert SPEC and SPEC.loader
 module = importlib.util.module_from_spec(SPEC); sys.modules[SPEC.name] = module; SPEC.loader.exec_module(module)
 
+IDENTITY_PATH = HERE / "identity.py"
+assert IDENTITY_PATH.exists(), "shared creature identity helper missing"
+IDENTITY_SPEC = importlib.util.spec_from_file_location("creature_identity", IDENTITY_PATH)
+assert IDENTITY_SPEC and IDENTITY_SPEC.loader
+identity = importlib.util.module_from_spec(IDENTITY_SPEC)
+IDENTITY_SPEC.loader.exec_module(identity)
+
 NPC = '''local internalNpcName = "Alice"\nnpcConfig.outfit = { lookType = 128, lookHead = 1, lookBody = 2, lookLegs = 3, lookFeet = 4, lookAddons = 1 }\nnpcConfig.shop = {}\nnpc:parseBank(message, npc, creature, npcHandler)\nlocal travelKeyword = StdModule.travel\nlocal q = Storage.Quest.Test\nlocal a = StdModule.learnSpell\nlocal b = StdModule.bless\n'''
 MONSTER = '''local mType = Game.createMonsterType("Rat")\nmonster.outfit = { lookType = 21 }\n'''
 NPC_XML = '''<npcs><npc centerx="100" centery="200" centerz="7" radius="2"><npc name="alice" x="1" y="-1" z="7" spawntime="60"/></npc></npcs>'''
@@ -21,6 +28,8 @@ def build(root: Path):
     (npcs/"alice.lua").write_text(NPC,encoding="utf-8"); (monsters/"rat.lua").write_text(MONSTER,encoding="utf-8"); return world,npcs,monsters
 
 def main() -> int:
+    assert identity.stable_creature_entity_id("npc", "alice") == "npc-entity:9e81bffc58a22ac102bfc5135d7a1c15"
+    assert identity.stable_creature_entity_id("monster", "rat") == "monster-entity:80295e51265b3662bfbea2ea01ee3ccb"
     assert module.npc_roles('npc:parseBank(message, npc, creature, npcHandler)') == ("bank",)
     assert module.npc_roles('local x = StdModule.travel') == ("travel",)
     assert module.npc_roles('npcConfig.shop = {}') == ("shop",)
