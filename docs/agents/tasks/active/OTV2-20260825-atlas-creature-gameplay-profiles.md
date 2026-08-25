@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/creature-gameplay-profiles-v1
 issue: 136
-pr: null
+pr: 138
 base_sha: 91b73a7566a59991ebf7d471eacb3a858b755c9c
 head_sha: null
 final_head_sha: null
@@ -121,7 +121,7 @@ last_progress: GitHub lifecycle allocated as Game #136 and Atlas #165; dedicated
 status: verifying
 branch: feat/creature-gameplay-profiles-v1
 head_sha: null
-pr: null
+pr: 138
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -139,5 +139,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: commit verified packaging/census workflow, create one PR, then freeze exact head and run CI/audit
+next_action: freeze the post-rebase PR #138 head in immutable PR evidence, run exact-head self-review/audit/CI, then squash merge
 ```
