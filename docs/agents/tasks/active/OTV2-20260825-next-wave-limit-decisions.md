@@ -4,21 +4,21 @@
 task_id: OTV2-20260825-next-wave-limit-decisions
 title: Accept evidence-backed first-slice next-wave resource limits
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/next-wave-limit-decisions-133
 issue: 133
-pr: null
+pr: 140
 base_sha: 86653375231febbf81623b4c6984a6ff1263bdc2
 allocation_pr: 137
 allocation_merge_sha: 86653375231febbf81623b4c6984a6ff1263bdc2
-head_sha: null
+head_sha: c1fcf8aaa428028659762b9a6359819c81997a7a
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT decision/evidence worker for Issue #133
 created_at: 2026-08-25T01:06:00+02:00
-updated_at: 2026-08-25T09:22:00+02:00
+updated_at: 2026-08-25T09:50:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: One reproducible evidence harness must classify and justify exact first-slice limits across three blocker issues without conflating semantic domains.
 owned_paths:
@@ -123,7 +123,7 @@ Allocation PR #137 is merged and the exact-base worker branch exists. The harnes
 ## Context checkpoint
 
 ```yaml
-last_progress: 24 candidate limits + 33 fail-closed exclusions are evidenced; Movement successor #139 exists; 11/11 harness tests, stress, JSON, architecture, governance and diff checks PASS.
+last_progress: Decision/evidence PR #140 opened from rebased semantic head c1fcf8a; 24 candidates + 33 exclusions and Movement successor #139 are complete; final metadata head is being frozen for exact-head CI.
 status: implementing
 branch: arch/next-wave-limit-decisions-133
 head_sha: null
@@ -145,5 +145,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Commit/push the reviewed decision tree, open its PR, record PR metadata, freeze that exact head and require exact-head CI/game-gate.
+next_action: Freeze this metadata commit as final PR head, rerun governance/diff, then require exact-head GitHub CI including game-gate before squash merge.
 ```
