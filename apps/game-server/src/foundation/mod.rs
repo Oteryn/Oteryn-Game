@@ -5,12 +5,14 @@ mod admission {
     include!("admission_recovery_inner.rs");
 }
 mod admission_facade;
+pub mod fnd04_verifier;
 mod protocol;
 mod snapshot_facade;
 pub use admission::*;
 pub use admission_facade::{
     AdmissionAuthority, ReconnectAttemptAuthoritySnapshot, ReconnectAttemptJournal,
 };
+pub use fnd04_verifier::{NumericDate, NumericDateError};
 pub use protocol::*;
 pub use snapshot_facade::SnapshotBarrier;
 

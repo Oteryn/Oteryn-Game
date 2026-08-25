@@ -12,8 +12,12 @@ category = "app"
 release-role = "production"
 
 [dependencies]
+base64.workspace = true
+ed25519-dalek.workspace = true
 oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
+serde.workspace = true
+serde_json.workspace = true
 tokio.workspace = true
 
 [lints]
