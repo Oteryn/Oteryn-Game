@@ -4,14 +4,14 @@
 task_id: OTV2-20260825-fnd04-verifier-consumer
 title: Implement production FND-04 verifier consumer seam
 mode: IMPLEMENT
-status: waiting
+status: ready_for_review
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/fnd04-verifier-consumer-115
 issue: 115
-pr: null
-base_sha: null
-head_sha: null
+pr: 151
+base_sha: 12d1920b19d09dd3ce76e8910cc7bde401e63428
+head_sha: pending_remote_freeze
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT security implementation worker for Issue #115
@@ -43,7 +43,7 @@ external_repositories: []
 
 ## Outcome
 
-Implement a Game-owned verifier/consumer seam that uses a verifier-fixed fresh/recovery trust context, validates bounded JWS Compact tokens with exact `Ed25519`, and combines authenticated claims with caller-provided current security/game evidence before returning trusted typed facts.
+Implement a Game-owned verifier/consumer seam that uses verifier-fixed fresh/recovery evidence scopes, validates bounded JWS Compact tokens with exact `Ed25519`, and queries a durable authoritative evidence boundary before returning trusted typed facts.
 
 ## Acceptance criteria
 
@@ -64,24 +64,24 @@ No listener/socket bind, production port/TLS cert/private key/KMS selection, no 
 
 ## Validation
 
-- TDD: pending RED/GREEN cycles after allocation merge
-- package/workspace: pending
-- supply chain: pending
+- TDD: RED/GREEN cycles complete; per-`kid` revocation and non-rollback-floor regressions are green
+- package/workspace: green locally; exact-head repository CI required
+- supply chain: locked workspace; no repair dependencies added
 - independent review: REQUIRED, fresh non-authoring local model on exact final head
 - E2E: verifier-only focused security integration; no live network/account/session path
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Worker task prepared; no code/Cargo authority exists until the allocation PR merges.
-status: waiting
+last_progress: Separate fresh/recovery typed consumers query an authority interface per profile, kid and account; raw evidence cannot enter the public verifier API. The authority contract requires durable per-scope non-rollback floors and contradiction detection. The branch is awaiting independent exact-head security review and repository CI.
+status: ready_for_review
 branch: feat/fnd04-verifier-consumer-115
-head_sha: null
-pr: null
+head_sha: pending_remote_freeze
+pr: 151
 final_head_sha: null
 final_head_frozen_at: null
 independent_review_required: true
 owner_action_required: null
-blocker: allocation_not_merged
-next_action: After allocation merge, create the exact-base worker branch, baseline tests, then write the first failing verifier test before production code.
+blocker: independent_exact_head_review_and_ci_pending
+next_action: Freeze the remote PR head, complete non-authoring security review and exact-head repository CI, then merge only if all required gates pass.
 ```
