@@ -4,18 +4,18 @@
 task_id: OTV2-20260825-work-delivery-independent-auditor
 title: Add independent high-effort Work delivery auditor prompt
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/work-delivery-independent-auditor-170
-pr: null
+pr: 173
 base_sha: a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT supervising architecture session
 created_at: 2026-08-25T22:05:23Z
-updated_at: 2026-08-25T22:05:23Z
+updated_at: 2026-08-25T22:10:30Z
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -42,18 +42,18 @@ Publish a reusable read-only `Oteryn: work auditor` prompt that independently au
 - `PROVEN`: protected admission `main` is `a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d`.
 - `PROVEN`: Issue #170 records the owner-approved alias, read-only authority and acceptance criteria.
 - `PROVEN`: `docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md` is the audited coordinator contract.
-- `PROVEN`: `docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md` already owns broad architecture/programme audit; the new prompt must remain narrower and execution-forensic rather than superseding it.
+- `PROVEN`: `docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md` already owns broad architecture/programme audit; the new prompt remains narrower and execution-forensic and explicitly does not supersede it.
 - `PROVEN`: governance changes under `docs/agents/**` require governance validation and shared-index edits must remain narrow.
 - `DERIVED`: a read-only audit prompt with zero mutation/merge authority is not an authority expansion and therefore does not by itself trigger the independent-review requirement reserved for safety reductions/authority expansions.
 
 ## Acceptance criteria
 
-- [ ] Add `docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` with alias `Oteryn: work auditor`.
-- [ ] Auditor treats Work summaries as claims and reconstructs exact Issue/task/branch/PR/check/merge truth from live GitHub.
-- [ ] Auditor covers programme resolution, allocation timing, path/lease isolation, DAG correctness, architecture escalation, worker-result verification, exact-head CI/reviews, QA truthfulness, merge/closeout and retry-loop hygiene.
-- [ ] Auditor has no repository mutation, implementation, merge/close, production or cross-repository write authority.
-- [ ] README and lifecycle registry describe the prompt as reusable without superseding existing coordinator or broad audit prompts.
-- [ ] Prompt evaluates `PASS` against Authority, Resolution, Ownership, Architecture, Completeness, Evidence, Validation, Autonomy, Handover and Safety gates.
+- [x] Add `docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` with alias `Oteryn: work auditor`.
+- [x] Auditor treats Work summaries as claims and reconstructs exact Issue/task/branch/PR/check/merge truth from live GitHub.
+- [x] Auditor covers programme resolution, allocation timing, path/lease isolation, DAG correctness, architecture escalation, worker-result verification, exact-head CI/reviews, QA truthfulness, merge/closeout and retry-loop hygiene.
+- [x] Auditor has no repository mutation, implementation, merge/close, production or cross-repository write authority.
+- [x] README and lifecycle registry describe the prompt as reusable without superseding existing coordinator or broad audit prompts.
+- [x] Prompt evaluates `PASS` against Authority, Resolution, Ownership, Architecture, Completeness, Evidence, Validation, Autonomy, Handover and Safety gates.
 - [ ] Exact-head governance/repository policy and `game-gate` pass before merge.
 - [ ] Post-merge readback, task archive, ownership release and branch cleanup are verified.
 
@@ -63,19 +63,32 @@ No runtime, Cargo/workspace, registry/stable-ID, workflow, architecture semantic
 
 ## Implementation / findings
 
-Issue #170 and branch `docs/work-delivery-independent-auditor-170` were created from the exact admission main. New prompt is being packaged as a read-only specialized audit profile.
+Issue #170 and branch `docs/work-delivery-independent-auditor-170` were created from the exact admission main. PR #173 contains the dedicated read-only prompt plus narrow README/lifecycle registration and this lifecycle packet.
+
+Prompt self-evaluation against `docs/agents/PROMPT_EVAL_STANDARD.md`:
+
+- Authority: `PASS` — exact read-only authority and all mutation/production/cross-repository exclusions are explicit.
+- Resolution: `PASS` — auditor resolves the current Work lifecycle from live GitHub and forbids hard-coded cached coordinator state.
+- Ownership: `PASS` — auditor receives no write ownership and explicitly reconstructs/validates worker path and lease ownership.
+- Architecture: `PASS` — accepted architecture is evidence; material decisions remain with the Supervising Architect.
+- Completeness: `PASS` — startup, allocation, dispatch, concurrency, DAG, escalation, PR qualification, QA, merge and closeout are covered.
+- Evidence: `PASS` — frozen SHAs, exact-head evidence and `PROVEN / DERIVED / UNKNOWN / CONFLICT` are mandatory.
+- Validation: `PASS` — risk-proportional full-diff/check/review/E2E evidence is audited and skipped jobs require justification.
+- Autonomy: `PASS` — auditor completes the bounded current programme audit without implementing fixes and returns an explicit coordinator disposition.
+- Handover: `PASS` — frozen snapshot, exact lane/PR matrix, ordered required actions, confidence and missing-evidence fields make the result independently resumable/actionable.
+- Safety: `PASS` — repository mutation, workflow retrigger, secrets, production and owner-funded AI are forbidden.
 
 ## Validation
 
 ### Focused
 
-- command/run: pending governance validation
-- result: pending
+- command/run: repository governance/repository-policy validation through PR #173 exact-head workflows
+- result: pending exact-head CI
 
 ### Component/integration
 
 - command/run: prompt evaluation against `docs/agents/PROMPT_EVAL_STANDARD.md`
-- result: pending
+- result: `PASS` on all 10 gates as recorded above
 
 ### E2E
 
@@ -84,19 +97,19 @@ Issue #170 and branch `docs/work-delivery-independent-auditor-170` were created 
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
+- final head: pending external exact-head evidence after this final candidate commit
+- trigger source: pull_request #173
 - workflow/run/job: pending
 - runner assignment: pending
-- classification: pending
+- classification: docs/agents governance-only
 - result: pending
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- exact head: pending external exact-head evidence after final candidate commit
+- method/reviewer: implementing/coordinating agent, whole-diff comparison against admission main and Issue #170
+- material findings: none in authored scope before exact-head CI; no runtime/authority widening detected
+- verdict: `PASS_PENDING_EXACT_HEAD_CI`
 
 ## Independent review
 
@@ -108,25 +121,25 @@ Issue #170 and branch `docs/work-delivery-independent-auditor-170` were created 
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: four intended docs/agents paths only before final candidate commit
 - unresolved review threads: pending
-- related/superseded PRs: none identified
-- protected auto-merge: pending
+- related/superseded PRs: none identified; prompt explicitly does not supersede Work coordinator or broad audit prompt
+- protected auto-merge: not used
 - merge commit/result: pending
 - ownership release: pending
 
 ## Context checkpoint
 
 ```yaml
-last_progress: issue and branch created; dedicated read-only Work auditor prompt added
-status: implementing
+last_progress: PR #173 opened; prompt package and self-evaluation complete
+status: validating
 branch: docs/work-delivery-independent-auditor-170
 head_sha: null
-pr: null
+pr: 173
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+ci_trigger_source: pull_request
+ci_check_generation: pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -140,5 +153,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: register prompt in README and lifecycle registry
+next_action: qualify PR #173 exact final head through repository-required CI and review gates
 ```
