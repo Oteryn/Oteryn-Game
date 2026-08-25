@@ -1,0 +1,118 @@
+name: Game Atlas creature gameplay profiles
+
+run-name: Game Atlas creature gameplay profiles - ${{ github.event.pull_request.number || github.ref_name }}
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tools/game-atlas-creature-gameplay/**'
+      - 'tools/game-atlas-creatures/identity.py'
+      - 'tools/game-atlas-creatures/export.py'
+      - 'tools/game-atlas-creatures/self_test.py'
+      - 'docs/contracts/OTERYN_GAME_ATLAS_CREATURE_GAMEPLAY_PROFILES_V1.md'
+      - 'docs/agents/evidence/OTV2-20260825-atlas-creature-gameplay-profiles-readiness.md'
+      - '.github/workflows/game-atlas-creature-gameplay-profiles.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: game-atlas-creature-gameplay-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Creature gameplay producer / exact-source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact Game revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0
+        with:
+          python-version: '3.12'
+          check-latest: false
+
+      - name: Verify exact checked-out head
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+
+      - name: Check out pinned migration evidence
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: blakinio/Otheryn
+          ref: e417c5e7c22986bf4acef0495eb47f7b72c97cce
+          path: legacy
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: |
+            vendor/map-analysis/crystalserver/data-global/npc
+            vendor/map-analysis/crystalserver/data-global/monster
+          sparse-checkout-cone-mode: false
+
+      - name: Verify migration evidence revision
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C legacy rev-parse HEAD)" = 'e417c5e7c22986bf4acef0495eb47f7b72c97cce'
+          test -d legacy/vendor/map-analysis/crystalserver/data-global/npc
+          test -d legacy/vendor/map-analysis/crystalserver/data-global/monster
+
+      - name: Compile and run producer self-tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile tools/game-atlas-creatures/identity.py tools/game-atlas-creatures/export.py tools/game-atlas-creatures/self_test.py tools/game-atlas-creature-gameplay/export.py tools/game-atlas-creature-gameplay/self_test.py
+          python tools/game-atlas-creatures/self_test.py
+          python tools/game-atlas-creature-gameplay/self_test.py
+
+      - name: Build exact pinned product twice
+        shell: bash
+        env:
+          PRODUCER_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          ROOT="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global"
+          python tools/game-atlas-creature-gameplay/export.py "$ROOT/npc" "$ROOT/monster" /tmp/gameplay-a --producer-sha "$PRODUCER_SHA"
+          python tools/game-atlas-creature-gameplay/export.py "$ROOT/npc" "$ROOT/monster" /tmp/gameplay-b --producer-sha "$PRODUCER_SHA"
+          diff -qr /tmp/gameplay-a /tmp/gameplay-b
+
+      - name: Verify frozen real-evidence census and bounds
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import collections, importlib.util, json
+          from pathlib import Path
+          module_path=Path('tools/game-atlas-creature-gameplay/export.py')
+          spec=importlib.util.spec_from_file_location('gameplay_export',module_path)
+          module=importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
+          manifest=module.verify_product(Path('/tmp/gameplay-a'))
+          root=Path('legacy/vendor/map-analysis/crystalserver/data-global')
+          product=module.export_gameplay_profiles(root/'npc',root/'monster')
+          assert product['statistics']=={'npc_profiles':1049,'monster_profiles':1800,'referenced_items':0}
+          assert dict(collections.Counter(x['shop']['state'] for x in product['npcs']))=={'UNKNOWN':732,'COMPLETE':254,'PARTIAL':51,'AMBIGUOUS':12}
+          assert dict(collections.Counter(x['travel']['state'] for x in product['npcs']))=={'UNKNOWN':989,'PARTIAL':43,'AMBIGUOUS':12,'COMPLETE':5}
+          assert dict(collections.Counter(x['services']['state'] for x in product['npcs']))=={'UNKNOWN':677,'PARTIAL':360,'AMBIGUOUS':12}
+          assert dict(collections.Counter(x['loot']['state'] for x in product['monsters']))=={'COMPLETE':1680,'PARTIAL':66,'UNKNOWN':53,'UNRESOLVED':1}
+          assert dict(collections.Counter(x['stats']['state'] for x in product['monsters']))=={'COMPLETE':968,'PARTIAL':832}
+          assert dict(collections.Counter(x['resistances']['state'] for x in product['monsters']))=={'COMPLETE':1788,'PARTIAL':12}
+          assert len(manifest['shards'])==508
+          assert max(x['bytes'] for x in manifest['shards'])==174660
+          assert max(x['records'] for x in manifest['shards'])==15
+          assert (Path('/tmp/gameplay-a')/'manifest.json').stat().st_size <= module.LIMITS['max_manifest_bytes']
+          assert manifest['limit_profile']=='creature-gameplay-profiles-v1-e417-census-v1'
+          print(json.dumps({'counts':manifest['counts'],'semantic_digest':manifest['semantic_digest'],'shards':len(manifest['shards'])},sort_keys=True))
+          PY

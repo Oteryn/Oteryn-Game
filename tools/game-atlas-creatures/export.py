@@ -14,6 +14,8 @@ from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
 
+from identity import stable_creature_entity_id
+
 CONTRACT_ID = "oteryn-game-atlas-export-v1"
 CAPABILITY = "static-creatures-v1"
 LEGACY_EVIDENCE_SHA = "e417c5e7c22986bf4acef0495eb47f7b72c97cce"
@@ -123,7 +125,7 @@ def export_creatures(world_root: Path, npc_root: Path, monster_root: Path):
             elif definition is None or definition.outfit.look_type<=0: record["resolution_state"]="UNRESOLVED"; unresolved+=1
             else:
                 outfit=definition.outfit
-                record["resolution_state"]="RESOLVED"; record["appearance"]={"outfit_key":outfit.key,"look_type":outfit.look_type,"head":outfit.head,"body":outfit.body,"legs":outfit.legs,"feet":outfit.feet,"addons":outfit.addons}; record["entity_id"]=stable_id(f"{kind}-entity",folded)
+                record["resolution_state"]="RESOLVED"; record["appearance"]={"outfit_key":outfit.key,"look_type":outfit.look_type,"head":outfit.head,"body":outfit.body,"legs":outfit.legs,"feet":outfit.feet,"addons":outfit.addons}; record["entity_id"]=stable_creature_entity_id(kind,folded)
     for values in groups.values(): values.sort(key=lambda r:(int(r["position"]["floor"]),int(r["position"]["y"]),int(r["position"]["x"]),str(r["name"]).casefold(),str(r["record_id"])))
     result={"contract_id":CONTRACT_ID,"semantic_revision":1,"capability":CAPABILITY,"npc_role_schema_version":1,"coordinate_profile":"oteryn-native-floor-v1","legacy_evidence":{"repository":"blakinio/Otheryn","sha":LEGACY_EVIDENCE_SHA},"npcs":groups["npcs"],"monster_spawns":groups["monster_spawns"],"statistics":{"npcs":len(groups["npcs"]),"monster_spawns":len(groups["monster_spawns"]),"unresolved":unresolved,"ambiguous":ambiguous}}
     canonical=json.dumps(result,ensure_ascii=False,separators=(",",":"),sort_keys=True).encode("utf-8"); result["semantic_digest"]="sha256:"+hashlib.sha256(canonical).hexdigest(); return result
