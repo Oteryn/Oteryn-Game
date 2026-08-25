@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
+import copy
 import importlib.util
+import json
 from pathlib import Path
 import tempfile
 
@@ -99,6 +101,107 @@ def main() -> int:
         assert bad_loot["entries"] == []
         assert bad_loot["reason_codes"] == ["INVALID_LOOT_CHANCE", "INVALID_LOOT_COUNT"]
 
+    with tempfile.TemporaryDirectory() as package_tmp:
+        package_root = Path(package_tmp)
+        first = package_root / "first"
+        second = package_root / "second"
+        producer_sha = "a" * 40
+        manifest_a = module.write_product(product, first, producer_sha)
+        reversed_product = copy.deepcopy(product)
+        reversed_product["npcs"].reverse()
+        reversed_product["monsters"].reverse()
+        reversed_product["referenced_items"].reverse()
+        manifest_b = module.write_product(reversed_product, second, producer_sha)
+        assert manifest_a == manifest_b
+        first_files = {p.relative_to(first).as_posix(): p.read_bytes() for p in first.rglob("*") if p.is_file()}
+        second_files = {p.relative_to(second).as_posix(): p.read_bytes() for p in second.rglob("*") if p.is_file()}
+        assert first_files == second_files
+        assert module.verify_product(first)["semantic_digest"] == manifest_a["semantic_digest"]
+        assert manifest_a["counts"] == {"npc_profiles": 1, "monster_profiles": 1, "referenced_items": 0}
+        assert manifest_a["shard_key_rule"] == "entity-hash-prefix-2"
+        assert all(desc["path"].startswith("shards/") for desc in manifest_a["shards"])
+
+        bad_identity = copy.deepcopy(product)
+        bad_identity["npcs"][0]["entity_id"] = "not-an-entity"
+        try:
+            module.write_product(bad_identity, package_root / "bad-identity", producer_sha)
+            raise AssertionError("malformed entity identity accepted")
+        except module.ExportError:
+            pass
+
+        duplicate = copy.deepcopy(product)
+        duplicate["npcs"].append(copy.deepcopy(duplicate["npcs"][0]))
+        try:
+            module.write_product(duplicate, package_root / "duplicate", producer_sha)
+            raise AssertionError("duplicate entity accepted")
+        except module.ExportError:
+            pass
+
+        negative_price = copy.deepcopy(product)
+        negative_price["npcs"][0]["shop"]["sells"][0]["unit_price"] = -1
+        try:
+            module.write_product(negative_price, package_root / "negative-price", producer_sha)
+            raise AssertionError("negative price accepted")
+        except module.ExportError:
+            pass
+
+        invalid_chance = copy.deepcopy(product)
+        invalid_chance["monsters"][0]["loot"]["entries"][0]["chance_ppm"] = 1_000_001
+        try:
+            module.write_product(invalid_chance, package_root / "invalid-chance", producer_sha)
+            raise AssertionError("invalid chance accepted")
+        except module.ExportError:
+            pass
+
+        too_many_rows = copy.deepcopy(product)
+        row = copy.deepcopy(too_many_rows["npcs"][0]["shop"]["sells"][0])
+        too_many_rows["npcs"][0]["shop"]["sells"] = [copy.deepcopy(row) for _ in range(module.LIMITS["max_shop_sells_per_profile"] + 1)]
+        try:
+            module.write_product(too_many_rows, package_root / "too-many", producer_sha)
+            raise AssertionError("shop row limit not enforced")
+        except module.ExportError:
+            pass
+
+        oversized_string = copy.deepcopy(product)
+        oversized_string["npcs"][0]["name"] = "x" * (module.LIMITS["max_string_bytes"] + 1)
+        try:
+            module.write_product(oversized_string, package_root / "oversized", producer_sha)
+            raise AssertionError("string limit not enforced")
+        except module.ExportError:
+            pass
+
+        duplicate_item = copy.deepcopy(product)
+        item = {"item_ref": "oteryn:item.test", "name": "Test", "resolution_state": "RESOLVED", "appearance_ref": None}
+        duplicate_item["referenced_items"] = [copy.deepcopy(item), copy.deepcopy(item)]
+        try:
+            module.write_product(duplicate_item, package_root / "duplicate-item", producer_sha)
+            raise AssertionError("duplicate item ref accepted")
+        except module.ExportError:
+            pass
+
+        manifest_path = first / "manifest.json"
+        original_manifest_bytes = manifest_path.read_bytes()
+        unsafe_manifest = json.loads(original_manifest_bytes)
+        unsafe_manifest["shards"][0]["path"] = "../escape.json"
+        unsafe_manifest["semantic_digest"] = module.compute_semantic_digest(unsafe_manifest)
+        manifest_path.write_bytes(module.canonical_json_bytes(unsafe_manifest))
+        try:
+            module.verify_product(first)
+            raise AssertionError("unsafe shard path accepted")
+        except module.ExportError:
+            pass
+        manifest_path.write_bytes(original_manifest_bytes)
+
+        target_path = first / manifest_a["shards"][0]["path"]
+        original_shard = target_path.read_bytes()
+        target_path.write_bytes(original_shard + b" ")
+        try:
+            module.verify_product(first)
+            raise AssertionError("corrupt shard accepted")
+        except module.ExportError:
+            pass
+        target_path.write_bytes(original_shard)
+        assert module.verify_product(first)["semantic_digest"] == manifest_a["semantic_digest"]
     print("game-atlas-creature-gameplay self-test: PASS")
     return 0
 
