@@ -4,25 +4,24 @@
 task_id: OTV2-20260825-close-next-wave-blockers
 title: Close next-wave blockers coordinator allocation
 mode: COORDINATE
-status: validating
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: coord/close-next-wave-blockers-131
+branch: null
 issue: 131
 pr: 132
 base_sha: 9cc23cdbfe68d0a0f13df054874929b5e5dbe418
-head_sha: null
+head_sha: c37d2a58ca0d43ba1ae7e8d01ca07ad00d1f881a
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT coordinator session for Issue #131
 created_at: 2026-08-25T00:55:13+02:00
-updated_at: 2026-08-25T00:58:42+02:00
+updated_at: 2026-08-25T07:20:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: Four independent blocker lifecycles require evidence, a serialized registry mutation, one TDD security implementation, exact-head review/CI, merges and terminal ownership reconciliation.
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260825-close-next-wave-blockers.md
   - docs/superpowers/plans/2026-08-25-oteryn-close-next-wave-blockers-implementation-plan.md
-  - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
 public_contracts: []
 depends_on:
   - issue:128
@@ -53,7 +52,7 @@ Issue #131 owns a reviewed, executable decomposition that terminally closes bloc
 - [x] The implementation plan defines exact tasks, paths, RED/GREEN gates, review and closeout order.
 - [x] Live allocations names Issue #131 and this branch without granting child write authority early.
 - [x] Governance and diff checks pass.
-- [ ] Exact-head protected CI including game-gate passes and the allocation PR merges.
+- [x] Exact-head protected CI including game-gate passed and allocation PR #132 merged as `8b6f8e6c0ab0f849a87a7a3a8eb97d8367649d26`.
 
 ## Excluded scope
 
@@ -61,7 +60,7 @@ No registry mutation, Cargo/lockfile mutation, Foundation code, Server Seam list
 
 ## Implementation / findings
 
-Coordinator preflight is complete. The only current open PRs are unrelated Dependabot updates. The accepted prompt and blocker packets are present on the exact base. Child paths remain unallocated until this plan merges.
+Coordinator allocation PR #132 is merged. Issue #131 remains active across serialized child lifecycles. Issue #133 is the current decision/evidence child; its allocation is being prepared without archiving or releasing the parent coordinator. The coordinator-only live-allocation surface is transferred as a one-writer lease to OTV2-20260825-next-wave-limit-decisions-allocation for this child lifecycle.
 
 ## Validation
 
@@ -82,16 +81,16 @@ Coordinator preflight is complete. The only current open PRs are unrelated Depen
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
+- final head: `c37d2a58ca0d43ba1ae7e8d01ca07ad00d1f881a`
+- trigger source: PR #132
+- workflow/run/job: governance `32787214773`; architecture audit `32787214712`; merge-authority `32787214824`; merge gate `32787214733`; game-gate job `97621772392`
+- runner assignment: GitHub Actions
 - classification: docs-only governance/allocation
-- result: pending
+- result: `SUCCESS`
 
 ## Self-review
 
-- exact head: pending
+- exact head: `c37d2a58ca0d43ba1ae7e8d01ca07ad00d1f881a`
 - method/reviewer: implementing/coordinating agent
 - material findings: Initial task packet omitted the validator-required positive Issue field; repaired with `issue: 131`. Whole allocation diff otherwise matches Issue #128 scope and grants no child/shared path early.
 - verdict: PASS
@@ -106,29 +105,29 @@ Coordinator preflight is complete. The only current open PRs are unrelated Depen
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: `PASS`
+- unresolved review threads: `0`
 - related/superseded PRs: none
-- protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: after allocation merge; Issue #131 remains coordinator authority for child tasks
+- protected auto-merge: not used
+- merge commit/result: PR #132 squash-merged as `8b6f8e6c0ab0f849a87a7a3a8eb97d8367649d26`
+- ownership release: not released; Issue #131 remains active coordinator authority until all child blockers close
 
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #132 is open; all final task/PR metadata except immutable exact-head evidence is prepared.
-status: validating
-branch: coord/close-next-wave-blockers-131
-head_sha: null
+last_progress: Coordinator allocation PR #132 merged as 8b6f8e6; Issue #133 child allocation is the current serialized action.
+status: implementing
+branch: null
+head_sha: c37d2a58ca0d43ba1ae7e8d01ca07ad00d1f881a
 pr: 132
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_trigger_source: pull_request_132
+ci_check_generation: merge_gate_run_32787214733
+ci_checks_for_current_head: 1
+ci_run_ids: [32787214773, 32787214712, 32787214824, 32787214733]
+ci_job_ids: [97621772392]
+runner_assignment_state: completed
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -138,5 +137,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze the exact head, run protected CI and merge PR #132.
+next_action: Merge the corrected Issue #133 decision/evidence allocation, then create its exact-base worker branch and begin RED harness tests.
 ```

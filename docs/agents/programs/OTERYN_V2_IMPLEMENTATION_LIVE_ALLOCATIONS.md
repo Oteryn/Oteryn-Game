@@ -31,7 +31,7 @@
 - Content evidence delivery merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`
 - Content activation repair PR: `#87`
 - Content activation repair merge: `db95bc720529b643531c79f708086f69dd612d22`
-- State: `NEXT_WAVE_BLOCKER_CLOSURE_COORDINATOR_ALLOCATION_ACTIVE`
+- State: `NEXT_WAVE_BLOCKER_CLOSURE_LIMIT_DECISION_ALLOCATION_PENDING_MERGE`
 
 ## Authority rule
 
@@ -48,10 +48,13 @@ lane_id: OTV2-CLOSE-NEXT-WAVE-BLOCKERS
 task_id: OTV2-20260825-close-next-wave-blockers
 issue: 131
 worker_alias: Oteryn: close next-wave blockers
-status: allocation_pr_open
+status: active_child_allocation_pending_merge
 allocation_pr: 132
+allocation_merge_sha: 8b6f8e6c0ab0f849a87a7a3a8eb97d8367649d26
 base_sha: 9cc23cdbfe68d0a0f13df054874929b5e5dbe418
-branch: coord/close-next-wave-blockers-131
+branch: null
+current_child_issue: 133
+current_child_allocation_branch: coord/allocate-next-wave-limit-decisions-133
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260825-close-next-wave-blockers.md
   - docs/superpowers/plans/2026-08-25-oteryn-close-next-wave-blockers-implementation-plan.md
@@ -67,6 +70,30 @@ blocks:
 ```
 
 This allocation grants only coordinator documentation. The resource registry, Foundation/Cargo paths and every product implementation path remain released until a separately merged child allocation acquires one exact serialized lease. Issue #131 may coordinate child lifecycles but may not consume unmerged sibling output.
+
+## Next-wave limit decision allocation candidate
+
+```yaml
+lane_id: OTV2-NEXT-WAVE-LIMIT-DECISIONS
+task_id: OTV2-20260825-next-wave-limit-decisions
+allocation_task: OTV2-20260825-next-wave-limit-decisions-allocation
+issue: 133
+status: allocation_pending_merge
+risk: Medium
+allocation_branch: coord/allocate-next-wave-limit-decisions-133
+branch_after_allocation_merge: arch/next-wave-limit-decisions-133
+worker_base_policy: exact_allocation_merge_sha
+owned_paths_after_allocation_merge:
+  - tools/next-wave-limit-evidence/**
+  - docs/agents/evidence/OTV2-20260825-next-wave-limit-evidence.json
+  - docs/architecture/reviews/OTERYN_GAME_NEXT_WAVE_FIRST_SLICE_LIMITS_DECISION_2026-08-25.md
+  - docs/agents/tasks/active/OTV2-20260825-next-wave-limit-decisions.md
+shared_lease: not_required
+resource_registry_authority: none
+cargo_workspace_product_code_authority: none
+```
+
+This child allocation becomes effective only after its coordinator PR merges. It grants evidence/decision paths only; the canonical resource registry remains a later serialized task, and no gameplay, listener, Durability or Foundation runtime path becomes writable.
 
 ## Completed allocation — Bootstrap
 
@@ -338,6 +365,17 @@ OTV2-PREP-DURABILITY-TOPOLOGY:
   delivery_merge_sha: c92d2d0615ae1e969003d152b4b0dfa87acfb72d
   owned_paths: []
   branch: null
+OTV2-NEXT-WAVE-LIMIT-DECISIONS:
+  status: allocation_pending_merge
+  issue: 133
+  write_authority: none_until_allocation_merge
+  branch_after_allocation_merge: arch/next-wave-limit-decisions-133
+  owned_paths_after_allocation_merge:
+    - tools/next-wave-limit-evidence/**
+    - docs/agents/evidence/OTV2-20260825-next-wave-limit-evidence.json
+    - docs/architecture/reviews/OTERYN_GAME_NEXT_WAVE_FIRST_SLICE_LIMITS_DECISION_2026-08-25.md
+    - docs/agents/tasks/active/OTV2-20260825-next-wave-limit-decisions.md
+  resource_registry_authority: none
 OTV2-IMPL-DURABILITY:
   status: blocked_dur03_hard_max_owner_decision
   write_authority: none
