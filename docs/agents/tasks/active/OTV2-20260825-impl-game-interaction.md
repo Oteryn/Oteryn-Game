@@ -4,19 +4,19 @@
 task_id: OTV2-20260825-impl-game-interaction
 title: Implement bounded deterministic interaction lifecycle
 mode: IMPLEMENT
-status: waiting
+status: done_with_concerns
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-interaction-lifecycle
 issue: 165
 pr: null
-base_sha: null
-head_sha: null
+base_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
+head_sha: d0059c5a11d0b8bd3b8c159a871436e34f1c9937
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: impl interaction
 created_at: 2026-08-25T23:24:03+02:00
-updated_at: 2026-08-25T23:24:03+02:00
+updated_at: 2026-08-26T00:40:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: bounded authoritative lifecycle implementation with retry/reconciliation and deterministic limit proof
 owned_paths:
@@ -64,13 +64,13 @@ No Movement/handoff, Ability effects, value durability, protocol/events, transpo
 
 ### Focused
 
-- command/run: pending allocation merge
-- result: pending
+- command/run: `cargo test -p oteryn-game-server --test interaction_workflow stable_child_identity_is_reconstructed_from_the_same_semantic_tuple`
+- result: `NOT_EXECUTED_LOCAL`: `/bin/bash: cargo: command not found`; neither `cargo` nor `rustc` is available on `PATH` or in the checked standard tool locations. The test-first harness proves 16 typed trigger candidates with one selected child, rejects 17 candidates, proves all remaining max/max+1 limits from selected work or typed retention, and covers stable ancestry/revision identity, opaque domain-owned operation types, canonical ordering/RNG identity, duplicate dispatch, stale/cancel, stale authority generation/revision and adapter-owner negatives.
 
 ### Component/integration
 
-- command/run: pending allocation merge
-- result: pending
+- command/run: `cargo test -p oteryn-game-server --test interaction_workflow`
+- result: `NOT_EXECUTED_LOCAL`: same absent Rust toolchain; exact-head GitHub CI is required before composition or merge.
 
 ### E2E
 
@@ -80,13 +80,12 @@ No Movement/handoff, Ability effects, value durability, protocol/events, transpo
 ## Context checkpoint
 
 ```yaml
-last_progress: task packet created; no worker authority before allocation merge
-status: waiting
+last_progress: CI correction aligns the standalone harness plan construction with the exact rustfmt layout reported at the remote head
+status: done_with_concerns
 branch: impl/game-interaction-lifecycle
-head_sha: null
+head_sha: d0059c5a11d0b8bd3b8c159a871436e34f1c9937
 pr: null
 final_head_sha: null
-owner_action_required: null
-blocker: allocation authority is unmerged
-next_action: coordinator merges exact allocation then records worker base SHA
+blocker: local Rust toolchain unavailable; static review only until exact-head GitHub CI
+next_action: coordinator evaluates the exact candidate in GitHub CI and serializes the separate lib.rs composition lease only after worker review
 ```
