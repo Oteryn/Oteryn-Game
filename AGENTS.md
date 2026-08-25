@@ -33,6 +33,11 @@ The organization baseline is META ADR 0004 plus the central agent execution/cont
 - Preserve published task history by default. When entering final integration, refresh to current `integration_main_sha` with a normal non-force merge-up, resolve only authorized conflicts, review the resulting diff and rerun every validation/review layer invalidated by the new `task_head_sha`.
 - A lost merge race returns the task to integration/reconciliation, not to implementation from scratch.
 - Invalidate affected work only when verified task cancellation/supersession/rescope, incompatible governing authority, semantic contract/API/schema/invariant conflict, an unresolvable authorized reconciliation, or required tests prove prior assumptions no longer hold. Textual overlap or a changed filename alone is not sufficient proof.
+- Before final qualification, freeze the exact candidate head. While frozen, do not change the branch solely to retrigger CI, review, mergeability, polling, status calculation or checkpoint publication; only a material finding, required integration refresh, changed authority or implementation/test repair may start a new head generation.
+- If CI, authenticated review evidence, another dependency or another external event is the only thing that can change material state, classify the task `WAITING_EXTERNAL`, persist the waiting reason/next event and end or release the active worker instead of polling.
+- Empty commits, semantic no-op edits, checkpoint-only churn and unrelated documentation changes whose purpose is only to retrigger an external system are forbidden. Re-evaluate the same exact head when supported; otherwise remain `WAITING_EXTERNAL` or `BLOCKED`.
+- Repeated unchanged failures are bounded. Use stable material progress/failure identity; when the configured retry budget is exhausted without new evidence, transition to `STALLED` rather than repeat the same action.
+- `WAITING_EXTERNAL` and `STALLED` never satisfy merge readiness. Game-required exact-head checks, review and fail-closed merge rules remain authoritative.
 
 ## Lifecycle
 
