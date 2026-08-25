@@ -24,6 +24,8 @@ owned_paths:
   - docs/superpowers/plans/2026-08-25-oteryn-game-interaction-lifecycle.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-ability-engine.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-durability-journal.md
+  - docs/superpowers/plans/2026-08-26-oteryn-game-ai-bootstrap.md
+  - docs/agents/tasks/active/OTV2-20260826-impl-game-ai-bootstrap.md
   - docs/agents/tasks/active/OTV2-20260825-impl-game-interaction.md
   - docs/agents/tasks/active/OTV2-20260825-impl-game-ability.md
   - docs/agents/tasks/active/OTV2-20260825-impl-durability.md
@@ -60,7 +62,7 @@ Create the durable execution lifecycle for the post-blocker gameplay vertical sl
 - \`PROVEN\`: open PR #150 is a draft root-\`AGENTS.md\` governance change on a separate path; it owns no coordinator or Wave A implementation path.
 - \`PROVEN\`: no open Wave A implementation PR or active Wave A path allocation exists on the admission main.
 - \`PROVEN\`: Task 1 coordinator lifecycle merged as \`c57ddb5253cdfec126a768232d53f8a9bb292e3f\`; protected main readback confirmed it.
-- \`PROVEN\`: AI candidate contract is noncanonical and lacks mandatory executable interfaces/hard maxima; Issue #164 is \`ARCHITECTURE_ESCALATION_REQUIRED\` with no implementation allocation.
+- \`PROVEN\`: Issue #164 is terminally resolved by owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\`, which accepts only a pure-local AI bootstrap; Issue #174 needs this fresh exact allocation before implementation.
 - \`PROVEN\`: Server Seam lacks a merged production durable \`ReconnectAttemptJournal\`; it is \`WAITING_DEPENDENCY\`, not an architecture escalation.
 - \`DERIVED\`: Interaction, Ability and journal-only Durability have disjoint primary semantic paths. Their shared composition/Cargo surfaces remain serialized coordinator paths.
 
@@ -83,7 +85,7 @@ This is a Task 1 reconciliation, not a worker allocation. \`READY_FOR_TASK_2_DOR
 |---|---|---|---|
 | Interaction | \`READY_TO_ALLOCATE\` | Issue #165; exact primary paths and child plan created | merge allocation, record base SHA, dispatch one worker |
 | Ability | \`READY_TO_ALLOCATE\` | Issue #166; exact primary paths and child plan created | merge allocation, record base SHA, dispatch one worker |
-| AI | \`ARCHITECTURE_ESCALATION_REQUIRED\` | Issue #164; noncanonical candidate lacks interfaces/hard maxima | wait for Supervising Architect decision; no worker |
+| AI | \`READY_TO_ALLOCATE\` | owner-accepted pure-local bootstrap; Issue #174 and exact primary paths/child plan created | merge allocation, record base SHA, dispatch one worker |
 | Durability | \`READY_TO_ALLOCATE\` | Issue #167; accepted journal-only topology and exact child plan | merge allocation, record base SHA, dispatch one worker |
 | Server Seam | \`WAITING_DEPENDENCY\` | durable production \`ReconnectAttemptJournal\` adapter absent | re-evaluate after Durability protected-main readback |
 | Client | \`WAITING_DEPENDENCY\` | no compatible production Server Seam is merged | re-evaluate only after Server Seam is merged and exact-head validated |
@@ -104,7 +106,7 @@ No gameplay/runtime, Cargo/workspace, registry, stable-ID, public-contract, work
 
 ## Implementation / findings
 
-Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected \`main\`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. No stale coordinator branch, Issue, task or PR was created from the erroneous initial prompt selection. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. No worker branch is created until this allocation authority merges.
+Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected \`main\`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. No stale coordinator branch, Issue, task or PR was created from the erroneous initial prompt selection. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. Owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\` closed #164 and now authorizes only a separately allocated pure-local AI bootstrap through Issue #174.
 
 ## Validation
 
@@ -159,7 +161,7 @@ Task 1 established Issue #162 and merged the coordinator-only packet from fresh 
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: Task 2 recorded three ready exact lane allocations and AI escalation Issue #164 from main@c57ddb5253cdfec126a768232d53f8a9bb292e3f
+last_progress: owner-accepted pure-local AI bootstrap was re-evaluated at main@a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d and prepared as Issue #174 allocation
 status: implementing
 branch: coord/post-blocker-wave-a-allocations
 head_sha: null
@@ -181,5 +183,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: validate and merge this exact Wave A allocation authority before dispatching any mutating worker
+next_action: validate and merge the exact AI bootstrap allocation authority before dispatching its mutating worker
 \`\`\`

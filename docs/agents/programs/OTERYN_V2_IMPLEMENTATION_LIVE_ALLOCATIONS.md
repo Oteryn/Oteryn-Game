@@ -365,17 +365,17 @@ write_authority: coordinator_docs_and_exact_lane_allocations_only
 terminal_blockers_not_reopened: [93, 115, 116, 123, 131]
 ```
 
-## Wave A Definition-of-Ready at `main@c57ddb5253cdfec126a768232d53f8a9bb292e3f`
+## Wave A Definition-of-Ready at `main@d86d2c5ad001ae563b371558d202a30b0ac3a062`
 
 | Lane | Result | Exact next state |
 | --- | --- | --- |
 | Interaction | `READY_TO_ALLOCATE` | Issue #165 and its exact worker allocation below; no shared-path write authority. |
 | Ability | `READY_TO_ALLOCATE` | Issue #166 and its exact worker allocation below; no shared-path write authority. |
 | Durability | `READY_TO_ALLOCATE` | Issue #167, journal-only topology and exact worker allocation below; no shared-path write authority. |
-| AI | `ARCHITECTURE_ESCALATION_REQUIRED` | Issue #164; no branch, worker or path allocation. |
+| AI | `READY_TO_ALLOCATE` | Owner decision `a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d`; Issue #174 and exact primary paths below. |
 | Server Seam | `WAITING_DEPENDENCY` | Wait for merged durable `ReconnectAttemptJournal` adapter before new DoR. |
 
-The three ready primary path sets are disjoint. `apps/game-server/src/lib.rs`, Cargo/workspace/workflow and registry surfaces are not primary semantic ownership; they remain a single serialized coordinator lease and no worker may edit them.
+The owner decision arrived on protected `main` after `c57ddb5253cdfec126a768232d53f8a9bb292e3f`; the four ready primary path sets are disjoint at the frozen current admission base above. `apps/game-server/src/lib.rs`, Cargo/workspace/workflow and registry surfaces are not primary semantic ownership; they remain a single serialized coordinator lease and no worker may edit them.
 
 ## Active allocation — Interaction
 
@@ -467,16 +467,43 @@ coordinator_serialized_lease:
 write_authority: owned_paths_only_after_this_allocation_merges
 ```
 
-## Architecture escalation — AI
+## Active allocation — AI pure-local bootstrap
 
 ```yaml
 lane_id: OTV2-IMPL-AI
-issue: 164
-status: ARCHITECTURE_ESCALATION_REQUIRED
-branch: null
-worker: null
-owned_paths: []
-blocking_decision: accept a canonical minimum executable AI slice, its typed Ability action-result and Interaction route-invalidation seams, and each exercised hard maximum or fail-closed exclusion
+issue: 174
+status: allocated_waiting_for_worker_branch
+worker_alias: Oteryn: impl ai
+allocation_coordinator_issue: 162
+worker_branch: impl/game-ai-bootstrap
+integration_admission_base_sha: d86d2c5ad001ae563b371558d202a30b0ac3a062
+worker_base_sha: recorded_after_allocation_merge
+final_merge_sha_guard: recorded_before_worker_dispatch
+child_plan: docs/superpowers/plans/2026-08-26-oteryn-game-ai-bootstrap.md
+task_packet: docs/agents/tasks/active/OTV2-20260826-impl-game-ai-bootstrap.md
+owner_decision_merge_sha: a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d
+resource_limits:
+  AI01-ACTIVE-ACTORS: 256
+  AI01-AUTHORED-UNITS: 4
+  AI01-EVALUATION-WORK: 8
+  AI01-PERCEPTION-CANDIDATES: 64
+  AI01-PATH-REQUESTS-PER-ACTOR: 2 (slice config <=1)
+  AI01-PATH-SEARCH-WORK: 1024
+  AI01-ROUTE-STEPS: 128
+  AI01-ROUTE-BYTES: 4096
+owned_paths:
+  - apps/game-server/src/ai/mod.rs
+  - apps/game-server/src/ai/snapshot.rs
+  - apps/game-server/src/ai/perception.rs
+  - apps/game-server/src/ai/resolution.rs
+  - apps/game-server/src/ai/path_proposal.rs
+  - apps/game-server/src/ai/tests.rs
+  - apps/game-server/tests/ai_bootstrap.rs
+  - docs/agents/tasks/active/OTV2-20260826-impl-game-ai-bootstrap.md
+shared_paths: []
+coordinator_serialized_lease:
+  - apps/game-server/src/lib.rs
+write_authority: owned_paths_only_after_this_allocation_merges
 ```
 
 ## Waiting dependency — Server Seam
@@ -590,12 +617,13 @@ OTV2-IMPL-INTERACTION:
   resource_gate_state: completed
   blocker: none_for_first_slice_resource_limits
 OTV2-IMPL-AI:
-  status: ARCHITECTURE_ESCALATION_REQUIRED
-  write_authority: none
-  issue: 164
+  status: allocated_waiting_for_worker_branch
+  write_authority: owned_paths_only_after_work_allocation_merge
+  issue: 174
+  coordinator_issue: 162
   resource_gate_issue: 93
   resource_gate_state: completed
-  blocker: noncanonical_contract_missing_executable_interfaces_and_hard_maxima
+  blocker: none_for_owner_accepted_pure_local_bootstrap
 OTV2-WAVE2-RESOURCE-LIMITS:
   status: completed_released
   write_authority: none
