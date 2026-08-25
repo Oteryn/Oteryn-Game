@@ -85,6 +85,17 @@
       "supersession_rule": "This prompt does not supersede OTV2_IMPLEMENTATION_COORDINATOR; only an explicit replacement registered in this lifecycle registry may supersede it."
     },
     {
+      "prompt_id": "OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR",
+      "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "independent-audit-role",
+      "scope": "Read-only high-effort forensic audit of OTV2_WORK_DELIVERY_COORDINATOR execution from live GitHub evidence; no implementation, merge/close, architecture, production or cross-repository write authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This prompt supersedes neither OTV2_WORK_DELIVERY_COORDINATOR nor OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT; only an explicit replacement registered in this lifecycle registry may supersede this auditor prompt."
+    },
+    {
       "prompt_id": "OTV2_IMPL_ANALYTICS",
       "path": "docs/agents/prompts/OTV2_IMPL_ANALYTICS.md",
       "version": "1.0",
