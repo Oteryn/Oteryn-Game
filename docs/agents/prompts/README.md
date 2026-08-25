@@ -26,6 +26,12 @@ The coordinator resolves live `main`, performs the serial bootstrap gate first, 
 
 The Work profile does not supersede or widen `OTV2_IMPLEMENTATION_COORDINATOR`. It is a stricter execution profile: Work coordinates exact allocations, path-disjoint subagents and integration, while material architecture/API/schema/security/persistence/resource/cross-repository conflicts become durable `ARCHITECTURE_ESCALATION_REQUIRED` handoffs to the owner-designated Supervising Architect rather than worker-selected architecture.
 
+### Independent Work delivery audit
+
+- `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` — read-only, high-effort forensic audit of the live Work coordinator lifecycle. **Short invocation: `Oteryn: work auditor`.**
+
+The Work auditor independently reconstructs coordinator execution from live GitHub Issue/task/branch/PR/exact-head check/review/merge evidence, treats Work summaries as claims rather than proof, and verifies programme resolution, allocation timing, path/lease isolation, DAG order, architecture escalation, worker integration, QA truthfulness and closeout. It may recommend `PASS_CONTINUE`, lane/coordinator pause, reconciliation or architecture escalation, but it has no repository mutation, implementation, merge/close, production or cross-repository write authority. It does not supersede the broader `OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT`.
+
 ### Next-wave parallel preparation
 
 - `OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md` — preparation-wave launcher/matrix. **Short invocation: `Oteryn: next-wave prep swarm`.**
