@@ -9,16 +9,16 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/next-wave-registry-142
 issue: 142
-pr: null
+pr: 144
 base_sha: 83f67cddc17704ce670d2a29dd64da7c0a40395f
 allocation_pr: 143
 allocation_merge_sha: 83f67cddc17704ce670d2a29dd64da7c0a40395f
-head_sha: null
-final_head_sha: null
+head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
+final_head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
 final_head_frozen_at: null
 owner: ChatGPT registry worker for Issue #142
 created_at: 2026-08-25T10:12:00+02:00
-updated_at: 2026-08-25T10:36:00+02:00
+updated_at: 2026-08-25T10:46:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -71,10 +71,10 @@ No product/runtime/Cargo/workspace change; no Ability/Interaction/AI/Movement/Du
 
 ## Self-review
 
-- exact head: pending final commit
+- exact head: semantic delivery head `f9e887ec2cfd9112700390e1b2c4909bf0e44746`; final metadata head will be frozen after this PR-metadata commit without further content changes
 - method: complete diff against `83f67cddc17704ce670d2a29dd64da7c0a40395f` plus machine comparison against merged evidence JSON
 - material findings: one P2 formatting-churn issue was detected after the first JSON writer reformatted the existing registry; reverted and replaced with minimal append before commit. A checker typo (`id` vs `candidate_id`) was corrected before accepting GREEN.
-- verdict: PASS pending final exact-head recheck
+- verdict: PASS
 
 
 ## Independent review
@@ -87,12 +87,12 @@ No product/runtime/Cargo/workspace change; no Ability/Interaction/AI/Movement/Du
 ## Context checkpoint
 
 ```yaml
-last_progress: Registry RED observed; exact 24-entry minimal mutation is GREEN with uniqueness, round-trip, required-field and inherited-singleton checks. Repository governance and architecture checks pass.
+last_progress: Registry delivery PR #144 opened; semantic head f9e887e contains exact 24-entry mutation and all local gates are green; final metadata head is being frozen.
 status: validating
 branch: docs/next-wave-registry-142
-head_sha: null
-pr: null
-final_head_sha: null
+head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
+pr: 144
+final_head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -101,5 +101,5 @@ ci_run_ids: []
 ci_job_ids: []
 owner_action_required: null
 blocker: null
-next_action: Freeze the exact registry head, open the delivery PR, require exact-head CI including game-gate, then squash merge and recheck Issues #93/#116/#123 on current main.
+next_action: Freeze this metadata commit as the final PR #144 head, require exact-head CI including game-gate, then squash merge and recheck Issues #93/#116/#123 on current main.
 ```
