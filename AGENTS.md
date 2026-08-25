@@ -22,6 +22,18 @@ Before editing locally, verify remote URL, branch/worktree identity, HEAD and wo
 
 Local-only work receives no completion credit until the durable result exists on the approved GitHub branch/PR. If GitHub is genuinely unavailable, continue safe read-only analysis/patch preparation but do not start new product mutations merely to bypass the control plane unless the owner explicitly authorizes an emergency exception.
 
+## Parallel-agent Git concurrency
+
+The organization baseline is META ADR 0004 plus the central agent execution/continuation contract. Game keeps the bootstrap-critical minimum here because repository instructions do not inherit across repositories.
+
+- For substantial mutating work, keep `admission_main_sha`, `task_head_sha` and `integration_main_sha` distinct. `admission_main_sha` is immutable task provenance; `task_head_sha` is the current task-branch head; `integration_main_sha` is the protected `main` selected at final integration.
+- One active mutating worker owns one canonical task branch and one writable worktree. Do not share a writable branch/worktree between active agents.
+- If protected `main` advances after admission, classify it as `UPSTREAM_ADVANCED`; that movement alone does not invalidate implementation and is not a reason to restart, reset, recreate, rebase, force-push or discard still-applicable work.
+- If the upstream delta changes an applicable instruction, safety/security/provenance rule, architecture authority, compatibility contract or invariant, reload and reconcile that governing authority before further mutation while preserving unaffected work.
+- Preserve published task history by default. When entering final integration, refresh to current `integration_main_sha` with a normal non-force merge-up, resolve only authorized conflicts, review the resulting diff and rerun every validation/review layer invalidated by the new `task_head_sha`.
+- A lost merge race returns the task to integration/reconciliation, not to implementation from scratch.
+- Invalidate affected work only when verified task cancellation/supersession/rescope, incompatible governing authority, semantic contract/API/schema/invariant conflict, an unresolvable authorized reconciliation, or required tests prove prior assumptions no longer hold. Textual overlap or a changed filename alone is not sufficient proof.
+
 ## Lifecycle
 
 - GitHub Issue is authoritative for substantial task status, dependencies and acceptance criteria.
