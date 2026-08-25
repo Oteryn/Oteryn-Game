@@ -43,7 +43,7 @@ external_repositories: []
 
 ## Outcome
 
-Implement a Game-owned verifier/consumer seam that uses a verifier-fixed fresh/recovery trust context, validates bounded JWS Compact tokens with exact `Ed25519`, and combines authenticated claims with caller-provided current security/game evidence before returning trusted typed facts.
+Implement a Game-owned verifier/consumer seam that uses verifier-fixed fresh/recovery evidence scopes, validates bounded JWS Compact tokens with exact `Ed25519`, and queries a durable authoritative evidence boundary before returning trusted typed facts.
 
 ## Acceptance criteria
 
@@ -73,7 +73,7 @@ No listener/socket bind, production port/TLS cert/private key/KMS selection, no 
 ## Context checkpoint
 
 ```yaml
-last_progress: Separate fresh/recovery typed consumers now make trust decisions per kid and reject evidence below durable, source-owned non-rollback floors. The branch is awaiting independent exact-head security review and repository CI.
+last_progress: Separate fresh/recovery typed consumers query an authority interface per profile, kid and account; raw evidence cannot enter the public verifier API. The authority contract requires durable per-scope non-rollback floors and contradiction detection. The branch is awaiting independent exact-head security review and repository CI.
 status: ready_for_review
 branch: feat/fnd04-verifier-consumer-115
 head_sha: pending_remote_freeze

@@ -16,10 +16,14 @@ fixed-context Ed25519 verification, exact authenticated claim validation,
 binding/profile validation, NumericDate validation, evidence freshness and
 non-rollback-floor checks, then current target/revision checks. Signing trust
 is a per-`kid` decision: a revoked key cannot inherit a different key's
-trusted state. Account-security evidence is purpose- and account-bound. Both
-evidence constructors require a durable, authoritative non-rollback floor
-supplied by the corresponding adapter; that floor is not derived from the
-candidate token.
+trusted state. The verifier obtains key and account decisions only through
+the `Fnd04EvidenceAuthority` interface, scoped to the fixed fresh/recovery
+profile, exact account or `kid`, and verification time. The interface requires
+its implementation to authenticate Platform evidence, preserve durable
+per-scope non-rollback floors and decision identities, reject equal-revision
+contradictions, and fail closed after restart if those floors cannot be
+reconstructed. Raw timestamps, revisions, floors and allow/deny flags are not
+accepted by the public verifier API.
 
 Fresh verification returns the existing `FreshAdmissionFacts`; the existing
 authority boundary remains solely responsible for atomic replay consumption
@@ -40,6 +44,7 @@ admission authorization.
 - GREEN: a revoked `kid` is rejected even while a separate current `kid`
   remains usable.
 - GREEN: evidence below its durable non-rollback floor fails closed.
+- GREEN: a fresh signing key cannot be reused in the recovery evidence scope.
 - GREEN: `cargo test --locked --workspace`.
 - GREEN: `cargo fmt --check`.
 - GREEN: `cargo clippy -p oteryn-game-server --locked --all-targets -- -D warnings`.
