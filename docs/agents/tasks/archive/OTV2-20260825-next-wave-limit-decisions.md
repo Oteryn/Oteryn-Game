@@ -4,7 +4,7 @@
 task_id: OTV2-20260825-next-wave-limit-decisions
 title: Accept evidence-backed first-slice next-wave resource limits
 mode: CONTRACT
-status: validating
+status: completed_released
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/next-wave-limit-decisions-133
@@ -13,12 +13,12 @@ pr: 140
 base_sha: 86653375231febbf81623b4c6984a6ff1263bdc2
 allocation_pr: 137
 allocation_merge_sha: 86653375231febbf81623b4c6984a6ff1263bdc2
-head_sha: c1fcf8aaa428028659762b9a6359819c81997a7a
-final_head_sha: null
+head_sha: 414b7ad0fbf6a2bcb6023bd1d750fca6b5bb8f66
+final_head_sha: 414b7ad0fbf6a2bcb6023bd1d750fca6b5bb8f66
 final_head_frozen_at: null
 owner: ChatGPT decision/evidence worker for Issue #133
 created_at: 2026-08-25T01:06:00+02:00
-updated_at: 2026-08-25T09:50:00+02:00
+updated_at: 2026-08-25T21:04:03+02:00
 execution_budget_minutes: 120
 large_budget_reason: One reproducible evidence harness must classify and justify exact first-slice limits across three blocker issues without conflating semantic domains.
 owned_paths:
@@ -60,7 +60,7 @@ A reproducible checked-accounting harness and reviewed decision baseline identif
 - [x] Every exercised #93/#116/#123 inventory row has one exact candidate; every omitted row is explicitly fail-closed `NOT_APPLICABLE_TO_FIRST_SLICE`.
 - [x] Movement unresolved rows move to a dedicated successor issue without releasing Movement implementation.
 - [x] No canonical registry, product code, production tuning/default, port/certificate/key/deployment or gameplay balance value changes.
-- [ ] Whole-diff review, governance, semantic audits, exact-head `game-gate` and merge pass.
+- [x] Whole-diff review, governance, semantic audits, exact-head `game-gate` and merge pass.
 
 ## Excluded scope
 
@@ -124,7 +124,7 @@ Allocation PR #137 is merged and the exact-base worker branch exists. The harnes
 
 ```yaml
 last_progress: Decision/evidence PR #140 opened from rebased semantic head c1fcf8a; 24 candidates + 33 exclusions and Movement successor #139 are complete; final metadata head is being frozen for exact-head CI.
-status: implementing
+status: completed_released
 branch: arch/next-wave-limit-decisions-133
 head_sha: null
 pr: null
@@ -145,5 +145,12 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze this metadata commit as final PR head, rerun governance/diff, then require exact-head GitHub CI including game-gate before squash merge.
+next_action: none
 ```
+
+
+## Terminal lifecycle reconciliation — 2026-08-25
+
+Issue #133 completed through PR #140 / merge 88ad620169d6d08ebad6e49886ba1098da728480. Movement-only remainder is durably narrowed under Issue #139.
+
+This archive placement is merge-conditioned on the terminal closeout PR. GitHub merged-main, issue, PR and exact-head check state remain authoritative.

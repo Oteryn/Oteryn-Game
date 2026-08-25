@@ -4,7 +4,7 @@
 task_id: OTV2-20260825-next-wave-limit-decisions-allocation
 title: Allocate Issue #133 next-wave limit decision worker
 mode: COORDINATE
-status: validating
+status: completed_released
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/allocate-next-wave-limit-decisions-133
@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT coordinator for Issue #131
 created_at: 2026-08-25T07:18:00+02:00
-updated_at: 2026-08-25T07:25:00+02:00
+updated_at: 2026-08-25T21:04:03+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -55,7 +55,7 @@ Merge one docs-only coordinator allocation that authorizes the Issue #133 worker
 - [x] Canonical `RESOURCE_LIMITS_REGISTRY.json` remains unallocated to this worker.
 - [x] No product behavior, production tuning, gameplay balance, stable ID or Reference-parity decision is introduced.
 - [x] Governance and `git diff --check` pass.
-- [ ] Whole-diff self-review and exact-head repository checks including `game-gate` pass before merge.
+- [x] Whole-diff self-review and exact-head repository checks including `game-gate` pass before merge.
 
 ## Excluded scope
 
@@ -118,7 +118,7 @@ The originally staged branch incorrectly archived the still-active parent #131 t
 
 ```yaml
 last_progress: PR #137 is open on the corrected allocation tree; final metadata is recorded before freezing the exact head.
-status: validating
+status: completed_released
 branch: coord/allocate-next-wave-limit-decisions-133
 head_sha: null
 pr: 137
@@ -139,5 +139,12 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Freeze the exact PR #137 head, record self-review evidence, and require exact-head CI including game-gate before merge.
+next_action: none
 ```
+
+
+## Terminal lifecycle reconciliation — 2026-08-25
+
+Allocation PR #137 merged as 86653375231febbf81623b4c6984a6ff1263bdc2 and released its coordinator-only paths after delivery PR #140.
+
+This archive placement is merge-conditioned on the terminal closeout PR. GitHub merged-main, issue, PR and exact-head check state remain authoritative.

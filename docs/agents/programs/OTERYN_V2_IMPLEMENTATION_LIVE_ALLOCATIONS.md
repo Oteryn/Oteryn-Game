@@ -1,7 +1,7 @@
 # Oteryn v2 Implementation Live Allocations
 
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
-- Coordinator task: `OTV2-20260825-close-next-wave-blockers` - Issue #131 active coordinator allocation
+- Coordinator task: `OTV2-20260825-close-next-wave-blockers` - Issue #131 completed and released
 - Canonical repository: `Oteryn/Oteryn-Game`
 - Bootstrap delivery PR: `#10`
 - Bootstrap closeout PR: `#11`
@@ -31,7 +31,7 @@
 - Content evidence delivery merge: `8f99f25d0b1b3472d40504cd54b463cf752ebe7a`
 - Content activation repair PR: `#87`
 - Content activation repair merge: `db95bc720529b643531c79f708086f69dd612d22`
-- State: `NEXT_WAVE_BLOCKER_CLOSURE_FND04_ALLOCATION_PENDING_MERGE`
+- State: `NEXT_WAVE_BLOCKER_CLOSURE_COMPLETE`
 
 ## Authority rule
 
@@ -41,33 +41,29 @@ PR #58 merged the bounded CONTENT evidence seam. A later genuinely independent e
 
 Unmerged sibling output is never an implicit dependency. Stable registries/contracts, `.github/workflows/**`, architecture policy/tooling and new workspace/crate topology remain unallocated unless a later merged coordinator allocation explicitly grants them.
 
-## Active coordinator — close next-wave blockers
+## Completed coordinator — close next-wave blockers
 
 ```yaml
 lane_id: OTV2-CLOSE-NEXT-WAVE-BLOCKERS
 task_id: OTV2-20260825-close-next-wave-blockers
 issue: 131
+issue_state: completed
 worker_alias: Oteryn: close next-wave blockers
-status: active_child_fnd04_allocation_pending_merge
+status: completed_released
 allocation_pr: 132
 allocation_merge_sha: 8b6f8e6c0ab0f849a87a7a3a8eb97d8367649d26
 base_sha: 9cc23cdbfe68d0a0f13df054874929b5e5dbe418
+terminal_main_sha: 2d0e951ce37c2e28773c22966bb816c00bebaa0a
 branch: null
-current_child_issue: 115
-current_child_allocation_pr: 145
-current_child_allocation_branch: coord/allocate-fnd04-verifier-115
-owned_paths:
-  - docs/agents/tasks/active/OTV2-20260825-close-next-wave-blockers.md
-  - docs/superpowers/plans/2026-08-25-oteryn-close-next-wave-blockers-implementation-plan.md
-  - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
-shared_lease: not_acquired_child_paths_remain_unallocated
-depends_on:
-  - issue:128
-blocks:
-  - issue:115
+current_child_issue: null
+current_child_allocation_pr: null
+current_child_allocation_branch: null
+owned_paths: []
+shared_lease: released
+blocks: []
 ```
 
-This allocation grants only coordinator documentation. The resource registry, Foundation/Cargo paths and every product implementation path remain released until a separately merged child allocation acquires one exact serialized lease. Issue #131 may coordinate child lifecycles but may not consume unmerged sibling output.
+Issue #131 is terminal: #93, #115, #116 and #123 are completed. The coordinator, registry and Foundation/Cargo leases are released; no downstream gameplay lane receives implementation authority from this closeout.
 
 ## Completed decision/evidence — next-wave first-slice limits
 
@@ -100,32 +96,31 @@ resource_registry_authority: none
 Registry Issue #142 is terminal; #93, #116 and #123 were rechecked on current main and closed. The registry lease is released.
 
 
-## Production FND-04 verifier/consumer allocation candidate
+## Completed production FND-04 verifier/consumer
 
 ```yaml
 lane_id: OTV2-FND04-VERIFIER-CONSUMER
 task_id: OTV2-20260825-fnd04-verifier-consumer
-allocation_task: OTV2-20260825-fnd04-verifier-allocation
 issue: 115
-status: allocation_pending_merge
+issue_state: completed
+status: completed_released
 risk: XHigh
-allocation_branch: coord/allocate-fnd04-verifier-115
-branch_after_allocation_merge: feat/fnd04-verifier-consumer-115
-worker_base_policy: exact_allocation_merge_sha
-owned_paths_after_allocation_merge:
-  - apps/game-server/src/foundation/fnd04_verifier.rs
-  - apps/game-server/src/foundation/mod.rs
-  - apps/game-server/Cargo.toml
-  - Cargo.toml
-  - Cargo.lock
-  - docs/architecture/reviews/OTERYN_GAME_FND04_VERIFIER_CONSUMER_DELIVERY_2026-08-25.md
-  - docs/agents/tasks/active/OTV2-20260825-fnd04-verifier-consumer.md
-shared_cargo_lease: exclusive_after_allocation_merge
+allocation_pr: 145
+allocation_merge_sha: 12d1920b19d09dd3ce76e8910cc7bde401e63428
+worker_base_sha: 12d1920b19d09dd3ce76e8910cc7bde401e63428
+delivery_pr: 151
+delivery_final_head_sha: 7a61d0347fbc73501951d28e43182b3394df9ab1
+delivery_merge_sha: 2d0e951ce37c2e28773c22966bb816c00bebaa0a
+owned_paths: []
+branch: null
+shared_cargo_lease: released
 resource_registry_authority: none
-independent_exact_head_security_review: required
+independent_exact_head_security_review: PASS_POST_MERGE_RECONCILIATION
+review_input_sha256: 37c25ed27618e13df864f2ba055058d1d1f996100b60655a88f19c8661890b34
+review_output_sha256: 1568d7f90c8ba3bba878cb438aa73f3a1b9002b7c0a1ca3f551afcbfa59a6178
 ```
 
-The verifier allocation becomes effective only after its coordinator PR merges. It grants no listener, production key/KMS/config/deployment, durable-journal, Platform or external-repository authority.
+Allocation PR #145 and delivery PR #151 are terminal. The verifier is merged, Issue #115 is completed, its Foundation/Cargo lease is released, and no listener, production key/KMS/config/deployment, durable-journal, Platform or external-repository authority follows from that delivery.
 
 ## Completed allocation — Bootstrap
 
@@ -278,7 +273,7 @@ The repair closes the reproduced public activation-boundary P0. Production consu
 lane_id: OTV2-PREP-DURABILITY-TOPOLOGY
 task_id: OTV2-20260824-prep-durability-topology
 worker_alias: Oteryn: prep durability topology
-status: completed_blocked_on_dur03_owner_decision
+status: completed_released_resource_gate_closed
 risk: High
 issue: 94
 issue_state: completed
@@ -288,7 +283,8 @@ worker_base_sha: 58459c275ba62714741e6794b92d8935b140a37c
 delivery_pr: 122
 final_head_sha: 5f6d4c4440694b5edddf46f4b211e1a30955a4c6
 delivery_merge_sha: c92d2d0615ae1e969003d152b4b0dfa87acfb72d
-blocker_issue: 123
+resource_gate_issue: 123
+resource_gate_state: completed
 owned_paths: []
 branch: null
 shared_lease: not_required
@@ -296,7 +292,7 @@ runtime_ddl_migration_dependency_cargo_registry_workflow_authority: none
 implementation_authority: none
 ```
 
-Issue #94 preparation is complete: the merged packet freezes SQLx 0.9.0, a game-server-local Durability module, one game-owned migration ledger, dedicated migration execution, fail-closed schema compatibility, isolated PostgreSQL DB-E2E and the PREPARE -> DB COMMIT/CLASSIFY -> RECONCILE boundary. `OTV2-IMPL-DURABILITY` is not released: Issue #123 owns the required Durability-specific hard-max owner decision and later serialized registry lifecycle.
+Issue #94 preparation is complete: the merged packet freezes SQLx 0.9.0, a game-server-local Durability module, one game-owned migration ledger, dedicated migration execution, fail-closed schema compatibility, isolated PostgreSQL DB-E2E and the PREPARE -> DB COMMIT/CLASSIFY -> RECONCILE boundary. Issue #123 is now completed for the current journal-only first slice through explicit fail-closed DUR03 exclusions; Durability implementation, DDL/migrations and Cargo dependency mutation still require a fresh exact allocation.
 
 ## Active Wave 1 — QA
 
@@ -330,25 +326,26 @@ shared_paths:
   - Cargo.toml
   - Cargo.lock
   - workspace-boundaries.toml
-lease_state: fnd04_allocation_pending_merge
+lease_state: released_unassigned
 current_owner: null
-previous_owner: OTV2-IMPL-CONTENT
-previous_owner_status: evidence_delivery_merged_repair_complete_production_blocked
-next_candidate: OTV2-FND04-VERIFIER-CONSUMER
-next_candidate_authority: exclusive_after_allocation_merge
+previous_owner: OTV2-FND04-VERIFIER-CONSUMER
+previous_owner_status: completed_released
+next_candidate: null
+next_candidate_authority: none
 ```
 
-CONTENT no longer needs the serialized shared paths. Issue #115 is the next candidate because its standards-conformant verifier requires direct dependency wiring; the one-writer lease activates only after the #115 allocation PR merges. QA receives no shared path implicitly.
+The FND-04 verifier completed its serialized shared-path turn through PR #151. The shared lease is released and unassigned; QA or any later lane receives no shared path implicitly and needs a fresh coordinator allocation for any future mutation.
 
 ## Next-wave readiness findings
 
-- `PROVEN`: CONTENT repair #87 and closeout #89 are terminal; the prior P0 no longer blocks downstream preparation.
-- `PROVEN`: QA remains an allocated branch-only evidence shell with no PR; Tier 1/Tier 2 remain `NOT_EVALUATED`.
-- `PROVEN`: accepted DUR-02 selects PostgreSQL / one game-owned migration history but intentionally leaves the Rust driver, migration library and physical DDL to a separately authorized implementation task. Current main has no database client dependency or migration ledger.
-- `PROVEN`: accepted GAME-ABILITY, GAME-INTERACTION, GAME-AI and VSL-MOVE contracts require finite resource bounds while deliberately deferring exact numeric maxima; current resource registry contains no owning lane-specific entries for those required work dimensions.
-- `PROVEN`: `apps/game-server` remains fail-closed with no production gameplay listener/client-entry seam, so CLIENT cannot be released yet.
-- `RECOMMENDATION`: immediate parallel preparation is QA reconciliation, DURABILITY topology/allocation, CONTENT-FORMAT-SPIKE allocation and the Wave-2 resource-limit decision packet. Ability/Interaction/AI implementation follows only after their required numeric bounds are accepted or explicitly fenced out of the executable slice.
-- `RECOMMENDATION`: use one game-server-local durability module plus one game-owned migration ledger for the first implementation increment unless implementation evidence proves a dedicated immediate-consumer crate is necessary; any Cargo/workspace/migration paths still require explicit serialized allocation.
+- `PROVEN`: target blockers #93, #115, #116 and #123 are completed; registry PR #144 and FND-04 verifier PR #151 are merged.
+- `PROVEN`: Ability, Interaction and AI first-slice resource-limit gates are closed by the accepted #140 decision packet plus canonical #144 registry entries; none of those implementation lanes is allocated by this closeout.
+- `PROVEN`: Durability's current journal-only first slice explicitly excludes DUR03-RL-01..08 fail-closed, so Issue #123 is no longer its resource-gate blocker. Rust driver, migration library, physical DDL and implementation still require a separate allocation.
+- `PROVEN`: Server Seam preparation blockers #115 and #116 are closed, but no production gameplay listener/socket/port/certificate/deployment authority has been allocated; CLIENT therefore remains unreleased.
+- `PROVEN`: Movement-only resource closure remains non-current under Issue #139 and Movement also still depends on Interaction, Client and real QA integration readiness.
+- `PROVEN`: QA remains an allocated branch-only evidence shell with no delivery PR; Tier 1/Tier 2 remain `NOT_EVALUATED`.
+- `PROVEN`: the serialized Foundation/Cargo lease used by FND-04 is released and unassigned; no downstream lane inherits it.
+- `RECOMMENDATION`: downstream implementation lanes may now be evaluated against their own prerequisites, but each requires a fresh exact allocation and no work is started by this terminal blocker closeout.
 
 ## Completed preparation - Content Format Spike
 
@@ -412,46 +409,64 @@ OTV2-NEXT-WAVE-REGISTRY:
   write_authority: none
   resource_registry_authority: none
 OTV2-FND04-VERIFIER-CONSUMER:
-  status: allocation_pending_merge
+  status: completed_released
   issue: 115
-  write_authority: none_until_allocation_merge
-  branch_after_allocation_merge: feat/fnd04-verifier-consumer-115
-  shared_cargo_lease: exclusive_after_allocation_merge
-  independent_exact_head_security_review: required
+  issue_state: completed
+  allocation_pr: 145
+  delivery_pr: 151
+  delivery_merge_sha: 2d0e951ce37c2e28773c22966bb816c00bebaa0a
+  write_authority: none
+  branch: null
+  shared_cargo_lease: released
+  independent_exact_head_security_review: PASS_POST_MERGE_RECONCILIATION
 OTV2-IMPL-DURABILITY:
-  status: blocked_dur03_hard_max_owner_decision
+  status: architecture_ready_resource_gate_closed_pending_allocation
   write_authority: none
   topology_packet: docs/architecture/reviews/OTERYN_GAME_DURABILITY_TOPOLOGY_DECISION_PACKET_2026-08-24.md
   topology_merge_sha: c92d2d0615ae1e969003d152b4b0dfa87acfb72d
-  blocker_issue: 123
+  resource_gate_issue: 123
+  resource_gate_state: completed
   selected_stack: sqlx_0_9_0
-  evidence: topology is frozen; implementation allocation waits for exact first-slice DUR-03 hard-max acceptance/registration or fail-closed exclusion
+  evidence: current journal-only first slice explicitly excludes DUR03-RL-01..08 fail-closed; implementation and physical persistence still require a fresh allocation
 OTV2-IMPL-ABILITY:
-  status: architecture_ready_resource_limits_pending_allocation
+  status: architecture_ready_resource_limits_registered_pending_allocation
   write_authority: none
-  blocker: accepted GAME-ABILITY requires concrete registered hard maxima before executable acceptance
+  resource_gate_issue: 93
+  resource_gate_state: completed
+  blocker: none_for_first_slice_resource_limits
 OTV2-IMPL-INTERACTION:
-  status: architecture_ready_resource_limits_pending_allocation
+  status: architecture_ready_resource_limits_registered_pending_allocation
   write_authority: none
-  blocker: accepted GAME-INTERACTION keeps numeric cascade/resource/retry bounds owner-task controlled
+  resource_gate_issue: 93
+  resource_gate_state: completed
+  blocker: none_for_first_slice_resource_limits
 OTV2-IMPL-AI:
-  status: architecture_ready_resource_limits_pending_allocation
+  status: architecture_ready_resource_limits_registered_pending_allocation
   write_authority: none
-  blocker: accepted GAME-AI requires concrete registered AI/path/spawn/retry hard maxima before executable acceptance
+  resource_gate_issue: 93
+  resource_gate_state: completed
+  blocker: none_for_first_slice_resource_limits
 OTV2-WAVE2-RESOURCE-LIMITS:
-  status: owner_decision_packet_required
+  status: completed_released
   write_authority: none
-  blocker: accepted Ability/Interaction/AI/Movement contracts intentionally defer numeric hard maxima; required values must be accepted/registered before executable acceptance
+  issue: 93
+  issue_state: completed
+  decision_pr: 140
+  registry_pr: 144
+  movement_successor_issue: 139
+  blocker: none_for_ability_interaction_ai_first_slices
 OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM:
-  status: not_allocated
+  status: preparation_blockers_closed_not_allocated
   write_authority: none
-  blocker: Foundation protocol/runtime/admission semantics are merged, but apps/game-server has no production gameplay listener/client-entry transport seam
+  resource_gate_issue: 116
+  verifier_gate_issue: 115
+  blocker: production gameplay listener/client-entry transport seam remains unallocated
 OTV2-IMPL-CLIENT:
   status: not_allocated
   blocker: merged game-server still exposes fail-closed gameplay availability with no production gameplay listener/client-entry seam
 OTV2-IMPL-MOVE:
   status: not_allocated
-  blocker: Interaction, Client and real QA E2E prerequisites are not integration-ready
+  blocker: Movement-only resource successor #139 plus Interaction, Client and real QA E2E prerequisites are not integration-ready
 OTV2-IMPL-COMBAT:
   status: not_allocated
   blocker: Movement and remaining generic/value prerequisites are not merged

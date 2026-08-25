@@ -4,7 +4,7 @@
 task_id: OTV2-20260825-close-next-wave-blockers
 title: Close next-wave blockers coordinator allocation
 mode: COORDINATE
-status: implementing
+status: completed_released
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT coordinator session for Issue #131
 created_at: 2026-08-25T00:55:13+02:00
-updated_at: 2026-08-25T10:54:00+02:00
+updated_at: 2026-08-25T21:04:03+02:00
 execution_budget_minutes: 120
 large_budget_reason: Four independent blocker lifecycles require evidence, a serialized registry mutation, one TDD security implementation, exact-head review/CI, merges and terminal ownership reconciliation.
 owned_paths:
@@ -60,7 +60,7 @@ No registry mutation, Cargo/lockfile mutation, Foundation code, Server Seam list
 
 ## Implementation / findings
 
-Coordinator allocation PR #132 is merged. Resource decision #133 and registry #142 are terminal; #93, #116 and #123 were mechanically rechecked on current main and closed. Issue #115 is the sole remaining blocker and its bounded Foundation/Cargo implementation allocation is now the current serialized action.
+Coordinator allocation PR #132 is merged. Resource decision #133, registry #142, and FND-04 implementation #115 are terminal; #93, #115, #116 and #123 are closed on merged main. No downstream gameplay/listener/Durability/client implementation was started by this coordinator.
 
 ## Validation
 
@@ -110,13 +110,13 @@ Coordinator allocation PR #132 is merged. Resource decision #133 and registry #1
 - related/superseded PRs: none
 - protected auto-merge: not used
 - merge commit/result: PR #132 squash-merged as `8b6f8e6c0ab0f849a87a7a3a8eb97d8367649d26`
-- ownership release: not released; Issue #131 remains active coordinator authority until all child blockers close
+- ownership release: released by this merge-conditioned terminal closeout; Issue #131 is completed
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Registry PR #144 merged as c1020b2; #93/#116/#123 are closed after current-main recheck; #115 FND-04 verifier allocation is the sole remaining blocker action.
-status: implementing
+last_progress: #93/#115/#116/#123 are terminal on merged main; PR #144 and PR #151 are merged; shared leases are released by this closeout.
+status: completed_released
 branch: null
 head_sha: c37d2a58ca0d43ba1ae7e8d01ca07ad00d1f881a
 pr: 132
@@ -137,5 +137,14 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Merge the Issue #115 FND-04 verifier allocation, then create its exact-base worker branch and execute the security verifier strictly test-first with independent exact-head review before merge.
+next_action: none
 ```
+
+
+## Terminal lifecycle reconciliation — 2026-08-25
+
+Target Issues #93/#115/#116/#123 are completed; PR #144 merged c1020b2db62ecfa18c411bee56fa004430b28923; PR #151 merged 2d0e951ce37c2e28773c22966bb816c00bebaa0a; Issue #131 is completed. Shared leases are released.
+
+Closeout validation: governance PASS, workspace-boundaries PASS, `git diff --check` PASS, and stale-state scans PASS. The first Windows run of `python tools/repository/validate_repository_policy.py` reported the checkout `LICENSE` as noncanonical because CRLF conversion changed only the raw working-tree blob (`3d73aee29999ccd34b9495745d08be6c4b613712`); committed `HEAD:LICENSE` and the filtered checkout are the validator-pinned canonical blob `d0a1fa1482eea82e19510e7920cbe3a03e41f691`, with zero `LICENSE` diff. After local LF normalization, the same validator passes without any repository content change.
+
+This archive placement is merge-conditioned on the terminal closeout PR. GitHub merged-main, issue, PR and exact-head check state remain authoritative.

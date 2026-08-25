@@ -4,7 +4,7 @@
 task_id: OTV2-20260825-next-wave-registry
 title: Register accepted next-wave first-slice limits
 mode: CONTRACT
-status: validating
+status: completed_released
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/next-wave-registry-142
@@ -13,12 +13,12 @@ pr: 144
 base_sha: 83f67cddc17704ce670d2a29dd64da7c0a40395f
 allocation_pr: 143
 allocation_merge_sha: 83f67cddc17704ce670d2a29dd64da7c0a40395f
-head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
-final_head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
+head_sha: b9132369298b148c5503a44e9cd8803fcb66b6ea
+final_head_sha: b9132369298b148c5503a44e9cd8803fcb66b6ea
 final_head_frozen_at: null
 owner: ChatGPT registry worker for Issue #142
 created_at: 2026-08-25T10:12:00+02:00
-updated_at: 2026-08-25T10:46:00+02:00
+updated_at: 2026-08-25T21:04:03+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -48,7 +48,7 @@ Copy exactly the 24 accepted candidate records from merged PR #140 evidence into
 - [x] GREEN assertion proved exactly those 24 IDs/values and required fields after mutation.
 - [x] JSON uniqueness, required-field coverage and round-trip validation pass.
 - [x] No production default, wire/error numeric identifier, excluded-row value or implementation change appears.
-- [ ] Whole-diff review and exact-head repository CI including `game-gate` pass, then squash merge.
+- [x] Whole-diff review and exact-head repository CI including `game-gate` pass, then squash merge.
 
 ## Excluded scope
 
@@ -88,7 +88,7 @@ No product/runtime/Cargo/workspace change; no Ability/Interaction/AI/Movement/Du
 
 ```yaml
 last_progress: Registry delivery PR #144 opened; semantic head f9e887e contains exact 24-entry mutation and all local gates are green; final metadata head is being frozen.
-status: validating
+status: completed_released
 branch: docs/next-wave-registry-142
 head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
 pr: 144
@@ -101,5 +101,12 @@ ci_run_ids: []
 ci_job_ids: []
 owner_action_required: null
 blocker: null
-next_action: Freeze this metadata commit as the final PR #144 head, require exact-head CI including game-gate, then squash merge and recheck Issues #93/#116/#123 on current main.
+next_action: none
 ```
+
+
+## Terminal lifecycle reconciliation — 2026-08-25
+
+Issue #142 completed through PR #144 / merge c1020b2db62ecfa18c411bee56fa004430b28923. Current-main recheck closed #93/#116/#123 and the registry lease is released.
+
+This archive placement is merge-conditioned on the terminal closeout PR. GitHub merged-main, issue, PR and exact-head check state remain authoritative.

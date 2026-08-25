@@ -107,3 +107,15 @@
 3. Release all shared path leases, archive completed task records and delete merged branches through repository lifecycle automation/manual verified fallback.
 4. Record exact next aliases for every newly lawful lane and every remaining explicit blocker.
 5. Run governance/diff checks, self-review, exact-head CI, squash-merge, verify main and close #131 only when all acceptance boxes are true.
+
+
+## Terminal execution result — 2026-08-25
+
+- #93, #115, #116 and #123 are completed.
+- First-slice limit decisions merged through PR #140 and canonical registry mutation through PR #144.
+- FND-04 allocation PR #145 and verifier/consumer PR #151 are merged; Issue #115 is completed.
+- PR #151 exact-head CI is green. The missing durable independent-review evidence was reconciled post-merge on exact PR head `7a61d0347fbc73501951d28e43182b3394df9ab1` with fresh non-authoring `qwen2.5-coder:14b`: PASS, no findings.
+- Movement-only resource work remains outside this completed blocker wave under Issue #139.
+- No Server Seam listener, Durability, Ability, Interaction, AI, Movement, Combat or Client implementation is started by this closeout.
+- All blocker-wave task records are archived and the serialized Foundation/Cargo lease is released/unassigned by the terminal closeout delivery.
+- Local `validate_repository_policy.py` on Windows reports a checkout-only LICENSE hash mismatch because CRLF conversion changes the working-tree blob to `3d73aee29999ccd34b9495745d08be6c4b613712`; the committed/index LICENSE blob is `d0a1fa1482eea82e19510e7920cbe3a03e41f691`, exactly the validator-pinned canonical MPL-2.0 blob, and `LICENSE` has zero closeout diff.
