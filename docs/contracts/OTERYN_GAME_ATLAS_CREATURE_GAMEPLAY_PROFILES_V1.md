@@ -35,6 +35,8 @@ Profiles and placements are joined only by `entity_id`. Names are display facts,
 
 Referenced items use a Game-owned public export identity when resolved. If only a truthful label is established, the relation retains the label with `item_ref: null` and non-`RESOLVED` item resolution. Atlas must not create an authoritative item link in that case.
 
+Legacy numeric item IDs, Canary/TFS IDs, client IDs, file paths, and display-name equality are never canonical item identity. Until a revisioned Game-owned mapping to a stable native/export key exists, rows that carry only those legacy facts remain item_ref: null; a client ID must not be hashed or renamed into a fake stable item key.
+
 ## 4. Completeness vocabulary
 
 Every gameplay subsection has exactly one state:
