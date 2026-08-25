@@ -150,7 +150,7 @@ A rejected or over-budget resolution publishes no accepted action/path proposal 
 A future `OTV2-IMPL-AI` allocation implementing this decision must prove on its exact final head:
 
 1. identical accepted snapshot/input/revisions produce identical result under shuffled backing enumeration order;
-2. stable tie-break behavior for equivalent candidate scores/priority;
+2. stable tie-break behavior for otherwise equally eligible candidates;
 3. every exercised hard maximum accepts at max and rejects max+1 before partial mutation/proposal publication;
 4. checked arithmetic overflow rejects deterministically;
 5. evaluation/search budget exhaustion leaves zero product-semantic AI-local partial mutation;
