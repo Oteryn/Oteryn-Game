@@ -4,18 +4,18 @@
 task_id: OTV2-20260826-impl-game-ai-bootstrap
 title: Implement bounded pure-local AI bootstrap
 mode: IMPLEMENT
-status: waiting
+status: ready_for_integration
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-ai-bootstrap
 issue: 174
 pr: null
-base_sha: null
-head_sha: null
+base_sha: f3ba25234791d981d32a5f1d901803454ed4a6cb
+head_sha: 4611b8e781e0c61a683f6a01f957b5819cebf58d
 final_head_sha: null
 owner: Oteryn: impl ai
 created_at: 2026-08-26T00:13:00+02:00
-updated_at: 2026-08-26T00:13:00+02:00
+updated_at: 2026-08-26T00:54:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: deterministic bounded AI proof with eight independent ceilings
 owned_paths:
@@ -29,7 +29,7 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260826-impl-game-ai-bootstrap.md
 public_contracts:
   - OTERYN_GAME_AI_BOOTSTRAP_SLICE_OWNER_DECISION_2026-08-25
-integration_admission_base_sha: d86d2c5ad001ae563b371558d202a30b0ac3a062
+integration_admission_base_sha: f3ba25234791d981d32a5f1d901803454ed4a6cb
 final_merge_sha_guard: recorded_before_worker_dispatch
 resource_limits:
   AI01-ACTIVE-ACTORS: 256
@@ -40,7 +40,7 @@ resource_limits:
   AI01-PATH-SEARCH-WORK: 1024
   AI01-ROUTE-STEPS: 128
   AI01-ROUTE-BYTES: 4096
-depends_on: [issue:162 allocation merge, issue:174, main@d86d2c5ad001ae563b371558d202a30b0ac3a062]
+depends_on: [issue:162 allocation merge, issue:174, main@f3ba25234791d981d32a5f1d901803454ed4a6cb]
 blocks: []
 external_repositories: []
 ```
@@ -63,13 +63,13 @@ No Ability, Interaction, Movement, persistence/value/reward, spawn/timer/retry/s
 ## Context checkpoint
 
 ```yaml
-last_progress: task packet created from owner-accepted bootstrap decision; worker waits for allocation merge
-status: waiting
+last_progress: exact CI formatter job 97998843405 selected the final active-actor test signature layout; that one non-semantic hunk was applied in 4611b8e781e0c61a683f6a01f957b5819cebf58d
+status: ready_for_integration
 branch: impl/game-ai-bootstrap
-head_sha: null
+head_sha: 4611b8e781e0c61a683f6a01f957b5819cebf58d
 pr: null
 final_head_sha: null
 owner_action_required: null
-blocker: allocation authority is unmerged
-next_action: coordinator merges exact allocation and records worker base SHA
+blocker: local cargo/rustfmt are unavailable; exact-head Rust CI and independent review remain required
+next_action: coordinator publishes this local worker result, verifies exact head, and starts the allocated review/CI lifecycle
 ```
