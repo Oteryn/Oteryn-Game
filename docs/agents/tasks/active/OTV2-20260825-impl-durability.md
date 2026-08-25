@@ -20,9 +20,13 @@ updated_at: 2026-08-25T23:24:03+02:00
 execution_budget_minutes: 120
 large_budget_reason: SQLx migration safety, durable idempotency/fencing and mandatory isolated PostgreSQL evidence
 owned_paths:
-  - apps/game-server/src/durability/**
+  - apps/game-server/src/durability/mod.rs
+  - apps/game-server/src/durability/db.rs
+  - apps/game-server/src/durability/schema.rs
+  - apps/game-server/src/durability/admission_journal.rs
+  - apps/game-server/src/durability/reconcile.rs
   - apps/game-server/src/bin/oteryn-game-migrate.rs
-  - apps/game-server/migrations/**
+  - apps/game-server/migrations/0001_admission_reconnect_journal.sql
   - apps/game-server/build.rs
   - apps/game-server/tests/durability_postgres.rs
   - apps/game-server/tests/support/postgres.rs

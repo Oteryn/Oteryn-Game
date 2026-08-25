@@ -20,6 +20,13 @@ updated_at: 2026-08-25T23:24:03+02:00
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration, and closeout; no single worker owns the programme
 owned_paths:
+  - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
+  - docs/superpowers/plans/2026-08-25-oteryn-game-interaction-lifecycle.md
+  - docs/superpowers/plans/2026-08-25-oteryn-game-ability-engine.md
+  - docs/superpowers/plans/2026-08-25-oteryn-game-durability-journal.md
+  - docs/agents/tasks/active/OTV2-20260825-impl-game-interaction.md
+  - docs/agents/tasks/active/OTV2-20260825-impl-game-ability.md
+  - docs/agents/tasks/active/OTV2-20260825-impl-durability.md
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
 public_contracts: []
 depends_on:
@@ -29,6 +36,14 @@ blocks:
 cross_repository_coordination_id: OTV2-WORK-DELIVERY-POST-BLOCKER
 external_repositories: []
 \`\`\`
+
+The coordinator owns creation of each child task packet only through the
+allocation-PR merge. Immediately after the protected-main allocation merge,
+exclusive write ownership of each child task packet transfers to its named
+worker for that worker's one branch/PR and returns/releases only at that
+worker's closeout. The coordinator retains only the live allocation record,
+the child plans and this coordinator packet; no concurrent write authority is
+permitted.
 
 ## Outcome
 
@@ -85,7 +100,7 @@ This is a Task 1 reconciliation, not a worker allocation. \`READY_FOR_TASK_2_DOR
 
 ## Excluded scope
 
-No gameplay/runtime, Cargo/workspace, registry, stable-ID, public-contract, workflow, production, protected-environment, secret, live account/session/data, Platform, Atlas or META mutation is authorized by this coordinator bootstrap. This task creates no worker allocation by itself.
+No gameplay/runtime, Cargo/workspace, registry, stable-ID, public-contract, workflow, production, protected-environment, secret, live account/session/data, Platform, Atlas or META mutation is authorized by this coordinator. Task 2 is authorized to create and maintain only the exact coordinator documentation that allocates path-isolated workers; it does not itself implement runtime behavior, and worker mutation remains deferred until this allocation authority merges.
 
 ## Implementation / findings
 

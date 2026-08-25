@@ -10,7 +10,7 @@
 - `apps/game-server/src/durability/admission_journal.rs`
 - `apps/game-server/src/durability/reconcile.rs`
 - `apps/game-server/src/bin/oteryn-game-migrate.rs`
-- `apps/game-server/migrations/**`
+- `apps/game-server/migrations/0001_admission_reconnect_journal.sql`
 - `apps/game-server/build.rs`
 - `apps/game-server/tests/durability_postgres.rs`
 - `apps/game-server/tests/support/postgres.rs`
