@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT coordinator session for Issue #131
 created_at: 2026-08-25T00:55:13+02:00
-updated_at: 2026-08-25T07:20:00+02:00
+updated_at: 2026-08-25T10:12:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: Four independent blocker lifecycles require evidence, a serialized registry mutation, one TDD security implementation, exact-head review/CI, merges and terminal ownership reconciliation.
 owned_paths:
@@ -60,7 +60,7 @@ No registry mutation, Cargo/lockfile mutation, Foundation code, Server Seam list
 
 ## Implementation / findings
 
-Coordinator allocation PR #132 is merged. Issue #131 remains active across serialized child lifecycles. Issue #133 is the current decision/evidence child; its allocation is being prepared without archiving or releasing the parent coordinator. The coordinator-only live-allocation surface is transferred as a one-writer lease to OTV2-20260825-next-wave-limit-decisions-allocation for this child lifecycle.
+Coordinator allocation PR #132 is merged. Issue #131 remains active across serialized child lifecycles. Issue #133 is terminal through PR #140 / merge `88ad620169d6d08ebad6e49886ba1098da728480`. Issue #142 is now the serialized registry child; until its allocation PR merges, `RESOURCE_LIMITS_REGISTRY.json` remains unallocated and unwritable.
 
 ## Validation
 
@@ -115,7 +115,7 @@ Coordinator allocation PR #132 is merged. Issue #131 remains active across seria
 ## Context checkpoint
 
 ```yaml
-last_progress: Coordinator allocation PR #132 merged as 8b6f8e6; Issue #133 child allocation is the current serialized action.
+last_progress: Decision/evidence PR #140 merged as 88ad620; Issue #142 registry allocation is the current serialized action.
 status: implementing
 branch: null
 head_sha: c37d2a58ca0d43ba1ae7e8d01ca07ad00d1f881a
@@ -137,5 +137,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Merge the corrected Issue #133 decision/evidence allocation, then create its exact-base worker branch and begin RED harness tests.
+next_action: Merge the Issue #142 registry allocation, then create its exact-base worker branch and run the RED registry assertion before mutation.
 ```
