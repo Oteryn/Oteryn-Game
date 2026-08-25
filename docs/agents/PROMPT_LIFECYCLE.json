@@ -74,6 +74,17 @@
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
     },
     {
+      "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
+      "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "implementation-programme",
+      "scope": "ChatGPT Work execution profile of the implementation coordinator with bounded subagent dispatch/integration and fail-closed material architecture escalation; no authority expansion.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This prompt does not supersede OTV2_IMPLEMENTATION_COORDINATOR; only an explicit replacement registered in this lifecycle registry may supersede it."
+    },
+    {
       "prompt_id": "OTV2_IMPL_ANALYTICS",
       "path": "docs/agents/prompts/OTV2_IMPL_ANALYTICS.md",
       "version": "1.0",
