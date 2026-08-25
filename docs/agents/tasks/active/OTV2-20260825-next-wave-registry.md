@@ -4,19 +4,21 @@
 task_id: OTV2-20260825-next-wave-registry
 title: Register accepted next-wave first-slice limits
 mode: CONTRACT
-status: waiting
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/next-wave-registry-142
 issue: 142
-pr: null
-base_sha: null
-head_sha: null
-final_head_sha: null
+pr: 144
+base_sha: 83f67cddc17704ce670d2a29dd64da7c0a40395f
+allocation_pr: 143
+allocation_merge_sha: 83f67cddc17704ce670d2a29dd64da7c0a40395f
+head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
+final_head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
 final_head_frozen_at: null
 owner: ChatGPT registry worker for Issue #142
 created_at: 2026-08-25T10:12:00+02:00
-updated_at: 2026-08-25T10:12:00+02:00
+updated_at: 2026-08-25T10:46:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -24,8 +26,6 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260825-next-wave-registry.md
 public_contracts:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
-```
-
 depends_on:
   - issue:142
   - pr:140
@@ -40,15 +40,15 @@ external_repositories: []
 
 ## Outcome
 
-Copy exactly the 24 accepted candidate records from the merged Issue #133 evidence into the canonical resource registry. Do not duplicate the inherited `FND02-WIRE-FRAME-BYTES` entry and do not register any fail-closed-excluded row.
+Copy exactly the 24 accepted candidate records from merged PR #140 evidence into the canonical resource registry. The existing `FND02-WIRE-FRAME-BYTES` resource remains a singleton and no fail-closed-excluded row receives a value.
 
 ## Acceptance criteria
 
-- [ ] RED assertion proves all 24 accepted IDs are absent before mutation.
-- [ ] GREEN assertion proves exactly those IDs/values and required fields after mutation.
-- [ ] JSON uniqueness and round-trip validation pass.
-- [ ] No production default, wire/error numeric identifier, excluded-row value, or implementation change appears.
-- [ ] Governance, architecture checks, whole-diff review and exact-head `game-gate` pass.
+- [x] RED assertion proved all 24 accepted IDs were absent before mutation.
+- [x] GREEN assertion proved exactly those 24 IDs/values and required fields after mutation.
+- [x] JSON uniqueness, required-field coverage and round-trip validation pass.
+- [x] No production default, wire/error numeric identifier, excluded-row value or implementation change appears.
+- [ ] Whole-diff review and exact-head repository CI including `game-gate` pass, then squash merge.
 
 ## Excluded scope
 
@@ -56,20 +56,50 @@ No product/runtime/Cargo/workspace change; no Ability/Interaction/AI/Movement/Du
 
 ## Validation
 
-- focused registry assertion: pending RED then GREEN
-- governance / architecture / diff: pending
-- E2E: `NOT_APPLICABLE`
-- independent review: `NOT_REQUIRED` unless the registry diff introduces semantics beyond exact #140 copy
+### Registry RED/GREEN
+
+- RED on exact allocation merge: `REGISTRY_RED missing 24`, exit 1; the missing set was exactly the 24 candidate IDs from PR #140.
+- GREEN after minimal append: `new_ids=24 exact_required_fields=PASS uniqueness=PASS roundtrip=PASS inherited_frame_singleton=PASS`.
+- Existing registry records were preserved; final semantic diff adds only the 24 accepted entries.
+
+### Repository checks
+
+- `python tools/agents/validate_governance.py` — PASS, 25 required policy documents / 9 lanes.
+- `cargo run -q -p oteryn-architecture-check -- workspace .` — PASS.
+- `git diff --check` — PASS.
+- E2E — `NOT_APPLICABLE`; registry documentation only.
+
+## Self-review
+
+- exact head: semantic delivery head `f9e887ec2cfd9112700390e1b2c4909bf0e44746`; final metadata head will be frozen after this PR-metadata commit without further content changes
+- method: complete diff against `83f67cddc17704ce670d2a29dd64da7c0a40395f` plus machine comparison against merged evidence JSON
+- material findings: one P2 formatting-churn issue was detected after the first JSON writer reformatted the existing registry; reverted and replaced with minimal append before commit. A checker typo (`id` vs `candidate_id`) was corrected before accepting GREEN.
+- verdict: PASS
+
+
+## Independent review
+
+- required: NO — exact transcription of already accepted evidence into a data registry; no new security/runtime/persistence semantics are selected here.
+- exact head: `NOT_APPLICABLE`
+- material findings: `NOT_APPLICABLE`
+- verdict: `NOT_APPLICABLE`
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Worker task prepared but has no write authority until the allocation PR merges.
-status: waiting
+last_progress: Registry delivery PR #144 opened; semantic head f9e887e contains exact 24-entry mutation and all local gates are green; final metadata head is being frozen.
+status: validating
 branch: docs/next-wave-registry-142
-head_sha: null
-pr: null
-blocker: allocation_not_merged
+head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
+pr: 144
+final_head_sha: f9e887ec2cfd9112700390e1b2c4909bf0e44746
+final_head_frozen_at: null
+ci_trigger_source: null
+ci_check_generation: null
+ci_checks_for_current_head: 0
+ci_run_ids: []
+ci_job_ids: []
 owner_action_required: null
-next_action: After allocation merge, create the worker branch from the exact merge SHA and run the RED registry assertion before mutation.
+blocker: null
+next_action: Freeze this metadata commit as the final PR #144 head, require exact-head CI including game-gate, then squash merge and recheck Issues #93/#116/#123 on current main.
 ```
