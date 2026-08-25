@@ -37,7 +37,7 @@ fn every_hard_limit_accepts_max_and_rejects_max_plus_one_and_overflow() {
 
 #[test]
 fn active_actor_envelope_accepts_256_and_rejects_257_before_snapshot_publication()
-    -> Result<(), AiError> {
+-> Result<(), AiError> {
     let actors: Vec<_> = (0..ResourceLimit::ActiveActors.maximum())
         .map(|value| ActorId::new(value as u64))
         .collect();
