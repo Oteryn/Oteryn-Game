@@ -70,6 +70,12 @@ def main() -> int:
         assert unknown["npcs"][0]["shop"]["state"] == "UNKNOWN"
         assert unknown["monsters"][0]["loot"]["state"] == "UNKNOWN"
 
+        _write(npc_root / "alice.lua", '''local internalNpcName = "Alice"\nlocal npcConfig = {}\n--[[\nnpcConfig.shop = { { itemName = "fake", buy = 1 } }\n]]\nlocal note = [[npcConfig.shop = { { itemName = "also fake", buy = 2 } }]]\n''')
+        _write(monster_root / "dragon.lua", '''local mType = Game.createMonsterType("Test Dragon")\nlocal monster = {}\n--[[\nmonster.loot = { { name = "fake", chance = 100000 } }\n]]\nlocal note = [[monster.loot = { { name = "also fake", chance = 100000 } }]]\n''')
+        commented = module.export_gameplay_profiles(npc_root, monster_root)
+        assert commented["npcs"][0]["shop"]["state"] == "UNKNOWN"
+        assert commented["monsters"][0]["loot"]["state"] == "UNKNOWN"
+
         complete_npc = (HERE / "fixtures/complete-npc.lua").read_text(encoding="utf-8")
         _write(npc_root / "alice.lua", complete_npc)
         _write(npc_root / "alice-copy.lua", complete_npc)

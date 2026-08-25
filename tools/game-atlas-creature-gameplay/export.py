@@ -2,6 +2,7 @@
 """Deterministic, static-only Game -> Atlas creature gameplay profile extraction."""
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -40,7 +41,22 @@ class ExportError(RuntimeError):
     pass
 
 
+def _lua_long_bracket_end(text: str, start: int) -> int | None:
+    if start >= len(text) or text[start] != "[":
+        return None
+    cursor = start + 1
+    while cursor < len(text) and text[cursor] == "=":
+        cursor += 1
+    if cursor >= len(text) or text[cursor] != "[":
+        return None
+    equals = text[start + 1 : cursor]
+    closer = "]" + equals + "]"
+    end = text.find(closer, cursor + 1)
+    return len(text) if end < 0 else end + len(closer)
+
+
 def _strip_line_comments(text: str) -> str:
+    """Remove Lua comments and neutralize unsupported long strings without executing source."""
     out: list[str] = []
     i = 0
     quote: str | None = None
@@ -63,14 +79,26 @@ def _strip_line_comments(text: str) -> str:
             i += 1
             continue
         if ch == "-" and i + 1 < len(text) and text[i + 1] == "-":
+            long_end = _lua_long_bracket_end(text, i + 2)
+            if long_end is not None:
+                skipped = text[i:long_end]
+                out.append("\n" * skipped.count("\n"))
+                i = long_end
+                continue
             i += 2
             while i < len(text) and text[i] not in "\r\n":
                 i += 1
             continue
+        long_end = _lua_long_bracket_end(text, i)
+        if long_end is not None:
+            skipped = text[i:long_end]
+            out.append(" LONG_STRING_UNSUPPORTED ")
+            out.append("\n" * skipped.count("\n"))
+            i = long_end
+            continue
         out.append(ch)
         i += 1
     return "".join(out)
-
 
 def _matching(text: str, start: int, opener: str, closer: str) -> int:
     if start >= len(text) or text[start] != opener:
@@ -600,17 +628,414 @@ def export_gameplay_profiles(npc_root: Path, monster_root: Path) -> dict[str, An
     }
 
 
+LIMIT_PROFILE = "creature-gameplay-profiles-v1-e417-census-v1"
+LIMITS = {
+    "max_manifest_bytes": 256 * 1024,
+    "max_shard_bytes": 512 * 1024,
+    "max_profiles_per_shard": 32,
+    "max_npc_profiles": 2048,
+    "max_monster_profiles": 4096,
+    "max_referenced_items": 4096,
+    "max_shards": 513,
+    "max_shop_sells_per_profile": 256,
+    "max_shop_buys_per_profile": 2048,
+    "max_shop_rows_per_profile": 2304,
+    "max_loot_rows_per_profile": 128,
+    "max_travel_destinations_per_profile": 16,
+    "max_resistance_elements_per_profile": 16,
+    "max_immunities_per_profile": 16,
+    "max_string_bytes": 256,
+    "max_nesting_depth": 12,
+    "max_price": 100_000_000,
+    "max_loot_count": 1024,
+    "max_abs_resistance_percent": 2048,
+}
+STATES = {"COMPLETE", "PARTIAL", "UNRESOLVED", "AMBIGUOUS", "UNKNOWN", "NOT_APPLICABLE"}
+ENTITY_ID_RE = re.compile(r"^(npc|monster)-entity:[0-9a-f]{32}$")
+ITEM_REF_RE = re.compile(r"^oteryn:item\.[a-z0-9][a-z0-9._-]{0,127}$")
+SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
+
+
+def canonical_json_bytes(value: Any) -> bytes:
+    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True).encode("utf-8")
+
+
+def _check_tree_limits(value: Any, path: str = "root", depth: int = 0) -> None:
+    if depth > LIMITS["max_nesting_depth"]:
+        raise ExportError(f"nesting limit exceeded at {path}")
+    if isinstance(value, str):
+        if len(value.encode("utf-8")) > LIMITS["max_string_bytes"]:
+            raise ExportError(f"string limit exceeded at {path}")
+        return
+    if isinstance(value, dict):
+        for key, child in value.items():
+            if not isinstance(key, str):
+                raise ExportError(f"non-string object key at {path}")
+            _check_tree_limits(key, f"{path}.<key>", depth + 1)
+            _check_tree_limits(child, f"{path}.{key}", depth + 1)
+        return
+    if isinstance(value, list):
+        for index, child in enumerate(value):
+            _check_tree_limits(child, f"{path}[{index}]", depth + 1)
+        return
+    if value is None or isinstance(value, (bool, int)):
+        return
+    raise ExportError(f"unsupported JSON value at {path}: {type(value).__name__}")
+
+
+def _require_exact_keys(value: Any, required: set[str], optional: set[str], label: str) -> dict[str, Any]:
+    if not isinstance(value, dict):
+        raise ExportError(f"{label} must be an object")
+    keys = set(value)
+    if not required <= keys or not keys <= required | optional:
+        raise ExportError(f"invalid keys for {label}: {sorted(keys)}")
+    return value
+
+
+def _require_state(section: dict[str, Any], label: str) -> str:
+    state = section.get("state")
+    if state not in STATES:
+        raise ExportError(f"invalid completeness state for {label}: {state!r}")
+    return str(state)
+
+
+def _validate_reason_codes(section: dict[str, Any], label: str) -> None:
+    reasons = section.get("reason_codes", [])
+    if not isinstance(reasons, list) or any(not isinstance(value, str) or not value for value in reasons):
+        raise ExportError(f"invalid reason_codes for {label}")
+    if len(reasons) != len(set(reasons)):
+        raise ExportError(f"duplicate reason code for {label}")
+
+
+def _validate_item_relation(row: dict[str, Any], label: str, item_refs: set[str]) -> None:
+    item_ref = row.get("item_ref")
+    resolution = row.get("item_resolution_state")
+    name = row.get("item_name")
+    if not isinstance(name, str) or not name:
+        raise ExportError(f"missing item name for {label}")
+    if item_ref is None:
+        if resolution == "RESOLVED":
+            raise ExportError(f"resolved item row lacks stable item_ref for {label}")
+    else:
+        if not isinstance(item_ref, str) or ITEM_REF_RE.fullmatch(item_ref) is None:
+            raise ExportError(f"invalid stable item_ref for {label}")
+        if resolution != "RESOLVED" or item_ref not in item_refs:
+            raise ExportError(f"unproven stable item_ref for {label}")
+    if resolution not in {"RESOLVED", "UNRESOLVED", "AMBIGUOUS", "UNKNOWN"}:
+        raise ExportError(f"invalid item resolution for {label}")
+
+
+def _validate_npc_profile(profile: Any, item_refs: set[str]) -> None:
+    p = _require_exact_keys(profile, {"entity_id", "kind", "name", "shop", "services", "travel"}, set(), "npc profile")
+    if p.get("kind") != "npc" or not isinstance(p.get("name"), str) or not p["name"]:
+        raise ExportError("invalid npc profile identity fields")
+    entity_id = p.get("entity_id")
+    if not isinstance(entity_id, str) or ENTITY_ID_RE.fullmatch(entity_id) is None or not entity_id.startswith("npc-entity:"):
+        raise ExportError("invalid npc entity_id")
+
+    shop = _require_exact_keys(p["shop"], {"state", "sells", "buys", "reason_codes"}, set(), "npc shop")
+    _require_state(shop, "npc shop"); _validate_reason_codes(shop, "npc shop")
+    sells, buys = shop["sells"], shop["buys"]
+    if not isinstance(sells, list) or not isinstance(buys, list):
+        raise ExportError("npc shop rows must be arrays")
+    if len(sells) > LIMITS["max_shop_sells_per_profile"] or len(buys) > LIMITS["max_shop_buys_per_profile"] or len(sells) + len(buys) > LIMITS["max_shop_rows_per_profile"]:
+        raise ExportError("npc shop row limit exceeded")
+    for direction, rows in (("sells", sells), ("buys", buys)):
+        for index, raw in enumerate(rows):
+            row = _require_exact_keys(raw, {"item_ref", "item_name", "item_resolution_state", "unit_price", "currency"}, {"amount"}, f"npc {direction}[{index}]")
+            _validate_item_relation(row, f"npc {direction}[{index}]", item_refs)
+            price = row["unit_price"]
+            if not isinstance(price, int) or isinstance(price, bool) or not 0 <= price <= LIMITS["max_price"]:
+                raise ExportError("invalid npc shop price")
+            if row["currency"] != "gold":
+                raise ExportError("unsupported npc shop currency")
+            if "amount" in row and (not isinstance(row["amount"], int) or isinstance(row["amount"], bool) or row["amount"] <= 0):
+                raise ExportError("invalid npc shop amount")
+
+    services = _require_exact_keys(p["services"], {"state", "values"}, {"reason_codes"}, "npc services")
+    _require_state(services, "npc services"); _validate_reason_codes(services, "npc services")
+    values = services["values"]
+    if not isinstance(values, list) or any(value not in SERVICE_ORDER for value in values) or len(values) != len(set(values)):
+        raise ExportError("invalid npc service values")
+
+    travel = _require_exact_keys(p["travel"], {"state", "destinations", "reason_codes"}, set(), "npc travel")
+    _require_state(travel, "npc travel"); _validate_reason_codes(travel, "npc travel")
+    destinations = travel["destinations"]
+    if not isinstance(destinations, list) or len(destinations) > LIMITS["max_travel_destinations_per_profile"]:
+        raise ExportError("npc travel limit exceeded")
+    for index, raw in enumerate(destinations):
+        row = _require_exact_keys(raw, {"label"}, {"position", "price", "currency"}, f"travel[{index}]")
+        if not isinstance(row["label"], str) or not row["label"]:
+            raise ExportError("invalid travel label")
+        if "position" in row:
+            pos = _require_exact_keys(row["position"], {"x", "y", "floor"}, set(), "travel position")
+            if any(not isinstance(pos[key], int) or isinstance(pos[key], bool) for key in ("x", "y", "floor")):
+                raise ExportError("invalid travel position")
+        if "price" in row and (not isinstance(row["price"], int) or isinstance(row["price"], bool) or not 0 <= row["price"] <= LIMITS["max_price"]):
+            raise ExportError("invalid travel price")
+        if "currency" in row and row["currency"] != "gold":
+            raise ExportError("unsupported travel currency")
+
+
+def _validate_monster_profile(profile: Any, item_refs: set[str]) -> None:
+    p = _require_exact_keys(profile, {"entity_id", "kind", "name", "loot", "stats", "resistances"}, set(), "monster profile")
+    if p.get("kind") != "monster" or not isinstance(p.get("name"), str) or not p["name"]:
+        raise ExportError("invalid monster profile identity fields")
+    entity_id = p.get("entity_id")
+    if not isinstance(entity_id, str) or ENTITY_ID_RE.fullmatch(entity_id) is None or not entity_id.startswith("monster-entity:"):
+        raise ExportError("invalid monster entity_id")
+
+    loot = _require_exact_keys(p["loot"], {"state", "entries", "reason_codes"}, set(), "monster loot")
+    _require_state(loot, "monster loot"); _validate_reason_codes(loot, "monster loot")
+    entries = loot["entries"]
+    if not isinstance(entries, list) or len(entries) > LIMITS["max_loot_rows_per_profile"]:
+        raise ExportError("monster loot row limit exceeded")
+    for index, raw in enumerate(entries):
+        row = _require_exact_keys(raw, {"item_ref", "item_name", "item_resolution_state", "chance_ppm", "min_count", "max_count"}, set(), f"loot[{index}]")
+        _validate_item_relation(row, f"loot[{index}]", item_refs)
+        chance, minimum, maximum = row["chance_ppm"], row["min_count"], row["max_count"]
+        if not isinstance(chance, int) or isinstance(chance, bool) or not 0 <= chance <= 1_000_000:
+            raise ExportError("invalid loot chance_ppm")
+        if any(not isinstance(value, int) or isinstance(value, bool) for value in (minimum, maximum)) or minimum < 0 or maximum < minimum or maximum > LIMITS["max_loot_count"]:
+            raise ExportError("invalid loot count")
+
+    stats = _require_exact_keys(p["stats"], {"state", "health", "experience", "armor", "defense", "speed"}, {"reason_codes"}, "monster stats")
+    state = _require_state(stats, "monster stats"); _validate_reason_codes(stats, "monster stats")
+    for key in ("health", "experience", "armor", "defense", "speed"):
+        value = stats[key]
+        if value is not None and (not isinstance(value, int) or isinstance(value, bool) or value < 0 or value > LIMITS["max_price"]):
+            raise ExportError(f"invalid monster stat: {key}")
+    if state == "COMPLETE" and any(stats[key] is None for key in ("health", "experience", "armor", "defense", "speed")):
+        raise ExportError("complete monster stats contain null")
+
+    resistances = _require_exact_keys(p["resistances"], {"state", "elements", "immunities"}, {"reason_codes"}, "monster resistances")
+    _require_state(resistances, "monster resistances"); _validate_reason_codes(resistances, "monster resistances")
+    elements, immunities = resistances["elements"], resistances["immunities"]
+    if not isinstance(elements, list) or len(elements) > LIMITS["max_resistance_elements_per_profile"] or not isinstance(immunities, list) or len(immunities) > LIMITS["max_immunities_per_profile"]:
+        raise ExportError("resistance/immunity row limit exceeded")
+    for index, raw in enumerate(elements):
+        row = _require_exact_keys(raw, {"type", "percent"}, set(), f"element[{index}]")
+        if not isinstance(row["type"], str) or not row["type"] or not isinstance(row["percent"], int) or isinstance(row["percent"], bool) or abs(row["percent"]) > LIMITS["max_abs_resistance_percent"]:
+            raise ExportError("invalid resistance element")
+    if any(not isinstance(value, str) or not value for value in immunities) or len(immunities) != len(set(immunities)):
+        raise ExportError("invalid immunity values")
+
+
+def validate_normalized_product(product: Any) -> None:
+    _check_tree_limits(product)
+    p = _require_exact_keys(product, {"contract_id", "semantic_revision", "capability", "profile_schema_version", "source_evidence", "npcs", "monsters", "referenced_items", "statistics"}, set(), "normalized product")
+    if p["contract_id"] != CONTRACT_ID or p["semantic_revision"] != 1 or p["capability"] != CAPABILITY or p["profile_schema_version"] != PROFILE_SCHEMA_VERSION:
+        raise ExportError("normalized product contract mismatch")
+    evidence = _require_exact_keys(p["source_evidence"], {"repository", "sha"}, set(), "source evidence")
+    if evidence != {"repository": "blakinio/Otheryn", "sha": LEGACY_EVIDENCE_SHA}:
+        raise ExportError("source evidence mismatch")
+    npcs, monsters, items = p["npcs"], p["monsters"], p["referenced_items"]
+    if not isinstance(npcs, list) or len(npcs) > LIMITS["max_npc_profiles"] or not isinstance(monsters, list) or len(monsters) > LIMITS["max_monster_profiles"] or not isinstance(items, list) or len(items) > LIMITS["max_referenced_items"]:
+        raise ExportError("product record limit exceeded")
+    item_refs: set[str] = set()
+    for index, raw in enumerate(items):
+        row = _require_exact_keys(raw, {"item_ref", "name", "resolution_state", "appearance_ref"}, {"reason_codes"}, f"referenced item[{index}]")
+        ref = row["item_ref"]
+        if not isinstance(ref, str) or ITEM_REF_RE.fullmatch(ref) is None or ref in item_refs:
+            raise ExportError("invalid or duplicate referenced item identity")
+        if row["resolution_state"] != "RESOLVED" or not isinstance(row["name"], str) or not row["name"]:
+            raise ExportError("invalid referenced item record")
+        item_refs.add(ref)
+    entity_ids: set[str] = set()
+    for row in npcs:
+        _validate_npc_profile(row, item_refs)
+        if row["entity_id"] in entity_ids:
+            raise ExportError("duplicate creature entity profile")
+        entity_ids.add(row["entity_id"])
+    for row in monsters:
+        _validate_monster_profile(row, item_refs)
+        if row["entity_id"] in entity_ids:
+            raise ExportError("duplicate creature entity profile")
+        entity_ids.add(row["entity_id"])
+    stats = _require_exact_keys(p["statistics"], {"npc_profiles", "monster_profiles", "referenced_items"}, set(), "statistics")
+    expected = {"npc_profiles": len(npcs), "monster_profiles": len(monsters), "referenced_items": len(items)}
+    if stats != expected:
+        raise ExportError("statistics/count mismatch")
+
+
+def _safe_shard_path(value: Any) -> str:
+    if not isinstance(value, str) or not value.startswith("shards/") or "\\" in value or value.startswith("/") or "//" in value:
+        raise ExportError("unsafe shard path")
+    parts = value.split("/")
+    if any(part in {"", ".", ".."} for part in parts) or not value.endswith(".json"):
+        raise ExportError("unsafe shard path")
+    return value
+
+
+def _digest_bytes(data: bytes) -> str:
+    return "sha256:" + hashlib.sha256(data).hexdigest()
+
+
+def compute_semantic_digest(manifest: dict[str, Any]) -> str:
+    unsigned = copy.deepcopy(manifest)
+    unsigned.pop("semantic_digest", None)
+    return _digest_bytes(canonical_json_bytes(unsigned))
+
+
+def _write_shard(root: Path, kind: str, key: str, payload: dict[str, Any], records: int) -> dict[str, Any]:
+    path = f"shards/{kind}-{key}.json"
+    data = canonical_json_bytes(payload)
+    if len(data) > LIMITS["max_shard_bytes"]:
+        raise ExportError(f"shard byte limit exceeded: {path}")
+    target = root / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(data)
+    return {"kind": kind, "key": key, "path": path, "bytes": len(data), "digest": _digest_bytes(data), "records": records}
+
+
+def write_product(product: dict[str, Any], output_root: Path, producer_sha: str) -> dict[str, Any]:
+    validate_normalized_product(product)
+    if SHA_RE.fullmatch(producer_sha) is None:
+        raise ExportError("producer SHA must be exact lowercase 40-hex")
+    root = Path(output_root)
+    if root.exists() and any(root.iterdir()):
+        raise ExportError("output directory must be empty")
+    root.mkdir(parents=True, exist_ok=True)
+    shards: list[dict[str, Any]] = []
+    for kind, records in (("npc", product["npcs"]), ("monster", product["monsters"])):
+        groups: dict[str, list[dict[str, Any]]] = {}
+        for record in sorted(records, key=lambda row: row["entity_id"]):
+            key = str(record["entity_id"]).split(":", 1)[1][:2]
+            groups.setdefault(key, []).append(copy.deepcopy(record))
+        for key in sorted(groups):
+            rows = groups[key]
+            if len(rows) > LIMITS["max_profiles_per_shard"]:
+                raise ExportError("profiles-per-shard limit exceeded")
+            shards.append(_write_shard(root, kind, key, {"kind": kind, "key": key, "profiles": rows}, len(rows)))
+    items = sorted((copy.deepcopy(row) for row in product["referenced_items"]), key=lambda row: row["item_ref"])
+    if items:
+        shards.append(_write_shard(root, "referenced-items", "all", {"kind": "referenced-items", "key": "all", "items": items}, len(items)))
+    if len(shards) > LIMITS["max_shards"]:
+        raise ExportError("shard count limit exceeded")
+    shards.sort(key=lambda row: (row["kind"], row["key"]))
+    manifest: dict[str, Any] = {
+        "contract_id": CONTRACT_ID,
+        "semantic_revision": 1,
+        "capability": CAPABILITY,
+        "profile_schema_version": PROFILE_SCHEMA_VERSION,
+        "producer_repository_sha": producer_sha,
+        "source_evidence": copy.deepcopy(product["source_evidence"]),
+        "shard_key_rule": "entity-hash-prefix-2",
+        "limit_profile": LIMIT_PROFILE,
+        "limits": copy.deepcopy(LIMITS),
+        "counts": {"npc_profiles": len(product["npcs"]), "monster_profiles": len(product["monsters"]), "referenced_items": len(items)},
+        "shards": shards,
+    }
+    manifest["semantic_digest"] = compute_semantic_digest(manifest)
+    manifest_bytes = canonical_json_bytes(manifest)
+    if len(manifest_bytes) > LIMITS["max_manifest_bytes"]:
+        raise ExportError("manifest byte limit exceeded")
+    (root / "manifest.json").write_bytes(manifest_bytes)
+    return manifest
+
+
+def verify_product(output_root: Path) -> dict[str, Any]:
+    root = Path(output_root)
+    manifest_path = root / "manifest.json"
+    if not manifest_path.is_file() or manifest_path.stat().st_size > LIMITS["max_manifest_bytes"]:
+        raise ExportError("manifest missing or oversized")
+    manifest_bytes = manifest_path.read_bytes()
+    try:
+        manifest = json.loads(manifest_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ExportError("manifest is not valid UTF-8 JSON") from exc
+    if canonical_json_bytes(manifest) != manifest_bytes:
+        raise ExportError("manifest is not canonical JSON")
+    expected_keys = {"contract_id", "semantic_revision", "capability", "profile_schema_version", "producer_repository_sha", "source_evidence", "shard_key_rule", "limit_profile", "limits", "counts", "shards", "semantic_digest"}
+    _require_exact_keys(manifest, expected_keys, set(), "manifest")
+    if manifest["contract_id"] != CONTRACT_ID or manifest["semantic_revision"] != 1 or manifest["capability"] != CAPABILITY or manifest["profile_schema_version"] != PROFILE_SCHEMA_VERSION:
+        raise ExportError("manifest contract mismatch")
+    if not isinstance(manifest["producer_repository_sha"], str) or SHA_RE.fullmatch(manifest["producer_repository_sha"]) is None:
+        raise ExportError("invalid producer SHA")
+    if manifest["source_evidence"] != {"repository": "blakinio/Otheryn", "sha": LEGACY_EVIDENCE_SHA}:
+        raise ExportError("manifest source evidence mismatch")
+    if manifest["shard_key_rule"] != "entity-hash-prefix-2" or manifest["limit_profile"] != LIMIT_PROFILE or manifest["limits"] != LIMITS:
+        raise ExportError("manifest producer profile mismatch")
+    digest = manifest["semantic_digest"]
+    if not isinstance(digest, str) or DIGEST_RE.fullmatch(digest) is None or digest != compute_semantic_digest(manifest):
+        raise ExportError("manifest semantic digest mismatch")
+    descriptors = manifest["shards"]
+    if not isinstance(descriptors, list) or len(descriptors) > LIMITS["max_shards"]:
+        raise ExportError("invalid shard descriptors")
+    npcs: list[dict[str, Any]] = []
+    monsters: list[dict[str, Any]] = []
+    items: list[dict[str, Any]] = []
+    seen_paths: set[str] = set()
+    seen_slots: set[tuple[str, str]] = set()
+    for descriptor in descriptors:
+        desc = _require_exact_keys(descriptor, {"kind", "key", "path", "bytes", "digest", "records"}, set(), "shard descriptor")
+        kind, key, path = desc["kind"], desc["key"], _safe_shard_path(desc["path"])
+        if kind not in {"npc", "monster", "referenced-items"} or not isinstance(key, str) or not key:
+            raise ExportError("invalid shard kind/key")
+        if path in seen_paths or (kind, key) in seen_slots:
+            raise ExportError("duplicate shard descriptor")
+        seen_paths.add(path); seen_slots.add((kind, key))
+        target = root / path
+        if not target.is_file():
+            raise ExportError("shard file missing")
+        data = target.read_bytes()
+        if not isinstance(desc["bytes"], int) or isinstance(desc["bytes"], bool) or desc["bytes"] != len(data) or len(data) > LIMITS["max_shard_bytes"]:
+            raise ExportError("shard byte/count mismatch")
+        if not isinstance(desc["digest"], str) or DIGEST_RE.fullmatch(desc["digest"]) is None or desc["digest"] != _digest_bytes(data):
+            raise ExportError("shard digest mismatch")
+        try:
+            payload = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ExportError("shard is not valid UTF-8 JSON") from exc
+        if canonical_json_bytes(payload) != data:
+            raise ExportError("shard is not canonical JSON")
+        if kind in {"npc", "monster"}:
+            body = _require_exact_keys(payload, {"kind", "key", "profiles"}, set(), "profile shard")
+            rows = body["profiles"]
+            if body["kind"] != kind or body["key"] != key or not isinstance(rows, list) or len(rows) > LIMITS["max_profiles_per_shard"] or desc["records"] != len(rows):
+                raise ExportError("profile shard metadata mismatch")
+            for row in rows:
+                entity_id = row.get("entity_id") if isinstance(row, dict) else None
+                if not isinstance(entity_id, str) or entity_id.split(":", 1)[-1][:2] != key:
+                    raise ExportError("profile stored in wrong shard")
+            (npcs if kind == "npc" else monsters).extend(rows)
+        else:
+            body = _require_exact_keys(payload, {"kind", "key", "items"}, set(), "referenced item shard")
+            rows = body["items"]
+            if body["kind"] != "referenced-items" or key != "all" or body["key"] != "all" or not isinstance(rows, list) or desc["records"] != len(rows):
+                raise ExportError("referenced item shard metadata mismatch")
+            items.extend(rows)
+    counts = manifest["counts"]
+    _require_exact_keys(counts, {"npc_profiles", "monster_profiles", "referenced_items"}, set(), "manifest counts")
+    product = {
+        "contract_id": CONTRACT_ID,
+        "semantic_revision": 1,
+        "capability": CAPABILITY,
+        "profile_schema_version": PROFILE_SCHEMA_VERSION,
+        "source_evidence": copy.deepcopy(manifest["source_evidence"]),
+        "npcs": sorted(npcs, key=lambda row: row["entity_id"]),
+        "monsters": sorted(monsters, key=lambda row: row["entity_id"]),
+        "referenced_items": sorted(items, key=lambda row: row["item_ref"]),
+        "statistics": {"npc_profiles": len(npcs), "monster_profiles": len(monsters), "referenced_items": len(items)},
+    }
+    validate_normalized_product(product)
+    if counts != product["statistics"]:
+        raise ExportError("manifest count mismatch")
+    return manifest
+
 def main() -> int:
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("npc_root", type=Path)
     parser.add_argument("monster_root", type=Path)
-    parser.add_argument("output", type=Path)
+    parser.add_argument("output_root", type=Path)
+    parser.add_argument("--producer-sha", required=True)
     args = parser.parse_args()
     product = export_gameplay_profiles(args.npc_root, args.monster_root)
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(product, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-    print(json.dumps(product["statistics"], sort_keys=True))
+    manifest = write_product(product, args.output_root, args.producer_sha)
+    verify_product(args.output_root)
+    print(json.dumps({"semantic_digest": manifest["semantic_digest"], "limit_profile": manifest["limit_profile"], **manifest["counts"]}, sort_keys=True))
     return 0
 
 

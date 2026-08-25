@@ -4,10 +4,11 @@
 task_id: OTV2-20260825-atlas-creature-gameplay-profiles
 title: Game-owned Atlas creature gameplay profiles v1
 mode: IMPLEMENT
-status: implementing
+status: verifying
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: feat/creature-gameplay-profiles-v1
+issue: 136
 pr: null
 base_sha: 91b73a7566a59991ebf7d471eacb3a858b755c9c
 head_sha: null
@@ -15,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT autonomous implementation session
 created_at: 2026-08-25T07:08:00+02:00
-updated_at: 2026-08-25T07:08:00+02:00
+updated_at: 2026-08-25T07:55:00+02:00
 execution_budget_minutes: 240
 large_budget_reason: cross-repository producer/consumer programme with exact-head verification
 owned_paths:
@@ -68,15 +69,17 @@ No gameplay runtime changes, Lua execution/eval, live server introspection, Atla
 
 Initial GitHub preflight found no overlapping Game feature PR for this producer; open Game PRs were Dependabot-only. Atlas runtime overlap exists in #162/#163/#143, so Atlas mutation is deferred until this producer merges.
 
+Implementation now provides a shared creature identity seam, fail-closed static-only NPC/monster gameplay extraction, honest completeness/ambiguity semantics, no client-ID-derived item authority, deterministic two-hex entity shards, exact digest verification, frozen real-corpus bounds, and a dedicated exact-head workflow. Real evidence census is recorded in `docs/agents/evidence/OTV2-20260825-atlas-creature-gameplay-profiles-readiness.md`.
+
 ## Validation
 
 ### Focused
 - command/run: `python tools/game-atlas-creatures/self_test.py`
-- result: baseline PASS before mutation
+- result: baseline PASS before mutation; post-change PASS
 
 ### Component/integration
-- command/run: pending
-- result: pending
+- command/run: `python tools/game-atlas-creature-gameplay/self_test.py`; exact pinned corpus built twice and all 509 files SHA-256 compared
+- result: PASS; 1049 NPCs, 1800 monsters, 508 shards, max shard 174660 bytes, max 15 records/shard
 
 ### E2E
 - scenario: NOT_APPLICABLE for Game producer; Atlas #165 owns browser E2E after producer merge
@@ -115,7 +118,7 @@ Initial GitHub preflight found no overlapping Game feature PR for this producer;
 
 ```yaml
 last_progress: GitHub lifecycle allocated as Game #136 and Atlas #165; dedicated Game branch pushed from exact main.
-status: implementing
+status: verifying
 branch: feat/creature-gameplay-profiles-v1
 head_sha: null
 pr: null
@@ -136,5 +139,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: add and observe the shared-identity regression RED
+next_action: commit verified packaging/census workflow, create one PR, then freeze exact head and run CI/audit
 ```

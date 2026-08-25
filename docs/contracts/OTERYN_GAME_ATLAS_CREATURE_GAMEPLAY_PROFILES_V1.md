@@ -70,7 +70,7 @@ A trade row may contain only proven public fields:
 
 ```json
 {
-  "item_ref": "item:<stable-export-id> or null",
+  "item_ref": "oteryn:item.<stable-key> or null",
   "item_name": "Health Potion",
   "item_resolution_state": "RESOLVED|UNRESOLVED|AMBIGUOUS|UNKNOWN",
   "unit_price": 50,
@@ -101,7 +101,7 @@ A loot row contains:
 
 ```json
 {
-  "item_ref": "item:<stable-export-id> or null",
+  "item_ref": "oteryn:item.<stable-key> or null",
   "item_name": "Gold Coin",
   "item_resolution_state": "RESOLVED|UNRESOLVED|AMBIGUOUS|UNKNOWN",
   "chance_ppm": 800000,
@@ -149,7 +149,7 @@ The immutable product contains one manifest plus deterministic shards and a dedu
 }
 ```
 
-Shard selection is derived from stable entity identity, not display name. Every shard descriptor contains a safe relative path, canonical byte count, SHA-256 digest and profile count. Paths containing traversal, absolute roots or platform-specific escape semantics are invalid.
+Shard selection is derived from stable entity identity, not display name. `shard_key_rule = entity-hash-prefix-2`: NPC/monster profiles use the first two hexadecimal characters after the `entity_id` colon and are written as `shards/npc-<key>.json` / `shards/monster-<key>.json`. A resolved referenced-item table, when non-empty, uses `shards/referenced-items-all.json`. Every shard descriptor contains `kind`, `key`, safe relative `path`, canonical `bytes`, `digest`, and `records`. Paths containing traversal, absolute roots, backslashes, duplicate separators, or platform-specific escape semantics are invalid.
 
 Canonical JSON uses UTF-8, sorted object keys, compact separators and deterministic record ordering. Wall-clock timestamps, machine paths and runner IDs are excluded from canonical digests.
 
@@ -157,21 +157,31 @@ Canonical JSON uses UTF-8, sorted object keys, compact separators and determinis
 
 ## 9. Resource bounds
 
-Unbounded parsing or rendering is forbidden. Before merge, the producer freezes numeric hard limits from real evidence census with safety margin for at least:
+Unbounded parsing or rendering is forbidden. The frozen producer profile is `creature-gameplay-profiles-v1-e417-census-v1`, derived from the exact `e417c5e7c22986bf4acef0495eb47f7b72c97cce` corpus census with safety margin:
 
-- manifest bytes;
-- shard bytes;
-- profiles per shard;
-- total/referenced items;
-- string UTF-8 bytes and nesting depth;
-- shop rows per profile;
-- loot rows per profile;
-- travel destinations;
-- resistance and immunity entries.
+| Limit | v1 hard bound |
+| --- | ---: |
+| manifest bytes | 262,144 |
+| shard bytes | 524,288 |
+| profiles per shard | 32 |
+| NPC profiles | 2,048 |
+| monster profiles | 4,096 |
+| referenced items | 4,096 |
+| total shard descriptors | 513 |
+| UTF-8 bytes per string | 256 |
+| JSON nesting depth | 12 |
+| NPC sells rows/profile | 256 |
+| NPC buys rows/profile | 2,048 |
+| total shop rows/profile | 2,304 |
+| monster loot rows/profile | 128 |
+| travel destinations/profile | 16 |
+| resistance elements/profile | 16 |
+| immunities/profile | 16 |
+| public price integer | 100,000,000 |
+| loot count | 1,024 |
+| absolute resistance percent | 2,048 |
 
-The manifest declares the producer limit profile/revision. Exceeding a hard bound produces no publishable product. Atlas enforces independent equal-or-stricter consumer bounds and bounded cache residency.
-
-Numeric v1 limits are part of this contract once recorded in the producer `LIMITS` table and readiness evidence on the merged implementation; changing a limit incompatibly requires explicit review and a compatible capability/schema decision.
+The manifest embeds the exact producer `limits` object plus the limit profile identifier. Exceeding any hard bound produces no publishable product. Atlas enforces independent equal-or-stricter consumer bounds and bounded cache residency. Changing a limit incompatibly requires explicit review and a compatible capability/schema decision.
 
 ## 10. Public safety
 
