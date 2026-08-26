@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: OTV2-20260825-impl-durability
-title: READY_TO_RESUME — journal-only durability admission and reconnect substrate
+title: WAITING_DEPENDENCY — journal-only durability admission and reconnect substrate
 mode: IMPLEMENT
-status: READY_TO_RESUME
+status: WAITING_DEPENDENCY
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-durability-journal
@@ -66,17 +66,18 @@ depends_on:
   - issue:193 completed by pr:195 / main:9878d42a21815027ef88067bfc59f8b40e78b473
   - issue:197 completed by pr:200 / main:dc531658c7ffc9af91ccc6719aee80ffe01c22a4
 blocks:
+  - the implementation PR for Foundation terminal reconciliation snapshot repair #208 must merge into protected `main` before this worker resumes Task 1 or Task 2; allocation PR #209 alone does not restore authority
   - Server Seam remains WAITING_DEPENDENCY until this resumed Durability worker merges the real durable adapter
-write_authority: exact_owned_paths_after_resume_allocation_merge
+write_authority: none_until_foundation_terminal_reconciliation_implementation_pr_merges_to_protected_main
 shared_paths: none
 external_repositories: []
 ```
 
 ## Outcome
 
-Architecture #187/#190, transport-ref semantics #197/#200, the retained-attempt registry #193/#195 and the Foundation reconnect boundary #192/#199 are all merged. After this resume-allocation PR merges, the existing Durability worker may resume on its exact owned paths against protected `main@90f30b47ac9b1e5e41cf274caf707aa39109b0c0` without any owner decision.
+Architecture #187/#190, transport-ref semantics #197/#200, the retained-attempt registry #193/#195 and the Foundation reconnect boundary #192/#199 are merged. The Durability worker now waits for the **implementation PR for #208** to merge into protected `main`; merge of allocation PR #209 alone does not restore Durability write authority.
 
-The worker must preserve its published branch history. First perform a normal non-force merge-up of the fresh protected main into `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`, review the resulting diff and then continue TDD only inside the owned paths above. Do not reset/recreate/force-push the worker branch merely because main advanced.
+After #208's implementation PR merges into protected `main`, the worker must preserve its published branch history, refresh from the resulting current protected `main`, verify the constrained terminal reconciliation API and restored task authority, then perform a normal non-force merge-up into `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`. Only then may it resume TDD inside the owned paths. Do not reset/recreate/force-push the worker branch merely because main advanced.
 
 ## Architecture and source of truth
 
@@ -92,7 +93,7 @@ The worker must preserve its published branch history. First perform a normal no
 
 ## Acceptance criteria
 
-- [ ] Worker merge-ups protected `main@90f30b47ac9b1e5e41cf274caf707aa39109b0c0` into the existing branch without force/reset and verifies the post-merge diff is ownership-correct.
+- [ ] After #208's implementation PR merges into protected `main`, worker refreshes the resulting protected `main` into the existing branch without force/reset and verifies both the terminal reconciliation API and ownership-correct post-merge diff.
 - [ ] Real isolated PostgreSQL tests prove migration fresh/compatibility/checksum/ahead/behind/dirty/lock interruption and runtime-DDL denial.
 - [ ] Durable journal/adapter consumes the merged Foundation V1 boundary and proves fencing, same-attempt retry/lost-response classification, crash reconciliation and DB outage/recovery without moving Foundation admission/security/controller authority.
 - [ ] PREPARE/COMMIT persistence and reconciliation preserve the exact V1 attempt/transport-ref/evidence/deadline semantics; ambiguous outcomes reconcile the same attempt rather than reminting authority.
@@ -106,12 +107,12 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 
 ### Focused
 
-- command/run: worker TDD after resume-allocation merge
+- command/run: worker TDD after #208 implementation PR merges into protected `main`
 - result: pending
 
 ### Component/integration
 
-- command/run: isolated PostgreSQL worker evidence after resume-allocation merge
+- command/run: isolated PostgreSQL worker evidence after #208 implementation PR merges into protected `main`
 - result: pending
 
 ### E2E
@@ -122,15 +123,15 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 ## Context checkpoint
 
 ```yaml
-last_progress: Foundation reconnect durability boundary #192 merged through PR #199 as protected main@90f30b47ac9b1e5e41cf274caf707aa39109b0c0; architecture, transport-ref and registry prerequisites are all resolved
-status: READY_TO_RESUME
+last_progress: #208 requires a Foundation-owned terminal reconciliation snapshot constructor for the V1 durable adapter; allocation PR #209 alone leaves Durability paused without Foundation-path ownership
+status: WAITING_DEPENDENCY
 branch: impl/game-durability-journal
 head_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
 resume_base_sha: 90f30b47ac9b1e5e41cf274caf707aa39109b0c0
 pr: null
 final_head_sha: null
-owner_action_required: null
-blocker: null
-write_authority: exact_owned_paths_after_resume_allocation_merge
-next_action: after this resume-allocation PR merges, normal non-force merge-up protected main into the existing worker branch, verify ownership and resume TDD on the exact Durability-owned paths
+owner_action_required: no architecture decision required; await #208 implementation PR merge into protected main
+blocker: #208's Foundation terminal reconciliation implementation PR must merge into protected main before external terminal same-attempt reconciliation can be implemented
+write_authority: none_until_foundation_terminal_reconciliation_implementation_pr_merges_to_protected_main
+next_action: after #208's implementation PR merges into protected main, refresh that protected main into the existing worker branch, verify the repair and restored allocation authority, then resume TDD only on the exact Durability-owned paths
 ```
