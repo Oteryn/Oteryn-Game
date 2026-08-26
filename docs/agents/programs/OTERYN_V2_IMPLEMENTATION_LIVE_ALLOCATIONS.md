@@ -368,17 +368,17 @@ terminal_blockers_not_reopened: [93, 115, 116, 123, 131]
 ```
 
 
-## Current Wave A delivery state — Durability architecture hold
+## Current Wave A delivery state — Durability successor dependency
 
 | Lane | Current state | Exact next state |
 | --- | --- | --- |
 | Interaction | `COMPLETED_RELEASED` | PR #172 merged; post-merge independent reconciliation PASS; no active ownership. |
 | Ability | `COMPLETED_RELEASED` | PR #171 merged; post-merge independent reconciliation PASS; no active ownership. |
-| Durability | `WAITING_ARCHITECTURE` | [Issue #187](https://github.com/Oteryn/Oteryn-Game/issues/187) identifies that the current synchronous Foundation `ReconnectAttemptJournal` cannot express the required FND-04/DUR-02 durable authority, revalidation and async-handoff semantics. PR #182 remains only the released shared SQLx/Cargo/PostgreSQL prerequisite. |
+| Durability | `WAITING_DEPENDENCY` | PR #190 merged `DUR-RECONNECT-AUTHORITY-V1`; #167 now waits on Foundation successor #192. Registry successor #193 is disjoint and may run in parallel. |
 | AI | `COMPLETED_RELEASED` | PR #178 merged; post-merge independent reconciliation PASS; no active ownership. |
-| Server Seam | `WAITING_DEPENDENCY` | Not released by #167 while its durable architecture is unresolved on #187. |
+| Server Seam | `WAITING_DEPENDENCY` | Waits for #192, then resumed #167 durable adapter merge. |
 
-The earlier Wave A allocation snapshot is historical. Current GitHub delivery/review evidence and the archived task packets below supersede its stale `allocated_waiting_for_worker_branch` and `READY_TO_RESUME` prose. Future shared Cargo/workflow/composition/policy mutations remain serialized even though the prerequisite SQLx/PostgreSQL surfaces are now present on `main`. No Durability code, schema or migration mutation is authorized while the architecture hold applies.
+The earlier Wave A allocation snapshot is historical. Current GitHub delivery/review evidence and the archived task packets below supersede its stale `allocated_waiting_for_worker_branch` and `READY_TO_RESUME` prose. Future shared Cargo/workflow/composition/policy mutations remain serialized even though the prerequisite SQLx/PostgreSQL surfaces are now present on `main`. No Durability code, schema or migration mutation is authorized until Foundation successor #192 merges and #167 receives a fresh exact-base resume allocation.
 
 
 ## Completed allocation — Interaction
@@ -427,15 +427,18 @@ write_authority: none
 ```
 
 
-## Architecture hold — Durability journal-only substrate
+## Waiting dependency — Durability journal-only substrate
 
 ```yaml
 lane_id: OTV2-IMPL-DURABILITY
 issue: 167
-status: WAITING_ARCHITECTURE
+status: WAITING_DEPENDENCY
 worker_alias: Oteryn: impl durability
-architecture_escalation_issue: 187
-architecture_escalation_url: https://github.com/Oteryn/Oteryn-Game/issues/187
+architecture_decision_issue: 187
+architecture_decision_pr: 190
+architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
+foundation_boundary_issue: 192
+registry_issue: 193
 ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
 ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
@@ -472,13 +475,55 @@ shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
 shared_cargo_ci_lease_pr: 181
 shared_policy_lease_pr: 185
 shared_leases: released
-blocker: current synchronous Foundation ReconnectAttemptJournal cannot express all FND-04/DUR-02 durable authority, revalidation and async-handoff requirements
-write_authority: none_while_waiting_architecture
-next_action: await the accepted architect decision on #187
+blocker: Foundation reconnect durability boundary #192 is not yet merged
+write_authority: none_while_waiting_dependency
+next_action: keep #167 fail-closed until #192 merges, then issue a fresh exact-base Durability resume allocation
 ```
 
-PR #182 terminally resolved only the former `WAITING_EXTERNAL` Cargo/lockfile/PostgreSQL-CI prerequisite. It does not complete Durability, create a worker PR, or release Server Seam. The remote branch provenance is retained solely as `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`; local unpublished documentation checkpoint `3adf13ef17b3b7811aa4f73971456ecd321afcc2` is not a remote delivery. Do not create a replacement task, branch or Issue while this hold applies.
+PR #190 resolved the architecture question but did not implement Foundation or Durability. The existing Durability remote branch provenance remains `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`; do not create a replacement Durability task/branch. #192 is the sole Foundation successor and #193 is its disjoint serialized registry successor.
 
+
+
+## Merge-conditioned allocation — Foundation reconnect durability boundary
+
+```yaml
+lane_id: OTV2-IMPL-FOUNDATION-RECONNECT-DURABILITY
+task_id: OTV2-20260826-impl-foundation-reconnect-durability
+issue: 192
+status: allocation_pending_merge
+worker_alias: Oteryn: impl foundation
+allocation_pr: pending
+allocation_base_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
+branch_after_merge: impl/foundation-reconnect-durability-v1
+owned_paths:
+  - apps/game-server/src/foundation/admission.rs
+  - apps/game-server/src/foundation/admission_facade.rs
+  - apps/game-server/src/foundation/admission_recovery_inner.rs
+  - apps/game-server/src/foundation/fnd04_verifier.rs
+  - apps/game-server/src/foundation/recovery_tests.rs
+  - docs/agents/tasks/active/OTV2-20260826-impl-foundation-reconnect-durability.md
+write_authority: none_until_allocation_pr_merges
+blocks: [OTV2-IMPL-DURABILITY]
+```
+
+## Merge-conditioned serialized allocation — reconnect attempt registry
+
+```yaml
+lane_id: OTV2-FND04-RECONNECT-ATTEMPT-REGISTRY
+task_id: OTV2-20260826-reconnect-attempt-registry
+issue: 193
+status: allocation_pending_merge
+worker_alias: Oteryn: work coordinator
+allocation_pr: pending
+allocation_base_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
+branch_after_merge: docs/reconnect-attempt-bound-193
+owned_paths:
+  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
+  - docs/agents/tasks/active/OTV2-20260826-reconnect-attempt-registry.md
+write_authority: none_until_allocation_pr_merges
+serialized_lease: RESOURCE_LIMITS_REGISTRY only
+blocks: [issue:192 final acceptance]
+```
 
 ## Completed allocation — AI pure-local bootstrap
 
@@ -588,12 +633,15 @@ OTV2-FND04-VERIFIER-CONSUMER:
   independent_exact_head_security_review: PASS_POST_MERGE_RECONCILIATION
 
 OTV2-IMPL-DURABILITY:
-  status: WAITING_ARCHITECTURE
-  write_authority: none_while_waiting_architecture
+  status: WAITING_DEPENDENCY
+  write_authority: none_while_waiting_dependency
   issue: 167
   coordinator_issue: 162
-  architecture_escalation_issue: 187
-  architecture_escalation_url: https://github.com/Oteryn/Oteryn-Game/issues/187
+  architecture_decision_issue: 187
+  architecture_decision_pr: 190
+  architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
+  foundation_boundary_issue: 192
+  registry_issue: 193
   ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
   ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
   architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
@@ -606,8 +654,8 @@ OTV2-IMPL-DURABILITY:
   shared_integration_pr: 182
   shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
   shared_leases: released
-  blocker: Issue #187 durable architecture decision required
-  next_action: await the accepted architect decision on #187
+  blocker: Foundation successor #192 is not yet merged
+  next_action: keep #167 fail-closed until #192 merges, then issue a fresh exact-base Durability resume allocation
 OTV2-IMPL-ABILITY:
   status: completed_released
   write_authority: none
@@ -644,19 +692,19 @@ OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM:
   write_authority: none
   resource_gate_issue: 116
   verifier_gate_issue: 115
-  blocker: OTV2-IMPL-DURABILITY is WAITING_ARCHITECTURE on Issue #187; no durable ReconnectAttemptJournal adapter is merged
+  blocker: OTV2-IMPL-DURABILITY is WAITING_DEPENDENCY on Foundation successor #192; no durable ReconnectAttemptJournal adapter is merged
 OTV2-IMPL-CLIENT:
   status: WAITING_DEPENDENCY
-  blocker: Server Seam remains WAITING_DEPENDENCY because OTV2-IMPL-DURABILITY is WAITING_ARCHITECTURE on Issue #187
+  blocker: Server Seam remains WAITING_DEPENDENCY because OTV2-IMPL-DURABILITY is WAITING_DEPENDENCY on Foundation successor #192
 OTV2-IMPL-MOVE:
   status: WAITING_DEPENDENCY
-  blocker: Movement-only resource successor #139 plus Client/Server Seam dependency held by OTV2-IMPL-DURABILITY WAITING_ARCHITECTURE on Issue #187 and real QA E2E prerequisites are not integration-ready
+  blocker: Movement-only resource successor #139 plus Client/Server Seam dependency held by OTV2-IMPL-DURABILITY WAITING_DEPENDENCY on Foundation successor #192 and real QA E2E prerequisites are not integration-ready
 OTV2-IMPL-COMBAT:
   status: WAITING_DEPENDENCY
-  blocker: Movement and its Client/Server Seam/Durability dependency chain are held by OTV2-IMPL-DURABILITY WAITING_ARCHITECTURE on Issue #187
+  blocker: Movement and its Client/Server Seam/Durability dependency chain are held by OTV2-IMPL-DURABILITY WAITING_DEPENDENCY on Foundation successor #192
 OTV2-IMPL-CHANNEL:
   status: WAITING_DEPENDENCY
-  blocker: OTV2-IMPL-DURABILITY is WAITING_ARCHITECTURE on Issue #187; no durable ReconnectAttemptJournal adapter is merged
+  blocker: OTV2-IMPL-DURABILITY is WAITING_DEPENDENCY on Foundation successor #192; no durable ReconnectAttemptJournal adapter is merged
 OTV2-CONTENT-FORMAT-SPIKE:
   status: completed_released_owner_format_decision_pending
   write_authority: none

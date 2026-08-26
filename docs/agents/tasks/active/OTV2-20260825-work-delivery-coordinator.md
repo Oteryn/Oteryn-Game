@@ -4,7 +4,7 @@
 task_id: OTV2-20260825-work-delivery-coordinator
 title: Coordinate the post-blocker gameplay vertical slice
 mode: COORDINATE
-status: waiting_architecture
+status: coordinating_successors
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
@@ -13,7 +13,11 @@ pr: null
 delivery_pr: 188
 prior_merged_pr: 186
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
-protected_main_sha: 29576afa621bbe6a46c51fa1117c94efb6c7a644
+protected_main_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
+architecture_decision_pr: 190
+architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
+foundation_successor_issue: 192
+registry_successor_issue: 193
 ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
 ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
 initial_published_pr_head_sha: e205b0620d433733e306777ab8e491d471b62677
@@ -25,7 +29,7 @@ final_head_sha: 0e26fa0c216cadf34ff5c83fa3be508f81106c41
 final_head_frozen_at: null
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-08-26T13:53:34+02:00
+updated_at: 2026-08-26T15:05:00+02:00
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration, and closeout; no single worker owns the programme
 owned_paths:
@@ -40,7 +44,8 @@ public_contracts: []
 depends_on:
   - Oteryn/Oteryn-Game#154
 blocks:
-  - Issue #187 durable architecture decision for #167; Server Seam remains WAITING_DEPENDENCY and is not released
+  - Foundation successor #192 then resumed Durability #167; Server Seam remains WAITING_DEPENDENCY
+  - Serialized registry successor #193 may execute in parallel with #192
 cross_repository_coordination_id: OTV2-WORK-DELIVERY-POST-BLOCKER
 external_repositories: []
 \`\`\`
@@ -73,9 +78,9 @@ Create the durable execution lifecycle for the post-blocker gameplay vertical sl
 - \`PROVEN\`: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` passed exact-head governance, architecture, authority and merge-gate checks plus independent review, then squash-merged as protected \`main\` \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`; its temporary delivery branch was deleted. Its initial published head \`e205b0620d433733e306777ab8e491d471b62677\` remains exact original admission provenance.
 - \`PROVEN\`: the architecture-hold protected-main checkpoint \`007183ac7ef09dd4ae8d8f476d7ac943541d7d48\` had PR #182's shared prerequisite but no Durability worker PR or durable adapter delivery; current protected \`main\` is \`29576afa621bbe6a46c51fa1117c94efb6c7a644\` and retains that no-delivery state.
 - \`PROVEN\`: the only Durability remote provenance is \`impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741\`; local unpublished documentation checkpoint \`3adf13ef17b3b7811aa4f73971456ecd321afcc2\` is not a remote delivery.
-- \`PROVEN\`: [Issue #187](https://github.com/Oteryn/Oteryn-Game/issues/187) comment \`5424765487\` grants this bounded ownership correction: only the active Durability task's status, provenance, blocker, no-write state and next action may be corrected; no worker or runtime change is authorized.
-- \`PROVEN\`: [Issue #187](https://github.com/Oteryn/Oteryn-Game/issues/187) establishes that the current synchronous Foundation \`ReconnectAttemptJournal\` cannot express all FND-04/DUR-02 durable authority, revalidation and async-handoff requirements. #167 is therefore \`WAITING_ARCHITECTURE\`.
-- \`PROVEN\`: Server Seam remains \`WAITING_DEPENDENCY\`, not released by #167 while #187 is unresolved.
+- `PROVEN`: PR #190 merged `DUR-RECONNECT-AUTHORITY-V1` as protected `main@2394f6f4633b8c6662d8d79a84110cc2ae13dcb7`, closing #187 and selecting Foundation successor #192 plus disjoint registry successor #193.
+- `PROVEN`: PR #190 merged `DUR-RECONNECT-AUTHORITY-V1` as protected `main@2394f6f4633b8c6662d8d79a84110cc2ae13dcb7`, closing #187 and selecting Foundation successor #192 plus disjoint registry successor #193.
+- \`PROVEN\`: Server Seam remains \`WAITING_DEPENDENCY\`, not released by #167 until #192 merges and #167 is freshly resumed.
 - \`DERIVED\`: Interaction, Ability and journal-only Durability have disjoint primary semantic paths. Their shared composition/Cargo surfaces remain serialized coordinator paths.
 
 Governing authority:
@@ -98,11 +103,11 @@ Task 1 and Task 2 allocation are historical completion steps. Current GitHub PR/
 | Interaction | \`COMPLETED_RELEASED\` | PR #172 merged as \`73f82e4864aa15ece50625bda8bac7868f779ba3\`; post-merge reconciliation is recorded | Issue #165 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
 | Ability | \`COMPLETED_RELEASED\` | PR #171 merged as \`2faa280b406a313d02ee1330c65651bc36e215a9\`; post-merge reconciliation is recorded | Issue #166 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
 | AI | \`COMPLETED_RELEASED\` | PR #178 merged as \`cb9c5f4f53dd880c9d338dafd21b6184a4419993\`; post-merge reconciliation is recorded | Issue #174 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
-| Durability | \`WAITING_ARCHITECTURE\` | Issue #187 identifies a Foundation \`ReconnectAttemptJournal\` conflict with FND-04/DUR-02 durable authority, revalidation and async handoff; PR #182 remains only the merged shared prerequisite | no write authority pending the single recorded next action |
+| Durability | \`WAITING_DEPENDENCY\` | Issue #187 identifies a Foundation \`ReconnectAttemptJournal\` conflict with FND-04/DUR-02 durable authority, revalidation and async handoff; PR #182 remains only the merged shared prerequisite | no write authority pending the single recorded next action |
 | Server Seam | \`WAITING_DEPENDENCY\` | #167 cannot release the durable adapter until #187's accepted architect decision and a fresh allocation | not released by #167 |
-| Client | \`WAITING_DEPENDENCY\` | Server Seam remains blocked by #167 \`WAITING_ARCHITECTURE\` | no compatible production Server Seam is merged |
-| Movement | \`WAITING_DEPENDENCY\` | #139 remains non-current and its Client/Server Seam dependency chain is blocked by #167 \`WAITING_ARCHITECTURE\`; real QA is also not integration-ready | no dispatch authority |
-| Combat | \`WAITING_DEPENDENCY\` | Movement and its Client/Server Seam/Durability dependency chain is blocked by #167 \`WAITING_ARCHITECTURE\` | no dispatch authority |
+| Client | \`WAITING_DEPENDENCY\` | Server Seam remains blocked by #167 \`WAITING_DEPENDENCY\` | no compatible production Server Seam is merged |
+| Movement | \`WAITING_DEPENDENCY\` | #139 remains non-current and its Client/Server Seam dependency chain is blocked by #167 \`WAITING_DEPENDENCY\`; real QA is also not integration-ready | no dispatch authority |
+| Combat | \`WAITING_DEPENDENCY\` | Movement and its Client/Server Seam/Durability dependency chain is blocked by #167 \`WAITING_DEPENDENCY\` | no dispatch authority |
 
 ## Acceptance criteria
 
@@ -120,7 +125,7 @@ No gameplay/runtime, Cargo/workspace, registry, stable-ID, public-contract, work
 
 Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected \`main\`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. Owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\` closed #164 and authorized only the separately allocated pure-local AI bootstrap through Issue #174.
 
-PRs #171, #172 and #178 are now merged and their worker packets are archived/released by the current coordinator reconciliation. PR #182 only released the serialized Cargo/CI/policy prerequisite. Issue #187 now blocks #167: it has no worker PR and \`write_authority: none_while_waiting_architecture\`; Server Seam remains \`WAITING_DEPENDENCY\` and unreleased. This hold does not complete the vertical-slice programme.
+PRs #171, #172 and #178 are now merged and their worker packets are archived/released by the current coordinator reconciliation. PR #182 only released the serialized Cargo/CI/policy prerequisite. PR #190 resolved #187. Existing #167 still has no worker PR and no write authority; it is now `WAITING_DEPENDENCY` on Foundation successor #192. Registry successor #193 may proceed in parallel. Server Seam remains `WAITING_DEPENDENCY` and unreleased. This hold does not complete the vertical-slice programme.
 
 ## Validation
 
@@ -175,13 +180,13 @@ PRs #171, #172 and #178 are now merged and their worker packets are archived/rel
 - related/superseded PRs: #168 allocation; #171, #172 and #178 deliveries; #181/#185 leases; #182 shared integration
 - protected auto-merge: not used
 - merge commit/result: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` squash-merged as \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`; protected-main readback is current
-- ownership release: Ability, Interaction and AI are released; Durability has no write authority while waiting on #187; coordinator remains active and the vertical-slice programme is not complete
+- ownership release: Ability, Interaction and AI are released; Durability has no write authority while waiting on #192; coordinator remains active and the vertical-slice programme is not complete
 
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: PR #188 final head 0e26fa0c216cadf34ff5c83fa3be508f81106c41 passed exact-head governance, architecture, authority and merge-gate checks plus independent review and squash-merged as protected main 29576afa621bbe6a46c51fa1117c94efb6c7a644; coordinator remains active waiting on #187
-status: waiting_architecture
+last_progress: PR #190 merged as main@2394f6f4633b8c6662d8d79a84110cc2ae13dcb7 and closed #187; successor Issues #192/#193 are prepared for exact merge-conditioned allocation
+status: coordinating_successors
 branch: null
 head_sha: null
 pr: null
@@ -202,7 +207,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: accepted architect decision on Issue #187
-blocker: Issue #187 durable architecture conflict; #167 has write_authority none_while_waiting_architecture
-next_action: await the accepted architect decision on #187
+owner_action_required: null
+blocker: #192 Foundation boundary must merge before #167 can receive fresh resume authority
+next_action: merge the exact successor allocation for #192/#193, then release only those named authorities
 \`\`\`
