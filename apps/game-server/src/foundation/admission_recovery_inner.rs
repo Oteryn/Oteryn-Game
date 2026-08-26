@@ -284,6 +284,26 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
     }
 }
 
+/// Stable non-process-local equality/fencing reference for one authenticated
+/// reconnect candidate transport. The bytes carry no chronology or authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct AuthenticatedTransportRefV1([u8; 16]);
+
+impl AuthenticatedTransportRefV1 {
+    pub fn decode(input: &[u8]) -> Result<Self, AdmissionError> {
+        let bytes: [u8; 16] = input.try_into().map_err(|_| AdmissionError::InvalidFacts)?;
+        if bytes.iter().all(|byte| *byte == 0) {
+            return Err(AdmissionError::InvalidFacts);
+        }
+        Ok(Self(bytes))
+    }
+
+    #[must_use]
+    pub const fn to_bytes(self) -> [u8; 16] {
+        self.0
+    }
+}
+
 #[cfg(test)]
 mod durability_reconnect_v1_tests {
     use super::*;
