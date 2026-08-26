@@ -77,7 +77,7 @@ external_repositories: []
 
 Architecture #187/#190, transport-ref semantics #197/#200, the retained-attempt registry #193/#195 and the Foundation reconnect boundary #192/#199 are merged. The Durability worker now waits for the **implementation PR for #208** to merge into protected `main`; merge of allocation PR #209 alone does not restore Durability write authority.
 
-After #208's implementation merge, the worker must preserve its published branch history, refresh from the resulting current protected `main`, verify the constrained terminal reconciliation API and restored task authority, then perform a normal non-force merge-up into `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`. Only then may it resume TDD inside the owned paths. Do not reset/recreate/force-push the worker branch merely because main advanced.
+After #208's implementation PR merges into protected `main`, the worker must preserve its published branch history, refresh from the resulting current protected `main`, verify the constrained terminal reconciliation API and restored task authority, then perform a normal non-force merge-up into `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`. Only then may it resume TDD inside the owned paths. Do not reset/recreate/force-push the worker branch merely because main advanced.
 
 ## Architecture and source of truth
 
@@ -132,7 +132,6 @@ pr: null
 final_head_sha: null
 owner_action_required: no architecture decision required; await #208 implementation PR merge into protected main
 blocker: #208's Foundation terminal reconciliation implementation PR must merge into protected main before external terminal same-attempt reconciliation can be implemented
-write_authority: none_until_foundation_terminal_reconciliation_repair_merges
+write_authority: none_until_foundation_terminal_reconciliation_implementation_pr_merges_to_protected_main
 next_action: after #208's implementation PR merges into protected main, refresh that protected main into the existing worker branch, verify the repair and restored allocation authority, then resume TDD only on the exact Durability-owned paths
 ```
-abd09929ef8270a428cd6bab27344514f901a17e
