@@ -72,7 +72,7 @@ AuthenticatedTransportRefV1 = 16 opaque non-zero bytes
 Rules:
 
 - minted exactly once by Foundation for one authenticated candidate transport before PREPARE;
-- collision-resistant and never reused; the implementation uses a CSPRNG-backed 128-bit value or an equivalently strong non-reuse construction;
+- collision-resistant and never reused; the implementation uses a CSPRNG-backed 128-bit candidate or an equivalently strong construction, checks it against the durable uniqueness set, and retries generation on collision before publishing it;
 - canonical durable codec is exactly the 16 bytes; all-zero is invalid;
 - equality-only: byte order provides no time, recency, priority or authority ordering;
 - non-secret and **not bearer authority**; possession never authorizes reconnect;
@@ -121,9 +121,11 @@ ReconnectDurabilityRecordV1
     RecoveryGrantNonce replay key when REAUTHENTICATED_RECOVERY
 
   FND-02 reconciliation fence
-    command high-water / pending-order evidence required by FND-02
+    next_command_id (non-zero; exact next reservable CommandId)
+    pending_command_ids (sorted unique; bounded by existing FND02-OUTSTANDING-COMMANDS = 64)
     current server_sequence
-    bounded typed domain revisions required for safe resume
+    domain_revisions (sorted unique by domain id; bounded by existing FND02-STATE-DOMAINS-PER-SYNC = 256)
+    no-double-execution/result reconciliation marker required to classify every pending CommandId
 
   compatibility/security evidence
     protocol_major
@@ -133,8 +135,8 @@ ReconnectDurabilityRecordV1
     map_revision
     world_policy_revision
     account_security_generation
-    authenticated Platform-security source revision/fence + source-observed time
-    authenticated proof/key/profile trust source revision/fence + source-observed time
+    PlatformSecurityEvidenceFenceV1 { authority/purpose/scope, source_revision, decision_identity, source_observed_at }
+    ProofTrustEvidenceFenceV1 { authority/purpose/scope, source_revision, decision_identity, source_observed_at }
     credential expiration when the proof class has one
 ```
 
@@ -249,7 +251,7 @@ live PREPARED candidates per GameSession = 1
 retained distinct reconnect attempts per open ControlLossEpoch = 8
 ```
 
-These are safety/idempotency cardinalities, not performance tuning knobs.
+These are safety/idempotency cardinalities, not performance tuning knobs. The value `8` is a new FND-04 reconnect safety ceiling selected by this decision, not an alias or reuse of `NET03-PENDING-WRITES` or any DUR-03 transaction limit. One open loss epoch may therefore retain the single live candidate plus a small bounded set of failed/expired attempt identities for deterministic lost-response lookup; eight distinct attempts permits repeated physical reconnection churn while bounding attacker-controlled row/index growth to a constant single-digit cardinality. The same-attempt retry path is idempotent and does not consume another slot, so ordinary packet/response retry does not spend this budget.
 
 Rules:
 
