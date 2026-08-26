@@ -436,6 +436,26 @@ status: allocated_ready_to_resume
 worker_alias: Oteryn: impl durability
 worker_branch: impl/game-durability-journal
 task_packet: docs/agents/tasks/active/OTV2-20260825-impl-durability.md
+owned_paths:
+  - apps/game-server/src/durability/mod.rs
+  - apps/game-server/src/durability/db.rs
+  - apps/game-server/src/durability/schema.rs
+  - apps/game-server/src/durability/admission_journal.rs
+  - apps/game-server/src/durability/reconcile.rs
+  - apps/game-server/src/bin/oteryn-game-migrate.rs
+  - apps/game-server/migrations/0001_admission_reconnect_journal.sql
+  - apps/game-server/build.rs
+  - apps/game-server/tests/durability_postgres.rs
+  - apps/game-server/tests/support/postgres.rs
+  - docs/agents/tasks/active/OTV2-20260825-impl-durability.md
+coordinator_serialized_lease:
+  - apps/game-server/src/lib.rs
+  - apps/game-server/Cargo.toml
+  - Cargo.toml
+  - Cargo.lock
+  - .github/workflows/rust.yml
+  - .gitattributes
+  - deny.toml
 shared_integration_pr: 182
 shared_integration_final_head_sha: 0017cac33fef8c7359bdb9f2ba2c6c367ba06495
 shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
