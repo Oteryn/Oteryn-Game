@@ -1422,3 +1422,110 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod durability_evidence_v1_tests {
+    use super::*;
+    use base64::Engine;
+    use ed25519_dalek::{Signer, SigningKey};
+
+    struct RecoveryAuthority {
+        key: [u8; 32],
+    }
+
+    impl Fnd04EvidenceAuthority for RecoveryAuthority {
+        fn signing_key(
+            &self,
+            scope: Fnd04EvidenceScope,
+            key_id: &str,
+            _now: i64,
+        ) -> Result<[u8; 32], Fnd04EvidenceError> {
+            if scope == Fnd04EvidenceScope::ExistingActorRecovery && key_id == "recovery-1" {
+                Ok(self.key)
+            } else {
+                Err(Fnd04EvidenceError::ExplicitlyDenied)
+            }
+        }
+
+        fn account_minimum_generation(
+            &self,
+            scope: Fnd04EvidenceScope,
+            _account_id: &str,
+            _now: i64,
+        ) -> Result<u64, Fnd04EvidenceError> {
+            if scope == Fnd04EvidenceScope::ExistingActorRecovery {
+                Ok(1)
+            } else {
+                Err(Fnd04EvidenceError::ExplicitlyDenied)
+            }
+        }
+    }
+
+    fn id(last: u8) -> [u8; 16] {
+        let mut value = [0u8; 16];
+        value[6] = 0x70;
+        value[8] = 0x80;
+        value[15] = last;
+        value
+    }
+
+    fn recovery_payload() -> String {
+        let nonce = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([8; 32]);
+        format!(
+            r#"{{"iss":"urn:oteryn:platform:game-recovery","aud":"urn:oteryn:game:recovery","iat":100,"nbf":100,"exp":110,"jti":"{nonce}","profile":"oteryn-reauth-recovery-v1","purpose":"existing_actor_recovery","attempt_ref":"00000000-0000-7000-8000-000000000001","account_id":"00000000-0000-4000-8000-000000000001","character_id":"00000000-0000-7000-8000-000000000002","world_id":"00000000-0000-7000-8000-000000000003","account_security_generation":"1","protocol_major":1,"transport_profile":1,"ruleset_revision":"rules-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1"}}"#
+        )
+    }
+
+    fn signed_recovery(signing_key: &SigningKey) -> String {
+        let header = r#"{"alg":"Ed25519","kid":"recovery-1","typ":"oteryn-recovery+jwt"}"#;
+        let encoded_header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(header);
+        let encoded_payload =
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(recovery_payload());
+        let signing_input = format!("{encoded_header}.{encoded_payload}");
+        let signature = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(signing_key.sign(signing_input.as_bytes()).to_bytes());
+        format!("{signing_input}.{signature}")
+    }
+
+    #[test]
+    fn recovery_durability_facts_preserve_signed_security_revision_and_expiry()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[23; 32]);
+        let authority = RecoveryAuthority {
+            key: signing_key.verifying_key().to_bytes(),
+        };
+        let trust = RecoveryTrustContext::new(&authority);
+        let current = RecoveryCurrentEvidence {
+            account_id: "00000000-0000-4000-8000-000000000001".to_owned(),
+            character_id: CharacterId::decode(&id(2))
+                .map_err(|_| Fnd04ConsumerError::RecoveryMalformed)?,
+            world_id: WorldId::decode(&id(3))
+                .map_err(|_| Fnd04ConsumerError::RecoveryMalformed)?,
+            ruleset_revision: "rules-1".to_owned(),
+            content_revision: "content-1".to_owned(),
+            map_revision: "map-1".to_owned(),
+            world_policy_revision: "policy-1".to_owned(),
+        };
+
+        let facts = verify_recovery_grant_durability_v1(
+            &signed_recovery(&signing_key),
+            100,
+            &trust,
+            &current,
+        )?;
+
+        assert_eq!(facts.grant_nonce(), [8; 32]);
+        assert_eq!(facts.account_id(), current.account_id);
+        assert_eq!(facts.character_id(), current.character_id);
+        assert_eq!(facts.world_id(), current.world_id);
+        assert_eq!(facts.account_security_generation(), 1);
+        assert_eq!(facts.protocol_major(), 1);
+        assert_eq!(facts.transport_profile(), 1);
+        assert_eq!(facts.ruleset_revision(), "rules-1");
+        assert_eq!(facts.content_revision(), "content-1");
+        assert_eq!(facts.map_revision(), "map-1");
+        assert_eq!(facts.world_policy_revision(), "policy-1");
+        assert_eq!(facts.credential_expiration(), 110);
+        Ok(())
+    }
+}
