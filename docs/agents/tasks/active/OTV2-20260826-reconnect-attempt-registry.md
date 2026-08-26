@@ -4,19 +4,20 @@
 task_id: OTV2-20260826-reconnect-attempt-registry
 title: Register FND-04 reconnect-attempt retention hard bound
 mode: CONTRACT
-status: waiting_allocation_merge
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/reconnect-attempt-bound-193
 issue: 193
 pr: null
-allocation_pr: pending
-base_sha: null
+allocation_pr: 194
+allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
+base_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
 head_sha: null
 final_head_sha: null
-owner: Oteryn: work coordinator
+owner: ChatGPT registry worker for Issue #193
 created_at: 2026-08-26T15:02:00+02:00
-updated_at: 2026-08-26T15:02:00+02:00
+updated_at: 2026-08-26T15:29:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -26,10 +27,11 @@ public_contracts:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - DUR-RECONNECT-AUTHORITY-V1
 depends_on:
-  - issue:187 resolved by pr:190 / main:2394f6f4633b8c6662d8d79a84110cc2ae13dcb7blocks:
+  - issue:187 resolved by pr:190 / main:2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
+blocks:
   - issue:192 final acceptance
   - issue:167 downstream resume
-write_authority: none_until_allocation_pr_merges
+write_authority: exact_allocated_registry_and_task_paths
 serialized_lease: docs/contracts/RESOURCE_LIMITS_REGISTRY.json only
 external_repositories: []
 ```
@@ -40,26 +42,37 @@ Append exactly one accepted registry row: `FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPO
 
 ## Acceptance criteria
 
-- [ ] RED proves the exact ID is absent on the allocation merge base.
-- [ ] Exactly one new registry object is added; every existing object is byte/semantic-equivalent except unavoidable trailing delimiter context.
-- [ ] `hard_maximum` is 8 and is not derived from NET03/DUR03 resources.
-- [ ] Max, max+1, same-ref retry and overflow obligations are recorded.
-- [ ] Registry JSON uniqueness/required-field/round-trip checks pass.
+- [x] RED proves the exact ID is absent on the allocation merge base.
+- [x] Exactly one new registry object is added; every existing object is byte/semantic-equivalent except unavoidable trailing delimiter context.
+- [x] `hard_maximum` is 8 and is not derived from NET03/DUR03 resources.
+- [x] Max, max+1, same-ref retry and overflow obligations are recorded.
+- [x] Registry JSON uniqueness/required-field/round-trip checks pass.
 - [ ] Governance, repository policy, architecture check, diff review and exact-head CI pass before expected-head merge.
 
 ## Excluded scope
 
 No runtime/Foundation/Durability implementation, Cargo/workflow, other resource value, wire/error numeric ID, production tuning or external-repository mutation.
 
+## Validation
+
+- RED on `main@1063caf409af6cd4b25fa844e17a483b87e76ad6`: target ID absent, expected failure observed.
+- GREEN: exact ID count 1, hard maximum 8, fixed range 8..8, required fields/uniqueness/JSON round-trip PASS.
+- `python tools/agents/validate_governance.py`: PASS.
+- `cargo +1.94.0 run -q -p oteryn-architecture-check -- workspace .`: PASS.
+- repository-policy validator retains the pre-existing canonical LICENSE mismatch; `git diff origin/main -- LICENSE` is empty.
+- `git diff --check`: PASS.
+- independent review: NOT_REQUIRED for exact transcription of the already accepted/reviewed PR #190 value into the serialized registry.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #190 accepted the exact hard maximum; serialized registry delivery awaits allocation merge
-status: waiting_allocation_mergebranch: docs/reconnect-attempt-bound-193
+last_progress: one-row registry mutation is GREEN; governance, architecture check and diff checks pass; repository-policy LICENSE mismatch is baseline-only
+status: validating
+branch: docs/reconnect-attempt-bound-193
 head_sha: null
 pr: null
 final_head_sha: null
 owner_action_required: null
-blocker: allocation PR must merge before registry mutation
-next_action: after allocation merge, create the named branch from that exact protected-main SHA and append the single accepted registry row
+blocker: null
+next_action: freeze the delivery head, open the exact-head PR and require protected CI before merge
 ```
