@@ -16,6 +16,11 @@ F_PATHS = {
     "docs/architecture/ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_ANALYSIS.md",
     "docs/architecture/ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_CONTRACT_CANDIDATE.md",
 }
+R_PATHS = {
+    "apps/game-server/src/foundation/admission_recovery_inner.rs",
+    "apps/game-server/src/foundation/fnd04_verifier.rs",
+    "docs/agents/tasks/active/OTV2-20260826-impl-foundation-reconnect-durability.md",
+}
 
 
 def fail(msg: str) -> None:
@@ -193,6 +198,165 @@ def analytics() -> list[str]:
     ]
 
 
+def foundation_reconnect() -> list[str]:
+    task = text("docs/agents/tasks/active/OTV2-20260826-impl-foundation-reconnect-durability.md")
+    implementation = text("apps/game-server/src/foundation/admission_recovery_inner.rs")
+    verifier = text("apps/game-server/src/foundation/fnd04_verifier.rs")
+
+    for label, fragment in {
+        "authority decision": "DUR-RECONNECT-AUTHORITY-V1",
+        "transport uniqueness decision": "DUR-RECONNECT-TRANSPORT-REF-UNIQUENESS-V1",
+        "exact Foundation write authority": "write_authority: exact_allocated_foundation_and_task_paths",
+        "attempt bound provenance": "FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPOCH = 8",
+        "no SQLx scope": "No SQLx/query/migration/schema work",
+        "Foundation authority retained": "Foundation retains admission/security/controller authority",
+    }.items():
+        need(task, fragment, label, ci=True)
+
+    for label, fragment in {
+        "stable transport ref": "pub struct AuthenticatedTransportRefV1([u8; 16]);",
+        "zero ref rejection": "if bytes.iter().all(|byte| *byte == 0)",
+        "attempt cap": "const RECONNECT_ATTEMPTS_PER_LOSS_EPOCH_V1: usize = 8;",
+        "full durability record": "pub struct ReconnectDurabilityRecordV1",
+        "identity evidence": "identity: ReconnectIdentityV1",
+        "connection evidence": "connection: ReconnectConnectionFenceV1",
+        "authority evidence": "authority: ReconnectAuthorityFenceV1",
+        "continuity evidence": "continuity: ReconnectContinuityV1",
+        "proof evidence": "proof: ReconnectProofV1",
+        "FND-02 evidence": "fnd02: Fnd02ReconciliationFenceV1",
+        "compatibility evidence": "compatibility: ReconnectCompatibilityEvidenceV1",
+        "one-live PREPARED": "entry.state == ReconnectAttemptStateV1::Prepared",
+        "collision terminal": "ReconnectAttemptStateV1::CollisionTerminal",
+        "prepare split phase": "ReconnectDurabilityPhaseV1::AwaitFinalRevalidation",
+        "commit split phase": "ReconnectDurabilityPhaseV1::PendingCommit",
+        "reconciliation phase": "ReconnectDurabilityPhaseV1::ReconciliationRequired",
+        "legacy journal retained": "ReconnectAttemptJournal<T>",
+    }.items():
+        need(implementation, fragment, label)
+
+    need_re(
+        implementation,
+        r"if let Some\(entry\) = self\.entries\.iter\(\)\.find\(\|entry\| entry\.attempt == attempt\).*?entry\.transport_ref == transport_ref.*?ReconnectAttemptReservationV1::Existing.*?IdempotencyConflict",
+        "one attempt binds one immutable transport ref",
+    )
+    need_re(
+        implementation,
+        r"if self\.entries\.len\(\) >= RECONNECT_ATTEMPTS_PER_LOSS_EPOCH_V1\s*\{\s*return Err\(ReconnectDurabilityErrorV1::AttemptCapacityExceeded\);\s*\}\s*self\.entries\.push",
+        "attempt 9 rejected before allocation",
+    )
+    need_re(
+        implementation,
+        r"Prepared \| ReconnectPrepareDispositionV1::ExistingPrepared.*?any\(\|\(other, entry\)\| other != index && entry\.state == ReconnectAttemptStateV1::Prepared\).*?ConcurrentPrepared",
+        "second live PREPARED fails closed",
+    )
+    need_re(
+        implementation,
+        r"replacement_allowed_after_collision.*?entries\.len\(\) < RECONNECT_ATTEMPTS_PER_LOSS_EPOCH_V1.*?!self\.entries\.iter\(\)\.any\(\|entry\| entry\.state == ReconnectAttemptStateV1::Prepared\).*?CollisionTerminal",
+        "collision replacement requires capacity, no PREPARED and terminal collision",
+    )
+
+    for disposition in (
+        "Prepared",
+        "ExistingPrepared",
+        "RejectedTransportRefCollision",
+        "RejectedConcurrentPrepared",
+        "RejectedStaleAuthority",
+        "AttemptCapacityExceeded",
+        "ExistingTerminal",
+        "Unavailable",
+        "Ambiguous",
+        "IdempotencyConflict",
+    ):
+        need(implementation, disposition, f"typed PREPARE disposition {disposition}")
+
+    need_re(
+        implementation,
+        r"ReconnectPrepareDispositionV1::Unavailable\s*=>\s*Ok\(ReconnectPrepareActionV1::RetrySameRequest\(self\.prepare_request\.clone\(\)\)\)",
+        "PREPARE unavailable retries the same request",
+    )
+    need_re(
+        implementation,
+        r"ReconnectPrepareDispositionV1::Ambiguous.*?ReconciliationRequired.*?ReconcileSameAttempt",
+        "PREPARE ambiguous reconciles the same attempt",
+    )
+    need_re(
+        implementation,
+        r"ReconnectCommitDispositionV1::Unavailable\s*=>\s*Ok\(ReconnectCommitActionV1::RetrySameRequest\(completion\.request\)\)",
+        "COMMIT unavailable retries the same request",
+    )
+    need_re(
+        implementation,
+        r"ReconnectCommitDispositionV1::Committed \| ReconnectCommitDispositionV1::Ambiguous.*?ReconciliationRequired.*?ReconcileSameAttempt",
+        "COMMIT committed/ambiguous requires reconciliation",
+    )
+
+    need_re(
+        implementation,
+        r"authorize_commit.*?phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation.*?ReconnectCurrentAuthorityV1::from_record.*?current != expected.*?GameSessionState::Reconnectable.*?current_controller_present.*?StaleAuthority.*?now > deadline.*?DeadlineExpired.*?ReconnectCommitRequestV1",
+        "fresh complete revalidation precedes COMMIT request",
+    )
+    need_re(
+        implementation,
+        r"authorization_deadline.*?prepared_deadline.*?original_grace_deadline.*?platform_deadline.*?trust_deadline.*?credential_expiration",
+        "authorization deadline is bounded by grace, prepared, evidence and credential expiry",
+    )
+    need_re(
+        implementation,
+        r"accept_reconciliation.*?snapshot\.record != self\.record.*?current_scope_generation != self\.record\.authority\(\)\.scope_ownership_generation\(\).*?ReconciliationMismatch",
+        "reconciliation rechecks exact record and scope fence",
+    )
+    need_re(
+        implementation,
+        r"DurableReconnectStateV1::Committed.*?current_generation != Some\(self\.record\.connection\(\)\.candidate\(\)\).*?current_transport_ref != Some\(self\.record\.connection\(\)\.transport_ref\(\)\).*?InstallController",
+        "controller installs only after exact committed generation/ref reconciliation",
+    )
+
+    need(verifier, "pub struct VerifiedRecoveryDurabilityFactsV1", "rich recovery verifier result")
+    need_re(
+        verifier,
+        r"verify_recovery_grant_durability_v1.*?let verified = verify_recovery_grant\(token, now, trust, current\)\?;.*?parse_compact_jws\(token\)",
+        "legacy verifier decision happens before signed-field preservation",
+    )
+    need_re(
+        verifier,
+        r"claims\.nonce != verified\.grant_nonce\(\).*?claims\.account_id\.as_str\(\) != verified\.account_id\(\).*?character != verified\.character_id\(\).*?world != verified\.world_id\(\).*?binding_mismatch",
+        "rich verifier rebinds parsed claims to the legacy verified identity",
+    )
+    for field in (
+        "account_security_generation",
+        "protocol_major",
+        "transport_profile",
+        "ruleset_revision",
+        "content_revision",
+        "map_revision",
+        "world_policy_revision",
+        "credential_expiration",
+    ):
+        need(verifier, field, f"signed recovery field preserved: {field}")
+    need(verifier, "it does not invent source revisions or decision identities", "no fabricated source evidence")
+
+    joined = implementation + "\n" + verifier
+    forbid_re(
+        joined,
+        r"\b(?:sqlx|reqwest|hyper|TcpStream|TcpListener|UdpSocket|tokio::net|std::net|std::fs|OpenOptions)\b|File::open",
+        "Foundation reconnect boundary must not perform database/network/filesystem I/O",
+    )
+    forbid_re(joined, r"\basync\s+fn\b|\.await\b", "Foundation logical writer must remain split-phase and non-blocking")
+
+    return [
+        "Foundation-only reconnect durability authority and scope",
+        "exact non-zero 16-byte transport reference",
+        "one-attempt/one-ref idempotency and 8-attempt cap-before-allocation",
+        "one-live-PREPARED and collision replacement fencing",
+        "typed PREPARE/COMMIT split-phase retry and ambiguity semantics",
+        "fresh final authority/security/deadline revalidation before COMMIT",
+        "exact durable reconciliation before controller installation",
+        "FND-02, proof, continuity and compatibility evidence preservation",
+        "legacy FND-04 recovery verification retained before rich signed-field extraction",
+        "no fabricated source evidence and no DB/network/filesystem I/O",
+    ]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--base-sha", required=True)
@@ -207,6 +371,8 @@ def main() -> None:
         profile, checks, verdict = "ALPHA_CLIENT_01", alpha(), "PASS"
     elif changed == F_PATHS:
         profile, checks, verdict = "ANL_02_ANL_03", analytics(), "PASS"
+    elif changed == R_PATHS:
+        profile, checks, verdict = "FOUNDATION_RECONNECT_DURABILITY_V1", foundation_reconnect(), "PASS"
     else:
         profile, checks, verdict = "NOT_APPLICABLE", [], "NOT_APPLICABLE"
 
