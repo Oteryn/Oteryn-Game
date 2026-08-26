@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: OTV2-20260825-impl-durability
-title: READY_TO_RESUME — journal-only durability admission and reconnect substrate
+title: WAITING_DEPENDENCY — journal-only durability admission and reconnect substrate
 mode: IMPLEMENT
-status: READY_TO_RESUME
+status: WAITING_DEPENDENCY
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-durability-journal
@@ -66,8 +66,9 @@ depends_on:
   - issue:193 completed by pr:195 / main:9878d42a21815027ef88067bfc59f8b40e78b473
   - issue:197 completed by pr:200 / main:dc531658c7ffc9af91ccc6719aee80ffe01c22a4
 blocks:
+  - Foundation terminal reconciliation snapshot repair #208 / allocation PR #209 must merge before this worker resumes Task 1 or Task 2
   - Server Seam remains WAITING_DEPENDENCY until this resumed Durability worker merges the real durable adapter
-write_authority: exact_owned_paths_after_resume_allocation_merge
+write_authority: none_until_foundation_terminal_reconciliation_repair_merges
 shared_paths: none
 external_repositories: []
 ```
@@ -122,15 +123,15 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 ## Context checkpoint
 
 ```yaml
-last_progress: Foundation reconnect durability boundary #192 merged through PR #199 as protected main@90f30b47ac9b1e5e41cf274caf707aa39109b0c0; architecture, transport-ref and registry prerequisites are all resolved
-status: READY_TO_RESUME
+last_progress: #208 identified the Foundation-owned terminal reconciliation snapshot constructor required by the V1 durable adapter; Durability pauses without Foundation-path ownership
+status: WAITING_DEPENDENCY
 branch: impl/game-durability-journal
 head_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
 resume_base_sha: 90f30b47ac9b1e5e41cf274caf707aa39109b0c0
 pr: null
 final_head_sha: null
-owner_action_required: null
-blocker: null
-write_authority: exact_owned_paths_after_resume_allocation_merge
-next_action: after this resume-allocation PR merges, normal non-force merge-up protected main into the existing worker branch, verify ownership and resume TDD on the exact Durability-owned paths
+owner_action_required: no architecture decision required; await bounded Foundation repair #208
+blocker: Foundation terminal reconciliation snapshot constructor is required for external terminal same-attempt reconciliation and is outside Durability ownership
+write_authority: none_until_foundation_terminal_reconciliation_repair_merges
+next_action: after #208 merges, refresh protected main into the existing worker branch, verify the repair and restored allocation authority, then resume TDD only on the exact Durability-owned paths
 ```

@@ -50,6 +50,18 @@ This allocation grants no authority until its PR merges. The worker starts only 
 - [ ] Existing prepared and committed paths remain covered.
 - [ ] Focused Foundation regression, full required workspace validation, independent exact-head authority review and protected merge gate pass.
 
+## Validation plan
+
+- focused: Foundation-owned regression will run the admission recovery test target that proves ambiguous same-attempt reconciliation reaches the constrained terminal projection.
+- component: the worker must run the applicable locked workspace build, strict Clippy and test checks on the exact final head.
+- E2E: NOT_APPLICABLE to this additive Foundation API repair; it creates no database, network or player-facing behavior.
+
+## Review plan
+
+- self-review: required against the exact final head; verify no public fields or unconstrained constructor are exposed.
+- independent review: required on the same exact final head because this is Foundation reconnect authority/reconciliation API surface.
+- closeout: freeze head, require exact-head protected merge gate and zero unresolved threads, then merge with expected head.
+
 ## Context checkpoint
 
 ```yaml
