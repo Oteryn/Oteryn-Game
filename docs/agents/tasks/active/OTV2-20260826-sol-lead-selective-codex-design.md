@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/sol-lead-selective-codex-179
 issue: 179
-pr: null
+pr: 180
 base_sha: cb9c5f4f53dd880c9d338dafd21b6184a4419993
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT supervising architecture session
 created_at: 2026-08-26T07:20:08Z
-updated_at: 2026-08-26T07:25:00Z
+updated_at: 2026-08-26T07:29:00Z
 execution_budget_minutes: 90
 large_budget_reason: execution-model architecture, reusable prompt packaging and governance validation
 owned_paths:
@@ -108,7 +108,7 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 ### Exact-head CI
 
 - final head: pending
-- trigger source: pull_request
+- trigger source: pull_request #180
 - workflow/run/job: pending
 - runner assignment: pending
 - classification: docs/governance only
@@ -141,15 +141,15 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 ## Context checkpoint
 
 ```yaml
-last_progress: written design, continuation prompt, README and lifecycle registration self-reviewed on the Issue #179 branch
+last_progress: draft PR #180 opened with written design, continuation prompt, README/lifecycle registration and self-review
 status: validating
 branch: docs/sol-lead-selective-codex-179
 head_sha: null
-pr: null
+pr: 180
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+ci_trigger_source: pull_request
+ci_check_generation: pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -163,5 +163,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: written_spec_review
 blocker: implementation plan must not be authored until owner reviews the written spec
-next_action: open the design package as a draft PR for owner written-spec review and exact-head governance qualification
+next_action: owner reviews and confirms the written spec in PR #180 or chat before implementation-plan authoring
 ```
