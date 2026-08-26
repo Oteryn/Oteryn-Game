@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: OTV2-20260826-impl-foundation-reconnect-durability
-title: WAITING_ARCHITECTURE_DECISION_MERGE — Foundation reconnect durability boundary v1
+title: Implement Foundation reconnect durability boundary v1
 mode: IMPLEMENT
-status: WAITING_ARCHITECTURE_DECISION_MERGE
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/foundation-reconnect-durability-v1
@@ -14,19 +14,20 @@ architecture_decision_issue: 187
 architecture_decision_pr: 190
 architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
 transport_ref_decision_issue: 197
-transport_ref_decision_pr: 198
+transport_ref_decision_pr: 200
 transport_ref_decision_head_sha: 55c96131745454e7b3c5b81781e865f17b285968
+transport_ref_decision_merge_sha: dc531658c7ffc9af91ccc6719aee80ffe01c22a4
 allocation_pr: 194
 allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
 registry_issue: 193
 registry_pr: 195
 registry_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
-base_sha: f31453f65477ae9966d724d67bdd2c1857318be1
+base_sha: dc531658c7ffc9af91ccc6719aee80ffe01c22a4
 head_sha: null
 final_head_sha: null
 owner: Oteryn: impl foundation
 created_at: 2026-08-26T15:02:00+02:00
-updated_at: 2026-08-26T18:32:00+02:00
+updated_at: 2026-08-26T19:00:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: FND-03/FND-04 reconnect authority, fencing, async handoff and security evidence are XHigh-risk Foundation semantics
 owned_paths:
@@ -38,47 +39,49 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260826-impl-foundation-reconnect-durability.md
 public_contracts:
   - DUR-RECONNECT-AUTHORITY-V1
-  - DUR-RECONNECT-TRANSPORT-REF-UNIQUENESS-V1 after PR #198 merges
+  - DUR-RECONNECT-TRANSPORT-REF-UNIQUENESS-V1
   - FND-03_RUNTIME_EXECUTION_CONTRACT
   - FND-04A_AUTHORITY_FRESH_ADMISSION_CONTRACT
   - FND-04B_RECONNECT_RECOVERY_CONTINUITY_CONTRACT
 depends_on:
   - issue:187 resolved by pr:190 / main:2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
   - issue:193 completed by pr:195 / main:9878d42a21815027ef88067bfc59f8b40e78b473
-  - issue:197 / pr:198 must merge and protected main must be read back before runtime TDD resumes
+  - issue:197 resolved by pr:200 / main:dc531658c7ffc9af91ccc6719aee80ffe01c22a4
 blocks:
   - issue:167
   - OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM
-write_authority: no_runtime_write_while_transport_ref_decision_unmerged
+write_authority: exact_allocated_foundation_and_task_paths
 shared_paths: none
 external_repositories: []
 ```
 
 ## Outcome
 
-After the transport-ref uniqueness decision becomes canonical, expose the smallest Foundation-owned V1 reconnect persistence boundary: stable transport reference, complete durable authority/reconciliation evidence, split-phase PREPARE/COMMIT request-completion semantics and final FND-04 revalidation. Foundation retains all admission/security/controller authority; this task never implements SQLx or the Durability module.
+Expose the smallest Foundation-owned V1 reconnect persistence boundary accepted by PR #190 and refined by PR #200: stable transport reference, complete durable authority/reconciliation evidence, split-phase PREPARE/COMMIT request-completion semantics and final FND-04 revalidation. Foundation retains all admission/security/controller authority; this task never implements SQLx or the Durability module.
 
 ## Architecture and source of truth
 
 - `PROVEN`: PR #190 merged `DUR-RECONNECT-AUTHORITY-V1` as `2394f6f4633b8c6662d8d79a84110cc2ae13dcb7`.
 - `PROVEN`: PR #194 merged the exact Foundation successor allocation as `1063caf409af6cd4b25fa844e17a483b87e76ad6`.
 - `PROVEN`: PR #195 merged `FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPOCH = 8` as `9878d42a21815027ef88067bfc59f8b40e78b473`.
-- `PROVEN`: Issue #197 is an active architecture holding gate and PR #198 is the exact docs-only decision candidate at `55c96131745454e7b3c5b81781e865f17b285968`.
-- `PROVEN`: PR #198 selects PREPARE CAS as the sole durable uniqueness reservation, one immutable ref per `ReconnectAttemptRef`, terminal collision for that attempt, and replacement only under a new bounded attempt.
-- `PROVEN`: the earlier #199 RED test commit was reverted from the worker branch because #197 forbids #192 runtime/test mutation before PR #198 merges; that unpublished/superseded experiment is not merge evidence.
-- `PROVEN`: current #199 branch runtime paths are byte-equivalent to protected `main`; only this worker-owned task packet remains changed while the hold is active.
+- `PROVEN`: PR #200 merged `DUR-RECONNECT-TRANSPORT-REF-UNIQUENESS-V1` as `dc531658c7ffc9af91ccc6719aee80ffe01c22a4` after exact-head governance, architecture, merge-authority, merge-gate/game-gate and SHA-bound independent review PASS.
+- `PROVEN`: this worker branch merged/reconciled that exact protected main before runtime TDD; merge-up commit is `4ce471d652e8910e088aeeef3600b4d7d3802d2f`.
+- `PROVEN`: earlier pre-#200 experimental RED commits were reverted and are not TDD/merge evidence.
+- `DERIVED`: runtime TDD may now proceed only in the exact allocated Foundation paths.
 
 ## Acceptance criteria
 
-- [ ] After PR #198 merges, merge/reconcile its exact protected-main result before the first runtime test commit.
-- [ ] TDD RED/GREEN proves one immutable `AuthenticatedTransportRefV1` per attempt and rejects same-attempt remint.
-- [ ] Typed PREPARE completions preserve collision, existing-prepared, unavailable, ambiguous, capacity, stale-authority and idempotency-conflict classes.
-- [ ] Collision may schedule at most one new attempt after terminal classification, fresh authority checks and remaining capacity; attempt 9 is rejected before allocation.
+- [ ] TDD RED/GREEN proves exact 16-byte non-zero `AuthenticatedTransportRefV1` semantics.
+- [ ] One `ReconnectAttemptRef` binds exactly one immutable transport ref; same-attempt different-ref is idempotency conflict and never remints.
+- [ ] Typed PREPARE completions preserve prepared/existing-prepared/collision/unavailable/ambiguous/capacity/stale-authority/idempotency-conflict classes.
+- [ ] Collision may schedule replacement only under a new attempt after terminal collision classification, fresh authority checks and remaining capacity; attempt 9 is rejected before allocation.
 - [ ] V1 record/authorization preserves AccountId, exact session/lease/scope/controller/ControlLoss/proof/security/trust/revision and FND-02 reconciliation fences.
 - [ ] Split-phase PREPARE and COMMIT yield the FND-03 logical writer; durable completions re-enter as new normalized authoritative inputs.
 - [ ] Complete final revalidation occurs after PREPARE and immediately before COMMIT authorization.
+- [ ] Ambiguous/unavailable paths preserve the same attempt/ref and never guess a new durable outcome.
 - [ ] Controller projection is installable only after exact durable reconciliation of committed attempt/generation/transport ref.
-- [ ] Full Cargo 1.94 focused/component/workspace validation, independent exact-head security review and exact-head CI pass before merge.
+- [ ] Existing synchronous reconnect journal remains compatibility/in-memory behavior and is not made to block on SQLx.
+- [ ] Full Cargo 1.94 focused/component/workspace validation, genuinely independent exact-head security review and exact-head CI pass before merge.
 
 ## Excluded scope
 
@@ -88,8 +91,9 @@ No SQLx/query/migration/schema work, Durability module, Cargo/workflow/registry/
 
 ### TDD
 
-- status: `NOT_STARTED_ON_AUTHORIZED_BASE` while PR #198 remains unmerged.
-- superseded pre-decision test commit: reverted; not evidence.
+- status: `NOT_STARTED_ON_AUTHORIZED_BASE`.
+- authorized base: `main@dc531658c7ffc9af91ccc6719aee80ffe01c22a4`.
+- superseded pre-decision tests: reverted; not evidence.
 
 ### Exact-head CI
 
@@ -99,13 +103,13 @@ No SQLx/query/migration/schema work, Durability module, Cargo/workflow/registry/
 ## Context checkpoint
 
 ```yaml
-last_progress: #199 runtime/test paths were restored to protected-main bytes after discovering the active #197 architecture hold; worker now waits only for PR #198 merge/readback
-status: WAITING_ARCHITECTURE_DECISION_MERGE
+last_progress: PR #200 merged and #199 reconciled to exact protected main dc531658c7ffc9af91ccc6719aee80ffe01c22a4; architecture hold is cleared and runtime authority is active on allocated Foundation paths
+status: implementing
 branch: impl/foundation-reconnect-durability-v1
 head_sha: null
 pr: 199
 final_head_sha: null
 owner_action_required: null
-blocker: PR #198 must pass its exact-head Merge authority audit and merge before #192 runtime TDD resumes
-next_action: after PR #198 merges, reconcile this branch to that exact protected-main SHA and begin TDD RED for one-ref-per-attempt semantics
+blocker: null
+next_action: commit the first test-only RED for AuthenticatedTransportRefV1 on this authorized base and wait for the expected GitHub-runner compile failure before production code
 ```
