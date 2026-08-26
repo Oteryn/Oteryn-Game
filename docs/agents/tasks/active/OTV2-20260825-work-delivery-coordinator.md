@@ -9,21 +9,21 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/durability-architecture-hold
 issue: 162
-pr: null
+pr: 188
 prior_merged_pr: 186
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
 ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
 ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
-candidate_local_head_sha: f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf
-candidate_validation: governance PASS and git diff --check PASS on the local hold candidate
-candidate_pr_state: ordinary PR pending publication and integration; no remote PR exists
+initial_published_pr_head_sha: e205b0620d433733e306777ab8e491d471b62677
+candidate_validation: PR #188 exact-head review found P1; its evidence is superseded by this lifecycle-correction commit and must rerun on the new PR head
+candidate_pr_state: PR #188 open; ordinary PR integration pending
 base_sha: 2e3b05e7e1e916bd3210ce2184ad7e23482f324d
-head_sha: null
+head_sha: e205b0620d433733e306777ab8e491d471b62677
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-08-26T13:42:59+02:00
+updated_at: 2026-08-26T13:53:34+02:00
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration, and closeout; no single worker owns the programme
 owned_paths:
@@ -68,6 +68,7 @@ Create the durable execution lifecycle for the post-blocker gameplay vertical sl
 - \`PROVEN\`: Task 1 coordinator lifecycle merged as \`c57ddb5253cdfec126a768232d53f8a9bb292e3f\`; protected main readback confirmed it.
 - \`PROVEN\`: Issue #164 is terminally resolved by owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\`, which accepts only a pure-local AI bootstrap; Issue #174 needs this fresh exact allocation before implementation.
 - \`PROVEN\`: PR #186 is merged. Its recorded review claims remain historical; this coordinator hold does not revise them.
+- \`PROVEN\`: PR #188 is open. Its initial published head is \`e205b0620d433733e306777ab8e491d471b62677\`; the dynamic PR/check evidence is authoritative after this lifecycle correction.
 - \`PROVEN\`: protected \`main@007183ac7ef09dd4ae8d8f476d7ac943541d7d48\` has PR #182's shared prerequisite but no Durability worker PR or durable adapter delivery.
 - \`PROVEN\`: the only Durability remote provenance is \`impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741\`; local unpublished documentation checkpoint \`3adf13ef17b3b7811aa4f73971456ecd321afcc2\` is not a remote delivery.
 - \`PROVEN\`: [Issue #187](https://github.com/Oteryn/Oteryn-Game/issues/187) comment \`5424765487\` grants this bounded ownership correction: only the active Durability task's status, provenance, blocker, no-write state and next action may be corrected; no worker or runtime change is authorized.
@@ -124,12 +125,12 @@ PRs #171, #172 and #178 are now merged and their worker packets are archived/rel
 ### Focused
 
 - command/run: \`python tools/agents/validate_governance.py\`
-- result: local candidate \`f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf\` passed governance validation and \`git diff --check\`; an ordinary PR is pending publication and integration, and no remote PR exists.
+- result: PR #188 initial published head \`e205b0620d433733e306777ab8e491d471b62677\` received an exact-head P1 review; that result is superseded by this lifecycle-correction commit and must rerun on the new PR head.
 
 ### Component/integration
 
 - command/run: \`python tools/repository/validate_repository_policy.py\`
-- result: baseline-only LICENSE canonical-text mismatch was outside PR #186; no repository-policy change is made by this architecture hold. Ordinary PR publication/integration remains pending.
+- result: baseline-only LICENSE canonical-text mismatch was outside PR #186; no repository-policy change is made by this architecture hold. PR #188 remains open and pending integration.
 
 ### E2E
 
@@ -138,56 +139,59 @@ PRs #171, #172 and #178 are now merged and their worker packets are archived/rel
 
 ### Exact-head CI
 
-- final head: local candidate \`f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf\`
-- trigger source: local candidate
-- workflow/run/job: ordinary PR publication pending; no remote PR exists
+- initial published head: \`e205b0620d433733e306777ab8e491d471b62677\`
+- dynamic authoritative source: PR #188 head and check evidence
+- trigger source: pull_request
+- workflow/run/job: exact CI on the initial published head is superseded/invalidated by this lifecycle-correction commit
 - runner assignment: GitHub-hosted workflow policy
 - classification: coordinator lifecycle reconciliation
-- result: pending ordinary PR publication and exact-head CI/integration
+- result: rerun required on the new PR #188 head before integration
 
 ## Self-review
 
-- exact head: local candidate \`f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf\`
+- initial reviewed head: \`e205b0620d433733e306777ab8e491d471b62677\`
+- dynamic authoritative source: PR #188 head and review evidence
 - method/reviewer: coordinator full-diff review
-- material findings: independent task review identified lifecycle defects; bounded correction in progress
-- verdict: pending ordinary PR publication and integration
+- material findings: PR #188 exact-head review found P1; this lifecycle correction addresses it
+- verdict: rerun required on the new PR #188 head
 
 ## Independent review
 
 - required: exact-head non-authoring review before merge
-- exact head: local candidate \`f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf\`
+- initial reviewed head: \`e205b0620d433733e306777ab8e491d471b62677\`
+- dynamic authoritative source: PR #188 head and review evidence
 - method/auditor: independent task review
-- material findings: four Important and two Minor lifecycle defects; bounded correction authorized by Issue #187 comment \`5424765487\`
-- verdict: correction pending ordinary PR publication and integration
+- material findings: PR #188 exact-head review found one P1; bounded correction authorized by Issue #187 comment \`5424765487\`
+- verdict: initial review is superseded; rerun required on the new PR #188 head
 
 ## PR and closeout
 
-- changed-file review: local candidate full-diff review completed; ordinary PR pending publication and integration
-- unresolved review threads: remote PR not yet created
+- changed-file review: PR #188 is open; its initial exact-head review found one P1 and this correction needs fresh review on the new PR head
+- unresolved review threads: P1 lifecycle correction pending fresh review
 - related/superseded PRs: #168 allocation; #171, #172 and #178 deliveries; #181/#185 leases; #182 shared integration
 - protected auto-merge: not used
-- merge commit/result: PR #186 is historical; ordinary hold-correction PR pending publication and integration
+- merge commit/result: PR #186 is historical; PR #188 is open and pending integration after fresh exact-head CI/review
 - ownership release: Ability, Interaction and AI are released; Durability has no write authority while waiting on #187; coordinator remains active and the vertical-slice programme is not complete
 
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: Issue #187 comment 5424765487 authorizes this bounded ownership correction; local candidate f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf has governance and diff-check PASS, while ordinary PR publication/integration remains pending
+last_progress: PR #188 is open; its initial published head e205b0620d433733e306777ab8e491d471b62677 had one P1, and this lifecycle-correction commit supersedes that exact CI/review evidence pending rerun on the dynamic new PR head
 status: waiting_architecture
 branch: coord/durability-architecture-hold
-head_sha: f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf
-pr: null
+head_sha: e205b0620d433733e306777ab8e491d471b62677
+pr: 188
 prior_merged_pr: 186
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_trigger_source: pull_request
+ci_check_generation: superseded_initial_e205b0620d433733e306777ab8e491d471b62677
+ci_checks_for_current_head: rerun_required_on_dynamic_pr188_head
+ci_run_ids: dynamic_pr188_check_evidence
+ci_job_ids: dynamic_pr188_check_evidence
+runner_assignment_state: GitHub-hosted workflow policy
 terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
+terminal_ci_checks_for_current_generation: rerun_required_on_dynamic_pr188_head
 unchanged_state_checks: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
