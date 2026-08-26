@@ -75,9 +75,9 @@ external_repositories: []
 
 ## Outcome
 
-Architecture #187/#190, transport-ref semantics #197/#200, the retained-attempt registry #193/#195 and the Foundation reconnect boundary #192/#199 are all merged. After this resume-allocation PR merges, the existing Durability worker may resume on its exact owned paths against protected `main@90f30b47ac9b1e5e41cf274caf707aa39109b0c0` without any owner decision.
+Architecture #187/#190, transport-ref semantics #197/#200, the retained-attempt registry #193/#195 and the Foundation reconnect boundary #192/#199 are merged. The Durability worker now waits for the **implementation PR for #208** to merge into protected `main`; merge of allocation PR #209 alone does not restore Durability write authority.
 
-The worker must preserve its published branch history. First perform a normal non-force merge-up of the fresh protected main into `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`, review the resulting diff and then continue TDD only inside the owned paths above. Do not reset/recreate/force-push the worker branch merely because main advanced.
+After #208's implementation merge, the worker must preserve its published branch history, refresh from the resulting current protected `main`, verify the constrained terminal reconciliation API and restored task authority, then perform a normal non-force merge-up into `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`. Only then may it resume TDD inside the owned paths. Do not reset/recreate/force-push the worker branch merely because main advanced.
 
 ## Architecture and source of truth
 
@@ -93,7 +93,7 @@ The worker must preserve its published branch history. First perform a normal no
 
 ## Acceptance criteria
 
-- [ ] Worker merge-ups protected `main@90f30b47ac9b1e5e41cf274caf707aa39109b0c0` into the existing branch without force/reset and verifies the post-merge diff is ownership-correct.
+- [ ] After #208's implementation PR merges, worker refreshes the resulting protected `main` into the existing branch without force/reset and verifies both the terminal reconciliation API and ownership-correct post-merge diff.
 - [ ] Real isolated PostgreSQL tests prove migration fresh/compatibility/checksum/ahead/behind/dirty/lock interruption and runtime-DDL denial.
 - [ ] Durable journal/adapter consumes the merged Foundation V1 boundary and proves fencing, same-attempt retry/lost-response classification, crash reconciliation and DB outage/recovery without moving Foundation admission/security/controller authority.
 - [ ] PREPARE/COMMIT persistence and reconciliation preserve the exact V1 attempt/transport-ref/evidence/deadline semantics; ambiguous outcomes reconcile the same attempt rather than reminting authority.
@@ -107,12 +107,12 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 
 ### Focused
 
-- command/run: worker TDD after resume-allocation merge
+- command/run: worker TDD after #208 implementation merge
 - result: pending
 
 ### Component/integration
 
-- command/run: isolated PostgreSQL worker evidence after resume-allocation merge
+- command/run: isolated PostgreSQL worker evidence after #208 implementation merge
 - result: pending
 
 ### E2E
