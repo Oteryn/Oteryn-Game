@@ -140,52 +140,6 @@ jobs:
       - name: Smoke native game-server bootstrap
         run: cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
 
-  durability-lockgen:
-    name: Rust / Durability temporary lock generator
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - name: Check out exact pull request head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-
-      - name: Verify exact pull request head
-        env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
-        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-
-      - name: Install canonical Rust toolchain
-        run: rustup toolchain install 1.94.0 --profile minimal
-
-      - name: Generate lockfile and emit immutable recovery payload
-        run: |
-          cargo +1.94.0 generate-lockfile
-          python - <<'PY'
-          import base64
-          import gzip
-          import hashlib
-          from pathlib import Path
-
-          payload = Path('Cargo.lock').read_bytes()
-          encoded = base64.b64encode(gzip.compress(payload, mtime=0)).decode('ascii')
-          print(f'OTERYN_CARGO_LOCK_SHA256={hashlib.sha256(payload).hexdigest()}')
-          print('OTERYN_CARGO_LOCK_GZIP_BASE64_BEGIN')
-          for offset in range(0, len(encoded), 120):
-              print(encoded[offset:offset + 120])
-          print('OTERYN_CARGO_LOCK_GZIP_BASE64_END')
-          PY
-
-      - name: Upload exact generated Cargo.lock
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        with:
-          name: durability-cargo-lock-${{ github.event.pull_request.head.sha }}
-          path: Cargo.lock
-          if-no-files-found: error
-          retention-days: 1
-
   durability-postgres:
     name: Rust / Durability PostgreSQL harness
     runs-on: ubuntu-24.04
