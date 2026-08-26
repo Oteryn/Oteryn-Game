@@ -16,11 +16,12 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT supervising architecture session
 created_at: 2026-08-26T07:20:08Z
-updated_at: 2026-08-26T07:29:00Z
+updated_at: 2026-08-26T09:04:00Z
 execution_budget_minutes: 90
 large_budget_reason: execution-model architecture, reusable prompt packaging and governance validation
 owned_paths:
   - docs/superpowers/specs/2026-08-26-oteryn-game-sol-lead-selective-codex-execution-design.md
+  - docs/superpowers/plans/2026-08-26-oteryn-game-sol-lead-selective-codex-execution.md
   - docs/agents/prompts/OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md
   - docs/agents/prompts/README.md
   - docs/agents/PROMPT_LIFECYCLE.json
@@ -28,25 +29,28 @@ owned_paths:
 public_contracts: []
 depends_on:
   - owner-approved execution direction in Issue #179
+  - owner written-spec approval on 2026-08-26
   - OTV2_WORK_DELIVERY_COORDINATOR
   - OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR
 blocks:
-  - implementation-plan and Sol lane prompt package until written spec owner review
+  - Packages A-D from docs/superpowers/plans/2026-08-26-oteryn-game-sol-lead-selective-codex-execution.md until this design/plan package is canonical
 cross_repository_coordination_id: OTV2-SOL-LEAD-SELECTIVE-CODEX
 external_repositories: []
 ```
 
 ## Outcome
 
-Persist the owner-approved execution-model design and a reusable architecture-continuation prompt so a fresh Sol Extra High agent can continue from repository truth without relying on this chat transcript.
+Persist the owner-approved execution-model design, continuation prompt and adoption plan so a fresh Sol Extra High agent can continue from repository truth without relying on this chat transcript.
 
 ## Architecture and source of truth
 
-- `PROVEN`: admission protected `main` is `cb9c5f4f53dd880c9d338dafd21b6184a4419993`.
+- `PROVEN`: admission protected `main` was `cb9c5f4f53dd880c9d338dafd21b6184a4419993`.
 - `PROVEN`: Issue #179 records the owner-approved direction: Work control plane + Sol lane leads + selective Codex assistance.
-- `PROVEN`: Ability #171, Interaction #172 and AI #178 are merged at the admission snapshot; Durability #167 is still the next critical implementation lane.
+- `PROVEN`: owner reviewed and approved the written spec on 2026-08-26.
+- `PROVEN`: fresh planning main after approval advanced to `2e8c1605535167e91fe0c7775e520f599e3d89ea`, merging the serialized Durability shared Cargo/CI lease allocation.
+- `PROVEN`: Ability #171, Interaction #172 and AI #178 were merged before this execution-model design; Durability #167 remains on the critical path and now has a coordinator-owned shared Cargo/CI lease lifecycle.
 - `PROVEN`: the current Work auditor prompt is read-only and remains an independent control.
-- `DERIVED`: this design delivery does not widen runtime/production/cross-repository authority because it only records the execution model and a continuation prompt; actual Sol worker write authority remains future allocation-gated.
+- `DERIVED`: this design/plan package does not widen runtime/production/cross-repository authority because it records execution governance only; actual Sol worker writes remain future exact-allocation-gated.
 
 ## Acceptance criteria
 
@@ -58,7 +62,9 @@ Persist the owner-approved execution-model design and a reusable architecture-co
 - [x] Add a continuation prompt that requires live GitHub, written-spec owner review, writing-plans, prompt evaluation and fail-closed authority.
 - [x] Register the continuation prompt in README/lifecycle metadata.
 - [x] Self-review the written spec for placeholders, contradictions, scope and unsupported authority.
-- [ ] Owner reviews the written spec before implementation-plan authoring.
+- [x] Owner reviews and approves the written spec before implementation-plan authoring.
+- [x] Create the adoption implementation/governance plan and split it into independently reviewable Packages A-D.
+- [ ] Refresh the PR branch against current protected main before final integration qualification.
 - [ ] Exact-head governance/repository-policy/semantic/merge-authority/game-gate qualification is complete before merge.
 
 ## Excluded scope
@@ -73,6 +79,13 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 - ambiguity: `PASS` — direct Codex use is conditional on a real supported mechanism; otherwise `CODEX_HANDOFF_REQUIRED` or safe continuation without Codex is mandatory;
 - historical truth: `PASS` — current Ability review/lifecycle findings are preserved as transition findings rather than rewritten.
 
+## Plan self-review
+
+- spec coverage: `PASS` — transition reconciliation, Work specialization, Sol prompt family, selective Codex contract, scheduler, launch sheet, escalation and terminal adoption are mapped to Packages A-D plus the first execution-wave gate;
+- dependency consistency: `PASS` — reconciliation precedes control-plane specialization; Work specialization precedes Sol prompt integration; prompt family precedes scheduler publication;
+- drift handling: `PASS` — the plan records `main@2e8c1605535167e91fe0c7775e520f599e3d89ea` as provenance only and requires every package to resolve newer live truth;
+- runtime boundary: `PASS` — no product/runtime implementation is authorized by this package.
+
 ## Prompt evaluation
 
 `OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION` against `docs/agents/PROMPT_EVAL_STANDARD.md`:
@@ -84,7 +97,7 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 - Completeness: `PASS` — spec review, writing-plan transition, prompt family, selective Codex, concurrency, transition truth and owner launch sheet are covered.
 - Evidence: `PASS` — `PROVEN / DERIVED / UNKNOWN / CONFLICT`, exact SHAs and no-fake-Codex evidence are explicit.
 - Validation: `PASS` — prompt evaluation plus repository exact-head governance/CI/review obligations are explicit.
-- Autonomy: `PASS` — the agent continues architecture packaging after owner confirmation but has concrete fail-closed stop conditions.
+- Autonomy: `PASS` — the agent can continue architecture packaging after owner confirmation but has concrete fail-closed stop conditions.
 - Handover: `PASS` — final owner launch sheet and exact transition truth are required.
 - Safety: `PASS` — no runtime, production, secrets, external-repo or unapproved owner-funded AI authority.
 
@@ -97,29 +110,29 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 
 ### Component/integration
 
-- command/run: repository governance/repository-policy exact-head CI after PR creation
-- result: pending
+- initial PR #180 agent-governance run `32942962226`: `FAIL` only because PR body lacked mandatory `## Validation`; repository validation steps did not execute.
+- corrective action: PR body now includes `## Validation`; next exact-head generation must prove the corrected metadata and package.
 
 ### E2E
 
-- scenario: `NOT_APPLICABLE` — execution architecture and prompt packaging only
+- scenario: `NOT_APPLICABLE` — execution architecture/prompt/plan packaging only
 - result: `NOT_APPLICABLE`
 
 ### Exact-head CI
 
-- final head: pending
+- final head: pending final candidate freeze
 - trigger source: pull_request #180
-- workflow/run/job: pending
+- workflow/run/job: pending new generation after plan/task changes
 - runner assignment: pending
 - classification: docs/governance only
 - result: pending
 
 ## Self-review
 
-- exact head: pending external exact-head evidence after final candidate commit
-- method/reviewer: implementing architecture session, whole-scope review against Issue #179 and governing prompt standard
-- material findings: none in the authored execution-model scope before exact-head CI; implementation plan intentionally deferred to owner written-spec review
-- verdict: `PASS_PENDING_OWNER_SPEC_REVIEW_AND_EXACT_HEAD_CI`
+- exact head: pending external exact-head evidence after final candidate freeze
+- method/reviewer: implementing architecture session, whole-scope review against Issue #179, approved spec and governing prompt standard
+- material findings: no authored-scope material finding; initial CI metadata defect was PR-body-only and has been corrected
+- verdict: `PASS_PENDING_MAIN_REFRESH_AND_EXACT_HEAD_CI`
 
 ## Independent review
 
@@ -131,17 +144,17 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 
 ## PR and closeout
 
-- changed-file review: five intended documentation/governance paths only
+- changed-file review: six intended documentation/governance paths including the approved adoption plan
 - unresolved review threads: pending
 - related/superseded PRs: open PR #150 is unrelated root-governance work and must not be modified by this task
 - protected auto-merge: not requested
-- merge commit/result: pending written-spec owner review and exact-head qualification
+- merge commit/result: pending current-main refresh and exact-head qualification
 - ownership release: pending terminal delivery
 
 ## Context checkpoint
 
 ```yaml
-last_progress: draft PR #180 opened with written design, continuation prompt, README/lifecycle registration and self-review
+last_progress: owner approved written spec; adoption plan created; PR metadata validation defect corrected; fresh main includes Durability shared Cargo/CI lease allocation
 status: validating
 branch: docs/sol-lead-selective-codex-179
 head_sha: null
@@ -149,7 +162,7 @@ pr: 180
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pending
+ci_check_generation: pending_new_head
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -158,10 +171,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
+repair_cycles_for_current_gate: 1
+ci_recovery_actions_for_current_head: 1
 stall_warnings: 0
-owner_action_required: written_spec_review
-blocker: implementation plan must not be authored until owner reviews the written spec
-next_action: owner reviews and confirms the written spec in PR #180 or chat before implementation-plan authoring
+owner_action_required: null
+blocker: current PR branch must be reconciled with protected main before final integration qualification
+next_action: refresh PR #180 branch against current protected main, then freeze exact head and require a fresh exact-head CI/review generation
 ```
