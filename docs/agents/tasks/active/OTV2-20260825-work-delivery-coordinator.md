@@ -4,19 +4,19 @@
 task_id: OTV2-20260825-work-delivery-coordinator
 title: Coordinate the post-blocker gameplay vertical slice
 mode: COORDINATE
-status: implementing
+status: coordinating_closeout
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: coord/post-blocker-wave-a-allocations
+branch: docs/wave-a-review-lifecycle-reconciliation
 issue: 162
-pr: null
+pr: 186
 base_sha: 2e3b05e7e1e916bd3210ce2184ad7e23482f324d
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-08-25T23:24:03+02:00
+updated_at: 2026-08-26T13:25:00+02:00
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration, and closeout; no single worker owns the programme
 owned_paths:
@@ -25,16 +25,13 @@ owned_paths:
   - docs/superpowers/plans/2026-08-25-oteryn-game-ability-engine.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-durability-journal.md
   - docs/superpowers/plans/2026-08-26-oteryn-game-ai-bootstrap.md
-  - docs/agents/tasks/active/OTV2-20260826-impl-game-ai-bootstrap.md
-  - docs/agents/tasks/active/OTV2-20260825-impl-game-interaction.md
-  - docs/agents/tasks/active/OTV2-20260825-impl-game-ability.md
-  - docs/agents/tasks/active/OTV2-20260825-impl-durability.md
+  - docs/agents/evidence/OTV2-20260826-wave-a-post-merge-review-reconciliation.md
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
 public_contracts: []
 depends_on:
   - Oteryn/Oteryn-Game#154
 blocks:
-  - exact Wave A allocation and worker dispatch
+  - durable ReconnectAttemptJournal adapter delivery for #167 before Server Seam re-evaluation
 cross_repository_coordination_id: OTV2-WORK-DELIVERY-POST-BLOCKER
 external_repositories: []
 \`\`\`
@@ -79,14 +76,14 @@ Governing authority:
 
 ## Current readiness matrix
 
-This is a Task 1 reconciliation, not a worker allocation. \`READY_FOR_TASK_2_DOR\` means the lane may receive an exact Definition-of-Ready and path-isolation evaluation; it does not authorize a worker to mutate code.
+Task 1 and Task 2 allocation are historical completion steps. Current GitHub PR/Issue state and the live allocation record are authoritative for delivery and readiness; this coordinator packet does not reclaim any worker-owned child packet.
 
 | Lane | Current readiness | Evidence | Task 2 requirement before dispatch |
 |---|---|---|---|
-| Interaction | \`READY_TO_ALLOCATE\` | Issue #165; exact primary paths and child plan created | merge allocation, record base SHA, dispatch one worker |
-| Ability | \`READY_TO_ALLOCATE\` | Issue #166; exact primary paths and child plan created | merge allocation, record base SHA, dispatch one worker |
-| AI | \`READY_TO_ALLOCATE\` | owner-accepted pure-local bootstrap; Issue #174 and exact primary paths/child plan created | merge allocation, record base SHA, dispatch one worker |
-| Durability | \`READY_TO_ALLOCATE\` | Issue #167; accepted journal-only topology and exact child plan | merge allocation, record base SHA, dispatch one worker |
+| Interaction | \`COMPLETED_RELEASED\` | PR #172 merged as \`73f82e4864aa15ece50625bda8bac7868f779ba3\`; post-merge reconciliation is recorded | Issue #165 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
+| Ability | \`COMPLETED_RELEASED\` | PR #171 merged as \`2faa280b406a313d02ee1330c65651bc36e215a9\`; post-merge reconciliation is recorded | Issue #166 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
+| AI | \`COMPLETED_RELEASED\` | PR #178 merged as \`cb9c5f4f53dd880c9d338dafd21b6184a4419993\`; post-merge reconciliation is recorded | Issue #174 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
+| Durability | \`READY_TO_RESUME\` | PR #182 merged as \`475288b29cadccb73e08eb488160169d296c7874\`; shared Cargo/CI/policy leases are released | Existing #167 branch refreshes to protected main and continues the canonical PostgreSQL TDD plan; this packet does not edit the worker-owned task. |
 | Server Seam | \`WAITING_DEPENDENCY\` | durable production \`ReconnectAttemptJournal\` adapter absent | re-evaluate after Durability protected-main readback |
 | Client | \`WAITING_DEPENDENCY\` | no compatible production Server Seam is merged | re-evaluate only after Server Seam is merged and exact-head validated |
 | Movement | \`WAITING_DEPENDENCY\` | #139 remains non-current; Interaction, compatible Client, and real QA are not integration-ready | exact Movement plan plus all stated prerequisites and resource closure |
@@ -98,7 +95,7 @@ This is a Task 1 reconciliation, not a worker allocation. \`READY_FOR_TASK_2_DOR
 - [x] Completed blocker work is reconciled without reopening #93, #115, #116, #123 or #131.
 - [x] Current Wave A candidate readiness is classified with no implicit worker authority.
 - [x] Task 1 coordinator lifecycle passed exact-head governance lifecycle and merged as \`c57ddb5253cdfec126a768232d53f8a9bb292e3f\`.
-- [ ] Task 2 allocation PR has merged exact, path-disjoint authority before any mutating lane worker is dispatched.
+- [x] Task 2 allocation PR #168 merged exact, path-disjoint authority before any mutating lane worker was dispatched.
 
 ## Excluded scope
 
@@ -106,19 +103,21 @@ No gameplay/runtime, Cargo/workspace, registry, stable-ID, public-contract, work
 
 ## Implementation / findings
 
-Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected \`main\`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. No stale coordinator branch, Issue, task or PR was created from the erroneous initial prompt selection. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. Owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\` closed #164 and now authorizes only a separately allocated pure-local AI bootstrap through Issue #174.
+Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected \`main\`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. Owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\` closed #164 and authorized only the separately allocated pure-local AI bootstrap through Issue #174.
+
+PRs #171, #172 and #178 are now merged and their worker packets are archived/released by the current coordinator reconciliation. The Durability worker packet stays active and untouched: PR #182 only released its serialized Cargo/CI/policy prerequisite. No worker may infer new shared-path authority from that release, and Server Seam remains \`WAITING_DEPENDENCY\` until the actual durable adapter is merged.
 
 ## Validation
 
 ### Focused
 
 - command/run: \`python tools/agents/validate_governance.py\`
-- result: pending
+- result: PASS on candidate PR #186 before this reconciliation repair; rerun on the new exact candidate head is required before merge.
 
 ### Component/integration
 
 - command/run: \`python tools/repository/validate_repository_policy.py\`
-- result: pending
+- result: baseline-only LICENSE canonical-text mismatch; the unchanged file is outside this PR. Exact-head Linux repository policy CI remains required for the new candidate head.
 
 ### E2E
 
@@ -127,45 +126,45 @@ Task 1 established Issue #162 and merged the coordinator-only packet from fresh 
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pending
-- workflow/run/job: pending
-- runner assignment: pending
-- classification: pending
-- result: pending
+- final head: current PR #186 head from GitHub
+- trigger source: pull_request
+- workflow/run/job: fresh exact-head GitHub generation required after every candidate change
+- runner assignment: GitHub-hosted workflow policy
+- classification: coordinator lifecycle reconciliation
+- result: pending fresh candidate qualification
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: ChatGPT Work Delivery Coordinator
-- material findings: pending
-- verdict: pending
+- exact head: current PR #186 head from GitHub
+- method/reviewer: coordinator full-diff review
+- material findings: pending fresh candidate qualification
+- verdict: pending fresh candidate qualification
 
 ## Independent review
 
-- required: pending repository risk classification for active coordinator-task lifecycle
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- required: exact-head non-authoring review before merge
+- exact head: current PR #186 head from GitHub
+- method/auditor: independent closeout reviewer
+- material findings: pending fresh candidate qualification
+- verdict: pending fresh candidate qualification
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
-- related/superseded PRs: no coordinator implementation PR exists before this task
-- protected auto-merge: pending
-- merge commit/result: pending
-- ownership release: pending after terminal programme closeout
+- changed-file review: required on the current PR #186 head
+- unresolved review threads: required zero before merge
+- related/superseded PRs: #168 allocation; #171, #172 and #178 deliveries; #181/#185 leases; #182 shared integration
+- protected auto-merge: not used
+- merge commit/result: pending expected-head squash merge
+- ownership release: Ability, Interaction and AI are released; Durability remains worker-owned; coordinator remains active until actual Durability/Server Seam programme work completes
 
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: owner-accepted pure-local AI bootstrap was re-evaluated at main@a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d and prepared as Issue #174 allocation
-status: implementing
-branch: coord/post-blocker-wave-a-allocations
+last_progress: PR #186 reconciles post-merge Work audit evidence and releases the completed Wave A lanes without modifying the worker-owned Durability packet
+status: coordinating_closeout
+branch: docs/wave-a-review-lifecycle-reconciliation
 head_sha: null
-pr: null
+pr: 186
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -183,5 +182,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: validate and merge the exact AI bootstrap allocation authority before dispatching its mutating worker
+next_action: after PR #186 exact-head review/CI and protected-main readback, close #165/#166/#174, record #167 READY_TO_RESUME on its Issue, then leave implementation to its existing worker
 \`\`\`

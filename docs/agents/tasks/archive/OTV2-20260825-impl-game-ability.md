@@ -4,15 +4,15 @@
 task_id: OTV2-20260825-impl-game-ability
 title: Implement bounded ability occurrence and effect-plan engine
 mode: IMPLEMENT
-status: active
+status: completed_released
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-ability-engine
 issue: 166
-pr: null
+pr: 171
 base_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
-head_sha: 06f3e7a872d9848fb4733abc304fb73c4d5ca483
-final_head_sha: null
+head_sha: f9a359282701cd385a6bd0252105bc11d35f8832
+final_head_sha: f9a359282701cd385a6bd0252105bc11d35f8832
 final_head_frozen_at: null
 owner: Oteryn: impl ability
 created_at: 2026-08-25T23:24:03+02:00
@@ -28,7 +28,7 @@ owned_paths:
   - apps/game-server/src/ability/effects.rs
   - apps/game-server/src/ability/tests.rs
   - apps/game-server/tests/ability_engine.rs
-  - docs/agents/tasks/active/OTV2-20260825-impl-game-ability.md
+  - docs/agents/tasks/archive/OTV2-20260825-impl-game-ability.md
 public_contracts:
   - GAME-ABILITY-01 whole-gate acceptance
 depends_on:
@@ -38,6 +38,13 @@ depends_on:
 blocks:
   - future Combat readiness only after serial integration prerequisites
 external_repositories: []
+delivery_pr: 171
+delivery_merge_sha: 2faa280b406a313d02ee1330c65651bc36e215a9
+historical_pre_merge_independent_review: NOT_PROVEN
+post_merge_independent_review: PASS_POST_MERGE_RECONCILIATION
+independent_review_packet_sha256: fccb4e4d8ffa1406e4221edc3869ba7bd2607a1c1fe6c2f044ecc9ecc9babde2
+independent_review_response_sha256: 1b8cd28726c5a4f9a8b37b77da9a9b13d3e35a21c9446c88e466d2e17f0305fd
+ownership_release: true
 ```
 
 ## Outcome
@@ -52,10 +59,10 @@ Revision-bound, deterministic, idempotent occurrence/intent/plan/commit pipeline
 
 ## Acceptance criteria
 
-- [ ] Occurrence/revision and retry no-double-commit proof passes.
-- [ ] Partial/sequential groups and deterministic calculation/effect order pass.
-- [ ] Each allocated limit has max/max+1 proof before effects.
-- [ ] Proposal-only/direct-mutation negatives, exact-head CI/review/merge/archive lifecycle pass.
+- [x] Occurrence/revision and retry no-double-commit proof passes.
+- [x] Partial/sequential groups and deterministic calculation/effect order pass.
+- [x] Each allocated limit has max/max+1 proof before effects.
+- [x] Proposal-only/direct-mutation negatives, exact-head CI/review/merge/archive lifecycle pass.
 
 ## Excluded scope
 
@@ -81,14 +88,18 @@ No formula/geometry/retarget/multihit/channel/timer/cooldown/condition/reaction 
 ## Context checkpoint
 
 ```yaml
-last_progress: rustfmt 1.94 correction applied mechanically to the Ability plan and focused harness; format check, focused test (8 passed) and Clippy -D warnings pass at worker head 57a61917215bd14857abfa81be62836bfc1d1ee3
-status: active
+last_progress: PR #171 merged; exact-head CI passed; post-merge independent reconciliation PASS 0/0/0; ownership released
+status: completed_released
 branch: impl/game-ability-engine
 base_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
-head_sha: 57a61917215bd14857abfa81be62836bfc1d1ee3
-pr: null
-final_head_sha: null
+head_sha: f9a359282701cd385a6bd0252105bc11d35f8832
+pr: 171
+final_head_sha: f9a359282701cd385a6bd0252105bc11d35f8832
 owner_action_required: null
 blocker: null
-next_action: coordinator runs exact-head CI/review for 57a61917215bd14857abfa81be62836bfc1d1ee3 before integration
+next_action: none_terminal
 ```
+
+## Terminal post-merge reconciliation
+
+Historical pre-merge independent-review evidence remains `NOT_PROVEN`; the fresh non-authoring exact-tree review is recorded only as `PASS_POST_MERGE_RECONCILIATION`. The merged implementation, exact-head CI, post-merge review and ownership release are terminal.

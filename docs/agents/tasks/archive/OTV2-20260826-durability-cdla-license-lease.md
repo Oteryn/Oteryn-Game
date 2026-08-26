@@ -4,7 +4,7 @@
 task_id: OTV2-20260826-durability-cdla-license-lease
 title: Admit the SQLx webpki-roots license through a serialized policy lease
 mode: COORDINATE
-status: allocation_pending
+status: completed_released
 repository: Oteryn/Oteryn-Game
 base_branch: main
 allocation_branch: coord/durability-cdla-license-lease
@@ -23,6 +23,15 @@ blocks:
   - PR #182 merge gate
   - Issue #167 resume from WAITING_EXTERNAL
 external_repositories: []
+allocation_pr: 185
+allocation_merge_sha: e0afb4cc265558b5adeaa01b3a21652ae4c9e50e
+delivery_pr: 182
+delivery_final_head_sha: 0017cac33fef8c7359bdb9f2ba2c6c367ba06495
+delivery_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
+ownership_release: true
+allocation_independent_review: PASS
+allocation_review_packet_sha256: e6465d906bd3162a23f483e84e21eedf8c667f743d65ae353b24a50bf0662bd3
+allocation_review_response_sha256: 8d58515e7b9f13444ba9edd45b70884819c1dc6f6f07408ee2e6ee96977ecfea
 ```
 
 ## Purpose
@@ -51,7 +60,11 @@ No wildcard/unknown license admission, no advisory/bans/source weakening, no run
 
 ```yaml
 last_progress: PR #182 exact head passed build/test/governance but failed only Rust supply chain because CDLA-Permissive-2.0 is not allowed
-status: allocation_pending
-blocker: deny.toml is outside PR #181 shared lease
-next_action: merge this one-path allocation, then add the exact SPDX license to PR #182 and rerun final review/CI
+status: completed_released
+blocker: null
+next_action: none_terminal
 ```
+
+## Terminal reconciliation
+
+The serialized coordinator lease completed through the recorded delivery PR, protected-main readback succeeded, and all listed write authority is released.

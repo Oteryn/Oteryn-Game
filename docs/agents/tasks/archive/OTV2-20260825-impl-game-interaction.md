@@ -4,15 +4,15 @@
 task_id: OTV2-20260825-impl-game-interaction
 title: Implement bounded deterministic interaction lifecycle
 mode: IMPLEMENT
-status: done_with_concerns
+status: completed_released
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-interaction-lifecycle
 issue: 165
-pr: null
+pr: 172
 base_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
-head_sha: d0059c5a11d0b8bd3b8c159a871436e34f1c9937
-final_head_sha: null
+head_sha: 14572daedfca2207cd024a022613ce42c2539169
+final_head_sha: 14572daedfca2207cd024a022613ce42c2539169
 final_head_frozen_at: null
 owner: Oteryn: impl interaction
 created_at: 2026-08-25T23:24:03+02:00
@@ -27,7 +27,7 @@ owned_paths:
   - apps/game-server/src/interaction/dispatch.rs
   - apps/game-server/src/interaction/tests.rs
   - apps/game-server/tests/interaction_workflow.rs
-  - docs/agents/tasks/active/OTV2-20260825-impl-game-interaction.md
+  - docs/agents/tasks/archive/OTV2-20260825-impl-game-interaction.md
 public_contracts:
   - GAME-INTERACTION-01 successor-child identity/retry acceptance
 depends_on:
@@ -37,6 +37,13 @@ depends_on:
 blocks:
   - future Movement readiness only after merged interaction and independent prerequisites
 external_repositories: []
+delivery_pr: 172
+delivery_merge_sha: 73f82e4864aa15ece50625bda8bac7868f779ba3
+historical_pre_merge_independent_review: NOT_PROVEN
+post_merge_independent_review: PASS_POST_MERGE_RECONCILIATION
+independent_review_packet_sha256: 987fe186d3dde5d209e800a61adba41bafcbd2fc2a68a66b8288ab6787f5eb16
+independent_review_response_sha256: 1b8cd28726c5a4f9a8b37b77da9a9b13d3e35a21c9446c88e466d2e17f0305fd
+ownership_release: true
 ```
 
 ## Outcome
@@ -51,10 +58,10 @@ Bounded deterministic interaction lifecycle with truthful retry/reconciliation a
 
 ## Acceptance criteria
 
-- [ ] Stable identity/retry/reconciliation and deterministic order/RNG have focused proof.
-- [ ] All five limits have max/max+1 rejection proof before effects.
-- [ ] Duplicate, stale/cancel and foreign-owner direct-write negatives pass.
-- [ ] Exact-head CI/review/merge/archive lifecycle is complete.
+- [x] Stable identity/retry/reconciliation and deterministic order/RNG have focused proof.
+- [x] All five limits have max/max+1 rejection proof before effects.
+- [x] Duplicate, stale/cancel and foreign-owner direct-write negatives pass.
+- [x] Exact-head CI/review/merge/archive lifecycle is complete.
 
 ## Excluded scope
 
@@ -80,12 +87,16 @@ No Movement/handoff, Ability effects, value durability, protocol/events, transpo
 ## Context checkpoint
 
 ```yaml
-last_progress: CI correction aligns the standalone harness plan construction with the exact rustfmt layout reported at the remote head
-status: done_with_concerns
+last_progress: PR #172 merged; exact-head CI passed; post-merge independent reconciliation PASS 0/0/0; ownership released
+status: completed_released
 branch: impl/game-interaction-lifecycle
-head_sha: d0059c5a11d0b8bd3b8c159a871436e34f1c9937
-pr: null
-final_head_sha: null
-blocker: local Rust toolchain unavailable; static review only until exact-head GitHub CI
-next_action: coordinator evaluates the exact candidate in GitHub CI and serializes the separate lib.rs composition lease only after worker review
+head_sha: 14572daedfca2207cd024a022613ce42c2539169
+pr: 172
+final_head_sha: 14572daedfca2207cd024a022613ce42c2539169
+blocker: null
+next_action: none_terminal
 ```
+
+## Terminal post-merge reconciliation
+
+Historical pre-merge independent-review evidence remains `NOT_PROVEN`; the fresh non-authoring exact-tree review is recorded only as `PASS_POST_MERGE_RECONCILIATION`. The merged implementation, exact-head CI, post-merge review and ownership release are terminal.
