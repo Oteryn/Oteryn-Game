@@ -368,17 +368,17 @@ terminal_blockers_not_reopened: [93, 115, 116, 123, 131]
 ```
 
 
-## Current Wave A delivery/resume state after Durability shared integration
+## Current Wave A delivery state — Durability architecture hold
 
 | Lane | Current state | Exact next state |
 | --- | --- | --- |
 | Interaction | `COMPLETED_RELEASED` | PR #172 merged; post-merge independent reconciliation PASS; no active ownership. |
 | Ability | `COMPLETED_RELEASED` | PR #171 merged; post-merge independent reconciliation PASS; no active ownership. |
-| Durability | `READY_TO_RESUME` | Shared SQLx/Cargo/PostgreSQL integration PR #182 merged as `475288b29cadccb73e08eb488160169d296c7874`; resume existing Issue #167/branch after fresh protected-main reconciliation. |
+| Durability | `WAITING_ARCHITECTURE` | [Issue #187](https://github.com/Oteryn/Oteryn-Game/issues/187) identifies that the current synchronous Foundation `ReconnectAttemptJournal` cannot express the required FND-04/DUR-02 durable authority, revalidation and async-handoff semantics. PR #182 remains only the released shared SQLx/Cargo/PostgreSQL prerequisite. |
 | AI | `COMPLETED_RELEASED` | PR #178 merged; post-merge independent reconciliation PASS; no active ownership. |
-| Server Seam | `WAITING_DEPENDENCY` | Wait for the actual durable `ReconnectAttemptJournal` adapter from #167. |
+| Server Seam | `WAITING_DEPENDENCY` | Not released by #167 while its durable architecture is unresolved on #187. |
 
-The earlier Wave A allocation snapshot is historical. Current GitHub delivery/review evidence and the archived task packets below supersede its stale `allocated_waiting_for_worker_branch` prose. Future shared Cargo/workflow/composition/policy mutations remain serialized even though the prerequisite SQLx/PostgreSQL surfaces are now present on `main`.
+The earlier Wave A allocation snapshot is historical. Current GitHub delivery/review evidence and the archived task packets below supersede its stale `allocated_waiting_for_worker_branch` and `READY_TO_RESUME` prose. Future shared Cargo/workflow/composition/policy mutations remain serialized even though the prerequisite SQLx/PostgreSQL surfaces are now present on `main`. No Durability code, schema or migration mutation is authorized while the architecture hold applies.
 
 
 ## Completed allocation — Interaction
@@ -427,14 +427,24 @@ write_authority: none
 ```
 
 
-## Active allocation — Durability journal-only substrate
+## Architecture hold — Durability journal-only substrate
 
 ```yaml
 lane_id: OTV2-IMPL-DURABILITY
 issue: 167
-status: allocated_ready_to_resume
+status: WAITING_ARCHITECTURE
 worker_alias: Oteryn: impl durability
+architecture_escalation_issue: 187
+architecture_escalation_url: https://github.com/Oteryn/Oteryn-Game/issues/187
+ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
+ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
+architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
 worker_branch: impl/game-durability-journal
+worker_branch_provenance: remote
+worker_branch_remote_head: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
+worker_pr: null
+local_unpublished_documentation_checkpoint: 3adf13ef17b3b7811aa4f73971456ecd321afcc2
+local_checkpoint_delivery_status: not_a_remote_delivery
 task_packet: docs/agents/tasks/active/OTV2-20260825-impl-durability.md
 owned_paths:
   - apps/game-server/src/durability/mod.rs
@@ -462,13 +472,12 @@ shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
 shared_cargo_ci_lease_pr: 181
 shared_policy_lease_pr: 185
 shared_leases: released
-resume_base_policy: fresh_protected_main_after_this_reconciliation_merge
-blocker: null
-next_gate: reconcile existing worker branch/task to fresh protected main, then continue the canonical Durability TDD plan
-write_authority: existing_worker_owned_paths_only
+blocker: current synchronous Foundation ReconnectAttemptJournal cannot express all FND-04/DUR-02 durable authority, revalidation and async-handoff requirements
+write_authority: none_while_waiting_architecture
+next_action: await the accepted architect decision on #187
 ```
 
-The former `WAITING_EXTERNAL` Cargo/lockfile/PostgreSQL-CI blocker is terminally resolved. This does not complete Durability itself and does not release Server Seam. No duplicate Durability task, branch or Issue should be created.
+PR #182 terminally resolved only the former `WAITING_EXTERNAL` Cargo/lockfile/PostgreSQL-CI prerequisite. It does not complete Durability, create a worker PR, or release Server Seam. The remote branch provenance is retained solely as `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`; local unpublished documentation checkpoint `3adf13ef17b3b7811aa4f73971456ecd321afcc2` is not a remote delivery. Do not create a replacement task, branch or Issue while this hold applies.
 
 
 ## Completed allocation — AI pure-local bootstrap
@@ -579,16 +588,26 @@ OTV2-FND04-VERIFIER-CONSUMER:
   independent_exact_head_security_review: PASS_POST_MERGE_RECONCILIATION
 
 OTV2-IMPL-DURABILITY:
-  status: allocated_ready_to_resume
-  write_authority: existing_worker_owned_paths_only
+  status: WAITING_ARCHITECTURE
+  write_authority: none_while_waiting_architecture
   issue: 167
   coordinator_issue: 162
+  architecture_escalation_issue: 187
+  architecture_escalation_url: https://github.com/Oteryn/Oteryn-Game/issues/187
+  ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
+  ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
+  architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
+  worker_branch: impl/game-durability-journal
+  worker_branch_remote_head: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
+  worker_pr: null
+  local_unpublished_documentation_checkpoint: 3adf13ef17b3b7811aa4f73971456ecd321afcc2
+  local_checkpoint_delivery_status: not_a_remote_delivery
   selected_stack: sqlx_0_9_0
   shared_integration_pr: 182
   shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
   shared_leases: released
-  blocker: null
-  next_gate: existing worker refreshes to fresh protected main and continues real PostgreSQL TDD
+  blocker: Issue #187 durable architecture decision required
+  next_action: await the accepted architect decision on #187
 OTV2-IMPL-ABILITY:
   status: completed_released
   write_authority: none
@@ -625,19 +644,19 @@ OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM:
   write_authority: none
   resource_gate_issue: 116
   verifier_gate_issue: 115
-  blocker: durable_ReconnectAttemptJournal_adapter_not_merged
+  blocker: OTV2-IMPL-DURABILITY is WAITING_ARCHITECTURE on Issue #187; no durable ReconnectAttemptJournal adapter is merged
 OTV2-IMPL-CLIENT:
-  status: not_allocated
-  blocker: merged game-server still exposes fail-closed gameplay availability with no production gameplay listener/client-entry seam
+  status: WAITING_DEPENDENCY
+  blocker: Server Seam remains WAITING_DEPENDENCY because OTV2-IMPL-DURABILITY is WAITING_ARCHITECTURE on Issue #187
 OTV2-IMPL-MOVE:
-  status: not_allocated
-  blocker: Movement-only resource successor #139 plus Interaction, Client and real QA E2E prerequisites are not integration-ready
+  status: WAITING_DEPENDENCY
+  blocker: Movement-only resource successor #139 plus Client/Server Seam dependency held by OTV2-IMPL-DURABILITY WAITING_ARCHITECTURE on Issue #187 and real QA E2E prerequisites are not integration-ready
 OTV2-IMPL-COMBAT:
-  status: not_allocated
-  blocker: Movement and remaining generic/value prerequisites are not merged
+  status: WAITING_DEPENDENCY
+  blocker: Movement and its Client/Server Seam/Durability dependency chain are held by OTV2-IMPL-DURABILITY WAITING_ARCHITECTURE on Issue #187
 OTV2-IMPL-CHANNEL:
-  status: not_allocated
-  blocker: DURABILITY not yet allocated/merged
+  status: WAITING_DEPENDENCY
+  blocker: OTV2-IMPL-DURABILITY is WAITING_ARCHITECTURE on Issue #187; no durable ReconnectAttemptJournal adapter is merged
 OTV2-CONTENT-FORMAT-SPIKE:
   status: completed_released_owner_format_decision_pending
   write_authority: none
