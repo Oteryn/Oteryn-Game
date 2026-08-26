@@ -865,6 +865,8 @@ impl ReconnectDurableReconciliationSnapshotV1 {
     pub fn committed(record: ReconnectDurabilityRecordV1) -> Self { Self { current_generation: Some(record.connection().candidate()), current_transport_ref: Some(record.connection().transport_ref()), record, durable_state: DurableReconnectStateV1::Committed } }
     #[must_use]
     pub fn prepared(record: ReconnectDurabilityRecordV1) -> Self { Self { current_generation: None, current_transport_ref: None, record, durable_state: DurableReconnectStateV1::Prepared } }
+    #[must_use]
+    pub fn terminal(record: ReconnectDurabilityRecordV1) -> Self { Self { current_generation: None, current_transport_ref: None, record, durable_state: DurableReconnectStateV1::Terminal } }
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ReconnectProjectionDecisionV1 {
@@ -1036,6 +1038,21 @@ mod durability_reconnect_v1_tests {
         let (mut ambiguous_flow, ambiguous_request) = ReconnectDurabilityFlowV1::begin(record);
         assert_eq!(ambiguous_flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(&ambiguous_request, ReconnectPrepareDispositionV1::Ambiguous))?, ReconnectPrepareActionV1::ReconcileSameAttempt);
         assert_eq!(ambiguous_flow.phase(), ReconnectDurabilityPhaseV1::ReconciliationRequired);
+        Ok(())
+    }
+
+    #[test]
+    fn ambiguous_same_attempt_reconciliation_projects_terminal() -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record(7, 7)?;
+        let (mut flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
+        assert_eq!(flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(&request, ReconnectPrepareDispositionV1::Ambiguous))?, ReconnectPrepareActionV1::ReconcileSameAttempt);
+        let snapshot = ReconnectDurableReconciliationSnapshotV1::terminal(record.clone());
+        assert_eq!(snapshot.record, record);
+        assert_eq!(snapshot.durable_state, DurableReconnectStateV1::Terminal);
+        assert_eq!(snapshot.current_generation, None);
+        assert_eq!(snapshot.current_transport_ref, None);
+        assert_eq!(flow.accept_reconciliation(snapshot, record.authority().scope_ownership_generation())?, ReconnectProjectionDecisionV1::Terminal);
+        assert_eq!(flow.phase(), ReconnectDurabilityPhaseV1::Terminal);
         Ok(())
     }
 
