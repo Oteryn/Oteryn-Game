@@ -178,6 +178,14 @@ jobs:
           print('OTERYN_CARGO_LOCK_GZIP_BASE64_END')
           PY
 
+      - name: Upload exact generated Cargo.lock
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: durability-cargo-lock-${{ github.event.pull_request.head.sha }}
+          path: Cargo.lock
+          if-no-files-found: error
+          retention-days: 1
+
   durability-postgres:
     name: Rust / Durability PostgreSQL harness
     runs-on: ubuntu-24.04
@@ -242,7 +250,7 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.sha }}
         run: |
-          if ((git rev-parse HEAD).Trim() -ne $env:EXPECTED_SHA) {
+          if ((git rev-parse HEAD).Trim() -ne "$env:EXPECTED_SHA") {
             throw "checked-out revision does not match expected exact SHA"
           }
 
@@ -311,7 +319,7 @@ jobs:
         env:
           EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          if ((git rev-parse HEAD).Trim() -ne $env:EXPECTED_SHA) {
+          if ((git rev-parse HEAD).Trim() -ne "$env:EXPECTED_SHA") {
             throw "checked-out revision does not match exact pull request head"
           }
 
