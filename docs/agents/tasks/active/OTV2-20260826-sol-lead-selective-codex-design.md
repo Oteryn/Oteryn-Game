@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT supervising architecture session
 created_at: 2026-08-26T07:20:08Z
-updated_at: 2026-08-26T09:04:00Z
+updated_at: 2026-08-26T09:06:00Z
 execution_budget_minutes: 90
 large_budget_reason: execution-model architecture, reusable prompt packaging and governance validation
 owned_paths:
@@ -48,6 +48,7 @@ Persist the owner-approved execution-model design, continuation prompt and adopt
 - `PROVEN`: Issue #179 records the owner-approved direction: Work control plane + Sol lane leads + selective Codex assistance.
 - `PROVEN`: owner reviewed and approved the written spec on 2026-08-26.
 - `PROVEN`: fresh planning main after approval advanced to `2e8c1605535167e91fe0c7775e520f599e3d89ea`, merging the serialized Durability shared Cargo/CI lease allocation.
+- `PROVEN`: PR #180 branch was normally merge-refreshed against `main@2e8c1605535167e91fe0c7775e520f599e3d89ea` before final qualification; the merge base now equals that protected-main SHA.
 - `PROVEN`: Ability #171, Interaction #172 and AI #178 were merged before this execution-model design; Durability #167 remains on the critical path and now has a coordinator-owned shared Cargo/CI lease lifecycle.
 - `PROVEN`: the current Work auditor prompt is read-only and remains an independent control.
 - `DERIVED`: this design/plan package does not widen runtime/production/cross-repository authority because it records execution governance only; actual Sol worker writes remain future exact-allocation-gated.
@@ -64,7 +65,7 @@ Persist the owner-approved execution-model design, continuation prompt and adopt
 - [x] Self-review the written spec for placeholders, contradictions, scope and unsupported authority.
 - [x] Owner reviews and approves the written spec before implementation-plan authoring.
 - [x] Create the adoption implementation/governance plan and split it into independently reviewable Packages A-D.
-- [ ] Refresh the PR branch against current protected main before final integration qualification.
+- [x] Refresh the PR branch against current protected main before final integration qualification.
 - [ ] Exact-head governance/repository-policy/semantic/merge-authority/game-gate qualification is complete before merge.
 
 ## Excluded scope
@@ -111,7 +112,7 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 ### Component/integration
 
 - initial PR #180 agent-governance run `32942962226`: `FAIL` only because PR body lacked mandatory `## Validation`; repository validation steps did not execute.
-- corrective action: PR body now includes `## Validation`; next exact-head generation must prove the corrected metadata and package.
+- corrective action: PR body now includes `## Validation`; final exact-head generation must prove corrected metadata and package.
 
 ### E2E
 
@@ -120,19 +121,19 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 
 ### Exact-head CI
 
-- final head: pending final candidate freeze
+- final head: intentionally not self-recorded in this commit; GitHub PR head is the immutable qualification key
 - trigger source: pull_request #180
-- workflow/run/job: pending new generation after plan/task changes
+- workflow/run/job: pending final generation
 - runner assignment: pending
 - classification: docs/governance only
 - result: pending
 
 ## Self-review
 
-- exact head: pending external exact-head evidence after final candidate freeze
+- exact head: final PR head after this candidate commit
 - method/reviewer: implementing architecture session, whole-scope review against Issue #179, approved spec and governing prompt standard
 - material findings: no authored-scope material finding; initial CI metadata defect was PR-body-only and has been corrected
-- verdict: `PASS_PENDING_MAIN_REFRESH_AND_EXACT_HEAD_CI`
+- verdict: `PASS_PENDING_EXACT_HEAD_CI`
 
 ## Independent review
 
@@ -148,13 +149,13 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 - unresolved review threads: pending
 - related/superseded PRs: open PR #150 is unrelated root-governance work and must not be modified by this task
 - protected auto-merge: not requested
-- merge commit/result: pending current-main refresh and exact-head qualification
+- merge commit/result: pending exact-head qualification
 - ownership release: pending terminal delivery
 
 ## Context checkpoint
 
 ```yaml
-last_progress: owner approved written spec; adoption plan created; PR metadata validation defect corrected; fresh main includes Durability shared Cargo/CI lease allocation
+last_progress: owner-approved design and adoption plan merge-refreshed to main@2e8c1605535167e91fe0c7775e520f599e3d89ea; final candidate ready for exact-head qualification
 status: validating
 branch: docs/sol-lead-selective-codex-179
 head_sha: null
@@ -162,7 +163,7 @@ pr: 180
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pending_new_head
+ci_check_generation: final_candidate_pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -175,6 +176,6 @@ repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 1
 stall_warnings: 0
 owner_action_required: null
-blocker: current PR branch must be reconciled with protected main before final integration qualification
-next_action: refresh PR #180 branch against current protected main, then freeze exact head and require a fresh exact-head CI/review generation
+blocker: null
+next_action: mark PR #180 ready for review and require fresh exact-head governance/semantic/merge-authority/merge-gate qualification
 ```
