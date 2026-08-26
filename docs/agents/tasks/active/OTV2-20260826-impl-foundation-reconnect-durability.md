@@ -57,7 +57,7 @@ external_repositories: []
 
 ## Outcome
 
-Expose the smallest Foundation-owned V1 reconnect persistence boundary accepted by PR #190 and refined by PR #200: stable transport reference, complete durable authority/reconciliation evidence, split-phase PREPARE/COMMIT request-completion semantics and final FND-04 revalidation. Foundation retains all admission/security/controller authority; this task never implements SQLx or the Durability module.
+Expose the smallest Foundation-owned V1 reconnect persistence boundary accepted by PR #190 and refined by PR #200: stable transport reference, complete durable authority/reconciliation evidence, split-phase PREPARE/COMMIT request-completion semantics and final FND-04 revalidation. Foundation retains admission/security/controller authority; this task never implements SQLx or the Durability module.
 
 ## Architecture and source of truth
 
