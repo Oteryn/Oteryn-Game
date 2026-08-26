@@ -361,149 +361,117 @@ status: active
 worker_alias: Oteryn: work coordinator
 admission_main_sha: 2e3b05e7e1e916bd3210ce2184ad7e23482f324d
 task_1_merge_sha: c57ddb5253cdfec126a768232d53f8a9bb292e3f
+latest_shared_integration_main_sha: 475288b29cadccb73e08eb488160169d296c7874
+review_reconciliation_evidence: docs/agents/evidence/OTV2-20260826-wave-a-post-merge-review-reconciliation.md
 write_authority: coordinator_docs_and_exact_lane_allocations_only
 terminal_blockers_not_reopened: [93, 115, 116, 123, 131]
 ```
 
-## Wave A Definition-of-Ready at `main@d86d2c5ad001ae563b371558d202a30b0ac3a062`
 
-| Lane | Result | Exact next state |
+## Current Wave A delivery/resume state after Durability shared integration
+
+| Lane | Current state | Exact next state |
 | --- | --- | --- |
-| Interaction | `READY_TO_ALLOCATE` | Issue #165 and its exact worker allocation below; no shared-path write authority. |
-| Ability | `READY_TO_ALLOCATE` | Issue #166 and its exact worker allocation below; no shared-path write authority. |
-| Durability | `READY_TO_ALLOCATE` | Issue #167, journal-only topology and exact worker allocation below; no shared-path write authority. |
-| AI | `READY_TO_ALLOCATE` | Owner decision `a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d`; Issue #174 and exact primary paths below. |
-| Server Seam | `WAITING_DEPENDENCY` | Wait for merged durable `ReconnectAttemptJournal` adapter before new DoR. |
+| Interaction | `COMPLETED_RELEASED` | PR #172 merged; post-merge independent reconciliation PASS; no active ownership. |
+| Ability | `COMPLETED_RELEASED` | PR #171 merged; post-merge independent reconciliation PASS; no active ownership. |
+| Durability | `READY_TO_RESUME` | Shared SQLx/Cargo/PostgreSQL integration PR #182 merged as `475288b29cadccb73e08eb488160169d296c7874`; resume existing Issue #167/branch after fresh protected-main reconciliation. |
+| AI | `COMPLETED_RELEASED` | PR #178 merged; post-merge independent reconciliation PASS; no active ownership. |
+| Server Seam | `WAITING_DEPENDENCY` | Wait for the actual durable `ReconnectAttemptJournal` adapter from #167. |
 
-The owner decision arrived on protected `main` after `c57ddb5253cdfec126a768232d53f8a9bb292e3f`; the four ready primary path sets are disjoint at the frozen current admission base above. `apps/game-server/src/lib.rs`, Cargo/workspace/workflow and registry surfaces are not primary semantic ownership; they remain a single serialized coordinator lease and no worker may edit them.
+The earlier Wave A allocation snapshot is historical. Current GitHub delivery/review evidence and the archived task packets below supersede its stale `allocated_waiting_for_worker_branch` prose. Future shared Cargo/workflow/composition/policy mutations remain serialized even though the prerequisite SQLx/PostgreSQL surfaces are now present on `main`.
 
-## Active allocation — Interaction
+
+## Completed allocation — Interaction
 
 ```yaml
 lane_id: OTV2-IMPL-INTERACTION
 issue: 165
-status: allocated_waiting_for_worker_branch
+status: completed_released
 worker_alias: Oteryn: impl interaction
-allocation_coordinator_issue: 162
-worker_branch: impl/game-interaction-lifecycle
-worker_base_sha: recorded_after_allocation_merge
-child_plan: docs/superpowers/plans/2026-08-25-oteryn-game-interaction-lifecycle.md
-task_packet: docs/agents/tasks/active/OTV2-20260825-impl-game-interaction.md
-owned_paths:
-  - apps/game-server/src/interaction/mod.rs
-  - apps/game-server/src/interaction/identity.rs
-  - apps/game-server/src/interaction/plan.rs
-  - apps/game-server/src/interaction/lifecycle.rs
-  - apps/game-server/src/interaction/dispatch.rs
-  - apps/game-server/src/interaction/tests.rs
-  - apps/game-server/tests/interaction_workflow.rs
-  - docs/agents/tasks/active/OTV2-20260825-impl-game-interaction.md
-shared_paths: []
-coordinator_serialized_lease:
-  - apps/game-server/src/lib.rs
-write_authority: owned_paths_only_after_this_allocation_merges
+delivery_pr: 172
+final_head_sha: 14572daedfca2207cd024a022613ce42c2539169
+delivery_merge_sha: 73f82e4864aa15ece50625bda8bac7868f779ba3
+task_packet: docs/agents/tasks/archive/OTV2-20260825-impl-game-interaction.md
+historical_pre_merge_independent_review: NOT_PROVEN
+post_merge_independent_review: PASS_POST_MERGE_RECONCILIATION
+independent_review_packet_sha256: 987fe186d3dde5d209e800a61adba41bafcbd2fc2a68a66b8288ab6787f5eb16
+independent_review_response_sha256: 1b8cd28726c5a4f9a8b37b77da9a9b13d3e35a21c9446c88e466d2e17f0305fd
+exact_head_merge_gate_run: 32908628654
+owned_paths: []
+branch: null
+shared_lease: released
+write_authority: none
 ```
 
-## Active allocation — Ability
+
+## Completed allocation — Ability
 
 ```yaml
 lane_id: OTV2-IMPL-ABILITY
 issue: 166
-status: allocated_waiting_for_worker_branch
+status: completed_released
 worker_alias: Oteryn: impl ability
-allocation_coordinator_issue: 162
-worker_branch: impl/game-ability-engine
-worker_base_sha: recorded_after_allocation_merge
-child_plan: docs/superpowers/plans/2026-08-25-oteryn-game-ability-engine.md
-task_packet: docs/agents/tasks/active/OTV2-20260825-impl-game-ability.md
-owned_paths:
-  - apps/game-server/src/ability/mod.rs
-  - apps/game-server/src/ability/occurrence.rs
-  - apps/game-server/src/ability/intent.rs
-  - apps/game-server/src/ability/plan.rs
-  - apps/game-server/src/ability/commit.rs
-  - apps/game-server/src/ability/effects.rs
-  - apps/game-server/src/ability/tests.rs
-  - apps/game-server/tests/ability_engine.rs
-  - docs/agents/tasks/active/OTV2-20260825-impl-game-ability.md
-shared_paths: []
-coordinator_serialized_lease:
-  - apps/game-server/src/lib.rs
-write_authority: owned_paths_only_after_this_allocation_merges
+delivery_pr: 171
+final_head_sha: f9a359282701cd385a6bd0252105bc11d35f8832
+delivery_merge_sha: 2faa280b406a313d02ee1330c65651bc36e215a9
+task_packet: docs/agents/tasks/archive/OTV2-20260825-impl-game-ability.md
+historical_pre_merge_independent_review: NOT_PROVEN
+post_merge_independent_review: PASS_POST_MERGE_RECONCILIATION
+independent_review_packet_sha256: fccb4e4d8ffa1406e4221edc3869ba7bd2607a1c1fe6c2f044ecc9ecc9babde2
+independent_review_response_sha256: 1b8cd28726c5a4f9a8b37b77da9a9b13d3e35a21c9446c88e466d2e17f0305fd
+exact_head_merge_gate_run: 32907800280
+owned_paths: []
+branch: null
+shared_lease: released
+write_authority: none
 ```
+
 
 ## Active allocation — Durability journal-only substrate
 
 ```yaml
 lane_id: OTV2-IMPL-DURABILITY
 issue: 167
-status: allocated_waiting_for_worker_branch
+status: allocated_ready_to_resume
 worker_alias: Oteryn: impl durability
-allocation_coordinator_issue: 162
 worker_branch: impl/game-durability-journal
-worker_base_sha: recorded_after_allocation_merge
-child_plan: docs/superpowers/plans/2026-08-25-oteryn-game-durability-journal.md
 task_packet: docs/agents/tasks/active/OTV2-20260825-impl-durability.md
-owned_paths:
-  - apps/game-server/src/durability/mod.rs
-  - apps/game-server/src/durability/db.rs
-  - apps/game-server/src/durability/schema.rs
-  - apps/game-server/src/durability/admission_journal.rs
-  - apps/game-server/src/durability/reconcile.rs
-  - apps/game-server/src/bin/oteryn-game-migrate.rs
-  - apps/game-server/migrations/0001_admission_reconnect_journal.sql
-  - apps/game-server/build.rs
-  - apps/game-server/tests/durability_postgres.rs
-  - apps/game-server/tests/support/postgres.rs
-  - docs/agents/tasks/active/OTV2-20260825-impl-durability.md
-shared_paths: []
-coordinator_serialized_lease:
-  - apps/game-server/src/lib.rs
-  - apps/game-server/Cargo.toml
-  - Cargo.toml
-  - Cargo.lock
-  - .github/workflows/rust.yml
-  - .gitattributes
-write_authority: owned_paths_only_after_this_allocation_merges
+shared_integration_pr: 182
+shared_integration_final_head_sha: 0017cac33fef8c7359bdb9f2ba2c6c367ba06495
+shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
+shared_cargo_ci_lease_pr: 181
+shared_policy_lease_pr: 185
+shared_leases: released
+resume_base_policy: fresh_protected_main_after_this_reconciliation_merge
+blocker: null
+next_gate: reconcile existing worker branch/task to fresh protected main, then continue the canonical Durability TDD plan
+write_authority: existing_worker_owned_paths_only
 ```
 
-## Active allocation — AI pure-local bootstrap
+The former `WAITING_EXTERNAL` Cargo/lockfile/PostgreSQL-CI blocker is terminally resolved. This does not complete Durability itself and does not release Server Seam. No duplicate Durability task, branch or Issue should be created.
+
+
+## Completed allocation — AI pure-local bootstrap
 
 ```yaml
 lane_id: OTV2-IMPL-AI
 issue: 174
-status: allocated_waiting_for_worker_branch
+status: completed_released
 worker_alias: Oteryn: impl ai
-allocation_coordinator_issue: 162
-worker_branch: impl/game-ai-bootstrap
-integration_admission_base_sha: d86d2c5ad001ae563b371558d202a30b0ac3a062
-worker_base_sha: recorded_after_allocation_merge
-final_merge_sha_guard: recorded_before_worker_dispatch
-child_plan: docs/superpowers/plans/2026-08-26-oteryn-game-ai-bootstrap.md
-task_packet: docs/agents/tasks/active/OTV2-20260826-impl-game-ai-bootstrap.md
+delivery_pr: 178
+final_head_sha: 2e7e10678579369e08c365a2380009d86345302d
+delivery_merge_sha: cb9c5f4f53dd880c9d338dafd21b6184a4419993
+task_packet: docs/agents/tasks/archive/OTV2-20260826-impl-game-ai-bootstrap.md
 owner_decision_merge_sha: a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d
-resource_limits:
-  AI01-ACTIVE-ACTORS: 256
-  AI01-AUTHORED-UNITS: 4
-  AI01-EVALUATION-WORK: 8
-  AI01-PERCEPTION-CANDIDATES: 64
-  AI01-PATH-REQUESTS-PER-ACTOR: 2 (slice config <=1)
-  AI01-PATH-SEARCH-WORK: 1024
-  AI01-ROUTE-STEPS: 128
-  AI01-ROUTE-BYTES: 4096
-owned_paths:
-  - apps/game-server/src/ai/mod.rs
-  - apps/game-server/src/ai/snapshot.rs
-  - apps/game-server/src/ai/perception.rs
-  - apps/game-server/src/ai/resolution.rs
-  - apps/game-server/src/ai/path_proposal.rs
-  - apps/game-server/src/ai/tests.rs
-  - apps/game-server/tests/ai_bootstrap.rs
-  - docs/agents/tasks/active/OTV2-20260826-impl-game-ai-bootstrap.md
-shared_paths: []
-coordinator_serialized_lease:
-  - apps/game-server/src/lib.rs
-write_authority: owned_paths_only_after_this_allocation_merges
+historical_pre_merge_independent_review: NOT_PROVEN
+post_merge_independent_review: PASS_POST_MERGE_RECONCILIATION
+independent_review_packet_sha256: 4ff6032c980f5163cbc0a0160c6d78b33a087e1a6d095c4813b5f04a8f62ef32
+independent_review_response_sha256: f537dd9fffd9936f6ba7103c40c159babb06a512901037898a97aebc2cf111b8
+exact_head_merge_gate_run: 32909436564
+owned_paths: []
+branch: null
+shared_lease: released
+write_authority: none
 ```
 
 ## Waiting dependency — Server Seam
@@ -589,41 +557,40 @@ OTV2-FND04-VERIFIER-CONSUMER:
   branch: null
   shared_cargo_lease: released
   independent_exact_head_security_review: PASS_POST_MERGE_RECONCILIATION
+
 OTV2-IMPL-DURABILITY:
-  status: allocated_waiting_for_worker_branch
-  write_authority: owned_paths_only_after_work_allocation_merge
+  status: allocated_ready_to_resume
+  write_authority: existing_worker_owned_paths_only
   issue: 167
   coordinator_issue: 162
-  topology_packet: docs/architecture/reviews/OTERYN_GAME_DURABILITY_TOPOLOGY_DECISION_PACKET_2026-08-24.md
-  topology_merge_sha: c92d2d0615ae1e969003d152b4b0dfa87acfb72d
-  resource_gate_issue: 123
-  resource_gate_state: completed
   selected_stack: sqlx_0_9_0
-  evidence: current journal-only first slice explicitly excludes DUR03-RL-01..08 fail-closed; implementation and physical persistence still require a fresh allocation
+  shared_integration_pr: 182
+  shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
+  shared_leases: released
+  blocker: null
+  next_gate: existing worker refreshes to fresh protected main and continues real PostgreSQL TDD
 OTV2-IMPL-ABILITY:
-  status: allocated_waiting_for_worker_branch
-  write_authority: owned_paths_only_after_work_allocation_merge
+  status: completed_released
+  write_authority: none
   issue: 166
-  coordinator_issue: 162
-  resource_gate_issue: 93
-  resource_gate_state: completed
-  blocker: none_for_first_slice_resource_limits
+  delivery_pr: 171
+  delivery_merge_sha: 2faa280b406a313d02ee1330c65651bc36e215a9
+  post_merge_independent_review: PASS_POST_MERGE_RECONCILIATION
 OTV2-IMPL-INTERACTION:
-  status: allocated_waiting_for_worker_branch
-  write_authority: owned_paths_only_after_work_allocation_merge
+  status: completed_released
+  write_authority: none
   issue: 165
-  coordinator_issue: 162
-  resource_gate_issue: 93
-  resource_gate_state: completed
-  blocker: none_for_first_slice_resource_limits
+  delivery_pr: 172
+  delivery_merge_sha: 73f82e4864aa15ece50625bda8bac7868f779ba3
+  post_merge_independent_review: PASS_POST_MERGE_RECONCILIATION
 OTV2-IMPL-AI:
-  status: allocated_waiting_for_worker_branch
-  write_authority: owned_paths_only_after_work_allocation_merge
+  status: completed_released
+  write_authority: none
   issue: 174
-  coordinator_issue: 162
-  resource_gate_issue: 93
-  resource_gate_state: completed
-  blocker: none_for_owner_accepted_pure_local_bootstrap
+  delivery_pr: 178
+  delivery_merge_sha: cb9c5f4f53dd880c9d338dafd21b6184a4419993
+  post_merge_independent_review: PASS_POST_MERGE_RECONCILIATION
+
 OTV2-WAVE2-RESOURCE-LIMITS:
   status: completed_released
   write_authority: none
