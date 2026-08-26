@@ -16,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT supervising architecture session
 created_at: 2026-08-26T07:20:08Z
-updated_at: 2026-08-26T07:22:00Z
+updated_at: 2026-08-26T07:25:00Z
 execution_budget_minutes: 90
 large_budget_reason: execution-model architecture, reusable prompt packaging and governance validation
 owned_paths:
@@ -56,8 +56,8 @@ Persist the owner-approved execution-model design and a reusable architecture-co
 - [x] Preserve Durability -> Server Seam -> Client/QA -> Movement -> Combat dependency order.
 - [x] Preserve audit/reconciliation findings rather than rewriting history.
 - [x] Add a continuation prompt that requires live GitHub, written-spec owner review, writing-plans, prompt evaluation and fail-closed authority.
-- [ ] Register the continuation prompt in README/lifecycle metadata.
-- [ ] Self-review the written spec for placeholders, contradictions, scope and unsupported authority.
+- [x] Register the continuation prompt in README/lifecycle metadata.
+- [x] Self-review the written spec for placeholders, contradictions, scope and unsupported authority.
 - [ ] Owner reviews the written spec before implementation-plan authoring.
 - [ ] Exact-head governance/repository-policy/semantic/merge-authority/game-gate qualification is complete before merge.
 
@@ -65,12 +65,35 @@ Persist the owner-approved execution-model design and a reusable architecture-co
 
 No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource registry, stable IDs, protocol/schema, workflow, production, secrets, Platform/Atlas/META or external-repository mutation. No Sol lane implementation begins from this task.
 
+## Design self-review
+
+- placeholder scan: `PASS` — no `TBD`, `TODO` or `fill in` markers found in the written spec;
+- internal consistency: `PASS` — Work remains control plane, Sol writes stay allocation-gated, shared surfaces remain serialized and Codex is optional/bounded;
+- scope: `PASS` — the document changes execution architecture only and explicitly excludes runtime/product architecture;
+- ambiguity: `PASS` — direct Codex use is conditional on a real supported mechanism; otherwise `CODEX_HANDOFF_REQUIRED` or safe continuation without Codex is mandatory;
+- historical truth: `PASS` — current Ability review/lifecycle findings are preserved as transition findings rather than rewritten.
+
+## Prompt evaluation
+
+`OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION` against `docs/agents/PROMPT_EVAL_STANDARD.md`:
+
+- Authority: `PASS` — exact docs/governance continuation authority and runtime/production/cross-repo exclusions are explicit.
+- Resolution: `PASS` — fresh protected main, live coordinator, audit findings, task/PR state and canonical spec are mandatory startup inputs.
+- Ownership: `PASS` — future writes require a fresh exact task/branch/PR lifecycle; Sol implementation remains future allocation-gated.
+- Architecture: `PASS` — accepted runtime architecture and DAG remain authoritative; execution-model conflicts escalate rather than being invented through.
+- Completeness: `PASS` — spec review, writing-plan transition, prompt family, selective Codex, concurrency, transition truth and owner launch sheet are covered.
+- Evidence: `PASS` — `PROVEN / DERIVED / UNKNOWN / CONFLICT`, exact SHAs and no-fake-Codex evidence are explicit.
+- Validation: `PASS` — prompt evaluation plus repository exact-head governance/CI/review obligations are explicit.
+- Autonomy: `PASS` — the agent continues architecture packaging after owner confirmation but has concrete fail-closed stop conditions.
+- Handover: `PASS` — final owner launch sheet and exact transition truth are required.
+- Safety: `PASS` — no runtime, production, secrets, external-repo or unapproved owner-funded AI authority.
+
 ## Validation
 
 ### Focused
 
 - command/run: prompt self-evaluation against `docs/agents/PROMPT_EVAL_STANDARD.md`
-- result: pending final package review
+- result: `PASS` on all 10 gates as recorded above
 
 ### Component/integration
 
@@ -93,14 +116,14 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: implementing architecture session
-- material findings: pending
-- verdict: pending
+- exact head: pending external exact-head evidence after final candidate commit
+- method/reviewer: implementing architecture session, whole-scope review against Issue #179 and governing prompt standard
+- material findings: none in the authored execution-model scope before exact-head CI; implementation plan intentionally deferred to owner written-spec review
+- verdict: `PASS_PENDING_OWNER_SPEC_REVIEW_AND_EXACT_HEAD_CI`
 
 ## Independent review
 
-- required: pending final governance risk classification; no runtime/merge authority expansion is intended
+- required: pending final governance risk classification; the package is intended to specialize roles without widening runtime or merge authority
 - exact head: pending or `NOT_APPLICABLE`
 - method/auditor: pending or `NOT_APPLICABLE`
 - material findings: pending or `NOT_APPLICABLE`
@@ -108,7 +131,7 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: five intended documentation/governance paths only
 - unresolved review threads: pending
 - related/superseded PRs: open PR #150 is unrelated root-governance work and must not be modified by this task
 - protected auto-merge: not requested
@@ -118,7 +141,7 @@ No gameplay/runtime, Cargo/workspace, `Cargo.lock`, composition, resource regist
 ## Context checkpoint
 
 ```yaml
-last_progress: owner-approved execution direction persisted as design spec and continuation prompt on Issue #179 branch
+last_progress: written design, continuation prompt, README and lifecycle registration self-reviewed on the Issue #179 branch
 status: validating
 branch: docs/sol-lead-selective-codex-179
 head_sha: null
@@ -140,5 +163,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: written_spec_review
 blocker: implementation plan must not be authored until owner reviews the written spec
-next_action: register continuation prompt in README and lifecycle registry, then present written spec for owner review
+next_action: open the design package as a draft PR for owner written-spec review and exact-head governance qualification
 ```
