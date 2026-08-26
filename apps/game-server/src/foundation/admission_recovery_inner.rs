@@ -283,3 +283,24 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
         self.current.as_ref().ok_or(AdmissionError::ReconciliationUnavailable)
     }
 }
+
+#[cfg(test)]
+mod durability_reconnect_v1_tests {
+    use super::*;
+
+    #[test]
+    fn authenticated_transport_ref_v1_is_exact_nonzero_16_bytes() -> Result<(), AdmissionError> {
+        let encoded = [0xA5u8; 16];
+        let transport_ref = AuthenticatedTransportRefV1::decode(&encoded)?;
+        assert_eq!(transport_ref.to_bytes(), encoded);
+        assert_eq!(
+            AuthenticatedTransportRefV1::decode(&[0u8; 16]),
+            Err(AdmissionError::InvalidFacts)
+        );
+        assert_eq!(
+            AuthenticatedTransportRefV1::decode(&[0xA5u8; 15]),
+            Err(AdmissionError::InvalidFacts)
+        );
+        Ok(())
+    }
+}
