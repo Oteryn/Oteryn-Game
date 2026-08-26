@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/foundation-reconnect-durability-v1
 issue: 192
-pr: null
+pr: 199
 architecture_decision_issue: 187
 architecture_decision_pr: 190
 architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
@@ -23,7 +23,7 @@ head_sha: null
 final_head_sha: null
 owner: Oteryn: impl foundation
 created_at: 2026-08-26T15:02:00+02:00
-updated_at: 2026-08-26T17:53:00+02:00
+updated_at: 2026-08-26T18:20:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: FND-03/FND-04 reconnect authority, fencing, async handoff and security evidence are XHigh-risk Foundation semantics
 owned_paths:
@@ -59,8 +59,8 @@ Expose the smallest Foundation-owned V1 reconnect persistence boundary accepted 
 - `PROVEN`: PR #194 merged the exact Foundation successor allocation as `1063caf409af6cd4b25fa844e17a483b87e76ad6`.
 - `PROVEN`: PR #195 merged the required `FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPOCH = 8` registry row as `9878d42a21815027ef88067bfc59f8b40e78b473`.
 - `PROVEN`: protected `main@f31453f65477ae9966d724d67bdd2c1857318be1` records the prior worker-packet mismatch as a `CONFLICT` and requires this worker to reconcile its own packet before first runtime write.
-- `PROVEN`: this branch is created from that current protected main and owns only the exact paths listed above.
-- `DERIVED`: after this packet reconciliation commit, the stale `waiting_allocation_merge` conflict is removed for the worker branch; runtime writes remain limited to the allocated Foundation paths.
+- `PROVEN`: this branch was created from that current protected main and owns only the exact paths listed above.
+- `PROVEN`: PR #199 is the worker delivery PR; the first TDD RED test for `AuthenticatedTransportRefV1` is committed on the branch and production code has not yet been written.
 
 ## Acceptance criteria
 
@@ -82,7 +82,8 @@ No SQLx/query/migration/schema work, Durability module, Cargo/workflow/registry/
 
 ### TDD
 
-- RED/green evidence: pending on GitHub runners from this reconciled branch; unpublished workstation scratch is non-authoritative and is not used as merge evidence.
+- RED candidate: first failing test committed on PR #199; awaiting GitHub-runner classification before production implementation.
+- unpublished workstation scratch: non-authoritative and not used as merge evidence.
 
 ### Exact-head CI
 
@@ -92,13 +93,13 @@ No SQLx/query/migration/schema work, Durability module, Cargo/workflow/registry/
 ## Context checkpoint
 
 ```yaml
-last_progress: worker-owned packet reconciled from protected main f31453f65477ae9966d724d67bdd2c1857318be1 after PR #194 allocation and PR #195 registry merge
+last_progress: PR #199 opened; first RED test is committed and production code remains absent pending GitHub-runner failure evidence
 status: implementing
 branch: impl/foundation-reconnect-durability-v1
 head_sha: null
-pr: null
+pr: 199
 final_head_sha: null
 owner_action_required: null
-blocker: null
-next_action: commit the first Foundation V1 failing test on this branch and observe the expected GitHub-runner RED before production implementation
+blocker: GitHub runner must classify the RED candidate before production implementation
+next_action: observe the expected runner compile failure for the missing AuthenticatedTransportRefV1 symbol
 ```
