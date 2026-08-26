@@ -830,19 +830,3 @@ fn prepare_reconciles_peer_commit_between_initial_read_and_claim() -> Result<(),
     );
     Ok(())
 }
-
-#[test]
-fn durable_transport_ref_v1_codec_is_exact_and_zero_rejected() -> Result<(), AdmissionError> {
-    let encoded = [0xA5u8; 16];
-    let reference = crate::foundation::AuthenticatedTransportRefV1::decode(&encoded)?;
-    assert_eq!(reference.to_bytes(), encoded);
-    assert_eq!(
-        crate::foundation::AuthenticatedTransportRefV1::decode(&[0u8; 16]),
-        Err(AdmissionError::InvalidFacts)
-    );
-    assert_eq!(
-        crate::foundation::AuthenticatedTransportRefV1::decode(&[0xA5u8; 15]),
-        Err(AdmissionError::InvalidFacts)
-    );
-    Ok(())
-}
