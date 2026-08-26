@@ -1499,8 +1499,7 @@ mod durability_evidence_v1_tests {
             account_id: "00000000-0000-4000-8000-000000000001".to_owned(),
             character_id: CharacterId::decode(&id(2))
                 .map_err(|_| Fnd04ConsumerError::RecoveryMalformed)?,
-            world_id: WorldId::decode(&id(3))
-                .map_err(|_| Fnd04ConsumerError::RecoveryMalformed)?,
+            world_id: WorldId::decode(&id(3)).map_err(|_| Fnd04ConsumerError::RecoveryMalformed)?,
             ruleset_revision: "rules-1".to_owned(),
             content_revision: "content-1".to_owned(),
             map_revision: "map-1".to_owned(),
@@ -1528,4 +1527,121 @@ mod durability_evidence_v1_tests {
         assert_eq!(facts.credential_expiration(), 110);
         Ok(())
     }
+}
+
+/// Recovery-verifier output for the durable reconnect V1 boundary.
+///
+/// The legacy verifier remains the sole authentication/authorization decision. This
+/// wrapper only preserves signed fields from the same immutable compact JWT after that
+/// decision succeeds; it does not invent source revisions or decision identities that
+/// `Fnd04EvidenceAuthority` does not expose.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerifiedRecoveryDurabilityFactsV1 {
+    verified: VerifiedRecoveryFacts,
+    account_security_generation: u64,
+    protocol_major: u64,
+    transport_profile: u64,
+    ruleset_revision: String,
+    content_revision: String,
+    map_revision: String,
+    world_policy_revision: String,
+    credential_expiration: i64,
+}
+
+impl VerifiedRecoveryDurabilityFactsV1 {
+    #[must_use]
+    pub const fn grant_nonce(&self) -> [u8; 32] {
+        self.verified.grant_nonce()
+    }
+
+    #[must_use]
+    pub fn account_id(&self) -> &str {
+        self.verified.account_id()
+    }
+
+    #[must_use]
+    pub const fn character_id(&self) -> CharacterId {
+        self.verified.character_id()
+    }
+
+    #[must_use]
+    pub const fn world_id(&self) -> WorldId {
+        self.verified.world_id()
+    }
+
+    #[must_use]
+    pub const fn account_security_generation(&self) -> u64 {
+        self.account_security_generation
+    }
+
+    #[must_use]
+    pub const fn protocol_major(&self) -> u64 {
+        self.protocol_major
+    }
+
+    #[must_use]
+    pub const fn transport_profile(&self) -> u64 {
+        self.transport_profile
+    }
+
+    #[must_use]
+    pub fn ruleset_revision(&self) -> &str {
+        &self.ruleset_revision
+    }
+
+    #[must_use]
+    pub fn content_revision(&self) -> &str {
+        &self.content_revision
+    }
+
+    #[must_use]
+    pub fn map_revision(&self) -> &str {
+        &self.map_revision
+    }
+
+    #[must_use]
+    pub fn world_policy_revision(&self) -> &str {
+        &self.world_policy_revision
+    }
+
+    #[must_use]
+    pub const fn credential_expiration(&self) -> i64 {
+        self.credential_expiration
+    }
+}
+
+pub fn verify_recovery_grant_durability_v1(
+    token: &str,
+    now: i64,
+    trust: &RecoveryTrustContext<'_>,
+    current: &RecoveryCurrentEvidence,
+) -> Result<VerifiedRecoveryDurabilityFactsV1, Fnd04ConsumerError> {
+    let verified = verify_recovery_grant(token, now, trust, current)?;
+    let kind = GrantKind::Recovery;
+    let compact = parse_compact_jws(token).map_err(|_| kind.malformed())?;
+    let payload = decode_canonical_base64url(&compact.payload_segment, 3_072)
+        .map_err(|_| kind.malformed())?;
+    let claims = parse_claims(&payload, kind)?;
+    let character = CharacterId::decode(&claims.character).map_err(|_| kind.malformed())?;
+    let world = WorldId::decode(&claims.world).map_err(|_| kind.malformed())?;
+
+    if claims.nonce != verified.grant_nonce()
+        || claims.account_id.as_str() != verified.account_id()
+        || character != verified.character_id()
+        || world != verified.world_id()
+    {
+        return Err(kind.binding_mismatch());
+    }
+
+    Ok(VerifiedRecoveryDurabilityFactsV1 {
+        verified,
+        account_security_generation: claims.account_security_generation,
+        protocol_major: claims.protocol_major,
+        transport_profile: claims.transport_profile,
+        ruleset_revision: claims.ruleset_revision,
+        content_revision: claims.content_revision,
+        map_revision: claims.map_revision,
+        world_policy_revision: claims.world_policy_revision,
+        credential_expiration: claims.exp,
+    })
 }
