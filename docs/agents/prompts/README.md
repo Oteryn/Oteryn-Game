@@ -7,6 +7,9 @@ These prompts are execution contracts for recurring Oteryn v2 programmes. They d
 - `OTV2_ARCHITECTURE_CONTINUATION_AGENT.md` — iterative Oteryn-v2 architecture work in architecture/analysis-only mode by default. Short invocation: `Oteryn: architektura`.
 - `OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — staged global architecture decision coordinator.
 - `OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT.md` — bounded domain architecture design worker allocated by the architecture coordinator.
+- `OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md` — continuation and packaging of the owner-approved Work-control-plane + Sol-lane-lead + selective-Codex execution model. **Short invocation: `Oteryn: sol execution architecture`.**
+
+The Sol execution architecture prompt is governance/architecture only. It validates the written execution-model spec against live GitHub, requires owner confirmation of that written spec before authoring the adoption plan, and then packages the future Sol lane-lead prompt family. It grants no gameplay/runtime, production or cross-repository authority.
 
 ## Implementation programme
 
