@@ -4,19 +4,26 @@
 task_id: OTV2-20260825-work-delivery-coordinator
 title: Coordinate the post-blocker gameplay vertical slice
 mode: COORDINATE
-status: coordinating_closeout
+status: waiting_architecture
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: docs/wave-a-review-lifecycle-reconciliation
+branch: coord/durability-architecture-hold
 issue: 162
-pr: 186
+pr: null
+prior_merged_pr: 186
+architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
+ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
+ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
+candidate_local_head_sha: f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf
+candidate_validation: governance PASS and git diff --check PASS on the local hold candidate
+candidate_pr_state: ordinary PR pending publication and integration; no remote PR exists
 base_sha: 2e3b05e7e1e916bd3210ce2184ad7e23482f324d
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-08-26T13:25:00+02:00
+updated_at: 2026-08-26T13:42:59+02:00
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration, and closeout; no single worker owns the programme
 owned_paths:
@@ -31,7 +38,7 @@ public_contracts: []
 depends_on:
   - Oteryn/Oteryn-Game#154
 blocks:
-  - durable ReconnectAttemptJournal adapter delivery for #167 before Server Seam re-evaluation
+  - Issue #187 durable architecture decision for #167; Server Seam remains WAITING_DEPENDENCY and is not released
 cross_repository_coordination_id: OTV2-WORK-DELIVERY-POST-BLOCKER
 external_repositories: []
 \`\`\`
@@ -60,7 +67,12 @@ Create the durable execution lifecycle for the post-blocker gameplay vertical sl
 - \`PROVEN\`: no open Wave A implementation PR or active Wave A path allocation exists on the admission main.
 - \`PROVEN\`: Task 1 coordinator lifecycle merged as \`c57ddb5253cdfec126a768232d53f8a9bb292e3f\`; protected main readback confirmed it.
 - \`PROVEN\`: Issue #164 is terminally resolved by owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\`, which accepts only a pure-local AI bootstrap; Issue #174 needs this fresh exact allocation before implementation.
-- \`PROVEN\`: Server Seam lacks a merged production durable \`ReconnectAttemptJournal\`; it is \`WAITING_DEPENDENCY\`, not an architecture escalation.
+- \`PROVEN\`: PR #186 is merged. Its recorded review claims remain historical; this coordinator hold does not revise them.
+- \`PROVEN\`: protected \`main@007183ac7ef09dd4ae8d8f476d7ac943541d7d48\` has PR #182's shared prerequisite but no Durability worker PR or durable adapter delivery.
+- \`PROVEN\`: the only Durability remote provenance is \`impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741\`; local unpublished documentation checkpoint \`3adf13ef17b3b7811aa4f73971456ecd321afcc2\` is not a remote delivery.
+- \`PROVEN\`: [Issue #187](https://github.com/Oteryn/Oteryn-Game/issues/187) comment \`5424765487\` grants this bounded ownership correction: only the active Durability task's status, provenance, blocker, no-write state and next action may be corrected; no worker or runtime change is authorized.
+- \`PROVEN\`: [Issue #187](https://github.com/Oteryn/Oteryn-Game/issues/187) establishes that the current synchronous Foundation \`ReconnectAttemptJournal\` cannot express all FND-04/DUR-02 durable authority, revalidation and async-handoff requirements. #167 is therefore \`WAITING_ARCHITECTURE\`.
+- \`PROVEN\`: Server Seam remains \`WAITING_DEPENDENCY\`, not released by #167 while #187 is unresolved.
 - \`DERIVED\`: Interaction, Ability and journal-only Durability have disjoint primary semantic paths. Their shared composition/Cargo surfaces remain serialized coordinator paths.
 
 Governing authority:
@@ -83,11 +95,11 @@ Task 1 and Task 2 allocation are historical completion steps. Current GitHub PR/
 | Interaction | \`COMPLETED_RELEASED\` | PR #172 merged as \`73f82e4864aa15ece50625bda8bac7868f779ba3\`; post-merge reconciliation is recorded | Issue #165 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
 | Ability | \`COMPLETED_RELEASED\` | PR #171 merged as \`2faa280b406a313d02ee1330c65651bc36e215a9\`; post-merge reconciliation is recorded | Issue #166 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
 | AI | \`COMPLETED_RELEASED\` | PR #178 merged as \`cb9c5f4f53dd880c9d338dafd21b6184a4419993\`; post-merge reconciliation is recorded | Issue #174 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
-| Durability | \`READY_TO_RESUME\` | PR #182 merged as \`475288b29cadccb73e08eb488160169d296c7874\`; shared Cargo/CI/policy leases are released | Existing #167 branch refreshes to protected main and continues the canonical PostgreSQL TDD plan; this packet does not edit the worker-owned task. |
-| Server Seam | \`WAITING_DEPENDENCY\` | durable production \`ReconnectAttemptJournal\` adapter absent | re-evaluate after Durability protected-main readback |
-| Client | \`WAITING_DEPENDENCY\` | no compatible production Server Seam is merged | re-evaluate only after Server Seam is merged and exact-head validated |
-| Movement | \`WAITING_DEPENDENCY\` | #139 remains non-current; Interaction, compatible Client, and real QA are not integration-ready | exact Movement plan plus all stated prerequisites and resource closure |
-| Combat | \`WAITING_DEPENDENCY\` | Movement and Ability/Interaction/Durability/Client/QA integration prerequisites are incomplete | re-evaluate after the serial Movement gate |
+| Durability | \`WAITING_ARCHITECTURE\` | Issue #187 identifies a Foundation \`ReconnectAttemptJournal\` conflict with FND-04/DUR-02 durable authority, revalidation and async handoff; PR #182 remains only the merged shared prerequisite | no write authority pending the single recorded next action |
+| Server Seam | \`WAITING_DEPENDENCY\` | #167 cannot release the durable adapter until #187's accepted architect decision and a fresh allocation | not released by #167 |
+| Client | \`WAITING_DEPENDENCY\` | Server Seam remains blocked by #167 \`WAITING_ARCHITECTURE\` | no compatible production Server Seam is merged |
+| Movement | \`WAITING_DEPENDENCY\` | #139 remains non-current and its Client/Server Seam dependency chain is blocked by #167 \`WAITING_ARCHITECTURE\`; real QA is also not integration-ready | no dispatch authority |
+| Combat | \`WAITING_DEPENDENCY\` | Movement and its Client/Server Seam/Durability dependency chain is blocked by #167 \`WAITING_ARCHITECTURE\` | no dispatch authority |
 
 ## Acceptance criteria
 
@@ -105,19 +117,19 @@ No gameplay/runtime, Cargo/workspace, registry, stable-ID, public-contract, work
 
 Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected \`main\`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. Owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\` closed #164 and authorized only the separately allocated pure-local AI bootstrap through Issue #174.
 
-PRs #171, #172 and #178 are now merged and their worker packets are archived/released by the current coordinator reconciliation. The Durability worker packet stays active and untouched: PR #182 only released its serialized Cargo/CI/policy prerequisite. No worker may infer new shared-path authority from that release, and Server Seam remains \`WAITING_DEPENDENCY\` until the actual durable adapter is merged.
+PRs #171, #172 and #178 are now merged and their worker packets are archived/released by the current coordinator reconciliation. PR #182 only released the serialized Cargo/CI/policy prerequisite. Issue #187 now blocks #167: it has no worker PR and \`write_authority: none_while_waiting_architecture\`; Server Seam remains \`WAITING_DEPENDENCY\` and unreleased. This hold does not complete the vertical-slice programme.
 
 ## Validation
 
 ### Focused
 
 - command/run: \`python tools/agents/validate_governance.py\`
-- result: PASS on candidate PR #186 before this reconciliation repair; rerun on the new exact candidate head is required before merge.
+- result: local candidate \`f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf\` passed governance validation and \`git diff --check\`; an ordinary PR is pending publication and integration, and no remote PR exists.
 
 ### Component/integration
 
 - command/run: \`python tools/repository/validate_repository_policy.py\`
-- result: baseline-only LICENSE canonical-text mismatch; the unchanged file is outside this PR. Exact-head Linux repository policy CI remains required for the new candidate head.
+- result: baseline-only LICENSE canonical-text mismatch was outside PR #186; no repository-policy change is made by this architecture hold. Ordinary PR publication/integration remains pending.
 
 ### E2E
 
@@ -126,45 +138,46 @@ PRs #171, #172 and #178 are now merged and their worker packets are archived/rel
 
 ### Exact-head CI
 
-- final head: current PR #186 head from GitHub
-- trigger source: pull_request
-- workflow/run/job: fresh exact-head GitHub generation required after every candidate change
+- final head: local candidate \`f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf\`
+- trigger source: local candidate
+- workflow/run/job: ordinary PR publication pending; no remote PR exists
 - runner assignment: GitHub-hosted workflow policy
 - classification: coordinator lifecycle reconciliation
-- result: pending fresh candidate qualification
+- result: pending ordinary PR publication and exact-head CI/integration
 
 ## Self-review
 
-- exact head: current PR #186 head from GitHub
+- exact head: local candidate \`f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf\`
 - method/reviewer: coordinator full-diff review
-- material findings: pending fresh candidate qualification
-- verdict: pending fresh candidate qualification
+- material findings: independent task review identified lifecycle defects; bounded correction in progress
+- verdict: pending ordinary PR publication and integration
 
 ## Independent review
 
 - required: exact-head non-authoring review before merge
-- exact head: current PR #186 head from GitHub
-- method/auditor: independent closeout reviewer
-- material findings: pending fresh candidate qualification
-- verdict: pending fresh candidate qualification
+- exact head: local candidate \`f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf\`
+- method/auditor: independent task review
+- material findings: four Important and two Minor lifecycle defects; bounded correction authorized by Issue #187 comment \`5424765487\`
+- verdict: correction pending ordinary PR publication and integration
 
 ## PR and closeout
 
-- changed-file review: required on the current PR #186 head
-- unresolved review threads: required zero before merge
+- changed-file review: local candidate full-diff review completed; ordinary PR pending publication and integration
+- unresolved review threads: remote PR not yet created
 - related/superseded PRs: #168 allocation; #171, #172 and #178 deliveries; #181/#185 leases; #182 shared integration
 - protected auto-merge: not used
-- merge commit/result: pending expected-head squash merge
-- ownership release: Ability, Interaction and AI are released; Durability remains worker-owned; coordinator remains active until actual Durability/Server Seam programme work completes
+- merge commit/result: PR #186 is historical; ordinary hold-correction PR pending publication and integration
+- ownership release: Ability, Interaction and AI are released; Durability has no write authority while waiting on #187; coordinator remains active and the vertical-slice programme is not complete
 
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: PR #186 reconciles post-merge Work audit evidence and releases the completed Wave A lanes without modifying the worker-owned Durability packet
-status: coordinating_closeout
-branch: docs/wave-a-review-lifecycle-reconciliation
-head_sha: null
-pr: 186
+last_progress: Issue #187 comment 5424765487 authorizes this bounded ownership correction; local candidate f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf has governance and diff-check PASS, while ordinary PR publication/integration remains pending
+status: waiting_architecture
+branch: coord/durability-architecture-hold
+head_sha: f8bb9b1f8f8a452df4dc07ad3e1e7330836acfaf
+pr: null
+prior_merged_pr: 186
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -180,7 +193,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
-blocker: null
-next_action: after PR #186 exact-head review/CI and protected-main readback, close #165/#166/#174, record #167 READY_TO_RESUME on its Issue, then leave implementation to its existing worker
+owner_action_required: accepted architect decision on Issue #187
+blocker: Issue #187 durable architecture conflict; #167 has write_authority none_while_waiting_architecture
+next_action: await the accepted architect decision on #187
 \`\`\`
