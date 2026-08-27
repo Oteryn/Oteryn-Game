@@ -13,7 +13,7 @@ The scheduler is interpreted by the programme's uniquely active control-plane pr
 | `Oteryn: terra game coordinator` | Work / Terra High | CONTROL_PLANE when durably selected, otherwise RECOVERY_READ_ONLY | GitHub state, DAG, ownership, leases, deterministic integration |
 | `Oteryn: work coordinator` | ChatGPT Work | CONTROL_PLANE when durably selected, otherwise RECOVERY_READ_ONLY | legacy/reusable Work delivery control plane |
 | `Oteryn: sol supervising architect` | GPT-5.6 Sol Extra High | ON_DEMAND | material architecture/cross-lane decisions |
-| `Oteryn: work auditor` | independent high-effort read-only | READ_ONLY | forensic control/audit |
+| `Oteryn: work auditor` | independent high-effort auditor | AUDIT_READ + EVIDENCE_WRITE | forensic audit plus bounded exact-target GitHub audit note |
 | `Oteryn: sol durability lead` | GPT-5.6 Sol Extra High | MUTATING when allocated | current Durability critical lane |
 | `Oteryn: sol server seam lead` | GPT-5.6 Sol Extra High | READ_ONLY until Durability terminal | production server/client-entry seam |
 | `Oteryn: sol client qa lead` | GPT-5.6 Sol Extra High | READ_ONLY until Server Seam terminal | native client + Tier 1/Tier 2 evidence |
@@ -36,12 +36,14 @@ The existing #162 lifecycle is a legacy Work lifecycle and therefore remains und
 ## Global concurrency
 
 - Exactly one control-plane profile may mutate the programme; the inactive Work/Terra profile is read-only recovery.
-- The read-only auditor does not consume implementation writer slots.
+- The Work auditor's bounded PR/Issue COMMENT evidence writes do not consume implementation writer slots and do not make the auditor a mutating control plane.
 - Up to five Sol chats may be active when their responsibilities are distinct.
 - Normally no more than two Sol leads may mutate the repository concurrently.
 - A third mutating lead requires `PROVEN` disjoint primary paths, no shared-surface collision, and a recorded concrete throughput reason.
 - Read-only preparation may continue while a dependency is blocked.
 - Never launch a writer merely to occupy capacity.
+
+Any canonical Oteryn Game agent or the owner may request `Oteryn: work auditor` against a uniquely identifiable PR/Issue/task/head. The auditor freezes exact target/head evidence, performs the audit independently, and persists exactly one non-dispositive GitHub audit note. If the target is ambiguous it returns `INSUFFICIENT_EVIDENCE`; if the head moves, the prior note remains historical and cannot qualify the new head.
 
 ## Shared serialization
 
@@ -55,6 +57,8 @@ The following remain one-writer-at-a-time:
 - workflows/protection/governance surfaces.
 
 `SHARED_LEASE_REQUIRED` does not authorize the worker to edit the path. The active control plane executes only a pre-authorized deterministic shared turn; ambiguity escalates.
+
+The Work auditor's evidence note is not a shared-surface lease and never authorizes tracked-file mutation.
 
 ## Current critical DAG
 
@@ -91,11 +95,11 @@ Post-VSL expansion
 
 Release mutation only when the live Durability allocation/branch/PR remains valid. If an existing branch or draft PR exists, continue its history; do not restart due to upstream main movement alone.
 
-### Parallel read-only preparation
+### Parallel non-implementation work
 
-- `Oteryn: sol server seam lead`
-- `Oteryn: sol client qa lead`
-- `Oteryn: work auditor`
+- `Oteryn: sol server seam lead` — read-only preparation;
+- `Oteryn: sol client qa lead` — read-only preparation;
+- `Oteryn: work auditor` — audit read + bounded GitHub evidence-write when requested.
 
 Optional Movement read-only work should start only when it can materially prepare #139/current contracts without inventing numbers.
 
@@ -118,7 +122,7 @@ Parallel:
 
 - Client/QA read-only preparation;
 - Movement read-only resource/dependency inventory if useful;
-- independent audit/review preparation.
+- independent audit/review preparation and bounded audit evidence note when requested.
 
 Promotion:
 
@@ -141,7 +145,8 @@ Required outcome includes truthful native-client Tier 2 evidence for supported j
 Parallel:
 
 - Movement Lead freezes exact child slice and maps exercised #139 rows;
-- Combat Lead may perform read-only dependency/test preparation only.
+- Combat Lead may perform read-only dependency/test preparation only;
+- Work auditor may audit an exact requested target and persist its non-dispositive evidence note.
 
 Promotion:
 
@@ -172,7 +177,7 @@ Oteryn: sol movement lead
 Parallel:
 
 - Combat read-only preparation;
-- auditor/reviewer.
+- auditor/reviewer; auditor evidence writes remain comment-only and non-dispositive.
 
 Promotion:
 
@@ -214,6 +219,8 @@ The active control plane may classify VSL terminal only after:
 - no unresolved material architecture escalation;
 - protected-main readback confirms claimed state.
 
+A Work auditor note may satisfy an audit-evidence requirement only when the exact target/head, independence requirement and applicable repository policy are all proven. The note itself never performs closeout or merge.
+
 This is not production/live deployment or full-game completion.
 
 ## Post-VSL expansion
@@ -247,6 +254,7 @@ Terra does not create future technical lanes itself. When Terra is the active co
 | exact prerequisite missing | `WAITING_DEPENDENCY` |
 | allocation missing | `WAITING_ALLOCATION` |
 | bounded path-local technical judgment needed | `LANE_DECISION_REQUIRED` -> owning Sol lead |
+| independent verification requested for exact target | `Oteryn: work auditor` -> persisted exact-target audit note |
 | unowned shared path required | `SHARED_LEASE_REQUIRED` |
 | public API/schema/persistence/trust/resource/cross-lane decision | `ARCHITECTURE_ESCALATION_REQUIRED` -> Sol Supervising Architect |
 | product priority/scope/authority decision | `OWNER_DECISION_REQUIRED` |
@@ -263,6 +271,7 @@ CURRENT_MAIN: <sha>
 CONTROL_PLANE_PROFILE: <exact active profile>
 ACTIVE_MUTATORS: <aliases>
 READ_ONLY_PREPARATION: <aliases>
+AUDIT_EVIDENCE: <auditor target/note or none>
 WAITING: <alias -> exact missing predicate>
 SHARED_LEASE: <path/owner or none>
 NEXT_UNLOCK: <terminal event -> alias>
