@@ -21,11 +21,6 @@ const INSTANCE_SCOPE: i16 = 2;
 const PENDING_ORIGINAL: i16 = 1;
 const TERMINAL_OUTCOME_RETAINED: i16 = 2;
 
-/// Asynchronous PostgreSQL worker for the Foundation V1 split-phase port.
-///
-/// It is intentionally not an implementation of Foundation's synchronous
-/// compatibility trait: callers submit the V1 request and later feed the typed
-/// result back into Foundation as a fresh normalized input.
 #[derive(Clone)]
 pub struct AdmissionReconnectJournal {
     pool: PgPool,
@@ -38,8 +33,6 @@ impl AdmissionReconnectJournal {
         })
     }
 
-    /// Atomically creates the exact PREPARED record and its transport-ref
-    /// reservation, or records the exact durable terminal classification.
     pub async fn prepare(
         &self,
         request: &ReconnectPrepareRequestV1,
@@ -89,9 +82,6 @@ impl AdmissionReconnectJournal {
         .bind(session_id.as_slice())
         .fetch_one(&mut *transaction)
         .await?;
-        // The session row is our per-session transaction mutex. Check the
-        // idempotency key only after it is held, otherwise two concurrent
-        // identical requests could both observe an empty attempt table.
         let existing = sqlx::query(
             "SELECT state, record_json FROM game_durability_reconnect_attempts \
              WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
@@ -111,9 +101,6 @@ impl AdmissionReconnectJournal {
             return disposition_for_existing(existing.try_get("state")?);
         }
 
-        // The frozen bound applies to every distinct retained attempt row,
-        // including terminal stale/expired classifications. Existing attempts
-        // replay above without consuming additional capacity.
         let count: i16 = session.try_get("attempt_count")?;
         if count >= MAX_ATTEMPTS_PER_EPOCH {
             return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
@@ -187,8 +174,6 @@ impl AdmissionReconnectJournal {
         Ok(ReconnectPrepareDispositionV1::Prepared)
     }
 
-    /// Atomically installs the prepared controller only while the durable
-    /// session still exactly carries the authority fenced by the request.
     pub async fn commit(
         &self,
         request: &ReconnectCommitRequestV1,
@@ -362,7 +347,6 @@ impl AdmissionReconnectJournal {
         Ok(ReconnectCommitDispositionV1::Committed)
     }
 
-    /// Reads one exact persisted attempt and its current durable outcome.
     pub async fn reconcile(
         &self,
         request: &ReconnectPrepareRequestV1,
@@ -507,7 +491,7 @@ async fn attempt_binding_is_valid(
     record: &ReconnectDurabilityRecordV1,
 ) -> Result<bool, DurabilityError> {
     let identity = record.identity();
-    let session_id = identity.game_session_id().as_bytes();
+    let session_id = identity.game_session_id().as_bytes().to_vec();
     let attempt_ref = identity.reconnect_attempt_ref().to_be_bytes();
     let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) = scope_storage(record);
     let row = sqlx::query(
@@ -564,7 +548,8 @@ async fn attempt_binding_is_valid(
     }
     for (stored, expected) in stored_pending.iter().zip(record.fnd02().pending()) {
         if stored.try_get::<String, _>("command_id")? != expected.command_id().get().to_string()
-            || stored.try_get::<i16, _>("disposition")? != pending_disposition(expected.disposition())
+            || stored.try_get::<i16, _>("disposition")?
+                != pending_disposition(expected.disposition())
         {
             return Ok(false);
         }
@@ -573,9 +558,6 @@ async fn attempt_binding_is_valid(
 }
 
 async fn database_now(transaction: &mut Transaction<'_, Postgres>) -> Result<i64, DurabilityError> {
-    // `CURRENT_TIMESTAMP` is fixed at transaction start in PostgreSQL and can
-    // become stale while this transaction waits for the per-session row lock.
-    // `clock_timestamp()` observes actual database time at the post-lock fence.
     let row = sqlx::query("SELECT FLOOR(EXTRACT(EPOCH FROM clock_timestamp()))::BIGINT AS now")
         .fetch_one(&mut **transaction)
         .await?;
@@ -589,7 +571,7 @@ async fn insert_attempt(
     state: i16,
 ) -> Result<(), DurabilityError> {
     let identity = record.identity();
-    let session_id = identity.game_session_id().as_bytes();
+    let session_id = identity.game_session_id().as_bytes().to_vec();
     let attempt_ref = identity.reconnect_attempt_ref().to_be_bytes();
     let epoch = i64::try_from(record.continuity().control_loss_epoch().get())
         .map_err(|_error| DurabilityError::InvalidStoredState)?;
