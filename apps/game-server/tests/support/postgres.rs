@@ -209,10 +209,12 @@ mod durability_contract_tests {
 
     #[tokio::test]
     async fn checksum_mismatch_is_runtime_incompatible() -> TestResult {
-        let (database, _database_url, executor) = migrated_database("checksum_mismatch").await?;
+        let (database, database_url, executor) = migrated_database("checksum_mismatch").await?;
+        let mut connection = PgConnection::connect(&database_url).await?;
         sqlx::query("UPDATE _sqlx_migrations SET checksum = decode('00', 'hex')")
-            .execute(&executor.pool)
+            .execute(&mut connection)
             .await?;
+        connection.close().await?;
 
         assert_eq!(executor.inspect().await?, SchemaCompatibility::Incompatible);
         database.cleanup().await?;
@@ -221,10 +223,12 @@ mod durability_contract_tests {
 
     #[tokio::test]
     async fn dirty_migration_is_runtime_incompatible() -> TestResult {
-        let (database, _database_url, executor) = migrated_database("dirty_migration").await?;
+        let (database, database_url, executor) = migrated_database("dirty_migration").await?;
+        let mut connection = PgConnection::connect(&database_url).await?;
         sqlx::query("UPDATE _sqlx_migrations SET success = false")
-            .execute(&executor.pool)
+            .execute(&mut connection)
             .await?;
+        connection.close().await?;
 
         assert_eq!(executor.inspect().await?, SchemaCompatibility::Incompatible);
         database.cleanup().await?;
@@ -233,10 +237,12 @@ mod durability_contract_tests {
 
     #[tokio::test]
     async fn behind_migration_ledger_is_runtime_incompatible() -> TestResult {
-        let (database, _database_url, executor) = migrated_database("behind_ledger").await?;
+        let (database, database_url, executor) = migrated_database("behind_ledger").await?;
+        let mut connection = PgConnection::connect(&database_url).await?;
         sqlx::query("DELETE FROM _sqlx_migrations")
-            .execute(&executor.pool)
+            .execute(&mut connection)
             .await?;
+        connection.close().await?;
 
         assert_eq!(executor.inspect().await?, SchemaCompatibility::Incompatible);
         database.cleanup().await?;
@@ -245,15 +251,17 @@ mod durability_contract_tests {
 
     #[tokio::test]
     async fn ahead_migration_ledger_is_runtime_incompatible() -> TestResult {
-        let (database, _database_url, executor) = migrated_database("ahead_ledger").await?;
+        let (database, database_url, executor) = migrated_database("ahead_ledger").await?;
+        let mut connection = PgConnection::connect(&database_url).await?;
         sqlx::query(
             "INSERT INTO _sqlx_migrations \
              (version, description, success, checksum, execution_time) \
              SELECT version + 1000000, 'synthetic ahead migration', true, checksum, 0 \
              FROM _sqlx_migrations ORDER BY version DESC LIMIT 1",
         )
-        .execute(&executor.pool)
+        .execute(&mut connection)
         .await?;
+        connection.close().await?;
 
         assert_eq!(executor.inspect().await?, SchemaCompatibility::Incompatible);
         database.cleanup().await?;
@@ -333,9 +341,7 @@ mod durability_contract_tests {
         accepting: bool,
     ) -> Result<(), IsolatedPostgresError> {
         let value = if accepting { "true" } else { "false" };
-        let statement = format!(
-            "ALTER DATABASE {database_name} WITH ALLOW_CONNECTIONS {value}"
-        );
+        let statement = format!("ALTER DATABASE {database_name} WITH ALLOW_CONNECTIONS {value}");
         admin
             .execute(sqlx::query(sqlx::AssertSqlSafe(statement)))
             .await?;
