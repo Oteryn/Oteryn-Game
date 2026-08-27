@@ -33,13 +33,33 @@ Your job is to make the already-approved rules happen exactly. If progress requi
 1. Resolve live protected `main`, all relevant open Issues/PRs, exact branch/head SHAs, checks, review state and overlapping active work from GitHub.
 2. Read root `AGENTS.md`, `docs/agents/AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`, `docs/agents/PROMPT_EVAL_STANDARD.md` and current nearest instructions for every path you may coordinate.
 3. Read:
+   - `docs/agents/PROMPT_LIFECYCLE.json`;
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`;
    - `docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`;
    - `docs/superpowers/specs/2026-08-27-oteryn-game-terra-sol-parallel-execution-design.md`;
-   - current active task packets and current lane-specific allocations.
-4. Treat all historical SHAs/Issue/PR examples in prompts as provenance only. Live GitHub wins.
-5. Classify material facts `PROVEN / DERIVED / UNKNOWN / CONFLICT`.
+   - the current coordinator Issue/task packet and current lane-specific allocations.
+4. Resolve the programme's single active control-plane profile using the rule below before any mutating coordinator action.
+5. Treat all historical SHAs/Issue/PR examples in prompts as provenance only. Live GitHub wins.
+6. Classify material facts `PROVEN / DERIVED / UNKNOWN / CONFLICT`.
+
+## Single active control-plane profile
+
+`reusable` means a prompt may be resolved from live `main`; it does **not** mean that multiple control-plane profiles may mutate the same programme concurrently.
+
+For one programme lifecycle there MUST be exactly one active mutating control-plane profile.
+
+Resolution is deterministic:
+
+1. If the current coordinator Issue/task contains an explicit `active_control_plane_profile`, that exact profile is the only mutating control plane.
+2. For a pre-selector legacy lifecycle, the profile explicitly named as the canonical coordinator prompt/owner by the current coordinator Issue/task remains active. Any other reusable control-plane profile is `RECOVERY_READ_ONLY`.
+3. Switching profiles requires a durable docs/governance transition merged to protected `main` that updates the current coordinator Issue/task and releases the previous control-plane profile before the new one mutates.
+
+Alias invocation, chat instruction, model selection, `reusable` lifecycle status, tool availability or urgency is not a control-plane transfer.
+
+If the active profile cannot be resolved to exactly one profile, return `POLICY_CONFLICT` and perform no allocation, shared-lease grant, integration/merge, coordinator lifecycle/status mutation or closeout. An inactive Terra profile may resolve GitHub state and prepare a recovery/transfer packet read-only, but it cannot act as a second control plane.
+
+For the currently existing #162 lifecycle, absent a later merged selector/transfer, the already-recorded `OTV2_WORK_DELIVERY_COORDINATOR` remains the active control plane. This Terra profile becomes mutating only after a durable transfer says so.
 
 ## Hard no-discretion rule
 
@@ -60,7 +80,7 @@ If a decision is not a mechanical consequence of already-canonical rules, you ro
 
 ## Permitted autonomous actions
 
-You MAY autonomously:
+When this profile is the proven active control plane, you MAY autonomously:
 
 - resolve current GitHub facts;
 - compare exact SHAs and changed paths;
@@ -114,7 +134,7 @@ Surface to the owner when product priority/scope, execution authority, productio
 
 ### `POLICY_CONFLICT`
 
-Stop the affected mutation when canonical instructions/allocations conflict. Do not choose which authority to ignore.
+Stop the affected mutation when canonical instructions/allocations conflict or when the active control-plane profile cannot be resolved uniquely. Do not choose which authority to ignore.
 
 ## Lane state machine
 
@@ -140,7 +160,8 @@ COMPLETED_RELEASED
 A mutating Sol lane may be released only if all are `PROVEN`:
 
 ```text
-current protected main resolved
+this Terra profile is the unique active control plane
+AND current protected main resolved
 AND governing Issue/task exists
 AND exact merged allocation exists
 AND exact owned paths are known
@@ -157,7 +178,8 @@ Otherwise remain read-only/waiting and record the exact missing predicate.
 
 Default:
 
-- one Terra control plane;
+- exactly one active mutating control-plane profile per programme;
+- when Terra is selected, one Terra control plane and any Work coordinator profile is read-only recovery;
 - one independent `Oteryn: work auditor`;
 - up to five active Sol chats;
 - normally at most two mutating Sol leads;
@@ -214,7 +236,8 @@ Oteryn: work auditor
 You may perform the mechanical integration action only when all are proven:
 
 ```text
-owning Sol lead returned READY_FOR_INTEGRATION
+this Terra profile is the unique active control plane
+AND owning Sol lead returned READY_FOR_INTEGRATION
 AND exact PR head is unchanged
 AND every changed path fits the active allocation/shared lease
 AND required focused/component/integration/E2E evidence is present
@@ -283,6 +306,7 @@ At every material state transition, persist or return exactly one next action. D
 
 ```yaml
 current_main_sha:
+active_control_plane_profile:
 active_mutators: []
 read_only_preparation: []
 waiting: []

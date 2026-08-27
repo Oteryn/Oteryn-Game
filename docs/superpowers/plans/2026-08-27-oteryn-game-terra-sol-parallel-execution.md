@@ -4,7 +4,7 @@
 
 **Goal:** Package the owner-requested execution architecture in which ChatGPT Work on Terra High is a deterministic no-technical-discretion control plane, while GPT-5.6 Sol Extra High lane leads perform deep implementation reasoning and a Sol Supervising Architect resolves material architecture decisions.
 
-**Architecture:** Preserve the current Oteryn Game runtime architecture and implementation DAG. Add a new Terra-specific control-plane profile rather than mutating the currently reusable Work coordinator prompt in place, package five current critical-path Sol lead profiles plus one post-VSL expansion profile, register them, and publish a deterministic wave scheduler. The package changes execution/governance only and remains non-canonical until exact-head governance plus genuinely independent review passes.
+**Architecture:** Preserve the current Oteryn Game runtime architecture and implementation DAG. Add a new Terra-specific control-plane profile, keep the reusable Work coordinator profile, make those two profiles fail-closed and mutually exclusive for mutating one programme lifecycle, package five current critical-path Sol lead profiles plus one post-VSL expansion profile, register them, and publish a deterministic wave scheduler. The package changes execution/governance only and remains non-canonical until exact-head governance plus genuinely independent review passes.
 
 **Tech Stack:** GitHub Issues/branches/PRs/Actions, Markdown/YAML/JSON agent governance, repository prompt lifecycle/evaluation tooling, ChatGPT Work/Terra High, GPT-5.6 Sol Extra High.
 
@@ -21,9 +21,11 @@
 - Material public API/schema/persistence/trust/resource/cross-lane decisions escalate to the Sol Supervising Architect.
 - Product/scope/authority decisions outside existing architecture escalate to the owner.
 - Shared Cargo/composition/registries/contracts/workflows/governance remain serialized.
-- Existing `Oteryn: work coordinator` remains unchanged by this package; the new Terra profile is additive until separately superseded.
+- Existing `Oteryn: work coordinator` remains reusable and unsuperseded, but this package narrows coexistence so exactly one Work/Terra control-plane profile may mutate a given programme lifecycle at a time.
+- A profile switch requires a durable coordinator Issue/task transition merged to protected `main`; alias/model/chat selection is not a transfer.
+- Existing legacy #162 remains under the Work coordinator until such a durable transfer explicitly selects Terra.
 - Existing active worker branches/PRs, including Durability #167/#212, remain untouched.
-- Because the package redistributes integration responsibility and narrows Work technical discretion, exact-head independent review is required before canonical merge.
+- Because the package redistributes integration responsibility and narrows Work technical/control-plane discretion, exact-head independent review is required before canonical merge.
 
 ---
 
@@ -43,7 +45,7 @@ Record Issue #213, branch `docs/terra-sol-parallel-agent-architecture-20260827`,
 
 - [ ] **Step 2: Record acceptance and independent-review requirement**
 
-Acceptance must name the Terra no-discretion rule, prompt family, scheduler, README/lifecycle registration, prompt evaluation and independent exact-head review.
+Acceptance must name the Terra no-discretion rule, single-active control-plane rule, prompt family, scheduler, README/lifecycle registration, prompt evaluation and independent exact-head review.
 
 - [ ] **Step 3: Keep closeout fields non-self-referential**
 
@@ -51,15 +53,17 @@ Do not commit a fake final SHA into the file. Final head/CI/review evidence belo
 
 ---
 
-### Task 2: Package the Terra control plane and architecture escalation role
+### Task 2: Package the Terra control plane, coexistence fence and architecture escalation role
 
 **Files:**
 - Create: `docs/agents/prompts/OTV2_TERRA_GAME_CONTROL_PLANE.md`
+- Modify: `docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md`
 - Create: `docs/agents/prompts/OTV2_SOL_SUPERVISING_ARCHITECT.md`
 
 **Interfaces:**
-- Terra consumes: canonical DAG, live allocations, Sol evidence packets, CI/review state.
-- Terra produces: deterministic dispatch/integration/wait/escalation actions only.
+- Terra consumes: canonical DAG, live allocations, Sol evidence packets, CI/review state and the durable active-control-plane selector/fallback.
+- Terra produces: deterministic dispatch/integration/wait/escalation actions only when it is the unique active control plane.
+- Work consumes the same programme control-plane selector and becomes read-only recovery whenever Terra is durably selected.
 - Architect consumes: durable `ARCHITECTURE_ESCALATION_REQUIRED` packets.
 - Architect produces: durable bounded architecture resolution or `OWNER_DECISION_REQUIRED`.
 
@@ -67,19 +71,23 @@ Do not commit a fake final SHA into the file. Final head/CI/review evidence belo
 
 The prompt must explicitly forbid product/runtime edits, technical design selection, API/schema/resource/ownership decisions and review-finding adjudication.
 
-- [ ] **Step 2: Encode deterministic release predicates**
+- [ ] **Step 2: Encode single active control-plane resolution**
 
-Require proven current main, Issue/task, merged allocation, owned paths, terminal prerequisites, zero overlap and zero unresolved architecture/policy conflict before dispatching mutation.
+Require exactly one active Work/Terra profile per programme. Explicit `active_control_plane_profile` wins; legacy lifecycles retain their already-named canonical coordinator. Any switch requires a durable merged transition. Ambiguity is `POLICY_CONFLICT`, and the inactive profile is read-only recovery.
 
-- [ ] **Step 3: Encode deterministic integration predicates**
+- [ ] **Step 3: Encode deterministic release predicates**
 
-Require `READY_FOR_INTEGRATION`, unchanged exact head, allocation-conformant paths, required tests/E2E, exact-head CI, independent review where required and zero unresolved threads before merge execution.
+Require proven active Terra selection, current main, Issue/task, merged allocation, owned paths, terminal prerequisites, zero overlap and zero unresolved architecture/policy conflict before dispatching mutation.
 
-- [ ] **Step 4: Encode decision routing**
+- [ ] **Step 4: Encode deterministic integration predicates**
+
+Require active Terra selection, `READY_FOR_INTEGRATION`, unchanged exact head, allocation-conformant paths, required tests/E2E, exact-head CI, independent review where required and zero unresolved threads before merge execution.
+
+- [ ] **Step 5: Encode decision routing**
 
 Use `LANE_DECISION_REQUIRED`, `ARCHITECTURE_ESCALATION_REQUIRED`, `OWNER_DECISION_REQUIRED` and `POLICY_CONFLICT` exactly.
 
-- [ ] **Step 5: Encode Architect authority**
+- [ ] **Step 6: Encode Architect authority**
 
 The architect may resolve material architecture within existing owner-approved authority, but must not turn architecture resolution into implicit runtime write authority. Owner-level product/scope/authority choices return `OWNER_DECISION_REQUIRED`.
 
@@ -141,7 +149,7 @@ All five prompts must return exact Issue/task/base/head/PR/changed paths/shared 
 **Interfaces:**
 - Expansion lead consumes: terminal VSL result plus all current accepted remaining Game backlog/architecture.
 - Expansion lead produces: exact future-wave decomposition and child lifecycle proposals, not runtime implementation.
-- Scheduler consumes: live GitHub state and canonical prompt/transition rules.
+- Scheduler consumes: live GitHub state, the unique active-control-plane selector and canonical prompt/transition rules.
 - Scheduler produces: owner launch sheet and deterministic promotion gates.
 
 - [ ] **Step 1: Make post-VSL expansion read-only by default**
@@ -154,7 +162,7 @@ Record Durability -> Server Seam -> Client/QA -> #139/Movement -> Combat and rea
 
 - [ ] **Step 3: Encode concurrency limits**
 
-One Terra control plane, one independent auditor, up to five Sol chats, normally at most two mutating Sol leads; a third requires proven total path/shared-surface independence plus a documented throughput reason.
+Exactly one active Work/Terra control plane, one independent auditor, up to five Sol chats, normally at most two mutating Sol leads; a third requires proven total path/shared-surface independence plus a documented throughput reason.
 
 - [ ] **Step 4: Encode promotion rules**
 
@@ -162,7 +170,7 @@ No manual inference: every transition is triggered by terminal dependency eviden
 
 - [ ] **Step 5: Encode owner launch-sheet fields**
 
-Each row: alias, requested model/effort, mode (`READ_ONLY`/`MUTATING`), exact prerequisite, live state, next alias unlocked.
+Each transition reports the active control-plane profile, alias, requested model/effort, mode (`READ_ONLY`/`MUTATING`), exact prerequisite, live state and next alias unlocked.
 
 ---
 
@@ -176,9 +184,9 @@ Each row: alias, requested model/effort, mode (`READ_ONLY`/`MUTATING`), exact pr
 - Consumes: all new prompt files.
 - Produces: canonical short-invocation discoverability after merge.
 
-- [ ] **Step 1: Register control aliases**
+- [ ] **Step 1: Register control aliases and coexistence semantics**
 
-Add `Oteryn: terra game coordinator` and `Oteryn: sol supervising architect`, explicitly leaving existing `Oteryn: work coordinator` reusable and unsuperseded.
+Add `Oteryn: terra game coordinator` and `Oteryn: sol supervising architect`, explicitly leaving existing `Oteryn: work coordinator` reusable and unsuperseded while documenting that reusable Work/Terra profiles are mutually exclusive for one programme's mutating control-plane role.
 
 - [ ] **Step 2: Register current Sol lead aliases**
 
@@ -190,7 +198,7 @@ Add `Oteryn: sol post-vsl expansion` as architecture/planning-only by default.
 
 - [ ] **Step 4: Add lifecycle entries**
 
-Each entry must be `reusable`, version `1.0`, state exact authority/ownership scope and state that alias existence grants no write authority without live allocation.
+Each new entry must be `reusable`, version `1.0`, state exact authority/ownership scope and state that alias existence grants no write authority without live allocation. `reusable` must not be interpreted as concurrent control-plane activation.
 
 ---
 
@@ -205,7 +213,7 @@ Each entry must be `reusable`, version `1.0`, state exact authority/ownership sc
 
 - [ ] **Step 1: Validate prompt structure**
 
-Evaluate every new prompt against `docs/agents/PROMPT_EVAL_STANDARD.md`: Authority, Resolution, Ownership, Architecture, Completeness, Evidence, Validation, Autonomy, Handover, Safety. Any material fail blocks readiness.
+Evaluate every new prompt plus the coexistence amendment to `OTV2_WORK_DELIVERY_COORDINATOR` against `docs/agents/PROMPT_EVAL_STANDARD.md`: Authority, Resolution, Ownership, Architecture, Completeness, Evidence, Validation, Autonomy, Handover, Safety. Any material fail blocks readiness.
 
 - [ ] **Step 2: Run governance validation**
 
@@ -213,7 +221,7 @@ Require `python tools/agents/validate_governance.py` through an available truste
 
 - [ ] **Step 3: Self-review complete branch**
 
-Check no prompt grants implicit write authority, no Terra technical discretion survives, no lane can grab shared surfaces, no alias is presented as current runtime allocation and no historical evidence is rewritten.
+Check no prompt grants implicit write authority, no Terra technical discretion survives, no lane can grab shared surfaces, no alias is presented as current runtime allocation, no two reusable control-plane profiles can mutate one programme concurrently and no historical evidence is rewritten.
 
 - [ ] **Step 4: Obtain genuinely independent exact-head review**
 
@@ -221,7 +229,7 @@ Because the package changes execution/merge authority boundaries, an independent
 
 - [ ] **Step 5: Open PR and keep it unmerged until gates pass**
 
-PR must reference #213, state governance-only scope, list aliases, document that existing worker branches are untouched, and require exact-head governance/architecture/merge-authority/merge-gate plus zero unresolved threads.
+PR must reference #213, state governance-only scope, list aliases, document that existing worker branches are untouched, document the single-active control-plane fence, and require exact-head governance/architecture/merge-authority/merge-gate plus zero unresolved threads.
 
 - [ ] **Step 6: Merge only after current-main reconciliation**
 

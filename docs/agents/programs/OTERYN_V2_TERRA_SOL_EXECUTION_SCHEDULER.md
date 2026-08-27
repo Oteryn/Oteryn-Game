@@ -4,13 +4,14 @@
 
 Provide one canonical launch sheet for the execution model defined by `2026-08-27-oteryn-game-terra-sol-parallel-execution-design.md`.
 
-The scheduler is interpreted by `Oteryn: terra game coordinator`. It is a deterministic dependency/ownership map, not technical decision authority. Every invocation resolves live GitHub; the examples below are not cached state authority.
+The scheduler is interpreted by the programme's uniquely active control-plane profile. When Terra is selected, `Oteryn: terra game coordinator` applies it as a deterministic dependency/ownership map, not technical decision authority. Every invocation resolves live GitHub; the examples below are not cached state authority.
 
 ## Roles
 
 | Alias | Requested profile | Default mode | Purpose |
 | --- | --- | --- | --- |
-| `Oteryn: terra game coordinator` | Work / Terra High | CONTROL_PLANE | GitHub state, DAG, ownership, leases, deterministic integration |
+| `Oteryn: terra game coordinator` | Work / Terra High | CONTROL_PLANE when durably selected, otherwise RECOVERY_READ_ONLY | GitHub state, DAG, ownership, leases, deterministic integration |
+| `Oteryn: work coordinator` | ChatGPT Work | CONTROL_PLANE when durably selected, otherwise RECOVERY_READ_ONLY | legacy/reusable Work delivery control plane |
 | `Oteryn: sol supervising architect` | GPT-5.6 Sol Extra High | ON_DEMAND | material architecture/cross-lane decisions |
 | `Oteryn: work auditor` | independent high-effort read-only | READ_ONLY | forensic control/audit |
 | `Oteryn: sol durability lead` | GPT-5.6 Sol Extra High | MUTATING when allocated | current Durability critical lane |
@@ -20,9 +21,22 @@ The scheduler is interpreted by `Oteryn: terra game coordinator`. It is a determ
 | `Oteryn: sol combat lead` | GPT-5.6 Sol Extra High | READ_ONLY until Movement terminal | authoritative Combat/death/loot/XP/pickup |
 | `Oteryn: sol post-vsl expansion` | GPT-5.6 Sol Extra High | READ_ONLY planning | decompose all remaining accepted Game work after VSL |
 
+## Control-plane activation
+
+Exactly one mutating control-plane profile may own one programme lifecycle.
+
+- If the current coordinator Issue/task contains `active_control_plane_profile`, use it exactly.
+- For a legacy lifecycle without that field, the profile already named as canonical coordinator prompt/owner remains active; any other reusable control-plane profile is `RECOVERY_READ_ONLY`.
+- A profile switch requires a durable docs/governance transition merged to protected `main` that updates the current coordinator Issue/task and releases the previous profile before the new one mutates.
+- Alias invocation, model selection, chat instruction, `reusable` status or tool availability never transfers control-plane authority.
+- If exactly one active profile cannot be proven, classify `POLICY_CONFLICT`; neither profile may allocate, grant shared leases, integrate/merge, mutate coordinator status or close out the programme.
+
+The existing #162 lifecycle is a legacy Work lifecycle and therefore remains under `OTV2_WORK_DELIVERY_COORDINATOR` until a later merged transition explicitly selects Terra. This scheduler does not silently restart or replace it.
+
 ## Global concurrency
 
-- Terra coordinator and read-only auditor do not consume implementation writer slots.
+- Exactly one control-plane profile may mutate the programme; the inactive Work/Terra profile is read-only recovery.
+- The read-only auditor does not consume implementation writer slots.
 - Up to five Sol chats may be active when their responsibilities are distinct.
 - Normally no more than two Sol leads may mutate the repository concurrently.
 - A third mutating lead requires `PROVEN` disjoint primary paths, no shared-surface collision, and a recorded concrete throughput reason.
@@ -40,7 +54,7 @@ The following remain one-writer-at-a-time:
 - shared ADRs/contracts consumed by concurrent lanes;
 - workflows/protection/governance surfaces.
 
-`SHARED_LEASE_REQUIRED` does not authorize the worker to edit the path. Terra executes only a pre-authorized deterministic shared turn; ambiguity escalates.
+`SHARED_LEASE_REQUIRED` does not authorize the worker to edit the path. The active control plane executes only a pre-authorized deterministic shared turn; ambiguity escalates.
 
 ## Current critical DAG
 
@@ -189,7 +203,7 @@ Any material durable loot/value/item/resource gap is architecture escalation, no
 
 ## VSL closeout
 
-Terra may classify VSL terminal only after:
+The active control plane may classify VSL terminal only after:
 
 - Server Seam + compatible Client terminal;
 - applicable Tier 1/Tier 2 evidence truthful;
@@ -212,12 +226,13 @@ Oteryn: sol post-vsl expansion
 
 It inventories all remaining accepted Game work and proposes exact next-wave lanes. Expected decomposition families may include World/Content, NPC/AI, Player Systems/Economy, Native Client/Renderer and Tooling/Operations, but current accepted architecture determines the actual split.
 
-Terra does not create future technical lanes itself. It consumes the accepted expansion result and applies the same allocation/ownership/concurrency state machine recursively until all accepted Game programme lanes are terminal.
+Terra does not create future technical lanes itself. When Terra is the active control plane, it consumes the accepted expansion result and applies the same allocation/ownership/concurrency state machine recursively until all accepted Game programme lanes are terminal.
 
 ## Decision routing table
 
-| Situation | Terra action |
+| Situation | Active control-plane action |
 | --- | --- |
+| active control-plane profile ambiguous | `POLICY_CONFLICT` |
 | exact prerequisite missing | `WAITING_DEPENDENCY` |
 | allocation missing | `WAITING_ALLOCATION` |
 | bounded path-local technical judgment needed | `LANE_DECISION_REQUIRED` -> owning Sol lead |
@@ -230,10 +245,11 @@ Terra does not create future technical lanes itself. It consumes the accepted ex
 
 ## Owner launch sheet
 
-At every material transition, Terra should return only a compact sheet with exactly one next action:
+At every material transition, the active control plane should return only a compact sheet with exactly one next action:
 
 ```text
 CURRENT_MAIN: <sha>
+CONTROL_PLANE_PROFILE: <exact active profile>
 ACTIVE_MUTATORS: <aliases>
 READ_ONLY_PREPARATION: <aliases>
 WAITING: <alias -> exact missing predicate>

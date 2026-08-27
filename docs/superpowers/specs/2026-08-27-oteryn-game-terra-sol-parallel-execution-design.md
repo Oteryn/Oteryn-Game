@@ -39,7 +39,7 @@ Owner
   +--> Sol Supervising Architect (Extra High)
   |      material/cross-lane architecture decisions
   |
-  +--> Work / Terra High Control Plane
+  +--> exactly one active Work control-plane profile
   |      deterministic scheduler and release executor
   |        |
   |        +--> Sol Durability Lead (Extra High)
@@ -53,11 +53,27 @@ Owner
          read-only, independent
 ```
 
+## Control-plane activation and transfer
+
+`OTV2_WORK_DELIVERY_COORDINATOR` and `OTV2_TERRA_GAME_CONTROL_PLANE` remain reusable profiles, but **reusable is not the same as active**. One programme lifecycle may have exactly one mutating control plane.
+
+The selector is resolved only from durable GitHub state:
+
+1. If the current coordinator Issue/task contains `active_control_plane_profile`, that exact profile is the only mutating control plane.
+2. A legacy coordinator lifecycle that predates the selector keeps the profile already named as its canonical coordinator prompt/owner. Other reusable control-plane profiles are `RECOVERY_READ_ONLY`.
+3. A switch requires a dedicated docs/governance transition merged to protected `main` that updates the current coordinator Issue/task and releases the previous profile before the new profile mutates.
+
+Alias invocation, chat instruction, model selection, `reusable` registry status, tool availability or urgency never performs this transfer. If exactly one profile cannot be proven, control-plane mutation fails closed as `POLICY_CONFLICT`.
+
+The existing #162 Work lifecycle therefore remains owned by `OTV2_WORK_DELIVERY_COORDINATOR` until a later durable transition explicitly selects Terra. Merging this package does not silently seize or restart #162. The Terra profile is immediately reusable for read-only recovery/transfer preparation and for future or explicitly transferred programme lifecycles.
+
+An inactive control-plane profile may resolve live GitHub state and prepare a recovery/transfer packet, but it may not create allocations, grant shared leases, integrate/merge, mutate coordinator status or perform lifecycle closeout for that programme.
+
 ## Core invariant: Terra has zero technical discretion
 
 The Terra control plane MUST NOT decide whether a technical change is correct or desirable. It may only execute deterministic consequences of already-canonical authority and exact GitHub evidence.
 
-Terra may autonomously:
+Terra may autonomously, only when it is the uniquely selected active control plane:
 
 - resolve current `main`, Issues, tasks, branches, PR heads, checks and reviews;
 - compare exact SHAs and changed paths;
@@ -101,7 +117,7 @@ Use when the choice changes product priority, accepted scope, execution authorit
 
 ### `POLICY_CONFLICT`
 
-Use when current canonical repository instructions or allocations conflict. Stop affected mutation until the conflict is reconciled durably.
+Use when current canonical repository instructions or allocations conflict, or when the active control-plane profile is not uniquely resolvable. Stop affected mutation until the conflict is reconciled durably.
 
 ## Sol lane-lead authority
 
@@ -114,7 +130,7 @@ A Sol lane lead is the reasoning owner for one bounded lane. It may make ordinar
 - the choice does not require a serialized shared surface that is not currently leased;
 - the choice is not a material architecture decision under the escalation rules.
 
-A Sol lead owns one canonical branch/worktree and one PR at a time. It does not merge its own implementation PR under this execution profile; it returns `READY_FOR_INTEGRATION` and the Terra control plane performs only the deterministic integration gate.
+A Sol lead owns one canonical branch/worktree and one PR at a time. It does not merge its own implementation PR under this execution profile; it returns `READY_FOR_INTEGRATION` and the uniquely active control plane performs only the deterministic integration gate.
 
 ## Supervising Architect authority
 
@@ -132,7 +148,7 @@ It must return `OWNER_DECISION_REQUIRED` if owner authority is required. Archite
 
 ## Independent auditor
 
-`Oteryn: work auditor` remains read-only and independent. It audits both Terra control-plane behavior and Sol lead evidence. It is never counted as a mutating lane and cannot author a fix for code it is auditing.
+`Oteryn: work auditor` remains read-only and independent. It audits the active control plane and Sol lead evidence. It is never counted as a mutating lane and cannot author a fix for code it is auditing.
 
 ## Lane state machine
 
@@ -160,7 +176,8 @@ COMPLETED_RELEASED
 Terra may release a Sol lane from preparation to mutation only when all required facts are directly `PROVEN`:
 
 ```text
-current main resolved
+Terra is the uniquely active control plane
++ current main resolved
 + governing Issue/task exists
 + exact merged allocation exists
 + exact owned paths are known
@@ -178,7 +195,8 @@ If any operand is not proven, Terra does not infer readiness.
 Terra may integrate only when:
 
 ```text
-Sol lead says READY_FOR_INTEGRATION
+Terra is the uniquely active control plane
++ Sol lead says READY_FOR_INTEGRATION
 + exact PR head is unchanged
 + changed paths fit allocation/lease
 + all required focused/component/E2E evidence is present
@@ -196,7 +214,7 @@ Any technical review finding requiring judgment returns to the owning Sol lead o
 
 Default useful concurrency:
 
-- one Terra control plane;
+- exactly one active mutating control-plane profile per programme; the inactive Work/Terra profile is read-only recovery;
 - one independent auditor;
 - up to five active Sol chats;
 - normally at most two mutating Sol lanes;
@@ -216,7 +234,7 @@ At minimum:
 - shared ADRs/contracts consumed by multiple active lanes;
 - workflows, branch/protection/governance files.
 
-A worker encountering a shared requirement returns `SHARED_LEASE_REQUIRED` with the exact path and reason. Terra may grant/execute the shared turn only if an already-approved allocation mechanism deterministically authorizes it. Any scope/ownership ambiguity escalates.
+A worker encountering a shared requirement returns `SHARED_LEASE_REQUIRED` with the exact path and reason. The active control plane may grant/execute the shared turn only if an already-approved allocation mechanism deterministically authorizes it. Any scope/ownership ambiguity escalates.
 
 ## Current vertical-slice waves
 
@@ -238,7 +256,7 @@ Durability
 - Server Seam Lead: read-only preparation until the durable adapter is terminally merged and fresh allocation exists.
 - Client/QA Lead: read-only preparation until a compatible production Server Seam is merged.
 - Auditor: read-only continuous checkpoint review.
-- Terra: scheduling, ownership, shared leases and deterministic integration only.
+- Active control plane: scheduling, ownership, shared leases and deterministic integration only.
 
 ### Wave V1 — after Durability
 
@@ -296,7 +314,7 @@ unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate
 ```
 
-Terra verifies every factual field against GitHub before acting.
+The active control plane verifies every factual field against GitHub before acting.
 
 ## Prompt aliases
 
@@ -331,6 +349,7 @@ Direct legacy `Oteryn: impl ...` aliases remain bounded executor/recovery prompt
 This execution architecture is ready for canonical use only when:
 
 - the Terra coordinator prompt encodes zero technical discretion;
+- Work and Terra reusable control-plane profiles are mutually exclusive for programme mutation and transfer is durable/fail-closed;
 - the Sol Supervising Architect and all five current lane-lead prompts are registered;
 - the scheduler makes current and dependency-triggered launches explicit;
 - Sol leads cannot write without exact merged allocation;

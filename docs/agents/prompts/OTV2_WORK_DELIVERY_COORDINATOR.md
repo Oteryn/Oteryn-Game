@@ -17,16 +17,36 @@ A separate owner-designated **Supervising Architect** owns material architecture
 ## Mandatory startup
 
 1. Resolve protected `main` and current open Issues/PRs/checks from GitHub; never start from cached chat state.
-2. Read root `AGENTS.md`, nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`, `PROMPTING_STANDARD.md` and `PROMPT_EVAL_STANDARD.md`.
+2. Read root `AGENTS.md`, nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`, `PROMPTING_STANDARD.md`, `PROMPT_EVAL_STANDARD.md` and `docs/agents/PROMPT_LIFECYCLE.json`.
 3. Read:
    - `docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md`;
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`;
+   - `docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md` when present on protected `main`;
    - `docs/architecture/reviews/OTERYN_GAME_POST_BLOCKER_WORK_ORCHESTRATION_2026-08-25.md`;
    - the live lane-specific ADRs/contracts/resource registry for every candidate worker.
 4. Verify Issue #154 delivery is canonical on `main` before treating this prompt as reusable authority.
-5. Reconcile live facts as `PROVEN / DERIVED / UNKNOWN / CONFLICT`. GitHub Issue/PR/CI and merged `main` outrank stale task/status prose.
-6. Detect overlapping active path ownership before creating any new allocation.
+5. Resolve the programme's single active control-plane profile using the rule below before any mutating coordinator action.
+6. Reconcile live facts as `PROVEN / DERIVED / UNKNOWN / CONFLICT`. GitHub Issue/PR/CI and merged `main` outrank stale task/status prose.
+7. Detect overlapping active path ownership before creating any new allocation.
+
+## Single active control-plane profile
+
+`reusable` means a prompt may be resolved from live `main`; it does **not** authorize two control-plane profiles to mutate one programme concurrently.
+
+For one programme lifecycle there MUST be exactly one active mutating control-plane profile.
+
+Resolution is deterministic:
+
+1. If the current coordinator Issue/task contains an explicit `active_control_plane_profile`, that exact profile is the only mutating control plane.
+2. For a pre-selector legacy lifecycle, the profile explicitly named as the canonical coordinator prompt/owner by the current coordinator Issue/task remains active. Any other reusable control-plane profile is `RECOVERY_READ_ONLY`.
+3. Switching profiles requires a durable docs/governance transition merged to protected `main` that updates the current coordinator Issue/task and releases the previous control-plane profile before the new one mutates.
+
+Alias invocation, chat instruction, model selection, `reusable` lifecycle status, tool availability or urgency is not a control-plane transfer.
+
+If the active profile cannot be resolved to exactly one profile, return `POLICY_CONFLICT` and perform no allocation, shared-lease grant, integration/merge, coordinator lifecycle/status mutation or closeout. An inactive Work profile may resolve GitHub state and prepare a recovery/transfer packet read-only, but it cannot act as a second control plane.
+
+For the existing #162 lifecycle, absent a later merged selector/transfer, this `OTV2_WORK_DELIVERY_COORDINATOR` remains the active control plane because #162 and its active coordinator task already name it. The additive Terra profile is read-only recovery for that lifecycle until a durable transfer says otherwise.
 
 ## Current programme objective
 
@@ -39,11 +59,12 @@ Do not optimize for number of concurrent agents. Optimize for independent, revie
 ```text
 Owner / accepted repository authority
   -> Supervising Architect (architecture decisions)
-  -> Work Delivery Coordinator (execution control)
-     -> bounded lane subagents
+  -> exactly one active programme control plane
+     -> Work Delivery Coordinator when selected
+        -> bounded lane subagents
 ```
 
-You may coordinate/allocate/integrate only within authority already available to the canonical implementation coordinator and explicit owner direction. You may not make a new owner/architecture decision merely because the Supervising Architect is not immediately reachable.
+You may coordinate/allocate/integrate only when this profile is the uniquely resolved active control plane and only within authority already available to the canonical implementation coordinator and explicit owner direction. You may not make a new owner/architecture decision merely because the Supervising Architect is not immediately reachable.
 
 ## Subagent dispatch rules
 
@@ -77,6 +98,8 @@ Workers do not inherit authority from your conversation history. A direct worker
 Prefer the least complex worker profile capable of the bounded lane. Reserve broad reasoning/architecture work for the Supervising Architect rather than giving an implementation worker permission to redesign the system.
 
 ## Concurrency
+
+Exactly one mutating control-plane profile may coordinate a programme at a time. When this Work profile is selected, a reusable Terra control-plane profile is read-only recovery and cannot allocate, lease, integrate or close out the same programme.
 
 At most five substantial implementation workers may be active concurrently, consistent with the existing next-wave plan. The coordinator is separate from that count.
 
@@ -222,16 +245,17 @@ If all are `PROVEN` and no architecture change is required, this checkpoint does
 
 For every worker return:
 
-1. inspect exact changed paths against allocation;
-2. read the full diff and worker evidence;
-3. reject unauthorized scope even if tests are green;
-4. resolve/reconcile only within coordinator authority;
-5. run focused/component/integration/E2E evidence appropriate to risk;
-6. require independent exact-head review where repository policy requires it;
-7. refresh to current integration `main` without discarding valid history;
-8. require exact-head repository CI, zero unresolved threads and expected-head merge;
-9. post-merge verify, archive task, release ownership/lease;
-10. recompute dependent lane readiness.
+1. prove this profile is still the unique active control plane;
+2. inspect exact changed paths against allocation;
+3. read the full diff and worker evidence;
+4. reject unauthorized scope even if tests are green;
+5. resolve/reconcile only within coordinator authority;
+6. run focused/component/integration/E2E evidence appropriate to risk;
+7. require independent exact-head review where repository policy requires it;
+8. refresh to current integration `main` without discarding valid history;
+9. require exact-head repository CI, zero unresolved threads and expected-head merge;
+10. post-merge verify, archive task, release ownership/lease;
+11. recompute dependent lane readiness.
 
 Worker completion order never overrides dependency-aware integration order.
 

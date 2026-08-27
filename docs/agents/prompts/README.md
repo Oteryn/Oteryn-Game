@@ -32,6 +32,16 @@ The coordinator resolves live `main`, performs the serial bootstrap gate first, 
 
 The Work profile does not supersede or widen `OTV2_IMPLEMENTATION_COORDINATOR`. It is a stricter execution profile: Work coordinates exact allocations, path-disjoint subagents and integration, while material architecture/API/schema/security/persistence/resource/cross-repository conflicts become durable `ARCHITECTURE_ESCALATION_REQUIRED` handoffs to the owner-designated Supervising Architect rather than worker-selected architecture.
 
+### Single active control-plane rule
+
+`Oteryn: work coordinator` and `Oteryn: terra game coordinator` may both remain `reusable`, but they are **mutually exclusive for mutating control-plane work inside one programme lifecycle**. Reusability permits resolution from live `main`; it does not activate a second scheduler/integrator.
+
+The active profile is resolved from the current coordinator Issue/task. An explicit `active_control_plane_profile` wins. For a legacy task without that field, the profile already named as canonical coordinator prompt/owner remains active and every other reusable control-plane profile is read-only recovery. Switching profiles requires a durable docs/governance transition merged to protected `main`; alias invocation, chat instruction, model selection or tool availability is not a transfer.
+
+If exactly one active profile cannot be proven, all control-plane mutation fails closed as `POLICY_CONFLICT`. The inactive profile may inspect live state and prepare a recovery/transfer packet, but it may not allocate workers, grant shared leases, integrate/merge, mutate coordinator status or close/archive the programme.
+
+The existing #162 lifecycle remains under `OTV2_WORK_DELIVERY_COORDINATOR` unless a later merged coordinator transition explicitly selects Terra. This package therefore adds the safer Terra profile without silently stealing the live coordinator lifecycle.
+
 ### Terra High deterministic control plane + Sol leads
 
 - `OTV2_TERRA_GAME_CONTROL_PLANE.md` — ChatGPT Work / Terra High deterministic control plane with **zero technical or architecture discretion**. **Short invocation: `Oteryn: terra game coordinator`.**
@@ -42,7 +52,7 @@ The Work profile does not supersede or widen `OTV2_IMPLEMENTATION_COORDINATOR`. 
 - `OTV2_SOL_COMBAT_LEAD.md` — Combat/death/loot/XP/pickup lead gated by merged Movement and current prerequisites. **`Oteryn: sol combat lead`.**
 - `OTV2_SOL_POST_VSL_EXPANSION.md` — read-only-by-default decomposition of remaining accepted Game work after terminal Movement+Combat VSL. **`Oteryn: sol post-vsl expansion`.**
 
-The Terra profile is additive and does **not** silently supersede `Oteryn: work coordinator` or `OTV2_IMPLEMENTATION_COORDINATOR`. Use it when the Work control-plane session is intentionally running on Terra High and technical judgment must remain in GPT-5.6 Sol Extra High chats. Terra may only apply deterministic GitHub/DAG/ownership/merge predicates; technical findings route to the owning Sol lead, material cross-lane decisions route to `Oteryn: sol supervising architect`, and owner-only scope/authority decisions return `OWNER_DECISION_REQUIRED`.
+The Terra profile is additive and does **not** silently supersede `Oteryn: work coordinator` or `OTV2_IMPLEMENTATION_COORDINATOR`. When a programme has durably selected Terra as its unique active control plane, Terra may apply only deterministic GitHub/DAG/ownership/merge predicates; technical findings route to the owning Sol lead, material cross-lane decisions route to `Oteryn: sol supervising architect`, and owner-only scope/authority decisions return `OWNER_DECISION_REQUIRED`.
 
 Canonical launch/promotion rules for this profile live in `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`. Alias existence grants no write authority. Every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
 
@@ -103,4 +113,4 @@ High-risk protocol/session/persistence/item/loot/value/multichannel/fencing work
 
 Before reuse, evaluate the selected prompt against `../PROMPT_EVAL_STANDARD.md`, read the canonical implementation DAG, and verify all repository state named by the prompt against live GitHub state.
 
-A short invocation is only an alias for resolving the canonical prompt from live `main`; it is not permission to use a cached prompt body or bypass current repository instructions.
+A short invocation is only an alias for resolving the canonical prompt from live `main`; it is not permission to use a cached prompt body, bypass current repository instructions or activate a second control plane.
