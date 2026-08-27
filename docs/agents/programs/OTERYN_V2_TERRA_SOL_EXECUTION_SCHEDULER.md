@@ -230,7 +230,7 @@ Terra does not create future technical lanes itself. It consumes the accepted ex
 
 ## Owner launch sheet
 
-At every material transition, Terra should return only a compact sheet:
+At every material transition, Terra should return only a compact sheet with exactly one next action:
 
 ```text
 CURRENT_MAIN: <sha>
@@ -241,6 +241,7 @@ SHARED_LEASE: <path/owner or none>
 NEXT_UNLOCK: <terminal event -> alias>
 ARCHITECTURE_ESCALATION: <issue/ref or none>
 OWNER_DECISION: <precise question or none>
+NEXT_ACTION: <exactly one deterministic action>
 ```
 
-Do not make the owner reconstruct the DAG from chat history.
+Do not make the owner reconstruct the DAG from chat history and do not give Terra a menu of technical choices.
