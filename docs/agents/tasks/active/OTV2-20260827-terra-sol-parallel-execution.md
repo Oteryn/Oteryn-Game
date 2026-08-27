@@ -77,9 +77,17 @@ Both `Oteryn: work coordinator` and `Oteryn: terra game coordinator` remain reus
 - [x] Explicit World/Content, NPC/AI, Systems/Economy and Tooling/Ops preparation profiles are present and remain read-only until exact later allocation.
 - [x] Scheduler defines V0-V4 promotion, useful parallel preparation, writer limits and unique active control-plane resolution.
 - [x] README and prompt lifecycle register every new alias without implicit supersession.
-- [ ] Final exact-head prompt evaluation against `PROMPT_EVAL_STANDARD.md` is complete after repair freeze.
-- [ ] Exact-head agent governance and applicable repository governance checks pass on the repaired head.
-- [ ] Genuinely independent exact-head review passes on the repaired head before merge because execution/merge authority boundaries change.
+- [x] Static prompt-family self-evaluation against `PROMPT_EVAL_STANDARD.md` is complete for package content; exact-head author-review evidence is recorded externally in the PR after final-head freeze.
+
+## External terminal merge gates
+
+The following are mandatory **external exact-head gates**, not mutable completion checkboxes in this task packet:
+
+- required Agent governance / Architecture semantic audit / Merge authority audit / Merge gate-game-gate evidence is green on the unchanged final PR head in GitHub;
+- a genuinely independent non-authoring review returns `PASS` on that same final head because execution/merge authority boundaries change;
+- zero unresolved required review threads are confirmed immediately before merge.
+
+Per `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`, after final-head freeze these facts belong in GitHub reviews/workflows or another immutable evidence channel. Do not add a task/checkpoint/SHA/run-ID commit merely to mirror them here because that would create a new, unqualified head.
 
 ## Excluded scope
 
@@ -108,60 +116,60 @@ No runtime worker ownership is changed. In particular, draft Durability PR #212 
 
 - command/run: independent review against original exact head `5fa107837f0b8b3c31c493ec0511b00176a23f75`
 - result: `CHANGES_REQUIRED`; P1-01 predecessor ownership, P1-02 competing control planes, P1-03 stale active task metadata
-- repair status: P1-01 terminally resolved by #184/#183; P1-02/P1-03 incorporated into this repair candidate
-- repair extension: current Issue #213 deliverables were re-read; missing future-wave profile completeness and the handoff-schema P2 are incorporated before final freeze
+- repair status: predecessor ownership terminally released by #184/#183; control-plane mutual exclusion and task metadata repaired
+- repair extension: current Issue #213 deliverables were re-read; four future-wave profiles and the handoff-schema P2 are incorporated before final freeze
 
 ### Component/integration
 
-- command/run: exact-head GitHub governance workflows after repaired-head freeze
-- result: pending repaired head generation; prior head results are historical only and will not be reused
+- command/run: exact-head GitHub governance workflows after final-head freeze
+- result: mandatory external terminal gate; the GitHub workflow generation on the unchanged PR head is authoritative and is intentionally not mirrored by a follow-up content commit
 
 ### E2E
 
-- scenario: `NOT_APPLICABLE` — governance/prompt package only, no executable product behavior
+- scenario: `NOT_APPLICABLE` - governance/prompt package only, no executable product behavior
 - result: `NOT_APPLICABLE`
 
 ### Exact-head CI
 
 - final head: intentionally not self-recorded in this commit; GitHub PR head is the immutable qualification key
 - trigger source: pull_request #214
-- workflow/run/job: pending repaired final generation
-- runner assignment: pending
+- workflow/run/job: external GitHub evidence on the unchanged final head
+- runner assignment: external GitHub evidence
 - classification: governance-only
-- result: pending
+- result: mandatory external merge gate; do not create content churn merely to mirror run IDs or state here
 
 ## Self-review
 
-- exact head: repaired PR head after this candidate commit
-- method/reviewer: repair-authoring session; whole-scope review against Issue #213, first independent findings and `PROMPT_EVAL_STANDARD.md`
-- material findings: P1-01 is externally closed by #184/#183; P1-02 and P1-03 are addressed in the candidate content; final exact-head self-review remains required after commit
-- verdict: `PENDING_EXACT_HEAD_SELF_REVIEW`
+- exact head: resolved from GitHub after final-head freeze; intentionally not self-recorded in this commit
+- method/reviewer: repair-authoring session; whole-scope review against Issue #213, prior independent findings and `PROMPT_EVAL_STANDARD.md`
+- static package result: `PASS` on all ten prompt-evaluation gates after predecessor ownership, control-plane mutual exclusion, handoff-schema and four-profile completeness repairs
+- exact-head verdict/evidence: mandatory external PR review on the unchanged final head; a later commit must not be created merely to copy that verdict here
 
 ## Independent review
 
-- required: YES — execution/merge authority boundary change under `docs/agents/AGENTS.md`
+- required: YES - execution/merge authority boundary change under `docs/agents/AGENTS.md`
 - previous exact head: `5fa107837f0b8b3c31c493ec0511b00176a23f75`
 - previous method/auditor: genuinely independent non-authoring reviewer session
 - previous material findings: P1=3, P0=0, plus one non-blocking P2
 - previous verdict: `CHANGES_REQUIRED`
-- repaired exact head: pending final candidate commit
-- repaired-head method/auditor: must be a genuinely independent non-authoring reviewer/session; this repair-authoring session does not count
-- repaired-head verdict: pending
+- final exact head: resolved from GitHub after freeze; intentionally not self-recorded in task content
+- final-head method/auditor: genuinely independent non-authoring reviewer/session; the repair-authoring session does not count
+- final-head verdict/evidence: mandatory external PR review; any material repair moves the head and requires a fresh independent review
 
 ## PR and closeout
 
 - PR: #214
 - changed-file review: 19 intended governance/docs paths after adding the bounded Work-coordinator coexistence amendment and four required post-VSL preparation profiles
-- unresolved review threads: zero at the reviewed pre-repair head; must be re-read on repaired exact head
+- unresolved review threads: external exact-head pre-merge readback; not mirrored by a content commit after freeze
 - related/superseded PRs: #184 merged as `c082060c10a54758ebcc3655d0bffa83f4af51e3` and Issue #183 closed completed; no predecessor ownership remains
-- protected auto-merge: not requested
-- merge commit/result: pending repaired exact-head qualification
-- ownership release: pending terminal delivery
+- protected auto-merge: not requested before all external exact-head gates are proven
+- merge commit/result: external GitHub evidence after expected-head protected merge
+- ownership release: post-merge bounded closeout/reconciliation; the merge SHA cannot be self-recorded before merge
 
 ## Context checkpoint
 
 ```yaml
-last_progress: predecessor ownership #184/#183 is terminal; PR #214 is merge-updated with main c082060c10a54758ebcc3655d0bffa83f4af51e3 and the repair candidate adds fail-closed Work/Terra mutual exclusion plus current task metadata
+last_progress: all material package repairs are present, including predecessor ownership release, fail-closed Work/Terra mutual exclusion, aligned handoff evidence, and four explicit read-only future-wave preparation profiles
 status: validating
 branch: docs/terra-sol-parallel-agent-architecture-20260827
 head_sha: null
@@ -169,19 +177,11 @@ pr: 214
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: repaired_candidate_pending
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
-terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
-ci_recovery_actions_for_current_head: 0
-stall_warnings: 0
+ci_evidence_location: github_pr_214_exact_head
+review_evidence_location: github_pr_214_exact_head
+runner_assignment_state: external_github_evidence
+repair_cycles_for_current_gate: 2
 owner_action_required: null
-blocker: genuinely independent exact-head review remains mandatory after repaired head freezes
-next_action: freeze the repaired PR #214 candidate, then require fresh exact-head governance CI and genuinely independent review on that unchanged head
+blocker: external exact-head qualification gates are mandatory but are not mutable task-state fields
+next_action: qualify the unchanged final PR #214 head through external GitHub self-review, genuinely independent review, required CI and zero-thread readback
 ```
