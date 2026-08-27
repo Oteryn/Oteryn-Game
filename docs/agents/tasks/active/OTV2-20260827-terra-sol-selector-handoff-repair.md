@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/terra-sol-selector-handoff-repair-217
 issue: 217
-pr: null
+pr: 218
 base_sha: a36513fa12725b1fd4abfdf18a4891ddc6021b85
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: ChatGPT GPT-5.6 Sol repair session
 created_at: 2026-08-27T16:04:25+02:00
-updated_at: 2026-08-27T16:04:25+02:00
+updated_at: 2026-08-27T16:08:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -53,7 +53,7 @@ Restore the Terra + Sol package's single-active-control-plane invariant without 
 - [x] Durability integration handoff resolves the uniquely active control-plane profile and fails closed as `POLICY_CONFLICT` when uniqueness is not proven.
 - [x] Supervising Architect mission/evidence/return wording is selector-resolved and does not route Work-controlled lifecycles through inactive Terra.
 - [x] Original #213 archive preserves historical evidence but marks its current terminal-clean verdict superseded pending this corrective lifecycle.
-- [ ] PR number and complete changed-file set are frozen before exact-head review.
+- [x] PR #218 is published and its changed-file set is exactly the four owned governance paths above; no further content mutation is authorized except repair of a discovered material finding.
 - [ ] Agent governance, Architecture semantic audit, Merge authority audit and Merge gate/game-gate pass on the unchanged final head.
 - [ ] Mandatory whole-diff author self-review returns P0/P1/P2=0/0/0 on the exact final head.
 - [ ] Genuinely independent non-authoring exact-head review returns PASS with P0/P1/P2=0/0/0.
@@ -75,7 +75,7 @@ The original pre-merge review records remain historical facts. They are not dele
 ### Focused
 
 - command/run: exact textual review against current #162 single-active selector semantics
-- result: PASS for the implemented wording; external exact-head repository validation pending PR publication
+- result: PASS for the implemented wording; external exact-head repository validation pending final PR head
 
 ### Component/integration
 
@@ -89,8 +89,8 @@ The original pre-merge review records remain historical facts. They are not dele
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pull_request
+- final head: intentionally external after final content commit
+- trigger source: pull_request #218
 - workflow/run/job: pending
 - runner assignment: GitHub-hosted policy
 - classification: governance-only corrective repair
@@ -98,7 +98,7 @@ The original pre-merge review records remain historical facts. They are not dele
 
 ## Self-review
 
-- exact head: pending
+- exact head: intentionally external after final content commit
 - method/reviewer: implementing repair session; full changed-file review against Issue #217 and post-merge P1 evidence
 - material findings: pending
 - verdict: pending
@@ -106,14 +106,14 @@ The original pre-merge review records remain historical facts. They are not dele
 ## Independent review
 
 - required: YES — this repair changes execution-authority routing and corrects a previously terminal governance package
-- exact head: pending
+- exact head: intentionally external after final content commit
 - method/auditor: separate non-authoring reviewer/session
 - material findings: pending
 - verdict: pending
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: exactly four owned governance paths; no runtime/shared product path
 - unresolved review threads: pending
 - related/superseded PRs: #214 historical delivery; #215 historical closeout; #216 redundant closed-not-merged
 - protected auto-merge: disabled/not requested
@@ -123,15 +123,15 @@ The original pre-merge review records remain historical facts. They are not dele
 ## Context checkpoint
 
 ```yaml
-last_progress: selector-resolved Durability and Architect handoffs implemented; original #213 archive reconciled as SUPERSEDED_PENDING_CORRECTION
+last_progress: PR #218 published with exactly four owned governance paths; selector-resolved handoffs and stale terminal-evidence reconciliation are complete in content
 status: validating
 branch: docs/terra-sol-selector-handoff-repair-217
 head_sha: null
-pr: null
+pr: 218
 final_head_sha: null
-final_head_frozen_at: null
+final_head_frozen_at: external exact-head evidence after this commit
 ci_trigger_source: pull_request
-ci_check_generation: null
+ci_check_generation: pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -145,5 +145,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: open the corrective PR for Issue #217, then freeze PR metadata and exact changed paths before final-head qualification
+next_action: mark PR #218 ready for review, then qualify the unchanged exact head with repository CI, author self-review and genuinely independent review
 ```
