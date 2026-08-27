@@ -5,6 +5,7 @@ task_id: OTV2-20260825-impl-durability
 title: IN_PROGRESS — journal-only durability admission and reconnect substrate
 mode: IMPLEMENT
 status: IN_PROGRESS
+integration_state: REVIEW_RECONCILIATION_REQUIRED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-durability-journal
@@ -30,20 +31,24 @@ ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
 ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
 worker_branch_provenance: remote
-worker_branch_remote_head: 79ec09b0d2b13aca4355a66b91ac392474ca467c
+worker_branch_remote_head: f11986f8219eb7b401af8ef942377758c4e85fe9
 local_unpublished_documentation_checkpoint: 3adf13ef17b3b7811aa4f73971456ecd321afcc2
 local_checkpoint_delivery_status: not_a_remote_delivery
 prior_resume_base_sha: 90f30b47ac9b1e5e41cf274caf707aa39109b0c0
 resume_base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
 resume_admission_main_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
+current_protected_main_sha: 6e6e37852b7a050a1c7117ab2a9f316907d09daf
+current_main_merge_up_sha: c8a27bbae6c531ba625aee76f347388c2a447034
 resume_strategy: normal_non_force_merge_up_existing_worker_branch
-base_sha: 4c395ece416c3c56aed5607653a0730c52dcb3fd
-head_sha: 76b4989d6048d4f3195654ca68720c23830418db
+base_sha: 6e6e37852b7a050a1c7117ab2a9f316907d09daf
+head_sha: f11986f8219eb7b401af8ef942377758c4e85fe9
+validated_implementation_head_sha: 46148c92bc2e27b2c9523a08f8a8e3b6f7deb735
+format_successor_head_sha: f11986f8219eb7b401af8ef942377758c4e85fe9
 final_head_sha: null
 final_head_frozen_at: null
-owner: Oteryn: impl durability
+owner: Oteryn: sol durability lead
 created_at: 2026-08-25T23:24:03+02:00
-updated_at: 2026-08-27T07:31:00Z
+updated_at: 2026-08-27T20:36:00Z
 execution_budget_minutes: 120
 large_budget_reason: SQLx migration safety, durable idempotency/fencing and mandatory isolated PostgreSQL evidence
 owned_paths:
@@ -72,73 +77,107 @@ depends_on:
   - issue:197 completed by pr:200 / main:dc531658c7ffc9af91ccc6719aee80ffe01c22a4
   - issue:208 completed by pr:210 / main:f056cd38dde6065a3154e256d01aea9e5a09e5f4
 blocks:
-  - Server Seam remains WAITING_DEPENDENCY until this resumed Durability worker merges the real durable adapter
+  - Server Seam remains WAITING_DEPENDENCY until this Durability worker is independently reviewed and integrated
 write_authority: exact_owned_paths_after_foundation_terminal_reconciliation_implementation_merge
 shared_paths: none
 external_repositories: []
+shared_supply_chain_status: BLOCKED_SHARED_SUPPLY_CHAIN
+shared_supply_chain_detail: cargo-deny rejects yanked chacha20 0.10.1 through rand 0.10.2 -> sqlx-postgres 0.9.0; this task has no Cargo/lockfile authority and PR #212 changes neither
 ```
 
 ## Outcome
 
-Architecture #187/#190, transport-ref semantics #197/#200, the retained-attempt registry #193/#195, Foundation reconnect boundary #192/#199 and Foundation terminal reconciliation repair #208/#210 are merged. PR #210 merged as protected `main@f056cd38dde6065a3154e256d01aea9e5a09e5f4`, so Durability write authority is restored only on its exact owned paths.
+The real PostgreSQL reconnect journal/adapter is implemented on the existing `impl/game-durability-journal` worker branch and remains within the exact #167-owned paths. Protected `main@6e6e37852b7a050a1c7117ab2a9f316907d09daf` was merged normally and non-force into the retained worker branch at `c8a27bbae6c531ba625aee76f347388c2a447034`; there has been no reset, branch recreation or force-push.
 
-The worker must preserve its published branch history, refresh from protected `main@f056cd38dde6065a3154e256d01aea9e5a09e5f4`, verify the constrained terminal reconciliation API and this restored task authority, then perform a normal non-force merge-up into `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`. Only then may it resume TDD inside the owned paths. Do not reset/recreate/force-push the worker branch merely because main advanced.
+The first independent exact-head audit of PR #212 at `c79ab0627cf50c9c02296711fc76436b692143c7` returned three P1 findings and two P2 findings. The implementation findings were corrected at `46148c92bc2e27b2c9523a08f8a8e3b6f7deb735`: recovery-grant nonce is now durably single-consumed atomically at COMMIT, stale/expired retained attempts consume the same eight-attempt epoch capacity, PREPARE checks durable RECONNECTABLE/no-current-controller/current-generation fencing, and the migration interruption proof now cancels/drops the blocked operation before starting a fresh retry. The only CI-local defect on that implementation SHA was rustfmt in the new regression tests; the formatting-only successor is `f11986f8219eb7b401af8ef942377758c4e85fe9`.
+
+This task is not `READY_FOR_INTEGRATION` yet. A fresh genuinely independent exact-head persistence/fencing/schema review is still required after the refreshed checkpoint and exact-head CI. The repository-wide cargo-deny failure for yanked `chacha20 0.10.1` is a separate shared-surface blocker and must not be repaired from this lane.
 
 ## Architecture and source of truth
 
 - `PROVEN`: accepted topology is a game-server-local module, one game-owned migration ledger, dedicated migration execution and `PREPARE -> DB COMMIT/CLASSIFY -> RECONCILE`.
 - `PROVEN`: DUR03-RL-01..08 and all item/value transactions remain fail-closed excluded.
 - `PROVEN`: `lib.rs`, Cargo/workspace/workflow/gitattributes are not writable by this task; PR #182 already merged the accepted shared SQLx/Cargo/PostgreSQL prerequisite.
-- `PROVEN`: the retained remote worker branch was non-force merged with protected `main@4c395ece416c3c56aed5607653a0730c52dcb3fd` at `2c03415c85a3621fcf6564a88f15f62398d8a790`, advanced to Task 1's deliberate RED contract at `289336df5b58f4dc720861043cc22a881ac3fa33`, then to PREPARE at `79ec09b0d2b13aca4355a66b91ac392474ca467c` and the COMMIT/CAS checkpoint at `a0982e0f55b5c8d802ae96be31f1ccd083b8989f`. The stale-COMMIT terminalization and journal-reconnect proof are at `76b4989d6048d4f3195654ca68720c23830418db`; the earlier local unpublished checkpoint `3adf13ef17b3b7811aa4f73971456ecd321afcc2` remains non-authoritative and is not a delivery.
 - `PROVEN`: PR #190 merged `DUR-RECONNECT-AUTHORITY-V1` as `2394f6f4633b8c6662d8d79a84110cc2ae13dcb7`.
 - `PROVEN`: PR #200 merged transport-ref uniqueness as `dc531658c7ffc9af91ccc6719aee80ffe01c22a4`.
 - `PROVEN`: PR #195 merged `FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPOCH = 8` as `9878d42a21815027ef88067bfc59f8b40e78b473`.
-- `PROVEN`: PR #199 merged the Foundation V1 reconnect durability boundary as protected `main@90f30b47ac9b1e5e41cf274caf707aa39109b0c0` after exact-head `FOUNDATION_RECONNECT_DURABILITY_V1 / PASS`, full Cargo 1.94/CI and `game-gate` PASS.
-- `PROVEN`: PR #210 merged the constrained `ReconnectDurableReconciliationSnapshotV1::terminal(record)` API and ambiguous-same-attempt terminal regression as protected `main@f056cd38dde6065a3154e256d01aea9e5a09e5f4`; exact-head review and all required CI passed.
-- `DERIVED`: the former architecture/Foundation dependency blocker is terminally resolved; Server Seam is still blocked on the real durable adapter, not on architecture.
+- `PROVEN`: PR #199 merged the Foundation V1 reconnect durability boundary as protected `main@90f30b47ac9b1e5e41cf274caf707aa39109b0c0`.
+- `PROVEN`: PR #210 merged the constrained terminal reconciliation API as protected `main@f056cd38dde6065a3154e256d01aea9e5a09e5f4`.
+- `PROVEN`: protected `main` advanced to `6e6e37852b7a050a1c7117ab2a9f316907d09daf` and was normally merged into this worker at `c8a27bbae6c531ba625aee76f347388c2a447034`; the branch is not relying on a stale Foundation base.
+- `PROVEN`: the independent review of `c79ab0627cf50c9c02296711fc76436b692143c7` identified concrete persistence/fencing gaps rather than architecture ambiguity; those implementation gaps are addressed in the owned Durability surfaces at `46148c92bc2e27b2c9523a08f8a8e3b6f7deb735`.
+- `DERIVED`: remaining Durability work is exact-head verification/re-review/integration lifecycle, not additional product or authority design.
 
 ## Acceptance criteria
 
-- [x] #208 was completed by PR #210; branch/history were preserved by normal non-force merge-up of the current protected `main@4c395ece416c3c56aed5607653a0730c52dcb3fd` into the existing worker branch at `2c03415c85a3621fcf6564a88f15f62398d8a790`, followed by an ownership-correct Task 1 RED contract at `289336df5b58f4dc720861043cc22a881ac3fa33`.
-- [ ] Real isolated PostgreSQL tests prove migration fresh/compatibility/checksum/ahead/behind/dirty/lock interruption and runtime-DDL denial.
-- [ ] Durable journal/adapter consumes the merged Foundation V1 boundary and proves fencing, same-attempt retry/lost-response classification, crash reconciliation and DB outage/recovery without moving Foundation admission/security/controller authority.
-- [ ] PREPARE/COMMIT persistence and reconciliation preserve the exact V1 attempt/transport-ref/evidence/deadline semantics; ambiguous outcomes reconcile the same attempt rather than reminting authority.
-- [ ] Exact-head persistence/fencing review, CI, expected-head merge and archive lifecycle are complete.
+- [x] #208 was completed by PR #210 and the retained worker history was preserved; current protected `main@6e6e37852b7a050a1c7117ab2a9f316907d09daf` is present through normal non-force merge commit `c8a27bbae6c531ba625aee76f347388c2a447034`.
+- [x] Real isolated PostgreSQL 17.6 tests prove fresh migration, missing-ledger/runtime-DDL denial, checksum mismatch, ahead/behind/dirty ledger, migration lock cancellation plus fresh retry, and DB outage/recovery.
+- [x] The durable journal consumes the merged Foundation V1 boundary and proves durable fencing, same-attempt retry/lost-response classification, cross-process replay, crash/reconciliation behavior, transport-ref collision, recovery-grant nonce single-consumption and DB outage/recovery without moving Foundation admission/security/controller authority.
+- [x] PREPARE/COMMIT persistence and reconciliation preserve exact V1 attempt/transport-ref/evidence/deadline semantics: stale/expired attempts remain inside the retained eight-attempt bound, PREPARE requires durable RECONNECTABLE/no-current-controller/current-generation state, recovery grants are single-consumed at COMMIT, and ambiguous outcomes reconcile the same attempt rather than reminting authority.
+- [ ] Fresh exact-head independent persistence/fencing/schema review, final exact-head CI reconciliation, expected-head merge and archive lifecycle are complete.
 
 ## Excluded scope
 
-No production database/config/secrets, transaction/outbox, item/value custody/reward, Foundation semantic change, `main.rs`, registry, Platform/Atlas/META or external repository write. No new Cargo/workflow/shared-surface authority is granted by this resume allocation.
+No production database/config/secrets, transaction/outbox, item/value custody/reward, Foundation semantic change, `main.rs`, registry, Platform/Atlas/META or external repository write. No new Cargo/workflow/shared-surface authority is granted by this task. In particular, the yanked `chacha20 0.10.1` supply-chain repair belongs to a shared Cargo/lockfile owner, not this Durability lane.
 
 ## Validation
 
-### Focused
+### Focused / real PostgreSQL
 
-- initial command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres`
-- initial result: `RED` as required for Task 1 at `289336df5b58f4dc720861043cc22a881ac3fa33` — the test imported the allocated but not-yet-implemented `apps/game-server/src/durability/mod.rs` and Cargo failed only with the missing-module error.
-- current source evidence at `76b4989d6048d4f3195654ca68720c23830418db`: `cargo fmt --all -- --check`, strict Clippy for `durability_postgres` and both game-server binaries, and `cargo test --locked -p oteryn-game-server --lib` all pass; the library proof is `153/153` tests. Exact-head Rust CI passed and its isolated PostgreSQL 17 harness passed `10/10`, including lost-response COMMIT/reconcile, stale-COMMIT terminalization and journal rehydration.
+- exact implementation SHA: `46148c92bc2e27b2c9523a08f8a8e3b6f7deb735`
+- workflow: Rust workspace run `33113636219`, job `Rust / Durability PostgreSQL harness`
+- environment: pinned PostgreSQL `17.6-bookworm`
+- result: `PASS`, `21/21` tests, `0 failed`
+- audit-regression proofs passing on that SHA:
+  - `recovery_grant_nonce_is_single_consumed_at_commit`
+  - `stale_prepare_attempts_consume_the_retained_attempt_bound`
+  - `prepare_requires_reconnectable_state_and_no_current_controller`
+  - `migration_lock_interruption_releases_before_any_ddl_and_allows_fresh_retry`
+- retained proofs also pass for fresh/compatibility/checksum/ahead/behind/dirty schema, runtime no-DDL, outage/recovery, same-attempt replay, cross-process replacement, concurrent same attempt, transport-ref collision, eight-attempt limit, lost-response COMMIT/reconcile and stale-COMMIT terminalization.
 
-### Component/integration
+### Build / policy / semantic CI
 
-- command/run: isolated PostgreSQL worker evidence after normal merge-up from protected `main@4c395ece416c3c56aed5607653a0730c52dcb3fd`
-- result: `NOT_EXECUTED_LOCALLY` — the isolated executor has no local PostgreSQL runtime; the exact task-owned `durability_postgres` test is wired to the pinned per-run PostgreSQL 17 GitHub Actions service and will be required there before delivery.
+At implementation SHA `46148c92bc2e27b2c9523a08f8a8e3b6f7deb735`:
+
+- `Rust workspace` run `33113636219`: `SUCCESS`; Windows SIM golden and Durability PostgreSQL harness both passed.
+- `Agent governance`: `SUCCESS`.
+- `Merge authority audit`: `SUCCESS`.
+- `Architecture semantic audit`: `SUCCESS`.
+- merge-gate scope/governance/dependency review/CodeQL passed; Linux build, strict Clippy, workspace tests and synthetic harness passed during the run.
+- merge-gate policy detected only rustfmt differences in `apps/game-server/tests/support/postgres.rs`; those exact rustfmt changes were applied by formatting-only successor `f11986f8219eb7b401af8ef942377758c4e85fe9`.
+- merge-gate supply-chain failed independently on yanked `chacha20 0.10.1`; PR #212 changes no Cargo manifest or lockfile and this task has no authority to repair it.
 
 ### E2E
 
 - scenario: real isolated PostgreSQL DB E2E required during Durability delivery; gameplay Tier 1/Tier 2 `NOT_APPLICABLE`
-- result: pending
+- result: `PASS` for the task-owned PostgreSQL E2E at `46148c92bc2e27b2c9523a08f8a8e3b6f7deb735`; exact successor CI must be reconciled again after this checkpoint-only update before integration.
+
+## Independent review reconciliation
+
+The independent exact-head audit at `c79ab0627cf50c9c02296711fc76436b692143c7` returned `REQUEST_CHANGES` with the following PR-local findings, all now addressed in the owned lane:
+
+1. P1 recovery-grant replay key was not durably single-consumed -> fixed by `game_durability_recovery_grant_consumptions` and atomic COMMIT/replay/reconcile binding.
+2. P1 stale/expired PREPARE could bypass the eight-attempt retained bound -> fixed by capacity-before-new-row and attempt-count accounting for stale terminals.
+3. P1 PREPARE did not assert durable RECONNECTABLE/no-current-controller/current-generation state -> fixed in the per-session locked CAS predicate.
+4. P2 migration interruption resumed the same pinned future -> fixed so timeout owns/drops the blocked future and a distinct fresh migration operation is started after lock release.
+5. P2 active checkpoint was stale -> fixed by this checkpoint refresh.
+
+A fresh independent review must evaluate the new exact PR head after this checkpoint. This lane must not self-approve or self-merge.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: normal non-force merge-up was published at 2c03415c85a3621fcf6564a88f15f62398d8a790; Task 1's guarded PostgreSQL RED specifications were published at 289336df5b58f4dc720861043cc22a881ac3fa33; PREPARE was published at 79ec09b0d2b13aca4355a66b91ac392474ca467c; COMMIT/CAS, stale-COMMIT terminalization and journal-rehydration reconciliation passed exact-head PostgreSQL CI at 76b4989d6048d4f3195654ca68720c23830418db in draft PR #212
+last_progress: independent audit findings were implemented at 46148c92bc2e27b2c9523a08f8a8e3b6f7deb735 with real PostgreSQL 17.6 21/21 PASS; rustfmt-only successor f11986f8219eb7b401af8ef942377758c4e85fe9 was published; this checkpoint refresh closes the final PR-local P2 documentation finding
 status: IN_PROGRESS
+integration_state: REVIEW_RECONCILIATION_REQUIRED
 branch: impl/game-durability-journal
-head_sha: 76b4989d6048d4f3195654ca68720c23830418db
+validated_implementation_head_sha: 46148c92bc2e27b2c9523a08f8a8e3b6f7deb735
+checkpoint_parent_head_sha: f11986f8219eb7b401af8ef942377758c4e85fe9
 resume_base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
+current_protected_main_sha: 6e6e37852b7a050a1c7117ab2a9f316907d09daf
 pr: 212
 final_head_sha: null
-owner_action_required: null
-blocker: null
+owner_action_required: fresh independent exact-head persistence/fencing/schema review after exact-head CI
+blocker: independent re-review required; separately, shared cargo-deny is blocked by yanked chacha20 0.10.1 outside this lane
 write_authority: exact_owned_paths_after_foundation_terminal_reconciliation_implementation_merge
-next_action: add the remaining isolated PostgreSQL RED cases for durable-state corruption, terminal outcomes and outage classification; retain PREPARE completion as non-authoritative until Foundation performs its separate final revalidation
+next_action: freeze the new exact PR head, reconcile exact-head CI, obtain genuinely independent re-review of persistence/fencing/schema, then hand off to the integration authority without self-merging
 ```
