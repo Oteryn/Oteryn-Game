@@ -91,7 +91,7 @@ recommended_control_plane_action: integrate | return_to_lane | wait | escalate
 next_action: <exactly one concrete action>
 ```
 
-The Terra control plane independently verifies all facts before integration.
+The uniquely active control-plane profile, resolved from the current coordinator Issue/task, independently verifies all facts before integration. If no unique active profile is `PROVEN`, return `POLICY_CONFLICT` and do not route integration to Terra or Work by alias, model selection or reusable status.
 
 ## Safety
 
