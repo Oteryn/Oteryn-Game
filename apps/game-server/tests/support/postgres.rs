@@ -309,12 +309,9 @@ mod durability_contract_tests {
 
             let executor = MigrationExecutor::connect_migration(&database_url).await?;
             assert!(
-                tokio::time::timeout(
-                    Duration::from_millis(250),
-                    executor.apply_embedded_ledger(),
-                )
-                .await
-                .is_err(),
+                tokio::time::timeout(Duration::from_millis(250), executor.apply_embedded_ledger(),)
+                    .await
+                    .is_err(),
                 "migration must wait while SQLx's database advisory lock is held"
             );
 
@@ -333,7 +330,8 @@ mod durability_contract_tests {
             // releasing the lock, this is a distinct migration operation rather
             // than resuming the previously polled future.
             lock_holder.close().await?;
-            tokio::time::timeout(Duration::from_secs(5), executor.apply_embedded_ledger()).await??;
+            tokio::time::timeout(Duration::from_secs(5), executor.apply_embedded_ledger())
+                .await??;
             assert_eq!(executor.inspect().await?, SchemaCompatibility::Compatible);
 
             database.cleanup().await?;
@@ -392,11 +390,12 @@ mod durability_contract_tests {
                     ),
                 )
                 .map_err(crate::foundation_error)?;
-            let first_current = oteryn_game_server::foundation::ReconnectCurrentAuthorityV1::from_record(
-                first_prepare.record(),
-                record_now,
-            )
-            .map_err(crate::foundation_error)?;
+            let first_current =
+                oteryn_game_server::foundation::ReconnectCurrentAuthorityV1::from_record(
+                    first_prepare.record(),
+                    record_now,
+                )
+                .map_err(crate::foundation_error)?;
             let first_commit = first_flow
                 .authorize_commit(first_current, record_now)
                 .map_err(crate::foundation_error)?;
@@ -526,7 +525,8 @@ mod durability_contract_tests {
     #[test]
     fn prepare_requires_reconnectable_state_and_no_current_controller() -> TestResult {
         run_postgres_test(async {
-            let (database, database_url, _executor) = migrated_database("prepare_authority").await?;
+            let (database, database_url, _executor) =
+                migrated_database("prepare_authority").await?;
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
             let record_now = crate::unix_now().map_err(crate::foundation_error)?;
             let (_first_flow, first_prepare) =
