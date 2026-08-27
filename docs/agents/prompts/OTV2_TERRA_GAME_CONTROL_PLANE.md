@@ -225,6 +225,17 @@ Post-VSL planning:
 Oteryn: sol post-vsl expansion
 ```
 
+Post-VSL read-only preparation (only after VSL terminal):
+
+```text
+Oteryn: sol world content prep
+Oteryn: sol npc ai prep
+Oteryn: sol systems economy prep
+Oteryn: sol tooling ops prep
+```
+
+These four aliases never grant mutation. Terra may only schedule them read-only and may consume a `READY_FOR_ALLOCATION_PROPOSAL` result after independently verifying it; implementation still requires a later exact merged allocation.
+
 Independent control:
 
 ```text

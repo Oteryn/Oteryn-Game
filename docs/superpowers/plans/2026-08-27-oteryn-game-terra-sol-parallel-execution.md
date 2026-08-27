@@ -144,6 +144,7 @@ All five prompts must return exact Issue/task/base/head/PR/changed paths/shared 
 
 **Files:**
 - Create: `docs/agents/prompts/OTV2_SOL_POST_VSL_EXPANSION.md`
+- `docs/agents/prompts/OTV2_SOL_WORLD_CONTENT_PREP.md`, `OTV2_SOL_NPC_AI_PREP.md`, `OTV2_SOL_SYSTEMS_ECONOMY_PREP.md`, `OTV2_SOL_TOOLING_OPS_PREP.md` ? explicit post-VSL read-only preparation profiles required by Issue #213; no mutation before later exact allocation.
 - Create: `docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`
 
 **Interfaces:**

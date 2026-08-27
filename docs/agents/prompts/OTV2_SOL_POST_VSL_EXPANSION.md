@@ -45,6 +45,7 @@ Candidate decomposition families may include, only where current accepted author
 - **Tooling/Operations** — migration/authoring tools, observability, deployment-readiness and operational evidence under separate production authority.
 
 This list is not authority. If current architecture splits these differently, use the current accepted ownership.
+Issue #213 additionally requires four reusable read-only preparation profiles for the named future families. This expansion role may recommend launching `OTV2_SOL_WORLD_CONTENT_PREP`, `OTV2_SOL_NPC_AI_PREP`, `OTV2_SOL_SYSTEMS_ECONOMY_PREP` and `OTV2_SOL_TOOLING_OPS_PREP` after VSL terminal when useful. Those profiles may prepare exact allocation proposals only; they do not receive runtime, lease, integration or allocation authority from this recommendation.
 
 ## Decomposition rules
 

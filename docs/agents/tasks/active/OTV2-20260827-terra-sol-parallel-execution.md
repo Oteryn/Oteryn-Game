@@ -31,6 +31,10 @@ owned_paths:
   - docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md
   - docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md
   - docs/agents/prompts/OTV2_SOL_POST_VSL_EXPANSION.md
+  - docs/agents/prompts/OTV2_SOL_WORLD_CONTENT_PREP.md
+  - docs/agents/prompts/OTV2_SOL_NPC_AI_PREP.md
+  - docs/agents/prompts/OTV2_SOL_SYSTEMS_ECONOMY_PREP.md
+  - docs/agents/prompts/OTV2_SOL_TOOLING_OPS_PREP.md
   - docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md
   - docs/agents/prompts/README.md
   - docs/agents/PROMPT_LIFECYCLE.json
@@ -70,6 +74,7 @@ Both `Oteryn: work coordinator` and `Oteryn: terra game coordinator` remain reus
 - [x] Sol Supervising Architect prompt routes material architecture decisions without granting implicit runtime writes.
 - [x] Sol Durability, Server Seam, Client/QA, Movement and Combat lead prompts are present and bind mutation to exact live allocation.
 - [x] Post-VSL expansion prompt can decompose later accepted work without speculative runtime authority.
+- [x] Explicit World/Content, NPC/AI, Systems/Economy and Tooling/Ops preparation profiles are present and remain read-only until exact later allocation.
 - [x] Scheduler defines V0-V4 promotion, useful parallel preparation, writer limits and unique active control-plane resolution.
 - [x] README and prompt lifecycle register every new alias without implicit supersession.
 - [ ] Final exact-head prompt evaluation against `PROMPT_EVAL_STANDARD.md` is complete after repair freeze.
@@ -104,6 +109,7 @@ No runtime worker ownership is changed. In particular, draft Durability PR #212 
 - command/run: independent review against original exact head `5fa107837f0b8b3c31c493ec0511b00176a23f75`
 - result: `CHANGES_REQUIRED`; P1-01 predecessor ownership, P1-02 competing control planes, P1-03 stale active task metadata
 - repair status: P1-01 terminally resolved by #184/#183; P1-02/P1-03 incorporated into this repair candidate
+- repair extension: current Issue #213 deliverables were re-read; missing future-wave profile completeness and the handoff-schema P2 are incorporated before final freeze
 
 ### Component/integration
 
@@ -145,7 +151,7 @@ No runtime worker ownership is changed. In particular, draft Durability PR #212 
 ## PR and closeout
 
 - PR: #214
-- changed-file review: 15 intended governance/docs paths after adding the bounded Work-coordinator coexistence amendment
+- changed-file review: 19 intended governance/docs paths after adding the bounded Work-coordinator coexistence amendment and four required post-VSL preparation profiles
 - unresolved review threads: zero at the reviewed pre-repair head; must be re-read on repaired exact head
 - related/superseded PRs: #184 merged as `c082060c10a54758ebcc3655d0bffa83f4af51e3` and Issue #183 closed completed; no predecessor ownership remains
 - protected auto-merge: not requested

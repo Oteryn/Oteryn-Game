@@ -226,6 +226,17 @@ Oteryn: sol post-vsl expansion
 
 It inventories all remaining accepted Game work and proposes exact next-wave lanes. Expected decomposition families may include World/Content, NPC/AI, Player Systems/Economy, Native Client/Renderer and Tooling/Operations, but current accepted architecture determines the actual split.
 
+Issue #213 also requires four explicit future-wave preparation profiles. After VSL terminal they may run read-only in parallel when useful:
+
+```text
+Oteryn: sol world content prep
+Oteryn: sol npc ai prep
+Oteryn: sol systems economy prep
+Oteryn: sol tooling ops prep
+```
+
+Each may only return a `READY_FOR_ALLOCATION_PROPOSAL` packet; none may mutate, allocate itself, claim a lease, integrate or close out a lane before a later exact merged allocation.
+
 Terra does not create future technical lanes itself. When Terra is the active control plane, it consumes the accepted expansion result and applies the same allocation/ownership/concurrency state machine recursively until all accepted Game programme lanes are terminal.
 
 ## Decision routing table

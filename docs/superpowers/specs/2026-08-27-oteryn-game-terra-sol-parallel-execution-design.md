@@ -286,7 +286,7 @@ Expected lane families, subject to live accepted architecture and Issues, includ
 - Native Client/Renderer: complete map/world presentation, HUD/interaction breadth and performance;
 - Tooling/Operations: authoring/migration tools, observability, deployment-readiness and operational evidence under separate production authority.
 
-These are decomposition families, not write authority. The expansion lead must create exact child Issues/plans/prompts only after current architecture proves their scope and ownership. Terra never invents the next technical lane from this list.
+These are decomposition families, not write authority. Four reusable preparation profiles are packaged now because Issue #213 requires them explicitly: `Oteryn: sol world content prep`, `Oteryn: sol npc ai prep`, `Oteryn: sol systems economy prep`, and `Oteryn: sol tooling ops prep`. They remain read-only after VSL until an exact later allocation is merged; they may prepare allocation proposals but may not create their own write authority. The expansion lead creates exact child Issues/plans/implementation prompts only after current architecture proves scope and ownership. Terra never invents the next technical lane from this list.
 
 ## Evidence contract
 
@@ -312,6 +312,7 @@ independent_review:
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate
+next_action: <exactly one concrete action>
 ```
 
 The active control plane verifies every factual field against GitHub before acting.

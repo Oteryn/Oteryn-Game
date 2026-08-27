@@ -51,10 +51,15 @@ The existing #162 lifecycle remains under `OTV2_WORK_DELIVERY_COORDINATOR` unles
 - `OTV2_SOL_MOVEMENT_LEAD.md` — Movement lead gated by current Client/QA and #139 resource closure. **`Oteryn: sol movement lead`.**
 - `OTV2_SOL_COMBAT_LEAD.md` — Combat/death/loot/XP/pickup lead gated by merged Movement and current prerequisites. **`Oteryn: sol combat lead`.**
 - `OTV2_SOL_POST_VSL_EXPANSION.md` — read-only-by-default decomposition of remaining accepted Game work after terminal Movement+Combat VSL. **`Oteryn: sol post-vsl expansion`.**
+- `OTV2_SOL_WORLD_CONTENT_PREP.md` - post-VSL World/Content read-only preparation; no mutation before exact later allocation. **`Oteryn: sol world content prep`.**
+- `OTV2_SOL_NPC_AI_PREP.md` - post-VSL NPC/AI read-only preparation; no mutation before exact later allocation. **`Oteryn: sol npc ai prep`.**
+- `OTV2_SOL_SYSTEMS_ECONOMY_PREP.md` - post-VSL Systems/Economy read-only preparation; no mutation before exact later allocation. **`Oteryn: sol systems economy prep`.**
+- `OTV2_SOL_TOOLING_OPS_PREP.md` - post-VSL Tooling/Ops read-only preparation; no mutation before exact later allocation. **`Oteryn: sol tooling ops prep`.**
 
 The Terra profile is additive and does **not** silently supersede `Oteryn: work coordinator` or `OTV2_IMPLEMENTATION_COORDINATOR`. When a programme has durably selected Terra as its unique active control plane, Terra may apply only deterministic GitHub/DAG/ownership/merge predicates; technical findings route to the owning Sol lead, material cross-lane decisions route to `Oteryn: sol supervising architect`, and owner-only scope/authority decisions return `OWNER_DECISION_REQUIRED`.
 
 Canonical launch/promotion rules for this profile live in `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`. Alias existence grants no write authority. Every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
+The four future-wave preparation aliases are deliberately non-mutating: after terminal VSL they may prepare exact allocation proposals, but they cannot create branches/commits, claim leases, integrate PRs or become implementation leads until a later merged exact allocation/prompt lifecycle grants that authority.
 
 ### Independent Work delivery audit
 
