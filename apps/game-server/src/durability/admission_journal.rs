@@ -457,9 +457,14 @@ async fn recovery_grant_binding_is_valid(
 }
 
 async fn database_now(transaction: &mut Transaction<'_, Postgres>) -> Result<i64, DurabilityError> {
-    let row = sqlx::query("SELECT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP)::BIGINT AS now")
-        .fetch_one(&mut **transaction)
-        .await?;
+    // `CURRENT_TIMESTAMP` is fixed at transaction start in PostgreSQL and can
+    // become stale while this transaction waits for the per-session row lock.
+    // `clock_timestamp()` observes actual database time at the post-lock fence.
+    let row = sqlx::query(
+        "SELECT FLOOR(EXTRACT(EPOCH FROM clock_timestamp()))::BIGINT AS now",
+    )
+    .fetch_one(&mut **transaction)
+    .await?;
     row.try_get("now").map_err(DurabilityError::from)
 }
 

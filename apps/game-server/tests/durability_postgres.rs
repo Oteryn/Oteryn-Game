@@ -20,7 +20,7 @@ use oteryn_game_server::foundation::{
 };
 use std::process::Command;
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 fn foundation_error(error: ReconnectDurabilityErrorV1) -> std::io::Error {
     std::io::Error::other(format!(
@@ -37,6 +37,12 @@ fn unix_now() -> Result<i64, ReconnectDurabilityErrorV1> {
         .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)
 }
 
+async fn postgres_clock(pool: &sqlx::PgPool) -> Result<i64, sqlx::Error> {
+    sqlx::query_scalar("SELECT FLOOR(EXTRACT(EPOCH FROM clock_timestamp()))::BIGINT")
+        .fetch_one(pool)
+        .await
+}
+
 fn uuid_v7(raw: u64) -> [u8; 16] {
     let mut value = [0u8; 16];
     value[8..].copy_from_slice(&raw.to_be_bytes());
@@ -50,6 +56,22 @@ fn record(
     attempt_raw: u64,
     transport_byte: u8,
     now: i64,
+) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+    record_with_prepared_deadline(
+        game_session_raw,
+        attempt_raw,
+        transport_byte,
+        now,
+        now + 115,
+    )
+}
+
+fn record_with_prepared_deadline(
+    game_session_raw: u64,
+    attempt_raw: u64,
+    transport_byte: u8,
+    now: i64,
+    prepared_deadline: i64,
 ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
     let game_session_id = GameSessionId::decode(&uuid_v7(game_session_raw))
         .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?;
@@ -82,7 +104,7 @@ fn record(
     let continuity = ReconnectContinuityV1::new(
         ControlLossEpochRefV1::new(3)?,
         now + 120,
-        now + 115,
+        prepared_deadline,
         ProtectionEntitlementV1::unused(),
     )?;
     let fnd02 = Fnd02ReconciliationFenceV1::new(
@@ -742,6 +764,203 @@ fn committed_replay_fails_closed_when_session_state_is_inconsistent()
                     journal.commit(&commit).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn commit_row_lock_wait_cannot_outlive_authorization_deadline()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("commit_deadline_lock").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let lock_pool = sqlx::PgPool::connect(&database_url).await?;
+                let record_now = postgres_clock(&lock_pool).await?;
+                let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(90, 1, 0xb1, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                    .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+                let deadline = commit.authorization().authorization_deadline();
+                assert!(postgres_clock(&lock_pool).await? <= deadline);
+
+                let session_id = prepare
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                let mut lock = lock_pool.begin().await?;
+                sqlx::query(
+                    "SELECT game_session_id FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = $1 FOR UPDATE",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&mut *lock)
+                .await?;
+
+                let blocked_journal = journal.clone();
+                let blocked_commit = commit.clone();
+                let blocked = tokio::spawn(async move {
+                    blocked_journal.commit(&blocked_commit).await
+                });
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                assert!(
+                    !blocked.is_finished(),
+                    "commit must be waiting on the held per-session row lock"
+                );
+                while postgres_clock(&lock_pool).await? <= deadline {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+                lock.commit().await?;
+
+                assert_eq!(
+                    blocked.await??,
+                    ReconnectCommitDispositionV1::RejectedStaleAuthority
+                );
+                let session: (i64, Option<Vec<u8>>, i16, Option<Vec<u8>>) = sqlx::query_as(
+                    "SELECT current_generation, current_transport_ref, session_state, prepared_attempt_ref \
+                     FROM game_durability_reconnect_sessions WHERE game_session_id = $1",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&lock_pool)
+                .await?;
+                assert_eq!(session.0, 7);
+                assert!(session.1.is_none());
+                assert_eq!(session.2, 1);
+                assert!(session.3.is_none());
+                let consumed: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_recovery_grant_consumptions",
+                )
+                .fetch_one(&lock_pool)
+                .await?;
+                assert_eq!(consumed, 0, "expired commit must not consume recovery nonce");
+                assert_eq!(
+                    journal.reconcile(&prepare).await?,
+                    oteryn_game_server::foundation::ReconnectDurableReconciliationSnapshotV1::terminal(
+                        prepare.record().clone(),
+                    )
+                );
+                lock_pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn prepare_row_lock_wait_cannot_outlive_prepared_deadline()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("prepare_deadline_lock").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let lock_pool = sqlx::PgPool::connect(&database_url).await?;
+                let record_now = postgres_clock(&lock_pool).await?;
+                let prepared_deadline = record_now + 2;
+                let (_flow, request) = ReconnectDurabilityFlowV1::begin(
+                    record_with_prepared_deadline(91, 1, 0xc1, record_now, prepared_deadline)
+                        .map_err(foundation_error)?,
+                );
+                let session_id = request
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                sqlx::query(
+                    "INSERT INTO game_durability_reconnect_sessions (\
+                        game_session_id, control_loss_epoch, predecessor_generation, \
+                        character_lease_generation, scope_ownership_generation, current_generation\
+                     ) VALUES ($1, 3, 7, 9, 10, 7)",
+                )
+                .bind(session_id.as_slice())
+                .execute(&lock_pool)
+                .await?;
+                assert!(postgres_clock(&lock_pool).await? <= prepared_deadline);
+
+                let mut lock = lock_pool.begin().await?;
+                sqlx::query(
+                    "SELECT game_session_id FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = $1 FOR UPDATE",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&mut *lock)
+                .await?;
+
+                let blocked_journal = journal.clone();
+                let blocked_request = request.clone();
+                let blocked = tokio::spawn(async move {
+                    blocked_journal.prepare(&blocked_request).await
+                });
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                assert!(
+                    !blocked.is_finished(),
+                    "prepare must be waiting on the held per-session row lock"
+                );
+                while postgres_clock(&lock_pool).await? <= prepared_deadline {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+                lock.commit().await?;
+
+                assert_eq!(
+                    blocked.await??,
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority
+                );
+                assert_eq!(
+                    journal.prepare(&request).await?,
+                    ReconnectPrepareDispositionV1::ExistingTerminal
+                );
+                let session: (i64, Option<Vec<u8>>, i16, i16, Option<Vec<u8>>) = sqlx::query_as(
+                    "SELECT current_generation, current_transport_ref, session_state, attempt_count, prepared_attempt_ref \
+                     FROM game_durability_reconnect_sessions WHERE game_session_id = $1",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&lock_pool)
+                .await?;
+                assert_eq!(session.0, 7);
+                assert!(session.1.is_none());
+                assert_eq!(session.2, 1);
+                assert_eq!(session.3, 1);
+                assert!(session.4.is_none());
+                lock_pool.close().await;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;
