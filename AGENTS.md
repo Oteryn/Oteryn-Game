@@ -74,12 +74,28 @@ Before editing, verify current `main`, applicable instructions, active Issue/PR,
 - Security-, authorization-, durable-schema-, production-trust- and cross-repository-contract changes require genuinely independent exact-head review when repository policy says so.
 - Squash merge only after required checks/reviews pass; delete the merged task branch unless it has a documented continuing provenance role.
 
+## Autonomous Codex independent-review standing authorization
+
+After `docs/agents/CODEX_REVIEW_POLICY.json` is present on protected `main`, that machine-readable contract is the owner's standing authorization for the bounded Codex review operations it enumerates. For those covered operations only, no separate owner confirmation is required per review invocation. Any reusable prompt or lower-level prose that still says owner-funded Codex requires per-invocation authorization is satisfied/superseded only for an invocation that matches this standing authorization exactly; every non-covered owner-funded Codex/OpenAI/API use remains per-invocation owner-authorized.
+
+For an allocated lane with a pull request, the lane lead MUST apply `docs/agents/CODEX_REVIEW_POLICY.json` before claiming `READY_FOR_INTEGRATION`:
+
+- classify the candidate using the policy's exact risk matrix rather than personal preference;
+- when `CODEX_REQUIRED` and native GitHub Codex review capability is proven, freeze the exact candidate head and request a fresh independent Codex review through the canonical PR; the preferred native trigger is `@codex review` with bounded risk-specific guidance;
+- the Codex reviewer task/session must be fresh and must not have materially authored or modified the candidate;
+- the lane lead, not the owner or control plane, owns repair of review findings inside the existing allocation and requests a fresh review after every material head change;
+- a prior Codex review cannot qualify a different head;
+- Codex review may satisfy the independent technical-review gate only when the policy's independence, exact-head, qualification and durable-GitHub-evidence conditions are all met; it never replaces required author self-review or an explicitly separate governance/lifecycle audit;
+- when required Codex capability is unavailable, record the exact capability gap and apply the policy fallback fail-closed; never fabricate a review or use the owner as the default manual prompt relay.
+
+The uniquely active Work/Terra control plane MUST apply the same matrix mechanically and verify the durable exact-head review evidence. It MUST NOT decide ad hoc whether Codex is needed, adjudicate technical findings, or waive a required Codex review; technical findings return to the owning lane lead.
+
 ## Safety
 
 - Never weaken tests, protection, authorization, provenance or compatibility gates merely to make a task pass.
 - Never expose secrets, credentials, private data or proprietary assets.
 - Production/protected-environment/live-account mutations require separate explicit authority.
-- Do not use owner-funded Codex/OpenAI/API or other metered AI services without explicit owner authorization for that invocation.
+- Do not use owner-funded Codex/OpenAI/API or other metered AI services without explicit owner authorization, except for invocations exactly covered by the protected-main standing authorization in `docs/agents/CODEX_REVIEW_POLICY.json`.
 - Preserve unique migration/backup history until its retention and restore obligations are explicitly dispositioned.
 
 ## Routing
