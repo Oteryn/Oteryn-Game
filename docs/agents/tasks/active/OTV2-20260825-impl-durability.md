@@ -38,12 +38,12 @@ resume_base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
 resume_admission_main_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
 resume_strategy: normal_non_force_merge_up_existing_worker_branch
 base_sha: 4c395ece416c3c56aed5607653a0730c52dcb3fd
-head_sha: 79ec09b0d2b13aca4355a66b91ac392474ca467c
+head_sha: a0982e0f55b5c8d802ae96be31f1ccd083b8989f
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: impl durability
 created_at: 2026-08-25T23:24:03+02:00
-updated_at: 2026-08-27T07:06:23Z
+updated_at: 2026-08-27T07:17:00Z
 execution_budget_minutes: 120
 large_budget_reason: SQLx migration safety, durable idempotency/fencing and mandatory isolated PostgreSQL evidence
 owned_paths:
@@ -89,7 +89,7 @@ The worker must preserve its published branch history, refresh from protected `m
 - `PROVEN`: accepted topology is a game-server-local module, one game-owned migration ledger, dedicated migration execution and `PREPARE -> DB COMMIT/CLASSIFY -> RECONCILE`.
 - `PROVEN`: DUR03-RL-01..08 and all item/value transactions remain fail-closed excluded.
 - `PROVEN`: `lib.rs`, Cargo/workspace/workflow/gitattributes are not writable by this task; PR #182 already merged the accepted shared SQLx/Cargo/PostgreSQL prerequisite.
-- `PROVEN`: the retained remote worker branch was non-force merged with protected `main@4c395ece416c3c56aed5607653a0730c52dcb3fd` at `2c03415c85a3621fcf6564a88f15f62398d8a790`, advanced to Task 1's deliberate RED contract at `289336df5b58f4dc720861043cc22a881ac3fa33`, then to the first PREPARE-only implementation checkpoint at `79ec09b0d2b13aca4355a66b91ac392474ca467c`; the earlier local unpublished checkpoint `3adf13ef17b3b7811aa4f73971456ecd321afcc2` remains non-authoritative and is not a delivery.
+- `PROVEN`: the retained remote worker branch was non-force merged with protected `main@4c395ece416c3c56aed5607653a0730c52dcb3fd` at `2c03415c85a3621fcf6564a88f15f62398d8a790`, advanced to Task 1's deliberate RED contract at `289336df5b58f4dc720861043cc22a881ac3fa33`, then to PREPARE at `79ec09b0d2b13aca4355a66b91ac392474ca467c` and the COMMIT/CAS plus exact-attempt reconciliation checkpoint at `a0982e0f55b5c8d802ae96be31f1ccd083b8989f`; the earlier local unpublished checkpoint `3adf13ef17b3b7811aa4f73971456ecd321afcc2` remains non-authoritative and is not a delivery.
 - `PROVEN`: PR #190 merged `DUR-RECONNECT-AUTHORITY-V1` as `2394f6f4633b8c6662d8d79a84110cc2ae13dcb7`.
 - `PROVEN`: PR #200 merged transport-ref uniqueness as `dc531658c7ffc9af91ccc6719aee80ffe01c22a4`.
 - `PROVEN`: PR #195 merged `FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPOCH = 8` as `9878d42a21815027ef88067bfc59f8b40e78b473`.
@@ -115,7 +115,7 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 
 - initial command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres`
 - initial result: `RED` as required for Task 1 at `289336df5b58f4dc720861043cc22a881ac3fa33` — the test imported the allocated but not-yet-implemented `apps/game-server/src/durability/mod.rs` and Cargo failed only with the missing-module error.
-- current source evidence at `79ec09b0d2b13aca4355a66b91ac392474ca467c`: `cargo fmt --all -- --check`, strict Clippy for `durability_postgres` and both game-server binaries, and `cargo test --locked -p oteryn-game-server --lib` all pass; the library proof is `153/153` tests.
+- current source evidence at `a0982e0f55b5c8d802ae96be31f1ccd083b8989f`: `cargo fmt --all -- --check`, strict Clippy for `durability_postgres` and both game-server binaries, and `cargo test --locked -p oteryn-game-server --lib` all pass; the library proof is `153/153` tests. The new COMMIT/reconcile contract compiled locally and remains pending the isolated PostgreSQL 17 CI execution.
 
 ### Component/integration
 
@@ -130,15 +130,15 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 ## Context checkpoint
 
 ```yaml
-last_progress: normal non-force merge-up was published at 2c03415c85a3621fcf6564a88f15f62398d8a790; Task 1's guarded PostgreSQL RED specifications were published at 289336df5b58f4dc720861043cc22a881ac3fa33; PREPARE-only migration/schema/journal implementation plus collision, idempotency, 8/9 and same-attempt race contracts were published at 79ec09b0d2b13aca4355a66b91ac392474ca467c in draft PR #212
+last_progress: normal non-force merge-up was published at 2c03415c85a3621fcf6564a88f15f62398d8a790; Task 1's guarded PostgreSQL RED specifications were published at 289336df5b58f4dc720861043cc22a881ac3fa33; PREPARE was published at 79ec09b0d2b13aca4355a66b91ac392474ca467c; COMMIT/CAS and exact-attempt response-loss reconciliation were published at a0982e0f55b5c8d802ae96be31f1ccd083b8989f in draft PR #212
 status: IN_PROGRESS
 branch: impl/game-durability-journal
-head_sha: 79ec09b0d2b13aca4355a66b91ac392474ca467c
+head_sha: a0982e0f55b5c8d802ae96be31f1ccd083b8989f
 resume_base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
 pr: 212
 final_head_sha: null
 owner_action_required: null
 blocker: null
 write_authority: exact_owned_paths_after_foundation_terminal_reconciliation_implementation_merge
-next_action: implement the remaining allocated V1 COMMIT/CAS and restart-safe reconciliation path with new isolated PostgreSQL RED contracts; retain PREPARE completion as non-authoritative until Foundation performs its separate final revalidation
+next_action: wait for exact-head CI proof of the new COMMIT/CAS contract, then add the remaining isolated PostgreSQL RED cases for stale authority, terminal outcomes and restart/outage reconciliation; retain PREPARE completion as non-authoritative until Foundation performs its separate final revalidation
 ```
