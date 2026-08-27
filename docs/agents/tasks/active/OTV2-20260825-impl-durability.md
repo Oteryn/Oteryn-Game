@@ -2,14 +2,14 @@
 
 ```yaml
 task_id: OTV2-20260825-impl-durability
-title: READY_TO_RESUME — journal-only durability admission and reconnect substrate
+title: IN_PROGRESS — journal-only durability admission and reconnect substrate
 mode: IMPLEMENT
-status: READY_TO_RESUME
+status: IN_PROGRESS
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-durability-journal
 issue: 167
-pr: null
+pr: 212
 architecture_decision_issue: 187
 architecture_decision_pr: 190
 architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
@@ -30,20 +30,20 @@ ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
 ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
 worker_branch_provenance: remote
-worker_branch_remote_head: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
+worker_branch_remote_head: 289336df5b58f4dc720861043cc22a881ac3fa33
 local_unpublished_documentation_checkpoint: 3adf13ef17b3b7811aa4f73971456ecd321afcc2
 local_checkpoint_delivery_status: not_a_remote_delivery
 prior_resume_base_sha: 90f30b47ac9b1e5e41cf274caf707aa39109b0c0
 resume_base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
 resume_admission_main_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
 resume_strategy: normal_non_force_merge_up_existing_worker_branch
-base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
-head_sha: null
+base_sha: 4c395ece416c3c56aed5607653a0730c52dcb3fd
+head_sha: 289336df5b58f4dc720861043cc22a881ac3fa33
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: impl durability
 created_at: 2026-08-25T23:24:03+02:00
-updated_at: 2026-08-26T21:46:00Z
+updated_at: 2026-08-27T06:46:20Z
 execution_budget_minutes: 120
 large_budget_reason: SQLx migration safety, durable idempotency/fencing and mandatory isolated PostgreSQL evidence
 owned_paths:
@@ -89,7 +89,7 @@ The worker must preserve its published branch history, refresh from protected `m
 - `PROVEN`: accepted topology is a game-server-local module, one game-owned migration ledger, dedicated migration execution and `PREPARE -> DB COMMIT/CLASSIFY -> RECONCILE`.
 - `PROVEN`: DUR03-RL-01..08 and all item/value transactions remain fail-closed excluded.
 - `PROVEN`: `lib.rs`, Cargo/workspace/workflow/gitattributes are not writable by this task; PR #182 already merged the accepted shared SQLx/Cargo/PostgreSQL prerequisite.
-- `PROVEN`: the remote worker branch remains `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`; local unpublished checkpoint `3adf13ef17b3b7811aa4f73971456ecd321afcc2` remains non-authoritative and is not a delivery.
+- `PROVEN`: the retained remote worker branch was non-force merged with protected `main@4c395ece416c3c56aed5607653a0730c52dcb3fd` at `2c03415c85a3621fcf6564a88f15f62398d8a790`, then advanced to Task 1's deliberate RED contract at `289336df5b58f4dc720861043cc22a881ac3fa33`; the earlier local unpublished checkpoint `3adf13ef17b3b7811aa4f73971456ecd321afcc2` remains non-authoritative and is not a delivery.
 - `PROVEN`: PR #190 merged `DUR-RECONNECT-AUTHORITY-V1` as `2394f6f4633b8c6662d8d79a84110cc2ae13dcb7`.
 - `PROVEN`: PR #200 merged transport-ref uniqueness as `dc531658c7ffc9af91ccc6719aee80ffe01c22a4`.
 - `PROVEN`: PR #195 merged `FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPOCH = 8` as `9878d42a21815027ef88067bfc59f8b40e78b473`.
@@ -99,7 +99,7 @@ The worker must preserve its published branch history, refresh from protected `m
 
 ## Acceptance criteria
 
-- [ ] #208 was completed by PR #210 and merged into protected `main@f056cd38dde6065a3154e256d01aea9e5a09e5f4`; preserve branch/history by performing a normal non-force merge-up of that protected `main` head into the existing `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`, then verify the terminal reconciliation API and ownership-correct post-merge diff.
+- [x] #208 was completed by PR #210; branch/history were preserved by normal non-force merge-up of the current protected `main@4c395ece416c3c56aed5607653a0730c52dcb3fd` into the existing worker branch at `2c03415c85a3621fcf6564a88f15f62398d8a790`, followed by an ownership-correct Task 1 RED contract at `289336df5b58f4dc720861043cc22a881ac3fa33`.
 - [ ] Real isolated PostgreSQL tests prove migration fresh/compatibility/checksum/ahead/behind/dirty/lock interruption and runtime-DDL denial.
 - [ ] Durable journal/adapter consumes the merged Foundation V1 boundary and proves fencing, same-attempt retry/lost-response classification, crash reconciliation and DB outage/recovery without moving Foundation admission/security/controller authority.
 - [ ] PREPARE/COMMIT persistence and reconciliation preserve the exact V1 attempt/transport-ref/evidence/deadline semantics; ambiguous outcomes reconcile the same attempt rather than reminting authority.
@@ -119,7 +119,7 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 
 ### Component/integration
 
-- command/run: isolated PostgreSQL worker evidence after normal merge-up from protected `main@f056cd38dde6065a3154e256d01aea9e5a09e5f4`
+- command/run: isolated PostgreSQL worker evidence after normal merge-up from protected `main@4c395ece416c3c56aed5607653a0730c52dcb3fd`
 - result: `NOT_EXECUTED_LOCALLY` — the isolated executor has no local PostgreSQL runtime; the exact task-owned `durability_postgres` test is wired to the pinned per-run PostgreSQL 17 GitHub Actions service and will be required there before delivery.
 
 ### E2E
@@ -130,12 +130,12 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 ## Context checkpoint
 
 ```yaml
-last_progress: normal non-force merge-up completed locally from protected main 4c395ece416c3c56aed5607653a0730c52dcb3fd; Task 1 re-established a guarded real-PostgreSQL test harness plus fresh-ledger, same-attempt replay and cross-process replay RED specifications; no Durability production module exists yet
-status: READY_TO_RESUME
+last_progress: normal non-force merge-up was published at 2c03415c85a3621fcf6564a88f15f62398d8a790; Task 1's guarded real-PostgreSQL fresh-ledger, same-attempt replay and cross-process replay RED specifications were published at 289336df5b58f4dc720861043cc22a881ac3fa33 in draft PR #212; no Durability production module exists yet
+status: IN_PROGRESS
 branch: impl/game-durability-journal
-head_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
+head_sha: 289336df5b58f4dc720861043cc22a881ac3fa33
 resume_base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
-pr: null
+pr: 212
 final_head_sha: null
 owner_action_required: null
 blocker: null

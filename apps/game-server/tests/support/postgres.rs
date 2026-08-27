@@ -50,8 +50,10 @@ impl IsolatedPostgres {
 
         let database_name = database_name(test_name)?;
         let mut admin = PgConnection::connect(&admin_url).await?;
+        // `database_name` is generated below from ASCII alphanumerics/underscores only.
+        let create_database = format!("CREATE DATABASE {database_name}");
         admin
-            .execute(format!("CREATE DATABASE {database_name}"))
+            .execute(sqlx::query(sqlx::AssertSqlSafe(create_database)))
             .await?;
 
         Ok(Self {
@@ -70,13 +72,17 @@ impl IsolatedPostgres {
 
     pub async fn cleanup(self) -> Result<(), IsolatedPostgresError> {
         let mut admin = PgConnection::connect(&self.admin_url).await?;
-        let terminate = format!(
-            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '{}' AND pid <> pg_backend_pid()",
-            self.database_name
-        );
-        admin.execute(terminate.as_str()).await?;
+        sqlx::query(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
+             WHERE datname = $1 AND pid <> pg_backend_pid()",
+        )
+        .bind(&self.database_name)
+        .execute(&mut admin)
+        .await?;
+        // The test name is normalized by `database_name`, so this identifier is not user SQL.
+        let drop_database = format!("DROP DATABASE IF EXISTS {}", self.database_name);
         admin
-            .execute(format!("DROP DATABASE IF EXISTS {}", self.database_name))
+            .execute(sqlx::query(sqlx::AssertSqlSafe(drop_database)))
             .await?;
         Ok(())
     }
