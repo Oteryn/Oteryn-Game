@@ -1,0 +1,113 @@
+{
+  "schema_version": 1,
+  "repository": "Oteryn/Oteryn-Game",
+  "policy_id": "OTV2-CODEX-INDEPENDENT-REVIEW-01",
+  "authority": {
+    "owner_authorized_issue": 229,
+    "effective_only_after_protected_main_merge": true,
+    "standing_authorization": true,
+    "owner_confirmation_per_covered_run": false,
+    "purpose": "Remove owner-as-message-bus from bounded independent Codex review loops while preserving exact-head, independence and safety gates."
+  },
+  "transport": {
+    "canonical_surface": "github_pull_request",
+    "preferred_native_trigger": "@codex review",
+    "capability_must_be_proven_before_trigger": true,
+    "review_result_must_be_durable_on_github": true,
+    "fabricated_or_assumed_codex_execution_forbidden": true
+  },
+  "authorized_review_operations": [
+    "READ_ONLY_EXACT_HEAD_REVIEW",
+    "AUDIT",
+    "NON_MUTATING_TEST_EXECUTION",
+    "REPRODUCE",
+    "FUZZ",
+    "STATIC_ANALYSIS"
+  ],
+  "prohibited_operations": [
+    "IMPLEMENT_FIX",
+    "TRACKED_REPOSITORY_MUTATION",
+    "COMMIT",
+    "PUSH",
+    "MERGE",
+    "AUTO_MERGE",
+    "BRANCH_PROTECTION_CHANGE",
+    "PRODUCTION_MUTATION",
+    "PROTECTED_ENVIRONMENT_MUTATION",
+    "SECRET_OR_CREDENTIAL_ACCESS",
+    "LIVE_ACCOUNT_OR_SESSION_MUTATION",
+    "LIVE_DATA_MUTATION",
+    "EXTERNAL_REPOSITORY_WRITE",
+    "SCOPE_EXPANSION"
+  ],
+  "risk_routing": {
+    "CODEX_REQUIRED": [
+      "DURABLE_PERSISTENCE",
+      "DURABLE_SCHEMA",
+      "MIGRATION",
+      "CONCURRENCY_RACE_CONTENTION",
+      "AUTHENTICATION",
+      "SESSION",
+      "RECONNECT",
+      "FENCING",
+      "TRUST_BOUNDARY",
+      "PROTOCOL_WIRE",
+      "STABLE_IDENTITY",
+      "SECURITY",
+      "DURABLE_ITEM_VALUE_ECONOMY_CUSTODY"
+    ],
+    "CODEX_OPTIONAL": [
+      "COMPLEX_REFACTOR",
+      "BROAD_CODE_AWARENESS",
+      "TEST_OR_FUZZ_INTENSIVE_CHANGE"
+    ],
+    "CODEX_NOT_REQUIRED_BY_THIS_POLICY": [
+      "ORDINARY_DOCS_ONLY",
+      "LOW_RISK_PATH_LOCAL_IMPLEMENTATION"
+    ]
+  },
+  "independence": {
+    "fresh_reviewer_task_required": true,
+    "reviewer_must_not_have_materially_authored_candidate": true,
+    "reviewer_must_not_have_materially_modified_candidate": true,
+    "same_codex_task_that_implemented_change_is_not_independent": true,
+    "exact_final_head_required": true,
+    "head_change_invalidates_prior_qualification": true
+  },
+  "lane_lead_loop": {
+    "candidate_freeze_owner": "ALLOCATED_LANE_LEAD",
+    "review_request_owner": "ALLOCATED_LANE_LEAD",
+    "finding_repair_owner": "ALLOCATED_LANE_LEAD",
+    "re_review_owner": "ALLOCATED_LANE_LEAD",
+    "owner_manual_relay_required": false,
+    "on_required_codex_capability_available": "REQUEST_NATIVE_GITHUB_CODEX_REVIEW",
+    "on_findings": "REPAIR_WITHIN_EXISTING_ALLOCATION_THEN_FREEZE_NEW_HEAD_AND_REQUEST_FRESH_REVIEW",
+    "on_pass": "RETURN_READY_FOR_INTEGRATION_IF_ALL_OTHER_GATES_PASS",
+    "on_capability_unavailable": "RECORD_CODEX_CAPABILITY_UNAVAILABLE_AND_FOLLOW_FALLBACK_RULE"
+  },
+  "fallback_rule": {
+    "when_codex_required_and_capability_unavailable": "WAITING_EXTERNAL_OR_REVIEW_CAPABILITY_REQUIRED_UNLESS_CURRENT_REPOSITORY_POLICY_ACCEPTS_AN_EQUIVALENT_QUALIFIED_INDEPENDENT_TECHNICAL_REVIEWER_FOR_THE_EXACT_GATE",
+    "when_codex_optional_and_capability_unavailable": "CONTINUE_WITH_EXISTING_QUALIFIED_INDEPENDENT_REVIEW_PATH",
+    "owner_manual_prompt_relay_is_not_the_default_fallback": true
+  },
+  "control_plane": {
+    "technical_discretion": "NONE",
+    "routing_method": "MECHANICALLY_APPLY_RISK_ROUTING",
+    "must_verify_exact_head_review_evidence": true,
+    "must_not_adjudicate_technical_findings": true,
+    "technical_findings_return_to_lane_lead": true
+  },
+  "gate_semantics": {
+    "codex_review_may_satisfy_independent_technical_review": true,
+    "conditions": [
+      "fresh_non_authoring_reviewer_task",
+      "exact_final_head",
+      "qualified_for_requested_risk",
+      "durable_github_evidence",
+      "no_material_head_change_after_review"
+    ],
+    "does_not_replace_explicit_separate_governance_audit": true,
+    "does_not_replace_required_self_review": true,
+    "green_ci_alone_is_not_review": true
+  }
+}
