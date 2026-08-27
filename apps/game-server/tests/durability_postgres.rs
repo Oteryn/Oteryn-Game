@@ -144,8 +144,20 @@ fn record(
     )
 }
 
+fn postgres_e2e_is_configured() -> Result<bool, Box<dyn std::error::Error>> {
+    match postgres::postgres_e2e_availability()? {
+        postgres::PostgresE2eAvailability::Configured => Ok(true),
+        postgres::PostgresE2eAvailability::NotConfigured => {
+            eprintln!(
+                "PostgreSQL E2E NOT_APPLICABLE: OTERYN_TEST_POSTGRES_ADMIN_URL is not configured; real database assertions run in the dedicated configured harness"
+            );
+            Ok(false)
+        }
+    }
+}
+
 #[test]
-fn isolated_postgres_guard_rejects_nonlocal_socket_query_and_inherited_configuration() {
+fn isolated_postgres_guard_classifies_absence_and_rejects_unsafe_configuration() {
     assert_eq!(
         postgres::classify_e2e_admin_url(None).unwrap(),
         postgres::PostgresE2eAvailability::NotConfigured
@@ -184,6 +196,9 @@ fn isolated_postgres_guard_rejects_nonlocal_socket_query_and_inherited_configura
 #[test]
 fn fresh_migration_applies_only_the_embedded_game_ledger() -> Result<(), Box<dyn std::error::Error>>
 {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -205,6 +220,9 @@ fn fresh_migration_applies_only_the_embedded_game_ledger() -> Result<(), Box<dyn
 #[test]
 fn same_prepare_replay_returns_the_existing_durable_disposition()
 -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -237,6 +255,9 @@ fn same_prepare_replay_returns_the_existing_durable_disposition()
 
 #[test]
 fn same_prepare_replay_survives_process_replacement() -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -295,6 +316,9 @@ fn same_prepare_replay_survives_process_replacement() -> Result<(), Box<dyn std:
 #[test]
 fn transport_ref_collision_is_durable_and_same_attempt_replays_terminal()
 -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -336,6 +360,9 @@ fn transport_ref_collision_is_durable_and_same_attempt_replays_terminal()
 #[test]
 fn one_prepared_attempt_and_eight_attempt_epoch_limits_are_enforced_in_postgres()
 -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -387,6 +414,9 @@ fn one_prepared_attempt_and_eight_attempt_epoch_limits_are_enforced_in_postgres(
 #[test]
 fn same_attempt_with_changed_record_conflicts_without_consuming_the_new_ref()
 -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -431,6 +461,9 @@ fn same_attempt_with_changed_record_conflicts_without_consuming_the_new_ref()
 #[test]
 fn concurrent_same_attempt_reconciles_to_one_prepared_and_one_existing_prepared()
 -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -488,6 +521,9 @@ fn concurrent_same_attempt_reconciles_to_one_prepared_and_one_existing_prepared(
 #[test]
 fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
 -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -567,6 +603,9 @@ fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
 #[test]
 fn stale_commit_terminalizes_the_prepared_attempt_for_reconciliation()
 -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?
@@ -647,6 +686,9 @@ fn stale_commit_terminalizes_the_prepared_attempt_for_reconciliation()
 #[test]
 fn committed_replay_fails_closed_when_session_state_is_inconsistent()
 -> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
     tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()?

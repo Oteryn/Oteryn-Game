@@ -14,6 +14,12 @@ pub enum IsolatedPostgresError {
     Sqlx(sqlx::Error),
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PostgresE2eAvailability {
+    NotConfigured,
+    Configured,
+}
+
 impl Display for IsolatedPostgresError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         formatter.write_str(match self {
@@ -86,6 +92,24 @@ impl IsolatedPostgres {
             .await?;
         Ok(())
     }
+}
+
+pub fn postgres_e2e_availability() -> Result<PostgresE2eAvailability, IsolatedPostgresError> {
+    match env::var("OTERYN_TEST_POSTGRES_ADMIN_URL") {
+        Ok(admin_url) => classify_e2e_admin_url(Some(&admin_url)),
+        Err(env::VarError::NotPresent) => classify_e2e_admin_url(None),
+        Err(env::VarError::NotUnicode(_value)) => Err(IsolatedPostgresError::UnsafeAdminUrl),
+    }
+}
+
+pub fn classify_e2e_admin_url(
+    value: Option<&str>,
+) -> Result<PostgresE2eAvailability, IsolatedPostgresError> {
+    let Some(value) = value else {
+        return Ok(PostgresE2eAvailability::NotConfigured);
+    };
+    validate_admin_url(value)?;
+    Ok(PostgresE2eAvailability::Configured)
 }
 
 pub fn validate_admin_url(value: &str) -> Result<(), IsolatedPostgresError> {
