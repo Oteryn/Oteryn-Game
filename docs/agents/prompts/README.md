@@ -63,9 +63,11 @@ The four future-wave preparation aliases are deliberately non-mutating: after te
 
 ### Independent Work delivery audit
 
-- `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` — read-only, high-effort forensic audit of the live Work coordinator lifecycle. **Short invocation: `Oteryn: work auditor`.**
+- `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` — independent high-effort forensic audit of the live Work coordinator lifecycle with **bounded GitHub audit-evidence write** authority. **Short invocation: `Oteryn: work auditor`.**
 
-The Work auditor independently reconstructs coordinator execution from live GitHub Issue/task/branch/PR/exact-head check/review/merge evidence, treats Work summaries as claims rather than proof, and verifies programme resolution, allocation timing, path/lease isolation, DAG order, architecture escalation, worker integration, QA truthfulness and closeout. It may recommend `PASS_CONTINUE`, lane/coordinator pause, reconciliation or architecture escalation, but it has no repository mutation, implementation, merge/close, production or cross-repository write authority. It does not supersede the broader `OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT`.
+The Work auditor independently reconstructs coordinator execution from live GitHub Issue/task/branch/PR/exact-head check/review/merge evidence, treats Work or requesting-agent summaries as claims rather than proof, and verifies programme resolution, allocation timing, path/lease isolation, DAG order, architecture escalation, worker integration, QA truthfulness and closeout. Any canonical Oteryn Game agent or the owner may request a bounded audit of a uniquely identifiable PR/Issue/task/head. After a completed requested audit, the auditor must persist one exact-target GitHub evidence note as a PR COMMENT review/comment or linked Issue comment. That evidence write is non-dispositive and does not consume an implementation writer slot.
+
+The auditor still has no tracked-file, branch/commit, implementation/fix, control-plane, merge/close/approve, workflow-dispatch, production or cross-repository write authority. If it materially authored the target in another role, its result cannot count as genuinely independent. Head movement makes prior audit evidence historical; the new head requires a fresh audit for qualification. It does not supersede the broader `OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT`.
 
 ### Next-wave parallel preparation
 
