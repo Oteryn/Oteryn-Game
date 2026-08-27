@@ -131,6 +131,41 @@ The discussion exposed that housing cannot be decided by simply copying a Tibia-
 
 No housing topology, auction model, apartment system or cross-Channel house-presence behavior is accepted by this checkpoint.
 
+## Rested progression / housing utility — open analysis note
+
+`OPEN / NOT_ACCEPTED / REQUIRES_GAMEPLAY_AND_ECONOMY_ANALYSIS`.
+
+A candidate direction raised during the housing discussion is to replace or substantially simplify a classic Tibia-style stamina system with a positive `Rested XP` mechanic. The intent would be to reward genuine offline rest rather than degrade baseline play after a stamina budget is consumed.
+
+This is explicitly **not** an accepted gameplay contract. The following are hypotheses to evaluate, not frozen requirements:
+
+- the core rested mechanic should remain accessible to players who do not own a scarce physical house, including FACC and Premium players when all houses are occupied;
+- a house should act as a luxury/convenience path into the same core rested system rather than being the only way to obtain the baseline rested benefit;
+- candidate rest sources may include ordinary offline logout, public inns, permitted beds in another player's house, guildhouse beds, a bed in the player's own house and optional premium furniture;
+- public inns should not inherit physical-house scarcity; their resting capacity may need a logically non-scarce or instanced model even if the world presentation remains physical;
+- one physical house/guildhouse bed may represent one sleeping Character at a time where that constraint adds useful social/world semantics;
+- guildhouses may provide a social resting function for guild members without requiring every member to own a house;
+- if premium house furniture affects rested progression, the safer candidate is faster recovery and/or a bounded pool-capacity convenience rather than increasing the maximum XP bonus percentage above the core system's ceiling;
+- house/premium convenience must be evaluated against pay-to-win risk, scarcity fairness and the need for expensive desirable housing additions without making non-owners permanently weaker;
+- the mechanic should be analyzed together with offline training and other offline-progression systems to avoid overlapping currencies, timers and contradictory incentives.
+
+All numeric examples discussed so far — including values such as `+25% XP`, `8–12 hours` of rest, `100%/110%/120%` recovery rates or any specific rested-pool size — are illustrative only and have **no owner-approved authority**.
+
+Before disposition, the deep-dive should decide at least:
+
+1. whether classic stamina is removed, retained, or partially replaced;
+2. whether rested reward is time-based, XP-pool-based, or hybrid;
+3. exact eligibility and recovery semantics for FACC, Premium-without-house, house guests, guild members and house owners;
+4. whether Premium status itself changes recovery and, if so, by how much;
+5. what premium furniture may change without creating a material combat/progression power ceiling unavailable elsewhere;
+6. stacking, caps, refresh behavior and interaction with XP boosts/events;
+7. one-bed/one-sleeper semantics and what occurs on eviction, house transfer, guild removal or access-list changes while a Character is sleeping;
+8. anti-abuse behavior for multiaccount resting and whether any restriction is actually needed when every house-owning account must independently meet Premium/economy requirements;
+9. durable ownership of rested state and safe behavior across Channel switch, region failover and logout/login recovery;
+10. observability and audit requirements sufficient to diagnose duplicate credit, missed rest and timing disputes.
+
+Do not implement or canonically reference a rested/stamina replacement until this analysis receives an explicit owner disposition.
+
 ## Required continuation order
 
 The next `Oteryn: architektura` session must:
