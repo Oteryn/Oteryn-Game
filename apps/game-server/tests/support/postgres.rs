@@ -161,8 +161,7 @@ fn database_name(test_name: &str) -> Result<String, IsolatedPostgresError> {
 #[cfg(test)]
 mod durability_contract_tests {
     use super::{
-        IsolatedPostgres, IsolatedPostgresError, PostgresE2eAvailability,
-        postgres_e2e_availability,
+        IsolatedPostgres, IsolatedPostgresError, PostgresE2eAvailability, postgres_e2e_availability,
     };
     use crate::durability::{
         AdmissionReconnectJournal, DurabilityError, MigrationExecutor, SchemaCompatibility,
