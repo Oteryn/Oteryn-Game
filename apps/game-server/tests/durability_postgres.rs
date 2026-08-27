@@ -665,7 +665,7 @@ fn stale_commit_terminalizes_the_prepared_attempt_for_reconciliation()
                 sqlx::query(
                     "UPDATE game_durability_reconnect_sessions \
                      SET session_state = 2, current_generation = 8, current_transport_ref = $2 \
-                     WHERE game_session_id = $1",
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
                 )
                 .bind(
                     prepare
@@ -748,7 +748,7 @@ fn committed_replay_fails_closed_when_session_state_is_inconsistent()
                 let pool = sqlx::PgPool::connect(&database_url).await?;
                 sqlx::query(
                     "UPDATE game_durability_reconnect_sessions SET session_state = 1 \
-                     WHERE game_session_id = $1",
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
                 )
                 .bind(
                     prepare
@@ -819,7 +819,7 @@ fn commit_row_lock_wait_cannot_outlive_authorization_deadline()
                 let mut lock = lock_pool.begin().await?;
                 sqlx::query(
                     "SELECT game_session_id FROM game_durability_reconnect_sessions \
-                     WHERE game_session_id = $1 FOR UPDATE",
+                     WHERE game_session_id = encode($1, 'hex')::uuid FOR UPDATE",
                 )
                 .bind(session_id.as_slice())
                 .fetch_one(&mut *lock)
@@ -846,7 +846,8 @@ fn commit_row_lock_wait_cannot_outlive_authorization_deadline()
                 );
                 let session: (i64, Option<Vec<u8>>, i16, Option<Vec<u8>>) = sqlx::query_as(
                     "SELECT current_generation, current_transport_ref, session_state, prepared_attempt_ref \
-                     FROM game_durability_reconnect_sessions WHERE game_session_id = $1",
+                     FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
                 )
                 .bind(session_id.as_slice())
                 .fetch_one(&lock_pool)
@@ -909,7 +910,7 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
                     "INSERT INTO game_durability_reconnect_sessions (\
                         game_session_id, control_loss_epoch, predecessor_generation, \
                         character_lease_generation, scope_ownership_generation, current_generation\
-                     ) VALUES ($1, 3, 7, 9, 10, 7)",
+                     ) VALUES (encode($1, 'hex')::uuid, 3, 7, 9, 10, 7)",
                 )
                 .bind(session_id.as_slice())
                 .execute(&lock_pool)
@@ -919,7 +920,7 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
                 let mut lock = lock_pool.begin().await?;
                 sqlx::query(
                     "SELECT game_session_id FROM game_durability_reconnect_sessions \
-                     WHERE game_session_id = $1 FOR UPDATE",
+                     WHERE game_session_id = encode($1, 'hex')::uuid FOR UPDATE",
                 )
                 .bind(session_id.as_slice())
                 .fetch_one(&mut *lock)
@@ -950,7 +951,8 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
                 );
                 let session: (i64, Option<Vec<u8>>, i16, i16, Option<Vec<u8>>) = sqlx::query_as(
                     "SELECT current_generation, current_transport_ref, session_state, attempt_count, prepared_attempt_ref \
-                     FROM game_durability_reconnect_sessions WHERE game_session_id = $1",
+                     FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
                 )
                 .bind(session_id.as_slice())
                 .fetch_one(&lock_pool)
