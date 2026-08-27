@@ -608,24 +608,11 @@ fn stale_commit_terminalizes_the_prepared_attempt_for_reconciliation()
                         ReconnectCommitDispositionV1::RejectedStaleAuthority
                     )
                 );
-                let (mut retry_flow, retry_prepare) =
-                    ReconnectDurabilityFlowV1::begin(prepare.record().clone());
-                retry_flow
-                    .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
-                        &retry_prepare,
-                        ReconnectPrepareDispositionV1::ExistingTerminal,
-                    ))
-                    .map_err(foundation_error)?;
                 assert_eq!(
-                    retry_flow
-                        .accept_reconciliation(
-                            journal.reconcile(&retry_prepare).await?,
-                            ScopeOwnershipGeneration::new(10).map_err(|_error| {
-                                std::io::Error::other("invalid scope generation")
-                            })?,
-                        )
-                        .map_err(foundation_error)?,
-                    ReconnectProjectionDecisionV1::Terminal
+                    journal.reconcile(&prepare).await?,
+                    oteryn_game_server::foundation::ReconnectDurableReconciliationSnapshotV1::terminal(
+                        prepare.record().clone(),
+                    )
                 );
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
