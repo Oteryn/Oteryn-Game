@@ -101,6 +101,7 @@ facts:
 question: <one precise technical question>
 affected_paths: []
 holding_action: <safe reversible state>
+next_action: <exactly one action for the owning Sol lead>
 ```
 
 ### `ARCHITECTURE_ESCALATION_REQUIRED`
@@ -273,6 +274,22 @@ independent_review:
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action:
+next_action: <exactly one concrete control-plane action>
+```
+
+## Control-plane checkpoint
+
+At every material state transition, persist or return exactly one next action. Do not return a menu of speculative technical options.
+
+```yaml
+current_main_sha:
+active_mutators: []
+read_only_preparation: []
+waiting: []
+shared_lease: null
+architecture_escalation: null
+owner_decision: null
+next_action: <exactly one deterministic action>
 ```
 
 ## Safety
