@@ -20,6 +20,7 @@ const CHANNEL_SCOPE: i16 = 1;
 const INSTANCE_SCOPE: i16 = 2;
 const PENDING_ORIGINAL: i16 = 1;
 const TERMINAL_OUTCOME_RETAINED: i16 = 2;
+type ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 
 #[derive(Clone)]
 pub struct AdmissionReconnectJournal {
@@ -626,9 +627,7 @@ async fn insert_attempt(
     Ok(())
 }
 
-fn scope_storage(
-    record: &ReconnectDurabilityRecordV1,
-) -> (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>) {
+fn scope_storage(record: &ReconnectDurabilityRecordV1) -> ScopeStorage {
     match record.identity().runtime_scope() {
         RuntimeScopeRefV1::Channel {
             world_id,
