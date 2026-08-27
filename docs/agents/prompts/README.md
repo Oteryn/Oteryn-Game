@@ -8,8 +8,11 @@ These prompts are execution contracts for recurring Oteryn v2 programmes. They d
 - `OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — staged global architecture decision coordinator.
 - `OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT.md` — bounded domain architecture design worker allocated by the architecture coordinator.
 - `OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md` — continuation and packaging of the owner-approved Work-control-plane + Sol-lane-lead + selective-Codex execution model. **Short invocation: `Oteryn: sol execution architecture`.**
+- `OTV2_SOL_SUPERVISING_ARCHITECT.md` — material cross-lane Game architecture decision role for durable escalation packets. **Short invocation: `Oteryn: sol supervising architect`.**
 
 The Sol execution architecture prompt is governance/architecture only. It validates the written execution-model spec against live GitHub, requires owner confirmation of that written spec before authoring the adoption plan, and then packages the future Sol lane-lead prompt family. It grants no gameplay/runtime, production or cross-repository authority.
+
+The Sol Supervising Architect is not a routine coding lane. It resolves `ARCHITECTURE_ESCALATION_REQUIRED` within existing owner-approved architecture authority and returns `OWNER_DECISION_REQUIRED` when product/scope/authority decisions exceed that boundary. Architecture resolution never grants implicit runtime write authority.
 
 ## Implementation programme
 
@@ -28,6 +31,20 @@ The coordinator resolves live `main`, performs the serial bootstrap gate first, 
 - `OTV2_WORK_DELIVERY_COORDINATOR.md` — ChatGPT Work execution coordinator/subagent dispatcher with fail-closed material architecture escalation. **Short invocation: `Oteryn: work coordinator`.**
 
 The Work profile does not supersede or widen `OTV2_IMPLEMENTATION_COORDINATOR`. It is a stricter execution profile: Work coordinates exact allocations, path-disjoint subagents and integration, while material architecture/API/schema/security/persistence/resource/cross-repository conflicts become durable `ARCHITECTURE_ESCALATION_REQUIRED` handoffs to the owner-designated Supervising Architect rather than worker-selected architecture.
+
+### Terra High deterministic control plane + Sol leads
+
+- `OTV2_TERRA_GAME_CONTROL_PLANE.md` — ChatGPT Work / Terra High deterministic control plane with **zero technical or architecture discretion**. **Short invocation: `Oteryn: terra game coordinator`.**
+- `OTV2_SOL_DURABILITY_LEAD.md` — deep Durability lane reasoning/implementation. **`Oteryn: sol durability lead`.**
+- `OTV2_SOL_SERVER_SEAM_LEAD.md` — production Server Seam lead; read-only until exact durable prerequisite/allocation is ready. **`Oteryn: sol server seam lead`.**
+- `OTV2_SOL_CLIENT_QA_LEAD.md` — native Client + truthful Tier 1/Tier 2 QA lead. **`Oteryn: sol client qa lead`.**
+- `OTV2_SOL_MOVEMENT_LEAD.md` — Movement lead gated by current Client/QA and #139 resource closure. **`Oteryn: sol movement lead`.**
+- `OTV2_SOL_COMBAT_LEAD.md` — Combat/death/loot/XP/pickup lead gated by merged Movement and current prerequisites. **`Oteryn: sol combat lead`.**
+- `OTV2_SOL_POST_VSL_EXPANSION.md` — read-only-by-default decomposition of remaining accepted Game work after terminal Movement+Combat VSL. **`Oteryn: sol post-vsl expansion`.**
+
+The Terra profile is additive and does **not** silently supersede `Oteryn: work coordinator` or `OTV2_IMPLEMENTATION_COORDINATOR`. Use it when the Work control-plane session is intentionally running on Terra High and technical judgment must remain in GPT-5.6 Sol Extra High chats. Terra may only apply deterministic GitHub/DAG/ownership/merge predicates; technical findings route to the owning Sol lead, material cross-lane decisions route to `Oteryn: sol supervising architect`, and owner-only scope/authority decisions return `OWNER_DECISION_REQUIRED`.
+
+Canonical launch/promotion rules for this profile live in `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`. Alias existence grants no write authority. Every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
 
 ### Independent Work delivery audit
 
