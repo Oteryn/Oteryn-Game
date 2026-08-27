@@ -511,6 +511,9 @@ fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
                     journal.commit(&commit).await?,
                     ReconnectCommitDispositionV1::Committed
                 );
+                drop(journal);
+                let recovered_journal =
+                    AdmissionReconnectJournal::connect_runtime(&database_url).await?;
                 assert_eq!(
                     flow.accept_commit_completion(ReconnectCommitCompletionV1::for_request(
                         &commit,
@@ -521,7 +524,7 @@ fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
                 );
                 assert_eq!(
                     flow.accept_reconciliation(
-                        journal.reconcile(&prepare).await?,
+                        recovered_journal.reconcile(&prepare).await?,
                         ScopeOwnershipGeneration::new(10)
                             .map_err(|_error| std::io::Error::other("invalid scope generation"))?,
                     )
