@@ -18,6 +18,13 @@ CREATE TABLE game_durability_transport_ref_reservations (
     reserved_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE game_durability_recovery_grant_consumptions (
+    recovery_grant_nonce BYTEA PRIMARY KEY CHECK (octet_length(recovery_grant_nonce) = 32),
+    game_session_id BYTEA NOT NULL CHECK (octet_length(game_session_id) = 16),
+    reconnect_attempt_ref BYTEA NOT NULL CHECK (octet_length(reconnect_attempt_ref) = 8),
+    consumed_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE game_durability_reconnect_attempts (
     game_session_id BYTEA NOT NULL CHECK (octet_length(game_session_id) = 16),
     reconnect_attempt_ref BYTEA NOT NULL CHECK (octet_length(reconnect_attempt_ref) = 8),

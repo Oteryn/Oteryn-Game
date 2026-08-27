@@ -76,7 +76,8 @@ impl AdmissionReconnectJournal {
 
         let session = sqlx::query(
             "SELECT control_loss_epoch, predecessor_generation, character_lease_generation, \
-                scope_ownership_generation, attempt_count, prepared_attempt_ref \
+                scope_ownership_generation, current_generation, current_transport_ref, session_state, \
+                attempt_count, prepared_attempt_ref \
              FROM game_durability_reconnect_sessions \
              WHERE game_session_id = $1 FOR UPDATE",
         )
@@ -101,10 +102,24 @@ impl AdmissionReconnectJournal {
             }
             return disposition_for_existing(existing.try_get("state")?);
         }
+
+        // The frozen bound applies to every distinct retained attempt row,
+        // including terminal stale/expired classifications. Existing attempts
+        // replay above without consuming additional capacity.
+        let count: i16 = session.try_get("attempt_count")?;
+        if count >= MAX_ATTEMPTS_PER_EPOCH {
+            return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
+        }
+
         let is_current = session.try_get::<i64, _>("control_loss_epoch")? == epoch
             && session.try_get::<i64, _>("predecessor_generation")? == predecessor
             && session.try_get::<i64, _>("character_lease_generation")? == character_lease
-            && session.try_get::<i64, _>("scope_ownership_generation")? == scope_generation;
+            && session.try_get::<i64, _>("scope_ownership_generation")? == scope_generation
+            && session.try_get::<i64, _>("current_generation")? == predecessor
+            && session
+                .try_get::<Option<Vec<u8>>, _>("current_transport_ref")?
+                .is_none()
+            && session.try_get::<i16, _>("session_state")? == RECONNECTABLE;
         if !is_current || database_now(&mut transaction).await? > prepared_deadline {
             insert_terminal(
                 &mut transaction,
@@ -116,14 +131,11 @@ impl AdmissionReconnectJournal {
                 STALE_TERMINAL,
             )
             .await?;
+            increment_attempt_count(&mut transaction, session_id.as_slice()).await?;
             transaction.commit().await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
         }
 
-        let count: i16 = session.try_get("attempt_count")?;
-        if count >= MAX_ATTEMPTS_PER_EPOCH {
-            return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
-        }
         let incumbent: Option<Vec<u8>> = session.try_get("prepared_attempt_ref")?;
         if incumbent.is_some() {
             insert_terminal(
@@ -207,6 +219,7 @@ impl AdmissionReconnectJournal {
             .to_be_bytes()
             .to_vec();
         let transport_ref = record.connection().transport_ref().to_bytes().to_vec();
+        let recovery_grant_nonce = recovery_grant_nonce(record);
         let encoded_record = encode_record(record).to_string();
         let predecessor = i64::try_from(record.connection().predecessor().get())
             .map_err(|_error| DurabilityError::InvalidStoredState)?;
@@ -245,6 +258,13 @@ impl AdmissionReconnectJournal {
                 if session.try_get::<i64, _>("current_generation")? == candidate
                     && current_ref.as_deref() == Some(transport_ref.as_slice())
                     && session.try_get::<i16, _>("session_state")? == ACTIVE
+                    && recovery_grant_binding_is_valid(
+                        &mut transaction,
+                        recovery_grant_nonce.as_deref(),
+                        session_id.as_slice(),
+                        attempt_ref.as_slice(),
+                    )
+                    .await?
                 {
                     transaction.commit().await?;
                     return Ok(ReconnectCommitDispositionV1::Committed);
@@ -290,6 +310,31 @@ impl AdmissionReconnectJournal {
             transaction.commit().await?;
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         }
+
+        if let Some(recovery_grant_nonce) = recovery_grant_nonce.as_deref() {
+            let consumed = sqlx::query(
+                "INSERT INTO game_durability_recovery_grant_consumptions (\
+                    recovery_grant_nonce, game_session_id, reconnect_attempt_ref\
+                 ) VALUES ($1, $2, $3) \
+                 ON CONFLICT (recovery_grant_nonce) DO NOTHING",
+            )
+            .bind(recovery_grant_nonce)
+            .bind(session_id.as_slice())
+            .bind(attempt_ref.as_slice())
+            .execute(&mut *transaction)
+            .await?;
+            if consumed.rows_affected() != 1 {
+                terminalize_stale_commit(
+                    &mut transaction,
+                    session_id.as_slice(),
+                    attempt_ref.as_slice(),
+                )
+                .await?;
+                transaction.commit().await?;
+                return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
+            }
+        }
+
         sqlx::query(
             "UPDATE game_durability_reconnect_attempts SET state = $3 \
              WHERE game_session_id = $1 AND reconnect_attempt_ref = $2 AND state = $4",
@@ -323,6 +368,7 @@ impl AdmissionReconnectJournal {
             .to_be_bytes()
             .to_vec();
         let transport_ref = record.connection().transport_ref().to_bytes().to_vec();
+        let recovery_grant_nonce = recovery_grant_nonce(record);
         let encoded_record = encode_record(record).to_string();
         let mut transaction = self.pool.begin().await?;
         let session = sqlx::query(
@@ -354,6 +400,13 @@ impl AdmissionReconnectJournal {
                     .map_err(|_error| DurabilityError::InvalidStoredState)?;
                 if session.try_get::<i64, _>("current_generation")? != candidate
                     || current_ref.as_deref() != Some(transport_ref.as_slice())
+                    || !recovery_grant_binding_is_valid(
+                        &mut transaction,
+                        recovery_grant_nonce.as_deref(),
+                        session_id.as_slice(),
+                        attempt_ref.as_slice(),
+                    )
+                    .await?
                 {
                     return Err(DurabilityError::InvalidStoredState);
                 }
@@ -367,6 +420,40 @@ impl AdmissionReconnectJournal {
         transaction.commit().await?;
         Ok(snapshot)
     }
+}
+
+fn recovery_grant_nonce(record: &ReconnectDurabilityRecordV1) -> Option<Vec<u8>> {
+    match record.proof() {
+        ReconnectProofV1::FastReconnect { .. } => None,
+        ReconnectProofV1::ReauthenticatedRecovery {
+            recovery_grant_nonce,
+        } => Some(recovery_grant_nonce.to_vec()),
+    }
+}
+
+async fn recovery_grant_binding_is_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    recovery_grant_nonce: Option<&[u8]>,
+    session_id: &[u8],
+    attempt_ref: &[u8],
+) -> Result<bool, DurabilityError> {
+    let Some(recovery_grant_nonce) = recovery_grant_nonce else {
+        return Ok(true);
+    };
+    let owner = sqlx::query(
+        "SELECT game_session_id, reconnect_attempt_ref \
+         FROM game_durability_recovery_grant_consumptions \
+         WHERE recovery_grant_nonce = $1",
+    )
+    .bind(recovery_grant_nonce)
+    .fetch_optional(&mut **transaction)
+    .await?;
+    let Some(owner) = owner else {
+        return Ok(false);
+    };
+    let owner_session: Vec<u8> = owner.try_get("game_session_id")?;
+    let owner_attempt: Vec<u8> = owner.try_get("reconnect_attempt_ref")?;
+    Ok(owner_session.as_slice() == session_id && owner_attempt.as_slice() == attempt_ref)
 }
 
 async fn database_now(transaction: &mut Transaction<'_, Postgres>) -> Result<i64, DurabilityError> {

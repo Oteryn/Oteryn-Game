@@ -295,7 +295,7 @@ mod durability_contract_tests {
     }
 
     #[test]
-    fn migration_lock_interruption_releases_before_any_ddl_and_allows_retry() -> TestResult {
+    fn migration_lock_interruption_releases_before_any_ddl_and_allows_fresh_retry() -> TestResult {
         run_postgres_test(async {
             let database = IsolatedPostgres::create("migration_lock_interrupt").await?;
             let database_url = database.database_url()?;
@@ -308,11 +308,13 @@ mod durability_contract_tests {
                 .await?;
 
             let executor = MigrationExecutor::connect_migration(&database_url).await?;
-            let mut migration = Box::pin(executor.apply_embedded_ledger());
             assert!(
-                tokio::time::timeout(Duration::from_millis(250), migration.as_mut())
-                    .await
-                    .is_err(),
+                tokio::time::timeout(
+                    Duration::from_millis(250),
+                    executor.apply_embedded_ledger(),
+                )
+                .await
+                .is_err(),
                 "migration must wait while SQLx's database advisory lock is held"
             );
 
@@ -327,9 +329,11 @@ mod durability_contract_tests {
             );
             observer.close().await?;
 
+            // `timeout` owned and dropped the interrupted migration future. After
+            // releasing the lock, this is a distinct migration operation rather
+            // than resuming the previously polled future.
             lock_holder.close().await?;
-            tokio::time::timeout(Duration::from_secs(5), migration.as_mut()).await??;
-            drop(migration);
+            tokio::time::timeout(Duration::from_secs(5), executor.apply_embedded_ledger()).await??;
             assert_eq!(executor.inspect().await?, SchemaCompatibility::Compatible);
 
             database.cleanup().await?;
@@ -360,6 +364,223 @@ mod durability_contract_tests {
             let recovered = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
             drop(recovered);
             admin.close().await?;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn recovery_grant_nonce_is_single_consumed_at_commit() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url, _executor) = migrated_database("recovery_nonce").await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let record_now = crate::unix_now().map_err(crate::foundation_error)?;
+
+            let (mut first_flow, first_prepare) =
+                oteryn_game_server::foundation::ReconnectDurabilityFlowV1::begin(
+                    crate::record(80, 1, 0x81, record_now).map_err(crate::foundation_error)?,
+                );
+            assert_eq!(
+                journal.prepare(&first_prepare).await?,
+                oteryn_game_server::foundation::ReconnectPrepareDispositionV1::Prepared
+            );
+            first_flow
+                .accept_prepare_completion(
+                    oteryn_game_server::foundation::ReconnectPrepareCompletionV1::for_request(
+                        &first_prepare,
+                        oteryn_game_server::foundation::ReconnectPrepareDispositionV1::Prepared,
+                    ),
+                )
+                .map_err(crate::foundation_error)?;
+            let first_current = oteryn_game_server::foundation::ReconnectCurrentAuthorityV1::from_record(
+                first_prepare.record(),
+                record_now,
+            )
+            .map_err(crate::foundation_error)?;
+            let first_commit = first_flow
+                .authorize_commit(first_current, record_now)
+                .map_err(crate::foundation_error)?;
+            assert_eq!(
+                journal.commit(&first_commit).await?,
+                oteryn_game_server::foundation::ReconnectCommitDispositionV1::Committed
+            );
+
+            let (mut second_flow, second_prepare) =
+                oteryn_game_server::foundation::ReconnectDurabilityFlowV1::begin(
+                    crate::record(81, 1, 0x82, record_now).map_err(crate::foundation_error)?,
+                );
+            assert_eq!(
+                journal.prepare(&second_prepare).await?,
+                oteryn_game_server::foundation::ReconnectPrepareDispositionV1::Prepared
+            );
+            second_flow
+                .accept_prepare_completion(
+                    oteryn_game_server::foundation::ReconnectPrepareCompletionV1::for_request(
+                        &second_prepare,
+                        oteryn_game_server::foundation::ReconnectPrepareDispositionV1::Prepared,
+                    ),
+                )
+                .map_err(crate::foundation_error)?;
+            let second_current =
+                oteryn_game_server::foundation::ReconnectCurrentAuthorityV1::from_record(
+                    second_prepare.record(),
+                    record_now,
+                )
+                .map_err(crate::foundation_error)?;
+            let second_commit = second_flow
+                .authorize_commit(second_current, record_now)
+                .map_err(crate::foundation_error)?;
+            assert_eq!(
+                journal.commit(&second_commit).await?,
+                oteryn_game_server::foundation::ReconnectCommitDispositionV1::RejectedStaleAuthority
+            );
+
+            let mut connection = PgConnection::connect(&database_url).await?;
+            let consumed: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_recovery_grant_consumptions",
+            )
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(consumed, 1);
+            connection.close().await?;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn stale_prepare_attempts_consume_the_retained_attempt_bound() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url, _executor) = migrated_database("stale_capacity").await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let record_now = crate::unix_now().map_err(crate::foundation_error)?;
+            let (_first_flow, first_prepare) =
+                oteryn_game_server::foundation::ReconnectDurabilityFlowV1::begin(
+                    crate::record(82, 1, 0x91, record_now).map_err(crate::foundation_error)?,
+                );
+            assert_eq!(
+                journal.prepare(&first_prepare).await?,
+                oteryn_game_server::foundation::ReconnectPrepareDispositionV1::Prepared
+            );
+
+            let session_id = first_prepare
+                .record()
+                .identity()
+                .game_session_id()
+                .as_bytes()
+                .to_vec();
+            let mut connection = PgConnection::connect(&database_url).await?;
+            sqlx::query(
+                "UPDATE game_durability_reconnect_sessions \
+                 SET control_loss_epoch = control_loss_epoch + 1 \
+                 WHERE game_session_id = $1",
+            )
+            .bind(session_id.as_slice())
+            .execute(&mut connection)
+            .await?;
+
+            for attempt in 2_u64..=8 {
+                let transport = u8::try_from(0x90_u64 + attempt)?;
+                let (_flow, request) =
+                    oteryn_game_server::foundation::ReconnectDurabilityFlowV1::begin(
+                        crate::record(82, attempt, transport, record_now)
+                            .map_err(crate::foundation_error)?,
+                    );
+                assert_eq!(
+                    journal.prepare(&request).await?,
+                    oteryn_game_server::foundation::ReconnectPrepareDispositionV1::RejectedStaleAuthority
+                );
+            }
+
+            let (_ninth_flow, ninth) =
+                oteryn_game_server::foundation::ReconnectDurabilityFlowV1::begin(
+                    crate::record(82, 9, 0x99, record_now).map_err(crate::foundation_error)?,
+                );
+            assert_eq!(
+                journal.prepare(&ninth).await?,
+                oteryn_game_server::foundation::ReconnectPrepareDispositionV1::AttemptCapacityExceeded
+            );
+
+            let attempt_count: i16 = sqlx::query_scalar(
+                "SELECT attempt_count FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = $1",
+            )
+            .bind(session_id.as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            let retained_rows: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
+                 WHERE game_session_id = $1",
+            )
+            .bind(session_id.as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(attempt_count, 8);
+            assert_eq!(retained_rows, 8);
+            connection.close().await?;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn prepare_requires_reconnectable_state_and_no_current_controller() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url, _executor) = migrated_database("prepare_authority").await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let record_now = crate::unix_now().map_err(crate::foundation_error)?;
+            let (_first_flow, first_prepare) =
+                oteryn_game_server::foundation::ReconnectDurabilityFlowV1::begin(
+                    crate::record(83, 1, 0xa1, record_now).map_err(crate::foundation_error)?,
+                );
+            assert_eq!(
+                journal.prepare(&first_prepare).await?,
+                oteryn_game_server::foundation::ReconnectPrepareDispositionV1::Prepared
+            );
+
+            let session_id = first_prepare
+                .record()
+                .identity()
+                .game_session_id()
+                .as_bytes()
+                .to_vec();
+            let mut connection = PgConnection::connect(&database_url).await?;
+            sqlx::query(
+                "UPDATE game_durability_reconnect_sessions \
+                 SET prepared_attempt_ref = NULL, current_transport_ref = $2 \
+                 WHERE game_session_id = $1",
+            )
+            .bind(session_id.as_slice())
+            .bind([0xee_u8; 16].as_slice())
+            .execute(&mut connection)
+            .await?;
+            let (_controller_flow, controller_present) =
+                oteryn_game_server::foundation::ReconnectDurabilityFlowV1::begin(
+                    crate::record(83, 2, 0xa2, record_now).map_err(crate::foundation_error)?,
+                );
+            assert_eq!(
+                journal.prepare(&controller_present).await?,
+                oteryn_game_server::foundation::ReconnectPrepareDispositionV1::RejectedStaleAuthority
+            );
+
+            sqlx::query(
+                "UPDATE game_durability_reconnect_sessions \
+                 SET current_transport_ref = NULL, session_state = 2 \
+                 WHERE game_session_id = $1",
+            )
+            .bind(session_id.as_slice())
+            .execute(&mut connection)
+            .await?;
+            let (_active_flow, active_session) =
+                oteryn_game_server::foundation::ReconnectDurabilityFlowV1::begin(
+                    crate::record(83, 3, 0xa3, record_now).map_err(crate::foundation_error)?,
+                );
+            assert_eq!(
+                journal.prepare(&active_session).await?,
+                oteryn_game_server::foundation::ReconnectPrepareDispositionV1::RejectedStaleAuthority
+            );
+
+            connection.close().await?;
             database.cleanup().await?;
             Ok(())
         })
