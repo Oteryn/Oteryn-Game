@@ -280,6 +280,12 @@ impl AdmissionReconnectJournal {
             || database_now(&mut transaction).await?
                 > request.authorization().authorization_deadline()
         {
+            terminalize_stale_commit(
+                &mut transaction,
+                session_id.as_slice(),
+                attempt_ref.as_slice(),
+            )
+            .await?;
             transaction.commit().await?;
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         }
@@ -403,6 +409,35 @@ async fn increment_attempt_count(
          SET attempt_count = attempt_count + 1 WHERE game_session_id = $1",
     )
     .bind(session_id)
+    .execute(&mut **transaction)
+    .await?;
+    Ok(())
+}
+
+async fn terminalize_stale_commit(
+    transaction: &mut Transaction<'_, Postgres>,
+    session_id: &[u8],
+    attempt_ref: &[u8],
+) -> Result<(), DurabilityError> {
+    let terminalized = sqlx::query(
+        "UPDATE game_durability_reconnect_attempts SET state = $3 \
+         WHERE game_session_id = $1 AND reconnect_attempt_ref = $2 AND state = $4",
+    )
+    .bind(session_id)
+    .bind(attempt_ref)
+    .bind(STALE_TERMINAL)
+    .bind(PREPARED)
+    .execute(&mut **transaction)
+    .await?;
+    if terminalized.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    sqlx::query(
+        "UPDATE game_durability_reconnect_sessions SET prepared_attempt_ref = NULL \
+         WHERE game_session_id = $1 AND prepared_attempt_ref = $2",
+    )
+    .bind(session_id)
+    .bind(attempt_ref)
     .execute(&mut **transaction)
     .await?;
     Ok(())
