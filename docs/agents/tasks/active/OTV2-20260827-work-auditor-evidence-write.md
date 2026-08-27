@@ -4,18 +4,18 @@
 task_id: OTV2-20260827-work-auditor-evidence-write
 title: Allow Work auditor bounded audit-evidence writes
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/work-auditor-evidence-write-20260827
-pr: null
+pr: 223
 base_sha: 6e6e37852b7a050a1c7117ab2a9f316907d09daf
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: governance-author-session
 created_at: 2026-08-27T22:29:19+02:00
-updated_at: 2026-08-27T22:29:19+02:00
+updated_at: 2026-08-27T22:38:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -45,13 +45,13 @@ external_repositories: []
 
 ## Acceptance criteria
 
-- [ ] Any canonical Oteryn Game agent or the owner may request an audit of a uniquely identifiable PR/Issue/task/head.
-- [ ] Auditor freezes exact target/head evidence and fails closed as `INSUFFICIENT_EVIDENCE` if the target cannot be uniquely resolved.
-- [ ] A completed requested audit must persist one linked GitHub evidence note with target, exact SHA, disposition/verdict, P0/P1/P2/P3 counts/findings and exactly one `NEXT_ACTION`.
-- [ ] Head movement makes prior evidence historical and requires a fresh audit for qualification.
-- [ ] Auditor cannot edit tracked files, create branches/commits, implement fixes, merge/close/approve, dispatch workflows, mutate production/protected/live-data state or write cross-repository.
-- [ ] Auditor evidence writes do not consume an implementation writer slot and do not make the auditor a control plane.
-- [ ] README, lifecycle registry and Terra/Sol scheduler agree with the prompt.
+- [x] Any canonical Oteryn Game agent or the owner may request an audit of a uniquely identifiable PR/Issue/task/head.
+- [x] Auditor freezes exact target/head evidence and fails closed as `INSUFFICIENT_EVIDENCE` if the target cannot be uniquely resolved.
+- [x] A completed requested audit must persist one linked GitHub evidence note with target, exact SHA, disposition/verdict, P0/P1/P2/P3 counts/findings and exactly one `NEXT_ACTION`.
+- [x] Head movement makes prior evidence historical and requires a fresh audit for qualification.
+- [x] Auditor cannot edit tracked files, create branches/commits, implement fixes, merge/close/approve, dispatch workflows, mutate production/protected/live-data state or write cross-repository.
+- [x] Auditor evidence writes do not consume an implementation writer slot and do not make the auditor a control plane.
+- [x] README, lifecycle registry and Terra/Sol scheduler agree with the prompt.
 - [ ] Governance validation and exact-head CI pass.
 - [ ] Author whole-diff self-review is clean.
 - [ ] Genuinely independent non-authoring exact-head review is clean before merge.
@@ -62,19 +62,19 @@ No runtime/product code, Cargo/workspace, protocol/schema/registry, production, 
 
 ## Implementation / findings
 
-Issue #222 records the owner-approved authority expansion. This task must remain bounded to audit evidence writes only; any broader repository mutation authority for the auditor is out of scope.
+Issue #222 records the owner-approved authority expansion. The canonical prompt, README, lifecycle registry and Terra/Sol scheduler now consistently implement bounded audit evidence writes only; any broader repository mutation authority for the auditor remains out of scope.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python tools/agents/validate_governance.py`
-- result: pending
+- result: pending exact-head PR CI / governance workflow evidence
 
 ### Component/integration
 
 - command/run: machine-readable lifecycle parse plus full changed-file semantic review
-- result: pending
+- result: pending exact-head PR CI / author review
 
 ### E2E
 
@@ -83,8 +83,8 @@ Issue #222 records the owner-approved authority expansion. This task must remain
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: PR
+- final head: external GitHub evidence after final content commit
+- trigger source: PR #223
 - workflow/run/job: pending
 - runner assignment: pending
 - classification: pending
@@ -92,7 +92,7 @@ Issue #222 records the owner-approved authority expansion. This task must remain
 
 ## Self-review
 
-- exact head: pending
+- exact head: pending external GitHub review evidence
 - method/reviewer: governance author session
 - material findings: pending
 - verdict: pending
@@ -107,9 +107,9 @@ Issue #222 records the owner-approved authority expansion. This task must remain
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: exact scope is 5 governance paths
 - unresolved review threads: pending
-- related/superseded PRs: Issue #222
+- related/superseded PRs: Issue #222 / PR #223
 - protected auto-merge: not authorized
 - merge commit/result: pending
 - ownership release: pending
@@ -117,19 +117,19 @@ Issue #222 records the owner-approved authority expansion. This task must remain
 ## Context checkpoint
 
 ```yaml
-last_progress: Owner authorization captured in Issue #222 and bounded governance branch created from exact protected main
-status: implementing
+last_progress: PR #223 opened with the four canonical auditor changes plus this bounded task record; content is frozen for exact-head qualification
+status: validating
 branch: docs/work-auditor-evidence-write-20260827
-head_sha: null
-pr: null
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
+head_sha: external GitHub branch/PR evidence
+pr: 223
+final_head_sha: external GitHub evidence after final content commit
+final_head_frozen_at: 2026-08-27T22:38:00+02:00
+ci_trigger_source: pull_request
+ci_check_generation: current-final-head
+ci_checks_for_current_head: pending
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: pending
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -138,6 +138,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: null
-next_action: update the four canonical auditor prompt/registry/scheduler documents, then open the bounded governance PR
+blocker: genuinely independent non-authoring exact-head review remains mandatory before merge
+next_action: qualify the unchanged PR #223 head with exact-head CI, author whole-diff self-review and genuinely independent non-authoring review
 ```
