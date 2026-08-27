@@ -376,7 +376,7 @@
       "version": "1.0",
       "status": "reusable",
       "owner": "architecture-programme",
-      "scope": "Material Game architecture escalation resolver; no implicit runtime implementation, production or cross-repository write authority.",
+      "scope": "Material Game architecture escalation resolver; no implicit runtime implementation, merge, production or cross-repository write authority.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."

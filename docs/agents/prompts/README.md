@@ -12,7 +12,7 @@ These prompts are execution contracts for recurring Oteryn v2 programmes. They d
 
 The Sol execution architecture prompt is governance/architecture only. It validates the written execution-model spec against live GitHub, requires owner confirmation of that written spec before authoring the adoption plan, and then packages the future Sol lane-lead prompt family. It grants no gameplay/runtime, production or cross-repository authority.
 
-The Sol Supervising Architect is not a routine coding lane. It resolves `ARCHITECTURE_ESCALATION_REQUIRED` within existing owner-approved architecture authority and returns `OWNER_DECISION_REQUIRED` when product/scope/authority decisions exceed that boundary. Architecture resolution never grants implicit runtime write authority.
+The Sol Supervising Architect is not a routine coding lane. It resolves `ARCHITECTURE_ESCALATION_REQUIRED` within existing owner-approved architecture authority and returns `OWNER_DECISION_REQUIRED` when product/scope/authority decisions exceed that boundary. Architecture resolution grants neither implicit runtime write authority nor merge authority: the architect cannot merge, auto-merge, close out as canonical or otherwise integrate any PR/decision it authored or materially changed, and must hand the exact artifact to the uniquely active control plane or another separately authorized merge role.
 
 ## Implementation programme
 

@@ -144,7 +144,7 @@ It may:
 - create/update the bounded architecture decision/contract lifecycle required to make the decision durable;
 - return an exact implementation boundary to the affected lane.
 
-It must return `OWNER_DECISION_REQUIRED` if owner authority is required. Architecture resolution never silently grants runtime write authority; the affected implementation lane still needs its exact allocation.
+It must return `OWNER_DECISION_REQUIRED` if owner authority is required. Architecture resolution never silently grants runtime write or merge authority; the affected implementation lane still needs its exact allocation. The Supervising Architect has `merge_authority: false`: it may author/update bounded decision artifacts under architecture authority, but it may not merge, auto-merge, close out as canonical or otherwise integrate any PR/decision it authored or materially changed. Exact decision artifacts return to the uniquely active control plane or another separately authorized merge role for deterministic qualification and integration.
 
 ## Independent auditor
 
