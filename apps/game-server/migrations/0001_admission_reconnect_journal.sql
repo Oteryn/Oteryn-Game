@@ -4,6 +4,9 @@ CREATE TABLE game_durability_reconnect_sessions (
     predecessor_generation BIGINT NOT NULL CHECK (predecessor_generation > 0),
     character_lease_generation BIGINT NOT NULL CHECK (character_lease_generation > 0),
     scope_ownership_generation BIGINT NOT NULL CHECK (scope_ownership_generation > 0),
+    current_generation BIGINT NOT NULL CHECK (current_generation > 0),
+    current_transport_ref BYTEA NULL CHECK (octet_length(current_transport_ref) = 16),
+    session_state SMALLINT NOT NULL DEFAULT 1 CHECK (session_state BETWEEN 1 AND 2),
     attempt_count SMALLINT NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 8),
     prepared_attempt_ref BYTEA NULL CHECK (octet_length(prepared_attempt_ref) = 8)
 );
@@ -21,7 +24,7 @@ CREATE TABLE game_durability_reconnect_attempts (
     control_loss_epoch BIGINT NOT NULL CHECK (control_loss_epoch > 0),
     transport_ref BYTEA NOT NULL CHECK (octet_length(transport_ref) = 16),
     record_json TEXT NOT NULL,
-    state SMALLINT NOT NULL CHECK (state BETWEEN 1 AND 4),
+    state SMALLINT NOT NULL CHECK (state BETWEEN 1 AND 5),
     PRIMARY KEY (game_session_id, reconnect_attempt_ref)
 );
 

@@ -8,11 +8,13 @@ use oteryn_game_server::foundation::{
     AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId, CommandId,
     ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1, GameSessionId,
     PendingCommandDispositionV1, PendingCommandReconciliationV1, ProtectionEntitlementV1,
-    ReconnectAttemptRef, ReconnectAuthorityFenceV1, ReconnectCompatibilityEvidenceV1,
-    ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectDurabilityErrorV1,
-    ReconnectDurabilityFlowV1, ReconnectDurabilityRecordV1, ReconnectIdentityV1,
-    ReconnectPrepareDispositionV1, ReconnectProofV1, RuntimeScopeRefV1, ScopeOwnershipGeneration,
-    StateDomainRevisionV1, WorldId,
+    ReconnectAttemptRef, ReconnectAuthorityFenceV1, ReconnectCommitActionV1,
+    ReconnectCommitCompletionV1, ReconnectCommitDispositionV1, ReconnectCompatibilityEvidenceV1,
+    ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectCurrentAuthorityV1,
+    ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1, ReconnectDurabilityRecordV1,
+    ReconnectIdentityV1, ReconnectPrepareActionV1, ReconnectPrepareCompletionV1,
+    ReconnectPrepareDispositionV1, ReconnectProjectionDecisionV1, ReconnectProofV1,
+    RuntimeScopeRefV1, ScopeOwnershipGeneration, StateDomainRevisionV1, WorldId,
 };
 use std::process::Command;
 use std::sync::Arc;
@@ -455,6 +457,82 @@ fn concurrent_same_attempt_reconciles_to_one_prepared_and_one_existing_prepared(
                         ReconnectPrepareDispositionV1::Prepared,
                         ReconnectPrepareDispositionV1::ExistingPrepared,
                     ]
+                );
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
+-> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("commit_reconcile").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(60, 1, 0x71, record_now).map_err(foundation_error)?,
+                );
+
+                assert_eq!(
+                    journal.prepare(&prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                assert_eq!(
+                    flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                        &prepare,
+                        ReconnectPrepareDispositionV1::Prepared,
+                    ))
+                    .map_err(foundation_error)?,
+                    ReconnectPrepareActionV1::AwaitFinalRevalidation
+                );
+                let current =
+                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                        .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                assert_eq!(
+                    flow.accept_commit_completion(ReconnectCommitCompletionV1::for_request(
+                        &commit,
+                        ReconnectCommitDispositionV1::Committed,
+                    ))
+                    .map_err(foundation_error)?,
+                    ReconnectCommitActionV1::ReconcileSameAttempt
+                );
+                assert_eq!(
+                    flow.accept_reconciliation(
+                        journal.reconcile(&prepare).await?,
+                        ScopeOwnershipGeneration::new(10)
+                            .map_err(|_error| std::io::Error::other("invalid scope generation"))?,
+                    )
+                    .map_err(foundation_error)?,
+                    ReconnectProjectionDecisionV1::InstallController {
+                        generation: ConnectionGeneration::new(8).map_err(|_error| {
+                            std::io::Error::other("invalid connection generation")
+                        })?,
+                        transport_ref: AuthenticatedTransportRefV1::decode(&[0x71; 16])
+                            .map_err(|_error| std::io::Error::other("invalid transport ref"))?,
+                    }
                 );
                 Ok::<(), Box<dyn std::error::Error>>(())
             }

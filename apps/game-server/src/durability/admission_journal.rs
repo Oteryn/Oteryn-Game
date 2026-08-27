@@ -1,7 +1,8 @@
 use crate::durability::{DurabilityError, schema};
 use oteryn_game_server::foundation::{
-    ProtectionEntitlementV1, ReconnectDurabilityRecordV1, ReconnectPrepareDispositionV1,
-    ReconnectPrepareRequestV1, ReconnectProofV1, RuntimeScopeRefV1,
+    ProtectionEntitlementV1, ReconnectCommitDispositionV1, ReconnectCommitRequestV1,
+    ReconnectDurabilityRecordV1, ReconnectDurableReconciliationSnapshotV1,
+    ReconnectPrepareDispositionV1, ReconnectPrepareRequestV1, ReconnectProofV1, RuntimeScopeRefV1,
 };
 use serde_json::json;
 use sqlx::{PgPool, Postgres, Row, Transaction};
@@ -10,6 +11,9 @@ const PREPARED: i16 = 1;
 const COLLISION_TERMINAL: i16 = 2;
 const CONCURRENT_TERMINAL: i16 = 3;
 const STALE_TERMINAL: i16 = 4;
+const COMMITTED: i16 = 5;
+const RECONNECTABLE: i16 = 1;
+const ACTIVE: i16 = 2;
 const MAX_ATTEMPTS_PER_EPOCH: i16 = 8;
 
 /// Asynchronous PostgreSQL worker for the Foundation V1 split-phase port.
@@ -58,8 +62,8 @@ impl AdmissionReconnectJournal {
         sqlx::query(
             "INSERT INTO game_durability_reconnect_sessions (\
                 game_session_id, control_loss_epoch, predecessor_generation, \
-                character_lease_generation, scope_ownership_generation\
-             ) VALUES ($1, $2, $3, $4, $5)\
+                character_lease_generation, scope_ownership_generation, current_generation\
+             ) VALUES ($1, $2, $3, $4, $5, $3)\
              ON CONFLICT (game_session_id) DO NOTHING",
         )
         .bind(session_id.as_slice())
@@ -187,6 +191,174 @@ impl AdmissionReconnectJournal {
         .await?;
         transaction.commit().await?;
         Ok(ReconnectPrepareDispositionV1::Prepared)
+    }
+
+    /// Atomically installs the prepared controller only while the durable
+    /// session still exactly carries the authority fenced by the request.
+    pub async fn commit(
+        &self,
+        request: &ReconnectCommitRequestV1,
+    ) -> Result<ReconnectCommitDispositionV1, DurabilityError> {
+        let record = request.record();
+        let session_id = record.identity().game_session_id().as_bytes().to_vec();
+        let attempt_ref = record
+            .identity()
+            .reconnect_attempt_ref()
+            .to_be_bytes()
+            .to_vec();
+        let transport_ref = record.connection().transport_ref().to_bytes().to_vec();
+        let encoded_record = encode_record(record).to_string();
+        let predecessor = i64::try_from(record.connection().predecessor().get())
+            .map_err(|_error| DurabilityError::InvalidStoredState)?;
+        let candidate = i64::try_from(record.connection().candidate().get())
+            .map_err(|_error| DurabilityError::InvalidStoredState)?;
+        let mut transaction = self.pool.begin().await?;
+        let session = sqlx::query(
+            "SELECT control_loss_epoch, predecessor_generation, character_lease_generation, \
+                scope_ownership_generation, current_generation, current_transport_ref, \
+                session_state, prepared_attempt_ref \
+             FROM game_durability_reconnect_sessions WHERE game_session_id = $1 FOR UPDATE",
+        )
+        .bind(session_id.as_slice())
+        .fetch_optional(&mut *transaction)
+        .await?;
+        let Some(session) = session else {
+            return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
+        };
+        let attempt = sqlx::query(
+            "SELECT state, record_json FROM game_durability_reconnect_attempts \
+             WHERE game_session_id = $1 AND reconnect_attempt_ref = $2",
+        )
+        .bind(session_id.as_slice())
+        .bind(attempt_ref.as_slice())
+        .fetch_optional(&mut *transaction)
+        .await?;
+        let Some(attempt) = attempt else {
+            return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
+        };
+        if attempt.try_get::<String, _>("record_json")? != encoded_record {
+            return Ok(ReconnectCommitDispositionV1::IdempotencyConflict);
+        }
+        match attempt.try_get::<i16, _>("state")? {
+            COMMITTED => {
+                let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
+                if session.try_get::<i64, _>("current_generation")? == candidate
+                    && current_ref.as_deref() == Some(transport_ref.as_slice())
+                {
+                    transaction.commit().await?;
+                    return Ok(ReconnectCommitDispositionV1::Committed);
+                }
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            PREPARED => {}
+            COLLISION_TERMINAL | CONCURRENT_TERMINAL | STALE_TERMINAL => {
+                transaction.commit().await?;
+                return Ok(ReconnectCommitDispositionV1::ExistingTerminal);
+            }
+            _ => return Err(DurabilityError::InvalidStoredState),
+        }
+        let is_current = session.try_get::<i64, _>("control_loss_epoch")?
+            == i64::try_from(record.continuity().control_loss_epoch().get())
+                .map_err(|_error| DurabilityError::InvalidStoredState)?
+            && session.try_get::<i64, _>("predecessor_generation")? == predecessor
+            && session.try_get::<i64, _>("character_lease_generation")?
+                == i64::try_from(record.authority().character_lease_generation())
+                    .map_err(|_error| DurabilityError::InvalidStoredState)?
+            && session.try_get::<i64, _>("scope_ownership_generation")?
+                == i64::try_from(record.authority().scope_ownership_generation().get())
+                    .map_err(|_error| DurabilityError::InvalidStoredState)?
+            && session.try_get::<i64, _>("current_generation")? == predecessor
+            && session
+                .try_get::<Option<Vec<u8>>, _>("current_transport_ref")?
+                .is_none()
+            && session.try_get::<i16, _>("session_state")? == RECONNECTABLE
+            && session
+                .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
+                .as_deref()
+                == Some(attempt_ref.as_slice());
+        if !is_current
+            || database_now(&mut transaction).await?
+                > request.authorization().authorization_deadline()
+        {
+            transaction.commit().await?;
+            return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
+        }
+        sqlx::query(
+            "UPDATE game_durability_reconnect_attempts SET state = $3 \
+             WHERE game_session_id = $1 AND reconnect_attempt_ref = $2 AND state = $4",
+        )
+        .bind(session_id.as_slice())
+        .bind(attempt_ref.as_slice())
+        .bind(COMMITTED)
+        .bind(PREPARED)
+        .execute(&mut *transaction)
+        .await?;
+        sqlx::query(
+            "UPDATE game_durability_reconnect_sessions \
+             SET current_generation = $2, current_transport_ref = $3, session_state = $4, prepared_attempt_ref = NULL \
+             WHERE game_session_id = $1",
+        ).bind(session_id.as_slice()).bind(candidate).bind(transport_ref.as_slice()).bind(ACTIVE)
+         .execute(&mut *transaction).await?;
+        transaction.commit().await?;
+        Ok(ReconnectCommitDispositionV1::Committed)
+    }
+
+    /// Reads one exact persisted attempt and its current durable outcome.
+    pub async fn reconcile(
+        &self,
+        request: &ReconnectPrepareRequestV1,
+    ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
+        let record = request.record();
+        let session_id = record.identity().game_session_id().as_bytes().to_vec();
+        let attempt_ref = record
+            .identity()
+            .reconnect_attempt_ref()
+            .to_be_bytes()
+            .to_vec();
+        let transport_ref = record.connection().transport_ref().to_bytes().to_vec();
+        let encoded_record = encode_record(record).to_string();
+        let mut transaction = self.pool.begin().await?;
+        let session = sqlx::query(
+            "SELECT current_generation, current_transport_ref FROM game_durability_reconnect_sessions \
+             WHERE game_session_id = $1 FOR SHARE",
+        ).bind(session_id.as_slice()).fetch_optional(&mut *transaction).await?;
+        let Some(session) = session else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        let attempt = sqlx::query(
+            "SELECT state, record_json FROM game_durability_reconnect_attempts \
+             WHERE game_session_id = $1 AND reconnect_attempt_ref = $2",
+        )
+        .bind(session_id.as_slice())
+        .bind(attempt_ref.as_slice())
+        .fetch_optional(&mut *transaction)
+        .await?;
+        let Some(attempt) = attempt else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        if attempt.try_get::<String, _>("record_json")? != encoded_record {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let snapshot = match attempt.try_get::<i16, _>("state")? {
+            PREPARED => ReconnectDurableReconciliationSnapshotV1::prepared(record.clone()),
+            COMMITTED => {
+                let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
+                let candidate = i64::try_from(record.connection().candidate().get())
+                    .map_err(|_error| DurabilityError::InvalidStoredState)?;
+                if session.try_get::<i64, _>("current_generation")? != candidate
+                    || current_ref.as_deref() != Some(transport_ref.as_slice())
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                ReconnectDurableReconciliationSnapshotV1::committed(record.clone())
+            }
+            COLLISION_TERMINAL | CONCURRENT_TERMINAL | STALE_TERMINAL => {
+                ReconnectDurableReconciliationSnapshotV1::terminal(record.clone())
+            }
+            _ => return Err(DurabilityError::InvalidStoredState),
+        };
+        transaction.commit().await?;
+        Ok(snapshot)
     }
 }
 
