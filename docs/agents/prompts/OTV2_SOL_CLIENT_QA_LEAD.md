@@ -97,6 +97,7 @@ independent_review:
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate
+next_action: <exactly one concrete action>
 ```
 
 ## Safety
