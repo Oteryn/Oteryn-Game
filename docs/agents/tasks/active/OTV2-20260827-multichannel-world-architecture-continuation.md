@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/multichannel-world-owner-checkpoint-20260827
 issue: 220
-pr: null
+pr: 221
 base_sha: 6e6e37852b7a050a1c7117ab2a9f316907d09daf
 head_sha: null
 final_head_sha: null
@@ -17,7 +17,7 @@ final_head_frozen_at: null
 owner: Oteryn architecture continuation
 worker_alias: "Oteryn: architektura"
 created_at: 2026-08-27T22:11:06+02:00
-updated_at: 2026-08-27T22:11:06+02:00
+updated_at: 2026-08-27T22:14:01+02:00
 execution_budget_minutes: 240
 large_budget_reason: owner-driven architecture sequence spans multichannel product semantics, cross-region topology, housing/economy/anti-duplication and explicit supersession analysis
 owned_paths:
@@ -77,7 +77,7 @@ Current owner-selected direction:
 ### Focused
 
 - command/run: documentation consistency review against Issue #220 and current accepted architecture sources
-- result: pending after PR creation
+- result: pending while analysis continues in draft PR #221
 
 ### Component/integration
 
@@ -115,7 +115,7 @@ Current owner-selected direction:
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: draft PR #221 currently owns only the checkpoint and this task record
 - unresolved review threads: pending
 - related/superseded PRs: none known at admission
 - protected auto-merge: disabled while owner-decision sequence is incomplete
@@ -125,14 +125,14 @@ Current owner-selected direction:
 ## Context checkpoint
 
 ```yaml
-last_progress: owner-selected World/Channel/PvP/multi-region direction persisted; housing explicitly held for deep analysis
+last_progress: owner-selected World/Channel/PvP/multi-region direction persisted in Issue #220 and draft PR #221; housing explicitly held for deep analysis
 status: investigating
 branch: arch/multichannel-world-owner-checkpoint-20260827
 head_sha: null
-pr: null
+pr: 221
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
+ci_trigger_source: pull_request
 ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
