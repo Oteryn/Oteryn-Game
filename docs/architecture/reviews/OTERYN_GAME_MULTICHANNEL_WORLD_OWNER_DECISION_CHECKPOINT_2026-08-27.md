@@ -55,7 +55,7 @@ World: Oteryn-1
 
 PvP mode is not unique per Channel and does not create a separate World/economy/Character namespace.
 
-This intentionally conflicts with current accepted wording that different profile/ruleset families use distinct `WorldId` values and every Channel of a World inherits one profile family. Do not resolve that conflict by historical rewrite. A later amendment must decide whether PvP mode becomes a narrower channel-scoped policy dimension while other world/profile dimensions remain World-scoped.
+This intentionally conflicts with current accepted wording that different profile/ruleset families use distinct `WorldId` values and every Channel of one World inherits one profile family. Do not resolve that conflict by historical rewrite. A later amendment must decide whether PvP mode becomes a narrower channel-scoped policy dimension while other world/profile dimensions remain World-scoped.
 
 ### 4. Channel switch across PvP modes
 
@@ -149,12 +149,47 @@ This is explicitly **not** an accepted gameplay contract. The following are hypo
 - house/premium convenience must be evaluated against pay-to-win risk, scarcity fairness and the need for expensive desirable housing additions without making non-owners permanently weaker;
 - the mechanic should be analyzed together with offline training and other offline-progression systems to avoid overlapping currencies, timers and contradictory incentives.
 
+### Candidate consumption model: bonus-XP-denominated pool
+
+A specific usability problem observed in classic time-denominated stamina is that the system consumes valuable stamina time when a high-level player receives incidental monster XP while travelling, helping another player, completing a quest path or killing a boss. A trivial spider or other accidental combat can therefore consume the same indivisible stamina minute as intentional high-value hunting. Player requests for a manual stamina `pause` are a symptom of this accounting mismatch.
+
+The preferred candidate for further analysis is therefore **not** another minute timer and **not** a manual pause toggle. Instead, represent rested value as a bounded pool denominated in **bonus XP credit**:
+
+```text
+base XP remains unaffected
++ eligible Rested bonus XP is awarded while RestedPool > 0
++ RestedPool decreases only by the bonus XP actually awarded
+```
+
+Illustrative example only:
+
+```text
+Rested bonus rate: +25%
+RestedPool before kill: 10,000,000 bonus XP
+Monster base XP: 100
+Award: 100 base XP + 25 rested XP
+RestedPool after kill: 9,999,975
+```
+
+Under this model an incidental low-value kill consumes a proportionally tiny amount of rested value rather than a whole minute. A serious hunt naturally consumes the pool faster because it generates more eligible XP.
+
+Candidate design principles:
+
+- exhaustion of the rested pool should return the Character to the ordinary baseline XP/loot rate rather than applying a low-stamina punishment tier;
+- the system should not need a player-facing `pause rested` / `pause stamina` toggle merely to protect the resource from incidental combat;
+- quest XP, exploration XP, achievement XP, scripted rewards and boss XP should be explicitly classified for rested eligibility rather than inheriting monster-hunt behavior accidentally;
+- one plausible default is that only ordinary repeatable monster-hunt XP consumes the pool, while non-repeatable progression rewards do not, but this remains open;
+- boss XP requires explicit product treatment because bosses are intentional combat but are often not part of ordinary XP farming;
+- a dynamic minimum-XP eligibility threshold may be evaluated, but it is not preferred unless evidence shows that proportional consumption alone is insufficient, because thresholds introduce boundary exploits and opaque behavior;
+- the pool should be consumed from the **extra XP granted**, not from base XP, elapsed combat time, login time or number of kills;
+- no concrete bonus percentage, pool size, recharge curve or source classification is approved by this checkpoint.
+
 All numeric examples discussed so far — including values such as `+25% XP`, `8–12 hours` of rest, `100%/110%/120%` recovery rates or any specific rested-pool size — are illustrative only and have **no owner-approved authority**.
 
 Before disposition, the deep-dive should decide at least:
 
 1. whether classic stamina is removed, retained, or partially replaced;
-2. whether rested reward is time-based, XP-pool-based, or hybrid;
+2. whether rested reward is time-based, XP-pool-based, or hybrid, with the bonus-XP-denominated pool as the current preferred analysis candidate;
 3. exact eligibility and recovery semantics for FACC, Premium-without-house, house guests, guild members and house owners;
 4. whether Premium status itself changes recovery and, if so, by how much;
 5. what premium furniture may change without creating a material combat/progression power ceiling unavailable elsewhere;
@@ -162,7 +197,9 @@ Before disposition, the deep-dive should decide at least:
 7. one-bed/one-sleeper semantics and what occurs on eviction, house transfer, guild removal or access-list changes while a Character is sleeping;
 8. anti-abuse behavior for multiaccount resting and whether any restriction is actually needed when every house-owning account must independently meet Premium/economy requirements;
 9. durable ownership of rested state and safe behavior across Channel switch, region failover and logout/login recovery;
-10. observability and audit requirements sufficient to diagnose duplicate credit, missed rest and timing disputes.
+10. observability and audit requirements sufficient to diagnose duplicate credit, missed rest and timing disputes;
+11. which XP source classes consume RestedPool and which are explicitly exempt;
+12. whether manual pause/toggle is prohibited by design or retained only as a fallback if user-testing demonstrates a real need.
 
 Do not implement or canonically reference a rested/stamina replacement until this analysis receives an explicit owner disposition.
 
