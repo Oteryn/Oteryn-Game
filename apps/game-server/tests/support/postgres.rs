@@ -157,3 +157,205 @@ fn database_name(test_name: &str) -> Result<String, IsolatedPostgresError> {
     let process = std::process::id();
     Ok(format!("oteryn_game_test_{process}_{ordinal}_{normalized}"))
 }
+
+#[cfg(test)]
+mod durability_contract_tests {
+    use super::{IsolatedPostgres, IsolatedPostgresError};
+    use crate::durability::{
+        AdmissionReconnectJournal, DurabilityError, MigrationExecutor, SchemaCompatibility,
+    };
+    use sqlx::{Connection, Executor, PgConnection};
+    use std::error::Error;
+    use std::time::Duration;
+
+    type TestResult = Result<(), Box<dyn Error>>;
+
+    async fn migrated_database(
+        test_name: &str,
+    ) -> Result<(IsolatedPostgres, String, MigrationExecutor), Box<dyn Error>> {
+        let database = IsolatedPostgres::create(test_name).await?;
+        let database_url = database.database_url()?;
+        let executor = MigrationExecutor::connect_migration(&database_url).await?;
+        executor.apply_embedded_ledger().await?;
+        Ok((database, database_url, executor))
+    }
+
+    #[tokio::test]
+    async fn runtime_startup_rejects_missing_ledger_without_creating_ddl() -> TestResult {
+        let database = IsolatedPostgres::create("runtime_no_ddl").await?;
+        let database_url = database.database_url()?;
+
+        let startup = AdmissionReconnectJournal::connect_runtime(&database_url).await;
+        assert!(matches!(
+            startup,
+            Err(DurabilityError::SchemaIncompatible(
+                SchemaCompatibility::MissingMigrationLedger
+            ))
+        ));
+
+        let mut connection = PgConnection::connect(&database_url).await?;
+        let migration_table: Option<String> =
+            sqlx::query_scalar("SELECT to_regclass('_sqlx_migrations')::text")
+                .fetch_one(&mut connection)
+                .await?;
+        assert!(
+            migration_table.is_none(),
+            "runtime startup must not create the SQLx migration ledger"
+        );
+        connection.close().await?;
+        database.cleanup().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn checksum_mismatch_is_runtime_incompatible() -> TestResult {
+        let (database, _database_url, executor) = migrated_database("checksum_mismatch").await?;
+        sqlx::query("UPDATE _sqlx_migrations SET checksum = decode('00', 'hex')")
+            .execute(&executor.pool)
+            .await?;
+
+        assert_eq!(executor.inspect().await?, SchemaCompatibility::Incompatible);
+        database.cleanup().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn dirty_migration_is_runtime_incompatible() -> TestResult {
+        let (database, _database_url, executor) = migrated_database("dirty_migration").await?;
+        sqlx::query("UPDATE _sqlx_migrations SET success = false")
+            .execute(&executor.pool)
+            .await?;
+
+        assert_eq!(executor.inspect().await?, SchemaCompatibility::Incompatible);
+        database.cleanup().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn behind_migration_ledger_is_runtime_incompatible() -> TestResult {
+        let (database, _database_url, executor) = migrated_database("behind_ledger").await?;
+        sqlx::query("DELETE FROM _sqlx_migrations")
+            .execute(&executor.pool)
+            .await?;
+
+        assert_eq!(executor.inspect().await?, SchemaCompatibility::Incompatible);
+        database.cleanup().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn ahead_migration_ledger_is_runtime_incompatible() -> TestResult {
+        let (database, _database_url, executor) = migrated_database("ahead_ledger").await?;
+        sqlx::query(
+            "INSERT INTO _sqlx_migrations \
+             (version, description, success, checksum, execution_time) \
+             SELECT version + 1000000, 'synthetic ahead migration', true, checksum, 0 \
+             FROM _sqlx_migrations ORDER BY version DESC LIMIT 1",
+        )
+        .execute(&executor.pool)
+        .await?;
+
+        assert_eq!(executor.inspect().await?, SchemaCompatibility::Incompatible);
+        database.cleanup().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn migration_lock_interruption_releases_before_any_ddl_and_allows_retry() -> TestResult {
+        let database = IsolatedPostgres::create("migration_lock_interrupt").await?;
+        let database_url = database.database_url()?;
+        let migration_lock_id = sqlx_migration_lock_id(&database.database_name);
+
+        let mut lock_holder = PgConnection::connect(&database_url).await?;
+        sqlx::query("SELECT pg_advisory_lock($1)")
+            .bind(migration_lock_id)
+            .execute(&mut lock_holder)
+            .await?;
+
+        let executor = MigrationExecutor::connect_migration(&database_url).await?;
+        let mut migration = Box::pin(executor.apply_embedded_ledger());
+        assert!(
+            tokio::time::timeout(Duration::from_millis(250), migration.as_mut())
+                .await
+                .is_err(),
+            "migration must wait while SQLx's database advisory lock is held"
+        );
+
+        let mut observer = PgConnection::connect(&database_url).await?;
+        let migration_table: Option<String> =
+            sqlx::query_scalar("SELECT to_regclass('_sqlx_migrations')::text")
+                .fetch_one(&mut observer)
+                .await?;
+        assert!(
+            migration_table.is_none(),
+            "SQLx acquires the migration lock before creating the migration ledger"
+        );
+        observer.close().await?;
+
+        lock_holder.close().await?;
+        tokio::time::timeout(Duration::from_secs(5), migration.as_mut()).await??;
+        drop(migration);
+        assert_eq!(executor.inspect().await?, SchemaCompatibility::Compatible);
+
+        database.cleanup().await?;
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn isolated_database_outage_fails_closed_and_runtime_recovers() -> TestResult {
+        let (database, database_url, executor) = migrated_database("database_outage").await?;
+        drop(executor);
+
+        let mut admin = PgConnection::connect(&database.admin_url).await?;
+        set_accepting_connections(&mut admin, &database.database_name, false).await?;
+        sqlx::query(
+            "SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
+             WHERE datname = $1 AND pid <> pg_backend_pid()",
+        )
+        .bind(&database.database_name)
+        .execute(&mut admin)
+        .await?;
+
+        let outage = AdmissionReconnectJournal::connect_runtime(&database_url).await;
+        assert!(matches!(outage, Err(DurabilityError::Database(_))));
+
+        set_accepting_connections(&mut admin, &database.database_name, true).await?;
+        let recovered = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+        drop(recovered);
+        admin.close().await?;
+        database.cleanup().await?;
+        Ok(())
+    }
+
+    async fn set_accepting_connections(
+        admin: &mut PgConnection,
+        database_name: &str,
+        accepting: bool,
+    ) -> Result<(), IsolatedPostgresError> {
+        let value = if accepting { "true" } else { "false" };
+        let statement = format!(
+            "ALTER DATABASE {database_name} WITH ALLOW_CONNECTIONS {value}"
+        );
+        admin
+            .execute(sqlx::query(sqlx::AssertSqlSafe(statement)))
+            .await?;
+        Ok(())
+    }
+
+    // Mirrors sqlx-postgres 0.9.0 migrate::generate_lock_id without adding a new crate dependency.
+    fn sqlx_migration_lock_id(database_name: &str) -> i64 {
+        0x3d32_ad9e_i64 * i64::from(crc32_iso_hdlc(database_name.as_bytes()))
+    }
+
+    fn crc32_iso_hdlc(bytes: &[u8]) -> u32 {
+        let mut checksum = u32::MAX;
+        for &byte in bytes {
+            checksum ^= u32::from(byte);
+            for _ in 0..8 {
+                let low_bit_mask = 0_u32.wrapping_sub(checksum & 1);
+                checksum = (checksum >> 1) ^ (0xedb8_8320 & low_bit_mask);
+            }
+        }
+        !checksum
+    }
+}
