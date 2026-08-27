@@ -83,6 +83,7 @@ cross_repository_authority_changed: false
 supersedes: []
 required_validation: []
 required_independent_review:
+next_action: <exactly one action required to make the resolution durable or hand it back>
 ```
 
 If an existing ADR/contract must change, use the repository's normal architecture lifecycle. Preserve historical documents and identify exactly what is superseded.
@@ -113,6 +114,7 @@ implementation_may_resume: true | false
 required_fresh_allocation: true | false
 required_revalidation: []
 remaining_unknowns: []
+next_action: <exactly one concrete action>
 ```
 
 Terra independently verifies the durable decision before changing the lane state.
