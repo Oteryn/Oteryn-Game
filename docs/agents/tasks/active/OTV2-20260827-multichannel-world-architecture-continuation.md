@@ -9,7 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/anti-bot-player-reporting-20260827
 issue: 220
-pr: null
+pr: 228
 base_sha: 4b6656f688868aa2fb59c18392c2f859f1c5a1c7
 head_sha: null
 final_head_sha: null
@@ -17,7 +17,7 @@ final_head_frozen_at: null
 owner: Oteryn architecture continuation
 worker_alias: "Oteryn: architektura"
 created_at: 2026-08-27T22:11:06+02:00
-updated_at: 2026-08-27T23:40:00+02:00
+updated_at: 2026-08-27T23:43:00+02:00
 execution_budget_minutes: 240
 large_budget_reason: owner-driven architecture sequence spans multichannel product semantics, cross-region topology, housing/economy/anti-duplication, Rested progression, anti-automation reporting and explicit supersession analysis
 owned_paths:
@@ -84,7 +84,7 @@ Current owner-selected / preserved direction:
 ### Focused
 
 - command/run: documentation consistency review against Issue #220, merged PR #221 and current accepted architecture sources
-- result: pending on the new anti-bot reporting continuation PR
+- result: pending on draft PR #228
 
 ### Component/integration
 
@@ -123,6 +123,7 @@ Current owner-selected / preserved direction:
 ## PR and closeout
 
 - prior checkpoint delivery: PR #221 merged as `4b6656f688868aa2fb59c18392c2f859f1c5a1c7`
+- current continuation PR: #228
 - current continuation branch: `arch/anti-bot-player-reporting-20260827`
 - changed-file review: player-reporting open analysis plus this task update
 - unresolved review threads: pending
@@ -133,11 +134,11 @@ Current owner-selected / preserved direction:
 ## Context checkpoint
 
 ```yaml
-last_progress: merged PR #221 checkpoint extended with a dedicated open-analysis document for player anti-bot reports, malicious-report resistance, reporter independence/reliability, enhanced observation and UUIDv7/value-provenance integration
+last_progress: merged PR #221 checkpoint extended in draft PR #228 with a dedicated open-analysis document for player anti-bot reports, malicious-report resistance, reporter independence/reliability, enhanced observation and UUIDv7/value-provenance integration
 status: investigating
 branch: arch/anti-bot-player-reporting-20260827
 head_sha: null
-pr: null
+pr: 228
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
