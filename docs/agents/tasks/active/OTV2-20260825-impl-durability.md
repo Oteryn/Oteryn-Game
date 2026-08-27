@@ -113,13 +113,14 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 
 ### Focused
 
-- command/run: worker TDD after confirmed #208/#210 merge to protected `main@f056cd38dde6065a3154e256d01aea9e5a09e5f4`
-- result: pending
+- command/run: `RUSTUP_HOME=/workspace/scratch/19690285a8ec/.rustup-durability CARGO_HOME=/workspace/scratch/19690285a8ec/.cargo-durability cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres`
+- result: `RED` as required for Task 1 — `apps/game-server/tests/durability_postgres.rs` imports the allocated but not-yet-implemented `apps/game-server/src/durability/mod.rs`; Cargo fails only with `couldn't read .../src/durability/mod.rs: No such file or directory`.
+- evidence: the baseline before this Task-1-only delta was `153/153` game-server unit tests plus `8/8` Ability, `9/9` AI, `17/17` evidence-shell and `15/15` Interaction integration tests passing under Rust `1.94.0`.
 
 ### Component/integration
 
 - command/run: isolated PostgreSQL worker evidence after normal merge-up from protected `main@f056cd38dde6065a3154e256d01aea9e5a09e5f4`
-- result: pending
+- result: `NOT_EXECUTED_LOCALLY` — the isolated executor has no local PostgreSQL runtime; the exact task-owned `durability_postgres` test is wired to the pinned per-run PostgreSQL 17 GitHub Actions service and will be required there before delivery.
 
 ### E2E
 
@@ -129,7 +130,7 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 ## Context checkpoint
 
 ```yaml
-last_progress: #208 implementation PR #210 merged as protected main f056cd38dde6065a3154e256d01aea9e5a09e5f4; constrained terminal snapshot API is available and Durability authority is restored only on its existing owned paths
+last_progress: normal non-force merge-up completed locally from protected main 4c395ece416c3c56aed5607653a0730c52dcb3fd; Task 1 re-established a guarded real-PostgreSQL test harness plus fresh-ledger, same-attempt replay and cross-process replay RED specifications; no Durability production module exists yet
 status: READY_TO_RESUME
 branch: impl/game-durability-journal
 head_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
@@ -139,5 +140,5 @@ final_head_sha: null
 owner_action_required: null
 blocker: null
 write_authority: exact_owned_paths_after_foundation_terminal_reconciliation_implementation_merge
-next_action: normal non-force merge protected main f056cd38dde6065a3154e256d01aea9e5a09e5f4 into the preserved existing worker branch, reconcile only owned task/test changes, then resume Task 1 TDD
+next_action: implement only the minimum allocated Durability module required to advance the confirmed Task 1 RED suite, retaining the real PostgreSQL/cross-process tests as the contract
 ```
