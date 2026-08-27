@@ -1,5 +1,6 @@
 [package]
 name = "oteryn-game-server"
+default-run = "oteryn-game-server"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -18,6 +19,7 @@ oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
 oteryn-simulation-determinism = { version = "=0.1.0", path = "../../crates/simulation-determinism" }
 serde.workspace = true
 serde_json.workspace = true
+sqlx.workspace = true
 tokio.workspace = true
 
 [lints]

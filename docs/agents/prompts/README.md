@@ -7,6 +7,9 @@ These prompts are execution contracts for recurring Oteryn v2 programmes. They d
 - `OTV2_ARCHITECTURE_CONTINUATION_AGENT.md` — iterative Oteryn-v2 architecture work in architecture/analysis-only mode by default. Short invocation: `Oteryn: architektura`.
 - `OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — staged global architecture decision coordinator.
 - `OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT.md` — bounded domain architecture design worker allocated by the architecture coordinator.
+- `OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md` — continuation and packaging of the owner-approved Work-control-plane + Sol-lane-lead + selective-Codex execution model. **Short invocation: `Oteryn: sol execution architecture`.**
+
+The Sol execution architecture prompt is governance/architecture only. It validates the written execution-model spec against live GitHub, requires owner confirmation of that written spec before authoring the adoption plan, and then packages the future Sol lane-lead prompt family. It grants no gameplay/runtime, production or cross-repository authority.
 
 ## Implementation programme
 
@@ -25,6 +28,12 @@ The coordinator resolves live `main`, performs the serial bootstrap gate first, 
 - `OTV2_WORK_DELIVERY_COORDINATOR.md` — ChatGPT Work execution coordinator/subagent dispatcher with fail-closed material architecture escalation. **Short invocation: `Oteryn: work coordinator`.**
 
 The Work profile does not supersede or widen `OTV2_IMPLEMENTATION_COORDINATOR`. It is a stricter execution profile: Work coordinates exact allocations, path-disjoint subagents and integration, while material architecture/API/schema/security/persistence/resource/cross-repository conflicts become durable `ARCHITECTURE_ESCALATION_REQUIRED` handoffs to the owner-designated Supervising Architect rather than worker-selected architecture.
+
+### Independent Work delivery audit
+
+- `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` — read-only, high-effort forensic audit of the live Work coordinator lifecycle. **Short invocation: `Oteryn: work auditor`.**
+
+The Work auditor independently reconstructs coordinator execution from live GitHub Issue/task/branch/PR/exact-head check/review/merge evidence, treats Work summaries as claims rather than proof, and verifies programme resolution, allocation timing, path/lease isolation, DAG order, architecture escalation, worker integration, QA truthfulness and closeout. It may recommend `PASS_CONTINUE`, lane/coordinator pause, reconciliation or architecture escalation, but it has no repository mutation, implementation, merge/close, production or cross-repository write authority. It does not supersede the broader `OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT`.
 
 ### Next-wave parallel preparation
 
