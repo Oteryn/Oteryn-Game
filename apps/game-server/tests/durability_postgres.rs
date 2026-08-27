@@ -877,8 +877,8 @@ fn commit_row_lock_wait_cannot_outlive_authorization_deadline()
 }
 
 #[test]
-fn prepare_row_lock_wait_cannot_outlive_prepared_deadline()
--> Result<(), Box<dyn std::error::Error>> {
+fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dyn std::error::Error>>
+{
     if !postgres_e2e_is_configured()? {
         return Ok(());
     }
