@@ -184,6 +184,80 @@ Candidate design principles:
 - the pool should be consumed from the **extra XP granted**, not from base XP, elapsed combat time, login time or number of kills;
 - no concrete bonus percentage, pool size, recharge curve or source classification is approved by this checkpoint.
 
+### Owner-directed raw-XP accounting constraint
+
+For this candidate, Rested calculation must be anchored to **raw XP before later XP modifiers**. The relevant value is the raw XP attributable to the specific Character after authoritative kill attribution and any party/share split, but before prey bonuses, Store XP boosts, scheduled/double-XP events, VIP/premium modifiers, low-level bonuses or other downstream multipliers.
+
+Use the semantic value `EligibleRawXP` for analysis:
+
+```text
+Monster/source raw XP
+-> authoritative attribution / party-share calculation
+-> EligibleRawXP for Character
+-> RestedBonus from EligibleRawXP
+-> remaining independent XP modifiers
+-> FinalXP
+```
+
+Candidate invariant:
+
+```text
+RestedBonus = min(CurrentRestedPool, EligibleRawXP * RestedRate)
+RestedPoolAfter = CurrentRestedPool - RestedBonus
+```
+
+Consequences:
+
+- later XP bonuses cannot increase RestedPool consumption or make one unit of Rested more valuable during a Double XP event;
+- a Character in a party calculates Rested only from that Character's own `EligibleRawXP`, never from the monster's full XP value or another party member's share;
+- an XP source that is Rested-ineligible grants neither Rested bonus nor RestedPool consumption;
+- stacking/additive-versus-multiplicative rules for non-Rested bonuses remain a separate balance decision and must not alter the Rested accounting base.
+
+This raw-XP anchoring is owner-directed for the current Rested candidate, while the larger decision to replace classic stamina remains open.
+
+### Anti-automation integration — separate from Rested punishment
+
+The Rested mechanic may support anti-bot / anti-automation work, but it should not become the primary enforcement mechanism and should not recreate a universal low-stamina punishment tier for legitimate long sessions.
+
+Preferred architecture direction for further analysis:
+
+```text
+EligibleRawXP / gameplay events
+        |
+        +-> Rested accounting
+        |
+        +-> anti-automation telemetry
+                 |
+                 v
+            risk analysis
+                 |
+                 v
+        separate enforcement policy
+```
+
+`EligibleRawXP` is especially useful as a neutral activity measure because it is not distorted by Rested, prey, Store boosts, Double XP events or other reward multipliers. Candidate anti-automation telemetry may therefore derive server-authoritative rolling signals such as:
+
+- eligible raw-XP velocity over bounded windows;
+- duration and density of continuous repeatable farming;
+- route/path repetition and repeated encounter ordering;
+- combat/target/action cadence and unusually stable timing patterns;
+- session structure, recovery after death and repeated return-to-route behavior;
+- cross-Channel continuation of materially identical farming patterns;
+- account/Character correlations where repository policy and privacy constraints permit them.
+
+Anti-abuse principles to preserve:
+
+- long playtime or high raw XP alone is **not** proof of automation and must not independently trigger punitive action;
+- Rested exhaustion should still return a legitimate Character to ordinary baseline XP/loot rather than silently degrading rewards because a risk model exists;
+- anti-automation detection/risk scoring and enforcement are separate concerns from Rested reward accounting;
+- risk decisions should combine multiple independent signals and require explicit policy for confidence, review/challenge and enforcement;
+- do not expose exact detection thresholds through gameplay mechanics in a way that lets automation tune itself just below a public boundary;
+- client clocks are not authoritative; timing and XP telemetry must use server-authoritative state;
+- Channel switching, reconnects or region failover must not reset relevant telemetry windows or duplicate Rested credit;
+- a future anti-bot subsystem may use Rested/EligibleRawXP data, but it must not make `played too long` equivalent to `bot`.
+
+The positive Rested incentive still creates a small natural advantage for normal human play rhythms: a player who goes offline to sleep may return with Rested value, while a 24/7 automated farmer forgoes that recharge while continuously farming. Treat this as an economic incentive and telemetry signal, **not** sufficient anti-bot enforcement by itself.
+
 All numeric examples discussed so far — including values such as `+25% XP`, `8–12 hours` of rest, `100%/110%/120%` recovery rates or any specific rested-pool size — are illustrative only and have **no owner-approved authority**.
 
 Before disposition, the deep-dive should decide at least:
@@ -199,7 +273,10 @@ Before disposition, the deep-dive should decide at least:
 9. durable ownership of rested state and safe behavior across Channel switch, region failover and logout/login recovery;
 10. observability and audit requirements sufficient to diagnose duplicate credit, missed rest and timing disputes;
 11. which XP source classes consume RestedPool and which are explicitly exempt;
-12. whether manual pause/toggle is prohibited by design or retained only as a fallback if user-testing demonstrates a real need.
+12. whether manual pause/toggle is prohibited by design or retained only as a fallback if user-testing demonstrates a real need;
+13. exact definition and provenance of `EligibleRawXP` for solo, party, summon, shared-XP and scripted-kill attribution;
+14. which anti-automation telemetry signals may be derived from `EligibleRawXP` and gameplay events without coupling Rested to enforcement;
+15. risk-scoring, challenge/review and enforcement policy sufficient to avoid treating legitimate long sessions as automation.
 
 Do not implement or canonically reference a rested/stamina replacement until this analysis receives an explicit owner disposition.
 
