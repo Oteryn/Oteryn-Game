@@ -3,7 +3,9 @@ mod durability;
 #[path = "support/postgres.rs"]
 mod postgres;
 
-use durability::{AdmissionReconnectJournal, MigrationExecutor, SchemaCompatibility};
+use durability::{
+    AdmissionReconnectJournal, DurabilityError, MigrationExecutor, SchemaCompatibility,
+};
 use oteryn_game_server::foundation::{
     AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId, CommandId,
     ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1, GameSessionId,
@@ -617,6 +619,69 @@ fn stale_commit_terminalizes_the_prepared_attempt_for_reconciliation()
                         prepare.record().clone(),
                     )
                 );
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn committed_replay_fails_closed_when_session_state_is_inconsistent()
+-> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("corrupt_commit_state").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(62, 1, 0x73, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current =
+                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                        .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                sqlx::query(
+                    "UPDATE game_durability_reconnect_sessions SET session_state = 1 \
+                     WHERE game_session_id = $1",
+                )
+                .bind(
+                    prepare
+                        .record()
+                        .identity()
+                        .game_session_id()
+                        .as_bytes()
+                        .as_slice(),
+                )
+                .execute(&pool)
+                .await?;
+                assert!(matches!(
+                    journal.commit(&commit).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;
