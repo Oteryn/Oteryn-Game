@@ -41,6 +41,15 @@
     "SCOPE_EXPANSION"
   ],
   "risk_routing": {
+    "precedence": [
+      "CODEX_REQUIRED",
+      "CODEX_OPTIONAL",
+      "CODEX_NOT_REQUIRED_BY_THIS_POLICY"
+    ],
+    "multi_tag_rule": "HIGHEST_PRECEDENCE_MATCH_WINS",
+    "unknown_or_conflicting_classification": "FAIL_CLOSED_REVIEW_CLASSIFICATION_REQUIRED",
+    "classification_owner": "ALLOCATED_LANE_LEAD_OR_EXPLICIT_GOVERNING_TASK_RISK_METADATA",
+    "control_plane_must_not_invent_or_override_risk_tags": true,
     "CODEX_REQUIRED": [
       "DURABLE_PERSISTENCE",
       "DURABLE_SCHEMA",
@@ -92,7 +101,7 @@
   },
   "control_plane": {
     "technical_discretion": "NONE",
-    "routing_method": "MECHANICALLY_APPLY_RISK_ROUTING",
+    "routing_method": "MECHANICALLY_APPLY_RISK_ROUTING_PRECEDENCE_TO_PROVIDED_OR_GOVERNING_RISK_TAGS",
     "must_verify_exact_head_review_evidence": true,
     "must_not_adjudicate_technical_findings": true,
     "technical_findings_return_to_lane_lead": true
