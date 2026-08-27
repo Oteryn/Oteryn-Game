@@ -94,6 +94,36 @@ Create or update, under an exact architecture/governance allocation only:
 
 Without write allocation, return the proposed package in read-only form and do not mutate repository state.
 
+## Validation
+
+Before declaring the expansion package ready, require:
+
+- fresh protected-main and open-backlog reconciliation;
+- no proposed primary-path overlaps;
+- explicit shared-surface serialization;
+- every proposed lane bound to accepted architecture or explicitly escalated;
+- prompt self-evaluation against `docs/agents/PROMPT_EVAL_STANDARD.md` for any newly packaged prompt;
+- applicable governance/repository checks for any written planning package;
+- whole-package self-review and genuinely independent review where the package changes material architecture or execution authority.
+
+## Handoff
+
+Return one durable checkpoint, even when no write allocation exists:
+
+```yaml
+result: READY_FOR_OWNER_REVIEW | WAITING_DEPENDENCY | ARCHITECTURE_ESCALATION_REQUIRED | OWNER_DECISION_REQUIRED | POLICY_CONFLICT
+main_sha:
+vsl_terminal_ref:
+proposed_lanes: []
+shared_surfaces: []
+architecture_escalations: []
+owner_decisions: []
+written_package_refs: []
+validation: []
+unresolved_findings: []
+next_action: <exactly one concrete action>
+```
+
 ## Safety
 
 No runtime/product writes, production/protected-environment mutation, secrets, live data or external-repository writes. Do not turn historical Reference data into canonical product truth or freeze permanent world/content decisions without accepted authority and evidence.
