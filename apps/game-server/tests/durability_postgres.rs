@@ -157,16 +157,16 @@ fn postgres_e2e_is_configured() -> Result<bool, Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn isolated_postgres_guard_classifies_absence_and_rejects_unsafe_configuration() {
+fn isolated_postgres_guard_classifies_absence_and_rejects_unsafe_configuration()
+-> Result<(), Box<dyn std::error::Error>> {
     assert_eq!(
-        postgres::classify_e2e_admin_url(None).unwrap(),
+        postgres::classify_e2e_admin_url(None)?,
         postgres::PostgresE2eAvailability::NotConfigured
     );
     assert_eq!(
         postgres::classify_e2e_admin_url(Some(
             "postgresql://oteryn_test_admin:secret@127.0.0.1:5432/postgres"
-        ))
-        .unwrap(),
+        ))?,
         postgres::PostgresE2eAvailability::Configured
     );
     assert!(matches!(
@@ -191,6 +191,7 @@ fn isolated_postgres_guard_classifies_absence_and_rejects_unsafe_configuration()
         "postgresql://oteryn_test_admin:secret@127.0.0.1:5432/postgres?options=-c%20search_path%3Dpublic"
     )
     .is_err());
+    Ok(())
 }
 
 #[test]
