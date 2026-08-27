@@ -358,6 +358,138 @@
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+    },
+    {
+      "prompt_id": "OTV2_TERRA_GAME_CONTROL_PLANE",
+      "path": "docs/agents/prompts/OTV2_TERRA_GAME_CONTROL_PLANE.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "implementation-programme-control-plane",
+      "scope": "ChatGPT Work/Terra High deterministic Game control plane; zero technical/architecture discretion and no runtime implementation authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Additive Terra-specific profile; it does not supersede OTV2_WORK_DELIVERY_COORDINATOR or OTV2_IMPLEMENTATION_COORDINATOR unless a later explicit lifecycle change says so."
+    },
+    {
+      "prompt_id": "OTV2_SOL_SUPERVISING_ARCHITECT",
+      "path": "docs/agents/prompts/OTV2_SOL_SUPERVISING_ARCHITECT.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "architecture-programme",
+      "scope": "Material Game architecture escalation resolver; no implicit runtime implementation, merge, production or cross-repository write authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+    },
+    {
+      "prompt_id": "OTV2_SOL_DURABILITY_LEAD",
+      "path": "docs/agents/prompts/OTV2_SOL_DURABILITY_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "live-implementation-coordinator-allocation",
+      "scope": "Sol Extra High Durability lane lead; writes require the current exact merged Durability allocation and owned paths.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This lead profile does not supersede OTV2_IMPL_DURABILITY; it specializes reasoning/leadership under live coordinator allocation."
+    },
+    {
+      "prompt_id": "OTV2_SOL_SERVER_SEAM_LEAD",
+      "path": "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "live-implementation-coordinator-allocation",
+      "scope": "Sol Extra High Server Seam lane lead; read-only until exact prerequisites/allocation are proven, then writes only within owned paths.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This lead profile does not supersede OTV2_IMPL_SERVER_SEAM; it specializes reasoning/leadership under live coordinator allocation."
+    },
+    {
+      "prompt_id": "OTV2_SOL_CLIENT_QA_LEAD",
+      "path": "docs/agents/prompts/OTV2_SOL_CLIENT_QA_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "live-implementation-coordinator-allocation",
+      "scope": "Sol Extra High native Client/QA lane lead; writes require current compatible Server Seam and exact merged allocation.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This lead profile does not supersede OTV2_IMPL_NATIVE_CLIENT or OTV2_IMPL_QA_E2E; it coordinates the bounded current client/QA lane under live allocation."
+    },
+    {
+      "prompt_id": "OTV2_SOL_MOVEMENT_LEAD",
+      "path": "docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "live-implementation-coordinator-allocation",
+      "scope": "Sol Extra High Movement lane lead; writes require terminal current resource gate/prerequisites and exact merged allocation.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This lead profile does not supersede OTV2_IMPL_VSL_MOVEMENT; it specializes reasoning/leadership under live coordinator allocation."
+    },
+    {
+      "prompt_id": "OTV2_SOL_COMBAT_LEAD",
+      "path": "docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "live-implementation-coordinator-allocation",
+      "scope": "Sol Extra High Combat lane lead; writes require merged Movement/current prerequisites and exact Combat allocation.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This lead profile does not supersede OTV2_IMPL_VSL_COMBAT; it specializes reasoning/leadership under live coordinator allocation."
+    },
+    {
+      "prompt_id": "OTV2_SOL_POST_VSL_EXPANSION",
+      "path": "docs/agents/prompts/OTV2_SOL_POST_VSL_EXPANSION.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "architecture-programme",
+      "scope": "Read-only-by-default post-VSL planning/decomposition of remaining accepted Game work; no runtime implementation authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+    },
+    {
+      "prompt_id": "OTV2_SOL_WORLD_CONTENT_PREP",
+      "path": "docs/agents/prompts/OTV2_SOL_WORLD_CONTENT_PREP.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "post-vsl-read-only-preparation",
+      "scope": "Post-VSL World/Content read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Preparation-only profile; alias reuse never grants write authority. A later exact merged allocation/prompt lifecycle is required before implementation."
+    },
+    {
+      "prompt_id": "OTV2_SOL_NPC_AI_PREP",
+      "path": "docs/agents/prompts/OTV2_SOL_NPC_AI_PREP.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "post-vsl-read-only-preparation",
+      "scope": "Post-VSL NPC/AI read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Preparation-only profile; alias reuse never grants write authority. A later exact merged allocation/prompt lifecycle is required before implementation."
+    },
+    {
+      "prompt_id": "OTV2_SOL_SYSTEMS_ECONOMY_PREP",
+      "path": "docs/agents/prompts/OTV2_SOL_SYSTEMS_ECONOMY_PREP.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "post-vsl-read-only-preparation",
+      "scope": "Post-VSL Systems/Economy read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Preparation-only profile; alias reuse never grants write authority. A later exact merged allocation/prompt lifecycle is required before implementation."
+    },
+    {
+      "prompt_id": "OTV2_SOL_TOOLING_OPS_PREP",
+      "path": "docs/agents/prompts/OTV2_SOL_TOOLING_OPS_PREP.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "post-vsl-read-only-preparation",
+      "scope": "Post-VSL Tooling/Ops read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Preparation-only profile; alias reuse never grants write authority. A later exact merged allocation/prompt lifecycle is required before implementation."
     }
   ]
 }
