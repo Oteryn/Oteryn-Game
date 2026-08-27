@@ -212,8 +212,7 @@ mod durability_contract_tests {
             ReconnectDurabilityErrorV1::InvalidRecord
         }
 
-        let game_session_id =
-            GameSessionId::decode(&crate::uuid_v7(84)).map_err(invalid_record)?;
+        let game_session_id = GameSessionId::decode(&crate::uuid_v7(84)).map_err(invalid_record)?;
         let character_id = CharacterId::decode(&crate::uuid_v7(11)).map_err(invalid_record)?;
         let world_id = WorldId::decode(&crate::uuid_v7(12)).map_err(invalid_record)?;
         let channel_id = ChannelId::decode(&crate::uuid_v7(13)).map_err(invalid_record)?;
@@ -582,7 +581,8 @@ mod durability_contract_tests {
     #[test]
     fn prepare_requires_reconnectable_state_and_no_current_controller() -> TestResult {
         run_postgres_test(async {
-            let (database, database_url, _executor) = migrated_database("prepare_authority").await?;
+            let (database, database_url, _executor) =
+                migrated_database("prepare_authority").await?;
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
             let record_now = crate::unix_now().map_err(crate::foundation_error)?;
             let (_first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
@@ -718,10 +718,7 @@ mod durability_contract_tests {
             assert_eq!(stored.3, crate::uuid_v7(12));
             assert_eq!(stored.4, 1);
             assert_eq!(stored.5, crate::uuid_v7(12));
-            assert_eq!(
-                stored.6.as_deref(),
-                Some(crate::uuid_v7(13).as_slice())
-            );
+            assert_eq!(stored.6.as_deref(), Some(crate::uuid_v7(13).as_slice()));
             assert!(stored.7.is_none());
             assert_eq!(stored.8, u64::MAX.to_string());
             let pending: Vec<(String, i16)> = sqlx::query_as(
@@ -807,9 +804,7 @@ mod durability_contract_tests {
                     "UPDATE game_durability_reconnect_sessions SET {mutation} WHERE game_session_id = encode($1, 'hex')::uuid"
                 );
                 connection
-                    .execute(
-                        sqlx::query(sqlx::AssertSqlSafe(mutate)).bind(session_id.as_slice()),
-                    )
+                    .execute(sqlx::query(sqlx::AssertSqlSafe(mutate)).bind(session_id.as_slice()))
                     .await?;
                 assert!(matches!(
                     journal.reconcile(&prepare).await,
@@ -819,9 +814,7 @@ mod durability_contract_tests {
                     "UPDATE game_durability_reconnect_sessions SET {restore} WHERE game_session_id = encode($1, 'hex')::uuid"
                 );
                 connection
-                    .execute(
-                        sqlx::query(sqlx::AssertSqlSafe(restore)).bind(session_id.as_slice()),
-                    )
+                    .execute(sqlx::query(sqlx::AssertSqlSafe(restore)).bind(session_id.as_slice()))
                     .await?;
             }
             assert_eq!(journal.reconcile(&prepare).await?, committed());
