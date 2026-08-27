@@ -244,6 +244,7 @@ impl AdmissionReconnectJournal {
                 let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
                 if session.try_get::<i64, _>("current_generation")? == candidate
                     && current_ref.as_deref() == Some(transport_ref.as_slice())
+                    && session.try_get::<i16, _>("session_state")? == ACTIVE
                 {
                     transaction.commit().await?;
                     return Ok(ReconnectCommitDispositionV1::Committed);
