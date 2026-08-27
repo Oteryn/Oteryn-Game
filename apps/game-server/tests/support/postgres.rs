@@ -181,6 +181,17 @@ mod durability_contract_tests {
     use std::time::Duration;
 
     type TestResult = Result<(), Box<dyn Error>>;
+    type CanonicalAttemptRow = (
+        Vec<u8>,
+        String,
+        Vec<u8>,
+        Vec<u8>,
+        i16,
+        Vec<u8>,
+        Option<Vec<u8>>,
+        Option<Vec<u8>>,
+        String,
+    );
 
     fn run_postgres_test<F>(future: F) -> TestResult
     where
@@ -689,17 +700,7 @@ mod durability_contract_tests {
             .fetch_one(&mut connection)
             .await?;
             assert_eq!(pending_schema, ("numeric".to_owned(), Some(20), Some(0)));
-            let stored: (
-                Vec<u8>,
-                String,
-                Vec<u8>,
-                Vec<u8>,
-                i16,
-                Vec<u8>,
-                Option<Vec<u8>>,
-                Option<Vec<u8>>,
-                String,
-            ) = sqlx::query_as(
+            let stored: CanonicalAttemptRow = sqlx::query_as(
                 "SELECT uuid_send(game_session_id), account_id::text, uuid_send(character_id), uuid_send(world_id), \
                         runtime_scope_kind, uuid_send(runtime_scope_world_id), \
                         CASE WHEN runtime_scope_channel_id IS NULL THEN NULL ELSE uuid_send(runtime_scope_channel_id) END, \
