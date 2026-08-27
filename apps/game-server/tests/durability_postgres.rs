@@ -541,3 +541,96 @@ fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
             result
         })
 }
+
+#[test]
+fn stale_commit_terminalizes_the_prepared_attempt_for_reconciliation()
+-> Result<(), Box<dyn std::error::Error>> {
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("stale_commit").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(61, 1, 0x72, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                assert_eq!(
+                    flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                        &prepare,
+                        ReconnectPrepareDispositionV1::Prepared,
+                    ))
+                    .map_err(foundation_error)?,
+                    ReconnectPrepareActionV1::AwaitFinalRevalidation
+                );
+                let current =
+                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                        .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                sqlx::query(
+                    "UPDATE game_durability_reconnect_sessions \
+                     SET session_state = 2, current_generation = 8, current_transport_ref = $2 \
+                     WHERE game_session_id = $1",
+                )
+                .bind(
+                    prepare
+                        .record()
+                        .identity()
+                        .game_session_id()
+                        .as_bytes()
+                        .as_slice(),
+                )
+                .bind([0x99_u8; 16].as_slice())
+                .execute(&pool)
+                .await?;
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::RejectedStaleAuthority
+                );
+                assert_eq!(
+                    flow.accept_commit_completion(ReconnectCommitCompletionV1::for_request(
+                        &commit,
+                        ReconnectCommitDispositionV1::RejectedStaleAuthority,
+                    ))
+                    .map_err(foundation_error)?,
+                    ReconnectCommitActionV1::Terminal(
+                        ReconnectCommitDispositionV1::RejectedStaleAuthority
+                    )
+                );
+                let (mut retry_flow, retry_prepare) =
+                    ReconnectDurabilityFlowV1::begin(prepare.record().clone());
+                retry_flow
+                    .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                        &retry_prepare,
+                        ReconnectPrepareDispositionV1::ExistingTerminal,
+                    ))
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    retry_flow
+                        .accept_reconciliation(
+                            journal.reconcile(&retry_prepare).await?,
+                            ScopeOwnershipGeneration::new(10).map_err(|_error| {
+                                std::io::Error::other("invalid scope generation")
+                            })?,
+                        )
+                        .map_err(foundation_error)?,
+                    ReconnectProjectionDecisionV1::Terminal
+                );
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
