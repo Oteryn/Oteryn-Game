@@ -146,6 +146,23 @@ fn record(
 
 #[test]
 fn isolated_postgres_guard_rejects_nonlocal_socket_query_and_inherited_configuration() {
+    assert_eq!(
+        postgres::classify_e2e_admin_url(None).unwrap(),
+        postgres::PostgresE2eAvailability::NotConfigured
+    );
+    assert_eq!(
+        postgres::classify_e2e_admin_url(Some(
+            "postgresql://oteryn_test_admin:secret@127.0.0.1:5432/postgres"
+        ))
+        .unwrap(),
+        postgres::PostgresE2eAvailability::Configured
+    );
+    assert!(matches!(
+        postgres::classify_e2e_admin_url(Some(
+            "postgresql://oteryn_test_admin:secret@remote.example/postgres"
+        )),
+        Err(postgres::IsolatedPostgresError::UnsafeAdminUrl)
+    ));
     assert!(
         postgres::validate_admin_url(
             "postgresql://oteryn_test_admin:secret@remote.example/postgres"
