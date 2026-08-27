@@ -1422,3 +1422,226 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod durability_evidence_v1_tests {
+    use super::*;
+    use base64::Engine;
+    use ed25519_dalek::{Signer, SigningKey};
+
+    struct RecoveryAuthority {
+        key: [u8; 32],
+    }
+
+    impl Fnd04EvidenceAuthority for RecoveryAuthority {
+        fn signing_key(
+            &self,
+            scope: Fnd04EvidenceScope,
+            key_id: &str,
+            _now: i64,
+        ) -> Result<[u8; 32], Fnd04EvidenceError> {
+            if scope == Fnd04EvidenceScope::ExistingActorRecovery && key_id == "recovery-1" {
+                Ok(self.key)
+            } else {
+                Err(Fnd04EvidenceError::ExplicitlyDenied)
+            }
+        }
+
+        fn account_minimum_generation(
+            &self,
+            scope: Fnd04EvidenceScope,
+            _account_id: &str,
+            _now: i64,
+        ) -> Result<u64, Fnd04EvidenceError> {
+            if scope == Fnd04EvidenceScope::ExistingActorRecovery {
+                Ok(1)
+            } else {
+                Err(Fnd04EvidenceError::ExplicitlyDenied)
+            }
+        }
+    }
+
+    fn id(last: u8) -> [u8; 16] {
+        let mut value = [0u8; 16];
+        value[6] = 0x70;
+        value[8] = 0x80;
+        value[15] = last;
+        value
+    }
+
+    fn recovery_payload() -> String {
+        let nonce = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([8; 32]);
+        format!(
+            r#"{{"iss":"urn:oteryn:platform:game-recovery","aud":"urn:oteryn:game:recovery","iat":100,"nbf":100,"exp":110,"jti":"{nonce}","profile":"oteryn-reauth-recovery-v1","purpose":"existing_actor_recovery","attempt_ref":"00000000-0000-7000-8000-000000000001","account_id":"00000000-0000-4000-8000-000000000001","character_id":"00000000-0000-7000-8000-000000000002","world_id":"00000000-0000-7000-8000-000000000003","account_security_generation":"1","protocol_major":1,"transport_profile":1,"ruleset_revision":"rules-1","content_revision":"content-1","map_revision":"map-1","world_policy_revision":"policy-1"}}"#
+        )
+    }
+
+    fn signed_recovery(signing_key: &SigningKey) -> String {
+        let header = r#"{"alg":"Ed25519","kid":"recovery-1","typ":"oteryn-recovery+jwt"}"#;
+        let encoded_header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(header);
+        let encoded_payload =
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(recovery_payload());
+        let signing_input = format!("{encoded_header}.{encoded_payload}");
+        let signature = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(signing_key.sign(signing_input.as_bytes()).to_bytes());
+        format!("{signing_input}.{signature}")
+    }
+
+    #[test]
+    fn recovery_durability_facts_preserve_signed_security_revision_and_expiry()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[23; 32]);
+        let authority = RecoveryAuthority {
+            key: signing_key.verifying_key().to_bytes(),
+        };
+        let trust = RecoveryTrustContext::new(&authority);
+        let current = RecoveryCurrentEvidence {
+            account_id: "00000000-0000-4000-8000-000000000001".to_owned(),
+            character_id: CharacterId::decode(&id(2))
+                .map_err(|_| Fnd04ConsumerError::RecoveryMalformed)?,
+            world_id: WorldId::decode(&id(3)).map_err(|_| Fnd04ConsumerError::RecoveryMalformed)?,
+            ruleset_revision: "rules-1".to_owned(),
+            content_revision: "content-1".to_owned(),
+            map_revision: "map-1".to_owned(),
+            world_policy_revision: "policy-1".to_owned(),
+        };
+
+        let facts = verify_recovery_grant_durability_v1(
+            &signed_recovery(&signing_key),
+            100,
+            &trust,
+            &current,
+        )?;
+
+        assert_eq!(facts.grant_nonce(), [8; 32]);
+        assert_eq!(facts.account_id(), current.account_id);
+        assert_eq!(facts.character_id(), current.character_id);
+        assert_eq!(facts.world_id(), current.world_id);
+        assert_eq!(facts.account_security_generation(), 1);
+        assert_eq!(facts.protocol_major(), 1);
+        assert_eq!(facts.transport_profile(), 1);
+        assert_eq!(facts.ruleset_revision(), "rules-1");
+        assert_eq!(facts.content_revision(), "content-1");
+        assert_eq!(facts.map_revision(), "map-1");
+        assert_eq!(facts.world_policy_revision(), "policy-1");
+        assert_eq!(facts.credential_expiration(), 110);
+        Ok(())
+    }
+}
+
+/// Recovery-verifier output for the durable reconnect V1 boundary.
+///
+/// The legacy verifier remains the sole authentication/authorization decision. This
+/// wrapper only preserves signed fields from the same immutable compact JWT after that
+/// decision succeeds; it does not invent source revisions or decision identities that
+/// `Fnd04EvidenceAuthority` does not expose.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct VerifiedRecoveryDurabilityFactsV1 {
+    verified: VerifiedRecoveryFacts,
+    account_security_generation: u64,
+    protocol_major: u64,
+    transport_profile: u64,
+    ruleset_revision: String,
+    content_revision: String,
+    map_revision: String,
+    world_policy_revision: String,
+    credential_expiration: i64,
+}
+
+impl VerifiedRecoveryDurabilityFactsV1 {
+    #[must_use]
+    pub const fn grant_nonce(&self) -> [u8; 32] {
+        self.verified.grant_nonce()
+    }
+
+    #[must_use]
+    pub fn account_id(&self) -> &str {
+        self.verified.account_id()
+    }
+
+    #[must_use]
+    pub const fn character_id(&self) -> CharacterId {
+        self.verified.character_id()
+    }
+
+    #[must_use]
+    pub const fn world_id(&self) -> WorldId {
+        self.verified.world_id()
+    }
+
+    #[must_use]
+    pub const fn account_security_generation(&self) -> u64 {
+        self.account_security_generation
+    }
+
+    #[must_use]
+    pub const fn protocol_major(&self) -> u64 {
+        self.protocol_major
+    }
+
+    #[must_use]
+    pub const fn transport_profile(&self) -> u64 {
+        self.transport_profile
+    }
+
+    #[must_use]
+    pub fn ruleset_revision(&self) -> &str {
+        &self.ruleset_revision
+    }
+
+    #[must_use]
+    pub fn content_revision(&self) -> &str {
+        &self.content_revision
+    }
+
+    #[must_use]
+    pub fn map_revision(&self) -> &str {
+        &self.map_revision
+    }
+
+    #[must_use]
+    pub fn world_policy_revision(&self) -> &str {
+        &self.world_policy_revision
+    }
+
+    #[must_use]
+    pub const fn credential_expiration(&self) -> i64 {
+        self.credential_expiration
+    }
+}
+
+pub fn verify_recovery_grant_durability_v1(
+    token: &str,
+    now: i64,
+    trust: &RecoveryTrustContext<'_>,
+    current: &RecoveryCurrentEvidence,
+) -> Result<VerifiedRecoveryDurabilityFactsV1, Fnd04ConsumerError> {
+    let verified = verify_recovery_grant(token, now, trust, current)?;
+    let kind = GrantKind::Recovery;
+    let compact = parse_compact_jws(token).map_err(|_| kind.malformed())?;
+    let payload = decode_canonical_base64url(&compact.payload_segment, 3_072)
+        .map_err(|_| kind.malformed())?;
+    let claims = parse_claims(&payload, kind)?;
+    let character = CharacterId::decode(&claims.character).map_err(|_| kind.malformed())?;
+    let world = WorldId::decode(&claims.world).map_err(|_| kind.malformed())?;
+
+    if claims.nonce != verified.grant_nonce()
+        || claims.account_id.as_str() != verified.account_id()
+        || character != verified.character_id()
+        || world != verified.world_id()
+    {
+        return Err(kind.binding_mismatch());
+    }
+
+    Ok(VerifiedRecoveryDurabilityFactsV1 {
+        verified,
+        account_security_generation: claims.account_security_generation,
+        protocol_major: claims.protocol_major,
+        transport_profile: claims.transport_profile,
+        ruleset_revision: claims.ruleset_revision,
+        content_revision: claims.content_revision,
+        map_revision: claims.map_revision,
+        world_policy_revision: claims.world_policy_revision,
+        credential_expiration: claims.exp,
+    })
+}

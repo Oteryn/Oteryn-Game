@@ -4,7 +4,7 @@
 task_id: OTV2-20260826-durability-shared-cargo-ci-lease
 title: Integrate Durability shared Cargo and PostgreSQL CI surfaces
 mode: COORDINATE
-status: allocation_pending
+status: completed_released
 repository: Oteryn/Oteryn-Game
 base_branch: main
 allocation_branch: coord/durability-shared-lease-allocation
@@ -33,6 +33,15 @@ blocks:
   - issue:167 resume from WAITING_EXTERNAL
   - Server Seam re-evaluation after Durability delivery
 external_repositories: []
+allocation_pr: 181
+allocation_merge_sha: 2e8c1605535167e91fe0c7775e520f599e3d89ea
+delivery_pr: 182
+delivery_final_head_sha: 0017cac33fef8c7359bdb9f2ba2c6c367ba06495
+delivery_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
+ownership_release: true
+independent_review: PASS
+independent_review_packet_sha256: 69dca25b19bcedc48f650dcba96f901d098d64bfbcc6601203a77dfd2acf6c2f
+independent_review_response_sha256: 1b8cd28726c5a4f9a8b37b77da9a9b13d3e35a21c9446c88e466d2e17f0305fd
 ```
 
 ## Purpose
@@ -86,10 +95,14 @@ Issue #167 remains `WAITING_EXTERNAL` until this shared integration is merged to
 
 ```yaml
 last_progress: exact shared-path requirement proven; coordinator lease allocation prepared
-status: allocation_pending
+status: completed_released
 branch: coord/durability-shared-cargo-ci
 head_sha: null
 pr: null
-blocker: shared lease allocation must merge before coordinator publishes shared Cargo/workflow mutation
-next_action: merge this allocation record, then publish the already validated shared Cargo/CI candidate from the resulting protected main
+blocker: null
+next_action: none_terminal
 ```
+
+## Terminal reconciliation
+
+The serialized coordinator lease completed through the recorded delivery PR, protected-main readback succeeded, and all listed write authority is released.
