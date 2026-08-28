@@ -73,6 +73,31 @@ fn record_with_prepared_deadline(
     now: i64,
     prepared_deadline: i64,
 ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+    record_for_epoch(
+        game_session_raw,
+        attempt_raw,
+        transport_byte,
+        now,
+        prepared_deadline,
+        3,
+        7,
+        8,
+        0x55,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn record_for_epoch(
+    game_session_raw: u64,
+    attempt_raw: u64,
+    transport_byte: u8,
+    now: i64,
+    prepared_deadline: i64,
+    control_loss_epoch: u64,
+    predecessor_generation: u64,
+    candidate_generation: u64,
+    recovery_nonce_byte: u8,
+) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
     let game_session_id = GameSessionId::decode(&uuid_v7(game_session_raw))
         .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?;
     let character_id = CharacterId::decode(&uuid_v7(11))
@@ -91,8 +116,10 @@ fn record_with_prepared_deadline(
         RuntimeScopeRefV1::channel(world_id, channel_id),
     )?;
     let connection = ReconnectConnectionFenceV1::new(
-        ConnectionGeneration::new(7).map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
-        ConnectionGeneration::new(8).map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        ConnectionGeneration::new(predecessor_generation)
+            .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        ConnectionGeneration::new(candidate_generation)
+            .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
         AuthenticatedTransportRefV1::decode(&[transport_byte; 16])
             .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
     )?;
@@ -102,7 +129,7 @@ fn record_with_prepared_deadline(
             .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
     )?;
     let continuity = ReconnectContinuityV1::new(
-        ControlLossEpochRefV1::new(3)?,
+        ControlLossEpochRefV1::new(control_loss_epoch)?,
         now + 120,
         prepared_deadline,
         ProtectionEntitlementV1::unused(),
@@ -159,7 +186,7 @@ fn record_with_prepared_deadline(
         authority,
         continuity,
         ReconnectProofV1::ReauthenticatedRecovery {
-            recovery_grant_nonce: [0x55; 32],
+            recovery_grant_nonce: [recovery_nonce_byte; 32],
         },
         fnd02,
         compatibility,
@@ -615,6 +642,219 @@ fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
                             .map_err(|_error| std::io::Error::other("invalid transport ref"))?,
                     }
                 );
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn committed_session_accepts_a_later_non_reused_control_loss_epoch()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("cross_epoch_reconnect").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let first_now = unix_now().map_err(foundation_error)?;
+                let (mut first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(63, 1, 0xd1, first_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&first_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                first_flow
+                    .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                        &first_prepare,
+                        ReconnectPrepareDispositionV1::Prepared,
+                    ))
+                    .map_err(foundation_error)?;
+                let first_current =
+                    ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), first_now)
+                        .map_err(foundation_error)?;
+                let first_commit = first_flow
+                    .authorize_commit(first_current, first_now)
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&first_commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+
+                let second_now = first_now + 1;
+                let (mut second_flow, second_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_for_epoch(
+                        63,
+                        2,
+                        0xd2,
+                        second_now,
+                        second_now + 115,
+                        4,
+                        8,
+                        9,
+                        0x56,
+                    )
+                    .map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&second_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared,
+                    "a later authoritative loss epoch must replace the committed transport fence"
+                );
+
+                let (_changed_grace_flow, changed_grace_prepare) =
+                    ReconnectDurabilityFlowV1::begin(
+                        record_for_epoch(
+                            63,
+                            3,
+                            0xd3,
+                            second_now + 1,
+                            second_now + 116,
+                            4,
+                            8,
+                            9,
+                            0x57,
+                        )
+                        .map_err(foundation_error)?,
+                    );
+                assert_eq!(
+                    journal.prepare(&changed_grace_prepare).await?,
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority,
+                    "attempts in one loss epoch cannot restart or extend its original grace"
+                );
+                assert_eq!(
+                    journal.prepare(&changed_grace_prepare).await?,
+                    ReconnectPrepareDispositionV1::ExistingTerminal
+                );
+
+                second_flow
+                    .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                        &second_prepare,
+                        ReconnectPrepareDispositionV1::Prepared,
+                    ))
+                    .map_err(foundation_error)?;
+                let second_current =
+                    ReconnectCurrentAuthorityV1::from_record(second_prepare.record(), second_now)
+                        .map_err(foundation_error)?;
+                let second_commit = second_flow
+                    .authorize_commit(second_current, second_now)
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&second_commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                assert_eq!(
+                    journal.commit(&second_commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                assert!(matches!(
+                    journal.commit(&first_commit).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    journal.reconcile(&first_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+
+                let (_reused_epoch_flow, reused_epoch_prepare) =
+                    ReconnectDurabilityFlowV1::begin(
+                        record_for_epoch(
+                            63,
+                            4,
+                            0xd4,
+                            second_now,
+                            second_now + 115,
+                            3,
+                            9,
+                            10,
+                            0x58,
+                        )
+                        .map_err(foundation_error)?,
+                    );
+                assert_eq!(
+                    journal.prepare(&reused_epoch_prepare).await?,
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority,
+                    "a previously retained loss epoch cannot be reused"
+                );
+                assert_eq!(
+                    journal.prepare(&reused_epoch_prepare).await?,
+                    ReconnectPrepareDispositionV1::ExistingTerminal
+                );
+
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let session_id = second_prepare
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                let session: (
+                    i64,
+                    i64,
+                    i64,
+                    i64,
+                    Option<Vec<u8>>,
+                    i16,
+                    i16,
+                    Option<Vec<u8>>,
+                ) = sqlx::query_as(
+                    "SELECT control_loss_epoch, original_grace_deadline, predecessor_generation, \
+                            current_generation, current_transport_ref, session_state, \
+                            attempt_count, prepared_attempt_ref \
+                     FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(session.0, 4);
+                assert_eq!(session.1, second_now + 120);
+                assert_eq!(session.2, 8);
+                assert_eq!(session.3, 9);
+                assert_eq!(session.4.as_deref(), Some([0xd2_u8; 16].as_slice()));
+                assert_eq!(session.5, 2);
+                assert_eq!(session.6, 2);
+                assert!(session.7.is_none());
+
+                let attempts_per_epoch: Vec<(i64, i64)> = sqlx::query_as(
+                    "SELECT control_loss_epoch, COUNT(*) \
+                     FROM game_durability_reconnect_attempts \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                     GROUP BY control_loss_epoch ORDER BY control_loss_epoch",
+                )
+                .bind(session_id.as_slice())
+                .fetch_all(&pool)
+                .await?;
+                assert_eq!(attempts_per_epoch, vec![(3, 2), (4, 2)]);
+
+                let grace_by_epoch: Vec<(i64, i64)> = sqlx::query_as(
+                    "SELECT control_loss_epoch, \
+                            (record_json::jsonb #>> '{continuity,original_grace_deadline}')::BIGINT \
+                     FROM game_durability_reconnect_attempts \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref IN ($2, $3) \
+                     ORDER BY control_loss_epoch",
+                )
+                .bind(session_id.as_slice())
+                .bind(1_u64.to_be_bytes().as_slice())
+                .bind(2_u64.to_be_bytes().as_slice())
+                .fetch_all(&pool)
+                .await?;
+                assert_eq!(
+                    grace_by_epoch,
+                    vec![(3, first_now + 120), (4, second_now + 120)]
+                );
+                pool.close().await;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;
