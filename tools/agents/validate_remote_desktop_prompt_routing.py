@@ -112,11 +112,22 @@ OUTSIDE_ROUTING_PATTERNS = (
         r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?)\b",
         re.IGNORECASE,
     ),
+    re.compile(
+        r"(?=.*\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?)\b)"
+        r"(?=.*\b(?:(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(
         r"(?=.*\b(?:connector|router|transport)\b)"
         r"(?=.*\b(?:guarantee(?:s|d|ing)?|implement(?:s|ed|ing)?)\b)"
+        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?=.*\b(?:connector|router|transport)\b)"
+        r"(?=.*\benforc\w*\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
     ),
@@ -132,6 +143,10 @@ OUTSIDE_ROUTING_PATTERNS = (
 
 META_ROUTING_COORDINATE_RE = re.compile(
     r"Oteryn/Oteryn@[0-9a-f]{40}:ecosystem/agent-execution-routing-policy\.json"
+)
+ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
+    r"<(Oteryn/Oteryn@[0-9a-f]{40}:ecosystem/agent-execution-routing-policy\.json)>",
+    re.IGNORECASE,
 )
 EXPECTED_META_ROUTING_COORDINATE = (
     f"Oteryn/Oteryn@{META_SHA}:ecosystem/agent-execution-routing-policy.json"
@@ -511,6 +526,7 @@ def _normalize_policy_text(text: str) -> str:
     value = MARKDOWN_LINK_RE.sub(lambda match: match.group(1), value)
     value = MARKDOWN_REFERENCE_LINK_RE.sub(lambda match: match.group(1), value)
     value = HTML_COMMENT_INLINE_RE.sub(" ", value)
+    value = ANGLE_BRACKET_META_ROUTING_COORDINATE_RE.sub(r"\1", value)
     value = HTML_TAG_RE.sub(" ", value)
     value = MARKDOWN_ESCAPE_RE.sub(r"\1", value)
     value = _remove_default_ignorables(value)
