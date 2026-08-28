@@ -18,29 +18,36 @@ Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENT
 
 `list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. This prompt cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work."""
 
-REUSABLE_MARKERS = (
-    META_SHA,
-    "every direct `Remote_Desktop_Commander.*` invocation",
-    "positive per-action",
-    "`list_devices`",
-    "cannot broaden META exception reasons",
-    "routine fallback for repository tests, Git inspection, CI/log polling",
-    "not automatically a blocker",
-)
+CANONICAL_SURFACE_SECTIONS = {
+    "AGENTS.md": f"""## Remote Desktop execution routing
 
-CANONICAL_SURFACES = (
-    "AGENTS.md",
-    "docs/agents/GITHUB_ONLY_EXECUTION.md",
-    "docs/agents/PROMPTING_STANDARD.md",
-    "docs/agents/PROMPT_EVAL_STANDARD.md",
-)
+Before any Remote Desktop/Desktop Commander use, resolve this Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@{META_SHA}`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
 
-FORBIDDEN_PERMISSIVE_PATTERNS = (
-    re.compile(r"Remote Desktop is a routine fallback", re.IGNORECASE),
-    re.compile(r"may use Remote Desktop for (?:routine )?repository tests", re.IGNORECASE),
-    re.compile(r"list_devices may be used for capability discovery", re.IGNORECASE),
-    re.compile(r"Remote_Desktop_Commander\.list_devices may be used for capability discovery", re.IGNORECASE),
-)
+`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. Game cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.
+
+This provider binding is repository/prompt enforcement only. It MUST NOT be described as connector/router physical enforcement unless the actual Remote Desktop transport has a verified fail-closed hook consuming the same per-action semantics.""",
+    "docs/agents/GITHUB_ONLY_EXECUTION.md": f"""## Remote Desktop execution routing
+
+Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@{META_SHA}`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
+
+`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. Game cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.
+
+This policy does not claim connector/router physical enforcement; such a claim requires a verified fail-closed transport hook.""",
+    "docs/agents/PROMPTING_STANDARD.md": f"""## Remote Desktop execution routing
+
+Every reusable prompt must contain exactly one `## Remote Desktop execution routing` section. Before any Remote Desktop/Desktop Commander use, the prompt must resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@{META_SHA}`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
+
+The reusable prompt section must state that `list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions; unknown or undeclared tools fail closed; a prior ALLOW never authorizes a different action or tool; Game cannot broaden META exception reasons; and Remote Desktop cannot become a routine fallback for repository tests, Git inspection, CI/log polling or convenience. It must also state that a Remote Desktop DENY is not automatically a blocker and useful authorized work continues through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when possible.
+
+Prompt self-containment does not copy the META machine-readable policy into Game and does not claim connector/router physical enforcement.""",
+    "docs/agents/PROMPT_EVAL_STANDARD.md": f"""## Remote Desktop execution routing
+
+A reusable prompt fails evaluation if `list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations or another direct connector call can be treated as ordinary capability discovery. Unknown or undeclared tools must fail closed, a prior ALLOW must not authorize a different action/tool, and Game cannot broaden META exception reasons. Remote Desktop must not become a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: the prompt must continue useful authorized work through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when possible.
+
+The evaluated prompt may restate the routing boundary for self-containment, but must not copy/fork META machine-readable policy or claim connector/router physical enforcement without a verified transport hook.""",
+}
+
+CANONICAL_SURFACES = tuple(CANONICAL_SURFACE_SECTIONS)
 
 # Reusable prompts have one canonical Remote Desktop authority block. Any additional
 # Remote Desktop policy vocabulary outside that block is rejected so another paragraph
@@ -58,6 +65,19 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(r"\b(?:connector|router|transport)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
     re.compile(r"\bphysical(?:ly)?\b.{0,100}\b(?:connector|router|transport)\b.{0,100}\benforc", re.IGNORECASE),
 )
+
+APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS = {
+    "AGENTS.md": {
+        "Before any local/remote repository mutation, including work through Remote Desktop/Desktop Commander, Synology, WSL, Docker or a local worktree, the agent MUST first resolve from GitHub the exact repository, current `main` SHA, governing Issue/task (or explicit `NOT_APPLICABLE` for bounded trivial/read-only work), active PR/task branch, exact base/head SHAs and material overlapping work.",
+        "Remote Desktop/Desktop Commander remains exception-only under the organization execution-routing policy and is not the routine fallback for repository work. Tool availability never grants or broadens authorization.",
+        "For project work, use GitHub state, GitHub Actions or an approved runner, and an isolated worktree first. Remote Desktop/Desktop Commander is default-deny. A host exception must record one closed reason, the least-privilege semantic host action and the exact requested connector tool; it is never justification for routine builds, tests, Git inspection or polling. When equivalent CI exists, agents MUST NOT use RDC to poll process output, Docker logs, workflow state or Git state.",
+    },
+    "docs/agents/GITHUB_ONLY_EXECUTION.md": set(),
+    "docs/agents/PROMPTING_STANDARD.md": set(),
+    "docs/agents/PROMPT_EVAL_STANDARD.md": {
+        f"- **Remote Desktop routing:** every reusable prompt contains exactly one `## Remote Desktop execution routing` section bound to `Oteryn/Oteryn@{META_SHA}`; out-of-band local connector/tool registration and argument-schema inspection is distinct from every direct `Remote_Desktop_Commander.*` invocation, which requires a fresh valid host-exception context and positive per-action authorization for the exact semantic host action and exact connector tool."
+    },
+}
 
 
 def load_lifecycle(errors: list[str]) -> dict:
@@ -110,6 +130,29 @@ def _extract_canonical_section(path: str, text: str, errors: list[str]) -> tuple
     return section_text, outside_text
 
 
+def _outside_routing_paragraphs(text: str) -> list[str]:
+    paragraphs = [paragraph.strip() for paragraph in re.split(r"\n\s*\n", text) if paragraph.strip()]
+    return [
+        paragraph
+        for paragraph in paragraphs
+        if any(pattern.search(paragraph) is not None for pattern in OUTSIDE_ROUTING_PATTERNS)
+    ]
+
+
+def _validate_outside_routing_text(
+    path: str,
+    outside_text: str,
+    approved: set[str],
+    errors: list[str],
+) -> None:
+    for paragraph in _outside_routing_paragraphs(outside_text):
+        if paragraph not in approved:
+            snippet = paragraph.replace("\n", " ")[:160]
+            errors.append(
+                f"{path}: Remote Desktop policy text outside canonical section: {snippet!r}"
+            )
+
+
 def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> None:
     extracted = _extract_canonical_section(path, text, errors)
     if extracted is None:
@@ -119,22 +162,24 @@ def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> No
     if section_text != CANONICAL_PROMPT_SECTION:
         errors.append(f"{path}: canonical Remote Desktop routing section must match exactly")
 
-    for pattern in OUTSIDE_ROUTING_PATTERNS:
-        match = pattern.search(outside_text)
-        if match is not None:
-            snippet = match.group(0).replace("\n", " ")[:120]
-            errors.append(
-                f"{path}: Remote Desktop policy text outside canonical section: {snippet!r}"
-            )
+    _validate_outside_routing_text(path, outside_text, set(), errors)
 
 
 def validate_surface_text(path: str, text: str, errors: list[str]) -> None:
-    for marker in REUSABLE_MARKERS:
-        if marker not in text:
-            errors.append(f"{path}: missing Remote Desktop routing marker: {marker}")
-    for pattern in FORBIDDEN_PERMISSIVE_PATTERNS:
-        if pattern.search(text):
-            errors.append(f"{path}: contains permissive Remote Desktop routing text: {pattern.pattern}")
+    extracted = _extract_canonical_section(path, text, errors)
+    if extracted is None:
+        return
+    section_text, outside_text = extracted
+
+    expected = CANONICAL_SURFACE_SECTIONS.get(path)
+    if expected is None:
+        errors.append(f"{path}: canonical surface is not registered")
+        return
+    if section_text != expected:
+        errors.append(f"{path}: canonical Remote Desktop routing section must match exactly")
+
+    approved = APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS.get(path, set())
+    _validate_outside_routing_text(path, outside_text, approved, errors)
 
 
 def validate() -> list[str]:
@@ -177,7 +222,7 @@ def validate() -> list[str]:
     if not errors:
         print(
             f"Validated Remote Desktop per-action routing for {len(prompt_paths)} reusable prompts "
-            f"against META {META_SHA}."
+            f"and {len(CANONICAL_SURFACES)} canonical surfaces against META {META_SHA}."
         )
     return errors
 
