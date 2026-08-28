@@ -74,6 +74,8 @@
         "CANONICAL_RISK_CONTRACT"
       ],
       "source_must_not_be_allocated_worker": true,
+      "source_role_must_be_proven_from_canonical_authority_not_self_declared": true,
+      "source_record_must_be_on_protected_main_or_merged_governing_allocation": true,
       "source_record_must_exist_before_candidate_freeze": true
     },
     "mechanical_changed_scope_rules": {
