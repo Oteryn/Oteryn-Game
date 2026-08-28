@@ -98,7 +98,7 @@ Do not call this head GREEN for the #250 repair; it is only the admitted baselin
 
 **Interfaces:**
 - Consumes: V1 `GameSessionAuthoritySnapshot`, `ReconnectDurabilityRecordV1`, existing V1 prepare/reconciliation flow and reconstructed PostgreSQL journal.
-- Produces: failing tests naming the required V2/terminal-replacement behavior before repair implementation exists.
+- Produces: failing tests naming every new Section 9 terminal-replacement/V2 behavior before repair implementation exists.
 
 - [ ] **Step 1: Add Foundation contract RED tests**
 
@@ -125,6 +125,15 @@ fn generic_v1_existing_terminal_requires_typed_same_attempt_reconciliation() {
     // compatibility flow and assert ReconcileSameAttempt/ReconciliationRequired,
     // never a generic terminal completion that could be interpreted as collision.
 }
+
+#[test]
+fn v2_reconciliation_preserves_all_terminal_dispositions_and_collision_only_remint() {
+    // Reconcile TransportRefCollision, ConcurrentPrepared and StaleAuthority separately.
+    // Assert all three remain distinct terminal outcomes.
+    // Assert only TransportRefCollision marks the attempt collision-terminal and can
+    // unlock a fresh attempt when the existing eight-attempt budget still has capacity.
+    // ConcurrentPrepared and StaleAuthority must never acquire collision-remint semantics.
+}
 ```
 
 - [ ] **Step 2: Add PostgreSQL RED tests**
@@ -142,7 +151,31 @@ async fn terminal_replacement_rejects_scope_fence_ahead_of_foundation_authority(
 async fn terminal_replacement_rejects_live_or_mismatched_predecessor_without_mutation() { /* fixture + assertion */ }
 
 #[tokio::test]
+async fn terminal_replacement_lost_response_replays_only_exact_receipt_binding() {
+    // Commit predecessor->candidate replacement, simulate response loss/process replacement,
+    // then retry the exact request and prove idempotent success from the durable receipt.
+}
+
+#[tokio::test]
+async fn terminal_replacement_conflicting_receipt_binding_fails_closed() {
+    // After one replacement receipt exists, retry with a different predecessor or candidate
+    // binding and prove conflict/stale rejection with no actor-anchor mutation.
+}
+
+#[tokio::test]
+async fn terminal_replacement_fences_predecessor_prepared_attempt_against_late_commit() {
+    // Leave a predecessor attempt PREPARED, perform the authorized replacement, then issue
+    // the predecessor's late COMMIT and prove it cannot become ACTIVE/COMMITTED authority.
+}
+
+#[tokio::test]
 async fn collision_existing_terminal_replay_preserves_typed_collision_reason() { /* fixture + restart + replay */ }
+
+#[tokio::test]
+async fn v2_reconciliation_round_trips_collision_concurrent_and_stale_distinctly() {
+    // Persist each terminal attempt class, replace/restart the process boundary as applicable,
+    // reconcile the same exact attempt, and assert the exact typed terminal disposition.
+}
 
 #[tokio::test]
 async fn concurrent_terminal_replacement_has_exactly_one_candidate_winner() { /* two transactions/tasks */ }
@@ -155,18 +188,20 @@ Use the existing isolated PostgreSQL fixture/helpers; do not add another databas
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server terminal_replacement_authorization -- --nocapture
 cargo +1.94.0 test --locked -p oteryn-game-server generic_v1_existing_terminal_requires_typed_same_attempt_reconciliation -- --nocapture
+cargo +1.94.0 test --locked -p oteryn-game-server v2_reconciliation_preserves_all_terminal_dispositions_and_collision_only_remint -- --nocapture
 ```
 
-Expected: FAIL because terminal replacement/V2 typed replay semantics are not implemented.
+Expected: FAIL because terminal replacement/V2 typed replay/reconciliation semantics are not implemented.
 
 - [ ] **Step 4: Run the PostgreSQL RED**
 
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres terminal_replacement -- --nocapture
 cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres collision_existing_terminal_replay_preserves_typed_collision_reason -- --nocapture
+cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres v2_reconciliation_round_trips_collision_concurrent_and_stale_distinctly -- --nocapture
 ```
 
-Expected: FAIL on the new assertions/contract gaps; PostgreSQL service must actually be available. A skipped target is not RED.
+Expected: FAIL on the new assertions/contract gaps; PostgreSQL service must actually be available. A skipped target is not RED. The `terminal_replacement` filter must execute the scope, exact-receipt replay, conflicting-receipt, late-COMMIT fencing and contention cases above.
 
 - [ ] **Step 5: Publish and preserve the RED head**
 
@@ -263,7 +298,7 @@ pub enum ReconnectPrepareDispositionV2 {
 }
 ```
 
-Add matching V2 completion/action handling. For `ExistingTerminal { disposition: TransportRefCollision }`, mark the exact attempt collision-terminal just as for the original direct collision completion.
+Add matching V2 completion/action handling. For `ExistingTerminal { disposition: TransportRefCollision }`, mark the exact attempt collision-terminal just as for the original direct collision completion. V2 reconciliation must preserve all three terminal dispositions exactly, and only `TransportRefCollision` may enable the already-bounded fresh-attempt path.
 
 - [ ] **Step 4: Make legacy V1 `ExistingTerminal` fail into typed reconciliation**
 
@@ -283,6 +318,7 @@ Do not map generic V1 terminality to collision.
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server terminal_replacement_authorization -- --nocapture
 cargo +1.94.0 test --locked -p oteryn-game-server generic_v1_existing_terminal_requires_typed_same_attempt_reconciliation -- --nocapture
+cargo +1.94.0 test --locked -p oteryn-game-server v2_reconciliation_preserves_all_terminal_dispositions_and_collision_only_remint -- --nocapture
 cargo +1.94.0 test --locked -p oteryn-game-server durability_reconnect_v1_tests -- --nocapture
 ```
 
@@ -369,9 +405,9 @@ insert/establish candidate as the sole RECONNECTABLE nonterminal actor anchor
 continue ordinary candidate PREPARE reservation/classification
 ```
 
-Any mismatch, `stored_scope > authorized`, live/nonterminal Foundation evidence mismatch, or competing winner returns stale/mismatched authority with no partial candidate PREPARED state.
+Any mismatch, `stored_scope > authorized`, live/nonterminal Foundation evidence mismatch, conflicting existing replacement receipt, or competing winner returns stale/mismatched authority with no partial candidate PREPARED state. A lost response may replay idempotently only when the exact existing `(CharacterId, predecessor_game_session_id, candidate_game_session_id)` receipt proves the same replacement committed. Replacement must atomically terminalize/fence every predecessor PREPARED attempt so a late predecessor COMMIT cannot restore controller authority.
 
-- [ ] **Step 4: Return typed terminal reason on existing-attempt direct replay**
+- [ ] **Step 4: Return typed terminal reason on existing-attempt direct replay and reconciliation**
 
 Map stored attempt states exactly:
 
@@ -381,7 +417,7 @@ CONCURRENT_TERMINAL => ReconnectDurableTerminalDispositionV1::ConcurrentPrepared
 STALE_TERMINAL => ReconnectDurableTerminalDispositionV1::StaleAuthority,
 ```
 
-An existing terminal V2 PREPARE replay returns `ReconnectPrepareDispositionV2::ExistingTerminal { disposition }`. Reconciliation returns the same disposition through `ReconnectDurableReconciliationSnapshotV2`.
+An existing terminal V2 PREPARE replay returns `ReconnectPrepareDispositionV2::ExistingTerminal { disposition }`. Reconciliation returns the same disposition through `ReconnectDurableReconciliationSnapshotV2`. Only the collision disposition may mark the attempt collision-terminal for the existing bounded fresh-attempt rule; concurrent/stale outcomes remain terminal without remint eligibility.
 
 - [ ] **Step 5: Update schema contract tests**
 
@@ -399,11 +435,12 @@ full-range NUMERIC(20,0) scope fence
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres terminal_replacement -- --nocapture
 cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres collision_existing_terminal_replay_preserves_typed_collision_reason -- --nocapture
+cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres v2_reconciliation_round_trips_collision_concurrent_and_stale_distinctly -- --nocapture
 cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres concurrent_terminal_replacement_has_exactly_one_candidate_winner -- --nocapture
 cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres -- --nocapture
 ```
 
-Expected: all PASS against an actual isolated PostgreSQL 17 service, including the pre-existing journal regressions.
+Expected: all PASS against an actual isolated PostgreSQL 17 service, including exact-receipt lost-response replay, conflicting-receipt rejection, predecessor late-COMMIT fencing, all typed terminal reconciliation outcomes, collision-only remint behavior, and the pre-existing journal regressions.
 
 - [ ] **Step 7: Commit the durable implementation**
 
