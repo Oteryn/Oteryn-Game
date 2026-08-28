@@ -12,16 +12,16 @@ Allow an allocated lane lead to own the complete candidate-review-repair-re-revi
 
 ```text
 lane lead freezes exact candidate
-  -> lane lead requests native GitHub Codex review when policy requires it
+  -> lane lead requests native GitHub Codex review when validated policy requires it
   -> Codex posts durable exact-head findings on the PR
   -> lane lead repairs findings inside the existing allocation
   -> new head invalidates prior review
   -> lane lead requests a fresh independent Codex review
-  -> PASS + all other gates
+  -> successful exact-head review + zero blocking findings + all other gates
   -> READY_FOR_INTEGRATION
 ```
 
-The owner must not be required to copy a prompt into a second chat or approve every covered Codex review invocation.
+The owner must not be required to copy a prompt into a second chat or approve every covered Codex review invocation after the standing authorization is canonical.
 
 ## Authority model
 
@@ -30,6 +30,8 @@ The standing authorization is deliberately narrow. It applies only after this go
 Covered operations are independent read-only exact-head review/audit and non-mutating test/reproduce/fuzz/static-analysis used to support that review. It grants no implementation/fix, tracked repository mutation, commit/push/merge, production/protected-environment, secret, live-data or cross-repository authority.
 
 All other owner-funded Codex/OpenAI/API uses remain deny-by-default and require the existing explicit per-invocation owner authorization.
+
+The policy is itself normative authority and therefore must be registered in `docs/agents/GOVERNANCE_CONTRACT.json` and validated by `tools/agents/validate_governance.py`; green governance CI must fail if the policy is absent, malformed or materially weakens its bounded authority/routing/gate invariants.
 
 ## GitHub as the review message bus
 
@@ -41,21 +43,48 @@ The agent must verify capability before claiming invocation. If the integration 
 
 A review counts as independent only when the reviewer task/session did not materially author or materially modify the candidate under review. A Codex task used for implementation cannot become the independent reviewer for the same candidate. A fresh Codex review task is required.
 
-Every material candidate-head change invalidates prior Codex qualification. The new head receives a fresh review when its risk class requires Codex.
+Every material candidate-head change invalidates prior Codex qualification. The new head receives a fresh review when its validated risk route requires Codex.
 
 ## Deterministic risk routing
 
-The uniquely active control plane and the lane lead do not decide ad hoc whether Codex is desirable. They mechanically apply `CODEX_REVIEW_POLICY.json`.
+Neither the control plane nor the lane lead may decide ad hoc that a required review can be downgraded.
 
-Codex is required by this policy for high-risk classes including durable persistence/schema/migrations, concurrency/races/contention, authentication/session/reconnect/fencing/trust, protocol/wire/stable identity/security, and durable item/value/economy custody.
+The machine policy defines precedence:
 
-Codex is optional for complex refactors, broad-code-awareness cases and test/fuzz-intensive changes. Ordinary docs-only and low-risk path-local implementation are not made Codex-dependent by this policy.
+```text
+CODEX_REQUIRED
+  > CODEX_OPTIONAL
+  > CODEX_NOT_REQUIRED_BY_THIS_POLICY
+```
+
+Lane-lead self-tags may only increase review rigor. They cannot make the lead's own candidate OPTIONAL or NOT_REQUIRED. Such a downgrade requires one of the exact canonical sources admitted by the policy (owner decision, Sol Supervising Architect classification, canonical risk contract) with independently provable source role/reference recorded before candidate freeze, or an explicit mechanical changed-path rule. Unvalidated or conflicting classification fails closed to `CODEX_REQUIRED`.
+
+Codex is required for high-risk classes including durable persistence/schema/migrations, concurrency/races/contention, authentication/session/reconnect/fencing/trust, protocol/wire/stable identity/security, and durable item/value/economy custody.
+
+The ordinary-docs mechanical exception is deliberately narrow and excludes `docs/agents/**`, `docs/architecture/**` and `docs/contracts/**`. Low-risk local implementation and optional routing require validated authoritative downgrade metadata; worker self-assertion is insufficient.
+
+## Review success semantics
+
+The presence of any Codex comment is not a PASS.
+
+A Codex review may satisfy the independent technical-review gate only when the policy proves all required conditions, including:
+
+- fresh non-authoring reviewer task/session;
+- exact final head;
+- correct risk qualification;
+- durable GitHub evidence;
+- successful review evidence bound to that exact head (explicit PASS or the native no-suggestions signal accepted by the policy);
+- zero unresolved P0/P1 findings on that head;
+- zero unresolved required review threads;
+- no material head change after the qualifying review.
+
+Green CI alone never substitutes for review.
 
 ## Responsibilities
 
 ### Lane lead
 
-The allocated lane lead owns candidate freeze, Codex review request, repair of findings inside allocation, fresh re-review after head movement and final evidence handoff. It does not ask the owner to relay review prompts.
+The allocated lane lead owns candidate freeze, Codex review request, repair of findings inside allocation, fresh re-review after head movement and final evidence handoff. It does not ask the owner to relay review prompts after standing authorization becomes canonical. It may increase its own review rigor but cannot self-authorize a downgrade.
 
 ### Codex reviewer
 
@@ -63,7 +92,7 @@ The Codex reviewer is independent and read-only with respect to tracked reposito
 
 ### Control plane
 
-Work or Terra, whichever is uniquely active, mechanically verifies risk classification, required review presence, exact head, review independence and PASS status. Terra has zero technical discretion and never adjudicates whether a technical finding is acceptable.
+Work or Terra, whichever is uniquely active, mechanically validates the allowed risk-routing inputs, rejects any unvalidated downgrade, verifies required review presence/exact head/independence/success, and applies the resulting gate. Terra has zero technical discretion: it does not invent risk tags or decide whether a technical finding is acceptable.
 
 ### Work auditor
 
@@ -71,21 +100,23 @@ The Work auditor remains the governance/lifecycle auditor. Codex technical revie
 
 ## Failure handling
 
-If required Codex capability is unavailable, the lane records the exact missing capability. If current repository policy accepts an equivalent qualified independent technical reviewer for that exact gate, that fallback may be used. Otherwise the lane waits fail-closed. Manual owner prompt relay is not the normal fallback.
+If required Codex capability is unavailable, the lane records the exact missing capability. If current repository policy accepts an equivalent qualified independent technical reviewer for that exact gate, that fallback may be used. Otherwise the lane waits fail-closed. Manual owner prompt relay is not the normal fallback after the standing authorization is canonical.
 
 If Codex leaves findings, the lane remains active and repairs them. The control plane does not bounce the owner between agents.
 
 ## Compatibility
 
-This design does not change the single-active-control-plane rule, lane allocations, shared-path serialization, architecture escalation, production authority, runtime architecture or existing independent-review requirements. It specializes how a required technical reviewer is invoked and authorized.
+This design does not change the single-active-control-plane rule, lane allocations, shared-path serialization, architecture escalation, production authority, runtime architecture or existing independent-review requirements. It specializes how a required technical reviewer is selected, invoked, authorized and qualified.
 
 ## Success criteria
 
 - root governance contains the standing-authorization exception;
 - the owner-funded AI policy distinguishes covered standing review from other metered AI uses;
 - one machine-readable risk-routing policy is canonical;
+- that policy is registered as a required governance document and validated fail-closed for authority/routing/independence/prohibition/gate invariants;
 - lane leads are globally required by root instructions to own review/repair/re-review loops;
-- Work/Terra can apply the matrix deterministically without technical judgment;
+- lane leads cannot downgrade their own review requirement;
+- Work/Terra can validate and apply the matrix deterministically without technical judgment;
 - no covered Codex reviewer can implement, merge or mutate production;
-- exact-head and reviewer-independence requirements are explicit;
+- exact-head reviewer independence, explicit review success and zero blocking finding/thread requirements are machine-readable;
 - governance validation and genuinely independent exact-head review pass before merge.
