@@ -4,7 +4,7 @@
 task_id: OTV2-20260828-terminal-session-replacement-allocation
 title: Allocate canonical terminal GameSession replacement repair
 mode: COORDINATE
-status: allocating
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/terminal-session-replacement-allocation-250
@@ -16,7 +16,7 @@ architecture_merge_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 affected_issue: 167
 historical_pr: 243
 historical_head: eb28c42125c346e7f6f1c72e69d51af35af8fc1f
-allocation_pr: null
+allocation_pr: 251
 admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
 owner: ChatGPT Work Delivery Coordinator
@@ -25,7 +25,7 @@ worker_task_id: OTV2-20260828-terminal-session-replacement-repair
 worker_branch: impl/game-terminal-session-replacement-250
 worker_pr: null
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-28T20:08:00+02:00
+updated_at: 2026-08-28T20:13:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: serialized cross-lane Foundation/Durability repair with real PostgreSQL race/restart proof
 owned_paths:
@@ -173,14 +173,14 @@ No runtime code, migration, schema, Cargo/lockfile, workflow, registry/stable-ID
 ## Context checkpoint
 
 ```yaml
-last_progress: canonical architecture #249 merged; fresh allocation branch created from protected main
-status: allocating
+last_progress: PR #251 published and bound into the allocation packet
+status: validating
 branch: coord/terminal-session-replacement-allocation-250
 head_sha: null
-pr: null
+pr: 251
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
+ci_trigger_source: pull_request
 ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
@@ -194,6 +194,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: allocation_not_yet_merged
-next_action: publish the exact docs-only allocation PR and bind both task records to its PR number before final qualification
+blocker: exact_head_qualification_pending
+next_action: bind worker task to PR #251, then freeze the resulting exact head and run whole-diff self-review plus required exact-head CI and independent review
 ```
