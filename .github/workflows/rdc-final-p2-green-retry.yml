@@ -16,23 +16,47 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: governance/remote-desktop-per-action-gate-237
+          ref: ${{ github.sha }}
           persist-credentials: true
           fetch-depth: 0
-      - name: Apply bounded validator patch and prove GREEN
+      - name: Prove RED, apply bounded validator patch, prove GREEN
         shell: bash
         run: |
-          echo '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' | base64 -d | gzip -d > /tmp/rdc_patch.py
+          test "$(git rev-parse HEAD:tools/agents/validate_remote_desktop_prompt_routing.py)" = "29248fd91b4f1fae8d2acc2e1be8e654d3c113ce"
+          test "$(git rev-parse HEAD:tools/agents/test_validate_remote_desktop_prompt_routing.py)" = "6820f60e4a882b70d4f98d65d632d3b95dd8c4e7"
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, "tools/agents")
+          import test_validate_remote_desktop_prompt_routing as tests
+
+          expected_red = [
+              "test_pre_html_block_prompt_section_does_not_count",
+              "test_script_html_block_surface_section_does_not_count",
+              "test_direct_connector_operations_authorization_outside_section_fails",
+              "test_surface_direct_tool_requests_authorization_outside_section_fails",
+              "test_invisible_separator_connector_identifier_outside_section_fails",
+              "test_surface_invisible_separator_connector_identifier_outside_section_fails",
+              "test_non_cf_default_ignorable_connector_identifier_outside_section_fails",
+          ]
+          for name in expected_red:
+              try:
+                  getattr(tests, name)()
+              except AssertionError as exc:
+                  print(f"EXPECTED RED {name}: {exc}")
+              else:
+                  raise SystemExit(f"expected RED regression unexpectedly passed: {name}")
+          PY
+          echo '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' | base64 -d | gzip -d > /tmp/rdc_patch.py
           python /tmp/rdc_patch.py
-          rm .github/workflows/rdc-final-p2-green-retry.yml
+          python tools/agents/test_validate_remote_desktop_prompt_routing.py
+          python tools/agents/validate_remote_desktop_prompt_routing.py
+          python tools/agents/validate_governance.py
+          python tools/repository/validate_repository_policy.py
+          git diff --check
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add tools/agents/validate_remote_desktop_prompt_routing.py .github/workflows/rdc-final-p2-green-retry.yml
+          git add tools/agents/validate_remote_desktop_prompt_routing.py
           git diff --cached --check
           git commit -m "fix(agents): close raw-HTML and Unicode RDC bypasses"
           git push origin HEAD:governance/remote-desktop-per-action-gate-237
           echo "Published GREEN head: $(git rev-parse HEAD)"
-          python tools/agents/test_validate_remote_desktop_prompt_routing.py
-          python tools/agents/validate_remote_desktop_prompt_routing.py
-          python tools/agents/validate_governance.py
-          git diff --check HEAD^ HEAD
