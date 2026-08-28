@@ -186,6 +186,9 @@ jobs:
       - name: Validate agent governance
         run: python tools/agents/validate_governance.py
 
+      - name: Test Remote Desktop prompt routing
+        run: python tools/agents/test_validate_remote_desktop_prompt_routing.py
+
       - name: Validate Remote Desktop prompt routing
         run: python tools/agents/validate_remote_desktop_prompt_routing.py
 
