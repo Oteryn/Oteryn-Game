@@ -208,13 +208,13 @@ mod v2_reconciled_prepared_budget_regression_tests {
         AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId, CommandId,
         ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1, GameSessionId,
         ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
-        ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1,
-        ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
-        ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1,
-        ReconnectDurableOutcomeV2, ReconnectDurableReconciliationSnapshotV2, ReconnectIdentityV1,
-        ReconnectPrepareActionV2, ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1,
-        ReconnectPrepareDispositionV2, ReconnectProjectionDecisionV2, ReconnectProofV1,
-        RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+        ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1, ReconnectCompatibilityEvidenceV1,
+        ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectDurabilityErrorV1,
+        ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+        ReconnectDurableReconciliationSnapshotV2, ReconnectIdentityV1, ReconnectPrepareActionV2,
+        ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
+        ReconnectProjectionDecisionV2, ReconnectProofV1, RuntimeScopeRefV1,
+        ScopeOwnershipGeneration, WorldId,
     };
 
     fn invalid_record<E>(_error: E) -> ReconnectDurabilityErrorV1 {
@@ -305,11 +305,10 @@ mod v2_reconciled_prepared_budget_regression_tests {
     }
 
     #[test]
-    fn reconciled_prepared_marks_the_attempt_prepared_in_the_local_budget(
-    ) -> Result<(), ReconnectDurabilityErrorV1> {
+    fn reconciled_prepared_marks_the_attempt_prepared_in_the_local_budget()
+    -> Result<(), ReconnectDurabilityErrorV1> {
         let record = sample_record()?;
-        let mut budget =
-            ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
         assert_eq!(
             budget.reserve(
                 record.identity().reconnect_attempt_ref(),
