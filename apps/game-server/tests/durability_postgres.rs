@@ -662,6 +662,279 @@ fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
 }
 
 #[test]
+fn expired_prepared_replay_requires_exact_incumbent_binding()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("expired_incumbent_binding").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let record_now = postgres_clock(&pool).await?;
+                let prepared_deadline = record_now + 2;
+                let (_flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_with_prepared_deadline(
+                        96,
+                        1,
+                        0xe6,
+                        record_now,
+                        prepared_deadline,
+                    )
+                    .map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                let session_id = prepare
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                let attempt_ref = prepare
+                    .record()
+                    .identity()
+                    .reconnect_attempt_ref()
+                    .to_be_bytes()
+                    .to_vec();
+                let conflicting_ref = 2_u64.to_be_bytes().to_vec();
+                sqlx::query(
+                    "UPDATE game_durability_reconnect_sessions SET prepared_attempt_ref = $2 \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
+                )
+                .bind(session_id.as_slice())
+                .bind(conflicting_ref.as_slice())
+                .execute(&pool)
+                .await?;
+                while postgres_clock(&pool).await? <= prepared_deadline {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+                assert!(matches!(
+                    journal.prepare(&prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let attempt_state: i16 = sqlx::query_scalar(
+                    "SELECT state FROM game_durability_reconnect_attempts \
+                     WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                let retained_incumbent: Option<Vec<u8>> = sqlx::query_scalar(
+                    "SELECT prepared_attempt_ref FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(attempt_state, 1, "failed expiry transition must roll back");
+                assert_eq!(retained_incumbent.as_deref(), Some(conflicting_ref.as_slice()));
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn new_epoch_rejects_zero_fast_reconnect_generation_in_committed_winner()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("fast_proof_corrupt").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(97, 1, 0xe7, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&first_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &first_prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current = ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), record_now)
+                    .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let session_id = first_prepare
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                let attempt_ref = first_prepare
+                    .record()
+                    .identity()
+                    .reconnect_attempt_ref()
+                    .to_be_bytes()
+                    .to_vec();
+                sqlx::query(
+                    "UPDATE game_durability_reconnect_attempts \
+                     SET record_json = jsonb_set(record_json::jsonb, '{proof}', \
+                         '{\"class\":\"fast_reconnect\",\"generation\":0}'::jsonb)::text \
+                     WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .execute(&pool)
+                .await?;
+                let (_next_flow, next_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_for_epoch(
+                        97,
+                        2,
+                        0xe8,
+                        record_now + 1,
+                        record_now + 116,
+                        4,
+                        8,
+                        9,
+                        0x69,
+                    )
+                    .map_err(foundation_error)?,
+                );
+                assert!(matches!(
+                    journal.prepare(&next_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let session: (String, String, Option<Vec<u8>>, i16) = sqlx::query_as(
+                    "SELECT control_loss_epoch::text, current_generation::text, current_transport_ref, session_state \
+                     FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(session.0, "3");
+                assert_eq!(session.1, "8");
+                assert_eq!(session.2.as_deref(), Some([0xe7_u8; 16].as_slice()));
+                assert_eq!(session.3, 2);
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn committed_prepare_replay_after_process_restart_routes_to_reconciliation()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("committed_prepare_replay").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut original_flow, original_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(95, 1, 0xe5, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&original_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                original_flow
+                    .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                        &original_prepare,
+                        ReconnectPrepareDispositionV1::Prepared,
+                    ))
+                    .map_err(foundation_error)?;
+                let current =
+                    ReconnectCurrentAuthorityV1::from_record(original_prepare.record(), record_now)
+                        .map_err(foundation_error)?;
+                let commit = original_flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                drop(journal);
+
+                let recovered_journal =
+                    AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let (mut recovered_flow, replay_prepare) =
+                    ReconnectDurabilityFlowV1::begin(original_prepare.record().clone());
+                let replay_disposition = recovered_journal.prepare(&replay_prepare).await?;
+                assert_eq!(
+                    replay_disposition,
+                    ReconnectPrepareDispositionV1::Ambiguous,
+                    "a durable COMMITTED winner must route a fresh process into reconciliation"
+                );
+                assert_eq!(
+                    recovered_flow
+                        .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                            &replay_prepare,
+                            replay_disposition,
+                        ))
+                        .map_err(foundation_error)?,
+                    ReconnectPrepareActionV1::ReconcileSameAttempt
+                );
+                assert_eq!(
+                    recovered_flow
+                        .accept_reconciliation(
+                            recovered_journal.reconcile(&replay_prepare).await?,
+                            ScopeOwnershipGeneration::new(10).map_err(|_error| {
+                                std::io::Error::other("invalid scope generation")
+                            })?,
+                        )
+                        .map_err(foundation_error)?,
+                    ReconnectProjectionDecisionV1::InstallController {
+                        generation: ConnectionGeneration::new(8).map_err(|_error| {
+                            std::io::Error::other("invalid connection generation")
+                        })?,
+                        transport_ref: AuthenticatedTransportRefV1::decode(&[0xe5; 16])
+                            .map_err(|_error| std::io::Error::other("invalid transport ref"))?,
+                    }
+                );
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn expired_prepared_replay_retires_incumbent_and_allows_fresh_attempt()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {

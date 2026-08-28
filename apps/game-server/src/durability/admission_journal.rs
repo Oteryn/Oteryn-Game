@@ -46,6 +46,7 @@ impl AdmissionReconnectJournal {
         let transport_ref = record.connection().transport_ref().to_bytes().to_vec();
         let epoch = record.continuity().control_loss_epoch().get().to_string();
         let predecessor = record.connection().predecessor().get().to_string();
+        let candidate = record.connection().candidate().get().to_string();
         let character_lease = record.authority().character_lease_generation().to_string();
         let scope_generation = record
             .authority()
@@ -117,6 +118,13 @@ impl AdmissionReconnectJournal {
             }
             let state: i16 = existing.try_get("state")?;
             if state == PREPARED && database_now(&mut transaction).await? > prepared_deadline {
+                if session
+                    .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
+                    .as_deref()
+                    != Some(attempt_ref.as_slice())
+                {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
                 terminalize_prepared_attempt(
                     &mut transaction,
                     session_id.as_slice(),
@@ -125,6 +133,37 @@ impl AdmissionReconnectJournal {
                 .await?;
                 transaction.commit().await?;
                 return Ok(ReconnectPrepareDispositionV1::ExistingTerminal);
+            }
+            if state == COMMITTED {
+                let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
+                let recovery_grant_nonce = recovery_grant_nonce(record);
+                let committed_current = session.try_get::<String, _>("control_loss_epoch")?
+                    == epoch
+                    && session.try_get::<i64, _>("original_grace_deadline")?
+                        == original_grace_deadline
+                    && session.try_get::<String, _>("predecessor_generation")? == predecessor
+                    && session.try_get::<String, _>("character_lease_generation")?
+                        == character_lease
+                    && session.try_get::<String, _>("scope_ownership_generation")?
+                        == scope_generation
+                    && session.try_get::<String, _>("current_generation")? == candidate
+                    && current_ref.as_deref() == Some(transport_ref.as_slice())
+                    && session.try_get::<i16, _>("session_state")? == ACTIVE
+                    && session
+                        .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
+                        .is_none()
+                    && recovery_grant_binding_is_valid(
+                        &mut transaction,
+                        recovery_grant_nonce.as_deref(),
+                        session_id.as_slice(),
+                        attempt_ref.as_slice(),
+                    )
+                    .await?;
+                if !committed_current {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                transaction.commit().await?;
+                return Ok(ReconnectPrepareDispositionV1::Ambiguous);
             }
             return disposition_for_existing(state);
         }
@@ -829,7 +868,7 @@ async fn active_committed_binding_is_valid(
     }
 
     match proof["class"].as_str() {
-        Some("fast_reconnect") => Ok(true),
+        Some("fast_reconnect") => Ok(proof["generation"].as_u64().is_some_and(|value| value != 0)),
         Some("reauthenticated_recovery") => {
             let Some(nonce) = canonical_bytes(&proof["recovery_grant_nonce"]) else {
                 return Ok(false);
@@ -1054,7 +1093,7 @@ async fn terminalize_prepared_attempt(
     if terminalized.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
     }
-    sqlx::query(
+    let released = sqlx::query(
         "UPDATE game_durability_reconnect_sessions SET prepared_attempt_ref = NULL \
          WHERE game_session_id = encode($1, 'hex')::uuid AND prepared_attempt_ref = $2",
     )
@@ -1062,6 +1101,9 @@ async fn terminalize_prepared_attempt(
     .bind(attempt_ref)
     .execute(&mut **transaction)
     .await?;
+    if released.rows_affected() != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
     Ok(())
 }
 
