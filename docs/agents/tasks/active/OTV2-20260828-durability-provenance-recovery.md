@@ -45,6 +45,19 @@ Do not ratify the historical recovery. Do not force-push, reset, rebase, replace
 
 The successor may inspect/copy file contents only from exact historical source snapshot `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`. Any later #212 head is not automatically admissible source material and requires a new durable control-plane source-admission decision before any bytes are copied from it. The successor must not inherit commits, review verdicts, CI qualification or mutation authority from #212 and must produce its own TDD evidence, exact-head CI and required independent review.
 
+## Mandatory successor-owned TDD provenance
+
+The clean successor may not reconstruct tests and final implementation in one generation.
+
+1. After this allocation is canonical, create the successor branch from the allocation-recorded protected-main SHA.
+2. First copy only the frozen test blobs:
+   - `apps/game-server/tests/durability_postgres.rs` = `460ad5888d8e870bbeda50a3dc8f64b24a30c1cb`;
+   - `apps/game-server/tests/support/postgres.rs` = `bcb243f6c4823a14ec8116b72439c2c79c115d94`.
+3. Publish a Draft successor PR and run the focused Durability target on that exact test-only head. It must visibly **FAIL** because the production Durability module is absent. Skipped/not-run is not RED.
+4. Preserve exact RED head/run evidence before adding production bytes.
+5. Only then copy the seven frozen implementation/migration/build blobs from `fb30fba2...` and rerun the same target to **GREEN**.
+6. Historical #212 test results cannot satisfy either the RED or GREEN successor gate.
+
 ## Successor allowlist
 
 After this allocation merges and protected-main readback proves its merge SHA, `Oteryn: sol durability lead` may mutate only:
@@ -69,9 +82,10 @@ No `Cargo.toml`, `Cargo.lock`, Foundation, Server Seam, workflow, registry, comp
 3. Allocation must merge with expected-head protection; successor release occurs only after protected-main readback.
 4. Successor branch must start from the allocation-recorded protected main, never from #212 ancestry.
 5. Successor reconstruction copies only allowed file contents from exact source snapshot `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`; no cherry-pick from #212 and no later source head without separate admission.
-6. Successor must independently re-run focused PostgreSQL/Rust evidence and current exact-head repository gates.
-7. Required Codex review, if routed `CODEX_REQUIRED`, is requested by the allocated Durability lane lead under current policy, not by the Work coordinator.
-8. PR #212 may be closed as superseded only after the successor PR exists and preserves links to #212/#240; its branch/history remain intact.
+6. Successor must prove its own visible test-only RED generation before any implementation blob restore, then prove GREEN after exact implementation reconstruction.
+7. Successor must independently re-run focused PostgreSQL/Rust evidence and current exact-head repository gates.
+8. Required Codex review, if routed `CODEX_REQUIRED`, is requested by the allocated Durability lane lead under current policy, not by the Work coordinator.
+9. PR #212 may be closed as superseded only after the successor PR exists and preserves links to #212/#240; its branch/history remain intact.
 
 ## Validation
 
@@ -95,5 +109,5 @@ owned_paths:
   - docs/superpowers/plans/2026-08-28-durability-provenance-recovery.md
 blocker: allocation_not_yet_merged
 owner_action_required: null
-next_action: publish the docs-only recovery allocation PR and qualify its exact head
+next_action: publish and qualify the docs-only allocation; after merge release only the successor test-only RED generation before any implementation restore
 ```
