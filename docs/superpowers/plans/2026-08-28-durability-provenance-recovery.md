@@ -20,6 +20,7 @@
 - Successor write authority is limited to the exact runtime/test paths listed in Task 2 plus its own successor task packet.
 - No Cargo, `Cargo.lock`, Foundation, Server Seam, workflow, registry, governance, production, secret, live-data or external-repository authority transfers to the successor worker.
 - Required exact-head CI and required independent review must be produced on the successor head; historical #212 CI/reviews cannot satisfy those gates.
+- The only automatically admissible historical source snapshot is exact PR #212 commit `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`. Any later #212 head is untrusted for reconstruction unless the active control plane separately records a new exact source-admission decision before copying any bytes from it.
 
 ---
 
@@ -67,7 +68,7 @@ Do not release the successor worker until the allocation merge SHA is proven on 
 - Modify on successor only: `docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md`
 
 **Interfaces:**
-- Consumes: allocation merge SHA from Task 1 and read-only source snapshots from PR #212 head `fb30fba2a888835dfc7cbde27f940b79d7bfe05d` or its later frozen historical head only after verifying no out-of-allocation files are transferred.
+- Consumes: allocation merge SHA from Task 1 and read-only file contents from exact historical PR #212 source snapshot `fb30fba2a888835dfc7cbde27f940b79d7bfe05d` only.
 - Produces: `impl/game-durability-journal-recovery-240`, one new Draft PR, clean ancestry rooted at the allocation-recorded protected main, and an ownership-shaped candidate.
 
 - [ ] **Step 1: Create the successor branch from the allocation-recorded protected main**
@@ -78,7 +79,7 @@ Do not branch from PR #212 and do not cherry-pick commits from its corrupted anc
 
 - [ ] **Step 2: Reconstruct only the exact allocated file snapshots**
 
-Copy file contents, not commits, from the frozen historical #212 candidate into the successor allowlist. Any needed path outside the allowlist is `SHARED_LEASE_REQUIRED` and blocks that mutation.
+Copy file contents, not commits, from exact source snapshot `fb30fba2a888835dfc7cbde27f940b79d7bfe05d` into the successor allowlist. Any needed path outside the allowlist is `SHARED_LEASE_REQUIRED` and blocks that mutation. Do not consume bytes from any later #212 head without a new durable control-plane source-admission decision.
 
 - [ ] **Step 3: Re-establish TDD evidence**
 
