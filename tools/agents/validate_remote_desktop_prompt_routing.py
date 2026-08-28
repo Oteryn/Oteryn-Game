@@ -77,8 +77,8 @@ CANONICAL_ROUTING_ADJACENT_SECTIONS = {
 # cannot silently broaden, override, or claim physical enforcement of the contract.
 OUTSIDE_ROUTING_PATTERNS = (
     re.compile(r"Remote_Desktop_Commander", re.IGNORECASE),
-    re.compile(r"\bRemote\s+Desktop\b", re.IGNORECASE),
-    re.compile(r"\bDesktop\s+Commander\b", re.IGNORECASE),
+    re.compile(r"\bRemote(?:\s+|\s*[-\u2010-\u2015]\s*)Desktop\b", re.IGNORECASE),
+    re.compile(r"\bDesktop(?:\s+|\s*[-\u2010-\u2015]\s*)Commander\b", re.IGNORECASE),
     re.compile(r"\bRDC\b", re.IGNORECASE),
     re.compile(r"\blist_devices\b", re.IGNORECASE),
     re.compile(r"\bwho_am_i\b", re.IGNORECASE),
@@ -210,10 +210,61 @@ def _level2_sections(text: str) -> list[tuple[str, int, int, str]]:
     return sections
 
 
+def _visible_markdown_line(raw: str, in_html_comment: bool) -> tuple[str, bool]:
+    """Remove HTML comments while preserving visible prefixes and suffixes."""
+    visible: list[str] = []
+    cursor = 0
+    while cursor < len(raw):
+        if in_html_comment:
+            close = raw.find("-->", cursor)
+            if close == -1:
+                return "".join(visible), True
+            cursor = close + 3
+            in_html_comment = False
+            continue
+
+        opening = raw.find("<!--", cursor)
+        if opening == -1:
+            visible.append(raw[cursor:])
+            break
+        visible.append(raw[cursor:opening])
+        cursor = opening + 4
+        in_html_comment = True
+    return "".join(visible), in_html_comment
+
+
 def _operative_text(text: str) -> str:
     lines: list[str] = []
-    for _start, _end, raw, inert in _markdown_line_records(text):
-        lines.append("" if inert else raw)
+    fence_char: str | None = None
+    fence_len = 0
+    in_html_comment = False
+
+    for segment in text.splitlines():
+        raw = segment.rstrip("\r\n")
+
+        if fence_char is not None:
+            close = re.fullmatch(
+                rf" {{0,3}}{re.escape(fence_char)}{{{fence_len},}}[ \t]*",
+                raw,
+            )
+            if close is not None:
+                fence_char = None
+                fence_len = 0
+            lines.append("")
+            continue
+
+        if not in_html_comment:
+            opening = FENCE_OPEN_RE.fullmatch(raw)
+            if opening is not None:
+                fence = opening.group("fence")
+                fence_char = fence[0]
+                fence_len = len(fence)
+                lines.append("")
+                continue
+
+        visible, in_html_comment = _visible_markdown_line(raw, in_html_comment)
+        lines.append(visible)
+
     return "\n".join(lines)
 
 
@@ -254,7 +305,7 @@ def _normalize_policy_text(text: str) -> str:
     value = ZERO_WIDTH_RE.sub(" ", value)
     value = re.sub(r"[*~`]+", "", value)
     value = MARKDOWN_UNDERSCORE_EMPHASIS_RE.sub("", value)
-    value = re.sub(r"[ \t\f\v]+", " ", value)
+    value = re.sub(r"[\s\u00a0]+", " ", value)
     return value
 
 
