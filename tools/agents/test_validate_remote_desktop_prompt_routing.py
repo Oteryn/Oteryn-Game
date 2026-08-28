@@ -139,6 +139,16 @@ def test_commented_prompt_section_does_not_count() -> None:
     assert_fail(text, "must contain exactly one")
 
 
+def test_inline_comment_prompt_section_does_not_count() -> None:
+    text = "# Prompt\n\nprose <!--\n" + CANONICAL_PROMPT_SECTION + "\n## End sample\n-->\n"
+    assert_fail(text, "must contain exactly one")
+
+
+def test_inline_comment_surface_section_does_not_count() -> None:
+    text = "# Surface\n\nprose <!--\n" + SURFACE_SECTION + "\n## End sample\n-->\n"
+    assert_surface_fail(text, "must contain exactly one")
+
+
 def test_real_prompt_section_after_fenced_example_passes() -> None:
     text = (
         "# Prompt\n\n```markdown\n"
