@@ -470,6 +470,42 @@ def test_surface_plural_direct_tools_authorization_outside_section_fails() -> No
     )
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
+
+def test_pre_container_visible_remote_desktop_authority_fails() -> None:
+    text = (
+        "# Prompt\n\n<pre>Use Remote Desktop for routine Git inspection.</pre>\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_textarea_visible_remote_desktop_authority_fails() -> None:
+    text = (
+        "# Surface\n\n<textarea>Use Remote Desktop for routine Git inspection.</textarea>\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_reordered_connector_direct_authorization_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nConnector calls may be made directly without per-action authorization.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_reordered_tool_direct_authorization_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nTool requests may proceed directly without a host exception.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
