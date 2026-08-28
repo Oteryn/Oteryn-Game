@@ -84,7 +84,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(r"\bwho_am_i\b", re.IGNORECASE),
     re.compile(r"\bget_config\b", re.IGNORECASE),
     re.compile(
-        r"\bdirect\s+(?:connector|tool)\b.{0,160}"
+        r"\bdirect\s+(?:connectors?|tools?)\b.{0,160}"
         r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
@@ -92,7 +92,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
-        r"\bdirect\s+(?:connector|tool)\b",
+        r"\bdirect\s+(?:connectors?|tools?)\b",
         re.IGNORECASE,
     ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
@@ -351,7 +351,10 @@ def _operative_text(text: str) -> str:
         if raw_html_until_blank:
             if not raw.strip():
                 raw_html_until_blank = False
-            lines.append("")
+                lines.append("")
+            else:
+                visible, in_html_comment = _visible_markdown_line(raw, in_html_comment)
+                lines.append(visible)
             continue
 
         if not in_html_comment:
@@ -364,7 +367,10 @@ def _operative_text(text: str) -> str:
                     raw_html_delimiter = value
                 elif kind == "blank":
                     raw_html_until_blank = True
-                lines.append("")
+                    visible, in_html_comment = _visible_markdown_line(raw, in_html_comment)
+                    lines.append(visible)
+                else:
+                    lines.append("")
                 continue
 
             opening = FENCE_OPEN_RE.fullmatch(raw)
