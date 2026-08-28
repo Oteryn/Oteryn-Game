@@ -6,20 +6,25 @@ Provide one canonical launch sheet for the execution model defined by `2026-08-2
 
 The scheduler is interpreted by the programme's uniquely active control-plane profile. When Terra is selected, `Oteryn: terra game coordinator` applies it as a deterministic dependency/ownership map, not technical decision authority. Every invocation resolves live GitHub; the examples below are not cached state authority.
 
+Owner-facing placement, model/effort selection and `DONE / ACTIVE / BLOCKED / READY_NEXT / DO_NOT_LAUNCH` reporting are standardized by `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`. That runbook is subordinate to this scheduler and live GitHub; it never activates a lane or transfers control-plane authority.
+
 ## Roles
 
 | Alias | Requested profile | Default mode | Purpose |
 | --- | --- | --- | --- |
 | `Oteryn: terra game coordinator` | Work / Terra High | CONTROL_PLANE when durably selected, otherwise RECOVERY_READ_ONLY | GitHub state, DAG, ownership, leases, deterministic integration |
-| `Oteryn: work coordinator` | ChatGPT Work | CONTROL_PLANE when durably selected, otherwise RECOVERY_READ_ONLY | legacy/reusable Work delivery control plane |
+| `Oteryn: work coordinator` | ChatGPT Work / Terra High when selected for deterministic execution | CONTROL_PLANE when durably selected, otherwise RECOVERY_READ_ONLY | legacy/reusable Work delivery control plane |
 | `Oteryn: sol supervising architect` | GPT-5.6 Sol Extra High | ON_DEMAND | material architecture/cross-lane decisions |
-| `Oteryn: work auditor` | independent high-effort auditor | AUDIT_READ + EVIDENCE_WRITE | forensic audit plus bounded exact-target GitHub audit note |
+| `Oteryn: work auditor` | GPT-5.6 Sol highest available, independent | AUDIT_READ + EVIDENCE_WRITE | forensic audit plus bounded exact-target GitHub audit note |
+| `Oteryn: owner execution guide` | GPT-5.6 Sol Extra High | READ_ONLY | owner-facing live launch/model/effort/status guidance; never a control plane |
 | `Oteryn: sol durability lead` | GPT-5.6 Sol Extra High | MUTATING when allocated | current Durability critical lane |
 | `Oteryn: sol server seam lead` | GPT-5.6 Sol Extra High | READ_ONLY until Durability terminal | production server/client-entry seam |
 | `Oteryn: sol client qa lead` | GPT-5.6 Sol Extra High | READ_ONLY until Server Seam terminal | native client + Tier 1/Tier 2 evidence |
 | `Oteryn: sol movement lead` | GPT-5.6 Sol Extra High | READ_ONLY until Client/QA + #139 terminal | authoritative Movement |
 | `Oteryn: sol combat lead` | GPT-5.6 Sol Extra High | READ_ONLY until Movement terminal | authoritative Combat/death/loot/XP/pickup |
 | `Oteryn: sol post-vsl expansion` | GPT-5.6 Sol Extra High | READ_ONLY planning | decompose all remaining accepted Game work after VSL |
+
+`Oteryn: owner execution guide` may inspect this scheduler, live tasks and exact PR evidence to tell the owner what to launch. It cannot allocate workers, trigger Codex, request Work Auditor evidence, mutate coordinator state, grant leases, merge or close anything.
 
 ## Control-plane activation
 
@@ -31,12 +36,13 @@ Exactly one mutating control-plane profile may own one programme lifecycle.
 - Alias invocation, model selection, chat instruction, `reusable` status or tool availability never transfers control-plane authority.
 - If exactly one active profile cannot be proven, classify `POLICY_CONFLICT`; neither profile may allocate, grant shared leases, integrate/merge, mutate coordinator status or close out the programme.
 
-The existing #162 lifecycle is a legacy Work lifecycle and therefore remains under `OTV2_WORK_DELIVERY_COORDINATOR` until a later merged transition explicitly selects Terra. This scheduler does not silently restart or replace it.
+Historical coordinator Issue numbers in this document are provenance only. Every invocation must resolve the current live coordinator lifecycle from GitHub before using a profile as mutating control plane.
 
 ## Global concurrency
 
 - Exactly one control-plane profile may mutate the programme; the inactive Work/Terra profile is read-only recovery.
 - The Work auditor's bounded PR/Issue COMMENT evidence writes do not consume implementation writer slots and do not make the auditor a mutating control plane.
+- The owner execution guide is read-only and does not consume an implementation writer slot.
 - Up to five Sol chats may be active when their responsibilities are distinct.
 - Normally no more than two Sol leads may mutate the repository concurrently.
 - A third mutating lead requires `PROVEN` disjoint primary paths, no shared-surface collision, and a recorded concrete throughput reason.
@@ -87,6 +93,8 @@ VSL terminal closeout
 Post-VSL expansion
 ```
 
+The diagram is the dependency shape, not proof of current lane state. Recompute actual `DONE / ACTIVE / BLOCKED / READY_NEXT / DO_NOT_LAUNCH` from current protected-main/task/Issue/PR evidence before every launch.
+
 ## Wave V0 — current transition
 
 ### Mutating candidate
@@ -101,7 +109,7 @@ Release mutation only when the live Durability allocation/branch/PR remains vali
 - `Oteryn: sol client qa lead` — read-only preparation;
 - `Oteryn: work auditor` — audit read + bounded GitHub evidence-write when requested.
 
-Optional Movement read-only work should start only when it can materially prepare #139/current contracts without inventing numbers.
+Optional Movement read-only work should start only when it can materially prepare the current Movement resource/dependency gate and contracts without inventing numbers.
 
 ### Promotion
 
@@ -144,7 +152,7 @@ Required outcome includes truthful native-client Tier 2 evidence for supported j
 
 Parallel:
 
-- Movement Lead freezes exact child slice and maps exercised #139 rows;
+- Movement Lead freezes exact child slice and maps exercised resource rows;
 - Combat Lead may perform read-only dependency/test preparation only;
 - Work auditor may audit an exact requested target and persist its non-dispositive evidence note.
 
@@ -154,7 +162,7 @@ Promotion:
 compatible Client/QA terminal
 + required physical QA readiness PROVEN
 + exact Movement child slice frozen
-  -> activate/close #139 through its decision/registry lifecycle
+  -> close the current Movement resource/dependency gate through its canonical decision/registry lifecycle
 ```
 
 ## Wave V3 — Movement
@@ -162,7 +170,7 @@ compatible Client/QA terminal
 Mutation may begin only when:
 
 ```text
-#139 terminal for every exercised Movement row
+current Movement resource/dependency gate terminal for every exercised row
 AND Interaction/current prerequisites terminal
 AND compatible Client/QA terminal
 AND exact Movement allocation merged
@@ -206,6 +214,14 @@ Oteryn: sol combat lead
 
 Any material durable loot/value/item/resource gap is architecture escalation, not an implementation shortcut.
 
+## Autonomous Codex review gate
+
+For every allocated mutating lane PR, the owning Sol lane lead applies protected-main `docs/agents/CODEX_REVIEW_POLICY.json` before `READY_FOR_INTEGRATION`.
+
+When `CODEX_REQUIRED`, the owning lane lead performs the covered `freeze exact head -> @codex review -> repair within allocation -> exact-head revalidation -> fresh review after head movement` loop. The owner is not the default prompt relay. Work/Terra mechanically verify classification/evidence and return stale/failed review state to the lane as `REVIEW_RECONCILIATION_REQUIRED`; they do not trigger the lane's Codex review or adjudicate technical findings.
+
+Every mutating Sol return packet should include the standardized `codex_review` block defined by `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` and the lane prompt.
+
 ## VSL closeout
 
 The active control plane may classify VSL terminal only after:
@@ -233,7 +249,7 @@ Oteryn: sol post-vsl expansion
 
 It inventories all remaining accepted Game work and proposes exact next-wave lanes. Expected decomposition families may include World/Content, NPC/AI, Player Systems/Economy, Native Client/Renderer and Tooling/Operations, but current accepted architecture determines the actual split.
 
-Issue #213 also requires four explicit future-wave preparation profiles. After VSL terminal they may run read-only in parallel when useful:
+After VSL terminal the explicit future-wave preparation profiles may run read-only in parallel when useful:
 
 ```text
 Oteryn: sol world content prep
@@ -264,13 +280,14 @@ Terra does not create future technical lanes itself. When Terra is the active co
 
 ## Owner launch sheet
 
-At every material transition, the active control plane should return only a compact sheet with exactly one next action:
+`Oteryn: owner execution guide` may synthesize this sheet read-only from fresh GitHub. The active control plane should also return the compact execution state at every material transition with exactly one next action:
 
 ```text
 CURRENT_MAIN: <sha>
 CONTROL_PLANE_PROFILE: <exact active profile>
 ACTIVE_MUTATORS: <aliases>
 READ_ONLY_PREPARATION: <aliases>
+CODEX_REVIEW: <lane/pr/head/route/evidence or none>
 AUDIT_EVIDENCE: <auditor target/note or none>
 WAITING: <alias -> exact missing predicate>
 SHARED_LEASE: <path/owner or none>
@@ -280,4 +297,4 @@ OWNER_DECISION: <precise question or none>
 NEXT_ACTION: <exactly one deterministic action>
 ```
 
-Do not make the owner reconstruct the DAG from chat history and do not give Terra a menu of technical choices.
+Do not make the owner reconstruct the DAG from chat history and do not give a control plane a menu of technical choices.
