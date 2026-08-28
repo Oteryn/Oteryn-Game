@@ -806,6 +806,25 @@ def test_surface_entity_escaped_angle_bracket_remote_desktop_authority_fails() -
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
+
+def test_connector_actions_allowed_by_default_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nConnector actions are allowed by default.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_actions_to_tool_blanket_approval_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nActions to the tool have blanket approval.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
