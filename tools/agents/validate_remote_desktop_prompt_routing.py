@@ -95,6 +95,13 @@ OUTSIDE_ROUTING_PATTERNS = (
         r"\bdirect\s+(?:connectors?|tools?)\b",
         re.IGNORECASE,
     ),
+    re.compile(
+        r"(?=.*\bdirect(?:ly)?\b)"
+        r"(?=.*\b(?:connectors?|tools?)\b)"
+        r"(?=.*\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b)",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(r"\b(?:connector|router|transport)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
@@ -162,6 +169,9 @@ def _raw_html_block_start(raw: str) -> tuple[str, str] | None:
 
 def _raw_html_tag_closed(raw: str, tag: str) -> bool:
     return re.search(rf"</{re.escape(tag)}[ \t]*>", raw, re.IGNORECASE) is not None
+
+
+VISIBLE_RAW_HTML_POLICY_TAGS = {"pre", "textarea"}
 
 
 def load_lifecycle(errors: list[str]) -> dict:
@@ -337,9 +347,14 @@ def _operative_text(text: str) -> str:
             continue
 
         if raw_html_tag is not None:
-            if _raw_html_tag_closed(raw, raw_html_tag):
+            active_raw_html_tag = raw_html_tag
+            if _raw_html_tag_closed(raw, active_raw_html_tag):
                 raw_html_tag = None
-            lines.append("")
+            if active_raw_html_tag in VISIBLE_RAW_HTML_POLICY_TAGS:
+                visible, in_html_comment = _visible_markdown_line(raw, in_html_comment)
+                lines.append(visible)
+            else:
+                lines.append("")
             continue
 
         if raw_html_delimiter is not None:
@@ -361,10 +376,17 @@ def _operative_text(text: str) -> str:
             html_block = _raw_html_block_start(raw)
             if html_block is not None:
                 kind, value = html_block
-                if kind == "tag" and not _raw_html_tag_closed(raw, value):
-                    raw_html_tag = value
+                if kind == "tag":
+                    if not _raw_html_tag_closed(raw, value):
+                        raw_html_tag = value
+                    if value in VISIBLE_RAW_HTML_POLICY_TAGS:
+                        visible, in_html_comment = _visible_markdown_line(raw, in_html_comment)
+                        lines.append(visible)
+                    else:
+                        lines.append("")
                 elif kind == "delimiter" and value not in raw[2:]:
                     raw_html_delimiter = value
+                    lines.append("")
                 elif kind == "blank":
                     raw_html_until_blank = True
                     visible, in_html_comment = _visible_markdown_line(raw, in_html_comment)
@@ -384,7 +406,10 @@ def _operative_text(text: str) -> str:
         visible, in_html_comment = _visible_markdown_line(raw, in_html_comment)
         lines.append(visible)
 
-    return "\n".join(lines)
+    operative = "\n".join(lines)
+    for canonical_example in (CANONICAL_PROMPT_SECTION, *CANONICAL_SURFACE_SECTIONS.values()):
+        operative = operative.replace(canonical_example, "")
+    return operative
 
 
 def _extract_canonical_section(path: str, text: str, errors: list[str]) -> tuple[str, str] | None:
