@@ -27,36 +27,17 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
           path = Path('tools/agents/validate_remote_desktop_prompt_routing.py')
           text = path.read_text(encoding='utf-8')
-
-          old = '''    re.compile(r"\\bget_config\\b", re.IGNORECASE),
-    re.compile(r"\\bping\\b.{0,100}\\b(?:capability|discover|connector|tool|host)\\b", re.IGNORECASE),
-'''
-          new = '''    re.compile(r"\\bget_config\\b", re.IGNORECASE),
-    re.compile(
-        r"\\bdirect\\s+(?:connector|tool)\\s+(?:calls?|invocations?)\\b.{0,120}"
-        r"\\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|need(?:s)?\\s+no)\\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|need(?:s)?\\s+no)\\b.{0,120}"
-        r"\\bdirect\\s+(?:connector|tool)\\s+(?:calls?|invocations?)\\b",
-        re.IGNORECASE,
-    ),
-    re.compile(r"\\bping\\b.{0,100}\\b(?:capability|discover|connector|tool|host)\\b", re.IGNORECASE),
-'''
-          if text.count(old) != 1:
-              raise SystemExit(f'expected one routing-pattern anchor, got {text.count(old)}')
-          text = text.replace(old, new, 1)
-
+          needle = '    re.compile(r"\\bget_config\\b", re.IGNORECASE),\n'
+          addition = '    re.compile(\n        r"\\bdirect\\s+(?:connector|tool)\\s+(?:calls?|invocations?)\\b.{0,120}"\n        r"\\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|need(?:s)?\\s+no)\\b",\n        re.IGNORECASE,\n    ),\n    re.compile(\n        r"\\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|need(?:s)?\\s+no)\\b.{0,120}"\n        r"\\bdirect\\s+(?:connector|tool)\\s+(?:calls?|invocations?)\\b",\n        re.IGNORECASE,\n    ),\n'
+          if text.count(needle) != 1:
+              raise SystemExit(f'expected one get_config anchor, got {text.count(needle)}')
+          text = text.replace(needle, needle + addition, 1)
           old_zero = '    value = ZERO_WIDTH_RE.sub(" ", value)\n'
-          new_zero = '    value = ZERO_WIDTH_RE.sub("", value)\n'
           if text.count(old_zero) != 1:
-              raise SystemExit(f'expected one zero-width replacement anchor, got {text.count(old_zero)}')
-          text = text.replace(old_zero, new_zero, 1)
-
+              raise SystemExit(f'expected one zero-width anchor, got {text.count(old_zero)}')
+          text = text.replace(old_zero, '    value = ZERO_WIDTH_RE.sub("", value)\n', 1)
           path.write_text(text, encoding='utf-8')
           PY
       - name: Verify focused and provider governance GREEN
