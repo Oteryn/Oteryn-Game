@@ -4,7 +4,7 @@
 task_id: OTV2-20260828-durability-provenance-recovery
 title: Recover #167 Durability branch provenance
 mode: COORDINATE
-status: COMPLETED_SUCCESSOR_RELEASED
+status: COMPLETED_ARCHIVED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/durability-provenance-recovery-240
@@ -24,16 +24,20 @@ source_snapshot_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
 allocation_final_head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
 allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
 exact_final_head_evidence: immutable PR #241 review/check evidence after the final tracked-file commit; a commit cannot contain its own SHA
-owned_paths:
-  - docs/agents/tasks/active/OTV2-20260828-durability-provenance-recovery.md
+owned_paths: []
+released_paths:
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
   - docs/superpowers/plans/2026-08-28-durability-provenance-recovery.md
+archive_path: docs/agents/tasks/archive/OTV2-20260828-durability-provenance-recovery.md
+archived_at: 2026-08-28
 runtime_write_authority: none
 shared_lease: none
 external_repositories: []
 ```
 
 ## Proven incident state
+
+This allocation is terminal archive evidence. It owns no active path and may not be used to modify the separate successor packet or implementation lane.
 
 - `PROVEN`: protected `main` at recovery admission is `7c2da078596a7d2e27c3066ff74ac69b8b7f9af6`.
 - `PROVEN`: recovery allocation PR #241 exact final head `ca012ff2b42eefe4f27075455f097199aea63f8f` passed the required exact-head GitHub checks and native Codex review, then squash-merged as protected `main@a171410de07c2dab718f52f780d4314bdcc53604`.
@@ -104,18 +108,18 @@ No `Cargo.toml`, `Cargo.lock`, Foundation, Server Seam, workflow, registry, comp
 ## Context checkpoint
 
 ```yaml
-status: COMPLETED_SUCCESSOR_RELEASED
+status: COMPLETED_ARCHIVED
 branch: coord/durability-provenance-recovery-240
 pr: 241
 head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
 final_head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
 allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
 exact_head_evidence: immutable PR #241 review/check evidence; no self-referential status commit was created
-owned_paths:
-  - docs/agents/tasks/active/OTV2-20260828-durability-provenance-recovery.md
+owned_paths: []
+released_paths:
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
   - docs/superpowers/plans/2026-08-28-durability-provenance-recovery.md
-blocker: none_for_allocation; successor execution remains owned by OTV2-20260828-impl-durability-successor
-owner_action_required: coordinator must dispatch the separately allocated successor lifecycle from protected main a171410de07c2dab718f52f780d4314bdcc53604
-next_action: create exactly one clean successor branch from the recorded allocation merge SHA; preserve PR #212 as immutable evidence
+blocker: none_for_allocation; successor execution is separately owned by OTV2-20260828-impl-durability-successor
+owner_action_required: none — terminal allocation archived after successor release
+next_action: retain this record and PR #212 as immutable evidence; the separately owned successor controls all future delivery actions
 ```

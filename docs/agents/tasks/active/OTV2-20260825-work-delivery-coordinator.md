@@ -92,13 +92,11 @@ Create the durable execution lifecycle for the post-blocker gameplay vertical sl
 - \`PROVEN\`: PR #186 is merged. Its recorded review claims remain historical; this coordinator hold does not revise them.
 - \`PROVEN\`: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` passed exact-head governance, architecture, authority and merge-gate checks plus independent review, then squash-merged as protected \`main\` \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`; its temporary delivery branch was deleted. Its initial published head \`e205b0620d433733e306777ab8e491d471b62677\` remains exact original admission provenance.
 - \`PROVEN\`: the architecture-hold protected-main checkpoint \`007183ac7ef09dd4ae8d8f476d7ac943541d7d48\` had PR #182's shared prerequisite but no Durability worker PR or durable adapter delivery; the prior reconciliation readback at \`29576afa621bbe6a46c51fa1117c94efb6c7a644\` retained that no-delivery state.
-- \`PROVEN\`: the only Durability remote provenance is \`impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741\`; local unpublished documentation checkpoint \`3adf13ef17b3b7811aa4f73971456ecd321afcc2\` is not a remote delivery.
-- `PROVEN`: PR #190 merged `DUR-RECONNECT-AUTHORITY-V1` as protected `main@2394f6f4633b8c6662d8d79a84110cc2ae13dcb7`, resolving #187 and selecting Foundation successor #192 plus disjoint registry successor #193.
-- `PROVEN`: PR #194 merged the exact successor allocation as protected `main@1063caf409af6cd4b25fa844e17a483b87e76ad6`.
-- `PROVEN`: PR #195 merged as current protected `main@9878d42a21815027ef88067bfc59f8b40e78b473` and closed registry successor #193.
-- `CONFLICT`: Issue #192's allocation comment and merged PR #194 record an allocation, but the worker-owned active packet and live allocation still classify #192 as `waiting_allocation_merge` / `allocation_pending_merge`. This coordinator packet must not resolve that worker-owned state or assert Foundation runtime execution authority.
-- \`PROVEN\`: Server Seam remains \`WAITING_DEPENDENCY\`; #167 is not released until #192 is integrated and #167 receives fresh resume authority.
-- \`DERIVED\`: Interaction, Ability and journal-only Durability have disjoint primary semantic paths. Their shared composition/Cargo surfaces remain serialized coordinator paths.
+- `HISTORICAL`: `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741` and its local documentation checkpoint are pre-incident provenance only; neither is a dispatch target.
+- `HISTORICAL`: PRs #190, #194, #195, #199 and #210 completed the Foundation/registry predecessors. #192 and #193 are terminal and have no active worker/dispatch path.
+- `PROVEN`: PR #241 replaced the invalid legacy Durability continuation with one clean successor allocation. The legacy branch is immutable evidence; the successor is the only Durability execution target.
+- `PROVEN`: Server Seam remains `WAITING_DEPENDENCY` on the clean successor's independent merge, not on Foundation #192.
+- `DERIVED`: Interaction, Ability and journal-only Durability have disjoint primary semantic paths. Their shared composition/Cargo surfaces remain serialized coordinator paths.
 
 Governing authority:
 
@@ -111,11 +109,11 @@ Governing authority:
 - \`docs/architecture/reviews/OTERYN_GAME_POST_BLOCKER_WORK_ORCHESTRATION_2026-08-25.md\`
 - \`docs/superpowers/plans/2026-08-25-oteryn-game-work-delivery-orchestration.md\`
 
-## Current readiness matrix
+## Historical readiness matrix — non-actionable
 
-Task 1 and Task 2 allocation are historical completion steps. Current GitHub PR/Issue state and the live allocation record are authoritative for delivery and readiness; this coordinator packet does not reclaim any worker-owned child packet.
+This retained matrix records the pre-recovery state only. Every row below is historical and non-actionable: it grants no dispatch, merge-up, TDD or worker authority. Current delivery state is exclusively the recovery authority above, the archived allocation record and the separately owned successor packet.
 
-| Lane | Current readiness | Evidence | Task 2 requirement before dispatch |
+| Lane | Historical readiness | Historical evidence | Historical original record |
 |---|---|---|---|
 | Interaction | \`COMPLETED_RELEASED\` | PR #172 merged as \`73f82e4864aa15ece50625bda8bac7868f779ba3\`; post-merge reconciliation is recorded | Issue #165 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
 | Ability | \`COMPLETED_RELEASED\` | PR #171 merged as \`2faa280b406a313d02ee1330c65651bc36e215a9\`; post-merge reconciliation is recorded | Issue #166 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
@@ -143,7 +141,7 @@ No gameplay/runtime, Cargo/workspace, registry, stable-ID, public-contract, work
 
 Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected \`main\`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. Owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\` closed #164 and authorized only the separately allocated pure-local AI bootstrap through Issue #174.
 
-PRs #171, #172 and #178 are now merged and their worker packets are archived/released by the current coordinator reconciliation. PR #182 only released the serialized Cargo/CI/policy prerequisite. PR #190 resolved #187. PR #194 merged the Foundation #192 allocation record from protected `main@1063caf409af6cd4b25fa844e17a483b87e76ad6`; PR #195 merged as current protected `main@9878d42a21815027ef88067bfc59f8b40e78b473` and closed registry #193. However, #192's worker-owned active packet and live allocation still state `waiting_allocation_merge` / `allocation_pending_merge`; that conflict is pending worker-owned packet reconciliation, so this coordinator packet does not assert execution release or runtime authority. Existing #167 remains fail-closed `WAITING_DEPENDENCY`, and Server Seam remains `WAITING_DEPENDENCY` and unreleased. The sole next action is for worker #192 to reconcile its own active packet from current `main`, then execute TDD; no repeated allocation merge is directed. This hold does not complete the vertical-slice programme.
+PRs #171, #172 and #178 are merged and their packets released. PRs #190, #194, #195, #199 and #210 are terminal historical predecessor evidence; none creates a current #192/registry dispatch path. PR #241 is the current Durability recovery decision: legacy #212 remains immutable evidence, the separate clean successor is the sole Durability execution target, and Server Seam remains fail-closed until that successor independently merges.
 
 ## Validation
 
@@ -198,7 +196,7 @@ PRs #171, #172 and #178 are now merged and their worker packets are archived/rel
 - related/superseded PRs: #168 allocation; #171, #172 and #178 deliveries; #181/#185 leases; #182 shared integration
 - protected auto-merge: not used
 - merge commit/result: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` squash-merged as \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`; that protected-main readback is historical
-- ownership release: Ability, Interaction and AI are released; Durability has no write authority while waiting on #192; coordinator remains active and the vertical-slice programme is not complete
+- ownership release: Ability, Interaction and AI are released; legacy Durability has no write authority, while the separate clean successor owns its post-allocation lifecycle; coordinator remains active and the vertical-slice programme is not complete
 
 ## Context checkpoint
 

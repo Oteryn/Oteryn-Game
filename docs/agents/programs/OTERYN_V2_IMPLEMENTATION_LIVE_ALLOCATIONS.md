@@ -484,45 +484,39 @@ PR #190 resolved the architecture question but did not implement Foundation or D
 
 
 
-## Merge-conditioned allocation — Foundation reconnect durability boundary
+## Historical completed allocation — Foundation reconnect durability boundary
 
 ```yaml
 lane_id: OTV2-IMPL-FOUNDATION-RECONNECT-DURABILITY
 task_id: OTV2-20260826-impl-foundation-reconnect-durability
 issue: 192
-status: allocation_pending_merge
+status: completed_released
 worker_alias: Oteryn: impl foundation
-allocation_pr: pending
+allocation_pr: 194
+allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
+delivery_pr: 199
+delivery_merge_sha: 90f30b47ac9b1e5e41cf274caf707aa39109b0c0
 allocation_base_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
-branch_after_merge: impl/foundation-reconnect-durability-v1
-owned_paths:
-  - apps/game-server/src/foundation/admission.rs
-  - apps/game-server/src/foundation/admission_facade.rs
-  - apps/game-server/src/foundation/admission_recovery_inner.rs
-  - apps/game-server/src/foundation/fnd04_verifier.rs
-  - apps/game-server/src/foundation/recovery_tests.rs
-  - docs/agents/tasks/active/OTV2-20260826-impl-foundation-reconnect-durability.md
-write_authority: none_until_allocation_pr_merges
-blocks: [OTV2-IMPL-DURABILITY]
+owned_paths: []
+write_authority: none
+blocks: []
 ```
 
-## Merge-conditioned serialized allocation — reconnect attempt registry
+## Historical completed allocation — reconnect attempt registry
 
 ```yaml
 lane_id: OTV2-FND04-RECONNECT-ATTEMPT-REGISTRY
 task_id: OTV2-20260826-reconnect-attempt-registry
 issue: 193
-status: allocation_pending_merge
+status: completed_released
 worker_alias: Oteryn: work coordinator
-allocation_pr: pending
+allocation_pr: 195
+allocation_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
 allocation_base_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
-branch_after_merge: docs/reconnect-attempt-bound-193
-owned_paths:
-  - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
-  - docs/agents/tasks/active/OTV2-20260826-reconnect-attempt-registry.md
-write_authority: none_until_allocation_pr_merges
-serialized_lease: RESOURCE_LIMITS_REGISTRY only
-blocks: [issue:192 final acceptance]
+owned_paths: []
+write_authority: none
+serialized_lease: none
+blocks: []
 ```
 
 ## Completed allocation — AI pure-local bootstrap
