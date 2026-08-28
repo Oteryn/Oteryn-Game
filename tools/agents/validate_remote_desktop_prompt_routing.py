@@ -83,6 +83,16 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(r"\blist_devices\b", re.IGNORECASE),
     re.compile(r"\bwho_am_i\b", re.IGNORECASE),
     re.compile(r"\bget_config\b", re.IGNORECASE),
+    re.compile(
+        r"\bdirect\s+(?:connector|tool)\s+(?:calls?|invocations?)\b.{0,120}"
+        r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|need(?:s)?\s+no)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|need(?:s)?\s+no)\b.{0,120}"
+        r"\bdirect\s+(?:connector|tool)\s+(?:calls?|invocations?)\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(r"\b(?:connector|router|transport)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
@@ -302,7 +312,7 @@ def _normalize_policy_text(text: str) -> str:
     value = HTML_COMMENT_INLINE_RE.sub(" ", value)
     value = HTML_TAG_RE.sub(" ", value)
     value = MARKDOWN_ESCAPE_RE.sub(r"\1", value)
-    value = ZERO_WIDTH_RE.sub(" ", value)
+    value = ZERO_WIDTH_RE.sub("", value)
     value = re.sub(r"[*~`]+", "", value)
     value = MARKDOWN_UNDERSCORE_EMPHASIS_RE.sub("", value)
     value = re.sub(r"[\s\u00a0]+", " ", value)
