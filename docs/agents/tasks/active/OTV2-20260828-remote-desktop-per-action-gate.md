@@ -16,11 +16,12 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: oteryn-governance-controller
 created_at: 2026-08-28T11:12:01Z
-updated_at: 2026-08-28T11:15:00Z
+updated_at: 2026-08-28T11:23:00Z
 execution_budget_minutes: 120
 large_budget_reason: full reusable-prompt governance sweep plus deterministic exact-head qualification
 owned_paths:
   - .github/workflows/agent-governance.yml
+  - .github/workflows/rdc-prompt-sweep-once.yml
   - AGENTS.md
   - docs/agents/GITHUB_ONLY_EXECUTION.md
   - docs/agents/PROMPTING_STANDARD.md
@@ -55,6 +56,8 @@ Game adopts the exact merged META per-action Remote Desktop gate by reference. E
 
 No Game runtime, Cargo/workspace, protocol/schema/resource registry, deployment, production/protected environment, secrets, runner-host configuration, external-repository write or live Remote Desktop invocation. No claim of connector/router physical enforcement.
 
+The temporary `.github/workflows/rdc-prompt-sweep-once.yml` is authorized only as a branch-scoped GitHub-hosted migration helper to append the already-approved identical section to the lifecycle-derived reusable prompt set. It must fail closed on an unexpected prompt count/path/state, may commit only `docs/agents/prompts/*.md`, and must be deleted before the final candidate. Final proof comes from the retained `agent-governance.yml` on the exact removal head.
+
 ## Validation
 
 Focused: `python tools/agents/validate_remote_desktop_prompt_routing.py` plus existing `python tools/agents/validate_governance.py` in `Agent governance / validate`.
@@ -66,7 +69,7 @@ Final exact head, review fingerprint, check/review evidence and merge evidence r
 ## Context checkpoint
 
 ```yaml
-last_progress: Issue #237, dedicated branch, implementation plan and Draft PR #239 admitted from protected main after META protected-main readback
+last_progress: RED proven; canonical Game instruction surfaces aligned; bounded branch-only prompt sweep helper authorized
 status: implementing
 branch: governance/remote-desktop-per-action-gate-237
 head_sha: null
@@ -76,9 +79,9 @@ final_head_frozen_at: null
 ci_trigger_source: pull_request
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_run_ids: [33166551928]
+ci_job_ids: [98833233706]
+runner_assignment_state: github_hosted
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -88,5 +91,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: add focused RED provider validator and wire it into Agent governance
+next_action: run bounded lifecycle-derived reusable-prompt sweep and remove the temporary helper
 ```
