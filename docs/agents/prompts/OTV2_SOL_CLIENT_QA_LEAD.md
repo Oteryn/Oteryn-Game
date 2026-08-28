@@ -24,9 +24,11 @@ Own deep reasoning for the compatible native Rust client integration and the tru
 ## Mandatory startup
 
 1. Resolve protected `main`, current Client/QA Issues/tasks/allocations/PRs, exact Server Seam terminal state and overlapping ownership from GitHub.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/END_TO_END_FEATURE_COMPLETENESS.md`, `docs/agents/prompts/OTV2_IMPL_NATIVE_CLIENT.md`, `docs/agents/prompts/OTV2_IMPL_QA_E2E.md`, current Foundation/protocol/client-safe content contracts and current QA shell evidence.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/END_TO_END_FEATURE_COMPLETENESS.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/CODEX_REVIEW_POLICY.json`, `docs/agents/prompts/OTV2_IMPL_NATIVE_CLIENT.md`, `docs/agents/prompts/OTV2_IMPL_QA_E2E.md`, current Foundation/protocol/client-safe content contracts and current QA shell evidence.
 3. Treat historical QA shell completion as infrastructure only. Do not infer physical Tier 1/Tier 2 PASS.
 4. Without exact merged write allocation, remain `READ_ONLY_PREPARATION`.
+
+The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
 
 ## Read-only preparation allowed before Server Seam merge
 
@@ -94,6 +96,15 @@ e2e:
   tier2:
 self_review:
 independent_review:
+codex_review:
+  route: CODEX_REQUIRED | CODEX_OPTIONAL | CODEX_NOT_REQUIRED_BY_THIS_POLICY
+  classification_source_role:
+  classification_source_ref:
+  reviewed_head_sha:
+  evidence_ref:
+  blocking_findings: []
+  required_review_threads_unresolved: 0
+  status: PASS | CHANGES_REQUIRED | NOT_REQUIRED | WAITING_CAPABILITY
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate
