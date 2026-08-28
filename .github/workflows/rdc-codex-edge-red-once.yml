@@ -1,0 +1,96 @@
+name: RDC Codex edge RED once
+
+on:
+  push:
+    paths:
+      - .github/workflows/rdc-codex-edge-red-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  red:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: governance/remote-desktop-per-action-gate-237
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+      - name: Add focused Codex edge regressions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/agents/test_validate_remote_desktop_prompt_routing.py')
+          text = path.read_text(encoding='utf-8')
+          marker = '\ndef main() -> int:\n'
+          assert marker in text
+          block = r'''
+
+def test_codex_hyphenated_remote_desktop_authority_outside_section_fails() -> None:
+    text = "# Prompt\n\nUse Remote-Desktop for routine Git inspection.\n\n" + CANONICAL_PROMPT_SECTION + "\n"
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_codex_multiline_comment_suffix_remote_desktop_authority_outside_section_fails() -> None:
+    text = "# Prompt\n\nUse Remote <!-- hidden\n-->Desktop for routine Git inspection.\n\n" + CANONICAL_PROMPT_SECTION + "\n"
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_codex_soft_break_ping_discovery_outside_section_fails() -> None:
+    text = "# Prompt\n\nTreat ping as ordinary\ncapability discovery.\n\n" + CANONICAL_PROMPT_SECTION + "\n"
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_codex_surface_hyphenated_remote_desktop_authority_outside_section_fails() -> None:
+    text = "# Surface\n\nUse Remote-Desktop for routine Git inspection.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_codex_surface_multiline_comment_suffix_remote_desktop_authority_outside_section_fails() -> None:
+    text = "# Surface\n\nUse Remote <!-- hidden\n-->Desktop for routine Git inspection.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_codex_surface_soft_break_ping_discovery_outside_section_fails() -> None:
+    text = "# Surface\n\nTreat ping as ordinary\ncapability discovery.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+'''
+          assert 'test_codex_hyphenated_remote_desktop_authority_outside_section_fails' not in text
+          path.write_text(text.replace(marker, block + marker), encoding='utf-8')
+          PY
+      - name: Prove all three Codex findings RED
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, 'tools/agents')
+          import test_validate_remote_desktop_prompt_routing as t
+          tests = [
+              t.test_codex_hyphenated_remote_desktop_authority_outside_section_fails,
+              t.test_codex_multiline_comment_suffix_remote_desktop_authority_outside_section_fails,
+              t.test_codex_soft_break_ping_discovery_outside_section_fails,
+              t.test_codex_surface_hyphenated_remote_desktop_authority_outside_section_fails,
+              t.test_codex_surface_multiline_comment_suffix_remote_desktop_authority_outside_section_fails,
+              t.test_codex_surface_soft_break_ping_discovery_outside_section_fails,
+          ]
+          failed_as_expected = 0
+          for test in tests:
+              try:
+                  test()
+              except AssertionError as exc:
+                  print(f'EXPECTED RED {test.__name__}: {exc}')
+                  failed_as_expected += 1
+              else:
+                  raise SystemExit(f'UNEXPECTED PASS {test.__name__}')
+          assert failed_as_expected == len(tests)
+          print(f'RED proven for {failed_as_expected} Codex edge regressions')
+          PY
+      - name: Commit RED tests and remove helper
+        run: |
+          git config user.name blakinio
+          git config user.email 75369544+blakinio@users.noreply.github.com
+          git rm .github/workflows/rdc-codex-edge-red-once.yml
+          git add tools/agents/test_validate_remote_desktop_prompt_routing.py
+          git commit -m "test(agents): cover final Codex RDC parser edges"
+          git push origin HEAD:governance/remote-desktop-per-action-gate-237
