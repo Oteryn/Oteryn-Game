@@ -4,6 +4,7 @@ use oteryn_game_server::foundation::{
     ReconnectCommitRequestV1, ReconnectDurabilityRecordV1,
     ReconnectDurableReconciliationSnapshotV1, ReconnectPrepareDispositionV1,
     ReconnectPrepareRequestV1, ReconnectProofV1, RuntimeScopeRefV1,
+    MAX_OUTSTANDING_COMMANDS,
 };
 use serde_json::{Value, json};
 use sqlx::postgres::PgRow;
@@ -21,6 +22,7 @@ const CHANNEL_SCOPE: i16 = 1;
 const INSTANCE_SCOPE: i16 = 2;
 const PENDING_ORIGINAL: i16 = 1;
 const TERMINAL_OUTCOME_RETAINED: i16 = 2;
+const MAX_FND02_DOMAIN_REVISIONS: usize = 256;
 type ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 
 #[derive(Clone)]
@@ -918,12 +920,23 @@ async fn canonical_fnd02_mirrors_are_valid(
     canonical_fnd02: &Value,
 ) -> Result<bool, DurabilityError> {
     let stored_next_command_id: String = attempt.try_get("fnd02_next_command_id")?;
-    if canonical_u64_text(&canonical_fnd02["next_command_id"]) != Some(stored_next_command_id) {
+    let Some(next_command_id) = canonical_fnd02["next_command_id"]
+        .as_u64()
+        .filter(|value| *value != 0)
+    else {
+        return Ok(false);
+    };
+    if next_command_id.to_string() != stored_next_command_id {
         return Ok(false);
     }
     let Some(canonical_pending) = canonical_fnd02["pending"].as_array() else {
         return Ok(false);
     };
+    if canonical_pending.len() > MAX_OUTSTANDING_COMMANDS
+        || canonical_fnd02["server_sequence"].as_u64().is_none()
+    {
+        return Ok(false);
+    }
     let stored_pending = sqlx::query(
         "SELECT command_id::text AS command_id, disposition \
          FROM game_durability_reconnect_pending_commands \
@@ -937,18 +950,54 @@ async fn canonical_fnd02_mirrors_are_valid(
     if stored_pending.len() != canonical_pending.len() {
         return Ok(false);
     }
+    let mut previous_command_id = None;
     for (stored, expected) in stored_pending.iter().zip(canonical_pending) {
+        let Some(expected_command_id) = expected["command_id"]
+            .as_u64()
+            .filter(|value| *value != 0 && *value < next_command_id)
+        else {
+            return Ok(false);
+        };
+        if previous_command_id
+            .is_some_and(|previous_command_id| previous_command_id >= expected_command_id)
+        {
+            return Ok(false);
+        }
         let expected_disposition = match expected["disposition"].as_str() {
             Some("pending_original") => PENDING_ORIGINAL,
             Some("terminal_outcome_retained") => TERMINAL_OUTCOME_RETAINED,
             _ => return Ok(false),
         };
         let stored_command_id: String = stored.try_get("command_id")?;
-        if canonical_u64_text(&expected["command_id"]) != Some(stored_command_id)
+        if expected_command_id.to_string() != stored_command_id
             || stored.try_get::<i16, _>("disposition")? != expected_disposition
         {
             return Ok(false);
         }
+        previous_command_id = Some(expected_command_id);
+    }
+
+    let Some(canonical_domains) = canonical_fnd02["domain_revisions"].as_array() else {
+        return Ok(false);
+    };
+    if canonical_domains.len() > MAX_FND02_DOMAIN_REVISIONS {
+        return Ok(false);
+    }
+    let mut previous_domain_id = None;
+    for domain in canonical_domains {
+        let Some(domain_id) = domain["domain_id"]
+            .as_u64()
+            .and_then(|value| u32::try_from(value).ok())
+            .filter(|value| *value != 0)
+        else {
+            return Ok(false);
+        };
+        if domain["revision"].as_u64().is_none()
+            || previous_domain_id.is_some_and(|previous_domain_id| previous_domain_id >= domain_id)
+        {
+            return Ok(false);
+        }
+        previous_domain_id = Some(domain_id);
     }
     Ok(true)
 }
