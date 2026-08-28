@@ -9,10 +9,11 @@ status: ALLOCATION_PENDING_PROTECTED_MAIN_MERGE
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/durability-212-recovery-allocation
-pr: null
+pr: 242
 base_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
-head_sha: null
-final_head_sha: null
+head_sha: external_pr_evidence
+final_head_sha: external_pr_evidence
+head_evidence_surface: "PR #242 live head plus immutable PR comments/reviews/workflow runs"
 successor_branch: recovery/durability-212-owned-successor
 issue: 240
 parent_issue: 162
@@ -30,7 +31,7 @@ owner_before_allocation_merge: Oteryn: work coordinator
 owner_after_allocation_merge: Oteryn: sol durability lead
 owner: Oteryn: work coordinator
 created_at: 2026-08-28T13:04:06Z
-updated_at: 2026-08-28T13:22:36Z
+updated_at: 2026-08-28T13:28:43Z
 execution_budget_minutes: 120
 large_budget_reason: the successor must reproduce a high-risk PostgreSQL durability candidate, including fresh exact-head E2E, review and CI after an evidence-preserving provenance recovery
 owned_paths:
@@ -160,15 +161,15 @@ The coordinator opened Issue #240 and paused PR #212 before this allocation writ
 
 ### Exact-head CI
 
-- initial published head: `null`
-- final exact-head: `null`
+- initial published head: `e5bb7137e816df51be3ebca728af6077a35bf471`
+- final exact-head: external PR #242 evidence surface
 - required workflows: governance, architecture semantic audit, merge authority audit, Rust workspace and merge gate on the final PR head
 - result: pending
 
 ## Self-review
 
-- initial reviewed head: `null`
-- final reviewed head: `null`
+- initial reviewed head: `e5bb7137e816df51be3ebca728af6077a35bf471`
+- final reviewed head: external PR #242 evidence surface
 - method: coordinator checks the full staged/PR diff against Issue #240, the parent authority and exact owned paths
 - verdict: pending
 
@@ -189,12 +190,13 @@ The coordinator opened Issue #240 and paused PR #212 before this allocation writ
 ## Context checkpoint
 
 ```yaml
-last_progress: Issue #240 comment 5453015299 bound fb30fba2a888835dfc7cbde27f940b79d7bfe05d and nine exact source blobs as evidence only; a4d1 remains earlier paused evidence with the unresolved COMMIT-reservation P2
+last_progress: PR #242 opened Draft at e5bb7137e816df51be3ebca728af6077a35bf471; Issue #240 comment 5453015299 binds fb30fba2a888835dfc7cbde27f940b79d7bfe05d and nine exact source blobs as evidence only; a4d1 remains earlier paused evidence with the unresolved COMMIT-reservation P2
 status: ALLOCATION_PENDING_PROTECTED_MAIN_MERGE
 branch: coord/durability-212-recovery-allocation
-head_sha: null
-pr: null
-final_head_sha: null
+head_sha: external_pr_evidence
+pr: 242
+final_head_sha: external_pr_evidence
+head_evidence_surface: "PR #242 live head plus immutable PR comments/reviews/workflow runs"
 owner_action_required: null
 blocker: allocation not yet merged; original PR #212 must remain evidence-only
 next_action: qualify and merge this docs-only allocation, then create one clean successor branch from its protected-main merge SHA
