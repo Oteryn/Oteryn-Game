@@ -117,14 +117,17 @@ def reusable_prompt_paths(lifecycle: dict, errors: list[str]) -> list[str]:
 
 
 def _extract_canonical_section(path: str, text: str, errors: list[str]) -> tuple[str, str] | None:
-    if text.count(SECTION) != 1:
+    heading_pattern = re.compile(rf"(?m)^{re.escape(SECTION)}[ \t]*$")
+    matches = list(heading_pattern.finditer(text))
+    if len(matches) != 1:
         errors.append(f"{path}: must contain exactly one {SECTION!r} section")
         return None
 
-    start = text.index(SECTION)
-    remainder = text[start + len(SECTION):]
+    heading = matches[0]
+    start = heading.start()
+    remainder = text[heading.end():]
     next_heading = re.search(r"(?m)^##\s+.+$", remainder)
-    end = start + len(SECTION) + next_heading.start() if next_heading is not None else len(text)
+    end = heading.end() + next_heading.start() if next_heading is not None else len(text)
     section_text = text[start:end].strip()
     outside_text = (text[:start] + "\n" + text[end:]).strip()
     return section_text, outside_text
