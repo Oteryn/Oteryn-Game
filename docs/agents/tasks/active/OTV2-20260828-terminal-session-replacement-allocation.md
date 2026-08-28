@@ -25,7 +25,7 @@ worker_task_id: OTV2-20260828-terminal-session-replacement-repair
 worker_branch: impl/game-terminal-session-replacement-250
 worker_pr: null
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-28T20:21:00+02:00
+updated_at: 2026-08-28T20:31:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: serialized cross-lane Foundation/Durability repair with real PostgreSQL race/restart proof
 owned_paths:
@@ -108,9 +108,9 @@ Worker-governance metadata additionally owned after allocation merge:
 1. Allocation PR qualifies and squash-merges with expected-head protection.
 2. Work reads the merge SHA from protected `main` and creates the worker branch from exactly that SHA.
 3. Worker reconstructs the nine frozen PR #243 source files by file contents only. This is baseline reconstruction, not repair qualification.
-4. Worker adds fresh repair tests only and proves RED for every new canonical Section 9 terminal-replacement/V2 obligation before adding repair implementation.
-5. Worker implements the accepted Foundation V2/terminal-replacement contract, PostgreSQL replacement transaction/schema, exact receipt idempotency/conflict handling, predecessor PREPARED fencing, typed replay/reconciliation and `src/lib.rs` composition.
-6. Worker proves GREEN with Foundation contract tests plus real isolated PostgreSQL tests, including restart/replay/contention/late-COMMIT cases, then whole package/workspace validation.
+4. Worker adds fresh repair tests only and proves RED for every new canonical Section 9 terminal-replacement/V2 obligation before adding repair implementation, including every Foundation authorization binding, direct typed V2 replay, exact receipt replay/conflict, predecessor PREPARED fencing, mid-transaction rollback, typed reconciliation and contention.
+5. Worker implements the accepted Foundation V2/terminal-replacement contract, PostgreSQL replacement transaction/schema, exact receipt idempotency/conflict handling, predecessor PREPARED fencing, rollback atomicity, typed direct replay/reconciliation and `src/lib.rs` composition.
+6. Worker proves GREEN with Foundation contract tests plus real isolated PostgreSQL tests, including restart/replay/contention/late-COMMIT/mid-transaction rollback cases, then whole package/workspace validation.
 7. Worker freezes an exact final head, performs whole-diff self-review, requests its own standing-authorized `CODEX_REQUIRED` exact-head review, repairs findings only inside the allocation, and returns `READY_FOR_INTEGRATION` with zero unresolved required threads.
 8. Work integrates only after independent verification; Server Seam remains blocked until the repaired Durability delivery is merged and read back from protected main.
 
@@ -122,7 +122,10 @@ Worker-governance metadata additionally owned after allocation merge:
 - [ ] Worker implementation authority is exactly the canonical 11-path set plus its task metadata.
 - [ ] `apps/game-server/src/lib.rs` is explicitly serialized and does not overlap a current writer.
 - [ ] No Cargo/lockfile/workflow/registry/Server Seam/production/external write authority is introduced.
-- [ ] Fresh repair RED is required for exact replacement-receipt replay/conflict, predecessor PREPARED late-COMMIT fencing, typed V2 collision/concurrent/stale reconciliation and collision-only remint eligibility in addition to terminal/scope/contention cases.
+- [ ] Fresh Foundation RED independently rejects predecessor session/connection/lease and candidate session/account/character/world mismatches before V2 request construction.
+- [ ] Fresh Foundation RED separately proves direct typed V2 `ExistingTerminal` collision handling and collision-only bounded fresh-attempt eligibility, not only reconciliation.
+- [ ] Fresh PostgreSQL RED proves exact replacement-receipt replay/conflict, predecessor PREPARED late-COMMIT fencing and rollback after replacement mutation has begun but before candidate PREPARED authority.
+- [ ] Fresh PostgreSQL/Foundation RED proves collision/concurrent/stale typed outcomes remain distinct and only collision unlocks the existing bounded replacement-attempt path.
 - [ ] Allocation receives required exact-head governance/architecture/merge-authority/merge-gate checks, whole-diff self-review, and independent review under current policy before merge.
 - [ ] Protected-main readback occurs before any worker write.
 
@@ -135,12 +138,12 @@ No runtime code, migration, schema, Cargo/lockfile, workflow, registry/stable-ID
 ### Focused
 
 - command/run: `python tools/agents/validate_governance.py`
-- result: pending fresh exact-head workflow evidence after review repair
+- result: pending fresh exact-head workflow evidence after final review repair
 
 ### Component/integration
 
 - command/run: `python tools/repository/validate_repository_policy.py`
-- result: pending fresh exact-head merge-gate evidence after review repair
+- result: pending fresh exact-head merge-gate evidence after final review repair
 
 ### E2E
 
@@ -149,7 +152,7 @@ No runtime code, migration, schema, Cargo/lockfile, workflow, registry/stable-ID
 
 ### Exact-head CI
 
-- final head: resolved from live PR #251 after this last tracked review-repair commit
+- final head: resolved from live PR #251 after final tracked review-repair generation
 - trigger source: pull_request
 - workflow/run/job: pending fresh generation
 - runner assignment: GitHub-hosted where applicable
@@ -158,7 +161,7 @@ No runtime code, migration, schema, Cargo/lockfile, workflow, registry/stable-ID
 
 ## Self-review
 
-- exact head: resolved from live PR #251 after this last tracked review-repair commit
+- exact head: resolved from live PR #251 after final tracked review-repair generation
 - method/reviewer: Work coordinator whole-diff review
 - material findings: pending fresh review
 - verdict: pending
@@ -166,21 +169,21 @@ No runtime code, migration, schema, Cargo/lockfile, workflow, registry/stable-ID
 ## Independent review
 
 - required: `YES` — allocation changes cross-lane runtime write ownership and serialized composition authority
-- exact head: resolved from live PR #251 after this last tracked review-repair commit
+- exact head: resolved from live PR #251 after final tracked review-repair generation
 - method/auditor: fresh strict read-only Codex exact-head review under protected-main policy
-- material findings: prior P1 `3882998652` repaired; fresh review pending
+- material findings: prior P1 findings `3882998652`, `3883051604`, `3883051614`, `3883051624` repaired; fresh review pending
 - verdict: pending
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Codex P1 3882998652 repaired by complete canonical RED obligations in worker task and implementation plan
+last_progress: all four Codex P1 allocation findings are incorporated into complete canonical RED obligations before worker implementation authority can release
 status: validating
 branch: coord/terminal-session-replacement-allocation-250
 head_sha: LIVE_PR_251_HEAD
 pr: 251
 final_head_sha: LIVE_PR_251_HEAD
-final_head_frozen_at: after this checkpoint commit
+final_head_frozen_at: after this final tracked review-repair generation
 ci_trigger_source: pull_request
 ci_check_generation: pending_new_head
 ci_checks_for_current_head: 0
@@ -191,7 +194,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
