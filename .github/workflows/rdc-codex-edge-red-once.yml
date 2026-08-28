@@ -2,6 +2,8 @@ name: RDC Codex edge RED once
 
 on:
   push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
     paths:
       - .github/workflows/rdc-codex-edge-red-once.yml
 
@@ -15,17 +17,20 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: governance/remote-desktop-per-action-gate-237
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
-        with:
-          python-version: '3.12'
-      - name: Add focused Codex edge regressions
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Prove final Codex parser findings RED and publish tests
+        shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
+          import sys
+
           path = Path('tools/agents/test_validate_remote_desktop_prompt_routing.py')
           text = path.read_text(encoding='utf-8')
           marker = '\ndef main() -> int:\n'
-          assert marker in text
+          if marker not in text:
+              raise SystemExit('missing test main anchor')
           block = r'''
 
 def test_codex_hyphenated_remote_desktop_authority_outside_section_fails() -> None:
@@ -57,13 +62,10 @@ def test_codex_surface_soft_break_ping_discovery_outside_section_fails() -> None
     text = "# Surface\n\nTreat ping as ordinary\ncapability discovery.\n\n" + SURFACE_SECTION + "\n"
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 '''
-          assert 'test_codex_hyphenated_remote_desktop_authority_outside_section_fails' not in text
-          path.write_text(text.replace(marker, block + marker), encoding='utf-8')
-          PY
-      - name: Prove all three Codex findings RED
-        run: |
-          python - <<'PY'
-          import sys
+          if 'test_codex_hyphenated_remote_desktop_authority_outside_section_fails' in text:
+              raise SystemExit('Codex edge tests already present')
+          path.write_text(text.replace(marker, block + marker, 1), encoding='utf-8')
+
           sys.path.insert(0, 'tools/agents')
           import test_validate_remote_desktop_prompt_routing as t
           tests = [
@@ -74,23 +76,23 @@ def test_codex_surface_soft_break_ping_discovery_outside_section_fails() -> None
               t.test_codex_surface_multiline_comment_suffix_remote_desktop_authority_outside_section_fails,
               t.test_codex_surface_soft_break_ping_discovery_outside_section_fails,
           ]
-          failed_as_expected = 0
+          red = 0
           for test in tests:
               try:
                   test()
               except AssertionError as exc:
                   print(f'EXPECTED RED {test.__name__}: {exc}')
-                  failed_as_expected += 1
+                  red += 1
               else:
                   raise SystemExit(f'UNEXPECTED PASS {test.__name__}')
-          assert failed_as_expected == len(tests)
-          print(f'RED proven for {failed_as_expected} Codex edge regressions')
+          if red != len(tests):
+              raise SystemExit(f'expected {len(tests)} RED failures, got {red}')
+          print(f'RED proven for {red} Codex edge regressions')
+          Path('.github/workflows/rdc-codex-edge-red-once.yml').unlink()
           PY
-      - name: Commit RED tests and remove helper
-        run: |
-          git config user.name blakinio
-          git config user.email 75369544+blakinio@users.noreply.github.com
-          git rm .github/workflows/rdc-codex-edge-red-once.yml
-          git add tools/agents/test_validate_remote_desktop_prompt_routing.py
-          git commit -m "test(agents): cover final Codex RDC parser edges"
+          git diff --check
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add tools/agents/test_validate_remote_desktop_prompt_routing.py .github/workflows/rdc-codex-edge-red-once.yml
+          git commit -m 'test(agents): cover final Codex RDC parser edges'
           git push origin HEAD:governance/remote-desktop-per-action-gate-237
