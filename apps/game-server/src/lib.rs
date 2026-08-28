@@ -3,8 +3,11 @@
 //! Foundation and the protocol/runtime/admission seam are merged. Domain semantics are composed
 //! here while executable gameplay remains fail-closed until the later integration gates.
 
+extern crate self as oteryn_game_server;
+
 pub mod content;
 pub mod domain;
+pub mod durability;
 pub mod foundation;
 
 #[cfg(test)]

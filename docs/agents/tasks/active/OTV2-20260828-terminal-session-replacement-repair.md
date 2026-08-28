@@ -4,8 +4,8 @@
 task_id: OTV2-20260828-terminal-session-replacement-repair
 title: Implement terminal GameSession replacement and typed reconciliation
 mode: REPAIR
-status: implementing
-integration_state: RED_PENDING
+status: qualifying
+integration_state: FINAL_QUALIFICATION_PENDING
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-terminal-session-replacement-250
@@ -25,7 +25,7 @@ admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 pr: 252
 owner: Oteryn: sol durability lead
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-28T20:50:00+02:00
+updated_at: 2026-08-28T22:21:09+02:00
 execution_budget_minutes: 180
 large_budget_reason: cross-lane Foundation/Durability repair with real PostgreSQL contention, replay and restart proof
 write_authority: exact_allocated_worker_scope_after_12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
@@ -162,6 +162,15 @@ Implement only the canonical repairs needed to satisfy the complete RED suite:
 
 No Cargo/lockfile/workflow/resource-registry/Server Seam/Client/Movement/Combat/gameplay/production/secret/live-data/Platform/Atlas/META/external-repository mutation. No new resource maximum. Any need for another implementation path is `SHARED_LEASE_REQUIRED` and the worker must stop for explicit control-plane expansion.
 
+## Proven TDD checkpoint
+
+- Schema/receipt/live-anchor RED: `b9f1cda4d3693158eb2224208b51696e1bdb2766`, workflow run `33201919633`, PostgreSQL job `98953210787`: 49 PASS / 8 expected FAIL.
+- Foundation V2/terminal-authorization RED: `bff218dcc35a19b10c0a3dc1dbbc78e2cb41b306`, workflow run `33202516767`, job `98955532165`: expected missing canonical Foundation contract.
+- Complete runtime PostgreSQL RED: `0fc9de255394ba4ce1b919ad71ea47eeb3247e05`, workflow run `33204365030`, PostgreSQL job `98961526112`: 72 PASS / 6 expected FAIL on PostgreSQL 17.6.
+- Runtime GREEN before final composition: `aea85c41268f62486a45e37ed6142cd684ad89df`, workflow run `33207651906`, PostgreSQL job `98972703970`: 78 PASS / 0 FAIL on PostgreSQL 17.6.
+
+The final composition/task commit intentionally follows the proven runtime GREEN and must receive a completely fresh exact-head CI generation and Codex review; no earlier GREEN/review is inherited.
+
 ## Required validation
 
 ### Focused RED -> GREEN
@@ -194,15 +203,15 @@ PR #243 remains open Draft historical evidence until Work decides its terminal d
 ## Context checkpoint
 
 ```yaml
-last_progress: clean baseline reconstructed from exact nine frozen blobs and Draft PR #252 created; all nine baseline blob SHAs independently verified against allocation #251
-status: implementing
+last_progress: complete RED lifecycle proven; Foundation/schema/runtime GREEN implemented; exact runtime head aea85c41268f62486a45e37ed6142cd684ad89df passed 78/78 on hosted PostgreSQL 17.6; final composition/task checkpoint prepared
+status: qualifying
 branch: impl/game-terminal-session-replacement-250
-head_sha: 3d3c88c2eda1afadd4d82388e88504b4c7ef61f7
+head_sha: aea85c41268f62486a45e37ed6142cd684ad89df
 pr: 252
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: baseline
+ci_check_generation: final_head_pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -216,5 +225,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish the complete fresh test/task-only RED required by canonical Section 9, prove expected failure on an exact hosted PostgreSQL-capable head, then and only then implement GREEN repair behavior
+next_action: publish the final composition and task checkpoint commit, freeze that exact head, perform whole-diff self-review, require fresh exact-head repository CI and Codex review, then return READY_FOR_INTEGRATION to Work
 ```
