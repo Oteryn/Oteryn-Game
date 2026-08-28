@@ -236,16 +236,16 @@ mod durability_contract_tests {
             RuntimeScopeRefV1::channel(world_id, channel_id),
         )?;
         let connection = ReconnectConnectionFenceV1::new(
-            ConnectionGeneration::new(7).map_err(invalid_record)?,
-            ConnectionGeneration::new(8).map_err(invalid_record)?,
+            ConnectionGeneration::new(u64::MAX - 1).map_err(invalid_record)?,
+            ConnectionGeneration::new(u64::MAX).map_err(invalid_record)?,
             AuthenticatedTransportRefV1::decode(&[0xd1; 16]).map_err(invalid_record)?,
         )?;
         let authority = ReconnectAuthorityFenceV1::new(
-            9,
-            ScopeOwnershipGeneration::new(10).map_err(invalid_record)?,
+            u64::MAX - 2,
+            ScopeOwnershipGeneration::new(u64::MAX - 3).map_err(invalid_record)?,
         )?;
         let continuity = ReconnectContinuityV1::new(
-            ControlLossEpochRefV1::new(3)?,
+            ControlLossEpochRefV1::new(u64::MAX - 4)?,
             now + 120,
             now + 115,
             ProtectionEntitlementV1::unused(),
@@ -700,6 +700,21 @@ mod durability_contract_tests {
             .fetch_one(&mut connection)
             .await?;
             assert_eq!(pending_schema, ("numeric".to_owned(), Some(20), Some(0)));
+            let session_fences: (String, String, String, String, String) = sqlx::query_as(
+                "SELECT control_loss_epoch::text, predecessor_generation::text, \
+                        character_lease_generation::text, scope_ownership_generation::text, \
+                        current_generation::text \
+                 FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(session_id.as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(session_fences.0, (u64::MAX - 4).to_string());
+            assert_eq!(session_fences.1, (u64::MAX - 1).to_string());
+            assert_eq!(session_fences.2, (u64::MAX - 2).to_string());
+            assert_eq!(session_fences.3, (u64::MAX - 3).to_string());
+            assert_eq!(session_fences.4, (u64::MAX - 1).to_string());
             let stored: CanonicalAttemptRow = sqlx::query_as(
                 "SELECT uuid_send(game_session_id), account_id::text, uuid_send(character_id), uuid_send(world_id), \
                         runtime_scope_kind, uuid_send(runtime_scope_world_id), \
@@ -741,6 +756,92 @@ mod durability_contract_tests {
                 journal.prepare(&request).await?,
                 ReconnectPrepareDispositionV1::ExistingPrepared
             );
+            connection.close().await?;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn durable_session_actor_binding_fails_closed_when_typed_state_is_corrupt() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url, _executor) = migrated_database("session_actor_corrupt").await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let record_now = crate::unix_now().map_err(crate::foundation_error)?;
+            let (_flow, request) = ReconnectDurabilityFlowV1::begin(
+                crate::record(86, 1, 0xd3, record_now).map_err(crate::foundation_error)?,
+            );
+            assert_eq!(
+                journal.prepare(&request).await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            let session_id = request.record().identity().game_session_id().as_bytes().to_vec();
+            let mut connection = PgConnection::connect(&database_url).await?;
+            sqlx::query(
+                "UPDATE game_durability_reconnect_sessions SET character_id = encode($2, 'hex')::uuid \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(session_id.as_slice())
+            .bind(crate::uuid_v7(99).as_slice())
+            .execute(&mut connection)
+            .await?;
+            assert!(matches!(
+                journal.prepare(&request).await,
+                Err(DurabilityError::InvalidStoredState)
+            ));
+            connection.close().await?;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn typed_attempt_mirrors_fail_closed_when_canonical_record_is_unchanged() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url, _executor) = migrated_database("typed_attempt_corrupt").await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let record_now = crate::unix_now().map_err(crate::foundation_error)?;
+            let (_flow, request) = ReconnectDurabilityFlowV1::begin(
+                crate::record(87, 1, 0xd4, record_now).map_err(crate::foundation_error)?,
+            );
+            assert_eq!(
+                journal.prepare(&request).await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            let session_id = request.record().identity().game_session_id().as_bytes().to_vec();
+            let attempt_ref = request
+                .record()
+                .identity()
+                .reconnect_attempt_ref()
+                .to_be_bytes()
+                .to_vec();
+            let mut connection = PgConnection::connect(&database_url).await?;
+            sqlx::query(
+                "UPDATE game_durability_reconnect_attempts SET control_loss_epoch = control_loss_epoch + 1 \
+                 WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
+            )
+            .bind(session_id.as_slice())
+            .bind(attempt_ref.as_slice())
+            .execute(&mut connection)
+            .await?;
+            assert!(matches!(
+                journal.prepare(&request).await,
+                Err(DurabilityError::InvalidStoredState)
+            ));
+            sqlx::query(
+                "UPDATE game_durability_reconnect_attempts SET control_loss_epoch = control_loss_epoch - 1, \
+                        transport_ref = $3 \
+                 WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
+            )
+            .bind(session_id.as_slice())
+            .bind(attempt_ref.as_slice())
+            .bind([0xee_u8; 16].as_slice())
+            .execute(&mut connection)
+            .await?;
+            assert!(matches!(
+                journal.prepare(&request).await,
+                Err(DurabilityError::InvalidStoredState)
+            ));
             connection.close().await?;
             database.cleanup().await?;
             Ok(())
