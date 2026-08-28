@@ -57,9 +57,25 @@
       ]
     },
     "authoritative_downgrade_sources": [
-      "EXPLICIT_GOVERNING_TASK_OR_ALLOCATION_RISK_METADATA_FROM_NON_WORKER_OWNER_ROLE",
+      "OWNER_DECISION_RECORDED_IN_GOVERNING_ISSUE_OR_TASK",
+      "SOL_SUPERVISING_ARCHITECT_CLASSIFICATION_RECORDED_IN_GOVERNING_ISSUE_OR_TASK",
+      "CANONICAL_RISK_CONTRACT",
       "MECHANICAL_CHANGED_SCOPE_RULE"
     ],
+    "downgrade_metadata_contract": {
+      "required_fields": [
+        "risk_classification",
+        "risk_classification_source_role",
+        "risk_classification_source_ref"
+      ],
+      "permitted_source_roles": [
+        "OWNER",
+        "SOL_SUPERVISING_ARCHITECT",
+        "CANONICAL_RISK_CONTRACT"
+      ],
+      "source_must_not_be_allocated_worker": true,
+      "source_record_must_exist_before_candidate_freeze": true
+    },
     "mechanical_changed_scope_rules": {
       "ORDINARY_DOCS_ONLY": {
         "all_changed_paths_must_be_under": [
@@ -75,11 +91,9 @@
     },
     "low_risk_path_local_implementation": {
       "route": "CODEX_NOT_REQUIRED_BY_THIS_POLICY",
-      "requires_explicit_governing_task_or_allocation_metadata": true,
-      "metadata_owner_must_not_be_allocated_worker": true,
-      "metadata_must_predate_candidate_qualification": true
+      "requires_validated_downgrade_metadata_contract": true
     },
-    "optional_route_requires_authoritative_validation": true,
+    "optional_route_requires_validated_downgrade_metadata_contract": true,
     "unvalidated_or_conflicting_classification": "CODEX_REQUIRED",
     "control_plane_must_not_invent_risk_tags": true,
     "control_plane_may_mechanically_reject_unvalidated_downgrade": true,
