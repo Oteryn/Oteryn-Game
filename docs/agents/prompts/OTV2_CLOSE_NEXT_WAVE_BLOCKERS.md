@@ -172,13 +172,13 @@ Stop and request owner input only when one of these is true:
 - the remaining choice materially changes player-visible gameplay/product semantics rather than only bounding work;
 - production secret/key/deployment ownership or live production configuration must be chosen;
 - new production, Platform or external-repository authority is required;
-- a mandatory independent review cannot be satisfied by an allowed non-owner-funded mechanism;
+- a mandatory independent review remains unavailable after applying the canonical `CODEX_REVIEW_POLICY.json` capability/fallback rules;
 - an ownership conflict or unrecoverable repository/tool failure prevents truthful progress;
 - anti-stall/repair budget is exhausted.
 
 Routine CI failures, review findings, rebases, evidence repairs, allocation/PR bookkeeping and technically equivalent conservative choices are not owner blockers.
 
-Do not invoke owner-funded Codex/OpenAI/API merely because a review would be convenient. Follow `OWNER_FUNDED_AI_POLICY.md` exactly.
+Do not invoke non-covered owner-funded Codex/OpenAI/API merely because a review would be convenient. For covered independent review, apply `CODEX_REVIEW_POLICY.json` risk routing and standing authorization exactly.
 
 ## Completion rule
 
@@ -192,3 +192,13 @@ This invocation is complete only when all currently applicable blocker work has 
 - current `main` readiness is recomputed for Ability, Interaction, AI, Durability and Server Seam and the exact next lawful aliases are recorded.
 
 A packet marked `COMPLETE` while its implementation blocker still exists, a candidate value not accepted/registered, an unmerged PR, green local tests alone or an unarchived ownership lock is not completion.
+## Canonical Codex review routing
+
+Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
+
+- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
+- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
+- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
+- When this role is the authorized candidate/review-request owner and routing is `CODEX_REQUIRED`, freeze the PR exact head, use the canonical GitHub PR transport (`@codex review`), consume durable findings, repair only within existing authority, re-run applicable exact-head validation, and request a fresh review after every material head change. Do not return to the owner for covered per-run approval.
+- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
+- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.

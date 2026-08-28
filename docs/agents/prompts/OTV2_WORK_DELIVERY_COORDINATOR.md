@@ -267,6 +267,17 @@ When the central bounded-execution policy is canonical in Game, use its exact `W
 
 Repairable findings and deterministic local failures remain active work. Repeated identical failures require diagnosis and bounded retries, not narration loops.
 
+## Canonical Codex review routing
+
+Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
+
+- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
+- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
+- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
+- This coordinator/control-plane role is not the `ALLOCATED_LANE_LEAD` review-request owner for a lane candidate. Missing, stale or failed required Codex evidence becomes `REVIEW_RECONCILIATION_REQUIRED` routed to the owning lane lead; do not trigger Codex on that lane's behalf and do not ask the owner to relay the prompt.
+- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
+- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.
+
 ## Safety / exclusions
 
 This prompt grants no:
@@ -275,7 +286,7 @@ This prompt grants no:
 - production secret/key/certificate access;
 - live account/session/player-data mutation;
 - Platform/Atlas/META/other-repository writes;
-- owner-funded Codex/OpenAI/API invocation unless explicitly authorized for that exact use;
+- non-covered owner-funded Codex/OpenAI/API invocation unless explicitly owner-authorized for that exact use;
 - Reference parity claim;
 - permanent Content format decision;
 - permission to weaken branch/review/test/security/provenance gates.

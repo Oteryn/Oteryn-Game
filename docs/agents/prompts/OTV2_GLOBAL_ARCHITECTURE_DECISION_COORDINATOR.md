@@ -36,7 +36,7 @@ Routine writes are limited to:
 
 Other repositories are read-only unless the owner explicitly authorizes an exact write task.
 
-Codex/OpenAI/API/owner-funded AI may be invoked only after explicit owner authorization for the exact PR/use. Prior permissions never carry forward. If marking a draft ready triggers Codex automatically, that transition itself requires exact owner authorization.
+Covered Codex review operations follow the canonical standing authorization in `docs/agents/CODEX_REVIEW_POLICY.json`; per-run owner confirmation is not required for those operations. Non-covered owner-funded Codex/OpenAI/API use still requires exact per-invocation owner authorization. A draft-to-ready transition may be used as a review trigger only by the canonical review-request owner and must not create duplicate or unqualified review invocations.
 
 ## 3. Mandatory startup
 
@@ -219,10 +219,10 @@ Agent A priority controls the current programme/evidence truth. It does not requ
 Apply root review policy.
 
 - A qualified separate worker/coordinator session may be an independent reviewer only if it did not materially author the change.
-- Codex is optional and owner-funded.
-- Never mark a draft ready, comment `@codex review`, or otherwise trigger Codex without exact owner authorization for that PR/use.
-- If one authorized Codex review produces a finding and the worker repairs it, do not assume a second paid invocation is authorized.
-- Any head move invalidates prior exact-head review/CI evidence.
+- Codex independent-review use is determined by protected-main `CODEX_REVIEW_POLICY.json`; a validated `CODEX_REQUIRED` route is mandatory, while optional/not-required routes follow that policy.
+- Covered review triggers do not require per-run owner authorization, but only the canonical candidate/review-request owner may trigger them.
+- Any material head move invalidates prior exact-head review/CI evidence and requires a fresh covered review when the route still requires it; the standing authorization covers that re-review loop.
+- Non-covered owner-funded Codex/OpenAI/API use still requires exact per-invocation owner authorization.
 
 ## 12. Merge gate
 
@@ -280,3 +280,13 @@ Do not stop merely because a worker PR exists. Continue integration until a real
 - required owner authorization/action.
 
 Persist durable state in tasks/issues/PRs. Do not require chat history and do not claim hidden background work.
+## Canonical Codex review routing
+
+Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
+
+- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
+- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
+- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
+- When this role is the authorized candidate/review-request owner and routing is `CODEX_REQUIRED`, freeze the PR exact head, use the canonical GitHub PR transport (`@codex review`), consume durable findings, repair only within existing authority, re-run applicable exact-head validation, and request a fresh review after every material head change. Do not return to the owner for covered per-run approval.
+- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
+- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.

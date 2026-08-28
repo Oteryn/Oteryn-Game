@@ -61,6 +61,10 @@ The Terra profile is additive and does **not** silently supersede `Oteryn: work 
 Canonical launch/promotion rules for this profile live in `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`. Alias existence grants no write authority. Every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
 The four future-wave preparation aliases are deliberately non-mutating: after terminal VSL they may prepare exact allocation proposals, but they cannot create branches/commits, claim leases, integrate PRs or become implementation leads until a later merged exact allocation/prompt lifecycle grants that authority.
 
+### Canonical Codex review loop
+
+All reusable prompts resolve `../CODEX_REVIEW_POLICY.json` from protected `main`. For a lane candidate whose validated risk route is `CODEX_REQUIRED`, the canonical candidate/review-request owner performs `freeze exact head -> @codex review -> repair findings within existing allocation -> exact-head revalidation -> fresh review after head movement -> PASS/READY_FOR_INTEGRATION`. Covered review invocations do not require owner relay. Work/Terra verify and route evidence mechanically; they do not adjudicate findings. Auditors verify review evidence but do not become nested Codex dispatchers. Read-only preparation aliases gain no candidate/review-request authority from the standing authorization.
+
 ### Independent Work delivery audit
 
 - `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` — independent high-effort forensic audit of the live Work coordinator lifecycle with **bounded GitHub audit-evidence write** authority. **Short invocation: `Oteryn: work auditor`.**
@@ -110,7 +114,7 @@ Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A
 
 ## Safety / authority
 
-A prompt alias grants only the bounded task request represented by that prompt and current coordinator allocation. It never grants production/protected-environment approval, live data/session/account mutation, Platform/external-repository write authority, Reference parity, entitlement activation or owner-funded AI use.
+A prompt alias grants only the bounded task request represented by that prompt and current coordinator allocation. It never grants production/protected-environment approval, live data/session/account mutation, Platform/external-repository write authority, Reference parity or entitlement activation. Covered Codex review operations are governed by `../CODEX_REVIEW_POLICY.json` and need no per-run owner confirmation; all non-covered owner-funded Codex/OpenAI/API use still requires exact per-invocation owner authorization.
 
 High-risk protocol/session/persistence/item/loot/value/multichannel/fencing work still requires genuinely independent exact-head review under root `AGENTS.md`.
 
