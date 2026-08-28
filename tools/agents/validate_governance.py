@@ -197,8 +197,9 @@ def validate_codex_review_policy(policy: dict, errors: list[str]) -> None:
     if not isinstance(authority, dict):
         errors.append("Codex review authority must be an object")
         authority = {}
-    if not isinstance(authority.get("owner_authorized_issue"), int) or authority.get("owner_authorized_issue", 0) <= 0:
-        errors.append("Codex review policy must name a positive owner-authorized issue")
+    owner_authorized_issue = authority.get("owner_authorized_issue")
+    if type(owner_authorized_issue) is not int or owner_authorized_issue != 229:
+        errors.append("Codex review policy owner_authorized_issue must be exactly 229")
     if authority.get("effective_only_after_protected_main_merge") is not True:
         errors.append("Codex standing authorization must activate only after protected-main merge")
     if authority.get("standing_authorization") is not True:
@@ -223,15 +224,31 @@ def validate_codex_review_policy(policy: dict, errors: list[str]) -> None:
 
     expected_authorized = {
         "READ_ONLY_EXACT_HEAD_REVIEW",
-        "AUDIT",
+        "READ_ONLY_AUDIT",
         "NON_MUTATING_TEST_EXECUTION",
-        "REPRODUCE",
-        "FUZZ",
-        "STATIC_ANALYSIS",
+        "NON_MUTATING_REPRODUCE",
+        "NON_MUTATING_FUZZ",
+        "NON_MUTATING_STATIC_ANALYSIS",
     }
     authorized = policy.get("authorized_review_operations", [])
     if not isinstance(authorized, list) or set(authorized) != expected_authorized:
         errors.append("Codex authorized review operations changed outside bounded standing scope")
+
+    execution_constraints = policy.get("review_execution_constraints", {})
+    if not isinstance(execution_constraints, dict):
+        errors.append("Codex review execution constraints must be an object")
+        execution_constraints = {}
+    for field in (
+        "tracked_repository_mutation_forbidden",
+        "git_index_ref_or_config_mutation_forbidden",
+        "persistent_local_environment_mutation_forbidden",
+        "untracked_artifacts_must_be_ephemeral_and_disposable",
+        "ephemeral_scratch_or_build_artifacts_allowed_only_in_disposable_reviewer_environment",
+        "external_or_live_state_mutation_forbidden",
+        "tracked_worktree_diff_must_remain_clean",
+    ):
+        if execution_constraints.get(field) is not True:
+            errors.append(f"Codex review execution constraint must remain true: {field}")
 
     required_prohibited = {
         "IMPLEMENT_FIX",

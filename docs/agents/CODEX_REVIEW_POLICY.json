@@ -18,12 +18,21 @@
   },
   "authorized_review_operations": [
     "READ_ONLY_EXACT_HEAD_REVIEW",
-    "AUDIT",
+    "READ_ONLY_AUDIT",
     "NON_MUTATING_TEST_EXECUTION",
-    "REPRODUCE",
-    "FUZZ",
-    "STATIC_ANALYSIS"
+    "NON_MUTATING_REPRODUCE",
+    "NON_MUTATING_FUZZ",
+    "NON_MUTATING_STATIC_ANALYSIS"
   ],
+  "review_execution_constraints": {
+    "tracked_repository_mutation_forbidden": true,
+    "git_index_ref_or_config_mutation_forbidden": true,
+    "persistent_local_environment_mutation_forbidden": true,
+    "untracked_artifacts_must_be_ephemeral_and_disposable": true,
+    "ephemeral_scratch_or_build_artifacts_allowed_only_in_disposable_reviewer_environment": true,
+    "external_or_live_state_mutation_forbidden": true,
+    "tracked_worktree_diff_must_remain_clean": true
+  },
   "prohibited_operations": [
     "IMPLEMENT_FIX",
     "TRACKED_REPOSITORY_MUTATION",
