@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from validate_remote_desktop_prompt_routing import (
+    APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS,
     CANONICAL_PROMPT_SECTION,
     CANONICAL_SURFACE_SECTIONS,
     validate_reusable_prompt_text,
@@ -97,6 +98,14 @@ def test_surface_section_may_name_its_heading_inline() -> None:
     path = "docs/agents/PROMPTING_STANDARD.md"
     section = CANONICAL_SURFACE_SECTIONS[path]
     assert_surface_path_pass(path, "# Surface\n\n" + section + "\n")
+
+
+def test_surface_approved_routing_bullet_inside_list_passes() -> None:
+    path = "docs/agents/PROMPT_EVAL_STANDARD.md"
+    section = CANONICAL_SURFACE_SECTIONS[path]
+    approved = next(iter(APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS[path]))
+    text = "# Surface\n\n## Gates\n\n- **Authority:** exact writable repositories are explicit.\n" + approved + "\n\n" + section + "\n"
+    assert_surface_path_pass(path, text)
 
 
 def test_modified_canonical_surface_section_fails() -> None:
