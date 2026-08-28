@@ -4,11 +4,12 @@
 task_id: OTV2-20260828-durability-provenance-recovery
 title: Recover #167 Durability branch provenance
 mode: COORDINATE
-status: ALLOCATION_PR_PENDING
+status: REVIEW_RECONCILIATION_REQUIRED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/durability-provenance-recovery-240
 issue: 240
+pr: 241
 parent_coordinator_issue: 162
 affected_issue: 167
 affected_pr: 212
@@ -20,6 +21,7 @@ successor_task_id: OTV2-20260828-impl-durability-successor
 successor_branch: impl/game-durability-journal-recovery-240
 successor_pr: null
 source_snapshot_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
+exact_final_head_evidence: immutable PR #241 review/check evidence after the final tracked-file commit; a commit cannot contain its own SHA
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260828-durability-provenance-recovery.md
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
@@ -32,12 +34,14 @@ external_repositories: []
 ## Proven incident state
 
 - `PROVEN`: protected `main` at recovery admission is `7c2da078596a7d2e27c3066ff74ac69b8b7f9af6`.
+- `PROVEN`: recovery allocation is published as PR #241 from `coord/durability-provenance-recovery-240`.
 - `PROVEN`: the historical #167 branch is `impl/game-durability-journal`; PR #212 is Draft and must not qualify or merge.
 - `PROVEN`: destructive commit `cd808d396018832b632be26911105a36f0cb7a20` crossed #167 ownership boundaries.
 - `PROVEN`: restoration `73e17f418c63ec038f5aa7ef8f0888ac74b75aa2` was performed without the recovery allocation required by coordinator evidence on #162.
 - `PROVEN`: later writes continued on that ancestry after `PAUSED_BRANCH_PROVENANCE_RECOVERY`; current observed #212 head at recovery design time is `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`.
 - `PROVEN`: `main...fb30fba2` is currently ownership-shaped to the ten historical #167 paths, but a clean final tree cannot retroactively repair missing mutation authority in published ancestry.
 - `PROVEN`: Issue #240 requires a clean successor from protected main and preservation of #212 as immutable historical evidence.
+- `PROVEN`: repository closeout policy forbids a self-referential follow-up commit merely to populate the commit's own SHA; after the last material tracked-file change, exact current head is recorded in immutable PR #241 review/check evidence.
 
 ## Allocation decision
 
@@ -98,16 +102,17 @@ No `Cargo.toml`, `Cargo.lock`, Foundation, Server Seam, workflow, registry, comp
 ## Context checkpoint
 
 ```yaml
-status: ALLOCATION_PR_PENDING
+status: REVIEW_RECONCILIATION_REQUIRED
 branch: coord/durability-provenance-recovery-240
+pr: 241
 head_sha: null
 final_head_sha: null
-pr: null
+exact_head_evidence: record the exact post-repair PR #241 head in immutable PR review/check evidence; do not create a self-referential status commit
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260828-durability-provenance-recovery.md
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
   - docs/superpowers/plans/2026-08-28-durability-provenance-recovery.md
-blocker: allocation_not_yet_merged
+blocker: fresh_exact_head_review_and_ci_required_after_task_identity_repair
 owner_action_required: null
-next_action: publish and qualify the docs-only allocation; after merge release only the successor test-only RED generation before any implementation restore
+next_action: record the new exact PR #241 head in immutable evidence, run fresh whole-diff self-review/Codex/CI, then expected-head merge only if all gates are clean
 ```
