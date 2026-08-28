@@ -495,7 +495,10 @@ def _extract_canonical_section(path: str, text: str, errors: list[str]) -> tuple
 MARKDOWN_LINK_RE = re.compile(r"!?\[([^]\n]*)\]\([^\n)]*\)")
 MARKDOWN_REFERENCE_LINK_RE = re.compile(r"!?\[([^]\n]*)\]\[[^]\n]*\]")
 HTML_COMMENT_INLINE_RE = re.compile(r"<!--.*?-->", re.DOTALL)
-HTML_TAG_RE = re.compile(r"</?[A-Za-z][^>]*>")
+HTML_TAG_RE = re.compile(
+    r"</?[A-Za-z][A-Za-z0-9-]*(?:\s+[A-Za-z_:][A-Za-z0-9_.:-]*"
+    r"(?:\s*=\s*(?:\"[^\"]*\"|'[^']*'|[^\s\"'=<>`]+))?)*\s*/?>"
+)
 MARKDOWN_ESCAPE_RE = re.compile(r"\\([\\`*_{}\[\]()#+.!~>-])")
 MARKDOWN_UNDERSCORE_EMPHASIS_RE = re.compile(r"(?<!\w)_{1,3}(?=\w)|(?<=\w)_{1,3}(?!\w)")
 DEFAULT_IGNORABLE_RANGES = (
