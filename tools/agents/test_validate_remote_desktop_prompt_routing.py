@@ -4,18 +4,13 @@ from __future__ import annotations
 
 from validate_remote_desktop_prompt_routing import (
     CANONICAL_PROMPT_SECTION,
+    CANONICAL_SURFACE_SECTIONS,
     validate_reusable_prompt_text,
     validate_surface_text,
 )
 
 META_SHA = "e002fc7532188e73a0f495da3e20710541ed50e0"
-SURFACE_SECTION = f"""## Remote Desktop execution routing
-
-Before any Remote Desktop/Desktop Commander use, resolve this Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@{META_SHA}`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
-
-`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. Game cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.
-
-This provider binding is repository/prompt enforcement only. It MUST NOT be described as connector/router physical enforcement unless the actual Remote Desktop transport has a verified fail-closed hook consuming the same per-action semantics."""
+SURFACE_SECTION = CANONICAL_SURFACE_SECTIONS["AGENTS.md"]
 
 
 def assert_pass(text: str) -> None:
@@ -32,11 +27,15 @@ def assert_fail(text: str, needle: str) -> None:
         raise AssertionError(f"expected error containing {needle!r}, got: {errors}")
 
 
-def assert_surface_pass(text: str) -> None:
+def assert_surface_path_pass(path: str, text: str) -> None:
     errors: list[str] = []
-    validate_surface_text("AGENTS.md", text, errors)
+    validate_surface_text(path, text, errors)
     if errors:
         raise AssertionError(f"expected surface PASS, got: {errors}")
+
+
+def assert_surface_pass(text: str) -> None:
+    assert_surface_path_pass("AGENTS.md", text)
 
 
 def assert_surface_fail(text: str, needle: str) -> None:
@@ -92,6 +91,12 @@ def test_duplicate_section_fails() -> None:
 
 def test_exact_canonical_surface_section_passes() -> None:
     assert_surface_pass("# Surface\n\nordinary repository text\n\n" + SURFACE_SECTION + "\n")
+
+
+def test_surface_section_may_name_its_heading_inline() -> None:
+    path = "docs/agents/PROMPTING_STANDARD.md"
+    section = CANONICAL_SURFACE_SECTIONS[path]
+    assert_surface_path_pass(path, "# Surface\n\n" + section + "\n")
 
 
 def test_modified_canonical_surface_section_fails() -> None:
