@@ -143,3 +143,804 @@ mod contract_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod terminal_replacement_postgres_red_tests {
+    use super::MigrationExecutor;
+    use crate::durability::{AdmissionReconnectJournal, DurabilityError};
+    use oteryn_game_server::foundation::{
+        AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId,
+        CharacterLease, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
+        Fnd02ReconciliationFenceV1, FreshAdmissionCommit, FreshAdmissionFacts,
+        GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, PendingCommandDispositionV1,
+        PendingCommandReconciliationV1, ProtectionEntitlementV1, ReconnectAuthorityFenceV1,
+        ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
+        ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1, ReconnectDurabilityFlowV2,
+        ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+        ReconnectDurableReconciliationSnapshotV1, ReconnectDurableReconciliationSnapshotV2,
+        ReconnectDurableTerminalDispositionV1, ReconnectIdentityV1, ReconnectPrepareCompletionV1,
+        ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2, ReconnectPrepareRequestV2,
+        ReconnectProofV1, RuntimeScopeRefV1, ScopeOwnershipGeneration, StateDomainRevisionV1,
+        TerminalGameSessionReplacementAuthorizationV1, WorldId, ReconnectAttemptRef,
+    };
+    use sqlx::{Connection, Executor, PgConnection};
+    use std::error::Error;
+    use std::future::Future;
+    use std::sync::atomic::{AtomicU64, Ordering};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    const ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174000";
+    static DB_SEQUENCE: AtomicU64 = AtomicU64::new(0);
+    type TestResult = Result<(), Box<dyn Error>>;
+
+    struct IsolatedDatabase {
+        admin_url: String,
+        database_name: String,
+    }
+
+    impl IsolatedDatabase {
+        async fn create(test_name: &str) -> Result<Self, Box<dyn Error>> {
+            let admin_url = std::env::var("OTERYN_TEST_POSTGRES_ADMIN_URL")?;
+            if !(admin_url.starts_with("postgresql://oteryn_test_admin:")
+                && (admin_url.contains("@127.0.0.1:5432/")
+                    || admin_url.contains("@localhost:5432/"))
+                && admin_url.ends_with("/postgres")
+                && !admin_url.contains(['?', '#', '\n', '\r']))
+            {
+                return Err("unsafe PostgreSQL test-admin URL".into());
+            }
+            let ordinal = DB_SEQUENCE.fetch_add(1, Ordering::Relaxed);
+            let normalized: String = test_name
+                .bytes()
+                .map(|byte| {
+                    if byte.is_ascii_alphanumeric() {
+                        char::from(byte.to_ascii_lowercase())
+                    } else {
+                        '_'
+                    }
+                })
+                .collect();
+            let database_name = format!("oteryn_game_repl_{}_{}_{}", std::process::id(), ordinal, normalized);
+            let mut admin = PgConnection::connect(&admin_url).await?;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "CREATE DATABASE {database_name}"
+                ))))
+                .await?;
+            Ok(Self {
+                admin_url,
+                database_name,
+            })
+        }
+
+        fn database_url(&self) -> Result<String, Box<dyn Error>> {
+            let prefix = self
+                .admin_url
+                .strip_suffix("/postgres")
+                .ok_or("invalid PostgreSQL test-admin URL")?;
+            Ok(format!("{prefix}/{}", self.database_name))
+        }
+
+        async fn cleanup(self) -> Result<(), Box<dyn Error>> {
+            let mut admin = PgConnection::connect(&self.admin_url).await?;
+            sqlx::query(
+                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity \
+                 WHERE datname = $1 AND pid <> pg_backend_pid()",
+            )
+            .bind(&self.database_name)
+            .execute(&mut admin)
+            .await?;
+            admin
+                .execute(sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "DROP DATABASE IF EXISTS {}",
+                    self.database_name
+                ))))
+                .await?;
+            Ok(())
+        }
+    }
+
+    fn run_postgres_test<F>(future: F) -> TestResult
+    where
+        F: Future<Output = TestResult>,
+    {
+        if std::env::var_os("OTERYN_TEST_POSTGRES_ADMIN_URL").is_none() {
+            return Ok(());
+        }
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?
+            .block_on(future)
+    }
+
+    async fn migrated_database(test_name: &str) -> Result<(IsolatedDatabase, String), Box<dyn Error>> {
+        let database = IsolatedDatabase::create(test_name).await?;
+        let database_url = database.database_url()?;
+        let executor = MigrationExecutor::connect_migration(&database_url).await?;
+        executor.apply_embedded_ledger().await?;
+        Ok((database, database_url))
+    }
+
+    fn unix_now() -> Result<i64, ReconnectDurabilityErrorV1> {
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?
+            .as_secs()
+            .try_into()
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
+    }
+
+    fn uuid_v7(raw: u64) -> [u8; 16] {
+        let mut value = [0_u8; 16];
+        value[8..].copy_from_slice(&raw.to_be_bytes());
+        value[6] = 0x70;
+        value[8] = (value[8] & 0x3f) | 0x80;
+        value
+    }
+
+    fn game_session(raw: u64) -> Result<GameSessionId, ReconnectDurabilityErrorV1> {
+        GameSessionId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
+    }
+
+    fn character(raw: u64) -> Result<CharacterId, ReconnectDurabilityErrorV1> {
+        CharacterId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
+    }
+
+    fn world(raw: u64) -> Result<WorldId, ReconnectDurabilityErrorV1> {
+        WorldId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
+    }
+
+    fn channel(raw: u64) -> Result<ChannelId, ReconnectDurabilityErrorV1> {
+        ChannelId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn record(
+        game_session_raw: u64,
+        character_raw: u64,
+        attempt_raw: u64,
+        transport_byte: u8,
+        epoch: u64,
+        predecessor_generation: u64,
+        scope_generation: u64,
+        now: i64,
+    ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        let world_id = world(12)?;
+        let identity = ReconnectIdentityV1::new(
+            game_session(game_session_raw)?,
+            ReconnectAttemptRef::new(attempt_raw)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            ACCOUNT,
+            character(character_raw)?,
+            world_id,
+            RuntimeScopeRefV1::channel(world_id, channel(13)?),
+        )?;
+        let connection = ReconnectConnectionFenceV1::new(
+            ConnectionGeneration::new(predecessor_generation)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            ConnectionGeneration::new(predecessor_generation + 1)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            AuthenticatedTransportRefV1::decode(&[transport_byte; 16])
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?;
+        let authority = ReconnectAuthorityFenceV1::new(
+            9,
+            ScopeOwnershipGeneration::new(scope_generation)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?;
+        let continuity = ReconnectContinuityV1::new(
+            ControlLossEpochRefV1::new(epoch)?,
+            now + 120,
+            now + 115,
+            ProtectionEntitlementV1::unused(),
+        )?;
+        let fnd02 = Fnd02ReconciliationFenceV1::new(
+            CommandId::new(3).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            vec![
+                PendingCommandReconciliationV1::new(
+                    CommandId::new(1).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+                    PendingCommandDispositionV1::PendingOriginal,
+                ),
+                PendingCommandReconciliationV1::new(
+                    CommandId::new(2).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+                    PendingCommandDispositionV1::TerminalOutcomeRetained,
+                ),
+            ],
+            41,
+            vec![
+                StateDomainRevisionV1::new(1, 4)?,
+                StateDomainRevisionV1::new(2, 7)?,
+            ],
+        )?;
+        let platform = AuthorityEvidenceFenceV1::new(
+            "platform-security",
+            "reconnect",
+            "account",
+            "sec:17",
+            "decision:sec:17",
+            now,
+        )?;
+        let trust = AuthorityEvidenceFenceV1::new(
+            "proof-trust",
+            "reconnect",
+            "recovery-key",
+            "trust:21",
+            "decision:trust:21",
+            now,
+        )?;
+        let compatibility = ReconnectCompatibilityEvidenceV1::new(
+            1,
+            1,
+            "rules:1",
+            "content:2",
+            "map:3",
+            "world:4",
+            12,
+            platform,
+            trust,
+            Some(now + 110),
+        )?;
+        ReconnectDurabilityRecordV1::new(
+            identity,
+            connection,
+            authority,
+            continuity,
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce: [transport_byte; 32],
+            },
+            fnd02,
+            compatibility,
+        )
+    }
+
+    fn authorization_for(
+        predecessor_raw: u64,
+        candidate: &ReconnectDurabilityRecordV1,
+        current_scope: u64,
+    ) -> Result<TerminalGameSessionReplacementAuthorizationV1, ReconnectDurabilityErrorV1> {
+        let facts = FreshAdmissionFacts::new(
+            [0x44; 32],
+            character(11)?,
+            world(12)?,
+            channel(13)?,
+            9,
+            10,
+        )
+        .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let initial_transport = AuthenticatedTransportRefV1::decode(&[0x70; 16])
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let predecessor = game_session(predecessor_raw)?;
+        let commit = FreshAdmissionCommit::from_facts(predecessor, facts, initial_transport)
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let snapshot = GameSessionAuthoritySnapshot::new(
+            commit,
+            GameSessionState::Terminal,
+            ConnectionGeneration::new(7).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            None,
+            CharacterLease::new(character(11)?, 9)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            ScopeOwnershipGeneration::new(current_scope)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        );
+        TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+            ACCOUNT,
+            predecessor,
+            candidate.identity().game_session_id(),
+            snapshot,
+            candidate,
+        )
+    }
+
+    fn v2_request(
+        candidate: ReconnectDurabilityRecordV1,
+        predecessor_raw: u64,
+        current_scope: u64,
+    ) -> Result<ReconnectPrepareRequestV2, ReconnectDurabilityErrorV1> {
+        let authorization = authorization_for(predecessor_raw, &candidate, current_scope)?;
+        Ok(ReconnectDurabilityFlowV2::begin(candidate, Some(authorization)).1)
+    }
+
+    async fn seed_terminal_session(
+        database_url: &str,
+        session_raw: u64,
+        stored_scope: u64,
+        now: i64,
+    ) -> Result<(), Box<dyn Error>> {
+        let mut connection = PgConnection::connect(database_url).await?;
+        sqlx::query(
+            "INSERT INTO game_durability_reconnect_sessions (\
+                game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+                runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+                control_loss_epoch, original_grace_deadline, predecessor_generation, \
+                character_lease_generation, scope_ownership_generation, current_generation, \
+                session_state\
+             ) VALUES (\
+                encode($1, 'hex')::uuid, $2::text::uuid, encode($3, 'hex')::uuid, \
+                encode($4, 'hex')::uuid, 1, encode($4, 'hex')::uuid, \
+                encode($5, 'hex')::uuid, NULL, 3, $6, 7, 9, $7::text::numeric(20, 0), 7, 3\
+             )",
+        )
+        .bind(uuid_v7(session_raw).as_slice())
+        .bind(ACCOUNT)
+        .bind(uuid_v7(11).as_slice())
+        .bind(uuid_v7(12).as_slice())
+        .bind(uuid_v7(13).as_slice())
+        .bind(now + 120)
+        .bind(stored_scope.to_string())
+        .execute(&mut connection)
+        .await?;
+        connection.close().await?;
+        Ok(())
+    }
+
+    fn map_legacy_prepare(disposition: ReconnectPrepareDispositionV1) -> ReconnectPrepareDispositionV2 {
+        match disposition {
+            ReconnectPrepareDispositionV1::Prepared => ReconnectPrepareDispositionV2::Prepared,
+            ReconnectPrepareDispositionV1::ExistingPrepared => {
+                ReconnectPrepareDispositionV2::ExistingPrepared
+            }
+            ReconnectPrepareDispositionV1::RejectedTransportRefCollision => {
+                ReconnectPrepareDispositionV2::RejectedTransportRefCollision
+            }
+            ReconnectPrepareDispositionV1::RejectedConcurrentPrepared => {
+                ReconnectPrepareDispositionV2::RejectedConcurrentPrepared
+            }
+            ReconnectPrepareDispositionV1::RejectedStaleAuthority => {
+                ReconnectPrepareDispositionV2::RejectedStaleAuthority
+            }
+            ReconnectPrepareDispositionV1::AttemptCapacityExceeded => {
+                ReconnectPrepareDispositionV2::AttemptCapacityExceeded
+            }
+            ReconnectPrepareDispositionV1::ExistingTerminal => {
+                ReconnectPrepareDispositionV2::ExistingTerminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::StaleAuthority,
+                }
+            }
+            ReconnectPrepareDispositionV1::Unavailable => ReconnectPrepareDispositionV2::Unavailable,
+            ReconnectPrepareDispositionV1::Ambiguous => ReconnectPrepareDispositionV2::Ambiguous,
+            ReconnectPrepareDispositionV1::IdempotencyConflict => {
+                ReconnectPrepareDispositionV2::IdempotencyConflict
+            }
+        }
+    }
+
+    #[allow(dead_code, async_fn_in_trait)]
+    trait LegacyV2JournalFallback {
+        async fn prepare_v2(
+            &self,
+            request: &ReconnectPrepareRequestV2,
+        ) -> Result<ReconnectPrepareDispositionV2, DurabilityError>;
+
+        async fn reconcile_v2(
+            &self,
+            request: &ReconnectPrepareRequestV2,
+        ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError>;
+    }
+
+    impl LegacyV2JournalFallback for AdmissionReconnectJournal {
+        async fn prepare_v2(
+            &self,
+            request: &ReconnectPrepareRequestV2,
+        ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+            let (_flow, legacy_request) =
+                ReconnectDurabilityFlowV1::begin(request.record().clone());
+            self.prepare(&legacy_request).await.map(map_legacy_prepare)
+        }
+
+        async fn reconcile_v2(
+            &self,
+            request: &ReconnectPrepareRequestV2,
+        ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
+            let record = request.record().clone();
+            let (_flow, legacy_request) = ReconnectDurabilityFlowV1::begin(record.clone());
+            let legacy = self.reconcile(&legacy_request).await?;
+            let outcome = if legacy
+                == ReconnectDurableReconciliationSnapshotV1::prepared(record.clone())
+            {
+                ReconnectDurableOutcomeV2::Prepared
+            } else if legacy
+                == ReconnectDurableReconciliationSnapshotV1::committed(record.clone())
+            {
+                ReconnectDurableOutcomeV2::Committed {
+                    current_generation: record.connection().candidate(),
+                    current_transport_ref: record.connection().transport_ref(),
+                }
+            } else if legacy == ReconnectDurableReconciliationSnapshotV1::terminal(record.clone()) {
+                ReconnectDurableOutcomeV2::Terminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::StaleAuthority,
+                }
+            } else {
+                return Err(DurabilityError::InvalidStoredState);
+            };
+            Ok(ReconnectDurableReconciliationSnapshotV2::new(record, outcome))
+        }
+    }
+
+    #[test]
+    fn runtime_terminal_replacement_forward_syncs_scope_and_replays_exact_receipt() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("forward_sync_receipt").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_terminal_session(&database_url, 10, 9, now).await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let candidate = record(20, 11, 1, 0xa1, 3, 7, 10, now)
+                .map_err(|_| "candidate record")?;
+            let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
+
+            assert_eq!(journal.prepare_v2(&request).await?, ReconnectPrepareDispositionV2::Prepared);
+            let mut connection = PgConnection::connect(&database_url).await?;
+            let predecessor: (String, i16) = sqlx::query_as(
+                "SELECT scope_ownership_generation::text, session_state \
+                 FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(predecessor, ("10".to_owned(), 3));
+            let receipt_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_session_replacements \
+                 WHERE character_id = encode($1, 'hex')::uuid \
+                   AND predecessor_game_session_id = encode($2, 'hex')::uuid \
+                   AND candidate_game_session_id = encode($3, 'hex')::uuid",
+            )
+            .bind(uuid_v7(11).as_slice())
+            .bind(uuid_v7(10).as_slice())
+            .bind(uuid_v7(20).as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(receipt_count, 1);
+            connection.close().await?;
+
+            drop(journal);
+            let recovered = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            assert_eq!(
+                recovered.prepare_v2(&request).await?,
+                ReconnectPrepareDispositionV2::ExistingPrepared
+            );
+            let conflicting = v2_request(request.record().clone(), 30, 10)
+                .map_err(|_| "conflicting authorization")?;
+            assert_eq!(
+                recovered.prepare_v2(&conflicting).await?,
+                ReconnectPrepareDispositionV2::RejectedStaleAuthority
+            );
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn runtime_terminal_replacement_rejects_scope_ahead_without_candidate_mutation() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("scope_ahead").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_terminal_session(&database_url, 10, 11, now).await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let candidate = record(20, 11, 1, 0xa2, 3, 7, 10, now)
+                .map_err(|_| "candidate record")?;
+            let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
+            assert_eq!(
+                journal.prepare_v2(&request).await?,
+                ReconnectPrepareDispositionV2::RejectedStaleAuthority
+            );
+            let mut connection = PgConnection::connect(&database_url).await?;
+            let candidate_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(20).as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(candidate_count, 0);
+            let receipt_count: i64 =
+                sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_session_replacements")
+                    .fetch_one(&mut connection)
+                    .await?;
+            assert_eq!(receipt_count, 0);
+            connection.close().await?;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn runtime_terminal_replacement_rejects_mismatched_predecessor_without_candidate_mutation() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("mismatched_predecessor").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_terminal_session(&database_url, 30, 10, now).await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let candidate = record(20, 11, 1, 0xa3, 3, 7, 10, now)
+                .map_err(|_| "candidate record")?;
+            let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
+            assert_eq!(
+                journal.prepare_v2(&request).await?,
+                ReconnectPrepareDispositionV2::RejectedStaleAuthority
+            );
+            let mut connection = PgConnection::connect(&database_url).await?;
+            let candidate_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(20).as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(candidate_count, 0);
+            connection.close().await?;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn runtime_terminal_replacement_fences_prepared_predecessor_and_late_commit() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("late_commit_fence").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let predecessor_record = record(10, 11, 1, 0xa4, 3, 7, 10, now)
+                .map_err(|_| "predecessor record")?;
+            let (mut predecessor_flow, predecessor_prepare) =
+                ReconnectDurabilityFlowV1::begin(predecessor_record);
+            assert_eq!(
+                journal.prepare(&predecessor_prepare).await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            predecessor_flow
+                .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &predecessor_prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(|_| "predecessor completion")?;
+            let current = oteryn_game_server::foundation::ReconnectCurrentAuthorityV1::from_record(
+                predecessor_prepare.record(),
+                now,
+            )
+            .map_err(|_| "predecessor current authority")?;
+            let predecessor_commit = predecessor_flow
+                .authorize_commit(current, now)
+                .map_err(|_| "predecessor commit authorization")?;
+
+            let mut connection = PgConnection::connect(&database_url).await?;
+            sqlx::query(
+                "UPDATE game_durability_reconnect_sessions SET session_state = 3 \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .execute(&mut connection)
+            .await?;
+            connection.close().await?;
+
+            let candidate = record(20, 11, 2, 0xa5, 3, 7, 10, now)
+                .map_err(|_| "candidate record")?;
+            let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
+            assert_eq!(journal.prepare_v2(&request).await?, ReconnectPrepareDispositionV2::Prepared);
+
+            let mut connection = PgConnection::connect(&database_url).await?;
+            let predecessor_attempt_state: i16 = sqlx::query_scalar(
+                "SELECT state FROM game_durability_reconnect_attempts \
+                 WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .bind(1_u64.to_be_bytes().as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(predecessor_attempt_state, 4);
+            let prepared_ref: Option<Vec<u8>> = sqlx::query_scalar(
+                "SELECT prepared_attempt_ref FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert!(prepared_ref.is_none());
+            connection.close().await?;
+            assert_eq!(
+                journal.commit(&predecessor_commit).await?,
+                oteryn_game_server::foundation::ReconnectCommitDispositionV1::RejectedStaleAuthority
+            );
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn runtime_terminal_replacement_mid_transaction_failure_rolls_back_everything() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("replacement_rollback").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_terminal_session(&database_url, 10, 9, now).await?;
+            let mut connection = PgConnection::connect(&database_url).await?;
+            connection
+                .execute(sqlx::query(
+                    "CREATE FUNCTION fail_after_replacement_receipt() RETURNS trigger \
+                     LANGUAGE plpgsql AS $$ \
+                     BEGIN \
+                       IF EXISTS (SELECT 1 FROM game_durability_session_replacements) THEN \
+                         RAISE EXCEPTION 'forced replacement rollback'; \
+                       END IF; \
+                       RETURN NEW; \
+                     END $$",
+                ))
+                .await?;
+            connection
+                .execute(sqlx::query(
+                    "CREATE TRIGGER fail_candidate_attempt_after_replacement \
+                     BEFORE INSERT ON game_durability_reconnect_attempts \
+                     FOR EACH ROW EXECUTE FUNCTION fail_after_replacement_receipt()",
+                ))
+                .await?;
+            connection.close().await?;
+
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let candidate = record(20, 11, 1, 0xa6, 3, 7, 10, now)
+                .map_err(|_| "candidate record")?;
+            let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
+            assert!(matches!(
+                journal.prepare_v2(&request).await,
+                Err(DurabilityError::Database(_))
+            ));
+
+            let mut connection = PgConnection::connect(&database_url).await?;
+            let predecessor: (String, i16) = sqlx::query_as(
+                "SELECT scope_ownership_generation::text, session_state \
+                 FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(predecessor, ("9".to_owned(), 3));
+            let receipt_count: i64 =
+                sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_session_replacements")
+                    .fetch_one(&mut connection)
+                    .await?;
+            assert_eq!(receipt_count, 0);
+            let candidate_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(20).as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(candidate_count, 0);
+            connection.close().await?;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn runtime_collision_replay_and_restart_reconciliation_preserve_collision_reason() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("typed_collision_restart").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let first = record(50, 51, 1, 0xb1, 3, 7, 10, now).map_err(|_| "first record")?;
+            let (_first_flow, first_request) = ReconnectDurabilityFlowV1::begin(first);
+            assert_eq!(
+                journal.prepare(&first_request).await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+
+            let colliding = record(60, 61, 1, 0xb1, 3, 7, 10, now)
+                .map_err(|_| "collision record")?;
+            let (_flow, collision_request) = ReconnectDurabilityFlowV2::begin(colliding, None);
+            assert_eq!(
+                journal.prepare_v2(&collision_request).await?,
+                ReconnectPrepareDispositionV2::RejectedTransportRefCollision
+            );
+            drop(journal);
+
+            let recovered = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            assert_eq!(
+                recovered.prepare_v2(&collision_request).await?,
+                ReconnectPrepareDispositionV2::ExistingTerminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+                }
+            );
+            assert_eq!(
+                recovered.reconcile_v2(&collision_request).await?.outcome(),
+                ReconnectDurableOutcomeV2::Terminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+                }
+            );
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn runtime_restart_reconciliation_preserves_concurrent_and_stale_reasons() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("typed_terminal_restart").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+
+            let first = record(70, 71, 1, 0xc1, 3, 7, 10, now).map_err(|_| "first record")?;
+            let (_first_flow, first_request) = ReconnectDurabilityFlowV1::begin(first);
+            assert_eq!(journal.prepare(&first_request).await?, ReconnectPrepareDispositionV1::Prepared);
+            let concurrent = record(70, 71, 2, 0xc2, 3, 7, 10, now)
+                .map_err(|_| "concurrent record")?;
+            let (_flow, concurrent_request) = ReconnectDurabilityFlowV2::begin(concurrent, None);
+            assert_eq!(
+                journal.prepare_v2(&concurrent_request).await?,
+                ReconnectPrepareDispositionV2::RejectedConcurrentPrepared
+            );
+
+            let stale = record(70, 71, 3, 0xc3, 4, 7, 10, now)
+                .map_err(|_| "stale record")?;
+            let (_flow, stale_request) = ReconnectDurabilityFlowV2::begin(stale, None);
+            assert_eq!(
+                journal.prepare_v2(&stale_request).await?,
+                ReconnectPrepareDispositionV2::RejectedStaleAuthority
+            );
+            drop(journal);
+
+            let recovered = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            assert_eq!(
+                recovered.reconcile_v2(&concurrent_request).await?.outcome(),
+                ReconnectDurableOutcomeV2::Terminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::ConcurrentPrepared,
+                }
+            );
+            assert_eq!(
+                recovered.reconcile_v2(&stale_request).await?.outcome(),
+                ReconnectDurableOutcomeV2::Terminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::StaleAuthority,
+                }
+            );
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn runtime_concurrent_terminal_replacement_has_exactly_one_candidate_winner() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("replacement_race").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_terminal_session(&database_url, 10, 10, now).await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+
+            let first_candidate = record(20, 11, 1, 0xd1, 3, 7, 10, now)
+                .map_err(|_| "first candidate")?;
+            let second_candidate = record(21, 11, 1, 0xd2, 3, 7, 10, now)
+                .map_err(|_| "second candidate")?;
+            let first_request = v2_request(first_candidate, 10, 10).map_err(|_| "first auth")?;
+            let second_request = v2_request(second_candidate, 10, 10).map_err(|_| "second auth")?;
+            let first_journal = journal.clone();
+            let second_journal = journal.clone();
+            let (first, second) = tokio::join!(
+                first_journal.prepare_v2(&first_request),
+                second_journal.prepare_v2(&second_request)
+            );
+            let results = [first, second];
+            let prepared = results
+                .iter()
+                .filter(|result| matches!(result, Ok(ReconnectPrepareDispositionV2::Prepared)))
+                .count();
+            let rejected = results
+                .iter()
+                .filter(|result| {
+                    matches!(result, Ok(ReconnectPrepareDispositionV2::RejectedStaleAuthority))
+                })
+                .count();
+            assert_eq!(prepared, 1);
+            assert_eq!(rejected, 1);
+
+            let mut connection = PgConnection::connect(&database_url).await?;
+            let live_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_reconnect_sessions \
+                 WHERE character_id = encode($1, 'hex')::uuid AND session_state IN (1, 2)",
+            )
+            .bind(uuid_v7(11).as_slice())
+            .fetch_one(&mut connection)
+            .await?;
+            assert_eq!(live_count, 1);
+            connection.close().await?;
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+}
