@@ -2,10 +2,12 @@
 """Validate Game prompt binding to the canonical META Remote Desktop gate."""
 from __future__ import annotations
 
+import html
 import json
 from pathlib import Path
 import re
 import sys
+import unicodedata
 
 ROOT = Path(__file__).resolve().parents[2]
 LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
@@ -221,6 +223,30 @@ def _extract_canonical_section(path: str, text: str, errors: list[str]) -> tuple
     return section_text, outside_text
 
 
+MARKDOWN_LINK_RE = re.compile(r"!?\[([^]\n]*)\]\([^\n)]*\)")
+HTML_TAG_RE = re.compile(r"</?[A-Za-z][^>]*>")
+MARKDOWN_ESCAPE_RE = re.compile(r"\\([\\`*_{}\[\]()#+.!~>-])")
+ZERO_WIDTH_RE = re.compile("[\u200b\u200c\u200d\u2060\ufeff]")
+
+
+def _normalize_policy_text(text: str) -> str:
+    """Approximate rendered Markdown text for fail-closed policy detection."""
+    value = text
+    for _ in range(4):
+        decoded = html.unescape(value)
+        if decoded == value:
+            break
+        value = decoded
+    value = unicodedata.normalize("NFKC", value)
+    value = MARKDOWN_LINK_RE.sub(lambda match: match.group(1), value)
+    value = HTML_TAG_RE.sub(" ", value)
+    value = MARKDOWN_ESCAPE_RE.sub(r"\1", value)
+    value = ZERO_WIDTH_RE.sub(" ", value)
+    value = re.sub(r"[*_~`]+", "", value)
+    value = re.sub(r"[ \t\f\v]+", " ", value)
+    return value
+
+
 def _outside_routing_paragraphs(text: str) -> list[str]:
     operative = _operative_text(text)
     paragraphs = [paragraph.strip() for paragraph in re.split(r"\n\s*\n", operative) if paragraph.strip()]
@@ -231,10 +257,10 @@ def _outside_routing_paragraphs(text: str) -> list[str]:
             units.extend(
                 line
                 for line in lines
-                if any(pattern.search(line) is not None for pattern in OUTSIDE_ROUTING_PATTERNS)
+                if any(pattern.search(_normalize_policy_text(line)) is not None for pattern in OUTSIDE_ROUTING_PATTERNS)
             )
             continue
-        if any(pattern.search(paragraph) is not None for pattern in OUTSIDE_ROUTING_PATTERNS):
+        if any(pattern.search(_normalize_policy_text(paragraph)) is not None for pattern in OUTSIDE_ROUTING_PATTERNS):
             units.append(paragraph)
     return units
 
