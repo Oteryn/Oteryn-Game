@@ -825,6 +825,25 @@ def test_surface_actions_to_tool_blanket_approval_outside_section_fails() -> Non
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
+
+def test_named_filesystem_operations_preapproved_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nFilesystem operations are preapproved.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_named_history_actions_blanket_approval_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nHistory actions have blanket approval.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
