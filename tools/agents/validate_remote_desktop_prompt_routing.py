@@ -85,12 +85,12 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(r"\bget_config\b", re.IGNORECASE),
     re.compile(
         r"\bdirect\s+(?:connectors?|tools?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
         r"\bdirect\s+(?:connectors?|tools?)\b",
         re.IGNORECASE,
@@ -98,22 +98,28 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\bdirect(?:ly)?\b)"
         r"(?=.*\b(?:connectors?|tools?)\b)"
-        r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
         r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?)\b",
         re.IGNORECASE,
     ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
+    re.compile(
+        r"(?=.*\b(?:connector|router|transport)\b)"
+        r"(?=.*\b(?:guarantee(?:s|d|ing)?|implement(?:s|ed|ing)?)\b)"
+        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
+        re.IGNORECASE,
+    ),
     re.compile(
         r"(?=.*\b(?:connector|router|transport)\b)"
         r"(?=.*\bphysical(?:ly)?\b)"
@@ -219,7 +225,19 @@ def reusable_prompt_paths(lifecycle: dict, errors: list[str]) -> list[str]:
         if not isinstance(entry, dict):
             errors.append(f"prompt lifecycle entry {index} must be an object")
             continue
-        if entry.get("status") != "reusable" or entry.get("reusable") is not True:
+        status = entry.get("status")
+        reusable = entry.get("reusable")
+        if status == "reusable":
+            if reusable is not True:
+                errors.append(
+                    f"prompt lifecycle entry {index} has inconsistent reusable status/flag"
+                )
+        elif reusable is True:
+            errors.append(
+                f"prompt lifecycle entry {index} has inconsistent reusable status/flag"
+            )
+            continue
+        else:
             continue
         path = entry.get("path")
         if not isinstance(path, str) or not path.startswith("docs/agents/prompts/") or not path.endswith(".md"):
@@ -549,7 +567,8 @@ def _validate_routing_adjacent_sections(path: str, text: str, errors: list[str])
 
 
 def _validate_meta_routing_coordinates(path: str, text: str, errors: list[str]) -> None:
-    coordinates = META_ROUTING_COORDINATE_RE.findall(text)
+    normalized = _normalize_policy_text(_operative_text(text))
+    coordinates = META_ROUTING_COORDINATE_RE.findall(normalized)
     stale = sorted(
         {coordinate for coordinate in coordinates if coordinate != EXPECTED_META_ROUTING_COORDINATE}
     )
