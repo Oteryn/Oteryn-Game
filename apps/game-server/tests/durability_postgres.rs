@@ -1453,6 +1453,77 @@ fn protection_continuity_rejects_a_distinct_game_session_for_the_same_control_lo
 }
 
 #[test]
+fn reconnect_sessions_reject_a_distinct_game_session_for_a_later_control_loss_epoch()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database =
+                postgres::IsolatedPostgres::create("reconnect_session_cross_epoch_binding").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let first_now = unix_now().map_err(foundation_error)?;
+
+                let (mut first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_for_actor(108, 11, 1, 0xf5, first_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&first_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                first_flow
+                    .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                        &first_prepare,
+                        ReconnectPrepareDispositionV1::Prepared,
+                    ))
+                    .map_err(foundation_error)?;
+                let first_current =
+                    ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), first_now)
+                        .map_err(foundation_error)?;
+                let first_commit = first_flow
+                    .authorize_commit(first_current, first_now)
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&first_commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+
+                let second_now = unix_now().map_err(foundation_error)?;
+                let second_record = record_for_actor_epoch_with_protection(
+                    109,
+                    11,
+                    1,
+                    0xf6,
+                    second_now,
+                    second_now + 115,
+                    4,
+                    8,
+                    9,
+                    0x74,
+                    ProtectionEntitlementV1::fenced(8).map_err(foundation_error)?,
+                )
+                .map_err(foundation_error)?;
+                let (_second_flow, second_prepare) = ReconnectDurabilityFlowV1::begin(second_record);
+                assert!(matches!(
+                    journal.prepare(&second_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn fenced_entitlement_does_not_create_a_second_protection_window_on_later_epoch()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
