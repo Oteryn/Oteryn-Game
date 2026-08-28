@@ -4,17 +4,19 @@
 task_id: OTV2-20260828-codex-prompt-sweep
 title: Sweep reusable prompts for canonical Codex review routing
 mode: GOVERNANCE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/codex-prompt-sweep-20260828
 issue: 234
-pr: null
+pr: 235
 base_sha: 0deb460c1347213d2dbf14be845e9b0de344e792
 head_sha: external_pr_evidence
+final_head_sha: external_pr_evidence
+head_evidence_surface: "PR #235 live head plus immutable PR comments/reviews/workflow runs"
 owner: prompt-governance-sweep
 created_at: 2026-08-28T07:43:45Z
-updated_at: 2026-08-28T07:43:45Z
+updated_at: 2026-08-28T07:57:47Z
 owned_paths:
   - docs/agents/prompts/OTV2_ARCHITECTURE_CONTINUATION_AGENT.md
   - docs/agents/prompts/OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md
@@ -97,14 +99,19 @@ No runtime, Cargo/workspace, protocol/schema/resource registry, production/prote
 
 Runtime/E2E: `NOT_APPLICABLE` — prompt/governance-only sweep. Required evidence is static prompt sweep validation, Agent governance, Architecture semantic audit, Merge authority audit, Merge gate, self-review and independent exact-head Codex review.
 
+Pre-PR local candidate validation passed: 43/43 reusable prompts have one canonical routing section, stale authorization-pattern matches are zero, role-boundary assertions pass, lifecycle versions advance exactly one minor version, changed-path scope is exact, `python tools/agents/validate_governance.py` passes and `git diff --check` passes.
+
+PR #235 exists. Its first exact-head independent Codex review found one P1 in this task packet: stale `pr: null` / checkpoint metadata. That finding is being repaired here. The reviewer also requested a literal current candidate SHA in this tracked file; canonical `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md` forbids a self-referential follow-up commit merely to populate its own SHA. Therefore the current/final exact head is recorded after each freeze on the immutable PR #235 review/comment/workflow surface referenced by `head_evidence_surface`; this tracked task records the PR and evidence location without fabricating a self-referential SHA.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: all 43 reusable prompts updated locally against canonical Codex review routing
-status: implementing
+last_progress: PR #235 opened; first Codex review found one task-metadata P1 and this commit repairs the stale PR/checkpoint metadata while preserving canonical external exact-head evidence placement
+status: validating
 branch: docs/codex-prompt-sweep-20260828
 head_sha: external_pr_evidence
-pr: null
+pr: 235
+head_evidence_surface: "PR #235 live head plus immutable PR comments/reviews/workflow runs"
 blocker: null
-next_action: validate the complete prompt sweep and create the review PR
+next_action: qualify the repaired PR #235 exact head with fresh CI, whole-diff self-review and fresh independent Codex review
 ```
