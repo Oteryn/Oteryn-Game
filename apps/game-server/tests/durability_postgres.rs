@@ -1514,7 +1514,8 @@ fn reconnect_sessions_reject_a_distinct_game_session_for_a_later_control_loss_ep
                     ProtectionEntitlementV1::fenced(8).map_err(foundation_error)?,
                 )
                 .map_err(foundation_error)?;
-                let (_second_flow, second_prepare) = ReconnectDurabilityFlowV1::begin(second_record);
+                let (_second_flow, second_prepare) =
+                    ReconnectDurabilityFlowV1::begin(second_record);
                 assert!(matches!(
                     journal.prepare(&second_prepare).await,
                     Err(DurabilityError::InvalidStoredState)
@@ -1967,18 +1968,8 @@ fn new_epoch_rejects_committed_winner_without_compatibility_evidence()
                 assert_eq!(removed.rows_affected(), 1);
 
                 let (_next_flow, next_prepare) = ReconnectDurabilityFlowV1::begin(
-                    record_for_epoch(
-                        98,
-                        2,
-                        0xe9,
-                        record_now + 1,
-                        record_now + 116,
-                        4,
-                        8,
-                        9,
-                        0x6d,
-                    )
-                    .map_err(foundation_error)?,
+                    record_for_epoch(98, 2, 0xe9, record_now + 1, record_now + 116, 4, 8, 9, 0x6d)
+                        .map_err(foundation_error)?,
                 );
                 assert!(matches!(
                     journal.prepare(&next_prepare).await,

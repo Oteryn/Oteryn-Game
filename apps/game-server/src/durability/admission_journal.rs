@@ -783,7 +783,9 @@ fn protection_common_binding_is_valid(
         row.try_get::<String, _>("account_id")? == identity.account_id()
             && row.try_get::<Vec<u8>, _>("world_id")?.as_slice()
                 == identity.world_id().as_bytes().as_slice()
-            && row.try_get::<Vec<u8>, _>("context_game_session_id")?.as_slice()
+            && row
+                .try_get::<Vec<u8>, _>("context_game_session_id")?
+                .as_slice()
                 == identity.game_session_id().as_bytes().as_slice()
             && row.try_get::<i64, _>("original_grace_deadline")?
                 == record.continuity().original_grace_deadline(),
@@ -1142,9 +1144,9 @@ fn canonical_compatibility_evidence_is_valid(compatibility: &Value) -> bool {
             .is_some_and(|value| value != 0)
         && canonical_authority_evidence_is_valid(&compatibility["platform_security_evidence"])
         && canonical_authority_evidence_is_valid(&compatibility["proof_trust_evidence"])
-        && compatibility.get("credential_expiration").is_some_and(|value| {
-            value.is_null() || value.as_i64().is_some_and(|value| value > 0)
-        })
+        && compatibility
+            .get("credential_expiration")
+            .is_some_and(|value| value.is_null() || value.as_i64().is_some_and(|value| value > 0))
 }
 
 async fn transport_reservation_binding_is_valid(
