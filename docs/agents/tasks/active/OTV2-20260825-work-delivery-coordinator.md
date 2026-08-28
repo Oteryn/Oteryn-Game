@@ -22,6 +22,9 @@ foundation_successor_allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76
 registry_successor_issue: 193
 registry_successor_merge_pr: 195
 registry_successor_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
+recovery_allocation_issue: 240
+recovery_allocation_pr: 242
+recovery_allocation_head_evidence: external_pr_242_evidence
 ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
 ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
 initial_published_pr_head_sha: e205b0620d433733e306777ab8e491d471b62677
@@ -33,7 +36,7 @@ final_head_sha: 0e26fa0c216cadf34ff5c83fa3be508f81106c41
 final_head_frozen_at: null
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-08-28T13:22:36Z
+updated_at: 2026-08-28T13:34:00Z
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration, and closeout; no single worker owns the programme
 owned_paths:
@@ -208,11 +211,14 @@ PRs #171, #172 and #178 are now merged and their worker packets are archived/rel
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: PR #190 resolved #187; PR #194 merged the #192 allocation record as main@1063caf409af6cd4b25fa844e17a483b87e76ad6; PR #195 merged as current main@9878d42a21815027ef88067bfc59f8b40e78b473 and closed #193; #192 worker-owned allocation state remains CONFLICT
-status: coordinating_successors
+last_progress: Draft PR #242 allocates a clean Durability successor under Issue #240; current source evidence is #240 comment 5453015299 / fb30fba2a888835dfc7cbde27f940b79d7bfe05d only, while PR #212 remains paused immutable evidence
+status: coordinating_branch_provenance_recovery
 branch: null
 head_sha: null
 pr: null
+recovery_allocation_issue: 240
+recovery_allocation_pr: 242
+recovery_allocation_head_evidence: external_pr_242_evidence
 delivery_pr: 188
 prior_merged_pr: 186
 final_head_sha: 0e26fa0c216cadf34ff5c83fa3be508f81106c41
@@ -230,7 +236,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
-blocker: CONFLICT — #192's merged allocation record conflicts with its worker-owned active packet/live allocation state; #167 and Server Seam remain fail-closed WAITING_DEPENDENCY
-next_action: worker #192 reconciles its own active packet from current main, then executes TDD; do not repeat allocation merge work
+owner_action_required: complete PR #242 exact-head review/CI and protected-main merge; do not dispatch a Durability runtime writer before that merge
+blocker: P0 PR #212 provenance gap; its destructive cross-scope ancestor and unallocated restoration cannot be retrospectively ratified
+next_action: qualify and merge Issue #240 / PR #242 docs-only allocation, then create exactly one clean successor from the protected-main allocation merge SHA
 \`\`\`
