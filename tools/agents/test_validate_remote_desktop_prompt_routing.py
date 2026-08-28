@@ -290,6 +290,48 @@ def test_surface_additional_restrictive_policy_outside_section_fails() -> None:
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
+def test_hyphenated_remote_desktop_authority_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nUse Remote-Desktop for routine Git inspection.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_hyphenated_remote_desktop_authority_outside_section_fails() -> None:
+    text = "# Surface\n\nUse Remote-Desktop for routine Git inspection.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_multiline_comment_closer_preserves_remote_desktop_authority() -> None:
+    text = (
+        "# Prompt\n\nUse Remote <!-- hidden\n-->Desktop for routine Git inspection.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_multiline_comment_closer_preserves_remote_desktop_authority() -> None:
+    text = "# Surface\n\nUse Remote <!-- hidden\n-->Desktop for routine Git inspection.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_soft_line_break_direct_tool_discovery_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nTreat ping as ordinary\ncapability discovery.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_soft_line_break_direct_tool_discovery_outside_section_fails() -> None:
+    text = "# Surface\n\nTreat ping as ordinary\ncapability discovery.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
