@@ -18,13 +18,13 @@ architecture_merge_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 historical_source_pr: 243
 historical_source_head: eb28c42125c346e7f6f1c72e69d51af35af8fc1f
 allocation_branch: coord/terminal-session-replacement-allocation-250
-allocation_pr: null
+allocation_pr: 251
 allocation_merge_sha: null
 admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 pr: null
 owner: Oteryn: sol durability lead
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-28T20:08:00+02:00
+updated_at: 2026-08-28T20:13:00+02:00
 execution_budget_minutes: 180
 large_budget_reason: cross-lane Foundation/Durability repair with real PostgreSQL contention, replay and restart proof
 write_authority: none_until_allocation_merge
@@ -61,7 +61,7 @@ Deliver a clean-history, independently qualified Foundation + PostgreSQL impleme
 
 ## Start gate
 
-This task is **read-only** until the docs-only allocation on `coord/terminal-session-replacement-allocation-250` merges and Work reads its merge SHA from protected `main`.
+This task is **read-only** until docs-only allocation PR #251 merges and Work reads its merge SHA from protected `main`.
 
 After that readback, Work creates `impl/game-terminal-session-replacement-250` from exactly the allocation merge SHA. The worker must not reuse PR #243 branch ancestry or mutate/merge-up PR #243.
 
@@ -177,7 +177,7 @@ PR #243 remains open Draft historical evidence until Work decides its terminal d
 ## Context checkpoint
 
 ```yaml
-last_progress: canonical architecture merged; waiting for fresh cross-lane allocation
+last_progress: worker task is bound to allocation PR #251; allocation qualification is pending
 status: waiting
 branch: impl/game-terminal-session-replacement-250
 head_sha: null
@@ -198,6 +198,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: fresh_allocation_not_yet_merged
-next_action: after allocation merge and protected-main readback, create the worker branch from that exact merge SHA and reconstruct only the frozen nine-file baseline by file contents
+blocker: allocation_pr_251_not_yet_merged
+next_action: after PR #251 merge and protected-main readback, create the worker branch from that exact merge SHA and reconstruct only the frozen nine-file baseline by file contents
 ```
