@@ -46,7 +46,7 @@ After that merge, the Work coordinator records the exact successor base from cur
 
 ## Historical evidence boundary
 
-PR #212 and its branch are evidence only. The successor may read file contents from a frozen historical #212 head to avoid discarding legitimate implementation work, but every transferred path must be in the owned-path allowlist above. Historical reviews, CI and test counts are context only and never qualify this successor.
+PR #212 and its branch are evidence only. The only automatically admitted reconstruction source is exact commit `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`. Any later #212 head requires a new durable control-plane source-admission decision before its bytes may be used. Historical reviews, CI and test counts are context only and never qualify this successor.
 
 The successor must independently reproduce or close all material live technical findings discovered on #212. At minimum the PostgreSQL regression suite must preserve proofs for:
 
@@ -61,6 +61,36 @@ The successor must independently reproduce or close all material live technical 
 - migration cancellation proves a fresh retry rather than continuing the same future;
 - RecoveryGrantNonce remains durably single-consumed where the proof class requires it.
 
+## Mandatory successor-owned RED -> GREEN reconstruction
+
+The successor must not copy the final tests and final implementation in one generation.
+
+### RED generation
+
+1. Create the clean successor branch from the allocation-recorded protected-main SHA.
+2. Copy only the exact frozen regression harness blobs:
+   - `apps/game-server/tests/durability_postgres.rs` = `460ad5888d8e870bbeda50a3dc8f64b24a30c1cb`;
+   - `apps/game-server/tests/support/postgres.rs` = `bcb243f6c4823a14ec8116b72439c2c79c115d94`.
+3. Update this successor task packet to `TDD_RED_PENDING` / exact current head and commit the test-only generation.
+4. Open the successor PR as Draft before adding any production Durability file.
+5. Run the focused Durability test target on this exact test-only head and preserve a visible **FAIL** caused by the deliberately absent production Durability module (`apps/game-server/src/durability/mod.rs` / equivalent missing-module compile failure). Skipped/not-run is not RED.
+
+No production Durability/migration/build blob may be added before this RED evidence is durably recorded.
+
+### GREEN generation
+
+Only after RED is proven, copy the exact frozen implementation blobs:
+
+- `apps/game-server/build.rs` = `3a8149ef075f6896a7435c716cb8a4de5d94606b`;
+- `apps/game-server/migrations/0001_admission_reconnect_journal.sql` = `52aa1931550df3be6ab97d8b5a6814559f4ae494`;
+- `apps/game-server/src/bin/oteryn-game-migrate.rs` = `80e72fcdeeb70359986a5f93fe287362c0d205a1`;
+- `apps/game-server/src/durability/admission_journal.rs` = `336fbf4ed5f2cd740ab954261b924011030c272d`;
+- `apps/game-server/src/durability/db.rs` = `48746007625646dee9d8a44972005cacb2a97c73`;
+- `apps/game-server/src/durability/mod.rs` = `f37fd5e1d8ae50e8b71391a85da73369ac25fcb5`;
+- `apps/game-server/src/durability/schema.rs` = `8c92e301bd420a386f8684025ba429903b1b6e91`.
+
+Copy blobs/file contents, not historical commits. Re-run the same focused target and require **GREEN**, preserving exact RED-head -> GREEN-head linkage on the successor PR.
+
 ## Excluded scope
 
 No Foundation semantics or paths, Server Seam, Cargo/workspace/lockfile, workflow, registry/stable IDs, composition roots, public architecture decisions, production database/config/secrets, live account/session/player data, Platform/Atlas/META or external-repository mutation.
@@ -69,16 +99,17 @@ Any need for an unowned path is `SHARED_LEASE_REQUIRED`; any need to change pers
 
 ## Required validation
 
-1. Reconstruct exact allowed file snapshots on clean successor ancestry.
-2. Run the isolated PostgreSQL 17 Durability harness and preserve exact pass/fail evidence.
-3. Run Rust 1.94 formatting and strict Clippy for affected targets plus applicable game-server/package/workspace tests.
-4. Verify changed paths are exactly within the successor allowlist.
-5. Freeze exact final head after implementation/task metadata are complete.
-6. Perform mandatory whole-diff self-review.
-7. Resolve current protected-main `CODEX_REVIEW_POLICY.json`; when `CODEX_REQUIRED`, the Durability lane lead requests the strict read-only exact-head review under standing authorization.
-8. Require zero unresolved P0/P1/P2 findings and required review threads.
-9. Require exact-head repository CI on the unchanged final head.
-10. Return `READY_FOR_INTEGRATION` only after all gates are proven; no self-merge.
+1. Prove the test-only successor RED generation before any production blob restore.
+2. Restore only the seven exact implementation blobs after RED and prove the same focused target GREEN.
+3. Run the isolated PostgreSQL 17 Durability harness and preserve exact pass/fail evidence on the GREEN successor.
+4. Run Rust 1.94 formatting and strict Clippy for affected targets plus applicable game-server/package/workspace tests.
+5. Verify changed paths are exactly within the successor allowlist.
+6. Freeze exact final head after implementation/task metadata are complete.
+7. Perform mandatory whole-diff self-review.
+8. Resolve current protected-main `CODEX_REVIEW_POLICY.json`; when `CODEX_REQUIRED`, the Durability lane lead requests the strict read-only exact-head review under standing authorization.
+9. Require zero unresolved P0/P1/P2 findings and required review threads.
+10. Require exact-head repository CI on the unchanged final head.
+11. Return `READY_FOR_INTEGRATION` only after all gates are proven; no self-merge.
 
 ## Context checkpoint
 
@@ -101,5 +132,5 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
 blocker: recovery_allocation_pr_not_merged
 owner_action_required: null
-next_action: after allocation merge, create the successor branch from the allocation-recorded protected-main SHA and reconstruct only allocated file snapshots
+next_action: after allocation merge, create the successor branch from the allocation-recorded protected-main SHA, publish the test-only RED generation, then restore implementation blobs only after RED evidence exists
 ```
