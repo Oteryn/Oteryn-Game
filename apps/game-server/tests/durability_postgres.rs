@@ -1091,6 +1091,125 @@ fn expired_prepared_replay_retires_incumbent_and_allows_fresh_attempt()
 }
 
 #[test]
+fn new_epoch_requires_valid_committed_fnd02_typed_mirrors()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("new_epoch_fnd02_mirrors").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(97, 1, 0xe7, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&first_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &first_prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current =
+                    ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), record_now)
+                        .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let session_id = first_prepare
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                let attempt_ref = first_prepare
+                    .record()
+                    .identity()
+                    .reconnect_attempt_ref()
+                    .to_be_bytes();
+                let changed_next = sqlx::query(
+                    "UPDATE game_durability_reconnect_attempts \
+                     SET fnd02_next_command_id = 4 \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .execute(&pool)
+                .await?;
+                assert_eq!(changed_next.rows_affected(), 1);
+                let (_next_flow, next_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_for_epoch(97, 2, 0xe8, record_now + 1, record_now + 116, 4, 8, 9, 0x69)
+                        .map_err(foundation_error)?,
+                );
+                assert!(matches!(
+                    journal.prepare(&next_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+
+                sqlx::query(
+                    "UPDATE game_durability_reconnect_attempts \
+                     SET fnd02_next_command_id = 3 \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .execute(&pool)
+                .await?;
+                let changed_pending = sqlx::query(
+                    "UPDATE game_durability_reconnect_pending_commands \
+                     SET disposition = 2 \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref = $2 AND command_id = 1",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .execute(&pool)
+                .await?;
+                assert_eq!(changed_pending.rows_affected(), 1);
+                let (_pending_flow, pending_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_for_epoch(97, 3, 0xe9, record_now + 1, record_now + 116, 4, 8, 9, 0x6a)
+                        .map_err(foundation_error)?,
+                );
+                assert!(matches!(
+                    journal.prepare(&pending_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let session: (String, String, i16, i16) = sqlx::query_as(
+                    "SELECT control_loss_epoch::text, current_generation::text, session_state, attempt_count \
+                     FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(session, ("3".to_owned(), "8".to_owned(), 2, 1));
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn new_epoch_requires_a_valid_committed_active_transport_binding()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
