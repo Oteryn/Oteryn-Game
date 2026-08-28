@@ -1,4 +1,4 @@
-name: RDC final Codex authority repair
+name: RDC final Codex authority GREEN retry
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 jobs:
-  red-green:
+  green:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
@@ -19,6 +19,6 @@ jobs:
           ref: ${{ github.sha }}
           persist-credentials: true
           fetch-depth: 0
-      - name: Prove RED then publish minimal GREEN
+      - name: Publish narrowed GREEN
         shell: bash
         run: python tools/agents/.rdc_final_codex_repair.py
