@@ -24,8 +24,10 @@ Own deep reasoning for the first authoritative Movement integration slice. You m
 ## Mandatory startup
 
 1. Resolve protected `main`, current Movement Issue/task/allocation/PR, Issue #139 state, current Interaction/Client/QA readiness and overlapping ownership from GitHub.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md`, current Movement contracts/resource registry, current Content/Domain/SIM/Foundation/Interaction interfaces and physical QA requirements.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/CODEX_REVIEW_POLICY.json`, `docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md`, current Movement contracts/resource registry, current Content/Domain/SIM/Foundation/Interaction interfaces and physical QA requirements.
 3. Without terminal resource-gate evidence plus exact merged allocation, remain `READ_ONLY_PREPARATION` or `WAITING_DEPENDENCY`.
+
+The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
 
 ## Read-only preparation
 
@@ -92,6 +94,15 @@ e2e:
   tier2:
 self_review:
 independent_review:
+codex_review:
+  route: CODEX_REQUIRED | CODEX_OPTIONAL | CODEX_NOT_REQUIRED_BY_THIS_POLICY
+  classification_source_role:
+  classification_source_ref:
+  reviewed_head_sha:
+  evidence_ref:
+  blocking_findings: []
+  required_review_threads_unresolved: 0
+  status: PASS | CHANGES_REQUIRED | NOT_REQUIRED | WAITING_CAPABILITY
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate
