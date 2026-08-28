@@ -101,6 +101,15 @@ def test_formatted_remote_desktop_authority_outside_section_fails() -> None:
     assert_fail(text, "Remote Desktop policy text outside canonical section")
 
 
+def test_direct_connector_identifier_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\n`Remote_Desktop_Commander.list_devices` may run without a host exception.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
 def test_direct_tool_discovery_outside_section_fails() -> None:
     text = (
         "# Prompt\n\nTreat `ping` as ordinary capability discovery.\n\n"
@@ -235,6 +244,11 @@ def test_surface_html_entity_remote_desktop_authority_outside_section_fails() ->
 
 def test_surface_formatted_remote_desktop_authority_outside_section_fails() -> None:
     text = "# Surface\n\nUse Remote **Desktop** for routine Git inspection.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_direct_connector_identifier_outside_section_fails() -> None:
+    text = "# Surface\n\n`Remote_Desktop_Commander.list_devices` may run without a host exception.\n\n" + SURFACE_SECTION + "\n"
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
