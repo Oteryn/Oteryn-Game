@@ -32,10 +32,10 @@ current_main_merge_up_sha: e3524615917f3a0b89d4ef33a5826c36a855eb1e
 base_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
 validated_deadline_fix_head_sha: 2ffbf4006f0ad686a6965fa8c89cfdc935caae39
 validated_contract_repair_head_sha: null
-checkpoint_parent_head_sha: 851d3fedee186d4977ede6e9d83b65c90f0b5444
+checkpoint_parent_head_sha: c9a264e56143f8627b66dfb5adcf43ec95f61452
 final_head_sha: null
 final_head_frozen_at: null
-updated_at: 2026-08-28T09:49:49Z
+updated_at: 2026-08-28T10:19:08Z
 write_authority: exact_owned_paths_after_foundation_terminal_reconciliation_implementation_merge
 shared_paths: none
 external_repositories: []
@@ -69,9 +69,11 @@ The canonical schema repair now uses PostgreSQL native `uuid` for UUID-backed du
 
 Protected-main Codex policy now classifies this lane as `CODEX_REQUIRED`. A fresh native GitHub Codex review of `e3524615917f3a0b89d4ef33a5826c36a855eb1e` found one P1 and two P2 gaps: the durable session row did not bind AccountId/CharacterId/WorldId/RuntimeScopeRef, uint64-class authority fences narrowed through PostgreSQL `BIGINT`/Rust `i64`, and typed attempt mirrors did not compare `control_loss_epoch` plus `transport_ref` against the canonical record. TDD regressions reproduced all three findings before repair. The current local successor persists the complete session actor/scope binding, stores every uint64-class reconnect authority fence losslessly as `NUMERIC(20,0)`, validates typed epoch/transport mirrors, preserves deterministic terminal replay, and supports a new non-reused ControlLossEpoch without assigning ordering semantics to the opaque epoch fence.
 
+The first exact-head native Codex re-review of the fully green `c9a264e56143f8627b66dfb5adcf43ec95f61452` candidate found two further PR-local gaps: a same-attempt replay after `prepared_deadline` returned `ExistingPrepared` forever instead of terminalizing the expired prepared candidate and releasing `prepared_attempt_ref`; and the new-loss-epoch path accepted any non-null ACTIVE `current_transport_ref` without reconstructing a valid committed canonical winner. Both findings were reproduced as real PostgreSQL RED tests before repair. The local successor now terminalizes an expired PREPARED replay under the same session lock while preserving original grace for a fresh attempt, and a new loss epoch requires one exact committed active binding whose typed identity/scope/epoch/transport, canonical predecessor/candidate/transport/lease/scope/grace, retained transport reservation and proof-specific recovery-nonce binding all reconcile with the locked session row.
+
 Phase-D reconciliation now fail-closes unless the current durable session still matches the committed record's control-loss epoch, predecessor generation, character-lease generation, scope-ownership generation, candidate/current generation, transport ref, ACTIVE session state, absence of a prepared attempt, and recovery-grant binding where applicable. PREPARED reconciliation equivalently requires exact reconnectable/no-current-controller authority.
 
-The historical canonical/Phase-D repair culminated in `5ef45f94ef615a6d2ca139f5e12e1f167483f241`, where PostgreSQL 17.6 executed **25/25 PASS** and all PR-local Linux/Windows/format/governance/CodeQL/dependency jobs were green. The then-separate shared `cargo-deny` blocker is no longer current: protected main subsequently repaired the shared lockfile to `chacha20 0.10.2`, and the normal non-force merge-up `e3524615917f3a0b89d4ef33a5826c36a855eb1e` proved the Rust supply-chain gate green. The current successor has local pinned PostgreSQL 17.6 **33/33 PASS**, strict Clippy PASS for the Durability test target and migration binary, and the complete game-server package test suite PASS; exact-head CI must be rerun after the successor is pushed.
+The historical canonical/Phase-D repair culminated in `5ef45f94ef615a6d2ca139f5e12e1f167483f241`, where PostgreSQL 17.6 executed **25/25 PASS** and all PR-local Linux/Windows/format/governance/CodeQL/dependency jobs were green. The then-separate shared `cargo-deny` blocker is no longer current: protected main subsequently repaired the shared lockfile to `chacha20 0.10.2`, and the normal non-force merge-up `e3524615917f3a0b89d4ef33a5826c36a855eb1e` proved the Rust supply-chain gate green. Exact candidate `c9a264e56143f8627b66dfb5adcf43ec95f61452` then passed PostgreSQL 17.6 **33/33**, Rust workspace, full Merge gate, supply-chain, Linux/Windows, CodeQL and governance/architecture audits before its native Codex review returned the two findings above. The current local successor is now PostgreSQL 17.6 **35/35 PASS**, strict Clippy PASS for the Durability test target and migration binary, and the complete game-server package test suite PASS; those c9a exact-head results are invalidated for final qualification by the material repair and must be rerun after the successor is pushed.
 
 This lane remains `REVIEW_RECONCILIATION_REQUIRED`: the checkpoint successor must receive exact-head CI and a genuinely independent persistence/fencing/schema re-review before any integration handoff. This lane must not self-approve or self-merge.
 
@@ -85,7 +87,9 @@ This lane remains `REVIEW_RECONCILIATION_REQUIRED`: the checkpoint successor mus
 - `PROVEN`: frozen UUID-backed durable identifiers/scopes use native PostgreSQL `uuid`; all uint64-class reconnect authority fences plus full-range FND02 `CommandId` values use `NUMERIC(20,0)` and round-trip without `i64` narrowing.
 - `PROVEN`: the durable GameSession row binds AccountId, CharacterId, WorldId and the exact tagged RuntimeScopeRef; actor/scope disagreement fails closed before replay, COMMIT or reconciliation.
 - `PROVEN`: typed identity/scope/FND02 mirrors plus `control_loss_epoch` and `transport_ref` are validated against the exact V1 record on replay, COMMIT and reconciliation; typed/serialized disagreement fails closed.
-- `PROVEN`: a different ControlLossEpoch is admitted only as an unseen non-reused equality fence under exact current ACTIVE predecessor/lease/scope identity; it never derives authority from numeric epoch ordering, and stale/unseen or historical attempts are retained deterministically under the eight-attempt per-epoch bound.
+- `PROVEN`: a different ControlLossEpoch is admitted only as an unseen non-reused equality fence under exact current ACTIVE predecessor/lease/scope identity and a reconstructable committed current controller; it never derives authority from numeric epoch ordering, and stale/unseen or historical attempts are retained deterministically under the eight-attempt per-epoch bound.
+- `PROVEN`: an existing PREPARED attempt is reclassified terminal when trusted post-lock database time is later than its exact prepared deadline; the incumbent is released without extending original grace, so a distinct fresh PREPARE may proceed only while that original grace/current authority still permit it.
+- `PROVEN`: opening a later loss epoch does not trust a non-null controller ref by itself; the locked ACTIVE session must reconcile to exactly one COMMITTED attempt, its canonical connection/authority/continuity binding, the retained transport-ref reservation and proof-specific durable recovery replay binding.
 - `PROVEN`: Phase-D COMMITTED reconciliation revalidates current epoch/predecessor/lease/scope/generation/transport/session-state/prepared-state/nonce binding before returning a committed snapshot.
 - `PROVEN`: runtime startup performs schema inspection only and does not execute DDL; migration execution remains separate.
 - `PROVEN`: Cargo/workspace/workflow/Foundation/shared surfaces remain outside this task and were not modified.
@@ -103,12 +107,16 @@ This lane remains `REVIEW_RECONCILIATION_REQUIRED`: the checkpoint successor mus
 
 ### Current Codex-finding repair successor (local pre-push evidence)
 
-- checkpoint parent: `851d3fedee186d4977ede6e9d83b65c90f0b5444`
+- checkpoint parent: `c9a264e56143f8627b66dfb5adcf43ec95f61452`
 - protected main consumed by branch: `7c2da078596a7d2e27c3066ff74ac69b8b7f9af6`
-- pinned PostgreSQL 17.6 Durability harness: **33/33 PASS**, `0 failed`
+- predecessor exact-head c9a CI: Rust workspace `SUCCESS`; Merge gate `SUCCESS`; PostgreSQL 17.6 `33/33 PASS`; supply-chain/Linux/Windows/CodeQL/governance/architecture/merge-authority audits `PASS`
+- predecessor native Codex exact-head review: `REQUEST_CHANGES` with one P1 (expired PREPARED replay) and one P2 (unproven ACTIVE transport when opening new epoch)
+- current pinned PostgreSQL 17.6 Durability harness: **35/35 PASS**, `0 failed`
+- new TDD proofs:
+  - `expired_prepared_replay_retires_incumbent_and_allows_fresh_attempt`
+  - `new_epoch_requires_a_valid_committed_active_transport_binding`
 - strict Clippy: Durability PostgreSQL target `PASS`; `oteryn-game-migrate` binary `PASS`
 - complete `oteryn-game-server` package: 153/153 library tests plus all integration/doc-test groups `PASS`
-- formatting: touched Rust files pass Rust 1.94 `rustfmt --check` with Unix newline semantics
 - exact-head CI / fresh Codex re-review: **PENDING AFTER FAST-FORWARD PUSH**
 
 ### Canonical schema + Phase-D repair
@@ -165,17 +173,22 @@ Latest independent read-only contract review of the `536e46527662ebd1b370ed293a3
 1. canonical schema encoding with native UUID-backed durable identifiers/scopes and full-range `u64` CommandIds stored through `NUMERIC(20,0)`, rather than depending on JSON-only encoding;
 2. full Phase-D current-authority reconciliation after COMMIT, fail-closing on current session/epoch/predecessor/lease/scope/generation/transport/prepared/nonce disagreement.
 
-A fresh genuinely independent review must evaluate the exact checkpoint-successor PR head after its CI completes. This lane must not self-approve or self-merge.
+Native Codex review of exact fully-green `c9a264e56143f8627b66dfb5adcf43ec95f61452` then returned two additional findings, both reproduced RED and repaired locally:
+
+1. P1 ? same-attempt replay of an expired PREPARED row must terminalize the candidate and release the incumbent before replay classification, preserving only the original grace for a distinct fresh evaluation;
+2. P2 ? a later loss epoch may replace an ACTIVE controller only after the locked current generation/transport is reconstructed from a valid COMMITTED canonical attempt and its retained durable bindings, not merely from a non-null session transport field.
+
+A fresh genuinely independent review must evaluate the new exact successor PR head after its CI completes. This lane must not self-approve or self-merge.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: native Codex findings were reproduced by TDD and repaired locally; pinned PostgreSQL 17.6 is 33/33 PASS, strict Clippy and complete game-server package tests PASS; shared chacha20 blocker is resolved on protected main; exact-head CI and fresh Codex re-review remain pending after push
+last_progress: c9a exact-head CI was fully green but native Codex returned one P1 and one P2; both were reproduced RED and repaired locally; pinned PostgreSQL 17.6 is now 35/35 PASS, strict Clippy and complete game-server package tests PASS; exact-head CI and fresh Codex re-review remain pending after push
 status: IN_PROGRESS
 integration_state: REVIEW_RECONCILIATION_REQUIRED
 branch: impl/game-durability-journal
 validated_contract_repair_head_sha: null
-checkpoint_parent_head_sha: 851d3fedee186d4977ede6e9d83b65c90f0b5444
+checkpoint_parent_head_sha: c9a264e56143f8627b66dfb5adcf43ec95f61452
 current_protected_main_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
 current_main_merge_up_sha: e3524615917f3a0b89d4ef33a5826c36a855eb1e
 pr: 212

@@ -5,7 +5,7 @@ use oteryn_game_server::foundation::{
     ReconnectDurableReconciliationSnapshotV1, ReconnectPrepareDispositionV1,
     ReconnectPrepareRequestV1, ReconnectProofV1, RuntimeScopeRefV1,
 };
-use serde_json::json;
+use serde_json::{Value, json};
 use sqlx::postgres::PgRow;
 use sqlx::{PgPool, Postgres, Row, Transaction};
 
@@ -115,7 +115,18 @@ impl AdmissionReconnectJournal {
             if !attempt_binding_is_valid(&mut transaction, record).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
-            return disposition_for_existing(existing.try_get("state")?);
+            let state: i16 = existing.try_get("state")?;
+            if state == PREPARED && database_now(&mut transaction).await? > prepared_deadline {
+                terminalize_prepared_attempt(
+                    &mut transaction,
+                    session_id.as_slice(),
+                    attempt_ref.as_slice(),
+                )
+                .await?;
+                transaction.commit().await?;
+                return Ok(ReconnectPrepareDispositionV1::ExistingTerminal);
+            }
+            return disposition_for_existing(state);
         }
 
         let current_epoch: String = session.try_get("control_loss_epoch")?;
@@ -149,7 +160,7 @@ impl AdmissionReconnectJournal {
                 return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
             }
 
-            let can_open_new_epoch = session.try_get::<String, _>("current_generation")?
+            let active_shape_matches = session.try_get::<String, _>("current_generation")?
                 == predecessor
                 && session.try_get::<String, _>("character_lease_generation")? == character_lease
                 && session.try_get::<String, _>("scope_ownership_generation")? == scope_generation
@@ -160,6 +171,16 @@ impl AdmissionReconnectJournal {
                 && session
                     .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
                     .is_none();
+            let active_binding_valid = if active_shape_matches {
+                active_committed_binding_is_valid(&mut transaction, session_id.as_slice(), &session)
+                    .await?
+            } else {
+                false
+            };
+            if active_shape_matches && !active_binding_valid {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let can_open_new_epoch = active_shape_matches && active_binding_valid;
             if !can_open_new_epoch || database_now(&mut transaction).await? > prepared_deadline {
                 insert_attempt(&mut transaction, record, &encoded_record, STALE_TERMINAL).await?;
                 transaction.commit().await?;
@@ -381,7 +402,7 @@ impl AdmissionReconnectJournal {
             || database_now(&mut transaction).await?
                 > request.authorization().authorization_deadline()
         {
-            terminalize_stale_commit(
+            terminalize_prepared_attempt(
                 &mut transaction,
                 session_id.as_slice(),
                 attempt_ref.as_slice(),
@@ -404,7 +425,7 @@ impl AdmissionReconnectJournal {
             .execute(&mut *transaction)
             .await?;
             if consumed.rows_affected() != 1 {
-                terminalize_stale_commit(
+                terminalize_prepared_attempt(
                     &mut transaction,
                     session_id.as_slice(),
                     attempt_ref.as_slice(),
@@ -667,6 +688,164 @@ fn session_binding_is_valid(
     )
 }
 
+fn canonical_bytes(value: &Value) -> Option<Vec<u8>> {
+    let values = value.as_array()?;
+    let mut bytes = Vec::with_capacity(values.len());
+    for value in values {
+        bytes.push(u8::try_from(value.as_u64()?).ok()?);
+    }
+    Some(bytes)
+}
+
+fn canonical_u64_text(value: &Value) -> Option<String> {
+    value.as_u64().map(|value| value.to_string())
+}
+
+async fn active_committed_binding_is_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    session_id: &[u8],
+    session: &PgRow,
+) -> Result<bool, DurabilityError> {
+    let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
+    let Some(current_ref) = current_ref else {
+        return Ok(false);
+    };
+    let rows = sqlx::query(
+        "SELECT reconnect_attempt_ref, control_loss_epoch::text AS control_loss_epoch, \
+                transport_ref, account_id::text AS account_id, \
+                uuid_send(character_id) AS character_id, uuid_send(world_id) AS world_id, \
+                runtime_scope_kind, uuid_send(runtime_scope_world_id) AS runtime_scope_world_id, \
+                CASE WHEN runtime_scope_channel_id IS NULL THEN NULL \
+                     ELSE uuid_send(runtime_scope_channel_id) END AS runtime_scope_channel_id, \
+                CASE WHEN runtime_scope_instance_id IS NULL THEN NULL \
+                     ELSE uuid_send(runtime_scope_instance_id) END AS runtime_scope_instance_id, \
+                record_json \
+         FROM game_durability_reconnect_attempts \
+         WHERE game_session_id = encode($1, 'hex')::uuid \
+           AND state = $2 AND transport_ref = $3",
+    )
+    .bind(session_id)
+    .bind(COMMITTED)
+    .bind(current_ref.as_slice())
+    .fetch_all(&mut **transaction)
+    .await?;
+    if rows.len() != 1 {
+        return Ok(false);
+    }
+    let row = &rows[0];
+    let attempt_ref: Vec<u8> = row.try_get("reconnect_attempt_ref")?;
+    let stored_channel: Option<Vec<u8>> = row.try_get("runtime_scope_channel_id")?;
+    let stored_instance: Option<Vec<u8>> = row.try_get("runtime_scope_instance_id")?;
+    let session_channel: Option<Vec<u8>> = session.try_get("runtime_scope_channel_id")?;
+    let session_instance: Option<Vec<u8>> = session.try_get("runtime_scope_instance_id")?;
+    if row.try_get::<String, _>("control_loss_epoch")?
+        != session.try_get::<String, _>("control_loss_epoch")?
+        || row.try_get::<Vec<u8>, _>("transport_ref")? != current_ref
+        || row.try_get::<String, _>("account_id")? != session.try_get::<String, _>("account_id")?
+        || row.try_get::<Vec<u8>, _>("character_id")?
+            != session.try_get::<Vec<u8>, _>("character_id")?
+        || row.try_get::<Vec<u8>, _>("world_id")? != session.try_get::<Vec<u8>, _>("world_id")?
+        || row.try_get::<i16, _>("runtime_scope_kind")?
+            != session.try_get::<i16, _>("runtime_scope_kind")?
+        || row.try_get::<Vec<u8>, _>("runtime_scope_world_id")?
+            != session.try_get::<Vec<u8>, _>("runtime_scope_world_id")?
+        || stored_channel != session_channel
+        || stored_instance != session_instance
+    {
+        return Ok(false);
+    }
+
+    let stored_record: String = row.try_get("record_json")?;
+    let canonical: Value = serde_json::from_str(&stored_record)
+        .map_err(|_error| DurabilityError::InvalidStoredState)?;
+    let identity = &canonical["identity"];
+    let scope = &identity["runtime_scope"];
+    let connection = &canonical["connection"];
+    let authority = &canonical["authority"];
+    let continuity = &canonical["continuity"];
+    let proof = &canonical["proof"];
+    let session_scope_kind: i16 = session.try_get("runtime_scope_kind")?;
+    let scope_matches = match session_scope_kind {
+        CHANNEL_SCOPE => {
+            scope["kind"].as_str() == Some("channel")
+                && canonical_bytes(&scope["world_id"])
+                    == Some(session.try_get::<Vec<u8>, _>("runtime_scope_world_id")?)
+                && canonical_bytes(&scope["channel_id"]) == session_channel
+                && scope["instance_id"].is_null()
+        }
+        INSTANCE_SCOPE => {
+            scope["kind"].as_str() == Some("instance")
+                && canonical_bytes(&scope["world_id"])
+                    == Some(session.try_get::<Vec<u8>, _>("runtime_scope_world_id")?)
+                && scope["channel_id"].is_null()
+                && canonical_bytes(&scope["instance_id"]) == session_instance
+        }
+        _ => false,
+    };
+    if canonical["version"].as_u64() != Some(1)
+        || canonical_bytes(&identity["game_session_id"]) != Some(session_id.to_vec())
+        || canonical_bytes(&identity["reconnect_attempt_ref"]) != Some(attempt_ref.clone())
+        || identity["account_id"].as_str()
+            != Some(session.try_get::<String, _>("account_id")?.as_str())
+        || canonical_bytes(&identity["character_id"])
+            != Some(session.try_get::<Vec<u8>, _>("character_id")?)
+        || canonical_bytes(&identity["world_id"])
+            != Some(session.try_get::<Vec<u8>, _>("world_id")?)
+        || !scope_matches
+        || canonical_u64_text(&connection["predecessor_generation"])
+            != Some(session.try_get::<String, _>("predecessor_generation")?)
+        || canonical_u64_text(&connection["candidate_generation"])
+            != Some(session.try_get::<String, _>("current_generation")?)
+        || canonical_bytes(&connection["transport_ref"]) != Some(current_ref.clone())
+        || canonical_u64_text(&authority["character_lease_generation"])
+            != Some(session.try_get::<String, _>("character_lease_generation")?)
+        || canonical_u64_text(&authority["scope_ownership_generation"])
+            != Some(session.try_get::<String, _>("scope_ownership_generation")?)
+        || canonical_u64_text(&continuity["control_loss_epoch"])
+            != Some(session.try_get::<String, _>("control_loss_epoch")?)
+        || continuity["original_grace_deadline"].as_i64()
+            != Some(session.try_get::<i64, _>("original_grace_deadline")?)
+    {
+        return Ok(false);
+    }
+
+    let reservation = sqlx::query(
+        "SELECT uuid_send(game_session_id) AS game_session_id, reconnect_attempt_ref \
+         FROM game_durability_transport_ref_reservations WHERE transport_ref = $1",
+    )
+    .bind(current_ref.as_slice())
+    .fetch_optional(&mut **transaction)
+    .await?;
+    let Some(reservation) = reservation else {
+        return Ok(false);
+    };
+    if reservation
+        .try_get::<Vec<u8>, _>("game_session_id")?
+        .as_slice()
+        != session_id
+        || reservation.try_get::<Vec<u8>, _>("reconnect_attempt_ref")? != attempt_ref
+    {
+        return Ok(false);
+    }
+
+    match proof["class"].as_str() {
+        Some("fast_reconnect") => Ok(true),
+        Some("reauthenticated_recovery") => {
+            let Some(nonce) = canonical_bytes(&proof["recovery_grant_nonce"]) else {
+                return Ok(false);
+            };
+            recovery_grant_binding_is_valid(
+                transaction,
+                Some(nonce.as_slice()),
+                session_id,
+                attempt_ref.as_slice(),
+            )
+            .await
+        }
+        _ => Ok(false),
+    }
+}
+
 async fn attempt_binding_is_valid(
     transaction: &mut Transaction<'_, Postgres>,
     record: &ReconnectDurabilityRecordV1,
@@ -856,7 +1035,7 @@ async fn increment_attempt_count(
     Ok(())
 }
 
-async fn terminalize_stale_commit(
+async fn terminalize_prepared_attempt(
     transaction: &mut Transaction<'_, Postgres>,
     session_id: &[u8],
     attempt_ref: &[u8],
