@@ -84,13 +84,15 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(r"\bwho_am_i\b", re.IGNORECASE),
     re.compile(r"\bget_config\b", re.IGNORECASE),
     re.compile(
-        r"\bdirect\s+(?:connector|tool)\s+(?:calls?|invocations?)\b.{0,120}"
-        r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|need(?:s)?\s+no)\b",
+        r"\bdirect\s+(?:connector|tool)\b.{0,160}"
+        r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|need(?:s)?\s+no)\b.{0,120}"
-        r"\bdirect\s+(?:connector|tool)\s+(?:calls?|invocations?)\b",
+        r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
+        r"\bdirect\s+(?:connector|tool)\b",
         re.IGNORECASE,
     ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
@@ -114,6 +116,52 @@ APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS = {
 
 FENCE_OPEN_RE = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})(?P<rest>.*)$")
 LEVEL2_RE = re.compile(r"^ {0,3}##(?!#)(?:[ \t]+|$)")
+RAW_HTML_CONTAINER_OPEN_RE = re.compile(
+    r"^ {0,3}<(?P<tag>pre|script|style|textarea)(?:[ \t>]|$)",
+    re.IGNORECASE,
+)
+COMMONMARK_BLOCK_TAGS = (
+    "address", "article", "aside", "base", "basefont", "blockquote", "body",
+    "caption", "center", "col", "colgroup", "dd", "details", "dialog", "dir",
+    "div", "dl", "dt", "fieldset", "figcaption", "figure", "footer", "form",
+    "frame", "frameset", "h1", "h2", "h3", "h4", "h5", "h6", "head", "header",
+    "hr", "html", "iframe", "legend", "li", "link", "main", "menu", "menuitem",
+    "nav", "noframes", "ol", "optgroup", "option", "p", "param", "search",
+    "section", "summary", "table", "tbody", "td", "tfoot", "th", "thead", "title",
+    "tr", "track", "ul",
+)
+RAW_HTML_BLOCK_TAG_OPEN_RE = re.compile(
+    r"^ {0,3}</?(?:" + "|".join(COMMONMARK_BLOCK_TAGS) + r")(?:[ \t/>]|$)",
+    re.IGNORECASE,
+)
+RAW_HTML_COMPLETE_TAG_RE = re.compile(
+    r"^ {0,3}</?[A-Za-z][A-Za-z0-9-]*(?:[ \t]+[^>]*)?/?>[ \t]*$"
+)
+
+
+def _raw_html_block_start(raw: str) -> tuple[str, str] | None:
+    stripped = raw.lstrip(" ")
+    if len(raw) - len(stripped) > 3:
+        return None
+
+    container = RAW_HTML_CONTAINER_OPEN_RE.match(raw)
+    if container is not None:
+        return "tag", container.group("tag").lower()
+    if stripped.startswith("<?"):
+        return "delimiter", "?>"
+    if stripped.startswith("<![CDATA["):
+        return "delimiter", "]]>"
+    if re.match(r"<![A-Z]", stripped) is not None:
+        return "delimiter", ">"
+    if RAW_HTML_BLOCK_TAG_OPEN_RE.match(raw) is not None:
+        return "blank", ""
+    if RAW_HTML_COMPLETE_TAG_RE.fullmatch(raw) is not None:
+        return "blank", ""
+    return None
+
+
+def _raw_html_tag_closed(raw: str, tag: str) -> bool:
+    return re.search(rf"</{re.escape(tag)}[ \t]*>", raw, re.IGNORECASE) is not None
 
 
 def load_lifecycle(errors: list[str]) -> dict:
@@ -153,12 +201,15 @@ def reusable_prompt_paths(lifecycle: dict, errors: list[str]) -> list[str]:
 
 
 def _markdown_line_records(text: str) -> list[tuple[int, int, str, bool]]:
-    """Return line spans and whether each line is inert Markdown code/comment content."""
+    """Return line spans and whether each line is inert Markdown code/comment/raw-HTML content."""
     records: list[tuple[int, int, str, bool]] = []
     offset = 0
     fence_char: str | None = None
     fence_len = 0
     in_html_comment = False
+    raw_html_tag: str | None = None
+    raw_html_delimiter: str | None = None
+    raw_html_until_blank = False
 
     for segment in text.splitlines(keepends=True):
         raw = segment.rstrip("\r\n")
@@ -173,6 +224,18 @@ def _markdown_line_records(text: str) -> list[tuple[int, int, str, bool]]:
             if close is not None:
                 fence_char = None
                 fence_len = 0
+        elif raw_html_tag is not None:
+            inert = True
+            if _raw_html_tag_closed(raw, raw_html_tag):
+                raw_html_tag = None
+        elif raw_html_delimiter is not None:
+            inert = True
+            if raw_html_delimiter in raw:
+                raw_html_delimiter = None
+        elif raw_html_until_blank:
+            inert = True
+            if not raw.strip():
+                raw_html_until_blank = False
         elif in_html_comment:
             inert = True
             if "-->" in raw:
@@ -185,23 +248,30 @@ def _markdown_line_records(text: str) -> list[tuple[int, int, str, bool]]:
                 if "-->" not in stripped[4:]:
                     in_html_comment = True
             else:
-                opening = FENCE_OPEN_RE.fullmatch(raw)
-                if opening is not None:
+                html_block = _raw_html_block_start(raw)
+                if html_block is not None:
                     inert = True
-                    fence = opening.group("fence")
-                    fence_char = fence[0]
-                    fence_len = len(fence)
-                elif raw.rfind("<!--") > raw.rfind("-->"):
-                    # Markdown HTML comments may begin after ordinary prose. The
-                    # current line remains operative, but following lines are inert
-                    # until the matching closer is observed.
-                    in_html_comment = True
+                    kind, value = html_block
+                    if kind == "tag" and not _raw_html_tag_closed(raw, value):
+                        raw_html_tag = value
+                    elif kind == "delimiter" and value not in raw[2:]:
+                        raw_html_delimiter = value
+                    elif kind == "blank":
+                        raw_html_until_blank = True
+                else:
+                    opening = FENCE_OPEN_RE.fullmatch(raw)
+                    if opening is not None:
+                        inert = True
+                        fence = opening.group("fence")
+                        fence_char = fence[0]
+                        fence_len = len(fence)
+                    elif raw.rfind("<!--") > raw.rfind("-->"):
+                        in_html_comment = True
 
         end = offset + len(segment)
         records.append((offset, end, raw, inert))
         offset = end
 
-    # splitlines() returns no record for an empty trailing fragment, which is fine.
     return records
 
 
@@ -248,6 +318,9 @@ def _operative_text(text: str) -> str:
     fence_char: str | None = None
     fence_len = 0
     in_html_comment = False
+    raw_html_tag: str | None = None
+    raw_html_delimiter: str | None = None
+    raw_html_until_blank = False
 
     for segment in text.splitlines():
         raw = segment.rstrip("\r\n")
@@ -263,7 +336,37 @@ def _operative_text(text: str) -> str:
             lines.append("")
             continue
 
+        if raw_html_tag is not None:
+            if _raw_html_tag_closed(raw, raw_html_tag):
+                raw_html_tag = None
+            lines.append("")
+            continue
+
+        if raw_html_delimiter is not None:
+            if raw_html_delimiter in raw:
+                raw_html_delimiter = None
+            lines.append("")
+            continue
+
+        if raw_html_until_blank:
+            if not raw.strip():
+                raw_html_until_blank = False
+            lines.append("")
+            continue
+
         if not in_html_comment:
+            html_block = _raw_html_block_start(raw)
+            if html_block is not None:
+                kind, value = html_block
+                if kind == "tag" and not _raw_html_tag_closed(raw, value):
+                    raw_html_tag = value
+                elif kind == "delimiter" and value not in raw[2:]:
+                    raw_html_delimiter = value
+                elif kind == "blank":
+                    raw_html_until_blank = True
+                lines.append("")
+                continue
+
             opening = FENCE_OPEN_RE.fullmatch(raw)
             if opening is not None:
                 fence = opening.group("fence")
@@ -295,7 +398,33 @@ HTML_COMMENT_INLINE_RE = re.compile(r"<!--.*?-->", re.DOTALL)
 HTML_TAG_RE = re.compile(r"</?[A-Za-z][^>]*>")
 MARKDOWN_ESCAPE_RE = re.compile(r"\\([\\`*_{}\[\]()#+.!~>-])")
 MARKDOWN_UNDERSCORE_EMPHASIS_RE = re.compile(r"(?<!\w)_{1,3}(?=\w)|(?<=\w)_{1,3}(?!\w)")
-ZERO_WIDTH_RE = re.compile("[\u200b\u200c\u200d\u2060\ufeff]")
+DEFAULT_IGNORABLE_RANGES = (
+    (0x00AD, 0x00AD),
+    (0x034F, 0x034F),
+    (0x061C, 0x061C),
+    (0x115F, 0x1160),
+    (0x17B4, 0x17B5),
+    (0x180B, 0x180F),
+    (0x200B, 0x200F),
+    (0x202A, 0x202E),
+    (0x2060, 0x206F),
+    (0x3164, 0x3164),
+    (0xFE00, 0xFE0F),
+    (0xFEFF, 0xFEFF),
+    (0xFFA0, 0xFFA0),
+    (0xFFF0, 0xFFF8),
+    (0x1BCA0, 0x1BCA3),
+    (0x1D173, 0x1D17A),
+    (0xE0000, 0xE0FFF),
+)
+
+
+def _remove_default_ignorables(value: str) -> str:
+    return "".join(
+        character
+        for character in value
+        if not any(start <= ord(character) <= end for start, end in DEFAULT_IGNORABLE_RANGES)
+    )
 
 
 def _normalize_policy_text(text: str) -> str:
@@ -312,7 +441,7 @@ def _normalize_policy_text(text: str) -> str:
     value = HTML_COMMENT_INLINE_RE.sub(" ", value)
     value = HTML_TAG_RE.sub(" ", value)
     value = MARKDOWN_ESCAPE_RE.sub(r"\1", value)
-    value = ZERO_WIDTH_RE.sub("", value)
+    value = _remove_default_ignorables(value)
     value = re.sub(r"[*~`]+", "", value)
     value = MARKDOWN_UNDERSCORE_EMPHASIS_RE.sub("", value)
     value = re.sub(r"[\s\u00a0]+", " ", value)
