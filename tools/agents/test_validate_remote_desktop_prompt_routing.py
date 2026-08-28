@@ -171,6 +171,17 @@ def test_real_prompt_section_after_commented_example_passes() -> None:
     assert_pass(text)
 
 
+def test_real_prompt_section_after_inline_commented_example_passes() -> None:
+    text = (
+        "# Prompt\n\nprose <!--\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n## End sample\n-->\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_pass(text)
+
+
 def test_exact_canonical_surface_section_passes() -> None:
     assert_surface_pass("# Surface\n\nordinary repository text\n\n" + SURFACE_SECTION + "\n")
 
