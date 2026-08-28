@@ -25,7 +25,7 @@ admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 pr: 252
 owner: Oteryn: sol durability lead
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-28T22:21:09+02:00
+updated_at: 2026-08-28T22:39:00+02:00
 execution_budget_minutes: 180
 large_budget_reason: cross-lane Foundation/Durability repair with real PostgreSQL contention, replay and restart proof
 write_authority: exact_allocated_worker_scope_after_12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
@@ -168,8 +168,11 @@ No Cargo/lockfile/workflow/resource-registry/Server Seam/Client/Movement/Combat/
 - Foundation V2/terminal-authorization RED: `bff218dcc35a19b10c0a3dc1dbbc78e2cb41b306`, workflow run `33202516767`, job `98955532165`: expected missing canonical Foundation contract.
 - Complete runtime PostgreSQL RED: `0fc9de255394ba4ce1b919ad71ea47eeb3247e05`, workflow run `33204365030`, PostgreSQL job `98961526112`: 72 PASS / 6 expected FAIL on PostgreSQL 17.6.
 - Runtime GREEN before final composition: `aea85c41268f62486a45e37ed6142cd684ad89df`, workflow run `33207651906`, PostgreSQL job `98972703970`: 78 PASS / 0 FAIL on PostgreSQL 17.6.
+- Final composition source head before this checkpoint: `560eb1d30ad94986b9af3375735c3380b76d7070`; PR #252 was Draft, open and mergeable with exactly the 12 allocated paths.
+- On that source head, Rust workspace run `33208062237`, Architecture semantic audit `33208062163`, Merge authority audit `33208062198`, Agent governance `33208062254`, and Merge gate `33208062302` completed successfully.
+- A later Agent governance generation `33208318821` failed before checkout because PR metadata lacked the exact required `## Scope` and `## Validation` headings; corresponding Merge gate `33208318794` was cancelled. This is a PR-metadata qualification blocker, not a runtime/test failure.
 
-The final composition/task commit intentionally follows the proven runtime GREEN and must receive a completely fresh exact-head CI generation and Codex review; no earlier GREEN/review is inherited.
+The checkpoint commit itself moves the PR head and therefore invalidates prior exact-head qualification as a final integration proof. On resume, live GitHub is authoritative; do not infer the current head from the embedded source-head SHA above.
 
 ## Required validation
 
@@ -203,18 +206,29 @@ PR #243 remains open Draft historical evidence until Work decides its terminal d
 ## Context checkpoint
 
 ```yaml
-last_progress: complete RED lifecycle proven; Foundation/schema/runtime GREEN implemented; exact runtime head aea85c41268f62486a45e37ed6142cd684ad89df passed 78/78 on hosted PostgreSQL 17.6; final composition/task checkpoint prepared
+last_progress: runtime GREEN is proven at aea85c41268f62486a45e37ed6142cd684ad89df with 78/78 PostgreSQL tests; final composition source head 560eb1d30ad94986b9af3375735c3380b76d7070 was produced; latest qualification blocker is PR metadata headings only; this tracked checkpoint was requested and saved after that source head
 status: qualifying
 branch: impl/game-terminal-session-replacement-250
-head_sha: aea85c41268f62486a45e37ed6142cd684ad89df
+checkpoint_source_head: 560eb1d30ad94986b9af3375735c3380b76d7070
+head_sha: resolve_live_branch_on_resume
 pr: 252
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: final_head_pending
+ci_check_generation: checkpoint_commit_requires_fresh_exact_head_generation
 ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
+ci_run_ids:
+  - 33207651906
+  - 33208062237
+  - 33208062163
+  - 33208062198
+  - 33208062254
+  - 33208062302
+  - 33208318821
+  - 33208318794
+ci_job_ids:
+  runtime_green_postgres: 98972703970
+  latest_governance_metadata_failure: 98974989692
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
@@ -224,6 +238,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: null
-next_action: publish the final composition and task checkpoint commit, freeze that exact head, perform whole-diff self-review, require fresh exact-head repository CI and Codex review, then return READY_FOR_INTEGRATION to Work
+blocker: PR #252 body is missing the exact required headings `## Scope` and `## Validation`; checkpoint commit also requires a fresh exact-head qualification generation
+next_action: update PR #252 body to add the exact `## Scope` and `## Validation` headings while preserving the live branch head
 ```
