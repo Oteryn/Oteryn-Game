@@ -434,6 +434,42 @@ def test_non_cf_default_ignorable_connector_identifier_outside_section_fails() -
     )
     assert_fail(text, "Remote Desktop policy text outside canonical section")
 
+
+def test_visible_raw_html_block_remote_desktop_authority_fails() -> None:
+    text = (
+        "# Prompt\n\n<div>\nUse Remote Desktop for routine Git inspection.\n</div>\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_visible_raw_html_block_remote_desktop_authority_fails() -> None:
+    text = (
+        "# Surface\n\n<div>\nUse Remote Desktop for routine Git inspection.\n</div>\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_plural_direct_connectors_authorization_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nDirect connectors are exempt from per-action authorization.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_plural_direct_tools_authorization_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nDirect tools need no host exception.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
