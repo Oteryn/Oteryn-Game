@@ -24,7 +24,7 @@ admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 pr: null
 owner: Oteryn: sol durability lead
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-28T20:13:00+02:00
+updated_at: 2026-08-28T20:20:00+02:00
 execution_budget_minutes: 180
 large_budget_reason: cross-lane Foundation/Durability repair with real PostgreSQL contention, replay and restart proof
 write_authority: none_until_allocation_merge
@@ -104,27 +104,33 @@ Recreate the nine frozen files on the new allocation-based branch and commit the
 
 ### RED
 
-Before repair implementation, add focused failing tests that prove at least:
+Before repair implementation, add fresh focused failing tests that prove **every new canonical Section 9 obligation**, including at least:
 
 1. Foundation cannot issue terminal replacement authorization for Active/Reconnectable predecessor or a predecessor with a current transport.
 2. Foundation authorization carries the exact current terminal scope generation even when it is greater than the persisted predecessor fence.
 3. legacy generic V1 `ExistingTerminal` cannot generic-terminal-complete the migrated flow and instead requires typed same-attempt reconciliation.
-4. PostgreSQL exact terminal predecessor replacement accepts `stored_scope < authorized_current_scope` only by exact forward synchronization inside the same transaction.
-5. `stored_scope > authorized_current_scope`, predecessor/candidate mismatch and live predecessor all fail closed with no candidate PREPARED authority.
-6. direct same-PREPARE replay after lost collision response returns the original typed collision disposition.
-7. concurrent replacement attempts for one `CharacterId` have at most one winner.
+4. V2 reconciliation keeps collision, concurrent-prepared and stale-authority terminal dispositions distinct; only collision may unlock a fresh attempt under the unchanged remaining capacity rule.
+5. PostgreSQL exact terminal predecessor replacement accepts `stored_scope < authorized_current_scope` only by exact forward synchronization inside the same transaction.
+6. `stored_scope > authorized_current_scope`, predecessor/candidate mismatch and live predecessor all fail closed with no candidate PREPARED authority.
+7. direct same-PREPARE replay after lost collision response returns the original typed collision disposition.
+8. a lost predecessor->candidate replacement response replays idempotently only for the exact persisted replacement receipt binding.
+9. a conflicting predecessor or candidate against an existing replacement receipt fails closed without actor-anchor mutation.
+10. an outstanding predecessor PREPARED attempt is terminalized/fenced by replacement and a later predecessor COMMIT cannot restore authority.
+11. PostgreSQL V2 reconciliation round-trips collision, concurrent-prepared and stale-authority terminal reasons distinctly after process restart/reload.
+12. concurrent replacement attempts for one `CharacterId` have at most one winner.
 
-Publish a Draft PR and preserve the exact RED head/run evidence. Skipped/not-run is not RED.
+The detailed plan freezes exact test names and run commands for these cases. Publish a Draft PR and preserve the exact RED head/run evidence before adding repair implementation. Skipped/not-run is not RED.
 
 ### GREEN
 
-Implement only the canonical repairs needed to satisfy the RED suite:
+Implement only the canonical repairs needed to satisfy the complete RED suite:
 
 - Foundation terminal replacement authorization and typed V2 replay/reconciliation types in `admission_recovery_inner.rs`;
 - PostgreSQL terminal session state / replacement receipt or equivalent canonical-safe representation;
 - locked predecessor->candidate replacement CAS with monotonic exact-forward scope synchronization;
 - terminalization/fencing of predecessor PREPARED attempts in the same transaction;
-- typed durable terminal reason mapping for direct `ExistingTerminal` replay and reconciliation;
+- exact replacement-receipt idempotency with conflicting predecessor/candidate rejection;
+- typed durable terminal reason mapping for direct `ExistingTerminal` replay and reconciliation, with collision-only fresh-attempt eligibility;
 - `pub mod durability;` composition in `apps/game-server/src/lib.rs` without changing gameplay availability semantics;
 - schema/migration contract tests and real PostgreSQL race/restart/idempotency tests.
 
@@ -136,8 +142,10 @@ Implement only the canonical repairs needed to satisfy the RED suite:
 - persisted scope can move only monotonically forward to the exact Foundation-authorized value inside terminal replacement; no backwards/local invention;
 - connection and CharacterLease fences remain exact;
 - predecessor/candidate/account/character/world mismatch fails closed;
-- lost replacement response is idempotent only for the exact replacement receipt/binding;
+- lost replacement response is idempotent only for the exact replacement receipt/binding; a conflicting receipt binding is never replay-equivalent;
+- replacement atomically fences predecessor PREPARED attempts so a late predecessor COMMIT cannot reactivate authority;
 - collision stays terminal for that attempt; same-attempt remint remains forbidden; the existing eight-attempt loss-epoch budget is unchanged;
+- collision/concurrent/stale durable terminal outcomes remain typed and distinct after restart/reconciliation; only collision can unlock the existing bounded replacement-attempt path;
 - generic V1 terminality is never reinterpreted as collision proof;
 - no SQLx/network wait is introduced into Foundation's logical writer.
 
@@ -149,8 +157,8 @@ No Cargo/lockfile/workflow/resource-registry/Server Seam/Client/Movement/Combat/
 
 ### Focused RED -> GREEN
 
-- Foundation exact tests in `admission_recovery_inner.rs` for terminal authorization, scope drift and typed replay/reconciliation.
-- `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres` against isolated PostgreSQL 17 for replacement, race, restart, replay and existing Durability regressions.
+- Foundation exact tests in `admission_recovery_inner.rs` for terminal authorization, scope drift, typed direct replay/reconciliation and collision-only remint eligibility.
+- `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres` against isolated PostgreSQL 17 for replacement, exact-receipt replay/conflict, predecessor late-COMMIT fencing, contention, restart, typed reconciliation and existing Durability regressions.
 
 ### Component/integration
 
@@ -177,7 +185,7 @@ PR #243 remains open Draft historical evidence until Work decides its terminal d
 ## Context checkpoint
 
 ```yaml
-last_progress: worker task is bound to allocation PR #251; allocation qualification is pending
+last_progress: Codex P1 on allocation RED coverage repaired in worker task and implementation plan
 status: waiting
 branch: impl/game-terminal-session-replacement-250
 head_sha: null
