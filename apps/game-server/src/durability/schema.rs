@@ -84,3 +84,48 @@ fn is_missing_table(error: &sqlx::Error) -> bool {
         .and_then(|database| database.code())
         .is_some_and(|code| code == "42P01")
 }
+
+#[cfg(test)]
+mod contract_tests {
+    const MIGRATION: &str = include_str!("../../migrations/0001_admission_reconnect_journal.sql");
+
+    #[test]
+    fn reconnect_session_schema_binds_actor_and_runtime_scope_identity() {
+        for required in [
+            "account_id UUID NOT NULL",
+            "character_id UUID NOT NULL",
+            "world_id UUID NOT NULL",
+            "runtime_scope_kind SMALLINT NOT NULL",
+            "runtime_scope_world_id UUID NOT NULL",
+            "runtime_scope_channel_id UUID NULL",
+            "runtime_scope_instance_id UUID NULL",
+        ] {
+            assert!(
+                MIGRATION.contains(required),
+                "reconnect session schema must retain {required}"
+            );
+        }
+    }
+
+    #[test]
+    fn reconnect_authority_fences_preserve_the_full_unsigned_range() {
+        for required in [
+            "predecessor_generation NUMERIC(20, 0) NOT NULL",
+            "character_lease_generation NUMERIC(20, 0) NOT NULL",
+            "scope_ownership_generation NUMERIC(20, 0) NOT NULL",
+            "current_generation NUMERIC(20, 0) NOT NULL",
+        ] {
+            assert!(
+                MIGRATION.contains(required),
+                "reconnect session schema must retain full u64 range for {required}"
+            );
+        }
+        assert_eq!(
+            MIGRATION
+                .matches("control_loss_epoch NUMERIC(20, 0) NOT NULL")
+                .count(),
+            2,
+            "both session and attempt ControlLossEpoch mirrors must retain the full u64 range"
+        );
+    }
+}
