@@ -65,7 +65,7 @@ RED: exact head `7fc92624838718594283761632496ab2afc4e3b4`, Agent governance run
 
 Sweep: GitHub-hosted run `33168046139`, job `98838083652`: exactly 43 lifecycle-derived reusable prompts updated; existing governance PASS; focused routing validator PASS; bounded changed-path set PASS; `git diff --check` PASS.
 
-Focused final proof: `python tools/agents/test_validate_remote_desktop_prompt_routing.py`, `python tools/agents/validate_remote_desktop_prompt_routing.py` and existing `python tools/agents/validate_governance.py` in `Agent governance / validate` on immutable PR exact-head evidence. Focused regressions include hyphenated `Remote-Desktop` authority, visible text after multiline HTML-comment closure, Markdown soft-line-break `ping` capability-discovery wording, inline-comment/fence handling, rendered Markdown entities/emphasis/links, and preservation of literal `Remote_Desktop_Commander.*` identifiers.
+Focused final proof: `python tools/agents/test_validate_remote_desktop_prompt_routing.py`, `python tools/agents/validate_remote_desktop_prompt_routing.py` and existing `python tools/agents/validate_governance.py` in `Agent governance / validate` on immutable PR exact-head evidence. Focused regressions include hyphenated `Remote-Desktop` authority, visible text after multiline HTML-comment closure, Markdown soft-line-break `ping` capability-discovery wording, inline-comment/fence handling, rendered Markdown entities/emphasis/links, preservation of literal `Remote_Desktop_Commander.*` identifiers, generic direct-connector authorization/exemption wording, and zero-width obfuscation inside connector/tool identifiers.
 
 Runtime/component/E2E: `NOT_APPLICABLE` — governance/prompt-only change.
 
