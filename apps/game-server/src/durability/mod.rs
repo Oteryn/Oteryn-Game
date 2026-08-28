@@ -290,7 +290,16 @@ impl AdmissionReconnectJournalV2 {
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
-        let state = self.terminal_state_for_record(record).await?;
+        let state = match self.terminal_state_for_record(record).await {
+            Ok(state) => {
+                eprintln!("V2_RECONCILE_STATE={state}");
+                state
+            }
+            Err(error) => {
+                eprintln!("V2_RECONCILE_STATE_ERROR={error}");
+                return Err(error);
+            }
+        };
         let outcome = match state {
             V2_PREPARED => {
                 let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(record.clone());
@@ -385,12 +394,16 @@ impl AdmissionReconnectJournalV2 {
         .fetch_optional(&self.pool)
         .await?;
         let Some(row) = row else {
+            eprintln!("V2_TERMINAL_STATE_ROW_MISSING");
             return Err(DurabilityError::InvalidStoredState);
         };
         if row.try_get::<String, _>("record_json")? != encode_record_v2(record) {
+            eprintln!("V2_TERMINAL_STATE_RECORD_MISMATCH");
             return Err(DurabilityError::InvalidStoredState);
         }
-        row.try_get("state").map_err(DurabilityError::from)
+        let state = row.try_get("state").map_err(DurabilityError::from)?;
+        eprintln!("V2_TERMINAL_STATE_OK={state}");
+        Ok(state)
     }
 }
 
