@@ -2,12 +2,13 @@
 
 ```yaml
 task_id: OTV2-20260826-impl-foundation-reconnect-durability
-title: Implement Foundation reconnect durability boundary v1
+title: Historical completed Foundation reconnect durability boundary v1
 mode: IMPLEMENT
-status: waiting_independent_review
+status: COMPLETED_ARCHIVED
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: impl/foundation-reconnect-durability-v1
+branch: null
+historical_branch: impl/foundation-reconnect-durability-v1
 issue: 192
 pr: 199
 architecture_decision_issue: 187
@@ -25,18 +26,21 @@ registry_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
 base_sha: dc531658c7ffc9af91ccc6719aee80ffe01c22a4
 head_sha: null
 final_head_sha: null
+delivery_merge_sha: 90f30b47ac9b1e5e41cf274caf707aa39109b0c0
 owner: Oteryn: impl foundation
 created_at: 2026-08-26T15:02:00+02:00
-updated_at: 2026-08-26T20:57:00+02:00
+updated_at: 2026-08-28T14:05:00Z
+archived_at: 2026-08-28
 execution_budget_minutes: 120
 large_budget_reason: FND-03/FND-04 reconnect authority, fencing, async handoff and security evidence are XHigh-risk Foundation semantics
-owned_paths:
+owned_paths: []
+released_paths:
   - apps/game-server/src/foundation/admission.rs
   - apps/game-server/src/foundation/admission_facade.rs
   - apps/game-server/src/foundation/admission_recovery_inner.rs
   - apps/game-server/src/foundation/fnd04_verifier.rs
   - apps/game-server/src/foundation/recovery_tests.rs
-  - docs/agents/tasks/active/OTV2-20260826-impl-foundation-reconnect-durability.md
+  - docs/agents/tasks/archive/OTV2-20260826-impl-foundation-reconnect-durability.md
 public_contracts:
   - DUR-RECONNECT-AUTHORITY-V1
   - DUR-RECONNECT-TRANSPORT-REF-UNIQUENESS-V1
@@ -47,13 +51,15 @@ depends_on:
   - issue:187 resolved by pr:190 / main:2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
   - issue:193 completed by pr:195 / main:9878d42a21815027ef88067bfc59f8b40e78b473
   - issue:197 resolved by pr:200 / main:dc531658c7ffc9af91ccc6719aee80ffe01c22a4
-blocks:
-  - issue:167
-  - OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM
-write_authority: exact_allocated_foundation_and_task_paths
+blocks: []
+write_authority: none
 shared_paths: none
 external_repositories: []
 ```
+
+## Coordinated terminal archive
+
+PR #199 merged the completed Foundation delivery as protected `main@90f30b47ac9b1e5e41cf274caf707aa39109b0c0`. This record is immutable historical evidence, owns no path, and grants no dispatch, review, validation, or runtime-write authority.
 
 ## Outcome
 
@@ -81,7 +87,7 @@ Expose the smallest Foundation-owned V1 reconnect persistence boundary accepted 
 - [x] Ambiguous/unavailable paths preserve the same attempt/ref and never guess a new durable outcome.
 - [x] Controller projection is installable only after exact durable reconciliation of committed attempt/generation/transport ref.
 - [x] Existing synchronous reconnect journal remains compatibility/in-memory behavior and is not made to block on SQLx.
-- [ ] Genuinely independent exact-head security/authority review is PASS with unresolved P0/P1/P2 = 0, and the resulting exact-head CI/game-gate is PASS before merge.
+- Historical only: this delivery is terminal and merged; no review or CI action remains on this archived record.
 
 ## Excluded scope
 
@@ -105,18 +111,21 @@ No SQLx/query/migration/schema work, Durability module, Cargo/workflow/registry/
 - Merge authority audit `33001109406`: PASS.
 - Rust workspace `33001109461`: PASS.
 - Merge gate `33001109320`: PASS, including Linux build/strict Clippy/tests/harness/server smoke, Windows build/Clippy/smoke/harness, policy/fmt, dependency review, supply chain, CodeQL and canonical `game-gate`.
-- independent exact-head security/authority review: pending against the final review head after this lifecycle-only task-packet update.
+- independent exact-head security/authority review: historical lifecycle evidence only; no active review is requested from this archived record.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: V1 runtime boundary and recovery-verifier evidence bridge are GREEN on GitHub Actions; all exact-head repository gates passed on code candidate 3cecfca6ddc90f4d0dea2fe05668244915574b50
-status: waiting_independent_review
-branch: impl/foundation-reconnect-durability-v1
+last_progress: delivery PR #199 is merged as protected main 90f30b47ac9b1e5e41cf274caf707aa39109b0c0; ownership is released
+status: COMPLETED_ARCHIVED
+branch: null
+historical_branch: impl/foundation-reconnect-durability-v1
 head_sha: null
 pr: 199
 final_head_sha: null
-owner_action_required: null
-blocker: genuinely independent exact-head security/authority review only
-next_action: obtain SHA-bound independent review P0/P1/P2=0 on the final task-packet head, then require a fresh exact-head CI/game-gate PASS and expected-head merge
+delivery_merge_sha: 90f30b47ac9b1e5e41cf274caf707aa39109b0c0
+owned_paths: []
+owner_action_required: none — terminal delivery archived and paths released
+blocker: none
+next_action: retain this record as historical evidence only
 ```

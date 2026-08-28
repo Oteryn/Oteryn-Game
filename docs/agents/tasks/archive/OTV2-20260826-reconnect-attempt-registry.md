@@ -2,39 +2,46 @@
 
 ```yaml
 task_id: OTV2-20260826-reconnect-attempt-registry
-title: Register FND-04 reconnect-attempt retention hard bound
+title: Historical completed FND-04 reconnect-attempt retention hard bound
 mode: CONTRACT
-status: validating
+status: COMPLETED_ARCHIVED
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: docs/reconnect-attempt-bound-193
+branch: null
+historical_branch: docs/reconnect-attempt-bound-193
 issue: 193
-pr: null
+pr: 195
 allocation_pr: 194
 allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
 base_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
 head_sha: null
 final_head_sha: null
+delivery_pr: 195
+delivery_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
 owner: ChatGPT registry worker for Issue #193
 created_at: 2026-08-26T15:02:00+02:00
-updated_at: 2026-08-26T15:29:00+02:00
+updated_at: 2026-08-28T14:14:00Z
+archived_at: 2026-08-28
 execution_budget_minutes: 60
 large_budget_reason: null
-owned_paths:
+owned_paths: []
+released_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
-  - docs/agents/tasks/active/OTV2-20260826-reconnect-attempt-registry.md
+  - docs/agents/tasks/archive/OTV2-20260826-reconnect-attempt-registry.md
 public_contracts:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
   - DUR-RECONNECT-AUTHORITY-V1
 depends_on:
   - issue:187 resolved by pr:190 / main:2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
-blocks:
-  - issue:192 final acceptance
-  - issue:167 downstream resume
-write_authority: exact_allocated_registry_and_task_paths
-serialized_lease: docs/contracts/RESOURCE_LIMITS_REGISTRY.json only
+blocks: []
+write_authority: none
+serialized_lease: none
 external_repositories: []
 ```
+
+## Coordinated terminal archive
+
+PR #195 merged the completed registry delivery as protected `main@9878d42a21815027ef88067bfc59f8b40e78b473`. This record is immutable historical evidence, owns no path, and grants no dispatch, validation, registry-write, or blocker authority.
 
 ## Outcome
 
@@ -47,7 +54,7 @@ Append exactly one accepted registry row: `FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPO
 - [x] `hard_maximum` is 8 and is not derived from NET03/DUR03 resources.
 - [x] Max, max+1, same-ref retry and overflow obligations are recorded.
 - [x] Registry JSON uniqueness/required-field/round-trip checks pass.
-- [ ] Governance, repository policy, architecture check, diff review and exact-head CI pass before expected-head merge.
+- Historical only: the registry delivery is terminal and merged; no validation or merge action remains on this archived record.
 
 ## Excluded scope
 
@@ -66,13 +73,16 @@ No runtime/Foundation/Durability implementation, Cargo/workflow, other resource 
 ## Context checkpoint
 
 ```yaml
-last_progress: one-row registry mutation is GREEN; governance, architecture check and diff checks pass; repository-policy LICENSE mismatch is baseline-only
-status: validating
-branch: docs/reconnect-attempt-bound-193
+last_progress: delivery PR #195 is merged as protected main 9878d42a21815027ef88067bfc59f8b40e78b473; ownership is released
+status: COMPLETED_ARCHIVED
+branch: null
+historical_branch: docs/reconnect-attempt-bound-193
 head_sha: null
-pr: null
+pr: 195
 final_head_sha: null
-owner_action_required: null
-blocker: null
-next_action: freeze the delivery head, open the exact-head PR and require protected CI before merge
+delivery_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
+owned_paths: []
+owner_action_required: none — terminal delivery archived and paths released
+blocker: none
+next_action: retain this record as historical evidence only
 ```
