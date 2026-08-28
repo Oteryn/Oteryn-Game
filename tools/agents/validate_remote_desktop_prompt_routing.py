@@ -103,28 +103,28 @@ OUTSIDE_ROUTING_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?)\b.{0,160}"
+        r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
         r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
     ),
     re.compile(
         r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
-        r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?)\b",
+        r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?=.*\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?)\b)"
+        r"(?=.*\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b)"
         r"(?=.*\b(?:(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?=.*\b(?:calls?|operations?|requests?|invocations?)\s+to\s+(?:the\s+)?(?:connectors?|tools?)\b)"
+        r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\s+to\s+(?:the\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?=.*\b(?:calls?|operations?|requests?|invocations?)\b.{0,100}\b(?:through|via)\b.{0,100}\b(?:host\s+)?(?:connectors?|tools?)\b)"
+        r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,100}\b(?:through|via)\b.{0,100}\b(?:host\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
