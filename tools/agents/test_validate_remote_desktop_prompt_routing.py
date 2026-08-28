@@ -101,6 +101,24 @@ def test_formatted_remote_desktop_authority_outside_section_fails() -> None:
     assert_fail(text, "Remote Desktop policy text outside canonical section")
 
 
+def test_underscore_emphasis_remote_desktop_authority_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nUse Remote _Desktop_ for routine Git inspection.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_inline_html_comment_remote_desktop_authority_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nUse Remote<!-- rendered gap --> Desktop for routine Git inspection.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
 def test_direct_connector_identifier_outside_section_fails() -> None:
     text = (
         "# Prompt\n\n`Remote_Desktop_Commander.list_devices` may run without a host exception.\n\n"
