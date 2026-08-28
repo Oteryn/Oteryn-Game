@@ -20,7 +20,7 @@ Owner-facing placement, model/effort selection and `DONE / ACTIVE / BLOCKED / RE
 | `Oteryn: sol durability lead` | GPT-5.6 Sol Extra High | MUTATING when allocated | current Durability critical lane |
 | `Oteryn: sol server seam lead` | GPT-5.6 Sol Extra High | READ_ONLY until Durability terminal | production server/client-entry seam |
 | `Oteryn: sol client qa lead` | GPT-5.6 Sol Extra High | READ_ONLY until Server Seam terminal | native client + Tier 1/Tier 2 evidence |
-| `Oteryn: sol movement lead` | GPT-5.6 Sol Extra High | READ_ONLY until Client/QA + #139 terminal | authoritative Movement |
+| `Oteryn: sol movement lead` | GPT-5.6 Sol Extra High | READ_ONLY until Client/QA + current Movement resource/dependency gate terminal | authoritative Movement |
 | `Oteryn: sol combat lead` | GPT-5.6 Sol Extra High | READ_ONLY until Movement terminal | authoritative Combat/death/loot/XP/pickup |
 | `Oteryn: sol post-vsl expansion` | GPT-5.6 Sol Extra High | READ_ONLY planning | decompose all remaining accepted Game work after VSL |
 
@@ -78,7 +78,7 @@ Server Seam
 Client + QA / Tier 1 + Tier 2
   |
   v
-Movement resource gate #139
+current Movement resource/dependency gate
   |
   v
 Movement
