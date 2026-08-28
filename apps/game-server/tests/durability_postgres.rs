@@ -1082,6 +1082,10 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
                 .execute(&pool)
                 .await?;
                 assert_eq!(corrupted.rows_affected(), 1);
+                assert!(matches!(
+                    journal.commit(&commit).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
                 pool.close().await;
                 drop(journal);
 
@@ -1888,6 +1892,98 @@ fn new_epoch_requires_complete_committed_fnd02_fence() -> Result<(), Box<dyn std
                 .fetch_one(&pool)
                 .await?;
                 assert_eq!(session, ("3".to_owned(), "8".to_owned(), 2, 1));
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn new_epoch_rejects_committed_winner_without_compatibility_evidence()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database =
+                postgres::IsolatedPostgres::create("new_epoch_compatibility_evidence").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(98, 1, 0xe8, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&first_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &first_prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current =
+                    ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), record_now)
+                        .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let session_id = first_prepare
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                let attempt_ref = first_prepare
+                    .record()
+                    .identity()
+                    .reconnect_attempt_ref()
+                    .to_be_bytes();
+                let removed = sqlx::query(
+                    "UPDATE game_durability_reconnect_attempts \
+                     SET record_json = (record_json::jsonb - 'compatibility')::text \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .execute(&pool)
+                .await?;
+                assert_eq!(removed.rows_affected(), 1);
+
+                let (_next_flow, next_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_for_epoch(
+                        98,
+                        2,
+                        0xe9,
+                        record_now + 1,
+                        record_now + 116,
+                        4,
+                        8,
+                        9,
+                        0x6d,
+                    )
+                    .map_err(foundation_error)?,
+                );
+                assert!(matches!(
+                    journal.prepare(&next_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
                 pool.close().await;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
