@@ -1,0 +1,36 @@
+name: RDC exact main merge-up
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+    paths:
+      - .github/workflows/rdc-final-p2-green-retry.yml
+
+permissions:
+  contents: write
+
+jobs:
+  merge-up:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Merge exact protected main normally
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_main='2f198348b9de800c6694b89f6ac30f6fb7ae0336'
+          branch='governance/remote-desktop-per-action-gate-237'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git fetch origin main
+          actual_main="$(git rev-parse origin/main)"
+          test "$actual_main" = "$expected_main"
+          git merge --no-ff --no-edit "$expected_main"
+          git diff --check HEAD^1 HEAD
+          git push origin "HEAD:$branch"
+          echo "MERGE_UP_HEAD=$(git rev-parse HEAD)"
