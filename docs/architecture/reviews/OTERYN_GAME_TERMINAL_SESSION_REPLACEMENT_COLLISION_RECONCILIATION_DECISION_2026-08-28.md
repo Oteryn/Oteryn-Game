@@ -11,6 +11,74 @@
 - Status: **ACCEPTED WHEN THIS DECISION MERGES**
 - Runtime / schema / migration / Cargo / workflow / merge / production authority: **NONE**
 
+## Architecture resolution packet
+
+```yaml
+classification: ARCHITECTURE_RESOLUTION
+repository: Oteryn/Oteryn-Game
+main_sha: 0fa962b4e4f688331fea899ae496dbfdb914583d
+source_escalation: "Issue #248; dispatch comment #issuecomment-5455270337"
+blocking_question: >-
+  Define the Foundation evidence, exact predecessor-to-candidate fencing/CAS boundary,
+  typed collision reconciliation, and smallest cross-lane path set needed to replace an
+  authoritatively terminal GameSession without weakening one-live-session-per-character.
+facts:
+  proven:
+    - "Protected main at decision start is 0fa962b4e4f688331fea899ae496dbfdb914583d."
+    - "Issue #248 is the live ARCHITECTURE_ESCALATION_REQUIRED packet dispatched to the Sol Supervising Architect."
+    - "PR #243 is the blocked Durability candidate at eb28c42125c346e7f6f1c72e69d51af35af8fc1f and is outside this role's write authority."
+    - "The current Durability schema enforces actor-wide UNIQUE(character_id) while its session_state has no terminal replacement state."
+    - "ReconnectPrepareDispositionV1 already distinguishes RejectedTransportRefCollision."
+    - "ReconnectDurableReconciliationSnapshotV1 collapses collision, concurrent-prepared and stale terminal states into generic Terminal."
+    - "DUR-RECONNECT-AUTHORITY-V1 assigns lifecycle/final authorization to Foundation and PostgreSQL CAS/classification to Durability."
+    - "DUR-RECONNECT-TRANSPORT-REF-UNIQUENESS-V1 makes collision terminal for one attempt, forbids same-attempt remint and retains the 8-attempt ControlLossEpoch bound."
+  derived:
+    - "Durability cannot safely infer predecessor terminality from persisted deadline/age without taking Foundation lifecycle authority."
+    - "A safe replacement needs exact Foundation-issued predecessor/candidate evidence and one database-serialized replacement CAS before candidate PREPARE authority."
+    - "Lost collision response cannot safely authorize a new attempt unless durable reconciliation preserves the collision-specific terminal reason."
+  unknown:
+    - "Exact PostgreSQL physical representation of the actor anchor/replacement receipt is intentionally deferred to the allocated Durability implementation."
+    - "Exact Rust enum/field spelling for the versioned successor types is intentionally deferred provided the frozen semantics remain exact."
+  conflict: []
+accepted_decision: DUR-TERMINAL-SESSION-REPLACEMENT-V1
+rejected_options:
+  - "Remove actor-wide CharacterId exclusion and rely on GameSessionId."
+  - "Let Durability infer terminal predecessor eligibility from deadline or row age."
+  - "Add a separate mandatory synchronous/extra replacement service before PREPARE."
+affected_contracts:
+  - "DUR-RECONNECT-AUTHORITY-V1 — preserved"
+  - "DUR-RECONNECT-TRANSPORT-REF-UNIQUENESS-V1 — preserved"
+  - "TerminalGameSessionReplacementAuthorizationV1 — new versioned Foundation semantic authorization"
+  - "ReconnectDurableReconciliationSnapshotV2 / typed terminal disposition — new versioned reconciliation successor"
+affected_paths:
+  - apps/game-server/src/foundation/admission_recovery_inner.rs
+  - apps/game-server/src/durability/admission_journal.rs
+  - apps/game-server/src/durability/schema.rs
+  - apps/game-server/migrations/0001_admission_reconnect_journal.sql
+  - apps/game-server/tests/durability_postgres.rs
+implementation_owner: >-
+  Fresh control-plane-allocated serialized Foundation/Durability repair lane;
+  this architecture decision itself grants no implementation write authority.
+implementation_scope: "Only the five paths above unless fresh RED evidence is returned to the control plane for explicit scope expansion."
+resource_values_changed: false
+production_authority_changed: false
+cross_repository_authority_changed: false
+supersedes: []
+required_validation:
+  - "Exact-head repository governance and merge gates."
+  - "Foundation RED/GREEN authority-contract proof listed in Section 9."
+  - "Real isolated PostgreSQL race/restart/idempotency proof listed in Section 9."
+  - "Exact-head self-review."
+  - "Zero unresolved required review threads."
+required_independent_review: >-
+  CODEX_REQUIRED exact-head independent architecture/security/authority review under
+  OTV2-CODEX-INDEPENDENT-REVIEW-01 because the decision changes SESSION/RECONNECT/FENCING
+  semantics; the authoring architect is not the independent reviewer or review-request owner.
+next_action: >-
+  Uniquely active Work control plane verifies this exact candidate, routes PR #249 exact head
+  through the authorized independent-review owner, and integrates only after all gates pass.
+```
+
 ## 1. Decision timing
 
 **Must decide now: YES.**
