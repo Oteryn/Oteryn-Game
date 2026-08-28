@@ -27,10 +27,9 @@ CREATE TABLE game_durability_reconnect_sessions (
     current_generation NUMERIC(20, 0) NOT NULL
         CHECK (current_generation BETWEEN 1 AND 18446744073709551615),
     current_transport_ref BYTEA NULL CHECK (octet_length(current_transport_ref) = 16),
-    session_state SMALLINT NOT NULL DEFAULT 1 CHECK (session_state BETWEEN 1 AND 2),
+    session_state SMALLINT NOT NULL DEFAULT 1 CHECK (session_state BETWEEN 1 AND 3),
     attempt_count SMALLINT NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 8),
     prepared_attempt_ref BYTEA NULL CHECK (octet_length(prepared_attempt_ref) = 8),
-    UNIQUE (character_id),
     CHECK (
         (runtime_scope_kind = 1 AND runtime_scope_channel_id IS NOT NULL AND runtime_scope_instance_id IS NULL)
         OR
@@ -46,6 +45,31 @@ CREATE TABLE game_durability_reconnect_sessions (
         OR ((get_byte(uuid_send(runtime_scope_instance_id), 6) >> 4) = 7
             AND (get_byte(uuid_send(runtime_scope_instance_id), 8) & 192) = 128)
     )
+);
+
+CREATE UNIQUE INDEX game_durability_one_nonterminal_session_per_character
+    ON game_durability_reconnect_sessions (character_id)
+    WHERE session_state IN (1, 2);
+
+CREATE TABLE game_durability_session_replacements (
+    character_id UUID NOT NULL
+        CHECK ((get_byte(uuid_send(character_id), 6) >> 4) = 7)
+        CHECK ((get_byte(uuid_send(character_id), 8) & 192) = 128),
+    predecessor_game_session_id UUID NOT NULL
+        CHECK ((get_byte(uuid_send(predecessor_game_session_id), 6) >> 4) = 7)
+        CHECK ((get_byte(uuid_send(predecessor_game_session_id), 8) & 192) = 128),
+    candidate_game_session_id UUID NOT NULL
+        CHECK ((get_byte(uuid_send(candidate_game_session_id), 6) >> 4) = 7)
+        CHECK ((get_byte(uuid_send(candidate_game_session_id), 8) & 192) = 128),
+    predecessor_connection_generation NUMERIC(20, 0) NOT NULL
+        CHECK (predecessor_connection_generation BETWEEN 1 AND 18446744073709551615),
+    predecessor_character_lease_generation NUMERIC(20, 0) NOT NULL
+        CHECK (predecessor_character_lease_generation BETWEEN 1 AND 18446744073709551615),
+    predecessor_scope_ownership_generation NUMERIC(20, 0) NOT NULL
+        CHECK (predecessor_scope_ownership_generation BETWEEN 1 AND 18446744073709551615),
+    replaced_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (character_id, predecessor_game_session_id, candidate_game_session_id),
+    UNIQUE (character_id, candidate_game_session_id)
 );
 
 CREATE TABLE game_durability_control_loss_continuity (
