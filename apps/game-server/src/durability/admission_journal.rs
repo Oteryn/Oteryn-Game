@@ -777,6 +777,8 @@ fn protection_common_binding_is_valid(
         row.try_get::<String, _>("account_id")? == identity.account_id()
             && row.try_get::<Vec<u8>, _>("world_id")?.as_slice()
                 == identity.world_id().as_bytes().as_slice()
+            && row.try_get::<Vec<u8>, _>("context_game_session_id")?.as_slice()
+                == identity.game_session_id().as_bytes().as_slice()
             && row.try_get::<i64, _>("original_grace_deadline")?
                 == record.continuity().original_grace_deadline(),
     )
