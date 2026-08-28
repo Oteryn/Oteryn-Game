@@ -1091,8 +1091,7 @@ fn expired_prepared_replay_retires_incumbent_and_allows_fresh_attempt()
 }
 
 #[test]
-fn new_epoch_requires_valid_committed_fnd02_typed_mirrors() -> Result<(), Box<dyn std::error::Error>>
-{
+fn new_epoch_requires_complete_committed_fnd02_fence() -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
         return Ok(());
     }
@@ -1100,7 +1099,7 @@ fn new_epoch_requires_valid_committed_fnd02_typed_mirrors() -> Result<(), Box<dy
         .enable_all()
         .build()?
         .block_on(async {
-            let database = postgres::IsolatedPostgres::create("new_epoch_fnd02_mirrors").await?;
+            let database = postgres::IsolatedPostgres::create("new_epoch_complete_fnd02").await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let executor = MigrationExecutor::connect_migration(&database_url).await?;
@@ -1189,6 +1188,93 @@ fn new_epoch_requires_valid_committed_fnd02_typed_mirrors() -> Result<(), Box<dy
                 );
                 assert!(matches!(
                     journal.prepare(&pending_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+
+                sqlx::query(
+                    "UPDATE game_durability_reconnect_pending_commands \
+                     SET disposition = 1 \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref = $2 AND command_id = 1",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .execute(&pool)
+                .await?;
+                let removed_server_sequence = sqlx::query(
+                    "UPDATE game_durability_reconnect_attempts \
+                     SET record_json = (record_json::jsonb #- '{fnd02,server_sequence}')::text \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .execute(&pool)
+                .await?;
+                assert_eq!(removed_server_sequence.rows_affected(), 1);
+                let (_missing_server_flow, missing_server_prepare) =
+                    ReconnectDurabilityFlowV1::begin(
+                        record_for_epoch(
+                            97,
+                            4,
+                            0xea,
+                            record_now + 1,
+                            record_now + 116,
+                            4,
+                            8,
+                            9,
+                            0x6b,
+                        )
+                        .map_err(foundation_error)?,
+                    );
+                assert!(matches!(
+                    journal.prepare(&missing_server_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+
+                sqlx::query(
+                    "UPDATE game_durability_reconnect_attempts \
+                     SET record_json = jsonb_set( \
+                         record_json::jsonb, '{fnd02,server_sequence}', '41'::jsonb \
+                     )::text \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .execute(&pool)
+                .await?;
+                let unordered_domains = sqlx::query(
+                    "UPDATE game_durability_reconnect_attempts \
+                     SET record_json = jsonb_set( \
+                         record_json::jsonb, '{fnd02,domain_revisions}', $3::jsonb \
+                     )::text \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .bind(r#"[{"domain_id":2,"revision":7},{"domain_id":1,"revision":4}]"#)
+                .execute(&pool)
+                .await?;
+                assert_eq!(unordered_domains.rows_affected(), 1);
+                let (_unordered_domains_flow, unordered_domains_prepare) =
+                    ReconnectDurabilityFlowV1::begin(
+                        record_for_epoch(
+                            97,
+                            5,
+                            0xeb,
+                            record_now + 1,
+                            record_now + 116,
+                            4,
+                            8,
+                            9,
+                            0x6c,
+                        )
+                        .map_err(foundation_error)?,
+                    );
+                assert!(matches!(
+                    journal.prepare(&unordered_domains_prepare).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
                 let session: (String, String, i16, i16) = sqlx::query_as(
