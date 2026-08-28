@@ -22,7 +22,7 @@ initial_red_tree_commit: 896c26901bd1564577a716df934ba289b6e6c188
 source_snapshot_pr: 212
 source_snapshot_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
 source_snapshot_mode: read_only_file_content_only_no_commit_inheritance
-exact_current_head_evidence: pre-finalization GREEN head 20741682ab71fc50da53c82f827ae144712baec0 is immutably evidenced by PR #243 comment 5453327626 and trusted run/job 33176930382/98867863053; post-finalization exact head must be bound in fresh PR #243 review and CI evidence because a commit cannot contain its own SHA
+exact_current_head_evidence: initial GREEN head 20741682ab71fc50da53c82f827ae144712baec0 is immutably evidenced by PR #243 comment 5453327626 and trusted run/job 33176930382/98867863053; post-qualification P1 repair GREEN head 783ec1dfa8af6791e5ad8d06f13f32a6e62b985a is evidenced by Rust workspace run 33182999525 and PostgreSQL job 98888721229; this task-finalization commit still requires fresh exact-head PR #243 review and CI because a commit cannot contain its own SHA
 write_authority: exact_owned_paths_from_recovery_allocation_241
 shared_paths: none
 external_repositories: []
@@ -63,7 +63,8 @@ The successor-owned RED and GREEN gates are terminally proven on clean ancestry:
 1. `TDD_RED_PROVEN`: exact head `07a724db929dc1aa46556177b81a2b36f91238a2`; trusted run/job `33176654398` / `98866989164`; durable PR #243 comment `5453275715`. PostgreSQL 17.6 was healthy, the exact locked focused command executed, and it failed with the expected missing `apps/game-server/src/durability/mod.rs` compiler error.
 2. `TDD_GREEN_PROVEN`: exact head `20741682ab71fc50da53c82f827ae144712baec0`; trusted run/job `33176930382` / `98867863053`; durable PR #243 comment `5453327626`. PostgreSQL 17.6 was healthy and `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres` passed `44/44` (including the process-replacement child proof).
 3. Between those heads, only the allocation-approved frozen implementation/migration/build blobs were restored from admitted read-only file source `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`; no #212 commit was inherited or cherry-picked.
-4. This task-only finalization commit intentionally creates a new candidate head. It is `QUALIFICATION_PENDING` until fresh exact-head whole-diff self-review, required strict read-only Codex review, zero unresolved P0/P1/P2 findings/required threads, and required repository CI are durable on PR #243. PR #243 remains Draft and must not be merged by this lane.
+4. Post-qualification review found and the lane repaired two P1 control-plane gaps: exact-epoch protection continuity now compares `context_game_session_id`, and the durable reconnect-session row is the actor-wide `UNIQUE (character_id)` session/epoch anchor. Their respective test-only RED heads were `0129e9c4576894fd5b3d9184ea21afea97c1d204` and `48dac03fecce273836776ae434e4b0a913c6be18`; the latter's full PostgreSQL harness failed only because a later epoch on a distinct session was accepted.
+5. The P1 repair GREEN is `783ec1dfa8af6791e5ad8d06f13f32a6e62b985a` (Rust workspace run `33182999525`, PostgreSQL job `98888721229`). This task-only finalization commit intentionally creates a new candidate head. It is `QUALIFICATION_PENDING` until fresh exact-head whole-diff self-review, required strict read-only Codex review, zero unresolved P0/P1/P2 findings/required threads, and required repository CI are durable on PR #243. PR #243 remains Draft and must not be merged by this lane.
 
 Frozen RED blobs:
 
@@ -134,16 +135,19 @@ An unowned path is `SHARED_LEASE_REQUIRED`. A required change to persistence/tru
 status: QUALIFICATION_PENDING
 branch: impl/game-durability-journal-recovery-240
 pr: 243
-head_sha: 20741682ab71fc50da53c82f827ae144712baec0
+head_sha: 783ec1dfa8af6791e5ad8d06f13f32a6e62b985a
 final_head_sha: null
 red_head_sha: 07a724db929dc1aa46556177b81a2b36f91238a2
 red_evidence: PR #243 comment 5453275715; trusted run/job 33176654398/98866989164; expected missing src/durability/mod.rs failure
 green_head_sha: 20741682ab71fc50da53c82f827ae144712baec0
 green_evidence: PR #243 comment 5453327626; trusted run/job 33176930382/98867863053; durability_postgres 44/44 PASS
+post_qualification_p1_red_heads: 0129e9c4576894fd5b3d9184ea21afea97c1d204 (same-epoch cross-session) and 48dac03fecce273836776ae434e4b0a913c6be18 (later-epoch cross-session)
+post_qualification_p1_green_head: 783ec1dfa8af6791e5ad8d06f13f32a6e62b985a
+post_qualification_p1_green_evidence: Rust workspace run 33182999525 and PostgreSQL job 98888721229 PASS
 exact_head_evidence: bind the post-task-update exact final head in fresh immutable PR #243 self-review, Codex review, and required CI evidence
 allocation_pr: 241
 allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
-blocker: fresh_exact_head_self_review_codex_required_review_and_required_repository_ci_pending_after_task_only_finalization
+blocker: fresh_exact_head_self_review_codex_required_review_and_required_repository_ci_pending_after_truthful_post_p1_task_finalization
 owner_action_required: null
-next_action: publish this task-only qualification update, then complete and durably record fresh exact-head whole-diff self-review, required strict read-only Codex review, and required repository CI before any READY_FOR_INTEGRATION decision
+next_action: publish this task-only post-P1 qualification update, then complete and durably record fresh exact-head whole-diff self-review, required strict read-only Codex review, and required repository CI before any READY_FOR_INTEGRATION decision
 ```
