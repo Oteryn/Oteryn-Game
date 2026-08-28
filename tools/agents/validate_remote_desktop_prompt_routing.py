@@ -49,6 +49,27 @@ The evaluated prompt may restate the routing boundary for self-containment, but 
 
 CANONICAL_SURFACES = tuple(CANONICAL_SURFACE_SECTIONS)
 
+PROMPT_EVAL_GATES_SECTION = f"""## Gates
+
+- **Authority:** exact writable repositories and protected/live exclusions are explicit.
+- **Resolution:** task can be located from repository state without relying on chat.
+- **Ownership:** paths/contracts do not overlap ambiguously.
+- **Architecture:** accepted ADRs and product boundaries are preserved.
+- **Completeness:** observable outcome and all required layers are named.
+- **Evidence:** source order, truth labels and exact-head requirements are explicit.
+- **Validation:** focused/component/integration/E2E/audit/CI expectations are proportional and executable.
+- **Autonomy:** agent continues through lifecycle but has real bounded stop conditions.
+- **Handover:** durable checkpoint fields and one next action are required.
+- **Safety:** secrets, production, assets, destructive data and cross-repository operations are protected.
+- **Codex review routing:** reusable prompts defer to `CODEX_REVIEW_POLICY.json`; covered review never requires per-run owner relay, non-covered owner-funded AI remains exact-owner-authorized, and standing authorization does not create candidate/control-plane/auditor authority.
+- **Remote Desktop routing:** every reusable prompt contains exactly one `## Remote Desktop execution routing` section bound to `Oteryn/Oteryn@{META_SHA}`; out-of-band local connector/tool registration and argument-schema inspection is distinct from every direct `Remote_Desktop_Commander.*` invocation, which requires a fresh valid host-exception context and positive per-action authorization for the exact semantic host action and exact connector tool."""
+
+CANONICAL_ROUTING_ADJACENT_SECTIONS = {
+    "docs/agents/PROMPT_EVAL_STANDARD.md": {
+        "## Gates": PROMPT_EVAL_GATES_SECTION,
+    },
+}
+
 # Reusable prompts have one canonical Remote Desktop authority block. Any additional
 # Remote Desktop policy vocabulary outside that block is rejected so another paragraph
 # cannot silently broaden, override, or claim physical enforcement of the contract.
@@ -78,6 +99,9 @@ APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS = {
         f"- **Remote Desktop routing:** every reusable prompt contains exactly one `## Remote Desktop execution routing` section bound to `Oteryn/Oteryn@{META_SHA}`; out-of-band local connector/tool registration and argument-schema inspection is distinct from every direct `Remote_Desktop_Commander.*` invocation, which requires a fresh valid host-exception context and positive per-action authorization for the exact semantic host action and exact connector tool."
     },
 }
+
+FENCE_OPEN_RE = re.compile(r"^ {0,3}(?P<fence>`{3,}|~{3,})(?P<rest>.*)$")
+LEVEL2_RE = re.compile(r"^ {0,3}##(?!#)(?:[ \t]+|$)")
 
 
 def load_lifecycle(errors: list[str]) -> dict:
@@ -116,25 +140,90 @@ def reusable_prompt_paths(lifecycle: dict, errors: list[str]) -> list[str]:
     return sorted(set(paths))
 
 
+def _markdown_line_records(text: str) -> list[tuple[int, int, str, bool]]:
+    """Return line spans and whether each line is inert Markdown code/comment content."""
+    records: list[tuple[int, int, str, bool]] = []
+    offset = 0
+    fence_char: str | None = None
+    fence_len = 0
+    in_html_comment = False
+
+    for segment in text.splitlines(keepends=True):
+        raw = segment.rstrip("\r\n")
+        inert = False
+
+        if fence_char is not None:
+            inert = True
+            close = re.fullmatch(
+                rf" {{0,3}}{re.escape(fence_char)}{{{fence_len},}}[ \t]*",
+                raw,
+            )
+            if close is not None:
+                fence_char = None
+                fence_len = 0
+        elif in_html_comment:
+            inert = True
+            if "-->" in raw:
+                in_html_comment = False
+        else:
+            stripped = raw.lstrip(" ")
+            indent = len(raw) - len(stripped)
+            if indent <= 3 and stripped.startswith("<!--"):
+                inert = True
+                if "-->" not in stripped[4:]:
+                    in_html_comment = True
+            else:
+                opening = FENCE_OPEN_RE.fullmatch(raw)
+                if opening is not None:
+                    inert = True
+                    fence = opening.group("fence")
+                    fence_char = fence[0]
+                    fence_len = len(fence)
+
+        end = offset + len(segment)
+        records.append((offset, end, raw, inert))
+        offset = end
+
+    # splitlines() returns no record for an empty trailing fragment, which is fine.
+    return records
+
+
+def _level2_sections(text: str) -> list[tuple[str, int, int, str]]:
+    records = _markdown_line_records(text)
+    headings: list[tuple[str, int]] = []
+    for start, _end, raw, inert in records:
+        if inert or LEVEL2_RE.match(raw) is None:
+            continue
+        headings.append((raw.strip(), start))
+
+    sections: list[tuple[str, int, int, str]] = []
+    for index, (heading, start) in enumerate(headings):
+        end = headings[index + 1][1] if index + 1 < len(headings) else len(text)
+        sections.append((heading, start, end, text[start:end].strip()))
+    return sections
+
+
+def _operative_text(text: str) -> str:
+    lines: list[str] = []
+    for _start, _end, raw, inert in _markdown_line_records(text):
+        lines.append("" if inert else raw)
+    return "\n".join(lines)
+
+
 def _extract_canonical_section(path: str, text: str, errors: list[str]) -> tuple[str, str] | None:
-    heading_pattern = re.compile(rf"(?m)^{re.escape(SECTION)}[ \t]*$")
-    matches = list(heading_pattern.finditer(text))
+    matches = [section for section in _level2_sections(text) if section[0] == SECTION]
     if len(matches) != 1:
-        errors.append(f"{path}: must contain exactly one {SECTION!r} section")
+        errors.append(f"{path}: must contain exactly one operative {SECTION!r} section")
         return None
 
-    heading = matches[0]
-    start = heading.start()
-    remainder = text[heading.end():]
-    next_heading = re.search(r"(?m)^##\s+.+$", remainder)
-    end = heading.end() + next_heading.start() if next_heading is not None else len(text)
-    section_text = text[start:end].strip()
+    _heading, start, end, section_text = matches[0]
     outside_text = (text[:start] + "\n" + text[end:]).strip()
     return section_text, outside_text
 
 
 def _outside_routing_paragraphs(text: str) -> list[str]:
-    paragraphs = [paragraph.strip() for paragraph in re.split(r"\n\s*\n", text) if paragraph.strip()]
+    operative = _operative_text(text)
+    paragraphs = [paragraph.strip() for paragraph in re.split(r"\n\s*\n", operative) if paragraph.strip()]
     units: list[str] = []
     for paragraph in paragraphs:
         lines = [line.strip() for line in paragraph.splitlines() if line.strip()]
@@ -161,6 +250,20 @@ def _validate_outside_routing_text(
             snippet = paragraph.replace("\n", " ")[:160]
             errors.append(
                 f"{path}: Remote Desktop policy text outside canonical section: {snippet!r}"
+            )
+
+
+def _validate_routing_adjacent_sections(path: str, text: str, errors: list[str]) -> None:
+    expected_sections = CANONICAL_ROUTING_ADJACENT_SECTIONS.get(path, {})
+    if not expected_sections:
+        return
+
+    sections = _level2_sections(text)
+    for heading, expected in expected_sections.items():
+        matches = [section_text for section_heading, _start, _end, section_text in sections if section_heading == heading]
+        if len(matches) != 1 or matches[0] != expected:
+            errors.append(
+                f"{path}: routing list section {heading!r} must match exactly"
             )
 
 
@@ -191,6 +294,7 @@ def validate_surface_text(path: str, text: str, errors: list[str]) -> None:
 
     approved = APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS.get(path, set())
     _validate_outside_routing_text(path, outside_text, approved, errors)
+    _validate_routing_adjacent_sections(path, text, errors)
 
 
 def validate() -> list[str]:
