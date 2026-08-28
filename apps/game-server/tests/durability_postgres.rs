@@ -1091,8 +1091,8 @@ fn expired_prepared_replay_retires_incumbent_and_allows_fresh_attempt()
 }
 
 #[test]
-fn new_epoch_requires_valid_committed_fnd02_typed_mirrors()
--> Result<(), Box<dyn std::error::Error>> {
+fn new_epoch_requires_valid_committed_fnd02_typed_mirrors() -> Result<(), Box<dyn std::error::Error>>
+{
     if !postgres_e2e_is_configured()? {
         return Ok(());
     }

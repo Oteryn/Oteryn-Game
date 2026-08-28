@@ -770,6 +770,7 @@ async fn active_committed_binding_is_valid(
                      ELSE uuid_send(runtime_scope_channel_id) END AS runtime_scope_channel_id, \
                 CASE WHEN runtime_scope_instance_id IS NULL THEN NULL \
                      ELSE uuid_send(runtime_scope_instance_id) END AS runtime_scope_instance_id, \
+                fnd02_next_command_id::text AS fnd02_next_command_id, \
                 record_json \
          FROM game_durability_reconnect_attempts \
          WHERE game_session_id = encode($1, 'hex')::uuid \
@@ -815,6 +816,7 @@ async fn active_committed_binding_is_valid(
     let authority = &canonical["authority"];
     let continuity = &canonical["continuity"];
     let proof = &canonical["proof"];
+    let fnd02 = &canonical["fnd02"];
     let session_scope_kind: i16 = session.try_get("runtime_scope_kind")?;
     let scope_matches = match session_scope_kind {
         CHANNEL_SCOPE => {
@@ -859,6 +861,17 @@ async fn active_committed_binding_is_valid(
     {
         return Ok(false);
     }
+    if !canonical_fnd02_mirrors_are_valid(
+        transaction,
+        session_id,
+        attempt_ref.as_slice(),
+        row,
+        fnd02,
+    )
+    .await?
+    {
+        return Ok(false);
+    }
 
     let reservation = sqlx::query(
         "SELECT uuid_send(game_session_id) AS game_session_id, reconnect_attempt_ref \
@@ -895,6 +908,51 @@ async fn active_committed_binding_is_valid(
         }
         _ => Ok(false),
     }
+}
+
+async fn canonical_fnd02_mirrors_are_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    session_id: &[u8],
+    attempt_ref: &[u8],
+    attempt: &PgRow,
+    canonical_fnd02: &Value,
+) -> Result<bool, DurabilityError> {
+    let stored_next_command_id: String = attempt.try_get("fnd02_next_command_id")?;
+    if canonical_u64_text(&canonical_fnd02["next_command_id"])
+        != Some(stored_next_command_id)
+    {
+        return Ok(false);
+    }
+    let Some(canonical_pending) = canonical_fnd02["pending"].as_array() else {
+        return Ok(false);
+    };
+    let stored_pending = sqlx::query(
+        "SELECT command_id::text AS command_id, disposition \
+         FROM game_durability_reconnect_pending_commands \
+         WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2 \
+         ORDER BY command_id ASC",
+    )
+    .bind(session_id)
+    .bind(attempt_ref)
+    .fetch_all(&mut **transaction)
+    .await?;
+    if stored_pending.len() != canonical_pending.len() {
+        return Ok(false);
+    }
+    for (stored, expected) in stored_pending.iter().zip(canonical_pending) {
+        let expected_disposition = match expected["disposition"].as_str() {
+            Some("pending_original") => PENDING_ORIGINAL,
+            Some("terminal_outcome_retained") => TERMINAL_OUTCOME_RETAINED,
+            _ => return Ok(false),
+        };
+        let stored_command_id: String = stored.try_get("command_id")?;
+        if canonical_u64_text(&expected["command_id"]) != Some(stored_command_id)
+            || stored.try_get::<i16, _>("disposition")? != expected_disposition
+        {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 async fn attempt_binding_is_valid(
