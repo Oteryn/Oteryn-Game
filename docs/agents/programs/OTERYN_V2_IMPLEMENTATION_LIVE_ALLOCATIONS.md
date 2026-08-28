@@ -374,11 +374,11 @@ terminal_blockers_not_reopened: [93, 115, 116, 123, 131]
 | --- | --- | --- |
 | Interaction | `COMPLETED_RELEASED` | PR #172 merged; post-merge independent reconciliation PASS; no active ownership. |
 | Ability | `COMPLETED_RELEASED` | PR #171 merged; post-merge independent reconciliation PASS; no active ownership. |
-| Durability | `WAITING_DEPENDENCY` | PR #190 merged `DUR-RECONNECT-AUTHORITY-V1`; #167 now waits on Foundation successor #192. Registry successor #193 is disjoint and may run in parallel. |
+| Durability | `PAUSED_BRANCH_PROVENANCE_RECOVERY` | Foundation/registry prerequisites are terminal; Draft PR #212 is evidence-only because its history includes an unallocated cross-scope restoration. Issue #240 must merge a prospective successor allocation first. |
 | AI | `COMPLETED_RELEASED` | PR #178 merged; post-merge independent reconciliation PASS; no active ownership. |
-| Server Seam | `WAITING_DEPENDENCY` | Waits for #192, then resumed #167 durable adapter merge. |
+| Server Seam | `WAITING_DEPENDENCY` | Waits for a prospectively reconstructed #167 successor to merge the durable adapter. |
 
-The earlier Wave A allocation snapshot is historical. Current GitHub delivery/review evidence and the archived task packets below supersede its stale `allocated_waiting_for_worker_branch` and `READY_TO_RESUME` prose. Future shared Cargo/workflow/composition/policy mutations remain serialized even though the prerequisite SQLx/PostgreSQL surfaces are now present on `main`. No Durability code, schema or migration mutation is authorized until Foundation successor #192 merges and #167 receives a fresh exact-base resume allocation.
+The earlier Wave A allocation snapshot is historical. Current GitHub delivery/review evidence and the archived task packets below supersede its stale `allocated_waiting_for_worker_branch` and `READY_TO_RESUME` prose. Future shared Cargo/workflow/composition/policy mutations remain serialized even though the prerequisite SQLx/PostgreSQL surfaces are now present on `main`. Foundation successor #192 is terminal; no Durability code, schema or migration mutation is authorized until the separately reviewed Issue #240 prospective-reconstruction allocation merges.
 
 
 ## Completed allocation — Interaction
@@ -427,12 +427,12 @@ write_authority: none
 ```
 
 
-## Waiting dependency — Durability journal-only substrate
+## Paused recovery — Durability journal-only substrate
 
 ```yaml
 lane_id: OTV2-IMPL-DURABILITY
 issue: 167
-status: WAITING_DEPENDENCY
+status: PAUSED_BRANCH_PROVENANCE_RECOVERY
 worker_alias: Oteryn: impl durability
 architecture_decision_issue: 187
 architecture_decision_pr: 190
@@ -444,8 +444,8 @@ ownership_correction_scope: active Durability task status/provenance/blocker/no-
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
 worker_branch: impl/game-durability-journal
 worker_branch_provenance: remote
-worker_branch_remote_head: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
-worker_pr: null
+worker_branch_remote_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
+worker_pr: 212
 local_unpublished_documentation_checkpoint: 3adf13ef17b3b7811aa4f73971456ecd321afcc2
 local_checkpoint_delivery_status: not_a_remote_delivery
 task_packet: docs/agents/tasks/active/OTV2-20260825-impl-durability.md
@@ -475,12 +475,12 @@ shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
 shared_cargo_ci_lease_pr: 181
 shared_policy_lease_pr: 185
 shared_leases: released
-blocker: Foundation reconnect durability boundary #192 is not yet merged
-write_authority: none_while_waiting_dependency
-next_action: keep #167 fail-closed until #192 merges, then issue a fresh exact-base Durability resume allocation
+blocker: P0 provenance gap — branch history contains destructive cd808d396018832b632be26911105a36f0cb7a20 followed by unallocated restoration 73e17f418c63ec038f5aa7ef8f0888ac74b75aa2; #240 comment 5453015299 binds fb30fba2a888835dfc7cbde27f940b79d7bfe05d as source evidence only
+write_authority: none_pending_issue_240_recovery_allocation_merge
+next_action: preserve Draft PR #212 as evidence; merge the Issue #240 allocation before creating one clean successor branch
 ```
 
-PR #190 resolved the architecture question but did not implement Foundation or Durability. The existing Durability remote branch provenance remains `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`; do not create a replacement Durability task/branch. #192 is the sole Foundation successor and #193 is its disjoint serialized registry successor.
+PR #190 resolved the architecture question but did not implement Foundation or Durability. The existing Durability remote branch provenance remains retained as immutable evidence only. Issue #240 is independently required by the provenance incident and, once its allocation is merged, is the sole exception that authorizes one clean successor task/branch; it must not import the compromised branch ancestry. #192 and #193 are terminal historical predecessors.
 
 
 
@@ -633,8 +633,8 @@ OTV2-FND04-VERIFIER-CONSUMER:
   independent_exact_head_security_review: PASS_POST_MERGE_RECONCILIATION
 
 OTV2-IMPL-DURABILITY:
-  status: WAITING_DEPENDENCY
-  write_authority: none_while_waiting_dependency
+  status: PAUSED_BRANCH_PROVENANCE_RECOVERY
+  write_authority: none_pending_issue_240_recovery_allocation_merge
   issue: 167
   coordinator_issue: 162
   architecture_decision_issue: 187
@@ -646,16 +646,35 @@ OTV2-IMPL-DURABILITY:
   ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
   architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
   worker_branch: impl/game-durability-journal
-  worker_branch_remote_head: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
-  worker_pr: null
+  worker_branch_remote_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
+  worker_pr: 212
   local_unpublished_documentation_checkpoint: 3adf13ef17b3b7811aa4f73971456ecd321afcc2
   local_checkpoint_delivery_status: not_a_remote_delivery
   selected_stack: sqlx_0_9_0
   shared_integration_pr: 182
   shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
   shared_leases: released
-  blocker: Foundation successor #192 is not yet merged
-  next_action: keep #167 fail-closed until #192 merges, then issue a fresh exact-base Durability resume allocation
+  blocker: P0 branch provenance gap in PR #212; preserve the historical branch and await one prospective recovery allocation under Issue #240
+  next_action: merge Issue #240 allocation; do not write, qualify or merge the current branch
+OTV2-RECOVER-DURABILITY-PR212:
+  status: ALLOCATION_PENDING_PROTECTED_MAIN_MERGE
+  issue: 240
+  coordinator_issue: 162
+  implementation_issue: 167
+  source_pr: 212
+  source_head_evidence_only: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
+  prior_paused_head_evidence: a4d1d5c475e8da49d14707f64e99419010cd7bd6
+  source_manifest: issue_240_comment_5453015299
+  compromised_ancestors:
+    - cd808d396018832b632be26911105a36f0cb7a20
+    - 73e17f418c63ec038f5aa7ef8f0888ac74b75aa2
+  allocation_base_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
+  successor_branch_after_merge: recovery/durability-212-owned-successor
+  successor_task: docs/agents/tasks/active/OTV2-20260828-recover-durability-pr212-provenance.md
+  successor_plan: docs/superpowers/plans/2026-08-28-oteryn-game-durability-branch-provenance-recovery.md
+  write_authority: none_until_this_allocation_merges
+  source_branch_disposition: retain_draft_evidence_only_no_force_reset_rebase_or_merge
+  next_action: after protected-main allocation readback, create exactly one clean successor branch from that merge SHA and requalify its own candidate
 OTV2-IMPL-ABILITY:
   status: completed_released
   write_authority: none

@@ -2,14 +2,14 @@
 
 ```yaml
 task_id: OTV2-20260825-impl-durability
-title: READY_TO_RESUME — journal-only durability admission and reconnect substrate
+title: PAUSED_BRANCH_PROVENANCE_RECOVERY — journal-only durability admission and reconnect substrate
 mode: IMPLEMENT
-status: READY_TO_RESUME
+status: PAUSED_BRANCH_PROVENANCE_RECOVERY
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-durability-journal
 issue: 167
-pr: null
+pr: 212
 architecture_decision_issue: 187
 architecture_decision_pr: 190
 architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
@@ -30,7 +30,7 @@ ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
 ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
 worker_branch_provenance: remote
-worker_branch_remote_head: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
+worker_branch_remote_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
 local_unpublished_documentation_checkpoint: 3adf13ef17b3b7811aa4f73971456ecd321afcc2
 local_checkpoint_delivery_status: not_a_remote_delivery
 prior_resume_base_sha: 90f30b47ac9b1e5e41cf274caf707aa39109b0c0
@@ -38,12 +38,12 @@ resume_base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
 resume_admission_main_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
 resume_strategy: normal_non_force_merge_up_existing_worker_branch
 base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
-head_sha: null
+head_sha: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: impl durability
 created_at: 2026-08-25T23:24:03+02:00
-updated_at: 2026-08-26T21:46:00Z
+updated_at: 2026-08-28T13:22:36Z
 execution_budget_minutes: 120
 large_budget_reason: SQLx migration safety, durable idempotency/fencing and mandatory isolated PostgreSQL evidence
 owned_paths:
@@ -72,13 +72,30 @@ depends_on:
   - issue:197 completed by pr:200 / main:dc531658c7ffc9af91ccc6719aee80ffe01c22a4
   - issue:208 completed by pr:210 / main:f056cd38dde6065a3154e256d01aea9e5a09e5f4
 blocks:
-  - Server Seam remains WAITING_DEPENDENCY until this resumed Durability worker merges the real durable adapter
-write_authority: exact_owned_paths_after_foundation_terminal_reconciliation_implementation_merge
+  - P0 branch provenance recovery: destructive cross-scope commit cd808d396018832b632be26911105a36f0cb7a20 and unallocated restoration 73e17f418c63ec038f5aa7ef8f0888ac74b75aa2 are retained ancestors of the paused branch
+  - Server Seam remains WAITING_DEPENDENCY until a prospectively allocated Durability successor merges the real durable adapter
+write_authority: none_pending_issue_240_recovery_allocation_merge
 shared_paths: none
 external_repositories: []
 ```
 
 ## Outcome
+
+The previously published Durability branch is paused as evidence-only because its ancestry has a P0 authority/provenance gap. No runtime result is accepted or rejected by this status correction.
+
+## Coordinated ownership correction — 2026-08-28
+
+This correction is limited by ownership_correction_authority and ownership_correction_scope above to status, provenance, blocker, no-write state and next action. It changes no worker/runtime authority.
+
+- PROVEN: current Draft PR #212 head is fb30fba2a888835dfc7cbde27f940b79d7bfe05d; Issue #240 comment 5453015299 binds it and nine exact blobs as read-only reconstruction evidence. It follows destructive cross-scope commit cd808d396018832b632be26911105a36f0cb7a20 and its unallocated restoration 73e17f418c63ec038f5aa7ef8f0888ac74b75aa2.
+- PROVEN: a4d1d5c475e8da49d14707f64e99419010cd7bd6 remains the earlier paused head and carries an unresolved Codex P2 requiring a retained transport reservation to stay protected through COMMIT.
+- PROVEN: a repaired current ten-path diff and exact-head CI do not supply the missing prior recovery authority.
+- PROVEN: no further write, review qualification, readiness handoff or merge is allowed on impl/game-durability-journal / PR #212.
+- DERIVED: a fresh successor may later reuse PR #212 only as read-only evidence after the Issue #240 recovery allocation merges; it must not import the compromised ancestry.
+
+The former READY_TO_RESUME instructions below are historical and must not be executed. The one current next action is the coordinator-owned Issue #240 allocation merge.
+
+## Historical pre-pause execution record
 
 Architecture #187/#190, transport-ref semantics #197/#200, the retained-attempt registry #193/#195, Foundation reconnect boundary #192/#199 and Foundation terminal reconciliation repair #208/#210 are merged. PR #210 merged as protected `main@f056cd38dde6065a3154e256d01aea9e5a09e5f4`, so Durability write authority is restored only on its exact owned paths.
 
@@ -129,15 +146,15 @@ No production database/config/secrets, transaction/outbox, item/value custody/re
 ## Context checkpoint
 
 ```yaml
-last_progress: #208 implementation PR #210 merged as protected main f056cd38dde6065a3154e256d01aea9e5a09e5f4; constrained terminal snapshot API is available and Durability authority is restored only on its existing owned paths
-status: READY_TO_RESUME
+last_progress: Draft PR #212 remains paused after independent audit found its destructive cross-scope branch ancestor and unallocated restoration; Issue #240 comment 5453015299 binds fb30fba2a888835dfc7cbde27f940b79d7bfe05d as read-only source evidence only
+status: PAUSED_BRANCH_PROVENANCE_RECOVERY
 branch: impl/game-durability-journal
-head_sha: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
-resume_base_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
-pr: null
+head_sha: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
+resume_base_sha: null
+pr: 212
 final_head_sha: null
 owner_action_required: null
-blocker: null
-write_authority: exact_owned_paths_after_foundation_terminal_reconciliation_implementation_merge
-next_action: normal non-force merge protected main f056cd38dde6065a3154e256d01aea9e5a09e5f4 into the preserved existing worker branch, reconcile only owned task/test changes, then resume Task 1 TDD
+blocker: P0 branch provenance/authority gap; current branch content is evidence-only and cannot be retrospectively ratified
+write_authority: none_pending_issue_240_recovery_allocation_merge
+next_action: wait for the separately reviewed Issue #240 allocation; do not write, qualify, merge, reset, force-push or delete PR #212
 ```

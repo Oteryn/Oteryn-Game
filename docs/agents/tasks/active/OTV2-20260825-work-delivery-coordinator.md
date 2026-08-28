@@ -2,9 +2,9 @@
 
 \`\`\`yaml
 task_id: OTV2-20260825-work-delivery-coordinator
-title: Coordinate the post-blocker gameplay vertical slice
+title: Coordinate the post-blocker gameplay vertical slice and recover Durability branch provenance
 mode: COORDINATE
-status: coordinating_successors
+status: coordinating_branch_provenance_recovery
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
@@ -13,7 +13,7 @@ pr: null
 delivery_pr: 188
 prior_merged_pr: 186
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
-protected_main_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
+protected_main_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
 architecture_decision_pr: 190
 architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
 foundation_successor_issue: 192
@@ -33,7 +33,7 @@ final_head_sha: 0e26fa0c216cadf34ff5c83fa3be508f81106c41
 final_head_frozen_at: null
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-08-26T16:16:12+02:00
+updated_at: 2026-08-28T13:22:36Z
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration, and closeout; no single worker owns the programme
 owned_paths:
@@ -42,14 +42,16 @@ owned_paths:
   - docs/superpowers/plans/2026-08-25-oteryn-game-ability-engine.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-durability-journal.md
   - docs/superpowers/plans/2026-08-26-oteryn-game-ai-bootstrap.md
+  - docs/superpowers/plans/2026-08-28-oteryn-game-durability-branch-provenance-recovery.md
   - docs/agents/evidence/OTV2-20260826-wave-a-post-merge-review-reconciliation.md
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
+  - docs/agents/tasks/active/OTV2-20260828-recover-durability-pr212-provenance.md
 public_contracts: []
 depends_on:
   - Oteryn/Oteryn-Game#154
 blocks:
-  - CONFLICT: PR #194 records #192's merged allocation, while the worker-owned active packet and live allocation still say waiting_allocation_merge/allocation_pending_merge; no Foundation execution authority is asserted here
-  - #167 and Server Seam remain fail-closed WAITING_DEPENDENCY pending worker #192 packet reconciliation, Foundation execution/integration, and a fresh #167 resume allocation
+  - P0: PR #212 published destructive cross-scope history at cd808d396018832b632be26911105a36f0cb7a20 and an unallocated restoration at 73e17f418c63ec038f5aa7ef8f0888ac74b75aa2; current tree shape and CI cannot retroactively cure that provenance gap
+  - #167 and Server Seam remain fail-closed pending the separately reviewed prospective reconstruction allocation in Issue #240
 cross_repository_coordination_id: OTV2-WORK-DELIVERY-POST-BLOCKER
 external_repositories: []
 \`\`\`
@@ -65,6 +67,20 @@ permitted.
 ## Outcome
 
 Create the durable execution lifecycle for the post-blocker gameplay vertical slice. This coordinator records live readiness, allocates only path-disjoint lanes through separate merged allocations, integrates only exact-head verified deliveries, and emits \`ARCHITECTURE_ESCALATION_REQUIRED\` instead of inventing material architecture decisions.
+
+## Current recovery authority — 2026-08-28
+
+This section supersedes the earlier historical Foundation-successor/current-readiness claims and the earlier context checkpoint in this packet. Those entries remain provenance; they are not the current control-plane state.
+
+- PROVEN: Foundation #192, its terminal repair #208, and the prerequisite registry/transport decisions are merged. They no longer block #167.
+- PROVEN: Draft PR #212 is the existing #167 candidate. Its current paused head is fb30fba2a888835dfc7cbde27f940b79d7bfe05d, based on protected main 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6. Issue #240 comment 5453015299 binds it and nine exact blobs as read-only reconstruction evidence only.
+- PROVEN: a4d1d5c475e8da49d14707f64e99419010cd7bd6 remains prior paused evidence and carries an unresolved Codex P2 on retaining the exact transport reservation through COMMIT; the successor must independently resolve it.
+- PROVEN: cd808d396018832b632be26911105a36f0cb7a20 deleted cross-scope repository content; 73e17f418c63ec038f5aa7ef8f0888ac74b75aa2 restored that content without an already-merged recovery allocation. The current ten-path PR diff is ownership-shaped but does not erase those ancestors.
+- PROVEN: the independent control-plane audit on #162 classifies that provenance gap as P0. Its finding is not a technical review finding for the Durability lane to self-resolve.
+- DERIVED: current policy is prospective and has no ratification mechanism. Historical PR #212 content may be used as read-only reconstruction evidence, but neither its restoration commit nor later branch writes gain retrospective authority.
+- PROVEN: Issue #240 owns the independent recovery lifecycle. This coordinator allocation grants no Durability runtime write authority until it is merged to protected main.
+
+The sole current coordinator action is to merge the Issue #240 docs-only allocation, then transfer the listed exact paths to one fresh successor branch without importing the compromised branch ancestry. PR #212 stays Draft and evidence-only until that successor exists.
 
 ## Architecture and source of truth
 
