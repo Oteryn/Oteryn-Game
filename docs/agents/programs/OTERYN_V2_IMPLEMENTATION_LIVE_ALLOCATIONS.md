@@ -374,11 +374,11 @@ terminal_blockers_not_reopened: [93, 115, 116, 123, 131]
 | --- | --- | --- |
 | Interaction | `COMPLETED_RELEASED` | PR #172 merged; post-merge independent reconciliation PASS; no active ownership. |
 | Ability | `COMPLETED_RELEASED` | PR #171 merged; post-merge independent reconciliation PASS; no active ownership. |
-| Durability | `WAITING_DEPENDENCY` | PR #190 merged `DUR-RECONNECT-AUTHORITY-V1`; #167 now waits on Foundation successor #192. Registry successor #193 is disjoint and may run in parallel. |
+| Durability | `RECOVERY_SUCCESSOR_READY_FOR_DISPATCH` | PR #241 merged the clean provenance-recovery allocation as main `a171410de07c2dab718f52f780d4314bdcc53604`; only `OTV2-20260828-impl-durability-successor` may start fresh RED -> GREEN reconstruction. |
 | AI | `COMPLETED_RELEASED` | PR #178 merged; post-merge independent reconciliation PASS; no active ownership. |
-| Server Seam | `WAITING_DEPENDENCY` | Waits for #192, then resumed #167 durable adapter merge. |
+| Server Seam | `WAITING_DEPENDENCY` | Waits for the separately allocated clean Durability successor to merge the durable adapter. |
 
-The earlier Wave A allocation snapshot is historical. Current GitHub delivery/review evidence and the archived task packets below supersede its stale `allocated_waiting_for_worker_branch` and `READY_TO_RESUME` prose. Future shared Cargo/workflow/composition/policy mutations remain serialized even though the prerequisite SQLx/PostgreSQL surfaces are now present on `main`. No Durability code, schema or migration mutation is authorized until Foundation successor #192 merges and #167 receives a fresh exact-base resume allocation.
+The earlier Wave A allocation snapshot is historical. Current GitHub delivery/review evidence and the archived task packets below supersede its stale `allocated_waiting_for_worker_branch` and `READY_TO_RESUME` prose. Future shared Cargo/workflow/composition/policy mutations remain serialized even though the prerequisite SQLx/PostgreSQL surfaces are now present on `main`. PR #241 is merged; only the separately allocated clean successor may mutate its exact allowlist after its own clean-ancestry start, test-only RED evidence and later GREEN reconstruction.
 
 
 ## Completed allocation — Interaction
@@ -427,12 +427,12 @@ write_authority: none
 ```
 
 
-## Waiting dependency — Durability journal-only substrate
+## Recovery successor ready for dispatch — Durability journal-only substrate
 
 ```yaml
 lane_id: OTV2-IMPL-DURABILITY
 issue: 167
-status: WAITING_DEPENDENCY
+status: RECOVERY_SUCCESSOR_READY_FOR_DISPATCH
 worker_alias: Oteryn: impl durability
 architecture_decision_issue: 187
 architecture_decision_pr: 190
@@ -444,8 +444,8 @@ ownership_correction_scope: active Durability task status/provenance/blocker/no-
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
 worker_branch: impl/game-durability-journal
 worker_branch_provenance: remote
-worker_branch_remote_head: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
-worker_pr: null
+worker_branch_remote_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
+worker_pr: 212
 local_unpublished_documentation_checkpoint: 3adf13ef17b3b7811aa4f73971456ecd321afcc2
 local_checkpoint_delivery_status: not_a_remote_delivery
 task_packet: docs/agents/tasks/active/OTV2-20260825-impl-durability.md
@@ -475,12 +475,12 @@ shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
 shared_cargo_ci_lease_pr: 181
 shared_policy_lease_pr: 185
 shared_leases: released
-blocker: Foundation reconnect durability boundary #192 is not yet merged
-write_authority: none_while_waiting_dependency
-next_action: keep #167 fail-closed until #192 merges, then issue a fresh exact-base Durability resume allocation
+blocker: legacy PR #212 ancestry is immutable evidence with a P0 provenance gap; its clean successor has not yet completed mandatory RED -> GREEN reconstruction
+write_authority: none_for_legacy_branch_successor_task_is_separate
+next_action: coordinator dispatches OTV2-20260828-impl-durability-successor from main a171410de07c2dab718f52f780d4314bdcc53604; do not write, qualify or merge PR #212
 ```
 
-PR #190 resolved the architecture question but did not implement Foundation or Durability. The existing Durability remote branch provenance remains `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741`; do not create a replacement Durability task/branch. #192 is the sole Foundation successor and #193 is its disjoint serialized registry successor.
+PR #190 resolved the architecture question but did not implement Foundation or Durability. Legacy `impl/game-durability-journal@fb30fba2a888835dfc7cbde27f940b79d7bfe05d` / PR #212 is immutable evidence only. PR #241 merged the independently required clean recovery allocation; its sole successor is `impl/game-durability-journal-recovery-240` with packet `OTV2-20260828-impl-durability-successor`, which must start from protected main and not import legacy ancestry. #192 and #193 are terminal historical predecessors.
 
 
 
@@ -633,8 +633,8 @@ OTV2-FND04-VERIFIER-CONSUMER:
   independent_exact_head_security_review: PASS_POST_MERGE_RECONCILIATION
 
 OTV2-IMPL-DURABILITY:
-  status: WAITING_DEPENDENCY
-  write_authority: none_while_waiting_dependency
+  status: RECOVERY_SUCCESSOR_READY_FOR_DISPATCH
+  write_authority: none_for_legacy_branch_successor_task_is_separate
   issue: 167
   coordinator_issue: 162
   architecture_decision_issue: 187
@@ -646,16 +646,16 @@ OTV2-IMPL-DURABILITY:
   ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
   architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
   worker_branch: impl/game-durability-journal
-  worker_branch_remote_head: 7ac06bd84a1a31fc9a3ea2560de8ae20cea96741
-  worker_pr: null
+  worker_branch_remote_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
+  worker_pr: 212
   local_unpublished_documentation_checkpoint: 3adf13ef17b3b7811aa4f73971456ecd321afcc2
   local_checkpoint_delivery_status: not_a_remote_delivery
   selected_stack: sqlx_0_9_0
   shared_integration_pr: 182
   shared_integration_merge_sha: 475288b29cadccb73e08eb488160169d296c7874
   shared_leases: released
-  blocker: Foundation successor #192 is not yet merged
-  next_action: keep #167 fail-closed until #192 merges, then issue a fresh exact-base Durability resume allocation
+  blocker: legacy PR #212 is immutable evidence with P0 provenance gap; clean successor TDD/CI/review is pending
+  next_action: dispatch OTV2-20260828-impl-durability-successor from main a171410de07c2dab718f52f780d4314bdcc53604; do not mutate legacy PR #212
 OTV2-IMPL-ABILITY:
   status: completed_released
   write_authority: none
@@ -692,19 +692,19 @@ OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM:
   write_authority: none
   resource_gate_issue: 116
   verifier_gate_issue: 115
-  blocker: OTV2-IMPL-DURABILITY is WAITING_DEPENDENCY on Foundation successor #192; no durable ReconnectAttemptJournal adapter is merged
+  blocker: OTV2-IMPL-DURABILITY clean successor is not yet merged; no durable ReconnectAttemptJournal adapter is merged
 OTV2-IMPL-CLIENT:
   status: WAITING_DEPENDENCY
-  blocker: Server Seam remains WAITING_DEPENDENCY because OTV2-IMPL-DURABILITY is WAITING_DEPENDENCY on Foundation successor #192
+  blocker: Server Seam remains WAITING_DEPENDENCY because the OTV2-IMPL-DURABILITY clean successor is not yet merged
 OTV2-IMPL-MOVE:
   status: WAITING_DEPENDENCY
-  blocker: Movement-only resource successor #139 plus Client/Server Seam dependency held by OTV2-IMPL-DURABILITY WAITING_DEPENDENCY on Foundation successor #192 and real QA E2E prerequisites are not integration-ready
+  blocker: Movement-only resource successor #139 plus Client/Server Seam dependency held by the OTV2-IMPL-DURABILITY clean successor and real QA E2E prerequisites are not integration-ready
 OTV2-IMPL-COMBAT:
   status: WAITING_DEPENDENCY
-  blocker: Movement and its Client/Server Seam/Durability dependency chain are held by OTV2-IMPL-DURABILITY WAITING_DEPENDENCY on Foundation successor #192
+  blocker: Movement and its Client/Server Seam/Durability dependency chain are held by the OTV2-IMPL-DURABILITY clean successor
 OTV2-IMPL-CHANNEL:
   status: WAITING_DEPENDENCY
-  blocker: OTV2-IMPL-DURABILITY is WAITING_DEPENDENCY on Foundation successor #192; no durable ReconnectAttemptJournal adapter is merged
+  blocker: OTV2-IMPL-DURABILITY clean successor is not yet merged; no durable ReconnectAttemptJournal adapter is merged
 OTV2-CONTENT-FORMAT-SPIKE:
   status: completed_released_owner_format_decision_pending
   write_authority: none

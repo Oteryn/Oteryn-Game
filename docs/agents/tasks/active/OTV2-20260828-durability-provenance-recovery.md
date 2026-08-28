@@ -4,7 +4,7 @@
 task_id: OTV2-20260828-durability-provenance-recovery
 title: Recover #167 Durability branch provenance
 mode: COORDINATE
-status: REVIEW_RECONCILIATION_REQUIRED
+status: COMPLETED_SUCCESSOR_RELEASED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/durability-provenance-recovery-240
@@ -21,6 +21,8 @@ successor_task_id: OTV2-20260828-impl-durability-successor
 successor_branch: impl/game-durability-journal-recovery-240
 successor_pr: null
 source_snapshot_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
+allocation_final_head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
+allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
 exact_final_head_evidence: immutable PR #241 review/check evidence after the final tracked-file commit; a commit cannot contain its own SHA
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260828-durability-provenance-recovery.md
@@ -34,7 +36,7 @@ external_repositories: []
 ## Proven incident state
 
 - `PROVEN`: protected `main` at recovery admission is `7c2da078596a7d2e27c3066ff74ac69b8b7f9af6`.
-- `PROVEN`: recovery allocation is published as PR #241 from `coord/durability-provenance-recovery-240`.
+- `PROVEN`: recovery allocation PR #241 exact final head `ca012ff2b42eefe4f27075455f097199aea63f8f` passed the required exact-head GitHub checks and native Codex review, then squash-merged as protected `main@a171410de07c2dab718f52f780d4314bdcc53604`.
 - `PROVEN`: the historical #167 branch is `impl/game-durability-journal`; PR #212 is Draft and must not qualify or merge.
 - `PROVEN`: destructive commit `cd808d396018832b632be26911105a36f0cb7a20` crossed #167 ownership boundaries.
 - `PROVEN`: restoration `73e17f418c63ec038f5aa7ef8f0888ac74b75aa2` was performed without the recovery allocation required by coordinator evidence on #162.
@@ -97,22 +99,23 @@ No `Cargo.toml`, `Cargo.lock`, Foundation, Server Seam, workflow, registry, comp
 
 - focused: `python tools/agents/validate_governance.py`
 - runtime E2E: `NOT_APPLICABLE` — this task only establishes recovery authority and does not change runtime behavior.
-- exact-head CI: required before allocation merge.
+- exact-head CI: PASS on PR #241 final head `ca012ff2b42eefe4f27075455f097199aea63f8f`; historical workflow runs `33176010182`, `33176010161`, `33175924454`, and `33175924492` are successful.
 
 ## Context checkpoint
 
 ```yaml
-status: REVIEW_RECONCILIATION_REQUIRED
+status: COMPLETED_SUCCESSOR_RELEASED
 branch: coord/durability-provenance-recovery-240
 pr: 241
-head_sha: null
-final_head_sha: null
-exact_head_evidence: record the exact post-repair PR #241 head in immutable PR review/check evidence; do not create a self-referential status commit
+head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
+final_head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
+allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
+exact_head_evidence: immutable PR #241 review/check evidence; no self-referential status commit was created
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260828-durability-provenance-recovery.md
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
   - docs/superpowers/plans/2026-08-28-durability-provenance-recovery.md
-blocker: fresh_exact_head_review_and_ci_required_after_task_identity_repair
-owner_action_required: null
-next_action: record the new exact PR #241 head in immutable evidence, run fresh whole-diff self-review/Codex/CI, then expected-head merge only if all gates are clean
+blocker: none_for_allocation; successor execution remains owned by OTV2-20260828-impl-durability-successor
+owner_action_required: coordinator must dispatch the separately allocated successor lifecycle from protected main a171410de07c2dab718f52f780d4314bdcc53604
+next_action: create exactly one clean successor branch from the recorded allocation merge SHA; preserve PR #212 as immutable evidence
 ```

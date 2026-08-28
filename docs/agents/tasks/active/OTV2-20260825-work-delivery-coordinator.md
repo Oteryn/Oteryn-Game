@@ -2,9 +2,9 @@
 
 \`\`\`yaml
 task_id: OTV2-20260825-work-delivery-coordinator
-title: Coordinate the post-blocker gameplay vertical slice
+title: Coordinate the post-blocker gameplay vertical slice and release the clean Durability successor
 mode: COORDINATE
-status: coordinating_successors
+status: coordinating_durability_successor_release
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
@@ -13,7 +13,7 @@ pr: null
 delivery_pr: 188
 prior_merged_pr: 186
 architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
-protected_main_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
+protected_main_sha: a171410de07c2dab718f52f780d4314bdcc53604
 architecture_decision_pr: 190
 architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
 foundation_successor_issue: 192
@@ -22,6 +22,10 @@ foundation_successor_allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76
 registry_successor_issue: 193
 registry_successor_merge_pr: 195
 registry_successor_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
+recovery_allocation_issue: 240
+recovery_allocation_pr: 241
+recovery_allocation_final_head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
+recovery_allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
 ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
 ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
 initial_published_pr_head_sha: e205b0620d433733e306777ab8e491d471b62677
@@ -33,7 +37,7 @@ final_head_sha: 0e26fa0c216cadf34ff5c83fa3be508f81106c41
 final_head_frozen_at: null
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-08-26T16:16:12+02:00
+updated_at: 2026-08-28T13:45:24Z
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration, and closeout; no single worker owns the programme
 owned_paths:
@@ -48,8 +52,8 @@ public_contracts: []
 depends_on:
   - Oteryn/Oteryn-Game#154
 blocks:
-  - CONFLICT: PR #194 records #192's merged allocation, while the worker-owned active packet and live allocation still say waiting_allocation_merge/allocation_pending_merge; no Foundation execution authority is asserted here
-  - #167 and Server Seam remain fail-closed WAITING_DEPENDENCY pending worker #192 packet reconciliation, Foundation execution/integration, and a fresh #167 resume allocation
+  - P0: historical PR #212 branch ancestry contains destructive cross-scope commit cd808d396018832b632be26911105a36f0cb7a20 and unallocated restoration 73e17f418c63ec038f5aa7ef8f0888ac74b75aa2; it remains immutable evidence only
+  - #167 and Server Seam remain fail-closed until the separately allocated clean successor completes its independent TDD, review and merge lifecycle
 cross_repository_coordination_id: OTV2-WORK-DELIVERY-POST-BLOCKER
 external_repositories: []
 \`\`\`
@@ -65,6 +69,13 @@ permitted.
 ## Outcome
 
 Create the durable execution lifecycle for the post-blocker gameplay vertical slice. This coordinator records live readiness, allocates only path-disjoint lanes through separate merged allocations, integrates only exact-head verified deliveries, and emits \`ARCHITECTURE_ESCALATION_REQUIRED\` instead of inventing material architecture decisions.
+
+## Current recovery authority — 2026-08-28
+
+- PROVEN: recovery allocation PR #241 final head ca012ff2b42eefe4f27075455f097199aea63f8f passed exact-head governance, architecture, authority and merge-gate workflows plus native Codex review, then merged as protected main a171410de07c2dab718f52f780d4314bdcc53604.
+- PROVEN: PR #212 remains Draft immutable evidence. Its only admitted reconstruction source is fb30fba2a888835dfc7cbde27f940b79d7bfe05d under the canonical #241 packet; no historical mutation is ratified.
+- PROVEN: `OTV2-20260828-impl-durability-successor` is the separate successor task on `impl/game-durability-journal-recovery-240`; it receives the clean implementation lifecycle from the protected allocation merge, not from PR #212 ancestry.
+- DERIVED: the sole current coordinator action is to dispatch that one successor from main a171410de07c2dab718f52f780d4314bdcc53604, retain #212, and wait for fresh successor-owned evidence before reconsidering Server Seam.
 
 ## Architecture and source of truth
 
@@ -192,11 +203,15 @@ PRs #171, #172 and #178 are now merged and their worker packets are archived/rel
 ## Context checkpoint
 
 \`\`\`yaml
-last_progress: PR #190 resolved #187; PR #194 merged the #192 allocation record as main@1063caf409af6cd4b25fa844e17a483b87e76ad6; PR #195 merged as current main@9878d42a21815027ef88067bfc59f8b40e78b473 and closed #193; #192 worker-owned allocation state remains CONFLICT
-status: coordinating_successors
+last_progress: PR #241 merged the canonical clean Durability recovery allocation as main a171410de07c2dab718f52f780d4314bdcc53604; legacy PR #212 remains immutable evidence and the separate successor is ready for coordinator dispatch
+status: coordinating_durability_successor_release
 branch: null
 head_sha: null
 pr: null
+recovery_allocation_issue: 240
+recovery_allocation_pr: 241
+recovery_allocation_final_head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
+recovery_allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
 delivery_pr: 188
 prior_merged_pr: 186
 final_head_sha: 0e26fa0c216cadf34ff5c83fa3be508f81106c41
@@ -214,7 +229,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
-blocker: CONFLICT — #192's merged allocation record conflicts with its worker-owned active packet/live allocation state; #167 and Server Seam remain fail-closed WAITING_DEPENDENCY
-next_action: worker #192 reconciles its own active packet from current main, then executes TDD; do not repeat allocation merge work
+owner_action_required: create the one separately allocated successor branch from main a171410de07c2dab718f52f780d4314bdcc53604; do not dispatch legacy PR #212
+blocker: clean successor has not yet produced its mandatory test-only RED generation, implementation GREEN generation, fresh exact-head CI or fresh independent review
+next_action: dispatch OTV2-20260828-impl-durability-successor on impl/game-durability-journal-recovery-240 from the recorded merge SHA; retain PR #212 and recompute downstream readiness only after the successor merges
 \`\`\`
