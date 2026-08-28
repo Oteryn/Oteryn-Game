@@ -102,6 +102,16 @@ OUTSIDE_ROUTING_PATTERNS = (
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b)",
         re.IGNORECASE,
     ),
+    re.compile(
+        r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?)\b.{0,160}"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
+        r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?)\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(
@@ -112,6 +122,13 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(r"\b(?:connector|router|transport)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
     re.compile(r"\bphysical(?:ly)?\b.{0,100}\b(?:connector|router|transport)\b.{0,100}\benforc", re.IGNORECASE),
+)
+
+META_ROUTING_COORDINATE_RE = re.compile(
+    r"Oteryn/Oteryn@[0-9a-f]{40}:ecosystem/agent-execution-routing-policy\.json"
+)
+EXPECTED_META_ROUTING_COORDINATE = (
+    f"Oteryn/Oteryn@{META_SHA}:ecosystem/agent-execution-routing-policy.json"
 )
 
 APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS = {
@@ -531,7 +548,16 @@ def _validate_routing_adjacent_sections(path: str, text: str, errors: list[str])
             )
 
 
+def _validate_meta_routing_coordinates(path: str, text: str, errors: list[str]) -> None:
+    coordinates = META_ROUTING_COORDINATE_RE.findall(text)
+    stale = sorted(
+        {coordinate for coordinate in coordinates if coordinate != EXPECTED_META_ROUTING_COORDINATE}
+    )
+    for coordinate in stale:
+        errors.append(f"{path}: stale META execution-routing coordinate: {coordinate}")
+
 def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> None:
+    _validate_meta_routing_coordinates(path, text, errors)
     extracted = _extract_canonical_section(path, text, errors)
     if extracted is None:
         return
@@ -544,6 +570,7 @@ def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> No
 
 
 def validate_surface_text(path: str, text: str, errors: list[str]) -> None:
+    _validate_meta_routing_coordinates(path, text, errors)
     extracted = _extract_canonical_section(path, text, errors)
     if extracted is None:
         return
