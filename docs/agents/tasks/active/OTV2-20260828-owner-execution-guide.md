@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: docs/owner-execution-guide-20260828
 issue: 253
-pr: null
+pr: 254
 base_sha: 12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: external GitHub PR evidence
+final_head_sha: external GitHub PR evidence
+final_head_frozen_at: 2026-08-28T23:15:00+02:00
 owner: owner-execution-guide-author-session
 created_at: 2026-08-28T22:56:24+02:00
-updated_at: 2026-08-28T23:14:00+02:00
+updated_at: 2026-08-28T23:15:00+02:00
 execution_budget_minutes: 90
 large_budget_reason: cross-prompt operational clarification and canonical owner runbook
 owned_paths:
@@ -98,8 +98,8 @@ No runtime/product code, Cargo/workspace, protocol/schema/resource registry, wor
 
 ### Exact-head CI
 
-- final head: external GitHub evidence after final content commit
-- trigger source: PR
+- final head: external GitHub PR evidence
+- trigger source: PR #254
 - workflow/run/job: pending
 - result: pending
 
@@ -121,13 +121,13 @@ No runtime/product code, Cargo/workspace, protocol/schema/resource registry, wor
 ## Context checkpoint
 
 ```yaml
-last_progress: owner runbook, read-only owner advisor, lifecycle registration, scheduler/README links and standardized five-lane Codex handoffs are content-complete; unchanged control-plane/architect/auditor prompts were verified already aligned
+last_progress: PR #254 is open; content is frozen after binding the task to the PR and must now be qualified without evidence-only commits
 status: validating
 branch: docs/owner-execution-guide-20260828
-head_sha: external GitHub branch/PR evidence
-pr: null
-final_head_sha: external GitHub evidence after final content commit
-final_head_frozen_at: pending PR creation
+head_sha: external GitHub PR evidence
+pr: 254
+final_head_sha: external GitHub PR evidence
+final_head_frozen_at: 2026-08-28T23:15:00+02:00
 blocker: exact-head CI, author whole-diff self-review and fresh independent Codex review remain required
-next_action: open the bounded governance PR and qualify its unchanged final head
+next_action: qualify the unchanged PR #254 head with exact-head CI, author whole-diff self-review and fresh independent Codex review
 ```
