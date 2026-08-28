@@ -5,7 +5,19 @@ from __future__ import annotations
 from validate_remote_desktop_prompt_routing import (
     CANONICAL_PROMPT_SECTION,
     validate_reusable_prompt_text,
+    validate_surface_text,
 )
+
+META_SHA = "e002fc7532188e73a0f495da3e20710541ed50e0"
+SURFACE_SECTION = f"""## Remote Desktop execution routing
+
+Game adopts the canonical META execution-routing authority at `Oteryn/Oteryn@{META_SHA}:ecosystem/agent-execution-routing-policy.json` by reference and cannot fork or weaken it. Game cannot broaden META exception reasons; the closed set remains `host_only_service`, `lan_or_hardware`, and `self_hosted_runner_diagnosis`.
+
+Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
+
+`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. Remote Desktop cannot be used as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.
+
+Every lifecycle-reusable prompt must contain exactly one canonical `## Remote Desktop execution routing` block enforced by the provider validator. This provider binding is repository/prompt enforcement only and MUST NOT be described as connector/router physical enforcement unless the actual Remote Desktop transport has a verified fail-closed hook consuming the same per-action semantics."""
 
 
 def assert_pass(text: str) -> None:
@@ -20,6 +32,20 @@ def assert_fail(text: str, needle: str) -> None:
     validate_reusable_prompt_text("prompt.md", text, errors)
     if not any(needle in error for error in errors):
         raise AssertionError(f"expected error containing {needle!r}, got: {errors}")
+
+
+def assert_surface_pass(text: str) -> None:
+    errors: list[str] = []
+    validate_surface_text("AGENTS.md", text, errors)
+    if errors:
+        raise AssertionError(f"expected surface PASS, got: {errors}")
+
+
+def assert_surface_fail(text: str, needle: str) -> None:
+    errors: list[str] = []
+    validate_surface_text("AGENTS.md", text, errors)
+    if not any(needle in error for error in errors):
+        raise AssertionError(f"expected surface error containing {needle!r}, got: {errors}")
 
 
 def test_exact_canonical_section_passes() -> None:
@@ -64,6 +90,41 @@ def test_physical_enforcement_claim_outside_section_fails() -> None:
 def test_duplicate_section_fails() -> None:
     text = CANONICAL_PROMPT_SECTION + "\n\n" + CANONICAL_PROMPT_SECTION + "\n"
     assert_fail(text, "must contain exactly one")
+
+
+def test_exact_canonical_surface_section_passes() -> None:
+    assert_surface_pass("# Surface\n\nordinary repository text\n\n" + SURFACE_SECTION + "\n")
+
+
+def test_modified_canonical_surface_section_fails() -> None:
+    modified = SURFACE_SECTION.replace(
+        "repository/prompt enforcement only",
+        "connector/router physical enforcement is active",
+    )
+    assert_surface_fail(
+        "# Surface\n\nordinary repository text\n\n" + modified + "\n",
+        "canonical Remote Desktop routing section must match exactly",
+    )
+
+
+def test_surface_remote_desktop_authority_outside_section_fails() -> None:
+    text = "# Surface\n\nUse Remote Desktop to inspect Git when convenient.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_direct_tool_discovery_outside_section_fails() -> None:
+    text = "# Surface\n\nTreat `ping` as ordinary capability discovery.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_physical_enforcement_claim_outside_section_fails() -> None:
+    text = "# Surface\n\nRemote Desktop connector/router physical enforcement is active.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_additional_restrictive_policy_outside_section_fails() -> None:
+    text = "# Surface\n\nRemote Desktop remains exception-only.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
 def main() -> int:
