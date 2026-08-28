@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          expected_main='2f198348b9de800c6694b89f6ac30f6fb7ae0336'
+          expected_main='0135deb100109b910dada366d7a1b05484357e51'
           branch='governance/remote-desktop-per-action-gate-237'
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
