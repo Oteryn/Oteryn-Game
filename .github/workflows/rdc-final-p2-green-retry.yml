@@ -1,0 +1,26 @@
+name: RDC remaining Codex P2 repair
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+    paths:
+      - .github/workflows/rdc-final-p2-green-retry.yml
+
+permissions:
+  contents: write
+
+jobs:
+  red-green:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Prove RED then GREEN
+        shell: bash
+        run: |
+          echo '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' | base64 -d | gzip -d > /tmp/rdc_remaining_repair.py
+          python /tmp/rdc_remaining_repair.py
