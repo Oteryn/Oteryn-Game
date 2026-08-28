@@ -46,10 +46,43 @@
       "CODEX_OPTIONAL",
       "CODEX_NOT_REQUIRED_BY_THIS_POLICY"
     ],
-    "multi_tag_rule": "HIGHEST_PRECEDENCE_MATCH_WINS",
-    "unknown_or_conflicting_classification": "FAIL_CLOSED_REVIEW_CLASSIFICATION_REQUIRED",
-    "classification_owner": "ALLOCATED_LANE_LEAD_OR_EXPLICIT_GOVERNING_TASK_RISK_METADATA",
-    "control_plane_must_not_invent_or_override_risk_tags": true,
+    "multi_tag_rule": "HIGHEST_PRECEDENCE_VALIDATED_MATCH_WINS",
+    "lane_lead_self_tags": {
+      "allowed": true,
+      "may_only_escalate": true,
+      "may_not_reduce_required_review": true,
+      "cannot_by_themselves_select": [
+        "CODEX_OPTIONAL",
+        "CODEX_NOT_REQUIRED_BY_THIS_POLICY"
+      ]
+    },
+    "authoritative_downgrade_sources": [
+      "EXPLICIT_GOVERNING_TASK_OR_ALLOCATION_RISK_METADATA_FROM_NON_WORKER_OWNER_ROLE",
+      "MECHANICAL_CHANGED_SCOPE_RULE"
+    ],
+    "mechanical_changed_scope_rules": {
+      "ORDINARY_DOCS_ONLY": {
+        "all_changed_paths_must_be_under": [
+          "docs/"
+        ],
+        "excluded_prefixes": [
+          "docs/agents/",
+          "docs/architecture/",
+          "docs/contracts/"
+        ],
+        "route": "CODEX_NOT_REQUIRED_BY_THIS_POLICY"
+      }
+    },
+    "low_risk_path_local_implementation": {
+      "route": "CODEX_NOT_REQUIRED_BY_THIS_POLICY",
+      "requires_explicit_governing_task_or_allocation_metadata": true,
+      "metadata_owner_must_not_be_allocated_worker": true,
+      "metadata_must_predate_candidate_qualification": true
+    },
+    "optional_route_requires_authoritative_validation": true,
+    "unvalidated_or_conflicting_classification": "CODEX_REQUIRED",
+    "control_plane_must_not_invent_risk_tags": true,
+    "control_plane_may_mechanically_reject_unvalidated_downgrade": true,
     "CODEX_REQUIRED": [
       "DURABLE_PERSISTENCE",
       "DURABLE_SCHEMA",
@@ -101,18 +134,30 @@
   },
   "control_plane": {
     "technical_discretion": "NONE",
-    "routing_method": "MECHANICALLY_APPLY_RISK_ROUTING_PRECEDENCE_TO_PROVIDED_OR_GOVERNING_RISK_TAGS",
+    "routing_method": "MECHANICALLY_VALIDATE_RISK_INPUTS_THEN_APPLY_PRECEDENCE",
     "must_verify_exact_head_review_evidence": true,
+    "must_reject_unvalidated_low_risk_or_optional_downgrade": true,
     "must_not_adjudicate_technical_findings": true,
     "technical_findings_return_to_lane_lead": true
   },
   "gate_semantics": {
     "codex_review_may_satisfy_independent_technical_review": true,
+    "successful_review_evidence": [
+      "EXPLICIT_PASS_BOUND_TO_EXACT_HEAD",
+      "NATIVE_CODEX_NO_SUGGESTIONS_SIGNAL_BOUND_TO_EXACT_HEAD_TRIGGER"
+    ],
+    "blocking_finding_severities": [
+      "P0",
+      "P1"
+    ],
     "conditions": [
       "fresh_non_authoring_reviewer_task",
       "exact_final_head",
       "qualified_for_requested_risk",
       "durable_github_evidence",
+      "successful_review_evidence_present",
+      "zero_unresolved_blocking_findings_on_exact_head",
+      "zero_unresolved_required_review_threads",
       "no_material_head_change_after_review"
     ],
     "does_not_replace_explicit_separate_governance_audit": true,
