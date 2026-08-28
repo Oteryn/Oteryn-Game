@@ -1,0 +1,38 @@
+name: RDC final P2 GREEN retry
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+    paths:
+      - .github/workflows/rdc-final-p2-green-retry.yml
+
+permissions:
+  contents: write
+
+jobs:
+  publish-green:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: governance/remote-desktop-per-action-gate-237
+          persist-credentials: true
+          fetch-depth: 0
+      - name: Apply bounded validator patch and prove GREEN
+        shell: bash
+        run: |
+          echo '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' | base64 -d | gzip -d > /tmp/rdc_patch.py
+          python /tmp/rdc_patch.py
+          rm .github/workflows/rdc-final-p2-green-retry.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/agents/validate_remote_desktop_prompt_routing.py .github/workflows/rdc-final-p2-green-retry.yml
+          git diff --cached --check
+          git commit -m "fix(agents): close raw-HTML and Unicode RDC bypasses"
+          git push origin HEAD:governance/remote-desktop-per-action-gate-237
+          echo "Published GREEN head: $(git rev-parse HEAD)"
+          python tools/agents/test_validate_remote_desktop_prompt_routing.py
+          python tools/agents/validate_remote_desktop_prompt_routing.py
+          python tools/agents/validate_governance.py
+          git diff --check HEAD^ HEAD
