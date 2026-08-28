@@ -290,6 +290,16 @@ impl AdmissionReconnectJournalV2 {
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
+        if let Some(authorization) = request.terminal_replacement() {
+            if !replacement_authorization_matches_record(authorization, record) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let mut transaction = self.pool.begin().await?;
+            if !replacement_receipt_matches(&mut transaction, authorization).await? {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            transaction.commit().await?;
+        }
         let state = self.terminal_state_for_record(record).await?;
         let outcome = match state {
             V2_PREPARED => {
