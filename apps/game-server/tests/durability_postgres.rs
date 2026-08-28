@@ -935,6 +935,78 @@ fn committed_prepare_replay_after_process_restart_routes_to_reconciliation()
 }
 
 #[test]
+fn committed_replay_requires_the_retained_transport_reservation()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database =
+                postgres::IsolatedPostgres::create("committed_replay_transport_reservation").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(96, 1, 0xe6, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                    .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let deleted = sqlx::query(
+                    "DELETE FROM game_durability_transport_ref_reservations \
+                     WHERE transport_ref = $1",
+                )
+                .bind(prepare.record().connection().transport_ref().to_bytes().as_slice())
+                .execute(&pool)
+                .await?;
+                assert_eq!(deleted.rows_affected(), 1);
+                pool.close().await;
+                drop(journal);
+
+                let recovered_journal =
+                    AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let (_recovered_flow, replay_prepare) =
+                    ReconnectDurabilityFlowV1::begin(prepare.record().clone());
+                assert!(matches!(
+                    recovered_journal.prepare(&replay_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    recovered_journal.reconcile(&replay_prepare).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn expired_prepared_replay_retires_incumbent_and_allows_fresh_attempt()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
