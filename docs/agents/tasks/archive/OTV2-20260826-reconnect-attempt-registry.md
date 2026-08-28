@@ -11,15 +11,16 @@ branch: null
 historical_branch: docs/reconnect-attempt-bound-193
 issue: 193
 pr: 195
-allocation_pr: 195
-allocation_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
+allocation_pr: 194
+allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
 base_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
 head_sha: null
 final_head_sha: null
+delivery_pr: 195
 delivery_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
 owner: ChatGPT registry worker for Issue #193
 created_at: 2026-08-26T15:02:00+02:00
-updated_at: 2026-08-28T14:05:00Z
+updated_at: 2026-08-28T14:14:00Z
 archived_at: 2026-08-28
 execution_budget_minutes: 60
 large_budget_reason: null

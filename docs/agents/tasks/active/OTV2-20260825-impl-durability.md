@@ -43,10 +43,11 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: impl durability
 created_at: 2026-08-25T23:24:03+02:00
-updated_at: 2026-08-28T13:45:24Z
+updated_at: 2026-08-28T14:14:00Z
 execution_budget_minutes: 120
 large_budget_reason: SQLx migration safety, durable idempotency/fencing and mandatory isolated PostgreSQL evidence
-owned_paths:
+owned_paths: []
+released_paths:
   - apps/game-server/src/durability/mod.rs
   - apps/game-server/src/durability/db.rs
   - apps/game-server/src/durability/schema.rs
