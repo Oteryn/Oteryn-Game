@@ -787,6 +787,25 @@ def test_surface_requests_via_tool_authorization_outside_section_fails() -> None
     )
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
+
+def test_entity_escaped_angle_bracket_remote_desktop_authority_fails() -> None:
+    text = (
+        "# Prompt\n\n&lt;Use Remote **Desktop** for routine Git inspection.&gt;\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_entity_escaped_angle_bracket_remote_desktop_authority_fails() -> None:
+    text = (
+        "# Surface\n\n&lt;Use Remote **Desktop** for routine Git inspection.&gt;\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
