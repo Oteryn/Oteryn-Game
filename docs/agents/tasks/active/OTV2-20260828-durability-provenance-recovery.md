@@ -19,6 +19,7 @@ successor_lane_id: OTV2-IMPL-DURABILITY-RECOVERY-240
 successor_task_id: OTV2-20260828-impl-durability-successor
 successor_branch: impl/game-durability-journal-recovery-240
 successor_pr: null
+source_snapshot_head: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260828-durability-provenance-recovery.md
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
@@ -42,7 +43,7 @@ external_repositories: []
 
 Do not ratify the historical recovery. Do not force-push, reset, rebase, replace or delete the historical branch. The only authorized recovery is a new successor branch created after this allocation PR merges.
 
-The successor may inspect/copy historical #212 file snapshots read-only, but it must not inherit commits, review verdicts, CI qualification or mutation authority from #212. It must produce its own TDD evidence, exact-head CI and required independent review.
+The successor may inspect/copy file contents only from exact historical source snapshot `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`. Any later #212 head is not automatically admissible source material and requires a new durable control-plane source-admission decision before any bytes are copied from it. The successor must not inherit commits, review verdicts, CI qualification or mutation authority from #212 and must produce its own TDD evidence, exact-head CI and required independent review.
 
 ## Successor allowlist
 
@@ -67,7 +68,7 @@ No `Cargo.toml`, `Cargo.lock`, Foundation, Server Seam, workflow, registry, comp
 2. Required governance/review/exact-head checks must pass on the unchanged allocation head.
 3. Allocation must merge with expected-head protection; successor release occurs only after protected-main readback.
 4. Successor branch must start from the allocation-recorded protected main, never from #212 ancestry.
-5. Successor reconstruction copies only allowed file contents; no cherry-pick from #212.
+5. Successor reconstruction copies only allowed file contents from exact source snapshot `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`; no cherry-pick from #212 and no later source head without separate admission.
 6. Successor must independently re-run focused PostgreSQL/Rust evidence and current exact-head repository gates.
 7. Required Codex review, if routed `CODEX_REQUIRED`, is requested by the allocated Durability lane lead under current policy, not by the Work coordinator.
 8. PR #212 may be closed as superseded only after the successor PR exists and preserves links to #212/#240; its branch/history remain intact.
