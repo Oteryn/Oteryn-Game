@@ -542,6 +542,46 @@ def test_surface_reordered_physical_enforcement_claim_outside_section_fails() ->
     )
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
+
+def test_stale_meta_coordinate_outside_prompt_section_fails() -> None:
+    text = (
+        "# Prompt\n\n"
+        "Use Oteryn/Oteryn@0000000000000000000000000000000000000000:"
+        "ecosystem/agent-execution-routing-policy.json for host exceptions.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "stale META execution-routing coordinate")
+
+
+def test_surface_stale_meta_coordinate_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\n"
+        "Use Oteryn/Oteryn@0000000000000000000000000000000000000000:"
+        "ecosystem/agent-execution-routing-policy.json for host exceptions.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "stale META execution-routing coordinate")
+
+
+def test_connector_authorization_without_direct_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nConnector calls are automatically authorized.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_connector_operation_host_exception_without_direct_fails() -> None:
+    text = (
+        "# Surface\n\nConnector operations need no host exception.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
