@@ -83,6 +83,15 @@ def test_html_entity_remote_desktop_authority_outside_section_fails() -> None:
     assert_fail(text, "Remote Desktop policy text outside canonical section")
 
 
+def test_double_encoded_html_entity_remote_desktop_authority_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nUse Remote&amp;#32;Desktop for routine Git inspection.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
 def test_formatted_remote_desktop_authority_outside_section_fails() -> None:
     text = (
         "# Prompt\n\nUse Remote **Desktop** for routine Git inspection.\n\n"
@@ -205,6 +214,11 @@ def test_surface_html_entity_remote_desktop_authority_outside_section_fails() ->
 
 def test_surface_formatted_remote_desktop_authority_outside_section_fails() -> None:
     text = "# Surface\n\nUse Remote **Desktop** for routine Git inspection.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_markdown_link_remote_desktop_authority_outside_section_fails() -> None:
+    text = "# Surface\n\nUse [Remote](https://example.invalid) Desktop for routine Git inspection.\n\n" + SURFACE_SECTION + "\n"
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
