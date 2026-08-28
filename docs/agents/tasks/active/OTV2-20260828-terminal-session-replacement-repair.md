@@ -25,7 +25,7 @@ admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 pr: 252
 owner: Oteryn: sol durability lead
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-28T22:39:00+02:00
+updated_at: 2026-08-28T22:47:24+02:00
 execution_budget_minutes: 180
 large_budget_reason: cross-lane Foundation/Durability repair with real PostgreSQL contention, replay and restart proof
 write_authority: exact_allocated_worker_scope_after_12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
@@ -168,11 +168,13 @@ No Cargo/lockfile/workflow/resource-registry/Server Seam/Client/Movement/Combat/
 - Foundation V2/terminal-authorization RED: `bff218dcc35a19b10c0a3dc1dbbc78e2cb41b306`, workflow run `33202516767`, job `98955532165`: expected missing canonical Foundation contract.
 - Complete runtime PostgreSQL RED: `0fc9de255394ba4ce1b919ad71ea47eeb3247e05`, workflow run `33204365030`, PostgreSQL job `98961526112`: 72 PASS / 6 expected FAIL on PostgreSQL 17.6.
 - Runtime GREEN before final composition: `aea85c41268f62486a45e37ed6142cd684ad89df`, workflow run `33207651906`, PostgreSQL job `98972703970`: 78 PASS / 0 FAIL on PostgreSQL 17.6.
-- Final composition source head before this checkpoint: `560eb1d30ad94986b9af3375735c3380b76d7070`; PR #252 was Draft, open and mergeable with exactly the 12 allocated paths.
-- On that source head, Rust workspace run `33208062237`, Architecture semantic audit `33208062163`, Merge authority audit `33208062198`, Agent governance `33208062254`, and Merge gate `33208062302` completed successfully.
-- A later Agent governance generation `33208318821` failed before checkout because PR metadata lacked the exact required `## Scope` and `## Validation` headings; corresponding Merge gate `33208318794` was cancelled. This is a PR-metadata qualification blocker, not a runtime/test failure.
+- Final composition head: `560eb1d30ad94986b9af3375735c3380b76d7070`; PR #252 was Draft, open and mergeable with exactly the 12 allocated paths at that generation.
+- On `560eb1d...`, Rust workspace run `33208062237`, Architecture semantic audit `33208062163`, Merge authority audit `33208062198`, Agent governance `33208062254`, and Merge gate `33208062302` completed successfully.
+- A later Agent governance generation `33208318821` failed before checkout because PR metadata lacked the exact required `## Scope` and `## Validation` headings; corresponding Merge gate `33208318794` was cancelled.
+- After `560eb1d...` and before the first checkpoint commit, concurrent exact commit `1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4` added the fresh test-only RED `runtime_reconciliation_requires_exact_replacement_receipt_binding` in `apps/game-server/src/durability/schema.rs`. It is in the current branch ancestry. Its hosted RED and subsequent GREEN have **not** been established by this checkpoint.
+- First durable checkpoint commit: `5382963922bd54a07ba5f301efd26e310500955f`, parent `1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4`. This proved the save did not overwrite the concurrent RED commit.
 
-The checkpoint commit itself moves the PR head and therefore invalidates prior exact-head qualification as a final integration proof. On resume, live GitHub is authoritative; do not infer the current head from the embedded source-head SHA above.
+Any tracked checkpoint commit moves the PR head and invalidates prior exact-head qualification as final integration proof. On resume, live GitHub is authoritative; resolve the current branch head, PR body, CI and review state before further mutation.
 
 ## Required validation
 
@@ -206,10 +208,11 @@ PR #243 remains open Draft historical evidence until Work decides its terminal d
 ## Context checkpoint
 
 ```yaml
-last_progress: runtime GREEN is proven at aea85c41268f62486a45e37ed6142cd684ad89df with 78/78 PostgreSQL tests; final composition source head 560eb1d30ad94986b9af3375735c3380b76d7070 was produced; latest qualification blocker is PR metadata headings only; this tracked checkpoint was requested and saved after that source head
+last_progress: runtime GREEN is proven at aea85c41268f62486a45e37ed6142cd684ad89df with 78/78 PostgreSQL tests; final composition reached 560eb1d30ad94986b9af3375735c3380b76d7070; concurrent commit 1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4 then added receipt-bound reconciliation RED; durable checkpoint 5382963922bd54a07ba5f301efd26e310500955f preserved that ancestry; current tracked correction records the new RED explicitly
 status: qualifying
 branch: impl/game-terminal-session-replacement-250
-checkpoint_source_head: 560eb1d30ad94986b9af3375735c3380b76d7070
+checkpoint_source_head: 1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4
+previous_checkpoint_commit: 5382963922bd54a07ba5f301efd26e310500955f
 head_sha: resolve_live_branch_on_resume
 pr: 252
 final_head_sha: null
@@ -238,6 +241,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: PR #252 body is missing the exact required headings `## Scope` and `## Validation`; checkpoint commit also requires a fresh exact-head qualification generation
-next_action: update PR #252 body to add the exact `## Scope` and `## Validation` headings while preserving the live branch head
+blocker: receipt-bound reconciliation RED from 1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4 still needs hosted RED classification and GREEN repair; PR #252 metadata also lacks exact `## Scope` and `## Validation` headings; all final exact-head CI/review must be regenerated after checkpoint commits
+next_action: run the Durability PostgreSQL harness on the live checkpoint head to classify `runtime_reconciliation_requires_exact_replacement_receipt_binding` before any production repair
 ```
