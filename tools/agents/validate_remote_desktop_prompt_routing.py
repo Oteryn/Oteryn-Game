@@ -181,6 +181,11 @@ def _markdown_line_records(text: str) -> list[tuple[int, int, str, bool]]:
                     fence = opening.group("fence")
                     fence_char = fence[0]
                     fence_len = len(fence)
+                elif raw.rfind("<!--") > raw.rfind("-->"):
+                    # Markdown HTML comments may begin after ordinary prose. The
+                    # current line remains operative, but following lines are inert
+                    # until the matching closer is observed.
+                    in_html_comment = True
 
         end = offset + len(segment)
         records.append((offset, end, raw, inert))
