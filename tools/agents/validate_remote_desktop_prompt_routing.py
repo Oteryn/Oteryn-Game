@@ -85,12 +85,12 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(r"\bget_config\b", re.IGNORECASE),
     re.compile(
         r"\bdirect\s+(?:connectors?|tools?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
         r"\bdirect\s+(?:connectors?|tools?)\b",
         re.IGNORECASE,
@@ -98,12 +98,18 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\bdirect(?:ly)?\b)"
         r"(?=.*\b(?:connectors?|tools?)\b)"
-        r"(?=.*\b(?:authori[sz]ation|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|host[- ]exception|exception|per[- ]action|exempt|without|"
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b)",
         re.IGNORECASE,
     ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
+    re.compile(
+        r"(?=.*\b(?:connector|router|transport)\b)"
+        r"(?=.*\bphysical(?:ly)?\b)"
+        r"(?=.*\benforc\w*\b)",
+        re.IGNORECASE,
+    ),
     re.compile(r"\b(?:connector|router|transport)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
     re.compile(r"\bphysical(?:ly)?\b.{0,100}\b(?:connector|router|transport)\b.{0,100}\benforc", re.IGNORECASE),
 )
