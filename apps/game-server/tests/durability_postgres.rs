@@ -1019,6 +1019,109 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
 }
 
 #[test]
+fn fresh_commit_requires_the_exact_retained_transport_reservation()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("fresh_commit_transport_reservation").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(99, 1, 0xe9, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                    .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let deleted = sqlx::query(
+                    "DELETE FROM game_durability_transport_ref_reservations WHERE transport_ref = $1",
+                )
+                .bind(
+                    prepare
+                        .record()
+                        .connection()
+                        .transport_ref()
+                        .to_bytes()
+                        .as_slice(),
+                )
+                .execute(&pool)
+                .await?;
+                assert_eq!(deleted.rows_affected(), 1);
+
+                assert!(matches!(
+                    journal.commit(&commit).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let session_id = prepare
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                let attempt_ref = prepare
+                    .record()
+                    .identity()
+                    .reconnect_attempt_ref()
+                    .to_be_bytes()
+                    .to_vec();
+                let attempt_state: i16 = sqlx::query_scalar(
+                    "SELECT state FROM game_durability_reconnect_attempts \
+                     WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(attempt_state, 1, "invalid reservation must not commit the attempt");
+                let session: (String, Option<Vec<u8>>, i16, Option<Vec<u8>>) = sqlx::query_as(
+                    "SELECT current_generation::text, current_transport_ref, session_state, prepared_attempt_ref \
+                     FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(session.0, "7");
+                assert!(session.1.is_none());
+                assert_eq!(session.2, 1);
+                assert_eq!(session.3.as_deref(), Some(attempt_ref.as_slice()));
+                let consumed: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_recovery_grant_consumptions",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(consumed, 0, "invalid reservation must not consume the recovery nonce");
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn expired_prepared_replay_retires_incumbent_and_allows_fresh_attempt()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {

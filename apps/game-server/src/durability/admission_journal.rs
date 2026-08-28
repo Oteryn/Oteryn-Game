@@ -1,10 +1,9 @@
 use crate::durability::{DurabilityError, schema};
 use oteryn_game_server::foundation::{
-    PendingCommandDispositionV1, ProtectionEntitlementV1, ReconnectCommitDispositionV1,
-    ReconnectCommitRequestV1, ReconnectDurabilityRecordV1,
+    MAX_OUTSTANDING_COMMANDS, PendingCommandDispositionV1, ProtectionEntitlementV1,
+    ReconnectCommitDispositionV1, ReconnectCommitRequestV1, ReconnectDurabilityRecordV1,
     ReconnectDurableReconciliationSnapshotV1, ReconnectPrepareDispositionV1,
     ReconnectPrepareRequestV1, ReconnectProofV1, RuntimeScopeRefV1,
-    MAX_OUTSTANDING_COMMANDS,
 };
 use serde_json::{Value, json};
 use sqlx::postgres::PgRow;
@@ -459,6 +458,17 @@ impl AdmissionReconnectJournal {
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         }
 
+        if !transport_reservation_binding_is_valid(
+            &mut transaction,
+            transport_ref.as_slice(),
+            session_id.as_slice(),
+            attempt_ref.as_slice(),
+        )
+        .await?
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+
         if let Some(recovery_grant_nonce) = recovery_grant_nonce.as_deref() {
             let consumed = sqlx::query(
                 "INSERT INTO game_durability_recovery_grant_consumptions (\
@@ -752,6 +762,32 @@ fn canonical_bytes(value: &Value) -> Option<Vec<u8>> {
 
 fn canonical_u64_text(value: &Value) -> Option<String> {
     value.as_u64().map(|value| value.to_string())
+}
+
+async fn transport_reservation_binding_is_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    transport_ref: &[u8],
+    session_id: &[u8],
+    attempt_ref: &[u8],
+) -> Result<bool, DurabilityError> {
+    let reservation = sqlx::query(
+        "SELECT uuid_send(game_session_id) AS game_session_id, reconnect_attempt_ref \
+         FROM game_durability_transport_ref_reservations WHERE transport_ref = $1",
+    )
+    .bind(transport_ref)
+    .fetch_optional(&mut **transaction)
+    .await?;
+    let Some(reservation) = reservation else {
+        return Ok(false);
+    };
+    Ok(reservation
+        .try_get::<Vec<u8>, _>("game_session_id")?
+        .as_slice()
+        == session_id
+        && reservation
+            .try_get::<Vec<u8>, _>("reconnect_attempt_ref")?
+            .as_slice()
+            == attempt_ref)
 }
 
 async fn active_committed_binding_is_valid(
