@@ -129,6 +129,16 @@ OUTSIDE_ROUTING_PATTERNS = (
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
+    re.compile(
+    r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
+    r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b",
+    re.IGNORECASE,
+),
+re.compile(
+    r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b.{0,160}"
+    r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
+    re.IGNORECASE,
+),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(
