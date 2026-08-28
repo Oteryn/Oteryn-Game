@@ -16,7 +16,7 @@ historical_pr: 212
 pr: null
 owner: Oteryn: sol durability lead
 allocation_branch: coord/durability-provenance-recovery-240
-allocation_pr: null
+allocation_pr: 241
 allocation_merge_sha: null
 admission_main_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
 source_snapshot_pr: 212
@@ -40,7 +40,7 @@ owned_paths:
 
 ## Start gate
 
-This task is deliberately non-mutating until the recovery allocation PR created for Issue #240 is merged and its merge SHA is read back from protected `main`.
+This task is deliberately non-mutating until recovery allocation PR #241 is merged and its merge SHA is read back from protected `main`.
 
 After that merge, the Work coordinator records the exact successor base from current protected main and creates `impl/game-durability-journal-recovery-240` from that SHA. The worker must not branch from, merge from, cherry-pick from, rebase onto, reset to, or force-update the historical `impl/game-durability-journal` branch.
 
@@ -71,7 +71,7 @@ The successor must not copy the final tests and final implementation in one gene
 2. Copy only the exact frozen regression harness blobs:
    - `apps/game-server/tests/durability_postgres.rs` = `460ad5888d8e870bbeda50a3dc8f64b24a30c1cb`;
    - `apps/game-server/tests/support/postgres.rs` = `bcb243f6c4823a14ec8116b72439c2c79c115d94`.
-3. Update this successor task packet to `TDD_RED_PENDING` / exact current head and commit the test-only generation.
+3. Update this successor task packet to `TDD_RED_PENDING`; exact current head is then recorded in immutable successor-PR/check evidence because a commit cannot contain its own SHA.
 4. Open the successor PR as Draft before adding any production Durability file.
 5. Run the focused Durability test target on this exact test-only head and preserve a visible **FAIL** caused by the deliberately absent production Durability module (`apps/game-server/src/durability/mod.rs` / equivalent missing-module compile failure). Skipped/not-run is not RED.
 
@@ -104,7 +104,7 @@ Any need for an unowned path is `SHARED_LEASE_REQUIRED`; any need to change pers
 3. Run the isolated PostgreSQL 17 Durability harness and preserve exact pass/fail evidence on the GREEN successor.
 4. Run Rust 1.94 formatting and strict Clippy for affected targets plus applicable game-server/package/workspace tests.
 5. Verify changed paths are exactly within the successor allowlist.
-6. Freeze exact final head after implementation/task metadata are complete.
+6. Freeze exact final head after implementation/task metadata are complete; record it in immutable successor PR/task-tracker evidence rather than a self-referential status commit.
 7. Perform mandatory whole-diff self-review.
 8. Resolve current protected-main `CODEX_REVIEW_POLICY.json`; when `CODEX_REQUIRED`, the Durability lane lead requests the strict read-only exact-head review under standing authorization.
 9. Require zero unresolved P0/P1/P2 findings and required review threads.
@@ -119,6 +119,7 @@ branch: impl/game-durability-journal-recovery-240
 head_sha: null
 final_head_sha: null
 pr: null
+allocation_pr: 241
 owned_paths:
   - apps/game-server/build.rs
   - apps/game-server/migrations/0001_admission_reconnect_journal.sql
@@ -130,7 +131,7 @@ owned_paths:
   - apps/game-server/tests/durability_postgres.rs
   - apps/game-server/tests/support/postgres.rs
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
-blocker: recovery_allocation_pr_not_merged
+blocker: recovery_allocation_pr_241_not_merged
 owner_action_required: null
-next_action: after allocation merge, create the successor branch from the allocation-recorded protected-main SHA, publish the test-only RED generation, then restore implementation blobs only after RED evidence exists
+next_action: after PR #241 allocation merge, create the successor branch from the allocation-recorded protected-main SHA, publish the test-only RED generation, then restore implementation blobs only after RED evidence exists
 ```
