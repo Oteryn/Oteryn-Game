@@ -1,0 +1,29 @@
+[package]
+name = "oteryn-client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "app"
+release-role = "production"
+
+[dependencies]
+oteryn-client-runtime = { version = "=0.1.0", path = "../../crates/client-runtime" }
+oteryn-diagnostics = { version = "=0.1.0", path = "../../crates/diagnostics" }
+oteryn-foundation = { version = "=0.1.0", path = "../../crates/foundation" }
+oteryn-identity = { version = "=0.1.0", path = "../../crates/identity" }
+oteryn-input-actions = { version = "=0.1.0", path = "../../crates/input-actions" }
+oteryn-input-platform = { version = "=0.1.0", path = "../../crates/input-platform" }
+oteryn-platform-client = { version = "=0.1.0", path = "../../crates/platform-client" }
+oteryn-platform-contracts = { version = "=0.1.0", path = "../../crates/platform-contracts" }
+oteryn-renderer = { version = "=0.1.0", path = "../../crates/renderer" }
+
+[target.'cfg(windows)'.dependencies]
+winit.workspace = true
+
+[lints]
+workspace = true

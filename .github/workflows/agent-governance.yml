@@ -1,0 +1,190 @@
+name: Agent governance
+
+run-name: >-
+  Agent governance • ${{ github.event_name }} •
+  ${{ github.event.pull_request.number || github.event.inputs.pull_request_number || github.ref_name }}
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      pull_request_number:
+        description: 'Open PR number, e.g. 58 (a pasted "pull_request_number: 58" is also accepted)'
+        required: true
+        type: string
+      expected_head_sha:
+        description: 'Exact 40-character PR head SHA (a pasted "expected_head_sha: ..." is also accepted)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: agent-governance-${{ github.event.pull_request.number || github.event.inputs.pull_request_number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Agent governance / validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      TARGET_SHA: ${{ github.sha }}
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Verify pull request target and metadata
+        if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch'
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REPOSITORY: ${{ github.repository }}
+          EVENT_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DISPATCH_PR_NUMBER: ${{ github.event.inputs.pull_request_number }}
+          DISPATCH_EXPECTED_HEAD_SHA: ${{ github.event.inputs.expected_head_sha }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+          import urllib.error
+          import urllib.request
+
+          event_name = os.environ["EVENT_NAME"]
+          repository = os.environ["REPOSITORY"]
+          errors: list[str] = []
+
+          def normalize_labeled_input(raw: str, label: str) -> str:
+              value = raw.strip()
+              prefix = f"{label}:"
+              if value.lower().startswith(prefix.lower()):
+                  value = value[len(prefix):].strip()
+              return value
+
+          if event_name == "workflow_dispatch":
+              number_text = normalize_labeled_input(
+                  os.environ.get("DISPATCH_PR_NUMBER", ""),
+                  "pull_request_number",
+              )
+              expected_head = normalize_labeled_input(
+                  os.environ.get("DISPATCH_EXPECTED_HEAD_SHA", ""),
+                  "expected_head_sha",
+              ).lower()
+              event_sha = os.environ.get("EVENT_SHA", "").strip().lower()
+
+              if re.fullmatch(r"[1-9][0-9]*", number_text) is None:
+                  errors.append("pull_request_number must be a positive integer")
+              if re.fullmatch(r"[0-9a-f]{40}", expected_head) is None:
+                  errors.append("expected_head_sha must be a full lowercase 40-character SHA")
+              if expected_head != event_sha:
+                  errors.append(
+                      "workflow dispatch ref does not resolve to expected_head_sha; "
+                      "select the exact PR head branch before running"
+                  )
+          else:
+              number_text = os.environ.get("EVENT_PR_NUMBER", "").strip()
+              expected_head = os.environ.get("EVENT_PR_HEAD_SHA", "").strip().lower()
+
+              if re.fullmatch(r"[1-9][0-9]*", number_text) is None:
+                  errors.append("pull request event is missing a valid PR number")
+              if re.fullmatch(r"[0-9a-f]{40}", expected_head) is None:
+                  errors.append("pull request event head SHA is invalid")
+
+          if errors:
+              for error in errors:
+                  print(f"- {error}", file=sys.stderr)
+              raise SystemExit(1)
+
+          request = urllib.request.Request(
+              f"https://api.github.com/repos/{repository}/pulls/{number_text}",
+              headers={
+                  "Accept": "application/vnd.github+json",
+                  "Authorization": f"Bearer {os.environ['GH_TOKEN']}",
+                  "X-GitHub-Api-Version": "2022-11-28",
+              },
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  pull = json.load(response)
+          except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as exc:
+              print(f"unable to read pull request metadata: {exc}", file=sys.stderr)
+              raise SystemExit(1) from exc
+
+          title = pull.get("title", "")
+          body = pull.get("body") or ""
+          head_sha = pull.get("head", {}).get("sha", "").lower()
+          head_repository = pull.get("head", {}).get("repo", {}).get("full_name", "")
+          base_ref = pull.get("base", {}).get("ref", "")
+          state = pull.get("state", "")
+
+          if state != "open":
+              errors.append("governance validation requires an open pull request")
+          if head_sha != expected_head:
+              errors.append(
+                  "pull request head moved after the triggering event or dispatch SHA was recorded"
+              )
+          if head_repository != repository:
+              errors.append("governance validation only accepts same-repository pull request heads")
+          if base_ref != "main":
+              errors.append("governance validation only accepts pull requests targeting main")
+          if re.fullmatch(r"[0-9a-f]{40}", head_sha) is None:
+              errors.append("live pull request head SHA is invalid")
+
+          pattern = re.compile(
+              r"^(feat|fix|docs|refactor|perf|test|build|ci|chore|revert)"
+              r"(\([a-z0-9][a-z0-9._/-]*\))?!?: [A-Za-z0-9].+$"
+          )
+          if len(title) > 72:
+              errors.append("PR title must be at most 72 characters")
+          if not pattern.fullmatch(title):
+              errors.append("PR title must follow type(scope): imperative summary")
+          for heading in ("## Summary", "## Scope", "## Validation"):
+              if heading not in body:
+                  errors.append(f"PR body is missing {heading}")
+
+          if errors:
+              for error in errors:
+                  print(f"- {error}", file=sys.stderr)
+              raise SystemExit(1)
+
+          with open(os.environ["GITHUB_ENV"], "a", encoding="utf-8") as env_file:
+              env_file.write(f"TARGET_SHA={head_sha}\n")
+
+          print(f"Validated live PR metadata and exact target head {head_sha}.")
+          PY
+
+      - name: Check out exact target
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ env.TARGET_SHA }}
+        run: |
+          actual_sha="$(git rev-parse HEAD)"
+          test "$actual_sha" = "$EXPECTED_SHA"
+          echo "Validated exact checkout: $actual_sha"
+
+      - name: Validate agent governance
+        run: python tools/agents/validate_governance.py
+
+      - name: Validate repository policy
+        run: python tools/repository/validate_repository_policy.py

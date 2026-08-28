@@ -1,0 +1,20 @@
+[package]
+name = "oteryn-client-runtime"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[package.metadata.oteryn]
+category = "runtime"
+release-role = "production"
+
+[dependencies]
+oteryn-diagnostics = { version = "=0.1.0", path = "../diagnostics" }
+oteryn-foundation = { version = "=0.1.0", path = "../foundation" }
+tokio.workspace = true
+
+[lints]
+workspace = true

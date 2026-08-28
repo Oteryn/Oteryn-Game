@@ -1,0 +1,37 @@
+{
+  "format": "oteryn-worldmap-normalized-v1",
+  "source": {
+    "name": "synthetic-example",
+    "client_version": "synthetic"
+  },
+  "tiles": [
+    {
+      "coordinate": {"x": 100, "y": 200, "z": 7},
+      "observed": true,
+      "sequence": 1,
+      "contents": [
+        {
+          "stack_index": 0,
+          "client_appearance_id": 10,
+          "semantic_class": "ground",
+          "server_otb_id": 1000,
+          "mapping_status": "MAPPED"
+        },
+        {
+          "stack_index": 1,
+          "client_appearance_id": 11,
+          "semantic_class": "static_item",
+          "server_otb_id": 1001,
+          "mapping_status": "MAPPED"
+        }
+      ]
+    },
+    {
+      "coordinate": {"x": 101, "y": 200, "z": 7},
+      "observed": false,
+      "sequence": 1,
+      "contents": []
+    }
+  ],
+  "entities": []
+}
