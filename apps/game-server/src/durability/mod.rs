@@ -188,7 +188,12 @@ impl AdmissionReconnectJournalV2 {
                  WHERE game_session_id = encode($1, 'hex')::uuid \
                    AND reconnect_attempt_ref = $2 AND state = $4",
             )
-            .bind(authorization.predecessor_game_session_id().as_bytes().as_slice())
+            .bind(
+                authorization
+                    .predecessor_game_session_id()
+                    .as_bytes()
+                    .as_slice(),
+            )
             .bind(prepared_attempt_ref.as_slice())
             .bind(V2_STALE_TERMINAL)
             .bind(V2_PREPARED)
@@ -209,7 +214,12 @@ impl AdmissionReconnectJournalV2 {
                AND scope_ownership_generation <= $2::text::numeric(20, 0) \
                AND session_state IN (1, 2)",
         )
-        .bind(authorization.predecessor_game_session_id().as_bytes().as_slice())
+        .bind(
+            authorization
+                .predecessor_game_session_id()
+                .as_bytes()
+                .as_slice(),
+        )
         .bind(authorized_scope.to_string())
         .bind(V2_TERMINAL_SESSION)
         .bind(
@@ -241,7 +251,12 @@ impl AdmissionReconnectJournalV2 {
              ) ON CONFLICT DO NOTHING",
         )
         .bind(character_id.as_slice())
-        .bind(authorization.predecessor_game_session_id().as_bytes().as_slice())
+        .bind(
+            authorization
+                .predecessor_game_session_id()
+                .as_bytes()
+                .as_slice(),
+        )
         .bind(candidate_session_id.as_slice())
         .bind(
             authorization
@@ -262,7 +277,7 @@ impl AdmissionReconnectJournalV2 {
         }
 
         insert_candidate_session_v2(&mut transaction, record).await?;
-        ensure_precommit_continuity_v2(&mut transaction, record).await?;
+        ensure_precommit_continuity_v2(&mut transaction, record, authorization).await?;
 
         let disposition = prepare_new_candidate_attempt_v2(&mut transaction, record).await?;
         transaction.commit().await?;
@@ -347,13 +362,19 @@ impl AdmissionReconnectJournalV2 {
              WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
         )
         .bind(record.identity().game_session_id().as_bytes().as_slice())
-        .bind(record.identity().reconnect_attempt_ref().to_be_bytes().as_slice())
+        .bind(
+            record
+                .identity()
+                .reconnect_attempt_ref()
+                .to_be_bytes()
+                .as_slice(),
+        )
         .fetch_optional(&self.pool)
         .await?;
         let Some(row) = row else {
             return Err(DurabilityError::InvalidStoredState);
         };
-        if row.try_get::<String, _>("record_json")? != encode_record_v2(record).to_string() {
+        if row.try_get::<String, _>("record_json")? != encode_record_v2(record) {
             return Err(DurabilityError::InvalidStoredState);
         }
         row.try_get("state").map_err(DurabilityError::from)
@@ -381,7 +402,10 @@ fn replacement_predecessor_row_matches(
     authorization: &TerminalGameSessionReplacementAuthorizationV1,
 ) -> Result<bool, DurabilityError> {
     Ok(row.try_get::<Vec<u8>, _>("game_session_id")?.as_slice()
-        == authorization.predecessor_game_session_id().as_bytes().as_slice()
+        == authorization
+            .predecessor_game_session_id()
+            .as_bytes()
+            .as_slice()
         && row.try_get::<String, _>("account_id")? == authorization.account_id()
         && row.try_get::<Vec<u8>, _>("character_id")?.as_slice()
             == authorization.character_id().as_bytes().as_slice()
@@ -440,7 +464,10 @@ async fn replacement_receipt_matches(
     Ok(row
         .try_get::<Vec<u8>, _>("predecessor_game_session_id")?
         .as_slice()
-        == authorization.predecessor_game_session_id().as_bytes().as_slice()
+        == authorization
+            .predecessor_game_session_id()
+            .as_bytes()
+            .as_slice()
         && row.try_get::<String, _>("predecessor_connection_generation")?
             == authorization
                 .predecessor_connection_generation()
@@ -462,7 +489,8 @@ async fn insert_candidate_session_v2(
     record: &ReconnectDurabilityRecordV1,
 ) -> Result<(), DurabilityError> {
     let identity = record.identity();
-    let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) = scope_storage_v2(record);
+    let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) =
+        scope_storage_v2(record);
     let inserted = sqlx::query(
         "INSERT INTO game_durability_reconnect_sessions (\
             game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
@@ -503,15 +531,12 @@ async fn insert_candidate_session_v2(
 async fn ensure_precommit_continuity_v2(
     transaction: &mut Transaction<'_, Postgres>,
     record: &ReconnectDurabilityRecordV1,
+    authorization: &TerminalGameSessionReplacementAuthorizationV1,
 ) -> Result<(), DurabilityError> {
     let identity = record.identity();
     let (state, fenced_generation, rearm_state) = match record.continuity().protection_entitlement()
     {
-        ProtectionEntitlementV1::Unused => (
-            V2_PROTECTION_UNUSED,
-            None,
-            V2_PROTECTION_REARM_READY,
-        ),
+        ProtectionEntitlementV1::Unused => (V2_PROTECTION_UNUSED, None, V2_PROTECTION_REARM_READY),
         ProtectionEntitlementV1::Fenced { generation } => (
             V2_PROTECTION_FENCED,
             Some(generation.to_string()),
@@ -540,7 +565,78 @@ async fn ensure_precommit_continuity_v2(
     .bind(rearm_state)
     .execute(&mut **transaction)
     .await?;
-    if inserted.rows_affected() != 1 {
+    if inserted.rows_affected() == 1 {
+        return Ok(());
+    }
+
+    // A terminal replacement may inherit the exact same loss-epoch continuity row.
+    // Validate it without changing entitlement/rearm timestamps, then rebind only the
+    // GameSession context under the same predecessor->candidate transaction.
+    let existing = sqlx::query(
+        "SELECT account_id::text AS account_id, uuid_send(world_id) AS world_id, \
+                uuid_send(context_game_session_id) AS context_game_session_id, \
+                original_grace_deadline, protection_entitlement_state, \
+                protection_fenced_generation::text AS protection_fenced_generation, \
+                protection_rearm_state \
+         FROM game_durability_control_loss_continuity \
+         WHERE character_id = encode($1, 'hex')::uuid \
+           AND control_loss_epoch = $2::text::numeric(20, 0) FOR UPDATE",
+    )
+    .bind(identity.character_id().as_bytes().as_slice())
+    .bind(record.continuity().control_loss_epoch().get().to_string())
+    .fetch_optional(&mut **transaction)
+    .await?;
+    let Some(existing) = existing else {
+        return Err(DurabilityError::InvalidStoredState);
+    };
+    let context: Vec<u8> = existing.try_get("context_game_session_id")?;
+    let stored_fenced_generation: Option<String> =
+        existing.try_get("protection_fenced_generation")?;
+    let exact_continuity = existing.try_get::<String, _>("account_id")? == identity.account_id()
+        && existing.try_get::<Vec<u8>, _>("world_id")?.as_slice()
+            == identity.world_id().as_bytes().as_slice()
+        && existing.try_get::<i64, _>("original_grace_deadline")?
+            == record.continuity().original_grace_deadline()
+        && existing.try_get::<i16, _>("protection_entitlement_state")? == state
+        && stored_fenced_generation.as_deref() == fenced_generation.as_deref()
+        && existing.try_get::<i16, _>("protection_rearm_state")? == rearm_state;
+    if !exact_continuity {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+
+    let candidate_game_session_id = identity.game_session_id();
+    let candidate_session_id = candidate_game_session_id.as_bytes();
+    if context.as_slice() == candidate_session_id.as_slice() {
+        return Ok(());
+    }
+    if context.as_slice()
+        != authorization
+            .predecessor_game_session_id()
+            .as_bytes()
+            .as_slice()
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+
+    let rebound = sqlx::query(
+        "UPDATE game_durability_control_loss_continuity \
+         SET context_game_session_id = encode($3, 'hex')::uuid \
+         WHERE character_id = encode($1, 'hex')::uuid \
+           AND control_loss_epoch = $2::text::numeric(20, 0) \
+           AND context_game_session_id = encode($4, 'hex')::uuid",
+    )
+    .bind(identity.character_id().as_bytes().as_slice())
+    .bind(record.continuity().control_loss_epoch().get().to_string())
+    .bind(candidate_session_id.as_slice())
+    .bind(
+        authorization
+            .predecessor_game_session_id()
+            .as_bytes()
+            .as_slice(),
+    )
+    .execute(&mut **transaction)
+    .await?;
+    if rebound.rows_affected() != 1 {
         return Err(DurabilityError::InvalidStoredState);
     }
     Ok(())
@@ -608,7 +704,8 @@ async fn insert_attempt_v2(
     state: i16,
 ) -> Result<(), DurabilityError> {
     let identity = record.identity();
-    let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) = scope_storage_v2(record);
+    let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) =
+        scope_storage_v2(record);
     let encoded_record = encode_record_v2(record).to_string();
     let attempt_ref = identity.reconnect_attempt_ref().to_be_bytes();
     let transport_ref = record.connection().transport_ref().to_bytes();
@@ -828,7 +925,9 @@ mod terminal_replacement_schema_red_tests {
     #[test]
     fn terminal_replacement_forward_syncs_lagging_scope_fence_atomically() {
         assert!(
-            MIGRATION.contains("session_state SMALLINT NOT NULL DEFAULT 1 CHECK (session_state BETWEEN 1 AND 3)"),
+            MIGRATION.contains(
+                "session_state SMALLINT NOT NULL DEFAULT 1 CHECK (session_state BETWEEN 1 AND 3)"
+            ),
             "terminal predecessor replacement requires an explicit durable TERMINAL session state before any forward scope synchronization can be committed"
         );
         assert!(
@@ -883,7 +982,9 @@ mod terminal_replacement_schema_red_tests {
     #[test]
     fn terminal_replacement_fences_predecessor_prepared_attempt_against_late_commit() {
         assert!(
-            MIGRATION.contains("session_state SMALLINT NOT NULL DEFAULT 1 CHECK (session_state BETWEEN 1 AND 3)"),
+            MIGRATION.contains(
+                "session_state SMALLINT NOT NULL DEFAULT 1 CHECK (session_state BETWEEN 1 AND 3)"
+            ),
             "the predecessor needs a durable terminal state that late COMMIT validation can fail closed against"
         );
     }
@@ -932,6 +1033,7 @@ mod terminal_replacement_schema_red_tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used, clippy::too_many_arguments)]
 mod terminal_replacement_foundation_red_tests {
     use oteryn_game_server::foundation::{
         AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId,
@@ -1081,15 +1183,9 @@ mod terminal_replacement_foundation_red_tests {
         current_scope: u64,
     ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
     {
-        let facts = FreshAdmissionFacts::new(
-            [0x44; 32],
-            character(11)?,
-            world(12)?,
-            channel(13)?,
-            9,
-            10,
-        )
-        .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let facts =
+            FreshAdmissionFacts::new([0x44; 32], character(11)?, world(12)?, channel(13)?, 9, 10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
         let initial_transport = AuthenticatedTransportRefV1::decode(&[0x70; 16])
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
         let commit = FreshAdmissionCommit::from_facts(game_session(10)?, facts, initial_transport)
@@ -1130,9 +1226,7 @@ mod terminal_replacement_foundation_red_tests {
             authorize(
                 predecessor_snapshot(
                     GameSessionState::Active,
-                    Some(
-                        AuthenticatedTransportRefV1::decode(&[0x70; 16]).expect("transport"),
-                    ),
+                    Some(AuthenticatedTransportRefV1::decode(&[0x70; 16]).expect("transport"),),
                     11,
                 )
                 .expect("snapshot"),
@@ -1155,9 +1249,7 @@ mod terminal_replacement_foundation_red_tests {
             authorize(
                 predecessor_snapshot(
                     GameSessionState::Terminal,
-                    Some(
-                        AuthenticatedTransportRefV1::decode(&[0x70; 16]).expect("transport"),
-                    ),
+                    Some(AuthenticatedTransportRefV1::decode(&[0x70; 16]).expect("transport"),),
                     11,
                 )
                 .expect("snapshot"),
@@ -1254,7 +1346,8 @@ mod terminal_replacement_foundation_red_tests {
 
     #[test]
     fn terminal_replacement_authorization_rejects_candidate_account_mismatch() {
-        let candidate = candidate_record(20, OTHER_ACCOUNT, 11, 12, 7, 9, 11, 1).expect("candidate");
+        let candidate =
+            candidate_record(20, OTHER_ACCOUNT, 11, 12, 7, 9, 11, 1).expect("candidate");
         assert!(
             authorize(
                 predecessor_snapshot(GameSessionState::Terminal, None, 11).expect("snapshot"),
@@ -1345,7 +1438,8 @@ mod terminal_replacement_foundation_red_tests {
             let record = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 10, 1).expect("record");
             let attempt = record.identity().reconnect_attempt_ref();
             let transport = record.connection().transport_ref();
-            let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
             budget.reserve(attempt, transport).expect("reserve");
             let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record, None);
             flow.accept_prepare_completion(
@@ -1376,7 +1470,8 @@ mod terminal_replacement_foundation_red_tests {
             let record = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 10, 1).expect("record");
             let attempt = record.identity().reconnect_attempt_ref();
             let transport = record.connection().transport_ref();
-            let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
             budget.reserve(attempt, transport).expect("reserve");
             let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
             flow.accept_prepare_completion(

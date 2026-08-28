@@ -203,13 +203,6 @@ mod terminal_replacement_postgres_red_tests {
             self.v2.legacy().commit(request).await
         }
 
-        async fn reconcile(
-            &self,
-            request: &oteryn_game_server::foundation::ReconnectPrepareRequestV1,
-        ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
-            self.v2.legacy().reconcile(request).await
-        }
-
         async fn prepare_v2(
             &self,
             request: &ReconnectPrepareRequestV2,
@@ -457,15 +450,9 @@ mod terminal_replacement_postgres_red_tests {
         candidate: &ReconnectDurabilityRecordV1,
         current_scope: u64,
     ) -> Result<TerminalGameSessionReplacementAuthorizationV1, ReconnectDurabilityErrorV1> {
-        let facts = FreshAdmissionFacts::new(
-            [0x44; 32],
-            character(11)?,
-            world(12)?,
-            channel(13)?,
-            9,
-            10,
-        )
-        .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let facts =
+            FreshAdmissionFacts::new([0x44; 32], character(11)?, world(12)?, channel(13)?, 9, 10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
         let initial_transport = AuthenticatedTransportRefV1::decode(&[0x70; 16])
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
         let predecessor = game_session(predecessor_raw)?;
@@ -532,7 +519,9 @@ mod terminal_replacement_postgres_red_tests {
         Ok(())
     }
 
-    fn map_legacy_prepare(disposition: ReconnectPrepareDispositionV1) -> ReconnectPrepareDispositionV2 {
+    fn map_legacy_prepare(
+        disposition: ReconnectPrepareDispositionV1,
+    ) -> ReconnectPrepareDispositionV2 {
         match disposition {
             ReconnectPrepareDispositionV1::Prepared => ReconnectPrepareDispositionV2::Prepared,
             ReconnectPrepareDispositionV1::ExistingPrepared => {
@@ -555,7 +544,9 @@ mod terminal_replacement_postgres_red_tests {
                     disposition: ReconnectDurableTerminalDispositionV1::StaleAuthority,
                 }
             }
-            ReconnectPrepareDispositionV1::Unavailable => ReconnectPrepareDispositionV2::Unavailable,
+            ReconnectPrepareDispositionV1::Unavailable => {
+                ReconnectPrepareDispositionV2::Unavailable
+            }
             ReconnectPrepareDispositionV1::Ambiguous => ReconnectPrepareDispositionV2::Ambiguous,
             ReconnectPrepareDispositionV1::IdempotencyConflict => {
                 ReconnectPrepareDispositionV2::IdempotencyConflict
@@ -592,7 +583,8 @@ mod terminal_replacement_postgres_red_tests {
             &self,
             request: &ReconnectPrepareRequestV2,
         ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
-            let (_flow, legacy_request) = ReconnectDurabilityFlowV1::begin(request.record().clone());
+            let (_flow, legacy_request) =
+                ReconnectDurabilityFlowV1::begin(request.record().clone());
             self.prepare(&legacy_request).await.map(map_legacy_prepare)
         }
 
@@ -607,8 +599,7 @@ mod terminal_replacement_postgres_red_tests {
                 == ReconnectDurableReconciliationSnapshotV1::prepared(record.clone())
             {
                 ReconnectDurableOutcomeV2::Prepared
-            } else if legacy
-                == ReconnectDurableReconciliationSnapshotV1::committed(record.clone())
+            } else if legacy == ReconnectDurableReconciliationSnapshotV1::committed(record.clone())
             {
                 ReconnectDurableOutcomeV2::Committed {
                     current_generation: record.connection().candidate(),
@@ -621,7 +612,9 @@ mod terminal_replacement_postgres_red_tests {
             } else {
                 return Err(DurabilityError::InvalidStoredState);
             };
-            Ok(ReconnectDurableReconciliationSnapshotV2::new(record, outcome))
+            Ok(ReconnectDurableReconciliationSnapshotV2::new(
+                record, outcome,
+            ))
         }
     }
 
@@ -632,8 +625,8 @@ mod terminal_replacement_postgres_red_tests {
             let now = unix_now().map_err(|_| "invalid clock")?;
             seed_current_actor_anchor(&database_url, 10, 9, now).await?;
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
-            let candidate = record(20, 11, 1, 0xa1, 3, 7, 10, now)
-                .map_err(|_| "candidate record")?;
+            let candidate =
+                record(20, 11, 1, 0xa1, 3, 7, 10, now).map_err(|_| "candidate record")?;
             let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
 
             assert_eq!(
@@ -686,8 +679,8 @@ mod terminal_replacement_postgres_red_tests {
             let now = unix_now().map_err(|_| "invalid clock")?;
             seed_current_actor_anchor(&database_url, 10, 11, now).await?;
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
-            let candidate = record(20, 11, 1, 0xa2, 3, 7, 10, now)
-                .map_err(|_| "candidate record")?;
+            let candidate =
+                record(20, 11, 1, 0xa2, 3, 7, 10, now).map_err(|_| "candidate record")?;
             let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
             let result = journal.prepare_v2(&request).await;
             assert!(failed_closed_prepare(&result));
@@ -712,14 +705,15 @@ mod terminal_replacement_postgres_red_tests {
     }
 
     #[test]
-    fn runtime_terminal_replacement_rejects_mismatched_predecessor_without_candidate_mutation() -> TestResult {
+    fn runtime_terminal_replacement_rejects_mismatched_predecessor_without_candidate_mutation()
+    -> TestResult {
         run_postgres_test(async {
             let (database, database_url) = migrated_database("mismatched_predecessor").await?;
             let now = unix_now().map_err(|_| "invalid clock")?;
             seed_current_actor_anchor(&database_url, 30, 10, now).await?;
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
-            let candidate = record(20, 11, 1, 0xa3, 3, 7, 10, now)
-                .map_err(|_| "candidate record")?;
+            let candidate =
+                record(20, 11, 1, 0xa3, 3, 7, 10, now).map_err(|_| "candidate record")?;
             let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
             let result = journal.prepare_v2(&request).await;
             assert!(failed_closed_prepare(&result));
@@ -744,8 +738,8 @@ mod terminal_replacement_postgres_red_tests {
             let (database, database_url) = migrated_database("late_commit_fence").await?;
             let now = unix_now().map_err(|_| "invalid clock")?;
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
-            let predecessor_record = record(10, 11, 1, 0xa4, 3, 7, 10, now)
-                .map_err(|_| "predecessor record")?;
+            let predecessor_record =
+                record(10, 11, 1, 0xa4, 3, 7, 10, now).map_err(|_| "predecessor record")?;
             let (mut predecessor_flow, predecessor_prepare) =
                 ReconnectDurabilityFlowV1::begin(predecessor_record);
             assert_eq!(
@@ -758,14 +752,15 @@ mod terminal_replacement_postgres_red_tests {
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(|_| "predecessor completion")?;
-            let current = ReconnectCurrentAuthorityV1::from_record(predecessor_prepare.record(), now)
-                .map_err(|_| "predecessor current authority")?;
+            let current =
+                ReconnectCurrentAuthorityV1::from_record(predecessor_prepare.record(), now)
+                    .map_err(|_| "predecessor current authority")?;
             let predecessor_commit = predecessor_flow
                 .authorize_commit(current, now)
                 .map_err(|_| "predecessor commit authorization")?;
 
-            let candidate = record(20, 11, 2, 0xa5, 3, 7, 10, now)
-                .map_err(|_| "candidate record")?;
+            let candidate =
+                record(20, 11, 2, 0xa5, 3, 7, 10, now).map_err(|_| "candidate record")?;
             let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
             assert_eq!(
                 journal.prepare_v2(&request).await?,
@@ -840,8 +835,8 @@ mod terminal_replacement_postgres_red_tests {
             connection.close().await?;
 
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
-            let candidate = record(20, 11, 1, 0xa6, 3, 7, 10, now)
-                .map_err(|_| "candidate record")?;
+            let candidate =
+                record(20, 11, 1, 0xa6, 3, 7, 10, now).map_err(|_| "candidate record")?;
             let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
             assert!(matches!(
                 journal.prepare_v2(&request).await,
@@ -878,7 +873,8 @@ mod terminal_replacement_postgres_red_tests {
     }
 
     #[test]
-    fn runtime_collision_replay_and_restart_reconciliation_preserve_collision_reason() -> TestResult {
+    fn runtime_collision_replay_and_restart_reconciliation_preserve_collision_reason() -> TestResult
+    {
         run_postgres_test(async {
             let (database, database_url) = migrated_database("typed_collision_restart").await?;
             let now = unix_now().map_err(|_| "invalid clock")?;
@@ -890,8 +886,8 @@ mod terminal_replacement_postgres_red_tests {
                 ReconnectPrepareDispositionV1::Prepared
             );
 
-            let colliding = record(60, 61, 1, 0xb1, 3, 7, 10, now)
-                .map_err(|_| "collision record")?;
+            let colliding =
+                record(60, 61, 1, 0xb1, 3, 7, 10, now).map_err(|_| "collision record")?;
             let (_flow, collision_request) = ReconnectDurabilityFlowV2::begin(colliding, None);
             assert_eq!(
                 journal.prepare_v2(&collision_request).await?,
@@ -930,16 +926,15 @@ mod terminal_replacement_postgres_red_tests {
                 journal.prepare(&first_request).await?,
                 ReconnectPrepareDispositionV1::Prepared
             );
-            let concurrent = record(70, 71, 2, 0xc2, 3, 7, 10, now)
-                .map_err(|_| "concurrent record")?;
+            let concurrent =
+                record(70, 71, 2, 0xc2, 3, 7, 10, now).map_err(|_| "concurrent record")?;
             let (_flow, concurrent_request) = ReconnectDurabilityFlowV2::begin(concurrent, None);
             assert_eq!(
                 journal.prepare_v2(&concurrent_request).await?,
                 ReconnectPrepareDispositionV2::RejectedConcurrentPrepared
             );
 
-            let stale = record(70, 71, 3, 0xc3, 4, 7, 10, now)
-                .map_err(|_| "stale record")?;
+            let stale = record(70, 71, 3, 0xc3, 4, 7, 10, now).map_err(|_| "stale record")?;
             let (_flow, stale_request) = ReconnectDurabilityFlowV2::begin(stale, None);
             assert_eq!(
                 journal.prepare_v2(&stale_request).await?,
@@ -973,20 +968,18 @@ mod terminal_replacement_postgres_red_tests {
             seed_current_actor_anchor(&database_url, 10, 10, now).await?;
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
 
-            let first_candidate = record(20, 11, 1, 0xd1, 3, 7, 10, now)
-                .map_err(|_| "first candidate")?;
-            let second_candidate = record(21, 11, 1, 0xd2, 3, 7, 10, now)
-                .map_err(|_| "second candidate")?;
+            let first_candidate =
+                record(20, 11, 1, 0xd1, 3, 7, 10, now).map_err(|_| "first candidate")?;
+            let second_candidate =
+                record(21, 11, 1, 0xd2, 3, 7, 10, now).map_err(|_| "second candidate")?;
             let first_request = v2_request(first_candidate, 10, 10).map_err(|_| "first auth")?;
             let second_request = v2_request(second_candidate, 10, 10).map_err(|_| "second auth")?;
             let first_journal = journal.clone();
             let second_journal = journal.clone();
-            let first_task = tokio::spawn(async move {
-                first_journal.prepare_v2(&first_request).await
-            });
-            let second_task = tokio::spawn(async move {
-                second_journal.prepare_v2(&second_request).await
-            });
+            let first_task =
+                tokio::spawn(async move { first_journal.prepare_v2(&first_request).await });
+            let second_task =
+                tokio::spawn(async move { second_journal.prepare_v2(&second_request).await });
             let results = [first_task.await?, second_task.await?];
             let prepared = results
                 .iter()
