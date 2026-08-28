@@ -1,0 +1,33 @@
+name: RDC Codex edge RED once
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+    paths:
+      - .github/workflows/rdc-codex-edge-red-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  retire:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: governance/remote-desktop-per-action-gate-237
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Verify current parser regressions and remove helper
+        shell: bash
+        run: |
+          python tools/agents/test_validate_remote_desktop_prompt_routing.py
+          python tools/agents/validate_remote_desktop_prompt_routing.py
+          git diff --check
+          rm .github/workflows/rdc-codex-edge-red-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/rdc-codex-edge-red-once.yml
+          git commit -m 'chore(agents): remove temporary Codex RED helper'
+          git push origin HEAD:governance/remote-desktop-per-action-gate-237
