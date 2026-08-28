@@ -506,6 +506,42 @@ def test_surface_reordered_tool_direct_authorization_outside_section_fails() -> 
     )
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
+
+def test_automatically_authorized_direct_connector_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nDirect connector calls are automatically authorized.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_preauthorized_direct_tool_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nDirect tool requests are preauthorized.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_reordered_physical_enforcement_claim_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nThis policy is physically enforced by the connector/router.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_reordered_physical_enforcement_claim_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nThis policy is physically enforced by the transport connector.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
