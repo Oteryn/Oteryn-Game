@@ -4,7 +4,7 @@
 
 **Goal:** Recover the #167 Durability implementation onto a clean, reviewable successor history without rewriting or retroactively authorizing the corrupted PR #212 branch history.
 
-**Architecture:** The active Work control plane first merges a docs-only recovery allocation from exact protected `main`. Only after that allocation is canonical may a successor Durability branch be created from the recorded protected-main base and reconstruct the current ownership-shaped #212 candidate by copying only explicitly allocated files as read-only source material. PR #212 remains immutable historical evidence and cannot qualify or merge.
+**Architecture:** The active Work control plane first merges a docs-only recovery allocation from exact protected `main`. Only after that allocation is canonical may a successor Durability branch be created from the recorded protected-main base. Recovery is explicitly two-phase TDD: first reconstruct only the frozen regression-test/support blobs and publish a visible failing RED checkpoint while production Durability files are absent; only after that RED evidence may the frozen implementation blobs be restored and driven GREEN. PR #212 remains immutable historical evidence and cannot qualify or merge.
 
 **Tech Stack:** GitHub Issues/PRs/Actions, repository agent governance, Rust 1.94, SQLx 0.9.0, PostgreSQL 17 test harness, Superpowers execution/review workflows.
 
@@ -21,6 +21,7 @@
 - No Cargo, `Cargo.lock`, Foundation, Server Seam, workflow, registry, governance, production, secret, live-data or external-repository authority transfers to the successor worker.
 - Required exact-head CI and required independent review must be produced on the successor head; historical #212 CI/reviews cannot satisfy those gates.
 - The only automatically admissible historical source snapshot is exact PR #212 commit `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`. Any later #212 head is untrusted for reconstruction unless the active control plane separately records a new exact source-admission decision before copying any bytes from it.
+- TDD provenance is successor-owned: tests must reach and preserve a visible RED checkpoint on clean successor ancestry before production Durability implementation blobs are added. Copying tests and final implementation in one step is forbidden.
 
 ---
 
@@ -53,23 +54,23 @@ Do not release the successor worker until the allocation merge SHA is proven on 
 
 ---
 
-### Task 2: Reconstruct the Durability candidate on clean history
+### Task 2: Reconstruct the Durability candidate on clean history with fresh RED -> GREEN evidence
 
 **Files:**
-- Create/modify on successor only: `apps/game-server/build.rs`
-- Create/modify on successor only: `apps/game-server/migrations/0001_admission_reconnect_journal.sql`
-- Create/modify on successor only: `apps/game-server/src/bin/oteryn-game-migrate.rs`
-- Create/modify on successor only: `apps/game-server/src/durability/admission_journal.rs`
-- Create/modify on successor only: `apps/game-server/src/durability/db.rs`
-- Create/modify on successor only: `apps/game-server/src/durability/mod.rs`
-- Create/modify on successor only: `apps/game-server/src/durability/schema.rs`
-- Create/modify on successor only: `apps/game-server/tests/durability_postgres.rs`
-- Create/modify on successor only: `apps/game-server/tests/support/postgres.rs`
+- RED phase only: `apps/game-server/tests/durability_postgres.rs`
+- RED phase only: `apps/game-server/tests/support/postgres.rs`
+- GREEN phase after RED: `apps/game-server/build.rs`
+- GREEN phase after RED: `apps/game-server/migrations/0001_admission_reconnect_journal.sql`
+- GREEN phase after RED: `apps/game-server/src/bin/oteryn-game-migrate.rs`
+- GREEN phase after RED: `apps/game-server/src/durability/admission_journal.rs`
+- GREEN phase after RED: `apps/game-server/src/durability/db.rs`
+- GREEN phase after RED: `apps/game-server/src/durability/mod.rs`
+- GREEN phase after RED: `apps/game-server/src/durability/schema.rs`
 - Modify on successor only: `docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md`
 
 **Interfaces:**
 - Consumes: allocation merge SHA from Task 1 and read-only file contents from exact historical PR #212 source snapshot `fb30fba2a888835dfc7cbde27f940b79d7bfe05d` only.
-- Produces: `impl/game-durability-journal-recovery-240`, one new Draft PR, clean ancestry rooted at the allocation-recorded protected main, and an ownership-shaped candidate.
+- Produces: `impl/game-durability-journal-recovery-240`, one new Draft PR, clean ancestry rooted at the allocation-recorded protected main, one visible RED generation, and a later GREEN ownership-shaped candidate.
 
 - [ ] **Step 1: Create the successor branch from the allocation-recorded protected main**
 
@@ -77,15 +78,53 @@ Branch name: `impl/game-durability-journal-recovery-240`.
 
 Do not branch from PR #212 and do not cherry-pick commits from its corrupted ancestry.
 
-- [ ] **Step 2: Reconstruct only the exact allocated file snapshots**
+- [ ] **Step 2: Reconstruct the regression harness only and publish RED**
 
-Copy file contents, not commits, from exact source snapshot `fb30fba2a888835dfc7cbde27f940b79d7bfe05d` into the successor allowlist. Any needed path outside the allowlist is `SHARED_LEASE_REQUIRED` and blocks that mutation. Do not consume bytes from any later #212 head without a new durable control-plane source-admission decision.
+Copy only these two exact blobs from `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`:
 
-- [ ] **Step 3: Re-establish TDD evidence**
+```text
+apps/game-server/tests/durability_postgres.rs
+  460ad5888d8e870bbeda50a3dc8f64b24a30c1cb
+apps/game-server/tests/support/postgres.rs
+  bcb243f6c4823a14ec8116b72439c2c79c115d94
+```
 
-Re-run the real PostgreSQL regression suite on the successor. The successor must independently prove the previously discovered reconnect-lifecycle cases, including committed PREPARE replay after process restart, exact incumbent binding on expired PREPARED replay, and fail-closed fast-reconnect generation reconstruction.
+Update only the successor task packet to record `TDD_RED_PENDING`, commit this test-only generation, and open the successor PR as Draft before adding any production Durability file.
 
-- [ ] **Step 4: Verify ownership-shaped diff**
+Run the focused Durability test target on this exact test-only head. Expected result: **FAIL** because `apps/game-server/src/durability/mod.rs` and the production Durability module are deliberately absent on clean protected-main ancestry. Preserve the exact command/run/head and failure evidence durably on the successor PR/task. A skipped/not-run test is not RED.
+
+Do not add any of the seven production/migration/build blobs until this RED generation is durably evidenced.
+
+- [ ] **Step 3: Restore exact implementation blobs only after RED and drive GREEN**
+
+After the RED evidence exists, copy exactly these source blobs from the same frozen `fb30fba2a888835dfc7cbde27f940b79d7bfe05d` snapshot:
+
+```text
+apps/game-server/build.rs
+  3a8149ef075f6896a7435c716cb8a4de5d94606b
+apps/game-server/migrations/0001_admission_reconnect_journal.sql
+  52aa1931550df3be6ab97d8b5a6814559f4ae494
+apps/game-server/src/bin/oteryn-game-migrate.rs
+  80e72fcdeeb70359986a5f93fe287362c0d205a1
+apps/game-server/src/durability/admission_journal.rs
+  336fbf4ed5f2cd740ab954261b924011030c272d
+apps/game-server/src/durability/db.rs
+  48746007625646dee9d8a44972005cacb2a97c73
+apps/game-server/src/durability/mod.rs
+  f37fd5e1d8ae50e8b71391a85da73369ac25fcb5
+apps/game-server/src/durability/schema.rs
+  8c92e301bd420a386f8684025ba429903b1b6e91
+```
+
+Copy file contents/blobs, not commits. Any needed path outside the allowlist is `SHARED_LEASE_REQUIRED` and blocks that mutation. Do not consume bytes from any later #212 head without a new durable control-plane source-admission decision.
+
+Re-run the same focused Durability target on the implementation generation and require **GREEN**. Preserve exact RED -> GREEN head/run linkage; a historical #212 result cannot substitute.
+
+- [ ] **Step 4: Re-establish the complete successor-owned validation evidence**
+
+Run the real PostgreSQL regression suite on the successor. The successor must independently preserve proofs for all previously discovered reconnect-lifecycle cases, including committed PREPARE replay after process restart, exact incumbent binding on expired PREPARED replay, fail-closed fast-reconnect generation reconstruction, durable actor/scope binding, lossless full-range `u64` fences, typed epoch/transport mirrors, new-loss-epoch committed-controller validation, post-lock deadline freshness, migration cancellation/fresh retry, and RecoveryGrantNonce single-consumption where applicable.
+
+- [ ] **Step 5: Verify ownership-shaped diff**
 
 Compare successor head to its recorded protected-main base and require no changed path outside the nine runtime/test files plus the successor task packet.
 
@@ -98,7 +137,7 @@ Compare successor head to its recorded protected-main base and require no change
 - Evidence only in GitHub PR/review/check state after final candidate freeze.
 
 **Interfaces:**
-- Consumes: clean successor PR/head and Task 2 focused evidence.
+- Consumes: clean successor PR/head and Task 2 RED -> GREEN + focused evidence.
 - Produces: exact-head qualification state suitable for coordinator integration consideration.
 
 - [ ] **Step 1: Run focused and component validation**
