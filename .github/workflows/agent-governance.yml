@@ -186,5 +186,8 @@ jobs:
       - name: Validate agent governance
         run: python tools/agents/validate_governance.py
 
+      - name: Validate Remote Desktop prompt routing
+        run: python tools/agents/validate_remote_desktop_prompt_routing.py
+
       - name: Validate repository policy
         run: python tools/repository/validate_repository_policy.py
