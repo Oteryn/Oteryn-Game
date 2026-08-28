@@ -33,7 +33,9 @@ A genuinely independent reviewer must not have materially authored or materially
 
 The implementing/coordinating agent's self-review remains self-review and must never be relabeled as independent.
 
-Codex is not required merely because any review is needed. Apply `CODEX_REVIEW_POLICY.json` mechanically: its high-risk classes make Codex independent technical review required; ordinary docs-only or low-risk local work is not made Codex-dependent by this policy. Separate governance/lifecycle audit requirements remain separate.
+Codex is not required merely because any review is needed. Apply `CODEX_REVIEW_POLICY.json` mechanically: its high-risk classes require Codex independent technical review; an unvalidated or conflicting downgrade also fails closed to `CODEX_REQUIRED`. Only a mechanically proven ordinary-docs rule or independently validated authoritative downgrade metadata may select `CODEX_OPTIONAL` / `CODEX_NOT_REQUIRED_BY_THIS_POLICY`. Separate governance/lifecycle audit requirements remain separate.
+
+A lane lead may self-tag a candidate only to increase review rigor. It may not make its own candidate optional or not-required. Any downgrade source role and source record must be proven from canonical authority under the machine-readable contract rather than accepted as self-declared text.
 
 ## GitHub review evidence
 
@@ -41,7 +43,7 @@ The pull request is the canonical review message bus when native GitHub Codex re
 
 A material head change makes a prior qualifying Codex review historical. If the risk matrix still requires Codex, the lane lead freezes the new head and requests a fresh review. Technical findings are repaired by the owning lane lead within its existing allocation, not by the owner or control plane.
 
-A Codex PASS can satisfy the independent technical-review gate only when all independence, exact-head, qualification and durable-evidence conditions in `CODEX_REVIEW_POLICY.json` are proven. Green CI alone is not independent review.
+Successful Codex evidence can satisfy the independent technical-review gate only when all independence, exact-head, qualification and durable-evidence conditions in `CODEX_REVIEW_POLICY.json` are proven. Success means either an explicit exact-head PASS or the native exact-head no-suggestions signal accepted by that policy, with zero unresolved P0/P1 findings and zero unresolved required review threads. Green CI alone is not independent review.
 
 ## Capability and fallback
 
@@ -63,7 +65,7 @@ Prior permission or the independent-review standing authorization is never stand
 
 A mandatory review or validation gate is never waived by quota/capability policy. Use the canonical standing-authorized Codex path when required and available, an explicitly permitted equivalent reviewer when the exact gate allows it, or fail closed with the exact blocker.
 
-The uniquely active Work/Terra control plane verifies required review presence and exact-head evidence mechanically. It does not decide ad hoc whether a technical finding is harmless and cannot waive `CODEX_REQUIRED` classifications.
+The uniquely active Work/Terra control plane mechanically validates risk-routing inputs, rejects any unvalidated low-risk/optional downgrade, and verifies required review presence and exact-head evidence. It does not decide ad hoc whether a technical finding is harmless and cannot waive `CODEX_REQUIRED` classifications.
 
 ## Authority
 
