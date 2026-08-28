@@ -4,7 +4,7 @@
 
 **Goal:** Bind every reusable Oteryn Game agent prompt and canonical execution instruction to the merged META Remote Desktop per-action gate without forking META policy.
 
-**Architecture:** Game references `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0` as the sole machine-readable routing authority. Root/operational instructions and every reusable prompt receive one concise self-contained `## Remote Desktop execution routing` section, while `tools/agents/validate_governance.py` derives the applicable prompt set from `PROMPT_LIFECYCLE.json` and deterministically rejects missing or contradictory routing semantics.
+**Architecture:** Game references `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0` as the sole machine-readable routing authority. Root/operational instructions and every reusable prompt receive one concise self-contained `## Remote Desktop execution routing` section. A focused stdlib validator derives the applicable prompt set from `PROMPT_LIFECYCLE.json`; the existing `Agent governance / validate` job runs it alongside the established governance validator.
 
 **Tech Stack:** Markdown, Python 3.12 standard library, GitHub Actions.
 
@@ -28,18 +28,19 @@
 ### Task 1: Add RED provider-governance assertions
 
 **Files:**
-- Modify: `tools/agents/validate_governance.py`
+- Create: `tools/agents/validate_remote_desktop_prompt_routing.py`
+- Modify: `.github/workflows/agent-governance.yml`
 
 **Interfaces:**
 - Consumes: `PROMPT_LIFECYCLE.json`, `AGENTS.md`, `docs/agents/GITHUB_ONLY_EXECUTION.md`, `docs/agents/PROMPTING_STANDARD.md`, `docs/agents/PROMPT_EVAL_STANDARD.md`.
-- Produces: `validate_remote_desktop_prompt_routing(registry: dict, errors: list[str]) -> None`.
+- Produces: a deterministic command `python tools/agents/validate_remote_desktop_prompt_routing.py` that exits 0 only when every reusable prompt and canonical Game instruction surface satisfies the provider binding.
 
-- [ ] Add a function that discovers every lifecycle entry where `status == "reusable"` and `reusable is True` and requires the referenced prompt body to contain exactly one `## Remote Desktop execution routing` heading.
+- [ ] Create the focused validator so it discovers every lifecycle entry where `status == "reusable"` and `reusable is True` and requires the referenced prompt body to contain exactly one `## Remote Desktop execution routing` heading.
 - [ ] Require each reusable prompt to contain all canonical markers: exact META SHA `e002fc7532188e73a0f495da3e20710541ed50e0`; `every direct \`Remote_Desktop_Commander.*\` invocation`; `positive per-action`; `list_devices`; `not automatically a blocker`; and language that Game must not broaden META exception reasons.
 - [ ] Require root `AGENTS.md`, `GITHUB_ONLY_EXECUTION.md`, `PROMPTING_STANDARD.md` and `PROMPT_EVAL_STANDARD.md` to carry the corresponding canonical provider binding.
 - [ ] Reject stale META routing references in root instructions and reject prompt text that explicitly authorizes Remote Desktop as a routine fallback for repository tests, Git inspection or CI/log polling.
-- [ ] Call the new validator from `main()` immediately after `validate_prompt_lifecycle(...)`.
-- [ ] Push only these RED assertions first and verify `Agent governance / validate` fails because current prompts/instructions do not satisfy the new contract.
+- [ ] Add a retained step to `.github/workflows/agent-governance.yml` after the existing governance validator: `python tools/agents/validate_remote_desktop_prompt_routing.py`.
+- [ ] Push only the focused validator/workflow binding first and verify `Agent governance / validate` fails because current prompts/instructions do not satisfy the new contract.
 
 ---
 
@@ -87,7 +88,7 @@ Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENT
 
 **Files:** all files touched by Tasks 1-3 plus this plan/task packet.
 
-- [ ] Verify exact-head `Agent governance / validate` PASS and confirm the workflow ran `python tools/agents/validate_governance.py` against the PR exact head.
+- [ ] Verify exact-head `Agent governance / validate` PASS and confirm the workflow ran both `python tools/agents/validate_governance.py` and `python tools/agents/validate_remote_desktop_prompt_routing.py` against the PR exact head.
 - [ ] Verify repository-required Architecture semantic audit, Merge authority audit and Merge gate on the same final head where applicable.
 - [ ] Inspect the full changed-file list and full diff. Confirm the reusable prompt count equals the lifecycle-derived count and every reusable prompt has exactly one canonical section.
 - [ ] Confirm no runtime/Cargo/protocol/schema/resource/deployment/secret/runner-host/live-RDC path changed.
