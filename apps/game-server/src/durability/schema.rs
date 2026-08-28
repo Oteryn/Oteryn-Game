@@ -673,6 +673,44 @@ mod terminal_replacement_postgres_red_tests {
     }
 
     #[test]
+    fn runtime_reconciliation_requires_exact_replacement_receipt_binding() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("reconcile_receipt_binding").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_current_actor_anchor(&database_url, 10, 9, now).await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let candidate =
+                record(20, 11, 1, 0xa1, 3, 7, 10, now).map_err(|_| "candidate record")?;
+            let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
+
+            assert_eq!(
+                journal.prepare_v2(&request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+            drop(journal);
+
+            let recovered = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            assert_eq!(
+                recovered.reconcile_v2(&request).await?,
+                ReconnectDurableReconciliationSnapshotV2::new(
+                    request.record().clone(),
+                    ReconnectDurableOutcomeV2::Prepared,
+                )
+            );
+
+            let conflicting = v2_request(request.record().clone(), 30, 10)
+                .map_err(|_| "conflicting authorization")?;
+            assert!(matches!(
+                recovered.reconcile_v2(&conflicting).await,
+                Err(DurabilityError::InvalidStoredState)
+            ));
+
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
     fn runtime_terminal_replacement_rejects_scope_ahead_without_candidate_mutation() -> TestResult {
         run_postgres_test(async {
             let (database, database_url) = migrated_database("scope_ahead").await?;
