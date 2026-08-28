@@ -80,15 +80,16 @@ After `docs/agents/CODEX_REVIEW_POLICY.json` is present on protected `main`, tha
 
 For an allocated lane with a pull request, the lane lead MUST apply `docs/agents/CODEX_REVIEW_POLICY.json` before claiming `READY_FOR_INTEGRATION`:
 
-- classify the candidate using the policy's exact risk matrix rather than personal preference;
+- classify candidate risk using the canonical policy inputs; a lane lead may self-tag only to increase review rigor and MUST NOT by its own assertion select `CODEX_OPTIONAL` or `CODEX_NOT_REQUIRED_BY_THIS_POLICY`;
+- any review downgrade MUST be mechanically proven from an exact canonical source allowed by the policy (or its exact mechanical changed-scope rule); an unvalidated or conflicting classification fails closed to `CODEX_REQUIRED`;
 - when `CODEX_REQUIRED` and native GitHub Codex review capability is proven, freeze the exact candidate head and request a fresh independent Codex review through the canonical PR; the preferred native trigger is `@codex review` with bounded risk-specific guidance;
 - the Codex reviewer task/session must be fresh and must not have materially authored or modified the candidate;
 - the lane lead, not the owner or control plane, owns repair of review findings inside the existing allocation and requests a fresh review after every material head change;
 - a prior Codex review cannot qualify a different head;
-- Codex review may satisfy the independent technical-review gate only when the policy's independence, exact-head, qualification and durable-GitHub-evidence conditions are all met; it never replaces required author self-review or an explicitly separate governance/lifecycle audit;
+- Codex review may satisfy the independent technical-review gate only when the policy's independence, exact-head, qualification and durable-GitHub-evidence conditions are all met, successful exact-head review evidence is present, and there are zero unresolved blocking findings and required review threads; it never replaces required author self-review or an explicitly separate governance/lifecycle audit;
 - when required Codex capability is unavailable, record the exact capability gap and apply the policy fallback fail-closed; never fabricate a review or use the owner as the default manual prompt relay.
 
-The uniquely active Work/Terra control plane MUST apply the same matrix mechanically and verify the durable exact-head review evidence. It MUST NOT decide ad hoc whether Codex is needed, adjudicate technical findings, or waive a required Codex review; technical findings return to the owning lane lead.
+The uniquely active Work/Terra control plane MUST mechanically validate the policy's admitted risk inputs before applying precedence, reject any unvalidated low-risk/optional downgrade and verify durable exact-head review evidence. It MUST NOT invent risk tags, decide ad hoc whether Codex is needed, adjudicate technical findings, or waive a required Codex review; technical findings return to the owning lane lead.
 
 ## Safety
 
