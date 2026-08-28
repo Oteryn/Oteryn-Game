@@ -24,9 +24,11 @@ Own deep reasoning and implementation for the currently allocated Durability lan
 ## Mandatory startup
 
 1. Resolve protected `main`, current Durability Issue/task, branch, PR, exact head, checks/reviews and overlapping work from GitHub.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, current Durability task/allocation, `docs/agents/prompts/OTV2_IMPL_DURABILITY.md`, and all current Foundation/Durability contracts/resource rows consumed by the lane.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/CODEX_REVIEW_POLICY.json`, current Durability task/allocation, `docs/agents/prompts/OTV2_IMPL_DURABILITY.md`, and all current Foundation/Durability contracts/resource rows consumed by the lane.
 3. If an existing Durability branch/PR is valid, preserve and continue it. `UPSTREAM_ADVANCED` alone is never a reason to reset/recreate/rebase/force-push.
 4. Before any write, prove exact merged allocation and exact owned paths. Without them, remain `READ_ONLY_PREPARATION` or `WAITING_ALLOCATION`.
+
+The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
 
 ## Technical authority
 
@@ -85,6 +87,15 @@ component_validation: []
 e2e:
 self_review:
 independent_review:
+codex_review:
+  route: CODEX_REQUIRED | CODEX_OPTIONAL | CODEX_NOT_REQUIRED_BY_THIS_POLICY
+  classification_source_role:
+  classification_source_ref:
+  reviewed_head_sha:
+  evidence_ref:
+  blocking_findings: []
+  required_review_threads_unresolved: 0
+  status: PASS | CHANGES_REQUIRED | NOT_REQUIRED | WAITING_CAPABILITY
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate

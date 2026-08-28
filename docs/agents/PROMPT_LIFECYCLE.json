@@ -96,6 +96,17 @@
       "supersession_rule": "This prompt supersedes neither OTV2_WORK_DELIVERY_COORDINATOR nor OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT; only an explicit replacement registered in this lifecycle registry may supersede this auditor prompt."
     },
     {
+      "prompt_id": "OTV2_OWNER_EXECUTION_STATUS_ADVISOR",
+      "path": "docs/agents/prompts/OTV2_OWNER_EXECUTION_STATUS_ADVISOR.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "owner-execution-guidance",
+      "scope": "Read-only live-GitHub owner execution/status guidance for Work-vs-chat launch, model/effort selection and DONE/ACTIVE/BLOCKED/READY_NEXT/DO_NOT_LAUNCH reconciliation; no coordinator, implementation, review, audit, merge, production or external-repository authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "This prompt is read-only owner guidance and supersedes no coordinator, lane lead, architect or auditor; only an explicit replacement registered in this lifecycle registry may supersede it."
+    },
+    {
       "prompt_id": "OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION",
       "path": "docs/agents/prompts/OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md",
       "version": "1.1",
