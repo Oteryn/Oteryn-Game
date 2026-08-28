@@ -135,11 +135,19 @@ def _extract_canonical_section(path: str, text: str, errors: list[str]) -> tuple
 
 def _outside_routing_paragraphs(text: str) -> list[str]:
     paragraphs = [paragraph.strip() for paragraph in re.split(r"\n\s*\n", text) if paragraph.strip()]
-    return [
-        paragraph
-        for paragraph in paragraphs
-        if any(pattern.search(paragraph) is not None for pattern in OUTSIDE_ROUTING_PATTERNS)
-    ]
+    units: list[str] = []
+    for paragraph in paragraphs:
+        lines = [line.strip() for line in paragraph.splitlines() if line.strip()]
+        if len(lines) > 1 and all(line.startswith("- ") for line in lines):
+            units.extend(
+                line
+                for line in lines
+                if any(pattern.search(line) is not None for pattern in OUTSIDE_ROUTING_PATTERNS)
+            )
+            continue
+        if any(pattern.search(paragraph) is not None for pattern in OUTSIDE_ROUTING_PATTERNS):
+            units.append(paragraph)
+    return units
 
 
 def _validate_outside_routing_text(
