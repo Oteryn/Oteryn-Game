@@ -14,9 +14,10 @@ pub use schema::{MigrationExecutor, SchemaCompatibility};
 use oteryn_game_server::foundation::{
     PendingCommandDispositionV1, ProtectionEntitlementV1, ReconnectDurabilityFlowV1,
     ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
-    ReconnectDurableReconciliationSnapshotV2, ReconnectDurableTerminalDispositionV1,
-    ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2, ReconnectPrepareRequestV2,
-    ReconnectProofV1, RuntimeScopeRefV1, TerminalGameSessionReplacementAuthorizationV1,
+    ReconnectDurableReconciliationSnapshotV1, ReconnectDurableReconciliationSnapshotV2,
+    ReconnectDurableTerminalDispositionV1, ReconnectPrepareDispositionV1,
+    ReconnectPrepareDispositionV2, ReconnectPrepareRequestV2, ReconnectProofV1, RuntimeScopeRefV1,
+    TerminalGameSessionReplacementAuthorizationV1,
 };
 use serde_json::json;
 use sqlx::{PgPool, Postgres, Row, Transaction};
@@ -289,15 +290,27 @@ impl AdmissionReconnectJournalV2 {
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
-        let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(record.clone());
-        self.legacy.reconcile(&legacy_request).await?;
         let state = self.terminal_state_for_record(record).await?;
         let outcome = match state {
-            V2_PREPARED => ReconnectDurableOutcomeV2::Prepared,
-            V2_COMMITTED => ReconnectDurableOutcomeV2::Committed {
-                current_generation: record.connection().candidate(),
-                current_transport_ref: record.connection().transport_ref(),
-            },
+            V2_PREPARED => {
+                let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(record.clone());
+                let legacy = self.legacy.reconcile(&legacy_request).await?;
+                if legacy != ReconnectDurableReconciliationSnapshotV1::prepared(record.clone()) {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                ReconnectDurableOutcomeV2::Prepared
+            }
+            V2_COMMITTED => {
+                let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(record.clone());
+                let legacy = self.legacy.reconcile(&legacy_request).await?;
+                if legacy != ReconnectDurableReconciliationSnapshotV1::committed(record.clone()) {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
+                ReconnectDurableOutcomeV2::Committed {
+                    current_generation: record.connection().candidate(),
+                    current_transport_ref: record.connection().transport_ref(),
+                }
+            }
             V2_COLLISION_TERMINAL | V2_CONCURRENT_TERMINAL | V2_STALE_TERMINAL => {
                 ReconnectDurableOutcomeV2::Terminal {
                     disposition: terminal_disposition_from_state(state)?,
