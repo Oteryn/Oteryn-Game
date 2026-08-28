@@ -945,7 +945,8 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
         .build()?
         .block_on(async {
             let database =
-                postgres::IsolatedPostgres::create("committed_replay_transport_reservation").await?;
+                postgres::IsolatedPostgres::create("committed_replay_transport_reservation")
+                    .await?;
             let result = async {
                 let database_url = database.database_url()?;
                 let executor = MigrationExecutor::connect_migration(&database_url).await?;
@@ -981,7 +982,14 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
                      SET game_session_id = encode($2, 'hex')::uuid, reconnect_attempt_ref = $3 \
                      WHERE transport_ref = $1",
                 )
-                .bind(prepare.record().connection().transport_ref().to_bytes().as_slice())
+                .bind(
+                    prepare
+                        .record()
+                        .connection()
+                        .transport_ref()
+                        .to_bytes()
+                        .as_slice(),
+                )
                 .bind(uuid_v7(0x9a))
                 .bind([0xfe_u8; 8].as_slice())
                 .execute(&pool)
