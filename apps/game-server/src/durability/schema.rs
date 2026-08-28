@@ -585,7 +585,10 @@ mod terminal_replacement_postgres_red_tests {
                 .map_err(|_| "candidate record")?;
             let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
 
-            assert_eq!(journal.prepare_v2(&request).await?, ReconnectPrepareDispositionV2::Prepared);
+            assert_eq!(
+                journal.prepare_v2(&request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
             let mut connection = PgConnection::connect(&database_url).await?;
             let predecessor: (String, i16) = sqlx::query_as(
                 "SELECT scope_ownership_generation::text, session_state \
@@ -713,7 +716,10 @@ mod terminal_replacement_postgres_red_tests {
             let candidate = record(20, 11, 2, 0xa5, 3, 7, 10, now)
                 .map_err(|_| "candidate record")?;
             let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
-            assert_eq!(journal.prepare_v2(&request).await?, ReconnectPrepareDispositionV2::Prepared);
+            assert_eq!(
+                journal.prepare_v2(&request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
 
             let mut connection = PgConnection::connect(&database_url).await?;
             let predecessor_attempt_state: i16 = sqlx::query_scalar(
@@ -869,7 +875,10 @@ mod terminal_replacement_postgres_red_tests {
 
             let first = record(70, 71, 1, 0xc1, 3, 7, 10, now).map_err(|_| "first record")?;
             let (_first_flow, first_request) = ReconnectDurabilityFlowV1::begin(first);
-            assert_eq!(journal.prepare(&first_request).await?, ReconnectPrepareDispositionV1::Prepared);
+            assert_eq!(
+                journal.prepare(&first_request).await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
             let concurrent = record(70, 71, 2, 0xc2, 3, 7, 10, now)
                 .map_err(|_| "concurrent record")?;
             let (_flow, concurrent_request) = ReconnectDurabilityFlowV2::begin(concurrent, None);
@@ -921,11 +930,13 @@ mod terminal_replacement_postgres_red_tests {
             let second_request = v2_request(second_candidate, 10, 10).map_err(|_| "second auth")?;
             let first_journal = journal.clone();
             let second_journal = journal.clone();
-            let (first, second) = tokio::join!(
-                first_journal.prepare_v2(&first_request),
-                second_journal.prepare_v2(&second_request)
-            );
-            let results = [first, second];
+            let first_task = tokio::spawn(async move {
+                first_journal.prepare_v2(&first_request).await
+            });
+            let second_task = tokio::spawn(async move {
+                second_journal.prepare_v2(&second_request).await
+            });
+            let results = [first_task.await?, second_task.await?];
             let prepared = results
                 .iter()
                 .filter(|result| matches!(result, Ok(ReconnectPrepareDispositionV2::Prepared)))
