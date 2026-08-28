@@ -147,7 +147,10 @@ mod contract_tests {
 #[cfg(test)]
 mod terminal_replacement_postgres_red_tests {
     use super::MigrationExecutor;
-    use crate::durability::{AdmissionReconnectJournal, DurabilityError};
+    use crate::durability::{
+        AdmissionReconnectJournal as LegacyAdmissionReconnectJournal, AdmissionReconnectJournalV2,
+        DurabilityError,
+    };
     use oteryn_game_server::foundation::{
         AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId,
         CharacterLease, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
@@ -173,6 +176,54 @@ mod terminal_replacement_postgres_red_tests {
     const ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174000";
     static DB_SEQUENCE: AtomicU64 = AtomicU64::new(0);
     type TestResult = Result<(), Box<dyn Error>>;
+
+    #[derive(Clone)]
+    struct AdmissionReconnectJournal {
+        v2: AdmissionReconnectJournalV2,
+    }
+
+    impl AdmissionReconnectJournal {
+        async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
+            Ok(Self {
+                v2: AdmissionReconnectJournalV2::connect_runtime(database_url).await?,
+            })
+        }
+
+        async fn prepare(
+            &self,
+            request: &oteryn_game_server::foundation::ReconnectPrepareRequestV1,
+        ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
+            self.v2.legacy().prepare(request).await
+        }
+
+        async fn commit(
+            &self,
+            request: &oteryn_game_server::foundation::ReconnectCommitRequestV1,
+        ) -> Result<ReconnectCommitDispositionV1, DurabilityError> {
+            self.v2.legacy().commit(request).await
+        }
+
+        async fn reconcile(
+            &self,
+            request: &oteryn_game_server::foundation::ReconnectPrepareRequestV1,
+        ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
+            self.v2.legacy().reconcile(request).await
+        }
+
+        async fn prepare_v2(
+            &self,
+            request: &ReconnectPrepareRequestV2,
+        ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+            self.v2.prepare(request).await
+        }
+
+        async fn reconcile_v2(
+            &self,
+            request: &ReconnectPrepareRequestV2,
+        ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
+            self.v2.reconcile(request).await
+        }
+    }
 
     struct IsolatedDatabase {
         admin_url: String,
@@ -536,7 +587,7 @@ mod terminal_replacement_postgres_red_tests {
         ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError>;
     }
 
-    impl LegacyV2JournalFallback for AdmissionReconnectJournal {
+    impl LegacyV2JournalFallback for LegacyAdmissionReconnectJournal {
         async fn prepare_v2(
             &self,
             request: &ReconnectPrepareRequestV2,
