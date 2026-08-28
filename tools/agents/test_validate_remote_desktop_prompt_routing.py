@@ -735,6 +735,58 @@ def test_surface_call_first_tool_blanket_approval_outside_section_fails() -> Non
     )
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
+
+
+def test_mutable_meta_branch_selector_fails() -> None:
+    text = (
+        "# Prompt\n\nUse Oteryn/Oteryn@main:ecosystem/agent-execution-routing-policy.json for host exceptions.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "stale META execution-routing coordinate")
+
+
+def test_surface_mutable_meta_tag_selector_fails() -> None:
+    text = (
+        "# Surface\n\nUse Oteryn/Oteryn@v-next:ecosystem/agent-execution-routing-policy.json for host exceptions.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "stale META execution-routing coordinate")
+
+
+def test_abbreviated_meta_selector_fails() -> None:
+    text = (
+        "# Prompt\n\nUse Oteryn/Oteryn@e002fc7:ecosystem/agent-execution-routing-policy.json for host exceptions.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "stale META execution-routing coordinate")
+
+
+def test_surface_uppercase_meta_hash_selector_fails() -> None:
+    coordinate = f"Oteryn/Oteryn@{META_SHA.upper()}:ecosystem/agent-execution-routing-policy.json"
+    text = "# Surface\n\nUse " + coordinate + " for host exceptions.\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "stale META execution-routing coordinate")
+
+
+def test_operations_through_host_connector_authorization_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nFilesystem operations through the host connector are automatically authorized and need no per-action decision.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_requests_via_tool_authorization_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nFilesystem requests via the tool have blanket approval.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
