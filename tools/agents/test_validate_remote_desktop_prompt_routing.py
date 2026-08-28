@@ -716,6 +716,25 @@ def test_surface_router_implicit_enforcement_claim_outside_section_fails() -> No
     )
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
+
+
+def test_call_first_connector_automatically_authorized_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nCalls to the connector are automatically authorized.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_call_first_tool_blanket_approval_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nRequests to the tool have blanket approval.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
