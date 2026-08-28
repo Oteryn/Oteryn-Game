@@ -5,6 +5,7 @@ from __future__ import annotations
 from validate_remote_desktop_prompt_routing import (
     APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS,
     CANONICAL_PROMPT_SECTION,
+    CANONICAL_ROUTING_ADJACENT_SECTIONS,
     CANONICAL_SURFACE_SECTIONS,
     validate_reusable_prompt_text,
     validate_surface_text,
@@ -12,6 +13,8 @@ from validate_remote_desktop_prompt_routing import (
 
 META_SHA = "e002fc7532188e73a0f495da3e20710541ed50e0"
 SURFACE_SECTION = CANONICAL_SURFACE_SECTIONS["AGENTS.md"]
+PROMPT_EVAL_PATH = "docs/agents/PROMPT_EVAL_STANDARD.md"
+PROMPT_EVAL_GATES = CANONICAL_ROUTING_ADJACENT_SECTIONS[PROMPT_EVAL_PATH]["## Gates"]
 
 
 def assert_pass(text: str) -> None:
@@ -104,11 +107,27 @@ def test_fenced_surface_section_does_not_count() -> None:
     assert_surface_fail(text, "must contain exactly one")
 
 
+def test_commented_prompt_section_does_not_count() -> None:
+    text = "# Prompt\n\n<!--\n" + CANONICAL_PROMPT_SECTION + "\n## End sample\n-->\n"
+    assert_fail(text, "must contain exactly one")
+
+
 def test_real_prompt_section_after_fenced_example_passes() -> None:
     text = (
         "# Prompt\n\n```markdown\n"
         + CANONICAL_PROMPT_SECTION
         + "\n## End sample\n```\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_pass(text)
+
+
+def test_real_prompt_section_after_commented_example_passes() -> None:
+    text = (
+        "# Prompt\n\n<!--\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n## End sample\n-->\n\n"
         + CANONICAL_PROMPT_SECTION
         + "\n"
     )
@@ -126,39 +145,23 @@ def test_surface_section_may_name_its_heading_inline() -> None:
 
 
 def test_surface_approved_routing_bullet_inside_list_passes() -> None:
-    path = "docs/agents/PROMPT_EVAL_STANDARD.md"
-    section = CANONICAL_SURFACE_SECTIONS[path]
-    approved = next(iter(APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS[path]))
-    text = "# Surface\n\n## Gates\n\n- **Authority:** exact writable repositories are explicit.\n" + approved + "\n\n" + section + "\n"
-    assert_surface_path_pass(path, text)
+    section = CANONICAL_SURFACE_SECTIONS[PROMPT_EVAL_PATH]
+    text = "# Surface\n\n" + PROMPT_EVAL_GATES + "\n\n" + section + "\n"
+    assert_surface_path_pass(PROMPT_EVAL_PATH, text)
 
 
 def test_surface_adjacent_no_authorization_bullet_fails() -> None:
-    path = "docs/agents/PROMPT_EVAL_STANDARD.md"
-    section = CANONICAL_SURFACE_SECTIONS[path]
-    approved = next(iter(APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS[path]))
-    text = (
-        "# Surface\n\n## Gates\n\n"
-        + approved
-        + "\n- Direct invocations need no authorization.\n\n"
-        + section
-        + "\n"
-    )
-    assert_surface_path_fail(path, text, "routing list")
+    section = CANONICAL_SURFACE_SECTIONS[PROMPT_EVAL_PATH]
+    gates = PROMPT_EVAL_GATES + "\n- Direct invocations need no authorization."
+    text = "# Surface\n\n" + gates + "\n\n" + section + "\n"
+    assert_surface_path_fail(PROMPT_EVAL_PATH, text, "routing list")
 
 
 def test_surface_adjacent_routine_host_git_bullet_fails() -> None:
-    path = "docs/agents/PROMPT_EVAL_STANDARD.md"
-    section = CANONICAL_SURFACE_SECTIONS[path]
-    approved = next(iter(APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS[path]))
-    text = (
-        "# Surface\n\n## Gates\n\n"
-        + approved
-        + "\n- Routine Git inspection through the host is permitted.\n\n"
-        + section
-        + "\n"
-    )
-    assert_surface_path_fail(path, text, "routing list")
+    section = CANONICAL_SURFACE_SECTIONS[PROMPT_EVAL_PATH]
+    gates = PROMPT_EVAL_GATES + "\n- Routine Git inspection through the host is permitted."
+    text = "# Surface\n\n" + gates + "\n\n" + section + "\n"
+    assert_surface_path_fail(PROMPT_EVAL_PATH, text, "routing list")
 
 
 def test_modified_canonical_surface_section_fails() -> None:
