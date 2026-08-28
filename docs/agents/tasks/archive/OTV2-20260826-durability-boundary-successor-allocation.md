@@ -13,13 +13,14 @@ issue: 162
 architecture_issue: 187
 foundation_issue: 192
 registry_issue: 193
-pr: null
+pr: 194
 base_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
-head_sha: null
-final_head_sha: null
+head_sha: 870d473741b4eaa959180dc0cfe3da9dfea03dc4
+final_head_sha: 870d473741b4eaa959180dc0cfe3da9dfea03dc4
+allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
 owner: Oteryn: work coordinator
 created_at: 2026-08-26T15:02:00+02:00
-updated_at: 2026-08-28T14:07:00Z
+updated_at: 2026-08-28T14:19:00Z
 archived_at: 2026-08-28
 execution_budget_minutes: 60
 large_budget_reason: null
@@ -42,7 +43,7 @@ external_repositories: []
 
 ## Coordinated terminal archive
 
-PR #194 and PR #195 completed the child allocation releases, and PR #199 merged the Foundation delivery. This allocation record is terminal historical evidence, owns no path, and grants no dispatch, validation, or worker-release authority.
+PR #194 exact head `870d473741b4eaa959180dc0cfe3da9dfea03dc4` merged as protected `main@1063caf409af6cd4b25fa844e17a483b87e76ad6`; PR #195 completed the registry delivery and PR #199 merged the Foundation delivery. This allocation record is terminal historical evidence, owns no path, and grants no dispatch, validation, or worker-release authority.
 
 ## Outcome
 
@@ -58,13 +59,14 @@ Historical only: any review evidence belongs to the completed delivery PRs; this
 ## Context checkpoint
 
 ```yaml
-last_progress: child allocation releases and completed delivery are merged; ownership is released
+last_progress: allocation PR #194 exact head 870d473741b4eaa959180dc0cfe3da9dfea03dc4 merged as protected main 1063caf409af6cd4b25fa844e17a483b87e76ad6; child ownership is released
 status: COMPLETED_ARCHIVED
 branch: null
 historical_branch: coord/allocate-durability-boundary-successors
-head_sha: null
-pr: null
-final_head_sha: null
+head_sha: 870d473741b4eaa959180dc0cfe3da9dfea03dc4
+pr: 194
+final_head_sha: 870d473741b4eaa959180dc0cfe3da9dfea03dc4
+allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
 owned_paths: []
 owner_action_required: none — terminal allocation archived and paths released
 blocker: none

@@ -510,8 +510,10 @@ task_id: OTV2-20260826-reconnect-attempt-registry
 issue: 193
 status: completed_released
 worker_alias: Oteryn: work coordinator
-allocation_pr: 195
-allocation_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
+allocation_pr: 194
+allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
+delivery_pr: 195
+delivery_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
 allocation_base_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
 owned_paths: []
 write_authority: none
