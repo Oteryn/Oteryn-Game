@@ -4,8 +4,8 @@
 task_id: OTV2-20260828-terminal-session-replacement-repair
 title: Implement terminal GameSession replacement and typed reconciliation
 mode: REPAIR
-status: waiting
-integration_state: WAITING_FRESH_ALLOCATION_MERGE
+status: implementing
+integration_state: RED_PENDING
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-terminal-session-replacement-250
@@ -19,15 +19,16 @@ historical_source_pr: 243
 historical_source_head: eb28c42125c346e7f6f1c72e69d51af35af8fc1f
 allocation_branch: coord/terminal-session-replacement-allocation-250
 allocation_pr: 251
-allocation_merge_sha: null
+allocation_merge_sha: 12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
+worker_base_sha: 12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
 admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
-pr: null
+pr: 252
 owner: Oteryn: sol durability lead
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-28T20:30:00+02:00
+updated_at: 2026-08-28T20:50:00+02:00
 execution_budget_minutes: 180
 large_budget_reason: cross-lane Foundation/Durability repair with real PostgreSQL contention, replay and restart proof
-write_authority: none_until_allocation_merge
+write_authority: exact_allocated_worker_scope_after_12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
 source_snapshot_mode: COPY_FILE_CONTENTS_ONLY_NO_COMMIT_ANCESTRY_NO_REVIEW_OR_CI_INHERITANCE
 serialized_composition_lease: apps/game-server/src/lib.rs
 external_repositories: []
@@ -193,15 +194,15 @@ PR #243 remains open Draft historical evidence until Work decides its terminal d
 ## Context checkpoint
 
 ```yaml
-last_progress: fresh Codex review findings on authorization binding, direct V2 replay and mid-transaction rollback are incorporated into the mandatory RED gate
-status: waiting
+last_progress: clean baseline reconstructed from exact nine frozen blobs and Draft PR #252 created; all nine baseline blob SHAs independently verified against allocation #251
+status: implementing
 branch: impl/game-terminal-session-replacement-250
-head_sha: null
-pr: null
+head_sha: 3d3c88c2eda1afadd4d82388e88504b4c7ef61f7
+pr: 252
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+ci_trigger_source: pull_request
+ci_check_generation: baseline
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -214,6 +215,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: allocation_pr_251_not_yet_merged
-next_action: after PR #251 merge and protected-main readback, create the worker branch from that exact merge SHA and reconstruct only the frozen nine-file baseline by file contents
+blocker: null
+next_action: publish the complete fresh test/task-only RED required by canonical Section 9, prove expected failure on an exact hosted PostgreSQL-capable head, then and only then implement GREEN repair behavior
 ```
