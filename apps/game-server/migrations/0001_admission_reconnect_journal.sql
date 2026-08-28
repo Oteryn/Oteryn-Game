@@ -2,15 +2,49 @@ CREATE TABLE game_durability_reconnect_sessions (
     game_session_id UUID PRIMARY KEY
         CHECK ((get_byte(uuid_send(game_session_id), 6) >> 4) = 7)
         CHECK ((get_byte(uuid_send(game_session_id), 8) & 192) = 128),
-    control_loss_epoch BIGINT NOT NULL CHECK (control_loss_epoch > 0),
-    predecessor_generation BIGINT NOT NULL CHECK (predecessor_generation > 0),
-    character_lease_generation BIGINT NOT NULL CHECK (character_lease_generation > 0),
-    scope_ownership_generation BIGINT NOT NULL CHECK (scope_ownership_generation > 0),
-    current_generation BIGINT NOT NULL CHECK (current_generation > 0),
+    account_id UUID NOT NULL,
+    character_id UUID NOT NULL
+        CHECK ((get_byte(uuid_send(character_id), 6) >> 4) = 7)
+        CHECK ((get_byte(uuid_send(character_id), 8) & 192) = 128),
+    world_id UUID NOT NULL
+        CHECK ((get_byte(uuid_send(world_id), 6) >> 4) = 7)
+        CHECK ((get_byte(uuid_send(world_id), 8) & 192) = 128),
+    runtime_scope_kind SMALLINT NOT NULL CHECK (runtime_scope_kind IN (1, 2)),
+    runtime_scope_world_id UUID NOT NULL
+        CHECK ((get_byte(uuid_send(runtime_scope_world_id), 6) >> 4) = 7)
+        CHECK ((get_byte(uuid_send(runtime_scope_world_id), 8) & 192) = 128),
+    runtime_scope_channel_id UUID NULL,
+    runtime_scope_instance_id UUID NULL,
+    control_loss_epoch NUMERIC(20, 0) NOT NULL
+        CHECK (control_loss_epoch BETWEEN 1 AND 18446744073709551615),
+    original_grace_deadline BIGINT NOT NULL,
+    predecessor_generation NUMERIC(20, 0) NOT NULL
+        CHECK (predecessor_generation BETWEEN 1 AND 18446744073709551615),
+    character_lease_generation NUMERIC(20, 0) NOT NULL
+        CHECK (character_lease_generation BETWEEN 1 AND 18446744073709551615),
+    scope_ownership_generation NUMERIC(20, 0) NOT NULL
+        CHECK (scope_ownership_generation BETWEEN 1 AND 18446744073709551615),
+    current_generation NUMERIC(20, 0) NOT NULL
+        CHECK (current_generation BETWEEN 1 AND 18446744073709551615),
     current_transport_ref BYTEA NULL CHECK (octet_length(current_transport_ref) = 16),
     session_state SMALLINT NOT NULL DEFAULT 1 CHECK (session_state BETWEEN 1 AND 2),
     attempt_count SMALLINT NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 8),
-    prepared_attempt_ref BYTEA NULL CHECK (octet_length(prepared_attempt_ref) = 8)
+    prepared_attempt_ref BYTEA NULL CHECK (octet_length(prepared_attempt_ref) = 8),
+    CHECK (
+        (runtime_scope_kind = 1 AND runtime_scope_channel_id IS NOT NULL AND runtime_scope_instance_id IS NULL)
+        OR
+        (runtime_scope_kind = 2 AND runtime_scope_channel_id IS NULL AND runtime_scope_instance_id IS NOT NULL)
+    ),
+    CHECK (
+        runtime_scope_channel_id IS NULL
+        OR ((get_byte(uuid_send(runtime_scope_channel_id), 6) >> 4) = 7
+            AND (get_byte(uuid_send(runtime_scope_channel_id), 8) & 192) = 128)
+    ),
+    CHECK (
+        runtime_scope_instance_id IS NULL
+        OR ((get_byte(uuid_send(runtime_scope_instance_id), 6) >> 4) = 7
+            AND (get_byte(uuid_send(runtime_scope_instance_id), 8) & 192) = 128)
+    )
 );
 
 CREATE TABLE game_durability_transport_ref_reservations (
@@ -36,7 +70,8 @@ CREATE TABLE game_durability_reconnect_attempts (
         CHECK ((get_byte(uuid_send(game_session_id), 6) >> 4) = 7)
         CHECK ((get_byte(uuid_send(game_session_id), 8) & 192) = 128),
     reconnect_attempt_ref BYTEA NOT NULL CHECK (octet_length(reconnect_attempt_ref) = 8),
-    control_loss_epoch BIGINT NOT NULL CHECK (control_loss_epoch > 0),
+    control_loss_epoch NUMERIC(20, 0) NOT NULL
+        CHECK (control_loss_epoch BETWEEN 1 AND 18446744073709551615),
     transport_ref BYTEA NOT NULL CHECK (octet_length(transport_ref) = 16),
     account_id UUID NOT NULL,
     character_id UUID NOT NULL

@@ -89,16 +89,22 @@ fn is_missing_table(error: &sqlx::Error) -> bool {
 mod contract_tests {
     const MIGRATION: &str = include_str!("../../migrations/0001_admission_reconnect_journal.sql");
 
-    fn session_schema() -> &'static str {
+    fn session_schema() -> Option<&'static str> {
         MIGRATION
             .split_once("CREATE TABLE game_durability_transport_ref_reservations")
-            .expect("session table must precede transport reservations")
-            .0
+            .map(|(session, _rest)| session)
     }
 
     #[test]
     fn reconnect_session_schema_binds_actor_and_runtime_scope_identity() {
         let session = session_schema();
+        assert!(
+            session.is_some(),
+            "session table must precede transport reservations"
+        );
+        let Some(session) = session else {
+            return;
+        };
         for required in [
             "account_id UUID NOT NULL",
             "character_id UUID NOT NULL",

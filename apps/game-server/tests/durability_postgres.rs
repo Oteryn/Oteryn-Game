@@ -22,6 +22,17 @@ use std::process::Command;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+type CrossEpochSessionRow = (
+    i64,
+    i64,
+    i64,
+    i64,
+    Option<Vec<u8>>,
+    i16,
+    i16,
+    Option<Vec<u8>>,
+);
+
 fn foundation_error(error: ReconnectDurabilityErrorV1) -> std::io::Error {
     std::io::Error::other(format!(
         "Foundation V1 record construction failed: {error:?}"
@@ -791,6 +802,49 @@ fn committed_session_accepts_a_later_non_reused_control_loss_epoch()
                     ReconnectPrepareDispositionV1::ExistingTerminal
                 );
 
+                for attempt in 5_u64..=10 {
+                    let transport = u8::try_from(0xd0_u64 + attempt)?;
+                    let nonce = u8::try_from(0x50_u64 + attempt)?;
+                    let (_old_epoch_flow, old_epoch_prepare) = ReconnectDurabilityFlowV1::begin(
+                        record_for_epoch(
+                            63,
+                            attempt,
+                            transport,
+                            second_now,
+                            second_now + 115,
+                            3,
+                            9,
+                            10,
+                            nonce,
+                        )
+                        .map_err(foundation_error)?,
+                    );
+                    assert_eq!(
+                        journal.prepare(&old_epoch_prepare).await?,
+                        ReconnectPrepareDispositionV1::RejectedStaleAuthority
+                    );
+                }
+                let (_old_epoch_capacity_flow, old_epoch_capacity) =
+                    ReconnectDurabilityFlowV1::begin(
+                        record_for_epoch(
+                            63,
+                            11,
+                            0xdb,
+                            second_now,
+                            second_now + 115,
+                            3,
+                            9,
+                            10,
+                            0x5b,
+                        )
+                        .map_err(foundation_error)?,
+                    );
+                assert_eq!(
+                    journal.prepare(&old_epoch_capacity).await?,
+                    ReconnectPrepareDispositionV1::AttemptCapacityExceeded,
+                    "closed epochs retain the same eight-attempt hard bound"
+                );
+
                 let pool = sqlx::PgPool::connect(&database_url).await?;
                 let session_id = second_prepare
                     .record()
@@ -798,18 +852,9 @@ fn committed_session_accepts_a_later_non_reused_control_loss_epoch()
                     .game_session_id()
                     .as_bytes()
                     .to_vec();
-                let session: (
-                    i64,
-                    i64,
-                    i64,
-                    i64,
-                    Option<Vec<u8>>,
-                    i16,
-                    i16,
-                    Option<Vec<u8>>,
-                ) = sqlx::query_as(
-                    "SELECT control_loss_epoch, original_grace_deadline, predecessor_generation, \
-                            current_generation, current_transport_ref, session_state, \
+                let session: CrossEpochSessionRow = sqlx::query_as(
+                    "SELECT control_loss_epoch::BIGINT, original_grace_deadline, predecessor_generation::BIGINT, \
+                            current_generation::BIGINT, current_transport_ref, session_state, \
                             attempt_count, prepared_attempt_ref \
                      FROM game_durability_reconnect_sessions \
                      WHERE game_session_id = encode($1, 'hex')::uuid",
@@ -827,7 +872,7 @@ fn committed_session_accepts_a_later_non_reused_control_loss_epoch()
                 assert!(session.7.is_none());
 
                 let attempts_per_epoch: Vec<(i64, i64)> = sqlx::query_as(
-                    "SELECT control_loss_epoch, COUNT(*) \
+                    "SELECT control_loss_epoch::BIGINT, COUNT(*) \
                      FROM game_durability_reconnect_attempts \
                      WHERE game_session_id = encode($1, 'hex')::uuid \
                      GROUP BY control_loss_epoch ORDER BY control_loss_epoch",
@@ -835,10 +880,10 @@ fn committed_session_accepts_a_later_non_reused_control_loss_epoch()
                 .bind(session_id.as_slice())
                 .fetch_all(&pool)
                 .await?;
-                assert_eq!(attempts_per_epoch, vec![(3, 2), (4, 2)]);
+                assert_eq!(attempts_per_epoch, vec![(3, 8), (4, 2)]);
 
                 let grace_by_epoch: Vec<(i64, i64)> = sqlx::query_as(
-                    "SELECT control_loss_epoch, \
+                    "SELECT control_loss_epoch::BIGINT, \
                             (record_json::jsonb #>> '{continuity,original_grace_deadline}')::BIGINT \
                      FROM game_durability_reconnect_attempts \
                      WHERE game_session_id = encode($1, 'hex')::uuid \
@@ -1085,7 +1130,7 @@ fn commit_row_lock_wait_cannot_outlive_authorization_deadline()
                     ReconnectCommitDispositionV1::RejectedStaleAuthority
                 );
                 let session: (i64, Option<Vec<u8>>, i16, Option<Vec<u8>>) = sqlx::query_as(
-                    "SELECT current_generation, current_transport_ref, session_state, prepared_attempt_ref \
+                    "SELECT current_generation::BIGINT, current_transport_ref, session_state, prepared_attempt_ref \
                      FROM game_durability_reconnect_sessions \
                      WHERE game_session_id = encode($1, 'hex')::uuid",
                 )
@@ -1148,11 +1193,19 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
                     .to_vec();
                 sqlx::query(
                     "INSERT INTO game_durability_reconnect_sessions (\
-                        game_session_id, control_loss_epoch, predecessor_generation, \
+                        game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
+                        runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
+                        control_loss_epoch, original_grace_deadline, predecessor_generation, \
                         character_lease_generation, scope_ownership_generation, current_generation\
-                     ) VALUES (encode($1, 'hex')::uuid, 3, 7, 9, 10, 7)",
+                     ) VALUES (encode($1, 'hex')::uuid, '123e4567-e89b-12d3-a456-426614174000'::uuid, \
+                        encode($2, 'hex')::uuid, encode($3, 'hex')::uuid, 1, encode($3, 'hex')::uuid, \
+                        encode($4, 'hex')::uuid, NULL, 3, $5, 7, 9, 10, 7)",
                 )
                 .bind(session_id.as_slice())
+                .bind(uuid_v7(11).as_slice())
+                .bind(uuid_v7(12).as_slice())
+                .bind(uuid_v7(13).as_slice())
+                .bind(record_now + 120)
                 .execute(&lock_pool)
                 .await?;
                 assert!(postgres_clock(&lock_pool).await? <= prepared_deadline);
@@ -1190,7 +1243,7 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
                     ReconnectPrepareDispositionV1::ExistingTerminal
                 );
                 let session: (i64, Option<Vec<u8>>, i16, i16, Option<Vec<u8>>) = sqlx::query_as(
-                    "SELECT current_generation, current_transport_ref, session_state, attempt_count, prepared_attempt_ref \
+                    "SELECT current_generation::BIGINT, current_transport_ref, session_state, attempt_count, prepared_attempt_ref \
                      FROM game_durability_reconnect_sessions \
                      WHERE game_session_id = encode($1, 'hex')::uuid",
                 )

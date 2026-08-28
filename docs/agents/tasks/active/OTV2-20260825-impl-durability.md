@@ -27,20 +27,20 @@ transport_ref_decision_merge_sha: dc531658c7ffc9af91ccc6719aee80ffe01c22a4
 foundation_terminal_repair_issue: 208
 foundation_terminal_repair_pr: 210
 foundation_terminal_repair_merge_sha: f056cd38dde6065a3154e256d01aea9e5a09e5f4
-current_protected_main_sha: 4b6656f688868aa2fb59c18392c2f859f1c5a1c7
-current_main_merge_up_sha: d5025557eb4dfa52ca25919692752c858ad28e5d
-base_sha: 4b6656f688868aa2fb59c18392c2f859f1c5a1c7
+current_protected_main_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
+current_main_merge_up_sha: e3524615917f3a0b89d4ef33a5826c36a855eb1e
+base_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
 validated_deadline_fix_head_sha: 2ffbf4006f0ad686a6965fa8c89cfdc935caae39
-validated_contract_repair_head_sha: 5ef45f94ef615a6d2ca139f5e12e1f167483f241
-checkpoint_parent_head_sha: 5ef45f94ef615a6d2ca139f5e12e1f167483f241
+validated_contract_repair_head_sha: null
+checkpoint_parent_head_sha: 851d3fedee186d4977ede6e9d83b65c90f0b5444
 final_head_sha: null
 final_head_frozen_at: null
-updated_at: 2026-08-27T22:04:00Z
+updated_at: 2026-08-28T09:49:49Z
 write_authority: exact_owned_paths_after_foundation_terminal_reconciliation_implementation_merge
 shared_paths: none
 external_repositories: []
-shared_supply_chain_status: BLOCKED_SHARED_SUPPLY_CHAIN
-shared_supply_chain_detail: cargo-deny rejects yanked chacha20 0.10.1 through rand 0.10.2 -> sqlx-postgres 0.9.0; this task has no Cargo/lockfile authority and PR #212 changes neither
+shared_supply_chain_status: RESOLVED_ON_PROTECTED_MAIN
+shared_supply_chain_detail: protected main carries the shared Cargo.lock repair to chacha20 0.10.2; exact merged-up Durability CI proved the Rust supply-chain gate green without any #167-owned Cargo/lockfile mutation
 owned_paths:
   - apps/game-server/src/durability/mod.rs
   - apps/game-server/src/durability/db.rs
@@ -67,9 +67,11 @@ A later independent read-only contract review of the `536e46527662ebd1b370ed293a
 
 The canonical schema repair now uses PostgreSQL native `uuid` for UUID-backed durable identities/scopes and `NUMERIC(20,0)` for full-range `u64` FND02 CommandIds. The journal writes and validates a typed canonical mirror for identity/scope/FND02 fields rather than relying on `record_json` as the only representation; pending command IDs are retained in a typed child table. Opaque reconnect-attempt and transport references remain byte-oriented as required by their contracts.
 
+Protected-main Codex policy now classifies this lane as `CODEX_REQUIRED`. A fresh native GitHub Codex review of `e3524615917f3a0b89d4ef33a5826c36a855eb1e` found one P1 and two P2 gaps: the durable session row did not bind AccountId/CharacterId/WorldId/RuntimeScopeRef, uint64-class authority fences narrowed through PostgreSQL `BIGINT`/Rust `i64`, and typed attempt mirrors did not compare `control_loss_epoch` plus `transport_ref` against the canonical record. TDD regressions reproduced all three findings before repair. The current local successor persists the complete session actor/scope binding, stores every uint64-class reconnect authority fence losslessly as `NUMERIC(20,0)`, validates typed epoch/transport mirrors, preserves deterministic terminal replay, and supports a new non-reused ControlLossEpoch without assigning ordering semantics to the opaque epoch fence.
+
 Phase-D reconciliation now fail-closes unless the current durable session still matches the committed record's control-loss epoch, predecessor generation, character-lease generation, scope-ownership generation, candidate/current generation, transport ref, ACTIVE session state, absence of a prepared attempt, and recovery-grant binding where applicable. PREPARED reconciliation equivalently requires exact reconnectable/no-current-controller authority.
 
-The semantic repair landed at `dc93f54bb0a31d3e49fafeede573a00624de7dca`; compile/format/lint-only successors culminated in `5ef45f94ef615a6d2ca139f5e12e1f167483f241`. On that exact candidate PostgreSQL 17.6 executed **25/25 PASS**, including the new canonical encoding and full Phase-D reconciliation regressions. All PR-local merge-gate jobs completed successfully on that candidate: Linux build/strict Clippy/tests/synthetic/smoke, Windows build/strict Clippy/smoke/synthetic, formatting/policy, governance, CodeQL and dependency review. The only failed gate remains the separate shared-surface `cargo-deny` finding for yanked `chacha20 0.10.1`.
+The historical canonical/Phase-D repair culminated in `5ef45f94ef615a6d2ca139f5e12e1f167483f241`, where PostgreSQL 17.6 executed **25/25 PASS** and all PR-local Linux/Windows/format/governance/CodeQL/dependency jobs were green. The then-separate shared `cargo-deny` blocker is no longer current: protected main subsequently repaired the shared lockfile to `chacha20 0.10.2`, and the normal non-force merge-up `e3524615917f3a0b89d4ef33a5826c36a855eb1e` proved the Rust supply-chain gate green. The current successor has local pinned PostgreSQL 17.6 **33/33 PASS**, strict Clippy PASS for the Durability test target and migration binary, and the complete game-server package test suite PASS; exact-head CI must be rerun after the successor is pushed.
 
 This lane remains `REVIEW_RECONCILIATION_REQUIRED`: the checkpoint successor must receive exact-head CI and a genuinely independent persistence/fencing/schema re-review before any integration handoff. This lane must not self-approve or self-merge.
 
@@ -80,15 +82,17 @@ This lane remains `REVIEW_RECONCILIATION_REQUIRED`: the checkpoint successor mus
 - `PROVEN`: RecoveryGrantNonce is durably single-consumed atomically with COMMIT and validated on committed replay/reconciliation.
 - `PROVEN`: PREPARE publishes only while the locked durable session is reconnectable, has no current controller, and exact epoch/predecessor/lease/scope/current-generation fences match.
 - `PROVEN`: PREPARE/COMMIT deadline checks use actual database time after lock acquisition; transaction-start time is not accepted as post-contention freshness evidence.
-- `PROVEN`: frozen UUID-backed durable identifiers/scopes use native PostgreSQL `uuid`; full-range FND02 `CommandId` values use `NUMERIC(20,0)` and are round-tripped at `u64::MAX` without narrowing.
-- `PROVEN`: typed identity/scope/FND02 mirrors are validated against the exact V1 record on replay, COMMIT and reconciliation; typed/serialized disagreement fails closed.
+- `PROVEN`: frozen UUID-backed durable identifiers/scopes use native PostgreSQL `uuid`; all uint64-class reconnect authority fences plus full-range FND02 `CommandId` values use `NUMERIC(20,0)` and round-trip without `i64` narrowing.
+- `PROVEN`: the durable GameSession row binds AccountId, CharacterId, WorldId and the exact tagged RuntimeScopeRef; actor/scope disagreement fails closed before replay, COMMIT or reconciliation.
+- `PROVEN`: typed identity/scope/FND02 mirrors plus `control_loss_epoch` and `transport_ref` are validated against the exact V1 record on replay, COMMIT and reconciliation; typed/serialized disagreement fails closed.
+- `PROVEN`: a different ControlLossEpoch is admitted only as an unseen non-reused equality fence under exact current ACTIVE predecessor/lease/scope identity; it never derives authority from numeric epoch ordering, and stale/unseen or historical attempts are retained deterministically under the eight-attempt per-epoch bound.
 - `PROVEN`: Phase-D COMMITTED reconciliation revalidates current epoch/predecessor/lease/scope/generation/transport/session-state/prepared-state/nonce binding before returning a committed snapshot.
 - `PROVEN`: runtime startup performs schema inspection only and does not execute DDL; migration execution remains separate.
 - `PROVEN`: Cargo/workspace/workflow/Foundation/shared surfaces remain outside this task and were not modified.
 
 ## Acceptance criteria
 
-- [x] Foundation dependencies and retained worker history are reconciled; current protected `main@4b6656f688868aa2fb59c18392c2f859f1c5a1c7` is present through normal non-force merge commit `d5025557eb4dfa52ca25919692752c858ad28e5d`.
+- [x] Foundation dependencies and retained worker history are reconciled; current protected `main@7c2da078596a7d2e27c3066ff74ac69b8b7f9af6` is present through normal non-force merge commit `e3524615917f3a0b89d4ef33a5826c36a855eb1e`.
 - [x] Real isolated PostgreSQL tests prove fresh migration, missing-ledger/runtime-DDL denial, checksum/ahead/behind/dirty incompatibility, migration cancellation plus fresh retry, outage/recovery, replay/collision/capacity and restart behavior.
 - [x] PREPARE/COMMIT/reconciliation preserve exact V1 attempt, transport-ref, evidence, authority and deadline semantics, including durable recovery nonce single-consumption and post-lock deadline expiry under real row-lock contention.
 - [x] Canonical PostgreSQL representation proves native UUID round-trip and full-range `u64` CommandId persistence through `NUMERIC(20,0)`, with typed mirror validation against the exact V1 record.
@@ -96,6 +100,16 @@ This lane remains `REVIEW_RECONCILIATION_REQUIRED`: the checkpoint successor mus
 - [ ] Fresh exact-head independent persistence/fencing/schema review, final exact-head CI reconciliation, expected-head integration merge and archive lifecycle are complete.
 
 ## Validation
+
+### Current Codex-finding repair successor (local pre-push evidence)
+
+- checkpoint parent: `851d3fedee186d4977ede6e9d83b65c90f0b5444`
+- protected main consumed by branch: `7c2da078596a7d2e27c3066ff74ac69b8b7f9af6`
+- pinned PostgreSQL 17.6 Durability harness: **33/33 PASS**, `0 failed`
+- strict Clippy: Durability PostgreSQL target `PASS`; `oteryn-game-migrate` binary `PASS`
+- complete `oteryn-game-server` package: 153/153 library tests plus all integration/doc-test groups `PASS`
+- formatting: touched Rust files pass Rust 1.94 `rustfmt --check` with Unix newline semantics
+- exact-head CI / fresh Codex re-review: **PENDING AFTER FAST-FORWARD PUSH**
 
 ### Canonical schema + Phase-D repair
 
@@ -156,18 +170,18 @@ A fresh genuinely independent review must evaluate the exact checkpoint-successo
 ## Context checkpoint
 
 ```yaml
-last_progress: canonical schema encoding and full Phase-D reconciliation gaps were repaired; exact candidate 5ef45f94ef615a6d2ca139f5e12e1f167483f241 passed PostgreSQL 17.6 25/25 and every PR-local Linux/Windows/format/governance/CodeQL/dependency gate; only the separately owned cargo-deny/chacha20 blocker remains
+last_progress: native Codex findings were reproduced by TDD and repaired locally; pinned PostgreSQL 17.6 is 33/33 PASS, strict Clippy and complete game-server package tests PASS; shared chacha20 blocker is resolved on protected main; exact-head CI and fresh Codex re-review remain pending after push
 status: IN_PROGRESS
 integration_state: REVIEW_RECONCILIATION_REQUIRED
 branch: impl/game-durability-journal
-validated_contract_repair_head_sha: 5ef45f94ef615a6d2ca139f5e12e1f167483f241
-checkpoint_parent_head_sha: 5ef45f94ef615a6d2ca139f5e12e1f167483f241
-current_protected_main_sha: 4b6656f688868aa2fb59c18392c2f859f1c5a1c7
-current_main_merge_up_sha: d5025557eb4dfa52ca25919692752c858ad28e5d
+validated_contract_repair_head_sha: null
+checkpoint_parent_head_sha: 851d3fedee186d4977ede6e9d83b65c90f0b5444
+current_protected_main_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
+current_main_merge_up_sha: e3524615917f3a0b89d4ef33a5826c36a855eb1e
 pr: 212
 final_head_sha: null
-owner_action_required: fresh independent exact-head persistence/fencing/schema review after checkpoint-successor exact-head CI
-blocker: independent re-review required; separately shared cargo-deny is blocked by yanked chacha20 0.10.1 outside this lane
+owner_action_required: none; lane lead is standing-authorized to request fresh native GitHub Codex review after exact-head CI
+blocker: exact-head CI and fresh native Codex re-review required; no current shared supply-chain blocker
 write_authority: exact_owned_paths_after_foundation_terminal_reconciliation_implementation_merge
 next_action: freeze the checkpoint successor, reconcile exact-head CI, obtain genuinely independent persistence/fencing/schema re-review, then hand off to integration authority without self-merging
 ```

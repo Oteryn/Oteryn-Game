@@ -459,6 +459,85 @@ mod durability_contract_tests {
     }
 
     #[test]
+    fn rejected_unseen_epoch_is_retained_for_same_attempt_replay() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url, _executor) =
+                migrated_database("unseen_epoch_stale").await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let record_now = crate::unix_now().map_err(crate::foundation_error)?;
+            let (_first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
+                crate::record(89, 1, 0xd6, record_now).map_err(crate::foundation_error)?,
+            );
+            assert_eq!(
+                journal.prepare(&first_prepare).await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            let (_stale_epoch_flow, stale_epoch) = ReconnectDurabilityFlowV1::begin(
+                crate::record_for_epoch(89, 2, 0xd7, record_now, record_now + 115, 4, 7, 8, 0x67)
+                    .map_err(crate::foundation_error)?,
+            );
+            assert_eq!(
+                journal.prepare(&stale_epoch).await?,
+                ReconnectPrepareDispositionV1::RejectedStaleAuthority
+            );
+            assert_eq!(
+                journal.prepare(&stale_epoch).await?,
+                ReconnectPrepareDispositionV1::ExistingTerminal
+            );
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn reconcile_without_durable_session_is_invalid_stored_state() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url, _executor) =
+                migrated_database("missing_reconcile_session").await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let record_now = crate::unix_now().map_err(crate::foundation_error)?;
+            let (_flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                crate::record(92, 1, 0xd8, record_now).map_err(crate::foundation_error)?,
+            );
+            assert!(matches!(
+                journal.reconcile(&prepare).await,
+                Err(DurabilityError::InvalidStoredState)
+            ));
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn commit_without_durable_session_is_rejected_stale_authority() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url, _executor) =
+                migrated_database("missing_commit_session").await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let record_now = crate::unix_now().map_err(crate::foundation_error)?;
+            let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                crate::record(88, 1, 0xd5, record_now).map_err(crate::foundation_error)?,
+            );
+            flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                &prepare,
+                ReconnectPrepareDispositionV1::Prepared,
+            ))
+            .map_err(crate::foundation_error)?;
+            let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                .map_err(crate::foundation_error)?;
+            let commit = flow
+                .authorize_commit(current, record_now)
+                .map_err(crate::foundation_error)?;
+            assert_eq!(
+                journal.commit(&commit).await?,
+                ReconnectCommitDispositionV1::RejectedStaleAuthority
+            );
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
     fn recovery_grant_nonce_is_single_consumed_at_commit() -> TestResult {
         run_postgres_test(async {
             let (database, database_url, _executor) = migrated_database("recovery_nonce").await?;
@@ -545,7 +624,7 @@ mod durability_contract_tests {
                 .to_vec();
             let mut connection = PgConnection::connect(&database_url).await?;
             sqlx::query(
-                "UPDATE game_durability_reconnect_sessions SET control_loss_epoch = control_loss_epoch + 1 \
+                "UPDATE game_durability_reconnect_sessions SET predecessor_generation = predecessor_generation + 1 \
                  WHERE game_session_id = encode($1, 'hex')::uuid",
             )
             .bind(session_id.as_slice())
@@ -765,7 +844,8 @@ mod durability_contract_tests {
     #[test]
     fn durable_session_actor_binding_fails_closed_when_typed_state_is_corrupt() -> TestResult {
         run_postgres_test(async {
-            let (database, database_url, _executor) = migrated_database("session_actor_corrupt").await?;
+            let (database, database_url, _executor) =
+                migrated_database("session_actor_corrupt").await?;
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
             let record_now = crate::unix_now().map_err(crate::foundation_error)?;
             let (_flow, request) = ReconnectDurabilityFlowV1::begin(
@@ -775,7 +855,12 @@ mod durability_contract_tests {
                 journal.prepare(&request).await?,
                 ReconnectPrepareDispositionV1::Prepared
             );
-            let session_id = request.record().identity().game_session_id().as_bytes().to_vec();
+            let session_id = request
+                .record()
+                .identity()
+                .game_session_id()
+                .as_bytes()
+                .to_vec();
             let mut connection = PgConnection::connect(&database_url).await?;
             sqlx::query(
                 "UPDATE game_durability_reconnect_sessions SET character_id = encode($2, 'hex')::uuid \
@@ -798,7 +883,8 @@ mod durability_contract_tests {
     #[test]
     fn typed_attempt_mirrors_fail_closed_when_canonical_record_is_unchanged() -> TestResult {
         run_postgres_test(async {
-            let (database, database_url, _executor) = migrated_database("typed_attempt_corrupt").await?;
+            let (database, database_url, _executor) =
+                migrated_database("typed_attempt_corrupt").await?;
             let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
             let record_now = crate::unix_now().map_err(crate::foundation_error)?;
             let (_flow, request) = ReconnectDurabilityFlowV1::begin(
@@ -808,7 +894,12 @@ mod durability_contract_tests {
                 journal.prepare(&request).await?,
                 ReconnectPrepareDispositionV1::Prepared
             );
-            let session_id = request.record().identity().game_session_id().as_bytes().to_vec();
+            let session_id = request
+                .record()
+                .identity()
+                .game_session_id()
+                .as_bytes()
+                .to_vec();
             let attempt_ref = request
                 .record()
                 .identity()
