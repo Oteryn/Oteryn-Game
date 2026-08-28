@@ -65,6 +65,7 @@ The successor-owned RED and GREEN gates are terminally proven on clean ancestry:
 3. Between those heads, only the allocation-approved frozen implementation/migration/build blobs were restored from admitted read-only file source `fb30fba2a888835dfc7cbde27f940b79d7bfe05d`; no #212 commit was inherited or cherry-picked.
 4. Post-qualification review found and the lane repaired two P1 control-plane gaps: exact-epoch protection continuity now compares `context_game_session_id`, and the durable reconnect-session row is the actor-wide `UNIQUE (character_id)` session/epoch anchor. Their respective test-only RED heads were `0129e9c4576894fd5b3d9184ea21afea97c1d204` and `48dac03fecce273836776ae434e4b0a913c6be18`; the latter's full PostgreSQL harness failed only because a later epoch on a distinct session was accepted.
 5. The P1 repair GREEN is `783ec1dfa8af6791e5ad8d06f13f32a6e62b985a` (Rust workspace run `33182999525`, PostgreSQL job `98888721229`). This task-only finalization commit intentionally creates a new candidate head. It is `QUALIFICATION_PENDING` until fresh exact-head whole-diff self-review, required strict read-only Codex review, zero unresolved P0/P1/P2 findings/required threads, and required repository CI are durable on PR #243. PR #243 remains Draft and must not be merged by this lane.
+6. Fresh review found one P1 and one P2 on task-finalization head `80b94d79ddd0ceac7f33939951449f816ba9f5c2`: a committed COMMIT replay did not revalidate its exact transport-reservation/current winner, and a committed authority anchor accepted absent or malformed compatibility/security evidence. Test-only RED head `7f792ba98d04818cc2e73904a5444b99e922dab6` is proven by Rust run `33184342450` / PostgreSQL job `98893334040`: the full harness failed exactly at both focused regressions. The minimal repair GREEN head `4e8760edb792cdc241f430420ac93759b155007a` is proven by Rust run `33184628524` / PostgreSQL job `98894312224` PASS. This packet update intentionally creates a further candidate head and remains `QUALIFICATION_PENDING`.
 
 Frozen RED blobs:
 
@@ -144,10 +145,14 @@ green_evidence: PR #243 comment 5453327626; trusted run/job 33176930382/98867863
 post_qualification_p1_red_heads: 0129e9c4576894fd5b3d9184ea21afea97c1d204 (same-epoch cross-session) and 48dac03fecce273836776ae434e4b0a913c6be18 (later-epoch cross-session)
 post_qualification_p1_green_head: 783ec1dfa8af6791e5ad8d06f13f32a6e62b985a
 post_qualification_p1_green_evidence: Rust workspace run 33182999525 and PostgreSQL job 98888721229 PASS
+post_qualification_p1_p2_red_head: 7f792ba98d04818cc2e73904a5444b99e922dab6
+post_qualification_p1_p2_red_evidence: Rust workspace run 33184342450 and PostgreSQL job 98893334040; exact focused replay-reservation and compatibility-anchor assertions failed
+post_qualification_p1_p2_green_head: 4e8760edb792cdc241f430420ac93759b155007a
+post_qualification_p1_p2_green_evidence: Rust workspace run 33184628524 and PostgreSQL job 98894312224 PASS
 exact_head_evidence: bind the post-task-update exact final head in fresh immutable PR #243 self-review, Codex review, and required CI evidence
 allocation_pr: 241
 allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
-blocker: fresh_exact_head_self_review_codex_required_review_and_required_repository_ci_pending_after_truthful_post_p1_task_finalization
+blocker: fresh_exact_head_self_review_codex_required_review_and_required_repository_ci_pending_after_truthful_post_p1_p2_task_finalization
 owner_action_required: null
-next_action: publish this task-only post-P1 qualification update, then complete and durably record fresh exact-head whole-diff self-review, required strict read-only Codex review, and required repository CI before any READY_FOR_INTEGRATION decision
+next_action: publish this task-only post-P1/P2 qualification update, then complete and durably record fresh exact-head whole-diff self-review, required strict read-only Codex review, and required repository CI before any READY_FOR_INTEGRATION decision
 ```
