@@ -22,6 +22,10 @@ const INSTANCE_SCOPE: i16 = 2;
 const PENDING_ORIGINAL: i16 = 1;
 const TERMINAL_OUTCOME_RETAINED: i16 = 2;
 const MAX_FND02_DOMAIN_REVISIONS: usize = 256;
+const PROTECTION_UNUSED: i16 = 1;
+const PROTECTION_FENCED: i16 = 2;
+const PROTECTION_REARM_READY: i16 = 1;
+const PROTECTION_REARM_PENDING: i16 = 2;
 type ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 
 #[derive(Clone)]
@@ -61,7 +65,7 @@ impl AdmissionReconnectJournal {
             scope_storage(record);
 
         let mut transaction = self.pool.begin().await?;
-        sqlx::query(
+        let inserted_session = sqlx::query(
             "INSERT INTO game_durability_reconnect_sessions (\
                 game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
                 runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
@@ -91,6 +95,9 @@ impl AdmissionReconnectJournal {
         .bind(&scope_generation)
         .execute(&mut *transaction)
         .await?;
+        if inserted_session.rows_affected() == 1 {
+            ensure_precommit_protection_continuity(&mut transaction, record).await?;
+        }
 
         let Some(mut session) =
             load_session_for_update(&mut transaction, session_id.as_slice()).await?
@@ -118,6 +125,16 @@ impl AdmissionReconnectJournal {
                 return Err(DurabilityError::InvalidStoredState);
             }
             let state: i16 = existing.try_get("state")?;
+            if state == COMMITTED
+                && !committed_protection_binding_is_valid(&mut transaction, record).await?
+            {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            if state == PREPARED
+                && !precommit_protection_binding_is_valid(&mut transaction, record, false).await?
+            {
+                return Err(DurabilityError::InvalidStoredState);
+            }
             if state == PREPARED && database_now(&mut transaction).await? > prepared_deadline {
                 if session
                     .try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
@@ -233,6 +250,8 @@ impl AdmissionReconnectJournal {
                 return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
             }
 
+            ensure_precommit_protection_continuity(&mut transaction, record).await?;
+
             let opened = sqlx::query(
                 "UPDATE game_durability_reconnect_sessions \
                  SET control_loss_epoch = $2::text::numeric(20, 0), \
@@ -289,6 +308,7 @@ impl AdmissionReconnectJournal {
             transaction.commit().await?;
             return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
         }
+        ensure_precommit_protection_continuity(&mut transaction, record).await?;
 
         let incumbent: Option<Vec<u8>> = session.try_get("prepared_attempt_ref")?;
         if incumbent.is_some() {
@@ -395,6 +415,9 @@ impl AdmissionReconnectJournal {
         }
         match attempt.try_get::<i16, _>("state")? {
             COMMITTED => {
+                if !committed_protection_binding_is_valid(&mut transaction, record).await? {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
                 let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
                 if session.try_get::<String, _>("control_loss_epoch")? == epoch
                     && session.try_get::<i64, _>("original_grace_deadline")?
@@ -458,6 +481,10 @@ impl AdmissionReconnectJournal {
             return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
         }
 
+        if !precommit_protection_binding_is_valid(&mut transaction, record, true).await? {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+
         if !transport_reservation_binding_is_valid(
             &mut transaction,
             transport_ref.as_slice(),
@@ -492,6 +519,8 @@ impl AdmissionReconnectJournal {
                 return Ok(ReconnectCommitDispositionV1::RejectedStaleAuthority);
             }
         }
+
+        commit_protection_entitlement(&mut transaction, record).await?;
 
         let committed = sqlx::query(
             "UPDATE game_durability_reconnect_attempts SET state = $3 \
@@ -577,6 +606,9 @@ impl AdmissionReconnectJournal {
         }
         let snapshot = match attempt.try_get::<i16, _>("state")? {
             PREPARED => {
+                if !precommit_protection_binding_is_valid(&mut transaction, record, false).await? {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
                 let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
                 let prepared_ref: Option<Vec<u8>> = session.try_get("prepared_attempt_ref")?;
                 if session.try_get::<String, _>("control_loss_epoch")? != epoch
@@ -636,6 +668,301 @@ impl AdmissionReconnectJournal {
         };
         transaction.commit().await?;
         Ok(snapshot)
+    }
+}
+
+fn protection_precommit_storage(
+    record: &ReconnectDurabilityRecordV1,
+) -> (i16, Option<String>, i16) {
+    match record.continuity().protection_entitlement() {
+        ProtectionEntitlementV1::Unused => (PROTECTION_UNUSED, None, PROTECTION_REARM_READY),
+        ProtectionEntitlementV1::Fenced { generation } => (
+            PROTECTION_FENCED,
+            Some(generation.to_string()),
+            PROTECTION_REARM_PENDING,
+        ),
+    }
+}
+
+async fn ensure_precommit_protection_continuity(
+    transaction: &mut Transaction<'_, Postgres>,
+    record: &ReconnectDurabilityRecordV1,
+) -> Result<(), DurabilityError> {
+    let identity = record.identity();
+    let character_id = identity.character_id().as_bytes().to_vec();
+    let session_id = identity.game_session_id().as_bytes().to_vec();
+    let world_id = identity.world_id().as_bytes().to_vec();
+    let epoch = record.continuity().control_loss_epoch().get().to_string();
+    let grace = record.continuity().original_grace_deadline();
+    let (state, fenced_generation, rearm_state) = protection_precommit_storage(record);
+    sqlx::query(
+        "INSERT INTO game_durability_control_loss_continuity (\
+            character_id, control_loss_epoch, account_id, world_id, context_game_session_id, \
+            original_grace_deadline, protection_entitlement_state, \
+            protection_fenced_generation, protection_rearm_state\
+         ) VALUES (\
+            encode($1, 'hex')::uuid, $2::text::numeric(20, 0), $3::text::uuid, \
+            encode($4, 'hex')::uuid, encode($5, 'hex')::uuid, $6, $7, \
+            $8::text::numeric(20, 0), $9\
+         ) ON CONFLICT (character_id, control_loss_epoch) DO NOTHING",
+    )
+    .bind(character_id.as_slice())
+    .bind(&epoch)
+    .bind(identity.account_id())
+    .bind(world_id.as_slice())
+    .bind(session_id.as_slice())
+    .bind(grace)
+    .bind(state)
+    .bind(fenced_generation.as_deref())
+    .bind(rearm_state)
+    .execute(&mut **transaction)
+    .await?;
+    if !precommit_protection_binding_is_valid(transaction, record, true).await? {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
+}
+
+async fn load_protection_row(
+    transaction: &mut Transaction<'_, Postgres>,
+    character_id: &[u8],
+    epoch: &str,
+    for_update: bool,
+) -> Result<Option<PgRow>, DurabilityError> {
+    let sql = if for_update {
+        "SELECT account_id::text AS account_id, uuid_send(world_id) AS world_id, \
+                uuid_send(context_game_session_id) AS context_game_session_id, \
+                original_grace_deadline, protection_entitlement_state, \
+                protection_fenced_generation::text AS protection_fenced_generation, \
+                protection_activated_at IS NULL AS protection_activation_missing, \
+                protection_expires_at IS NULL AS protection_expiry_missing, \
+                CASE WHEN protection_activated_at IS NOT NULL AND protection_expires_at IS NOT NULL \
+                     THEN EXTRACT(EPOCH FROM (protection_expires_at - protection_activated_at))::BIGINT \
+                     ELSE NULL END AS protection_duration_seconds, \
+                protection_rearm_state, \
+                protection_rearm_deadline IS NULL AS protection_rearm_deadline_missing \
+         FROM game_durability_control_loss_continuity \
+         WHERE character_id = encode($1, 'hex')::uuid \
+           AND control_loss_epoch = $2::text::numeric(20, 0) FOR UPDATE"
+    } else {
+        "SELECT account_id::text AS account_id, uuid_send(world_id) AS world_id, \
+                uuid_send(context_game_session_id) AS context_game_session_id, \
+                original_grace_deadline, protection_entitlement_state, \
+                protection_fenced_generation::text AS protection_fenced_generation, \
+                protection_activated_at IS NULL AS protection_activation_missing, \
+                protection_expires_at IS NULL AS protection_expiry_missing, \
+                CASE WHEN protection_activated_at IS NOT NULL AND protection_expires_at IS NOT NULL \
+                     THEN EXTRACT(EPOCH FROM (protection_expires_at - protection_activated_at))::BIGINT \
+                     ELSE NULL END AS protection_duration_seconds, \
+                protection_rearm_state, \
+                protection_rearm_deadline IS NULL AS protection_rearm_deadline_missing \
+         FROM game_durability_control_loss_continuity \
+         WHERE character_id = encode($1, 'hex')::uuid \
+           AND control_loss_epoch = $2::text::numeric(20, 0)"
+    };
+    sqlx::query(sql)
+        .bind(character_id)
+        .bind(epoch)
+        .fetch_optional(&mut **transaction)
+        .await
+        .map_err(DurabilityError::from)
+}
+
+fn protection_common_binding_is_valid(
+    row: &PgRow,
+    record: &ReconnectDurabilityRecordV1,
+) -> Result<bool, DurabilityError> {
+    let identity = record.identity();
+    Ok(
+        row.try_get::<String, _>("account_id")? == identity.account_id()
+            && row.try_get::<Vec<u8>, _>("world_id")?.as_slice()
+                == identity.world_id().as_bytes().as_slice()
+            && row.try_get::<i64, _>("original_grace_deadline")?
+                == record.continuity().original_grace_deadline(),
+    )
+}
+
+async fn precommit_protection_binding_is_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    record: &ReconnectDurabilityRecordV1,
+    for_update: bool,
+) -> Result<bool, DurabilityError> {
+    let character_id = record.identity().character_id().as_bytes().to_vec();
+    let epoch = record.continuity().control_loss_epoch().get().to_string();
+    let Some(row) =
+        load_protection_row(transaction, character_id.as_slice(), &epoch, for_update).await?
+    else {
+        return Ok(false);
+    };
+    if !protection_common_binding_is_valid(&row, record)? {
+        return Ok(false);
+    }
+    let (expected_state, expected_generation, expected_rearm) =
+        protection_precommit_storage(record);
+    Ok(
+        row.try_get::<i16, _>("protection_entitlement_state")? == expected_state
+            && row.try_get::<Option<String>, _>("protection_fenced_generation")?
+                == expected_generation
+            && row.try_get::<bool, _>("protection_activation_missing")?
+            && row.try_get::<bool, _>("protection_expiry_missing")?
+            && row
+                .try_get::<Option<i64>, _>("protection_duration_seconds")?
+                .is_none()
+            && row.try_get::<i16, _>("protection_rearm_state")? == expected_rearm
+            && row.try_get::<bool, _>("protection_rearm_deadline_missing")?,
+    )
+}
+
+async fn committed_protection_binding_is_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    record: &ReconnectDurabilityRecordV1,
+) -> Result<bool, DurabilityError> {
+    let character_id = record.identity().character_id().as_bytes().to_vec();
+    let epoch = record.continuity().control_loss_epoch().get().to_string();
+    let Some(row) =
+        load_protection_row(transaction, character_id.as_slice(), &epoch, false).await?
+    else {
+        return Ok(false);
+    };
+    if !protection_common_binding_is_valid(&row, record)?
+        || row.try_get::<i16, _>("protection_entitlement_state")? != PROTECTION_FENCED
+        || row.try_get::<i16, _>("protection_rearm_state")? != PROTECTION_REARM_PENDING
+        || !row.try_get::<bool, _>("protection_rearm_deadline_missing")?
+    {
+        return Ok(false);
+    }
+    match record.continuity().protection_entitlement() {
+        ProtectionEntitlementV1::Unused => Ok(row
+            .try_get::<Option<String>, _>("protection_fenced_generation")?
+            == Some(record.connection().candidate().get().to_string())
+            && !row.try_get::<bool, _>("protection_activation_missing")?
+            && !row.try_get::<bool, _>("protection_expiry_missing")?
+            && row.try_get::<Option<i64>, _>("protection_duration_seconds")? == Some(4)),
+        ProtectionEntitlementV1::Fenced { generation } => Ok(row
+            .try_get::<Option<String>, _>("protection_fenced_generation")?
+            == Some(generation.to_string())
+            && row.try_get::<bool, _>("protection_activation_missing")?
+            && row.try_get::<bool, _>("protection_expiry_missing")?
+            && row
+                .try_get::<Option<i64>, _>("protection_duration_seconds")?
+                .is_none()),
+    }
+}
+
+async fn commit_protection_entitlement(
+    transaction: &mut Transaction<'_, Postgres>,
+    record: &ReconnectDurabilityRecordV1,
+) -> Result<(), DurabilityError> {
+    match record.continuity().protection_entitlement() {
+        ProtectionEntitlementV1::Unused => {
+            let character_id = record.identity().character_id().as_bytes().to_vec();
+            let epoch = record.continuity().control_loss_epoch().get().to_string();
+            let candidate = record.connection().candidate().get().to_string();
+            let updated = sqlx::query(
+                "WITH activation AS (SELECT clock_timestamp() AS activated_at) \
+                 UPDATE game_durability_control_loss_continuity AS continuity \
+                 SET protection_entitlement_state = $3, \
+                     protection_fenced_generation = $4::text::numeric(20, 0), \
+                     protection_activated_at = activation.activated_at, \
+                     protection_expires_at = activation.activated_at + INTERVAL '4 seconds', \
+                     protection_rearm_state = $5, protection_rearm_deadline = NULL \
+                 FROM activation \
+                 WHERE continuity.character_id = encode($1, 'hex')::uuid \
+                   AND continuity.control_loss_epoch = $2::text::numeric(20, 0) \
+                   AND continuity.protection_entitlement_state = $6 \
+                   AND continuity.protection_fenced_generation IS NULL \
+                   AND continuity.protection_activated_at IS NULL \
+                   AND continuity.protection_expires_at IS NULL \
+                   AND continuity.protection_rearm_state = $7 \
+                   AND continuity.protection_rearm_deadline IS NULL",
+            )
+            .bind(character_id.as_slice())
+            .bind(&epoch)
+            .bind(PROTECTION_FENCED)
+            .bind(&candidate)
+            .bind(PROTECTION_REARM_PENDING)
+            .bind(PROTECTION_UNUSED)
+            .bind(PROTECTION_REARM_READY)
+            .execute(&mut **transaction)
+            .await?;
+            if updated.rows_affected() != 1 {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+        }
+        ProtectionEntitlementV1::Fenced { .. } => {
+            if !precommit_protection_binding_is_valid(transaction, record, true).await? {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+        }
+    }
+    if !committed_protection_binding_is_valid(transaction, record).await? {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(())
+}
+
+async fn canonical_committed_protection_binding_is_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    session_id: &[u8],
+    session: &PgRow,
+    continuity: &Value,
+    connection: &Value,
+) -> Result<bool, DurabilityError> {
+    let character_id: Vec<u8> = session.try_get("character_id")?;
+    let Some(epoch) = canonical_u64_text(&continuity["control_loss_epoch"]) else {
+        return Ok(false);
+    };
+    let Some(row) =
+        load_protection_row(transaction, character_id.as_slice(), &epoch, false).await?
+    else {
+        return Ok(false);
+    };
+    if row.try_get::<String, _>("account_id")? != session.try_get::<String, _>("account_id")?
+        || row.try_get::<Vec<u8>, _>("world_id")? != session.try_get::<Vec<u8>, _>("world_id")?
+        || row
+            .try_get::<Vec<u8>, _>("context_game_session_id")?
+            .as_slice()
+            != session_id
+        || row.try_get::<i64, _>("original_grace_deadline")?
+            != continuity["original_grace_deadline"]
+                .as_i64()
+                .ok_or(DurabilityError::InvalidStoredState)?
+        || row.try_get::<i16, _>("protection_entitlement_state")? != PROTECTION_FENCED
+        || row.try_get::<i16, _>("protection_rearm_state")? != PROTECTION_REARM_PENDING
+        || !row.try_get::<bool, _>("protection_rearm_deadline_missing")?
+    {
+        return Ok(false);
+    }
+    match continuity["protection_entitlement"]["state"].as_str() {
+        Some("unused") => {
+            let Some(candidate) = canonical_u64_text(&connection["candidate_generation"]) else {
+                return Ok(false);
+            };
+            Ok(
+                row.try_get::<Option<String>, _>("protection_fenced_generation")?
+                    == Some(candidate)
+                    && !row.try_get::<bool, _>("protection_activation_missing")?
+                    && !row.try_get::<bool, _>("protection_expiry_missing")?
+                    && row.try_get::<Option<i64>, _>("protection_duration_seconds")? == Some(4),
+            )
+        }
+        Some("fenced") => {
+            let Some(generation) =
+                canonical_u64_text(&continuity["protection_entitlement"]["generation"])
+            else {
+                return Ok(false);
+            };
+            Ok(
+                row.try_get::<Option<String>, _>("protection_fenced_generation")?
+                    == Some(generation)
+                    && row.try_get::<bool, _>("protection_activation_missing")?
+                    && row.try_get::<bool, _>("protection_expiry_missing")?
+                    && row
+                        .try_get::<Option<i64>, _>("protection_duration_seconds")?
+                        .is_none(),
+            )
+        }
+        _ => Ok(false),
     }
 }
 
@@ -772,7 +1099,7 @@ async fn transport_reservation_binding_is_valid(
 ) -> Result<bool, DurabilityError> {
     let reservation = sqlx::query(
         "SELECT uuid_send(game_session_id) AS game_session_id, reconnect_attempt_ref \
-         FROM game_durability_transport_ref_reservations WHERE transport_ref = $1",
+         FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 FOR SHARE",
     )
     .bind(transport_ref)
     .fetch_optional(&mut **transaction)
@@ -899,21 +1226,29 @@ async fn active_committed_binding_is_valid(
     {
         return Ok(false);
     }
-    if !canonical_fnd02_mirrors_are_valid(
+    if !canonical_committed_protection_binding_is_valid(
         transaction,
         session_id,
-        attempt_ref.as_slice(),
-        row,
-        fnd02,
+        session,
+        continuity,
+        connection,
     )
     .await?
+        || !canonical_fnd02_mirrors_are_valid(
+            transaction,
+            session_id,
+            attempt_ref.as_slice(),
+            row,
+            fnd02,
+        )
+        .await?
     {
         return Ok(false);
     }
 
     let reservation = sqlx::query(
         "SELECT uuid_send(game_session_id) AS game_session_id, reconnect_attempt_ref \
-         FROM game_durability_transport_ref_reservations WHERE transport_ref = $1",
+         FROM game_durability_transport_ref_reservations WHERE transport_ref = $1 FOR SHARE",
     )
     .bind(current_ref.as_slice())
     .fetch_optional(&mut **transaction)

@@ -32,6 +32,15 @@ type CrossEpochSessionRow = (
     i16,
     Option<Vec<u8>>,
 );
+type ProtectionContinuityRow = (
+    i16,
+    Option<String>,
+    Option<String>,
+    Option<String>,
+    Option<i64>,
+    i16,
+    Option<String>,
+);
 
 fn foundation_error(error: ReconnectDurabilityErrorV1) -> std::io::Error {
     std::io::Error::other(format!(
@@ -109,9 +118,87 @@ fn record_for_epoch(
     candidate_generation: u64,
     recovery_nonce_byte: u8,
 ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+    record_for_epoch_with_protection(
+        game_session_raw,
+        attempt_raw,
+        transport_byte,
+        now,
+        prepared_deadline,
+        control_loss_epoch,
+        predecessor_generation,
+        candidate_generation,
+        recovery_nonce_byte,
+        ProtectionEntitlementV1::unused(),
+    )
+}
+
+fn record_for_actor(
+    game_session_raw: u64,
+    character_raw: u64,
+    attempt_raw: u64,
+    transport_byte: u8,
+    now: i64,
+) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+    record_for_actor_epoch_with_protection(
+        game_session_raw,
+        character_raw,
+        attempt_raw,
+        transport_byte,
+        now,
+        now + 115,
+        3,
+        7,
+        8,
+        0x55,
+        ProtectionEntitlementV1::unused(),
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn record_for_epoch_with_protection(
+    game_session_raw: u64,
+    attempt_raw: u64,
+    transport_byte: u8,
+    now: i64,
+    prepared_deadline: i64,
+    control_loss_epoch: u64,
+    predecessor_generation: u64,
+    candidate_generation: u64,
+    recovery_nonce_byte: u8,
+    protection_entitlement: ProtectionEntitlementV1,
+) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+    record_for_actor_epoch_with_protection(
+        game_session_raw,
+        11,
+        attempt_raw,
+        transport_byte,
+        now,
+        prepared_deadline,
+        control_loss_epoch,
+        predecessor_generation,
+        candidate_generation,
+        recovery_nonce_byte,
+        protection_entitlement,
+    )
+}
+
+#[allow(clippy::too_many_arguments)]
+fn record_for_actor_epoch_with_protection(
+    game_session_raw: u64,
+    character_raw: u64,
+    attempt_raw: u64,
+    transport_byte: u8,
+    now: i64,
+    prepared_deadline: i64,
+    control_loss_epoch: u64,
+    predecessor_generation: u64,
+    candidate_generation: u64,
+    recovery_nonce_byte: u8,
+    protection_entitlement: ProtectionEntitlementV1,
+) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
     let game_session_id = GameSessionId::decode(&uuid_v7(game_session_raw))
         .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?;
-    let character_id = CharacterId::decode(&uuid_v7(11))
+    let character_id = CharacterId::decode(&uuid_v7(character_raw))
         .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?;
     let world_id = WorldId::decode(&uuid_v7(12))
         .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?;
@@ -143,7 +230,7 @@ fn record_for_epoch(
         ControlLossEpochRefV1::new(control_loss_epoch)?,
         now + 120,
         prepared_deadline,
-        ProtectionEntitlementV1::unused(),
+        protection_entitlement,
     )?;
     let fnd02 = Fnd02ReconciliationFenceV1::new(
         CommandId::new(3).map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
@@ -395,7 +482,7 @@ fn transport_ref_collision_is_durable_and_same_attempt_replays_terminal()
                     record(20, 1, 0x33, record_now).map_err(foundation_error)?,
                 );
                 let (_colliding_flow, colliding) = ReconnectDurabilityFlowV1::begin(
-                    record(21, 1, 0x33, record_now).map_err(foundation_error)?,
+                    record_for_actor(21, 121, 1, 0x33, record_now).map_err(foundation_error)?,
                 );
 
                 assert_eq!(
@@ -496,7 +583,7 @@ fn same_attempt_with_changed_record_conflicts_without_consuming_the_new_ref()
                     record(40, 1, 0x52, record_now).map_err(foundation_error)?,
                 );
                 let (_new_flow, new_attempt) = ReconnectDurabilityFlowV1::begin(
-                    record(41, 1, 0x52, record_now).map_err(foundation_error)?,
+                    record_for_actor(41, 141, 1, 0x52, record_now).map_err(foundation_error)?,
                 );
 
                 assert_eq!(
@@ -1019,6 +1106,86 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
 }
 
 #[test]
+fn fresh_commit_holds_the_transport_reservation_lock_through_commit()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database =
+                postgres::IsolatedPostgres::create("fresh_commit_reservation_lock").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(106, 1, 0xf4, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current =
+                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                        .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let transport_ref = prepare
+                    .record()
+                    .connection()
+                    .transport_ref()
+                    .to_bytes()
+                    .to_vec();
+                let mut reservation_lock = pool.begin().await?;
+                sqlx::query(
+                    "SELECT transport_ref FROM game_durability_transport_ref_reservations \
+                     WHERE transport_ref = $1 FOR UPDATE",
+                )
+                .bind(transport_ref.as_slice())
+                .fetch_one(&mut *reservation_lock)
+                .await?;
+
+                let blocked_journal = journal.clone();
+                let blocked_commit = commit.clone();
+                let blocked =
+                    tokio::spawn(async move { blocked_journal.commit(&blocked_commit).await });
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                assert!(
+                    !blocked.is_finished(),
+                    "fresh COMMIT must wait while another transaction holds the reservation row"
+                );
+                let consumed_while_blocked: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_recovery_grant_consumptions",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(consumed_while_blocked, 0);
+
+                reservation_lock.commit().await?;
+                assert_eq!(blocked.await??, ReconnectCommitDispositionV1::Committed);
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn fresh_commit_requires_the_exact_retained_transport_reservation()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
@@ -1112,6 +1279,198 @@ fn fresh_commit_requires_the_exact_retained_transport_reservation()
                 .fetch_one(&pool)
                 .await?;
                 assert_eq!(consumed, 0, "invalid reservation must not consume the recovery nonce");
+                let character_id = prepare.record().identity().character_id().as_bytes().to_vec();
+                let protection: (i16, Option<String>, bool, bool, i16) = sqlx::query_as(
+                    "SELECT protection_entitlement_state, protection_fenced_generation::text, \
+                            protection_activated_at IS NULL, protection_expires_at IS NULL, \
+                            protection_rearm_state \
+                     FROM game_durability_control_loss_continuity \
+                     WHERE character_id = encode($1, 'hex')::uuid AND control_loss_epoch = 3",
+                )
+                .bind(character_id.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(protection, (1, None, true, true, 1));
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn successful_commit_activates_unused_protection_exactly_once()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("protection_activate_once").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let record_now = unix_now().map_err(foundation_error)?;
+                let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(104, 1, 0xf1, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(journal.prepare(&prepare).await?, ReconnectPrepareDispositionV1::Prepared);
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                    .map_err(foundation_error)?;
+                let commit = flow.authorize_commit(current, record_now).map_err(foundation_error)?;
+                assert_eq!(journal.commit(&commit).await?, ReconnectCommitDispositionV1::Committed);
+
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let character_id = prepare.record().identity().character_id().as_bytes().to_vec();
+                let first: ProtectionContinuityRow =
+                    sqlx::query_as(
+                        "SELECT protection_entitlement_state, protection_fenced_generation::text, \
+                                protection_activated_at::text, protection_expires_at::text, \
+                                EXTRACT(EPOCH FROM (protection_expires_at - protection_activated_at))::BIGINT, \
+                                protection_rearm_state, protection_rearm_deadline::text \
+                         FROM game_durability_control_loss_continuity \
+                         WHERE character_id = encode($1, 'hex')::uuid \
+                           AND control_loss_epoch = 3",
+                    )
+                    .bind(character_id.as_slice())
+                    .fetch_one(&pool)
+                    .await?;
+                assert_eq!(first.0, 2);
+                assert_eq!(first.1.as_deref(), Some("8"));
+                assert!(first.2.is_some());
+                assert!(first.3.is_some());
+                assert_eq!(first.4, Some(4));
+                assert_eq!(first.5, 2);
+                assert!(first.6.is_none());
+
+                drop(journal);
+                let recovered_journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                assert_eq!(
+                    recovered_journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                let replay: ProtectionContinuityRow =
+                    sqlx::query_as(
+                        "SELECT protection_entitlement_state, protection_fenced_generation::text, \
+                                protection_activated_at::text, protection_expires_at::text, \
+                                EXTRACT(EPOCH FROM (protection_expires_at - protection_activated_at))::BIGINT, \
+                                protection_rearm_state, protection_rearm_deadline::text \
+                         FROM game_durability_control_loss_continuity \
+                         WHERE character_id = encode($1, 'hex')::uuid \
+                           AND control_loss_epoch = 3",
+                    )
+                    .bind(character_id.as_slice())
+                    .fetch_one(&pool)
+                    .await?;
+                assert_eq!(replay, first, "lost-response replay must not restart the protection window");
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn fenced_entitlement_does_not_create_a_second_protection_window_on_later_epoch()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("protection_no_loop_extension").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let first_now = unix_now().map_err(foundation_error)?;
+                let (mut first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_for_epoch(105, 1, 0xf2, first_now, first_now + 115, 3, 7, 8, 0x71)
+                        .map_err(foundation_error)?,
+                );
+                assert_eq!(journal.prepare(&first_prepare).await?, ReconnectPrepareDispositionV1::Prepared);
+                first_flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &first_prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                )).map_err(foundation_error)?;
+                let first_current = ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), first_now)
+                    .map_err(foundation_error)?;
+                let first_commit = first_flow.authorize_commit(first_current, first_now).map_err(foundation_error)?;
+                assert_eq!(journal.commit(&first_commit).await?, ReconnectCommitDispositionV1::Committed);
+
+                let second_now = unix_now().map_err(foundation_error)?;
+                let fenced = ProtectionEntitlementV1::fenced(8).map_err(foundation_error)?;
+                let (mut second_flow, second_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_for_epoch_with_protection(
+                        105,
+                        2,
+                        0xf3,
+                        second_now,
+                        second_now + 115,
+                        4,
+                        8,
+                        9,
+                        0x72,
+                        fenced,
+                    )
+                    .map_err(foundation_error)?,
+                );
+                assert_eq!(journal.prepare(&second_prepare).await?, ReconnectPrepareDispositionV1::Prepared);
+                second_flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &second_prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                )).map_err(foundation_error)?;
+                let second_current = ReconnectCurrentAuthorityV1::from_record(second_prepare.record(), second_now)
+                    .map_err(foundation_error)?;
+                let second_commit = second_flow.authorize_commit(second_current, second_now).map_err(foundation_error)?;
+                assert_eq!(journal.commit(&second_commit).await?, ReconnectCommitDispositionV1::Committed);
+
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let character_id = second_prepare.record().identity().character_id().as_bytes().to_vec();
+                let rows: Vec<(String, i16, Option<String>, bool, bool, i16)> = sqlx::query_as(
+                    "SELECT control_loss_epoch::text, protection_entitlement_state, \
+                            protection_fenced_generation::text, \
+                            protection_activated_at IS NOT NULL, protection_expires_at IS NOT NULL, \
+                            protection_rearm_state \
+                     FROM game_durability_control_loss_continuity \
+                     WHERE character_id = encode($1, 'hex')::uuid \
+                     ORDER BY control_loss_epoch",
+                )
+                .bind(character_id.as_slice())
+                .fetch_all(&pool)
+                .await?;
+                assert_eq!(rows.len(), 2);
+                assert_eq!(rows[0].0, "3");
+                assert_eq!(rows[0].1, 2);
+                assert_eq!(rows[0].2.as_deref(), Some("8"));
+                assert!(rows[0].3 && rows[0].4);
+                assert_eq!(rows[0].5, 2);
+                assert_eq!(rows[1], ("4".to_owned(), 2, Some("8".to_owned()), false, false, 2));
+                let activations: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_control_loss_continuity \
+                     WHERE character_id = encode($1, 'hex')::uuid \
+                       AND protection_activated_at IS NOT NULL",
+                )
+                .bind(character_id.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(activations, 1, "non-rearmed reconnect churn must not mint a second protection window");
                 pool.close().await;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
@@ -2067,12 +2426,14 @@ fn prepare_row_lock_wait_cannot_outlive_prepared_deadline() -> Result<(), Box<dy
                 }
                 lock.commit().await?;
 
+                let blocked_result = blocked.await?;
                 assert_eq!(
-                    blocked.await??,
+                    blocked_result?,
                     ReconnectPrepareDispositionV1::RejectedStaleAuthority
                 );
+                let replay_result = journal.prepare(&request).await;
                 assert_eq!(
-                    journal.prepare(&request).await?,
+                    replay_result?,
                     ReconnectPrepareDispositionV1::ExistingTerminal
                 );
                 let session: (i64, Option<Vec<u8>>, i16, i16, Option<Vec<u8>>) = sqlx::query_as(

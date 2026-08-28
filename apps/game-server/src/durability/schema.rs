@@ -138,8 +138,8 @@ mod contract_tests {
             MIGRATION
                 .matches("control_loss_epoch NUMERIC(20, 0) NOT NULL")
                 .count(),
-            2,
-            "both session and attempt ControlLossEpoch mirrors must retain the full u64 range"
+            3,
+            "session, actor-wide continuity and attempt ControlLossEpoch mirrors must retain the full u64 range"
         );
     }
 }

@@ -47,6 +47,48 @@ CREATE TABLE game_durability_reconnect_sessions (
     )
 );
 
+CREATE TABLE game_durability_control_loss_continuity (
+    character_id UUID NOT NULL
+        CHECK ((get_byte(uuid_send(character_id), 6) >> 4) = 7)
+        CHECK ((get_byte(uuid_send(character_id), 8) & 192) = 128),
+    control_loss_epoch NUMERIC(20, 0) NOT NULL
+        CHECK (control_loss_epoch BETWEEN 1 AND 18446744073709551615),
+    account_id UUID NOT NULL,
+    world_id UUID NOT NULL
+        CHECK ((get_byte(uuid_send(world_id), 6) >> 4) = 7)
+        CHECK ((get_byte(uuid_send(world_id), 8) & 192) = 128),
+    context_game_session_id UUID NOT NULL
+        CHECK ((get_byte(uuid_send(context_game_session_id), 6) >> 4) = 7)
+        CHECK ((get_byte(uuid_send(context_game_session_id), 8) & 192) = 128),
+    original_grace_deadline BIGINT NOT NULL,
+    protection_entitlement_state SMALLINT NOT NULL CHECK (protection_entitlement_state IN (1, 2)),
+    protection_fenced_generation NUMERIC(20, 0) NULL
+        CHECK (protection_fenced_generation BETWEEN 1 AND 18446744073709551615),
+    protection_activated_at TIMESTAMPTZ NULL,
+    protection_expires_at TIMESTAMPTZ NULL,
+    protection_rearm_state SMALLINT NOT NULL CHECK (protection_rearm_state IN (1, 2)),
+    protection_rearm_deadline TIMESTAMPTZ NULL,
+    PRIMARY KEY (character_id, control_loss_epoch),
+    CHECK (
+        (protection_entitlement_state = 1
+            AND protection_fenced_generation IS NULL
+            AND protection_activated_at IS NULL
+            AND protection_expires_at IS NULL
+            AND protection_rearm_state = 1
+            AND protection_rearm_deadline IS NULL)
+        OR
+        (protection_entitlement_state = 2
+            AND protection_fenced_generation IS NOT NULL
+            AND protection_rearm_state = 2
+            AND (
+                (protection_activated_at IS NULL AND protection_expires_at IS NULL)
+                OR
+                (protection_activated_at IS NOT NULL
+                    AND protection_expires_at = protection_activated_at + INTERVAL '4 seconds')
+            ))
+    )
+);
+
 CREATE TABLE game_durability_transport_ref_reservations (
     transport_ref BYTEA PRIMARY KEY CHECK (octet_length(transport_ref) = 16),
     game_session_id UUID NOT NULL

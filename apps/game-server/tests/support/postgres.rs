@@ -568,7 +568,8 @@ mod durability_contract_tests {
             );
 
             let (mut second_flow, second_prepare) = ReconnectDurabilityFlowV1::begin(
-                crate::record(81, 1, 0x82, record_now).map_err(crate::foundation_error)?,
+                crate::record_for_actor(81, 181, 1, 0x82, record_now)
+                    .map_err(crate::foundation_error)?,
             );
             assert_eq!(
                 journal.prepare(&second_prepare).await?,
