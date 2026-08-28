@@ -918,9 +918,7 @@ async fn canonical_fnd02_mirrors_are_valid(
     canonical_fnd02: &Value,
 ) -> Result<bool, DurabilityError> {
     let stored_next_command_id: String = attempt.try_get("fnd02_next_command_id")?;
-    if canonical_u64_text(&canonical_fnd02["next_command_id"])
-        != Some(stored_next_command_id)
-    {
+    if canonical_u64_text(&canonical_fnd02["next_command_id"]) != Some(stored_next_command_id) {
         return Ok(false);
     }
     let Some(canonical_pending) = canonical_fnd02["pending"].as_array() else {
