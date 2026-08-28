@@ -10,7 +10,7 @@
     {
       "prompt_id": "OTV2_ARCHITECTURE_CONTINUATION_AGENT",
       "path": "docs/agents/prompts/OTV2_ARCHITECTURE_CONTINUATION_AGENT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Architecture analysis and bounded continuation under current repository governance.",
@@ -21,7 +21,7 @@
     {
       "prompt_id": "OTV2_CLOSE_NEXT_WAVE_BLOCKERS",
       "path": "docs/agents/prompts/OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "Owner-authorized coordinator for #93/#115/#116/#123 blocker closure, evidence-backed first-slice numeric acceptance, serialized registry canonicalization and bounded #115 verifier/consumer closure.",
@@ -32,7 +32,7 @@
     {
       "prompt_id": "OTV2_CONTENT_FORMAT_SPIKE",
       "path": "docs/agents/prompts/OTV2_CONTENT_FORMAT_SPIKE.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "implementation-coordinator",
       "scope": "Evidence-only content-format spike; no permanent production-format selection authority.",
@@ -43,7 +43,7 @@
     {
       "prompt_id": "OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT",
       "path": "docs/agents/prompts/OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Coordinator-allocated bounded domain architecture design worker.",
@@ -54,7 +54,7 @@
     {
       "prompt_id": "OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Global architecture decision coordination and audit within approved repository authority.",
@@ -65,7 +65,7 @@
     {
       "prompt_id": "OTV2_IMPLEMENTATION_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "Implementation-wave coordination and allocation inside Oteryn/Oteryn-Game only.",
@@ -76,7 +76,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_COORDINATOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "ChatGPT Work execution profile of the implementation coordinator with bounded subagent dispatch/integration and fail-closed material architecture escalation; no authority expansion.",
@@ -87,7 +87,7 @@
     {
       "prompt_id": "OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR",
       "path": "docs/agents/prompts/OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Independent high-effort forensic audit of OTV2_WORK_DELIVERY_COORDINATOR or a uniquely identified requested Game delivery target, with bounded non-dispositive GitHub audit-evidence COMMENT write authority only; no tracked-file, implementation/fix, control-plane, merge/close/approve, workflow-dispatch, architecture, production or cross-repository write authority.",
@@ -98,7 +98,7 @@
     {
       "prompt_id": "OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION",
       "path": "docs/agents/prompts/OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Architecture/governance continuation for the owner-approved Work-control-plane + Sol-lane-lead + selective-Codex execution model; no runtime implementation authority.",
@@ -109,7 +109,7 @@
     {
       "prompt_id": "OTV2_IMPL_ANALYTICS",
       "path": "docs/agents/prompts/OTV2_IMPL_ANALYTICS.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded analytics implementation worker; writes require a current merged allocation.",
@@ -120,7 +120,7 @@
     {
       "prompt_id": "OTV2_IMPL_DOMAIN_CORE",
       "path": "docs/agents/prompts/OTV2_IMPL_DOMAIN_CORE.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded gameplay-domain implementation worker; writes require a current merged allocation.",
@@ -131,7 +131,7 @@
     {
       "prompt_id": "OTV2_IMPL_DURABILITY",
       "path": "docs/agents/prompts/OTV2_IMPL_DURABILITY.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded durability implementation worker; writes require a current merged allocation.",
@@ -142,7 +142,7 @@
     {
       "prompt_id": "OTV2_IMPL_FOUNDATION_RUNTIME",
       "path": "docs/agents/prompts/OTV2_IMPL_FOUNDATION_RUNTIME.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded foundation/runtime executor template; reuse requires a current merged allocation even though earlier lane delivery is terminal.",
@@ -153,7 +153,7 @@
     {
       "prompt_id": "OTV2_IMPL_GAME_ABILITY",
       "path": "docs/agents/prompts/OTV2_IMPL_GAME_ABILITY.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded ability implementation worker; writes require a current merged allocation.",
@@ -164,7 +164,7 @@
     {
       "prompt_id": "OTV2_IMPL_GAME_AI",
       "path": "docs/agents/prompts/OTV2_IMPL_GAME_AI.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded Game AI implementation worker; writes require a current merged allocation.",
@@ -175,7 +175,7 @@
     {
       "prompt_id": "OTV2_IMPL_GAME_CHANNEL",
       "path": "docs/agents/prompts/OTV2_IMPL_GAME_CHANNEL.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded multichannel implementation worker; writes require a current merged allocation.",
@@ -186,7 +186,7 @@
     {
       "prompt_id": "OTV2_IMPL_GAME_INTERACTION",
       "path": "docs/agents/prompts/OTV2_IMPL_GAME_INTERACTION.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded interaction implementation worker; writes require a current merged allocation.",
@@ -197,7 +197,7 @@
     {
       "prompt_id": "OTV2_IMPL_NATIVE_CLIENT",
       "path": "docs/agents/prompts/OTV2_IMPL_NATIVE_CLIENT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded native-client implementation worker; writes require a current merged allocation.",
@@ -208,7 +208,7 @@
     {
       "prompt_id": "OTV2_IMPL_QA_E2E",
       "path": "docs/agents/prompts/OTV2_IMPL_QA_E2E.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded QA/E2E evidence worker template; a completed prior task does not grant new write authority.",
@@ -219,7 +219,7 @@
     {
       "prompt_id": "OTV2_IMPL_SERVER_SEAM",
       "path": "docs/agents/prompts/OTV2_IMPL_SERVER_SEAM.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded production gameplay server-seam executor; no mutation without the merged exact allocation required by the prompt.",
@@ -230,7 +230,7 @@
     {
       "prompt_id": "OTV2_IMPL_SIMULATION",
       "path": "docs/agents/prompts/OTV2_IMPL_SIMULATION.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded deterministic-simulation executor template; reuse requires a current merged allocation.",
@@ -241,7 +241,7 @@
     {
       "prompt_id": "OTV2_IMPL_VSL_COMBAT",
       "path": "docs/agents/prompts/OTV2_IMPL_VSL_COMBAT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded authoritative combat implementation worker; writes require a current merged allocation.",
@@ -252,7 +252,7 @@
     {
       "prompt_id": "OTV2_IMPL_VSL_CONTENT",
       "path": "docs/agents/prompts/OTV2_IMPL_VSL_CONTENT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded VSL content executor template; current production acceptance remains governed by live allocation and blockers.",
@@ -263,7 +263,7 @@
     {
       "prompt_id": "OTV2_IMPL_VSL_MOVEMENT",
       "path": "docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded movement implementation worker; writes require a current merged allocation.",
@@ -274,7 +274,7 @@
     {
       "prompt_id": "OTV2_IMPL_WORKSPACE_BOOTSTRAP",
       "path": "docs/agents/prompts/OTV2_IMPL_WORKSPACE_BOOTSTRAP.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Bounded workspace-bootstrap executor template; reuse requires a current merged allocation even though prior bootstrap is terminal.",
@@ -285,7 +285,7 @@
     {
       "prompt_id": "OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT",
       "path": "docs/agents/prompts/OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "independent-audit-role",
       "scope": "Read-only independent programme architecture audit.",
@@ -296,7 +296,7 @@
     {
       "prompt_id": "OTV2_NEXT_WAVE_PARALLEL_PREPARATION",
       "path": "docs/agents/prompts/OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "implementation-programme",
       "scope": "Orchestration-only launcher for bounded preparation lanes #93-#97; live task/allocation state is mandatory before any write.",
@@ -318,7 +318,7 @@
     {
       "prompt_id": "OTV2_PREP_DURABILITY_TOPOLOGY",
       "path": "docs/agents/prompts/OTV2_PREP_DURABILITY_TOPOLOGY.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Issue #94 durability topology preparation executor; no runtime/DDL implementation authority.",
@@ -329,7 +329,7 @@
     {
       "prompt_id": "OTV2_PREP_PROGRAMME_STATUS",
       "path": "docs/agents/prompts/OTV2_PREP_PROGRAMME_STATUS.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Issue #97 programme-status reconciliation executor; docs/audit only under a current allocation.",
@@ -340,7 +340,7 @@
     {
       "prompt_id": "OTV2_PREP_SERVER_SEAM",
       "path": "docs/agents/prompts/OTV2_PREP_SERVER_SEAM.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Issue #96 production gameplay server-seam preparation executor; no listener/runtime implementation authority.",
@@ -351,7 +351,7 @@
     {
       "prompt_id": "OTV2_PREP_WAVE2_RESOURCE_LIMITS",
       "path": "docs/agents/prompts/OTV2_PREP_WAVE2_RESOURCE_LIMITS.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Issue #93 Wave-2 resource-limit decision preparation; missing numeric values must not be invented.",
@@ -362,7 +362,7 @@
     {
       "prompt_id": "OTV2_TERRA_GAME_CONTROL_PLANE",
       "path": "docs/agents/prompts/OTV2_TERRA_GAME_CONTROL_PLANE.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "implementation-programme-control-plane",
       "scope": "ChatGPT Work/Terra High deterministic Game control plane; zero technical/architecture discretion and no runtime implementation authority.",
@@ -373,7 +373,7 @@
     {
       "prompt_id": "OTV2_SOL_SUPERVISING_ARCHITECT",
       "path": "docs/agents/prompts/OTV2_SOL_SUPERVISING_ARCHITECT.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Material Game architecture escalation resolver; no implicit runtime implementation, merge, production or cross-repository write authority.",
@@ -384,7 +384,7 @@
     {
       "prompt_id": "OTV2_SOL_DURABILITY_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_DURABILITY_LEAD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Extra High Durability lane lead; writes require the current exact merged Durability allocation and owned paths.",
@@ -395,7 +395,7 @@
     {
       "prompt_id": "OTV2_SOL_SERVER_SEAM_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Extra High Server Seam lane lead; read-only until exact prerequisites/allocation are proven, then writes only within owned paths.",
@@ -406,7 +406,7 @@
     {
       "prompt_id": "OTV2_SOL_CLIENT_QA_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_CLIENT_QA_LEAD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Extra High native Client/QA lane lead; writes require current compatible Server Seam and exact merged allocation.",
@@ -417,7 +417,7 @@
     {
       "prompt_id": "OTV2_SOL_MOVEMENT_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_MOVEMENT_LEAD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Extra High Movement lane lead; writes require terminal current resource gate/prerequisites and exact merged allocation.",
@@ -428,7 +428,7 @@
     {
       "prompt_id": "OTV2_SOL_COMBAT_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_COMBAT_LEAD.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
       "scope": "Sol Extra High Combat lane lead; writes require merged Movement/current prerequisites and exact Combat allocation.",
@@ -439,7 +439,7 @@
     {
       "prompt_id": "OTV2_SOL_POST_VSL_EXPANSION",
       "path": "docs/agents/prompts/OTV2_SOL_POST_VSL_EXPANSION.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "architecture-programme",
       "scope": "Read-only-by-default post-VSL planning/decomposition of remaining accepted Game work; no runtime implementation authority.",
@@ -450,7 +450,7 @@
     {
       "prompt_id": "OTV2_SOL_WORLD_CONTENT_PREP",
       "path": "docs/agents/prompts/OTV2_SOL_WORLD_CONTENT_PREP.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "post-vsl-read-only-preparation",
       "scope": "Post-VSL World/Content read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
@@ -461,7 +461,7 @@
     {
       "prompt_id": "OTV2_SOL_NPC_AI_PREP",
       "path": "docs/agents/prompts/OTV2_SOL_NPC_AI_PREP.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "post-vsl-read-only-preparation",
       "scope": "Post-VSL NPC/AI read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
@@ -472,7 +472,7 @@
     {
       "prompt_id": "OTV2_SOL_SYSTEMS_ECONOMY_PREP",
       "path": "docs/agents/prompts/OTV2_SOL_SYSTEMS_ECONOMY_PREP.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "post-vsl-read-only-preparation",
       "scope": "Post-VSL Systems/Economy read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",
@@ -483,7 +483,7 @@
     {
       "prompt_id": "OTV2_SOL_TOOLING_OPS_PREP",
       "path": "docs/agents/prompts/OTV2_SOL_TOOLING_OPS_PREP.md",
-      "version": "1.0",
+      "version": "1.1",
       "status": "reusable",
       "owner": "post-vsl-read-only-preparation",
       "scope": "Post-VSL Tooling/Ops read-only preparation; no repository mutation, lease, integration or allocation authority until a later exact merged allocation.",

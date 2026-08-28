@@ -8,7 +8,7 @@ Oteryn: sol execution architecture
 
 ```yaml
 prompt_id: OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION
-prompt_version: "1.0"
+prompt_version: "1.1"
 prompt_mode: ARCHITECTURE_GOVERNANCE_CONTINUATION
 working_mode: SOL_EXTRA_HIGH_EXECUTION_MODEL_DESIGN
 repository: Oteryn/Oteryn-Game
@@ -132,14 +132,14 @@ Each lead prompt must:
 Use exact policy label:
 
 ```text
-CODEX_USE: SELECTIVE_IMPLEMENTATION_ASSISTANCE
+CODEX_USE: POLICY_ROUTED_INDEPENDENT_REVIEW
 ```
 
-Codex is optional and bounded. It may assist a future Sol lane lead with concrete implementation/debug/test/build/repository execution when useful and actually available.
+Codex independent-review use is policy-routed, not universally optional. A future Sol lane lead must apply protected-main `CODEX_REVIEW_POLICY.json`; when the validated route is `CODEX_REQUIRED`, the lane lead owns the covered exact-head review/re-review loop.
 
-Do not use Codex by default for architecture, programme coordination, status reconciliation, ordinary planning or routine read-only review.
+Covered Codex review is strict read-only/non-mutating and standing-authorized. This architecture prompt grants no Codex implementation, debugging, build, repository mutation or other non-covered execution authority; any such owner-funded use still requires exact per-invocation owner authorization.
 
-If a direct supported Codex handoff is unavailable, the future lane prompt must either continue without Codex or emit `CODEX_HANDOFF_REQUIRED`. Never claim a Codex task ran unless there is real evidence that it ran.
+If native Codex review capability is unavailable, follow the canonical capability/fallback rule and record the exact blocker. Never invent `CODEX_HANDOFF_REQUIRED` as a request for the owner to relay prompts, and never claim Codex ran without durable evidence.
 
 The default execution design keeps one heavy Codex implementation lane active at a time; a second requires proven path/shared-surface independence and a concrete throughput reason. This is a project efficiency rule, not a claim about product quotas.
 
@@ -169,7 +169,7 @@ It MUST NOT:
 - merge/close high-risk governance changes without all repository-required evidence and authority;
 - write Platform/Atlas/META/external repositories;
 - access production/protected environments or secrets;
-- invoke owner-funded Codex/OpenAI/API reviewers unless the owner separately authorizes that exact invocation.
+- invoke non-covered owner-funded Codex/OpenAI/API reviewers without exact per-invocation owner authorization; covered review operations remain governed by `CODEX_REVIEW_POLICY.json` and the canonical review-request owner.
 
 If packaging would materially expand coordinator/worker merge authority or reduce safety, classify it as an authority expansion and require explicit owner scope plus genuinely independent exact-head review before merge.
 
@@ -231,3 +231,13 @@ Stop fail-closed with one durable next action when:
 - live GitHub becomes unavailable for a required mutation.
 
 Runtime implementation remains outside this prompt.
+## Canonical Codex review routing
+
+Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
+
+- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
+- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
+- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
+- When this role is the authorized candidate/review-request owner and routing is `CODEX_REQUIRED`, freeze the PR exact head, use the canonical GitHub PR transport (`@codex review`), consume durable findings, repair only within existing authority, re-run applicable exact-head validation, and request a fresh review after every material head change. Do not return to the owner for covered per-run approval.
+- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
+- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.

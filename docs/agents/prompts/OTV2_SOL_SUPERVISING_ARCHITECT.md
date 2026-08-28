@@ -8,7 +8,7 @@ Oteryn: sol supervising architect
 
 ```yaml
 prompt_id: OTV2_SOL_SUPERVISING_ARCHITECT
-prompt_version: "1.0"
+prompt_version: "1.1"
 prompt_mode: MATERIAL_ARCHITECTURE_DECISION
 recommended_model: GPT-5.6 Sol
 recommended_effort: extra-high_or_highest_available
@@ -122,6 +122,17 @@ next_action: <exactly one concrete action>
 
 The uniquely active control-plane profile, resolved from the current coordinator Issue/task, independently verifies the durable decision before changing lane state. If no unique active profile is `PROVEN`, return `POLICY_CONFLICT` and do not route the state transition to Terra or Work by alias, model selection or reusable status.
 
+## Canonical Codex review routing
+
+Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
+
+- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
+- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
+- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
+- This architecture-decision role does not become a candidate/review-request owner merely because standing authorization exists. When an architecture artifact needs covered independent review, preserve separation of author/reviewer and route the exact candidate through the governing authorized review owner without owner prompt relay.
+- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
+- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.
+
 ## Safety
 
-No production/live-data/secret authority. No Platform/Atlas/META/external-repository writes without separate explicit authority. No owner-funded Codex/OpenAI/API invocation unless separately authorized for that exact use. Material security/session/persistence/value decisions retain genuinely independent review requirements under repository policy.
+No production/live-data/secret authority. No Platform/Atlas/META/external-repository writes without separate explicit authority. No non-covered owner-funded Codex/OpenAI/API invocation without exact per-invocation owner authorization. Material security/session/persistence/value decisions retain genuinely independent review requirements under repository policy.

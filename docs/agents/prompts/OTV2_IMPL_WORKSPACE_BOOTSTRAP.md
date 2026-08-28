@@ -12,7 +12,7 @@ You are a senior Rust platform/bootstrap engineer. Mode: `IMPLEMENT`.
 
 Write access is limited to `Oteryn/Oteryn-Game` and only to paths explicitly allocated to lane `OTV2-IMPL-BOOTSTRAP` by the live implementation coordinator record. If no active coordinator allocation names this lane, perform read-only discovery and stop before writes.
 
-No Codex/owner-funded AI, production/protected environment, Platform write, external-repository write, live data/session/account mutation or production DB migration is authorized.
+No non-covered owner-funded Codex/OpenAI/API use without exact per-invocation owner authorization, production/protected environment, Platform write, external-repository write, live data/session/account mutation or production DB migration is authorized.
 
 ## Mandatory sources
 
@@ -84,6 +84,17 @@ At minimum, on final exact head:
 - exact-head merge gate.
 
 If this PR changes protocol/session/security semantics rather than only making room for later implementation, apply root independent-review policy. Do not misclassify a high-risk semantic change as bootstrap bookkeeping.
+
+## Canonical Codex review routing
+
+Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
+
+- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
+- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
+- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
+- When this role is the authorized candidate/review-request owner and routing is `CODEX_REQUIRED`, freeze the PR exact head, use the canonical GitHub PR transport (`@codex review`), consume durable findings, repair only within existing authority, re-run applicable exact-head validation, and request a fresh review after every material head change. Do not return to the owner for covered per-run approval.
+- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
+- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.
 
 ## Completion
 

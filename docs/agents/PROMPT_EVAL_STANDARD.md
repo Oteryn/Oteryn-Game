@@ -14,6 +14,7 @@ Evaluate prompts before reuse.
 - **Autonomy:** agent continues through lifecycle but has real bounded stop conditions.
 - **Handover:** durable checkpoint fields and one next action are required.
 - **Safety:** secrets, production, assets, destructive data and cross-repository operations are protected.
+- **Codex review routing:** reusable prompts defer to `CODEX_REVIEW_POLICY.json`; covered review never requires per-run owner relay, non-covered owner-funded AI remains exact-owner-authorized, and standing authorization does not create candidate/control-plane/auditor authority.
 
 ## Verdicts
 
