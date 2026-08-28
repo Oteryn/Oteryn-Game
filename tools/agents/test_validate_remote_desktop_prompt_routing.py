@@ -667,6 +667,55 @@ def test_nonreusable_status_true_flag_fails_closed() -> None:
     if not any("inconsistent reusable status/flag" in error for error in errors):
         raise AssertionError(f"expected lifecycle consistency error, got: {errors}")
 
+
+
+def test_angle_bracket_stale_meta_coordinate_fails() -> None:
+    stale = "&lt;Oteryn/Oteryn@0000000000000000000000000000000000000000:ecosystem/agent-execution-routing-policy.json&gt;"
+    text = "# Prompt\n\n" + stale + "\n\n" + CANONICAL_PROMPT_SECTION + "\n"
+    assert_fail(text, "stale META execution-routing coordinate")
+
+
+def test_surface_angle_bracket_stale_meta_coordinate_fails() -> None:
+    stale = "&lt;Oteryn/Oteryn@0000000000000000000000000000000000000000:ecosystem/agent-execution-routing-policy.json&gt;"
+    text = "# Surface\n\n" + stale + "\n\n" + SURFACE_SECTION + "\n"
+    assert_surface_fail(text, "stale META execution-routing coordinate")
+
+
+def test_blanket_approval_connector_calls_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nConnector calls have blanket approval.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_standing_approval_connector_operations_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nConnector operations operate under standing approval.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_transport_implicit_enforcement_claim_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nThe transport enforces every per-action decision.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_router_implicit_enforcement_claim_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nThe router enforces the per-action authorization gate.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
 def main() -> int:
     tests = [value for name, value in sorted(globals().items()) if name.startswith("test_") and callable(value)]
     for test in tests:
