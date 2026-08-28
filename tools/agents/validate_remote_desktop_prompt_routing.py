@@ -123,6 +123,12 @@ OUTSIDE_ROUTING_PATTERNS = (
         r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
+    re.compile(
+        r"(?=.*\b(?:calls?|operations?|requests?|invocations?)\b.{0,100}\b(?:through|via)\b.{0,100}\b(?:host\s+)?(?:connectors?|tools?)\b)"
+        r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(
@@ -148,10 +154,11 @@ OUTSIDE_ROUTING_PATTERNS = (
 )
 
 META_ROUTING_COORDINATE_RE = re.compile(
-    r"Oteryn/Oteryn@[0-9a-f]{40}:ecosystem/agent-execution-routing-policy\.json"
+    r"Oteryn/Oteryn@[^\s`<>:]+:ecosystem/agent-execution-routing-policy\.json",
+    re.IGNORECASE,
 )
 ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
-    r"<(Oteryn/Oteryn@[0-9a-f]{40}:ecosystem/agent-execution-routing-policy\.json)>",
+    r"<(Oteryn/Oteryn@[^\s`<>:]+:ecosystem/agent-execution-routing-policy\.json)>",
     re.IGNORECASE,
 )
 EXPECTED_META_ROUTING_COORDINATE = (
@@ -655,10 +662,7 @@ def validate() -> list[str]:
     root_agents = ROOT / "AGENTS.md"
     if root_agents.is_file():
         root_text = root_agents.read_text(encoding="utf-8")
-        coordinates = re.findall(
-            r"Oteryn/Oteryn@[0-9a-f]{40}:ecosystem/agent-execution-routing-policy\.json",
-            root_text,
-        )
+        coordinates = META_ROUTING_COORDINATE_RE.findall(_normalize_policy_text(_operative_text(root_text)))
         expected = f"Oteryn/Oteryn@{META_SHA}:ecosystem/agent-execution-routing-policy.json"
         if expected not in root_text:
             errors.append("AGENTS.md: canonical META execution-routing coordinate is missing")
