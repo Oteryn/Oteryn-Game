@@ -935,7 +935,7 @@ fn committed_prepare_replay_after_process_restart_routes_to_reconciliation()
 }
 
 #[test]
-fn committed_replay_requires_the_retained_transport_reservation()
+fn committed_replay_requires_the_exact_retained_transport_reservation()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
         return Ok(());
@@ -964,8 +964,9 @@ fn committed_replay_requires_the_retained_transport_reservation()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
-                    .map_err(foundation_error)?;
+                let current =
+                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                        .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
                     .map_err(foundation_error)?;
@@ -975,14 +976,17 @@ fn committed_replay_requires_the_retained_transport_reservation()
                 );
 
                 let pool = sqlx::PgPool::connect(&database_url).await?;
-                let deleted = sqlx::query(
-                    "DELETE FROM game_durability_transport_ref_reservations \
+                let corrupted = sqlx::query(
+                    "UPDATE game_durability_transport_ref_reservations \
+                     SET game_session_id = encode($2, 'hex')::uuid, reconnect_attempt_ref = $3 \
                      WHERE transport_ref = $1",
                 )
                 .bind(prepare.record().connection().transport_ref().to_bytes().as_slice())
+                .bind(uuid_v7(0x9a))
+                .bind([0xfe_u8; 8].as_slice())
                 .execute(&pool)
                 .await?;
-                assert_eq!(deleted.rows_affected(), 1);
+                assert_eq!(corrupted.rows_affected(), 1);
                 pool.close().await;
                 drop(journal);
 

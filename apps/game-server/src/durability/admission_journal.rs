@@ -158,6 +158,12 @@ impl AdmissionReconnectJournal {
                         session_id.as_slice(),
                         attempt_ref.as_slice(),
                     )
+                    .await?
+                    && active_committed_binding_is_valid(
+                        &mut transaction,
+                        session_id.as_slice(),
+                        &session,
+                    )
                     .await?;
                 if !committed_current {
                     return Err(DurabilityError::InvalidStoredState);
@@ -598,6 +604,12 @@ impl AdmissionReconnectJournal {
                         recovery_grant_nonce.as_deref(),
                         session_id.as_slice(),
                         attempt_ref.as_slice(),
+                    )
+                    .await?
+                    || !active_committed_binding_is_valid(
+                        &mut transaction,
+                        session_id.as_slice(),
+                        &session,
                     )
                     .await?
                 {
