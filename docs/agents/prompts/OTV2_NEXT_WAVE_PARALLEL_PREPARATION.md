@@ -61,6 +61,17 @@ Release implementation lanes independently as their own readiness gates close; d
 
 AI may continue in parallel and is not a hard dependency of the first Movement/Combat slice unless a reviewed concrete mechanic adds it.
 
+## Canonical Codex review routing
+
+Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
+
+- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
+- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
+- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
+- While this prompt is operating in read-only/preparation mode, it is not a candidate/review-request owner and must not trigger Codex. If later implementation is allocated, the canonical mutating owner/prompt for that candidate applies the review loop.
+- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
+- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.
+
 ## Completion
 
 Preparation-wave orchestration is complete when every still-required prep lane has either merged its bounded output and released ownership or is truthfully blocked on an explicit owner decision. Do not convert `UNKNOWN`, `CONFLICT` or evidence candidates into product policy merely to make the wave appear complete.

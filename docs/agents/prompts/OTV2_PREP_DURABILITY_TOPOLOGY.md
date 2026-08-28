@@ -63,3 +63,13 @@ Do not write runtime code, DDL, migrations, dependencies, Cargo/lockfile, produc
 Require source/version compatibility evidence for selected libraries, packet completeness, governance validation, `git diff --check`, placeholder scan, whole-diff self-review and exact-head repository gates.
 
 The final handoff must state either `READY_FOR_EXACT_DURABILITY_ALLOCATION` with all required paths/leases/bounds known, or an explicit blocker list. Only then may the coordinator prepare `Oteryn: impl durability` and its lane-specific child Superpowers plan.
+## Canonical Codex review routing
+
+Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
+
+- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
+- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
+- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
+- While this prompt is operating in read-only/preparation mode, it is not a candidate/review-request owner and must not trigger Codex. If later implementation is allocated, the canonical mutating owner/prompt for that candidate applies the review loop.
+- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
+- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.

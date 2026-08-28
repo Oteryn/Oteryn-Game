@@ -15,6 +15,7 @@ CONTRACT_LOCK_PATH = ROOT / "docs/contracts/CROSS_REPOSITORY_CONTRACT_LOCK.json"
 LIMITS_REGISTRY_PATH = ROOT / "docs/contracts/RESOURCE_LIMITS_REGISTRY.json"
 PROMPT_LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
 HANDOVER_LIFECYCLE_PATH = ROOT / "docs/agents/HANDOVER_LIFECYCLE.json"
+CODEX_REVIEW_POLICY_PATH = ROOT / "docs/agents/CODEX_REVIEW_POLICY.json"
 EXPECTED_REPOSITORY = "Oteryn/Oteryn-Game"
 
 
@@ -184,6 +185,287 @@ def validate_active_task_packets(errors: list[str]) -> None:
                 errors.append(f"active task packet {relative} has terminal status {status}")
 
 
+def validate_codex_review_policy(policy: dict, errors: list[str]) -> None:
+    if policy.get("schema_version") != 1:
+        errors.append("Codex review policy schema_version must be 1")
+    if policy.get("repository") != EXPECTED_REPOSITORY:
+        errors.append("Codex review policy repository mismatch")
+    if policy.get("policy_id") != "OTV2-CODEX-INDEPENDENT-REVIEW-01":
+        errors.append("unexpected Codex review policy id")
+
+    authority = policy.get("authority", {})
+    if not isinstance(authority, dict):
+        errors.append("Codex review authority must be an object")
+        authority = {}
+    owner_authorized_issue = authority.get("owner_authorized_issue")
+    if type(owner_authorized_issue) is not int or owner_authorized_issue != 229:
+        errors.append("Codex review policy owner_authorized_issue must be exactly 229")
+    if authority.get("effective_only_after_protected_main_merge") is not True:
+        errors.append("Codex standing authorization must activate only after protected-main merge")
+    if authority.get("standing_authorization") is not True:
+        errors.append("Codex review standing authorization must be explicit")
+    if authority.get("owner_confirmation_per_covered_run") is not False:
+        errors.append("covered Codex review must not require per-run owner relay")
+
+    transport = policy.get("transport", {})
+    if not isinstance(transport, dict):
+        errors.append("Codex review transport must be an object")
+        transport = {}
+    if transport.get("canonical_surface") != "github_pull_request":
+        errors.append("Codex review canonical surface must be github_pull_request")
+    if transport.get("preferred_native_trigger") != "@codex review":
+        errors.append("Codex review native trigger must be @codex review")
+    if transport.get("capability_must_be_proven_before_trigger") is not True:
+        errors.append("Codex capability must be proven before trigger")
+    if transport.get("review_result_must_be_durable_on_github") is not True:
+        errors.append("Codex review result must be durable on GitHub")
+    if transport.get("fabricated_or_assumed_codex_execution_forbidden") is not True:
+        errors.append("fabricated Codex execution must be forbidden")
+
+    expected_authorized = {
+        "READ_ONLY_EXACT_HEAD_REVIEW",
+        "READ_ONLY_AUDIT",
+        "NON_MUTATING_TEST_EXECUTION",
+        "NON_MUTATING_REPRODUCE",
+        "NON_MUTATING_FUZZ",
+        "NON_MUTATING_STATIC_ANALYSIS",
+    }
+    authorized = policy.get("authorized_review_operations", [])
+    if not isinstance(authorized, list) or set(authorized) != expected_authorized:
+        errors.append("Codex authorized review operations changed outside bounded standing scope")
+
+    execution_constraints = policy.get("review_execution_constraints", {})
+    if not isinstance(execution_constraints, dict):
+        errors.append("Codex review execution constraints must be an object")
+        execution_constraints = {}
+    for field in (
+        "tracked_repository_mutation_forbidden",
+        "git_index_ref_or_config_mutation_forbidden",
+        "persistent_local_environment_mutation_forbidden",
+        "untracked_artifacts_must_be_ephemeral_and_disposable",
+        "ephemeral_scratch_or_build_artifacts_allowed_only_in_disposable_reviewer_environment",
+        "external_or_live_state_mutation_forbidden",
+        "tracked_worktree_diff_must_remain_clean",
+    ):
+        if execution_constraints.get(field) is not True:
+            errors.append(f"Codex review execution constraint must remain true: {field}")
+
+    required_prohibited = {
+        "IMPLEMENT_FIX",
+        "TRACKED_REPOSITORY_MUTATION",
+        "COMMIT",
+        "PUSH",
+        "MERGE",
+        "AUTO_MERGE",
+        "BRANCH_PROTECTION_CHANGE",
+        "PRODUCTION_MUTATION",
+        "PROTECTED_ENVIRONMENT_MUTATION",
+        "SECRET_OR_CREDENTIAL_ACCESS",
+        "LIVE_ACCOUNT_OR_SESSION_MUTATION",
+        "LIVE_DATA_MUTATION",
+        "EXTERNAL_REPOSITORY_WRITE",
+        "SCOPE_EXPANSION",
+    }
+    prohibited = policy.get("prohibited_operations", [])
+    if not isinstance(prohibited, list) or not required_prohibited.issubset(set(prohibited)):
+        errors.append("Codex review policy is missing required prohibited operations")
+    if isinstance(authorized, list) and isinstance(prohibited, list) and set(authorized) & set(prohibited):
+        errors.append("Codex authorized and prohibited operations must be disjoint")
+
+    risk = policy.get("risk_routing", {})
+    if not isinstance(risk, dict):
+        errors.append("Codex risk_routing must be an object")
+        risk = {}
+    if risk.get("precedence") != [
+        "CODEX_REQUIRED",
+        "CODEX_OPTIONAL",
+        "CODEX_NOT_REQUIRED_BY_THIS_POLICY",
+    ]:
+        errors.append("Codex risk routing precedence changed")
+    if risk.get("multi_tag_rule") != "HIGHEST_PRECEDENCE_VALIDATED_MATCH_WINS":
+        errors.append("Codex multi-tag routing must use validated highest precedence")
+    lane_tags = risk.get("lane_lead_self_tags", {})
+    if not isinstance(lane_tags, dict):
+        errors.append("lane_lead_self_tags must be an object")
+        lane_tags = {}
+    if lane_tags.get("allowed") is not True or lane_tags.get("may_only_escalate") is not True:
+        errors.append("lane lead risk tags must be escalation-only")
+    if lane_tags.get("may_not_reduce_required_review") is not True:
+        errors.append("lane lead must not reduce required review")
+    if set(lane_tags.get("cannot_by_themselves_select", [])) != {
+        "CODEX_OPTIONAL",
+        "CODEX_NOT_REQUIRED_BY_THIS_POLICY",
+    }:
+        errors.append("lane lead self-tags must not select optional/not-required routing")
+
+    expected_downgrade_sources = {
+        "OWNER_DECISION_RECORDED_IN_GOVERNING_ISSUE_OR_TASK",
+        "SOL_SUPERVISING_ARCHITECT_CLASSIFICATION_RECORDED_IN_GOVERNING_ISSUE_OR_TASK",
+        "CANONICAL_RISK_CONTRACT",
+        "MECHANICAL_CHANGED_SCOPE_RULE",
+    }
+    if set(risk.get("authoritative_downgrade_sources", [])) != expected_downgrade_sources:
+        errors.append("Codex authoritative downgrade sources changed")
+    downgrade = risk.get("downgrade_metadata_contract", {})
+    if not isinstance(downgrade, dict):
+        errors.append("Codex downgrade metadata contract must be an object")
+        downgrade = {}
+    required_downgrade_fields = {
+        "risk_classification",
+        "risk_classification_source_role",
+        "risk_classification_source_ref",
+    }
+    if set(downgrade.get("required_fields", [])) != required_downgrade_fields:
+        errors.append("Codex downgrade metadata required fields changed")
+    if set(downgrade.get("permitted_source_roles", [])) != {
+        "OWNER",
+        "SOL_SUPERVISING_ARCHITECT",
+        "CANONICAL_RISK_CONTRACT",
+    }:
+        errors.append("Codex downgrade source roles changed")
+    for field in (
+        "source_must_not_be_allocated_worker",
+        "source_role_must_be_proven_from_canonical_authority_not_self_declared",
+        "source_record_must_be_on_protected_main_or_merged_governing_allocation",
+        "source_record_must_exist_before_candidate_freeze",
+    ):
+        if downgrade.get(field) is not True:
+            errors.append(f"Codex downgrade invariant must remain true: {field}")
+
+    docs_rule = risk.get("mechanical_changed_scope_rules", {}).get("ORDINARY_DOCS_ONLY", {})
+    if not isinstance(docs_rule, dict):
+        errors.append("ordinary-docs Codex routing rule must be an object")
+        docs_rule = {}
+    if docs_rule.get("all_changed_paths_must_be_under") != ["docs/"]:
+        errors.append("ordinary-docs rule must require all paths under docs/")
+    if set(docs_rule.get("excluded_prefixes", [])) != {
+        "docs/agents/",
+        "docs/architecture/",
+        "docs/contracts/",
+    }:
+        errors.append("ordinary-docs rule exclusions changed")
+    if docs_rule.get("route") != "CODEX_NOT_REQUIRED_BY_THIS_POLICY":
+        errors.append("ordinary-docs rule must route to not-required")
+    if risk.get("low_risk_path_local_implementation", {}).get("requires_validated_downgrade_metadata_contract") is not True:
+        errors.append("low-risk local implementation must require validated downgrade metadata")
+    if risk.get("optional_route_requires_validated_downgrade_metadata_contract") is not True:
+        errors.append("optional Codex route must require validated downgrade metadata")
+    if risk.get("unvalidated_or_conflicting_classification") != "CODEX_REQUIRED":
+        errors.append("unvalidated/conflicting Codex classification must fail closed to required")
+    if risk.get("control_plane_must_not_invent_risk_tags") is not True:
+        errors.append("control plane must not invent Codex risk tags")
+    if risk.get("control_plane_may_mechanically_reject_unvalidated_downgrade") is not True:
+        errors.append("control plane must reject unvalidated Codex downgrade")
+
+    expected_required_risks = {
+        "DURABLE_PERSISTENCE",
+        "DURABLE_SCHEMA",
+        "MIGRATION",
+        "CONCURRENCY_RACE_CONTENTION",
+        "AUTHENTICATION",
+        "SESSION",
+        "RECONNECT",
+        "FENCING",
+        "TRUST_BOUNDARY",
+        "PROTOCOL_WIRE",
+        "STABLE_IDENTITY",
+        "SECURITY",
+        "DURABLE_ITEM_VALUE_ECONOMY_CUSTODY",
+    }
+    if set(risk.get("CODEX_REQUIRED", [])) != expected_required_risks:
+        errors.append("Codex required risk classes changed")
+    if set(risk.get("CODEX_OPTIONAL", [])) != {
+        "COMPLEX_REFACTOR",
+        "BROAD_CODE_AWARENESS",
+        "TEST_OR_FUZZ_INTENSIVE_CHANGE",
+    }:
+        errors.append("Codex optional risk classes changed")
+    if set(risk.get("CODEX_NOT_REQUIRED_BY_THIS_POLICY", [])) != {
+        "ORDINARY_DOCS_ONLY",
+        "LOW_RISK_PATH_LOCAL_IMPLEMENTATION",
+    }:
+        errors.append("Codex not-required classes changed")
+
+    independence = policy.get("independence", {})
+    if not isinstance(independence, dict):
+        errors.append("Codex independence must be an object")
+        independence = {}
+    for field in (
+        "fresh_reviewer_task_required",
+        "reviewer_must_not_have_materially_authored_candidate",
+        "reviewer_must_not_have_materially_modified_candidate",
+        "same_codex_task_that_implemented_change_is_not_independent",
+        "exact_final_head_required",
+        "head_change_invalidates_prior_qualification",
+    ):
+        if independence.get(field) is not True:
+            errors.append(f"Codex independence invariant must remain true: {field}")
+
+    loop = policy.get("lane_lead_loop", {})
+    if not isinstance(loop, dict):
+        errors.append("Codex lane lead loop must be an object")
+        loop = {}
+    for field in ("candidate_freeze_owner", "review_request_owner", "finding_repair_owner", "re_review_owner"):
+        if loop.get(field) != "ALLOCATED_LANE_LEAD":
+            errors.append(f"Codex lane loop ownership changed: {field}")
+    if loop.get("owner_manual_relay_required") is not False:
+        errors.append("owner manual relay must not be required for covered review")
+
+    fallback = policy.get("fallback_rule", {})
+    if not isinstance(fallback, dict) or fallback.get("owner_manual_prompt_relay_is_not_the_default_fallback") is not True:
+        errors.append("Codex fallback must not default to owner manual relay")
+
+    control_plane = policy.get("control_plane", {})
+    if not isinstance(control_plane, dict):
+        errors.append("Codex control_plane must be an object")
+        control_plane = {}
+    if control_plane.get("technical_discretion") != "NONE":
+        errors.append("Codex control plane technical discretion must remain NONE")
+    if control_plane.get("routing_method") != "MECHANICALLY_VALIDATE_RISK_INPUTS_THEN_APPLY_PRECEDENCE":
+        errors.append("Codex control plane routing must remain mechanical")
+    for field in (
+        "must_verify_exact_head_review_evidence",
+        "must_reject_unvalidated_low_risk_or_optional_downgrade",
+        "must_not_adjudicate_technical_findings",
+        "technical_findings_return_to_lane_lead",
+    ):
+        if control_plane.get(field) is not True:
+            errors.append(f"Codex control-plane invariant must remain true: {field}")
+
+    gate = policy.get("gate_semantics", {})
+    if not isinstance(gate, dict):
+        errors.append("Codex gate_semantics must be an object")
+        gate = {}
+    if gate.get("codex_review_may_satisfy_independent_technical_review") is not True:
+        errors.append("Codex review qualification capability changed")
+    if set(gate.get("successful_review_evidence", [])) != {
+        "EXPLICIT_PASS_BOUND_TO_EXACT_HEAD",
+        "NATIVE_CODEX_NO_SUGGESTIONS_SIGNAL_BOUND_TO_EXACT_HEAD_TRIGGER",
+    }:
+        errors.append("Codex successful review evidence changed")
+    if set(gate.get("blocking_finding_severities", [])) != {"P0", "P1"}:
+        errors.append("Codex blocking finding severities must remain P0/P1")
+    required_gate_conditions = {
+        "fresh_non_authoring_reviewer_task",
+        "exact_final_head",
+        "qualified_for_requested_risk",
+        "durable_github_evidence",
+        "successful_review_evidence_present",
+        "zero_unresolved_blocking_findings_on_exact_head",
+        "zero_unresolved_required_review_threads",
+        "no_material_head_change_after_review",
+    }
+    conditions = gate.get("conditions", [])
+    if not isinstance(conditions, list) or not required_gate_conditions.issubset(set(conditions)):
+        errors.append("Codex gate is missing required exact-head success conditions")
+    if gate.get("does_not_replace_explicit_separate_governance_audit") is not True:
+        errors.append("Codex review must not replace separate governance audit")
+    if gate.get("does_not_replace_required_self_review") is not True:
+        errors.append("Codex review must not replace self-review")
+    if gate.get("green_ci_alone_is_not_review") is not True:
+        errors.append("green CI alone must not count as Codex review")
+
+
 def main() -> int:
     errors: list[str] = []
     contract = load_json(CONTRACT_PATH, errors)
@@ -192,10 +474,12 @@ def main() -> int:
     limits_registry = load_json(LIMITS_REGISTRY_PATH, errors)
     prompt_lifecycle = load_json(PROMPT_LIFECYCLE_PATH, errors)
     handover_lifecycle = load_json(HANDOVER_LIFECYCLE_PATH, errors)
+    codex_review_policy = load_json(CODEX_REVIEW_POLICY_PATH, errors)
 
     validate_prompt_lifecycle(prompt_lifecycle, errors)
     validate_handover_lifecycle(handover_lifecycle, errors)
     validate_active_task_packets(errors)
+    validate_codex_review_policy(codex_review_policy, errors)
 
     if contract.get("repository") != EXPECTED_REPOSITORY:
         errors.append("governance repository must be Oteryn/Oteryn-Game")
@@ -257,7 +541,6 @@ def main() -> int:
     missing_lanes = sorted(expected_lanes - lane_ids)
     if missing_lanes:
         errors.append(f"missing project lanes: {', '.join(missing_lanes)}")
-
 
     lock_policy = contract_lock.get("policy", {})
     if lock_policy.get("canonical_revisions_must_be_merged") is not True:

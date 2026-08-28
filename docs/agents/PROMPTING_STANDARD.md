@@ -30,6 +30,12 @@ Worker prompts have exclusive paths/contracts, precise inputs/outputs, no coordi
 
 Auditors are read-only unless repair is separately authorized. They must challenge completeness, inspect exact source/live state and classify every finding with evidence and severity.
 
+## Canonical Codex review routing
+
+Every reusable prompt must contain a `## Canonical Codex review routing` section and resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md` before owner-funded Codex/OpenAI/API review use. Prompt-local wording must not reintroduce per-run owner confirmation for operations covered by the standing review authorization. Non-covered owner-funded AI use still requires exact per-invocation owner authorization.
+
+A prompt must not infer candidate ownership from standing authorization. Only the current canonical candidate/review-request owner may trigger a covered review. Candidate-owning prompts must preserve exact-head freeze, durable GitHub review evidence, fresh re-review after material head movement, zero unresolved blocking findings/required threads, and strict read-only/non-mutating reviewer constraints. Control-plane, audit and read-only-preparation prompts must not acquire technical, candidate-write or nested-reviewer authority from the standing authorization.
+
 ## Retained prompt lifecycle
 
 Every retained execution prompt under `docs/agents/prompts/*.md`, except the directory `README.md`, must have exactly one entry in `docs/agents/PROMPT_LIFECYCLE.json`.
