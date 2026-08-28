@@ -440,6 +440,12 @@ impl AdmissionReconnectJournal {
                         attempt_ref.as_slice(),
                     )
                     .await?
+                    && active_committed_binding_is_valid(
+                        &mut transaction,
+                        session_id.as_slice(),
+                        &session,
+                    )
+                    .await?
                 {
                     transaction.commit().await?;
                     return Ok(ReconnectCommitDispositionV1::Committed);
@@ -1093,6 +1099,54 @@ fn canonical_u64_text(value: &Value) -> Option<String> {
     value.as_u64().map(|value| value.to_string())
 }
 
+fn canonical_visible_ascii(value: &Value) -> bool {
+    value.as_str().is_some_and(|value| {
+        !value.is_empty()
+            && value.len() <= 128
+            && value.bytes().all(|byte| (0x21..=0x7e).contains(&byte))
+    })
+}
+
+fn canonical_authority_evidence_is_valid(evidence: &Value) -> bool {
+    [
+        "authority",
+        "purpose",
+        "scope",
+        "source_revision",
+        "decision_identity",
+    ]
+    .iter()
+    .all(|field| canonical_visible_ascii(&evidence[field]))
+        && evidence["source_observed_at"]
+            .as_i64()
+            .is_some_and(|value| value >= 0)
+}
+
+fn canonical_compatibility_evidence_is_valid(compatibility: &Value) -> bool {
+    compatibility["protocol_major"]
+        .as_u64()
+        .is_some_and(|value| value != 0 && value <= u64::from(u32::MAX))
+        && compatibility["transport_profile"]
+            .as_u64()
+            .is_some_and(|value| value != 0 && value <= u64::from(u32::MAX))
+        && [
+            "ruleset_revision",
+            "content_revision",
+            "map_revision",
+            "world_policy_revision",
+        ]
+        .iter()
+        .all(|field| canonical_visible_ascii(&compatibility[field]))
+        && compatibility["account_security_generation"]
+            .as_u64()
+            .is_some_and(|value| value != 0)
+        && canonical_authority_evidence_is_valid(&compatibility["platform_security_evidence"])
+        && canonical_authority_evidence_is_valid(&compatibility["proof_trust_evidence"])
+        && compatibility.get("credential_expiration").is_some_and(|value| {
+            value.is_null() || value.as_i64().is_some_and(|value| value > 0)
+        })
+}
+
 async fn transport_reservation_binding_is_valid(
     transaction: &mut Transaction<'_, Postgres>,
     transport_ref: &[u8],
@@ -1184,6 +1238,7 @@ async fn active_committed_binding_is_valid(
     let continuity = &canonical["continuity"];
     let proof = &canonical["proof"];
     let fnd02 = &canonical["fnd02"];
+    let compatibility = &canonical["compatibility"];
     let session_scope_kind: i16 = session.try_get("runtime_scope_kind")?;
     let scope_matches = match session_scope_kind {
         CHANNEL_SCOPE => {
@@ -1225,6 +1280,7 @@ async fn active_committed_binding_is_valid(
             != Some(session.try_get::<String, _>("control_loss_epoch")?)
         || continuity["original_grace_deadline"].as_i64()
             != Some(session.try_get::<i64, _>("original_grace_deadline")?)
+        || !canonical_compatibility_evidence_is_valid(compatibility)
     {
         return Ok(false);
     }
