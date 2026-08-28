@@ -30,6 +30,7 @@ CREATE TABLE game_durability_reconnect_sessions (
     session_state SMALLINT NOT NULL DEFAULT 1 CHECK (session_state BETWEEN 1 AND 2),
     attempt_count SMALLINT NOT NULL DEFAULT 0 CHECK (attempt_count BETWEEN 0 AND 8),
     prepared_attempt_ref BYTEA NULL CHECK (octet_length(prepared_attempt_ref) = 8),
+    UNIQUE (character_id),
     CHECK (
         (runtime_scope_kind = 1 AND runtime_scope_channel_id IS NOT NULL AND runtime_scope_instance_id IS NULL)
         OR

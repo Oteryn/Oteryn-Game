@@ -78,7 +78,7 @@ impl AdmissionReconnectJournal {
                 $9::text::numeric(20, 0), $10, $11::text::numeric(20, 0), \
                 $12::text::numeric(20, 0), $13::text::numeric(20, 0), \
                 $11::text::numeric(20, 0)\
-             ) ON CONFLICT (game_session_id) DO NOTHING",
+             ) ON CONFLICT DO NOTHING",
         )
         .bind(session_id.as_slice())
         .bind(identity.account_id())
