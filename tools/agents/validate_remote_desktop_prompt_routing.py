@@ -114,29 +114,29 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"(?=.*\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b)"
-        r"(?=.*\b(?:(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b)",
+        r"(?=.*(?:\b(?:(?:blanket|standing|automatic|default)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b|\bby\s+default\b.{0,80}\b(?:approval|permission)\b))",
         re.IGNORECASE,
     ),
     re.compile(
         r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\s+to\s+(?:the\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic|default)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default|by\s+default.{0,80}(?:approval|permission))\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,100}\b(?:through|via)\b.{0,100}\b(?:host\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic|default)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default|by\s+default.{0,80}(?:approval|permission))\b)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b",
+        r"\b(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic|default)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default|by\s+default.{0,80}(?:approval|permission))\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b.{0,160}"
-        r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic|default)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default|by\s+default.{0,80}(?:approval|permission))\b.{0,160}"
+        r"\b(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
         re.IGNORECASE,
     ),
     re.compile(
@@ -161,7 +161,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
-        r"(?=.*\b(?:enforce|enforces|enforced|enforcing|enforcement|block|blocks|blocked|blocking|reject|rejects|rejected|rejecting)\b)"
+        r"(?=.*\b(?:enforce|enforces|enforced|enforcing|enforcement|block|blocks|blocked|blocking|reject|rejects|rejected|rejecting|prevent|prevents|prevented|preventing)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
     ),
@@ -184,7 +184,7 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     re.IGNORECASE,
 )
 GITHUB_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)(?:www\.)?github\.com(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
+    r"(?:(?:https?:)?//)(?:(?:www\.)?github\.com(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
 )
 EXPECTED_META_ROUTING_COORDINATE = (
@@ -365,7 +365,9 @@ def _markdown_line_records(text: str) -> list[tuple[int, int, str, bool]]:
                         raw_html_until_blank = True
                 else:
                     opening = FENCE_OPEN_RE.fullmatch(raw)
-                    if opening is not None:
+                    if opening is not None and not (
+                        opening.group("fence").startswith("`") and "`" in opening.group("rest")
+                    ):
                         inert = True
                         fence = opening.group("fence")
                         fence_char = fence[0]
@@ -491,7 +493,9 @@ def _operative_text(text: str) -> str:
                 continue
 
             opening = FENCE_OPEN_RE.fullmatch(raw)
-            if opening is not None:
+            if opening is not None and not (
+                opening.group("fence").startswith("`") and "`" in opening.group("rest")
+            ):
                 fence = opening.group("fence")
                 fence_char = fence[0]
                 fence_len = len(fence)
