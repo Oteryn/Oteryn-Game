@@ -8,6 +8,7 @@ from pathlib import Path
 import re
 import sys
 import unicodedata
+from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[2]
 LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
@@ -148,7 +149,10 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\b(?:(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)|"
         r"(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?))\b)"
-        r"(?=.*\b(?:approval|permission)\s+(?:is\s+)?(?:granted|given)\s+by\s+default\b)",
+        r"(?=.*\b(?:approval|permission)\b)"
+        r"(?=.*(?:\b(?:granted|given)\b.{0,80}\bby\s+default\b|"
+        r"\bautomatically\b.{0,80}\b(?:granted|given)\b|"
+        r"\b(?:granted|given)\b.{0,80}\bautomatically\b))",
         re.IGNORECASE,
     ),
     re.compile(
@@ -160,9 +164,23 @@ OUTSIDE_ROUTING_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"(?=.*\bping\b)"
+        r"(?=.*(?:\b(?:requires?|needs?)\s+no\s+(?:per[- ]action\s+)?(?:authori[sz]ation|host[- ]exception|exception)\b|"
+        r"\b(?:does\s+not\s+require|without|exempt(?:ed)?\s+from)\b.{0,80}"
+        r"\b(?:per[- ]action|authori[sz]ation|host[- ]exception|exception)\b))",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b.{0,80}"
         r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing)\b.{0,80}"
         r"\b(?:calls?|requests?|invocations?|actions?)\b)"
+        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?=.*\b(?:calls?|requests?|invocations?|actions?)\b.{0,120}"
+        r"\b(?:is|are|be|being|been)\b.{0,30}\b(?:stopped|refused)\s+by\s+(?:the\s+)?"
+        r"(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
     ),
@@ -662,6 +680,11 @@ def _normalize_url_scan_text(text: str) -> str:
             break
         value = decoded
     value = unicodedata.normalize("NFKC", value)
+    for _ in range(4):
+        decoded = unquote(value)
+        if decoded == value:
+            break
+        value = decoded
     return _remove_default_ignorables(value)
 
 
