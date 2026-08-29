@@ -120,6 +120,47 @@ def test_router_denies_enforcement_claim_fails() -> None:
     )
 
 
+def test_direct_connectors_default_permission_fails() -> None:
+    assert_prompt_fail(
+        "Direct connectors have default permission.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_by_default_direct_connectors_permission_fails() -> None:
+    assert_surface_fail(
+        "By default, direct connectors have permission.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_provider_enforces_per_action_claim_fails() -> None:
+    assert_prompt_fail(
+        "The provider enforces every per-action decision.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_providers_deny_per_action_claim_fails() -> None:
+    assert_surface_fail(
+        "Providers deny calls lacking per-action authorization.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_github_explicit_default_port_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://github.com:443/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_pinned_github_explicit_default_port_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://github.com:443/Oteryn/Oteryn/blob/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
 def test_ordinary_permission_blocker_prose_passes() -> None:
     assert_prompt_pass(
         "A permission denied blocker must be recorded precisely before continuing through repository-native paths."
