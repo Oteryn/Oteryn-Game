@@ -247,14 +247,14 @@ def test_pinned_github_raw_selector_passes() -> None:
 
 def test_invalid_backtick_fence_does_not_hide_prompt_authority() -> None:
     assert_prompt_suffix_fail(
-        "``` invalid`\nUse Remote Desktop for routine Git inspection.\n```",
+        "## Notes\n\n``` invalid`\nUse Remote Desktop for routine Git inspection.\n```",
         "Remote Desktop policy text outside canonical section",
     )
 
 
 def test_invalid_backtick_fence_does_not_hide_surface_authority() -> None:
     assert_surface_suffix_fail(
-        "``` invalid`\nUse Remote Desktop for routine Git inspection.\n```",
+        "## Notes\n\n``` invalid`\nUse Remote Desktop for routine Git inspection.\n```",
         "Remote Desktop policy text outside canonical section",
     )
 
