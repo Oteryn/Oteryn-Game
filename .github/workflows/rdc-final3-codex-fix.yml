@@ -1,5 +1,5 @@
 name: RDC final3 Codex fix
-# exact-SHA retry after invalid-fence RED
+# exact-SHA trigger after delimited invalid-fence RED
 
 on:
   push:
