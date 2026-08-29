@@ -1,5 +1,5 @@
 name: RDC final3 Codex fix
-# exact-SHA trigger after delimited invalid-fence RED
+# exact-SHA trigger with both CommonMark fence parsers
 
 on:
   push:
@@ -66,8 +66,14 @@ jobs:
           fence_old = 'if opening is not None:\n                        inert = True\n                        fence = opening.group("fence")\n                        fence_char = fence[0]\n                        fence_len = len(fence)'
           fence_new = 'if opening is not None and not (\n                        opening.group("fence").startswith("`") and "`" in opening.group("rest")\n                    ):\n                        inert = True\n                        fence = opening.group("fence")\n                        fence_char = fence[0]\n                        fence_len = len(fence)'
           if text.count(fence_old) != 1:
-              raise SystemExit(f"unexpected fence opener block count: {text.count(fence_old)}")
+              raise SystemExit(f"unexpected heading fence opener block count: {text.count(fence_old)}")
           text = text.replace(fence_old, fence_new)
+
+          operative_fence_old = 'opening = FENCE_OPEN_RE.fullmatch(raw)\n            if opening is not None:\n                fence = opening.group("fence")\n                fence_char = fence[0]\n                fence_len = len(fence)\n                lines.append("")\n                continue'
+          operative_fence_new = 'opening = FENCE_OPEN_RE.fullmatch(raw)\n            if opening is not None and not (\n                opening.group("fence").startswith("`") and "`" in opening.group("rest")\n            ):\n                fence = opening.group("fence")\n                fence_char = fence[0]\n                fence_len = len(fence)\n                lines.append("")\n                continue'
+          if text.count(operative_fence_old) != 1:
+              raise SystemExit(f"unexpected operative fence opener block count: {text.count(operative_fence_old)}")
+          text = text.replace(operative_fence_old, operative_fence_new)
 
           path.write_text(text, encoding="utf-8")
           PY
