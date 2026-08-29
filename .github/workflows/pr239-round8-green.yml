@@ -1,0 +1,88 @@
+name: PR239 round8 green
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+permissions:
+  contents: write
+jobs:
+  green:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Patch and verify
+        env:
+          EXPECTED_PARENT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('tools/agents/validate_remote_desktop_prompt_routing.py')
+          s = p.read_text(encoding='utf-8')
+          old_ping = '''    re.compile(
+        r"(?=.*\\bping\\b)"
+        r"(?=.*\\b(?:automatically\\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|"
+        r"(?:blanket|standing|automatic|default)\\s+(?:approval|permission|authori[sz]ation)|"
+        r"(?:approval|permission|authori[sz]ation)\\s+(?:is\\s+)?(?:granted|given)\\s+by\\s+default|"
+        r"(?:approval|permission|authori[sz]ation)\\s+by\\s+default)\\b)",
+        re.IGNORECASE,
+    ),
+'''
+          new_ping = '''    re.compile(
+        r"(?=.*\\bping\\b)"
+        r"(?=.*(?:\\bautomatically\\s+(?:authori[sz]ed|approved)\\b|\\bpreauthori[sz]ed\\b|\\bpreapproved\\b|"
+        r"\\b(?:blanket|standing|automatic|default)\\s+(?:approval|permission|authori[sz]ation)\\b|"
+        r"\\b(?:approval|permission|authori[sz]ation)\\s+(?:is\\s+)?(?:granted|given)\\s+by\\s+default\\b|"
+        r"\\b(?:approval|permission|authori[sz]ation)\\s+by\\s+default\\b|"
+        r"\\b(?:approval|permission|authori[sz]ation)\\s+(?:is\\s+)?automatically\\s+(?:granted|given)\\b|"
+        r"\\b(?:authori[sz]ed|approved)\\s+by\\s+default\\b))",
+        re.IGNORECASE,
+    ),
+'''
+          old_stop = '''    re.compile(
+        r"(?=.*\\b(?:calls?|requests?|invocations?|actions?)\\b.{0,120}"
+        r"\\b(?:is|are|be|being|been)\\b.{0,30}\\b(?:stopped|refused)\\s+(?:by|at)\\s+(?:the\\s+)?"
+        r"(?:connectors?|routers?|transports?|providers?)\\b)"
+        r"(?=.*\\b(?:per[- ]action|decision|gate|routing|authori[sz]\\w*)\\b)",
+        re.IGNORECASE,
+    ),
+'''
+          new_stop = '''    re.compile(
+        r"(?=.*\\b(?:calls?|requests?|invocations?|actions?)\\b.{0,120}"
+        r"(?:\\b(?:is|are|be|being|been|get|gets|got|getting)\\b.{0,30})?"
+        r"\\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing)\\s+(?:by|at)\\s+(?:the\\s+)?"
+        r"(?:connectors?|routers?|transports?|providers?)\\b)"
+        r"(?=.*\\b(?:per[- ]action|decision|gate|routing|authori[sz]\\w*)\\b)",
+        re.IGNORECASE,
+    ),
+'''
+          replacements = [
+              (old_ping, new_ping, 'ping matcher'),
+              (old_stop, new_stop, 'stop matcher'),
+              ('(?:www\\.)?github\\.com(?::[0-9]{1,5})?', '(?:www\\.)?github\\.com\\.?(?::[0-9]{1,5})?', 'github host'),
+              ('raw\\.githubusercontent\\.com(?::[0-9]{1,5})?', 'raw\\.githubusercontent\\.com\\.?(?::[0-9]{1,5})?', 'raw host'),
+              ('api\\.github\\.com(?::[0-9]{1,5})?', 'api\\.github\\.com\\.?(?::[0-9]{1,5})?', 'api host'),
+          ]
+          for old, new, label in replacements:
+              count = s.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected one anchor, got {count}')
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          python tools/agents/test_validate_remote_desktop_prompt_routing.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
+          python tools/agents/validate_remote_desktop_prompt_routing.py
+          python tools/repository/validate_repository_policy.py
+          git diff --check
+          git rm .github/workflows/pr239-round8-green.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/agents/validate_remote_desktop_prompt_routing.py
+          git commit -m "fix(agents): close final Codex round 8 bypasses"
+          test "$(git ls-remote origin refs/heads/governance/remote-desktop-per-action-gate-237 | cut -f1)" = "$EXPECTED_PARENT"
+          git push origin HEAD:refs/heads/governance/remote-desktop-per-action-gate-237
