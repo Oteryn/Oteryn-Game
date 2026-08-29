@@ -5,7 +5,7 @@ task_id: OTV2-20260828-terminal-session-replacement-repair
 title: Implement terminal GameSession replacement and typed reconciliation
 mode: REPAIR
 status: qualifying
-integration_state: CODEX_REVIEW_PENDING
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-terminal-session-replacement-250
@@ -22,15 +22,19 @@ allocation_pr: 251
 allocation_merge_sha: 12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
 worker_base_sha: 12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
 admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
+integration_main_sha: 0135deb100109b910dada366d7a1b05484357e51
+main_reconciliation_merge_sha: fc27d64f5803c15e70d78e6e7a0f9cd63980f89f
 pr: 252
 owner: Oteryn: sol durability lead
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-29T07:29:44+02:00
+updated_at: 2026-08-29T09:04:00+02:00
 execution_budget_minutes: 180
 large_budget_reason: cross-lane Foundation/Durability repair with real PostgreSQL contention, replay and restart proof
 write_authority: exact_allocated_worker_scope_after_12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
 source_snapshot_mode: COPY_FILE_CONTENTS_ONLY_NO_COMMIT_ANCESTRY_NO_REVIEW_OR_CI_INHERITANCE
 serialized_composition_lease: apps/game-server/src/lib.rs
+remote_desktop_used: exception_isolated_terminal_edit_and_local_tests_only
+remote_desktop_production_or_live_access: false
 external_repositories: []
 owned_paths:
   - apps/game-server/src/foundation/admission_recovery_inner.rs
@@ -175,6 +179,13 @@ No Cargo/lockfile/workflow/resource-registry/Server Seam/Client/Movement/Combat/
 - Exact persisted replacement-receipt reconciliation repair landed in `b88d8bf7ff0838b03b9462374b291119e1f947c8`.
 - Whole-diff self-review found a further local projection defect: reconciled durable `Prepared` left the exact local attempt budget `Reserved`. RED head `ef0963b36696daa09475371d64ff16ab4383eb3b`, Merge gate run `33212142814`, Linux workspace job `98987719428`: build and strict Clippy PASS; workspace tests 188 PASS / 1 expected FAIL in `v2_reconciled_prepared_budget_regression_tests::reconciled_prepared_marks_the_attempt_prepared_in_the_local_budget`.
 - Budget projection GREEN landed in `01d663035d62af87c8b4979b543b7d547bbdec32`. Rust workspace run `33236163526` completed SUCCESS; PostgreSQL 17.6 job `99057409787` verified the exact SHA and completed 79 PASS / 0 FAIL. Exact-head Merge authority audit `33236163535`, Agent governance `33236163536`, and Architecture semantic audit `33236163547` also completed SUCCESS.
+- Protected `main@0135deb100109b910dada366d7a1b05484357e51` was reconciled non-destructively into the worker branch by merge commit `fc27d64f5803c15e70d78e6e7a0f9cd63980f89f`; no rebase, reset or force-push was used.
+- A fresh review after reconciliation produced three P2 findings: exact receipt replay after losing the predecessor-lock race, one-snapshot V2 reconciliation across concurrent COMMIT, and full typed/session mirror validation before terminal outcome mapping.
+- Race/structural reconciliation RED was preserved at `a88c0b78633e1999006d1bebb72790780d926752`: Rust run `33239070718`, PostgreSQL 17.6 job `99065141820`, exact checkout verified, 79 PASS / 4 expected FAIL. The four failures were exactly the newly added deterministic regressions; all prior tests stayed GREEN.
+- The three P2 repairs landed in `d54d9cf5e70f4b6b081ef384afe4a4a70e270c76`: missing-predecessor exact receipt replay, shared transactional V1/V2 reconciliation, and full structural validation for every typed V2 outcome.
+- Local final code validation on `d54d9cf5e70f4b6b081ef384afe4a4a70e270c76`: formatting PASS, strict affected-target Clippy PASS, game-server library 193 PASS / 0 FAIL, and isolated PostgreSQL 17.6 83 PASS / 0 FAIL.
+- Hosted code GREEN on the same exact SHA: Rust run `33239666334`, PostgreSQL 17.6 job `99066708516`, exact checkout verified, 83 PASS / 0 FAIL. Architecture semantic audit `33239666333`, Merge authority audit `33239666378`, and Agent governance `33239666336` completed SUCCESS. All three P2 threads have exact repair replies and are resolved.
+- Remote Desktop was used only as an exception for an isolated temporary terminal checkout, precise edits and local Docker/PostgreSQL tests after container DNS and connector patch limitations blocked safer execution. No production/live system, database, secret or persistent user workspace was accessed.
 
 Any tracked commit moves the PR head and invalidates prior exact-head qualification as final integration proof. The metadata-complete head produced from this update is the next candidate freeze generation and requires fresh exact-head CI, whole-diff self-review and native Codex review.
 
@@ -210,36 +221,44 @@ PR #243 remains open Draft historical evidence until Work decides its terminal d
 ## Context checkpoint
 
 ```yaml
-last_progress: all known implementation and self-review defects are repaired through 01d663035d62af87c8b4979b543b7d547bbdec32; exact-head Rust and PostgreSQL validation is green there with 79/79 real PostgreSQL 17.6 tests; this metadata update creates the candidate freeze generation for final qualification
+last_progress: protected main was reconciled through fc27d64f5803c15e70d78e6e7a0f9cd63980f89f; exact P2 RED was proven at a88c0b78633e1999006d1bebb72790780d926752; all three repairs are code-green at d54d9cf5e70f4b6b081ef384afe4a4a70e270c76 with 83/83 real PostgreSQL 17.6 tests and resolved P2 threads; this metadata update creates the final candidate generation
 status: qualifying
-integration_state: CODEX_REVIEW_PENDING
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
 branch: impl/game-terminal-session-replacement-250
-previous_code_green_head: 01d663035d62af87c8b4979b543b7d547bbdec32
-head_sha: resolve_live_branch_on_resume
+admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
+integration_main_sha: 0135deb100109b910dada366d7a1b05484357e51
+main_reconciliation_merge_sha: fc27d64f5803c15e70d78e6e7a0f9cd63980f89f
+previous_code_green_head: d54d9cf5e70f4b6b081ef384afe4a4a70e270c76
+head_sha: resolve_live_branch_after_this_metadata_commit
 pr: 252
-final_head_sha: record_in_exact_head_self_review_and_codex_request
-final_head_frozen_at: 2026-08-29T07:29:44+02:00
+final_head_sha: resolve_live_branch_after_this_metadata_commit
+final_head_frozen_at: 2026-08-29T09:04:00+02:00
 ci_trigger_source: pull_request
 ci_check_generation: metadata_complete_head_requires_fresh_exact_head_generation
-ci_checks_for_previous_code_green_head: 5
 ci_run_ids:
-  rust_workspace_code_green: 33236163526
-  merge_gate_code_green: 33236163552
-  architecture_semantic_audit_code_green: 33236163547
-  merge_authority_audit_code_green: 33236163535
-  agent_governance_code_green: 33236163536
+  p2_red_rust: 33239070718
+  p2_green_rust: 33239666334
+  p2_green_merge_gate: 33239666342
+  p2_green_architecture: 33239666333
+  p2_green_merge_authority: 33239666378
+  p2_green_governance: 33239666336
 ci_job_ids:
-  code_green_postgres: 99057409787
-  reconciled_prepared_budget_red_linux_workspace: 98987719428
+  p2_red_postgres: 99065141820
+  p2_green_postgres: 99066708516
+local_validation:
+  game_server_lib: 193_pass_0_fail
+  postgres_17_6: 83_pass_0_fail
+  fmt: pass
+  strict_clippy: pass
 runner_assignment_state: hosted_exact_head_available
-terminal_ci_wait_started_at: 2026-08-29T07:29:44+02:00
+terminal_ci_wait_started_at: 2026-08-29T09:04:00+02:00
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 4
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: fresh exact-head CI, whole-diff self-review, required review-thread reconciliation and fresh native Codex review on the metadata-complete candidate
-next_action: resolve the metadata-complete PR head, require all exact-head checks, publish whole-diff self-review, resolve superseded P1 threads with evidence, and request fresh `@codex review`
+blocker: fresh exact-head CI, whole-diff self-review, integration-thread reconciliation and fresh native Codex review on the metadata-complete candidate
+next_action: freeze the live metadata-complete head, require all exact-head checks, publish whole-diff self-review, request fresh `@codex review`, repair any findings, then close the integration gate and hand off `READY_FOR_INTEGRATION`
 ```
