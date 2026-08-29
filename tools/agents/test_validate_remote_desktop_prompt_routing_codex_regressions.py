@@ -85,6 +85,41 @@ def test_nominal_connector_enforcement_claim_fails() -> None:
     )
 
 
+def test_direct_connectors_permission_by_default_fails() -> None:
+    assert_prompt_fail(
+        "Direct connectors have permission by default.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_direct_tools_blanket_permission_fails() -> None:
+    assert_surface_fail(
+        "Direct tools have blanket permission.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_www_github_blob_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://www.github.com/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_connector_fails_closed_enforcement_claim_fails() -> None:
+    assert_prompt_fail(
+        "The connector fails closed for every missing per-action decision.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_router_denies_enforcement_claim_fails() -> None:
+    assert_surface_fail(
+        "The router denies every call lacking per-action authorization.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
 def test_ordinary_permission_blocker_prose_passes() -> None:
     assert_prompt_pass(
         "A permission denied blocker must be recorded precisely before continuing through repository-native paths."
