@@ -71,8 +71,8 @@ jobs:
               raise SystemExit(f'unexpected ping authority matcher count: {text.count(ping_old)}')
           text = text.replace(ping_old, ping_new)
 
-          passive_provider_old = r'(?:stopped|refused)\s+by\s+(?:the\s+)?(?:connectors?|routers?|transports?|providers?)'
-          passive_provider_new = r'(?:stopped|refused)\s+(?:by|at)\s+(?:the\s+)?(?:connectors?|routers?|transports?|providers?)'
+          passive_provider_old = r'(?:stopped|refused)\s+by\s+(?:the\s+)?'
+          passive_provider_new = r'(?:stopped|refused)\s+(?:by|at)\s+(?:the\s+)?'
           if text.count(passive_provider_old) != 1:
               raise SystemExit(f'unexpected passive provider matcher count: {text.count(passive_provider_old)}')
           text = text.replace(passive_provider_old, passive_provider_new)
