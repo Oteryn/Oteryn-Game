@@ -1263,6 +1263,11 @@ impl ReconnectDurabilityFlowV2 {
 
         match snapshot.outcome {
             ReconnectDurableOutcomeV2::Prepared => {
+                budget.accept_prepare_completion(
+                    self.record.identity().reconnect_attempt_ref(),
+                    self.record.connection().transport_ref(),
+                    ReconnectPrepareDispositionV1::ExistingPrepared,
+                )?;
                 self.phase = ReconnectDurabilityPhaseV1::AwaitFinalRevalidation;
                 Ok(ReconnectProjectionDecisionV2::AwaitFinalRevalidation)
             }
