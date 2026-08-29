@@ -146,6 +146,27 @@ OUTSIDE_ROUTING_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"(?=.*\b(?:(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)|"
+        r"(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?))\b)"
+        r"(?=.*\b(?:approval|permission)\s+(?:is\s+)?(?:granted|given)\s+by\s+default\b)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?=.*\bping\b)"
+        r"(?=.*\b(?:automatically\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|"
+        r"(?:blanket|standing|automatic|default)\s+(?:approval|permission)|"
+        r"(?:approval|permission)\s+(?:is\s+)?(?:granted|given)\s+by\s+default|"
+        r"(?:approval|permission)\s+by\s+default)\b)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b.{0,80}"
+        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing)\b.{0,80}"
+        r"\b(?:calls?|requests?|invocations?|actions?)\b)"
+        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:fail(?:s|ed|ing)?\s+closed|deny|denies|denied|denying)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
@@ -185,6 +206,11 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
 )
 GITHUB_META_ROUTING_URL_RE = re.compile(
     r"(?:(?:https?:)?//)(?:(?:www\.)?github\.com(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
+    re.IGNORECASE,
+)
+GITHUB_CONTENTS_META_ROUTING_URL_RE = re.compile(
+    r"(?:(?:https?:)?//)api\.github\.com(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
+    r"ecosystem/agent-execution-routing-policy\.json(?:\?([^\s`<>)#]*))?",
     re.IGNORECASE,
 )
 EXPECTED_META_ROUTING_COORDINATE = (
@@ -652,6 +678,18 @@ def _validate_meta_routing_coordinates(path: str, text: str, errors: list[str]) 
     for selector in sorted({selector for selector in url_selectors if selector != META_SHA}):
         errors.append(
             f"{path}: stale META execution-routing coordinate: GitHub routing-policy URL selector {selector}"
+        )
+
+    contents_queries = GITHUB_CONTENTS_META_ROUTING_URL_RE.findall(_normalize_url_scan_text(text))
+    stale_contents_selectors: set[str] = set()
+    for query in contents_queries:
+        ref_match = re.search(r"(?:^|&)ref=([^&]+)", query, re.IGNORECASE)
+        selector = ref_match.group(1) if ref_match is not None else ""
+        if selector != META_SHA:
+            stale_contents_selectors.add(selector or "<default-branch>")
+    for selector in sorted(stale_contents_selectors):
+        errors.append(
+            f"{path}: stale META execution-routing coordinate: GitHub Contents routing-policy URL selector {selector}"
         )
 
 
