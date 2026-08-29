@@ -86,12 +86,12 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"\bdirect\s+(?:connectors?|tools?)\b.{0,160}"
         r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
     ),
     re.compile(
         r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
         r"\bdirect\s+(?:connectors?|tools?)\b",
         re.IGNORECASE,
     ),
@@ -99,16 +99,16 @@ OUTSIDE_ROUTING_PATTERNS = (
         r"(?=.*\bdirect(?:ly)?\b)"
         r"(?=.*\b(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b",
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
         r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
         re.IGNORECASE,
     ),
@@ -120,22 +120,22 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\s+to\s+(?:the\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,100}\b(?:through|via)\b.{0,100}\b(?:host\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b",
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b.{0,160}"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b.{0,160}"
         r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
         re.IGNORECASE,
     ),
