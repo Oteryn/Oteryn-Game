@@ -147,6 +147,14 @@ OUTSIDE_ROUTING_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"(?=.*\bdirect\s+(?:connectors?|tools?)\b)"
+        r"(?=.*\b(?:approval|permission)\b)"
+        r"(?=.*(?:\b(?:granted|given)\b.{0,80}\bby\s+default\b|"
+        r"\bautomatically\b.{0,80}\b(?:granted|given)\b|"
+        r"\b(?:granted|given)\b.{0,80}\bautomatically\b))",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"(?=.*\b(?:(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)|"
         r"(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?))\b)"
         r"(?=.*\b(?:approval|permission)\b)"
@@ -158,9 +166,9 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\bping\b)"
         r"(?=.*\b(?:automatically\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|"
-        r"(?:blanket|standing|automatic|default)\s+(?:approval|permission)|"
-        r"(?:approval|permission)\s+(?:is\s+)?(?:granted|given)\s+by\s+default|"
-        r"(?:approval|permission)\s+by\s+default)\b)",
+        r"(?:blanket|standing|automatic|default)\s+(?:approval|permission|authori[sz]ation)|"
+        r"(?:approval|permission|authori[sz]ation)\s+(?:is\s+)?(?:granted|given)\s+by\s+default|"
+        r"(?:approval|permission|authori[sz]ation)\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
@@ -179,7 +187,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"(?=.*\b(?:calls?|requests?|invocations?|actions?)\b.{0,120}"
-        r"\b(?:is|are|be|being|been)\b.{0,30}\b(?:stopped|refused)\s+by\s+(?:the\s+)?"
+        r"\b(?:is|are|be|being|been)\b.{0,30}\b(?:stopped|refused)\s+(?:by|at)\s+(?:the\s+)?"
         r"(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
