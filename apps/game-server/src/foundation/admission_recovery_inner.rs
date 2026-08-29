@@ -13,6 +13,7 @@ pub struct GameSessionAuthoritySnapshot<T: Copy + Eq> {
     current_connection_generation: ConnectionGeneration,
     current_transport: Option<T>,
     current_character_lease: CharacterLease,
+    current_runtime_scope: RuntimeScopeRefV1,
     current_scope_generation: ScopeOwnershipGeneration,
     current_control_loss_epoch: Option<ControlLossEpochRefV1>,
     current_original_grace_deadline: Option<i64>,
@@ -34,6 +35,7 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
             current_connection_generation,
             current_transport,
             current_character_lease,
+            current_runtime_scope: RuntimeScopeRefV1::channel(commit.world_id(), commit.channel_id()),
             current_scope_generation,
             current_control_loss_epoch: None,
             current_original_grace_deadline: None,
@@ -50,6 +52,17 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
         }
         self.current_control_loss_epoch = Some(control_loss_epoch);
         self.current_original_grace_deadline = Some(original_grace_deadline);
+        Ok(self)
+    }
+
+    pub fn with_current_runtime_scope(
+        mut self,
+        current_runtime_scope: RuntimeScopeRefV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if current_runtime_scope.world_id() != self.commit.world_id() {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        self.current_runtime_scope = current_runtime_scope;
         Ok(self)
     }
 
@@ -76,6 +89,11 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
     #[must_use]
     pub const fn current_character_lease(self) -> CharacterLease {
         self.current_character_lease
+    }
+
+    #[must_use]
+    pub const fn current_runtime_scope(self) -> RuntimeScopeRefV1 {
+        self.current_runtime_scope
     }
 
     #[must_use]
@@ -157,6 +175,7 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
             || identity.account_id() != account_id
             || identity.character_id() != committed.character_id()
             || identity.world_id() != committed.world_id()
+            || identity.runtime_scope() != snapshot.current_runtime_scope()
             || candidate.connection().predecessor() != snapshot.current_connection_generation()
             || current_lease.character_id() != committed.character_id()
             || candidate_authority.character_lease_generation() != current_lease.generation()
@@ -953,6 +972,7 @@ pub enum ReconnectDurabilityPhaseV1 { PendingPrepare, AwaitFinalRevalidation, Pe
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReconnectCurrentAuthorityV1 {
     identity: ReconnectIdentityV1,
+    current_runtime_scope: RuntimeScopeRefV1,
     predecessor: ConnectionGeneration,
     authority: ReconnectAuthorityFenceV1,
     continuity_epoch: ControlLossEpochRefV1,
@@ -987,6 +1007,7 @@ impl ReconnectCurrentAuthorityV1 {
         }
         Ok(Self {
             identity: record.identity().clone(),
+            current_runtime_scope: record.identity().runtime_scope(),
             predecessor: record.connection().predecessor(),
             authority,
             continuity_epoch: record.continuity().control_loss_epoch(),
@@ -1021,6 +1042,22 @@ impl ReconnectCurrentAuthorityV1 {
             false,
             observed_at,
         )
+    }
+
+    pub fn with_current_runtime_scope(
+        mut self,
+        current_runtime_scope: RuntimeScopeRefV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if current_runtime_scope.world_id() != self.identity.world_id() {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        self.current_runtime_scope = current_runtime_scope;
+        Ok(self)
+    }
+
+    #[must_use]
+    pub const fn current_runtime_scope(&self) -> RuntimeScopeRefV1 {
+        self.current_runtime_scope
     }
 }
 
