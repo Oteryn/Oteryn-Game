@@ -23,12 +23,12 @@ jobs:
         run: |
           set -euo pipefail
           python tools/agents/test_validate_remote_desktop_prompt_routing.py
-          set +e
-          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py > /tmp/round11-red.log 2>&1
-          rc=$?
-          set -e
+          if python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py > /tmp/round11-red.log 2>&1; then
+            cat /tmp/round11-red.log
+            echo "durable round11 regressions unexpectedly passed on unchanged validator" >&2
+            exit 1
+          fi
           cat /tmp/round11-red.log
-          test "$rc" -ne 0
           grep -F "expected error containing" /tmp/round11-red.log
           git diff --check
       - name: Publish clean tests-only RED commit
