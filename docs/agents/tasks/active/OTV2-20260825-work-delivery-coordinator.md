@@ -231,3 +231,49 @@ owner_action_required: create the one separately allocated successor branch from
 blocker: clean successor has not yet produced its mandatory test-only RED generation, implementation GREEN generation, fresh exact-head CI or fresh independent review
 next_action: dispatch OTV2-20260828-impl-durability-successor on impl/game-durability-journal-recovery-240 from the recorded merge SHA; retain PR #212 and recompute downstream readiness only after the successor merges
 \`\`\`
+
+## Current live control-plane checkpoint — 2026-08-29
+
+This section supersedes the older operational checkpoint above for current execution. Historical fields remain preserved for provenance only.
+
+```yaml
+protected_main_sha: 0135deb100109b910dada366d7a1b05484357e51
+parent_issue: 162
+status: REVIEW_RECONCILIATION_REQUIRED
+current_durability_issue: 250
+current_durability_pr: 252
+current_durability_allocation_pr: 251
+current_durability_head_sha: 99b1c13ebfe4edef120e5c89b3c3bf9dfe15114d
+current_durability_base_sha: 0135deb100109b910dada366d7a1b05484357e51
+current_durability_behind_by: 0
+current_durability_pr_state: draft_unmerged
+current_changed_path_count: 12
+historical_source_pr: 243
+historical_source_authority: read_only_evidence_only
+server_seam_issue: 247
+server_seam_state: WAITING_DURABILITY_MERGE
+work_owned_integration_guard: PRRT_kwDOT8SzxM6dX3eH
+owner_action_required: none
+blocker_owner: "Oteryn: sol durability lead"
+blockers:
+  - P1: retained reconnect-attempt budget is not preserved across terminal GameSession replacement under the same ControlLossEpoch
+  - P1: Foundation final revalidation cannot represent genuinely fresh current authority before V2 COMMIT
+qualification_evidence:
+  rust_workspace_run: 33240209169
+  merge_gate_run: 33240263818
+  agent_governance_run: 33240263805
+  architecture_semantic_audit_run: 33240209246
+  merge_authority_audit_run: 33240209170
+  whole_diff_self_review: PASS_on_99b1c13ebfe4edef120e5c89b3c3bf9dfe15114d
+  codex_review: CHANGES_REQUIRED_2xP1
+work_mutation_authority_now: control_plane_docs_only
+worker_branch_mutation_by_work: forbidden
+server_seam_release: forbidden_until_durability_merge_readback
+next_action: "Wait for Oteryn: sol durability lead to repair both P1s within merged #251 authority, preserve fresh RED -> GREEN evidence, freeze a new exact head, regenerate exact-head CI/self-review and fresh lane-owned Codex with zero blocking findings/required lane threads, then return READY_FOR_INTEGRATION to Work. Work then performs independent exact-head preflight, resolves only its own integration guard, expected-head squash-merges #252, reads back protected main, reconciles #250/#167/#243, and only then creates the fresh Server Seam #247 allocation."
+```
+
+Durable GitHub control-plane mirrors for this checkpoint:
+
+- Issue #162 comment `5462518299` records the current Work classification and the two blocking P1s.
+- Issue #167 comment `5462519470` supersedes stale `READY_TO_RESUME` / historical #243 execution wording and points current execution to #250/#252.
+- Issue #247 body now names Issue #250 / PR #252 as the current prerequisite and keeps Server Seam fail-closed at `WAITING_DURABILITY_MERGE`.
