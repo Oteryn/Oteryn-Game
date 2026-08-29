@@ -160,8 +160,8 @@ mod runtime_scope_identity_red_tests {
     }
 
     #[test]
-    fn terminal_replacement_rejects_same_world_generation_different_current_runtime_scope(
-    ) -> Result<(), ReconnectDurabilityErrorV1> {
+    fn terminal_replacement_rejects_same_world_generation_different_current_runtime_scope()
+    -> Result<(), ReconnectDurabilityErrorV1> {
         let candidate = candidate_record()?;
         let result = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
@@ -175,8 +175,8 @@ mod runtime_scope_identity_red_tests {
     }
 
     #[test]
-    fn final_revalidation_can_supply_actual_current_runtime_scope_and_reject_drift(
-    ) -> Result<(), ReconnectDurabilityErrorV1> {
+    fn final_revalidation_can_supply_actual_current_runtime_scope_and_reject_drift()
+    -> Result<(), ReconnectDurabilityErrorV1> {
         let record = candidate_record()?;
         let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
         budget.reserve(
