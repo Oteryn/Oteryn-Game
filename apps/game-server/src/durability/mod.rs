@@ -1084,7 +1084,8 @@ mod terminal_replacement_foundation_red_tests {
         PendingCommandReconciliationV1, ProtectionEntitlementV1, ReconnectAttemptBudgetV1,
         ReconnectAttemptRef, ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1,
         ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
-        ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1, ReconnectDurabilityFlowV2,
+        ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
+        ReconnectDurabilityFlowV2,
         ReconnectDurabilityPhaseV1, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
         ReconnectDurableReconciliationSnapshotV2, ReconnectDurableTerminalDispositionV1,
         ReconnectIdentityV1, ReconnectPrepareActionV1, ReconnectPrepareCompletionV1,
@@ -1256,6 +1257,48 @@ mod terminal_replacement_foundation_red_tests {
             snapshot,
             candidate,
         )
+    }
+
+    #[test]
+    fn v2_final_revalidation_accepts_external_current_facts_and_rejects_changed_authority() {
+        let record = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 10, 1).expect("record");
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        budget
+            .reserve(
+                record.identity().reconnect_attempt_ref(),
+                record.connection().transport_ref(),
+            )
+            .expect("reserve");
+        let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        flow.accept_prepare_completion(
+            ReconnectPrepareCompletionV2::for_request(
+                &request,
+                ReconnectPrepareDispositionV2::Prepared,
+            ),
+            &mut budget,
+        )
+        .expect("prepare completion");
+
+        let changed_authority = ReconnectAuthorityFenceV1::new(
+            record.authority().character_lease_generation() + 1,
+            record.authority().scope_ownership_generation(),
+        )
+        .expect("changed authority");
+        let current = ReconnectCurrentAuthorityV1::from_current_facts(
+            &record,
+            changed_authority,
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            105,
+        )
+        .expect("current authority");
+
+        assert_eq!(
+            flow.authorize_commit(current, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
     }
 
     #[test]
