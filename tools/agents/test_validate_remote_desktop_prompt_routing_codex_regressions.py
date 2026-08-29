@@ -562,6 +562,73 @@ def test_pinned_raw_userinfo_selector_passes() -> None:
     )
 
 
+def test_ping_automatic_authority_fails() -> None:
+    assert_prompt_fail(
+        "Ping has automatic authority.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_authority_is_automatic_fails() -> None:
+    assert_surface_fail(
+        "Ping authority is automatic.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_authority_automatically_granted_fails() -> None:
+    assert_prompt_fail(
+        "Authority is automatically granted for ping.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_authority_granted_automatically_fails() -> None:
+    assert_surface_fail(
+        "Authority is granted automatically for ping.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_github_encoded_userinfo_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://read%2Fer@github.com/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_raw_github_encoded_userinfo_mutable_selector_fails() -> None:
+    assert_surface_fail(
+        "Use https://read%2Fer@raw.githubusercontent.com/Oteryn/Oteryn/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_contents_api_encoded_userinfo_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://read%2Fer@api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref=main for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_pinned_github_encoded_userinfo_selector_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://read%2Fer@github.com/Oteryn/Oteryn/blob/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
+def test_pinned_raw_encoded_userinfo_selector_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://read%2Fer@raw.githubusercontent.com/Oteryn/Oteryn/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
+def test_pinned_contents_encoded_userinfo_selector_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://read%2Fer@api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref={META_SHA} for the pinned policy."
+    )
+
+
 def test_ordinary_permission_blocker_prose_passes() -> None:
     assert_prompt_pass(
         "A permission denied blocker must be recorded precisely before continuing through repository-native paths."
