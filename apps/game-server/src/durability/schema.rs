@@ -1128,6 +1128,71 @@ mod terminal_replacement_postgres_red_tests {
     }
 
     #[test]
+    fn runtime_terminal_replacement_rejects_exhausted_same_epoch_before_mutation() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) =
+                migrated_database("replacement_rejects_exhausted_attempt_budget").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_current_actor_anchor(&database_url, 10, 10, now).await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+
+            for attempt in 1_u64..=8 {
+                let transport = u8::try_from(0xc0_u64 + attempt)?;
+                let predecessor_record = record(10, 11, attempt, transport, 3, 7, 10, now)
+                    .map_err(|_| "predecessor record")?;
+                let (_, predecessor_request) = ReconnectDurabilityFlowV1::begin(predecessor_record);
+                let expected = if attempt == 1 {
+                    ReconnectPrepareDispositionV1::Prepared
+                } else {
+                    ReconnectPrepareDispositionV1::RejectedConcurrentPrepared
+                };
+                assert_eq!(journal.prepare(&predecessor_request).await?, expected);
+            }
+
+            let candidate =
+                record(20, 11, 9, 0xd9, 3, 7, 10, now).map_err(|_| "candidate record")?;
+            let replacement = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
+            assert_eq!(
+                journal.prepare_v2(&replacement).await?,
+                ReconnectPrepareDispositionV2::AttemptCapacityExceeded
+            );
+
+            let mut observer = PgConnection::connect(&database_url).await?;
+            let predecessor_state: (i16, i16) = sqlx::query_as(
+                "SELECT session_state, attempt_count FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .fetch_one(&mut observer)
+            .await?;
+            assert_eq!(predecessor_state, (1, 8));
+            let candidate_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(20).as_slice())
+            .fetch_one(&mut observer)
+            .await?;
+            assert_eq!(candidate_count, 0);
+            let receipt_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_session_replacements \
+                 WHERE predecessor_game_session_id = encode($1, 'hex')::uuid \
+                   AND candidate_game_session_id = encode($2, 'hex')::uuid",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .bind(uuid_v7(20).as_slice())
+            .fetch_one(&mut observer)
+            .await?;
+            assert_eq!(receipt_count, 0);
+            observer.close().await?;
+
+            drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
     fn runtime_concurrent_identical_terminal_replacement_replays_exact_receipt() -> TestResult {
         run_postgres_test(async {
             let (database, database_url) =
