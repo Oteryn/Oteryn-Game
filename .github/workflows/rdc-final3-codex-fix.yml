@@ -1,4 +1,5 @@
 name: RDC final3 Codex fix
+# retry after exact invalid-fence RED
 
 on:
   push:
