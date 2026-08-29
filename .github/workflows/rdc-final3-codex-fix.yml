@@ -1,5 +1,5 @@
 name: RDC final3 Codex fix
-# retry after exact invalid-fence RED
+# exact-SHA retry after invalid-fence RED
 
 on:
   push:
@@ -17,8 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: governance/remote-desktop-per-action-gate-237
+          ref: ${{ github.sha }}
           fetch-depth: 0
+      - name: Verify exact helper trigger
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
       - name: Apply bounded validator repair
         shell: bash
         run: |
@@ -96,4 +100,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "fix(agents): close final raw RDC bypasses"
+          remote_head="$(git ls-remote origin refs/heads/governance/remote-desktop-per-action-gate-237 | cut -f1)"
+          test "$remote_head" = "$GITHUB_SHA"
           git push origin HEAD:governance/remote-desktop-per-action-gate-237
