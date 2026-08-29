@@ -5,7 +5,7 @@ task_id: OTV2-20260828-terminal-session-replacement-repair
 title: Implement terminal GameSession replacement and typed reconciliation
 mode: REPAIR
 status: qualifying
-integration_state: FINAL_QUALIFICATION_PENDING
+integration_state: CODEX_REVIEW_PENDING
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-terminal-session-replacement-250
@@ -25,7 +25,7 @@ admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 pr: 252
 owner: Oteryn: sol durability lead
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-28T22:47:24+02:00
+updated_at: 2026-08-29T07:29:44+02:00
 execution_budget_minutes: 180
 large_budget_reason: cross-lane Foundation/Durability repair with real PostgreSQL contention, replay and restart proof
 write_authority: exact_allocated_worker_scope_after_12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
@@ -162,25 +162,27 @@ Implement only the canonical repairs needed to satisfy the complete RED suite:
 
 No Cargo/lockfile/workflow/resource-registry/Server Seam/Client/Movement/Combat/gameplay/production/secret/live-data/Platform/Atlas/META/external-repository mutation. No new resource maximum. Any need for another implementation path is `SHARED_LEASE_REQUIRED` and the worker must stop for explicit control-plane expansion.
 
-## Proven TDD checkpoint
+## Proven TDD and review-repair checkpoints
 
 - Schema/receipt/live-anchor RED: `b9f1cda4d3693158eb2224208b51696e1bdb2766`, workflow run `33201919633`, PostgreSQL job `98953210787`: 49 PASS / 8 expected FAIL.
 - Foundation V2/terminal-authorization RED: `bff218dcc35a19b10c0a3dc1dbbc78e2cb41b306`, workflow run `33202516767`, job `98955532165`: expected missing canonical Foundation contract.
 - Complete runtime PostgreSQL RED: `0fc9de255394ba4ce1b919ad71ea47eeb3247e05`, workflow run `33204365030`, PostgreSQL job `98961526112`: 72 PASS / 6 expected FAIL on PostgreSQL 17.6.
 - Runtime GREEN before final composition: `aea85c41268f62486a45e37ed6142cd684ad89df`, workflow run `33207651906`, PostgreSQL job `98972703970`: 78 PASS / 0 FAIL on PostgreSQL 17.6.
-- Final composition head: `560eb1d30ad94986b9af3375735c3380b76d7070`; PR #252 was Draft, open and mergeable with exactly the 12 allocated paths at that generation.
-- On `560eb1d...`, Rust workspace run `33208062237`, Architecture semantic audit `33208062163`, Merge authority audit `33208062198`, Agent governance `33208062254`, and Merge gate `33208062302` completed successfully.
-- A later Agent governance generation `33208318821` failed before checkout because PR metadata lacked the exact required `## Scope` and `## Validation` headings; corresponding Merge gate `33208318794` was cancelled.
-- After `560eb1d...` and before the first checkpoint commit, concurrent exact commit `1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4` added the fresh test-only RED `runtime_reconciliation_requires_exact_replacement_receipt_binding` in `apps/game-server/src/durability/schema.rs`. It is in the current branch ancestry. Its hosted RED and subsequent GREEN have **not** been established by this checkpoint.
-- First durable checkpoint commit: `5382963922bd54a07ba5f301efd26e310500955f`, parent `1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4`. This proved the save did not overwrite the concurrent RED commit.
+- Final composition generation `560eb1d30ad94986b9af3375735c3380b76d7070` passed Rust workspace `33208062237`, Architecture semantic audit `33208062163`, Merge authority audit `33208062198`, Agent governance `33208062254`, and Merge gate `33208062302`.
+- Receipt-bound reconciliation RED was preserved at `4530617223e93970533eb15e5997c7c0296ce471`: Rust run `33209828606`, PostgreSQL job `98980086302`, 78 PASS / 1 expected FAIL in `runtime_reconciliation_requires_exact_replacement_receipt_binding`.
+- Native exact-head review on `4530617223e93970533eb15e5997c7c0296ce471` reported two P1 findings: missing V2 final-revalidation/COMMIT progression and missing exact persisted replacement-receipt binding during reconciliation.
+- V2 final-revalidation/COMMIT progression repair landed in `1a2d7e53168fb87d26fc2185be49e0b5f51ac592`.
+- Exact persisted replacement-receipt reconciliation repair landed in `b88d8bf7ff0838b03b9462374b291119e1f947c8`.
+- Whole-diff self-review found a further local projection defect: reconciled durable `Prepared` left the exact local attempt budget `Reserved`. RED head `ef0963b36696daa09475371d64ff16ab4383eb3b`, Merge gate run `33212142814`, Linux workspace job `98987719428`: build and strict Clippy PASS; workspace tests 188 PASS / 1 expected FAIL in `v2_reconciled_prepared_budget_regression_tests::reconciled_prepared_marks_the_attempt_prepared_in_the_local_budget`.
+- Budget projection GREEN landed in `01d663035d62af87c8b4979b543b7d547bbdec32`. Rust workspace run `33236163526` completed SUCCESS; PostgreSQL 17.6 job `99057409787` verified the exact SHA and completed 79 PASS / 0 FAIL. Exact-head Merge authority audit `33236163535`, Agent governance `33236163536`, and Architecture semantic audit `33236163547` also completed SUCCESS.
 
-Any tracked checkpoint commit moves the PR head and invalidates prior exact-head qualification as final integration proof. On resume, live GitHub is authoritative; resolve the current branch head, PR body, CI and review state before further mutation.
+Any tracked commit moves the PR head and invalidates prior exact-head qualification as final integration proof. The metadata-complete head produced from this update is the next candidate freeze generation and requires fresh exact-head CI, whole-diff self-review and native Codex review.
 
 ## Required validation
 
 ### Focused RED -> GREEN
 
-- Foundation exact tests in `admission_recovery_inner.rs` for terminal lifecycle, current scope, every predecessor/candidate constructor binding, generic V1 fallback, direct typed V2 replay, reconciliation and collision-only fresh-attempt eligibility.
+- Foundation exact tests in `admission_recovery_inner.rs` for terminal lifecycle, current scope, every predecessor/candidate constructor binding, generic V1 fallback, direct typed V2 replay, reconciliation, commit progression, local prepared projection and collision-only fresh-attempt eligibility.
 - `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres` against isolated PostgreSQL 17 for replacement, scope drift, exact-receipt replay/conflict, predecessor late-COMMIT fencing, forced mid-transaction rollback, contention, restart, typed reconciliation and existing Durability regressions.
 
 ### Component/integration
@@ -208,39 +210,36 @@ PR #243 remains open Draft historical evidence until Work decides its terminal d
 ## Context checkpoint
 
 ```yaml
-last_progress: runtime GREEN is proven at aea85c41268f62486a45e37ed6142cd684ad89df with 78/78 PostgreSQL tests; final composition reached 560eb1d30ad94986b9af3375735c3380b76d7070; concurrent commit 1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4 then added receipt-bound reconciliation RED; durable checkpoint 5382963922bd54a07ba5f301efd26e310500955f preserved that ancestry; current tracked correction records the new RED explicitly
+last_progress: all known implementation and self-review defects are repaired through 01d663035d62af87c8b4979b543b7d547bbdec32; exact-head Rust and PostgreSQL validation is green there with 79/79 real PostgreSQL 17.6 tests; this metadata update creates the candidate freeze generation for final qualification
 status: qualifying
+integration_state: CODEX_REVIEW_PENDING
 branch: impl/game-terminal-session-replacement-250
-checkpoint_source_head: 1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4
-previous_checkpoint_commit: 5382963922bd54a07ba5f301efd26e310500955f
+previous_code_green_head: 01d663035d62af87c8b4979b543b7d547bbdec32
 head_sha: resolve_live_branch_on_resume
 pr: 252
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: record_in_exact_head_self_review_and_codex_request
+final_head_frozen_at: 2026-08-29T07:29:44+02:00
 ci_trigger_source: pull_request
-ci_check_generation: checkpoint_commit_requires_fresh_exact_head_generation
-ci_checks_for_current_head: 0
+ci_check_generation: metadata_complete_head_requires_fresh_exact_head_generation
+ci_checks_for_previous_code_green_head: 5
 ci_run_ids:
-  - 33207651906
-  - 33208062237
-  - 33208062163
-  - 33208062198
-  - 33208062254
-  - 33208062302
-  - 33208318821
-  - 33208318794
+  rust_workspace_code_green: 33236163526
+  merge_gate_code_green: 33236163552
+  architecture_semantic_audit_code_green: 33236163547
+  merge_authority_audit_code_green: 33236163535
+  agent_governance_code_green: 33236163536
 ci_job_ids:
-  runtime_green_postgres: 98972703970
-  latest_governance_metadata_failure: 98974989692
-runner_assignment_state: unknown
-terminal_ci_wait_started_at: null
+  code_green_postgres: 99057409787
+  reconciled_prepared_budget_red_linux_workspace: 98987719428
+runner_assignment_state: hosted_exact_head_available
+terminal_ci_wait_started_at: 2026-08-29T07:29:44+02:00
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: receipt-bound reconciliation RED from 1be6f9c6fb1c2ee78a076a5e86f00771a8d9e7b4 still needs hosted RED classification and GREEN repair; PR #252 metadata also lacks exact `## Scope` and `## Validation` headings; all final exact-head CI/review must be regenerated after checkpoint commits
-next_action: run the Durability PostgreSQL harness on the live checkpoint head to classify `runtime_reconciliation_requires_exact_replacement_receipt_binding` before any production repair
+blocker: fresh exact-head CI, whole-diff self-review, required review-thread reconciliation and fresh native Codex review on the metadata-complete candidate
+next_action: resolve the metadata-complete PR head, require all exact-head checks, publish whole-diff self-review, resolve superseded P1 threads with evidence, and request fresh `@codex review`
 ```
