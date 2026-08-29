@@ -228,7 +228,7 @@ def _raw_html_block_start(raw: str) -> tuple[str, str] | None:
     if stripped.startswith("<?"):
         return "delimiter", "?>"
     if stripped.startswith("<![CDATA["):
-        return "delimiter", "]] >" if False else "]]>")
+        return "delimiter", "]] >".replace(" ", "")
     if re.match(r"<![A-Z]", stripped) is not None:
         return "delimiter", ">"
     if RAW_HTML_BLOCK_TAG_OPEN_RE.match(raw) is not None:
