@@ -122,15 +122,8 @@ impl AdmissionReconnectJournalV2 {
         let character_id = record.identity().character_id().as_bytes().to_vec();
         let mut transaction = self.pool.begin().await?;
 
-        let candidate_exists: bool = sqlx::query_scalar(
-            "SELECT EXISTS (\
-                SELECT 1 FROM game_durability_reconnect_sessions \
-                WHERE game_session_id = encode($1, 'hex')::uuid\
-             )",
-        )
-        .bind(candidate_session_id.as_slice())
-        .fetch_one(&mut *transaction)
-        .await?;
+        let candidate_exists =
+            candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?;
         if candidate_exists {
             if !replacement_receipt_matches(&mut transaction, authorization).await? {
                 return Err(DurabilityError::InvalidStoredState);
@@ -164,6 +157,12 @@ impl AdmissionReconnectJournalV2 {
         .fetch_optional(&mut *transaction)
         .await?;
         let Some(predecessor) = predecessor else {
+            if candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?
+                && replacement_receipt_matches(&mut transaction, authorization).await?
+            {
+                transaction.commit().await?;
+                return self.prepare_legacy_typed(request).await;
+            }
             return Err(DurabilityError::InvalidStoredState);
         };
         if !replacement_predecessor_row_matches(&predecessor, authorization)? {
@@ -290,29 +289,25 @@ impl AdmissionReconnectJournalV2 {
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
-        if let Some(authorization) = request.terminal_replacement() {
-            if !replacement_authorization_matches_record(authorization, record) {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-            let mut transaction = self.pool.begin().await?;
-            if !replacement_receipt_matches(&mut transaction, authorization).await? {
-                return Err(DurabilityError::InvalidStoredState);
-            }
-            transaction.commit().await?;
+        let mut transaction = self.pool.begin().await?;
+        if let Some(authorization) = request.terminal_replacement()
+            && (!replacement_authorization_matches_record(authorization, record)
+                || !replacement_receipt_matches(&mut transaction, authorization).await?)
+        {
+            return Err(DurabilityError::InvalidStoredState);
         }
-        let state = self.terminal_state_for_record(record).await?;
+
+        let (legacy, state) =
+            AdmissionReconnectJournal::reconcile_record_in_transaction(&mut transaction, record)
+                .await?;
         let outcome = match state {
             V2_PREPARED => {
-                let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(record.clone());
-                let legacy = self.legacy.reconcile(&legacy_request).await?;
                 if legacy != ReconnectDurableReconciliationSnapshotV1::prepared(record.clone()) {
                     return Err(DurabilityError::InvalidStoredState);
                 }
                 ReconnectDurableOutcomeV2::Prepared
             }
             V2_COMMITTED => {
-                let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(record.clone());
-                let legacy = self.legacy.reconcile(&legacy_request).await?;
                 if legacy != ReconnectDurableReconciliationSnapshotV1::committed(record.clone()) {
                     return Err(DurabilityError::InvalidStoredState);
                 }
@@ -322,12 +317,16 @@ impl AdmissionReconnectJournalV2 {
                 }
             }
             V2_COLLISION_TERMINAL | V2_CONCURRENT_TERMINAL | V2_STALE_TERMINAL => {
+                if legacy != ReconnectDurableReconciliationSnapshotV1::terminal(record.clone()) {
+                    return Err(DurabilityError::InvalidStoredState);
+                }
                 ReconnectDurableOutcomeV2::Terminal {
                     disposition: terminal_disposition_from_state(state)?,
                 }
             }
             _ => return Err(DurabilityError::InvalidStoredState),
         };
+        transaction.commit().await?;
         Ok(ReconnectDurableReconciliationSnapshotV2::new(
             record.clone(),
             outcome,
@@ -446,6 +445,22 @@ fn replacement_predecessor_row_matches(
             == authorization
                 .predecessor_character_lease_generation()
                 .to_string())
+}
+
+async fn candidate_session_exists(
+    transaction: &mut Transaction<'_, Postgres>,
+    candidate_session_id: &[u8],
+) -> Result<bool, DurabilityError> {
+    sqlx::query_scalar(
+        "SELECT EXISTS (\
+            SELECT 1 FROM game_durability_reconnect_sessions \
+            WHERE game_session_id = encode($1, 'hex')::uuid\
+         )",
+    )
+    .bind(candidate_session_id)
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(DurabilityError::from)
 }
 
 async fn replacement_receipt_for_candidate_exists(

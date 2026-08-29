@@ -1149,7 +1149,7 @@ mod terminal_replacement_postgres_red_tests {
                 .authorize_commit(current, now)
                 .map_err(|_| "commit authorization")?;
             let reconcile_request = ReconnectDurabilityFlowV2::begin(record.clone(), None).1;
-            const LOCK_KEY: i64 = 252_202_608_29;
+            const LOCK_KEY: i64 = 25_220_260_829;
             let mut blocker = PgConnection::connect(&database_url).await?;
             sqlx::query("SELECT pg_advisory_lock($1)")
                 .bind(LOCK_KEY)

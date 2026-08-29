@@ -565,7 +565,17 @@ impl AdmissionReconnectJournal {
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
-        let record = request.record();
+        let mut transaction = self.pool.begin().await?;
+        let (snapshot, _state) =
+            Self::reconcile_record_in_transaction(&mut transaction, request.record()).await?;
+        transaction.commit().await?;
+        Ok(snapshot)
+    }
+
+    pub(super) async fn reconcile_record_in_transaction(
+        transaction: &mut Transaction<'_, Postgres>,
+        record: &ReconnectDurabilityRecordV1,
+    ) -> Result<(ReconnectDurableReconciliationSnapshotV1, i16), DurabilityError> {
         let session_id = record.identity().game_session_id().as_bytes().to_vec();
         let attempt_ref = record
             .identity()
@@ -586,8 +596,7 @@ impl AdmissionReconnectJournal {
             .get()
             .to_string();
 
-        let mut transaction = self.pool.begin().await?;
-        let Some(session) = load_session_for_share(&mut transaction, session_id.as_slice()).await?
+        let Some(session) = load_session_for_share(transaction, session_id.as_slice()).await?
         else {
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -600,19 +609,20 @@ impl AdmissionReconnectJournal {
         )
         .bind(session_id.as_slice())
         .bind(attempt_ref.as_slice())
-        .fetch_optional(&mut *transaction)
+        .fetch_optional(&mut **transaction)
         .await?;
         let Some(attempt) = attempt else {
             return Err(DurabilityError::InvalidStoredState);
         };
         if attempt.try_get::<String, _>("record_json")? != encoded_record
-            || !attempt_binding_is_valid(&mut transaction, record).await?
+            || !attempt_binding_is_valid(transaction, record).await?
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let snapshot = match attempt.try_get::<i16, _>("state")? {
+        let state = attempt.try_get::<i16, _>("state")?;
+        let snapshot = match state {
             PREPARED => {
-                if !precommit_protection_binding_is_valid(&mut transaction, record, false).await? {
+                if !precommit_protection_binding_is_valid(transaction, record, false).await? {
                     return Err(DurabilityError::InvalidStoredState);
                 }
                 let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
@@ -650,14 +660,14 @@ impl AdmissionReconnectJournal {
                     || session.try_get::<i16, _>("session_state")? != ACTIVE
                     || prepared_ref.is_some()
                     || !recovery_grant_binding_is_valid(
-                        &mut transaction,
+                        transaction,
                         recovery_grant_nonce.as_deref(),
                         session_id.as_slice(),
                         attempt_ref.as_slice(),
                     )
                     .await?
                     || !active_committed_binding_is_valid(
-                        &mut transaction,
+                        transaction,
                         session_id.as_slice(),
                         &session,
                     )
@@ -672,8 +682,7 @@ impl AdmissionReconnectJournal {
             }
             _ => return Err(DurabilityError::InvalidStoredState),
         };
-        transaction.commit().await?;
-        Ok(snapshot)
+        Ok((snapshot, state))
     }
 }
 
