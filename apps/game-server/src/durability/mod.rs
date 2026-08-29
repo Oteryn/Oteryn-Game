@@ -1381,6 +1381,70 @@ mod terminal_replacement_foundation_red_tests {
     }
 
     #[test]
+    fn terminal_replacement_authorization_rejects_candidate_loss_epoch_mismatch() {
+        let record = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 10, 1).expect("record");
+        let mismatched_continuity = ReconnectContinuityV1::new(
+            ControlLossEpochRefV1::new(4).expect("epoch"),
+            record.continuity().original_grace_deadline(),
+            record.continuity().prepared_deadline(),
+            record.continuity().protection_entitlement(),
+        )
+        .expect("continuity");
+        let mismatched = ReconnectDurabilityRecordV1::new(
+            record.identity().clone(),
+            record.connection(),
+            record.authority(),
+            mismatched_continuity,
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+        )
+        .expect("mismatched record");
+
+        assert!(
+            authorize(
+                predecessor_snapshot(GameSessionState::Terminal, None, 10).expect("snapshot"),
+                &mismatched,
+                game_session(10).expect("predecessor"),
+                game_session(20).expect("candidate"),
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
+    fn terminal_replacement_authorization_rejects_candidate_original_deadline_mismatch() {
+        let record = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 10, 1).expect("record");
+        let mismatched_continuity = ReconnectContinuityV1::new(
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline() + 1,
+            record.continuity().prepared_deadline(),
+            record.continuity().protection_entitlement(),
+        )
+        .expect("continuity");
+        let mismatched = ReconnectDurabilityRecordV1::new(
+            record.identity().clone(),
+            record.connection(),
+            record.authority(),
+            mismatched_continuity,
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+        )
+        .expect("mismatched record");
+
+        assert!(
+            authorize(
+                predecessor_snapshot(GameSessionState::Terminal, None, 10).expect("snapshot"),
+                &mismatched,
+                game_session(10).expect("predecessor"),
+                game_session(20).expect("candidate"),
+            )
+            .is_err()
+        );
+    }
+
+    #[test]
     fn terminal_replacement_authorization_requires_terminal_transportless_predecessor() {
         let candidate = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 11, 1).expect("candidate");
         let predecessor = game_session(10).expect("predecessor");

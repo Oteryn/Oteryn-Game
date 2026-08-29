@@ -1128,6 +1128,64 @@ mod terminal_replacement_postgres_red_tests {
     }
 
     #[test]
+    fn runtime_delayed_predecessor_prepare_cannot_exceed_actor_epoch_attempt_budget() -> TestResult
+    {
+        run_postgres_test(async {
+            let (database, database_url) =
+                migrated_database("replacement_delayed_predecessor_attempt_budget").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_current_actor_anchor(&database_url, 10, 10, now).await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+
+            for attempt in 1_u64..=7 {
+                let transport = u8::try_from(0xc0_u64 + attempt)?;
+                let predecessor_record = record(10, 11, attempt, transport, 3, 7, 10, now)
+                    .map_err(|_| "predecessor record")?;
+                let (_, predecessor_request) = ReconnectDurabilityFlowV1::begin(predecessor_record);
+                let expected = if attempt == 1 {
+                    ReconnectPrepareDispositionV1::Prepared
+                } else {
+                    ReconnectPrepareDispositionV1::RejectedConcurrentPrepared
+                };
+                assert_eq!(journal.prepare(&predecessor_request).await?, expected);
+            }
+
+            let candidate =
+                record(20, 11, 8, 0xd8, 3, 7, 10, now).map_err(|_| "candidate record")?;
+            let replacement = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
+            assert_eq!(
+                journal.prepare_v2(&replacement).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+
+            let delayed_predecessor =
+                record(10, 11, 9, 0xd9, 3, 7, 10, now).map_err(|_| "delayed predecessor")?;
+            let (_, delayed_request) = ReconnectDurabilityFlowV1::begin(delayed_predecessor);
+            assert_eq!(
+                journal.prepare(&delayed_request).await?,
+                ReconnectPrepareDispositionV1::AttemptCapacityExceeded
+            );
+
+            let mut observer = PgConnection::connect(&database_url).await?;
+            let retained: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
+                 WHERE character_id = encode($1, 'hex')::uuid \
+                   AND control_loss_epoch = $2::text::numeric(20, 0)",
+            )
+            .bind(uuid_v7(11).as_slice())
+            .bind("3")
+            .fetch_one(&mut observer)
+            .await?;
+            assert_eq!(retained, 8);
+            observer.close().await?;
+
+            drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
     fn runtime_terminal_replacement_rejects_exhausted_same_epoch_before_mutation() -> TestResult {
         run_postgres_test(async {
             let (database, database_url) =
