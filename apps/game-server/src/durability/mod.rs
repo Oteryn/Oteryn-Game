@@ -180,6 +180,12 @@ impl AdmissionReconnectJournalV2 {
             return Err(DurabilityError::InvalidStoredState);
         }
 
+        let retained_attempt_count =
+            retained_actor_epoch_attempt_count_v2(&mut transaction, record).await?;
+        if retained_attempt_count >= admission_journal::MAX_ATTEMPTS_PER_EPOCH {
+            return Ok(ReconnectPrepareDispositionV2::AttemptCapacityExceeded);
+        }
+
         if let Some(prepared_attempt_ref) =
             predecessor.try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
         {
@@ -276,8 +282,6 @@ impl AdmissionReconnectJournalV2 {
             return Err(DurabilityError::InvalidStoredState);
         }
 
-        let retained_attempt_count =
-            retained_actor_epoch_attempt_count_v2(&mut transaction, record).await?;
         insert_candidate_session_v2(&mut transaction, record, retained_attempt_count).await?;
         ensure_precommit_continuity_v2(&mut transaction, record, authorization).await?;
 
