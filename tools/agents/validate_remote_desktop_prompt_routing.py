@@ -139,6 +139,17 @@ OUTSIDE_ROUTING_PATTERNS = (
         r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
         re.IGNORECASE,
     ),
+    re.compile(
+        r"(?=.*\bdirect\s+(?:connectors?|tools?)\b)"
+        r"(?=.*\b(?:(?:blanket|standing|automatic)\s+(?:approval|permission)|(?:approval|permission)\s+by\s+default)\b)",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?=.*\b(?:connectors?|routers?|transports?)\b)"
+        r"(?=.*\b(?:fail(?:s|ed|ing)?\s+closed|deny|denies|denied|denying)\b)"
+        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(
@@ -172,7 +183,7 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     re.IGNORECASE,
 )
 GITHUB_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)github\.com/Oteryn/Oteryn/(?:blob|tree)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
+    r"(?:(?:https?:)?//)(?:www\.)?github\.com/Oteryn/Oteryn/(?:blob|tree)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
 )
 EXPECTED_META_ROUTING_COORDINATE = (
