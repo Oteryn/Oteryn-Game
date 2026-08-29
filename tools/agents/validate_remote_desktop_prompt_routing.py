@@ -166,13 +166,13 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\bping\b)"
         r"(?=.*(?:\bautomatically\s+(?:authori[sz]ed|approved)\b|\bpreauthori[sz]ed\b|\bpreapproved\b|"
-        r"\b(?:blanket|standing|automatic|default)\s+(?:approval|permission|authori[sz]ation)\b|"
-        r"\b(?:approval|permission|authori[sz]ation)\s+(?:is\s+)?(?:granted|given)\s+by\s+default\b|"
-        r"\b(?:approval|permission|authori[sz]ation)\s+by\s+default\b|"
-        r"\b(?:approval|permission|authori[sz]ation)\s+(?:is\s+)?automatically\s+(?:granted|given)\b|"
-        r"\b(?:approval|permission|authori[sz]ation)\s+(?:is\s+)?(?:granted|given)\s+automatically\b|"
-        r"\bautomatically\s+(?:granted|given)\s+(?:approval|permission|authori[sz]ation)\b|"
-        r"\b(?:approval|permission|authori[sz]ation)\s+(?:is\s+)?automatic\b|"
+        r"\b(?:blanket|standing|automatic|default)\s+(?:approval|permission|authori[sz]ation|authority)\b|"
+        r"\b(?:approval|permission|authori[sz]ation|authority)\s+(?:is\s+)?(?:granted|given)\s+by\s+default\b|"
+        r"\b(?:approval|permission|authori[sz]ation|authority)\s+by\s+default\b|"
+        r"\b(?:approval|permission|authori[sz]ation|authority)\s+(?:is\s+)?automatically\s+(?:granted|given)\b|"
+        r"\b(?:approval|permission|authori[sz]ation|authority)\s+(?:is\s+)?(?:granted|given)\s+automatically\b|"
+        r"\bautomatically\s+(?:granted|given)\s+(?:approval|permission|authori[sz]ation|authority)\b|"
+        r"\b(?:approval|permission|authori[sz]ation|authority)\s+(?:is\s+)?automatic\b|"
         r"\b(?:authori[sz]ed|approved)\s+by\s+default\b))",
         re.IGNORECASE,
     ),
@@ -237,11 +237,11 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     re.IGNORECASE,
 )
 GITHUB_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)(?:[^\s/@]+@)?(?:(?:www\.)?github\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
+    r"(?:(?:https?:)?//)(?:[^\s@]+@)?(?:(?:www\.)?github\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
 )
 GITHUB_CONTENTS_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)(?:[^\s/@]+@)?api\.github\.com\.?(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
+    r"(?:(?:https?:)?//)(?:[^\s@]+@)?api\.github\.com\.?(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
     r"ecosystem/agent-execution-routing-policy\.json(?:\?([^\s`<>)#]*))?",
     re.IGNORECASE,
 )
