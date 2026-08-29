@@ -161,6 +161,88 @@ def test_pinned_github_explicit_default_port_passes() -> None:
     )
 
 
+def test_connector_actions_reordered_by_default_permission_fails() -> None:
+    assert_prompt_fail(
+        "Connector actions, by default, have permission.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_named_host_operations_reordered_by_default_permission_fails() -> None:
+    assert_surface_fail(
+        "Filesystem operations, by default, have permission.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_calls_automatically_authorized_fails() -> None:
+    assert_prompt_fail(
+        "Ping calls are automatically authorized.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_requests_blanket_approval_fails() -> None:
+    assert_surface_fail(
+        "Ping requests have blanket approval.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_connector_prevents_per_action_claim_fails() -> None:
+    assert_prompt_fail(
+        "The connector prevents every call lacking per-action authorization.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_providers_prevent_per_action_claim_fails() -> None:
+    assert_surface_fail(
+        "Providers prevent calls lacking per-action authorization.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_raw_githubusercontent_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://raw.githubusercontent.com/Oteryn/Oteryn/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_github_raw_mutable_selector_fails() -> None:
+    assert_surface_fail(
+        "Use https://github.com/Oteryn/Oteryn/raw/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_pinned_raw_githubusercontent_selector_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://raw.githubusercontent.com/Oteryn/Oteryn/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
+def test_pinned_github_raw_selector_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://github.com/Oteryn/Oteryn/raw/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
+def test_invalid_backtick_fence_does_not_hide_prompt_authority() -> None:
+    assert_prompt_fail(
+        "``` invalid`\nUse Remote Desktop for routine Git inspection.\n```",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_invalid_backtick_fence_does_not_hide_surface_authority() -> None:
+    assert_surface_fail(
+        "``` invalid`\nUse Remote Desktop for routine Git inspection.\n```",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
 def test_ordinary_permission_blocker_prose_passes() -> None:
     assert_prompt_pass(
         "A permission denied blocker must be recorded precisely before continuing through repository-native paths."
