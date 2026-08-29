@@ -1,6 +1,6 @@
 # OTV2-20260825-work-delivery-coordinator
 
-```yaml
+\`\`\`yaml
 task_id: OTV2-20260825-work-delivery-coordinator
 title: Coordinate the post-blocker gameplay vertical slice and release the clean Durability successor
 mode: COORDINATE
@@ -56,7 +56,7 @@ blocks:
   - #167 and Server Seam remain fail-closed until the separately allocated clean successor completes its independent TDD, review and merge lifecycle
 cross_repository_coordination_id: OTV2-WORK-DELIVERY-POST-BLOCKER
 external_repositories: []
-```
+\`\`\`
 
 The coordinator owns creation of each child task packet only through the
 allocation-PR merge. Immediately after the protected-main allocation merge,
@@ -68,7 +68,7 @@ permitted.
 
 ## Outcome
 
-Create the durable execution lifecycle for the post-blocker gameplay vertical slice. This coordinator records live readiness, allocates only path-disjoint lanes through separate merged allocations, integrates only exact-head verified deliveries, and emits `ARCHITECTURE_ESCALATION_REQUIRED` instead of inventing material architecture decisions.
+Create the durable execution lifecycle for the post-blocker gameplay vertical slice. This coordinator records live readiness, allocates only path-disjoint lanes through separate merged allocations, integrates only exact-head verified deliveries, and emits \`ARCHITECTURE_ESCALATION_REQUIRED\` instead of inventing material architecture decisions.
 
 ## Current recovery authority — 2026-08-28
 
@@ -79,19 +79,19 @@ Create the durable execution lifecycle for the post-blocker gameplay vertical sl
 
 ## Architecture and source of truth
 
-- `PROVEN`: protected `main` is `2e3b05e7e1e916bd3210ce2184ad7e23482f324d` when this task was admitted.
-- `PROVEN`: Issue #154 is closed completed; its packaged authority is canonical on this admission main.
-- `PROVEN`: Issues #91, #93, #115, #116, #123 and #131 are closed completed. Their terminal state does not grant downstream runtime write authority.
-- `PROVEN`: PR #98 merged as `dc22e0da8efcc6f4458416191261063b295af5b4`; its QA shell exists, while real gameplay Tier 1 and Tier 2 remain `NOT_EVALUATED`.
-- `PROVEN`: PR #144 (`c1020b2db62ecfa18c411bee56fa004430b28923`) and PR #151 (`2d0e951ce37c2e28773c22966bb816c00bebaa0a`) are merged; the prior registry/Foundation-Cargo lease is released.
-- `PROVEN`: Issue #139 is deliberately non-current until its exact Movement plan, Interaction, compatible Client, and real QA prerequisites are integration-ready.
-- `PROVEN`: open PR #150 is a draft root-`AGENTS.md` governance change on a separate path; it owns no coordinator or Wave A implementation path.
-- `PROVEN`: no open Wave A implementation PR or active Wave A path allocation exists on the admission main.
-- `PROVEN`: Task 1 coordinator lifecycle merged as `c57ddb5253cdfec126a768232d53f8a9bb292e3f`; protected main readback confirmed it.
-- `PROVEN`: Issue #164 is terminally resolved by owner decision merge `a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d`, which accepts only a pure-local AI bootstrap; Issue #174 needs this fresh exact allocation before implementation.
-- `PROVEN`: PR #186 is merged. Its recorded review claims remain historical; this coordinator hold does not revise them.
-- `PROVEN`: PR #188 final head `0e26fa0c216cadf34ff5c83fa3be508f81106c41` passed exact-head governance, architecture, authority and merge-gate checks plus independent review, then squash-merged as protected `main` `29576afa621bbe6a46c51fa1117c94efb6c7a644`; its temporary delivery branch was deleted. Its initial published head `e205b0620d433733e306777ab8e491d471b62677` remains exact original admission provenance.
-- `PROVEN`: the architecture-hold protected-main checkpoint `007183ac7ef09dd4ae8d8f476d7ac943541d7d48` had PR #182's shared prerequisite but no Durability worker PR or durable adapter delivery; the prior reconciliation readback at `29576afa621bbe6a46c51fa1117c94efb6c7a644` retained that no-delivery state.
+- \`PROVEN\`: protected \`main\` is \`2e3b05e7e1e916bd3210ce2184ad7e23482f324d\` when this task was admitted.
+- \`PROVEN\`: Issue #154 is closed completed; its packaged authority is canonical on this admission main.
+- \`PROVEN\`: Issues #91, #93, #115, #116, #123 and #131 are closed completed. Their terminal state does not grant downstream runtime write authority.
+- \`PROVEN\`: PR #98 merged as \`dc22e0da8efcc6f4458416191261063b295af5b4\`; its QA shell exists, while real gameplay Tier 1 and Tier 2 remain \`NOT_EVALUATED\`.
+- \`PROVEN\`: PR #144 (\`c1020b2db62ecfa18c411bee56fa004430b28923\`) and PR #151 (\`2d0e951ce37c2e28773c22966bb816c00bebaa0a\`) are merged; the prior registry/Foundation-Cargo lease is released.
+- \`PROVEN\`: Issue #139 is deliberately non-current until its exact Movement plan, Interaction, compatible Client, and real QA prerequisites are integration-ready.
+- \`PROVEN\`: open PR #150 is a draft root-\`AGENTS.md\` governance change on a separate path; it owns no coordinator or Wave A implementation path.
+- \`PROVEN\`: no open Wave A implementation PR or active Wave A path allocation exists on the admission main.
+- \`PROVEN\`: Task 1 coordinator lifecycle merged as \`c57ddb5253cdfec126a768232d53f8a9bb292e3f\`; protected main readback confirmed it.
+- \`PROVEN\`: Issue #164 is terminally resolved by owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\`, which accepts only a pure-local AI bootstrap; Issue #174 needs this fresh exact allocation before implementation.
+- \`PROVEN\`: PR #186 is merged. Its recorded review claims remain historical; this coordinator hold does not revise them.
+- \`PROVEN\`: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` passed exact-head governance, architecture, authority and merge-gate checks plus independent review, then squash-merged as protected \`main\` \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`; its temporary delivery branch was deleted. Its initial published head \`e205b0620d433733e306777ab8e491d471b62677\` remains exact original admission provenance.
+- \`PROVEN\`: the architecture-hold protected-main checkpoint \`007183ac7ef09dd4ae8d8f476d7ac943541d7d48\` had PR #182's shared prerequisite but no Durability worker PR or durable adapter delivery; the prior reconciliation readback at \`29576afa621bbe6a46c51fa1117c94efb6c7a644\` retained that no-delivery state.
 - `HISTORICAL`: `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741` and its local documentation checkpoint are pre-incident provenance only; neither is a dispatch target.
 - `HISTORICAL`: PRs #190, #194, #195, #199 and #210 completed the Foundation/registry predecessors. #192 and #193 are terminal and have no active worker/dispatch path.
 - `PROVEN`: PR #241 replaced the invalid legacy Durability continuation with one clean successor allocation. The legacy branch is immutable evidence; the successor is the only Durability execution target.
@@ -100,14 +100,14 @@ Create the durable execution lifecycle for the post-blocker gameplay vertical sl
 
 Governing authority:
 
-- `AGENTS.md`
-- `docs/agents/AGENTS.md`
-- `docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md`
-- `docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md`
-- `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`
-- `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`
-- `docs/architecture/reviews/OTERYN_GAME_POST_BLOCKER_WORK_ORCHESTRATION_2026-08-25.md`
-- `docs/superpowers/plans/2026-08-25-oteryn-game-work-delivery-orchestration.md`
+- \`AGENTS.md\`
+- \`docs/agents/AGENTS.md\`
+- \`docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md\`
+- \`docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md\`
+- \`docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md\`
+- \`docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md\`
+- \`docs/architecture/reviews/OTERYN_GAME_POST_BLOCKER_WORK_ORCHESTRATION_2026-08-25.md\`
+- \`docs/superpowers/plans/2026-08-25-oteryn-game-work-delivery-orchestration.md\`
 
 ## Historical readiness matrix — non-actionable
 
@@ -115,22 +115,22 @@ This retained matrix records the pre-recovery state only. Every row below is his
 
 | Lane | Historical readiness | Historical evidence | Historical original record |
 |---|---|---|---|
-| Interaction | `COMPLETED_RELEASED` | PR #172 merged as `73f82e4864aa15ece50625bda8bac7868f779ba3`; post-merge reconciliation is recorded | Issue #165 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
-| Ability | `COMPLETED_RELEASED` | PR #171 merged as `2faa280b406a313d02ee1330c65651bc36e215a9`; post-merge reconciliation is recorded | Issue #166 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
-| AI | `COMPLETED_RELEASED` | PR #178 merged as `cb9c5f4f53dd880c9d338dafd21b6184a4419993`; post-merge reconciliation is recorded | Issue #174 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
-| Foundation successor | `CONFLICT` | #187 is resolved by PR #190 and #194 is merged, but the worker-owned #192 packet/live allocation still say `waiting_allocation_merge` / `allocation_pending_merge` | worker #192 must reconcile its own active packet from current `main`, then execute TDD; this coordinator packet grants no execution authority |
-| Durability | `WAITING_DEPENDENCY` | #167 remains fail-closed while #192's worker-owned allocation-state conflict is reconciled and its Foundation boundary later integrates | no write authority until #192 integrates and #167 receives fresh resume authority |
-| Server Seam | `WAITING_DEPENDENCY` | #167 cannot release the durable adapter until the #192 conflict is reconciled, Foundation integrates, and #167 is freshly resumed | not released by #167 |
-| Client | `WAITING_DEPENDENCY` | Server Seam remains blocked by #167 `WAITING_DEPENDENCY` | no compatible production Server Seam is merged |
-| Movement | `WAITING_DEPENDENCY` | #139 remains non-current and its Client/Server Seam dependency chain is blocked by #167 `WAITING_DEPENDENCY`; real QA is also not integration-ready | no dispatch authority |
-| Combat | `WAITING_DEPENDENCY` | Movement and its Client/Server Seam/Durability dependency chain is blocked by #167 `WAITING_DEPENDENCY` | no dispatch authority |
+| Interaction | \`COMPLETED_RELEASED\` | PR #172 merged as \`73f82e4864aa15ece50625bda8bac7868f779ba3\`; post-merge reconciliation is recorded | Issue #165 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
+| Ability | \`COMPLETED_RELEASED\` | PR #171 merged as \`2faa280b406a313d02ee1330c65651bc36e215a9\`; post-merge reconciliation is recorded | Issue #166 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
+| AI | \`COMPLETED_RELEASED\` | PR #178 merged as \`cb9c5f4f53dd880c9d338dafd21b6184a4419993\`; post-merge reconciliation is recorded | Issue #174 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
+| Foundation successor | \`CONFLICT\` | #187 is resolved by PR #190 and #194 is merged, but the worker-owned #192 packet/live allocation still say \`waiting_allocation_merge\` / \`allocation_pending_merge\` | worker #192 must reconcile its own active packet from current `main`, then execute TDD; this coordinator packet grants no execution authority |
+| Durability | \`WAITING_DEPENDENCY\` | #167 remains fail-closed while #192's worker-owned allocation-state conflict is reconciled and its Foundation boundary later integrates | no write authority until #192 integrates and #167 receives fresh resume authority |
+| Server Seam | \`WAITING_DEPENDENCY\` | #167 cannot release the durable adapter until the #192 conflict is reconciled, Foundation integrates, and #167 is freshly resumed | not released by #167 |
+| Client | \`WAITING_DEPENDENCY\` | Server Seam remains blocked by #167 \`WAITING_DEPENDENCY\` | no compatible production Server Seam is merged |
+| Movement | \`WAITING_DEPENDENCY\` | #139 remains non-current and its Client/Server Seam dependency chain is blocked by #167 \`WAITING_DEPENDENCY\`; real QA is also not integration-ready | no dispatch authority |
+| Combat | \`WAITING_DEPENDENCY\` | Movement and its Client/Server Seam/Durability dependency chain is blocked by #167 \`WAITING_DEPENDENCY\` | no dispatch authority |
 
 ## Acceptance criteria
 
 - [x] GitHub-backed protected-main, Issue, PR and active-task preflight completed.
 - [x] Completed blocker work is reconciled without reopening #93, #115, #116, #123 or #131.
 - [x] Current Wave A candidate readiness is classified with no implicit worker authority.
-- [x] Task 1 coordinator lifecycle passed exact-head governance lifecycle and merged as `c57ddb5253cdfec126a768232d53f8a9bb292e3f`.
+- [x] Task 1 coordinator lifecycle passed exact-head governance lifecycle and merged as \`c57ddb5253cdfec126a768232d53f8a9bb292e3f\`.
 - [x] Task 2 allocation PR #168 merged exact, path-disjoint authority before any mutating lane worker was dispatched.
 
 ## Excluded scope
@@ -139,7 +139,7 @@ No gameplay/runtime, Cargo/workspace, registry, stable-ID, public-contract, work
 
 ## Implementation / findings
 
-Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected `main`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. Owner decision merge `a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d` closed #164 and authorized only the separately allocated pure-local AI bootstrap through Issue #174.
+Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected \`main\`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. Owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\` closed #164 and authorized only the separately allocated pure-local AI bootstrap through Issue #174.
 
 PRs #171, #172 and #178 are merged and their packets released. PRs #190, #194, #195, #199 and #210 are terminal historical predecessor evidence; none creates a current #192/registry dispatch path. PR #241 is the current Durability recovery decision: legacy #212 remains immutable evidence, the separate clean successor is the sole Durability execution target, and Server Seam remains fail-closed until that successor independently merges.
 
@@ -147,23 +147,23 @@ PRs #171, #172 and #178 are merged and their packets released. PRs #190, #194, #
 
 ### Focused
 
-- command/run: `python tools/agents/validate_governance.py`
-- result: PR #188 final head `0e26fa0c216cadf34ff5c83fa3be508f81106c41` passed exact-head governance, architecture, authority and merge-gate checks plus independent review before squash merge.
+- command/run: \`python tools/agents/validate_governance.py\`
+- result: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` passed exact-head governance, architecture, authority and merge-gate checks plus independent review before squash merge.
 
 ### Component/integration
 
-- command/run: `python tools/repository/validate_repository_policy.py`
-- result: baseline-only LICENSE canonical-text mismatch was outside PR #186; no repository-policy change is made by this architecture hold. PR #188 is merged; its historical protected-main merge result is `29576afa621bbe6a46c51fa1117c94efb6c7a644`.
+- command/run: \`python tools/repository/validate_repository_policy.py\`
+- result: baseline-only LICENSE canonical-text mismatch was outside PR #186; no repository-policy change is made by this architecture hold. PR #188 is merged; its historical protected-main merge result is \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`.
 
 ### E2E
 
-- scenario: `NOT_APPLICABLE` — coordinator-only governance/task lifecycle creates no runtime behavior or user journey.
-- result: `NOT_APPLICABLE`
+- scenario: \`NOT_APPLICABLE\` — coordinator-only governance/task lifecycle creates no runtime behavior or user journey.
+- result: \`NOT_APPLICABLE\`
 
 ### Exact-head CI
 
-- initial published head: `e205b0620d433733e306777ab8e491d471b62677`
-- final exact-head: `0e26fa0c216cadf34ff5c83fa3be508f81106c41`
+- initial published head: \`e205b0620d433733e306777ab8e491d471b62677\`
+- final exact-head: \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\`
 - authoritative source: PR #188 final-head checks and merge record
 - trigger source: pull_request
 - workflow/run/job: exact-head governance, architecture, authority and merge-gate checks for PR #188 final head
@@ -173,8 +173,8 @@ PRs #171, #172 and #178 are merged and their packets released. PRs #190, #194, #
 
 ## Self-review
 
-- initial reviewed head: `e205b0620d433733e306777ab8e491d471b62677`
-- final reviewed head: `0e26fa0c216cadf34ff5c83fa3be508f81106c41`
+- initial reviewed head: \`e205b0620d433733e306777ab8e491d471b62677\`
+- final reviewed head: \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\`
 - authoritative source: PR #188 final-head review evidence
 - method/reviewer: coordinator full-diff review
 - material findings: none on the final PR #188 head
@@ -183,24 +183,24 @@ PRs #171, #172 and #178 are merged and their packets released. PRs #190, #194, #
 ## Independent review
 
 - required: exact-head non-authoring review before merge
-- initial reviewed head: `e205b0620d433733e306777ab8e491d471b62677`
+- initial reviewed head: \`e205b0620d433733e306777ab8e491d471b62677\`
 - authoritative source: PR #188 final-head review evidence
 - method/auditor: independent task review
-- material findings: none on final head; bounded lifecycle scope remained authorized by Issue #187 comment `5424765487`
+- material findings: none on final head; bounded lifecycle scope remained authorized by Issue #187 comment \`5424765487\`
 - verdict: PASS; final head independently reviewed and merged
 
 ## PR and closeout
 
-- changed-file review: PR #188 final head `0e26fa0c216cadf34ff5c83fa3be508f81106c41` passed independent review
+- changed-file review: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` passed independent review
 - unresolved review threads: none reported at merge
 - related/superseded PRs: #168 allocation; #171, #172 and #178 deliveries; #181/#185 leases; #182 shared integration
 - protected auto-merge: not used
-- merge commit/result: PR #188 final head `0e26fa0c216cadf34ff5c83fa3be508f81106c41` squash-merged as `29576afa621bbe6a46c51fa1117c94efb6c7a644`; that protected-main readback is historical
+- merge commit/result: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` squash-merged as \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`; that protected-main readback is historical
 - ownership release: Ability, Interaction and AI are released; legacy Durability has no write authority, while the separate clean successor owns its post-allocation lifecycle; coordinator remains active and the vertical-slice programme is not complete
 
 ## Context checkpoint
 
-```yaml
+\`\`\`yaml
 last_progress: PR #241 merged the canonical clean Durability recovery allocation as main a171410de07c2dab718f52f780d4314bdcc53604; legacy PR #212 remains immutable evidence and the separate successor is ready for coordinator dispatch
 status: coordinating_durability_successor_release
 branch: null
@@ -230,7 +230,7 @@ stall_warnings: 0
 owner_action_required: create the one separately allocated successor branch from main a171410de07c2dab718f52f780d4314bdcc53604; do not dispatch legacy PR #212
 blocker: clean successor has not yet produced its mandatory test-only RED generation, implementation GREEN generation, fresh exact-head CI or fresh independent review
 next_action: dispatch OTV2-20260828-impl-durability-successor on impl/game-durability-journal-recovery-240 from the recorded merge SHA; retain PR #212 and recompute downstream readiness only after the successor merges
-```
+\`\`\`
 
 ## Current live control-plane checkpoint — 2026-08-29
 
