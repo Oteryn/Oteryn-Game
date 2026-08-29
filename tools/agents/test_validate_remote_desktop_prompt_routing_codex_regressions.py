@@ -29,6 +29,22 @@ def assert_surface_fail(policy: str, needle: str) -> None:
         raise AssertionError(f"expected surface error containing {needle!r}, got: {errors}")
 
 
+def assert_prompt_suffix_fail(policy: str, needle: str) -> None:
+    errors: list[str] = []
+    text = "# Prompt\n\n" + CANONICAL_PROMPT_SECTION + "\n\n" + policy + "\n"
+    validate_reusable_prompt_text("prompt.md", text, errors)
+    if not any(needle in error for error in errors):
+        raise AssertionError(f"expected suffix error containing {needle!r}, got: {errors}")
+
+
+def assert_surface_suffix_fail(policy: str, needle: str) -> None:
+    errors: list[str] = []
+    text = "# Surface\n\n" + SURFACE_SECTION + "\n\n" + policy + "\n"
+    validate_surface_text("AGENTS.md", text, errors)
+    if not any(needle in error for error in errors):
+        raise AssertionError(f"expected suffix surface error containing {needle!r}, got: {errors}")
+
+
 def assert_prompt_pass(policy: str) -> None:
     errors: list[str] = []
     text = "# Prompt\n\n" + policy + "\n\n" + CANONICAL_PROMPT_SECTION + "\n"
@@ -230,14 +246,14 @@ def test_pinned_github_raw_selector_passes() -> None:
 
 
 def test_invalid_backtick_fence_does_not_hide_prompt_authority() -> None:
-    assert_prompt_fail(
+    assert_prompt_suffix_fail(
         "``` invalid`\nUse Remote Desktop for routine Git inspection.\n```",
         "Remote Desktop policy text outside canonical section",
     )
 
 
 def test_invalid_backtick_fence_does_not_hide_surface_authority() -> None:
-    assert_surface_fail(
+    assert_surface_suffix_fail(
         "``` invalid`\nUse Remote Desktop for routine Git inspection.\n```",
         "Remote Desktop policy text outside canonical section",
     )
