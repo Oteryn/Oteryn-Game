@@ -141,11 +141,12 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"(?=.*\bdirect\s+(?:connectors?|tools?)\b)"
-        r"(?=.*\b(?:(?:blanket|standing|automatic)\s+(?:approval|permission)|(?:approval|permission)\s+by\s+default)\b)",
+        r"(?=.*(?:\b(?:blanket|standing|automatic|default)\s+(?:approval|permission)\b|"
+        r"\b(?:approval|permission)\s+by\s+default\b|\bby\s+default\b.{0,160}\b(?:approval|permission)\b))",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?=.*\b(?:connectors?|routers?|transports?)\b)"
+        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:fail(?:s|ed|ing)?\s+closed|deny|denies|denied|denying)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
@@ -153,25 +154,25 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(
-        r"(?=.*\b(?:connectors?|routers?|transports?)\b)"
+        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:guarantee(?:s|d|ing)?|implement(?:s|ed|ing)?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?=.*\b(?:connectors?|routers?|transports?)\b)"
+        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:enforce|enforces|enforced|enforcing|enforcement|block|blocks|blocked|blocking|reject|rejects|rejected|rejecting)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?=.*\b(?:connectors?|routers?|transports?)\b)"
+        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\bphysical(?:ly)?\b)"
         r"(?=.*\benforc\w*\b)",
         re.IGNORECASE,
     ),
-    re.compile(r"\b(?:connectors?|routers?|transports?)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
-    re.compile(r"\bphysical(?:ly)?\b.{0,100}\b(?:connectors?|routers?|transports?)\b.{0,100}\benforc", re.IGNORECASE),
+    re.compile(r"\b(?:connectors?|routers?|transports?|providers?)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
+    re.compile(r"\bphysical(?:ly)?\b.{0,100}\b(?:connectors?|routers?|transports?|providers?)\b.{0,100}\benforc", re.IGNORECASE),
 )
 
 META_ROUTING_COORDINATE_RE = re.compile(
@@ -183,7 +184,7 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     re.IGNORECASE,
 )
 GITHUB_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)(?:www\.)?github\.com/Oteryn/Oteryn/(?:blob|tree)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
+    r"(?:(?:https?:)?//)(?:www\.)?github\.com(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
 )
 EXPECTED_META_ROUTING_COORDINATE = (
