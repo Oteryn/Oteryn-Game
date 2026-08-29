@@ -1,0 +1,43 @@
+name: PR239 round10 green
+
+"on":
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+
+permissions:
+  contents: write
+
+jobs:
+  green:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out trigger commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+
+      - name: Apply bounded patch
+        run: python tools/agents/_pr239_round10_patch.py
+
+      - name: Verify complete governance repair
+        run: |
+          python tools/agents/test_validate_remote_desktop_prompt_routing.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
+          python tools/agents/validate_remote_desktop_prompt_routing.py
+          python tools/repository/validate_repository_policy.py
+          git diff --check
+
+      - name: Publish clean validator commit
+        run: |
+          set -euo pipefail
+          expected_parent="$(git rev-parse HEAD)"
+          git rm .github/workflows/pr239-round10-green.yml tools/agents/_pr239_round10_patch.py
+          git add tools/agents/validate_remote_desktop_prompt_routing.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(agents): close final Codex round 10 bypasses"
+          remote_sha="$(git ls-remote origin refs/heads/governance/remote-desktop-per-action-gate-237 | cut -f1)"
+          test "$remote_sha" = "$expected_parent"
+          git push origin HEAD:refs/heads/governance/remote-desktop-per-action-gate-237
