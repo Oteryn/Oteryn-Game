@@ -86,12 +86,12 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"\bdirect\s+(?:connectors?|tools?)\b.{0,160}"
         r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
     ),
     re.compile(
         r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
         r"\bdirect\s+(?:connectors?|tools?)\b",
         re.IGNORECASE,
     ),
@@ -99,46 +99,46 @@ OUTSIDE_ROUTING_PATTERNS = (
         r"(?=.*\bdirect(?:ly)?\b)"
         r"(?=.*\b(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
         r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
         re.IGNORECASE,
     ),
     re.compile(
         r"(?=.*\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b)"
-        r"(?=.*\b(?:(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
+        r"(?=.*\b(?:(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\s+to\s+(?:the\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,100}\b(?:through|via)\b.{0,100}\b(?:host\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
-    r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
-    r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b",
-    re.IGNORECASE,
-),
-re.compile(
-    r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+approval|preapproval|approval\s+by\s+default)\b.{0,160}"
-    r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
-    re.IGNORECASE,
-),
+        r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|permissions?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b.{0,160}"
+        r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
+        re.IGNORECASE,
+    ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(
@@ -149,7 +149,7 @@ re.compile(
     ),
     re.compile(
         r"(?=.*\b(?:connector|router|transport)\b)"
-        r"(?=.*\benforc\w*\b)"
+        r"(?=.*\b(?:enforc|block|reject)\w*\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
     ),
@@ -169,6 +169,10 @@ META_ROUTING_COORDINATE_RE = re.compile(
 )
 ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     r"<(Oteryn/Oteryn@[^\s`<>:]+:ecosystem/agent-execution-routing-policy\.json)>",
+    re.IGNORECASE,
+)
+GITHUB_META_ROUTING_URL_RE = re.compile(
+    r"https://github\.com/Oteryn/Oteryn/(?:blob|tree)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
 )
 EXPECTED_META_ROUTING_COORDINATE = (
@@ -608,6 +612,17 @@ def _validate_routing_adjacent_sections(path: str, text: str, errors: list[str])
             )
 
 
+def _normalize_url_scan_text(text: str) -> str:
+    value = _operative_text(text)
+    for _ in range(4):
+        decoded = html.unescape(value)
+        if decoded == value:
+            break
+        value = decoded
+    value = unicodedata.normalize("NFKC", value)
+    return _remove_default_ignorables(value)
+
+
 def _validate_meta_routing_coordinates(path: str, text: str, errors: list[str]) -> None:
     normalized = _normalize_policy_text(_operative_text(text))
     coordinates = META_ROUTING_COORDINATE_RE.findall(normalized)
@@ -616,6 +631,13 @@ def _validate_meta_routing_coordinates(path: str, text: str, errors: list[str]) 
     )
     for coordinate in stale:
         errors.append(f"{path}: stale META execution-routing coordinate: {coordinate}")
+
+    url_selectors = GITHUB_META_ROUTING_URL_RE.findall(_normalize_url_scan_text(text))
+    for selector in sorted({selector for selector in url_selectors if selector != META_SHA}):
+        errors.append(
+            f"{path}: stale META execution-routing coordinate: GitHub routing-policy URL selector {selector}"
+        )
+
 
 def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> None:
     _validate_meta_routing_coordinates(path, text, errors)
