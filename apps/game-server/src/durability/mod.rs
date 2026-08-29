@@ -276,10 +276,14 @@ impl AdmissionReconnectJournalV2 {
             return Err(DurabilityError::InvalidStoredState);
         }
 
-        insert_candidate_session_v2(&mut transaction, record).await?;
+        let retained_attempt_count =
+            retained_actor_epoch_attempt_count_v2(&mut transaction, record).await?;
+        insert_candidate_session_v2(&mut transaction, record, retained_attempt_count).await?;
         ensure_precommit_continuity_v2(&mut transaction, record, authorization).await?;
 
-        let disposition = prepare_new_candidate_attempt_v2(&mut transaction, record).await?;
+        let disposition =
+            prepare_new_candidate_attempt_v2(&mut transaction, record, retained_attempt_count)
+                .await?;
         transaction.commit().await?;
         Ok(disposition)
     }
@@ -525,9 +529,29 @@ async fn replacement_receipt_matches(
                 .to_string())
 }
 
+async fn retained_actor_epoch_attempt_count_v2(
+    transaction: &mut Transaction<'_, Postgres>,
+    record: &ReconnectDurabilityRecordV1,
+) -> Result<i16, DurabilityError> {
+    let retained: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
+         WHERE character_id = encode($1, 'hex')::uuid \
+           AND control_loss_epoch = $2::text::numeric(20, 0)",
+    )
+    .bind(record.identity().character_id().as_bytes().as_slice())
+    .bind(record.continuity().control_loss_epoch().get().to_string())
+    .fetch_one(&mut **transaction)
+    .await?;
+    if retained > i64::from(admission_journal::MAX_ATTEMPTS_PER_EPOCH) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    i16::try_from(retained).map_err(|_| DurabilityError::InvalidStoredState)
+}
+
 async fn insert_candidate_session_v2(
     transaction: &mut Transaction<'_, Postgres>,
     record: &ReconnectDurabilityRecordV1,
+    retained_attempt_count: i16,
 ) -> Result<(), DurabilityError> {
     let identity = record.identity();
     let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) =
@@ -537,14 +561,15 @@ async fn insert_candidate_session_v2(
             game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
             runtime_scope_world_id, runtime_scope_channel_id, runtime_scope_instance_id, \
             control_loss_epoch, original_grace_deadline, predecessor_generation, \
-            character_lease_generation, scope_ownership_generation, current_generation, session_state\
+            character_lease_generation, scope_ownership_generation, current_generation, \
+            attempt_count, session_state\
          ) VALUES (\
             encode($1, 'hex')::uuid, $2::text::uuid, encode($3, 'hex')::uuid, \
             encode($4, 'hex')::uuid, $5, encode($6, 'hex')::uuid, \
             encode($7, 'hex')::uuid, encode($8, 'hex')::uuid, \
             $9::text::numeric(20, 0), $10, $11::text::numeric(20, 0), \
             $12::text::numeric(20, 0), $13::text::numeric(20, 0), \
-            $11::text::numeric(20, 0), $14\
+            $11::text::numeric(20, 0), $14, $15\
          )",
     )
     .bind(identity.game_session_id().as_bytes().as_slice())
@@ -559,7 +584,14 @@ async fn insert_candidate_session_v2(
     .bind(record.continuity().original_grace_deadline())
     .bind(record.connection().predecessor().get().to_string())
     .bind(record.authority().character_lease_generation().to_string())
-    .bind(record.authority().scope_ownership_generation().get().to_string())
+    .bind(
+        record
+            .authority()
+            .scope_ownership_generation()
+            .get()
+            .to_string(),
+    )
+    .bind(retained_attempt_count)
     .bind(V2_RECONNECTABLE)
     .execute(&mut **transaction)
     .await?;
@@ -686,10 +718,14 @@ async fn ensure_precommit_continuity_v2(
 async fn prepare_new_candidate_attempt_v2(
     transaction: &mut Transaction<'_, Postgres>,
     record: &ReconnectDurabilityRecordV1,
+    retained_attempt_count: i16,
 ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+    if retained_attempt_count >= admission_journal::MAX_ATTEMPTS_PER_EPOCH {
+        return Ok(ReconnectPrepareDispositionV2::AttemptCapacityExceeded);
+    }
     if database_now_v2(transaction).await? > record.continuity().prepared_deadline() {
         insert_attempt_v2(transaction, record, V2_STALE_TERMINAL).await?;
-        set_candidate_attempt_v2(transaction, record, None).await?;
+        set_candidate_attempt_v2(transaction, record, None, retained_attempt_count).await?;
         return Ok(ReconnectPrepareDispositionV2::RejectedStaleAuthority);
     }
 
@@ -708,12 +744,18 @@ async fn prepare_new_candidate_attempt_v2(
     .await?;
     if reserved.rows_affected() == 0 {
         insert_attempt_v2(transaction, record, V2_COLLISION_TERMINAL).await?;
-        set_candidate_attempt_v2(transaction, record, None).await?;
+        set_candidate_attempt_v2(transaction, record, None, retained_attempt_count).await?;
         return Ok(ReconnectPrepareDispositionV2::RejectedTransportRefCollision);
     }
 
     insert_attempt_v2(transaction, record, V2_PREPARED).await?;
-    set_candidate_attempt_v2(transaction, record, Some(attempt_ref.as_slice())).await?;
+    set_candidate_attempt_v2(
+        transaction,
+        record,
+        Some(attempt_ref.as_slice()),
+        retained_attempt_count,
+    )
+    .await?;
     Ok(ReconnectPrepareDispositionV2::Prepared)
 }
 
@@ -721,16 +763,18 @@ async fn set_candidate_attempt_v2(
     transaction: &mut Transaction<'_, Postgres>,
     record: &ReconnectDurabilityRecordV1,
     prepared_attempt_ref: Option<&[u8]>,
+    retained_attempt_count: i16,
 ) -> Result<(), DurabilityError> {
     let updated = sqlx::query(
         "UPDATE game_durability_reconnect_sessions \
          SET attempt_count = attempt_count + 1, prepared_attempt_ref = $2 \
          WHERE game_session_id = encode($1, 'hex')::uuid \
-           AND session_state = $3 AND attempt_count = 0",
+           AND session_state = $3 AND attempt_count = $4",
     )
     .bind(record.identity().game_session_id().as_bytes().as_slice())
     .bind(prepared_attempt_ref)
     .bind(V2_RECONNECTABLE)
+    .bind(retained_attempt_count)
     .execute(&mut **transaction)
     .await?;
     if updated.rows_affected() != 1 {
@@ -1085,12 +1129,12 @@ mod terminal_replacement_foundation_red_tests {
         ReconnectAttemptRef, ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1,
         ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
         ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
-        ReconnectDurabilityFlowV2,
-        ReconnectDurabilityPhaseV1, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
-        ReconnectDurableReconciliationSnapshotV2, ReconnectDurableTerminalDispositionV1,
-        ReconnectIdentityV1, ReconnectPrepareActionV1, ReconnectPrepareCompletionV1,
-        ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
-        ReconnectProofV1, RuntimeScopeRefV1, ScopeOwnershipGeneration, StateDomainRevisionV1,
+        ReconnectDurabilityFlowV2, ReconnectDurabilityPhaseV1, ReconnectDurabilityRecordV1,
+        ReconnectDurableOutcomeV2, ReconnectDurableReconciliationSnapshotV2,
+        ReconnectDurableTerminalDispositionV1, ReconnectIdentityV1, ReconnectPrepareActionV1,
+        ReconnectPrepareCompletionV1, ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1,
+        ReconnectPrepareDispositionV2, ReconnectProofV1, RuntimeScopeRefV1,
+        ScopeOwnershipGeneration, StateDomainRevisionV1,
         TerminalGameSessionReplacementAuthorizationV1, WorldId,
     };
 
@@ -1279,12 +1323,43 @@ mod terminal_replacement_foundation_red_tests {
         )
         .expect("prepare completion");
 
+        let exact_current = ReconnectCurrentAuthorityV1::from_current_facts(
+            &record,
+            record.authority(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            105,
+        )
+        .expect("exact current authority");
+        assert!(flow.authorize_commit(exact_current, 104).is_ok());
+
+        let mut changed_budget =
+            ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        changed_budget
+            .reserve(
+                record.identity().reconnect_attempt_ref(),
+                record.connection().transport_ref(),
+            )
+            .expect("changed reserve");
+        let (mut changed_flow, changed_request) =
+            ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        changed_flow
+            .accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &changed_request,
+                    ReconnectPrepareDispositionV2::Prepared,
+                ),
+                &mut changed_budget,
+            )
+            .expect("changed prepare completion");
         let changed_authority = ReconnectAuthorityFenceV1::new(
             record.authority().character_lease_generation() + 1,
             record.authority().scope_ownership_generation(),
         )
         .expect("changed authority");
-        let current = ReconnectCurrentAuthorityV1::from_current_facts(
+        let changed_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
             changed_authority,
             record.fnd02().clone(),
@@ -1293,10 +1368,10 @@ mod terminal_replacement_foundation_red_tests {
             false,
             105,
         )
-        .expect("current authority");
+        .expect("changed current authority");
 
         assert_eq!(
-            flow.authorize_commit(current, 104),
+            changed_flow.authorize_commit(changed_current, 104),
             Err(ReconnectDurabilityErrorV1::StaleAuthority)
         );
     }

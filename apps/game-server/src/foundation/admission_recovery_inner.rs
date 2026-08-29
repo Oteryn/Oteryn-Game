@@ -921,12 +921,54 @@ pub struct ReconnectCurrentAuthorityV1 {
     observed_at: i64,
 }
 impl ReconnectCurrentAuthorityV1 {
-    pub fn from_record(record: &ReconnectDurabilityRecordV1, observed_at: i64) -> Result<Self, ReconnectDurabilityErrorV1> {
-        if observed_at < 0 { return Err(ReconnectDurabilityErrorV1::InvalidRecord); }
-        let compatibility = record.compatibility();
+    pub fn from_current_facts(
+        record: &ReconnectDurabilityRecordV1,
+        authority: ReconnectAuthorityFenceV1,
+        fnd02: Fnd02ReconciliationFenceV1,
+        compatibility: ReconnectCompatibilityEvidenceV1,
+        session_state: GameSessionState,
+        current_controller_present: bool,
+        observed_at: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if observed_at < 0 {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
         Ok(Self {
-            identity: record.identity().clone(), predecessor: record.connection().predecessor(), authority: record.authority(), continuity_epoch: record.continuity().control_loss_epoch(), proof: record.proof().clone(), fnd02: record.fnd02().clone(), protocol_major: compatibility.protocol_major(), transport_profile: compatibility.transport_profile(), ruleset_revision: compatibility.ruleset_revision().to_owned(), content_revision: compatibility.content_revision().to_owned(), map_revision: compatibility.map_revision().to_owned(), world_policy_revision: compatibility.world_policy_revision().to_owned(), account_security_generation: compatibility.account_security_generation(), platform_security_evidence: compatibility.platform_security_evidence().clone(), proof_trust_evidence: compatibility.proof_trust_evidence().clone(), credential_expiration: compatibility.credential_expiration(), session_state: GameSessionState::Reconnectable, current_controller_present: false, observed_at,
+            identity: record.identity().clone(),
+            predecessor: record.connection().predecessor(),
+            authority,
+            continuity_epoch: record.continuity().control_loss_epoch(),
+            proof: record.proof().clone(),
+            fnd02,
+            protocol_major: compatibility.protocol_major(),
+            transport_profile: compatibility.transport_profile(),
+            ruleset_revision: compatibility.ruleset_revision().to_owned(),
+            content_revision: compatibility.content_revision().to_owned(),
+            map_revision: compatibility.map_revision().to_owned(),
+            world_policy_revision: compatibility.world_policy_revision().to_owned(),
+            account_security_generation: compatibility.account_security_generation(),
+            platform_security_evidence: compatibility.platform_security_evidence().clone(),
+            proof_trust_evidence: compatibility.proof_trust_evidence().clone(),
+            credential_expiration: compatibility.credential_expiration(),
+            session_state,
+            current_controller_present,
+            observed_at,
         })
+    }
+
+    pub fn from_record(
+        record: &ReconnectDurabilityRecordV1,
+        observed_at: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        Self::from_current_facts(
+            record,
+            record.authority(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            observed_at,
+        )
     }
 }
 
