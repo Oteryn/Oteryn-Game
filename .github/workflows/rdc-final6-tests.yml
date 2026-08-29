@@ -1,0 +1,55 @@
+name: RDC final6 tests-only staging
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+    paths:
+      - .github/workflows/rdc-final6-tests.yml
+
+permissions:
+  contents: write
+
+jobs:
+  stage-tests:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Add durable tests only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py')
+          text = path.read_text(encoding='utf-8')
+          anchor = '''def test_ordinary_permission_blocker_prose_passes() -> None:\n'''
+          additions = '''def test_direct_connectors_passive_permission_automatically_granted_fails() -> None:\n    assert_prompt_fail(\n        "Permission is automatically granted for direct connectors.",\n        "Remote Desktop policy text outside canonical section",\n    )\n\n\ndef test_direct_tools_passive_approval_given_by_default_fails() -> None:\n    assert_surface_fail(\n        "Approval is given by default for direct tools.",\n        "Remote Desktop policy text outside canonical section",\n    )\n\n\ndef test_ping_standing_authorization_fails() -> None:\n    assert_prompt_fail(\n        "Ping has standing authorization.",\n        "Remote Desktop policy text outside canonical section",\n    )\n\n\ndef test_ping_blanket_authorization_fails() -> None:\n    assert_surface_fail(\n        "Ping has blanket authorization.",\n        "Remote Desktop policy text outside canonical section",\n    )\n\n\ndef test_calls_passively_stopped_at_connector_fails() -> None:\n    assert_prompt_fail(\n        "Calls lacking per-action authorization are stopped at the connector.",\n        "Remote Desktop policy text outside canonical section",\n    )\n\n\ndef test_requests_passively_refused_at_provider_fails() -> None:\n    assert_surface_fail(\n        "Requests lacking per-action authorization are refused at the provider.",\n        "Remote Desktop policy text outside canonical section",\n    )\n\n\n'''
+          if text.count(anchor) != 1:
+              raise SystemExit(f'unexpected insertion anchor count: {text.count(anchor)}')
+          if 'test_ping_standing_authorization_fails' in text:
+              raise SystemExit('tests already present')
+          path.write_text(text.replace(anchor, additions + anchor), encoding='utf-8')
+          PY
+          git rm .github/workflows/rdc-final6-tests.yml
+          git add tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
+          python - <<'PY'
+          import subprocess
+          allowed = {
+              '.github/workflows/rdc-final6-tests.yml',
+              'tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py',
+          }
+          changed = set(subprocess.check_output(['git','diff','--cached','--name-only'], text=True).splitlines())
+          if changed != allowed:
+              raise SystemExit(f'unexpected staged paths: {sorted(changed)}')
+          PY
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'test(agents): cover final RDC wording variants'
+          remote_head="$(git ls-remote origin refs/heads/governance/remote-desktop-per-action-gate-237 | cut -f1)"
+          test "$remote_head" = "$GITHUB_SHA"
+          git push origin HEAD:governance/remote-desktop-per-action-gate-237
