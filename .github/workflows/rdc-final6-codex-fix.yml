@@ -32,24 +32,44 @@ jobs:
           path = Path('tools/agents/validate_remote_desktop_prompt_routing.py')
           text = path.read_text(encoding='utf-8')
 
-          subject_old = r'(?:(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)|(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?))'
-          subject_new = r'(?:(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)|direct\s+(?:connectors?|tools?)|(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?))'
-          if text.count(subject_old) != 1:
-              raise SystemExit(f'unexpected passive subject matcher count: {text.count(subject_old)}')
-          text = text.replace(subject_old, subject_new)
+          direct_anchor = '''    re.compile(
+                  r"(?=.*\\bdirect\\s+(?:connectors?|tools?)\\b)"
+                  r"(?=.*(?:\\b(?:blanket|standing|automatic|default)\\s+(?:approval|permission)\\b|"
+                  r"\\b(?:approval|permission)\\s+by\\s+default\\b|\\bby\\s+default\\b.{0,160}\\b(?:approval|permission)\\b))",
+                  re.IGNORECASE,
+              ),'''
+          direct_new = direct_anchor + '''
+              re.compile(
+                  r"(?=.*\\bdirect\\s+(?:connectors?|tools?)\\b)"
+                  r"(?=.*\\b(?:approval|permission)\\b)"
+                  r"(?=.*(?:\\b(?:granted|given)\\b.{0,80}\\bby\\s+default\\b|"
+                  r"\\bautomatically\\b.{0,80}\\b(?:granted|given)\\b|"
+                  r"\\b(?:granted|given)\\b.{0,80}\\bautomatically\\b))",
+                  re.IGNORECASE,
+              ),'''
+          if text.count(direct_anchor) != 1:
+              raise SystemExit(f'unexpected direct connector matcher count: {text.count(direct_anchor)}')
+          text = text.replace(direct_anchor, direct_new)
 
-          ping_old = r'(?:blanket|standing|automatic|default)\s+(?:approval|permission)'
-          ping_new = r'(?:blanket|standing|automatic|default)\s+(?:approval|permission|authori[sz]ation)'
-          if text.count(ping_old) < 1:
-              raise SystemExit('missing ping authority vocabulary')
-          # Only the direct ping matcher has this exact line once in the current validator.
-          text = text.replace(ping_old, ping_new, 1)
-
-          ping_tail_old = r'(?:approval|permission)\s+by\s+default'
-          ping_tail_new = r'(?:approval|permission|authori[sz]ation)\s+by\s+default'
-          if text.count(ping_tail_old) < 1:
-              raise SystemExit('missing ping default authority tail')
-          text = text.replace(ping_tail_old, ping_tail_new, 1)
+          ping_old = '''    re.compile(
+                  r"(?=.*\\bping\\b)"
+                  r"(?=.*\\b(?:automatically\\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|"
+                  r"(?:blanket|standing|automatic|default)\\s+(?:approval|permission)|"
+                  r"(?:approval|permission)\\s+(?:is\\s+)?(?:granted|given)\\s+by\\s+default|"
+                  r"(?:approval|permission)\\s+by\\s+default)\\b)",
+                  re.IGNORECASE,
+              ),'''
+          ping_new = '''    re.compile(
+                  r"(?=.*\\bping\\b)"
+                  r"(?=.*\\b(?:automatically\\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|"
+                  r"(?:blanket|standing|automatic|default)\\s+(?:approval|permission|authori[sz]ation)|"
+                  r"(?:approval|permission|authori[sz]ation)\\s+(?:is\\s+)?(?:granted|given)\\s+by\\s+default|"
+                  r"(?:approval|permission|authori[sz]ation)\\s+by\\s+default)\\b)",
+                  re.IGNORECASE,
+              ),'''
+          if text.count(ping_old) != 1:
+              raise SystemExit(f'unexpected ping authority matcher count: {text.count(ping_old)}')
+          text = text.replace(ping_old, ping_new)
 
           passive_provider_old = r'(?:stopped|refused)\s+by\s+(?:the\s+)?(?:connectors?|routers?|transports?|providers?)'
           passive_provider_new = r'(?:stopped|refused)\s+(?:by|at)\s+(?:the\s+)?(?:connectors?|routers?|transports?|providers?)'
