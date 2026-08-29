@@ -160,28 +160,29 @@ mod runtime_scope_identity_red_tests {
     }
 
     #[test]
-    fn terminal_replacement_rejects_same_world_generation_different_current_runtime_scope() {
-        let candidate = candidate_record().expect("candidate");
+    fn terminal_replacement_rejects_same_world_generation_different_current_runtime_scope(
+    ) -> Result<(), ReconnectDurabilityErrorV1> {
+        let candidate = candidate_record()?;
         let result = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
-            game_session(10).expect("predecessor"),
-            game_session(20).expect("candidate id"),
-            predecessor_snapshot(14).expect("snapshot with actual current channel"),
+            game_session(10)?,
+            game_session(20)?,
+            predecessor_snapshot(14)?,
             &candidate,
         );
         assert_eq!(result, Err(ReconnectDurabilityErrorV1::StaleAuthority));
+        Ok(())
     }
 
     #[test]
-    fn final_revalidation_can_supply_actual_current_runtime_scope_and_reject_drift() {
-        let record = candidate_record().expect("record");
+    fn final_revalidation_can_supply_actual_current_runtime_scope_and_reject_drift(
+    ) -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
         let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
-        budget
-            .reserve(
-                record.identity().reconnect_attempt_ref(),
-                record.connection().transport_ref(),
-            )
-            .expect("reserve");
+        budget.reserve(
+            record.identity().reconnect_attempt_ref(),
+            record.connection().transport_ref(),
+        )?;
         let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
         flow.accept_prepare_completion(
             ReconnectPrepareCompletionV2::for_request(
@@ -189,8 +190,7 @@ mod runtime_scope_identity_red_tests {
                 ReconnectPrepareDispositionV2::Prepared,
             ),
             &mut budget,
-        )
-        .expect("prepare completion");
+        )?;
 
         let current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
@@ -200,17 +200,16 @@ mod runtime_scope_identity_red_tests {
             GameSessionState::Reconnectable,
             false,
             105,
-        )
-        .expect("current authority")
+        )?
         .with_current_runtime_scope(RuntimeScopeRefV1::channel(
             record.identity().world_id(),
-            channel(14).expect("actual current channel"),
-        ))
-        .expect("current runtime scope");
+            channel(14)?,
+        ))?;
 
         assert_eq!(
             flow.authorize_commit(current, 104),
             Err(ReconnectDurabilityErrorV1::StaleAuthority)
         );
+        Ok(())
     }
 }
