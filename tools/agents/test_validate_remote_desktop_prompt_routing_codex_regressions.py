@@ -425,6 +425,54 @@ def test_requests_passively_refused_at_provider_fails() -> None:
     )
 
 
+def test_ping_passive_automatic_authorization_grant_fails() -> None:
+    assert_prompt_fail(
+        "Authorization is automatically granted for ping.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_passive_automatic_permission_grant_fails() -> None:
+    assert_surface_fail(
+        "Permission is automatically granted for ping.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_authorized_by_default_fails() -> None:
+    assert_prompt_fail(
+        "Ping is authorized by default.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_calls_active_stop_at_connector_fails() -> None:
+    assert_prompt_fail(
+        "Calls lacking per-action authorization stop at the connector.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_calls_get_stopped_at_connector_fails() -> None:
+    assert_surface_fail(
+        "Calls lacking per-action authorization get stopped at the connector.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_github_trailing_dot_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://github.com./Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_pinned_github_trailing_dot_selector_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://github.com./Oteryn/Oteryn/blob/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
 def test_ordinary_permission_blocker_prose_passes() -> None:
     assert_prompt_pass(
         "A permission denied blocker must be recorded precisely before continuing through repository-native paths."
