@@ -114,53 +114,53 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"(?=.*\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b)"
-        r"(?=.*\b(?:(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
+        r"(?=.*\b(?:(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\s+to\s+(?:the\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,100}\b(?:through|via)\b.{0,100}\b(?:host\s+)?(?:connectors?|tools?)\b)"
         r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b)",
+        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b)",
         re.IGNORECASE,
     ),
     re.compile(
         r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b",
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b",
         re.IGNORECASE,
     ),
     re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|approval\s+by\s+default)\b.{0,160}"
+        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic)\s+(?:approval|permission)|preapproval|(?:approval|permission)\s+by\s+default)\b.{0,160}"
         r"\b(?:filesystem|search|process|session|terminal|history)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
         re.IGNORECASE,
     ),
     re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
     re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
     re.compile(
-        r"(?=.*\b(?:connector|router|transport)\b)"
+        r"(?=.*\b(?:connectors?|routers?|transports?)\b)"
         r"(?=.*\b(?:guarantee(?:s|d|ing)?|implement(?:s|ed|ing)?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?=.*\b(?:connector|router|transport)\b)"
-        r"(?=.*\b(?:enforce|enforces|enforced|enforcing|block|blocks|blocked|blocking|reject|rejects|rejected|rejecting)\b)"
+        r"(?=.*\b(?:connectors?|routers?|transports?)\b)"
+        r"(?=.*\b(?:enforce|enforces|enforced|enforcing|enforcement|block|blocks|blocked|blocking|reject|rejects|rejected|rejecting)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
     ),
     re.compile(
-        r"(?=.*\b(?:connector|router|transport)\b)"
+        r"(?=.*\b(?:connectors?|routers?|transports?)\b)"
         r"(?=.*\bphysical(?:ly)?\b)"
         r"(?=.*\benforc\w*\b)",
         re.IGNORECASE,
     ),
-    re.compile(r"\b(?:connector|router|transport)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
-    re.compile(r"\bphysical(?:ly)?\b.{0,100}\b(?:connector|router|transport)\b.{0,100}\benforc", re.IGNORECASE),
+    re.compile(r"\b(?:connectors?|routers?|transports?)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
+    re.compile(r"\bphysical(?:ly)?\b.{0,100}\b(?:connectors?|routers?|transports?)\b.{0,100}\benforc", re.IGNORECASE),
 )
 
 META_ROUTING_COORDINATE_RE = re.compile(
@@ -172,7 +172,7 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     re.IGNORECASE,
 )
 GITHUB_META_ROUTING_URL_RE = re.compile(
-    r"https://github\.com/Oteryn/Oteryn/(?:blob|tree)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
+    r"(?:(?:https?:)?//)github\.com/Oteryn/Oteryn/(?:blob|tree)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
 )
 EXPECTED_META_ROUTING_COORDINATE = (
