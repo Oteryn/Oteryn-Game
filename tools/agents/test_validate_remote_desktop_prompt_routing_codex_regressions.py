@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """Focused Codex regressions for the Game Remote Desktop prompt-routing gate."""
-# Qualification trigger: inert and temporary.
 from __future__ import annotations
 
 from validate_remote_desktop_prompt_routing import (
