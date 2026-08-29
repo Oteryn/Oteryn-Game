@@ -170,6 +170,9 @@ OUTSIDE_ROUTING_PATTERNS = (
         r"\b(?:approval|permission|authori[sz]ation)\s+(?:is\s+)?(?:granted|given)\s+by\s+default\b|"
         r"\b(?:approval|permission|authori[sz]ation)\s+by\s+default\b|"
         r"\b(?:approval|permission|authori[sz]ation)\s+(?:is\s+)?automatically\s+(?:granted|given)\b|"
+        r"\b(?:approval|permission|authori[sz]ation)\s+(?:is\s+)?(?:granted|given)\s+automatically\b|"
+        r"\bautomatically\s+(?:granted|given)\s+(?:approval|permission|authori[sz]ation)\b|"
+        r"\b(?:approval|permission|authori[sz]ation)\s+(?:is\s+)?automatic\b|"
         r"\b(?:authori[sz]ed|approved)\s+by\s+default\b))",
         re.IGNORECASE,
     ),
@@ -190,7 +193,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\b(?:calls?|requests?|invocations?|actions?)\b.{0,120}"
         r"(?:\b(?:is|are|be|being|been|get|gets|got|getting)\b.{0,30})?"
-        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing)\s+(?:by|at)\s+(?:the\s+)?"
+        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing)\s+(?:by|at|within|inside)\s+(?:the\s+)?"
         r"(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
@@ -234,11 +237,11 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     re.IGNORECASE,
 )
 GITHUB_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)(?:(?:www\.)?github\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
+    r"(?:(?:https?:)?//)(?:[^\s/@]+@)?(?:(?:www\.)?github\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
 )
 GITHUB_CONTENTS_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)api\.github\.com\.?(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
+    r"(?:(?:https?:)?//)(?:[^\s/@]+@)?api\.github\.com\.?(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
     r"ecosystem/agent-execution-routing-policy\.json(?:\?([^\s`<>)#]*))?",
     re.IGNORECASE,
 )
