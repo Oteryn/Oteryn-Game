@@ -473,6 +473,95 @@ def test_pinned_github_trailing_dot_selector_passes() -> None:
     )
 
 
+def test_ping_authorization_granted_automatically_fails() -> None:
+    assert_prompt_fail(
+        "Authorization is granted automatically for ping.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_automatically_granted_authorization_fails() -> None:
+    assert_surface_fail(
+        "Ping is automatically granted authorization.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_authorization_is_automatic_fails() -> None:
+    assert_prompt_fail(
+        "Ping authorization is automatic.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_permission_is_automatic_fails() -> None:
+    assert_surface_fail(
+        "Ping permission is automatic.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_calls_stop_within_connector_fails() -> None:
+    assert_prompt_fail(
+        "Calls lacking per-action authorization stop within the connector.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_calls_refused_inside_router_fails() -> None:
+    assert_surface_fail(
+        "Calls lacking per-action authorization are refused inside the router.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_requests_get_stopped_within_provider_fails() -> None:
+    assert_prompt_fail(
+        "Requests lacking per-action authorization get stopped within the provider.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_invocations_refuse_inside_transport_fails() -> None:
+    assert_surface_fail(
+        "Invocations lacking per-action authorization refuse inside the transport.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_github_userinfo_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://reader@github.com/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_raw_github_userinfo_mutable_selector_fails() -> None:
+    assert_surface_fail(
+        "Use https://reader@raw.githubusercontent.com/Oteryn/Oteryn/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_contents_api_userinfo_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://reader@api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref=main for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_pinned_github_userinfo_selector_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://reader@github.com/Oteryn/Oteryn/blob/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
+def test_pinned_raw_userinfo_selector_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://reader@raw.githubusercontent.com/Oteryn/Oteryn/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
 def test_ordinary_permission_blocker_prose_passes() -> None:
     assert_prompt_pass(
         "A permission denied blocker must be recorded precisely before continuing through repository-native paths."
