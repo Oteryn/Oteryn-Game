@@ -10,19 +10,17 @@ base_branch: main
 branch: governance/remote-desktop-per-action-gate-237
 issue: 237
 pr: 239
-base_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
+base_sha: external_pr_evidence
 head_sha: external_pr_evidence
 final_head_sha: external_pr_evidence
 final_head_frozen_at: external_pr_evidence
 owner: oteryn-governance-controller
 created_at: 2026-08-28T11:12:01Z
-updated_at: 2026-08-28T18:55:00+02:00
+updated_at: 2026-08-30T00:40:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: full reusable-prompt governance sweep plus deterministic exact-head qualification
 owned_paths:
   - .github/workflows/agent-governance.yml
-  - .github/workflows/rdc-prompt-sweep-once.yml
-  - .github/workflows/rdc-final-p2-green-retry.yml
   - AGENTS.md
   - docs/agents/GITHUB_ONLY_EXECUTION.md
   - docs/agents/PROMPTING_STANDARD.md
@@ -31,6 +29,7 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260828-remote-desktop-per-action-gate.md
   - docs/superpowers/plans/2026-08-28-game-remote-desktop-per-action-adoption.md
   - tools/agents/test_validate_remote_desktop_prompt_routing.py
+  - tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
   - tools/agents/validate_remote_desktop_prompt_routing.py
 public_contracts:
   - Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0:ecosystem/agent-execution-routing-policy.json
@@ -74,97 +73,49 @@ Runtime/component/E2E: `NOT_APPLICABLE` — governance/prompt-only change.
 
 A commit cannot contain its own SHA. Final exact head, review/check evidence and merge evidence therefore remain in immutable GitHub PR/check/review state instead of causing a self-referential follow-up commit.
 
-## Continuation handoff — 2026-08-28
+## Current continuation checkpoint
 
-This section is a locator/checkpoint, not authority. The next agent MUST refresh all GitHub facts before mutation.
+This checkpoint is intentionally SHA-neutral: exact head/base/check/review coordinates are immutable GitHub evidence and MUST be refreshed from live GitHub immediately before any mutation or merge decision. A commit cannot truthfully embed its own final SHA.
 
-Observed immediately before this handoff commit:
+Current durable repository state represented by this task packet:
 
-```yaml
-protected_main_sha: 0fa962b4e4f688331fea899ae496dbfdb914583d
-pr: 239
-pr_state: open
-pr_mergeable: true
-handoff_source_head_sha: 6962698fa328a5bf12c59709236cce61105948c7
-handoff_source_changed_files: 53
-handoff_source_agent_governance:
-  run_id: 33182421714
-  conclusion: failure
-handoff_source_architecture_semantic_audit:
-  run_id: 33182421698
-  conclusion: success
-handoff_source_merge_authority_audit:
-  run_id: 33182421702
-  conclusion: success
-handoff_source_merge_gate:
-  run_id: 33182421778
-  conclusion: success
-temporary_helper_still_in_diff: .github/workflows/rdc-final-p2-green-retry.yml
-remote_desktop_used_for_this_task: false
-```
+- the canonical META provider binding remains `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`;
+- all **44** lifecycle-reusable Game prompts and the four canonical governance surfaces are covered by the retained provider validator;
+- `tools/agents/test_validate_remote_desktop_prompt_routing.py` plus the durable `tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py` retain tests-first coverage for every repaired independent-review bypass class;
+- no branch-only repair workflow, patch script or qualification marker is part of the intended final changed-file set;
+- Remote Desktop/Desktop Commander was not used for this task and remains default-deny/exception-only;
+- the task remains `validating` until one exact final head passes all four required Game workflows, receives one fresh independent clean Codex review, is guarded-squash-merged, and protected `main` readback succeeds.
 
-The source head is intentionally RED for the focused governance path and is NOT merge-qualified. Three current unresolved independent-review P2 threads remain:
+### Required terminal continuation order
 
-1. **Raw HTML block inertness** — `<pre>`, `<script>` or equivalent raw HTML blocks can contain the exact routing heading/section while remaining non-operative Markdown; heading discovery must fail closed rather than accept an inert section.
-2. **Generic direct connector/tool authorization synonyms** — wording such as `Direct connector operations ...` or `Direct tool requests ...` can evade rules that only recognize `calls`/`invocations`; equivalent authorization/exemption nouns must be rejected outside the canonical routing authority.
-3. **Default-ignorable Unicode obfuscation** — visually hidden characters beyond the earlier narrow zero-width set, including U+2063 INVISIBLE SEPARATOR, can split protected identifiers; normalization must remove the relevant default-ignorable characters without breaking canonical identifier matching.
-
-Do not resolve those review threads until a new exact head contains regression tests and a passing fix. The source-head success of architecture/merge gates does not qualify any later head.
-
-### Required continuation order
-
-1. Refresh protected `main`, Issue #237, PR #239, exact PR head, changed-file set, unresolved review threads and exact-head workflow evidence from live GitHub.
-2. Re-read root `AGENTS.md`, this task packet, the implementation plan and canonical META policy pinned above. Do not use Remote Desktop/Desktop Commander; no host-only exception exists for this repository-governance work.
-3. Preserve TDD. Add/confirm focused RED regressions for all three unresolved P2 classes on both reusable prompts and applicable canonical surfaces before changing validator behavior.
-4. Implement the smallest fail-closed parser/normalization changes in `tools/agents/validate_remote_desktop_prompt_routing.py`. Do not weaken existing regressions or broaden Remote Desktop authorization.
-5. Prove GREEN with the focused suite, provider routing validator, existing governance validator and repository policy checks through the normal exact-head `Agent governance` workflow.
-6. Delete `.github/workflows/rdc-final-p2-green-retry.yml` and any other branch-only repair helper before final freeze. Final changed-file scope must contain only durable product/governance artifacts.
-7. If protected `main` advanced, classify the upstream delta. Preserve work; use a normal non-force merge-up when reconciliation is safe. Never reset/rebase/force-push merely because `main` moved.
-8. Freeze one exact candidate head. Require fresh exact-head `Agent governance`, `Architecture semantic audit`, `Merge authority audit` and full `Merge gate` success for that same SHA.
-9. Request exactly one fresh independent Codex review for the frozen exact head under `docs/agents/CODEX_REVIEW_POLICY.json`. Any material P0/P1/P2 reopens TDD and invalidates prior qualification. Require zero unresolved blocking review threads.
-10. Re-read PR head and protected `main` immediately before integration. Squash-merge PR #239 with `expected_head_sha` equal to the frozen reviewed head; do not bypass protections.
-11. Read back protected `main`, confirm the squash merge SHA is canonical, verify the Remote Desktop routing binding/validator and a representative reusable prompt on merged `main`, and report exact immutable evidence.
+1. Refresh protected `main`, Issue #237, PR #239, exact PR head, changed filenames, unresolved review threads and exact-head workflow evidence from live GitHub.
+2. Confirm the durable changed-file set contains no temporary helper/workflow/marker and the PR is `behind_by=0` against protected `main`; if main advanced, reconcile only by a normal merge-up, never reset/rebase/force.
+3. Require `Agent governance`, `Architecture semantic audit`, `Merge authority audit` and the full `Merge gate` to PASS on the same exact final SHA. Agent governance must prove the complete base and durable Remote Desktop regression suites plus 44 reusable prompts + 4 canonical surfaces and repository policy.
+4. Request exactly one fresh independent Codex review for that frozen exact SHA. Any material P0/P1/P2 reopens strict tests-first RED→GREEN repair and invalidates prior qualification.
+5. With zero unresolved blocking threads, refresh head/main once more and squash-merge PR #239 using `expected_head_sha` equal to the reviewed frozen SHA; do not bypass protections.
+6. Read back protected `main`, verify the returned squash SHA, canonical META binding, validator, representative reusable prompts and retained Agent-governance binding; then close Issue #237 as completed if its acceptance criteria are satisfied.
 
 ## Autonomous continuation prompt
 
-Use the following prompt verbatim or as the authoritative minimum for the successor agent:
-
-> Continue autonomously and bring `Oteryn/Oteryn-Game#239` to a safe squash merge. GitHub live state is the sole source of truth: do not trust SHAs, cached worktrees, old handoffs or prior review summaries without refreshing them. Start by resolving protected `main`, Issue #237, PR #239, the exact PR head, changed filenames, unresolved review threads, task `docs/agents/tasks/active/OTV2-20260828-remote-desktop-per-action-gate.md`, implementation plan `docs/superpowers/plans/2026-08-28-game-remote-desktop-per-action-adoption.md`, root `AGENTS.md`, and the pinned META routing policy. Do not use Remote Desktop/Desktop Commander; this task has no valid host-only exception and GitHub/GitHub Actions are sufficient.
->
-> The last handoff locator observed PR head `6962698fa328a5bf12c59709236cce61105948c7` against `main@0fa962b4e4f688331fea899ae496dbfdb914583d`, but both are locators only. At that source head, Architecture semantic audit run `33182421698`, Merge authority audit `33182421702` and Merge gate `33182421778` were success, while Agent governance run `33182421714` was RED. Three unresolved Codex P2 threads remained: raw `<pre>/<script>` HTML blocks can hide an inert canonical routing section; generic `direct connector/tool operations/requests/...` authorization synonyms can evade the outside-authority detector; and default-ignorable Unicode such as U+2063 can split protected identifiers. Also, temporary `.github/workflows/rdc-final-p2-green-retry.yml` still appeared in the PR diff and must not survive the final candidate.
->
-> Use strict TDD. First add or confirm focused failing regressions for all three P2 classes on reusable prompts and applicable canonical surfaces. Then implement only the minimal fail-closed parser/normalization changes in `tools/agents/validate_remote_desktop_prompt_routing.py`; never weaken existing tests or broaden Remote Desktop authority. Prove GREEN through the focused suite, provider validator, existing governance and repository-policy validation. Remove all temporary repair workflows before final freeze.
->
-> If `main` advanced, classify the delta and merge-up normally if safe; do not restart, reset, rebase or force-push just because upstream moved. After every material head change, discard superseded CI/review evidence. Freeze one exact final head, require fresh exact-head Agent governance, Architecture semantic audit, Merge authority audit and full Merge gate PASS on that exact SHA, then request one fresh independent Codex review under the repository policy. If Codex finds any material P0/P1/P2, repair with another RED→GREEN cycle and repeat exact-head qualification. Do not merge with unresolved blocking threads.
->
-> When the exact final head is clean and fully qualified, refresh PR head and protected `main` once more and squash-merge PR #239 using an expected-head guard. Do not bypass protections. Then read back protected `main`, verify the merge SHA and the canonical Remote Desktop provider binding/validator plus a representative reusable prompt, and return the final exact evidence. Do not claim completion before the protected-main readback succeeds.
+> Continue autonomously and bring `Oteryn/Oteryn-Game#239` to a safe squash merge. GitHub live state is the sole source of truth. Do not use Remote Desktop/Desktop Commander. Preserve strict tests-first repair for any new P0/P1/P2. Never rebase/force. Freeze one exact final head, require all four Game workflows plus one fresh independent Codex review on that same SHA, then guarded squash merge with `expected_head_sha`, protected-main readback, and Issue #237 closeout. Never treat this checkpoint's prose as a substitute for live GitHub evidence.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: provider binding and 43-prompt sweep are complete; multiple parser bypasses were repaired TDD; three fresh independent-review P2 parser/normalization bypasses remain RED at handoff; temporary GREEN retry helper still needs cleanup
+last_progress: canonical provider binding, 44-prompt sweep, durable validator hardening and accumulated Codex regression coverage are implemented; live exact-head qualification remains authoritative
 status: validating
 branch: governance/remote-desktop-per-action-gate-237
 head_sha: external_pr_evidence
 pr: 239
 final_head_sha: external_pr_evidence
 final_head_frozen_at: external_pr_evidence
-handoff_source_head_sha: 6962698fa328a5bf12c59709236cce61105948c7
-handoff_source_main_sha: 0fa962b4e4f688331fea899ae496dbfdb914583d
 ci_trigger_source: pull_request
-ci_check_generation: handoff_source_red
 ci_checks_for_current_head: external_pr_evidence
 ci_run_ids: external_pr_evidence
 ci_job_ids: external_pr_evidence
 runner_assignment_state: github_hosted
-terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
-stall_warnings: 0
+remote_desktop_used_for_this_task: false
 owner_action_required: null
-blocker: three unresolved Codex P2 parser/normalization bypasses plus temporary rdc-final-p2-green-retry workflow still present in PR diff
-next_action: refresh live GitHub state; TDD-fix the three unresolved P2s; delete temporary helper; qualify one immutable exact head through all Game gates and fresh independent Codex review; squash merge with expected-head guard; protected-main readback
+blocker: refresh live GitHub; require one exact final SHA with four required workflow PASS results, zero unresolved blocking threads, and one fresh independent clean Codex review
+next_action: refresh live PR/main and durable changed-file scope; qualify one immutable exact head; request one fresh Codex review; if clean, guarded squash merge with expected-head guard; protected-main readback; close Issue #237
 ```
