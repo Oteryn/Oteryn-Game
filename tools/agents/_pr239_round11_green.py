@@ -100,12 +100,12 @@ next_action: refresh live PR/main and durable changed-file scope; qualify one im
 '''
 task = task[:start] + replacement
 
-# Fail closed if the obsolete authoritative checkpoint still survives.
+# Fail closed if the obsolete authoritative checkpoint survives; historical
+# validation paragraphs above remain as evidence and may still mention the original 43-prompt sweep.
 for stale in (
-    "three unresolved Codex P2",
-    "temporary_helper_still_in_diff",
-    "blocker: three unresolved",
-    "exactly 43 lifecycle-derived reusable prompts",
+    "three unresolved Codex P2 parser/normalization bypasses remain RED at handoff",
+    "temporary_helper_still_in_diff:",
+    "blocker: three unresolved Codex P2",
 ):
     if stale in task:
         raise SystemExit(f"stale checkpoint text survived: {stale}")
