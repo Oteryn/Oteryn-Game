@@ -1630,17 +1630,11 @@ pub(super) async fn lock_actor_epoch_attempt_budget(
     let identity = record.identity();
     let character_id = identity.character_id().as_bytes().to_vec();
     let epoch = record.continuity().control_loss_epoch().get().to_string();
-    let Some(row) = load_protection_row(transaction, character_id.as_slice(), &epoch, true).await?
-    else {
-        return Ok(None);
-    };
-    if row.try_get::<String, _>("account_id")? != identity.account_id()
-        || row.try_get::<Vec<u8>, _>("world_id")?.as_slice()
-            != identity.world_id().as_bytes().as_slice()
-        || row.try_get::<i64, _>("original_grace_deadline")?
-            != record.continuity().original_grace_deadline()
+    if load_protection_row(transaction, character_id.as_slice(), &epoch, true)
+        .await?
+        .is_none()
     {
-        return Err(DurabilityError::InvalidStoredState);
+        return Ok(None);
     }
     let retained: i64 = sqlx::query_scalar(
         "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
