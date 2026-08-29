@@ -383,6 +383,48 @@ def test_invalid_backtick_fence_does_not_hide_surface_authority() -> None:
     )
 
 
+def test_direct_connectors_passive_permission_automatically_granted_fails() -> None:
+    assert_prompt_fail(
+        "Permission is automatically granted for direct connectors.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_direct_tools_passive_approval_given_by_default_fails() -> None:
+    assert_surface_fail(
+        "Approval is given by default for direct tools.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_standing_authorization_fails() -> None:
+    assert_prompt_fail(
+        "Ping has standing authorization.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_blanket_authorization_fails() -> None:
+    assert_surface_fail(
+        "Ping has blanket authorization.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_calls_passively_stopped_at_connector_fails() -> None:
+    assert_prompt_fail(
+        "Calls lacking per-action authorization are stopped at the connector.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_requests_passively_refused_at_provider_fails() -> None:
+    assert_surface_fail(
+        "Requests lacking per-action authorization are refused at the provider.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
 def test_ordinary_permission_blocker_prose_passes() -> None:
     assert_prompt_pass(
         "A permission denied blocker must be recorded precisely before continuing through repository-native paths."
