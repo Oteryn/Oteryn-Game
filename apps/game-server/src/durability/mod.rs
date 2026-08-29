@@ -146,6 +146,7 @@ impl AdmissionReconnectJournalV2 {
             "SELECT uuid_send(game_session_id) AS game_session_id, \
                     account_id::text AS account_id, uuid_send(character_id) AS character_id, \
                     uuid_send(world_id) AS world_id, current_generation::text AS current_generation, \
+                    control_loss_epoch::text AS control_loss_epoch, original_grace_deadline, \
                     character_lease_generation::text AS character_lease_generation, \
                     scope_ownership_generation::text AS scope_ownership_generation, \
                     prepared_attempt_ref \
@@ -428,6 +429,10 @@ fn replacement_authorization_matches_record(
             == record.authority().character_lease_generation()
         && authorization.predecessor_current_scope_ownership_generation()
             == record.authority().scope_ownership_generation()
+        && authorization.predecessor_control_loss_epoch()
+            == record.continuity().control_loss_epoch()
+        && authorization.predecessor_original_grace_deadline()
+            == record.continuity().original_grace_deadline()
 }
 
 fn replacement_predecessor_row_matches(
@@ -452,7 +457,14 @@ fn replacement_predecessor_row_matches(
         && row.try_get::<String, _>("character_lease_generation")?
             == authorization
                 .predecessor_character_lease_generation()
-                .to_string())
+                .to_string()
+        && row.try_get::<String, _>("control_loss_epoch")?
+            == authorization
+                .predecessor_control_loss_epoch()
+                .get()
+                .to_string()
+        && row.try_get::<i64, _>("original_grace_deadline")?
+            == authorization.predecessor_original_grace_deadline())
 }
 
 async fn candidate_session_exists(
@@ -537,19 +549,9 @@ async fn retained_actor_epoch_attempt_count_v2(
     transaction: &mut Transaction<'_, Postgres>,
     record: &ReconnectDurabilityRecordV1,
 ) -> Result<i16, DurabilityError> {
-    let retained: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
-         WHERE character_id = encode($1, 'hex')::uuid \
-           AND control_loss_epoch = $2::text::numeric(20, 0)",
-    )
-    .bind(record.identity().character_id().as_bytes().as_slice())
-    .bind(record.continuity().control_loss_epoch().get().to_string())
-    .fetch_one(&mut **transaction)
-    .await?;
-    if retained > i64::from(admission_journal::MAX_ATTEMPTS_PER_EPOCH) {
-        return Err(DurabilityError::InvalidStoredState);
-    }
-    i16::try_from(retained).map_err(|_| DurabilityError::InvalidStoredState)
+    admission_journal::lock_actor_epoch_attempt_budget(transaction, record)
+        .await?
+        .ok_or(DurabilityError::InvalidStoredState)
 }
 
 async fn insert_candidate_session_v2(
@@ -620,32 +622,6 @@ async fn ensure_precommit_continuity_v2(
             V2_PROTECTION_REARM_PENDING,
         ),
     };
-    let inserted = sqlx::query(
-        "INSERT INTO game_durability_control_loss_continuity (\
-            character_id, control_loss_epoch, account_id, world_id, context_game_session_id, \
-            original_grace_deadline, protection_entitlement_state, \
-            protection_fenced_generation, protection_rearm_state\
-         ) VALUES (\
-            encode($1, 'hex')::uuid, $2::text::numeric(20, 0), $3::text::uuid, \
-            encode($4, 'hex')::uuid, encode($5, 'hex')::uuid, $6, $7, \
-            $8::text::numeric(20, 0), $9\
-         ) ON CONFLICT (character_id, control_loss_epoch) DO NOTHING",
-    )
-    .bind(identity.character_id().as_bytes().as_slice())
-    .bind(record.continuity().control_loss_epoch().get().to_string())
-    .bind(identity.account_id())
-    .bind(identity.world_id().as_bytes().as_slice())
-    .bind(identity.game_session_id().as_bytes().as_slice())
-    .bind(record.continuity().original_grace_deadline())
-    .bind(state)
-    .bind(fenced_generation.as_deref())
-    .bind(rearm_state)
-    .execute(&mut **transaction)
-    .await?;
-    if inserted.rows_affected() == 1 {
-        return Ok(());
-    }
-
     // A terminal replacement may inherit the exact same loss-epoch continuity row.
     // Validate it without changing entitlement/rearm timestamps, then rebind only the
     // GameSession context under the same predecessor->candidate transaction.
@@ -1280,7 +1256,7 @@ mod terminal_replacement_foundation_red_tests {
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
         let commit = FreshAdmissionCommit::from_facts(game_session(10)?, facts, initial_transport)
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
-        Ok(GameSessionAuthoritySnapshot::new(
+        GameSessionAuthoritySnapshot::new(
             commit,
             state,
             ConnectionGeneration::new(7).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
@@ -1289,7 +1265,8 @@ mod terminal_replacement_foundation_red_tests {
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
             ScopeOwnershipGeneration::new(current_scope)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
-        ))
+        )
+        .with_control_loss_continuity(ControlLossEpochRefV1::new(3)?, 120)
     }
 
     fn authorize(

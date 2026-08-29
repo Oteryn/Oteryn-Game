@@ -192,6 +192,13 @@ impl AdmissionReconnectJournal {
             return disposition_for_existing(state);
         }
 
+        if let Some(retained_for_actor_epoch) =
+            lock_actor_epoch_attempt_budget(&mut transaction, record).await?
+            && retained_for_actor_epoch >= MAX_ATTEMPTS_PER_EPOCH
+        {
+            return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
+        }
+
         let current_epoch: String = session.try_get("control_loss_epoch")?;
         if current_epoch != epoch {
             let previously_used: bool = sqlx::query_scalar(
@@ -1614,6 +1621,42 @@ const fn pending_disposition(disposition: PendingCommandDispositionV1) -> i16 {
         PendingCommandDispositionV1::PendingOriginal => PENDING_ORIGINAL,
         PendingCommandDispositionV1::TerminalOutcomeRetained => TERMINAL_OUTCOME_RETAINED,
     }
+}
+
+pub(super) async fn lock_actor_epoch_attempt_budget(
+    transaction: &mut Transaction<'_, Postgres>,
+    record: &ReconnectDurabilityRecordV1,
+) -> Result<Option<i16>, DurabilityError> {
+    let identity = record.identity();
+    let character_id = identity.character_id().as_bytes().to_vec();
+    let epoch = record.continuity().control_loss_epoch().get().to_string();
+    let Some(row) = load_protection_row(transaction, character_id.as_slice(), &epoch, true).await?
+    else {
+        return Ok(None);
+    };
+    if row.try_get::<String, _>("account_id")? != identity.account_id()
+        || row.try_get::<Vec<u8>, _>("world_id")?.as_slice()
+            != identity.world_id().as_bytes().as_slice()
+        || row.try_get::<i64, _>("original_grace_deadline")?
+            != record.continuity().original_grace_deadline()
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let retained: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
+         WHERE character_id = encode($1, 'hex')::uuid \
+           AND control_loss_epoch = $2::text::numeric(20, 0)",
+    )
+    .bind(character_id.as_slice())
+    .bind(&epoch)
+    .fetch_one(&mut **transaction)
+    .await?;
+    if retained > i64::from(MAX_ATTEMPTS_PER_EPOCH) {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    Ok(Some(
+        i16::try_from(retained).map_err(|_| DurabilityError::InvalidStoredState)?,
+    ))
 }
 
 async fn increment_attempt_count(

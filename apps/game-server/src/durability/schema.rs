@@ -467,7 +467,11 @@ mod terminal_replacement_postgres_red_tests {
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
             ScopeOwnershipGeneration::new(current_scope)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
-        );
+        )
+        .with_control_loss_continuity(
+            ControlLossEpochRefV1::new(3)?,
+            candidate.continuity().original_grace_deadline(),
+        )?;
         TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
             predecessor,
@@ -513,6 +517,20 @@ mod terminal_replacement_postgres_red_tests {
         .bind(uuid_v7(13).as_slice())
         .bind(now + 120)
         .bind(stored_scope.to_string())
+        .execute(&mut connection)
+        .await?;
+        sqlx::query(
+            "INSERT INTO game_durability_control_loss_continuity (\
+                character_id, control_loss_epoch, account_id, world_id, context_game_session_id, \
+                original_grace_deadline, protection_entitlement_state, protection_rearm_state\
+             ) VALUES (encode($1, 'hex')::uuid, 3, $2::text::uuid, encode($3, 'hex')::uuid, \
+                       encode($4, 'hex')::uuid, $5, 1, 1)",
+        )
+        .bind(uuid_v7(11).as_slice())
+        .bind(ACCOUNT)
+        .bind(uuid_v7(12).as_slice())
+        .bind(uuid_v7(session_raw).as_slice())
+        .bind(now + 120)
         .execute(&mut connection)
         .await?;
         connection.close().await?;

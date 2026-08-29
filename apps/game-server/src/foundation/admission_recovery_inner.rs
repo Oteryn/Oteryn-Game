@@ -14,6 +14,8 @@ pub struct GameSessionAuthoritySnapshot<T: Copy + Eq> {
     current_transport: Option<T>,
     current_character_lease: CharacterLease,
     current_scope_generation: ScopeOwnershipGeneration,
+    current_control_loss_epoch: Option<ControlLossEpochRefV1>,
+    current_original_grace_deadline: Option<i64>,
 }
 
 impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
@@ -33,7 +35,22 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
             current_transport,
             current_character_lease,
             current_scope_generation,
+            current_control_loss_epoch: None,
+            current_original_grace_deadline: None,
         }
+    }
+
+    pub fn with_control_loss_continuity(
+        mut self,
+        control_loss_epoch: ControlLossEpochRefV1,
+        original_grace_deadline: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if original_grace_deadline <= 0 {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        self.current_control_loss_epoch = Some(control_loss_epoch);
+        self.current_original_grace_deadline = Some(original_grace_deadline);
+        Ok(self)
     }
 
     #[must_use]
@@ -65,6 +82,16 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
     pub const fn current_scope_generation(self) -> ScopeOwnershipGeneration {
         self.current_scope_generation
     }
+
+    #[must_use]
+    pub const fn current_control_loss_epoch(self) -> Option<ControlLossEpochRefV1> {
+        self.current_control_loss_epoch
+    }
+
+    #[must_use]
+    pub const fn current_original_grace_deadline(self) -> Option<i64> {
+        self.current_original_grace_deadline
+    }
 }
 
 impl CharacterLease {
@@ -88,6 +115,8 @@ pub struct TerminalGameSessionReplacementAuthorizationV1 {
     predecessor_connection_generation: ConnectionGeneration,
     predecessor_character_lease_generation: u64,
     predecessor_current_scope_ownership_generation: ScopeOwnershipGeneration,
+    predecessor_control_loss_epoch: ControlLossEpochRefV1,
+    predecessor_original_grace_deadline: i64,
     candidate_game_session_id: GameSessionId,
 }
 
@@ -112,8 +141,16 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
 
         let committed = snapshot.commit();
         let current_lease = snapshot.current_character_lease();
+        let Some(current_control_loss_epoch) = snapshot.current_control_loss_epoch() else {
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        };
+        let Some(current_original_grace_deadline) = snapshot.current_original_grace_deadline()
+        else {
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        };
         let identity = candidate.identity();
         let candidate_authority = candidate.authority();
+        let candidate_continuity = candidate.continuity();
 
         if committed.game_session_id() != predecessor_game_session_id
             || identity.game_session_id() != candidate_game_session_id
@@ -123,7 +160,10 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
             || candidate.connection().predecessor() != snapshot.current_connection_generation()
             || current_lease.character_id() != committed.character_id()
             || candidate_authority.character_lease_generation() != current_lease.generation()
-            || candidate_authority.scope_ownership_generation() != snapshot.current_scope_generation()
+            || candidate_authority.scope_ownership_generation()
+                != snapshot.current_scope_generation()
+            || candidate_continuity.control_loss_epoch() != current_control_loss_epoch
+            || candidate_continuity.original_grace_deadline() != current_original_grace_deadline
         {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
@@ -136,6 +176,8 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
             predecessor_connection_generation: snapshot.current_connection_generation(),
             predecessor_character_lease_generation: current_lease.generation(),
             predecessor_current_scope_ownership_generation: snapshot.current_scope_generation(),
+            predecessor_control_loss_epoch: current_control_loss_epoch,
+            predecessor_original_grace_deadline: current_original_grace_deadline,
             candidate_game_session_id,
         })
     }
@@ -175,6 +217,16 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
         &self,
     ) -> ScopeOwnershipGeneration {
         self.predecessor_current_scope_ownership_generation
+    }
+
+    #[must_use]
+    pub const fn predecessor_control_loss_epoch(&self) -> ControlLossEpochRefV1 {
+        self.predecessor_control_loss_epoch
+    }
+
+    #[must_use]
+    pub const fn predecessor_original_grace_deadline(&self) -> i64 {
+        self.predecessor_original_grace_deadline
     }
 
     #[must_use]
