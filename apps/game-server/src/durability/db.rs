@@ -56,6 +56,12 @@ mod runtime_scope_identity_red_tests {
     }
 
     fn candidate_record() -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        candidate_record_for_channel(13)
+    }
+
+    fn candidate_record_for_channel(
+        channel_raw: u64,
+    ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
         let world_id = world(12)?;
         let identity = ReconnectIdentityV1::new(
             game_session(20)?,
@@ -63,7 +69,7 @@ mod runtime_scope_identity_red_tests {
             ACCOUNT,
             character(11)?,
             world_id,
-            RuntimeScopeRefV1::channel(world_id, channel(13)?),
+            RuntimeScopeRefV1::channel(world_id, channel(channel_raw)?),
         )?;
         let connection = ReconnectConnectionFenceV1::new(
             ConnectionGeneration::new(7).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
@@ -210,6 +216,26 @@ mod runtime_scope_identity_red_tests {
             flow.authorize_commit(current, 104),
             Err(ReconnectDurabilityErrorV1::StaleAuthority)
         );
+        Ok(())
+    }
+
+    #[test]
+    fn replacement_authorization_rejects_runtime_scope_record_substitution()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let candidate = candidate_record()?;
+        let authorization = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+            ACCOUNT,
+            game_session(10)?,
+            game_session(20)?,
+            predecessor_snapshot(13)?,
+            &candidate,
+        )?;
+        let substituted = candidate_record_for_channel(14)?;
+
+        assert!(!crate::durability::replacement_authorization_matches_record(
+            &authorization,
+            &substituted,
+        ));
         Ok(())
     }
 }
