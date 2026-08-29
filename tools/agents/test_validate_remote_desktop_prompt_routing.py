@@ -369,7 +369,6 @@ def test_surface_zero_width_direct_connector_identifier_outside_section_fails() 
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
-
 def test_pre_html_block_prompt_section_does_not_count() -> None:
     text = "# Prompt\n\n<pre>\n" + CANONICAL_PROMPT_SECTION + "\n## End sample\n</pre>\n"
     assert_fail(text, "must contain exactly one")
@@ -668,7 +667,6 @@ def test_nonreusable_status_true_flag_fails_closed() -> None:
         raise AssertionError(f"expected lifecycle consistency error, got: {errors}")
 
 
-
 def test_angle_bracket_stale_meta_coordinate_fails() -> None:
     stale = "&lt;Oteryn/Oteryn@0000000000000000000000000000000000000000:ecosystem/agent-execution-routing-policy.json&gt;"
     text = "# Prompt\n\n" + stale + "\n\n" + CANONICAL_PROMPT_SECTION + "\n"
@@ -717,7 +715,6 @@ def test_surface_router_implicit_enforcement_claim_outside_section_fails() -> No
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
-
 def test_call_first_connector_automatically_authorized_outside_section_fails() -> None:
     text = (
         "# Prompt\n\nCalls to the connector are automatically authorized.\n\n"
@@ -734,7 +731,6 @@ def test_surface_call_first_tool_blanket_approval_outside_section_fails() -> Non
         + "\n"
     )
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
-
 
 
 def test_mutable_meta_branch_selector_fails() -> None:
@@ -806,7 +802,6 @@ def test_surface_entity_escaped_angle_bracket_remote_desktop_authority_fails() -
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
-
 def test_connector_actions_allowed_by_default_outside_section_fails() -> None:
     text = (
         "# Prompt\n\nConnector actions are allowed by default.\n\n"
@@ -825,7 +820,6 @@ def test_surface_actions_to_tool_blanket_approval_outside_section_fails() -> Non
     assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
 
 
-
 def test_named_filesystem_operations_preapproved_outside_section_fails() -> None:
     text = (
         "# Prompt\n\nFilesystem operations are preapproved.\n\n"
@@ -838,6 +832,60 @@ def test_named_filesystem_operations_preapproved_outside_section_fails() -> None
 def test_surface_named_history_actions_blanket_approval_outside_section_fails() -> None:
     text = (
         "# Surface\n\nHistory actions have blanket approval.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_mutable_github_blob_routing_policy_url_fails() -> None:
+    text = (
+        "# Prompt\n\nUse [the META routing policy](https://github.com/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json) for host exceptions.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "stale META execution-routing coordinate")
+
+
+def test_surface_mutable_github_tree_routing_policy_url_fails() -> None:
+    text = (
+        "# Surface\n\nUse https://github.com/Oteryn/Oteryn/tree/main/ecosystem/agent-execution-routing-policy.json for host exceptions.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "stale META execution-routing coordinate")
+
+
+def test_named_filesystem_operations_blanket_permission_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nFilesystem operations have blanket permission.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_named_history_actions_standing_permission_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nHistory actions have standing permission.\n\n"
+        + SURFACE_SECTION
+        + "\n"
+    )
+    assert_surface_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_transport_blocks_per_action_calls_outside_section_fails() -> None:
+    text = (
+        "# Prompt\n\nThe transport blocks every call lacking per-action authorization.\n\n"
+        + CANONICAL_PROMPT_SECTION
+        + "\n"
+    )
+    assert_fail(text, "Remote Desktop policy text outside canonical section")
+
+
+def test_surface_router_rejects_missing_per_action_decision_outside_section_fails() -> None:
+    text = (
+        "# Surface\n\nThe router rejects calls without a per-action decision.\n\n"
         + SURFACE_SECTION
         + "\n"
     )
