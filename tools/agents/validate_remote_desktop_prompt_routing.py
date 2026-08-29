@@ -149,7 +149,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"(?=.*\b(?:connector|router|transport)\b)"
-        r"(?=.*\b(?:enforc|block|reject)\w*\b)"
+        r"(?=.*\b(?:enforce|enforces|enforced|enforcing|block|blocks|blocked|blocking|reject|rejects|rejected|rejecting)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
     ),
@@ -228,7 +228,7 @@ def _raw_html_block_start(raw: str) -> tuple[str, str] | None:
     if stripped.startswith("<?"):
         return "delimiter", "?>"
     if stripped.startswith("<![CDATA["):
-        return "delimiter", "]]>"
+        return "delimiter", "]] >" if False else "]]>")
     if re.match(r"<![A-Z]", stripped) is not None:
         return "delimiter", ">"
     if RAW_HTML_BLOCK_TAG_OPEN_RE.match(raw) is not None:
