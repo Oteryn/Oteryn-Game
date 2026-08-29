@@ -1,0 +1,132 @@
+name: RDC final4 Codex fix
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+    paths:
+      - .github/workflows/rdc-final4-codex-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - name: Verify exact helper trigger
+        shell: bash
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+      - name: Apply bounded validator repair
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("tools/agents/validate_remote_desktop_prompt_routing.py")
+          text = path.read_text(encoding="utf-8")
+
+          provider_anchor = '''    re.compile(
+                  r"(?=.*\\b(?:connectors?|routers?|transports?|providers?)\\b)"
+                  r"(?=.*\\b(?:fail(?:s|ed|ing)?\\s+closed|deny|denies|denied|denying)\\b)"
+                  r"(?=.*\\b(?:per[- ]action|decision|gate|routing|authori[sz]\\w*)\\b)",
+                  re.IGNORECASE,
+              ),'''
+          passive_and_ping = '''    re.compile(
+                  r"(?=.*\\b(?:(?:connectors?|tools?)\\s+(?:calls?|operations?|requests?|invocations?|actions?)|"
+                  r"(?:filesystem|search|process|session|terminal|history|ping)\\s+(?:calls?|operations?|requests?|invocations?|actions?))\\b)"
+                  r"(?=.*\\b(?:approval|permission)\\s+(?:is\\s+)?(?:granted|given)\\s+by\\s+default\\b)",
+                  re.IGNORECASE,
+              ),
+              re.compile(
+                  r"(?=.*\\bping\\b)"
+                  r"(?=.*\\b(?:automatically\\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|"
+                  r"(?:blanket|standing|automatic|default)\\s+(?:approval|permission)|"
+                  r"(?:approval|permission)\\s+(?:is\\s+)?(?:granted|given)\\s+by\\s+default|"
+                  r"(?:approval|permission)\\s+by\\s+default)\\b)",
+                  re.IGNORECASE,
+              ),
+          ''' + provider_anchor
+          if text.count(provider_anchor) != 1:
+              raise SystemExit(f"unexpected provider anchor count: {text.count(provider_anchor)}")
+          text = text.replace(provider_anchor, passive_and_ping)
+
+          enforcement_old = r'enforce|enforces|enforced|enforcing|enforcement|block|blocks|blocked|blocking|reject|rejects|rejected|rejecting|prevent|prevents|prevented|preventing'
+          enforcement_new = enforcement_old + r'|stop|stops|stopped|stopping|refuse|refuses|refused|refusing'
+          if text.count(enforcement_old) != 1:
+              raise SystemExit(f"unexpected enforcement matcher count: {text.count(enforcement_old)}")
+          text = text.replace(enforcement_old, enforcement_new)
+
+          url_anchor = '''GITHUB_META_ROUTING_URL_RE = re.compile(
+              r"(?:(?:https?:)?//)(?:(?:www\\.)?github\\.com(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\\.githubusercontent\\.com(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\\s`<>)]+?)/ecosystem/agent-execution-routing-policy\\.json",
+              re.IGNORECASE,
+          )'''
+          contents_url = url_anchor + '''
+          GITHUB_CONTENTS_META_ROUTING_URL_RE = re.compile(
+              r"(?:(?:https?:)?//)api\\.github\\.com(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
+              r"ecosystem/agent-execution-routing-policy\\.json(?:\\?([^\\s`<>)#]*))?",
+              re.IGNORECASE,
+          )'''
+          if text.count(url_anchor) != 1:
+              raise SystemExit(f"unexpected GitHub URL anchor count: {text.count(url_anchor)}")
+          text = text.replace(url_anchor, contents_url)
+
+          validation_anchor = '''    url_selectors = GITHUB_META_ROUTING_URL_RE.findall(_normalize_url_scan_text(text))
+              for selector in sorted({selector for selector in url_selectors if selector != META_SHA}):
+                  errors.append(
+                      f"{path}: stale META execution-routing coordinate: GitHub routing-policy URL selector {selector}"
+                  )'''
+          contents_validation = validation_anchor + '''
+          
+              contents_queries = GITHUB_CONTENTS_META_ROUTING_URL_RE.findall(_normalize_url_scan_text(text))
+              stale_contents_selectors: set[str] = set()
+              for query in contents_queries:
+                  ref_match = re.search(r"(?:^|&)ref=([^&]+)", query, re.IGNORECASE)
+                  selector = ref_match.group(1) if ref_match is not None else ""
+                  if selector != META_SHA:
+                      stale_contents_selectors.add(selector or "<default-branch>")
+              for selector in sorted(stale_contents_selectors):
+                  errors.append(
+                      f"{path}: stale META execution-routing coordinate: GitHub Contents routing-policy URL selector {selector}"
+                  )'''
+          if text.count(validation_anchor) != 1:
+              raise SystemExit(f"unexpected URL validation anchor count: {text.count(validation_anchor)}")
+          text = text.replace(validation_anchor, contents_validation)
+
+          path.write_text(text, encoding="utf-8")
+          PY
+      - name: Verify repaired validator
+        shell: bash
+        run: |
+          python tools/agents/validate_governance.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
+          python tools/agents/validate_remote_desktop_prompt_routing.py
+          python tools/repository/validate_repository_policy.py
+          git diff --check
+      - name: Remove one-shot helper and publish repair
+        shell: bash
+        run: |
+          git rm .github/workflows/rdc-final4-codex-fix.yml
+          git add tools/agents/validate_remote_desktop_prompt_routing.py
+          python - <<'PY'
+          import subprocess
+          allowed = {
+              ".github/workflows/rdc-final4-codex-fix.yml",
+              "tools/agents/validate_remote_desktop_prompt_routing.py",
+          }
+          changed = set(subprocess.check_output(["git", "diff", "--cached", "--name-only"], text=True).splitlines())
+          if changed != allowed:
+              raise SystemExit(f"unexpected staged paths: {sorted(changed)}")
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "fix(agents): reject final RDC authorization bypasses"
+          remote_head="$(git ls-remote origin refs/heads/governance/remote-desktop-per-action-gate-237 | cut -f1)"
+          test "$remote_head" = "$GITHUB_SHA"
+          git push origin HEAD:governance/remote-desktop-per-action-gate-237
