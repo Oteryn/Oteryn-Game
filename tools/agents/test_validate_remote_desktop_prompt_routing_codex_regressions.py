@@ -80,9 +80,23 @@ def test_connector_actions_permission_by_default_fails() -> None:
     )
 
 
+def test_connector_actions_passive_permission_granted_by_default_fails() -> None:
+    assert_prompt_fail(
+        "Permission is granted by default for connector actions.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
 def test_named_host_operations_permission_by_default_fails() -> None:
     assert_surface_fail(
         "Filesystem operations have permission by default.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_named_host_operations_passive_permission_granted_by_default_fails() -> None:
+    assert_surface_fail(
+        "Permission is granted by default for filesystem operations.",
         "Remote Desktop policy text outside canonical section",
     )
 
@@ -164,6 +178,20 @@ def test_providers_deny_per_action_claim_fails() -> None:
     )
 
 
+def test_connector_stops_per_action_claim_fails() -> None:
+    assert_prompt_fail(
+        "The connector stops every call lacking per-action authorization.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_providers_refuse_per_action_claim_fails() -> None:
+    assert_surface_fail(
+        "Providers refuse calls lacking per-action authorization.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
 def test_github_explicit_default_port_mutable_selector_fails() -> None:
     assert_prompt_fail(
         "Use https://github.com:443/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
@@ -205,6 +233,20 @@ def test_ping_requests_blanket_approval_fails() -> None:
     )
 
 
+def test_ping_automatically_authorized_fails() -> None:
+    assert_prompt_fail(
+        "Ping is automatically authorized.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
+def test_ping_preapproved_fails() -> None:
+    assert_surface_fail(
+        "Ping is preapproved.",
+        "Remote Desktop policy text outside canonical section",
+    )
+
+
 def test_connector_prevents_per_action_claim_fails() -> None:
     assert_prompt_fail(
         "The connector prevents every call lacking per-action authorization.",
@@ -242,6 +284,26 @@ def test_pinned_raw_githubusercontent_selector_passes() -> None:
 def test_pinned_github_raw_selector_passes() -> None:
     assert_prompt_pass(
         f"Reference https://github.com/Oteryn/Oteryn/raw/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
+def test_github_contents_api_mutable_ref_fails() -> None:
+    assert_prompt_fail(
+        "Use https://api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref=main for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_github_contents_api_surface_mutable_ref_fails() -> None:
+    assert_surface_fail(
+        "Use https://api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref=feature for host exceptions.",
+        "stale META execution-routing coordinate",
+    )
+
+
+def test_pinned_github_contents_api_ref_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref={META_SHA} for the pinned policy."
     )
 
 
