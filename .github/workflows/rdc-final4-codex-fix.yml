@@ -37,7 +37,7 @@ jobs:
                   r"(?=.*\\b(?:per[- ]action|decision|gate|routing|authori[sz]\\w*)\\b)",
                   re.IGNORECASE,
               ),'''
-          passive_and_ping = '''    re.compile(
+          bounded_additions = '''    re.compile(
                   r"(?=.*\\b(?:(?:connectors?|tools?)\\s+(?:calls?|operations?|requests?|invocations?|actions?)|"
                   r"(?:filesystem|search|process|session|terminal|history|ping)\\s+(?:calls?|operations?|requests?|invocations?|actions?))\\b)"
                   r"(?=.*\\b(?:approval|permission)\\s+(?:is\\s+)?(?:granted|given)\\s+by\\s+default\\b)",
@@ -51,16 +51,17 @@ jobs:
                   r"(?:approval|permission)\\s+by\\s+default)\\b)",
                   re.IGNORECASE,
               ),
+              re.compile(
+                  r"(?=.*\\b(?:connectors?|routers?|transports?|providers?)\\b.{0,80}"
+                  r"\\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing)\\b.{0,80}"
+                  r"\\b(?:calls?|requests?|invocations?|actions?)\\b)"
+                  r"(?=.*\\b(?:per[- ]action|decision|gate|routing|authori[sz]\\w*)\\b)",
+                  re.IGNORECASE,
+              ),
           ''' + provider_anchor
           if text.count(provider_anchor) != 1:
               raise SystemExit(f"unexpected provider anchor count: {text.count(provider_anchor)}")
-          text = text.replace(provider_anchor, passive_and_ping)
-
-          enforcement_old = r'enforce|enforces|enforced|enforcing|enforcement|block|blocks|blocked|blocking|reject|rejects|rejected|rejecting|prevent|prevents|prevented|preventing'
-          enforcement_new = enforcement_old + r'|stop|stops|stopped|stopping|refuse|refuses|refused|refusing'
-          if text.count(enforcement_old) != 1:
-              raise SystemExit(f"unexpected enforcement matcher count: {text.count(enforcement_old)}")
-          text = text.replace(enforcement_old, enforcement_new)
+          text = text.replace(provider_anchor, bounded_additions)
 
           url_anchor = '''GITHUB_META_ROUTING_URL_RE = re.compile(
               r"(?:(?:https?:)?//)(?:(?:www\\.)?github\\.com(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\\.githubusercontent\\.com(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\\s`<>)]+?)/ecosystem/agent-execution-routing-policy\\.json",
