@@ -292,3 +292,52 @@ owner_action_required: null
 blocker: fresh exact-head CI on this metadata-complete candidate, exact-head whole-diff self-review, fresh native Codex review, and control-plane integration-gate reconciliation before squash merge
 next_action: commit this metadata checkpoint, freeze/read back the live exact head, require all exact-head checks, perform whole-diff self-review, request fresh `@codex review`, repair any findings if needed, then issue `READY_FOR_INTEGRATION` for independent control-plane preflight and expected-head squash merge
 ```
+
+## Runtime-scope final qualification checkpoint — 2026-08-30
+
+This checkpoint supersedes the Context checkpoint above for the current final qualification generation. It records the last review-repair cycle before the metadata-complete exact-head freeze.
+
+- Fresh native Codex review on `5d3d6f9cd4e7621a3f36619868f34cc2d6f6c10d` reported a P1 because terminal replacement authorization and final COMMIT revalidation could not represent and compare the actual current `RuntimeScopeRefV1` identity (Channel/Instance) independently of WorldId and scope generation.
+- Initial test-only RED `85310158d0d46295cbb4bc10a764884a0583fdc3` was proven by Merge Gate Linux workspace job `99129278992`: exact-head all-target build failed with `E0599` because `ReconnectCurrentAuthorityV1::with_current_runtime_scope` did not exist.
+- Executed two-boundary test-only RED `e0c981c750b8c5b80ff4d27d05cc2ff715cd2d66` was preserved in the hosted PostgreSQL target surface. Rust run `33265511987`, PostgreSQL 17.6 job `99134752795`: exact checkout was verified and compilation failed before GREEN, with both runtime-scope regressions present in `apps/game-server/src/durability/db.rs`.
+- Production GREEN `613f9aef9926d5aee47a9a7c1c5fd20744c3a607` added explicit current runtime scope to `GameSessionAuthoritySnapshot` and `ReconnectCurrentAuthorityV1`, requires exact candidate/current scope identity for terminal replacement, and leaves final revalidation fail-closed through full current-authority equality.
+- Lint/format-only follow-ups `79a366642eb29db74297963b2f607e04877d567f` and `1e189e6646a4c41370964146f6d740385fc47506` preserved the same production semantics.
+- Exact hosted GREEN on `1e189e6646a4c41370964146f6d740385fc47506`: Rust run `33266293045`, PostgreSQL 17.6 job `99136831009`, exact checkout, 91 PASS / 0 FAIL, including `final_revalidation_can_supply_actual_current_runtime_scope_and_reject_drift` and `terminal_replacement_rejects_same_world_generation_different_current_runtime_scope`. Architecture semantic audit `33266293030`, Merge authority audit `33266293040`, Agent governance `33266293049`, Merge gate `33266293035`, and aggregate `game-gate` job `99137774423` all completed SUCCESS.
+- Whole-diff pre-metadata guard on `1e189e6646a4c41370964146f6d740385fc47506`: protected `main@138c5add957718bd26149820626e538068a35a58` is the merge base, `behind_by=0`, and the effective diff is exactly the allocated 12 paths.
+
+```yaml
+last_progress: runtime-scope P1 from final review on 5d3d6f9cd4e7621a3f36619868f34cc2d6f6c10d was proven by hosted RED 85310158d0d46295cbb4bc10a764884a0583fdc3 and e0c981c750b8c5b80ff4d27d05cc2ff715cd2d66, repaired in 613f9aef9926d5aee47a9a7c1c5fd20744c3a607, and code-GREEN at 1e189e6646a4c41370964146f6d740385fc47506 with PostgreSQL 17.6 91/91 PASS
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+branch: impl/game-terminal-session-replacement-250
+integration_main_sha: 138c5add957718bd26149820626e538068a35a58
+previous_code_green_head: 1e189e6646a4c41370964146f6d740385fc47506
+head_sha: resolve_live_branch_after_this_metadata_commit
+final_head_sha: resolve_live_branch_after_this_metadata_commit
+final_head_frozen_at: 2026-08-30T00:24:39+02:00
+runtime_scope_p1:
+  reviewed_head: 5d3d6f9cd4e7621a3f36619868f34cc2d6f6c10d
+  initial_red_head: 85310158d0d46295cbb4bc10a764884a0583fdc3
+  initial_red_merge_gate_linux_job: 99129278992
+  executed_red_head: e0c981c750b8c5b80ff4d27d05cc2ff715cd2d66
+  executed_red_rust_run: 33265511987
+  executed_red_postgres_job: 99134752795
+  production_green_head: 613f9aef9926d5aee47a9a7c1c5fd20744c3a607
+  final_code_green_head: 1e189e6646a4c41370964146f6d740385fc47506
+final_code_green_ci:
+  rust: 33266293045
+  postgres_job: 99136831009
+  postgres_result: 91_pass_0_fail
+  architecture: 33266293030
+  merge_authority: 33266293040
+  governance: 33266293049
+  merge_gate: 33266293035
+  game_gate_job: 99137774423
+whole_diff_pre_metadata:
+  main_sha: 138c5add957718bd26149820626e538068a35a58
+  behind_by: 0
+  allocated_paths: 12_of_12
+owner_action_required: null
+blocker: fresh exact-head CI on the metadata-complete candidate, exact-head whole-diff self-review, fresh native Codex review, runtime-scope P1 resolution, READY_FOR_INTEGRATION handoff, and independent control-plane pre-merge verification
+next_action: freeze/read back the live metadata-complete head, require all exact-head checks, perform whole-diff self-review, request fresh @codex review, repair any findings if needed, resolve the repaired runtime-scope P1, issue READY_FOR_INTEGRATION, then let Work independently verify and expected-head squash merge without bypass
+```
