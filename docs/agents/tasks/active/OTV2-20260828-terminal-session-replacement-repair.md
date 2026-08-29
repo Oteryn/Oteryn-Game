@@ -22,12 +22,12 @@ allocation_pr: 251
 allocation_merge_sha: 12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
 worker_base_sha: 12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
 admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
-integration_main_sha: 0135deb100109b910dada366d7a1b05484357e51
+integration_main_sha: 138c5add957718bd26149820626e538068a35a58
 main_reconciliation_merge_sha: fc27d64f5803c15e70d78e6e7a0f9cd63980f89f
 pr: 252
 owner: Oteryn: sol durability lead
 created_at: 2026-08-28T20:08:00+02:00
-updated_at: 2026-08-29T09:04:00+02:00
+updated_at: 2026-08-29T17:43:02+02:00
 execution_budget_minutes: 180
 large_budget_reason: cross-lane Foundation/Durability repair with real PostgreSQL contention, replay and restart proof
 write_authority: exact_allocated_worker_scope_after_12d4ca5326d62a7a2c46d80cd5e167e99f109d1d
@@ -185,7 +185,16 @@ No Cargo/lockfile/workflow/resource-registry/Server Seam/Client/Movement/Combat/
 - The three P2 repairs landed in `d54d9cf5e70f4b6b081ef384afe4a4a70e270c76`: missing-predecessor exact receipt replay, shared transactional V1/V2 reconciliation, and full structural validation for every typed V2 outcome.
 - Local final code validation on `d54d9cf5e70f4b6b081ef384afe4a4a70e270c76`: formatting PASS, strict affected-target Clippy PASS, game-server library 193 PASS / 0 FAIL, and isolated PostgreSQL 17.6 83 PASS / 0 FAIL.
 - Hosted code GREEN on the same exact SHA: Rust run `33239666334`, PostgreSQL 17.6 job `99066708516`, exact checkout verified, 83 PASS / 0 FAIL. Architecture semantic audit `33239666333`, Merge authority audit `33239666378`, and Agent governance `33239666336` completed SUCCESS. All three P2 threads have exact repair replies and are resolved.
+- Fresh native review on `99b1c13ebfe4edef120e5c89b3c3bf9dfe15114d` reported two P1 findings: the actor/epoch eight-attempt budget was reset across terminal GameSession replacement, and V2 final revalidation had no public way to supply actual mutable current authority facts.
+- Attempt-budget RED was preserved at `c95962ce7debb28a35e137476397bffa38990ab6`: Rust run `33260072109`, PostgreSQL 17.6 job `99120370411`, exact checkout verified, 83 PASS / 1 expected FAIL in `runtime_terminal_replacement_preserves_actor_epoch_attempt_budget` (`attempt_count` 1 instead of 8).
+- Current-facts RED was preserved at `2b51ebe64a83725036c993ca0bb862e632df5f4d`: Rust run `33260242289`, PostgreSQL job `99120815389`, exact checkout verified, expected compile failure `E0599` proving `ReconnectCurrentAuthorityV1::from_current_facts` was absent.
+- Control-plane follow-up RED `9ec8342f7d9979f3b059d27059cf74338090a991` froze `runtime_terminal_replacement_rejects_exhausted_same_epoch_before_mutation`; its hosted PostgreSQL run `33260416224` / job `99121281797` remained blocked earlier by the already-proven current-facts `E0599`, so no separate runtime-failure claim is made for that test.
+- Both P1 repairs and the fail-before-mutation ordering repair are code-GREEN at `3f8cf2ac48f3830f623b00dea901c74ea7b875f1`: the unchanged actor/epoch cap of eight is retained across session replacement, exhaustion rejects before predecessor/receipt/candidate mutation, and Foundation exposes an explicit current-facts snapshot constructor while keeping strict final comparison.
+- Local validation on `3f8cf2ac48f3830f623b00dea901c74ea7b875f1`: game-server library 196 PASS / 0 FAIL, full Durability PostgreSQL target compiles, strict game-server all-target Clippy with `-D warnings` PASS, and `git diff --check` PASS.
+- Hosted GREEN on exact `3f8cf2ac48f3830f623b00dea901c74ea7b875f1`: Rust run `33260542415`, PostgreSQL 17.6 job `99121611106`, exact checkout verified, 86 PASS / 0 FAIL including both attempt-budget regressions and `v2_final_revalidation_accepts_external_current_facts_and_rejects_changed_authority`; Architecture semantic audit `33260542379`, Merge authority audit `33260542309`, Agent governance `33260542389`, and Windows SIM golden job `99121611059` completed SUCCESS.
+- Both fresh P1 review threads were replied to with exact GREEN evidence and resolved on `3f8cf2ac48f3830f623b00dea901c74ea7b875f1`; the integration-gate thread remains intentionally unresolved for the control plane.
 - Remote Desktop was used only as an exception for an isolated temporary terminal checkout, precise edits and local Docker/PostgreSQL tests after container DNS and connector patch limitations blocked safer execution. No production/live system, database, secret or persistent user workspace was accessed.
+- In the final P1 repair cycle, Remote Desktop was used only for the same isolated `%TEMP%` checkout, surgical Rust/metadata edits and local Rust compile/test/Clippy checks because the GitHub connector could not apply small patches to the large owned files. Local Docker was not started in this cycle; PostgreSQL 17.6 runtime proof came from hosted exact-head CI.
 
 Any tracked commit moves the PR head and invalidates prior exact-head qualification as final integration proof. The metadata-complete head produced from this update is the next candidate freeze generation and requires fresh exact-head CI, whole-diff self-review and native Codex review.
 
@@ -221,44 +230,54 @@ PR #243 remains open Draft historical evidence until Work decides its terminal d
 ## Context checkpoint
 
 ```yaml
-last_progress: protected main was reconciled through fc27d64f5803c15e70d78e6e7a0f9cd63980f89f; exact P2 RED was proven at a88c0b78633e1999006d1bebb72790780d926752; all three repairs are code-green at d54d9cf5e70f4b6b081ef384afe4a4a70e270c76 with 83/83 real PostgreSQL 17.6 tests and resolved P2 threads; this metadata update creates the final candidate generation
+last_progress: fresh P1 review defects were proven by exact RED heads c95962ce7debb28a35e137476397bffa38990ab6 and 2b51ebe64a83725036c993ca0bb862e632df5f4d, the exhausted-before-mutation guard was frozen at 9ec8342f7d9979f3b059d27059cf74338090a991, and both repairs are code-green at 3f8cf2ac48f3830f623b00dea901c74ea7b875f1 with hosted PostgreSQL 17.6 86/86 PASS
 status: qualifying
 integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
 branch: impl/game-terminal-session-replacement-250
 admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
-integration_main_sha: 0135deb100109b910dada366d7a1b05484357e51
+integration_main_sha: 138c5add957718bd26149820626e538068a35a58
 main_reconciliation_merge_sha: fc27d64f5803c15e70d78e6e7a0f9cd63980f89f
-previous_code_green_head: d54d9cf5e70f4b6b081ef384afe4a4a70e270c76
+previous_code_green_head: 3f8cf2ac48f3830f623b00dea901c74ea7b875f1
 head_sha: resolve_live_branch_after_this_metadata_commit
 pr: 252
 final_head_sha: resolve_live_branch_after_this_metadata_commit
-final_head_frozen_at: 2026-08-29T09:04:00+02:00
+final_head_frozen_at: 2026-08-29T17:43:02+02:00
 ci_trigger_source: pull_request
 ci_check_generation: metadata_complete_head_requires_fresh_exact_head_generation
 ci_run_ids:
-  p2_red_rust: 33239070718
-  p2_green_rust: 33239666334
-  p2_green_merge_gate: 33239666342
-  p2_green_architecture: 33239666333
-  p2_green_merge_authority: 33239666378
-  p2_green_governance: 33239666336
+  attempt_budget_red_rust: 33260072109
+  current_facts_red_rust: 33260242289
+  exhausted_guard_red_rust: 33260416224
+  repair_green_rust: 33260542415
+  repair_green_architecture: 33260542379
+  repair_green_merge_authority: 33260542309
+  repair_green_governance: 33260542389
 ci_job_ids:
-  p2_red_postgres: 99065141820
-  p2_green_postgres: 99066708516
+  attempt_budget_red_postgres: 99120370411
+  current_facts_red_postgres: 99120815389
+  exhausted_guard_red_postgres: 99121281797
+  repair_green_postgres: 99121611106
+  repair_green_windows_sim: 99121611059
 local_validation:
-  game_server_lib: 193_pass_0_fail
-  postgres_17_6: 83_pass_0_fail
-  fmt: pass
-  strict_clippy: pass
+  game_server_lib: 196_pass_0_fail
+  durability_postgres_compile: pass
+  strict_game_server_clippy_all_targets_deny_warnings: pass
+  diff_check: pass
+hosted_green_validation:
+  postgres_17_6: 86_pass_0_fail
+  exact_checkout: pass
+  architecture_semantic_audit: pass
+  merge_authority_audit: pass
+  agent_governance: pass
 runner_assignment_state: hosted_exact_head_available
-terminal_ci_wait_started_at: 2026-08-29T09:04:00+02:00
+terminal_ci_wait_started_at: 2026-08-29T17:43:02+02:00
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 4
+repair_cycles_for_current_gate: 5
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: fresh exact-head CI, whole-diff self-review, integration-thread reconciliation and fresh native Codex review on the metadata-complete candidate
-next_action: freeze the live metadata-complete head, require all exact-head checks, publish whole-diff self-review, request fresh `@codex review`, repair any findings, then close the integration gate and hand off `READY_FOR_INTEGRATION`
+blocker: fresh exact-head CI on the metadata-complete candidate, exact-head whole-diff self-review, fresh native Codex review, and control-plane integration-gate reconciliation before merge
+next_action: commit this metadata checkpoint, freeze/read back the live exact head, require all exact-head checks, perform whole-diff self-review, request fresh `@codex review`, repair any findings if needed, then hand off `READY_FOR_INTEGRATION` for control-plane integration
 ```
