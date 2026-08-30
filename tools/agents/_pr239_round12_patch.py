@@ -4,15 +4,15 @@ from pathlib import Path
 path = Path("tools/agents/validate_remote_desktop_prompt_routing.py")
 text = path.read_text(encoding="utf-8")
 
-old = r'(?:approval|permission|authority)\s+by\s+default|by\s+default.{0,80}(?:approval|permission|authority))\b)'
-new = r'(?:approval|permission|authority)\s+by\s+default|by\s+default.{0,80}(?:approval|permission|authority)|(?:approval|permission|authority)\s+automatically)\b)'
-count = text.count(old)
-if count != 3:
-    raise SystemExit(f"expected exactly 3 grant matcher sites, found {count}")
-text = text.replace(old, new)
+anchor = '''    re.compile(\n        r"(?=.*\\bdirect\\s+(?:connectors?|tools?)\\b)"\n        r"(?=.*(?:\\b(?:blanket|standing|automatic|default)\\s+(?:approval|permission|authority)\\b|"\n'''
+addition = '''    re.compile(\n        r"(?=.*\\b(?:(?:direct\\s+(?:connectors?|tools?))|"\n        r"(?:(?:connectors?|tools?)\\s+(?:calls?|operations?|requests?|invocations?|actions?))|"\n        r"(?:(?:filesystem|search|process|session|terminal|history|ping)\\s+(?:calls?|operations?|requests?|invocations?|actions?)))\\b)"\n        r"(?=.*\\b(?:approval|permission|authority)\\s+automatically\\b)",\n        re.IGNORECASE,\n    ),\n'''
+count = text.count(anchor)
+if count != 1:
+    raise SystemExit(f"expected exactly 1 direct-authority insertion anchor, found {count}")
+text = text.replace(anchor, addition + anchor, 1)
 
-old_userinfo = r'(?:[^\s]+@)?'
-new_userinfo = r'(?:[^#?<>\(\)\r\n]*@)?'
+old_userinfo = r'(?:[^\\s]+@)?'
+new_userinfo = r'(?:[^#?<>\\(\\)\\r\\n]*@)?'
 count = text.count(old_userinfo)
 if count != 2:
     raise SystemExit(f"expected exactly 2 GitHub userinfo matcher sites, found {count}")
