@@ -141,6 +141,13 @@ OUTSIDE_ROUTING_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"(?=.*\b(?:(?:direct\s+(?:connectors?|tools?))|"
+        r"(?:(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?))|"
+        r"(?:(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?)))\b)"
+        r"(?=.*\b(?:approval|permission|authority)\s+automatically\b)",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"(?=.*\bdirect\s+(?:connectors?|tools?)\b)"
         r"(?=.*(?:\b(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b|"
         r"\b(?:approval|permission|authority)\s+by\s+default\b|\bby\s+default\b.{0,160}\b(?:approval|permission|authority)\b))",
@@ -239,11 +246,11 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     re.IGNORECASE,
 )
 GITHUB_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)(?:[^\s]+@)?(?:(?:www\.)?github\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
+    r"(?:(?:https?:)?//)(?:[^#?<>()\r\n]*@)?(?:(?:www\.)?github\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
 )
 GITHUB_CONTENTS_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)(?:[^\s]+@)?api\.github\.com\.?(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
+    r"(?:(?:https?:)?//)(?:[^#?<>()\r\n]*@)?api\.github\.com\.?(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
     r"ecosystem/agent-execution-routing-policy\.json(?:\?([^\s`<>)#]*))?",
     re.IGNORECASE,
 )
