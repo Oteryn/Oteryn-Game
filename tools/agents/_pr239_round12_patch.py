@@ -11,8 +11,8 @@ if count != 1:
     raise SystemExit(f"expected exactly 1 direct-authority insertion anchor, found {count}")
 text = text.replace(anchor, addition + anchor, 1)
 
-old_userinfo = r'(?:[^\\s]+@)?'
-new_userinfo = r'(?:[^#?<>\\(\\)\\r\\n]*@)?'
+old_userinfo = r'(?:[^\s]+@)?'
+new_userinfo = r'(?:[^#?<>()\r\n]*@)?'
 count = text.count(old_userinfo)
 if count != 2:
     raise SystemExit(f"expected exactly 2 GitHub userinfo matcher sites, found {count}")
