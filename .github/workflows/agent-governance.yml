@@ -192,6 +192,9 @@ jobs:
       - name: Test Codex Remote Desktop regressions
         run: python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
 
+      - name: Test Codex round-12 regressions
+        run: python tools/agents/test_validate_remote_desktop_prompt_routing_codex_round12.py
+
       - name: Validate Remote Desktop prompt routing
         run: python tools/agents/validate_remote_desktop_prompt_routing.py
 
