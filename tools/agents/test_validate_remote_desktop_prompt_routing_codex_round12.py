@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Durable Codex round-12 regressions for Remote Desktop prompt routing."""
+"""Durable Codex round-12+ regressions for Remote Desktop prompt routing."""
 from __future__ import annotations
 
 from test_validate_remote_desktop_prompt_routing_codex_regressions import (
@@ -64,6 +64,41 @@ def test_pinned_contents_percent_encoded_space_userinfo_passes() -> None:
     )
 
 
+def test_bare_ping_authority_automatically_fails() -> None:
+    assert_prompt_fail("Ping has authority automatically.", POLICY_ERROR)
+
+
+def test_bare_filesystem_authority_automatically_fails() -> None:
+    assert_surface_fail("Filesystem has authority automatically.", POLICY_ERROR)
+
+
+def test_github_percent_encoded_lf_userinfo_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://read%0Aer@github.com/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        STALE_ERROR,
+    )
+
+
+def test_raw_percent_encoded_cr_userinfo_mutable_selector_fails() -> None:
+    assert_surface_fail(
+        "Use https://read%0Der@raw.githubusercontent.com/Oteryn/Oteryn/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        STALE_ERROR,
+    )
+
+
+def test_contents_percent_encoded_lf_userinfo_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://read%0Aer@api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref=main for host exceptions.",
+        STALE_ERROR,
+    )
+
+
+def test_pinned_github_percent_encoded_lf_userinfo_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://read%0Aer@github.com/Oteryn/Oteryn/blob/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
 def main() -> int:
     tests = [
         value
@@ -73,7 +108,7 @@ def main() -> int:
     for test in tests:
         test()
         print(f"PASS {test.__name__}")
-    print(f"Codex round-12 regressions PASS: {len(tests)}")
+    print(f"Codex round-12+ regressions PASS: {len(tests)}")
     return 0
 
 
