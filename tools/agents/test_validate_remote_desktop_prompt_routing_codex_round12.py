@@ -99,6 +99,45 @@ def test_pinned_github_percent_encoded_lf_userinfo_passes() -> None:
     )
 
 
+def test_github_percent_encoded_question_userinfo_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://read%3Fer@github.com/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        STALE_ERROR,
+    )
+
+
+def test_raw_percent_encoded_hash_userinfo_mutable_selector_fails() -> None:
+    assert_surface_fail(
+        "Use https://read%23er@raw.githubusercontent.com/Oteryn/Oteryn/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        STALE_ERROR,
+    )
+
+
+def test_contents_percent_encoded_gt_userinfo_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use https://read%3Eer@api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref=main for host exceptions.",
+        STALE_ERROR,
+    )
+
+
+def test_pinned_github_percent_encoded_question_userinfo_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://read%3Fer@github.com/Oteryn/Oteryn/blob/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
+def test_pinned_raw_percent_encoded_hash_userinfo_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://read%23er@raw.githubusercontent.com/Oteryn/Oteryn/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
+def test_pinned_contents_percent_encoded_gt_userinfo_passes() -> None:
+    assert_prompt_pass(
+        f"Reference https://read%3Eer@api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref={META_SHA} for the pinned policy."
+    )
+
+
 def main() -> int:
     tests = [
         value
