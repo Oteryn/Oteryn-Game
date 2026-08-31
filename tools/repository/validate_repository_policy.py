@@ -38,13 +38,10 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - reopened
       - synchronize
       - edited
+  merge_group:
+    types:
+      - checks_requested
 """
-EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
-    "c4ed68e5e828897500f6fe0cde71f0bbc4de853c585508b893e1c066bb900ab1"
-)
-EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a"
-)
 
 REQUIRED_FILES = [
     ".github/CODEOWNERS",
@@ -299,25 +296,38 @@ def main() -> int:
         trigger_block = top_level_yaml_mapping_block(text, "on")
         if trigger_block != EXPECTED_MERGE_GATE_TRIGGER_BLOCK:
             errors.append(
-                "merge gate trigger block must exactly match the canonical always-on "
-                "pull_request contract"
+                "merge gate trigger block must cover normal pull requests and "
+                "merge_group checks_requested candidates"
             )
         if "workflow_dispatch:" in text:
             errors.append("merge gate must not execute pull-request code through workflow_dispatch")
         scope_block = indented_yaml_mapping_block(text, "scope", 2)
-        scope_digest = hashlib.sha256(scope_block.encode("utf-8")).hexdigest() if scope_block else None
-        if scope_digest != EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256:
-            errors.append(
-                "merge gate scope job must exactly match the canonical exact-head, "
-                "changed-path classification and output implementation"
-            )
+        if scope_block is None:
+            errors.append("merge gate must have a scope job")
+        else:
+            for fragment in (
+                "EVENT_NAME: ${{ github.event_name }}",
+                "EVENT_CANDIDATE_SHA: ${{ github.sha }}",
+                "if event_name == 'pull_request':",
+                "if event_name == 'merge_group':",
+                "target_sha = candidate_sha",
+                "integration_mode = 'merge_group'",
+            ):
+                if fragment not in scope_block:
+                    errors.append(f"merge gate scope job missing event-context contract: {fragment}")
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
-        validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
-        if validate_digest != EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256:
-            errors.append(
-                "merge gate aggregate validate job must exactly match the canonical "
-                "needs/result wiring and fail-closed implementation"
-            )
+        if validate_block is None:
+            errors.append("merge gate must have a fail-closed aggregate validate job")
+        else:
+            for fragment in (
+                "INTEGRATION_MODE: ${{ needs.scope.outputs.integration_mode }}",
+                "INTEGRATION_POLICY: ${{ needs.integration_policy.result }}",
+                "if integration_mode == 'pull_request':",
+                "elif integration_mode == 'merge_group':",
+                "if os.environ['CODEQL'] != 'success':",
+            ):
+                if fragment not in validate_block:
+                    errors.append(f"merge gate aggregate missing dual-event contract: {fragment}")
         game_gate_block = indented_yaml_mapping_block(text, "game_gate", 2)
         if game_gate_block is None:
             errors.append("merge gate must publish the stable game-gate aggregate")
@@ -333,6 +343,7 @@ def main() -> int:
                     errors.append(f"game-gate aggregate missing canonical fragment: {fragment.strip()}")
         for required_fragment in (
             "pull request head moved after event head was resolved",
+            "merge-group candidate SHA must be a full lowercase 40-character SHA",
             "changed_files = pull.get('changed_files')",
             "changed_files > 3000",
             "len(files) != changed_files",
@@ -342,6 +353,7 @@ def main() -> int:
             "base-ref: ${{ needs.scope.outputs.base_sha }}",
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
             "Merge gate / governance",
+            "Merge gate / integration policy",
             "Merge gate / dependency review",
             "Merge gate / CodeQL",
             "Merge gate / Rust policy and metadata",

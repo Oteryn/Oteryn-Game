@@ -1,6 +1,6 @@
 name: Merge gate
 
-run-name: Merge gate • pull_request • ${{ github.event.pull_request.number }}
+run-name: Merge gate • ${{ github.event_name }} • ${{ github.event.pull_request.number || github.sha }}
 
 on:
   pull_request:
@@ -11,11 +11,14 @@ on:
       - reopened
       - synchronize
       - edited
+  merge_group:
+    types:
+      - checks_requested
 
 permissions: {}
 
 concurrency:
-  group: merge-gate-${{ github.event.pull_request.number }}
+  group: merge-gate-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -31,12 +34,15 @@ jobs:
       target_sha: ${{ steps.detect.outputs.target_sha }}
       base_sha: ${{ steps.detect.outputs.base_sha }}
       rust: ${{ steps.detect.outputs.rust }}
+      integration_mode: ${{ steps.detect.outputs.integration_mode }}
     steps:
-      - name: Resolve and validate exact pull request head
+      - name: Resolve pull request head or merge-queue integration candidate
         id: detect
         env:
+          EVENT_NAME: ${{ github.event_name }}
           EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
           EVENT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          EVENT_CANDIDATE_SHA: ${{ github.sha }}
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
         run: |
@@ -48,14 +54,22 @@ jobs:
           import urllib.request
 
           repository = os.environ['REPOSITORY']
+          event_name = os.environ.get('EVENT_NAME', '').strip()
           number_text = os.environ.get('EVENT_PR_NUMBER', '').strip()
           expected_head = os.environ.get('EVENT_PR_HEAD_SHA', '').strip().lower()
+          candidate_sha = os.environ.get('EVENT_CANDIDATE_SHA', '').strip().lower()
           errors: list[str] = []
 
-          if re.fullmatch(r'[1-9][0-9]*', number_text) is None:
-              errors.append('pull request number must be a positive integer')
-          if re.fullmatch(r'[0-9a-f]{40}', expected_head) is None:
-              errors.append('pull request head SHA must be a full lowercase 40-character SHA')
+          if event_name not in {'pull_request', 'merge_group'}:
+              errors.append(f'unsupported merge-gate event: {event_name!r}')
+          if event_name == 'pull_request':
+              if re.fullmatch(r'[1-9][0-9]*', number_text) is None:
+                  errors.append('pull request number must be a positive integer')
+              if re.fullmatch(r'[0-9a-f]{40}', expected_head) is None:
+                  errors.append('pull request head SHA must be a full lowercase 40-character SHA')
+          if event_name == 'merge_group':
+              if re.fullmatch(r'[0-9a-f]{40}', candidate_sha) is None:
+                  errors.append('merge-group candidate SHA must be a full lowercase 40-character SHA')
 
           if errors:
               for error in errors:
@@ -69,88 +83,101 @@ jobs:
               'User-Agent': 'Oteryn-v2-merge-gate',
           }
 
-          request = urllib.request.Request(
-              f'https://api.github.com/repos/{repository}/pulls/{number_text}',
-              headers=headers,
-          )
-          with urllib.request.urlopen(request, timeout=30) as response:
-              pull = json.load(response)
-
-          state = pull.get('state', '')
-          head_sha = pull.get('head', {}).get('sha', '').lower()
-          head_repository = pull.get('head', {}).get('repo', {}).get('full_name', '')
-          base_ref = pull.get('base', {}).get('ref', '')
-          base_sha = pull.get('base', {}).get('sha', '').lower()
-          changed_files = pull.get('changed_files')
-
-          if state != 'open':
-              errors.append('merge-gate validation requires an open pull request')
-          if head_sha != expected_head:
-              errors.append('pull request head moved after event head was resolved')
-          if head_repository != repository:
-              errors.append('merge gate only accepts same-repository pull request heads')
-          if base_ref != 'main':
-              errors.append('merge gate only accepts pull requests targeting main')
-          if re.fullmatch(r'[0-9a-f]{40}', base_sha) is None:
-              errors.append('pull request base SHA is invalid')
-          if not isinstance(changed_files, int) or changed_files < 0:
-              errors.append('pull request changed_files count is invalid')
-          elif changed_files > 3000:
-              errors.append('pull request exceeds GitHub changed-files API cap of 3000; fail closed')
-
-          files: list[str] = []
-          classification_paths: list[str] = []
-          page = 1
-          while not errors:
-              files_request = urllib.request.Request(
-                  f'https://api.github.com/repos/{repository}/pulls/{number_text}/files?per_page=100&page={page}',
+          if event_name == 'pull_request' and not errors:
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repository}/pulls/{number_text}',
                   headers=headers,
               )
-              with urllib.request.urlopen(files_request, timeout=30) as response:
-                  batch = json.load(response)
-              for item in batch:
-                  filename = item['filename']
-                  files.append(filename)
-                  classification_paths.append(filename)
-                  previous_filename = item.get('previous_filename')
-                  if isinstance(previous_filename, str) and previous_filename:
-                      classification_paths.append(previous_filename)
-              if len(batch) < 100:
-                  break
-              page += 1
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  pull = json.load(response)
 
-          if not errors and len(files) != changed_files:
-              errors.append(
-                  f'changed-files enumeration mismatch: API reports {changed_files}, '
-                  f'collected {len(files)}; fail closed'
-              )
+              state = pull.get('state', '')
+              head_sha = pull.get('head', {}).get('sha', '').lower()
+              head_repository = pull.get('head', {}).get('repo', {}).get('full_name', '')
+              base_ref = pull.get('base', {}).get('ref', '')
+              base_sha = pull.get('base', {}).get('sha', '').lower()
+              changed_files = pull.get('changed_files')
+
+              if state != 'open':
+                  errors.append('merge-gate validation requires an open pull request')
+              if head_sha != expected_head:
+                  errors.append('pull request head moved after event head was resolved')
+              if head_repository != repository:
+                  errors.append('merge gate only accepts same-repository pull request heads')
+              if base_ref != 'main':
+                  errors.append('merge gate only accepts pull requests targeting main')
+              if re.fullmatch(r'[0-9a-f]{40}', base_sha) is None:
+                  errors.append('pull request base SHA is invalid')
+              if not isinstance(changed_files, int) or changed_files < 0:
+                  errors.append('pull request changed_files count is invalid')
+              elif changed_files > 3000:
+                  errors.append('pull request exceeds GitHub changed-files API cap of 3000; fail closed')
+
+              files: list[str] = []
+              classification_paths: list[str] = []
+              page = 1
+              while not errors:
+                  files_request = urllib.request.Request(
+                      f'https://api.github.com/repos/{repository}/pulls/{number_text}/files?per_page=100&page={page}',
+                      headers=headers,
+                  )
+                  with urllib.request.urlopen(files_request, timeout=30) as response:
+                      batch = json.load(response)
+                  for item in batch:
+                      filename = item['filename']
+                      files.append(filename)
+                      classification_paths.append(filename)
+                      previous_filename = item.get('previous_filename')
+                      if isinstance(previous_filename, str) and previous_filename:
+                          classification_paths.append(previous_filename)
+                  if len(batch) < 100:
+                      break
+                  page += 1
+
+              if not errors and len(files) != changed_files:
+                  errors.append(
+                      f'changed-files enumeration mismatch: API reports {changed_files}, '
+                      f'collected {len(files)}; fail closed'
+                  )
 
           if errors:
               for error in errors:
                   print(f'- {error}', file=sys.stderr)
               raise SystemExit(1)
 
-          exact = {
-              'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'rustfmt.toml',
-              'deny.toml', 'workspace-boundaries.toml',
-              '.github/workflows/rust.yml', '.github/workflows/merge-gate.yml',
-          }
-          prefixes = ('.cargo/', 'apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')
-          rust = any(path in exact or path.startswith(prefixes) for path in classification_paths)
-
-          print(f'Validated PR #{number_text} exact head {head_sha} against base {base_sha}.')
-          print(f'Changed files: {len(files)}; Rust/workspace validation required: {rust}')
+          if event_name == 'pull_request':
+              exact = {
+                  'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml', 'rustfmt.toml',
+                  'deny.toml', 'workspace-boundaries.toml',
+                  '.github/workflows/rust.yml', '.github/workflows/merge-gate.yml',
+              }
+              prefixes = ('.cargo/', 'apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')
+              rust = any(path in exact or path.startswith(prefixes) for path in classification_paths)
+              target_sha = head_sha
+              integration_mode = 'pull_request'
+              print(f'Validated PR #{number_text} exact head {head_sha} against base {base_sha}.')
+              print(f'Changed files: {len(files)}; Rust/workspace validation required: {rust}')
+          else:
+              target_sha = candidate_sha
+              base_sha = ''
+              rust = True
+              integration_mode = 'merge_group'
+              number_text = ''
+              print(f'Validated merge-queue integration candidate {target_sha} for main.')
+              print('Merge-queue candidates run the complete Rust/workspace suite.')
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f'pr_number={number_text}\n')
-              output.write(f'target_sha={head_sha}\n')
+              output.write(f'target_sha={target_sha}\n')
               output.write(f'base_sha={base_sha}\n')
               output.write(f"rust={'true' if rust else 'false'}\n")
+              output.write(f'integration_mode={integration_mode}\n')
           PY
 
   governance:
     name: Merge gate / governance
     needs: scope
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -231,9 +258,33 @@ jobs:
       - name: Validate repository policy
         run: python tools/repository/validate_repository_policy.py
 
+  integration_policy:
+    name: Merge gate / integration policy
+    needs: scope
+    if: github.event_name == 'merge_group'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Check out actual integration candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.scope.outputs.target_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out integration candidate
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Validate repository policy
+        run: python tools/repository/validate_repository_policy.py
+
   dependency_review:
     name: Merge gate / dependency review
     needs: scope
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
@@ -438,6 +489,7 @@ jobs:
     needs:
       - scope
       - governance
+      - integration_policy
       - dependency_review
       - codeql
       - rust_policy
@@ -453,9 +505,11 @@ jobs:
         env:
           SCOPE: ${{ needs.scope.result }}
           GOVERNANCE: ${{ needs.governance.result }}
+          INTEGRATION_POLICY: ${{ needs.integration_policy.result }}
           DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
           CODEQL: ${{ needs.codeql.result }}
           RUST_REQUIRED: ${{ needs.scope.outputs.rust }}
+          INTEGRATION_MODE: ${{ needs.scope.outputs.integration_mode }}
           RUST_POLICY: ${{ needs.rust_policy.result }}
           RUST_LINUX: ${{ needs.rust_linux.result }}
           RUST_WINDOWS: ${{ needs.rust_windows.result }}
@@ -466,8 +520,28 @@ jobs:
           import sys
 
           failures: list[str] = []
-          for name in ('SCOPE', 'GOVERNANCE', 'DEPENDENCY_REVIEW', 'CODEQL'):
+          if os.environ['SCOPE'] != 'success':
+              failures.append(f"SCOPE={os.environ['SCOPE']}")
+          if os.environ['CODEQL'] != 'success':
+              failures.append(f"CODEQL={os.environ['CODEQL']}")
+
+          integration_mode = os.environ['INTEGRATION_MODE']
+          if integration_mode == 'pull_request':
+              required = ('GOVERNANCE', 'DEPENDENCY_REVIEW')
+              skipped = ('INTEGRATION_POLICY',)
+          elif integration_mode == 'merge_group':
+              required = ('INTEGRATION_POLICY',)
+              skipped = ('GOVERNANCE', 'DEPENDENCY_REVIEW')
+          else:
+              failures.append(f'INTEGRATION_MODE={integration_mode}')
+              required = ()
+              skipped = ()
+
+          for name in required:
               if os.environ[name] != 'success':
+                  failures.append(f'{name}={os.environ[name]}')
+          for name in skipped:
+              if os.environ[name] != 'skipped':
                   failures.append(f'{name}={os.environ[name]}')
 
           rust_required = os.environ['RUST_REQUIRED'] == 'true'
@@ -486,7 +560,7 @@ jobs:
               for failure in failures:
                   print(f'- {failure}', file=sys.stderr)
               raise SystemExit(1)
-          print('All applicable merge gates passed on the exact pull request head.')
+          print(f'All applicable merge gates passed for {integration_mode}.')
           PY
 
   game_gate:
