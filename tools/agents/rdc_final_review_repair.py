@@ -10,8 +10,8 @@ if text.count(old_postposed) != 1:
     raise SystemExit(f"expected one bare-host automatic authorization group, found {text.count(old_postposed)}")
 text = text.replace(old_postposed, new_postposed, 1)
 
-old_negative_subject = r'r"(?=.*\bping\b)"\n        r"(?=.*(?:\\b(?:requires?|needs?)\\s+no\\s+(?:per[- ]action\\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\\b|"'
-new_negative_subject = r'r"(?=.*\b(?:filesystem|search|process|session|terminal|history|ping)\b)"\n        r"(?=.*(?:\\b(?:requires?|needs?)\\s+no\\s+(?:per[- ]action\\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\\b|"'
+old_negative_subject = '        r"(?=.*\\bping\\b)"\n        r"(?=.*(?:\\b(?:requires?|needs?)\\s+no\\s+(?:per[- ]action\\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\\b|"'
+new_negative_subject = '        r"(?=.*\\b(?:filesystem|search|process|session|terminal|history|ping)\\b)"\n        r"(?=.*(?:\\b(?:requires?|needs?)\\s+no\\s+(?:per[- ]action\\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\\b|"'
 if text.count(old_negative_subject) != 1:
     raise SystemExit(f"expected one ping-only negative matcher prefix, found {text.count(old_negative_subject)}")
 text = text.replace(old_negative_subject, new_negative_subject, 1)
