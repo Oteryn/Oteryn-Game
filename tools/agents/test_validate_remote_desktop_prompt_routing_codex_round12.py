@@ -239,6 +239,14 @@ def test_calls_skipped_by_router_fails() -> None:
     assert_surface_fail("Calls lacking per-action authorization are skipped by the router.", POLICY_ERROR)
 
 
+def test_ping_requires_no_per_action_decision_fails() -> None:
+    assert_prompt_fail("Ping requires no per-action decision.", POLICY_ERROR)
+
+
+def test_filesystem_automatically_authorized_fails() -> None:
+    assert_surface_fail("Filesystem is automatically authorized.", POLICY_ERROR)
+
+
 def main() -> int:
     tests = [
         value
