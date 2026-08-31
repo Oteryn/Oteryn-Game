@@ -1,0 +1,85 @@
+name: RDC latest review repair
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact triggering head
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Apply bounded latest review repair
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("tools/agents/validate_remote_desktop_prompt_routing.py")
+          text = path.read_text(encoding="utf-8")
+
+          old_ping = r'''        r"(?=.*(?:\b(?:requires?|needs?)\s+no\s+(?:per[- ]action\s+)?(?:authori[sz]ation|approval|permission|host[- ]exception|exception)\b|"
+        r"\b(?:does\s+not\s+(?:require|need)|without|exempt(?:ed)?\s+from)\b.{0,80}"
+        r"\b(?:per[- ]action|authori[sz]ation|approval|permission|host[- ]exception|exception)\b))",'''
+          new_ping = r'''        r"(?=.*(?:\b(?:requires?|needs?)\s+no\s+(?:per[- ]action\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\b|"
+        r"\b(?:does\s+not\s+(?:require|need)|without|exempt(?:ed)?\s+from)\b.{0,80}"
+        r"\b(?:per[- ]action|decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\b))",'''
+          if text.count(old_ping) != 1:
+              raise SystemExit(f"expected exactly one ping negative matcher, found {text.count(old_ping)}")
+          text = text.replace(old_ping, new_ping, 1)
+
+          anchor = r'''    re.compile(
+        r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,40}"
+        r"\b(?:has|have)\s+(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b",
+        re.IGNORECASE,
+    ),
+'''
+          addition = anchor + r'''    re.compile(
+        r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,80}"
+        r"\b(?:is|are|was|were|be|been|being)\s+(?:automatically\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|(?:authori[sz]ed|approved)\s+by\s+default)\b",
+        re.IGNORECASE,
+    ),
+'''
+          if text.count(anchor) != 1:
+              raise SystemExit(f"expected exactly one bare-host authority anchor, found {text.count(anchor)}")
+          text = text.replace(anchor, addition, 1)
+
+          path.write_text(text, encoding="utf-8")
+
+          helper = Path(".github/workflows/rdc-latest-review-repair.yml")
+          if not helper.exists():
+              raise SystemExit("temporary helper is missing")
+          helper.unlink()
+          PY
+
+      - name: Verify focused GREEN before publication
+        shell: bash
+        run: |
+          python tools/agents/validate_governance.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_round12.py
+          python tools/agents/validate_remote_desktop_prompt_routing.py
+          git diff --check
+
+      - name: Publish exact guarded repair
+        shell: bash
+        env:
+          EVENT_SHA: ${{ github.sha }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add tools/agents/validate_remote_desktop_prompt_routing.py .github/workflows/rdc-latest-review-repair.yml
+          git commit -m "fix(agents): close latest RDC review findings"
+          git fetch origin governance/remote-desktop-per-action-gate-237
+          test "$(git rev-parse FETCH_HEAD)" = "$EVENT_SHA"
+          git push origin HEAD:refs/heads/governance/remote-desktop-per-action-gate-237
