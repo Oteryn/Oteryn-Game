@@ -1,0 +1,16 @@
+name: RDC final review repair
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Confirm helper execution
+        run: echo helper-ok
