@@ -247,6 +247,42 @@ def test_filesystem_automatically_authorized_fails() -> None:
     assert_surface_fail("Filesystem is automatically authorized.", POLICY_ERROR)
 
 
+def test_filesystem_authorized_automatically_fails() -> None:
+    assert_prompt_fail("Filesystem is authorized automatically.", POLICY_ERROR)
+
+
+def test_search_approved_automatically_fails() -> None:
+    assert_surface_fail("Search is approved automatically.", POLICY_ERROR)
+
+
+def test_filesystem_requires_no_per_action_decision_fails() -> None:
+    assert_prompt_fail("Filesystem requires no per-action decision.", POLICY_ERROR)
+
+
+def test_search_needs_no_approval_fails() -> None:
+    assert_surface_fail("Search needs no approval.", POLICY_ERROR)
+
+
+def test_process_does_not_need_permission_fails() -> None:
+    assert_prompt_fail("Process does not need permission.", POLICY_ERROR)
+
+
+def test_connector_cancels_calls_fails() -> None:
+    assert_prompt_fail("The connector cancels calls lacking per-action authorization.", POLICY_ERROR)
+
+
+def test_router_intercepts_calls_fails() -> None:
+    assert_surface_fail("The router intercepts calls lacking per-action authorization.", POLICY_ERROR)
+
+
+def test_calls_cancelled_by_connector_fails() -> None:
+    assert_prompt_fail("Calls lacking per-action authorization are cancelled by the connector.", POLICY_ERROR)
+
+
+def test_calls_intercepted_by_router_fails() -> None:
+    assert_surface_fail("Calls lacking per-action authorization are intercepted by the router.", POLICY_ERROR)
+
+
 def main() -> int:
     tests = [
         value
