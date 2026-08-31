@@ -30,6 +30,7 @@ owned_paths:
   - docs/superpowers/plans/2026-08-28-game-remote-desktop-per-action-adoption.md
   - tools/agents/test_validate_remote_desktop_prompt_routing.py
   - tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
+  - tools/agents/test_validate_remote_desktop_prompt_routing_codex_round12.py
   - tools/agents/validate_remote_desktop_prompt_routing.py
 public_contracts:
   - Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0:ecosystem/agent-execution-routing-policy.json
