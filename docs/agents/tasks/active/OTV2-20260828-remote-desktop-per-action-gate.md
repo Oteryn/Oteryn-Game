@@ -16,7 +16,7 @@ final_head_sha: external_pr_evidence
 final_head_frozen_at: external_pr_evidence
 owner: oteryn-governance-controller
 created_at: 2026-08-28T11:12:01Z
-updated_at: 2026-08-30T00:40:00+02:00
+updated_at: 2026-08-31T23:12:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: full reusable-prompt governance sweep plus deterministic exact-head qualification
 owned_paths:
