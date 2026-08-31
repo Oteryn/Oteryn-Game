@@ -246,11 +246,11 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     re.IGNORECASE,
 )
 GITHUB_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)(?:[^#?<>()]*@)?(?:(?:www\.)?github\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
+    r"(?:(?:https?:)?//)(?:[^\x00]*@)?(?:(?:www\.)?github\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
 )
 GITHUB_CONTENTS_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:https?:)?//)(?:[^#?<>()]*@)?api\.github\.com\.?(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
+    r"(?:(?:https?:)?//)(?:[^\x00]*@)?api\.github\.com\.?(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
     r"ecosystem/agent-execution-routing-policy\.json(?:\?([^\s`<>)#]*))?",
     re.IGNORECASE,
 )
