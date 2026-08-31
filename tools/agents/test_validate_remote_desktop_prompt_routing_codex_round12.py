@@ -213,9 +213,18 @@ def main() -> int:
         for name, value in sorted(globals().items())
         if name.startswith("test_") and callable(value)
     ]
+    failures: list[tuple[str, str]] = []
     for test in tests:
-        test()
-        print(f"PASS {test.__name__}")
+        try:
+            test()
+        except AssertionError as exc:
+            failures.append((test.__name__, str(exc)))
+            print(f"FAIL {test.__name__}: {exc}")
+        else:
+            print(f"PASS {test.__name__}")
+    if failures:
+        print(f"Codex round-12+ regressions FAIL: {len(failures)} of {len(tests)}")
+        return 1
     print(f"Codex round-12+ regressions PASS: {len(tests)}")
     return 0
 
