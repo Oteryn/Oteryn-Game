@@ -153,6 +153,18 @@ OUTSIDE_ROUTING_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,80}"
+        r"\b(?:is|are|was|were|be|been|being)\s+(?:granted|given)\s+"
+        r"(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b.{0,80}"
+        r"\b(?:is|are|was|were|be|been|being)\s+(?:granted|given)\s+to\s+"
+        r"(?:filesystem|search|process|session|terminal|history|ping)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"(?=.*\bdirect\s+(?:connectors?|tools?)\b)"
         r"(?=.*(?:\b(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b|"
         r"\b(?:approval|permission|authority)\s+by\s+default\b|\bby\s+default\b.{0,160}\b(?:approval|permission|authority)\b))",
@@ -199,7 +211,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b.{0,80}"
-        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|filter(?:s|ed|ing)?(?:\s+out)?)\b.{0,80}"
+        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|suppress(?:es|ed|ing)?|filter(?:s|ed|ing)?(?:\s+out)?)\b.{0,80}"
         r"\b(?:calls?|requests?|invocations?|actions?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
@@ -207,7 +219,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\b(?:calls?|requests?|invocations?|actions?)\b.{0,120}"
         r"(?:\b(?:is|are|be|being|been|get|gets|got|getting)\b.{0,30})?"
-        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|filter(?:s|ed|ing)?(?:\s+out)?)\s+(?:by|at|within|inside)\s+(?:the\s+)?"
+        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|suppress(?:es|ed|ing)?|filter(?:s|ed|ing)?(?:\s+out)?)\s+(?:by|at|within|inside)\s+(?:the\s+)?"
         r"(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
