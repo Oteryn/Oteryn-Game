@@ -223,6 +223,22 @@ def test_calls_ignored_by_router_fails() -> None:
     assert_surface_fail("Calls lacking per-action authorization are ignored by the router.", POLICY_ERROR)
 
 
+def test_ping_does_not_need_permission_fails() -> None:
+    assert_prompt_fail("Ping does not need permission.", POLICY_ERROR)
+
+
+def test_ping_does_not_need_approval_fails() -> None:
+    assert_surface_fail("Ping does not need approval.", POLICY_ERROR)
+
+
+def test_connector_skips_calls_fails() -> None:
+    assert_prompt_fail("The connector skips calls lacking per-action authorization.", POLICY_ERROR)
+
+
+def test_calls_skipped_by_router_fails() -> None:
+    assert_surface_fail("Calls lacking per-action authorization are skipped by the router.", POLICY_ERROR)
+
+
 def main() -> int:
     tests = [
         value
