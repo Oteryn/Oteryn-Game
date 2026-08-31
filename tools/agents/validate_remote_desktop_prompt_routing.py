@@ -204,14 +204,14 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"(?=.*\bping\b)"
-        r"(?=.*(?:\b(?:requires?|needs?)\s+no\s+(?:per[- ]action\s+)?(?:authori[sz]ation|host[- ]exception|exception)\b|"
+        r"(?=.*(?:\b(?:requires?|needs?)\s+no\s+(?:per[- ]action\s+)?(?:authori[sz]ation|approval|permission|host[- ]exception|exception)\b|"
         r"\b(?:does\s+not\s+require|without|exempt(?:ed)?\s+from)\b.{0,80}"
-        r"\b(?:per[- ]action|authori[sz]ation|host[- ]exception|exception)\b))",
+        r"\b(?:per[- ]action|authori[sz]ation|approval|permission|host[- ]exception|exception)\b))",
         re.IGNORECASE,
     ),
     re.compile(
         r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b.{0,80}"
-        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|suppress(?:es|ed|ing)?|filter(?:s|ed|ing)?(?:\s+out)?)\b.{0,80}"
+        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|suppress(?:es|ed|ing)?|ignore(?:s|d|ing)?|filter(?:s|ed|ing)?(?:\s+out)?)\b.{0,80}"
         r"\b(?:calls?|requests?|invocations?|actions?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
@@ -219,7 +219,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\b(?:calls?|requests?|invocations?|actions?)\b.{0,120}"
         r"(?:\b(?:is|are|be|being|been|get|gets|got|getting)\b.{0,30})?"
-        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|suppress(?:es|ed|ing)?|filter(?:s|ed|ing)?(?:\s+out)?)\s+(?:by|at|within|inside)\s+(?:the\s+)?"
+        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|suppress(?:es|ed|ing)?|ignore(?:s|d|ing)?|filter(?:s|ed|ing)?(?:\s+out)?)\s+(?:by|at|within|inside)\s+(?:the\s+)?"
         r"(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
