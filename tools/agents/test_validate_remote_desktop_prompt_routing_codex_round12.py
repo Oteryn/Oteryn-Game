@@ -138,6 +138,59 @@ def test_pinned_contents_percent_encoded_gt_userinfo_passes() -> None:
     )
 
 
+def test_two_github_urls_mutable_then_pinned_userinfo_fails() -> None:
+    assert_prompt_fail(
+        f"Use https://github.com/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json first, then https://reader@github.com/Oteryn/Oteryn/blob/{META_SHA}/ecosystem/agent-execution-routing-policy.json.",
+        STALE_ERROR,
+    )
+
+
+def test_two_raw_urls_mutable_then_pinned_userinfo_fails() -> None:
+    assert_surface_fail(
+        f"Use https://raw.githubusercontent.com/Oteryn/Oteryn/main/ecosystem/agent-execution-routing-policy.json first, then https://reader@raw.githubusercontent.com/Oteryn/Oteryn/{META_SHA}/ecosystem/agent-execution-routing-policy.json.",
+        STALE_ERROR,
+    )
+
+
+def test_two_contents_urls_mutable_then_pinned_userinfo_fails() -> None:
+    assert_prompt_fail(
+        f"Use https://api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref=main first, then https://reader@api.github.com/repos/Oteryn/Oteryn/contents/ecosystem/agent-execution-routing-policy.json?ref={META_SHA}.",
+        STALE_ERROR,
+    )
+
+
+def test_bare_filesystem_prefixed_authority_fails() -> None:
+    assert_prompt_fail("Filesystem has automatic authority.", POLICY_ERROR)
+
+
+def test_bare_process_prefixed_authority_fails() -> None:
+    assert_surface_fail("Process has standing authority.", POLICY_ERROR)
+
+
+def test_bare_session_prefixed_authority_fails() -> None:
+    assert_prompt_fail("Session has default authority.", POLICY_ERROR)
+
+
+def test_ping_authorized_automatically_fails() -> None:
+    assert_prompt_fail("Ping is authorized automatically.", POLICY_ERROR)
+
+
+def test_ping_approved_automatically_fails() -> None:
+    assert_surface_fail("Ping is approved automatically.", POLICY_ERROR)
+
+
+def test_connector_drops_calls_fails() -> None:
+    assert_prompt_fail("The connector drops calls lacking per-action authorization.", POLICY_ERROR)
+
+
+def test_calls_discarded_by_router_fails() -> None:
+    assert_surface_fail("Calls lacking per-action authorization are discarded by the router.", POLICY_ERROR)
+
+
+def test_transport_filters_out_calls_fails() -> None:
+    assert_prompt_fail("The transport filters out calls without per-action authorization.", POLICY_ERROR)
+
+
 def main() -> int:
     tests = [
         value
