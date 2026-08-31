@@ -154,6 +154,11 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,80}"
+        r"\b(?:is|are|was|were|be|been|being)\s+(?:automatically\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|(?:authori[sz]ed|approved)\s+by\s+default)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,80}"
         r"\b(?:is|are|was|were|be|been|being)\s+(?:granted|given)\s+"
         r"(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b",
         re.IGNORECASE,
@@ -204,9 +209,9 @@ OUTSIDE_ROUTING_PATTERNS = (
     ),
     re.compile(
         r"(?=.*\bping\b)"
-        r"(?=.*(?:\b(?:requires?|needs?)\s+no\s+(?:per[- ]action\s+)?(?:authori[sz]ation|approval|permission|host[- ]exception|exception)\b|"
+        r"(?=.*(?:\b(?:requires?|needs?)\s+no\s+(?:per[- ]action\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\b|"
         r"\b(?:does\s+not\s+(?:require|need)|without|exempt(?:ed)?\s+from)\b.{0,80}"
-        r"\b(?:per[- ]action|authori[sz]ation|approval|permission|host[- ]exception|exception)\b))",
+        r"\b(?:per[- ]action|decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\b))",
         re.IGNORECASE,
     ),
     re.compile(
