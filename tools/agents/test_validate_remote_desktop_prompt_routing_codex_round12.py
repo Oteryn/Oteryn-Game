@@ -191,6 +191,22 @@ def test_transport_filters_out_calls_fails() -> None:
     assert_prompt_fail("The transport filters out calls without per-action authorization.", POLICY_ERROR)
 
 
+def test_bare_filesystem_passive_authority_grant_fails() -> None:
+    assert_prompt_fail("Filesystem is granted automatic authority.", POLICY_ERROR)
+
+
+def test_bare_filesystem_subject_last_passive_authority_grant_fails() -> None:
+    assert_surface_fail("Automatic authority is granted to filesystem.", POLICY_ERROR)
+
+
+def test_connector_suppresses_calls_fails() -> None:
+    assert_prompt_fail("The connector suppresses calls lacking per-action authorization.", POLICY_ERROR)
+
+
+def test_calls_suppressed_by_router_fails() -> None:
+    assert_surface_fail("Calls lacking per-action authorization are suppressed by the router.", POLICY_ERROR)
+
+
 def main() -> int:
     tests = [
         value
