@@ -7,7 +7,7 @@
 3. For substantial work, create a bounded `OTV2-*` task record and a dedicated branch.
 4. Open a pull request to `main`; never push feature, fix, architecture, or documentation work directly to `main`.
 5. Keep the change focused, update affected tests and contracts, and record exact validation evidence.
-6. Resolve requested changes and review threads before squash merge.
+6. Resolve requested changes and review threads before integration. When Merge Queue is enabled, keep the accepted PR head unchanged and let the queue create and validate the synthetic integration candidate instead of merging `main` into the PR merely to refresh it.
 
 ## Pull request titles
 
@@ -41,7 +41,7 @@ The project does not currently require copyright assignment or a Contributor Lic
 
 ## Validation
 
-Run the focused checks named by `docs/agents/BUILD_TEST_MATRIX.md` and the actual workspace. The required GitHub checks must pass on the exact unchanged PR head. A green unrelated or historical run is not evidence for the current change.
+Run the focused checks named by `docs/agents/BUILD_TEST_MATRIX.md` and the actual workspace. The required GitHub checks must pass on the exact unchanged PR head. When the repository uses Merge Queue, the same stable required `game-gate` must also pass on GitHub's synthetic `merge_group` integration candidate before protected integration. A green unrelated or historical run is not evidence for the current change.
 
 ## Security
 
