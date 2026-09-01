@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "4565eb043c2075c5435e8e24f00829f49db43e3f"
+          test "$(git rev-parse HEAD^)" = "6a94d6fbd40316dde461b9ff54489fbbe74a79a4"
           test "$(git rev-parse HEAD:tools/agents/validate_remote_desktop_prompt_routing.py)" = "0ded8788b3f626ce2cf420faafd48061ac2ce6dc"
           test -f .github/workflows/rdc-systemic-semantic-green-once.yml
 
@@ -169,14 +169,22 @@ jobs:
 
 
           def _is_restrictive_without_requirement(text: str) -> bool:
+              restrictive = re.compile(
+                  r"\b(?:no|never|cannot|can't|do\s+not|does\s+not|must\s+not|may\s+not|shall\s+not|will\s+not|is\s+not\s+allowed|are\s+not\s+allowed|is\s+not\s+permitted|are\s+not\s+permitted|prohibited|forbidden)\b",
+                  re.IGNORECASE,
+              )
               for match in re.finditer(r"\bwithout\b", text, re.IGNORECASE):
-                  prefix = text[max(0, match.start() - 96):match.start()]
+                  full_prefix = text[:match.start()]
                   suffix = text[match.end():min(len(text), match.end() + 112)]
-                  restrictive = re.compile(
-                      r"\b(?:no|never|cannot|can't|do\s+not|does\s+not|must\s+not|may\s+not|shall\s+not|will\s+not|is\s+not\s+allowed|are\s+not\s+allowed|is\s+not\s+permitted|are\s+not\s+permitted|prohibited|forbidden)\b",
-                      re.IGNORECASE,
-                  )
-                  if restrictive.search(prefix) or restrictive.search(suffix):
+                  stripped_prefix = re.sub(r"^\s*(?:[-*+]\s+)?", "", full_prefix)
+                  if re.match(r"^(?:no|never)\b", stripped_prefix, re.IGNORECASE):
+                      prefix_subjects = _protected_subject_spans(full_prefix)
+                      if prefix_subjects:
+                          first_subject_start = min(span[0] for span in prefix_subjects)
+                          if not DECISION_REQUIREMENT_RE.search(full_prefix[:first_subject_start]):
+                              return True
+                  local_prefix = full_prefix[max(0, len(full_prefix) - 112):]
+                  if restrictive.search(local_prefix) or restrictive.search(suffix):
                       return True
               return False
 
@@ -215,6 +223,76 @@ jobs:
                       return True'''
           assert code.count(old_capability_gate) == 1, code.count(old_capability_gate)
           code = code.replace(old_capability_gate, new_capability_gate, 1)
+
+          provider_start = code.index("def _is_provider_enforcement_claim(text: str) -> bool:")
+          provider_end = code.index("def _is_outside_routing_policy(text: str) -> bool:")
+          provider_block = r'''ENFORCEMENT_TARGET_RE = re.compile(
+              r"\b(?:calls?|requests?|invocations?|actions?|operations?)\b",
+              re.IGNORECASE,
+          )
+          STRONG_GATE_CONTEXT_RE = re.compile(
+              r"\b(?:per[- ]?action|host[- ]?exception|authorization|authorisation|approval|permission|decision|gate|routing|unauthori[sz]ed|missing|lacking)\b",
+              re.IGNORECASE,
+          )
+          PHYSICAL_ENFORCEMENT_RE = re.compile(
+              r"\bphysical(?:ly)?\b",
+              re.IGNORECASE,
+          )
+          PROVIDER_LOCATION_RELATION_RE = re.compile(
+              r"\b(?:by|at|within|inside)\b",
+              re.IGNORECASE,
+          )
+
+
+          def _is_provider_enforcement_claim(text: str) -> bool:
+              providers = list(PROVIDER_NOUN_RE.finditer(text))
+              enforcements = [
+                  match
+                  for match in ENFORCEMENT_CONCEPT_RE.finditer(text)
+                  if not _enforcement_match_is_negated(text, match.start(), match.end())
+              ]
+              if not providers or not enforcements:
+                  return False
+
+              for provider in providers:
+                  provider_span = provider.span()
+                  for enforcement in enforcements:
+                      enforcement_span = enforcement.span()
+                      if _span_gap(provider_span, enforcement_span) > 120:
+                          continue
+                      around_start = max(0, min(provider.start(), enforcement.start()) - 104)
+                      around_end = min(len(text), max(provider.end(), enforcement.end()) + 136)
+                      around = text[around_start:around_end]
+                      has_gate = bool(STRONG_GATE_CONTEXT_RE.search(around))
+                      has_physical = bool(PHYSICAL_ENFORCEMENT_RE.search(around))
+                      if not (has_gate or has_physical):
+                          continue
+
+                      if provider.start() <= enforcement.start():
+                          between = text[provider.end():enforcement.start()]
+                          if len(between) > 72 or re.search(r"[.;,:]", between):
+                              continue
+                          if has_physical or has_gate:
+                              return True
+                          continue
+
+                      between = text[enforcement.end():provider.start()]
+                      if re.search(r"[.;]", between):
+                          continue
+                      if not PROVIDER_LOCATION_RELATION_RE.search(between):
+                          continue
+                      target_window_start = max(0, enforcement.start() - 96)
+                      target_window_end = min(len(text), provider.end() + 40)
+                      target_window = text[target_window_start:target_window_end]
+                      if has_physical or (
+                          has_gate and ENFORCEMENT_TARGET_RE.search(target_window)
+                      ):
+                          return True
+              return False
+
+
+          '''
+          code = code[:provider_start] + provider_block + code[provider_end:]
 
           exec(compile(code, str(helper_path), "exec"), {"__name__": "__main__"})
           PY
