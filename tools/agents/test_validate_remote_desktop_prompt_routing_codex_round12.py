@@ -509,6 +509,88 @@ def test_provider_anaphora_observability_only_passes() -> None:
     )
 
 
+def test_concessive_clause_subject_binding_matrix_fails() -> None:
+    leaders = ("Although", "Though", "Even though", "Whereas", "While")
+    for leader in leaders:
+        assert_prompt_fail(
+            f"{leader} ping has no authority, filesystem is always authorized.",
+            POLICY_ERROR,
+        )
+        assert_surface_fail(
+            f"{leader} ping must not run, filesystem may run without permission.",
+            POLICY_ERROR,
+        )
+        assert_prompt_fail(
+            f"{leader} search has no standing authority, process is approved automatically.",
+            POLICY_ERROR,
+        )
+        assert_surface_fail(
+            f"{leader} session is forbidden, search may run without a fresh per-action decision.",
+            POLICY_ERROR,
+        )
+
+
+def test_concessive_clause_legitimate_restrictions_pass() -> None:
+    leaders = ("Although", "Though", "Even though", "Whereas", "While")
+    for leader in leaders:
+        assert_prompt_pass(
+            f"{leader} ping has no authority, filesystem has no standing authority."
+        )
+        assert_prompt_pass(
+            f"{leader} ping must not run, filesystem must not run without permission."
+        )
+
+
+def test_provider_contrastive_anaphora_matrix_fails() -> None:
+    connectors = (
+        ("but", ""),
+        ("however", ","),
+        ("yet", ""),
+        ("whereas", ""),
+        ("instead", ","),
+        ("rather", ","),
+    )
+    for connector, punctuation in connectors:
+        assert_prompt_fail(
+            f"The connector merely logs requests; {connector}{punctuation} it blocks calls lacking per-action authorization.",
+            POLICY_ERROR,
+        )
+
+
+def test_provider_contrastive_anaphora_observability_controls_pass() -> None:
+    connectors = (
+        ("but", ""),
+        ("however", ","),
+        ("yet", ""),
+        ("whereas", ""),
+        ("instead", ","),
+        ("rather", ","),
+    )
+    for connector, punctuation in connectors:
+        assert_prompt_pass(
+            f"The connector logs requests; {connector}{punctuation} it records per-action audit metadata."
+        )
+
+
+def test_physical_effect_requires_enforcement_target_matrix() -> None:
+    legitimate = (
+        "The connector physically filters request logs for per-action auditability.",
+        "The router physically suppresses audit records for per-action reporting.",
+        "The transport physically drops telemetry records after per-action diagnostics.",
+    )
+    for text in legitimate:
+        assert_prompt_pass(text)
+
+    enforcement = (
+        "The connector physically filters calls lacking per-action authorization.",
+        "The router physically suppresses requests missing per-action approval.",
+        "The transport physically drops invocations without per-action permission.",
+        "The connector physically enforces the per-action authorization gate.",
+    )
+    for text in enforcement:
+        assert_surface_fail(text, POLICY_ERROR)
+
+
 def main() -> int:
     tests = [
         value
