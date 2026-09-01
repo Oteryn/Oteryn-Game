@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import sys
 import unicodedata
-from urllib.parse import unquote
+from urllib.parse import parse_qs, unquote, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
 LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
@@ -76,205 +76,6 @@ CANONICAL_ROUTING_ADJACENT_SECTIONS = {
 # Reusable prompts have one canonical Remote Desktop authority block. Any additional
 # Remote Desktop policy vocabulary outside that block is rejected so another paragraph
 # cannot silently broaden, override, or claim physical enforcement of the contract.
-OUTSIDE_ROUTING_PATTERNS = (
-    re.compile(r"Remote_Desktop_Commander", re.IGNORECASE),
-    re.compile(r"\bRemote(?:\s+|\s*[-\u2010-\u2015]\s*)Desktop\b", re.IGNORECASE),
-    re.compile(r"\bDesktop(?:\s+|\s*[-\u2010-\u2015]\s*)Commander\b", re.IGNORECASE),
-    re.compile(r"\bRDC\b", re.IGNORECASE),
-    re.compile(r"\blist_devices\b", re.IGNORECASE),
-    re.compile(r"\bwho_am_i\b", re.IGNORECASE),
-    re.compile(r"\bget_config\b", re.IGNORECASE),
-    re.compile(
-        r"\bdirect\s+(?:connectors?|tools?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
-        r"\bdirect\s+(?:connectors?|tools?)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\bdirect(?:ly)?\b)"
-        r"(?=.*\b(?:connectors?|tools?)\b)"
-        r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no)\b.{0,160}"
-        r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b)"
-        r"(?=.*(?:\b(?:(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)|preapproval|(?:approval|permission|authority)\s+by\s+default)\b|\bby\s+default\b.{0,80}\b(?:approval|permission|authority)\b))",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\s+to\s+(?:the\s+)?(?:connectors?|tools?)\b)"
-        r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)|preapproval|(?:approval|permission|authority)\s+by\s+default|by\s+default.{0,80}(?:approval|permission|authority))\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,100}\b(?:through|via)\b.{0,100}\b(?:host\s+)?(?:connectors?|tools?)\b)"
-        r"(?=.*\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|"
-        r"allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)|preapproval|(?:approval|permission|authority)\s+by\s+default|by\s+default.{0,80}(?:approval|permission|authority))\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b.{0,160}"
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)|preapproval|(?:approval|permission|authority)\s+by\s+default|by\s+default.{0,80}(?:approval|permission|authority))\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:authori[sz]ation|(?:pre)?authori[sz]ed|(?:pre)?approved|host[- ]exception|exception|per[- ]action|exempt|without|allow(?:ed|ance)?|permit(?:ted|s)?|require(?:d|s)?|need(?:s)?\s+no|(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)|preapproval|(?:approval|permission|authority)\s+by\s+default|by\s+default.{0,80}(?:approval|permission|authority))\b.{0,160}"
-        r"\b(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:(?:direct\s+(?:connectors?|tools?))|"
-        r"(?:(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?))|"
-        r"(?:(?:filesystem|search|process|session|terminal|history|ping)(?:\s+(?:calls?|operations?|requests?|invocations?|actions?))?))\b)"
-        r"(?=.*\b(?:approval|permission|authority)\s+automatically\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,40}"
-        r"\b(?:has|have)\s+(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,80}"
-        r"\b(?:is|are|was|were|be|been|being)\s+(?:automatically\s+(?:authori[sz]ed|approved)|(?:authori[sz]ed|approved)\s+automatically|always\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|(?:authori[sz]ed|approved)\s+by\s+default)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,80}"
-        r"\b(?:is|are|was|were|be|been|being)\s+(?:granted|given)\s+"
-        r"(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b.{0,80}"
-        r"\b(?:is|are|was|were|be|been|being)\s+(?:granted|given)\s+to\s+"
-        r"(?:filesystem|search|process|session|terminal|history|ping)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\bdirect\s+(?:connectors?|tools?)\b)"
-        r"(?=.*(?:\b(?:blanket|standing|automatic|default)\s+(?:approval|permission|authority)\b|"
-        r"\b(?:approval|permission|authority)\s+by\s+default\b|\bby\s+default\b.{0,160}\b(?:approval|permission|authority)\b))",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\bdirect\s+(?:connectors?|tools?)\b)"
-        r"(?=.*\b(?:approval|permission|authority)\b)"
-        r"(?=.*(?:\b(?:granted|given)\b.{0,80}\bby\s+default\b|"
-        r"\bautomatically\b.{0,80}\b(?:granted|given)\b|"
-        r"\b(?:granted|given)\b.{0,80}\bautomatically\b))",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)|"
-        r"(?:filesystem|search|process|session|terminal|history|ping)\s+(?:calls?|operations?|requests?|invocations?|actions?))\b)"
-        r"(?=.*\b(?:approval|permission|authority)\b)"
-        r"(?=.*(?:\b(?:granted|given)\b.{0,80}\bby\s+default\b|"
-        r"\bautomatically\b.{0,80}\b(?:granted|given)\b|"
-        r"\b(?:granted|given)\b.{0,80}\bautomatically\b))",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\bping\b)"
-        r"(?=.*(?:\bautomatically\s+(?:authori[sz]ed|approved)\b|\b(?:authori[sz]ed|approved)\s+automatically\b|\bpreauthori[sz]ed\b|\bpreapproved\b|"
-        r"\b(?:blanket|standing|automatic|default)\s+(?:approval|permission|authori[sz]ation|authority)\b|"
-        r"\b(?:approval|permission|authori[sz]ation|authority)\s+(?:is\s+)?(?:granted|given)\s+by\s+default\b|"
-        r"\b(?:approval|permission|authori[sz]ation|authority)\s+by\s+default\b|"
-        r"\b(?:approval|permission|authori[sz]ation|authority)\s+(?:is\s+)?automatically\s+(?:granted|given)\b|"
-        r"\b(?:approval|permission|authori[sz]ation|authority)\s+(?:is\s+)?(?:granted|given)\s+automatically\b|"
-        r"\bautomatically\s+(?:granted|given)\s+(?:approval|permission|authori[sz]ation|authority)\b|"
-        r"\bping\b.{0,80}\b(?:is\s+)?(?:granted|given)\s+(?:approval|permission|authori[sz]ation|authority)\s+automatically\b|"
-        r"\b(?:approval|permission|authori[sz]ation|authority)\s+(?:is\s+)?(?:granted|given)\s+to\s+ping\s+automatically\b|"
-        r"\b(?:approval|permission|authori[sz]ation|authority)\s+(?:is\s+)?automatic\b|"
-        r"\b(?:authori[sz]ed|approved)\s+by\s+default\b))",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\bping\b)"
-        r"(?=.*(?:\b(?:requires?|needs?)\s+no\s+(?:per[- ]action\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\b|"
-        r"\b(?:does\s+not\s+(?:require|need)|without|exempt(?:ed)?\s+from)\b.{0,80}"
-        r"\b(?:per[- ]action|decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\b))",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:filesystem|search|process|session|terminal|history)\b\s+"
-        r"(?:(?:calls?|operations?|requests?|invocations?|actions?)\s+)?"
-        r"(?:"
-        r"(?:requires?|needs?)\s+no\s+(?:per[- ]action\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)|"
-        r"does\s+not\s+(?:require|need)\s+(?:a\s+)?(?:per[- ]action\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)|"
-        r"(?:is\s+)?exempt(?:ed)?\s+from\s+(?:a\s+)?(?:per[- ]action\s+)?(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)"
-        r")\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,80}"
-        r"\b(?:may\s+be\s+used|can\s+run)\s+without\s+(?:a\s+)?(?:per[- ]action\s+)?"
-        r"(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b.{0,80}"
-        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|skip(?:s|ped|ping)?|suppress(?:es|ed|ing)?|ignore(?:s|d|ing)?|cancel(?:s|ed|ing|led|ling)?|intercept(?:s|ed|ing)?|quarantin(?:e|es|ed|ing)|declin(?:e|es|ed|ing)|filter(?:s|ed|ing)?(?:\s+out)?)\b.{0,80}"
-        r"\b(?:calls?|requests?|invocations?|actions?)\b)"
-        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:calls?|requests?|invocations?|actions?)\b.{0,120}"
-        r"(?:\b(?:is|are|be|being|been|get|gets|got|getting)\b.{0,30})?"
-        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|skip(?:s|ped|ping)?|suppress(?:es|ed|ing)?|ignore(?:s|d|ing)?|cancel(?:s|ed|ing|led|ling)?|intercept(?:s|ed|ing)?|quarantin(?:e|es|ed|ing)|declin(?:e|es|ed|ing)|filter(?:s|ed|ing)?(?:\s+out)?)\s+(?:by|at|within|inside)\s+(?:the\s+)?"
-        r"(?:connectors?|routers?|transports?|providers?)\b)"
-        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
-        r"(?=.*\b(?:fail(?:s|ed|ing)?\s+closed|deny|denies|denied|denying)\b)"
-        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(r"\bping\b.{0,100}\b(?:capability|discover|connector|tool|host)\b", re.IGNORECASE),
-    re.compile(r"\b(?:capability|discover|connector|tool|host)\b.{0,100}\bping\b", re.IGNORECASE),
-    re.compile(
-        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
-        r"(?=.*\b(?:guarantee(?:s|d|ing)?|implement(?:s|ed|ing)?)\b)"
-        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
-        r"(?=.*\b(?:enforce|enforces|enforced|enforcing|enforcement|block|blocks|blocked|blocking|reject|rejects|rejected|rejecting|prevent|prevents|prevented|preventing)\b)"
-        r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b)"
-        r"(?=.*\bphysical(?:ly)?\b)"
-        r"(?=.*\benforc\w*\b)",
-        re.IGNORECASE,
-    ),
-    re.compile(r"\b(?:connectors?|routers?|transports?|providers?)\b.{0,100}\bphysical(?:ly)?\b.{0,100}\benforc", re.IGNORECASE),
-    re.compile(r"\bphysical(?:ly)?\b.{0,100}\b(?:connectors?|routers?|transports?|providers?)\b.{0,100}\benforc", re.IGNORECASE),
-)
-
 META_ROUTING_COORDINATE_RE = re.compile(
     r"Oteryn/Oteryn@[^\s`<>:]+:ecosystem/agent-execution-routing-policy\.json",
     re.IGNORECASE,
@@ -283,18 +84,69 @@ ANGLE_BRACKET_META_ROUTING_COORDINATE_RE = re.compile(
     r"<(Oteryn/Oteryn@[^\s`<>:]+:ecosystem/agent-execution-routing-policy\.json)>",
     re.IGNORECASE,
 )
-GITHUB_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:(?:https?:)?//)(?:(?:(?!(?:https?:)?//)[^\x00])*@)?|(?<![A-Za-z0-9_.-]))(?:(?:www\.)?github\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn/(?:blob|tree|raw)|raw\.githubusercontent\.com\.?(?::[0-9]{1,5})?/Oteryn/Oteryn)/([^\s`<>)]+?)/ecosystem/agent-execution-routing-policy\.json",
-    re.IGNORECASE,
-)
-GITHUB_CONTENTS_META_ROUTING_URL_RE = re.compile(
-    r"(?:(?:(?:https?:)?//)(?:(?:(?!(?:https?:)?//)[^\x00])*@)?|(?<![A-Za-z0-9_.-]))api\.github\.com\.?(?::[0-9]{1,5})?/repos/Oteryn/Oteryn/contents/"
-    r"ecosystem/agent-execution-routing-policy\.json(?:\?([^\s`<>)#]*))?",
-    re.IGNORECASE,
-)
 EXPECTED_META_ROUTING_COORDINATE = (
     f"Oteryn/Oteryn@{META_SHA}:ecosystem/agent-execution-routing-policy.json"
 )
+
+# Bounded lexical recognizers feed semantic policy classes. They intentionally
+# recognize concepts and relationships rather than complete reviewed sentences.
+REMOTE_POLICY_MARKER_RE = re.compile(
+    r"Remote_Desktop_Commander"
+    r"|\bRemote(?:\s+|\s*[-\u2010-\u2015]\s*)Desktop\b"
+    r"|\bDesktop(?:\s+|\s*[-\u2010-\u2015]\s*)Commander\b"
+    r"|\bRDC\b|\blist_devices\b|\bwho_am_i\b|\bget_config\b",
+    re.IGNORECASE,
+)
+PROTECTED_HOST_ACTION_RE = re.compile(
+    r"\b(?:filesystem|search|process|session|terminal|history|ping)\b",
+    re.IGNORECASE,
+)
+DIRECT_CONNECTOR_RE = re.compile(
+    r"(?:\bdirect(?:ly)?\b.{0,64}\b(?:connectors?|tools?)\b)"
+    r"|(?:\b(?:connectors?|tools?)\b.{0,64}\bdirect(?:ly)?\b)",
+    re.IGNORECASE,
+)
+CONNECTOR_ACTION_RE = re.compile(
+    r"\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b"
+    r"|\b(?:calls?|operations?|requests?|invocations?|actions?)\s+(?:to|through|via)\s+(?:the\s+)?(?:connectors?|tools?)\b",
+    re.IGNORECASE,
+)
+CAPABILITY_CONCEPT_RE = re.compile(
+    r"\b(?:capabilit(?:y|ies)|discover(?:y|able|ed|ing)?|probe[sd]?|probing|metadata|read[- ]?only|inspection)\b",
+    re.IGNORECASE,
+)
+DURABLE_AUTHORITY_RE = re.compile(
+    r"\b(?:blanket|standing|automatic(?:ally)?|default|durable|reusable|persistent|ongoing|continuing|permanent|indefinite|perpetual|always)\b"
+    r"|\bby\s+default\b|\bpre[- ]?(?:approved?|authorized?|authorised?|approval|authorization|authorisation)\b",
+    re.IGNORECASE,
+)
+AUTHORITY_CONCEPT_RE = re.compile(
+    r"\b(?:authority|authorization|authorisation|authorized|authorised|approval|approved|permission|permitted|permit|allowed|allowance|exception|entitlement)\b"
+    r"|\bpre[- ]?(?:approv(?:e[sd]?|al)|authori[sz](?:e[sd]?|ation))\b",
+    re.IGNORECASE,
+)
+DECISION_CONCEPT_RE = re.compile(
+    r"\b(?:decision|authorization|authorisation|approval|permission|exception|check|gate)\b",
+    re.IGNORECASE,
+)
+PROVIDER_NOUN_RE = re.compile(
+    r"\b(?:connectors?|routers?|providers?|transports?)\b",
+    re.IGNORECASE,
+)
+GATE_CONTEXT_RE = re.compile(
+    r"\b(?:per[- ]?action|fresh|authorization|authorisation|approval|permission|decision|host[- ]?exception|gate|routing|unauthori[sz]ed|missing|lacking|physical(?:ly)?)\b",
+    re.IGNORECASE,
+)
+ENFORCEMENT_CONCEPT_RE = re.compile(
+    r"\b(?:enforc(?:e[sd]?|ing|ement)|block(?:s|ed|ing)?|reject(?:s|ed|ing|ion)?|den(?:y|ies|ied|ying|ial)|stop(?:s|ped|ping)?|refus(?:e[sd]?|ing|al)|drop(?:s|ped|ping)?|discard(?:s|ed|ing)?|filter(?:s|ed|ing)?|suppress(?:es|ed|ing|ion)?|ignor(?:e[sd]?|ing)|skip(?:s|ped|ping)?|cancel(?:s|ed|led|ing|ling|ation)?|intercept(?:s|ed|ing|ion)?|quarantine(?:s|d|ing)?|declin(?:e[sd]?|ing)|prevent(?:s|ed|ing|ion)?|guarantee(?:s|d|ing)?|implement(?:s|ed|ing|ation)?|fail(?:s|ed|ing)?[- ]closed)\b",
+    re.IGNORECASE,
+)
+GITHUB_URL_CANDIDATE_RE = re.compile(
+    r"(?:https?:)?//[^\s`<>\[\]()]+"
+    r"|(?<![A-Za-z0-9_.-])(?:www\.)?(?:github\.com\.?|raw\.githubusercontent\.com\.?|raw\.github\.com\.?|api\.github\.com\.?)(?::\d{1,5})?/[^\s`<>\[\]()]+",
+    re.IGNORECASE,
+)
+ROUTING_POLICY_TAIL = ("ecosystem", "agent-execution-routing-policy.json")
 
 APPROVED_SURFACE_OUTSIDE_ROUTING_PARAGRAPHS = {
     "AGENTS.md": {
@@ -687,9 +539,278 @@ def _normalize_policy_text(text: str) -> str:
     return value
 
 
+def _semantic_clauses(text: str) -> list[str]:
+    return [
+        part.strip()
+        for part in re.split(r"(?:[;\n]+|(?<=[.!?])\s+)", text)
+        if part.strip()
+    ]
+
+
+def _has_protected_action(text: str) -> bool:
+    return bool(
+        PROTECTED_HOST_ACTION_RE.search(text)
+        or DIRECT_CONNECTOR_RE.search(text)
+        or CONNECTOR_ACTION_RE.search(text)
+    )
+
+
+PROTECTED_SUBJECT_TEXT_PATTERN = (
+    r"(?:\b(?:filesystem|search|process|session|terminal|history|ping)\b"
+    r"|\bdirect(?:ly)?\s+(?:connectors?|tools?)(?:\s+(?:calls?|operations?|requests?|invocations?|actions?))?\b"
+    r"|\b(?:connectors?|tools?)\s+(?:calls?|operations?|requests?|invocations?|actions?)\b"
+    r"|\b(?:calls?|operations?|requests?|invocations?|actions?)\s+(?:to|through|via)\s+(?:the\s+)?(?:connectors?|tools?)\b)"
+)
+PROTECTED_SUBJECT_RE = re.compile(PROTECTED_SUBJECT_TEXT_PATTERN, re.IGNORECASE)
+AUTHORITY_NOUN_PATTERN = r"(?:authority|authorization|authorisation|approval|permission|entitlement)"
+DURABLE_AUTHORITY_PHRASE_RE = re.compile(
+    rf"\b(?:blanket|standing|automatic|default|durable|reusable|persistent|ongoing|continuing|permanent|indefinite|perpetual)\s+{AUTHORITY_NOUN_PATTERN}\b"
+    rf"|\b{AUTHORITY_NOUN_PATTERN}\b(?:\s+(?:is|are|was|were|be|been|being))?\s+(?:automatic(?:ally)?|by\s+default|always)\b"
+    rf"|\b{AUTHORITY_NOUN_PATTERN}\b.{{0,24}}\b(?:granted|given|retained|attached)\b.{{0,32}}\b(?:automatic(?:ally)?|by\s+default|always)\b"
+    rf"|\b{AUTHORITY_NOUN_PATTERN}\b.{{0,24}}\b(?:automatic(?:ally)?|by\s+default|always)\b.{{0,24}}\b(?:granted|given|retained)\b"
+    rf"|\b(?:automatic(?:ally)?|by\s+default|always)\b.{{0,24}}\b(?:granted|given|retained)\b.{{0,24}}\b{AUTHORITY_NOUN_PATTERN}\b"
+    rf"|\b(?:automatically|always)\s+(?:authorized|authorised|approved|permitted|allowed)\b"
+    rf"|\b(?:authorized|authorised|approved|permitted|allowed)\s+(?:automatically|by\s+default|always)\b"
+    rf"|\bpre[- ]?(?:approved|authorized|authorised)\b",
+    re.IGNORECASE,
+)
+DEFAULT_AUTHORITY_RELATION_RE = re.compile(
+    rf"\bby\s+default\b.{{0,72}}\b(?:remains?|is|are|has|have|retains?|carries?|keeps?)\b.{{0,20}}\b(?:permitted|allowed|authorized|authorised|approved|{AUTHORITY_NOUN_PATTERN})\b",
+    re.IGNORECASE,
+)
+DECISION_REQUIREMENT_RE = re.compile(
+    r"\b(?:fresh(?:\s+exact)?(?:\s+per[- ]?action)?\s+(?:decision|authorization|authorisation|approval|permission|exception|check)"
+    r"|per[- ]?action\s+(?:decision|authorization|authorisation|approval|permission|exception|check)"
+    r"|host[- ]?exception|authorization|authorisation|approval|permission|exception)\b",
+    re.IGNORECASE,
+)
+EXEMPTION_RELATION_RE = re.compile(
+    r"\b(?:without|absent)\b"
+    r"|\b(?:requires?|needs?)\s+no\b"
+    r"|\b(?:does|do)\s+not\s+(?:require|need)\b"
+    r"|\b(?:exempt(?:ed|ion)?\s+from|free\s+(?:from|of))\b"
+    r"|\bno\b.{0,56}\b(?:is|are|was|were)?\s*(?:required|needed|necessary)\b"
+    r"|\b(?:not\s+required|not\s+needed|unnecessary|optional|waived|bypassed)\b"
+    r"|\b(?:waive[sd]?|waiving|bypass(?:es|ed|ing)?)\b"
+    r"|\bwith\s+no\b",
+    re.IGNORECASE,
+)
+CAPABILITY_RELATION_RE = re.compile(
+    rf"\b(?:treat(?:s|ed|ing)?|consider(?:s|ed|ing)?|regard(?:s|ed|ing)?|classif(?:y|ies|ied|ying)|count(?:s|ed|ing)?)\b.{{0,48}}{PROTECTED_SUBJECT_TEXT_PATTERN}.{{0,28}}\b(?:as\s+)?(?:ordinary\s+)?(?:capabilit(?:y|ies)(?:\s+discovery)?|discovery|probe|probing|metadata|read[- ]?only(?:\s+inspection)?|inspection)\b"
+    rf"|{PROTECTED_SUBJECT_TEXT_PATTERN}.{{0,36}}\b(?:is|are|counts?|qualifies?|serves?)\b.{{0,24}}\b(?:as\s+)?(?:ordinary\s+)?(?:capabilit(?:y|ies)(?:\s+discovery)?|discovery|probe|probing|metadata|read[- ]?only(?:\s+inspection)?|inspection)\b"
+    rf"|\b(?:capabilit(?:y|ies)(?:\s+discovery)?|discovery|probe|probing|metadata|read[- ]?only(?:\s+inspection)?|inspection)\b.{{0,40}}\b(?:includes?|covers?|applies?\s+to)\b.{{0,48}}{PROTECTED_SUBJECT_TEXT_PATTERN}",
+    re.IGNORECASE,
+)
+
+
+def _protected_subject_spans(text: str) -> list[tuple[int, int]]:
+    return [match.span() for match in PROTECTED_SUBJECT_RE.finditer(text)]
+
+
+def _span_gap(left: tuple[int, int], right: tuple[int, int]) -> int:
+    if left[1] < right[0]:
+        return right[0] - left[1]
+    if right[1] < left[0]:
+        return left[0] - right[1]
+    return 0
+
+
+def _any_spans_related(
+    left: list[tuple[int, int]],
+    right: list[tuple[int, int]],
+    max_gap: int,
+) -> bool:
+    return any(_span_gap(a, b) <= max_gap for a in left for b in right)
+
+
+def _authority_is_explicitly_denied(text: str) -> bool:
+    if re.search(
+        r"\bno\b.{0,56}\b(?:authority|authorization|authorisation|approval|permission|exception|entitlement)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return True
+    if re.search(
+        r"\b(?:not|never)\b.{0,36}\b(?:authorized|authorised|approved|permitted|allowed|granted|given|retained|automatic(?:ally)?|standing|default)\b",
+        text,
+        re.IGNORECASE,
+    ):
+        return True
+    return bool(
+        re.search(
+            r"\b(?:authority|authorization|authorisation|approval|permission|exception|entitlement)\b.{0,48}\b(?:is|are|was|were|be|been|being|remains?)\s+not\b",
+            text,
+            re.IGNORECASE,
+        )
+    )
+
+
+def _is_blanket_authority_claim(text: str) -> bool:
+    subjects = _protected_subject_spans(text)
+    if not subjects or _authority_is_explicitly_denied(text):
+        return False
+    authority_spans = [match.span() for match in DURABLE_AUTHORITY_PHRASE_RE.finditer(text)]
+    if _any_spans_related(subjects, authority_spans, 72):
+        return True
+    for subject in subjects:
+        window = text[max(0, subject[0] - 72):min(len(text), subject[1] + 72)]
+        if DEFAULT_AUTHORITY_RELATION_RE.search(window):
+            return True
+    return False
+
+
+def _is_restrictive_without_requirement(text: str) -> bool:
+    restrictive = re.compile(
+        r"\b(?:no|never|cannot|can't|do\s+not|does\s+not|must\s+not|may\s+not|shall\s+not|will\s+not|is\s+not\s+allowed|are\s+not\s+allowed|is\s+not\s+permitted|are\s+not\s+permitted|prohibited|forbidden)\b",
+        re.IGNORECASE,
+    )
+    for match in re.finditer(r"\bwithout\b", text, re.IGNORECASE):
+        full_prefix = text[:match.start()]
+        suffix = text[match.end():min(len(text), match.end() + 112)]
+        stripped_prefix = re.sub(r"^\s*(?:[-*+]\s+)?", "", full_prefix)
+        if re.match(r"^(?:no|never)\b", stripped_prefix, re.IGNORECASE):
+            prefix_subjects = _protected_subject_spans(full_prefix)
+            if prefix_subjects:
+                first_subject_start = min(span[0] for span in prefix_subjects)
+                if not DECISION_REQUIREMENT_RE.search(full_prefix[:first_subject_start]):
+                    return True
+        local_prefix = full_prefix[max(0, len(full_prefix) - 112):]
+        if restrictive.search(local_prefix) or restrictive.search(suffix):
+            return True
+    return False
+
+
+def _is_fresh_decision_exemption(text: str) -> bool:
+    subjects = _protected_subject_spans(text)
+    decisions = [match.span() for match in DECISION_REQUIREMENT_RE.finditer(text)]
+    relations = [match.span() for match in EXEMPTION_RELATION_RE.finditer(text)]
+    if not subjects or not decisions or not relations:
+        return False
+    if _is_restrictive_without_requirement(text):
+        return False
+    for subject in subjects:
+        for decision in decisions:
+            if _span_gap(subject, decision) > 112:
+                continue
+            if any(
+                _span_gap(relation, subject) <= 112
+                and _span_gap(relation, decision) <= 72
+                for relation in relations
+            ):
+                return True
+    return False
+
+
+def _is_capability_exemption_claim(text: str) -> bool:
+    return bool(CAPABILITY_RELATION_RE.search(text))
+
+
+def _enforcement_match_is_negated(text: str, start: int, end: int) -> bool:
+    prefix = text[max(0, start - 56):start]
+    suffix = text[end:min(len(text), end + 48)]
+    if re.search(
+        r"\b(?:no|not|never)\b(?:\s+[A-Za-z_-]+){0,4}\s*$"
+        r"|\b(?:doesn't|don't|isn't|aren't|wasn't|weren't|won't|can't|cannot)\b(?:\s+[A-Za-z_-]+){0,4}\s*$",
+        prefix,
+        re.IGNORECASE,
+    ):
+        return True
+    return bool(
+        re.match(
+            r"\s+(?:is|are|was|were|will|would|can|could|must|may|should)\s+not\b",
+            suffix,
+            re.IGNORECASE,
+        )
+    )
+
+
+ENFORCEMENT_TARGET_RE = re.compile(
+    r"\b(?:calls?|requests?|invocations?|actions?|operations?)\b",
+    re.IGNORECASE,
+)
+STRONG_GATE_CONTEXT_RE = re.compile(
+    r"\b(?:per[- ]?action|host[- ]?exception|authorization|authorisation|approval|permission|decision|gate|routing|unauthori[sz]ed|missing|lacking)\b",
+    re.IGNORECASE,
+)
+PHYSICAL_ENFORCEMENT_RE = re.compile(
+    r"\bphysical(?:ly)?\b",
+    re.IGNORECASE,
+)
+PROVIDER_LOCATION_RELATION_RE = re.compile(
+    r"\b(?:by|at|within|inside)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_provider_enforcement_claim(text: str) -> bool:
+    providers = list(PROVIDER_NOUN_RE.finditer(text))
+    enforcements = [
+        match
+        for match in ENFORCEMENT_CONCEPT_RE.finditer(text)
+        if not _enforcement_match_is_negated(text, match.start(), match.end())
+    ]
+    if not providers or not enforcements:
+        return False
+
+    for provider in providers:
+        provider_span = provider.span()
+        for enforcement in enforcements:
+            enforcement_span = enforcement.span()
+            if _span_gap(provider_span, enforcement_span) > 120:
+                continue
+            around_start = max(0, min(provider.start(), enforcement.start()) - 104)
+            around_end = min(len(text), max(provider.end(), enforcement.end()) + 136)
+            around = text[around_start:around_end]
+            has_gate = bool(STRONG_GATE_CONTEXT_RE.search(around))
+            has_physical = bool(PHYSICAL_ENFORCEMENT_RE.search(around))
+            if not (has_gate or has_physical):
+                continue
+
+            if provider.start() <= enforcement.start():
+                between = text[provider.end():enforcement.start()]
+                if len(between) > 72 or re.search(r"[.;,:]", between):
+                    continue
+                if has_physical or has_gate:
+                    return True
+                continue
+
+            between = text[enforcement.end():provider.start()]
+            if re.search(r"[.;]", between):
+                continue
+            if not PROVIDER_LOCATION_RELATION_RE.search(between):
+                continue
+            target_window_start = max(0, enforcement.start() - 96)
+            target_window_end = min(len(text), provider.end() + 40)
+            target_window = text[target_window_start:target_window_end]
+            if has_physical or (
+                has_gate and ENFORCEMENT_TARGET_RE.search(target_window)
+            ):
+                return True
+    return False
+
+
+def _is_outside_routing_policy(text: str) -> bool:
+    if REMOTE_POLICY_MARKER_RE.search(text):
+        return True
+    for clause in _semantic_clauses(text):
+        if _is_capability_exemption_claim(clause):
+            return True
+        if _is_blanket_authority_claim(clause):
+            return True
+        if _is_fresh_decision_exemption(clause):
+            return True
+        if _is_provider_enforcement_claim(clause):
+            return True
+    return False
+
+
 def _outside_routing_paragraphs(text: str) -> list[str]:
     operative = _operative_text(text)
-    paragraphs = [paragraph.strip() for paragraph in re.split(r"\n\s*\n", operative) if paragraph.strip()]
+    paragraphs = [
+        paragraph.strip()
+        for paragraph in re.split(r"\n\s*\n", operative)
+        if paragraph.strip()
+    ]
     units: list[str] = []
     for paragraph in paragraphs:
         lines = [line.strip() for line in paragraph.splitlines() if line.strip()]
@@ -697,10 +818,10 @@ def _outside_routing_paragraphs(text: str) -> list[str]:
             units.extend(
                 line
                 for line in lines
-                if any(pattern.search(_normalize_policy_text(line)) is not None for pattern in OUTSIDE_ROUTING_PATTERNS)
+                if _is_outside_routing_policy(_normalize_policy_text(line))
             )
             continue
-        if any(pattern.search(_normalize_policy_text(paragraph)) is not None for pattern in OUTSIDE_ROUTING_PATTERNS):
+        if _is_outside_routing_policy(_normalize_policy_text(paragraph)):
             units.append(paragraph)
     return units
 
@@ -741,40 +862,113 @@ def _normalize_url_scan_text(text: str) -> str:
             break
         value = decoded
     value = unicodedata.normalize("NFKC", value)
-    for _ in range(4):
-        decoded = unquote(value)
-        if decoded == value:
-            break
-        value = decoded
     return _remove_default_ignorables(value).replace("\\", "/")
 
 
-def _validate_meta_routing_coordinates(path: str, text: str, errors: list[str]) -> None:
-    normalized = _normalize_policy_text(_operative_text(text))
-    coordinates = META_ROUTING_COORDINATE_RE.findall(normalized)
-    stale = sorted(
-        {coordinate for coordinate in coordinates if coordinate != EXPECTED_META_ROUTING_COORDINATE}
-    )
-    for coordinate in stale:
-        errors.append(f"{path}: stale META execution-routing coordinate: {coordinate}")
+def _decode_url_component(value: str) -> str:
+    decoded = value
+    for _ in range(4):
+        next_value = unquote(decoded)
+        if next_value == decoded:
+            break
+        decoded = next_value
+    return _remove_default_ignorables(unicodedata.normalize("NFKC", decoded))
 
-    url_selectors = GITHUB_META_ROUTING_URL_RE.findall(_normalize_url_scan_text(text))
-    for selector in sorted({selector for selector in url_selectors if selector != META_SHA}):
-        errors.append(
-            f"{path}: stale META execution-routing coordinate: GitHub routing-policy URL selector {selector}"
-        )
 
-    contents_queries = GITHUB_CONTENTS_META_ROUTING_URL_RE.findall(_normalize_url_scan_text(text))
-    stale_contents_selectors: set[str] = set()
-    for query in contents_queries:
-        ref_match = re.search(r"(?:^|&)ref=([^&]+)", query, re.IGNORECASE)
-        selector = ref_match.group(1) if ref_match is not None else ""
+def _normalize_github_host(value: str) -> str:
+    host = _decode_url_component(value).lower().rstrip(".")
+    aliases = {
+        "www.github.com": "github.com",
+        "raw.github.com": "raw.githubusercontent.com",
+        "www.raw.githubusercontent.com": "raw.githubusercontent.com",
+    }
+    return aliases.get(host, host)
+
+
+def _normalize_url_path(value: str) -> list[str]:
+    decoded = _decode_url_component(value).replace("\\", "/")
+    segments: list[str] = []
+    for raw_segment in decoded.split("/"):
+        segment = _decode_url_component(raw_segment)
+        if not segment or segment == ".":
+            continue
+        if segment == "..":
+            if segments:
+                segments.pop()
+            continue
+        segments.append(segment)
+    return segments
+
+
+def _github_url_candidates(text: str) -> list[str]:
+    normalized = _normalize_url_scan_text(text)
+    candidates: list[str] = []
+    for match in GITHUB_URL_CANDIDATE_RE.finditer(normalized):
+        candidate = match.group(0).rstrip(".,;:!?\"'}>")
+        if candidate:
+            candidates.append(candidate)
+    return candidates
+
+
+def _github_routing_reference(candidate: str) -> tuple[str, str] | None:
+    parse_target = candidate
+    if not re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", parse_target):
+        if not parse_target.startswith("//"):
+            parse_target = "//" + parse_target
+    try:
+        parts = urlsplit(parse_target)
+        host = _normalize_github_host(parts.hostname or "")
+    except (TypeError, ValueError):
+        return None
+    segments = _normalize_url_path(parts.path)
+    lowered = [segment.lower() for segment in segments]
+    tail = [part.lower() for part in ROUTING_POLICY_TAIL]
+
+    if host == "github.com":
+        if len(segments) >= 5 and lowered[:2] == ["oteryn", "oteryn"] and lowered[2] in {"blob", "tree", "raw"} and lowered[-2:] == tail:
+            return ("GitHub routing-policy URL", "/".join(segments[3:-2]))
+        return None
+
+    if host == "raw.githubusercontent.com":
+        if len(segments) >= 4 and lowered[:2] == ["oteryn", "oteryn"] and lowered[-2:] == tail:
+            return ("GitHub raw routing-policy URL", "/".join(segments[2:-2]))
+        return None
+
+    if host == "api.github.com":
+        expected = ["repos", "oteryn", "oteryn", "contents", *tail]
+        if lowered == expected:
+            query_text = _decode_url_component(parts.query)
+            query = parse_qs(query_text, keep_blank_values=True)
+            refs = [
+                _decode_url_component(value)
+                for key, values in query.items()
+                if _decode_url_component(key).lower() == "ref"
+                for value in values
+            ]
+            selector = refs[0] if len(refs) == 1 else ""
+            return ("GitHub Contents routing-policy URL", selector)
+        return None
+
+    return None
+
+
+def _validate_meta_routing_coordinates(path: Path, text: str, errors: list[str]) -> None:
+    operative = _normalize_policy_text(_operative_text(text))
+    for coordinate in META_ROUTING_COORDINATE_RE.findall(operative):
+        if coordinate != EXPECTED_META_ROUTING_COORDINATE:
+            errors.append(
+                f"{path}: stale META execution-routing coordinate {coordinate!r}; expected {EXPECTED_META_ROUTING_COORDINATE!r}"
+            )
+
+    for candidate in _github_url_candidates(text):
+        reference = _github_routing_reference(candidate)
+        if reference is None:
+            continue
+        label, selector = reference
         if selector != META_SHA:
-            stale_contents_selectors.add(selector or "<default-branch>")
-    for selector in sorted(stale_contents_selectors):
-        errors.append(
-            f"{path}: stale META execution-routing coordinate: GitHub Contents routing-policy URL selector {selector}"
-        )
+            errors.append(
+                f"{path}: stale META execution-routing coordinate in {label} {candidate!r}; expected selector {META_SHA!r}"
+            )
 
 
 def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> None:
