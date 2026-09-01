@@ -1,0 +1,73 @@
+name: RDC systemic helper class fix once
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+    paths:
+      - .github/workflows/rdc-systemic-helper-class-fix-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch-helper:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: governance/remote-desktop-per-action-gate-237
+          fetch-depth: 3
+
+      - name: Fail closed on exact failed-helper head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "ae5051347912e86550d048ea1ae8e5cf97300218"
+          test "$(git rev-parse HEAD:tools/agents/validate_remote_desktop_prompt_routing.py)" = "0ded8788b3f626ce2cf420faafd48061ac2ce6dc"
+          test -f .github/workflows/rdc-systemic-semantic-green-once.yml
+
+      - name: Correct semantic helper classes
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('.github/workflows/rdc-systemic-semantic-green-once.yml')
+          text = path.read_text(encoding='utf-8')
+
+          old_guard = 'test "$(git rev-parse HEAD^)" = "19e6a4afc888ab54a7e5467b8b39413a05818bfc"'
+          new_guard = 'test "$(git rev-parse HEAD^^)" = "ae5051347912e86550d048ea1ae8e5cf97300218"'
+          assert text.count(old_guard) == 1, text.count(old_guard)
+          text = text.replace(old_guard, new_guard, 1)
+
+          old_authority = r'''r"\b(?:authority|authorization|authorisation|authorized|authorised|approval|approved|permission|permitted|permit|allowed|allowance|exception|entitlement)\b",'''
+          new_authority = r'''r"\b(?:authority|authorization|authorisation|authorized|authorised|approval|approved|permission|permitted|permit|allowed|allowance|exception|entitlement)\b"
+              r"|\bpre[- ]?(?:approv(?:e[sd]?|al)|authori[sz](?:e[sd]?|ation))\b",'''
+          assert text.count(old_authority) == 1, text.count(old_authority)
+          text = text.replace(old_authority, new_authority, 1)
+
+          old_context = r'''r"\b(?:per[- ]?action|fresh|authorization|authorisation|approval|permission|decision|host[- ]?exception|gate|routing|unauthori[sz]ed|missing|lacking)\b",'''
+          new_context = r'''r"\b(?:per[- ]?action|fresh|authorization|authorisation|approval|permission|decision|host[- ]?exception|gate|routing|unauthori[sz]ed|missing|lacking|physical(?:ly)?|policy)\b",'''
+          assert text.count(old_context) == 1, text.count(old_context)
+          text = text.replace(old_context, new_context, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Publish corrected helper and remove patcher
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/rdc-systemic-helper-class-fix-once.yml
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/workflows/rdc-systemic-semantic-green-once.yml .github/workflows/rdc-systemic-helper-class-fix-once.yml
+          mapfile -t changed < <(git diff --cached --name-only)
+          test "${#changed[@]}" -eq 2
+          printf '%s\n' "${changed[@]}" | grep -Fxq '.github/workflows/rdc-systemic-semantic-green-once.yml'
+          printf '%s\n' "${changed[@]}" | grep -Fxq '.github/workflows/rdc-systemic-helper-class-fix-once.yml'
+          git commit -m "chore(agents): correct systemic helper classifiers"
+          git push origin HEAD:governance/remote-desktop-per-action-gate-237
