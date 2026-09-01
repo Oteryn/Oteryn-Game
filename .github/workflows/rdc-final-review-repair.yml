@@ -1,0 +1,48 @@
+name: RDC final review repair
+
+on:
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
+    paths:
+      - tools/agents/rdc_final_review_repair.py
+      - .github/workflows/rdc-final-review-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out exact triggering head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+
+      - name: Apply bounded final review repair
+        run: python tools/agents/rdc_final_review_repair.py
+
+      - name: Verify focused GREEN before publication
+        run: |
+          python tools/agents/test_validate_remote_desktop_prompt_routing.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_round12.py
+          python tools/agents/validate_remote_desktop_prompt_routing.py
+          python tools/agents/validate_governance.py
+          python tools/agents/validate_repository_policy.py
+          git diff --check
+
+      - name: Publish exact guarded repair
+        env:
+          BRANCH: governance/remote-desktop-per-action-gate-237
+          TRIGGER_SHA: ${{ github.sha }}
+        run: |
+          test "$(git ls-remote origin "refs/heads/${BRANCH}" | cut -f1)" = "${TRIGGER_SHA}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && { echo "no repair diff"; exit 1; }
+          git commit -m "fix(agents): close final Codex routing bypasses"
+          git push origin "HEAD:${BRANCH}"
