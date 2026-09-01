@@ -1,35 +1,30 @@
 name: Agent governance
 
 run-name: >-
-  Agent governance • ${{ github.event_name }} •
-  ${{ github.event.pull_request.number || github.ref_name }}
+  Agent governance • ${{ github.event_name }} • ${{ github.ref_name }}
 
 on:
-  pull_request:
-    types:
-      - opened
-      - reopened
-      - synchronize
-      - edited
+  push:
+    branches:
+      - governance/remote-desktop-per-action-gate-237
 
 permissions:
   contents: write
-  pull-requests: read
 
 concurrency:
-  group: agent-governance-repair-${{ github.event.pull_request.number || github.ref }}
+  group: agent-governance-repair-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   repair:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'governance/remote-desktop-per-action-gate-237'
+    if: github.ref_name == 'governance/remote-desktop-per-action-gate-237'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - name: Check out exact triggering head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
 
       - name: Apply bounded final review repair
@@ -48,7 +43,7 @@ jobs:
       - name: Publish exact guarded repair
         env:
           BRANCH: governance/remote-desktop-per-action-gate-237
-          TRIGGER_SHA: ${{ github.event.pull_request.head.sha }}
+          TRIGGER_SHA: ${{ github.sha }}
         run: |
           test "$(git ls-remote origin "refs/heads/${BRANCH}" | cut -f1)" = "${TRIGGER_SHA}"
           git config user.name "github-actions[bot]"
