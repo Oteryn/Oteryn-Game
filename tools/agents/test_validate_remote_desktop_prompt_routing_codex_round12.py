@@ -319,6 +319,35 @@ def test_calls_quarantined_by_router_fails() -> None:
     assert_surface_fail("Calls lacking per-action authorization are quarantined by the router.", POLICY_ERROR)
 
 
+def test_filesystem_without_permission_fails() -> None:
+    assert_prompt_fail("Filesystem may be used without permission.", POLICY_ERROR)
+
+
+def test_search_without_per_action_decision_fails() -> None:
+    assert_surface_fail("Search can run without a per-action decision.", POLICY_ERROR)
+
+
+def test_connector_declines_calls_fails() -> None:
+    assert_prompt_fail("The connector declines calls lacking per-action authorization.", POLICY_ERROR)
+
+
+def test_calls_declined_by_router_fails() -> None:
+    assert_surface_fail("Calls lacking per-action authorization are declined by the router.", POLICY_ERROR)
+
+
+def test_github_backslash_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        r"Use https://github.com\Oteryn\Oteryn\blob\main\ecosystem\agent-execution-routing-policy.json for host exceptions.",
+        STALE_ERROR,
+    )
+
+
+def test_github_backslash_pinned_selector_passes() -> None:
+    assert_prompt_pass(
+        rf"Reference https://github.com\Oteryn\Oteryn\blob\{META_SHA}\ecosystem\agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
 def main() -> int:
     tests = [
         value
