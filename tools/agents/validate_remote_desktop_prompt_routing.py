@@ -492,8 +492,20 @@ def _semantic_clauses(text: str) -> list[str]:
     return [part.strip() for part in re.split(r"(?:[;\n]+|(?<=[.!?])\s+)", text) if part.strip()]
 
 
-CONTRASTIVE_BOUNDARY_RE = re.compile(r"\b(?:but|however|yet|whereas|instead|rather)\b", re.IGNORECASE)
-RELATION_BOUNDARY_RE = re.compile(r"\b(?:and|but|however|yet|whereas|while)\b", re.IGNORECASE)
+CONTRASTIVE_CONNECTOR_PATTERN = r"(?:but|however|yet|whereas|instead|rather)"
+CONTRASTIVE_BOUNDARY_RE = re.compile(rf"\b{CONTRASTIVE_CONNECTOR_PATTERN}\b", re.IGNORECASE)
+RELATION_BOUNDARY_RE = re.compile(rf"\b(?:and|while|{CONTRASTIVE_CONNECTOR_PATTERN})\b", re.IGNORECASE)
+SUBORDINATE_RELATION_PREFIX_RE = re.compile(
+    r"^\s*(?:[-*+]\s+)?(?:although|though|even\s+though|whereas|while)\b",
+    re.IGNORECASE,
+)
+
+
+def _leading_subordinate_clause_boundary(text: str) -> int | None:
+    if SUBORDINATE_RELATION_PREFIX_RE.search(text) is None:
+        return None
+    comma = text.find(",")
+    return comma if comma >= 0 else None
 
 
 def _relation_window(text: str, *spans: tuple[int, int], padding: int = 24) -> str:
@@ -501,6 +513,12 @@ def _relation_window(text: str, *spans: tuple[int, int], padding: int = 24) -> s
     high = max(span[1] for span in spans)
     start = max(0, low - padding)
     end = min(len(text), high + padding)
+    subordinate_boundary = _leading_subordinate_clause_boundary(text)
+    if subordinate_boundary is not None:
+        if low > subordinate_boundary:
+            start = max(start, subordinate_boundary + 1)
+        elif high <= subordinate_boundary:
+            end = min(end, subordinate_boundary)
     for boundary in RELATION_BOUNDARY_RE.finditer(text):
         if boundary.end() <= low:
             start = max(start, boundary.end())
@@ -664,13 +682,13 @@ def _enforcement_match_is_negated(text: str, start: int, end: int) -> bool:
 ENFORCEMENT_TARGET_RE = re.compile(r"\b(?:calls?|requests?|invocations?|actions?|operations?)\b", re.IGNORECASE)
 STRONG_GATE_CONTEXT_RE = re.compile(r"\b(?:per[- ]?action|host[- ]?exception|authorization|authorisation|approval|permission|decision|gate|routing|unauthori[sz]ed|missing|lacking)\b", re.IGNORECASE)
 PHYSICAL_ENFORCEMENT_RE = re.compile(r"\bphysical(?:ly)?\b", re.IGNORECASE)
-PHYSICAL_ENFORCEMENT_EFFECT_RE = re.compile(
-    r"(?:enforc(?:e[sd]?|ing|ement)|block(?:s|ed|ing)?|reject(?:s|ed|ing|ion)?|den(?:y|ies|ied|ying|ial)|stop(?:s|ped|ping)?|refus(?:e[sd]?|ing|al)|drop(?:s|ped|ping)?|discard(?:s|ed|ing)?|filter(?:s|ed|ing)?|suppress(?:es|ed|ing|ion)?|ignor(?:e[sd]?|ing)|skip(?:s|ped|ping)?|cancel(?:s|ed|led|ing|ling|ation)?|intercept(?:s|ed|ing|ion)?|quarantine(?:s|d|ing)?|declin(?:e[sd]?|ing)|prevent(?:s|ed|ing|ion)?|fail(?:s|ed|ing)?[- ]closed)",
+INTRINSIC_PHYSICAL_ENFORCEMENT_RE = re.compile(
+    r"(?:enforc(?:e[sd]?|ing|ement)|fail(?:s|ed|ing)?[- ]closed)",
     re.IGNORECASE,
 )
 PROVIDER_LOCATION_RELATION_RE = re.compile(r"\b(?:by|at|within|inside)\b", re.IGNORECASE)
 PROVIDER_ANAPHORA_BRIDGE_RE = re.compile(
-    r"^\s*[^.;!?]{0,72};\s*(?:instead|however|rather|yet)\s*,?\s*it\s*$",
+    rf"^\s*[^.;!?]{{0,72}};\s*{CONTRASTIVE_CONNECTOR_PATTERN}\s*,?\s*it\s*$",
     re.IGNORECASE,
 )
 DIRECT_GATE_OBJECT_RE = re.compile(
@@ -719,15 +737,15 @@ def _is_provider_enforcement_claim(text: str) -> bool:
             if not (has_gate or has_physical):
                 continue
             has_target = _provider_enforcement_has_target(text, enforcement)
-            has_physical_effect = bool(
-                has_physical and PHYSICAL_ENFORCEMENT_EFFECT_RE.fullmatch(enforcement.group(0))
+            has_intrinsic_physical_enforcement = bool(
+                has_physical and INTRINSIC_PHYSICAL_ENFORCEMENT_RE.fullmatch(enforcement.group(0))
             )
             if provider.start() <= enforcement.start():
                 between = text[provider.end():enforcement.start()]
                 anaphoric_bridge = PROVIDER_ANAPHORA_BRIDGE_RE.fullmatch(between) is not None
                 if not anaphoric_bridge and (len(between) > 72 or re.search(r"[.;,:]", between)):
                     continue
-                if has_target or has_physical_effect:
+                if has_target or has_intrinsic_physical_enforcement:
                     return True
                 continue
             between = text[enforcement.end():provider.start()]
@@ -738,7 +756,7 @@ def _is_provider_enforcement_claim(text: str) -> bool:
             target_window_start = max(0, enforcement.start() - 96)
             target_window_end = min(len(text), provider.end() + 40)
             target_window = text[target_window_start:target_window_end]
-            if has_physical_effect or (has_gate and ENFORCEMENT_TARGET_RE.search(target_window) and has_target):
+            if has_intrinsic_physical_enforcement or (has_gate and ENFORCEMENT_TARGET_RE.search(target_window) and has_target):
                 return True
     return False
 
