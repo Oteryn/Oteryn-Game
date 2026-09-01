@@ -1,0 +1,174 @@
+name: Merge authority audit
+
+on:
+  pull_request_target:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
+
+permissions: {}
+
+concurrency:
+  group: merge-authority-audit-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  audit:
+    name: Merge authority audit / protected-base validate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read
+    env:
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "1e0e7b70a806fe744d394ca8abf43ee434ead3f2"
+    steps:
+      - name: Validate control-plane candidate as inert data
+        shell: bash
+        env:
+          EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
+          EVENT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import base64
+          import hashlib
+          import json
+          import os
+          import re
+          import urllib.parse
+          import urllib.request
+
+          repository = os.environ['REPOSITORY']
+          number = os.environ['EVENT_PR_NUMBER'].strip()
+          expected_head = os.environ['EVENT_PR_HEAD_SHA'].strip().lower()
+          expected_gate_blob = os.environ['EXPECTED_MERGE_GROUP_GATE_BLOB'].strip().lower()
+
+          if re.fullmatch(r'[1-9][0-9]*', number) is None:
+              raise SystemExit('invalid pull request number')
+          if re.fullmatch(r'[0-9a-f]{40}', expected_head) is None:
+              raise SystemExit('invalid pull request head SHA')
+          if re.fullmatch(r'[0-9a-f]{40}', expected_gate_blob) is None:
+              raise SystemExit('protected-base merge-group gate blob pin is invalid')
+
+          headers = {
+              'Accept': 'application/vnd.github+json',
+              'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+              'X-GitHub-Api-Version': '2022-11-28',
+              'User-Agent': 'Oteryn-protected-base-merge-authority-audit',
+          }
+
+          def api(path: str):
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repository}{path}',
+                  headers=headers,
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          pull = api(f'/pulls/{number}')
+          live_head = pull.get('head', {}).get('sha', '').lower()
+          if pull.get('state') != 'open':
+              raise SystemExit('audit requires an open pull request')
+          if live_head != expected_head:
+              raise SystemExit('pull request head moved after event identity was recorded')
+          if pull.get('head', {}).get('repo', {}).get('full_name') != repository:
+              raise SystemExit('audit accepts only same-repository pull request heads')
+          if pull.get('base', {}).get('ref') != 'main':
+              raise SystemExit('audit accepts only pull requests targeting main')
+
+          changed_files = pull.get('changed_files')
+          if not isinstance(changed_files, int) or changed_files < 0 or changed_files > 3000:
+              raise SystemExit('invalid or over-cap changed-files count')
+
+          changed = []
+          page = 1
+          while True:
+              batch = api(f'/pulls/{number}/files?per_page=100&page={page}')
+              for item in batch:
+                  changed.append(item.get('filename', ''))
+                  previous = item.get('previous_filename')
+                  if isinstance(previous, str) and previous:
+                      changed.append(previous)
+              if len(batch) < 100:
+                  break
+              page += 1
+          if len([path for path in changed if path]) < changed_files:
+              raise SystemExit('changed-files enumeration is incomplete')
+
+          protected_paths = (
+              '.github/workflows/',
+              '.github/repository-policy.json',
+              'tools/repository/',
+          )
+          touches_control_plane = any(
+              path == '.github/repository-policy.json'
+              or path.startswith('.github/workflows/')
+              or path.startswith('tools/repository/')
+              for path in changed
+          )
+          if not touches_control_plane:
+              print('No merge-authority control-plane paths changed; protected-base audit not applicable.')
+              raise SystemExit(0)
+
+          if '.github/workflows/merge-authority-audit.yml' in changed:
+              raise SystemExit(
+                  'candidate modifies the protected-base audit itself; require explicit owner-authorized '
+                  'audit rotation and independent deep review before integration'
+              )
+
+          encoded_path = urllib.parse.quote('.github/workflows/merge-group-gate.yml', safe='')
+          payload = api(f'/contents/{encoded_path}?ref={expected_head}')
+          if payload.get('encoding') != 'base64' or not isinstance(payload.get('content'), str):
+              raise SystemExit('unable to read candidate merge-group gate as inert content')
+          gate = base64.b64decode(payload['content']).decode('utf-8')
+          gate_bytes = gate.encode('utf-8')
+          actual_blob = hashlib.sha1(
+              f'blob {len(gate_bytes)}\0'.encode('ascii') + gate_bytes
+          ).hexdigest()
+          if actual_blob != expected_gate_blob:
+              raise SystemExit(
+                  'candidate merge-group gate does not match the protected-base approved blob: '
+                  f'expected {expected_gate_blob}, got {actual_blob}'
+              )
+
+          required = (
+              '  merge_group:\n    types: [checks_requested]\n',
+              '    name: game-gate\n',
+              '    if: always()\n',
+              '    needs: [candidate, dependency_review, codeql, rust_linux, rust_windows, rust_supply_chain]\n',
+              '            test "$result" = success\n',
+          )
+          for fragment in required:
+              if fragment not in gate:
+                  raise SystemExit(f'candidate merge-group gate missing protected fragment: {fragment.strip()}')
+          for forbidden in (
+              'continue-on-error:',
+              'workflow_dispatch:',
+              'pull_request_target:',
+              'contents: write',
+              'actions: write',
+              'checks: write',
+              'pull-requests: write',
+              'statuses: write',
+              'id-token: write',
+          ):
+              if forbidden in gate:
+                  raise SystemExit(f'candidate merge-group gate contains forbidden behavior: {forbidden}')
+
+          uses_line = re.compile(r'^\s*uses:\s*([^@\s]+)@([^\s#]+)', re.MULTILINE)
+          for action, ref in uses_line.findall(gate):
+              if re.fullmatch(r'[0-9a-f]{40}', ref) is None:
+                  raise SystemExit(f'candidate merge-group gate uses unpinned action {action}@{ref}')
+
+          print(
+              f'Protected-base merge-authority audit PASS for PR #{number} exact head '
+              f'{expected_head}; merge-group gate blob={actual_blob}.'
+          )
+          PY
