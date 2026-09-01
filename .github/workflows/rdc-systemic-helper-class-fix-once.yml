@@ -23,7 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "21f076d860bfe1f1633f82debafaf625ed3be295"
+          test "$(git rev-parse HEAD^)" = "9699a2e37e6ace3cee58f382a37ef1728503f277"
           test "$(git rev-parse HEAD:tools/agents/validate_remote_desktop_prompt_routing.py)" = "0ded8788b3f626ce2cf420faafd48061ac2ce6dc"
           test -f .github/workflows/rdc-systemic-semantic-green-once.yml
 
@@ -52,6 +52,15 @@ jobs:
           new_context = r'''r"\b(?:per[- ]?action|fresh|authorization|authorisation|approval|permission|decision|host[- ]?exception|gate|routing|unauthori[sz]ed|missing|lacking|physical(?:ly)?|policy)\b",'''
           assert code.count(old_context) == 1, code.count(old_context)
           code = code.replace(old_context, new_context, 1)
+
+          old_coordinate_scan = '''def _validate_meta_routing_coordinates(path: Path, text: str, errors: list[str]) -> None:
+              operative = _operative_text(text)
+          '''
+          new_coordinate_scan = '''def _validate_meta_routing_coordinates(path: Path, text: str, errors: list[str]) -> None:
+              operative = _normalize_policy_text(_operative_text(text))
+          '''
+          assert code.count(old_coordinate_scan) == 1, code.count(old_coordinate_scan)
+          code = code.replace(old_coordinate_scan, new_coordinate_scan, 1)
 
           exec(compile(code, str(helper_path), "exec"), {"__name__": "__main__"})
           PY
