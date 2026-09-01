@@ -102,11 +102,6 @@ jobs:
           if len([path for path in changed if path]) < changed_files:
               raise SystemExit('changed-files enumeration is incomplete')
 
-          protected_paths = (
-              '.github/workflows/',
-              '.github/repository-policy.json',
-              'tools/repository/',
-          )
           touches_control_plane = any(
               path == '.github/repository-policy.json'
               or path.startswith('.github/workflows/')
@@ -123,7 +118,7 @@ jobs:
                   'audit rotation and independent deep review before integration'
               )
 
-          encoded_path = urllib.parse.quote('.github/workflows/merge-group-gate.yml', safe='')
+          encoded_path = urllib.parse.quote('.github/workflows/merge-group-gate.yml', safe='/')
           payload = api(f'/contents/{encoded_path}?ref={expected_head}')
           if payload.get('encoding') != 'base64' or not isinstance(payload.get('content'), str):
               raise SystemExit('unable to read candidate merge-group gate as inert content')
