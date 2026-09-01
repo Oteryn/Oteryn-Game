@@ -419,6 +419,59 @@ def test_semantic_positive_controls_pass() -> None:
         assert_prompt_pass(text)
 
 
+def test_mixed_subject_denial_does_not_hide_blanket_authority_fails() -> None:
+    assert_prompt_fail(
+        "Ping has no authority, but filesystem is always authorized.",
+        POLICY_ERROR,
+    )
+
+
+def test_unrelated_restriction_does_not_hide_fresh_decision_exemption_fails() -> None:
+    assert_surface_fail(
+        "Ping must not run, but filesystem may run without permission.",
+        POLICY_ERROR,
+    )
+
+
+def test_contrastive_negation_does_not_hide_provider_enforcement_fails() -> None:
+    assert_prompt_fail(
+        "The connector does not merely log but blocks calls lacking per-action authorization.",
+        POLICY_ERROR,
+    )
+
+
+def test_provider_implements_request_logging_passes() -> None:
+    assert_prompt_pass("The connector implements per-action request logging.")
+
+
+def test_provider_guarantees_request_auditability_passes() -> None:
+    assert_prompt_pass("The connector guarantees per-action request auditability.")
+
+
+def test_provider_implements_authorization_gate_still_fails() -> None:
+    assert_surface_fail(
+        "The connector implements the per-action authorization gate.",
+        POLICY_ERROR,
+    )
+
+
+def test_provider_guarantees_authorization_decision_still_fails() -> None:
+    assert_prompt_fail(
+        "The connector guarantees every per-action authorization decision.",
+        POLICY_ERROR,
+    )
+
+
+def test_relation_scoped_legitimate_negatives_pass() -> None:
+    controls = (
+        "Ping has no authority, and filesystem has no standing authority.",
+        "Filesystem must not run without permission.",
+        "The connector does not block calls; it only logs per-action request outcomes.",
+    )
+    for text in controls:
+        assert_prompt_pass(text)
+
+
 def main() -> int:
     tests = [
         value
