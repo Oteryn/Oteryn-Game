@@ -472,6 +472,43 @@ def test_relation_scoped_legitimate_negatives_pass() -> None:
         assert_prompt_pass(text)
 
 
+def test_coordinated_subject_denial_does_not_hide_blanket_authority_fails() -> None:
+    assert_prompt_fail(
+        "Ping has no authority, and filesystem is always authorized.",
+        POLICY_ERROR,
+    )
+
+
+def test_coordinated_restriction_does_not_hide_fresh_decision_exemption_fails() -> None:
+    assert_surface_fail(
+        "Ping must not run, and filesystem may run without permission.",
+        POLICY_ERROR,
+    )
+
+
+def test_provider_anaphora_after_semicolon_preserves_enforcement_fails() -> None:
+    assert_prompt_fail(
+        "The connector does not merely log; instead, it blocks calls lacking per-action authorization.",
+        POLICY_ERROR,
+    )
+
+
+def test_physical_provider_request_logging_passes() -> None:
+    assert_prompt_pass("The connector physically implements per-action request logging.")
+
+
+def test_coordinated_legitimate_restrictions_pass() -> None:
+    assert_prompt_pass(
+        "Ping must not run, and filesystem must not run without permission."
+    )
+
+
+def test_provider_anaphora_observability_only_passes() -> None:
+    assert_prompt_pass(
+        "The connector logs requests; instead, it records per-action audit metadata."
+    )
+
+
 def main() -> int:
     tests = [
         value
