@@ -2,18 +2,13 @@
 """Fail-closed wrapper for the Game repository-policy validator."""
 from __future__ import annotations
 
-import hashlib
 import importlib.util
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
-MERGE_GROUP_GATE = ROOT / ".github/workflows/merge-group-gate.yml"
+MERGE_AUTHORITY_AUDIT = ROOT / ".github/workflows/merge-authority-audit.yml"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "1e0e7b70a806fe744d394ca8abf43ee434ead3f2"
-
-
-def git_blob_sha(data: bytes) -> str:
-    return hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
 
 
 def load_core():
@@ -25,16 +20,39 @@ def load_core():
     return module
 
 
+def validate_protected_base_audit() -> list[str]:
+    if not MERGE_AUTHORITY_AUDIT.is_file():
+        return ["missing protected-base merge-authority audit"]
+
+    text = MERGE_AUTHORITY_AUDIT.read_text(encoding="utf-8")
+    errors: list[str] = []
+    for fragment in (
+        "  pull_request_target:\n",
+        "      - opened\n",
+        "      - reopened\n",
+        "      - synchronize\n",
+        "      - edited\n",
+        "      contents: read\n",
+        "      pull-requests: read\n",
+        f'EXPECTED_MERGE_GROUP_GATE_BLOB: "{EXPECTED_MERGE_GROUP_GATE_BLOB}"',
+        "candidate merge-group gate does not match the protected-base approved blob",
+    ):
+        if fragment not in text:
+            errors.append(f"protected-base merge-authority audit missing contract: {fragment.strip()}")
+
+    if "actions/checkout@" in text:
+        errors.append("protected-base merge-authority audit must not checkout candidate code")
+    if "continue-on-error:" in text:
+        errors.append("protected-base merge-authority audit must not permit continue-on-error")
+    return errors
+
+
 def main() -> int:
-    if not MERGE_GROUP_GATE.is_file():
-        print("Repository policy validation failed:\n- missing exact Merge Queue gate")
-        return 1
-    actual = git_blob_sha(MERGE_GROUP_GATE.read_bytes())
-    if actual != EXPECTED_MERGE_GROUP_GATE_BLOB:
-        print(
-            "Repository policy validation failed:\n"
-            f"- merge-group gate blob drift: expected {EXPECTED_MERGE_GROUP_GATE_BLOB}, got {actual}"
-        )
+    errors = validate_protected_base_audit()
+    if errors:
+        print("Repository policy validation failed:")
+        for error in errors:
+            print(f"- {error}")
         return 1
     return load_core().main()
 
