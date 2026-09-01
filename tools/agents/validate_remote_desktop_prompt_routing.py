@@ -634,7 +634,7 @@ def _is_fresh_decision_exemption(text: str) -> bool:
             for relation in relations:
                 if _span_gap(relation, subject) > 112 or _span_gap(relation, decision) > 72:
                     continue
-                window = _relation_window(text, subject, decision, relation, padding=20)
+                window = _relation_window(text, subject, decision, relation, padding=len(text))
                 if _is_restrictive_without_requirement(window):
                     continue
                 return True
