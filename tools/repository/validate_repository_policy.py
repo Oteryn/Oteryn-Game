@@ -45,7 +45,7 @@ def validate_protected_base_audit() -> list[str]:
         errors.append("protected-base merge-authority audit must own an exact gate blob pin")
     if "actions/checkout@" in text:
         errors.append("protected-base merge-authority audit must not checkout candidate code")
-    if "continue-on-error:" in text:
+    if re.search(r'^\s*continue-on-error\s*:', text, re.MULTILINE):
         errors.append("protected-base merge-authority audit must not permit continue-on-error")
     return errors
 
