@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
 MERGE_AUTHORITY_AUDIT = ROOT / ".github/workflows/merge-authority-audit.yml"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "1e0e7b70a806fe744d394ca8abf43ee434ead3f2"
 
 
 def load_core():
@@ -34,12 +34,15 @@ def validate_protected_base_audit() -> list[str]:
         "      - edited\n",
         "      contents: read\n",
         "      pull-requests: read\n",
-        f'EXPECTED_MERGE_GROUP_GATE_BLOB: "{EXPECTED_MERGE_GROUP_GATE_BLOB}"',
         "candidate merge-group gate does not match the protected-base approved blob",
+        "candidate modifies the protected-base audit itself",
     ):
         if fragment not in text:
             errors.append(f"protected-base merge-authority audit missing contract: {fragment.strip()}")
 
+    pin = re.search(r'^\s*EXPECTED_MERGE_GROUP_GATE_BLOB:\s*"([0-9a-f]{40})"\s*$', text, re.MULTILINE)
+    if pin is None:
+        errors.append("protected-base merge-authority audit must own an exact gate blob pin")
     if "actions/checkout@" in text:
         errors.append("protected-base merge-authority audit must not checkout candidate code")
     if "continue-on-error:" in text:
