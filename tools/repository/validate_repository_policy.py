@@ -45,6 +45,26 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a"
 )
+EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
+    "name",
+    "on",
+    "permissions",
+    "concurrency",
+    "jobs",
+]
+EXPECTED_MERGE_GROUP_GATE_TRIGGER_BLOCK = """on:
+  merge_group:
+    types: [checks_requested]
+"""
+EXPECTED_MERGE_GROUP_JOB_KEYS = [
+    "candidate",
+    "dependency_review",
+    "codeql",
+    "rust_linux",
+    "rust_windows",
+    "rust_supply_chain",
+    "game_gate",
+]
 
 REQUIRED_FILES = [
     ".github/CODEOWNERS",
@@ -55,6 +75,7 @@ REQUIRED_FILES = [
     ".github/dependabot.yml",
     ".github/repository-policy.json",
     ".github/workflows/merge-gate.yml",
+    ".github/workflows/merge-group-gate.yml",
     ".github/workflows/agent-governance.yml",
     ".github/workflows/codeql.yml",
     ".github/workflows/repository-configuration.yml",
@@ -107,6 +128,23 @@ def canonical_top_level_yaml_keys(text: str) -> list[str] | None:
         if not line.strip() or line.lstrip().startswith("#"):
             continue
         if line[0].isspace():
+            continue
+        match = key_line.fullmatch(line)
+        if match is None:
+            return None
+        keys.append(match.group(1))
+    return keys
+
+
+def yaml_mapping_keys_at_indent(text: str, indent: int) -> list[str] | None:
+    keys: list[str] = []
+    prefix = " " * indent
+    key_line = re.compile(rf"^{re.escape(prefix)}([a-z][a-z0-9_-]*):(?:[ \t].*)?$")
+    for line in text.replace("\r\n", "\n").splitlines():
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        leading_spaces = len(line) - len(line.lstrip(" "))
+        if leading_spaces != indent:
             continue
         match = key_line.fullmatch(line)
         if match is None:
@@ -244,6 +282,7 @@ def main() -> int:
         "deletion",
         "required_linear_history",
         "pull_request",
+        "merge_queue",
         "required_status_checks",
         "non_fast_forward",
     }
@@ -351,6 +390,91 @@ def main() -> int:
         ):
             if required_fragment not in text:
                 errors.append(f"merge gate missing required recovery/sub-gate contract: {required_fragment}")
+
+    merge_group_gate = ROOT / ".github/workflows/merge-group-gate.yml"
+    if merge_group_gate.is_file():
+        text = merge_group_gate.read_text(encoding="utf-8")
+        top_level_keys = canonical_top_level_yaml_keys(text)
+        if top_level_keys != EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS:
+            errors.append(
+                "merge-group gate must use only the canonical top-level workflow keys in the "
+                f"expected order; got {top_level_keys!r}"
+            )
+        trigger_block = top_level_yaml_mapping_block(text, "on")
+        if trigger_block != EXPECTED_MERGE_GROUP_GATE_TRIGGER_BLOCK:
+            errors.append("merge-group gate trigger must be exactly merge_group/checks_requested")
+        jobs_block = top_level_yaml_mapping_block(text, "jobs")
+        job_keys = yaml_mapping_keys_at_indent(jobs_block or "", 2)
+        if job_keys != EXPECTED_MERGE_GROUP_JOB_KEYS:
+            errors.append(
+                "merge-group gate jobs must exactly match the canonical qualification fan-in; "
+                f"got {job_keys!r}"
+            )
+
+        required_by_job = {
+            "candidate": (
+                "    name: Merge Queue / candidate and governance\n",
+                "[[ \"$BASE_REF\" == \"refs/heads/main\" ]]",
+                "[[ \"$HEAD_SHA\" == \"$GITHUB_SHA_VALUE\" ]]",
+                "git diff --check \"$BASE_SHA\" \"$HEAD_SHA\"",
+                "python tools/agents/validate_governance.py",
+                "python tools/repository/validate_repository_policy.py",
+            ),
+            "dependency_review": (
+                "    name: Merge Queue / dependency review\n",
+                "actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294",
+                "base-ref: ${{ github.event.merge_group.base_sha }}",
+                "head-ref: ${{ github.event.merge_group.head_sha }}",
+            ),
+            "codeql": (
+                "    name: Merge Queue / CodeQL (${{ matrix.language }})\n",
+                "language: [python, actions]",
+                "github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd",
+                "github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd",
+            ),
+            "rust_linux": (
+                "    name: Merge Queue / Rust Linux workspace\n",
+                "cargo +1.94.0 build --locked --workspace --all-targets",
+                "cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings",
+                "cargo +1.94.0 test --locked --workspace",
+                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
+                "cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke",
+            ),
+            "rust_windows": (
+                "    name: Merge Queue / Rust Windows client\n",
+                "--target x86_64-pc-windows-msvc",
+                "cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke",
+                "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
+            ),
+            "rust_supply_chain": (
+                "    name: Merge Queue / Rust supply chain\n",
+                "EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25",
+                "      command: check\n",
+                "      arguments: --all-features\n",
+            ),
+            "game_gate": (
+                "    name: game-gate\n",
+                "    if: always()\n",
+                "    needs: [candidate, dependency_review, codeql, rust_linux, rust_windows, rust_supply_chain]\n",
+                "          CANDIDATE: ${{ needs.candidate.result }}\n",
+                "          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}\n",
+                "          CODEQL: ${{ needs.codeql.result }}\n",
+                "          RUST_LINUX: ${{ needs.rust_linux.result }}\n",
+                "          RUST_WINDOWS: ${{ needs.rust_windows.result }}\n",
+                "          RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}\n",
+                "            test \"$result\" = success\n",
+            ),
+        }
+        for job, fragments in required_by_job.items():
+            job_block = indented_yaml_mapping_block(text, job, 2)
+            if job_block is None:
+                errors.append(f"merge-group gate missing canonical job: {job}")
+                continue
+            for fragment in fragments:
+                if fragment not in job_block:
+                    errors.append(
+                        f"merge-group gate job {job} missing canonical fragment: {fragment.strip()}"
+                    )
 
     rust_workflow = ROOT / ".github/workflows/rust.yml"
     if rust_workflow.is_file():
