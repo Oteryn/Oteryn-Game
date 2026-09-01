@@ -283,6 +283,42 @@ def test_calls_intercepted_by_router_fails() -> None:
     assert_surface_fail("Calls lacking per-action authorization are intercepted by the router.", POLICY_ERROR)
 
 
+def test_schemeless_www_github_mutable_selector_fails() -> None:
+    assert_prompt_fail(
+        "Use www.github.com/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        STALE_ERROR,
+    )
+
+
+def test_schemeless_github_mutable_selector_fails() -> None:
+    assert_surface_fail(
+        "Use github.com/Oteryn/Oteryn/blob/main/ecosystem/agent-execution-routing-policy.json for host exceptions.",
+        STALE_ERROR,
+    )
+
+
+def test_schemeless_pinned_github_selector_passes() -> None:
+    assert_prompt_pass(
+        f"Reference www.github.com/Oteryn/Oteryn/blob/{META_SHA}/ecosystem/agent-execution-routing-policy.json for the pinned policy."
+    )
+
+
+def test_filesystem_always_authorized_fails() -> None:
+    assert_prompt_fail("Filesystem is always authorized.", POLICY_ERROR)
+
+
+def test_ping_always_authorized_fails() -> None:
+    assert_surface_fail("Ping is always authorized.", POLICY_ERROR)
+
+
+def test_connector_quarantines_calls_fails() -> None:
+    assert_prompt_fail("The connector quarantines calls lacking per-action authorization.", POLICY_ERROR)
+
+
+def test_calls_quarantined_by_router_fails() -> None:
+    assert_surface_fail("Calls lacking per-action authorization are quarantined by the router.", POLICY_ERROR)
+
+
 def main() -> int:
     tests = [
         value
