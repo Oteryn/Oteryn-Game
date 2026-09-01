@@ -348,6 +348,77 @@ def test_github_backslash_pinned_selector_passes() -> None:
     )
 
 
+def test_semantic_blanket_authority_matrix_fails() -> None:
+    actions = ("Filesystem", "Search", "Process", "Session", "Terminal", "History", "Ping")
+    forms = (
+        "{action} retains reusable authority.",
+        "Reusable authority is retained by {action}.",
+        "By default, {action} remains permitted.",
+        "Standing permission attaches to {action}.",
+    )
+    for action in actions:
+        for form in forms:
+            assert_prompt_fail(form.format(action=action), POLICY_ERROR)
+
+
+def test_semantic_fresh_decision_exemption_matrix_fails() -> None:
+    actions = ("Filesystem", "Search", "Process", "Session", "Terminal", "History", "Ping")
+    forms = (
+        "{action} proceeds without a fresh per-action decision.",
+        "Without a fresh exact approval, {action} may proceed.",
+        "No fresh permission check is required before {action}.",
+        "{action} is exempt from checking per-action authorization.",
+    )
+    for action in actions:
+        for form in forms:
+            assert_prompt_fail(form.format(action=action), POLICY_ERROR)
+
+
+def test_semantic_provider_enforcement_matrix_fails() -> None:
+    providers = ("connector", "router", "provider", "transport")
+    forms = (
+        "The {provider} performs rejection of calls lacking per-action authorization.",
+        "Call denial for missing per-action approval occurs at the {provider}.",
+        "The {provider} applies suppression to requests missing per-action authorization.",
+        "Per-action authorization failures lead to interception of calls at the {provider}.",
+    )
+    for provider in providers:
+        for form in forms:
+            assert_surface_fail(form.format(provider=provider), POLICY_ERROR)
+
+
+def test_structured_github_coordinate_normalization_matrix() -> None:
+    mutable = (
+        "https://github.com/Oteryn/Oteryn/blob/main/ignored/../ecosystem/agent-execution-routing-policy.json",
+        "github.com/Oteryn/Oteryn/blob/main/a/%2e%2e/ecosystem/agent-execution-routing-policy.json",
+        "https://raw.githubusercontent.com/Oteryn/Oteryn/main/ignored/../ecosystem/agent-execution-routing-policy.json",
+        "https://api.github.com/repos/Oteryn/Oteryn/contents/ignored/../ecosystem/agent-execution-routing-policy.json?ref=main",
+    )
+    for url in mutable:
+        assert_prompt_fail(f"Use {url} for host exceptions.", STALE_ERROR)
+
+    pinned = (
+        f"https://github.com/Oteryn/Oteryn/blob/{META_SHA}/ignored/../ecosystem/agent-execution-routing-policy.json",
+        f"github.com/Oteryn/Oteryn/blob/{META_SHA}/a/%2e%2e/ecosystem/agent-execution-routing-policy.json",
+        f"https://raw.githubusercontent.com/Oteryn/Oteryn/{META_SHA}/ignored/../ecosystem/agent-execution-routing-policy.json",
+        f"https://api.github.com/repos/Oteryn/Oteryn/contents/ignored/../ecosystem/agent-execution-routing-policy.json?ref={META_SHA}",
+    )
+    for url in pinned:
+        assert_prompt_pass(f"Reference {url} for the pinned policy.")
+
+
+def test_semantic_positive_controls_pass() -> None:
+    controls = (
+        "Filesystem paths are documented for repository layout only.",
+        "The connector does not enforce per-action authorization; repository governance does.",
+        "Calls are not blocked by the transport; repository governance performs the decision.",
+        "No standing authority is granted to filesystem operations.",
+        "Filesystem operations cannot proceed without a fresh per-action decision.",
+    )
+    for text in controls:
+        assert_prompt_pass(text)
+
+
 def main() -> int:
     tests = [
         value
