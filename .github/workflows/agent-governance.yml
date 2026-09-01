@@ -17,7 +17,7 @@ concurrency:
 
 jobs:
   repair:
-    if: github.ref_name == 'governance/remote-desktop-per-action-gate-237'
+    if: github.ref_name == 'governance/remote-desktop-per-action-gate-237' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -40,15 +40,19 @@ jobs:
           python tools/repository/validate_repository_policy.py
           git diff --check
 
-      - name: Publish exact guarded repair
+      - name: Publish exact guarded validator repair
         env:
           BRANCH: governance/remote-desktop-per-action-gate-237
           TRIGGER_SHA: ${{ github.sha }}
         run: |
           test "$(git ls-remote origin "refs/heads/${BRANCH}" | cut -f1)" = "${TRIGGER_SHA}"
+          git restore --source="${TRIGGER_SHA}" -- \
+            .github/workflows/agent-governance.yml \
+            .github/workflows/rdc-final-review-repair.yml \
+            tools/agents/rdc_final_review_repair.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet && { echo "no repair diff"; exit 1; }
+          git add tools/agents/validate_remote_desktop_prompt_routing.py
+          git diff --cached --quiet && { echo "no validator repair diff"; exit 1; }
           git commit -m "fix(agents): close final Codex routing bypasses"
           git push origin "HEAD:${BRANCH}"
