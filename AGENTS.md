@@ -10,6 +10,14 @@ These instructions govern `Oteryn/Oteryn-Game`, the canonical repository for the
 - Platform owns web identity/commercial/control-plane responsibilities defined by accepted cross-repository contracts. Atlas consumes normalized Game-owned exports and may not become Game truth authority.
 - Read a nearer `AGENTS.md` for any touched path. A same-directory `AGENTS.override.md` replaces, rather than extends, the base instruction file and therefore must only exist when true replacement semantics are intended.
 
+## External execution-skill precedence
+
+Repository and user authority govern execution. Agent skills, plugins and workflow frameworks such as Superpowers are subordinate execution aids, not independent task or lifecycle authority.
+
+For an already-authorized Oteryn programme or task with an approved canonical design, implementation plan, checkpoint, or explicit continuation directive, Superpowers workflows MUST NOT introduce additional approval gates, re-brainstorm an approved design, require duplicate planning artifacts, replace canonical authority, or interrupt autonomous continuation solely because the skill's default workflow would do so. Relevant skills MAY still be used internally for implementation, testing, debugging, review, isolation, or verification when they do not conflict with the governing Oteryn authority.
+
+A skill or plugin MUST NOT weaken repository safety, validation, review, GitHub-first, or authorization requirements. When a skill workflow conflicts with applicable user instructions, this `AGENTS.md`, repository policy, or canonical task authority, the applicable higher-priority Oteryn authority controls.
+
 ## GitHub-first execution gate
 
 GitHub is the authoritative control plane for Game repository identity, `main`, Issue/task status, PR, task branch, exact remote SHA, checks, reviews and merge state.
