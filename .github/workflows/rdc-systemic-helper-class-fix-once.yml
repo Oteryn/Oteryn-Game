@@ -11,63 +11,71 @@ permissions:
   contents: write
 
 jobs:
-  patch-helper:
+  systemic-green:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: governance/remote-desktop-per-action-gate-237
-          fetch-depth: 3
+          fetch-depth: 2
 
-      - name: Fail closed on exact failed-helper head
+      - name: Fail closed on exact helper revision
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "ae5051347912e86550d048ea1ae8e5cf97300218"
+          test "$(git rev-parse HEAD^)" = "21f076d860bfe1f1633f82debafaf625ed3be295"
           test "$(git rev-parse HEAD:tools/agents/validate_remote_desktop_prompt_routing.py)" = "0ded8788b3f626ce2cf420faafd48061ac2ce6dc"
           test -f .github/workflows/rdc-systemic-semantic-green-once.yml
 
-      - name: Correct semantic helper classes
+      - name: Apply corrected systemic semantic transform
         shell: bash
         run: |
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+          import textwrap
 
-          path = Path('.github/workflows/rdc-systemic-semantic-green-once.yml')
-          text = path.read_text(encoding='utf-8')
-
-          old_guard = 'test "$(git rev-parse HEAD^)" = "19e6a4afc888ab54a7e5467b8b39413a05818bfc"'
-          new_guard = 'test "$(git rev-parse HEAD^^)" = "ae5051347912e86550d048ea1ae8e5cf97300218"'
-          assert text.count(old_guard) == 1, text.count(old_guard)
-          text = text.replace(old_guard, new_guard, 1)
+          helper_path = Path(".github/workflows/rdc-systemic-semantic-green-once.yml")
+          helper = helper_path.read_text(encoding="utf-8")
+          lines = helper.splitlines()
+          start = next(i for i, line in enumerate(lines) if line.strip() == "python - <<'PY'")
+          end = next(i for i in range(start + 1, len(lines)) if lines[i].strip() == "PY")
+          code = textwrap.dedent("\n".join(lines[start + 1:end])) + "\n"
 
           old_authority = r'''r"\b(?:authority|authorization|authorisation|authorized|authorised|approval|approved|permission|permitted|permit|allowed|allowance|exception|entitlement)\b",'''
           new_authority = r'''r"\b(?:authority|authorization|authorisation|authorized|authorised|approval|approved|permission|permitted|permit|allowed|allowance|exception|entitlement)\b"
               r"|\bpre[- ]?(?:approv(?:e[sd]?|al)|authori[sz](?:e[sd]?|ation))\b",'''
-          assert text.count(old_authority) == 1, text.count(old_authority)
-          text = text.replace(old_authority, new_authority, 1)
+          assert code.count(old_authority) == 1, code.count(old_authority)
+          code = code.replace(old_authority, new_authority, 1)
 
           old_context = r'''r"\b(?:per[- ]?action|fresh|authorization|authorisation|approval|permission|decision|host[- ]?exception|gate|routing|unauthori[sz]ed|missing|lacking)\b",'''
           new_context = r'''r"\b(?:per[- ]?action|fresh|authorization|authorisation|approval|permission|decision|host[- ]?exception|gate|routing|unauthori[sz]ed|missing|lacking|physical(?:ly)?|policy)\b",'''
-          assert text.count(old_context) == 1, text.count(old_context)
-          text = text.replace(old_context, new_context, 1)
+          assert code.count(old_context) == 1, code.count(old_context)
+          code = code.replace(old_context, new_context, 1)
 
-          path.write_text(text, encoding='utf-8')
+          exec(compile(code, str(helper_path), "exec"), {"__name__": "__main__"})
           PY
 
-      - name: Publish corrected helper and remove patcher
+      - name: Verify systemic GREEN before publication
         shell: bash
         run: |
           set -euo pipefail
-          rm .github/workflows/rdc-systemic-helper-class-fix-once.yml
+          python tools/agents/test_validate_remote_desktop_prompt_routing.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
+          python tools/agents/test_validate_remote_desktop_prompt_routing_codex_round12.py
+          python tools/agents/validate_remote_desktop_prompt_routing.py
+          python tools/agents/validate_governance.py
           git diff --check
+
+      - name: Publish validator only
+        shell: bash
+        run: |
+          set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/rdc-systemic-semantic-green-once.yml .github/workflows/rdc-systemic-helper-class-fix-once.yml
+          git add tools/agents/validate_remote_desktop_prompt_routing.py
           mapfile -t changed < <(git diff --cached --name-only)
-          test "${#changed[@]}" -eq 2
-          printf '%s\n' "${changed[@]}" | grep -Fxq '.github/workflows/rdc-systemic-semantic-green-once.yml'
-          printf '%s\n' "${changed[@]}" | grep -Fxq '.github/workflows/rdc-systemic-helper-class-fix-once.yml'
-          git commit -m "chore(agents): correct systemic helper classifiers"
+          test "${#changed[@]}" -eq 1
+          test "${changed[0]}" = "tools/agents/validate_remote_desktop_prompt_routing.py"
+          git commit -m "fix(agents): enforce systemic remote desktop semantics"
           git push origin HEAD:governance/remote-desktop-per-action-gate-237
