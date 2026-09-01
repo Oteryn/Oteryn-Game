@@ -225,8 +225,14 @@ OUTSIDE_ROUTING_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"\b(?:filesystem|search|process|session|terminal|history|ping)\b.{0,80}"
+        r"\b(?:may\s+be\s+used|can\s+run)\s+without\s+(?:a\s+)?(?:per[- ]action\s+)?"
+        r"(?:decision|authori[sz]ation|approval|permission|host[- ]exception|exception)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"(?=.*\b(?:connectors?|routers?|transports?|providers?)\b.{0,80}"
-        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|skip(?:s|ped|ping)?|suppress(?:es|ed|ing)?|ignore(?:s|d|ing)?|cancel(?:s|ed|ing|led|ling)?|intercept(?:s|ed|ing)?|quarantin(?:e|es|ed|ing)|filter(?:s|ed|ing)?(?:\s+out)?)\b.{0,80}"
+        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|skip(?:s|ped|ping)?|suppress(?:es|ed|ing)?|ignore(?:s|d|ing)?|cancel(?:s|ed|ing|led|ling)?|intercept(?:s|ed|ing)?|quarantin(?:e|es|ed|ing)|declin(?:e|es|ed|ing)|filter(?:s|ed|ing)?(?:\s+out)?)\b.{0,80}"
         r"\b(?:calls?|requests?|invocations?|actions?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
@@ -234,7 +240,7 @@ OUTSIDE_ROUTING_PATTERNS = (
     re.compile(
         r"(?=.*\b(?:calls?|requests?|invocations?|actions?)\b.{0,120}"
         r"(?:\b(?:is|are|be|being|been|get|gets|got|getting)\b.{0,30})?"
-        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|skip(?:s|ped|ping)?|suppress(?:es|ed|ing)?|ignore(?:s|d|ing)?|cancel(?:s|ed|ing|led|ling)?|intercept(?:s|ed|ing)?|quarantin(?:e|es|ed|ing)|filter(?:s|ed|ing)?(?:\s+out)?)\s+(?:by|at|within|inside)\s+(?:the\s+)?"
+        r"\b(?:stop|stops|stopped|stopping|refuse|refuses|refused|refusing|drop|drops|dropped|dropping|discard|discards|discarded|discarding|skip(?:s|ped|ping)?|suppress(?:es|ed|ing)?|ignore(?:s|d|ing)?|cancel(?:s|ed|ing|led|ling)?|intercept(?:s|ed|ing)?|quarantin(?:e|es|ed|ing)|declin(?:e|es|ed|ing)|filter(?:s|ed|ing)?(?:\s+out)?)\s+(?:by|at|within|inside)\s+(?:the\s+)?"
         r"(?:connectors?|routers?|transports?|providers?)\b)"
         r"(?=.*\b(?:per[- ]action|decision|gate|routing|authori[sz]\w*)\b)",
         re.IGNORECASE,
@@ -740,7 +746,7 @@ def _normalize_url_scan_text(text: str) -> str:
         if decoded == value:
             break
         value = decoded
-    return _remove_default_ignorables(value)
+    return _remove_default_ignorables(value).replace("\\", "/")
 
 
 def _validate_meta_routing_coordinates(path: str, text: str, errors: list[str]) -> None:
