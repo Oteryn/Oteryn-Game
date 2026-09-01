@@ -11,8 +11,8 @@ if text.count(old_url_prefix) != 2:
     raise SystemExit(f"expected two GitHub URL prefixes, found {text.count(old_url_prefix)}")
 text = text.replace(old_url_prefix, new_url_prefix)
 
-old_bare_host_auth = 'r"(?:automatically\\s+(?:authori[sz]ed|approved)|(?:authori[sz]ed|approved)\\s+automatically|preauthori[sz]ed|preapproved|(?:authori[sz]ed|approved)\\s+by\\s+default)\\b",'
-new_bare_host_auth = 'r"(?:automatically\\s+(?:authori[sz]ed|approved)|(?:authori[sz]ed|approved)\\s+automatically|always\\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|(?:authori[sz]ed|approved)\\s+by\\s+default)\\b",'
+old_bare_host_auth = r"(?:automatically\s+(?:authori[sz]ed|approved)|(?:authori[sz]ed|approved)\s+automatically|preauthori[sz]ed|preapproved|(?:authori[sz]ed|approved)\s+by\s+default)"
+new_bare_host_auth = r"(?:automatically\s+(?:authori[sz]ed|approved)|(?:authori[sz]ed|approved)\s+automatically|always\s+(?:authori[sz]ed|approved)|preauthori[sz]ed|preapproved|(?:authori[sz]ed|approved)\s+by\s+default)"
 if text.count(old_bare_host_auth) != 1:
     raise SystemExit(f"expected one bare-host authorization matcher, found {text.count(old_bare_host_auth)}")
 text = text.replace(old_bare_host_auth, new_bare_host_auth, 1)
