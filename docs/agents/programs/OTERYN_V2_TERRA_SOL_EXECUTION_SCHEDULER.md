@@ -17,7 +17,10 @@ Owner-facing placement, model/effort selection and `DONE / ACTIVE / BLOCKED / RE
 | `Oteryn: sol supervising architect` | GPT-5.6 Sol Extra High | ON_DEMAND | material architecture/cross-lane decisions |
 | `Oteryn: work auditor` | GPT-5.6 Sol highest available, independent | AUDIT_READ + EVIDENCE_WRITE | forensic audit plus bounded exact-target GitHub audit note |
 | `Oteryn: owner execution guide` | GPT-5.6 Sol Extra High | READ_ONLY | owner-facing live launch/model/effort/status guidance; never a control plane |
-| `Oteryn: sol durability lead` | GPT-5.6 Sol Extra High | MUTATING when allocated | current Durability critical lane |
+| `Oteryn: sol durability lead` | GPT-5.6 Sol Extra High | MUTATING when allocated | single mutating writer and technical synthesis owner for the current Durability critical lane |
+| `Oteryn: sol durability authority analyst` | GPT-5.6 Sol High | READ_ONLY | Foundation/current-authority snapshot and final-COMMIT revalidation analysis for the live Durability candidate |
+| `Oteryn: sol durability continuity analyst` | GPT-5.6 Sol High | READ_ONLY | continuity/protection-shape and replacement transaction-ordering analysis for the live Durability candidate |
+| `Oteryn: sol durability qualification analyst` | GPT-5.6 Sol High | READ_ONLY | whole-diff consistency, regression-gap, main-drift and qualification-plan analysis for the live Durability candidate |
 | `Oteryn: sol server seam lead` | GPT-5.6 Sol Extra High | READ_ONLY until Durability terminal | production server/client-entry seam |
 | `Oteryn: sol client qa lead` | GPT-5.6 Sol Extra High | READ_ONLY until Server Seam terminal | native client + Tier 1/Tier 2 evidence |
 | `Oteryn: sol movement lead` | GPT-5.6 Sol Extra High | READ_ONLY until Client/QA + current Movement resource/dependency gate terminal | authoritative Movement |
@@ -25,6 +28,8 @@ Owner-facing placement, model/effort selection and `DONE / ACTIVE / BLOCKED / RE
 | `Oteryn: sol post-vsl expansion` | GPT-5.6 Sol Extra High | READ_ONLY planning | decompose all remaining accepted Game work after VSL |
 
 `Oteryn: owner execution guide` may inspect this scheduler, live tasks and exact PR evidence to tell the owner what to launch. It cannot allocate workers, trigger Codex, request Work Auditor evidence, mutate coordinator state, grant leases, merge or close anything.
+
+The three Durability analyst aliases are reusable read-only accelerators. They never become lane owners, never receive an implementation writer slot, never mutate PR/Issue/comment/review state and never satisfy a formal independent-review requirement. Their packets are advisory inputs that the single `Oteryn: sol durability lead` must verify against the live head and synthesize.
 
 ## Control-plane activation
 
@@ -46,7 +51,8 @@ Historical coordinator Issue numbers in this document are provenance only. Every
 - Up to five Sol chats may be active when their responsibilities are distinct.
 - Normally no more than two Sol leads may mutate the repository concurrently.
 - A third mutating lead requires `PROVEN` disjoint primary paths, no shared-surface collision, and a recorded concrete throughput reason.
-- Read-only preparation may continue while a dependency is blocked.
+- Read-only preparation or analyst work may continue while a dependency is blocked or a lane writer is active.
+- For one canonical Durability lane/branch/PR, exactly one mutating writer owns it. The three Durability analyst aliases may run concurrently only as strict read-only analysis and never share/own the writable branch or worktree.
 - Never launch a writer merely to occupy capacity.
 
 Any canonical Oteryn Game agent or the owner may request `Oteryn: work auditor` against a uniquely identifiable PR/Issue/task/head. The auditor freezes exact target/head evidence, performs the audit independently, and persists exactly one non-dispositive GitHub audit note. If the target is ambiguous it returns `INSUFFICIENT_EVIDENCE`; if the head moves, the prior note remains historical and cannot qualify the new head.
@@ -102,6 +108,18 @@ The diagram is the dependency shape, not proof of current lane state. Recompute 
 `Oteryn: sol durability lead`
 
 Release mutation only when the live Durability allocation/branch/PR remains valid. If an existing branch or draft PR exists, continue its history; do not restart due to upstream main movement alone.
+
+This lead is the single mutating writer for its canonical Durability branch/PR and owns synthesis of every parallel analyst result.
+
+### Parallel Durability analyst fanout
+
+When the current Durability candidate has independent investigation domains and parallel analysis is useful, these roles may run concurrently in separate chats or as true subagents when the execution environment supports it:
+
+- `Oteryn: sol durability authority analyst` — read-only Foundation/current-authority analysis;
+- `Oteryn: sol durability continuity analyst` — read-only continuity/transaction-order analysis;
+- `Oteryn: sol durability qualification analyst` — read-only whole-diff/qualification analysis.
+
+All three must resolve the exact live PR head independently and return their standardized packet. They perform no tracked-file or GitHub mutation. The Durability Lead must reject stale-head packets, verify accepted findings itself and remain the only writer. Analyst unavailability is not a dependency blocker.
 
 ### Parallel non-implementation work
 
@@ -214,13 +232,20 @@ Oteryn: sol combat lead
 
 Any material durable loot/value/item/resource gap is architecture escalation, not an implementation shortcut.
 
-## Autonomous Codex review gate
+## AI review gate — META-owned
 
-For every allocated mutating lane PR, the owning Sol lane lead applies protected-main `docs/agents/CODEX_REVIEW_POLICY.json` before `READY_FOR_INTEGRATION`.
+Current protected-main root `AGENTS.md` and the organization AI review policy it adopts by reference are the only current AI-review routing authority. Conflicting older `docs/agents/**` review-tier, standing-authorization or controller prose is historical/procedural only.
 
-When `CODEX_REQUIRED`, the owning lane lead performs the covered `freeze exact head -> @codex review -> repair within allocation -> exact-head revalidation -> fresh review after head movement` loop. The owner is not the default prompt relay. Work/Terra mechanically verify classification/evidence and return stale/failed review state to the lane as `REVIEW_RECONCILIATION_REQUIRED`; they do not trigger the lane's Codex review or adjudicate technical findings.
+- Default: no external AI review.
+- Ordinary code change with clear independent-review value: prefer Codex Spark when available.
+- Material high-risk/control-plane change: use one Codex deep review on a stable material candidate.
+- External AI review is advisory and never a required GitHub status or merge authority; repository gates, protection and Merge Queue remain enforcement.
+- Re-review only when a material risk-bearing repair makes the previous review no longer representative.
+- Do not recreate local R0/R1/R2 tiers or standing review-controller authority.
 
-Every mutating Sol return packet should include the standardized `codex_review` block defined by `OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` and the lane prompt.
+A lane lead applies this current policy to its stable candidate. Work/Terra verify that the candidate followed current protected-main policy but do not invent stricter local routing or adjudicate technical findings. Existing handoff fields named `codex_review` may remain compatibility metadata; they never outrank root `AGENTS.md`.
+
+The three Durability analyst roles are not formal external review and never satisfy this gate.
 
 ## VSL closeout
 
