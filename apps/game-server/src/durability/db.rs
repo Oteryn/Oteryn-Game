@@ -626,6 +626,66 @@ mod runtime_scope_identity_red_tests {
     }
 
     #[test]
+    fn replacement_prepare_requires_receipt_authorization_when_request_omits_it() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("unsigned_replacement_prepare").await?;
+            let now = unix_now()?;
+            seed_current_actor_anchor(&database_url, 10, now).await?;
+            let journal = AdmissionReconnectJournalV2::connect_runtime(&database_url).await?;
+            let candidate = postgres_record(now, 20, 1, 0xa2, 7, ProtectionEntitlementV1::unused())
+                .map_err(|_| "candidate record")?;
+            let authorization = replacement_authorization(&candidate, 10, 7)
+                .map_err(|_| "replacement authorization")?;
+            let signed_request =
+                ReconnectDurabilityFlowV2::begin(candidate.clone(), Some(authorization)).1;
+            assert_eq!(
+                journal.prepare(&signed_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+
+            let unsigned_request = ReconnectDurabilityFlowV2::begin(candidate, None).1;
+            assert!(matches!(
+                journal.prepare(&unsigned_request).await,
+                Err(crate::durability::DurabilityError::InvalidStoredState)
+            ));
+
+            drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn legacy_prepare_rejects_receipt_backed_replacement_candidate() -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) = migrated_database("legacy_replacement_prepare").await?;
+            let now = unix_now()?;
+            seed_current_actor_anchor(&database_url, 10, now).await?;
+            let journal = AdmissionReconnectJournalV2::connect_runtime(&database_url).await?;
+            let candidate = postgres_record(now, 20, 1, 0xa3, 7, ProtectionEntitlementV1::unused())
+                .map_err(|_| "candidate record")?;
+            let authorization = replacement_authorization(&candidate, 10, 7)
+                .map_err(|_| "replacement authorization")?;
+            let signed_request =
+                ReconnectDurabilityFlowV2::begin(candidate.clone(), Some(authorization)).1;
+            assert_eq!(
+                journal.prepare(&signed_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+
+            let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(candidate);
+            assert!(matches!(
+                journal.legacy().prepare(&legacy_request).await,
+                Err(crate::durability::DurabilityError::InvalidStoredState)
+            ));
+
+            drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
     fn terminal_replacement_preserves_committed_predecessor_reconciliation() -> TestResult {
         run_postgres_test(async {
             let (database, database_url) =
