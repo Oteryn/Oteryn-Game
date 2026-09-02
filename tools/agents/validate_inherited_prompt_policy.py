@@ -3,7 +3,8 @@
 
 Reusable prompts may omit duplicated global Remote Desktop policy. If they contain an
 operative legacy canonical block it must remain exact. Any prompt-local Remote Desktop
-policy outside that legacy block still fails closed.
+policy outside that legacy block still fails closed. The authoritative root/supporting
+surfaces remain validated by the existing strict canonical checks.
 """
 from __future__ import annotations
 
@@ -18,6 +19,12 @@ from validate_remote_desktop_prompt_routing import (
     _validate_outside_routing_text,
     load_lifecycle,
     reusable_prompt_paths,
+    validate_surface_text,
+)
+
+INHERITED_POLICY_SURFACES = (
+    "AGENTS.md",
+    "docs/agents/GITHUB_ONLY_EXECUTION.md",
 )
 
 
@@ -47,6 +54,18 @@ def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> No
 
 def validate() -> list[str]:
     errors: list[str] = []
+
+    # Prompts may inherit policy only while the inherited policy surfaces remain
+    # present and exact. Deduplication must not become a safety reduction.
+    for relative in INHERITED_POLICY_SURFACES:
+        path = ROOT / relative
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            errors.append(f"{relative}: unable to read inherited policy surface: {exc}")
+            continue
+        validate_surface_text(relative, text, errors)
+
     lifecycle = load_lifecycle(errors)
     prompt_paths = reusable_prompt_paths(lifecycle, errors)
     for relative in prompt_paths:
@@ -57,10 +76,12 @@ def validate() -> list[str]:
             errors.append(f"{relative}: unable to read reusable prompt: {exc}")
             continue
         validate_reusable_prompt_text(relative, text, errors)
+
     if not errors:
         print(
             "Validated inherited Remote Desktop policy for "
-            f"{len(prompt_paths)} reusable prompts; duplicated per-prompt policy is optional."
+            f"{len(prompt_paths)} reusable prompts and {len(INHERITED_POLICY_SURFACES)} authoritative surfaces; "
+            "duplicated per-prompt policy is optional."
         )
     return errors
 
