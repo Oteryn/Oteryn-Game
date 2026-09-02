@@ -445,6 +445,27 @@ mod terminal_replacement_postgres_red_tests {
         )
     }
 
+    fn record_with_protection(
+        record: ReconnectDurabilityRecordV1,
+        protection_entitlement: ProtectionEntitlementV1,
+    ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        let continuity = ReconnectContinuityV1::new(
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.continuity().prepared_deadline(),
+            protection_entitlement,
+        )?;
+        ReconnectDurabilityRecordV1::new(
+            record.identity().clone(),
+            record.connection(),
+            record.authority(),
+            continuity,
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+        )
+    }
+
     fn authorization_for(
         predecessor_raw: u64,
         candidate: &ReconnectDurabilityRecordV1,
@@ -707,6 +728,81 @@ mod terminal_replacement_postgres_red_tests {
             let conflict = recovered.prepare_v2(&conflicting).await;
             assert!(failed_closed_prepare(&conflict));
             database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn runtime_terminal_replacement_rejects_consumed_fenced_continuity_before_mutation()
+    -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) =
+                migrated_database("replacement_consumed_fenced_continuity").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_current_actor_anchor(&database_url, 10, 10, now).await?;
+
+            let mut setup = PgConnection::connect(&database_url).await?;
+            sqlx::query(
+                "WITH activation AS (SELECT clock_timestamp() AS activated_at) \
+                 UPDATE game_durability_control_loss_continuity AS continuity \
+                 SET protection_entitlement_state = 2, protection_fenced_generation = 42, \
+                     protection_activated_at = activation.activated_at, \
+                     protection_expires_at = activation.activated_at + INTERVAL '4 seconds', \
+                     protection_rearm_state = 2, \
+                     protection_rearm_deadline = activation.activated_at + INTERVAL '8 seconds' \
+                 FROM activation \
+                 WHERE continuity.character_id = encode($1, 'hex')::uuid \
+                   AND continuity.control_loss_epoch = 3",
+            )
+            .bind(uuid_v7(11).as_slice())
+            .execute(&mut setup)
+            .await?;
+            setup.close().await?;
+
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+            let candidate = record_with_protection(
+                record(20, 11, 1, 0xaf, 3, 7, 10, now).map_err(|_| "candidate record")?,
+                ProtectionEntitlementV1::fenced(42).map_err(|_| "fenced protection")?,
+            )
+            .map_err(|_| "candidate protection")?;
+            let request = v2_request(candidate, 10, 10).map_err(|_| "authorization")?;
+            let prepare_result = journal.prepare_v2(&request).await;
+
+            let mut observer = PgConnection::connect(&database_url).await?;
+            let predecessor_state: i16 = sqlx::query_scalar(
+                "SELECT session_state FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .fetch_one(&mut observer)
+            .await?;
+            let candidate_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_reconnect_sessions \
+                 WHERE game_session_id = encode($1, 'hex')::uuid",
+            )
+            .bind(uuid_v7(20).as_slice())
+            .fetch_one(&mut observer)
+            .await?;
+            let receipt_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_session_replacements \
+                 WHERE predecessor_game_session_id = encode($1, 'hex')::uuid \
+                   AND candidate_game_session_id = encode($2, 'hex')::uuid",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .bind(uuid_v7(20).as_slice())
+            .fetch_one(&mut observer)
+            .await?;
+            observer.close().await?;
+            drop(journal);
+            database.cleanup().await?;
+
+            assert!(matches!(
+                prepare_result,
+                Err(DurabilityError::InvalidStoredState)
+            ));
+            assert_eq!(predecessor_state, 1);
+            assert_eq!(candidate_count, 0);
+            assert_eq!(receipt_count, 0);
             Ok(())
         })
     }
