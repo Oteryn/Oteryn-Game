@@ -10,6 +10,14 @@ These instructions govern `Oteryn/Oteryn-Game`, the canonical repository for the
 - Platform owns web identity/commercial/control-plane responsibilities defined by accepted cross-repository contracts. Atlas consumes normalized Game-owned exports and may not become Game truth authority.
 - Read a nearer `AGENTS.md` for any touched path. A same-directory `AGENTS.override.md` replaces, rather than extends, the base instruction file and therefore must only exist when true replacement semantics are intended.
 
+## External execution-skill precedence
+
+Repository and user authority govern execution. Agent skills, plugins and workflow frameworks such as Superpowers are subordinate execution aids, not independent task or lifecycle authority.
+
+For an already-authorized Oteryn programme or task with an approved canonical design, implementation plan, checkpoint, or explicit continuation directive, Superpowers workflows MUST NOT introduce additional approval gates, re-brainstorm an approved design, require duplicate planning artifacts, replace canonical authority, or interrupt autonomous continuation solely because the skill's default workflow would do so. Relevant skills MAY still be used internally for implementation, testing, debugging, review, isolation, or verification when they do not conflict with the governing Oteryn authority.
+
+A skill or plugin MUST NOT weaken repository safety, validation, review, GitHub-first, or authorization requirements. When a skill workflow conflicts with applicable user instructions, this `AGENTS.md`, repository policy, or canonical task authority, the applicable higher-priority Oteryn authority controls.
+
 ## GitHub-first execution gate
 
 GitHub is the authoritative control plane for Game repository identity, `main`, Issue/task status, PR, task branch, exact remote SHA, checks, reviews and merge state.
@@ -48,11 +56,19 @@ The organization baseline is META ADR 0004 plus the central agent execution/cont
 
 ## META execution-routing policy
 
-The canonical organization policy is [`Oteryn/Oteryn@8fac1d55805fc3372351ea0a55ad7728b3570ebc:ecosystem/agent-execution-routing-policy.json`](https://github.com/Oteryn/Oteryn/blob/8fac1d55805fc3372351ea0a55ad7728b3570ebc/ecosystem/agent-execution-routing-policy.json). It is adopted by reference; do not fork or weaken it in Game.
+The canonical organization policy is [`Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0:ecosystem/agent-execution-routing-policy.json`](https://github.com/Oteryn/Oteryn/blob/e002fc7532188e73a0f495da3e20710541ed50e0/ecosystem/agent-execution-routing-policy.json). It is adopted by reference; do not fork or weaken it in Game.
 
-For project work, use GitHub state, GitHub Actions or an approved runner, and an isolated worktree first. Remote Desktop/Desktop Commander is default-deny. A host exception must record one closed reason and a least-privilege action; it is never justification for routine builds, tests, Git inspection or polling. When equivalent CI exists, agents MUST NOT use RDC to poll process output, Docker logs, workflow state or Git state.
+For project work, use GitHub state, GitHub Actions or an approved runner, and an isolated worktree first. Remote Desktop/Desktop Commander is default-deny. A host exception must record one closed reason, the least-privilege semantic host action and the exact requested connector tool; it is never justification for routine builds, tests, Git inspection or polling. When equivalent CI exists, agents MUST NOT use RDC to poll process output, Docker logs, workflow state or Git state.
 
 Before resuming work, refresh the current GitHub repository, default-branch SHA, governing Issue, PR and task-head facts. Existing worktrees and handoffs are evidence only. A substantial task packet must plan parallel-first: independent lanes, exclusive branch/worktree and owned paths, dependencies, any shared-resource lease, and integration order. Serial work requires an explicit reason.
+
+## Remote Desktop execution routing
+
+Before any Remote Desktop/Desktop Commander use, resolve this Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
+
+`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. Game cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.
+
+This provider binding is repository/prompt enforcement only. It MUST NOT be described as connector/router physical enforcement unless the actual Remote Desktop transport has a verified fail-closed hook consuming the same per-action semantics.
 
 ## Lifecycle
 
@@ -74,29 +90,26 @@ Before editing, verify current `main`, applicable instructions, active Issue/PR,
 - Security-, authorization-, durable-schema-, production-trust- and cross-repository-contract changes require genuinely independent exact-head review when repository policy says so.
 - Squash merge only after required checks/reviews pass; delete the merged task branch unless it has a documented continuing provenance role.
 
-## Autonomous Codex independent-review standing authorization
+## AI review policy — META-owned
 
-After `docs/agents/CODEX_REVIEW_POLICY.json` is present on protected `main`, that machine-readable contract is the owner's standing authorization for the bounded Codex review operations it enumerates. For those covered operations only, no separate owner confirmation is required per review invocation. Any reusable prompt or lower-level prose that still says owner-funded Codex requires per-invocation authorization is satisfied/superseded only for an invocation that matches this standing authorization exactly; every non-covered owner-funded Codex/OpenAI/API use remains per-invocation owner-authorized.
+Game adopts the current organization AI review policy from protected `Oteryn/Oteryn:docs/governance/AI_REVIEW_POLICY.md` by reference and must not maintain a competing local review-routing authority.
 
-For an allocated lane with a pull request, the lane lead MUST apply `docs/agents/CODEX_REVIEW_POLICY.json` before claiming `READY_FOR_INTEGRATION`:
+- Default: no external AI review.
+- Ordinary code change with clear independent-review value: prefer Codex Spark when available.
+- Material high-risk/control-plane change: use one Codex deep review on a stable material candidate.
+- Trivial docs, formatting, generated evidence, metadata and other low-risk changes: no external AI review.
+- External AI review is advisory and never a required status or GitHub merge authority; `game-gate`, repository protection and Merge Queue remain the enforcement path.
+- Do not recreate local R0/R1/R2 tiers, review fingerprints, review envelopes, attestations, standing review controllers or equivalent merge authority.
+- Re-review only when a material risk-bearing repair makes the prior review no longer representative.
 
-- classify candidate risk using the canonical policy inputs; a lane lead may self-tag only to increase review rigor and MUST NOT by its own assertion select `CODEX_OPTIONAL` or `CODEX_NOT_REQUIRED_BY_THIS_POLICY`;
-- any review downgrade MUST be mechanically proven from an exact canonical source allowed by the policy (or its exact mechanical changed-scope rule); an unvalidated or conflicting classification fails closed to `CODEX_REQUIRED`;
-- when `CODEX_REQUIRED` and native GitHub Codex review capability is proven, freeze the exact candidate head and request a fresh independent Codex review through the canonical PR; the preferred native trigger is `@codex review` with bounded risk-specific guidance;
-- the Codex reviewer task/session must be fresh and must not have materially authored or modified the candidate;
-- the lane lead, not the owner or control plane, owns repair of review findings inside the existing allocation and requests a fresh review after every material head change;
-- a prior Codex review cannot qualify a different head;
-- Codex review may satisfy the independent technical-review gate only when the policy's independence, exact-head, qualification and durable-GitHub-evidence conditions are all met, successful exact-head review evidence is present, and there are zero unresolved blocking findings and required review threads; it never replaces required author self-review or an explicitly separate governance/lifecycle audit;
-- when required Codex capability is unavailable, record the exact capability gap and apply the policy fallback fail-closed; never fabricate a review or use the owner as the default manual prompt relay.
-
-The uniquely active Work/Terra control plane MUST mechanically validate the policy's admitted risk inputs before applying precedence, reject any unvalidated low-risk/optional downgrade and verify durable exact-head review evidence. It MUST NOT invent risk tags, decide ad hoc whether Codex is needed, adjudicate technical findings, or waive a required Codex review; technical findings return to the owning lane lead.
+This section is the current repository-wide AI-review authority and supersedes conflicting standing-authorization, review-tier or Work/Terra controller prose in older `docs/agents/**` policies/prompts. Those legacy files may remain as historical/procedural evidence but do not override this rule.
 
 ## Safety
 
 - Never weaken tests, protection, authorization, provenance or compatibility gates merely to make a task pass.
 - Never expose secrets, credentials, private data or proprietary assets.
 - Production/protected-environment/live-account mutations require separate explicit authority.
-- Do not use owner-funded Codex/OpenAI/API or other metered AI services without explicit owner authorization, except for invocations exactly covered by the protected-main standing authorization in `docs/agents/CODEX_REVIEW_POLICY.json`.
+- Metered AI/API use outside the central AI review policy still requires the task-specific authority applicable to that use; mere availability of credentials never grants authorization.
 - Preserve unique migration/backup history until its retention and restore obligations are explicitly dispositioned.
 
 ## Routing

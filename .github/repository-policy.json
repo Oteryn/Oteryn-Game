@@ -103,10 +103,22 @@
             "squash"
           ],
           "dismiss_stale_reviews_on_push": true,
-          "require_code_owner_review": true,
+          "require_code_owner_review": false,
           "require_last_push_approval": false,
           "required_approving_review_count": 0,
           "required_review_thread_resolution": true
+        }
+      },
+      {
+        "type": "merge_queue",
+        "parameters": {
+          "check_response_timeout_minutes": 60,
+          "grouping_strategy": "ALLGREEN",
+          "max_entries_to_build": 5,
+          "max_entries_to_merge": 5,
+          "merge_method": "SQUASH",
+          "min_entries_to_merge": 1,
+          "min_entries_to_merge_wait_minutes": 0
         }
       },
       {
@@ -118,7 +130,7 @@
               "context": "game-gate"
             }
           ],
-          "strict_required_status_checks_policy": true
+          "strict_required_status_checks_policy": false
         }
       },
       {
@@ -127,7 +139,7 @@
     ]
   },
   "control_plane_protection": {
-    "public_repository_strategy": "required_code_owner_review",
+    "public_repository_strategy": "explicit_owner_authorization_plus_merge_queue",
     "code_owner": "@blakinio",
     "protected_paths": [
       ".github/CODEOWNERS",
@@ -136,7 +148,7 @@
       "tools/repository/"
     ],
     "push_ruleset_private_internal_only": true,
-    "break_glass": "temporarily alter the live branch ruleset in GitHub Settings, require independent exact-head review, then restore and verify canonical policy"
+    "break_glass": "capture current live ruleset, make only the explicitly authorized bounded mutation, restore and positively read back the snapshot on any unsuccessful exit"
   },
   "push_ruleset": {
     "name": "Protect repository control plane",

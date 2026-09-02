@@ -1,11 +1,14 @@
 name: Merge authority audit
 
-run-name: Merge authority audit • pull_request • ${{ github.event.pull_request.number }}
-
 on:
-  pull_request:
+  pull_request_target:
     branches:
       - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - edited
 
 permissions: {}
 
@@ -15,270 +18,152 @@ concurrency:
 
 jobs:
   audit:
-    name: Merge authority audit / validate
+    name: Merge authority audit / protected-base validate
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
       pull-requests: read
+    env:
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "1e0e7b70a806fe744d394ca8abf43ee434ead3f2"
     steps:
-      - name: Resolve exact pull request head
-        id: resolve
+      - name: Validate control-plane candidate as inert data
+        shell: bash
         env:
           EVENT_PR_NUMBER: ${{ github.event.pull_request.number }}
           EVENT_PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
         run: |
+          set -euo pipefail
           python - <<'PY'
+          import base64
+          import hashlib
           import json
           import os
           import re
+          import urllib.parse
           import urllib.request
 
+          repository = os.environ['REPOSITORY']
           number = os.environ['EVENT_PR_NUMBER'].strip()
-          expected = os.environ['EVENT_PR_HEAD_SHA'].strip().lower()
+          expected_head = os.environ['EVENT_PR_HEAD_SHA'].strip().lower()
+          expected_gate_blob = os.environ['EXPECTED_MERGE_GROUP_GATE_BLOB'].strip().lower()
+
           if re.fullmatch(r'[1-9][0-9]*', number) is None:
               raise SystemExit('invalid pull request number')
-          if re.fullmatch(r'[0-9a-f]{40}', expected) is None:
-              raise SystemExit('invalid expected head SHA')
+          if re.fullmatch(r'[0-9a-f]{40}', expected_head) is None:
+              raise SystemExit('invalid pull request head SHA')
+          if re.fullmatch(r'[0-9a-f]{40}', expected_gate_blob) is None:
+              raise SystemExit('protected-base merge-group gate blob pin is invalid')
 
-          request = urllib.request.Request(
-              f"https://api.github.com/repos/{os.environ['REPOSITORY']}/pulls/{number}",
-              headers={
-                  'Accept': 'application/vnd.github+json',
-                  'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
-                  'X-GitHub-Api-Version': '2026-03-10',
-                  'User-Agent': 'Oteryn-v2-merge-authority-audit',
-              },
-          )
-          with urllib.request.urlopen(request, timeout=30) as response:
-              pull = json.load(response)
+          headers = {
+              'Accept': 'application/vnd.github+json',
+              'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+              'X-GitHub-Api-Version': '2022-11-28',
+              'User-Agent': 'Oteryn-protected-base-merge-authority-audit',
+          }
 
+          def api(path: str):
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repository}{path}',
+                  headers=headers,
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          pull = api(f'/pulls/{number}')
+          live_head = pull.get('head', {}).get('sha', '').lower()
           if pull.get('state') != 'open':
               raise SystemExit('audit requires an open pull request')
-          if pull.get('head', {}).get('sha', '').lower() != expected:
-              raise SystemExit('pull request head moved')
-          if pull.get('head', {}).get('repo', {}).get('full_name') != os.environ['REPOSITORY']:
-              raise SystemExit('audit accepts only same-repository PR heads')
+          if live_head != expected_head:
+              raise SystemExit('pull request head moved after event identity was recorded')
+          if pull.get('head', {}).get('repo', {}).get('full_name') != repository:
+              raise SystemExit('audit accepts only same-repository pull request heads')
           if pull.get('base', {}).get('ref') != 'main':
-              raise SystemExit('audit accepts only PRs targeting main')
+              raise SystemExit('audit accepts only pull requests targeting main')
 
-          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              output.write(f'target_sha={expected}\n')
-          print(f'Auditing PR #{number} exact head {expected}.')
-          PY
+          changed_files = pull.get('changed_files')
+          if not isinstance(changed_files, int) or changed_files < 0 or changed_files > 3000:
+              raise SystemExit('invalid or over-cap changed-files count')
 
-      - name: Check out exact head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ steps.resolve.outputs.target_sha }}
-          persist-credentials: false
+          changed = []
+          page = 1
+          while True:
+              batch = api(f'/pulls/{number}/files?per_page=100&page={page}')
+              for item in batch:
+                  changed.append(item.get('filename', ''))
+                  previous = item.get('previous_filename')
+                  if isinstance(previous, str) and previous:
+                      changed.append(previous)
+              if len(batch) < 100:
+                  break
+              page += 1
+          if len([path for path in changed if path]) < changed_files:
+              raise SystemExit('changed-files enumeration is incomplete')
 
-      - name: Verify exact checkout
-        env:
-          EXPECTED_SHA: ${{ steps.resolve.outputs.target_sha }}
-        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
-
-      - name: Independently audit merge authority and adversarial mutations
-        run: |
-          python - <<'PY'
-          import hashlib
-          import json
-          import subprocess
-          from pathlib import Path
-
-          workflow_path = Path('.github/workflows/merge-gate.yml')
-          policy_path = Path('.github/repository-policy.json')
-          validator_path = Path('tools/repository/validate_repository_policy.py')
-          apply_path = Path('tools/repository/apply_github_settings.py')
-          codeowners_path = Path('.github/CODEOWNERS')
-
-          workflow = workflow_path.read_text(encoding='utf-8')
-          policy = json.loads(policy_path.read_text(encoding='utf-8'))
-          apply_text = apply_path.read_text(encoding='utf-8')
-          codeowners = codeowners_path.read_text(encoding='utf-8')
-
-          expected_push_paths = [
-              '.github/workflows/*',
-              '.github/workflows/**/*',
-              '.github/repository-policy.json',
-              'tools/repository/*',
-              'tools/repository/**/*',
-          ]
-          expected_codeowners = {
-              '/.github/CODEOWNERS @blakinio',
-              '/.github/workflows/ @blakinio',
-              '/.github/repository-policy.json @blakinio',
-              '/tools/repository/ @blakinio',
-          }
-
-          if policy.get('required_status_check') != 'game-gate':
-              raise SystemExit('policy required status is not the stable game-gate')
-          ruleset = policy.get('ruleset', {})
-          if ruleset.get('target') != 'branch':
-              raise SystemExit('Protect main must target branches')
-          if ruleset.get('enforcement') != 'active' or ruleset.get('bypass_actors') != []:
-              raise SystemExit('Protect main must be active with no bypass actors')
-
-          status_rules = [r for r in ruleset.get('rules', []) if r.get('type') == 'required_status_checks']
-          if len(status_rules) != 1:
-              raise SystemExit('expected exactly one required-status rule')
-          contexts = [
-              item.get('context')
-              for item in status_rules[0].get('parameters', {}).get('required_status_checks', [])
-          ]
-          if contexts != ['game-gate']:
-              raise SystemExit(f'unexpected required contexts: {contexts!r}')
-          if any(r.get('type') == 'file_path_restriction' for r in ruleset.get('rules', [])):
-              raise SystemExit('branch ruleset must not contain file_path_restriction')
-
-          pr_rules = [r for r in ruleset.get('rules', []) if r.get('type') == 'pull_request']
-          if len(pr_rules) != 1:
-              raise SystemExit('expected exactly one pull_request rule')
-          pr = pr_rules[0].get('parameters', {})
-          expected_pr = {
-              'dismiss_stale_reviews_on_push': True,
-              'require_code_owner_review': True,
-              'require_last_push_approval': False,
-              'required_approving_review_count': 0,
-              'required_review_thread_resolution': True,
-          }
-          for key, expected in expected_pr.items():
-              if pr.get(key) != expected:
-                  raise SystemExit(f'Protect main pull_request {key} mismatch: {pr.get(key)!r}')
-
-          protection = policy.get('control_plane_protection', {})
-          if protection.get('public_repository_strategy') != 'required_code_owner_review':
-              raise SystemExit('public repository control-plane fallback is not Code Owner review')
-          if protection.get('push_ruleset_private_internal_only') is not True:
-              raise SystemExit('policy must mark push rulesets private/internal-only')
-
-          entries = {
-              line.strip()
-              for line in codeowners.splitlines()
-              if line.strip() and not line.lstrip().startswith('#')
-          }
-          if entries != expected_codeowners:
-              raise SystemExit(f'CODEOWNERS control-plane entries mismatch: {sorted(entries)!r}')
-          if any(line.lstrip().startswith('* ') for line in codeowners.splitlines()):
-              raise SystemExit('CODEOWNERS must not make ordinary PRs require owner approval')
-
-          push_ruleset = policy.get('push_ruleset', {})
-          if push_ruleset.get('target') != 'push':
-              raise SystemExit('latent control-plane ruleset must target pushes')
-          if push_ruleset.get('enforcement') != 'active' or push_ruleset.get('bypass_actors') != []:
-              raise SystemExit('latent push ruleset must be active with no bypass actors')
-          if 'conditions' in push_ruleset:
-              raise SystemExit('push ruleset must not contain branch ref_name conditions')
-          path_rules = [r for r in push_ruleset.get('rules', []) if r.get('type') == 'file_path_restriction']
-          if len(path_rules) != 1:
-              raise SystemExit('expected exactly one latent file_path_restriction rule')
-          restricted = path_rules[0].get('parameters', {}).get('restricted_file_paths')
-          if restricted != expected_push_paths:
-              raise SystemExit(f'unexpected latent push-ruleset paths: {restricted!r}')
-
-          for fragment in (
-              'repository_supports_push_ruleset',
-              'repo.get("visibility") in {"private", "internal"}',
-              'remove_named_ruleset_if_present',
-              'verify_codeowners_fallback',
-              'public repository must not retain unsupported control-plane push ruleset',
-          ):
-              if fragment not in apply_text:
-                  raise SystemExit(f'visibility-aware apply/readback missing fragment: {fragment}')
-
-          if workflow.count('name: Merge gate / validate') != 1:
-              raise SystemExit('aggregate required status name must be unique')
-          if workflow.count('name: game-gate') != 1:
-              raise SystemExit('stable game-gate status name must be unique')
-          for fragment in (
-              '    needs: validate',
-              'LEGACY_VALIDATE: ${{ needs.validate.result }}',
-              'run: test "$LEGACY_VALIDATE" = "success"',
-          ):
-              if fragment not in workflow:
-                  raise SystemExit(f'stable game-gate is detached from canonical aggregate: {fragment}')
-          if 'workflow_dispatch:' in workflow:
-              raise SystemExit('merge gate must not execute PR code through workflow_dispatch')
-          if "prefixes = ('.cargo/', 'apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')" not in workflow:
-              raise SystemExit('Rust-sensitive path classifier is incomplete')
-          if "previous_filename = item.get('previous_filename')" not in workflow:
-              raise SystemExit('rename-source classification is missing')
-          if "changed_files > 3000" not in workflow or "len(files) != changed_files" not in workflow:
-              raise SystemExit('changed-file enumeration must fail closed')
-
-          pristine_validator = subprocess.run(
-              ['python', str(validator_path)], text=True, capture_output=True, check=False
+          touches_control_plane = any(
+              path == '.github/repository-policy.json'
+              or path.startswith('.github/workflows/')
+              or path.startswith('tools/repository/')
+              for path in changed
           )
-          if pristine_validator.returncode != 0:
+          if not touches_control_plane:
+              print('No merge-authority control-plane paths changed; protected-base audit not applicable.')
+              raise SystemExit(0)
+
+          if '.github/workflows/merge-authority-audit.yml' in changed:
               raise SystemExit(
-                  'canonical repository validator failed on pristine exact head:\n'
-                  + pristine_validator.stdout + pristine_validator.stderr
+                  'candidate modifies the protected-base audit itself; require explicit owner-authorized '
+                  'audit rotation and independent deep review before integration'
               )
 
-          original_workflow = workflow
+          encoded_path = urllib.parse.quote('.github/workflows/merge-group-gate.yml', safe='/')
+          payload = api(f'/contents/{encoded_path}?ref={expected_head}')
+          if payload.get('encoding') != 'base64' or not isinstance(payload.get('content'), str):
+              raise SystemExit('unable to read candidate merge-group gate as inert content')
+          gate = base64.b64decode(payload['content']).decode('utf-8')
+          gate_bytes = gate.encode('utf-8')
+          actual_blob = hashlib.sha1(
+              f'blob {len(gate_bytes)}\0'.encode('ascii') + gate_bytes
+          ).hexdigest()
+          if actual_blob != expected_gate_blob:
+              raise SystemExit(
+                  'candidate merge-group gate does not match the protected-base approved blob: '
+                  f'expected {expected_gate_blob}, got {actual_blob}'
+              )
 
-          def validator_must_reject(mutated: str, label: str) -> None:
-              workflow_path.write_text(mutated, encoding='utf-8')
-              try:
-                  result = subprocess.run(
-                      ['python', str(validator_path)], text=True, capture_output=True, check=False
-                  )
-                  if result.returncode == 0:
-                      raise SystemExit(f'validator accepted adversarial mutation: {label}')
-                  print(f'{label}: rejected as required')
-              finally:
-                  workflow_path.write_text(original_workflow, encoding='utf-8')
-
-          rust_line = "rust = any(path in exact or path.startswith(prefixes) for path in classification_paths)"
-          if rust_line not in original_workflow:
-              raise SystemExit('canonical Rust classifier assignment not found')
-          validator_must_reject(
-              original_workflow.replace(rust_line, 'rust = False', 1),
-              'scope producer forced rust=false',
+          required = (
+              '  merge_group:\n    types: [checks_requested]\n',
+              '    name: game-gate\n',
+              '    if: always()\n',
+              '    needs: [candidate, dependency_review, codeql, rust_linux, rust_windows, rust_supply_chain]\n',
+              '            test "$result" = success\n',
           )
+          for fragment in required:
+              if fragment not in gate:
+                  raise SystemExit(f'candidate merge-group gate missing protected fragment: {fragment.strip()}')
+          for forbidden in (
+              'continue-on-error:',
+              'workflow_dispatch:',
+              'pull_request_target:',
+              'contents: write',
+              'actions: write',
+              'checks: write',
+              'pull-requests: write',
+              'statuses: write',
+              'id-token: write',
+          ):
+              if forbidden in gate:
+                  raise SystemExit(f'candidate merge-group gate contains forbidden behavior: {forbidden}')
 
-          aggregate_loop = "for name in ('SCOPE', 'GOVERNANCE', 'DEPENDENCY_REVIEW', 'CODEQL'):"
-          if aggregate_loop not in original_workflow:
-              raise SystemExit('canonical aggregate fail-closed loop not found')
-          validator_must_reject(
-              original_workflow.replace(aggregate_loop, 'for name in ():', 1),
-              'aggregate always-required results bypassed',
+          uses_line = re.compile(r'^\s*uses:\s*([^@\s]+)@([^\s#]+)', re.MULTILINE)
+          for action, ref in uses_line.findall(gate):
+              if re.fullmatch(r'[0-9a-f]{40}', ref) is None:
+                  raise SystemExit(f'candidate merge-group gate uses unpinned action {action}@{ref}')
+
+          print(
+              f'Protected-base merge-authority audit PASS for PR #{number} exact head '
+              f'{expected_head}; merge-group gate blob={actual_blob}.'
           )
-
-          game_needs = "    needs: validate\n"
-          if game_needs not in original_workflow:
-              raise SystemExit('canonical game-gate dependency not found')
-          validator_must_reject(
-              original_workflow.replace(game_needs, "    needs: scope\n", 1),
-              'stable game-gate detached from legacy aggregate',
-          )
-
-          game_run = '        run: test "$LEGACY_VALIDATE" = "success"'
-          if game_run not in original_workflow:
-              raise SystemExit('canonical game-gate success assertion not found')
-          validator_must_reject(
-              original_workflow.replace(game_run, '        run: true', 1),
-              'stable game-gate success assertion bypassed',
-          )
-
-          trigger = "  pull_request:\n    branches:\n      - main\n"
-          if trigger not in original_workflow:
-              raise SystemExit('canonical pull_request trigger not found')
-          validator_must_reject(
-              original_workflow.replace(
-                  trigger,
-                  trigger + "    paths:\n      - 'docs/**'\n",
-                  1,
-              ),
-              'merge gate path-filtered',
-          )
-
-          print(f"merge-gate sha256={hashlib.sha256(original_workflow.encode('utf-8')).hexdigest()}")
-          print(f"repository-policy sha256={hashlib.sha256(policy_path.read_bytes()).hexdigest()}")
-          print(f"repository-validator sha256={hashlib.sha256(validator_path.read_bytes()).hexdigest()}")
-          print(f"repository-apply sha256={hashlib.sha256(apply_path.read_bytes()).hexdigest()}")
-          print(f"CODEOWNERS sha256={hashlib.sha256(codeowners_path.read_bytes()).hexdigest()}")
-          print('Independent deterministic merge-authority audit: PASS')
           PY

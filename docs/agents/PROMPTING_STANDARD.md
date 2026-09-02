@@ -36,6 +36,14 @@ Every reusable prompt must contain a `## Canonical Codex review routing` section
 
 A prompt must not infer candidate ownership from standing authorization. Only the current canonical candidate/review-request owner may trigger a covered review. Candidate-owning prompts must preserve exact-head freeze, durable GitHub review evidence, fresh re-review after material head movement, zero unresolved blocking findings/required threads, and strict read-only/non-mutating reviewer constraints. Control-plane, audit and read-only-preparation prompts must not acquire technical, candidate-write or nested-reviewer authority from the standing authorization.
 
+## Remote Desktop execution routing
+
+Every reusable prompt must contain exactly one `## Remote Desktop execution routing` section. Before any Remote Desktop/Desktop Commander use, the prompt must resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
+
+The reusable prompt section must state that `list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions; unknown or undeclared tools fail closed; a prior ALLOW never authorizes a different action or tool; Game cannot broaden META exception reasons; and Remote Desktop cannot become a routine fallback for repository tests, Git inspection, CI/log polling or convenience. It must also state that a Remote Desktop DENY is not automatically a blocker and useful authorized work continues through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when possible.
+
+Prompt self-containment does not copy the META machine-readable policy into Game and does not claim connector/router physical enforcement.
+
 ## Retained prompt lifecycle
 
 Every retained execution prompt under `docs/agents/prompts/*.md`, except the directory `README.md`, must have exactly one entry in `docs/agents/PROMPT_LIFECYCLE.json`.
