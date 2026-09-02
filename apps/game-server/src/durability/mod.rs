@@ -424,6 +424,7 @@ fn replacement_authorization_matches_record(
         && authorization.character_id() == identity.character_id()
         && authorization.world_id() == identity.world_id()
         && authorization.candidate_game_session_id() == identity.game_session_id()
+        && authorization.candidate_runtime_scope() == identity.runtime_scope()
         && authorization.predecessor_connection_generation() == record.connection().predecessor()
         && authorization.predecessor_character_lease_generation()
             == record.authority().character_lease_generation()

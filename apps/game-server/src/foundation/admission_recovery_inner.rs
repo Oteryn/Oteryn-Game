@@ -136,6 +136,7 @@ pub struct TerminalGameSessionReplacementAuthorizationV1 {
     predecessor_control_loss_epoch: ControlLossEpochRefV1,
     predecessor_original_grace_deadline: i64,
     candidate_game_session_id: GameSessionId,
+    candidate_runtime_scope: RuntimeScopeRefV1,
 }
 
 impl TerminalGameSessionReplacementAuthorizationV1 {
@@ -198,6 +199,7 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
             predecessor_control_loss_epoch: current_control_loss_epoch,
             predecessor_original_grace_deadline: current_original_grace_deadline,
             candidate_game_session_id,
+            candidate_runtime_scope: identity.runtime_scope(),
         })
     }
 
@@ -251,6 +253,11 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
     #[must_use]
     pub const fn candidate_game_session_id(&self) -> GameSessionId {
         self.candidate_game_session_id
+    }
+
+    #[must_use]
+    pub const fn candidate_runtime_scope(&self) -> RuntimeScopeRefV1 {
+        self.candidate_runtime_scope
     }
 }
 
