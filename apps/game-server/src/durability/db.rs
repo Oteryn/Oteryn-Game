@@ -1,6 +1,6 @@
 use crate::durability::DurabilityError;
-use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
+use sqlx::PgPool;
 use std::time::Duration;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -143,7 +143,7 @@ mod runtime_scope_identity_red_tests {
             [0x44; 32],
             character(11)?,
             world(12)?,
-            channel(current_channel_raw)?,
+            channel(13)?,
             9,
             10,
         )
@@ -152,17 +152,59 @@ mod runtime_scope_identity_red_tests {
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
         let commit = FreshAdmissionCommit::from_facts(game_session(10)?, facts, initial_transport)
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
-        GameSessionAuthoritySnapshot::new(
+        GameSessionAuthoritySnapshot::from_current_facts(
             commit,
             GameSessionState::Terminal,
             ConnectionGeneration::new(7).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
             None,
             CharacterLease::new(character(11)?, 9)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            RuntimeScopeRefV1::channel(world(12)?, channel(current_channel_raw)?),
             ScopeOwnershipGeneration::new(10)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
-        )
+        )?
         .with_control_loss_continuity(ControlLossEpochRefV1::new(3)?, 120)
+    }
+
+    fn prepared_flow(
+        record: &ReconnectDurabilityRecordV1,
+    ) -> Result<ReconnectDurabilityFlowV2, ReconnectDurabilityErrorV1> {
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        budget.reserve(
+            record.identity().reconnect_attempt_ref(),
+            record.connection().transport_ref(),
+        )?;
+        let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        flow.accept_prepare_completion(
+            ReconnectPrepareCompletionV2::for_request(
+                &request,
+                ReconnectPrepareDispositionV2::Prepared,
+            ),
+            &mut budget,
+        )?;
+        Ok(flow)
+    }
+
+    fn current_authority(
+        record: &ReconnectDurabilityRecordV1,
+        runtime_scope: RuntimeScopeRefV1,
+        connection_generation: ConnectionGeneration,
+        control_loss_epoch: ControlLossEpochRefV1,
+        proof: ReconnectProofV1,
+    ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
+        ReconnectCurrentAuthorityV1::from_current_facts(
+            record,
+            runtime_scope,
+            connection_generation,
+            record.authority(),
+            control_loss_epoch,
+            proof,
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            105,
+        )
     }
 
     #[test]
@@ -181,39 +223,75 @@ mod runtime_scope_identity_red_tests {
     }
 
     #[test]
-    fn final_revalidation_can_supply_actual_current_runtime_scope_and_reject_drift()
+    fn final_revalidation_requires_complete_current_authority_facts()
     -> Result<(), ReconnectDurabilityErrorV1> {
         let record = candidate_record()?;
-        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
-        budget.reserve(
-            record.identity().reconnect_attempt_ref(),
-            record.connection().transport_ref(),
-        )?;
-        let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
-        flow.accept_prepare_completion(
-            ReconnectPrepareCompletionV2::for_request(
-                &request,
-                ReconnectPrepareDispositionV2::Prepared,
-            ),
-            &mut budget,
-        )?;
+        let exact_scope = record.identity().runtime_scope();
+        let exact_connection = record.connection().predecessor();
+        let exact_epoch = record.continuity().control_loss_epoch();
+        let exact_proof = record.proof().clone();
 
-        let current = ReconnectCurrentAuthorityV1::from_current_facts(
+        let mut exact_flow = prepared_flow(&record)?;
+        let exact = current_authority(
             &record,
-            record.authority(),
-            record.fnd02().clone(),
-            record.compatibility().clone(),
-            GameSessionState::Reconnectable,
-            false,
-            105,
-        )?
-        .with_current_runtime_scope(RuntimeScopeRefV1::channel(
-            record.identity().world_id(),
-            channel(14)?,
-        ))?;
+            exact_scope,
+            exact_connection,
+            exact_epoch,
+            exact_proof.clone(),
+        )?;
+        assert!(exact_flow.authorize_commit(exact, 104).is_ok());
 
+        let mut scope_flow = prepared_flow(&record)?;
+        let changed_scope = current_authority(
+            &record,
+            RuntimeScopeRefV1::channel(record.identity().world_id(), channel(14)?),
+            exact_connection,
+            exact_epoch,
+            exact_proof.clone(),
+        )?;
         assert_eq!(
-            flow.authorize_commit(current, 104),
+            scope_flow.authorize_commit(changed_scope, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut connection_flow = prepared_flow(&record)?;
+        let changed_connection = current_authority(
+            &record,
+            exact_scope,
+            ConnectionGeneration::new(9).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            exact_epoch,
+            exact_proof.clone(),
+        )?;
+        assert_eq!(
+            connection_flow.authorize_commit(changed_connection, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut epoch_flow = prepared_flow(&record)?;
+        let changed_epoch = current_authority(
+            &record,
+            exact_scope,
+            exact_connection,
+            ControlLossEpochRefV1::new(4)?,
+            exact_proof,
+        )?;
+        assert_eq!(
+            epoch_flow.authorize_commit(changed_epoch, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut proof_flow = prepared_flow(&record)?;
+        let changed_proof = current_authority(
+            &record,
+            exact_scope,
+            exact_connection,
+            exact_epoch,
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce: [0x56; 32],
+            },
+        )?;
+        assert_eq!(
+            proof_flow.authorize_commit(changed_proof, 104),
             Err(ReconnectDurabilityErrorV1::StaleAuthority)
         );
         Ok(())
@@ -232,10 +310,12 @@ mod runtime_scope_identity_red_tests {
         )?;
         let substituted = candidate_record_for_channel(14)?;
 
-        assert!(!crate::durability::replacement_authorization_matches_record(
-            &authorization,
-            &substituted,
-        ));
+        assert!(
+            !crate::durability::replacement_authorization_matches_record(
+                &authorization,
+                &substituted,
+            )
+        );
         Ok(())
     }
 }
