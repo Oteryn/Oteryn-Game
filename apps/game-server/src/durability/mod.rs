@@ -186,6 +186,7 @@ impl AdmissionReconnectJournalV2 {
         if retained_attempt_count >= admission_journal::MAX_ATTEMPTS_PER_EPOCH {
             return Ok(ReconnectPrepareDispositionV2::AttemptCapacityExceeded);
         }
+        ensure_precommit_continuity_v2(&mut transaction, record, authorization).await?;
 
         if let Some(prepared_attempt_ref) =
             predecessor.try_get::<Option<Vec<u8>>, _>("prepared_attempt_ref")?
@@ -284,7 +285,6 @@ impl AdmissionReconnectJournalV2 {
         }
 
         insert_candidate_session_v2(&mut transaction, record, retained_attempt_count).await?;
-        ensure_precommit_continuity_v2(&mut transaction, record, authorization).await?;
 
         let disposition =
             prepare_new_candidate_attempt_v2(&mut transaction, record, retained_attempt_count)
@@ -631,7 +631,13 @@ async fn ensure_precommit_continuity_v2(
                 uuid_send(context_game_session_id) AS context_game_session_id, \
                 original_grace_deadline, protection_entitlement_state, \
                 protection_fenced_generation::text AS protection_fenced_generation, \
-                protection_rearm_state \
+                protection_activated_at IS NULL AS protection_activation_missing, \
+                protection_expires_at IS NULL AS protection_expiry_missing, \
+                CASE WHEN protection_activated_at IS NOT NULL AND protection_expires_at IS NOT NULL \
+                     THEN EXTRACT(EPOCH FROM (protection_expires_at - protection_activated_at))::BIGINT \
+                     ELSE NULL END AS protection_duration_seconds, \
+                protection_rearm_state, \
+                protection_rearm_deadline IS NULL AS protection_rearm_deadline_missing \
          FROM game_durability_control_loss_continuity \
          WHERE character_id = encode($1, 'hex')::uuid \
            AND control_loss_epoch = $2::text::numeric(20, 0) FOR UPDATE",
@@ -653,7 +659,13 @@ async fn ensure_precommit_continuity_v2(
             == record.continuity().original_grace_deadline()
         && existing.try_get::<i16, _>("protection_entitlement_state")? == state
         && stored_fenced_generation.as_deref() == fenced_generation.as_deref()
-        && existing.try_get::<i16, _>("protection_rearm_state")? == rearm_state;
+        && existing.try_get::<bool, _>("protection_activation_missing")?
+        && existing.try_get::<bool, _>("protection_expiry_missing")?
+        && existing
+            .try_get::<Option<i64>, _>("protection_duration_seconds")?
+            .is_none()
+        && existing.try_get::<i16, _>("protection_rearm_state")? == rearm_state
+        && existing.try_get::<bool, _>("protection_rearm_deadline_missing")?;
     if !exact_continuity {
         return Err(DurabilityError::InvalidStoredState);
     }
