@@ -2,7 +2,7 @@
 """Regression tests for lean reusable prompt inheritance."""
 from __future__ import annotations
 
-from validate_remote_desktop_prompt_routing import validate_reusable_prompt_text
+from validate_inherited_prompt_policy import validate_reusable_prompt_text
 
 
 def validate(text: str) -> list[str]:
@@ -21,6 +21,14 @@ def test_prompt_local_remote_desktop_policy_still_fails_closed() -> None:
     errors = validate("# Prompt\n\nUse Remote Desktop for routine Git inspection when convenient.\n")
     if not any("Remote Desktop policy text outside canonical section" in error for error in errors):
         raise AssertionError(f"prompt-local routing policy must fail closed, got: {errors}")
+
+
+def test_exact_legacy_block_remains_compatible() -> None:
+    from validate_remote_desktop_prompt_routing import CANONICAL_PROMPT_SECTION
+
+    errors = validate("# Prompt\n\nTask-specific instructions.\n\n" + CANONICAL_PROMPT_SECTION + "\n")
+    if errors:
+        raise AssertionError(f"legacy canonical block should remain compatible during migration, got: {errors}")
 
 
 def main() -> int:
