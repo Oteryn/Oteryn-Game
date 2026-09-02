@@ -395,13 +395,46 @@
     {
       "prompt_id": "OTV2_SOL_DURABILITY_LEAD",
       "path": "docs/agents/prompts/OTV2_SOL_DURABILITY_LEAD.md",
-      "version": "1.1",
+      "version": "1.2",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
-      "scope": "Sol Extra High Durability lane lead; writes require the current exact merged Durability allocation and owned paths.",
+      "scope": "Sol Extra High Durability lane lead and single mutating writer for its canonical branch/PR; writes require the current exact merged Durability allocation and owned paths, and parallel analyst packets remain advisory.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This lead profile does not supersede OTV2_IMPL_DURABILITY; it specializes reasoning/leadership under live coordinator allocation."
+    },
+    {
+      "prompt_id": "OTV2_SOL_DURABILITY_AUTHORITY_ANALYST",
+      "path": "docs/agents/prompts/OTV2_SOL_DURABILITY_AUTHORITY_ANALYST.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "durability-read-only-analysis",
+      "scope": "Strict read-only Foundation/current-authority analysis for the live Durability candidate; returns an exact-head advisory packet and grants no repository/GitHub mutation or formal-review authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Read-only analyst profile; it never supersedes or becomes the Durability Lead, implementation worker, formal reviewer, control plane or architecture authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_DURABILITY_CONTINUITY_ANALYST",
+      "path": "docs/agents/prompts/OTV2_SOL_DURABILITY_CONTINUITY_ANALYST.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "durability-read-only-analysis",
+      "scope": "Strict read-only continuity/protection and replacement-transaction analysis for the live Durability candidate; returns an exact-head advisory packet and grants no repository/GitHub mutation or formal-review authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Read-only analyst profile; it never supersedes or becomes the Durability Lead, implementation worker, formal reviewer, control plane or architecture authority."
+    },
+    {
+      "prompt_id": "OTV2_SOL_DURABILITY_QUALIFICATION_ANALYST",
+      "path": "docs/agents/prompts/OTV2_SOL_DURABILITY_QUALIFICATION_ANALYST.md",
+      "version": "1.0",
+      "status": "reusable",
+      "owner": "durability-read-only-analysis",
+      "scope": "Strict read-only whole-diff, regression-gap, protected-main-drift and qualification-plan analysis for the live Durability candidate; returns an exact-head advisory packet and grants no repository/GitHub mutation or formal-review authority.",
+      "reusable": true,
+      "superseded_by": null,
+      "supersession_rule": "Read-only analyst profile; it never supersedes or becomes the Durability Lead, implementation worker, formal reviewer, control plane or architecture authority."
     },
     {
       "prompt_id": "OTV2_SOL_SERVER_SEAM_LEAD",
