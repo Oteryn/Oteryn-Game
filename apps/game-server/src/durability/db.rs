@@ -1,6 +1,6 @@
 use crate::durability::DurabilityError;
-use sqlx::postgres::PgPoolOptions;
 use sqlx::PgPool;
+use sqlx::postgres::PgPoolOptions;
 use std::time::Duration;
 
 const CONNECT_TIMEOUT: Duration = Duration::from_secs(5);
@@ -139,15 +139,9 @@ mod runtime_scope_identity_red_tests {
         current_channel_raw: u64,
     ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
     {
-        let facts = FreshAdmissionFacts::new(
-            [0x44; 32],
-            character(11)?,
-            world(12)?,
-            channel(13)?,
-            9,
-            10,
-        )
-        .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let facts =
+            FreshAdmissionFacts::new([0x44; 32], character(11)?, world(12)?, channel(13)?, 9, 10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
         let initial_transport = AuthenticatedTransportRefV1::decode(&[0x70; 16])
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
         let commit = FreshAdmissionCommit::from_facts(game_session(10)?, facts, initial_transport)
