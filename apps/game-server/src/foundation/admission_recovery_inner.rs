@@ -20,6 +20,7 @@ pub struct GameSessionAuthoritySnapshot<T: Copy + Eq> {
 }
 
 impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
+    #[cfg(test)]
     #[must_use]
     pub const fn new(
         commit: FreshAdmissionCommit<T>,
@@ -40,6 +41,31 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
             current_control_loss_epoch: None,
             current_original_grace_deadline: None,
         }
+    }
+
+    pub fn from_current_facts(
+        commit: FreshAdmissionCommit<T>,
+        session_state: GameSessionState,
+        current_connection_generation: ConnectionGeneration,
+        current_transport: Option<T>,
+        current_character_lease: CharacterLease,
+        current_runtime_scope: RuntimeScopeRefV1,
+        current_scope_generation: ScopeOwnershipGeneration,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if current_runtime_scope.world_id() != commit.world_id() {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        Ok(Self {
+            commit,
+            session_state,
+            current_connection_generation,
+            current_transport,
+            current_character_lease,
+            current_runtime_scope,
+            current_scope_generation,
+            current_control_loss_epoch: None,
+            current_original_grace_deadline: None,
+        })
     }
 
     pub fn with_control_loss_continuity(
@@ -1000,25 +1026,33 @@ pub struct ReconnectCurrentAuthorityV1 {
     observed_at: i64,
 }
 impl ReconnectCurrentAuthorityV1 {
+    #[allow(clippy::too_many_arguments)]
     pub fn from_current_facts(
         record: &ReconnectDurabilityRecordV1,
+        current_runtime_scope: RuntimeScopeRefV1,
+        predecessor: ConnectionGeneration,
         authority: ReconnectAuthorityFenceV1,
+        continuity_epoch: ControlLossEpochRefV1,
+        proof: ReconnectProofV1,
         fnd02: Fnd02ReconciliationFenceV1,
         compatibility: ReconnectCompatibilityEvidenceV1,
         session_state: GameSessionState,
         current_controller_present: bool,
         observed_at: i64,
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
-        if observed_at < 0 {
+        if observed_at < 0
+            || current_runtime_scope.world_id() != record.identity().world_id()
+            || !proof.validate()
+        {
             return Err(ReconnectDurabilityErrorV1::InvalidRecord);
         }
         Ok(Self {
             identity: record.identity().clone(),
-            current_runtime_scope: record.identity().runtime_scope(),
-            predecessor: record.connection().predecessor(),
+            current_runtime_scope,
+            predecessor,
             authority,
-            continuity_epoch: record.continuity().control_loss_epoch(),
-            proof: record.proof().clone(),
+            continuity_epoch,
+            proof,
             fnd02,
             protocol_major: compatibility.protocol_major(),
             transport_profile: compatibility.transport_profile(),
@@ -1042,7 +1076,11 @@ impl ReconnectCurrentAuthorityV1 {
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         Self::from_current_facts(
             record,
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
             record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.proof().clone(),
             record.fnd02().clone(),
             record.compatibility().clone(),
             GameSessionState::Reconnectable,

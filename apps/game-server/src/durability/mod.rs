@@ -1257,16 +1257,17 @@ mod terminal_replacement_foundation_red_tests {
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
         let commit = FreshAdmissionCommit::from_facts(game_session(10)?, facts, initial_transport)
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
-        GameSessionAuthoritySnapshot::new(
+        GameSessionAuthoritySnapshot::from_current_facts(
             commit,
             state,
             ConnectionGeneration::new(7).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
             current_transport,
             CharacterLease::new(character(11)?, 9)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            RuntimeScopeRefV1::channel(world(12)?, channel(13)?),
             ScopeOwnershipGeneration::new(current_scope)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
-        )
+        )?
         .with_control_loss_continuity(ControlLossEpochRefV1::new(3)?, 120)
     }
 
@@ -1307,7 +1308,11 @@ mod terminal_replacement_foundation_red_tests {
 
         let exact_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
             record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.proof().clone(),
             record.fnd02().clone(),
             record.compatibility().clone(),
             GameSessionState::Reconnectable,
@@ -1343,7 +1348,11 @@ mod terminal_replacement_foundation_red_tests {
         .expect("changed authority");
         let changed_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
             changed_authority,
+            record.continuity().control_loss_epoch(),
+            record.proof().clone(),
             record.fnd02().clone(),
             record.compatibility().clone(),
             GameSessionState::Reconnectable,

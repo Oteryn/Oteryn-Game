@@ -381,17 +381,17 @@ mod v2_reconciled_prepared_budget_regression_tests {
         let other_channel = ChannelId::decode(&uuid_v7(14)).map_err(invalid_record)?;
         let current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
+            RuntimeScopeRefV1::channel(record.identity().world_id(), other_channel),
+            record.connection().predecessor(),
             record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.proof().clone(),
             record.fnd02().clone(),
             record.compatibility().clone(),
             GameSessionState::Reconnectable,
             false,
             105,
-        )?
-        .with_current_runtime_scope(RuntimeScopeRefV1::channel(
-            record.identity().world_id(),
-            other_channel,
-        ))?;
+        )?;
         assert_eq!(
             flow.authorize_commit(current, 104),
             Err(ReconnectDurabilityErrorV1::StaleAuthority)

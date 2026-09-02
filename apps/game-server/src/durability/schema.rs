@@ -458,16 +458,17 @@ mod terminal_replacement_postgres_red_tests {
         let predecessor = game_session(predecessor_raw)?;
         let commit = FreshAdmissionCommit::from_facts(predecessor, facts, initial_transport)
             .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
-        let snapshot = GameSessionAuthoritySnapshot::new(
+        let snapshot = GameSessionAuthoritySnapshot::from_current_facts(
             commit,
             GameSessionState::Terminal,
             ConnectionGeneration::new(7).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
             None,
             CharacterLease::new(character(11)?, 9)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            RuntimeScopeRefV1::channel(world(12)?, channel(13)?),
             ScopeOwnershipGeneration::new(current_scope)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
-        )
+        )?
         .with_control_loss_continuity(
             ControlLossEpochRefV1::new(3)?,
             candidate.continuity().original_grace_deadline(),
