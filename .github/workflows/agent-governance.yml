@@ -189,6 +189,9 @@ jobs:
       - name: Test Remote Desktop prompt routing
         run: python tools/agents/test_validate_remote_desktop_prompt_routing.py
 
+      - name: Test lean prompt deduplication
+        run: python tools/agents/test_prompt_deduplication.py
+
       - name: Test Codex Remote Desktop regressions
         run: python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
 
