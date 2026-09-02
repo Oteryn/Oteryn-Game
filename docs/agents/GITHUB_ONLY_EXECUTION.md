@@ -63,6 +63,14 @@ A workflow removed before merge cannot prove the removal commit. Final exact-hea
 
 Do not add `pull_request_target` execution of PR-controlled code merely to work around suppressed connector events. Any status-reporting workflow must preserve least privilege and must not allow an untrusted PR to mint its own required success context.
 
+## Remote Desktop execution routing
+
+Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
+
+`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. Game cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.
+
+This policy does not claim connector/router physical enforcement; such a claim requires a verified fail-closed transport hook.
+
 ## Merge
 
 Protected auto-merge may be configured when the exact head is frozen, all non-CI gates are complete and protection guarantees required checks. Otherwise direct squash merge is allowed only after every exact-head check, audit, E2E, review and ownership gate passes.
