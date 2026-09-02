@@ -212,6 +212,21 @@ impl AdmissionReconnectJournalV2 {
             }
         }
 
+        sqlx::query(
+            "UPDATE game_durability_reconnect_attempts SET state = $2 \
+             WHERE game_session_id = encode($1, 'hex')::uuid AND state = $3",
+        )
+        .bind(
+            authorization
+                .predecessor_game_session_id()
+                .as_bytes()
+                .as_slice(),
+        )
+        .bind(V2_STALE_TERMINAL)
+        .bind(V2_COMMITTED)
+        .execute(&mut *transaction)
+        .await?;
+
         let terminalized_session = sqlx::query(
             "UPDATE game_durability_reconnect_sessions \
              SET scope_ownership_generation = $2::text::numeric(20, 0), \
@@ -309,6 +324,16 @@ impl AdmissionReconnectJournalV2 {
         let (legacy, state) =
             AdmissionReconnectJournal::reconcile_record_in_transaction(&mut transaction, record)
                 .await?;
+        if request.terminal_replacement().is_none()
+            && replacement_receipt_for_candidate_exists(
+                &mut transaction,
+                record.identity().character_id().as_bytes().as_slice(),
+                record.identity().game_session_id().as_bytes().as_slice(),
+            )
+            .await?
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
         let outcome = match state {
             V2_PREPARED => {
                 if legacy != ReconnectDurableReconciliationSnapshotV1::prepared(record.clone()) {
