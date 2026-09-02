@@ -1,22 +1,23 @@
 # Prompting standard
 
-A repository execution prompt must be self-contained, bounded and verifiable.
+A repository execution prompt is a **task-specific delta** on top of current root/nearest `AGENTS.md`, live GitHub task state and accepted contracts. For GPT-5.6 Sol, prefer the smallest prompt that preserves the intended outcome, authority boundaries, hard domain constraints and observable acceptance.
 
-## Required sections
+Do not copy repository-wide execution policy into every prompt merely for self-containment. Global GitHub-first, branch/concurrency, capability-discovery, Remote Desktop, AI-review, retry/continuation and merge rules are inherited from current governing instructions unless the task has a legitimate narrower rule.
 
-1. Role and exact task mode (`IMPLEMENT`, `AUDIT`, `CONTRACT`, `REPAIR`, `COORDINATE`).
-2. Authorized repositories and explicit write allowlist.
-3. Exact target outcome and observable acceptance.
-4. Trusted source order and mandatory files/contracts.
-5. Current known baseline labeled `PROVEN/DERIVED/UNKNOWN/CONFLICT`.
-6. Owned paths/public contracts and excluded scope.
-7. Dependencies, parallelism and cross-repository ordering.
-8. Required implementation layers.
-9. Validation ladder, audit, E2E and exact-head merge gate.
-10. Stop conditions, budget and durable handover requirements.
-11. Completion rule preventing plan-only or partial delivery.
+## Minimal prompt contract
 
-## Oteryn v2 prompt invariants
+A substantial prompt needs only the task-specific information that materially changes execution:
+
+1. **Role / outcome** — bounded role and one observable target.
+2. **Authority / scope** — exact writable repository/path or allocation boundary and prohibited effects.
+3. **Live locators** — Issue/task/PR/branch or other identifiers needed to refresh current truth; cached SHAs are locators, not authority.
+4. **Hard constraints / dependencies** — Game/domain invariants, accepted contracts and prerequisites unique to this work.
+5. **Acceptance / validation** — the observable evidence actually required for this task.
+6. **Stop / handoff** — genuine owner/safety/authority blockers and the durable result or next action when execution cannot continue.
+
+Omit a section when it has no task-specific content. Do not add a field, example, checklist or procedure solely because an older template contained it.
+
+## Oteryn v2 domain invariants
 
 Prompts must preserve native Rust, `protocol-oteryn` only, multichannel identities/ownership, server authority, session fencing and separate external repository authority unless an owner-approved ADR/task explicitly changes them.
 
@@ -26,29 +27,39 @@ Do not instruct an agent to infer missing bytes, schemas, assets, credentials, d
 
 Worker prompts have exclusive paths/contracts, precise inputs/outputs, no coordinator authority, clear integration-ready state and focused acceptance. Do not assign overlapping public contract ownership to parallel workers.
 
+A direct reusable worker alias grants no write authority by itself. The worker must resolve the live allocation/owner authority required by its lifecycle entry and task before mutation.
+
 ## Audit prompts
 
-Auditors are read-only unless repair is separately authorized. They must challenge completeness, inspect exact source/live state and classify every finding with evidence and severity.
+Auditors are read-only unless repair is separately authorized. They must challenge completeness, inspect exact source/live state and classify every finding with evidence and severity. Do not copy implementation-worker procedure into an auditor merely for symmetry.
 
-## Canonical Codex review routing
+## AI review inheritance
 
-Every reusable prompt must contain a `## Canonical Codex review routing` section and resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md` before owner-funded Codex/OpenAI/API review use. Prompt-local wording must not reintroduce per-run owner confirmation for operations covered by the standing review authorization. Non-covered owner-funded AI use still requires exact per-invocation owner authorization.
+Reusable prompts inherit the current root `AGENTS.md` META-owned AI-review policy. They **must not** maintain a competing full copy of organization review routing.
 
-A prompt must not infer candidate ownership from standing authorization. Only the current canonical candidate/review-request owner may trigger a covered review. Candidate-owning prompts must preserve exact-head freeze, durable GitHub review evidence, fresh re-review after material head movement, zero unresolved blocking findings/required threads, and strict read-only/non-mutating reviewer constraints. Control-plane, audit and read-only-preparation prompts must not acquire technical, candidate-write or nested-reviewer authority from the standing authorization.
+A prompt may state a task-specific risk fact or identify which current policy trigger applies, but root/current META policy decides whether review is required, optional or not useful. Standing or historical local review prose cannot create candidate ownership, control-plane authority, merge authority or a required GitHub status.
 
-## Remote Desktop execution routing
+Legacy `## Canonical Codex review routing` blocks may remain temporarily during migration, but new or materially updated prompts should omit them unless a deterministic consumer still requires that exact block. Any such retained block is compatibility text, not independent policy authority.
 
-Every reusable prompt must contain exactly one `## Remote Desktop execution routing` section. Before any Remote Desktop/Desktop Commander use, the prompt must resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
+## Remote Desktop inheritance
 
-The reusable prompt section must state that `list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions; unknown or undeclared tools fail closed; a prior ALLOW never authorizes a different action or tool; Game cannot broaden META exception reasons; and Remote Desktop cannot become a routine fallback for repository tests, Git inspection, CI/log polling or convenience. It must also state that a Remote Desktop DENY is not automatically a blocker and useful authorized work continues through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when possible.
+Reusable prompts inherit Remote Desktop/Desktop Commander restrictions from current Game `AGENTS.md` and the canonical META execution-routing policy referenced there. Prompt-local policy must never broaden those rules.
 
-Prompt self-containment does not copy the META machine-readable policy into Game and does not claim connector/router physical enforcement.
+A reusable prompt does **not** need to copy a `## Remote Desktop execution routing` section. During migration, an existing exact legacy canonical section may remain compatible; modified, duplicate, hidden/example-only or policy-broadening copies fail closed. Remote Desktop availability never grants authority and a DENY is not automatically a task blocker when a safe repository-native path remains.
+
+The authoritative repository/supporting policy surfaces retain the detailed per-action routing contract and deterministic validation. Task prompts should reference/inherit that authority rather than repeat it.
+
+## Prompt evaluation
+
+Evaluate material prompt/harness changes against `docs/agents/PROMPT_EVAL_STANDARD.md`. Use balanced cases and ablation; keep a rule or example only when it protects a documented invariant or improves measured behaviour. Newer model families may require less scaffolding.
+
+Do not score prompts by length alone: shorter is useful only when safety, task success and observable outcome are preserved or improved. Measure unnecessary owner questions, repeated reads/tool calls, context loaded versus used, and false blockers where practical.
 
 ## Retained prompt lifecycle
 
 Every retained execution prompt under `docs/agents/prompts/*.md`, except the directory `README.md`, must have exactly one entry in `docs/agents/PROMPT_LIFECYCLE.json`.
 
-The lifecycle registry supplies dispatch metadata that older prompt bodies do not consistently carry inline: stable `prompt_id`, lifecycle-registry `version`, `status`, lifecycle owner, bounded scope and supersession semantics. Registry version `1.0` means first registration in that lifecycle registry; it does not retroactively claim that an older prompt document historically used that version.
+The lifecycle registry supplies stable `prompt_id`, registry version, status, lifecycle owner, bounded scope and supersession semantics. Registry version `1.0` means first registration in that lifecycle registry; it does not retroactively claim that an older prompt document historically used that version.
 
 `reusable` means only that the prompt may be resolved from current `main`. It does not grant a branch, owned paths or write authority; the prompt's live allocation/owner prerequisites still apply. `retired` means provenance-only: the file may remain in Git history or the prompt directory, but it must not be dispatched as executable work and must name its successor in the lifecycle registry.
 
