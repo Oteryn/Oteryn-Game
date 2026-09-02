@@ -137,7 +137,10 @@ mod runtime_scope_identity_red_tests {
     }
 
     fn unix_now() -> Result<i64, Box<dyn Error>> {
-        Ok(SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs().try_into()?)
+        Ok(SystemTime::now()
+            .duration_since(UNIX_EPOCH)?
+            .as_secs()
+            .try_into()?)
     }
 
     fn uuid_v7(raw: u64) -> [u8; 16] {
@@ -591,21 +594,16 @@ mod runtime_scope_identity_red_tests {
     }
 
     #[test]
-    fn replacement_reconciliation_requires_receipt_authorization_when_request_omits_it() -> TestResult {
+    fn replacement_reconciliation_requires_receipt_authorization_when_request_omits_it()
+    -> TestResult {
         run_postgres_test(async {
-            let (database, database_url) = migrated_database("unsigned_replacement_reconcile").await?;
+            let (database, database_url) =
+                migrated_database("unsigned_replacement_reconcile").await?;
             let now = unix_now()?;
             seed_current_actor_anchor(&database_url, 10, now).await?;
             let journal = AdmissionReconnectJournalV2::connect_runtime(&database_url).await?;
-            let candidate = postgres_record(
-                now,
-                20,
-                1,
-                0xa1,
-                7,
-                ProtectionEntitlementV1::unused(),
-            )
-            .map_err(|_| "candidate record")?;
+            let candidate = postgres_record(now, 20, 1, 0xa1, 7, ProtectionEntitlementV1::unused())
+                .map_err(|_| "candidate record")?;
             let authorization = replacement_authorization(&candidate, 10, 7)
                 .map_err(|_| "replacement authorization")?;
             let signed_request =
@@ -630,12 +628,13 @@ mod runtime_scope_identity_red_tests {
     #[test]
     fn terminal_replacement_preserves_committed_predecessor_reconciliation() -> TestResult {
         run_postgres_test(async {
-            let (database, database_url) = migrated_database("committed_predecessor_reconcile").await?;
+            let (database, database_url) =
+                migrated_database("committed_predecessor_reconcile").await?;
             let now = unix_now()?;
             let journal = AdmissionReconnectJournalV2::connect_runtime(&database_url).await?;
             let fenced = ProtectionEntitlementV1::fenced(42).map_err(|_| "fenced protection")?;
-            let predecessor_record = postgres_record(now, 10, 1, 0xb1, 7, fenced)
-                .map_err(|_| "predecessor record")?;
+            let predecessor_record =
+                postgres_record(now, 10, 1, 0xb1, 7, fenced).map_err(|_| "predecessor record")?;
             let (mut predecessor_flow, predecessor_prepare) =
                 ReconnectDurabilityFlowV1::begin(predecessor_record.clone());
             assert_eq!(
