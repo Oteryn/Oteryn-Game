@@ -1172,8 +1172,8 @@ mod terminal_replacement_foundation_red_tests {
         ReconnectDurableOutcomeV2, ReconnectDurableReconciliationSnapshotV2,
         ReconnectDurableTerminalDispositionV1, ReconnectIdentityV1, ReconnectPrepareActionV1,
         ReconnectPrepareCompletionV1, ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1,
-        ReconnectPrepareDispositionV2, ReconnectProofV1, RuntimeScopeRefV1,
-        ScopeOwnershipGeneration, StateDomainRevisionV1,
+        ReconnectPrepareDispositionV2, ReconnectProjectionDecisionV2, ReconnectProofV1,
+        RuntimeScopeRefV1, ScopeOwnershipGeneration, StateDomainRevisionV1,
         TerminalGameSessionReplacementAuthorizationV1, WorldId,
     };
 
@@ -1422,6 +1422,111 @@ mod terminal_replacement_foundation_red_tests {
         assert_eq!(
             changed_flow.authorize_commit(changed_current, 104),
             Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+    }
+
+    #[test]
+    fn v2_final_authority_revalidation_requires_current_account_presence() {
+        let record = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 10, 1).expect("record");
+        let exact_presence = AccountPresenceClaimV1::new(
+            record.identity().account_id(),
+            record.identity().character_id(),
+        )
+        .expect("account presence");
+        let reassigned_presence =
+            AccountPresenceClaimV1::new(ACCOUNT, character(99).expect("character"))
+                .expect("reassigned account presence");
+
+        let current = |presence| {
+            ReconnectCurrentAuthorityV1::from_current_facts(
+                &record,
+                presence,
+                record.identity().runtime_scope(),
+                record.connection().predecessor(),
+                record.authority(),
+                record.continuity().control_loss_epoch(),
+                record.proof().clone(),
+                record.fnd02().clone(),
+                record.compatibility().clone(),
+                GameSessionState::Reconnectable,
+                false,
+                105,
+            )
+            .expect("current authority")
+        };
+        let flow = || {
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+            budget
+                .reserve(
+                    record.identity().reconnect_attempt_ref(),
+                    record.connection().transport_ref(),
+                )
+                .expect("reserve");
+            let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Prepared,
+                ),
+                &mut budget,
+            )
+            .expect("prepare completion");
+            flow
+        };
+
+        assert!(
+            flow()
+                .authorize_commit(current(Some(exact_presence.clone())), 104)
+                .is_ok()
+        );
+        assert_eq!(
+            flow().authorize_commit(current(None), 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+        assert_eq!(
+            flow().authorize_commit(current(Some(reassigned_presence.clone())), 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let committed = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation: record.connection().candidate(),
+                current_transport_ref: record.connection().transport_ref(),
+            },
+        );
+        let reconcile = |presence| {
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+            budget
+                .reserve(
+                    record.identity().reconnect_attempt_ref(),
+                    record.connection().transport_ref(),
+                )
+                .expect("reserve");
+            let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Ambiguous,
+                ),
+                &mut budget,
+            )
+            .expect("prepare completion");
+            flow.accept_reconciliation(committed.clone(), current(presence), &mut budget)
+        };
+        assert!(matches!(
+            reconcile(Some(exact_presence)),
+            Ok(ReconnectProjectionDecisionV2::InstallController { .. })
+        ));
+        assert_eq!(
+            reconcile(None),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
+        assert_eq!(
+            reconcile(Some(reassigned_presence)),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
         );
     }
 
