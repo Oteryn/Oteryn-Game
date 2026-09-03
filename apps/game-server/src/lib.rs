@@ -405,4 +405,50 @@ mod v2_reconciled_prepared_budget_regression_tests {
         );
         Ok(())
     }
+
+    #[test]
+    fn final_revalidation_rejects_authority_observed_after_authorization_deadline()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record()?;
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        budget.reserve(
+            record.identity().reconnect_attempt_ref(),
+            record.connection().transport_ref(),
+        )?;
+        let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        assert_eq!(
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Prepared,
+                ),
+                &mut budget,
+            )?,
+            ReconnectPrepareActionV2::AwaitFinalRevalidation
+        );
+
+        let current = ReconnectCurrentAuthorityV1::from_current_facts(
+            &record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
+            Some(ReconnectCandidateBindingV1::from_record(&record)?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            106,
+        )?;
+        assert_eq!(
+            flow.authorize_commit(current, 104),
+            Err(ReconnectDurabilityErrorV1::DeadlineExpired)
+        );
+        Ok(())
+    }
 }
