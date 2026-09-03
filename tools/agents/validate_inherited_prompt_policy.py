@@ -45,12 +45,15 @@ AI_REVIEW_AUTHORITY_BROADENING = (
         r"\bwithout\s+(?:explicit\s+)?authorization\b",
         re.IGNORECASE | re.DOTALL,
     ),
-    # Positive modal grant to use an AI service. "may not", "cannot", and
-    # "is not allowed" are structurally different and therefore remain valid.
+    # Positive modal grant to directly invoke an AI service. Keep the service
+    # adjacent to the invocation verb so unrelated domain prose such as
+    # "may run alongside ... AI" or "may use ... AI fixtures" is not treated
+    # as review-service authority.
     re.compile(
         r"\b(?:may|can|is\s+allowed\s+to|is\s+authorized\s+to|has\s+authority\s+to)\s+"
-        r"(?:invoke|use|run|call)\b.{0,80}\b(?:external\s+)?(?:ai|codex|openai)\b",
-        re.IGNORECASE | re.DOTALL,
+        r"(?:invoke|use|run|call)\s+(?:owner[- ]funded\s+)?(?:external\s+)?"
+        r"(?:ai|codex|openai)\b",
+        re.IGNORECASE,
     ),
     re.compile(
         r"\b(?:approval|review)\s+(?:is|becomes|shall\s+be|must\s+be)\s+"
