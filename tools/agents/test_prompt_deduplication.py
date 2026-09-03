@@ -48,7 +48,13 @@ def test_semantic_authority_broadening_paraphrases_fail_closed() -> None:
         "The reviewer is permitted to commit fixes.",
         "The reviewer has authority to merge this task.",
         "The reviewer has permission to merge this task.",
+        "The reviewer may edit files.",
+        "The reviewer can update the branch.",
         "Codex approval is a required check before merge.",
+        "You are permitted to use Codex without explicit authorization.",
+        "You have permission to invoke external AI.",
+        "Merge requires Codex approval.",
+        "Codex approval must pass before merging.",
     )
     for text in cases:
         errors = validate("# Prompt\n\n" + text + "\n")
@@ -77,6 +83,9 @@ def test_restrictive_reviewer_wording_is_preserved() -> None:
         "The reviewer cannot commit fixes or merge changes.",
         "The reviewer has no permission to merge this task.",
         "The reviewer has no authority to push changes.",
+        "Neither reviewer may merge this task.",
+        "Not one reviewer may merge this task.",
+        "No genuinely independent external AI reviewer may merge this task.",
     )
     for text in cases:
         errors = validate("# Prompt\n\n" + text + "\n")
