@@ -1881,7 +1881,7 @@ impl ReconnectDurabilityFlowV2 {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
         let deadline = self.record.authorization_deadline()?;
-        if now > deadline {
+        if now > deadline || current.observed_at > deadline {
             self.phase = ReconnectDurabilityPhaseV1::Terminal;
             return Err(ReconnectDurabilityErrorV1::DeadlineExpired);
         }
