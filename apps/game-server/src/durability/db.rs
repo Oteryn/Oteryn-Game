@@ -19,17 +19,20 @@ mod runtime_scope_identity_red_tests {
     use crate::durability::{AdmissionReconnectJournalV2, MigrationExecutor};
     use oteryn_game_server::foundation::{
         AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
-        CharacterId, CharacterLease, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
-        Fnd02ReconciliationFenceV1, FreshAdmissionCommit, FreshAdmissionFacts,
-        GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, ProtectionEntitlementV1,
-        ReconnectAttemptBudgetV1, ReconnectAttemptRef, ReconnectAuthorityFenceV1,
-        ReconnectCommitDispositionV1, ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1,
-        ReconnectContinuityV1, ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1,
-        ReconnectDurabilityFlowV1, ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1,
-        ReconnectDurableReconciliationSnapshotV1, ReconnectIdentityV1,
+        CharacterId, CharacterLease, CharacterWorldEligibilityClaimV1, CommandId,
+        ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1,
+        FreshAdmissionCommit, FreshAdmissionFacts, GameSessionAuthoritySnapshot, GameSessionId,
+        GameSessionState, ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
+        ReconnectAuthorityFenceV1, ReconnectCandidateBindingV1, ReconnectCommitDispositionV1,
+        ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
+        ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
+        ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1,
+        ReconnectDurableOutcomeV2, ReconnectDurableReconciliationSnapshotV1,
+        ReconnectDurableReconciliationSnapshotV2, ReconnectIdentityV1,
         ReconnectPrepareCompletionV1, ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1,
-        ReconnectPrepareDispositionV2, ReconnectProofV1, RuntimeScopeRefV1,
-        ScopeOwnershipGeneration, TerminalGameSessionReplacementAuthorizationV1, WorldId,
+        ReconnectPrepareDispositionV2, ReconnectProofV1, ReconnectProjectionDecisionV2,
+        RuntimeScopeRefV1, ScopeOwnershipGeneration,
+        TerminalGameSessionReplacementAuthorizationV1, WorldId,
     };
     use sqlx::{Connection, Executor, PgConnection};
     use std::error::Error;
@@ -353,6 +356,7 @@ mod runtime_scope_identity_red_tests {
             None,
             CharacterLease::new(character(11)?, 9)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            Some(CharacterWorldEligibilityClaimV1::new(character(11)?, world(12)?)),
             RuntimeScopeRefV1::channel(world(12)?, channel(13)?),
             ScopeOwnershipGeneration::new(10)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
@@ -419,6 +423,17 @@ mod runtime_scope_identity_red_tests {
         current_channel_raw: u64,
     ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
     {
+        predecessor_snapshot_with_world_eligibility(
+            current_channel_raw,
+            Some(CharacterWorldEligibilityClaimV1::new(character(11)?, world(12)?)),
+        )
+    }
+
+    fn predecessor_snapshot_with_world_eligibility(
+        current_channel_raw: u64,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
+    {
         let facts =
             FreshAdmissionFacts::new([0x44; 32], character(11)?, world(12)?, channel(13)?, 9, 10)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
@@ -433,6 +448,7 @@ mod runtime_scope_identity_red_tests {
             None,
             CharacterLease::new(character(11)?, 9)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            current_character_world_eligibility,
             RuntimeScopeRefV1::channel(world(12)?, channel(current_channel_raw)?),
             ScopeOwnershipGeneration::new(10)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
@@ -466,9 +482,34 @@ mod runtime_scope_identity_red_tests {
         control_loss_epoch: ControlLossEpochRefV1,
         proof: ReconnectProofV1,
     ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
+        current_authority_with_bindings(
+            record,
+            Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
+            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            runtime_scope,
+            connection_generation,
+            control_loss_epoch,
+            proof,
+            105,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn current_authority_with_bindings(
+        record: &ReconnectDurabilityRecordV1,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+        current_candidate: Option<ReconnectCandidateBindingV1>,
+        runtime_scope: RuntimeScopeRefV1,
+        connection_generation: ConnectionGeneration,
+        control_loss_epoch: ControlLossEpochRefV1,
+        proof: ReconnectProofV1,
+        observed_at: i64,
+    ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
         ReconnectCurrentAuthorityV1::from_current_facts(
             record,
             Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            current_character_world_eligibility,
+            current_candidate,
             runtime_scope,
             connection_generation,
             record.authority(),
@@ -478,8 +519,240 @@ mod runtime_scope_identity_red_tests {
             record.compatibility().clone(),
             GameSessionState::Reconnectable,
             false,
-            105,
+            observed_at,
         )
+    }
+
+    #[test]
+    fn terminal_replacement_requires_independent_current_character_world_eligibility()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let candidate = candidate_record()?;
+        assert!(TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+            ACCOUNT,
+            game_session(10)?,
+            game_session(20)?,
+            predecessor_snapshot_with_world_eligibility(
+                13,
+                Some(CharacterWorldEligibilityClaimV1::new(character(11)?, world(12)?)),
+            )?,
+            &candidate,
+        )
+        .is_ok());
+
+        for current_eligibility in [
+            None,
+            Some(CharacterWorldEligibilityClaimV1::new(character(11)?, world(99)?)),
+            Some(CharacterWorldEligibilityClaimV1::new(character(99)?, world(12)?)),
+        ] {
+            assert_eq!(
+                TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                    ACCOUNT,
+                    game_session(10)?,
+                    game_session(20)?,
+                    predecessor_snapshot_with_world_eligibility(13, current_eligibility)?,
+                    &candidate,
+                ),
+                Err(ReconnectDurabilityErrorV1::StaleAuthority)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn v2_final_revalidation_requires_current_world_and_live_candidate_binding()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
+        let exact_world = Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity()));
+        let exact_candidate = ReconnectCandidateBindingV1::from_record(&record)?;
+        let exact_scope = record.identity().runtime_scope();
+        let exact_connection = record.connection().predecessor();
+        let exact_epoch = record.continuity().control_loss_epoch();
+        let exact_proof = record.proof().clone();
+
+        let mut exact_flow = prepared_flow(&record)?;
+        assert!(exact_flow
+            .authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    exact_world,
+                    Some(exact_candidate),
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof.clone(),
+                    105,
+                )?,
+                104,
+            )
+            .is_ok());
+
+        let mut missing_world_flow = prepared_flow(&record)?;
+        assert_eq!(
+            missing_world_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    None,
+                    Some(exact_candidate),
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof.clone(),
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut reassigned_world_flow = prepared_flow(&record)?;
+        assert_eq!(
+            reassigned_world_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    Some(CharacterWorldEligibilityClaimV1::new(character(11)?, world(99)?)),
+                    Some(exact_candidate),
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof.clone(),
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let mut missing_candidate_flow = prepared_flow(&record)?;
+        assert_eq!(
+            missing_candidate_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    exact_world,
+                    None,
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof.clone(),
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let rebound_candidate = ReconnectCandidateBindingV1::new(
+            record.identity().game_session_id(),
+            record.identity().reconnect_attempt_ref(),
+            record.connection().candidate(),
+            AuthenticatedTransportRefV1::decode(&[0x72; 16])
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            record.continuity().prepared_deadline(),
+        )?;
+        let mut rebound_candidate_flow = prepared_flow(&record)?;
+        assert_eq!(
+            rebound_candidate_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    exact_world,
+                    Some(rebound_candidate),
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof.clone(),
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let changed_attempt_candidate = ReconnectCandidateBindingV1::new(
+            record.identity().game_session_id(),
+            ReconnectAttemptRef::new(2).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            record.connection().candidate(),
+            record.connection().transport_ref(),
+            record.continuity().prepared_deadline(),
+        )?;
+        let mut changed_attempt_flow = prepared_flow(&record)?;
+        assert_eq!(
+            changed_attempt_flow.authorize_commit(
+                current_authority_with_bindings(
+                    &record,
+                    exact_world,
+                    Some(changed_attempt_candidate),
+                    exact_scope,
+                    exact_connection,
+                    exact_epoch,
+                    exact_proof,
+                    105,
+                )?,
+                104,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn v2_committed_reconciliation_requires_current_world_and_live_candidate_binding()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
+        let snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation: record.connection().candidate(),
+                current_transport_ref: record.connection().transport_ref(),
+            },
+        );
+        let reconcile = |
+            current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+            current_candidate: Option<ReconnectCandidateBindingV1>,
+        | {
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+            budget.reserve(
+                record.identity().reconnect_attempt_ref(),
+                record.connection().transport_ref(),
+            )?;
+            let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Ambiguous,
+                ),
+                &mut budget,
+            )?;
+            flow.accept_reconciliation(
+                snapshot.clone(),
+                current_authority_with_bindings(
+                    &record,
+                    current_character_world_eligibility,
+                    current_candidate,
+                    record.identity().runtime_scope(),
+                    record.connection().predecessor(),
+                    record.continuity().control_loss_epoch(),
+                    record.proof().clone(),
+                    105,
+                )?,
+                &mut budget,
+            )
+        };
+
+        let exact_world = Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity()));
+        let exact_candidate = Some(ReconnectCandidateBindingV1::from_record(&record)?);
+        assert!(matches!(
+            reconcile(exact_world, exact_candidate)?,
+            ReconnectProjectionDecisionV2::InstallController { .. }
+        ));
+        assert_eq!(
+            reconcile(None, exact_candidate),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
+        assert_eq!(
+            reconcile(exact_world, None),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
+        Ok(())
     }
 
     #[test]
