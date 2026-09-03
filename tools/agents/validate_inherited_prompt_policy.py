@@ -70,21 +70,24 @@ AI_REVIEW_AUTHORITY_BROADENING = (
     ),
 )
 
-MUTATION_MERGE_AUTHORITY_BROADENING = (
-    re.compile(
-        r"\breviewer\b.{0,40}\b(?:may|can|is\s+allowed\s+to|is\s+authorized\s+to|has\s+authority\s+to)\s+"
-        r"(?:commit|push|merge|implement|modify|fix|approve)\b",
-        re.IGNORECASE | re.DOTALL,
-    ),
-    re.compile(
-        r"\bapprove\s+(?:its|their|his|her)\s+own\s+(?:fixes|changes|work)\b",
-        re.IGNORECASE,
-    ),
-    re.compile(
-        r"\b(?:may|can|should|must|is\s+allowed\s+to|is\s+authorized\s+to)\s+"
-        r"bypass\b.{0,80}\b(?:game-gate|merge\s+queue|branch\s+protection|protections?)\b",
-        re.IGNORECASE | re.DOTALL,
-    ),
+# A reviewer grant is intentionally modeled as a small grammar rather than a
+# bag of free-floating keywords. The text between the reviewer subject and the
+# grant modality may contain a short qualifier, but not a negation. This keeps
+# restrictive forms such as "No reviewer may merge", "reviewers must not
+# approve", "reviewer cannot commit", and "reviewer has no permission" valid.
+REVIEWER_MUTATION_GRANT = re.compile(
+    r"\breviewer(?:s)?\b"
+    r"(?:(?!\b(?:not|no|never|cannot|can't)\b).){0,40}?"
+    r"\b(?:may|can|is\s+(?:allowed|authorized|permitted)\s+to|"
+    r"has\s+(?:authority|permission)\s+to)\s+"
+    r"(?:commit|push|merge|implement|modify|fix|approve)\b",
+    re.IGNORECASE | re.DOTALL,
+)
+
+BYPASS_AUTHORITY_GRANT = re.compile(
+    r"\b(?:may|can|should|must|is\s+(?:allowed|authorized|permitted)\s+to)\s+"
+    r"bypass\b.{0,80}\b(?:game-gate|merge\s+queue|branch\s+protection|protections?)\b",
+    re.IGNORECASE | re.DOTALL,
 )
 
 
@@ -92,10 +95,37 @@ def _matches_any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:
     return any(pattern.search(text) is not None for pattern in patterns)
 
 
+def _reviewer_grant_is_negated(text: str, start: int) -> bool:
+    """Return whether a reviewer-grant match is introduced by a local denial."""
+    prefix = text[max(0, start - 64):start]
+    clause_prefix = re.split(r"[.;:\n]", prefix)[-1]
+    # Handles "No reviewer ..." and qualified forms such as
+    # "No external reviewer ..." without suppressing a later independent grant.
+    return re.search(r"\bno(?:\s+[A-Za-z0-9_-]+){0,3}\s+$", clause_prefix, re.IGNORECASE) is not None
+
+
+def _has_unnegated_reviewer_grant(text: str) -> bool:
+    for match in REVIEWER_MUTATION_GRANT.finditer(text):
+        if not _reviewer_grant_is_negated(text, match.start()):
+            return True
+    return False
+
+
+def _has_unnegated_bypass_grant(text: str) -> bool:
+    for match in BYPASS_AUTHORITY_GRANT.finditer(text):
+        prefix = text[max(0, match.start() - 64):match.start()]
+        clause_prefix = re.split(r"[.;:\n]", prefix)[-1]
+        # Preserve explicit denials such as "No reviewer may bypass Merge Queue".
+        if re.search(r"\bno(?:\s+[A-Za-z0-9_-]+){0,4}\s+$", clause_prefix, re.IGNORECASE):
+            continue
+        return True
+    return False
+
+
 def _validate_inherited_authority_boundaries(path: str, text: str, errors: list[str]) -> None:
     if _matches_any(AI_REVIEW_AUTHORITY_BROADENING, text):
         errors.append(f"{path}: prompt-local AI/review authority broadening is forbidden")
-    if _matches_any(MUTATION_MERGE_AUTHORITY_BROADENING, text):
+    if _has_unnegated_reviewer_grant(text) or _has_unnegated_bypass_grant(text):
         errors.append(f"{path}: prompt-local mutation/merge authority broadening is forbidden")
 
 
