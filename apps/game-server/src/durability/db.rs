@@ -911,6 +911,78 @@ mod runtime_scope_identity_red_tests {
     }
 
     #[test]
+    fn final_revalidation_requires_current_original_grace_deadline()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
+        let current = |original_grace_deadline: i64| {
+            ReconnectCurrentAuthorityV1::from_current_facts(
+                &record,
+                Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+                Some(CharacterWorldEligibilityClaimV1::from_identity(
+                    record.identity(),
+                )),
+                Some(ReconnectCandidateBindingV1::from_record(&record)?),
+                record.identity().runtime_scope(),
+                record.connection().predecessor(),
+                record.authority(),
+                record.continuity().control_loss_epoch(),
+                original_grace_deadline,
+                record.proof().clone(),
+                record.fnd02().clone(),
+                record.compatibility().clone(),
+                GameSessionState::Reconnectable,
+                false,
+                105,
+            )
+        };
+
+        let exact_deadline = record.continuity().original_grace_deadline();
+        let mut exact_flow = prepared_flow(&record)?;
+        assert!(
+            exact_flow
+                .authorize_commit(current(exact_deadline)?, 104)
+                .is_ok()
+        );
+
+        let mut shortened_flow = prepared_flow(&record)?;
+        assert_eq!(
+            shortened_flow.authorize_commit(current(exact_deadline - 1)?, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+
+        let snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation: record.connection().candidate(),
+                current_transport_ref: record.connection().transport_ref(),
+            },
+        );
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        budget.reserve(
+            record.identity().reconnect_attempt_ref(),
+            record.connection().transport_ref(),
+        )?;
+        let (mut reconciliation_flow, request) =
+            ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        reconciliation_flow.accept_prepare_completion(
+            ReconnectPrepareCompletionV2::for_request(
+                &request,
+                ReconnectPrepareDispositionV2::Ambiguous,
+            ),
+            &mut budget,
+        )?;
+        assert!(matches!(
+            reconciliation_flow.accept_reconciliation(
+                snapshot,
+                current(exact_deadline)?,
+                &mut budget,
+            )?,
+            ReconnectProjectionDecisionV2::InstallController { .. }
+        ));
+        Ok(())
+    }
+
+    #[test]
     fn replacement_authorization_rejects_runtime_scope_record_substitution()
     -> Result<(), ReconnectDurabilityErrorV1> {
         let candidate = candidate_record()?;
