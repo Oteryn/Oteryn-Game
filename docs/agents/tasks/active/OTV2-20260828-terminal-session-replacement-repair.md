@@ -528,8 +528,6 @@ code_green_ci:
   agent_governance_run: 33792514823_SUCCESS
 allocated_paths: 12_of_12
 history_operations: no_force_no_rebase_no_reset_no_merge
-head_sha: LIVE_REMOTE_SHA_AFTER_DOCS_PUBLICATION
-final_head_sha: LIVE_REMOTE_SHA_AFTER_DOCS_PUBLICATION
 checkpoint_commit_qualification: the docs-only commit is not final qualification evidence; after publication its remote SHA must be read back and becomes the only final exact-head candidate
 thread_policy: do not resolve threads, mark READY, change PR Draft state, or merge
 next_action: read back the published docs-only remote SHA, then run fresh exact-head CI, whole-diff self-review, and fresh independent Codex review on that immutable SHA
