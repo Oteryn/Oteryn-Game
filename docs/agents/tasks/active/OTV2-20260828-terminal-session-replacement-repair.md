@@ -532,3 +532,35 @@ checkpoint_commit_qualification: the docs-only commit is not final qualification
 thread_policy: do not resolve threads, mark READY, change PR Draft state, or merge
 next_action: read back the published docs-only remote SHA, then run fresh exact-head CI, whole-diff self-review, and fresh independent Codex review on that immutable SHA
 ```
+
+## Terminal-replacement PREPARE AccountPresence repair checkpoint — 2026-09-03
+
+Minimal GREEN adds `current_account_presence: Option<&AccountPresenceClaimV1>` to `TerminalGameSessionReplacementAuthorizationV1::from_current_authority`; `None`, account mismatch, or CharacterId reassignment fails closed; existing Character->World, runtime-scope, lease, connection, continuity and candidate checks remain unchanged; same-commit non-production edits are mechanical callsite/rustfmt changes within allocation.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+reviewed_parent_head: 0fc9406476755acd73998d7465475b4d841678f8
+p1_thread: PRRT_kwDOT8SzxM6fCnig
+p1_comment: 3927729050
+requirement: terminal-replacement PREPARE independently revalidates current AccountId-to-CharacterId AccountPresence
+red_head: 57396c7027db0cf838510e0e950088c1ae78da48
+red_rust_run: 33794233927
+red_postgres_job: 100778335019
+red_result: expected_E0061_E0308_compile_failure
+code_green_head: 8e93a5c91a3c5b95d53ebeb8a6c244d228e1e83c
+code_green_rust_run: 33794954483_SUCCESS
+code_green_postgres_job: 100780292724_SUCCESS_103_pass_0_fail
+code_green_windows_sim_job: 100780292535_SUCCESS
+code_green_architecture_run: 33794954424_SUCCESS
+code_green_governance_run: 33794954418_SUCCESS
+code_green_merge_gate_run: 33794954547_SUCCESS
+code_green_game_gate_job: 100783044583_SUCCESS
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+allocated_paths: 12_of_12
+history_operations: no_force_no_rebase_no_reset_no_merge
+thread_policy: do_not_resolve_or_mark_READY_before_fresh_metadata_head_CI_self_review_and_exact_head_Codex_P0_P1_P2_zero
+checkpoint_commit_qualification: remote SHA of this docs-only publication must be read back after push and becomes the sole final qualification candidate; do not put a self-referential SHA placeholder in this section
+next_action: fresh exact-head hosted CI, whole-diff self-review, and independent exact-head @codex review on the read-back metadata-complete SHA; repair and repeat any P0/P1/P2; do not merge
+```
