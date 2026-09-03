@@ -8,6 +8,7 @@ surfaces remain validated by the existing strict canonical checks.
 """
 from __future__ import annotations
 
+import re
 import sys
 
 from validate_remote_desktop_prompt_routing import (
@@ -27,9 +28,49 @@ INHERITED_POLICY_SURFACES = (
     "docs/agents/GITHUB_ONLY_EXECUTION.md",
 )
 
+AI_REVIEW_AUTHORITY_BROADENING = (
+    re.compile(
+        r"\bowner[- ]funded\b.{0,80}\b(?:external\s+)?(?:ai|codex|openai)\b.{0,80}"
+        r"\bwithout\s+(?:explicit\s+)?authorization\b",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    re.compile(
+        r"\b(?:approval|review)\s+(?:is|becomes|shall\s+be|must\s+be)\s+"
+        r"(?:an?\s+)?required\s+(?:merge\s+)?status\b",
+        re.IGNORECASE,
+    ),
+)
+
+MUTATION_MERGE_AUTHORITY_BROADENING = (
+    re.compile(
+        r"\breviewer\s+may\s+(?:commit|push|merge|implement|modify|fix)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bapprove\s+(?:its|their|his|her)\s+own\s+(?:fixes|changes|work)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bbypass\b.{0,80}\b(?:game-gate|merge\s+queue|branch\s+protection|protections?)\b",
+        re.IGNORECASE | re.DOTALL,
+    ),
+)
+
+
+def _matches_any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:
+    return any(pattern.search(text) is not None for pattern in patterns)
+
+
+def _validate_inherited_authority_boundaries(path: str, text: str, errors: list[str]) -> None:
+    if _matches_any(AI_REVIEW_AUTHORITY_BROADENING, text):
+        errors.append(f"{path}: prompt-local AI/review authority broadening is forbidden")
+    if _matches_any(MUTATION_MERGE_AUTHORITY_BROADENING, text):
+        errors.append(f"{path}: prompt-local mutation/merge authority broadening is forbidden")
+
 
 def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> None:
     _validate_meta_routing_coordinates(path, text, errors)
+    _validate_inherited_authority_boundaries(path, text, errors)
     matches = [section for section in _level2_sections(text) if section[0] == SECTION]
 
     if not matches:
@@ -79,7 +120,7 @@ def validate() -> list[str]:
 
     if not errors:
         print(
-            "Validated inherited Remote Desktop policy for "
+            "Validated inherited Remote Desktop and review/merge authority policy for "
             f"{len(prompt_paths)} reusable prompts and {len(INHERITED_POLICY_SURFACES)} authoritative surfaces; "
             "duplicated per-prompt policy is optional."
         )
