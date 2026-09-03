@@ -241,10 +241,6 @@ impl AdmissionReconnectJournal {
         {
             return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
         }
-        if receipt_backed {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-
         let current_epoch: String = session.try_get("control_loss_epoch")?;
         if current_epoch != epoch {
             let previously_used: bool = sqlx::query_scalar(

@@ -1180,6 +1180,7 @@ pub struct ReconnectCurrentAuthorityV1 {
     predecessor: ConnectionGeneration,
     authority: ReconnectAuthorityFenceV1,
     continuity_epoch: ControlLossEpochRefV1,
+    original_grace_deadline: i64,
     proof: ReconnectProofV1,
     fnd02: Fnd02ReconciliationFenceV1,
     protocol_major: u32,
@@ -1207,6 +1208,7 @@ impl ReconnectCurrentAuthorityV1 {
         predecessor: ConnectionGeneration,
         authority: ReconnectAuthorityFenceV1,
         continuity_epoch: ControlLossEpochRefV1,
+        original_grace_deadline: i64,
         proof: ReconnectProofV1,
         fnd02: Fnd02ReconciliationFenceV1,
         compatibility: ReconnectCompatibilityEvidenceV1,
@@ -1215,6 +1217,7 @@ impl ReconnectCurrentAuthorityV1 {
         observed_at: i64,
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         if observed_at < 0
+            || original_grace_deadline <= 0
             || current_runtime_scope.world_id() != record.identity().world_id()
             || !proof.validate()
         {
@@ -1229,6 +1232,7 @@ impl ReconnectCurrentAuthorityV1 {
             predecessor,
             authority,
             continuity_epoch,
+            original_grace_deadline,
             proof,
             fnd02,
             protocol_major: compatibility.protocol_major(),
@@ -1260,6 +1264,7 @@ impl ReconnectCurrentAuthorityV1 {
             record.connection().predecessor(),
             record.authority(),
             record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
             record.proof().clone(),
             record.fnd02().clone(),
             record.compatibility().clone(),

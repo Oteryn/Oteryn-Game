@@ -522,6 +522,7 @@ mod runtime_scope_identity_red_tests {
             connection_generation,
             record.authority(),
             control_loss_epoch,
+            record.continuity().original_grace_deadline(),
             proof,
             record.fnd02().clone(),
             record.compatibility().clone(),
