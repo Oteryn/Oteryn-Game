@@ -206,9 +206,10 @@ mod tests {
 mod v2_reconciled_prepared_budget_regression_tests {
     use super::foundation::{
         AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
-        CharacterId, CharacterWorldEligibilityClaimV1, CommandId, ConnectionGeneration,
-        ControlLossEpochRefV1, Fnd02ReconciliationFenceV1, GameSessionId, GameSessionState,
-        ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
+        CharacterId, CharacterLease, CharacterWorldEligibilityClaimV1, CommandId,
+        ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1,
+        FreshAdmissionCommit, FreshAdmissionFacts, GameSessionAuthoritySnapshot, GameSessionId,
+        GameSessionState, ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
         ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1, ReconnectCandidateBindingV1,
         ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
         ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV2,
@@ -216,7 +217,7 @@ mod v2_reconciled_prepared_budget_regression_tests {
         ReconnectDurableReconciliationSnapshotV2, ReconnectIdentityV1, ReconnectPrepareActionV2,
         ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
         ReconnectProjectionDecisionV2, ReconnectProofV1, RuntimeScopeRefV1,
-        ScopeOwnershipGeneration, WorldId,
+        ScopeOwnershipGeneration, TerminalGameSessionReplacementAuthorizationV1, WorldId,
     };
 
     fn invalid_record<E>(_error: E) -> ReconnectDurabilityErrorV1 {
@@ -304,6 +305,38 @@ mod v2_reconciled_prepared_budget_regression_tests {
             fnd02,
             compatibility,
         )
+    }
+
+    fn terminal_predecessor_snapshot(
+    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
+    {
+        let character_id = CharacterId::decode(&uuid_v7(11)).map_err(invalid_record)?;
+        let world_id = WorldId::decode(&uuid_v7(12)).map_err(invalid_record)?;
+        let channel_id = ChannelId::decode(&uuid_v7(13)).map_err(invalid_record)?;
+        let facts = FreshAdmissionFacts::new([0x44; 32], character_id, world_id, channel_id, 9, 10)
+            .map_err(invalid_record)?;
+        let initial_transport =
+            AuthenticatedTransportRefV1::decode(&[0x70; 16]).map_err(invalid_record)?;
+        let commit = FreshAdmissionCommit::from_facts(
+            GameSessionId::decode(&uuid_v7(20)).map_err(invalid_record)?,
+            facts,
+            initial_transport,
+        )
+        .map_err(invalid_record)?;
+        GameSessionAuthoritySnapshot::from_current_facts(
+            commit,
+            GameSessionState::Terminal,
+            ConnectionGeneration::new(7).map_err(invalid_record)?,
+            None,
+            CharacterLease::new(character_id, 9).map_err(invalid_record)?,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                character_id,
+                world_id,
+            )),
+            RuntimeScopeRefV1::channel(world_id, channel_id),
+            ScopeOwnershipGeneration::new(10).map_err(invalid_record)?,
+        )?
+        .with_control_loss_continuity(ControlLossEpochRefV1::new(3)?, 120)
     }
 
     #[test]
@@ -448,6 +481,53 @@ mod v2_reconciled_prepared_budget_regression_tests {
         assert_eq!(
             flow.authorize_commit(current, 104),
             Err(ReconnectDurabilityErrorV1::DeadlineExpired)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn terminal_replacement_authorization_requires_current_account_presence_at_prepare()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record()?;
+        let predecessor_session_id = GameSessionId::decode(&uuid_v7(20)).map_err(invalid_record)?;
+        let exact_presence = AccountPresenceClaimV1::from_identity(record.identity())?;
+        let reassigned_presence = AccountPresenceClaimV1::new(
+            record.identity().account_id(),
+            CharacterId::decode(&uuid_v7(99)).map_err(invalid_record)?,
+        )?;
+
+        assert!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                record.identity().account_id(),
+                Some(&exact_presence),
+                predecessor_session_id,
+                record.identity().game_session_id(),
+                terminal_predecessor_snapshot()?,
+                &record,
+            )
+            .is_ok()
+        );
+        assert_eq!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                record.identity().account_id(),
+                None,
+                predecessor_session_id,
+                record.identity().game_session_id(),
+                terminal_predecessor_snapshot()?,
+                &record,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+        assert_eq!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                record.identity().account_id(),
+                Some(&reassigned_presence),
+                predecessor_session_id,
+                record.identity().game_session_id(),
+                terminal_predecessor_snapshot()?,
+                &record,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
         );
         Ok(())
     }
