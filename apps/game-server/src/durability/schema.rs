@@ -823,10 +823,7 @@ mod terminal_replacement_postgres_red_tests {
             let replay = journal.prepare(&later_request).await;
             let later_v2_request = ReconnectDurabilityFlowV2::begin(later_epoch, None).1;
             let reconciliation = journal.reconcile_v2(&later_v2_request).await;
-            let replay_ok = matches!(
-                replay,
-                Ok(ReconnectPrepareDispositionV1::ExistingPrepared)
-            );
+            let replay_ok = matches!(replay, Ok(ReconnectPrepareDispositionV1::ExistingPrepared));
             let reconciliation_ok = matches!(
                 reconciliation,
                 Ok(ref snapshot) if snapshot.outcome() == ReconnectDurableOutcomeV2::Prepared
