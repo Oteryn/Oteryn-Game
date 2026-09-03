@@ -1342,6 +1342,9 @@ mod terminal_replacement_foundation_red_tests {
     ) -> Result<TerminalGameSessionReplacementAuthorizationV1, ReconnectDurabilityErrorV1> {
         TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
+            Some(&AccountPresenceClaimV1::from_identity(
+                candidate.identity(),
+            )?),
             expected_predecessor,
             expected_candidate,
             snapshot,

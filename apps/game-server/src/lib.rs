@@ -307,8 +307,8 @@ mod v2_reconciled_prepared_budget_regression_tests {
         )
     }
 
-    fn terminal_predecessor_snapshot(
-    ) -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
+    fn terminal_predecessor_snapshot()
+    -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
     {
         let character_id = CharacterId::decode(&uuid_v7(11)).map_err(invalid_record)?;
         let world_id = WorldId::decode(&uuid_v7(12)).map_err(invalid_record)?;

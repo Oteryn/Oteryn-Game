@@ -369,6 +369,7 @@ mod runtime_scope_identity_red_tests {
         )?;
         TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
+            Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
             predecessor,
             candidate.identity().game_session_id(),
             snapshot,
@@ -537,6 +538,7 @@ mod runtime_scope_identity_red_tests {
         assert!(
             TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
                 ACCOUNT,
+                Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
                 game_session(10)?,
                 game_session(20)?,
                 predecessor_snapshot_with_world_eligibility(
@@ -565,6 +567,7 @@ mod runtime_scope_identity_red_tests {
             assert_eq!(
                 TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
                     ACCOUNT,
+                    Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
                     game_session(10)?,
                     game_session(20)?,
                     predecessor_snapshot_with_world_eligibility(13, current_eligibility)?,
@@ -822,6 +825,7 @@ mod runtime_scope_identity_red_tests {
         let candidate = candidate_record()?;
         let result = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
+            Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
             game_session(10)?,
             game_session(20)?,
             predecessor_snapshot(14)?,
@@ -912,6 +916,7 @@ mod runtime_scope_identity_red_tests {
         let candidate = candidate_record()?;
         let authorization = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
+            Some(&AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?),
             game_session(10)?,
             game_session(20)?,
             predecessor_snapshot(13)?,

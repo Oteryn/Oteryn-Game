@@ -214,12 +214,18 @@ pub struct TerminalGameSessionReplacementAuthorizationV1 {
 impl TerminalGameSessionReplacementAuthorizationV1 {
     pub fn from_current_authority<T: Copy + Eq>(
         account_id: &str,
+        current_account_presence: Option<&AccountPresenceClaimV1>,
         predecessor_game_session_id: GameSessionId,
         candidate_game_session_id: GameSessionId,
         snapshot: GameSessionAuthoritySnapshot<T>,
         candidate: &ReconnectDurabilityRecordV1,
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         if !canonical_uuid(account_id)
+            || current_account_presence.is_none_or(|presence| {
+                presence.account_id() != account_id
+                    || presence.character_id() != snapshot.commit().character_id()
+                    || presence.character_id() != candidate.identity().character_id()
+            })
             || predecessor_game_session_id == candidate_game_session_id
             || snapshot.session_state() != GameSessionState::Terminal
             || snapshot.current_transport().is_some()
