@@ -45,8 +45,10 @@ def test_semantic_authority_broadening_paraphrases_fail_closed() -> None:
     cases = (
         "External AI is pre-authorized for this task.",
         "The reviewer is allowed to commit fixes.",
-        "Codex approval is a required check before merge.",
+        "The reviewer is permitted to commit fixes.",
         "The reviewer has authority to merge this task.",
+        "The reviewer has permission to merge this task.",
+        "Codex approval is a required check before merge.",
     )
     for text in cases:
         errors = validate("# Prompt\n\n" + text + "\n")
@@ -66,6 +68,21 @@ def test_restrictive_ai_authorization_wording_is_preserved() -> None:
         authority_errors = [error for error in errors if "authority broadening is forbidden" in error]
         if authority_errors:
             raise AssertionError(f"restrictive authority wording must remain valid: {text!r}; got: {errors}")
+
+
+def test_restrictive_reviewer_wording_is_preserved() -> None:
+    cases = (
+        "No reviewer may merge this task.",
+        "Reviewers must not approve their own work.",
+        "The reviewer cannot commit fixes or merge changes.",
+        "The reviewer has no permission to merge this task.",
+        "The reviewer has no authority to push changes.",
+    )
+    for text in cases:
+        errors = validate("# Prompt\n\n" + text + "\n")
+        authority_errors = [error for error in errors if "authority broadening is forbidden" in error]
+        if authority_errors:
+            raise AssertionError(f"restrictive reviewer wording must remain valid: {text!r}; got: {errors}")
 
 
 def test_exact_legacy_block_remains_compatible() -> None:
