@@ -141,6 +141,13 @@ impl AdmissionReconnectJournal {
         if !session_binding_is_valid(&session, record)? {
             return Err(DurabilityError::InvalidStoredState);
         }
+        let receipt_backed = !receipt_authorized
+            && replacement_receipt_for_candidate_exists(
+                &mut transaction,
+                identity.character_id().as_bytes().as_slice(),
+                session_id.as_slice(),
+            )
+            .await?;
         let existing = sqlx::query(
             "SELECT state, record_json FROM game_durability_reconnect_attempts \
              WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
@@ -150,6 +157,9 @@ impl AdmissionReconnectJournal {
         .fetch_optional(&mut *transaction)
         .await?;
         if let Some(existing) = existing {
+            if receipt_backed {
+                return Err(DurabilityError::InvalidStoredState);
+            }
             let stored_record: String = existing.try_get("record_json")?;
             if stored_record != encoded_record {
                 return Ok(ReconnectPrepareDispositionV1::IdempotencyConflict);
@@ -231,14 +241,7 @@ impl AdmissionReconnectJournal {
         {
             return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
         }
-        if !receipt_authorized
-            && replacement_receipt_for_candidate_exists(
-                &mut transaction,
-                identity.character_id().as_bytes().as_slice(),
-                session_id.as_slice(),
-            )
-            .await?
-        {
+        if receipt_backed {
             return Err(DurabilityError::InvalidStoredState);
         }
 
