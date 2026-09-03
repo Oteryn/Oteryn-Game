@@ -29,31 +29,20 @@ INHERITED_POLICY_SURFACES = (
 )
 
 AI_REVIEW_AUTHORITY_BROADENING = (
-    # Explicit grant/pre-authorization to an AI service itself. Keep the
-    # grammatical subject tight: "External AI is pre-authorized" is a grant,
-    # while "No ... AI invocation is authorized by this prompt" is a denial of
-    # a particular invocation and must remain valid.
     re.compile(
         r"\b(?:external\s+)?(?:ai|codex|openai)(?:\s+(?:service|reviewer))?\s+"
         r"(?:is|are)\s+(?:pre[- ]?)?(?:authorized|allowed|permitted)\b",
         re.IGNORECASE,
     ),
-    # Direct imperative use without authorization. This intentionally requires
-    # the invocation verb at the start of a line/bullet, avoiding restrictive
-    # modal forms such as "must not invoke ...".
     re.compile(
         r"(?m)^\s*(?:[-*]\s*)?(?:please\s+)?(?:invoke|use|run|call)\s+"
         r"(?:owner[- ]funded\s+)?(?:external\s+)?(?:ai|codex|openai)\b.{0,80}"
         r"\bwithout\s+(?:explicit\s+)?authorization\b",
         re.IGNORECASE | re.DOTALL,
     ),
-    # Positive modal grant to directly invoke an AI service. Keep the service
-    # adjacent to the invocation verb so unrelated domain prose such as
-    # "may run alongside ... AI" or "may use ... AI fixtures" is not treated
-    # as review-service authority.
     re.compile(
-        r"\b(?:may|can|is\s+(?:allowed|authorized|permitted)\s+to|"
-        r"has\s+(?:authority|permission)\s+to)\s+"
+        r"\b(?:may|can|(?:is|are)\s+(?:allowed|authorized|permitted)\s+to|"
+        r"(?:has|have)\s+(?:authority|permission)\s+to)\s+"
         r"(?:invoke|use|run|call)\s+(?:owner[- ]funded\s+)?(?:external\s+)?"
         r"(?:ai|codex|openai)\b",
         re.IGNORECASE,
@@ -69,8 +58,6 @@ AI_REVIEW_AUTHORITY_BROADENING = (
         r"(?:merge\s+)?(?:status|check|gate)\b",
         re.IGNORECASE,
     ),
-    # Reverse-form required review authority: the merge clause can name the
-    # review dependency first, or the review can be required to pass before merge.
     re.compile(
         r"\bmerge\s+(?:requires|needs|must\s+have)\s+"
         r"(?:(?:codex|ai(?:\s+reviewer)?|reviewer)\s+)?(?:approval|review)\b",
@@ -83,11 +70,6 @@ AI_REVIEW_AUTHORITY_BROADENING = (
     ),
 )
 
-# A reviewer grant is intentionally modeled as a small grammar rather than a
-# bag of free-floating keywords. The text between the reviewer subject and the
-# grant modality may contain a short qualifier, but not a negation. This keeps
-# restrictive forms such as "No reviewer may merge", "reviewers must not
-# approve", "reviewer cannot commit", and "reviewer has no permission" valid.
 REVIEWER_MUTATION_GRANT = re.compile(
     r"\breviewer(?:s)?\b"
     r"(?:(?!\b(?:not|no|never|cannot|can't)\b).){0,40}?"
@@ -114,12 +96,8 @@ def _matches_any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:
 
 
 def _reviewer_grant_is_negated(text: str, start: int) -> bool:
-    """Return whether a reviewer-grant match is introduced by a local denial."""
     prefix = text[max(0, start - 96):start]
     clause_prefix = re.split(r"[.;:\n]", prefix)[-1]
-    # Handles "No reviewer", "Neither reviewer", "Not one reviewer" and
-    # qualified subjects such as "No genuinely independent external AI reviewer"
-    # without suppressing a later independent grant in another clause.
     return LOCAL_SUBJECT_DENIAL.search(clause_prefix) is not None
 
 
@@ -134,7 +112,6 @@ def _has_unnegated_bypass_grant(text: str) -> bool:
     for match in BYPASS_AUTHORITY_GRANT.finditer(text):
         prefix = text[max(0, match.start() - 96):match.start()]
         clause_prefix = re.split(r"[.;:\n]", prefix)[-1]
-        # Preserve explicit denials such as "No reviewer may bypass Merge Queue".
         if LOCAL_SUBJECT_DENIAL.search(clause_prefix):
             continue
         return True
@@ -154,8 +131,6 @@ def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> No
     matches = [section for section in _level2_sections(text) if section[0] == SECTION]
 
     if not matches:
-        # A fenced/commented copy of the old global block is not a valid inheritance
-        # mechanism and should not be mistaken for a clean lean prompt.
         if SECTION in text:
             errors.append(f"{path}: {SECTION!r} appears but is not one operative legacy section")
             return
@@ -175,9 +150,6 @@ def validate_reusable_prompt_text(path: str, text: str, errors: list[str]) -> No
 
 def validate() -> list[str]:
     errors: list[str] = []
-
-    # Prompts may inherit policy only while the inherited policy surfaces remain
-    # present and exact. Deduplication must not become a safety reduction.
     for relative in INHERITED_POLICY_SURFACES:
         path = ROOT / relative
         try:
