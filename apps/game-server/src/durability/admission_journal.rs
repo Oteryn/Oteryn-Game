@@ -28,20 +28,32 @@ const PROTECTION_REARM_READY: i16 = 1;
 const PROTECTION_REARM_PENDING: i16 = 2;
 type ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 
-async fn replacement_receipt_for_candidate_exists(
+pub(super) async fn replacement_receipt_matches_record(
     transaction: &mut Transaction<'_, Postgres>,
-    character_id: &[u8],
-    candidate_session_id: &[u8],
+    record: &ReconnectDurabilityRecordV1,
 ) -> Result<bool, DurabilityError> {
+    let identity = record.identity();
     sqlx::query_scalar(
         "SELECT EXISTS (\
             SELECT 1 FROM game_durability_session_replacements \
             WHERE character_id = encode($1, 'hex')::uuid \
-              AND candidate_game_session_id = encode($2, 'hex')::uuid\
+              AND candidate_game_session_id = encode($2, 'hex')::uuid \
+              AND predecessor_connection_generation = $3::text::numeric(20, 0) \
+              AND predecessor_character_lease_generation = $4::text::numeric(20, 0) \
+              AND predecessor_scope_ownership_generation = $5::text::numeric(20, 0)\
          )",
     )
-    .bind(character_id)
-    .bind(candidate_session_id)
+    .bind(identity.character_id().as_bytes().as_slice())
+    .bind(identity.game_session_id().as_bytes().as_slice())
+    .bind(record.connection().predecessor().get().to_string())
+    .bind(record.authority().character_lease_generation().to_string())
+    .bind(
+        record
+            .authority()
+            .scope_ownership_generation()
+            .get()
+            .to_string(),
+    )
     .fetch_one(&mut **transaction)
     .await
     .map_err(DurabilityError::from)
@@ -142,12 +154,7 @@ impl AdmissionReconnectJournal {
             return Err(DurabilityError::InvalidStoredState);
         }
         let receipt_backed = !receipt_authorized
-            && replacement_receipt_for_candidate_exists(
-                &mut transaction,
-                identity.character_id().as_bytes().as_slice(),
-                session_id.as_slice(),
-            )
-            .await?;
+            && replacement_receipt_matches_record(&mut transaction, record).await?;
         let existing = sqlx::query(
             "SELECT state, record_json FROM game_durability_reconnect_attempts \
              WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
