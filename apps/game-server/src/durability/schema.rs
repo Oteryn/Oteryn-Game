@@ -166,16 +166,16 @@ mod terminal_replacement_postgres_red_tests {
         ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1,
         FreshAdmissionCommit, FreshAdmissionFacts, GameSessionAuthoritySnapshot, GameSessionId,
         GameSessionState, PendingCommandDispositionV1, PendingCommandReconciliationV1,
-        ProtectionEntitlementV1, ReconnectAttemptRef, ReconnectAuthorityFenceV1,
-        ReconnectCommitDispositionV1, ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1,
-        ReconnectContinuityV1, ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1,
-        ReconnectDurabilityFlowV1, ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1,
-        ReconnectDurableOutcomeV2, ReconnectDurableReconciliationSnapshotV1,
-        ReconnectDurableReconciliationSnapshotV2, ReconnectDurableTerminalDispositionV1,
-        ReconnectIdentityV1, ReconnectPrepareCompletionV1, ReconnectPrepareDispositionV1,
-        ReconnectPrepareDispositionV2, ReconnectPrepareRequestV2, ReconnectProofV1,
-        RuntimeScopeRefV1, ScopeOwnershipGeneration, StateDomainRevisionV1,
-        TerminalGameSessionReplacementAuthorizationV1, WorldId,
+        ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
+        ReconnectAuthorityFenceV1, ReconnectCommitDispositionV1, ReconnectCompatibilityEvidenceV1,
+        ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectCurrentAuthorityV1,
+        ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1, ReconnectDurabilityFlowV2,
+        ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+        ReconnectDurableReconciliationSnapshotV1, ReconnectDurableReconciliationSnapshotV2,
+        ReconnectDurableTerminalDispositionV1, ReconnectIdentityV1, ReconnectPrepareCompletionV1,
+        ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
+        ReconnectPrepareRequestV2, ReconnectProofV1, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+        StateDomainRevisionV1, TerminalGameSessionReplacementAuthorizationV1, WorldId,
     };
     use sqlx::{Connection, Executor, PgConnection};
     use std::error::Error;
@@ -744,6 +744,83 @@ mod terminal_replacement_postgres_red_tests {
                 .map_err(|_| "conflicting authorization")?;
             let conflict = recovered.prepare_v2(&conflicting).await;
             assert!(failed_closed_prepare(&conflict));
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
+    fn replacement_created_session_can_reconnect_in_later_epoch_without_reusing_replacement_authorization()
+    -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) =
+                migrated_database("replacement_candidate_later_epoch").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_current_actor_anchor(&database_url, 10, 10, now).await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+
+            let candidate =
+                record(20, 11, 1, 0xa2, 3, 7, 10, now).map_err(|_| "candidate record")?;
+            let authorization =
+                authorization_for(10, &candidate, 10).map_err(|_| "replacement authorization")?;
+            let (mut replacement_flow, replacement_request) =
+                ReconnectDurabilityFlowV2::begin(candidate.clone(), Some(authorization));
+            assert_eq!(
+                journal.prepare_v2(&replacement_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(candidate.continuity().control_loss_epoch());
+            budget
+                .reserve(
+                    candidate.identity().reconnect_attempt_ref(),
+                    candidate.connection().transport_ref(),
+                )
+                .map_err(|_| "replacement attempt reservation")?;
+            replacement_flow
+                .accept_prepare_completion(
+                    ReconnectPrepareCompletionV2::for_request(
+                        &replacement_request,
+                        ReconnectPrepareDispositionV2::Prepared,
+                    ),
+                    &mut budget,
+                )
+                .map_err(|_| "replacement prepare completion")?;
+            let replacement_commit = replacement_flow
+                .authorize_commit(
+                    ReconnectCurrentAuthorityV1::from_record(&candidate, now)
+                        .map_err(|_| "current replacement authority")?,
+                    now,
+                )
+                .map_err(|_| "replacement commit authorization")?;
+            assert_eq!(
+                journal.commit(&replacement_commit).await?,
+                ReconnectCommitDispositionV1::Committed
+            );
+
+            let mut observer = PgConnection::connect(&database_url).await?;
+            let receipt_count: i64 = sqlx::query_scalar(
+                "SELECT COUNT(*) FROM game_durability_session_replacements \
+                 WHERE predecessor_game_session_id = encode($1, 'hex')::uuid \
+                   AND candidate_game_session_id = encode($2, 'hex')::uuid",
+            )
+            .bind(uuid_v7(10).as_slice())
+            .bind(uuid_v7(20).as_slice())
+            .fetch_one(&mut observer)
+            .await?;
+            assert_eq!(receipt_count, 1);
+            observer.close().await?;
+
+            let later_epoch =
+                record(20, 11, 2, 0xa3, 4, 8, 10, now).map_err(|_| "later epoch record")?;
+            let (_, later_request) = ReconnectDurabilityFlowV1::begin(later_epoch);
+            assert_eq!(
+                journal.prepare(&later_request).await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+
+            drop(journal);
             database.cleanup().await?;
             Ok(())
         })
