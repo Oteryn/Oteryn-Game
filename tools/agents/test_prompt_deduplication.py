@@ -41,6 +41,32 @@ def test_prompt_local_merge_authority_broadening_fails_closed() -> None:
         raise AssertionError(f"prompt-local mutation/merge authority broadening must fail closed, got: {errors}")
 
 
+def test_semantic_authority_broadening_paraphrases_fail_closed() -> None:
+    cases = (
+        "External AI is pre-authorized for this task.",
+        "The reviewer is allowed to commit fixes.",
+        "Codex approval is a required check before merge.",
+        "The reviewer has authority to merge this task.",
+    )
+    for text in cases:
+        errors = validate("# Prompt\n\n" + text + "\n")
+        if not any("authority broadening is forbidden" in error for error in errors):
+            raise AssertionError(f"authority-broadening paraphrase must fail closed: {text!r}; got: {errors}")
+
+
+def test_restrictive_ai_authorization_wording_is_preserved() -> None:
+    cases = (
+        "Owner-funded external AI must not be invoked without authorization.",
+        "Owner-funded AI cannot run without explicit authorization.",
+        "The reviewer is not allowed to commit fixes or merge changes.",
+    )
+    for text in cases:
+        errors = validate("# Prompt\n\n" + text + "\n")
+        authority_errors = [error for error in errors if "authority broadening is forbidden" in error]
+        if authority_errors:
+            raise AssertionError(f"restrictive authority wording must remain valid: {text!r}; got: {errors}")
+
+
 def test_exact_legacy_block_remains_compatible() -> None:
     from validate_remote_desktop_prompt_routing import CANONICAL_PROMPT_SECTION
 
