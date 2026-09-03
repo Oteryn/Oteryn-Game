@@ -325,12 +325,8 @@ impl AdmissionReconnectJournalV2 {
             AdmissionReconnectJournal::reconcile_record_in_transaction(&mut transaction, record)
                 .await?;
         if request.terminal_replacement().is_none()
-            && replacement_receipt_for_candidate_exists(
-                &mut transaction,
-                record.identity().character_id().as_bytes().as_slice(),
-                record.identity().game_session_id().as_bytes().as_slice(),
-            )
-            .await?
+            && admission_journal::replacement_receipt_matches_record(&mut transaction, record)
+                .await?
         {
             return Err(DurabilityError::InvalidStoredState);
         }
