@@ -162,14 +162,14 @@ mod terminal_replacement_postgres_red_tests {
     };
     use oteryn_game_server::foundation::{
         AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId,
-        CharacterLease, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
-        Fnd02ReconciliationFenceV1, FreshAdmissionCommit, FreshAdmissionFacts,
-        GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, PendingCommandDispositionV1,
-        PendingCommandReconciliationV1, ProtectionEntitlementV1, ReconnectAttemptRef,
-        ReconnectAuthorityFenceV1, ReconnectCommitDispositionV1, ReconnectCompatibilityEvidenceV1,
-        ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectCurrentAuthorityV1,
-        ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1, ReconnectDurabilityFlowV2,
-        ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+        CharacterLease, CharacterWorldEligibilityClaimV1, CommandId, ConnectionGeneration,
+        ControlLossEpochRefV1, Fnd02ReconciliationFenceV1, FreshAdmissionCommit,
+        FreshAdmissionFacts, GameSessionAuthoritySnapshot, GameSessionId, GameSessionState,
+        PendingCommandDispositionV1, PendingCommandReconciliationV1, ProtectionEntitlementV1,
+        ReconnectAttemptRef, ReconnectAuthorityFenceV1, ReconnectCommitDispositionV1,
+        ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
+        ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
+        ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
         ReconnectDurableReconciliationSnapshotV1, ReconnectDurableReconciliationSnapshotV2,
         ReconnectDurableTerminalDispositionV1, ReconnectIdentityV1, ReconnectPrepareCompletionV1,
         ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2, ReconnectPrepareRequestV2,
@@ -495,6 +495,10 @@ mod terminal_replacement_postgres_red_tests {
             None,
             CharacterLease::new(character(11)?, 9)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                character(11)?,
+                world(12)?,
+            )),
             RuntimeScopeRefV1::channel(world(12)?, channel(13)?),
             ScopeOwnershipGeneration::new(current_scope)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
