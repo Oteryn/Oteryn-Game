@@ -141,17 +141,6 @@ impl AdmissionReconnectJournal {
         if !session_binding_is_valid(&session, record)? {
             return Err(DurabilityError::InvalidStoredState);
         }
-        if !receipt_authorized
-            && replacement_receipt_for_candidate_exists(
-                &mut transaction,
-                identity.character_id().as_bytes().as_slice(),
-                session_id.as_slice(),
-            )
-            .await?
-        {
-            return Err(DurabilityError::InvalidStoredState);
-        }
-
         let existing = sqlx::query(
             "SELECT state, record_json FROM game_durability_reconnect_attempts \
              WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
@@ -241,6 +230,16 @@ impl AdmissionReconnectJournal {
             && retained_for_actor_epoch >= MAX_ATTEMPTS_PER_EPOCH
         {
             return Ok(ReconnectPrepareDispositionV1::AttemptCapacityExceeded);
+        }
+        if !receipt_authorized
+            && replacement_receipt_for_candidate_exists(
+                &mut transaction,
+                identity.character_id().as_bytes().as_slice(),
+                session_id.as_slice(),
+            )
+            .await?
+        {
+            return Err(DurabilityError::InvalidStoredState);
         }
 
         let current_epoch: String = session.try_get("control_loss_epoch")?;
