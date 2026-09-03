@@ -52,7 +52,8 @@ AI_REVIEW_AUTHORITY_BROADENING = (
     # "may run alongside ... AI" or "may use ... AI fixtures" is not treated
     # as review-service authority.
     re.compile(
-        r"\b(?:may|can|is\s+allowed\s+to|is\s+authorized\s+to|has\s+authority\s+to)\s+"
+        r"\b(?:may|can|is\s+(?:allowed|authorized|permitted)\s+to|"
+        r"has\s+(?:authority|permission)\s+to)\s+"
         r"(?:invoke|use|run|call)\s+(?:owner[- ]funded\s+)?(?:external\s+)?"
         r"(?:ai|codex|openai)\b",
         re.IGNORECASE,
@@ -68,6 +69,18 @@ AI_REVIEW_AUTHORITY_BROADENING = (
         r"(?:merge\s+)?(?:status|check|gate)\b",
         re.IGNORECASE,
     ),
+    # Reverse-form required review authority: the merge clause can name the
+    # review dependency first, or the review can be required to pass before merge.
+    re.compile(
+        r"\bmerge\s+(?:requires|needs|must\s+have)\s+"
+        r"(?:(?:codex|ai(?:\s+reviewer)?|reviewer)\s+)?(?:approval|review)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:codex|ai(?:\s+reviewer)?|reviewer)\s+(?:approval|review)\s+"
+        r"(?:must|shall|has\s+to)\s+pass\b.{0,60}\bbefore\s+merg(?:e|ing)\b",
+        re.IGNORECASE | re.DOTALL,
+    ),
 )
 
 # A reviewer grant is intentionally modeled as a small grammar rather than a
@@ -80,7 +93,7 @@ REVIEWER_MUTATION_GRANT = re.compile(
     r"(?:(?!\b(?:not|no|never|cannot|can't)\b).){0,40}?"
     r"\b(?:may|can|is\s+(?:allowed|authorized|permitted)\s+to|"
     r"has\s+(?:authority|permission)\s+to)\s+"
-    r"(?:commit|push|merge|implement|modify|fix|approve)\b",
+    r"(?:commit|push|merge|implement|modify|edit|update|change|write|fix|approve)\b",
     re.IGNORECASE | re.DOTALL,
 )
 
@@ -90,6 +103,11 @@ BYPASS_AUTHORITY_GRANT = re.compile(
     re.IGNORECASE | re.DOTALL,
 )
 
+LOCAL_SUBJECT_DENIAL = re.compile(
+    r"\b(?:no|neither|not\s+one)(?:\s+[A-Za-z0-9_-]+){0,8}\s+$",
+    re.IGNORECASE,
+)
+
 
 def _matches_any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:
     return any(pattern.search(text) is not None for pattern in patterns)
@@ -97,11 +115,12 @@ def _matches_any(patterns: tuple[re.Pattern[str], ...], text: str) -> bool:
 
 def _reviewer_grant_is_negated(text: str, start: int) -> bool:
     """Return whether a reviewer-grant match is introduced by a local denial."""
-    prefix = text[max(0, start - 64):start]
+    prefix = text[max(0, start - 96):start]
     clause_prefix = re.split(r"[.;:\n]", prefix)[-1]
-    # Handles "No reviewer ..." and qualified forms such as
-    # "No external reviewer ..." without suppressing a later independent grant.
-    return re.search(r"\bno(?:\s+[A-Za-z0-9_-]+){0,3}\s+$", clause_prefix, re.IGNORECASE) is not None
+    # Handles "No reviewer", "Neither reviewer", "Not one reviewer" and
+    # qualified subjects such as "No genuinely independent external AI reviewer"
+    # without suppressing a later independent grant in another clause.
+    return LOCAL_SUBJECT_DENIAL.search(clause_prefix) is not None
 
 
 def _has_unnegated_reviewer_grant(text: str) -> bool:
@@ -113,10 +132,10 @@ def _has_unnegated_reviewer_grant(text: str) -> bool:
 
 def _has_unnegated_bypass_grant(text: str) -> bool:
     for match in BYPASS_AUTHORITY_GRANT.finditer(text):
-        prefix = text[max(0, match.start() - 64):match.start()]
+        prefix = text[max(0, match.start() - 96):match.start()]
         clause_prefix = re.split(r"[.;:\n]", prefix)[-1]
         # Preserve explicit denials such as "No reviewer may bypass Merge Queue".
-        if re.search(r"\bno(?:\s+[A-Za-z0-9_-]+){0,4}\s+$", clause_prefix, re.IGNORECASE):
+        if LOCAL_SUBJECT_DENIAL.search(clause_prefix):
             continue
         return True
     return False
