@@ -564,3 +564,64 @@ thread_policy: do_not_resolve_or_mark_READY_before_fresh_metadata_head_CI_self_r
 checkpoint_commit_qualification: remote SHA of this docs-only publication must be read back after push and becomes the sole final qualification candidate; do not put a self-referential SHA placeholder in this section
 next_action: fresh exact-head hosted CI, whole-diff self-review, and independent exact-head @codex review on the read-back metadata-complete SHA; repair and repeat any P0/P1/P2; do not merge
 ```
+
+## Final two-P1 repair checkpoint — 2026-09-03
+
+This checkpoint supersedes all earlier current-status checkpoints for the live continuation state while retaining them as historical provenance. Fresh native Codex review on exact head `8a02d7825722a897ce0e52b63dc6238bd64ba1c9` produced two additional P1 findings: a historical terminal-replacement receipt permanently blocked a genuinely later ordinary reconnect on the replacement-created GameSession, and final current-authority revalidation did not independently carry the current `original_grace_deadline`.
+
+- Receipt/future-epoch RED is `12c3111a4d8989c5eaa245bdfdb7fa8617eb8c22`; Rust run `33799400542`, PostgreSQL 17.6 job `100794820236`, exact checkout verified, 103 PASS / 1 expected FAIL. The sole failure was `replacement_created_session_can_reconnect_in_later_epoch_without_reusing_replacement_authorization`, returning `InvalidStoredState`.
+- Current-original-grace RED is `8fa624810d8d3e5986ef6b8f0725d8451c82b834`; Rust run `33799957633`, PostgreSQL 17.6 job `100796763136`, exact checkout verified, expected compile failure `E0061` because `ReconnectCurrentAuthorityV1::from_current_facts(...)` had no explicit independently observed current original-grace-deadline argument.
+- Minimal code GREEN is immutable `0ec5747a52b0ec961e8e7a7417ba7be23da0d9bb`. `AdmissionReconnectJournal::prepare_internal` now keeps the receipt-backed fail-closed guard on exact existing-attempt replay but no longer rejects a fresh unseen later attempt merely because the GameSession has historical replacement-receipt provenance. `ReconnectCurrentAuthorityV1` now carries an explicit positive `original_grace_deadline`; `from_current_facts(...)` receives it independently and `from_record(...)` supplies the persisted record value. The existing complete equality predicate therefore rejects deadline drift in direct COMMIT and committed reconciliation.
+- Exact hosted GREEN on `0ec5747a52b0ec961e8e7a7417ba7be23da0d9bb`: Rust run `33800610471` SUCCESS; PostgreSQL 17.6 job `100798951680` verified exact checkout and completed 105 PASS / 0 FAIL; Windows SIM `100798951257` SUCCESS; Architecture `33800610652` SUCCESS; Agent governance `33800610784` SUCCESS; Merge gate `33800610201` SUCCESS; aggregate `game-gate` job `100801677693` SUCCESS.
+- Whole-diff self-review on code GREEN `0ec5747a52b0ec961e8e7a7417ba7be23da0d9bb` against protected `main@f5f8e3717a48e6854ac36595533046938ceec890` found `merge_base=main`, `behind_by=0`, exactly the 12 allocated paths, and no P0/P1/P2 in the complete diff. The two latest production changes are minimal and preserve the prior negative-path regressions.
+- No force-push, rebase, reset, merge, scope expansion, Cargo/lockfile/workflow/resource-registry, gameplay, production/live-data, secret, external-repository, or resource-maximum mutation occurred in this repair cycle.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+pr_state: open_draft_mergeable_unmerged
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+reviewed_head_with_latest_findings: 8a02d7825722a897ce0e52b63dc6238bd64ba1c9
+latest_findings:
+  later_reconnect_receipt_p1:
+    thread: PRRT_kwDOT8SzxM6fDpe1
+    comment: 3927601387
+  current_original_grace_p1:
+    thread: PRRT_kwDOT8SzxM6fDpe5
+    comment: 3927601391
+red_evidence:
+  later_reconnect:
+    head: 12c3111a4d8989c5eaa245bdfdb7fa8617eb8c22
+    rust_run: 33799400542
+    postgres_job: 100794820236
+    result: 103_pass_1_expected_fail_invalid_stored_state
+  current_original_grace:
+    head: 8fa624810d8d3e5986ef6b8f0725d8451c82b834
+    rust_run: 33799957633
+    postgres_job: 100796763136
+    result: expected_compile_failure_E0061
+immutable_code_candidate_sha: 0ec5747a52b0ec961e8e7a7417ba7be23da0d9bb
+code_green_ci:
+  rust_run: 33800610471_SUCCESS
+  postgres_job: 100798951680_SUCCESS_105_pass_0_fail
+  windows_sim_job: 100798951257_SUCCESS
+  architecture_run: 33800610652_SUCCESS
+  agent_governance_run: 33800610784_SUCCESS
+  merge_gate_run: 33800610201_SUCCESS
+  game_gate_job: 100801677693_SUCCESS
+whole_diff_pre_metadata:
+  main_sha: f5f8e3717a48e6854ac36595533046938ceec890
+  merge_base_sha: f5f8e3717a48e6854ac36595533046938ceec890
+  behind_by: 0
+  allocated_paths: 12_of_12
+  self_review: P0_0_P1_0_P2_0
+history_operations: no_force_no_rebase_no_reset_no_merge
+thread_policy: resolve repaired technical threads only after the metadata-complete exact head has fresh CI and fresh exact-head Codex with zero P0/P1/P2; keep control-plane integration gate PRRT_kwDOT8SzxM6dX3eH unresolved for Work
+owner_action_required: null
+checkpoint_commit_qualification: this docs-only publication advances the PR head; its read-back remote SHA becomes the sole final qualification candidate
+next_action: read back this metadata commit SHA; require fresh exact-head hosted CI, whole-diff self-review and fresh independent @codex review on that immutable SHA; if P0/P1/P2 remain zero, resolve repaired technical threads and issue READY_FOR_INTEGRATION without merging
+```
