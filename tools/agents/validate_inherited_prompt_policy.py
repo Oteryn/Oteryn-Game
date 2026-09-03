@@ -29,22 +29,47 @@ INHERITED_POLICY_SURFACES = (
 )
 
 AI_REVIEW_AUTHORITY_BROADENING = (
+    # Explicit grant/pre-authorization to an AI service. Negated forms such as
+    # "must not be invoked without authorization" do not match this grammar.
     re.compile(
-        r"\bowner[- ]funded\b.{0,80}\b(?:external\s+)?(?:ai|codex|openai)\b.{0,80}"
+        r"\b(?:external\s+)?(?:ai|codex|openai)\b.{0,40}\b(?:is|are)\s+"
+        r"(?:pre[- ]?)?(?:authorized|allowed|permitted)\b",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    # Direct imperative use without authorization. This intentionally requires
+    # the invocation verb at the start of a line/bullet, avoiding restrictive
+    # modal forms such as "must not invoke ...".
+    re.compile(
+        r"(?m)^\s*(?:[-*]\s*)?(?:please\s+)?(?:invoke|use|run|call)\s+"
+        r"(?:owner[- ]funded\s+)?(?:external\s+)?(?:ai|codex|openai)\b.{0,80}"
         r"\bwithout\s+(?:explicit\s+)?authorization\b",
+        re.IGNORECASE | re.DOTALL,
+    ),
+    # Positive modal grant to use an AI service. "may not", "cannot", and
+    # "is not allowed" are structurally different and therefore remain valid.
+    re.compile(
+        r"\b(?:may|can|is\s+allowed\s+to|is\s+authorized\s+to|has\s+authority\s+to)\s+"
+        r"(?:invoke|use|run|call)\b.{0,80}\b(?:external\s+)?(?:ai|codex|openai)\b",
         re.IGNORECASE | re.DOTALL,
     ),
     re.compile(
         r"\b(?:approval|review)\s+(?:is|becomes|shall\s+be|must\s+be)\s+"
-        r"(?:an?\s+)?required\s+(?:merge\s+)?status\b",
+        r"(?:an?\s+)?required\s+(?:merge\s+)?(?:status|check|gate)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:codex|ai(?:\s+reviewer)?|reviewer)\s+(?:approval|review)\s+"
+        r"(?:is|becomes|shall\s+be|must\s+be)\s+(?:an?\s+)?required\s+"
+        r"(?:merge\s+)?(?:status|check|gate)\b",
         re.IGNORECASE,
     ),
 )
 
 MUTATION_MERGE_AUTHORITY_BROADENING = (
     re.compile(
-        r"\breviewer\s+may\s+(?:commit|push|merge|implement|modify|fix)\b",
-        re.IGNORECASE,
+        r"\breviewer\b.{0,40}\b(?:may|can|is\s+allowed\s+to|is\s+authorized\s+to|has\s+authority\s+to)\s+"
+        r"(?:commit|push|merge|implement|modify|fix|approve)\b",
+        re.IGNORECASE | re.DOTALL,
     ),
     re.compile(
         r"\bapprove\s+(?:its|their|his|her)\s+own\s+(?:fixes|changes|work)\b",
