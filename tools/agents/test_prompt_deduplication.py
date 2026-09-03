@@ -59,6 +59,7 @@ def test_restrictive_ai_authorization_wording_is_preserved() -> None:
         "Owner-funded external AI must not be invoked without authorization.",
         "Owner-funded AI cannot run without explicit authorization.",
         "The reviewer is not allowed to commit fixes or merge changes.",
+        "No production/protected-environment/live-data/Platform/external-repository write, secrets use, deployment, production port change or non-covered owner-funded AI invocation is authorized by this prompt.",
     )
     for text in cases:
         errors = validate("# Prompt\n\n" + text + "\n")
