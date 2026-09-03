@@ -1,5 +1,36 @@
 use super::{CommandId, MAX_OUTSTANDING_COMMANDS};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CharacterWorldEligibilityClaimV1 {
+    character_id: CharacterId,
+    world_id: WorldId,
+}
+
+impl CharacterWorldEligibilityClaimV1 {
+    #[must_use]
+    pub const fn new(character_id: CharacterId, world_id: WorldId) -> Self {
+        Self {
+            character_id,
+            world_id,
+        }
+    }
+
+    #[must_use]
+    pub fn from_identity(identity: &ReconnectIdentityV1) -> Self {
+        Self::new(identity.character_id(), identity.world_id())
+    }
+
+    #[must_use]
+    pub const fn character_id(self) -> CharacterId {
+        self.character_id
+    }
+
+    #[must_use]
+    pub const fn world_id(self) -> WorldId {
+        self.world_id
+    }
+}
+
 /// Current fenced authority required to reconstruct one GameSession projection
 /// after process replacement.
 ///
@@ -13,6 +44,7 @@ pub struct GameSessionAuthoritySnapshot<T: Copy + Eq> {
     current_connection_generation: ConnectionGeneration,
     current_transport: Option<T>,
     current_character_lease: CharacterLease,
+    current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
     current_runtime_scope: RuntimeScopeRefV1,
     current_scope_generation: ScopeOwnershipGeneration,
     current_control_loss_epoch: Option<ControlLossEpochRefV1>,
@@ -36,6 +68,10 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
             current_connection_generation,
             current_transport,
             current_character_lease,
+            current_character_world_eligibility: Some(CharacterWorldEligibilityClaimV1::new(
+                commit.character_id(),
+                commit.world_id(),
+            )),
             current_runtime_scope: RuntimeScopeRefV1::channel(commit.world_id(), commit.channel_id()),
             current_scope_generation,
             current_control_loss_epoch: None,
@@ -43,12 +79,14 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn from_current_facts(
         commit: FreshAdmissionCommit<T>,
         session_state: GameSessionState,
         current_connection_generation: ConnectionGeneration,
         current_transport: Option<T>,
         current_character_lease: CharacterLease,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
         current_runtime_scope: RuntimeScopeRefV1,
         current_scope_generation: ScopeOwnershipGeneration,
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
@@ -61,6 +99,7 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
             current_connection_generation,
             current_transport,
             current_character_lease,
+            current_character_world_eligibility,
             current_runtime_scope,
             current_scope_generation,
             current_control_loss_epoch: None,
@@ -115,6 +154,13 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
     #[must_use]
     pub const fn current_character_lease(self) -> CharacterLease {
         self.current_character_lease
+    }
+
+    #[must_use]
+    pub const fn current_character_world_eligibility(
+        self,
+    ) -> Option<CharacterWorldEligibilityClaimV1> {
+        self.current_character_world_eligibility
     }
 
     #[must_use]
@@ -295,6 +341,14 @@ fn validate_current_authority<T: Copy + Eq>(
     if committed.game_session_id() != expected_game_session_id {
         return Err(AdmissionError::ReconciliationUnavailable);
     }
+    if snapshot.current_character_world_eligibility()
+        != Some(CharacterWorldEligibilityClaimV1::new(
+            committed.character_id(),
+            committed.world_id(),
+        ))
+    {
+        return Err(AdmissionError::ReconciliationUnavailable);
+    }
 
     let lease = snapshot.current_character_lease();
     if lease.character_id() != committed.character_id() {
@@ -397,7 +451,6 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
     ) -> Result<&GameSession, AdmissionError> {
         let committed = snapshot.commit();
         validate_current_authority(committed.game_session_id(), snapshot)?;
-
         if committed.initial_transport() != authenticated_transport
             || snapshot.session_state() != GameSessionState::Active
             || snapshot.current_connection_generation() != committed.connection_generation()
@@ -666,6 +719,78 @@ impl ReconnectConnectionFenceV1 {
     pub const fn candidate(self) -> ConnectionGeneration { self.candidate }
     #[must_use]
     pub const fn transport_ref(self) -> AuthenticatedTransportRefV1 { self.transport_ref }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReconnectCandidateBindingV1 {
+    game_session_id: GameSessionId,
+    reconnect_attempt_ref: ReconnectAttemptRef,
+    connection_generation: ConnectionGeneration,
+    transport_ref: AuthenticatedTransportRefV1,
+    prepared_deadline: i64,
+}
+
+impl ReconnectCandidateBindingV1 {
+    pub fn new(
+        game_session_id: GameSessionId,
+        reconnect_attempt_ref: ReconnectAttemptRef,
+        connection_generation: ConnectionGeneration,
+        transport_ref: AuthenticatedTransportRefV1,
+        prepared_deadline: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if prepared_deadline <= 0 {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        Ok(Self {
+            game_session_id,
+            reconnect_attempt_ref,
+            connection_generation,
+            transport_ref,
+            prepared_deadline,
+        })
+    }
+
+    pub fn from_record(
+        record: &ReconnectDurabilityRecordV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        Self::new(
+            record.identity().game_session_id(),
+            record.identity().reconnect_attempt_ref(),
+            record.connection().candidate(),
+            record.connection().transport_ref(),
+            record.continuity().prepared_deadline(),
+        )
+    }
+
+    #[must_use]
+    pub const fn game_session_id(self) -> GameSessionId {
+        self.game_session_id
+    }
+
+    #[must_use]
+    pub const fn reconnect_attempt_ref(self) -> ReconnectAttemptRef {
+        self.reconnect_attempt_ref
+    }
+
+    #[must_use]
+    pub const fn connection_generation(self) -> ConnectionGeneration {
+        self.connection_generation
+    }
+
+    #[must_use]
+    pub const fn transport_ref(self) -> AuthenticatedTransportRefV1 {
+        self.transport_ref
+    }
+
+    #[must_use]
+    pub const fn prepared_deadline(self) -> i64 {
+        self.prepared_deadline
+    }
+
+    #[must_use]
+    const fn is_live_at(self, observed_at: i64) -> bool {
+        observed_at >= 0 && observed_at <= self.prepared_deadline
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -1043,6 +1168,8 @@ impl AccountPresenceClaimV1 {
 pub struct ReconnectCurrentAuthorityV1 {
     identity: ReconnectIdentityV1,
     current_account_presence: Option<AccountPresenceClaimV1>,
+    current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+    current_candidate: Option<ReconnectCandidateBindingV1>,
     current_runtime_scope: RuntimeScopeRefV1,
     predecessor: ConnectionGeneration,
     authority: ReconnectAuthorityFenceV1,
@@ -1068,6 +1195,8 @@ impl ReconnectCurrentAuthorityV1 {
     pub fn from_current_facts(
         record: &ReconnectDurabilityRecordV1,
         current_account_presence: Option<AccountPresenceClaimV1>,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+        current_candidate: Option<ReconnectCandidateBindingV1>,
         current_runtime_scope: RuntimeScopeRefV1,
         predecessor: ConnectionGeneration,
         authority: ReconnectAuthorityFenceV1,
@@ -1088,6 +1217,8 @@ impl ReconnectCurrentAuthorityV1 {
         Ok(Self {
             identity: record.identity().clone(),
             current_account_presence,
+            current_character_world_eligibility,
+            current_candidate,
             current_runtime_scope,
             predecessor,
             authority,
@@ -1117,6 +1248,8 @@ impl ReconnectCurrentAuthorityV1 {
         Self::from_current_facts(
             record,
             Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
+            Some(ReconnectCandidateBindingV1::from_record(record)?),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             record.authority(),
@@ -1546,8 +1679,7 @@ impl ReconnectDurabilityFlowV1 {
     }
     pub fn authorize_commit(&mut self, current: ReconnectCurrentAuthorityV1, now: i64) -> Result<ReconnectCommitRequestV1, ReconnectDurabilityErrorV1> {
         if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation { return Err(ReconnectDurabilityErrorV1::InvalidPhase); }
-        let expected = ReconnectCurrentAuthorityV1::from_record(&self.record, current.observed_at)?;
-        if current != expected || current.session_state != GameSessionState::Reconnectable || current.current_controller_present { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
+        if !current_authority_matches_record(&self.record, &current)? { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
         let deadline = self.record.authorization_deadline()?;
         if now > deadline { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::DeadlineExpired); }
         let request = ReconnectCommitRequestV1 { record: Box::new(self.record.clone()), authorization: ReconnectCommitAuthorizationV1 { authorization_deadline: deadline } };
@@ -1801,6 +1933,9 @@ fn current_authority_matches_record(
 ) -> Result<bool, ReconnectDurabilityErrorV1> {
     let expected = ReconnectCurrentAuthorityV1::from_record(record, current.observed_at)?;
     Ok(*current == expected
+        && current
+            .current_candidate
+            .is_some_and(|candidate| candidate.is_live_at(current.observed_at))
         && current.session_state == GameSessionState::Reconnectable
         && !current.current_controller_present)
 }
