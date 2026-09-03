@@ -18,8 +18,8 @@ pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool,
 mod runtime_scope_identity_red_tests {
     use crate::durability::{AdmissionReconnectJournalV2, MigrationExecutor};
     use oteryn_game_server::foundation::{
-        AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId,
-        CharacterLease, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
+        AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
+        CharacterId, CharacterLease, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
         Fnd02ReconciliationFenceV1, FreshAdmissionCommit, FreshAdmissionFacts,
         GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, ProtectionEntitlementV1,
         ReconnectAttemptBudgetV1, ReconnectAttemptRef, ReconnectAuthorityFenceV1,
@@ -468,6 +468,7 @@ mod runtime_scope_identity_red_tests {
     ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
         ReconnectCurrentAuthorityV1::from_current_facts(
             record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
             runtime_scope,
             connection_generation,
             record.authority(),

@@ -205,16 +205,17 @@ mod tests {
 #[cfg(test)]
 mod v2_reconciled_prepared_budget_regression_tests {
     use super::foundation::{
-        AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId, CommandId,
-        ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1, GameSessionId,
-        GameSessionState, ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
-        ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1, ReconnectCompatibilityEvidenceV1,
-        ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectCurrentAuthorityV1,
-        ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1,
-        ReconnectDurableOutcomeV2, ReconnectDurableReconciliationSnapshotV2, ReconnectIdentityV1,
-        ReconnectPrepareActionV2, ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1,
-        ReconnectPrepareDispositionV2, ReconnectProjectionDecisionV2, ReconnectProofV1,
-        RuntimeScopeRefV1, ScopeOwnershipGeneration, WorldId,
+        AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
+        CharacterId, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
+        Fnd02ReconciliationFenceV1, GameSessionId, GameSessionState, ProtectionEntitlementV1,
+        ReconnectAttemptBudgetV1, ReconnectAttemptRef, ReconnectAttemptReservationV1,
+        ReconnectAuthorityFenceV1, ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1,
+        ReconnectContinuityV1, ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1,
+        ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+        ReconnectDurableReconciliationSnapshotV2, ReconnectIdentityV1, ReconnectPrepareActionV2,
+        ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
+        ReconnectProjectionDecisionV2, ReconnectProofV1, RuntimeScopeRefV1,
+        ScopeOwnershipGeneration, WorldId,
     };
 
     fn invalid_record<E>(_error: E) -> ReconnectDurabilityErrorV1 {
@@ -381,6 +382,7 @@ mod v2_reconciled_prepared_budget_regression_tests {
         let other_channel = ChannelId::decode(&uuid_v7(14)).map_err(invalid_record)?;
         let current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
             RuntimeScopeRefV1::channel(record.identity().world_id(), other_channel),
             record.connection().predecessor(),
             record.authority(),

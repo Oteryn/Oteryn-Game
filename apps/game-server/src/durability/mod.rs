@@ -1160,8 +1160,8 @@ mod terminal_replacement_schema_red_tests {
 #[allow(clippy::expect_used, clippy::too_many_arguments)]
 mod terminal_replacement_foundation_red_tests {
     use oteryn_game_server::foundation::{
-        AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId, CharacterId,
-        CharacterLease, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
+        AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
+        CharacterId, CharacterLease, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
         Fnd02ReconciliationFenceV1, FreshAdmissionCommit, FreshAdmissionFacts,
         GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, PendingCommandDispositionV1,
         PendingCommandReconciliationV1, ProtectionEntitlementV1, ReconnectAttemptBudgetV1,
@@ -1366,6 +1366,7 @@ mod terminal_replacement_foundation_red_tests {
 
         let exact_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity()).expect("presence")),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             record.authority(),
@@ -1406,6 +1407,7 @@ mod terminal_replacement_foundation_red_tests {
         .expect("changed authority");
         let changed_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity()).expect("presence")),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             changed_authority,

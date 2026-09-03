@@ -1003,8 +1003,46 @@ pub enum ReconnectPrepareActionV1 {
 pub enum ReconnectDurabilityPhaseV1 { PendingPrepare, AwaitFinalRevalidation, PendingCommit, ReconciliationRequired, Terminal, Completed }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AccountPresenceClaimV1 {
+    account_id: String,
+    character_id: CharacterId,
+}
+
+impl AccountPresenceClaimV1 {
+    pub fn new(
+        account_id: &str,
+        character_id: CharacterId,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if !canonical_uuid(account_id) {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        Ok(Self {
+            account_id: account_id.to_owned(),
+            character_id,
+        })
+    }
+
+    pub fn from_identity(
+        identity: &ReconnectIdentityV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        Self::new(identity.account_id(), identity.character_id())
+    }
+
+    #[must_use]
+    pub fn account_id(&self) -> &str {
+        &self.account_id
+    }
+
+    #[must_use]
+    pub const fn character_id(&self) -> CharacterId {
+        self.character_id
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReconnectCurrentAuthorityV1 {
     identity: ReconnectIdentityV1,
+    current_account_presence: Option<AccountPresenceClaimV1>,
     current_runtime_scope: RuntimeScopeRefV1,
     predecessor: ConnectionGeneration,
     authority: ReconnectAuthorityFenceV1,
@@ -1029,6 +1067,7 @@ impl ReconnectCurrentAuthorityV1 {
     #[allow(clippy::too_many_arguments)]
     pub fn from_current_facts(
         record: &ReconnectDurabilityRecordV1,
+        current_account_presence: Option<AccountPresenceClaimV1>,
         current_runtime_scope: RuntimeScopeRefV1,
         predecessor: ConnectionGeneration,
         authority: ReconnectAuthorityFenceV1,
@@ -1048,6 +1087,7 @@ impl ReconnectCurrentAuthorityV1 {
         }
         Ok(Self {
             identity: record.identity().clone(),
+            current_account_presence,
             current_runtime_scope,
             predecessor,
             authority,
@@ -1076,6 +1116,7 @@ impl ReconnectCurrentAuthorityV1 {
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         Self::from_current_facts(
             record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             record.authority(),
