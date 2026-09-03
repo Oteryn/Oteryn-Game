@@ -343,7 +343,7 @@ next_action: freeze/read back the live metadata-complete head, require all exact
 This checkpoint supersedes every earlier Context/final-qualification checkpoint for current task status. Earlier SHAs and CI runs remain historical repair provenance only; in particular, `1e189e6646a4c41370964146f6d740385fc47506` is not the latest qualified candidate.
 
 - Final exact-head Codex review on `d0106cda44cdffc758a93f669a7dfb9dee625b76` reported two P1 findings: current AccountPresence was not independently represented during direct final COMMIT or lost-COMMIT `Committed` reconciliation, and this active task checkpoint was stale.
-- Fresh executable test-only RED is preserved at `e585c5057f5e056d1994b27ccbd7770ae5c64918`. The focused game-server test command exited 101 because `AccountPresenceClaimV1` and the required AccountPresence argument to `ReconnectCurrentAuthorityV1::from_current_facts(...)` did not exist.
+- Fresh executable test-only RED is preserved at `e585c50b1eb5f9f64c8a32a6f189e4c989c658e9`. The focused game-server test command exited 101 because `AccountPresenceClaimV1` and the required AccountPresence argument to `ReconnectCurrentAuthorityV1::from_current_facts(...)` did not exist.
 - Production GREEN is `906170dcabe68ab1fb329e7f3e36c717f6a04eae`. Foundation now exposes the typed `AccountPresenceClaimV1`, accepts the independently observed current claim as an optional current fact (`None` means released), and includes it in the complete exact current-authority comparison shared by direct V2 final COMMIT authorization and reconciled `Committed` controller installation.
 - The focused regression proves that the exact current account/character claim authorizes, while a released claim and a claim reassigned to another CharacterId both fail closed even though the separate account-security generation remains unchanged. All previously required runtime-scope, connection, continuity, proof, FND-02, compatibility/security, session/controller and expiry checks remain in the same complete comparison/authorization paths.
 - The repair remains inside the existing 12-path allocation. The code generation changed only four already allocated files; this metadata checkpoint changes only this allocated task record.
@@ -355,9 +355,9 @@ branch: impl/game-terminal-session-replacement-250
 pr: 252
 integration_main_sha: f5f8e3717a48e6854ac36595533046938ceec890
 reviewed_parent_head: d0106cda44cdffc758a93f669a7dfb9dee625b76
-account_presence_red_head: e585c5057f5e056d1994b27ccbd7770ae5c64918
+account_presence_red_head: e585c50b1eb5f9f64c8a32a6f189e4c989c658e9
 account_presence_code_green_head: 906170dcabe68ab1fb329e7f3e36c717f6a04eae
-checkpoint_branch_tip: HEAD
+reviewed_exact_head: 615d5c4f12a734f7d2257af6f0455d30fbf6cb6e
 checkpoint_commit_scope: docs_only_after_account_presence_code_green
 focused_red:
   command: cargo +1.94.0 test --locked -p oteryn-game-server v2_final_authority_revalidation_requires_current_account_presence
@@ -372,4 +372,64 @@ review_disposition:
 owner_action_required: null
 blocker: fresh exact-head hosted CI, whole-diff self-review, fresh independent Codex review, and control-plane integration reconciliation remain required
 next_action: publish this metadata-complete repair generation, verify the remote exact head, then let the coordinator run fresh exact-head hosted qualification and independent Codex review; do not mark READY_FOR_INTEGRATION or resolve review threads
+```
+
+## Final-review repair handoff checkpoint — 2026-09-03
+
+This section supersedes all prior current-status checkpoints for continuation state; older checkpoints and their evidence remain historical provenance. The task is `REPAIR_REQUIRED`, is not ready for integration, and must be resumed from a fresh read of the live branch head because this docs-only checkpoint commit moves the PR head. It is not itself a reviewed or exact-head-qualified final candidate.
+
+```yaml
+status: REPAIR_REQUIRED
+integration_state: NOT_READY_FOR_INTEGRATION
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+pr_state: open_draft_mergeable_unmerged
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+reviewed_exact_head: 615d5c4f12a734f7d2257af6f0455d30fbf6cb6e
+final_codex_review:
+  submission: PRR_kwDOT8SzxM8AAAABMEC8gg
+  reviewed_head: 615d5c4f12a734f7d2257af6f0455d30fbf6cb6e
+account_presence_generation:
+  red_head: e585c50b1eb5f9f64c8a32a6f189e4c989c658e9
+  green_head: 906170dcabe68ab1fb329e7f3e36c717f6a04eae
+  metadata_head_reviewed: 615d5c4f12a734f7d2257af6f0455d30fbf6cb6e
+reviewed_head_qualification:
+  rust_run: 33779042687_SUCCESS
+  postgres_17_6_job: 100727892790_SUCCESS
+  architecture_run: 33779042944_SUCCESS
+  agent_governance_run: 33779042937_SUCCESS
+  merge_gate_run: 33779043078_SUCCESS
+changed_paths:
+  - apps/game-server/build.rs
+  - apps/game-server/migrations/0001_admission_reconnect_journal.sql
+  - apps/game-server/src/bin/oteryn-game-migrate.rs
+  - apps/game-server/src/durability/admission_journal.rs
+  - apps/game-server/src/durability/db.rs
+  - apps/game-server/src/durability/mod.rs
+  - apps/game-server/src/durability/schema.rs
+  - apps/game-server/src/foundation/admission_recovery_inner.rs
+  - apps/game-server/src/lib.rs
+  - apps/game-server/tests/durability_postgres.rs
+  - apps/game-server/tests/support/postgres.rs
+  - docs/agents/tasks/active/OTV2-20260828-terminal-session-replacement-repair.md
+actionable_findings:
+  - thread: PRRT_kwDOT8SzxM6e_-dm
+    comment: 3926687258
+    severity: P1
+    requirement: independently current CharacterId-to-WorldId eligibility must flow through terminal-replacement PREPARE authority and final COMMIT/lost-COMMIT reconciliation
+  - thread: PRRT_kwDOT8SzxM6e_-dt
+    comment: 3926687267
+    severity: P1
+    requirement: current reconnect-candidate existence, liveness, expiry, attempt identity, and transport binding must be verified before COMMIT/reconciliation so stale, disappeared, or rebound candidate authority fails closed
+  - thread: PRRT_kwDOT8SzxM6e_-dy
+    comment: 3926687275
+    severity: P1
+    requirement: authoritative task metadata must identify the immutable reviewed/frozen SHA rather than movable HEAD semantics
+execution_strategy: one primary high-reasoning lead owns the coherent current-authority design and all core mutations; parallel helpers may inspect, test, or review only
+scope_guard: preserve the existing 12-path allocation; expected repairs stay within allocated Foundation/test surfaces; no Server Seam, gameplay, external repository, production/live data, resource maxima, Cargo/lockfile, or workflow changes
+new_path_policy: SHARED_LEASE_REQUIRED_STOP_FOR_CONTROL_PLANE_EXPANSION
+thread_policy: older technical threads remain intentionally unresolved until a fresh repaired generation is independently qualified; do not resolve them during continuation, and keep control-plane-owned integration gate PRRT_kwDOT8SzxM6dX3eH unresolved
+checkpoint_commit_qualification: this docs-only commit advances the PR head and is not final exact-head qualification evidence
+next_action: the next single lead agent creates fresh executable RED coverage for both coupled Foundation P1s, implements the minimal coherent GREEN within allocation, updates metadata accurately, native-publishes a new head, then reruns fresh exact-head hosted CI, whole-diff self-review, and independent Codex review; only zero unresolved actionable P0/P1/P2 can proceed to READY_FOR_INTEGRATION
 ```
