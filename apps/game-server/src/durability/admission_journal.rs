@@ -28,6 +28,25 @@ const PROTECTION_REARM_READY: i16 = 1;
 const PROTECTION_REARM_PENDING: i16 = 2;
 type ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 
+async fn replacement_receipt_for_candidate_exists(
+    transaction: &mut Transaction<'_, Postgres>,
+    character_id: &[u8],
+    candidate_session_id: &[u8],
+) -> Result<bool, DurabilityError> {
+    sqlx::query_scalar(
+        "SELECT EXISTS (\
+            SELECT 1 FROM game_durability_session_replacements \
+            WHERE character_id = encode($1, 'hex')::uuid \
+              AND candidate_game_session_id = encode($2, 'hex')::uuid\
+         )",
+    )
+    .bind(character_id)
+    .bind(candidate_session_id)
+    .fetch_one(&mut **transaction)
+    .await
+    .map_err(DurabilityError::from)
+}
+
 #[derive(Clone)]
 pub struct AdmissionReconnectJournal {
     pool: PgPool,
@@ -43,6 +62,21 @@ impl AdmissionReconnectJournal {
     pub async fn prepare(
         &self,
         request: &ReconnectPrepareRequestV1,
+    ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
+        self.prepare_internal(request, false).await
+    }
+
+    pub(crate) async fn prepare_receipt_authorized(
+        &self,
+        request: &ReconnectPrepareRequestV1,
+    ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
+        self.prepare_internal(request, true).await
+    }
+
+    async fn prepare_internal(
+        &self,
+        request: &ReconnectPrepareRequestV1,
+        receipt_authorized: bool,
     ) -> Result<ReconnectPrepareDispositionV1, DurabilityError> {
         let record = request.record();
         let identity = record.identity();
@@ -105,6 +139,16 @@ impl AdmissionReconnectJournal {
             return Err(DurabilityError::InvalidStoredState);
         };
         if !session_binding_is_valid(&session, record)? {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        if !receipt_authorized
+            && replacement_receipt_for_candidate_exists(
+                &mut transaction,
+                identity.character_id().as_bytes().as_slice(),
+                session_id.as_slice(),
+            )
+            .await?
+        {
             return Err(DurabilityError::InvalidStoredState);
         }
 

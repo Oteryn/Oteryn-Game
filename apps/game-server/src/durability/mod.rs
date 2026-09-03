@@ -129,7 +129,7 @@ impl AdmissionReconnectJournalV2 {
                 return Err(DurabilityError::InvalidStoredState);
             }
             transaction.commit().await?;
-            return self.prepare_legacy_typed(request).await;
+            return self.prepare_legacy_typed_receipt_authorized(request).await;
         }
 
         if replacement_receipt_for_candidate_exists(
@@ -162,7 +162,7 @@ impl AdmissionReconnectJournalV2 {
                 && replacement_receipt_matches(&mut transaction, authorization).await?
             {
                 transaction.commit().await?;
-                return self.prepare_legacy_typed(request).await;
+                return self.prepare_legacy_typed_receipt_authorized(request).await;
             }
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -371,9 +371,30 @@ impl AdmissionReconnectJournalV2 {
         &self,
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+        self.prepare_legacy_typed_internal(request, false).await
+    }
+
+    async fn prepare_legacy_typed_receipt_authorized(
+        &self,
+        request: &ReconnectPrepareRequestV2,
+    ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
+        self.prepare_legacy_typed_internal(request, true).await
+    }
+
+    async fn prepare_legacy_typed_internal(
+        &self,
+        request: &ReconnectPrepareRequestV2,
+        receipt_authorized: bool,
+    ) -> Result<ReconnectPrepareDispositionV2, DurabilityError> {
         let record = request.record();
         let (_, legacy_request) = ReconnectDurabilityFlowV1::begin(record.clone());
-        let disposition = self.legacy.prepare(&legacy_request).await?;
+        let disposition = if receipt_authorized {
+            self.legacy
+                .prepare_receipt_authorized(&legacy_request)
+                .await?
+        } else {
+            self.legacy.prepare(&legacy_request).await?
+        };
         match disposition {
             ReconnectPrepareDispositionV1::Prepared => Ok(ReconnectPrepareDispositionV2::Prepared),
             ReconnectPrepareDispositionV1::ExistingPrepared => {

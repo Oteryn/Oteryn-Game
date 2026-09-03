@@ -628,7 +628,8 @@ mod runtime_scope_identity_red_tests {
     #[test]
     fn replacement_prepare_requires_receipt_authorization_when_request_omits_it() -> TestResult {
         run_postgres_test(async {
-            let (database, database_url) = migrated_database("unsigned_replacement_prepare").await?;
+            let (database, database_url) =
+                migrated_database("unsigned_replacement_prepare").await?;
             let now = unix_now()?;
             seed_current_actor_anchor(&database_url, 10, now).await?;
             let journal = AdmissionReconnectJournalV2::connect_runtime(&database_url).await?;
