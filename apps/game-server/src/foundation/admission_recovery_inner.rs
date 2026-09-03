@@ -1454,6 +1454,7 @@ impl ReconnectDurabilityFlowV2 {
             } => {
                 if current_generation != self.record.connection().candidate()
                     || current_transport_ref != self.record.connection().transport_ref()
+                    || current.observed_at > self.record.authorization_deadline()?
                     || !current_authority_matches_record(&self.record, &current)?
                 {
                     return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
@@ -1978,6 +1979,10 @@ mod durability_reconnect_v2_commit_phase_regression_tests {
             reconcile(ReconnectCurrentAuthorityV1::from_record(&record, 105)?)?,
             ReconnectProjectionDecisionV2::InstallController { .. }
         ));
+        assert_eq!(
+            reconcile(ReconnectCurrentAuthorityV1::from_record(&record, 106)?),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
         let mut stale = ReconnectCurrentAuthorityV1::from_record(&record, 105)?;
         stale.session_state = GameSessionState::Terminal;
         assert_eq!(
