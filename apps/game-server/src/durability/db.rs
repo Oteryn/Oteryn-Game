@@ -577,6 +577,41 @@ mod runtime_scope_identity_red_tests {
     }
 
     #[test]
+    fn terminal_replacement_authorization_requires_current_account_presence_at_prepare()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let candidate = candidate_record()?;
+        let exact_presence = AccountPresenceClaimV1::new(ACCOUNT, character(11)?)?;
+        let reassigned_presence = AccountPresenceClaimV1::new(ACCOUNT, character(99)?)?;
+
+        assert!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                ACCOUNT,
+                Some(&exact_presence),
+                game_session(10)?,
+                game_session(20)?,
+                predecessor_snapshot(13)?,
+                &candidate,
+            )
+            .is_ok()
+        );
+
+        for current_presence in [None, Some(&reassigned_presence)] {
+            assert_eq!(
+                TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                    ACCOUNT,
+                    current_presence,
+                    game_session(10)?,
+                    game_session(20)?,
+                    predecessor_snapshot(13)?,
+                    &candidate,
+                ),
+                Err(ReconnectDurabilityErrorV1::StaleAuthority)
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
     fn v2_final_revalidation_requires_current_world_and_live_candidate_binding()
     -> Result<(), ReconnectDurabilityErrorV1> {
         let record = candidate_record()?;
