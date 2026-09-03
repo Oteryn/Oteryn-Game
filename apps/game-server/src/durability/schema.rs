@@ -96,6 +96,15 @@ mod contract_tests {
     }
 
     #[test]
+    fn reconnect_attempts_index_supports_actor_epoch_budget_count() {
+        assert!(
+            MIGRATION.contains(
+                "ON game_durability_reconnect_attempts (character_id, control_loss_epoch)"
+            )
+        );
+    }
+
+    #[test]
     fn reconnect_session_schema_binds_actor_and_runtime_scope_identity() {
         let session = session_schema();
         assert!(

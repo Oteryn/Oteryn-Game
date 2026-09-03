@@ -189,3 +189,6 @@ CREATE TABLE game_durability_reconnect_pending_commands (
 
 CREATE INDEX game_durability_reconnect_attempts_epoch_idx
     ON game_durability_reconnect_attempts (game_session_id, control_loss_epoch);
+
+CREATE INDEX game_durability_reconnect_attempts_actor_epoch_idx
+    ON game_durability_reconnect_attempts (character_id, control_loss_epoch);

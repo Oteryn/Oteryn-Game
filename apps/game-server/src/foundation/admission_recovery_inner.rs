@@ -1425,14 +1425,15 @@ impl ReconnectDurabilityFlowV2 {
     pub fn accept_reconciliation(
         &mut self,
         snapshot: ReconnectDurableReconciliationSnapshotV2,
-        current_scope_generation: ScopeOwnershipGeneration,
+        current: ReconnectCurrentAuthorityV1,
         budget: &mut ReconnectAttemptBudgetV1,
     ) -> Result<ReconnectProjectionDecisionV2, ReconnectDurabilityErrorV1> {
         if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired {
             return Err(ReconnectDurabilityErrorV1::InvalidPhase);
         }
         if snapshot.record != self.record
-            || current_scope_generation != self.record.authority().scope_ownership_generation()
+            || current.authority.scope_ownership_generation()
+                != self.record.authority().scope_ownership_generation()
         {
             return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
         }
@@ -1453,6 +1454,7 @@ impl ReconnectDurabilityFlowV2 {
             } => {
                 if current_generation != self.record.connection().candidate()
                     || current_transport_ref != self.record.connection().transport_ref()
+                    || !current_authority_matches_record(&self.record, &current)?
                 {
                     return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
                 }
@@ -1700,11 +1702,7 @@ impl ReconnectDurabilityFlowV2 {
         if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation {
             return Err(ReconnectDurabilityErrorV1::InvalidPhase);
         }
-        let expected = ReconnectCurrentAuthorityV1::from_record(&self.record, current.observed_at)?;
-        if current != expected
-            || current.session_state != GameSessionState::Reconnectable
-            || current.current_controller_present
-        {
+        if !current_authority_matches_record(&self.record, &current)? {
             self.phase = ReconnectDurabilityPhaseV1::Terminal;
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
@@ -1753,6 +1751,16 @@ impl ReconnectDurabilityFlowV2 {
             }
         }
     }
+}
+
+fn current_authority_matches_record(
+    record: &ReconnectDurabilityRecordV1,
+    current: &ReconnectCurrentAuthorityV1,
+) -> Result<bool, ReconnectDurabilityErrorV1> {
+    let expected = ReconnectCurrentAuthorityV1::from_record(record, current.observed_at)?;
+    Ok(*current == expected
+        && current.session_state == GameSessionState::Reconnectable
+        && !current.current_controller_present)
 }
 
 #[cfg(test)]
@@ -1914,9 +1922,7 @@ mod durability_reconnect_v2_commit_phase_regression_tests {
                     reconciled_record.clone(),
                     ReconnectDurableOutcomeV2::Prepared,
                 ),
-                reconciled_record
-                    .authority()
-                    .scope_ownership_generation(),
+                ReconnectCurrentAuthorityV1::from_record(&reconciled_record, 105)?,
                 &mut reconciled_budget,
             )?,
             ReconnectProjectionDecisionV2::AwaitFinalRevalidation
@@ -1935,6 +1941,48 @@ mod durability_reconnect_v2_commit_phase_regression_tests {
         assert_eq!(
             reconciled_flow.phase(),
             ReconnectDurabilityPhaseV1::ReconciliationRequired
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn v2_committed_reconciliation_revalidates_complete_current_authority(
+    ) -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record(31, 31)?;
+        let snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation: record.connection().candidate(),
+                current_transport_ref: record.connection().transport_ref(),
+            },
+        );
+        let reconcile = |current: ReconnectCurrentAuthorityV1| {
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+            budget.reserve(
+                record.identity().reconnect_attempt_ref(),
+                record.connection().transport_ref(),
+            )?;
+            let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Ambiguous,
+                ),
+                &mut budget,
+            )?;
+            flow.accept_reconciliation(snapshot.clone(), current, &mut budget)
+        };
+
+        assert!(matches!(
+            reconcile(ReconnectCurrentAuthorityV1::from_record(&record, 105)?)?,
+            ReconnectProjectionDecisionV2::InstallController { .. }
+        ));
+        let mut stale = ReconnectCurrentAuthorityV1::from_record(&record, 105)?;
+        stale.session_state = GameSessionState::Terminal;
+        assert_eq!(
+            reconcile(stale),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
         );
         Ok(())
     }

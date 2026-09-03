@@ -1761,7 +1761,8 @@ mod terminal_replacement_foundation_red_tests {
             let decision = flow
                 .accept_reconciliation(
                     snapshot,
-                    record.authority().scope_ownership_generation(),
+                    ReconnectCurrentAuthorityV1::from_record(&record, 105)
+                        .expect("current authority"),
                     &mut budget,
                 )
                 .expect("typed reconciliation");

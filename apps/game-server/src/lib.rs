@@ -333,7 +333,7 @@ mod v2_reconciled_prepared_budget_regression_tests {
                     record.clone(),
                     ReconnectDurableOutcomeV2::Prepared,
                 ),
-                record.authority().scope_ownership_generation(),
+                ReconnectCurrentAuthorityV1::from_record(&record, 105)?,
                 &mut budget,
             )?,
             ReconnectProjectionDecisionV2::AwaitFinalRevalidation
