@@ -42,6 +42,12 @@ Capability discovery MUST be observational and least-mutating. Do not create thr
 
 Remote Desktop/Desktop Commander remains exception-only under the organization execution-routing policy and is not the routine fallback for repository work. Tool availability never grants or broadens authorization.
 
+## Codex GitHub publishing credential compatibility
+
+For an already-authorized GitHub write from Codex, if `GH_TOKEN` and `GITHUB_TOKEN` are unset but agent-visible `GH` is present, the agent MAY pass it transiently as `GH_TOKEN="$GH"` only to the exact authorized `gh` or non-force `git push` command. It MUST NOT print, echo, log, persist, transform, commit, copy into files/configuration/credential helpers, or otherwise expose the credential value.
+
+Credential presence never expands repository, branch, path, task, merge, production, or secret authority. The agent MUST update only the approved task branch/existing PR, MUST NOT force-push, and MUST verify the remote exact head after publication. If no authorized credential is present, report the precise unauthenticated operation after capability discovery instead of generalizing that GitHub is read-only.
+
 ## Parallel-agent Git concurrency
 
 The organization baseline is META ADR 0004 plus the central agent execution/continuation contract. Game keeps the bootstrap-critical minimum here because repository instructions do not inherit across repositories.
