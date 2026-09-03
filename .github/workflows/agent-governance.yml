@@ -186,8 +186,11 @@ jobs:
       - name: Validate agent governance
         run: python tools/agents/validate_governance.py
 
-      - name: Test Remote Desktop prompt routing
+      - name: Test legacy Remote Desktop prompt routing
         run: python tools/agents/test_validate_remote_desktop_prompt_routing.py
+
+      - name: Test lean prompt deduplication
+        run: python tools/agents/test_prompt_deduplication.py
 
       - name: Test Codex Remote Desktop regressions
         run: python tools/agents/test_validate_remote_desktop_prompt_routing_codex_regressions.py
@@ -195,8 +198,8 @@ jobs:
       - name: Test Codex round-12 regressions
         run: python tools/agents/test_validate_remote_desktop_prompt_routing_codex_round12.py
 
-      - name: Validate Remote Desktop prompt routing
-        run: python tools/agents/validate_remote_desktop_prompt_routing.py
+      - name: Validate inherited prompt policy
+        run: python tools/agents/validate_inherited_prompt_policy.py
 
       - name: Validate repository policy
         run: python tools/repository/validate_repository_policy.py
