@@ -487,3 +487,50 @@ owner_action_required: null
 blocker: metadata-complete exact-head CI, whole-diff self-review, fresh independent exact-head Codex review, and zero actionable P0/P1/P2 are still required
 next_action: read back the metadata commit SHA as the only final qualification candidate; run fresh exact-head hosted CI on that SHA, perform whole-diff self-review, request fresh native @codex review and require its reviewed commit to equal that SHA; repair and repeat on any P0/P1/P2; do not merge
 ```
+
+## Authorization-observation deadline repair checkpoint — 2026-09-03
+
+This docs-only checkpoint supersedes earlier current-status checkpoints for continuation state without rewriting or removing their historical evidence. The superseded independently reviewed metadata head was `8b3b218ce95a615d8804d8af6a7ddb87067dc3e7`. Codex review `PRR_kwDOT8SzxM8AAAABMEwVFg` reviewed commit `8b3b218ce9`; its latest P1 is thread `PRRT_kwDOT8SzxM6fBol3`, comment `3927341659`. The finding was that direct V2 `authorize_commit` checked the authorization deadline only against caller-supplied `now`, not the actual authority observation time `current.observed_at`.
+
+- Fresh test-only RED is `35578c2cf048eae99f08f79f8ed64319e48d611e`. Merge Gate run `33791866970`, Linux workspace job `100770156188`, verified the exact checkout; build and strict Clippy passed, then workspace tests produced 214 PASS / 1 expected FAIL. The sole failure was `final_revalidation_rejects_authority_observed_after_authorization_deadline`: actual `Ok` with `authorization_deadline=105`, `current.observed_at=106`, and `now=104`, where `DeadlineExpired` was expected.
+- Minimal production GREEN is `7da8a037a3870f858c4538c3909a8ba85c1875fb`. Its single semantic change is `if now > deadline || current.observed_at > deadline`.
+- Exact code-GREEN Rust run `33792514763` completed SUCCESS; PostgreSQL job `100772249645` completed SUCCESS; Windows SIM job `100772249321` completed SUCCESS; Architecture run `33792514818` completed SUCCESS; Agent governance run `33792514823` completed SUCCESS.
+- Protected `main` remains `f5f8e3717a48e6854ac36595533046938ceec890`. Scope remains exactly the 12 allocated paths. No force-push, rebase, reset, merge, or scope expansion occurred.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+pr_state: open_draft_unmerged
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+superseded_independently_reviewed_metadata_head: 8b3b218ce95a615d8804d8af6a7ddb87067dc3e7
+codex_review:
+  submission: PRR_kwDOT8SzxM8AAAABMEwVFg
+  reviewed_commit: 8b3b218ce9
+  latest_p1_thread: PRRT_kwDOT8SzxM6fBol3
+  latest_p1_comment: 3927341659
+deadline_red:
+  head: 35578c2cf048eae99f08f79f8ed64319e48d611e
+  merge_gate_run: 33791866970
+  linux_workspace_job: 100770156188
+  result: 214_pass_1_expected_fail
+deadline_green:
+  code_head: 7da8a037a3870f858c4538c3909a8ba85c1875fb
+  semantic_change: now_gt_deadline_or_current_observed_at_gt_deadline
+code_green_ci:
+  rust_run: 33792514763_SUCCESS
+  postgres_job: 100772249645_SUCCESS
+  windows_sim_job: 100772249321_SUCCESS
+  architecture_run: 33792514818_SUCCESS
+  agent_governance_run: 33792514823_SUCCESS
+allocated_paths: 12_of_12
+history_operations: no_force_no_rebase_no_reset_no_merge
+head_sha: LIVE_REMOTE_SHA_AFTER_DOCS_PUBLICATION
+final_head_sha: LIVE_REMOTE_SHA_AFTER_DOCS_PUBLICATION
+checkpoint_commit_qualification: the docs-only commit is not final qualification evidence; after publication its remote SHA must be read back and becomes the only final exact-head candidate
+thread_policy: do not resolve threads, mark READY, change PR Draft state, or merge
+next_action: read back the published docs-only remote SHA, then run fresh exact-head CI, whole-diff self-review, and fresh independent Codex review on that immutable SHA
+```
