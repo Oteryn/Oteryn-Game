@@ -1161,11 +1161,12 @@ mod terminal_replacement_schema_red_tests {
 mod terminal_replacement_foundation_red_tests {
     use oteryn_game_server::foundation::{
         AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
-        CharacterId, CharacterLease, CommandId, ConnectionGeneration, ControlLossEpochRefV1,
-        Fnd02ReconciliationFenceV1, FreshAdmissionCommit, FreshAdmissionFacts,
-        GameSessionAuthoritySnapshot, GameSessionId, GameSessionState, PendingCommandDispositionV1,
-        PendingCommandReconciliationV1, ProtectionEntitlementV1, ReconnectAttemptBudgetV1,
-        ReconnectAttemptRef, ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1,
+        CharacterId, CharacterLease, CharacterWorldEligibilityClaimV1, CommandId,
+        ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1,
+        FreshAdmissionCommit, FreshAdmissionFacts, GameSessionAuthoritySnapshot, GameSessionId,
+        GameSessionState, PendingCommandDispositionV1, PendingCommandReconciliationV1,
+        ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
+        ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1, ReconnectCandidateBindingV1,
         ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
         ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
         ReconnectDurabilityFlowV2, ReconnectDurabilityPhaseV1, ReconnectDurabilityRecordV1,
@@ -1322,6 +1323,10 @@ mod terminal_replacement_foundation_red_tests {
             current_transport,
             CharacterLease::new(character(11)?, 9)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                character(11)?,
+                world(12)?,
+            )),
             RuntimeScopeRefV1::channel(world(12)?, channel(13)?),
             ScopeOwnershipGeneration::new(current_scope)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
@@ -1367,6 +1372,8 @@ mod terminal_replacement_foundation_red_tests {
         let exact_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
             Some(AccountPresenceClaimV1::from_identity(record.identity()).expect("presence")),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
+            Some(ReconnectCandidateBindingV1::from_record(&record).expect("candidate binding")),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             record.authority(),
@@ -1408,6 +1415,8 @@ mod terminal_replacement_foundation_red_tests {
         let changed_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
             Some(AccountPresenceClaimV1::from_identity(record.identity()).expect("presence")),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
+            Some(ReconnectCandidateBindingV1::from_record(&record).expect("candidate binding")),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             changed_authority,
@@ -1443,6 +1452,10 @@ mod terminal_replacement_foundation_red_tests {
             ReconnectCurrentAuthorityV1::from_current_facts(
                 &record,
                 presence,
+                Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
+                Some(
+                    ReconnectCandidateBindingV1::from_record(&record).expect("candidate binding"),
+                ),
                 record.identity().runtime_scope(),
                 record.connection().predecessor(),
                 record.authority(),
