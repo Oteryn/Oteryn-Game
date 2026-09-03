@@ -433,3 +433,57 @@ thread_policy: older technical threads remain intentionally unresolved until a f
 checkpoint_commit_qualification: this docs-only commit advances the PR head and is not final exact-head qualification evidence
 next_action: the next single lead agent creates fresh executable RED coverage for both coupled Foundation P1s, implements the minimal coherent GREEN within allocation, updates metadata accurately, native-publishes a new head, then reruns fresh exact-head hosted CI, whole-diff self-review, and independent Codex review; only zero unresolved actionable P0/P1/P2 can proceed to READY_FOR_INTEGRATION
 ```
+
+## Coupled current-authority P1 repair checkpoint — 2026-09-03
+
+This checkpoint supersedes the Final-review repair handoff checkpoint above for current execution state. It freezes the completed code generation by immutable SHA; it does not use movable `HEAD` semantics and it does not claim that the metadata commit containing this checkpoint has already been reviewed.
+
+- The two coupled Foundation P1s from exact Codex review head `615d5c4f12a734f7d2257af6f0455d30fbf6cb6e` were treated as one current-authority repair: independently observed `CharacterId -> WorldId` eligibility plus independently observed live reconnect-candidate binding.
+- Fresh executable RED is `14dc17d794a67af34226f3ec5dd95bf03ab744ca`; Rust run `33783771444`, Durability PostgreSQL harness job `100743493058` failed compilation as expected because `CharacterWorldEligibilityClaimV1`, `ReconnectCandidateBindingV1`, and their current-facts API did not yet exist.
+- Production GREEN is `9c2fc39cc62aafd83083996524c554f3f34317f0`. `GameSessionAuthoritySnapshot` now independently requires current character/world eligibility for terminal-replacement authority, while `ReconnectCurrentAuthorityV1` independently carries both current character/world eligibility and the exact current candidate session/attempt/generation/transport/deadline binding. Direct final COMMIT and committed reconciliation share the complete fail-closed current-authority predicate.
+- Test-helper/API fallout was repaired only inside already allocated paths: schema helper `89eafea6fba087349fcdfa8c7d5351a8f2f610ed`, durability helper `60abcc3d3c9d119a8df40a17a7f5b50171176301`, exact rustfmt-only commits `a9d1512976c890136a3b9630c79fbbc0c2305fae` and `c53b3d4b1b2e7157a5f3842e3d4e01ba82700665`, then the single downstream game-server test helper exposed by full workspace compilation was updated in `1da3beed55086aa375dbd47ef6cbab5fb23a8a1b` to supply the same two independent current facts.
+- On immutable code-complete candidate `1da3beed55086aa375dbd47ef6cbab5fb23a8a1b`, Rust workspace run `33787753024` completed SUCCESS, including Durability PostgreSQL harness job `100756554709` and Windows SIM exact-head job `100756554993`. Architecture semantic audit `33787752822` and Agent governance `33787752902` completed SUCCESS. Merge Gate generation `33787752841` had already passed exact scope, formatting/policy/metadata, dependency review, governance, CodeQL actions/python, supply-chain, and Linux workspace build before this metadata freeze; its remaining long-running lanes are not reused as final proof because this metadata commit changes the exact head.
+- Scope remains exactly the original 12 allocated paths. No force-push, rebase, reset, merge, Cargo/lockfile/workflow/resource-registry, gameplay, production/live-data, secret, external-repository, or resource-maximum change was introduced.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+pr_state: open_draft_mergeable_unmerged
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+reviewed_source_sha: 615d5c4f12a734f7d2257af6f0455d30fbf6cb6e
+immutable_code_candidate_sha: 1da3beed55086aa375dbd47ef6cbab5fb23a8a1b
+coupled_foundation_p1_red:
+  head: 14dc17d794a67af34226f3ec5dd95bf03ab744ca
+  rust_run: 33783771444
+  postgres_job: 100743493058
+  result: expected_compile_failure_exit_101
+coupled_foundation_p1_green:
+  production_head: 9c2fc39cc62aafd83083996524c554f3f34317f0
+  schema_helper_head: 89eafea6fba087349fcdfa8c7d5351a8f2f610ed
+  durability_helper_head: 60abcc3d3c9d119a8df40a17a7f5b50171176301
+  db_fmt_head: a9d1512976c890136a3b9630c79fbbc0c2305fae
+  mod_fmt_head: c53b3d4b1b2e7157a5f3842e3d4e01ba82700665
+  code_complete_head: 1da3beed55086aa375dbd47ef6cbab5fb23a8a1b
+code_complete_ci:
+  rust_run: 33787753024_SUCCESS
+  postgres_job: 100756554709_SUCCESS
+  windows_sim_job: 100756554993_SUCCESS
+  architecture_run: 33787752822_SUCCESS
+  agent_governance_run: 33787752902_SUCCESS
+  merge_gate_generation: 33787752841_PRE_METADATA_ONLY_NOT_FINAL_PROOF
+whole_diff_pre_metadata:
+  allocated_paths: 12_of_12
+  protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+review_disposition:
+  character_world_p1: code_repaired_pending_fresh_exact_head_codex
+  live_candidate_p1: code_repaired_pending_fresh_exact_head_codex
+  metadata_p1: repaired_by_immutable_code_candidate_record
+  ready_for_integration: false
+thread_policy: do not resolve technical review threads or the control-plane integration gate before metadata-complete exact-head CI, whole-diff self-review, and fresh exact-head Codex produce P0=0/P1=0/P2=0
+owner_action_required: null
+blocker: metadata-complete exact-head CI, whole-diff self-review, fresh independent exact-head Codex review, and zero actionable P0/P1/P2 are still required
+next_action: read back the metadata commit SHA as the only final qualification candidate; run fresh exact-head hosted CI on that SHA, perform whole-diff self-review, request fresh native @codex review and require its reviewed commit to equal that SHA; repair and repeat on any P0/P1/P2; do not merge
+```
