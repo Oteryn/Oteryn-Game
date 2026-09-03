@@ -51,7 +51,8 @@ MUTATION_MERGE_AUTHORITY_BROADENING = (
         re.IGNORECASE,
     ),
     re.compile(
-        r"\bbypass\b.{0,80}\b(?:game-gate|merge\s+queue|branch\s+protection|protections?)\b",
+        r"\b(?:may|can|should|must|is\s+allowed\s+to|is\s+authorized\s+to)\s+"
+        r"bypass\b.{0,80}\b(?:game-gate|merge\s+queue|branch\s+protection|protections?)\b",
         re.IGNORECASE | re.DOTALL,
     ),
 )
