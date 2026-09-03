@@ -1372,7 +1372,9 @@ mod terminal_replacement_foundation_red_tests {
         let exact_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
             Some(AccountPresenceClaimV1::from_identity(record.identity()).expect("presence")),
-            Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
             Some(ReconnectCandidateBindingV1::from_record(&record).expect("candidate binding")),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
@@ -1415,7 +1417,9 @@ mod terminal_replacement_foundation_red_tests {
         let changed_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
             Some(AccountPresenceClaimV1::from_identity(record.identity()).expect("presence")),
-            Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
             Some(ReconnectCandidateBindingV1::from_record(&record).expect("candidate binding")),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
@@ -1452,10 +1456,10 @@ mod terminal_replacement_foundation_red_tests {
             ReconnectCurrentAuthorityV1::from_current_facts(
                 &record,
                 presence,
-                Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
-                Some(
-                    ReconnectCandidateBindingV1::from_record(&record).expect("candidate binding"),
-                ),
+                Some(CharacterWorldEligibilityClaimV1::from_identity(
+                    record.identity(),
+                )),
+                Some(ReconnectCandidateBindingV1::from_record(&record).expect("candidate binding")),
                 record.identity().runtime_scope(),
                 record.connection().predecessor(),
                 record.authority(),
