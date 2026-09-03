@@ -29,12 +29,14 @@ INHERITED_POLICY_SURFACES = (
 )
 
 AI_REVIEW_AUTHORITY_BROADENING = (
-    # Explicit grant/pre-authorization to an AI service. Negated forms such as
-    # "must not be invoked without authorization" do not match this grammar.
+    # Explicit grant/pre-authorization to an AI service itself. Keep the
+    # grammatical subject tight: "External AI is pre-authorized" is a grant,
+    # while "No ... AI invocation is authorized by this prompt" is a denial of
+    # a particular invocation and must remain valid.
     re.compile(
-        r"\b(?:external\s+)?(?:ai|codex|openai)\b.{0,40}\b(?:is|are)\s+"
-        r"(?:pre[- ]?)?(?:authorized|allowed|permitted)\b",
-        re.IGNORECASE | re.DOTALL,
+        r"\b(?:external\s+)?(?:ai|codex|openai)(?:\s+(?:service|reviewer))?\s+"
+        r"(?:is|are)\s+(?:pre[- ]?)?(?:authorized|allowed|permitted)\b",
+        re.IGNORECASE,
     ),
     # Direct imperative use without authorization. This intentionally requires
     # the invocation verb at the start of a line/bullet, avoiding restrictive
