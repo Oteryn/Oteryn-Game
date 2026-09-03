@@ -246,10 +246,8 @@ admission_main_sha: a47e15fdc41373e32935b6fea19f51850f655cfc
 integration_main_sha: 138c5add957718bd26149820626e538068a35a58
 main_reconciliation_merge_sha: fc27d64f5803c15e70d78e6e7a0f9cd63980f89f
 previous_code_green_head: 670e5028a5e11be3761c392c795717b324e853a0
-head_sha: resolve_live_branch_after_this_metadata_commit
 pr: 252
-final_head_sha: resolve_live_branch_after_this_metadata_commit
-final_head_frozen_at: 2026-08-29T18:25:29+02:00
+final_final_head_frozen_at: 2026-08-29T18:25:29+02:00
 ci_trigger_source: pull_request
 ci_check_generation: metadata_complete_head_requires_fresh_exact_head_generation
 ci_run_ids:
@@ -312,9 +310,7 @@ integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
 branch: impl/game-terminal-session-replacement-250
 integration_main_sha: 138c5add957718bd26149820626e538068a35a58
 previous_code_green_head: 1e189e6646a4c41370964146f6d740385fc47506
-head_sha: resolve_live_branch_after_this_metadata_commit
-final_head_sha: resolve_live_branch_after_this_metadata_commit
-final_head_frozen_at: 2026-08-30T00:24:39+02:00
+final_final_head_frozen_at: 2026-08-30T00:24:39+02:00
 runtime_scope_p1:
   reviewed_head: 5d3d6f9cd4e7621a3f36619868f34cc2d6f6c10d
   initial_red_head: 85310158d0d46295cbb4bc10a764884a0583fdc3
@@ -340,4 +336,40 @@ whole_diff_pre_metadata:
 owner_action_required: null
 blocker: fresh exact-head CI on the metadata-complete candidate, exact-head whole-diff self-review, fresh native Codex review, runtime-scope P1 resolution, READY_FOR_INTEGRATION handoff, and independent control-plane pre-merge verification
 next_action: freeze/read back the live metadata-complete head, require all exact-head checks, perform whole-diff self-review, request fresh @codex review, repair any findings if needed, resolve the repaired runtime-scope P1, issue READY_FOR_INTEGRATION, then let Work independently verify and expected-head squash merge without bypass
+```
+
+## AccountPresence final-revalidation repair checkpoint — 2026-09-03
+
+This checkpoint supersedes every earlier Context/final-qualification checkpoint for current task status. Earlier SHAs and CI runs remain historical repair provenance only; in particular, `1e189e6646a4c41370964146f6d740385fc47506` is not the latest qualified candidate.
+
+- Final exact-head Codex review on `d0106cda44cdffc758a93f669a7dfb9dee625b76` reported two P1 findings: current AccountPresence was not independently represented during direct final COMMIT or lost-COMMIT `Committed` reconciliation, and this active task checkpoint was stale.
+- Fresh executable test-only RED is preserved at `e585c5057f5e056d1994b27ccbd7770ae5c64918`. The focused game-server test command exited 101 because `AccountPresenceClaimV1` and the required AccountPresence argument to `ReconnectCurrentAuthorityV1::from_current_facts(...)` did not exist.
+- Production GREEN is `906170dcabe68ab1fb329e7f3e36c717f6a04eae`. Foundation now exposes the typed `AccountPresenceClaimV1`, accepts the independently observed current claim as an optional current fact (`None` means released), and includes it in the complete exact current-authority comparison shared by direct V2 final COMMIT authorization and reconciled `Committed` controller installation.
+- The focused regression proves that the exact current account/character claim authorizes, while a released claim and a claim reassigned to another CharacterId both fail closed even though the separate account-security generation remains unchanged. All previously required runtime-scope, connection, continuity, proof, FND-02, compatibility/security, session/controller and expiry checks remain in the same complete comparison/authorization paths.
+- The repair remains inside the existing 12-path allocation. The code generation changed only four already allocated files; this metadata checkpoint changes only this allocated task record.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+branch: impl/game-terminal-session-replacement-250
+pr: 252
+integration_main_sha: f5f8e3717a48e6854ac36595533046938ceec890
+reviewed_parent_head: d0106cda44cdffc758a93f669a7dfb9dee625b76
+account_presence_red_head: e585c5057f5e056d1994b27ccbd7770ae5c64918
+account_presence_code_green_head: 906170dcabe68ab1fb329e7f3e36c717f6a04eae
+checkpoint_branch_tip: HEAD
+checkpoint_commit_scope: docs_only_after_account_presence_code_green
+focused_red:
+  command: cargo +1.94.0 test --locked -p oteryn-game-server v2_final_authority_revalidation_requires_current_account_presence
+  result: expected_compile_failure_exit_101
+focused_green:
+  command: cargo +1.94.0 test --locked -p oteryn-game-server v2_final_authority_revalidation_requires_current_account_presence
+  result: pass
+review_disposition:
+  account_presence_p1: repaired_pending_fresh_exact_head_review
+  stale_task_checkpoint_p1: repaired_by_this_checkpoint
+  ready_for_integration: false
+owner_action_required: null
+blocker: fresh exact-head hosted CI, whole-diff self-review, fresh independent Codex review, and control-plane integration reconciliation remain required
+next_action: publish this metadata-complete repair generation, verify the remote exact head, then let the coordinator run fresh exact-head hosted qualification and independent Codex review; do not mark READY_FOR_INTEGRATION or resolve review threads
 ```
