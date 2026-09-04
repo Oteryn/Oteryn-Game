@@ -1528,7 +1528,12 @@ async fn current_prepared_binding_is_valid(
         || canonical_u64_text(&connection["predecessor_generation"])
             != Some(session.try_get::<String, _>("predecessor_generation")?)
         || canonical_u64_text(&connection["candidate_generation"])
-            == Some(session.try_get::<String, _>("predecessor_generation")?)
+            != session
+                .try_get::<String, _>("predecessor_generation")?
+                .parse::<u64>()
+                .ok()
+                .and_then(|generation| generation.checked_add(1))
+                .map(|generation| generation.to_string())
         || canonical_bytes(&connection["transport_ref"]) != Some(transport_ref.clone())
         || canonical_u64_text(&authority["character_lease_generation"])
             != Some(session.try_get::<String, _>("character_lease_generation")?)
