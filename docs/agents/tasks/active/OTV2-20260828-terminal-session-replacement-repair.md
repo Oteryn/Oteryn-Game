@@ -854,3 +854,35 @@ metadata_commit_identity: established_by_authoritative_remote_readback_not_self_
 final_evidence_authority: final_SHA_CI_review_and_READY_are_GitHub_control_plane_evidence_under_current_TASK_TEMPLATE
 next_action: read back the published metadata-complete SHA, run fresh exact-head hosted CI, perform whole-diff self-review, and obtain independent exact-head review; repair and repeat any P0/P1/P2 before READY_FOR_INTEGRATION; do not merge
 ```
+
+## Historical COMMITTED reconciliation repair checkpoint — 2026-09-04
+
+This checkpoint supersedes earlier current-status checkpoints for live qualification while retaining all earlier evidence as historical provenance. It records the final material repair generation before exact-head qualification; the docs-only checkpoint commit identity is established by authoritative remote readback and is intentionally not self-embedded.
+
+- Exact-head review `5113483686` on frozen head `532b1adefcf5937892bc54e3b1591fcced852f16` produced P2 comment `3934420221`: a valid earlier COMMITTED winner became unreconcilable after the same GameSession advanced into a later `ControlLossEpoch` and current projection.
+- Fresh executed test-only RED is `6dc0f1c05487562e10822adbc85c28975ab92380`. Rust run `33878520064`, PostgreSQL 17.6 job `101041281811`, verified the exact checkout and completed 113 PASS / exactly 1 expected FAIL, solely `committed_reconciliation_remains_historical_after_later_epoch_opens`, which returned `InvalidStoredState` instead of historical committed evidence.
+- The repair generation comprises initial semantic GREEN `6788cdde22899e3fe8700088eebf905bf175f422` plus exact projection-validation correction `d3ce7462bf1442f6a852981a8a9065a125bb1ddf`. COMMITTED reconciliation retains full record/typed-attempt/recovery-grant mirror validation. It accepts historical COMMITTED evidence only when the session has advanced to a strictly later epoch with a structurally valid current PREPARED or COMMITTED projection; the unchanged complete Foundation current-authority gate remains solely responsible for refusing stale `InstallController` projection.
+- Exact code-GREEN Rust run `33879231616` is SUCCESS. PostgreSQL 17.6 job `101043522525` verified exact `d3ce7462bf1442f6a852981a8a9065a125bb1ddf` and completed 114/114 PASS, including the new historical reconciliation regression. Architecture `33879231613`, Agent governance `33879231742`, and Merge authority `33879228974` are SUCCESS.
+- Protected `main@d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d` remains the merge base, GitHub compare reports `behind_by=0`, and the effective PR diff remains exactly the allocated 12/12 paths. No scope expansion, force-push, rebase, reset, or merge occurred.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+protected_main: d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d
+review: 5113483686
+p2_comment: 3934420221
+reviewed_head: 532b1adefcf5937892bc54e3b1591fcced852f16
+red_head: 6dc0f1c05487562e10822adbc85c28975ab92380
+red_rust_run: 33878520064_FAILURE
+red_postgres_job: 101041281811_113_pass_1_expected_fail
+green_head: d3ce7462bf1442f6a852981a8a9065a125bb1ddf
+green_rust_run: 33879231616_SUCCESS
+green_postgres_job: 101043522525_SUCCESS_114_pass_0_fail
+whole_diff: behind_by_0_exactly_12_of_12_allocated_paths
+metadata_commit_identity: established_by_authoritative_remote_readback_not_self_embedded
+next_action: run fresh exact-head CI, whole-diff self-review, and independent exact-head review on the authoritative read-back checkpoint SHA; keep FINAL_EXACT_HEAD_QUALIFICATION_PENDING and do not resolve threads, mark READY_FOR_INTEGRATION, or merge
+```
