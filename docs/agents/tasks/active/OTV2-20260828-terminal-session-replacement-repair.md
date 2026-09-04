@@ -705,3 +705,37 @@ history_operations: no_force_no_rebase_no_reset_no_merge
 thread_policy: do_not_resolve_threads_or_declare_READY_before_fresh_exact_head_review_reports_P0_0_P1_0_P2_0
 next_action: run fresh exact-head CI on the authoritative read-back docs head, then perform whole-diff self-review and independent read-only Codex review; repair and repeat only if a fresh P0/P1/P2 appears; do not resolve threads or declare READY before P0=P1=P2=0
 ```
+
+## Final code-GREEN repair qualification checkpoint — 2026-09-04
+
+This checkpoint supersedes earlier current-status checkpoints for live continuation state while preserving all older evidence as historical provenance. The immutable qualified code head is `fb1889002b61972f7de6ba5e3b91823e34b2016d`; the docs-only publication commit created from it becomes the sole final metadata candidate externally after authoritative remote readback. This document intentionally does not use `HEAD`, a placeholder, or its own unknown commit SHA as immutable evidence.
+
+- Protected `main` is `f5f8e3717a48e6854ac36595533046938ceec890`.
+- The prior metadata-complete candidate reviewed was `7d59bf6eaa701711046ccb1d3e94be6596db54e6`. Independent Codex review numeric ID `5110767899` reviewed that exact commit and produced two P1 threads: `PRRT_kwDOT8SzxM6fN5Vn` / comment `3932203686` for the production record-derived `ReconnectCurrentAuthorityV1::from_record` bypass, and `PRRT_kwDOT8SzxM6fN5Vt` / comment `3932203697` for historical terminal reconciliation incorrectly fenced by later scope advancement.
+- Fresh test-only RED is `f21b31e0d68bbebacdf09fc2507ce8b6f4f2115c`. Rust run `33853739671`, PostgreSQL 17.6 job `100962147321`, verified the exact checkout and ran 108 tests: 106 PASS / exactly 2 expected FAIL, `v2_terminal_reconciliation_survives_scope_advance_but_committed_stays_fenced` and `record_derived_current_authority_is_test_only_but_current_facts_remain_public`. Windows SIM job `100962147504` was SUCCESS.
+- Production GREEN is `5b553701a91c1ea904144cded983f983b5f06ba7`: `from_record` became `#[cfg(test)]`; reconciliation no longer globally rejects a historical terminal outcome on scope drift; `Committed` remains complete-current-authority fail-closed.
+- The first GREEN hosted Rust run `33854385596` exposed only integration-test `E0599` because external harnesses still invoked the now-test-only `from_record`. This was not a semantic rollback, and `from_record` was not re-exposed.
+- Mechanical test-harness repair `fb1889002b61972f7de6ba5e3b91823e34b2016d` replaces external test calls with exact-current helpers using public `from_current_facts`; production semantics are unchanged.
+- Hosted exact code-GREEN on `fb1889002b61972f7de6ba5e3b91823e34b2016d`: Rust run `33855402001` SUCCESS; PostgreSQL 17.6 job `100967423940` verified the exact checkout and completed 108/108 PASS, including both fresh regressions; Windows SIM `100967423812` SUCCESS; Architecture `33855401993` SUCCESS; Agent governance `33855402041` SUCCESS; Merge Gate `33855402040` SUCCESS, including canonical `game-gate` job `100969639469` SUCCESS.
+- Effective task scope remains exactly 12/12 allocated paths. There is no Cargo, lockfile, workflow, or registry expansion, and no merge, rebase, reset, or force operation occurred.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+prior_metadata_complete_candidate: 7d59bf6eaa701711046ccb1d3e94be6596db54e6
+independent_codex_review: 5110767899
+red_head: f21b31e0d68bbebacdf09fc2507ce8b6f4f2115c
+production_green_head: 5b553701a91c1ea904144cded983f983b5f06ba7
+qualified_code_head: fb1889002b61972f7de6ba5e3b91823e34b2016d
+allocated_paths: 12_of_12
+history_operations: no_force_no_rebase_no_reset_no_merge
+metadata_commit_identity: established_by_authoritative_remote_readback_not_self_embedded
+next_action: run fresh exact-head CI on the read-back metadata-complete SHA, perform a whole-diff self-review, and obtain an independent Codex review of that exact SHA; repair and repeat any P0/P1/P2 before READY_FOR_INTEGRATION
+```
+
+Disposition remains `FINAL_EXACT_HEAD_QUALIFICATION_PENDING`; this task is not ready for integration. Fresh exact-head CI, whole-diff self-review, and independent Codex review are still required on the externally read-back docs publication SHA before READY.
