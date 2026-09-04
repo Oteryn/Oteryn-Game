@@ -4,7 +4,7 @@
 task_id: OTV2-20260904-gameplay-server-seam-allocation
 title: Allocate production gameplay Server Seam
 mode: COORDINATE
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/gameplay-server-seam-allocation-247
@@ -59,10 +59,10 @@ Create one fresh exact-base, docs-only allocation that releases the already-acce
 - `PROVEN` — protected `main` at allocation admission is `68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705`.
 - `PROVEN` — Issue #162 remains the live coordinator lifecycle for `Oteryn: work coordinator`; its latest durable checkpoint names a fresh Server Seam allocation as the deterministic next action after Durability terminal closeout.
 - `PROVEN` — Issue #247 is open and its latest checkpoint classifies the lane `READY_FOR_FRESH_ALLOCATION`, explicitly stating that the Issue itself grants no implementation write authority.
-- `PROVEN` — Durability prerequisite Issue #250 is completed; implementation PR #252 merged as `b67f4425e9e9c5fdd9083d7a1b05484357e51` is **not** the recorded merge SHA and therefore must not be used. The authoritative live checkpoints instead record PR #252 merged as `b67f4425e9e9c5bbf9f7bc94c422cd7478edcdd3`, followed by archival PR #290 merged as `47faa84152ffdcac00d8e2173d582aa54be2cbcf`, with ownership released.
+- `PROVEN` — Durability prerequisite Issue #250 is completed; live coordinator checkpoints record implementation PR #252 merged as `b67f4425e9e9c5bbf9f7bc94c422cd7478edcdd3`, followed by archival PR #290 merged as `47faa84152ffdcac00d8e2173d582aa54be2cbcf`, with the Durability task archived and ownership released.
 - `PROVEN` — Server Seam preparation Issue #96 is completed and PR #117 merged as `4079804b7f1f29cc2b7db2e746d4da2861bff084`; `docs/architecture/reviews/OTERYN_GAME_PRODUCTION_GAMEPLAY_SERVER_SEAM_PLAN_2026-08-24.md` is the accepted implementation shape.
 - `PROVEN` — current `apps/game-server/src/main.rs` has no gameplay listener: `--smoke` runs `bootstrap_smoke()`, while normal execution reports gameplay unavailable and exits non-zero.
-- `PROVEN` — current `apps/game-server/src/foundation/protocol.rs` owns FND-02 wire validation and exposes `WireEnvelopeView`/`decode_wire_envelope`, but the accepted #117 decision records the still-missing typed bootstrap/resume extraction and server-side Foundation encoders required by the Server Seam.
+- `PROVEN` — current `apps/game-server/src/foundation/protocol.rs` owns FND-02 wire validation and exposes `WireEnvelopeView`/`decode_wire_envelope`, while the accepted #117 decision records the still-missing typed bootstrap/resume extraction and server-side Foundation encoders required by the Server Seam.
 - `PROVEN` — `docs/contracts/RESOURCE_LIMITS_REGISTRY.json` contains the Server Seam limits accepted through #116/#140/#144, including `NET03-PREADMISSION-CONNECTIONS=256`, `NET03-HANDSHAKE-AUTH-WORK=64`, `NET03-OUTBOUND-QUEUE-ENTRIES=64`, `NET03-OUTBOUND-QUEUE-BYTES=1048576`, `NET03-PENDING-WRITES=8` and `NET03-DRAIN-TASKS=256`, plus the FND-02 wire/message limits.
 - `PROVEN` — the current open non-Dependabot PR scan found no task-owned Server Seam runtime/shared path in the exact allowlist below. PR #289 owns Durability/Foundation recovery paths but not `foundation/protocol.rs`, `src/lib.rs`, `src/main.rs` or Cargo shared paths; #287/#291/#293 own workflow/governance/docs surfaces only.
 - `PROVEN` — Dependabot PRs #259, #260 and #261 are open and each changes `Cargo.toml`/`Cargo.lock`, but they have no coordinator task/allocation ownership and are not active implementation writers. Repository precedent distinguishes active non-Dependabot ownership from unallocated Dependabot candidates. They remain real later integration candidates and receive no shared lease from this task.
@@ -188,8 +188,8 @@ The future worker allocation also excludes `workspace-boundaries.toml` unless a 
 
 - exact head: pending stable allocation candidate
 - method/reviewer: ChatGPT Work Delivery Coordinator whole-diff review
-- material findings: pending
-- verdict: pending
+- material findings: one pre-PR self-review finding repaired before qualification — removed a spurious non-authoritative SHA from the Durability provenance sentence; no runtime or authority scope changed
+- verdict: pending exact stable candidate review
 
 ## Independent review
 
@@ -211,8 +211,8 @@ The future worker allocation also excludes `workspace-boundaries.toml` unless a 
 ## Context checkpoint
 
 ```yaml
-last_progress: exact protected-main, Durability terminal state, accepted Server Seam decision, current APIs, resource limits and open-PR path ownership were independently refreshed; allocation branch was created from the exact admission SHA
-status: implementing
+last_progress: three-file docs-only allocation candidate is authored from exact main; one self-review provenance typo was repaired before PR publication
+status: validating
 branch: coord/gameplay-server-seam-allocation-247
 head_sha: null
 pr: null
@@ -228,10 +228,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: create the worker task and accepted-path implementation plan on this same docs-only allocation branch, then open one Draft allocation PR for exact-head qualification and independent review
+next_action: open one Draft allocation PR from this branch, record its number in the two task records, verify exact three-path diff and current-main relation, then run exact-head CI plus one independent deep review
 ```
