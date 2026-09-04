@@ -1251,6 +1251,7 @@ impl ReconnectCurrentAuthorityV1 {
         })
     }
 
+    #[cfg(test)]
     pub fn from_record(
         record: &ReconnectDurabilityRecordV1,
         observed_at: i64,
@@ -1616,10 +1617,7 @@ impl ReconnectDurabilityFlowV2 {
         if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired {
             return Err(ReconnectDurabilityErrorV1::InvalidPhase);
         }
-        if snapshot.record != self.record
-            || current.authority.scope_ownership_generation()
-                != self.record.authority().scope_ownership_generation()
-        {
+        if snapshot.record != self.record {
             return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
         }
 
@@ -1942,8 +1940,31 @@ fn current_authority_matches_record(
     record: &ReconnectDurabilityRecordV1,
     current: &ReconnectCurrentAuthorityV1,
 ) -> Result<bool, ReconnectDurabilityErrorV1> {
-    let expected = ReconnectCurrentAuthorityV1::from_record(record, current.observed_at)?;
-    Ok(*current == expected
+    let identity = record.identity();
+    let compatibility = record.compatibility();
+    Ok(current.identity == *identity
+        && current.current_account_presence
+            == Some(AccountPresenceClaimV1::from_identity(identity)?)
+        && current.current_character_world_eligibility
+            == Some(CharacterWorldEligibilityClaimV1::from_identity(identity))
+        && current.current_candidate == Some(ReconnectCandidateBindingV1::from_record(record)?)
+        && current.current_runtime_scope == identity.runtime_scope()
+        && current.predecessor == record.connection().predecessor()
+        && current.authority == record.authority()
+        && current.continuity_epoch == record.continuity().control_loss_epoch()
+        && current.original_grace_deadline == record.continuity().original_grace_deadline()
+        && current.proof == *record.proof()
+        && current.fnd02 == *record.fnd02()
+        && current.protocol_major == compatibility.protocol_major()
+        && current.transport_profile == compatibility.transport_profile()
+        && current.ruleset_revision == compatibility.ruleset_revision()
+        && current.content_revision == compatibility.content_revision()
+        && current.map_revision == compatibility.map_revision()
+        && current.world_policy_revision == compatibility.world_policy_revision()
+        && current.account_security_generation == compatibility.account_security_generation()
+        && current.platform_security_evidence == *compatibility.platform_security_evidence()
+        && current.proof_trust_evidence == *compatibility.proof_trust_evidence()
+        && current.credential_expiration == compatibility.credential_expiration()
         && current
             .current_candidate
             .is_some_and(|candidate| candidate.is_live_at(current.observed_at))
