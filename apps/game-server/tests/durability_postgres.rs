@@ -2565,6 +2565,188 @@ fn committed_reconciliation_remains_historical_after_later_epoch_opens()
 }
 
 #[test]
+fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let corruptions = [
+                "session_generation",
+                "canonical_attempt",
+                "transport_reservation",
+                "protection_continuity",
+                "fnd02_mirror",
+            ];
+            for (index, corruption) in corruptions.into_iter().enumerate() {
+                let database = postgres::IsolatedPostgres::create(&format!(
+                    "historical_prepared_{corruption}"
+                ))
+                .await?;
+                let result = async {
+                    let database_url = database.database_url()?;
+                    let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                    executor.apply_embedded_ledger().await?;
+                    let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                    let record_now = unix_now().map_err(foundation_error)?;
+                    let seed = 170 + index as u64;
+                    let (mut first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
+                        record(seed, 1, 0xb1 + index as u8, record_now)
+                            .map_err(foundation_error)?,
+                    );
+                    assert_eq!(
+                        journal.prepare(&first_prepare).await?,
+                        ReconnectPrepareDispositionV1::Prepared
+                    );
+                    first_flow
+                        .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                            &first_prepare,
+                            ReconnectPrepareDispositionV1::Prepared,
+                        ))
+                        .map_err(foundation_error)?;
+                    let first_commit = first_flow
+                        .authorize_commit(
+                            current_authority_from_record(first_prepare.record(), record_now)
+                                .map_err(foundation_error)?,
+                            record_now,
+                        )
+                        .map_err(foundation_error)?;
+                    assert_eq!(
+                        journal.commit(&first_commit).await?,
+                        ReconnectCommitDispositionV1::Committed
+                    );
+
+                    let second_now = record_now + 1;
+                    let (_second_flow, second_prepare) = ReconnectDurabilityFlowV1::begin(
+                        record_for_epoch(
+                            seed,
+                            2,
+                            0xc1 + index as u8,
+                            second_now,
+                            second_now + 115,
+                            4,
+                            8,
+                            9,
+                            0xd1 + index as u8,
+                        )
+                        .map_err(foundation_error)?,
+                    );
+                    assert_eq!(
+                        journal.prepare(&second_prepare).await?,
+                        ReconnectPrepareDispositionV1::Prepared
+                    );
+
+                    let pool = sqlx::PgPool::connect(&database_url).await?;
+                    let session_id = second_prepare
+                        .record()
+                        .identity()
+                        .game_session_id()
+                        .as_bytes()
+                        .to_vec();
+                    let attempt_ref = second_prepare
+                        .record()
+                        .identity()
+                        .reconnect_attempt_ref()
+                        .to_be_bytes();
+                    let transport_ref = second_prepare
+                        .record()
+                        .connection()
+                        .transport_ref()
+                        .to_bytes();
+                    let character_id = second_prepare
+                        .record()
+                        .identity()
+                        .character_id()
+                        .as_bytes()
+                        .to_vec();
+                    let epoch = second_prepare
+                        .record()
+                        .continuity()
+                        .control_loss_epoch()
+                        .get()
+                        .to_string();
+                    match corruption {
+                        "session_generation" => {
+                            sqlx::query(
+                                "UPDATE game_durability_reconnect_sessions \
+                                 SET current_generation = current_generation + 1 \
+                                 WHERE game_session_id = encode($1, 'hex')::uuid",
+                            )
+                            .bind(session_id.as_slice())
+                            .execute(&pool)
+                            .await?;
+                        }
+                        "canonical_attempt" => {
+                            sqlx::query(
+                                "UPDATE game_durability_reconnect_attempts \
+                                 SET record_json = jsonb_set(record_json::jsonb, \
+                                     '{connection,candidate_generation}', '10'::jsonb)::text \
+                                 WHERE game_session_id = encode($1, 'hex')::uuid \
+                                   AND reconnect_attempt_ref = $2",
+                            )
+                            .bind(session_id.as_slice())
+                            .bind(attempt_ref.as_slice())
+                            .execute(&pool)
+                            .await?;
+                        }
+                        "transport_reservation" => {
+                            sqlx::query(
+                                "DELETE FROM game_durability_transport_ref_reservations \
+                                 WHERE transport_ref = $1",
+                            )
+                            .bind(transport_ref.as_slice())
+                            .execute(&pool)
+                            .await?;
+                        }
+                        "protection_continuity" => {
+                            sqlx::query(
+                                "UPDATE game_durability_control_loss_continuity \
+                                 SET protection_rearm_deadline = clock_timestamp() \
+                                 WHERE character_id = encode($1, 'hex')::uuid \
+                                   AND control_loss_epoch = $2::text::numeric(20, 0)",
+                            )
+                            .bind(character_id.as_slice())
+                            .bind(&epoch)
+                            .execute(&pool)
+                            .await?;
+                        }
+                        "fnd02_mirror" => {
+                            sqlx::query(
+                                "UPDATE game_durability_reconnect_attempts \
+                                 SET fnd02_next_command_id = fnd02_next_command_id + 1 \
+                                 WHERE game_session_id = encode($1, 'hex')::uuid \
+                                   AND reconnect_attempt_ref = $2",
+                            )
+                            .bind(session_id.as_slice())
+                            .bind(attempt_ref.as_slice())
+                            .execute(&pool)
+                            .await?;
+                        }
+                        _ => unreachable!(),
+                    }
+
+                    assert!(
+                        matches!(
+                            journal.reconcile(&first_prepare).await,
+                            Err(DurabilityError::InvalidStoredState)
+                        ),
+                        "historical reconciliation must reject corrupt later PREPARED {corruption}"
+                    );
+                    pool.close().await;
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                }
+                .await;
+                database.cleanup().await?;
+                result?;
+            }
+            Ok(())
+        })
+}
+
+#[test]
 fn committed_replay_fails_closed_when_session_state_is_inconsistent()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
