@@ -148,6 +148,45 @@ mod contract_tests {
     }
 
     #[test]
+    fn identity_derived_authority_claim_convenience_is_test_only_across_sibling_family() {
+        for type_name in [
+            "CharacterWorldEligibilityClaimV1",
+            "AccountPresenceClaimV1",
+        ] {
+            let marker = format!("impl {type_name} {{");
+            let implementation = ADMISSION_RECOVERY
+                .split_once(&marker)
+                .and_then(|(_before, rest)| rest.split_once("\n}\n"))
+                .map(|(implementation, _after)| implementation);
+            let Some(implementation) = implementation else {
+                panic!("{type_name}: implementation missing");
+            };
+            let production_impl = implementation
+                .replace(
+                    "#[cfg(test)]\n    #[must_use]\n    pub fn from_identity(",
+                    "",
+                )
+                .replace("#[cfg(test)]\n    pub fn from_identity(", "");
+
+            assert!(
+                !production_impl.contains("\n    pub fn from_identity("),
+                "{type_name}: identity-derived authority convenience must not be production-public"
+            );
+            assert!(
+                implementation.contains("fn expected_from_identity("),
+                "{type_name}: immutable identity derivation must remain an internal expected-value helper"
+            );
+            assert!(
+                implementation.contains("#[cfg(test)]\n    pub fn from_identity(")
+                    || implementation.contains(
+                        "#[cfg(test)]\n    #[must_use]\n    pub fn from_identity("
+                    ),
+                "{type_name}: identity-derived convenience must remain available only to tests"
+            );
+        }
+    }
+
+    #[test]
     fn generic_v1_terminal_reconciliation_is_not_a_production_recovery_api() {
         const ADMISSION_JOURNAL: &str = include_str!("admission_journal.rs");
         const DURABILITY: &str = include_str!("../durability/mod.rs");
