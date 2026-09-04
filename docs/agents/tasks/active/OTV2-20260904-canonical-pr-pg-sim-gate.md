@@ -4,7 +4,7 @@
 task_id: OTV2-20260904-canonical-pr-pg-sim-gate
 title: Canonicalize PR PostgreSQL and simulation exact-head gates
 mode: GOVERNANCE
-status: BLOCKED_SCOPE
+status: QUALIFYING
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/canonical-pr-pg-sim-279
@@ -17,12 +17,13 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Codex single mutating writer authorized by owner continuation
 created_at: 2026-09-04T13:56:00Z
-updated_at: 2026-09-04T22:25:55Z
+updated_at: 2026-09-04T22:29:44Z
 execution_budget_minutes: 60
 large_budget_reason: required-check composition with hosted RED/GREEN and review-repair evidence
 owned_paths:
   - .github/workflows/merge-gate.yml
   - tools/repository/validate_repository_policy.py
+  - tools/repository/validate_repository_policy_core.py
   - tools/repository/validate_pr_gate_pg_sim.py
   - tools/repository/test_validate_pr_gate_pg_sim.py
   - docs/agents/BUILD_TEST_MATRIX.md
@@ -50,7 +51,7 @@ The owner explicitly authorized this session to take over repair and qualificati
 
 ## Scope and invariants
 
-The six-path Issue #279 allocation is unchanged. Existing Rust path applicability, dependency review, CodeQL, supply chain, Linux/Windows validation and aggregate fan-in remain intact. No `rust.yml`, merge-group gate, protected audit or ruleset mutation belongs to this task. #284/#285 separately own merge-group gate strengthening.
+Issue #279 now allocates seven paths: after the witnessed core-policy failure and exact proposed digest were presented, the owner instructed continuation. The added path is tools/repository/validate_repository_policy_core.py, solely to update the existing canonical scope digest; its enforcement remains unchanged. Existing Rust path applicability, dependency review, CodeQL, supply chain, Linux/Windows validation and aggregate fan-in remain intact. No `rust.yml`, merge-group gate, protected audit or ruleset mutation belongs to this task. #284/#285 separately own merge-group gate strengthening.
 
 The upstream scope now re-reads the PR after file enumeration and rejects changed state/head/repository/base SHA/base ref/count before publishing any routing output. Stable Rust path classification is preserved. The current-PR target classifier consumes exact expected head and base SHA, validates initial identity, enumerates all file pages, and re-reads the PR before emitting any result. Changes to open state, head, repository, base or file count fail closed. The PG/SIM evidence steps remain unconditional inside their applicable Rust jobs.
 
@@ -94,7 +95,7 @@ Fenced Game writes, game-session authority, replay and runtime concurrency are `
 - [x] Minimal classifier GREEN preserves original positive behavior and fails closed for the accepted race family.
 - [x] `python3 tools/repository/test_validate_pr_gate_pg_sim.py`: 8 test functions PASS, including both upstream and downstream post-enumeration mutation families, base failures, stable scope/target controls and both skip-condition families.
 - [x] `python3 tools/repository/validate_pr_gate_pg_sim.py`: PASS.
-- [ ] Repository policy currently FAILS only because the repaired scope differs from EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 in unallocated tools/repository/validate_repository_policy_core.py. Owner scope expansion is required before changing that pin; no bypass or wrapper suppression is permitted.
+- [x] Repository policy PASS after the owner-authorized exact scope digest update. Before expansion it failed only on the old scope pin. No wrapper suppression, bypass, aggregate-pin change or other core-policy modification.
 - [x] `python3 tools/agents/validate_governance.py`: PASS.
 - [x] Whole-diff/family self-review and `git diff --check`: PASS before publication.
 - [ ] Fresh published-head canonical game-gate including real PostgreSQL 17.6 and Windows simulation.
@@ -103,15 +104,15 @@ Fenced Game writes, game-session authority, replay and runtime concurrency are `
 
 ## Self-review and independent review
 
-The implementation revalidates both mutable-files consumers (scope routing and PostgreSQL target classification), adds executable regression coverage to the existing governance job, and reconciles metadata. Aggregate predicates, path applicability, permissions, service pin and PG/SIM commands are unchanged. The full diff remains inside the six allocated paths. The independent upstream-scope P1 is accepted and repaired; a fresh whole-diff/family sweep includes both output-producing consumers. Final current-head qualification and review remain pending.
+The implementation revalidates both mutable-files consumers (scope routing and PostgreSQL target classification), adds executable regression coverage to the existing governance job, and reconciles metadata. Aggregate predicates, path applicability, permissions, service pin and PG/SIM commands are unchanged. The full diff remains inside the seven allocated paths. The independent upstream-scope P1 is accepted and repaired; a fresh whole-diff/family sweep includes both output-producing consumers. Final current-head qualification and review remain pending.
 
 The current META AI review policy selects one deep review because this is required-check control-plane behavior. Deterministic hosted validation must pass first. No final review is claimed yet. Review/head/run/READY bookkeeping after this material commit belongs on Issue/PR, not in a new bookkeeping-only commit. `final_head_sha` is resolved externally after publication, not self-referentially embedded here.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: GREEN5 upstream scope revalidation and eight regression functions pass after witnessed RED5
-status: BLOCKED_SCOPE
+last_progress: GREEN5 scope revalidation, authorized canonical digest update and eight regression functions pass after witnessed RED5
+status: QUALIFYING
 branch: ci/canonical-pr-pg-sim-279
 head_sha: null
 pr: 287
@@ -131,6 +132,6 @@ repair_cycles_for_current_gate: 5
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: owner scope expansion required for tools/repository/validate_repository_policy_core.py exact scope digest update
-next_action: obtain evidence-backed owner scope expansion for the core validator, update only the exact repaired-scope digest, rerun full deterministic qualification and one material-repair deep review, then dispose findings and return without merge
+blocker: null
+next_action: qualify the published repair with exact-head PG/SIM game-gate and one material-repair deep review, then dispose findings and return without merge
 ```
