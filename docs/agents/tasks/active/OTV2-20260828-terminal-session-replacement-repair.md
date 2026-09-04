@@ -625,3 +625,50 @@ owner_action_required: null
 checkpoint_commit_qualification: this docs-only publication advances the PR head; its read-back remote SHA becomes the sole final qualification candidate
 next_action: read back this metadata commit SHA; require fresh exact-head hosted CI, whole-diff self-review and fresh independent @codex review on that immutable SHA; if P0/P1/P2 remain zero, resolve repaired technical threads and issue READY_FOR_INTEGRATION without merging
 ```
+
+## Later-reconnect replay/reconciliation receipt-scope repair checkpoint — 2026-09-04
+
+This checkpoint supersedes the Final two-P1 repair checkpoint for live continuation state. A subsequent exact-head review found that the first later ordinary reconnect could be PREPARED after terminal replacement, but an exact replay of that later attempt and V2 reconciliation were still incorrectly treated as replacement-authorized solely because the same GameSession had a historical replacement receipt.
+
+- Reviewed source head: `e697bdff241d2ca4a3d2f685ea3eb928c535d618`; actionable P1 thread `PRRT_kwDOT8SzxM6fE1OR`, top-level comment `3928606792`.
+- Fresh executable RED is immutable `1bfb978ecdb4c9dba45bf6ab39fa86385ddb294a`. Rust run `33805721160`, PostgreSQL 17.6 job `100815584853` verified the exact checkout and ran 105 tests: 104 PASS / 1 expected FAIL. The sole failure was `replacement_created_session_can_reconnect_in_later_epoch_without_reusing_replacement_authorization`, with both `replay_ok=false` and `reconciliation_ok=false`.
+- Minimal GREEN is split only across the two already allocated Durability paths that enforce the same receipt predicate: `fac91851cfdd8c3fe9e60eb4e27e2fd1c089382d` binds a replacement receipt to the exact record's candidate session plus predecessor connection/CharacterLease/scope generations; `6b2c3825e4aa9d26025cb75f573b6851bbfab81c` reuses that exact predicate in V2 reconciliation. `0ef16d77816a0ef11c6d5b2a1935865190728803` is rustfmt-only for the regression test.
+- Exact hosted code GREEN on `0ef16d77816a0ef11c6d5b2a1935865190728803`: Rust workspace run `33809399549` SUCCESS; PostgreSQL 17.6 job `100827437620` verified exact checkout and completed 105 PASS / 0 FAIL; Windows SIM exact-head job `100827437842` SUCCESS; Architecture semantic audit `33809399600` SUCCESS; Agent governance `33809399473` SUCCESS; Merge gate `33809399411` SUCCESS.
+- Scope remains exactly the existing 12 allocated paths. This checkpoint itself changes only the already allocated active task record. No force-push, rebase, reset, merge, scope expansion, Cargo/lockfile/workflow/resource-registry, gameplay, production/live-data, secret, external-repository, or resource-maximum mutation is introduced.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+pr_state: open_draft_mergeable_unmerged
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+reviewed_source_head: e697bdff241d2ca4a3d2f685ea3eb928c535d618
+latest_p1:
+  thread: PRRT_kwDOT8SzxM6fE1OR
+  comment: 3928606792
+  requirement: historical replacement receipt must apply only to the original replacement attempt and must not poison exact replay or V2 reconciliation of a genuinely later ordinary reconnect
+red_evidence:
+  head: 1bfb978ecdb4c9dba45bf6ab39fa86385ddb294a
+  rust_run: 33805721160
+  postgres_job: 100815584853
+  result: 104_pass_1_expected_fail_replay_and_reconciliation_false
+green_evidence:
+  receipt_binding_head: fac91851cfdd8c3fe9e60eb4e27e2fd1c089382d
+  reconciliation_scope_head: 6b2c3825e4aa9d26025cb75f573b6851bbfab81c
+  code_complete_head: 0ef16d77816a0ef11c6d5b2a1935865190728803
+  rust_run: 33809399549_SUCCESS
+  postgres_job: 100827437620_SUCCESS_105_pass_0_fail
+  windows_sim_job: 100827437842_SUCCESS
+  architecture_run: 33809399600_SUCCESS
+  agent_governance_run: 33809399473_SUCCESS
+  merge_gate_run: 33809399411_SUCCESS
+allocated_paths: 12_of_12
+history_operations: no_force_no_rebase_no_reset_no_merge
+checkpoint_commit_qualification: this docs-only publication advances the PR head; read back its immutable remote SHA and use only that SHA for final exact-head qualification
+thread_policy: do_not_resolve_any_technical_thread_or_mark_READY_until_fresh_metadata_head_CI_whole_diff_self_review_and_exact_head_Codex_all_report_P0_0_P1_0_P2_0; keep control-plane integration gate PRRT_kwDOT8SzxM6dX3eH unresolved
+owner_action_required: null
+next_action: read back this metadata commit SHA; require fresh exact-head hosted CI on it, perform complete whole-diff self-review against current protected main, then request fresh independent native @codex review pinned to the same immutable SHA; repair and repeat any P0/P1/P2; do not merge
+```
