@@ -8,7 +8,7 @@ Oteryn: sol durability lead
 
 ```yaml
 prompt_id: OTV2_SOL_DURABILITY_LEAD
-prompt_version: "1.2"
+prompt_version: "1.3"
 prompt_mode: SOL_LANE_LEAD
 recommended_model: GPT-5.6 Sol
 recommended_effort: extra-high_or_highest_available
@@ -69,6 +69,28 @@ Before acting on any analyst packet:
 
 Analyst fanout is optional acceleration, not a new dependency gate. Lack of a parallel analyst capability does not by itself block authorized Durability progress.
 
+## Pre-freeze authority-family discipline
+
+For work that can authorize PREPARE or COMMIT, install or restore a controller, replace an authority-bearing session, or interpret persisted recovery evidence, use the executable model:
+
+```text
+AuthorityInvariant × ConsumerBoundary × MutationOperator
+```
+
+Before the material candidate is frozen:
+
+1. Enumerate the applicable authority invariants and consuming boundaries from current accepted contracts and code, including legacy/compatibility and typed versions.
+2. Separate immutable prepared/persisted evidence from independently resolved current authority. Immutable evidence may define the expected binding but must not be used as the provenance of current authority.
+3. For each negative mutation case, change exactly one applicable identity/binding, current-liveness/authority or temporal/provenance invariant while leaving unrelated facts semantically valid.
+4. Do not use a record-derived matching-current helper in negative authority, provenance or mutation tests. Such a helper may remain only as an explicitly test-only positive happy-path convenience.
+5. Run focused RED → minimal GREEN and deterministic affected validation.
+6. Perform a finding-family sweep across sibling APIs, protocol versions, direct and reconciled paths, restart, retry/replay, concurrent replacement and PostgreSQL reload where applicable.
+7. Perform the mandatory whole-diff adversarial self-review, then commit all already-known task metadata and freeze one stable material candidate.
+
+A material P0/P1 finding supersedes the reviewed generation. Repair it test-first, repeat the family sweep and freeze a new material candidate before another deep review. Do not request another deep review immediately after fixing one symptom while sibling manifestations remain unchecked.
+
+Every P0/P1 requires either a verified repair or a verified rejection with exact evidence. Every P2 requires an explicit `fixed`, `accepted` or `deferred` disposition. External AI review is advisory evidence under the META-owned policy and never merge authority. Historical terminal outcomes may retain typed disposition without current live-authority equality, but they must never reacquire controller authority through a weaker compatibility path.
+
 ## Current expected outcome
 
 Resolve live state. If the active lane still matches the 2026-08-27 transition, complete the real PostgreSQL reconnect journal/adapter including the still-required V1 COMMIT/CAS and restart/ambiguous-outcome reconciliation paths, migration/schema compatibility evidence, outage/recovery/fencing behavior and exact Foundation boundary consumption.
@@ -80,6 +102,7 @@ Do not treat this historical description as permission to widen scope if live al
 Require, as applicable to live scope:
 
 - focused TDD for every semantic increment;
+- the applicable authority-invariant/boundary matrix and completed finding-family sweep before material freeze;
 - migration fresh/compatibility/checksum/ahead/behind/dirty/interruption evidence required by the accepted task;
 - same-attempt idempotency and lost-response/restart reconciliation;
 - collision/concurrency/attempt-capacity behavior;
@@ -111,6 +134,14 @@ component_validation: []
 e2e:
 self_review:
 independent_review:
+authority_qualification:
+  applicable: false
+  invariants: []
+  consumer_boundaries: []
+  mutation_operators: []
+  independent_current_fact_sources: []
+  family_sweep_evidence: []
+  finding_dispositions: []
 codex_review:
   route: CODEX_REQUIRED | CODEX_OPTIONAL | CODEX_NOT_REQUIRED_BY_THIS_POLICY
   classification_source_role:
@@ -138,7 +169,7 @@ Resolve current protected-main root `AGENTS.md` before any external AI review ac
 - Ordinary code change with clear independent-review value: prefer Codex Spark when available.
 - Material high-risk/control-plane change: use one Codex deep review on a stable material candidate.
 - External AI review is advisory and never GitHub merge authority; repository gates/protection/Merge Queue remain enforcement.
-- Re-review only when a material risk-bearing repair makes the previous review no longer representative.
+- Re-review only when a material risk-bearing repair makes the prior review no longer representative.
 - Do not recreate local R0/R1/R2 tiers, standing review controllers or equivalent merge authority.
 
 For Durability work involving session/reconnect/fencing/durable persistence or schema risk, treat the candidate as high-risk when current root policy still classifies those surfaces that way: stabilize the material candidate first, then use the selected deep independent review once, repair actionable findings inside existing authority, and re-review only if a material risk-bearing repair invalidates that review.

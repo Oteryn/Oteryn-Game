@@ -34,6 +34,33 @@ Describe the observable repository/product result, not only files to edit.
 
 List accepted ADRs/contracts and exact external revisions. Label material statements `PROVEN`, `DERIVED`, `UNKNOWN` or `CONFLICT`.
 
+## High-risk authority/recovery qualification
+
+For work that can authorize PREPARE or COMMIT, install/restore a controller, replace an authority-bearing session, or interpret persisted recovery evidence, complete this section before material freeze. Otherwise record `NOT_APPLICABLE` with a concrete reason.
+
+```yaml
+applicable: pending
+model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
+authority_invariants: []
+consumer_boundaries: []
+mutation_operators: []
+independent_current_fact_sources: []
+record_derived_matching_helper:
+  allowed_for_positive_happy_path: pending
+  forbidden_for_negative_authority_or_provenance_cases: pending
+finding_family_sweep:
+  sibling_apis: pending
+  protocol_versions: pending
+  direct_and_reconciled_paths: pending
+  restart_retry_replay_concurrency_pg_reload: pending
+  evidence: []
+finding_dispositions:
+  p0_p1_verified_repair_or_rejection: pending
+  p2_fixed_accepted_or_deferred: pending
+```
+
+Immutable prepared/persisted evidence may define the expected binding but is not current authority evidence. Negative mutation cases change exactly one applicable invariant while keeping unrelated facts semantically valid. Historical terminal outcomes may preserve typed disposition without current live-authority equality, but must never reacquire authority through a weaker compatibility path.
+
 ## Acceptance criteria
 
 - [ ] Concrete criterion with named evidence.
@@ -44,7 +71,11 @@ State what this task must not change or claim.
 
 ## Implementation / findings
 
-Maintain concise durable progress and decisions. Prepare all known closeout metadata before freezing the final head; do not move a frozen head merely to copy review/audit or CI status into this file.
+Maintain concise durable progress and decisions. For applicable high-risk authority/recovery work, complete focused RED → minimal GREEN, deterministic affected validation, the finding-family sweep and adversarial whole-diff self-review before material freeze.
+
+A material P0/P1 finding supersedes the reviewed generation. Repair it test-first and expand the finding family across applicable sibling APIs, versions, direct/reconciled, restart, retry/replay, concurrent and PostgreSQL reload paths before requesting another deep review. A P0/P1 is terminally disposed only by a verified repair or verified rejection; a P2 requires explicit `fixed`, `accepted` or `deferred` disposition. External AI findings are advisory evidence and never merge authority.
+
+Prepare all known closeout metadata before freezing the final head; do not move a frozen head merely to copy review/audit or CI status into this file.
 
 A commit cannot contain its own SHA. Record the final exact head in immutable PR/check evidence after the final commit exists rather than creating a self-referential follow-up commit.
 
