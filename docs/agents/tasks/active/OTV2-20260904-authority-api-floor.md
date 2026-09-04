@@ -110,6 +110,27 @@ No workflow/ruleset/branch-protection change, no persistence-schema semantic cha
 
 TDD RED is preserved at `600a8139778923136e03632ef661849806c07b58`. The blocked GREEN attempt made no commit. The six-path allocation is the smallest verified scope that can both hide the production constructor and keep all-target/binary test contexts compiling without weakening the API-floor assertion.
 
+## Qualification analyst handoff
+
+Read-only `Oteryn: sol durability qualification analyst` independently inspected live PR #289 at exact head `588b67c25499ac8d2f24de16df8b7be2fdab49eb` against protected `main@68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705` and returned `ADDITIONAL_REPAIR_RISK_FOUND`.
+
+Verified sibling-family finding on that exact head:
+
+- `AccountPresenceClaimV1::from_identity(...)` remains production-public and constructs an authority-shaped current account-presence claim directly from immutable `ReconnectIdentityV1`;
+- `CharacterWorldEligibilityClaimV1::from_identity(...)` remains production-public and constructs an authority-shaped current world-eligibility claim directly from immutable `ReconnectIdentityV1`;
+- both are the same provenance-substitution/API-floor family as the repaired `ReconnectCandidateBindingV1::from_record(...)` convenience under current `apps/game-server/AGENTS.md` authority-family discipline.
+
+Required writer disposition before material freeze:
+
+1. Refresh live protected `main`, Issue #280, PR #289 and exact branch head; do not trust the SHAs above if GitHub moved.
+2. Re-verify both sibling constructors on the current exact head.
+3. If still applicable, treat them as one coherent authority API-floor family repair: fresh TDD RED for both, then minimal GREEN within the exact current allocation.
+4. Perform the full finding-family sweep across sibling APIs, V1/V2, direct and reconciled paths, restart/retry/replay/concurrency and PostgreSQL reload where applicable.
+5. Do not freeze the material candidate and do not request the final independent deep review until this sibling family is clean.
+6. After the later normal non-force protected-main merge-up, rerun every validation/review layer invalidated by the new exact head, including focused API-floor regressions, game-server lib/all-target Clippy, real `durability_postgres`, canonical hosted gate and whole-diff adversarial self-review.
+
+This analyst handoff is advisory evidence only. It is not the repository's formal independent review and grants no scope, architecture, merge or control-plane authority.
+
 ## Validation
 
 ### Focused
@@ -163,7 +184,7 @@ TDD RED is preserved at `600a8139778923136e03632ef661849806c07b58`. The blocked 
 ## Context checkpoint
 
 ```yaml
-last_progress: RED compile evidence proved two additional mechanical test paths are required for a safe GREEN
+last_progress: qualification analyst verified two production-public sibling authority constructors on exact head 588b67c25499ac8d2f24de16df8b7be2fdab49eb
 status: implementing
 branch: refactor/authority-api-floor-280
 head_sha: established_by_authoritative_remote_readback
@@ -171,7 +192,7 @@ pr: 289
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: RED
+ci_check_generation: GREEN_pre_family_sweep
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -185,5 +206,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish the minimal six-path GREEN that hides the production candidate record constructor and mechanically adapts separately compiled test helpers
+next_action: refresh live head, re-verify AccountPresenceClaimV1::from_identity and CharacterWorldEligibilityClaimV1::from_identity, then if still applicable establish fresh sibling-family TDD RED before any freeze or deep review
 ```
