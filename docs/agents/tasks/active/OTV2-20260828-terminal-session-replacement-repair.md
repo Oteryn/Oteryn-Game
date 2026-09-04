@@ -818,3 +818,39 @@ metadata_commit_identity: established_by_authoritative_remote_readback_not_self_
 thread_policy: only_if_P0_P1_P2_zero_resolve_repaired_lane_owned_technical_threads_except_control_plane_gate_PRRT_kwDOT8SzxM6dX3eH
 next_action: run exact-head CI on the authoritative read-back docs SHA, perform a fresh whole-diff self-review, and obtain one independent exact-head Codex review; only if P0=P1=P2=0 resolve repaired lane-owned technical threads except control-plane gate PRRT_kwDOT8SzxM6dX3eH and publish READY_FOR_INTEGRATION; do not merge
 ```
+
+## Future-authenticated-evidence repair checkpoint — 2026-09-04
+
+This checkpoint supersedes earlier current-status checkpoints for live qualification while preserving their historical evidence. It records the bounded repair generation before the next material freeze; the immutable identity of this docs-bearing generation is established by authoritative GitHub readback after publication rather than self-embedded.
+
+- Independent exact-head review `5113263511` reviewed frozen head `89ca402ae94b42044f74a1f866d4a23a6baed5e4` and produced two actionable P1 findings: technical comment `3934233107`, because future-dated authenticated `source_observed_at` values could extend COMMIT authority; and task-record comment `3934233118`, because the active record stopped before the generic-V1 repair and current-main merge-up.
+- Fresh focused test-only RED is `e3ca7cd0c5c7560d4dcb83fdaa8c4029b98babd7`. Rust run `33876594852`, PostgreSQL 17.6 job `101034940507`, verified the exact checkout and completed 111 PASS / exactly 2 expected FAIL: `commit_authorization_rejects_future_authenticated_evidence_and_accepts_equal_timestamps` and `committed_reconciliation_rejects_authority_observed_before_authenticated_evidence`. The regressions cover direct V1 and V2 COMMIT, both authenticated evidence sources, current-authority chronology, committed reconciliation, and accepted equality boundaries.
+- Minimal production GREEN is `54d9579279bd19718a698e16eb8577b84b2cbb37`. Both trusted caller `now` and independently observed current-authority time must be at or after both authenticated evidence source timestamps. Direct V1/V2 COMMIT returns the existing `StaleAuthority` class for future source provenance; the shared complete-current-authority predicate applies the same chronology to committed V1/V2 reconciliation, which retains the existing reconciliation mismatch class. All existing deadline, freshness, and authority checks remain intact.
+- The later generic-V1 production repair `92ce1be30f05aba02f392069090200784530758d` is part of the published history and fences generic V1 terminal reconciliation from external production use. Protected-main reconciliation is `main@d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d`; merge-up `89ca402ae94b42044f74a1f866d4a23a6baed5e4` is the historical pre-repair generation. The effective task diff remains the existing 12/12 allocated paths.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+protected_main: d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d
+review:
+  numeric_id: 5113263511
+  reviewed_head: 89ca402ae94b42044f74a1f866d4a23a6baed5e4
+  technical_p1_comment: 3934233107
+  task_record_p1_comment: 3934233118
+red_head: e3ca7cd0c5c7560d4dcb83fdaa8c4029b98babd7
+red_rust_run: 33876594852_FAILURE
+red_postgres_job: 101034940507_111_pass_2_expected_fail
+green_head: 54d9579279bd19718a698e16eb8577b84b2cbb37
+green_exact_head_ci: pending_on_metadata_complete_generation
+current_main_reconciliation:
+  integration_main_sha: d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d
+  historical_pre_repair_merge_up: 89ca402ae94b42044f74a1f866d4a23a6baed5e4
+allocated_paths: 12_of_12
+metadata_commit_identity: established_by_authoritative_remote_readback_not_self_embedded
+final_evidence_authority: final_SHA_CI_review_and_READY_are_GitHub_control_plane_evidence_under_current_TASK_TEMPLATE
+next_action: read back the published metadata-complete SHA, run fresh exact-head hosted CI, perform whole-diff self-review, and obtain independent exact-head review; repair and repeat any P0/P1/P2 before READY_FOR_INTEGRATION; do not merge
+```
