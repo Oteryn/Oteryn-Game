@@ -22,7 +22,7 @@ owner: "Oteryn: sol server seam lead"
 created_at: 2026-09-04T19:27:00+02:00
 updated_at: 2026-09-04T19:27:00+02:00
 execution_budget_minutes: 120
-large_budget_reason: high-risk TCP/TLS plus Foundation admission/reconnect integration, bounded-resource evidence, real Tier 1 proof and independent exact-head review
+large_budget_reason: high-risk TCP/TLS plus Foundation admission/reconnect integration, bounded-resource proof, real production-path seam integration and independent exact-head review
 owned_paths:
   - apps/game-server/src/gameplay_transport/mod.rs
   - apps/game-server/src/gameplay_transport/tcp_tls.rs
@@ -43,32 +43,38 @@ public_contracts:
 depends_on:
   - allocation_task: OTV2-20260904-gameplay-server-seam-allocation
   - merged_pr: 117
+  - merged_pr: 151
   - merged_pr: 252
   - merged_pr: 290
 blocks:
   - native Client allocation/readiness
-  - physical gameplay Tier 1/Tier 2 sequence
+  - physical gameplay Tier 1/Tier 2 QA sequence
 external_repositories: []
 ```
 
 ## Outcome
 
-Implement the smallest accepted production gameplay server/client-entry seam on top of the already-merged Foundation and Durability authorities: bounded TCP + TLS 1.3 transport using ALPN `oteryn-game/1`, FND-02 framing and protocol validation, FND-04 admission/reconnect verification, current GameSession/CharacterLease/fencing ownership, current durable reconnect journal, bounded backpressure/drain behavior, and a real local Tier 1 journey through the production boundary.
+Implement the smallest accepted production gameplay server/client-entry seam on top of merged Foundation, FND-04 verifier/consumer and Durability authorities: bounded TCP + TLS 1.3 with ALPN `oteryn-game/1`, FND-02 framing/validation, canonical fresh-admission/reconnect verification, current GameSession/CharacterLease/fencing authority, durable reconnect journal consumption, bounded backpressure/drain, and real local production-path TCP/TLS integration evidence.
 
-This task does not make gameplay commands available. Unregistered gameplay remains fail-closed until later owning lanes allocate their protocol/state/event identities and runtime semantics.
+This lane makes the later ADR-0007 physical Tier 1 journey executable but does **not** own or declare QA Tier 1/Tier 2 `PROVEN`. Formal QA Tier 1/Tier 2 remain `NOT_EVALUATED` until a separate QA allocation after the Server Seam is merged.
+
+Unregistered gameplay remains fail-closed. This task allocates no gameplay command/state/event/capability/stable numeric ID and does not create gameplay domain semantics.
 
 ## Architecture and source of truth
 
-- `PROVEN` — write authority is **not active** while allocation PR #294 has not merged. This task remains `waiting`/read-only until Work reads the allocation merge SHA from protected `main` and creates the worker branch from exactly that SHA.
+- `PROVEN` — write authority is not active while allocation PR #294 is unmerged. This task remains `waiting`/read-only until Work reads the allocation merge SHA from protected `main` and creates the worker branch from exactly that SHA.
 - `PROVEN` — accepted Server Seam architecture is `docs/architecture/reviews/OTERYN_GAME_PRODUCTION_GAMEPLAY_SERVER_SEAM_PLAN_2026-08-24.md`, merged through PR #117.
-- `PROVEN` — current Foundation protocol constants include `PROTOCOL_MAJOR_V1=1`, `TRANSPORT_PROFILE_TCP_TLS13_V1=1`, `ALPN_OTERYN_GAME_V1="oteryn-game/1"`, a 1,048,576-byte FND-02 wire-frame hard maximum and message-specific bounds.
-- `PROVEN` — current `WireEnvelopeView` exposes message type/generation/sequence/raw payload and `decode_wire_envelope` validates current inbound envelopes; the accepted decision requires the missing typed bootstrap/resume consumer bridge and outbound Foundation acknowledgement/error encoding.
-- `PROVEN` — current `apps/game-server/src/main.rs` is intentionally fail-closed for normal gameplay and must not be converted into a hard-coded production endpoint.
-- `PROVEN` — current Durability terminal-replacement implementation is merged and ownership released; this task consumes it but does not redesign it.
-- `PROVEN` — Server Seam hard maxima are registered, including pre-admission connections 256, concurrent handshake/auth work 64, outbound queue entries 64/session, outbound queue bytes 1,048,576/session, pending writes 8/session and drain tasks 256/batch.
-- `DERIVED` — the seam can be implemented without new gameplay IDs, new resource maxima, a second admission/session authority or a production deployment decision by keeping configuration/TLS material caller-supplied and using local test-only fixtures for physical Tier 1.
+- `PROVEN` — Issue #115 implementation is terminal: archived task `OTV2-20260825-fnd04-verifier-consumer` records PR #151 merged as `2d0e951ce37c2e28773c22966bb816c00bebaa0a` with released ownership.
+- `PROVEN` — Issue #116 is closed and the current Resource Limits Registry contains the accepted NET03 Server Seam hard maxima.
+- `PROVEN` — current Durability implementation/journal/reconnect terminal-replacement work is merged and ownership released; this lane consumes it and does not redesign it.
+- `PROVEN` — current Foundation protocol constants include protocol major `1`, TCP/TLS13 transport profile `1`, ALPN `oteryn-game/1`, the 1,048,576-byte wire-frame hard maximum and message-specific bounds.
+- `PROVEN` — current `foundation/protocol.rs` validates inbound wire envelopes but the accepted #117 decision still allocates the minimum typed bootstrap/resume extraction plus registered-only server encoders to this lane.
+- `PROVEN` — current `apps/game-server/src/main.rs` remains fail-closed for ordinary gameplay startup and must not be changed into a hard-coded production endpoint.
+- `DERIVED` — the accepted seam can be implemented without a new stable ID, resource maximum, duplicate authority or production deployment decision by keeping configuration/TLS material caller-supplied and using non-shipping loopback fixtures for implementation/integration evidence.
 
-Governing source order is protected-main governance -> merged allocation -> accepted #117 architecture -> current FND/DUR contracts/registries -> live implementation. Any material conflict blocks only the affected mutation and is escalated rather than guessed through.
+All prerequisite facts are re-read from protected `main` at worker release. A changed/conflicting prerequisite blocks the affected mutation rather than becoming an assumption.
+
+Governing order: protected-main governance -> merged allocation -> accepted #117 architecture -> current FND/DUR contracts/registries -> live implementation.
 
 ## High-risk authority/recovery qualification
 
@@ -77,46 +83,46 @@ applicable: true
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants:
   - authenticated transport identity/binding is independently verified before admission or reconnect authority is granted
-  - fresh admission GameSession/CharacterLease/world/runtime ownership facts are current and match the accepted FND-04 verifier result
+  - fresh admission GameSession/CharacterLease/world/runtime ownership facts are current and match canonical FND-04 verifier output
   - reconnect candidate identity, connection generation, runtime scope, ownership generation and control-loss continuity are current at every authority-consuming boundary
-  - durable PREPARE/COMMIT/reconciliation evidence defines expected persisted binding but is never used as its own source of current live authority
-  - final reconnect COMMIT/controller installation revalidates current authority/fence facts rather than trusting a stale earlier snapshot
-  - stale connection generation cannot send accepted post-admission work or receive controller authority
+  - durable PREPARE/COMMIT/reconciliation evidence defines expected persisted binding but is never its own source of live current authority
+  - final reconnect COMMIT/controller installation revalidates current authority/fence facts rather than trusting an earlier snapshot
+  - stale connection generation cannot send accepted post-admission work or regain controller authority
 consumer_boundaries:
-  - pre-admission TLS connection acceptance and FND-02 bootstrap decode
-  - FND-04 fresh admission verification and GameSession commit
+  - pre-admission TLS connection and bounded FND-02 bootstrap/resume decode
+  - FND-04 fresh admission verification and canonical GameSession commit
   - reconnect/resume verification and durable PREPARE/reconciliation
-  - final reconnect authority revalidation/controller installation
-  - admitted connection read/write dispatch and generation fencing
-  - shutdown/drain path that releases connection/session-local transport work without transferring authority
+  - final reconnect current-authority revalidation/controller installation
+  - admitted read/write dispatch and connection-generation fencing
+  - shutdown/drain of bounded transport work including already-authoritative reserved work
 mutation_operators:
   applicable:
     - accept one pre-admission connection within the registered connection budget
     - begin one bounded TLS handshake/authentication unit
-    - commit a fresh admitted GameSession through the canonical Foundation authority
-    - prepare or reconcile a reconnect attempt through the current durable adapter
+    - commit a fresh GameSession only through canonical Foundation authority
+    - prepare or reconcile reconnect only through the current durable adapter
     - authorize final reconnect COMMIT/controller replacement only from independently current facts
-    - attach or replace the admitted transport generation after canonical authority succeeds
-    - enqueue bounded server output and pending writes for the current admitted generation
+    - attach or replace the transport generation after canonical authority succeeds
+    - enqueue bounded server output/pending writes for the current admitted generation
     - close/drain transport-local work without mutating foreign gameplay authority
   considered_not_applicable:
-    - gameplay command/domain mutation: no gameplay command IDs are allocated to this lane
-    - Movement/Combat/Ability/Interaction/AI state mutation: owned by later or separate lanes
-    - production certificate/key/port deployment mutation: explicitly outside task authority
+    - gameplay command/domain mutation: no gameplay command IDs are allocated
+    - Movement/Combat/Ability/Interaction/AI mutation: foreign lanes
+    - production certificate/key/port/deployment mutation: explicitly excluded
 one_invariant_per_negative_case: required
 independent_current_fact_sources:
-  - current FND-04 evidence verifier/consumer output for authentication/admission/reconnect evidence
-  - current Foundation GameSession/CharacterLease/runtime authority state at the exact consuming boundary
-  - current connection generation/runtime-scope/ownership-generation facts resolved independently of immutable reconnect records
+  - production FND-04 verifier/consumer output plus independently current authoritative evidence
+  - current Foundation GameSession/CharacterLease/runtime authority at the consuming boundary
+  - current connection-generation/runtime-scope/ownership-generation facts resolved independently of immutable reconnect records
 record_derived_matching_helper:
-  allowed_for_positive_happy_path: only when current protected-main governance explicitly permits a test-only convenience and the case does not claim negative/current-authority proof
+  allowed_for_positive_happy_path: only where current protected-main governance explicitly permits a test-only convenience that does not claim negative/current-authority proof
   forbidden_for_negative_authority_or_provenance_cases: true
 finding_family_sweep:
-  sibling_apis: required across fresh admission, resume/reconnect and server acknowledgement/error bridge APIs that consume authority facts
-  protocol_versions: v1 only unless protected main allocates another version; no compatibility version may weaken v1 authority
+  sibling_apis: required across fresh admission, resume/reconnect and server acknowledgement/error bridge APIs
+  protocol_versions: v1 only unless protected main allocates another version; no compatibility path may weaken v1 authority
   direct_and_reconciled_paths: required
-  fenced_durable_writes: required where this seam invokes reconnect PREPARE/COMMIT/reconciliation
-  restart_retry_replay_concurrency_pg_reload: required where the current durable adapter boundary is exercised; PostgreSQL reload may rely on already-merged Durability tests only when the Server Seam change does not invalidate that behavior, otherwise add focused physical evidence within owned paths or escalate for a missing test lease
+  fenced_durable_writes: required where reconnect PREPARE/COMMIT/reconciliation is invoked
+  restart_retry_replay_concurrency_pg_reload: required where the current durable adapter boundary is exercised; existing Durability evidence may be reused only if this diff has not invalidated it
   evidence: []
 finding_dispositions:
   p0_p1_accepted_and_repaired: []
@@ -124,94 +130,95 @@ finding_dispositions:
   p2_fixed_accepted_or_deferred: []
 ```
 
-Immutable prepared/persisted reconnect evidence may define the expected durable binding but never proves that a session, lease, runtime scope, connection generation or ownership generation is current. Every authority-consuming production boundary must receive independent current facts sufficient for that boundary.
+Immutable prepared/persisted reconnect evidence may define expected durable binding but never proves current session, lease, runtime scope, connection generation or ownership generation.
 
 ## Acceptance criteria
 
 ### Transport and framing
 
-- [ ] Normal Server Seam transport uses TCP with TLS 1.3 profile 1 and ALPN exactly `oteryn-game/1`; no plaintext gameplay path or legacy/Canary protocol path is introduced.
-- [ ] Four-byte big-endian frame length is validated before body allocation/read; 0 and >1,048,576 are rejected fail-closed, truncation is deterministic, and all FND-02 message-specific bounds remain authoritative.
-- [ ] Unknown/malformed/direction-invalid/phase-invalid messages are rejected without admission, domain mutation or unbounded retained work.
-- [ ] Transport implementation has no `unsafe` and preserves workspace lint policy.
+- [ ] TCP + TLS 1.3 profile 1 and ALPN exactly `oteryn-game/1`; no plaintext, downgrade, legacy or Canary fallback.
+- [ ] BE32 frame length is checked before peer-sized body allocation/read; 0 and >1,048,576 reject fail-closed; exact max and truncation are tested.
+- [ ] Wrong protocol major/transport profile, malformed/duplicate/unknown/over-limit fields, invalid direction/phase/generation and unknown message types fail before admission/domain mutation.
+- [ ] No `unsafe`; current workspace lint policy remains intact.
 
-### Foundation authority consumption
+### Foundation bridge and authority consumption
 
-- [ ] `foundation/protocol.rs` exposes only the minimum typed, crate-internal consumer bridge required to obtain already-validated `ClientBootstrap`/`ClientResume` fields and encode already-registered `ServerAccepted`, `ServerResumeAccepted` and `ProtocolError`; no new message ID/capability/state-domain/stable ID is allocated.
-- [ ] If implementation would require a new externally public Foundation API/schema/wire semantic rather than a crate-internal accepted consumer bridge, stop with `ARCHITECTURE_ESCALATION_REQUIRED` before that change.
-- [ ] Fresh admission is committed only through canonical FND-04/Foundation admission authority after trusted evidence verification; no transport-local duplicate session authority exists.
-- [ ] Resume/reconnect consumes the current Durability/Foundation replacement flow and final current-authority revalidation; no record-derived helper substitutes for live facts.
-- [ ] Stale/missing/mismatched generation, GameSession, CharacterLease, world/runtime scope, ownership generation, transport binding and authority/provenance cases fail independently before the affected authority grant/mutation.
+- [ ] `foundation/protocol.rs` adds only the minimum crate-internal typed bootstrap/resume bridge and registered-only encoders for `ServerAccepted`, `ServerResumeAccepted`, `ProtocolError`; no new ID/schema/field meaning/limit.
+- [ ] Outbound encoder evidence includes canonical/golden bytes and an independent non-self-referential cross-oracle/wire check; self encode->self decode alone is insufficient.
+- [ ] New externally public Foundation API/schema/wire semantics require `ARCHITECTURE_ESCALATION_REQUIRED` before mutation.
+- [ ] Fresh admission uses the production FND-04 verifier/consumer and canonical Foundation commit; invalid/expired/replayed/wrong-binding/stale-evidence cases fail independently.
+- [ ] Concurrent/replayed fresh admission cannot create two sessions.
+- [ ] Reconnect consumes current Durability/Foundation replacement flow and independently current facts; no record-derived helper substitutes for live authority.
+- [ ] Stale/missing/mismatched GameSession, CharacterLease, world/runtime scope, ownership generation, connection generation, transport binding or provenance fails before the affected authority grant/mutation.
 
-### Resource and lifecycle bounds
+### Resource/lifecycle bounds
 
-- [ ] Registered hard maxima are enforced with checked accounting before allocation or partial mutation: pre-admission connections 256, handshake/auth work 64, outbound queue entries 64/session, outbound queue bytes 1,048,576/session, pending writes 8/session, drain tasks 256/batch.
-- [ ] Each applicable registered Server Seam limit has max-accepted, max+1 rejected and checked-overflow/relevant early-rejection evidence consistent with the registry.
-- [ ] Backpressure never converts queue saturation into unbounded task spawning, hidden retry or cross-session starvation authority.
-- [ ] Shutdown/drain is bounded, cancellation-safe and does not retain or transfer stale controller/session authority.
+- [ ] Hard maxima are enforced with checked accounting before partial mutation: pre-admission 256, handshake/auth 64, outbound entries 64/session, outbound bytes 1,048,576/session, pending writes 8/session, drain tasks 256/batch.
+- [ ] Each applicable limit has max-accepted, max+1 rejected/backpressured and relevant overflow/early-rejection proof.
+- [ ] Slow clients cannot create unbounded task/channel/retry growth or consume another session's authority budget.
+- [ ] Shutdown/drain is bounded/cancellation-safe, does not transfer/resurrect stale controller authority, and does not silently drop already-authoritative reserved work; such work is drained or explicitly resolved according to canonical Foundation lifecycle semantics.
 
-### Composition and configuration
+### Composition / unsupported gameplay
 
-- [ ] `apps/game-server/src/lib.rs` composes exactly one Server Seam implementation while preserving existing Foundation/Durability/content modules and current high-risk regression tests.
-- [ ] `apps/game-server/src/main.rs` keeps `--smoke` behavior and may enter gameplay serving only from explicit caller/configuration input; it must not choose or hard-code a production bind address, port, certificate, private key, secret location or deployment topology.
-- [ ] Library/test composition accepts local caller-supplied endpoint/TLS material sufficient for real loopback Tier 1 without production credentials.
-- [ ] Missing/incompatible runtime configuration remains fail-closed rather than silently opening gameplay.
+- [ ] `lib.rs` composes exactly one Server Seam while preserving Foundation/Durability/content and existing high-risk regression coverage.
+- [ ] `main.rs` preserves `--smoke` and uses only explicit valid configuration; no production bind address/port/certificate/key/secret/deployment topology is selected here.
+- [ ] Missing/incompatible runtime configuration remains fail-closed; no plaintext fallback.
+- [ ] After admission, unsupported/unregistered `ClientCommand` fails closed with zero command reservation/domain mutation and no invented gameplay ID.
 
-### TDD and physical evidence
+### TDD and physical seam evidence
 
-- [ ] Fresh RED is captured before implementation for typed Foundation extraction/encoding, framing boundaries, malformed/oversized/unknown input, TLS/ALPN mismatch, pre-admission/handshake limits, authority-before-mutation, stale generation/reconnect facts, queue/pending-write saturation and bounded shutdown.
-- [ ] Minimal GREEN implements only the accepted seam; repair cycles do not broaden into gameplay or architecture redesign.
-- [ ] `apps/game-server/tests/gameplay_server_seam.rs` proves a real local loopback TCP/TLS production-path Tier 1 bootstrap/admit flow and reconnect/resume path using non-shipping test certificate/evidence fixtures.
-- [ ] Direct-domain/synthetic success is not reported as physical Tier 1.
-- [ ] Real Tier 1 records the exact candidate head, local topology, negotiated TLS/ALPN, bounded input path and authoritative admission/reconnect result.
+- [ ] Fresh RED -> minimal GREEN covers Foundation bridge/encoders, framing, TLS/ALPN/profile, malformed/oversized input, FND-04 invalid/expired/replay/wrong-binding, concurrent fresh admission, stale reconnect facts, all resource boundaries, unsupported post-admission gameplay, backpressure and bounded shutdown/drain.
+- [ ] `apps/game-server/tests/gameplay_server_seam.rs` traverses the actual production listener/composition path on loopback using non-shipping TLS material for bootstrap/admission and resume/reconnect.
+- [ ] Physical assertions observe canonical GameSession/current-generation outcomes, not merely socket success.
+- [ ] Server Seam physical integration may be reported `PROVEN` for the exact candidate when tests pass; ADR-0007 QA Tier 1 and Tier 2 remain `NOT_EVALUATED` for this lane.
 
 ### Qualification and handoff
 
-- [ ] Focused/package tests, strict Clippy, fmt and applicable whole-workspace tests pass on the stable candidate.
-- [ ] Exact-head repository CI, including current Linux/Windows/supply-chain/merge-gate composition as applicable, is green for the exact final head.
-- [ ] Whole-diff self-review finds no unresolved P0/P1/P2 disposition gap and completes the finding-family sweep required above.
-- [ ] One genuinely independent exact-head deep review covers protocol/session/admission/fencing risk; green CI alone does not satisfy review.
-- [ ] Zero unresolved required review threads and no material head movement after final qualifying review.
-- [ ] Worker returns the canonical SERVER_SEAM handoff with `READY_FOR_INTEGRATION`; worker does not merge its own PR.
+- [ ] Focused/package tests, fmt, strict Clippy and applicable workspace validation pass on the coherent candidate.
+- [ ] Exact-head repository CI including current Linux/Windows/supply-chain/merge-gate composition as applicable is green.
+- [ ] Whole-diff self-review completes the required finding-family sweep and leaves no unresolved P0/P1/P2 disposition gap.
+- [ ] One genuinely independent exact-head deep review covers protocol/session/admission/reconnect/fencing/TLS/resource/evidence-ownership risk.
+- [ ] Zero unresolved required review threads and no material head movement after qualifying review.
+- [ ] Worker returns canonical SERVER_SEAM `READY_FOR_INTEGRATION` handoff without self-merging.
 
 ## Excluded scope
 
-- No gameplay command/state/event/capability/stable numeric ID allocation.
-- No Movement, Combat, Ability, Interaction, AI, Channel, Analytics or gameplay formula implementation.
-- No permanent Content/world-bundle format decision.
-- No production bind address, port, DNS, certificate, private key, secret, environment, deployment or live-account/session/data mutation.
-- No QUIC activation or alternate protocol stack.
+- No gameplay command/state/event/capability/stable numeric ID allocation or gameplay formula/state implementation.
+- No Movement, Combat, Ability, Interaction, AI, Channel or Analytics implementation.
+- No permanent Content/world-bundle format decision or Reference-parity claim.
+- No production address/port/DNS/certificate/private key/secret/environment/deployment/live-account/session/data mutation.
+- No QUIC activation/registration or alternate protocol stack.
 - No new persistence semantics, migration redesign or durable value/item semantics.
-- No `workspace-boundaries.toml`, workflow, ruleset, repository-protection or architecture-contract writes.
+- No `workspace-boundaries.toml`, workflow, ruleset, repository-protection, stable registry or architecture-contract writes.
 - No Platform, Atlas, META or other external-repository writes.
-- No Reference-parity or production-readiness claim from this seam alone.
+- No QA Tier 1/Tier 2 completion claim from this lane.
 
-A required change outside the exact owned paths is reported to Work as `SHARED_LEASE_REQUIRED`. A material public API/schema/protocol/trust/fencing/persistence/resource/production decision is `ARCHITECTURE_ESCALATION_REQUIRED` and stops only the affected mutation.
+A legitimate need outside exact owned paths is `SHARED_LEASE_REQUIRED`. A material public API/schema/protocol/trust/fencing/persistence/resource/production/evidence-ownership decision is `ARCHITECTURE_ESCALATION_REQUIRED` before mutation.
 
 ## Implementation / findings
 
-The implementation follows `docs/superpowers/plans/2026-08-24-oteryn-production-gameplay-server-seam.md` after the allocation merge/readback. The plan is subordinate to this task and accepted contracts; it cannot authorize a path or semantic not listed here.
+Follow `docs/superpowers/plans/2026-08-24-oteryn-production-gameplay-server-seam.md` after allocation merge/readback. The plan is subordinate to this task and accepted #117; it cannot widen authority.
 
-Do not begin by creating a listener. Begin with RED tests around the already-accepted Foundation consumer bridge and untrusted framing boundary, because these establish the only safe inputs the listener may later consume.
-
-Dependency changes in root/game-server Cargo files are restricted to exact dependencies/features needed by the accepted TCP/TLS implementation. Do not absorb open Dependabot #259/#260/#261 upgrades as convenience. Re-read those PRs before shared Cargo mutation and before final integration.
+Do not begin with a listener. Begin with fresh RED around the Foundation wire bridge and untrusted framing boundary. Before shared Cargo mutation and final integration, re-read #259/#260/#261 and all active non-Dependabot ownership.
 
 ## Validation
 
 ### Focused
 
 - command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam`
-- result: not run — mutation authority is waiting on allocation merge
+- result: not run — mutation authority waits on allocation merge/readback
 
 ### Component/integration
 
 - command/run: `cargo +1.94.0 test --locked -p oteryn-game-server`
-- result: not run — mutation authority is waiting on allocation merge
+- result: not run — mutation authority waits on allocation merge/readback
 
-### E2E
+### Physical Server Seam integration
 
-- scenario: local loopback TCP/TLS production listener -> FND-02 bootstrap/resume -> FND-04/Foundation admission/reconnect -> bounded server acknowledgement/error path using caller-supplied test TLS material
-- result: not run — mutation authority is waiting on allocation merge
+- scenario: real local loopback TCP/TLS production listener -> FND-02 bootstrap/resume -> production FND-04 verifier/current authority -> canonical Foundation admission/reconnect/Durability -> bounded registered server response; stale generation and unsupported gameplay fail closed
+- result: not run — mutation authority waits on allocation merge/readback
+- QA Tier 1: `NOT_EVALUATED` — separate post-merge QA allocation owns the ADR-0007 evidence envelope
+- QA Tier 2: `NOT_EVALUATED`
 
 ### Exact-head CI
 
@@ -219,7 +226,7 @@ Dependency changes in root/game-server Cargo files are restricted to exact depen
 - trigger source: pull_request after implementation candidate exists
 - workflow/run/job: not started
 - runner assignment: unknown
-- classification: high-risk protocol/session/admission/fencing Server Seam
+- classification: high-risk protocol/session/admission/reconnect/fencing/TLS Server Seam
 - result: not started
 
 ## Self-review
@@ -231,9 +238,9 @@ Dependency changes in root/game-server Cargo files are restricted to exact depen
 
 ## Independent review
 
-- required: `YES` — protocol/session/admission/reconnect/fencing plus production transport boundary
+- required: `YES`
 - exact head: null
-- method/auditor: one genuinely independent exact-head deep review under current protected-main policy
+- method/auditor: genuinely independent exact-head deep review under current protected-main policy
 - material findings: not evaluated
 - verdict: not evaluated
 
@@ -241,15 +248,14 @@ Dependency changes in root/game-server Cargo files are restricted to exact depen
 
 - changed-file review: exact owned-path allowlist only
 - unresolved review threads: not evaluated
-- related/superseded PRs: none for Server Seam at allocation admission
-- protected auto-merge: worker does not enable or perform terminal integration
-- merge commit/result: control-plane responsibility after READY_FOR_INTEGRATION
-- ownership release: after protected-main merge/readback and worker-task archival
+- protected integration: worker does not merge its own PR
+- merge/result: Work control-plane responsibility after truthful `READY_FOR_INTEGRATION`
+- ownership release: only after protected-main merge/readback and worker-task archival
 
 ## Context checkpoint
 
 ```yaml
-last_progress: allocation PR #294 is open Draft and records this worker task against Issue #247; runtime authority remains withheld until the allocation itself qualifies, merges and is read back from protected main
+last_progress: allocation PR #294 is Draft; self-review corrected QA evidence ownership and expanded the child plan to literal #117 negative/golden/shutdown requirements; runtime authority remains withheld until the allocation qualifies, merges and is read back from protected main
 status: waiting
 branch: agent/otv2-gameplay-server-seam-01
 head_sha: null
@@ -271,5 +277,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: allocation_pr_294_not_merged
-next_action: remain read-only until Work proves PR #294 merged and reads the exact merge SHA from protected main, then create the worker branch from exactly that SHA and run the first focused Server Seam RED before any production transport implementation
+next_action: remain read-only until Work proves PR #294 merged and reads the exact merge SHA from protected main, then create the worker branch from exactly that SHA and run the first focused Foundation-bridge RED before any production transport implementation
 ```
