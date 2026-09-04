@@ -750,7 +750,29 @@ impl AdmissionReconnectJournal {
                     .await?;
                 let is_historical_projection = current_epoch
                     > record.continuity().control_loss_epoch().get()
-                    && recovery_grant_is_valid;
+                    && recovery_grant_is_valid
+                    && match session.try_get::<i16, _>("session_state")? {
+                        ACTIVE => {
+                            prepared_ref.is_none()
+                                && active_committed_binding_is_valid(
+                                    transaction,
+                                    session_id.as_slice(),
+                                    &session,
+                                )
+                                .await?
+                        }
+                        RECONNECTABLE => {
+                            current_ref.is_none()
+                                && current_prepared_binding_is_valid(
+                                    transaction,
+                                    session_id.as_slice(),
+                                    prepared_ref.as_deref(),
+                                    &session,
+                                )
+                                .await?
+                        }
+                        _ => false,
+                    };
                 if !is_current_projection && !is_historical_projection {
                     return Err(DurabilityError::InvalidStoredState);
                 }
@@ -1402,6 +1424,45 @@ async fn active_committed_binding_is_valid(
         }
         _ => Ok(false),
     }
+}
+
+async fn current_prepared_binding_is_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    session_id: &[u8],
+    prepared_attempt_ref: Option<&[u8]>,
+    session: &PgRow,
+) -> Result<bool, DurabilityError> {
+    let Some(prepared_attempt_ref) = prepared_attempt_ref else {
+        return Ok(false);
+    };
+    let count: i64 = sqlx::query_scalar(
+        "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
+         WHERE game_session_id = encode($1, 'hex')::uuid \
+           AND reconnect_attempt_ref = $2 AND state = $3 \
+           AND control_loss_epoch = $4::text::numeric(20, 0) \
+           AND account_id = $5::text::uuid AND character_id = encode($6, 'hex')::uuid \
+           AND world_id = encode($7, 'hex')::uuid \
+           AND runtime_scope_kind = $8 \
+           AND runtime_scope_world_id = encode($9, 'hex')::uuid \
+           AND runtime_scope_channel_id IS NOT DISTINCT FROM \
+               CASE WHEN $10::bytea IS NULL THEN NULL ELSE encode($10, 'hex')::uuid END \
+           AND runtime_scope_instance_id IS NOT DISTINCT FROM \
+               CASE WHEN $11::bytea IS NULL THEN NULL ELSE encode($11, 'hex')::uuid END",
+    )
+    .bind(session_id)
+    .bind(prepared_attempt_ref)
+    .bind(PREPARED)
+    .bind(session.try_get::<String, _>("control_loss_epoch")?)
+    .bind(session.try_get::<String, _>("account_id")?)
+    .bind(session.try_get::<Vec<u8>, _>("character_id")?)
+    .bind(session.try_get::<Vec<u8>, _>("world_id")?)
+    .bind(session.try_get::<i16, _>("runtime_scope_kind")?)
+    .bind(session.try_get::<Vec<u8>, _>("runtime_scope_world_id")?)
+    .bind(session.try_get::<Option<Vec<u8>>, _>("runtime_scope_channel_id")?)
+    .bind(session.try_get::<Option<Vec<u8>>, _>("runtime_scope_instance_id")?)
+    .fetch_one(&mut **transaction)
+    .await?;
+    Ok(count == 1)
 }
 
 async fn canonical_fnd02_mirrors_are_valid(
