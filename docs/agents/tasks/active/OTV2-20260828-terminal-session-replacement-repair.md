@@ -886,3 +886,36 @@ whole_diff: behind_by_0_exactly_12_of_12_allocated_paths
 metadata_commit_identity: established_by_authoritative_remote_readback_not_self_embedded
 next_action: run fresh exact-head CI, whole-diff self-review, and independent exact-head review on the authoritative read-back checkpoint SHA; keep FINAL_EXACT_HEAD_QUALIFICATION_PENDING and do not resolve threads, mark READY_FOR_INTEGRATION, or merge
 ```
+
+## Later PREPARED structural-binding repair checkpoint — 2026-09-04
+
+This single superseding pre-freeze checkpoint replaces earlier current-status checkpoints for continuation state while retaining all earlier RED/GREEN evidence as historical provenance. Its own commit identity is established by authoritative remote readback and is intentionally not self-embedded.
+
+- Independent exact-head review `5113765290` on frozen head `d08677b1efec188ae4410699f22c8dfb8664150d` produced P2 comment `3934639680`: historical COMMITTED reconciliation accepted a later PREPARED projection after checking only epoch/state and actor/scope identity, without validating its complete session, canonical attempt, transport, protection, and FND-02 bindings.
+- Fresh executed test-only RED is `6a11c453e2fb2a39cf50c8ae39be3a3aab58f682`. Rust run `33880701069`, PostgreSQL 17.6 job `101048371153`, verified the exact checkout and completed 114 PASS / exactly 1 expected FAIL, solely `historical_committed_reconciliation_rejects_corrupt_later_prepared_projection`; corrupt later PREPARED state was accepted as historical COMMITTED evidence instead of returning `InvalidStoredState`.
+- Minimal production GREEN is `1aaa8a714256ed64baec9c3eae78c3578ad1b1ee`, refined by `55e95945d91c95ce5874a10758b89c130c5d20b4` to preserve valid unconsumed reauthenticated PREPARED proof semantics. The later PREPARED validator now requires the complete current session generation/state/anchor binding, canonical attempt-to-typed mirrors, exact runtime scope and authority generations, transport reservation, precommit protection continuity, FND-02 mirrors, compatibility evidence, and proof shape from the later attempt's own durable canonical record. The old COMMITTED record is not required to equal the later projection; ACTIVE later-projection validation and the complete Foundation current-authority gate are unchanged.
+- Final regression correction `1355cb61fcf6c5d02dd8404268afd0963348b3b9` makes the canonical-attempt corruption target the transport mirror while preserving the same RED assertion set. Rust run `33881800738`, PostgreSQL 17.6 job `101051972439`, verified that exact head and completed 115/115 PASS, including the valid later-PREPARED historical replay and all five corrupt later-PREPARED binding cases.
+- Local formatting, strict game-server all-target Clippy, focused regression, game-server library 227/227, and `git diff --check` passed. Protected `main@d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d` remains the merge base; GitHub compare reports `behind_by=0`; the effective PR diff remains exactly the allocated 12/12 paths. No scope expansion, force-push, rebase, reset, or merge occurred.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+protected_main: d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d
+review: 5113765290
+p2_comment: 3934639680
+reviewed_head: d08677b1efec188ae4410699f22c8dfb8664150d
+red_head: 6a11c453e2fb2a39cf50c8ae39be3a3aab58f682
+red_rust_run: 33880701069_FAILURE
+red_postgres_job: 101048371153_114_pass_1_expected_fail
+green_head: 55e95945d91c95ce5874a10758b89c130c5d20b4
+final_regression_head: 1355cb61fcf6c5d02dd8404268afd0963348b3b9
+final_rust_run: 33881800738_SUCCESS
+final_postgres_job: 101051972439_SUCCESS_115_pass_0_fail
+whole_diff: behind_by_0_exactly_12_of_12_allocated_paths
+metadata_commit_identity: established_by_authoritative_remote_readback_not_self_embedded
+next_action: run fresh exact-head hosted CI on the authoritative read-back checkpoint SHA, perform whole-diff self-review, and obtain one independent exact-head review; repair and repeat any P0/P1/P2 before READY_FOR_INTEGRATION; do not resolve threads, mark Ready, enqueue, or merge
+```

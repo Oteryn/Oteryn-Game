@@ -2681,7 +2681,7 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
                             sqlx::query(
                                 "UPDATE game_durability_reconnect_attempts \
                                  SET record_json = jsonb_set(record_json::jsonb, \
-                                     '{connection,candidate_generation}', '10'::jsonb)::text \
+                                     '{connection,transport_ref}', '[1]'::jsonb)::text \
                                  WHERE game_session_id = encode($1, 'hex')::uuid \
                                    AND reconnect_attempt_ref = $2",
                             )
