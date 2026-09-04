@@ -125,7 +125,7 @@ impl AdmissionReconnectJournalV2 {
         let candidate_exists =
             candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?;
         if candidate_exists {
-            if !replacement_receipt_matches(&mut transaction, authorization).await? {
+            if !replacement_receipt_matches(&mut transaction, authorization, record).await? {
                 return Err(DurabilityError::InvalidStoredState);
             }
             transaction.commit().await?;
@@ -159,7 +159,7 @@ impl AdmissionReconnectJournalV2 {
         .await?;
         let Some(predecessor) = predecessor else {
             if candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?
-                && replacement_receipt_matches(&mut transaction, authorization).await?
+                && replacement_receipt_matches(&mut transaction, authorization, record).await?
             {
                 transaction.commit().await?;
                 return self.prepare_legacy_typed_receipt_authorized(request).await;
@@ -265,12 +265,13 @@ impl AdmissionReconnectJournalV2 {
         let receipt = sqlx::query(
             "INSERT INTO game_durability_session_replacements (\
                 character_id, predecessor_game_session_id, candidate_game_session_id, \
+                candidate_reconnect_attempt_ref, \
                 predecessor_connection_generation, predecessor_character_lease_generation, \
                 predecessor_scope_ownership_generation\
              ) VALUES (\
                 encode($1, 'hex')::uuid, encode($2, 'hex')::uuid, encode($3, 'hex')::uuid, \
-                $4::text::numeric(20, 0), $5::text::numeric(20, 0), \
-                $6::text::numeric(20, 0)\
+                $4, $5::text::numeric(20, 0), $6::text::numeric(20, 0), \
+                $7::text::numeric(20, 0)\
              ) ON CONFLICT DO NOTHING",
         )
         .bind(character_id.as_slice())
@@ -281,6 +282,13 @@ impl AdmissionReconnectJournalV2 {
                 .as_slice(),
         )
         .bind(candidate_session_id.as_slice())
+        .bind(
+            record
+                .identity()
+                .reconnect_attempt_ref()
+                .to_be_bytes()
+                .as_slice(),
+        )
         .bind(
             authorization
                 .predecessor_connection_generation()
@@ -316,7 +324,7 @@ impl AdmissionReconnectJournalV2 {
         let mut transaction = self.pool.begin().await?;
         if let Some(authorization) = request.terminal_replacement()
             && (!replacement_authorization_matches_record(authorization, record)
-                || !replacement_receipt_matches(&mut transaction, authorization).await?)
+                || !replacement_receipt_matches(&mut transaction, authorization, record).await?)
         {
             return Err(DurabilityError::InvalidStoredState);
         }
@@ -548,12 +556,14 @@ async fn replacement_receipt_for_candidate_exists(
 async fn replacement_receipt_matches(
     transaction: &mut Transaction<'_, Postgres>,
     authorization: &TerminalGameSessionReplacementAuthorizationV1,
+    record: &ReconnectDurabilityRecordV1,
 ) -> Result<bool, DurabilityError> {
     let row = sqlx::query(
         "SELECT uuid_send(predecessor_game_session_id) AS predecessor_game_session_id, \
                 predecessor_connection_generation::text AS predecessor_connection_generation, \
                 predecessor_character_lease_generation::text AS predecessor_character_lease_generation, \
-                predecessor_scope_ownership_generation::text AS predecessor_scope_ownership_generation \
+                predecessor_scope_ownership_generation::text AS predecessor_scope_ownership_generation, \
+                candidate_reconnect_attempt_ref \
          FROM game_durability_session_replacements \
          WHERE character_id = encode($1, 'hex')::uuid \
            AND candidate_game_session_id = encode($2, 'hex')::uuid FOR SHARE",
@@ -572,6 +582,14 @@ async fn replacement_receipt_matches(
             .predecessor_game_session_id()
             .as_bytes()
             .as_slice()
+        && row
+            .try_get::<Vec<u8>, _>("candidate_reconnect_attempt_ref")?
+            .as_slice()
+            == record
+                .identity()
+                .reconnect_attempt_ref()
+                .to_be_bytes()
+                .as_slice()
         && row.try_get::<String, _>("predecessor_connection_generation")?
             == authorization
                 .predecessor_connection_generation()

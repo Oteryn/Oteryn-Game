@@ -38,13 +38,15 @@ pub(super) async fn replacement_receipt_matches_record(
             SELECT 1 FROM game_durability_session_replacements \
             WHERE character_id = encode($1, 'hex')::uuid \
               AND candidate_game_session_id = encode($2, 'hex')::uuid \
-              AND predecessor_connection_generation = $3::text::numeric(20, 0) \
-              AND predecessor_character_lease_generation = $4::text::numeric(20, 0) \
-              AND predecessor_scope_ownership_generation = $5::text::numeric(20, 0)\
+              AND candidate_reconnect_attempt_ref = $3 \
+              AND predecessor_connection_generation = $4::text::numeric(20, 0) \
+              AND predecessor_character_lease_generation = $5::text::numeric(20, 0) \
+              AND predecessor_scope_ownership_generation = $6::text::numeric(20, 0)\
          )",
     )
     .bind(identity.character_id().as_bytes().as_slice())
     .bind(identity.game_session_id().as_bytes().as_slice())
+    .bind(identity.reconnect_attempt_ref().to_be_bytes().as_slice())
     .bind(record.connection().predecessor().get().to_string())
     .bind(record.authority().character_lease_generation().to_string())
     .bind(

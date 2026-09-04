@@ -61,6 +61,7 @@ CREATE TABLE game_durability_session_replacements (
     candidate_game_session_id UUID NOT NULL
         CHECK ((get_byte(uuid_send(candidate_game_session_id), 6) >> 4) = 7)
         CHECK ((get_byte(uuid_send(candidate_game_session_id), 8) & 192) = 128),
+    candidate_reconnect_attempt_ref BYTEA NOT NULL CHECK (octet_length(candidate_reconnect_attempt_ref) = 8),
     predecessor_connection_generation NUMERIC(20, 0) NOT NULL
         CHECK (predecessor_connection_generation BETWEEN 1 AND 18446744073709551615),
     predecessor_character_lease_generation NUMERIC(20, 0) NOT NULL

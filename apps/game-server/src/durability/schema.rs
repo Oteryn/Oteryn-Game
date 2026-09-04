@@ -840,6 +840,59 @@ mod terminal_replacement_postgres_red_tests {
     }
 
     #[test]
+    fn replacement_created_session_can_replay_fresh_same_fence_attempt_after_collision()
+    -> TestResult {
+        run_postgres_test(async {
+            let (database, database_url) =
+                migrated_database("replacement_candidate_same_fence_retry").await?;
+            let now = unix_now().map_err(|_| "invalid clock")?;
+            seed_current_actor_anchor(&database_url, 10, 10, now).await?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+
+            let reserved = record(50, 51, 1, 0xa2, 3, 7, 10, now)
+                .map_err(|_| "transport reservation record")?;
+            assert_eq!(
+                journal
+                    .prepare(&ReconnectDurabilityFlowV1::begin(reserved).1)
+                    .await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+
+            let original =
+                record(20, 11, 1, 0xa2, 3, 7, 10, now).map_err(|_| "candidate record")?;
+            let authorization =
+                authorization_for(10, &original, 10).map_err(|_| "replacement authorization")?;
+            let original_request =
+                ReconnectDurabilityFlowV2::begin(original, Some(authorization)).1;
+            assert_eq!(
+                journal.prepare_v2(&original_request).await?,
+                ReconnectPrepareDispositionV2::RejectedTransportRefCollision
+            );
+
+            let fresh = record(20, 11, 2, 0xa3, 3, 7, 10, now).map_err(|_| "fresh attempt")?;
+            let fresh_legacy_request = ReconnectDurabilityFlowV1::begin(fresh.clone()).1;
+            assert_eq!(
+                journal.prepare(&fresh_legacy_request).await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            assert_eq!(
+                journal.prepare(&fresh_legacy_request).await?,
+                ReconnectPrepareDispositionV1::ExistingPrepared
+            );
+
+            let fresh_v2_request = ReconnectDurabilityFlowV2::begin(fresh, None).1;
+            assert_eq!(
+                journal.reconcile_v2(&fresh_v2_request).await?.outcome(),
+                ReconnectDurableOutcomeV2::Prepared
+            );
+
+            drop(journal);
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
     fn runtime_terminal_replacement_rejects_consumed_fenced_continuity_before_mutation()
     -> TestResult {
         run_postgres_test(async {
