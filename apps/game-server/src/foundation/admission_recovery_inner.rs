@@ -1,5 +1,36 @@
 use super::{CommandId, MAX_OUTSTANDING_COMMANDS};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CharacterWorldEligibilityClaimV1 {
+    character_id: CharacterId,
+    world_id: WorldId,
+}
+
+impl CharacterWorldEligibilityClaimV1 {
+    #[must_use]
+    pub const fn new(character_id: CharacterId, world_id: WorldId) -> Self {
+        Self {
+            character_id,
+            world_id,
+        }
+    }
+
+    #[must_use]
+    pub fn from_identity(identity: &ReconnectIdentityV1) -> Self {
+        Self::new(identity.character_id(), identity.world_id())
+    }
+
+    #[must_use]
+    pub const fn character_id(self) -> CharacterId {
+        self.character_id
+    }
+
+    #[must_use]
+    pub const fn world_id(self) -> WorldId {
+        self.world_id
+    }
+}
+
 /// Current fenced authority required to reconstruct one GameSession projection
 /// after process replacement.
 ///
@@ -13,10 +44,15 @@ pub struct GameSessionAuthoritySnapshot<T: Copy + Eq> {
     current_connection_generation: ConnectionGeneration,
     current_transport: Option<T>,
     current_character_lease: CharacterLease,
+    current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+    current_runtime_scope: RuntimeScopeRefV1,
     current_scope_generation: ScopeOwnershipGeneration,
+    current_control_loss_epoch: Option<ControlLossEpochRefV1>,
+    current_original_grace_deadline: Option<i64>,
 }
 
 impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
+    #[cfg(test)]
     #[must_use]
     pub const fn new(
         commit: FreshAdmissionCommit<T>,
@@ -32,8 +68,67 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
             current_connection_generation,
             current_transport,
             current_character_lease,
+            current_character_world_eligibility: Some(CharacterWorldEligibilityClaimV1::new(
+                commit.character_id(),
+                commit.world_id(),
+            )),
+            current_runtime_scope: RuntimeScopeRefV1::channel(commit.world_id(), commit.channel_id()),
             current_scope_generation,
+            current_control_loss_epoch: None,
+            current_original_grace_deadline: None,
         }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_current_facts(
+        commit: FreshAdmissionCommit<T>,
+        session_state: GameSessionState,
+        current_connection_generation: ConnectionGeneration,
+        current_transport: Option<T>,
+        current_character_lease: CharacterLease,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+        current_runtime_scope: RuntimeScopeRefV1,
+        current_scope_generation: ScopeOwnershipGeneration,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if current_runtime_scope.world_id() != commit.world_id() {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        Ok(Self {
+            commit,
+            session_state,
+            current_connection_generation,
+            current_transport,
+            current_character_lease,
+            current_character_world_eligibility,
+            current_runtime_scope,
+            current_scope_generation,
+            current_control_loss_epoch: None,
+            current_original_grace_deadline: None,
+        })
+    }
+
+    pub fn with_control_loss_continuity(
+        mut self,
+        control_loss_epoch: ControlLossEpochRefV1,
+        original_grace_deadline: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if original_grace_deadline <= 0 {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        self.current_control_loss_epoch = Some(control_loss_epoch);
+        self.current_original_grace_deadline = Some(original_grace_deadline);
+        Ok(self)
+    }
+
+    pub fn with_current_runtime_scope(
+        mut self,
+        current_runtime_scope: RuntimeScopeRefV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if current_runtime_scope.world_id() != self.commit.world_id() {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        self.current_runtime_scope = current_runtime_scope;
+        Ok(self)
     }
 
     #[must_use]
@@ -62,8 +157,30 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
     }
 
     #[must_use]
+    pub const fn current_character_world_eligibility(
+        self,
+    ) -> Option<CharacterWorldEligibilityClaimV1> {
+        self.current_character_world_eligibility
+    }
+
+    #[must_use]
+    pub const fn current_runtime_scope(self) -> RuntimeScopeRefV1 {
+        self.current_runtime_scope
+    }
+
+    #[must_use]
     pub const fn current_scope_generation(self) -> ScopeOwnershipGeneration {
         self.current_scope_generation
+    }
+
+    #[must_use]
+    pub const fn current_control_loss_epoch(self) -> Option<ControlLossEpochRefV1> {
+        self.current_control_loss_epoch
+    }
+
+    #[must_use]
+    pub const fn current_original_grace_deadline(self) -> Option<i64> {
+        self.current_original_grace_deadline
     }
 }
 
@@ -79,12 +196,163 @@ impl CharacterLease {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TerminalGameSessionReplacementAuthorizationV1 {
+    account_id: String,
+    character_id: CharacterId,
+    world_id: WorldId,
+    predecessor_game_session_id: GameSessionId,
+    predecessor_connection_generation: ConnectionGeneration,
+    predecessor_character_lease_generation: u64,
+    predecessor_current_scope_ownership_generation: ScopeOwnershipGeneration,
+    predecessor_control_loss_epoch: ControlLossEpochRefV1,
+    predecessor_original_grace_deadline: i64,
+    candidate_game_session_id: GameSessionId,
+    candidate_runtime_scope: RuntimeScopeRefV1,
+}
+
+impl TerminalGameSessionReplacementAuthorizationV1 {
+    pub fn from_current_authority<T: Copy + Eq>(
+        account_id: &str,
+        current_account_presence: Option<&AccountPresenceClaimV1>,
+        predecessor_game_session_id: GameSessionId,
+        candidate_game_session_id: GameSessionId,
+        snapshot: GameSessionAuthoritySnapshot<T>,
+        candidate: &ReconnectDurabilityRecordV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if !canonical_uuid(account_id)
+            || current_account_presence.is_none_or(|presence| {
+                presence.account_id() != account_id
+                    || presence.character_id() != snapshot.commit().character_id()
+                    || presence.character_id() != candidate.identity().character_id()
+            })
+            || predecessor_game_session_id == candidate_game_session_id
+            || snapshot.session_state() != GameSessionState::Terminal
+            || snapshot.current_transport().is_some()
+        {
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        }
+
+        validate_current_authority(predecessor_game_session_id, snapshot)
+            .map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
+
+        let committed = snapshot.commit();
+        let current_lease = snapshot.current_character_lease();
+        let Some(current_control_loss_epoch) = snapshot.current_control_loss_epoch() else {
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        };
+        let Some(current_original_grace_deadline) = snapshot.current_original_grace_deadline()
+        else {
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        };
+        let identity = candidate.identity();
+        let candidate_authority = candidate.authority();
+        let candidate_continuity = candidate.continuity();
+
+        if committed.game_session_id() != predecessor_game_session_id
+            || identity.game_session_id() != candidate_game_session_id
+            || identity.account_id() != account_id
+            || identity.character_id() != committed.character_id()
+            || identity.world_id() != committed.world_id()
+            || identity.runtime_scope() != snapshot.current_runtime_scope()
+            || candidate.connection().predecessor() != snapshot.current_connection_generation()
+            || current_lease.character_id() != committed.character_id()
+            || candidate_authority.character_lease_generation() != current_lease.generation()
+            || candidate_authority.scope_ownership_generation()
+                != snapshot.current_scope_generation()
+            || candidate_continuity.control_loss_epoch() != current_control_loss_epoch
+            || candidate_continuity.original_grace_deadline() != current_original_grace_deadline
+        {
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        }
+
+        Ok(Self {
+            account_id: account_id.to_owned(),
+            character_id: committed.character_id(),
+            world_id: committed.world_id(),
+            predecessor_game_session_id,
+            predecessor_connection_generation: snapshot.current_connection_generation(),
+            predecessor_character_lease_generation: current_lease.generation(),
+            predecessor_current_scope_ownership_generation: snapshot.current_scope_generation(),
+            predecessor_control_loss_epoch: current_control_loss_epoch,
+            predecessor_original_grace_deadline: current_original_grace_deadline,
+            candidate_game_session_id,
+            candidate_runtime_scope: identity.runtime_scope(),
+        })
+    }
+
+    #[must_use]
+    pub fn account_id(&self) -> &str {
+        &self.account_id
+    }
+
+    #[must_use]
+    pub const fn character_id(&self) -> CharacterId {
+        self.character_id
+    }
+
+    #[must_use]
+    pub const fn world_id(&self) -> WorldId {
+        self.world_id
+    }
+
+    #[must_use]
+    pub const fn predecessor_game_session_id(&self) -> GameSessionId {
+        self.predecessor_game_session_id
+    }
+
+    #[must_use]
+    pub const fn predecessor_connection_generation(&self) -> ConnectionGeneration {
+        self.predecessor_connection_generation
+    }
+
+    #[must_use]
+    pub const fn predecessor_character_lease_generation(&self) -> u64 {
+        self.predecessor_character_lease_generation
+    }
+
+    #[must_use]
+    pub const fn predecessor_current_scope_ownership_generation(
+        &self,
+    ) -> ScopeOwnershipGeneration {
+        self.predecessor_current_scope_ownership_generation
+    }
+
+    #[must_use]
+    pub const fn predecessor_control_loss_epoch(&self) -> ControlLossEpochRefV1 {
+        self.predecessor_control_loss_epoch
+    }
+
+    #[must_use]
+    pub const fn predecessor_original_grace_deadline(&self) -> i64 {
+        self.predecessor_original_grace_deadline
+    }
+
+    #[must_use]
+    pub const fn candidate_game_session_id(&self) -> GameSessionId {
+        self.candidate_game_session_id
+    }
+
+    #[must_use]
+    pub const fn candidate_runtime_scope(&self) -> RuntimeScopeRefV1 {
+        self.candidate_runtime_scope
+    }
+}
+
 fn validate_current_authority<T: Copy + Eq>(
     expected_game_session_id: GameSessionId,
     snapshot: GameSessionAuthoritySnapshot<T>,
 ) -> Result<(), AdmissionError> {
     let committed = snapshot.commit();
     if committed.game_session_id() != expected_game_session_id {
+        return Err(AdmissionError::ReconciliationUnavailable);
+    }
+    if snapshot.current_character_world_eligibility()
+        != Some(CharacterWorldEligibilityClaimV1::new(
+            committed.character_id(),
+            committed.world_id(),
+        ))
+    {
         return Err(AdmissionError::ReconciliationUnavailable);
     }
 
@@ -189,7 +457,6 @@ impl<T: Copy + Eq, J: ReconnectAttemptJournal<T>> AdmissionAuthority<T, J> {
     ) -> Result<&GameSession, AdmissionError> {
         let committed = snapshot.commit();
         validate_current_authority(committed.game_session_id(), snapshot)?;
-
         if committed.initial_transport() != authenticated_transport
             || snapshot.session_state() != GameSessionState::Active
             || snapshot.current_connection_generation() != committed.connection_generation()
@@ -458,6 +725,78 @@ impl ReconnectConnectionFenceV1 {
     pub const fn candidate(self) -> ConnectionGeneration { self.candidate }
     #[must_use]
     pub const fn transport_ref(self) -> AuthenticatedTransportRefV1 { self.transport_ref }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ReconnectCandidateBindingV1 {
+    game_session_id: GameSessionId,
+    reconnect_attempt_ref: ReconnectAttemptRef,
+    connection_generation: ConnectionGeneration,
+    transport_ref: AuthenticatedTransportRefV1,
+    prepared_deadline: i64,
+}
+
+impl ReconnectCandidateBindingV1 {
+    pub fn new(
+        game_session_id: GameSessionId,
+        reconnect_attempt_ref: ReconnectAttemptRef,
+        connection_generation: ConnectionGeneration,
+        transport_ref: AuthenticatedTransportRefV1,
+        prepared_deadline: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if prepared_deadline <= 0 {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        Ok(Self {
+            game_session_id,
+            reconnect_attempt_ref,
+            connection_generation,
+            transport_ref,
+            prepared_deadline,
+        })
+    }
+
+    pub fn from_record(
+        record: &ReconnectDurabilityRecordV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        Self::new(
+            record.identity().game_session_id(),
+            record.identity().reconnect_attempt_ref(),
+            record.connection().candidate(),
+            record.connection().transport_ref(),
+            record.continuity().prepared_deadline(),
+        )
+    }
+
+    #[must_use]
+    pub const fn game_session_id(self) -> GameSessionId {
+        self.game_session_id
+    }
+
+    #[must_use]
+    pub const fn reconnect_attempt_ref(self) -> ReconnectAttemptRef {
+        self.reconnect_attempt_ref
+    }
+
+    #[must_use]
+    pub const fn connection_generation(self) -> ConnectionGeneration {
+        self.connection_generation
+    }
+
+    #[must_use]
+    pub const fn transport_ref(self) -> AuthenticatedTransportRefV1 {
+        self.transport_ref
+    }
+
+    #[must_use]
+    pub const fn prepared_deadline(self) -> i64 {
+        self.prepared_deadline
+    }
+
+    #[must_use]
+    const fn is_live_at(self, observed_at: i64) -> bool {
+        observed_at >= 0 && observed_at <= self.prepared_deadline
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -795,11 +1134,53 @@ pub enum ReconnectPrepareActionV1 {
 pub enum ReconnectDurabilityPhaseV1 { PendingPrepare, AwaitFinalRevalidation, PendingCommit, ReconciliationRequired, Terminal, Completed }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AccountPresenceClaimV1 {
+    account_id: String,
+    character_id: CharacterId,
+}
+
+impl AccountPresenceClaimV1 {
+    pub fn new(
+        account_id: &str,
+        character_id: CharacterId,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if !canonical_uuid(account_id) {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        Ok(Self {
+            account_id: account_id.to_owned(),
+            character_id,
+        })
+    }
+
+    pub fn from_identity(
+        identity: &ReconnectIdentityV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        Self::new(identity.account_id(), identity.character_id())
+    }
+
+    #[must_use]
+    pub fn account_id(&self) -> &str {
+        &self.account_id
+    }
+
+    #[must_use]
+    pub const fn character_id(&self) -> CharacterId {
+        self.character_id
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReconnectCurrentAuthorityV1 {
     identity: ReconnectIdentityV1,
+    current_account_presence: Option<AccountPresenceClaimV1>,
+    current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+    current_candidate: Option<ReconnectCandidateBindingV1>,
+    current_runtime_scope: RuntimeScopeRefV1,
     predecessor: ConnectionGeneration,
     authority: ReconnectAuthorityFenceV1,
     continuity_epoch: ControlLossEpochRefV1,
+    original_grace_deadline: i64,
     proof: ReconnectProofV1,
     fnd02: Fnd02ReconciliationFenceV1,
     protocol_major: u32,
@@ -817,12 +1198,97 @@ pub struct ReconnectCurrentAuthorityV1 {
     observed_at: i64,
 }
 impl ReconnectCurrentAuthorityV1 {
-    pub fn from_record(record: &ReconnectDurabilityRecordV1, observed_at: i64) -> Result<Self, ReconnectDurabilityErrorV1> {
-        if observed_at < 0 { return Err(ReconnectDurabilityErrorV1::InvalidRecord); }
-        let compatibility = record.compatibility();
+    #[allow(clippy::too_many_arguments)]
+    pub fn from_current_facts(
+        record: &ReconnectDurabilityRecordV1,
+        current_account_presence: Option<AccountPresenceClaimV1>,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+        current_candidate: Option<ReconnectCandidateBindingV1>,
+        current_runtime_scope: RuntimeScopeRefV1,
+        predecessor: ConnectionGeneration,
+        authority: ReconnectAuthorityFenceV1,
+        continuity_epoch: ControlLossEpochRefV1,
+        original_grace_deadline: i64,
+        proof: ReconnectProofV1,
+        fnd02: Fnd02ReconciliationFenceV1,
+        compatibility: ReconnectCompatibilityEvidenceV1,
+        session_state: GameSessionState,
+        current_controller_present: bool,
+        observed_at: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if observed_at < 0
+            || original_grace_deadline <= 0
+            || current_runtime_scope.world_id() != record.identity().world_id()
+            || !proof.validate()
+        {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
         Ok(Self {
-            identity: record.identity().clone(), predecessor: record.connection().predecessor(), authority: record.authority(), continuity_epoch: record.continuity().control_loss_epoch(), proof: record.proof().clone(), fnd02: record.fnd02().clone(), protocol_major: compatibility.protocol_major(), transport_profile: compatibility.transport_profile(), ruleset_revision: compatibility.ruleset_revision().to_owned(), content_revision: compatibility.content_revision().to_owned(), map_revision: compatibility.map_revision().to_owned(), world_policy_revision: compatibility.world_policy_revision().to_owned(), account_security_generation: compatibility.account_security_generation(), platform_security_evidence: compatibility.platform_security_evidence().clone(), proof_trust_evidence: compatibility.proof_trust_evidence().clone(), credential_expiration: compatibility.credential_expiration(), session_state: GameSessionState::Reconnectable, current_controller_present: false, observed_at,
+            identity: record.identity().clone(),
+            current_account_presence,
+            current_character_world_eligibility,
+            current_candidate,
+            current_runtime_scope,
+            predecessor,
+            authority,
+            continuity_epoch,
+            original_grace_deadline,
+            proof,
+            fnd02,
+            protocol_major: compatibility.protocol_major(),
+            transport_profile: compatibility.transport_profile(),
+            ruleset_revision: compatibility.ruleset_revision().to_owned(),
+            content_revision: compatibility.content_revision().to_owned(),
+            map_revision: compatibility.map_revision().to_owned(),
+            world_policy_revision: compatibility.world_policy_revision().to_owned(),
+            account_security_generation: compatibility.account_security_generation(),
+            platform_security_evidence: compatibility.platform_security_evidence().clone(),
+            proof_trust_evidence: compatibility.proof_trust_evidence().clone(),
+            credential_expiration: compatibility.credential_expiration(),
+            session_state,
+            current_controller_present,
+            observed_at,
         })
+    }
+
+    #[cfg(test)]
+    pub fn from_record(
+        record: &ReconnectDurabilityRecordV1,
+        observed_at: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        Self::from_current_facts(
+            record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
+            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            observed_at,
+        )
+    }
+
+    pub fn with_current_runtime_scope(
+        mut self,
+        current_runtime_scope: RuntimeScopeRefV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if current_runtime_scope.world_id() != self.identity.world_id() {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        self.current_runtime_scope = current_runtime_scope;
+        Ok(self)
+    }
+
+    #[must_use]
+    pub const fn current_runtime_scope(&self) -> RuntimeScopeRefV1 {
+        self.current_runtime_scope
     }
 }
 
@@ -875,6 +1341,326 @@ pub enum ReconnectProjectionDecisionV1 {
     Terminal,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReconnectDurableTerminalDispositionV1 {
+    TransportRefCollision,
+    ConcurrentPrepared,
+    StaleAuthority,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReconnectDurableOutcomeV2 {
+    Prepared,
+    Committed {
+        current_generation: ConnectionGeneration,
+        current_transport_ref: AuthenticatedTransportRefV1,
+    },
+    Terminal {
+        disposition: ReconnectDurableTerminalDispositionV1,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReconnectDurableReconciliationSnapshotV2 {
+    record: ReconnectDurabilityRecordV1,
+    outcome: ReconnectDurableOutcomeV2,
+}
+
+impl ReconnectDurableReconciliationSnapshotV2 {
+    #[must_use]
+    pub fn new(record: ReconnectDurabilityRecordV1, outcome: ReconnectDurableOutcomeV2) -> Self {
+        Self { record, outcome }
+    }
+
+    #[must_use]
+    pub const fn record(&self) -> &ReconnectDurabilityRecordV1 {
+        &self.record
+    }
+
+    #[must_use]
+    pub const fn outcome(&self) -> ReconnectDurableOutcomeV2 {
+        self.outcome
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReconnectPrepareRequestV2 {
+    record: Box<ReconnectDurabilityRecordV1>,
+    terminal_replacement: Option<TerminalGameSessionReplacementAuthorizationV1>,
+}
+
+impl ReconnectPrepareRequestV2 {
+    #[must_use]
+    pub fn record(&self) -> &ReconnectDurabilityRecordV1 {
+        &self.record
+    }
+
+    #[must_use]
+    pub const fn terminal_replacement(
+        &self,
+    ) -> Option<&TerminalGameSessionReplacementAuthorizationV1> {
+        self.terminal_replacement.as_ref()
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReconnectPrepareDispositionV2 {
+    Prepared,
+    ExistingPrepared,
+    RejectedTransportRefCollision,
+    RejectedConcurrentPrepared,
+    RejectedStaleAuthority,
+    AttemptCapacityExceeded,
+    ExistingTerminal {
+        disposition: ReconnectDurableTerminalDispositionV1,
+    },
+    Unavailable,
+    Ambiguous,
+    IdempotencyConflict,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReconnectPrepareCompletionV2 {
+    request: ReconnectPrepareRequestV2,
+    disposition: ReconnectPrepareDispositionV2,
+}
+
+impl ReconnectPrepareCompletionV2 {
+    #[must_use]
+    pub fn for_request(
+        request: &ReconnectPrepareRequestV2,
+        disposition: ReconnectPrepareDispositionV2,
+    ) -> Self {
+        Self {
+            request: request.clone(),
+            disposition,
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReconnectPrepareActionV2 {
+    RetrySameRequest(ReconnectPrepareRequestV2),
+    AwaitFinalRevalidation,
+    ReconcileSameAttempt,
+    Terminal(ReconnectPrepareDispositionV2),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ReconnectProjectionDecisionV2 {
+    InstallController {
+        generation: ConnectionGeneration,
+        transport_ref: AuthenticatedTransportRefV1,
+    },
+    AwaitFinalRevalidation,
+    Terminal {
+        disposition: ReconnectDurableTerminalDispositionV1,
+    },
+}
+
+impl ReconnectProjectionDecisionV2 {
+    #[must_use]
+    pub const fn terminal_disposition(self) -> Option<ReconnectDurableTerminalDispositionV1> {
+        match self {
+            Self::Terminal { disposition } => Some(disposition),
+            Self::InstallController { .. } | Self::AwaitFinalRevalidation => None,
+        }
+    }
+}
+
+fn v1_budget_disposition_for_terminal(
+    disposition: ReconnectDurableTerminalDispositionV1,
+) -> ReconnectPrepareDispositionV1 {
+    match disposition {
+        ReconnectDurableTerminalDispositionV1::TransportRefCollision => {
+            ReconnectPrepareDispositionV1::RejectedTransportRefCollision
+        }
+        ReconnectDurableTerminalDispositionV1::ConcurrentPrepared => {
+            ReconnectPrepareDispositionV1::RejectedConcurrentPrepared
+        }
+        ReconnectDurableTerminalDispositionV1::StaleAuthority => {
+            ReconnectPrepareDispositionV1::RejectedStaleAuthority
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReconnectDurabilityFlowV2 {
+    record: ReconnectDurabilityRecordV1,
+    prepare_request: ReconnectPrepareRequestV2,
+    phase: ReconnectDurabilityPhaseV1,
+}
+
+impl ReconnectDurabilityFlowV2 {
+    #[must_use]
+    pub fn begin(
+        record: ReconnectDurabilityRecordV1,
+        terminal_replacement: Option<TerminalGameSessionReplacementAuthorizationV1>,
+    ) -> (Self, ReconnectPrepareRequestV2) {
+        let prepare_request = ReconnectPrepareRequestV2 {
+            record: Box::new(record.clone()),
+            terminal_replacement,
+        };
+        (
+            Self {
+                record,
+                prepare_request: prepare_request.clone(),
+                phase: ReconnectDurabilityPhaseV1::PendingPrepare,
+            },
+            prepare_request,
+        )
+    }
+
+    #[must_use]
+    pub const fn phase(&self) -> ReconnectDurabilityPhaseV1 {
+        self.phase
+    }
+
+    pub fn accept_prepare_completion(
+        &mut self,
+        completion: ReconnectPrepareCompletionV2,
+        budget: &mut ReconnectAttemptBudgetV1,
+    ) -> Result<ReconnectPrepareActionV2, ReconnectDurabilityErrorV1> {
+        if self.phase != ReconnectDurabilityPhaseV1::PendingPrepare {
+            return Err(ReconnectDurabilityErrorV1::InvalidPhase);
+        }
+        if completion.request != self.prepare_request {
+            return Err(ReconnectDurabilityErrorV1::CompletionMismatch);
+        }
+
+        let attempt = self.record.identity().reconnect_attempt_ref();
+        let transport_ref = self.record.connection().transport_ref();
+        match completion.disposition {
+            ReconnectPrepareDispositionV2::Prepared => {
+                budget.accept_prepare_completion(
+                    attempt,
+                    transport_ref,
+                    ReconnectPrepareDispositionV1::Prepared,
+                )?;
+                self.phase = ReconnectDurabilityPhaseV1::AwaitFinalRevalidation;
+                Ok(ReconnectPrepareActionV2::AwaitFinalRevalidation)
+            }
+            ReconnectPrepareDispositionV2::ExistingPrepared => {
+                budget.accept_prepare_completion(
+                    attempt,
+                    transport_ref,
+                    ReconnectPrepareDispositionV1::ExistingPrepared,
+                )?;
+                self.phase = ReconnectDurabilityPhaseV1::AwaitFinalRevalidation;
+                Ok(ReconnectPrepareActionV2::AwaitFinalRevalidation)
+            }
+            ReconnectPrepareDispositionV2::Unavailable => Ok(
+                ReconnectPrepareActionV2::RetrySameRequest(self.prepare_request.clone()),
+            ),
+            ReconnectPrepareDispositionV2::Ambiguous => {
+                self.phase = ReconnectDurabilityPhaseV1::ReconciliationRequired;
+                Ok(ReconnectPrepareActionV2::ReconcileSameAttempt)
+            }
+            ReconnectPrepareDispositionV2::RejectedTransportRefCollision => {
+                budget.accept_prepare_completion(
+                    attempt,
+                    transport_ref,
+                    ReconnectPrepareDispositionV1::RejectedTransportRefCollision,
+                )?;
+                self.phase = ReconnectDurabilityPhaseV1::Terminal;
+                Ok(ReconnectPrepareActionV2::Terminal(
+                    ReconnectPrepareDispositionV2::RejectedTransportRefCollision,
+                ))
+            }
+            ReconnectPrepareDispositionV2::RejectedConcurrentPrepared => {
+                budget.accept_prepare_completion(
+                    attempt,
+                    transport_ref,
+                    ReconnectPrepareDispositionV1::RejectedConcurrentPrepared,
+                )?;
+                self.phase = ReconnectDurabilityPhaseV1::Terminal;
+                Ok(ReconnectPrepareActionV2::Terminal(
+                    ReconnectPrepareDispositionV2::RejectedConcurrentPrepared,
+                ))
+            }
+            ReconnectPrepareDispositionV2::RejectedStaleAuthority => {
+                budget.accept_prepare_completion(
+                    attempt,
+                    transport_ref,
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority,
+                )?;
+                self.phase = ReconnectDurabilityPhaseV1::Terminal;
+                Ok(ReconnectPrepareActionV2::Terminal(
+                    ReconnectPrepareDispositionV2::RejectedStaleAuthority,
+                ))
+            }
+            ReconnectPrepareDispositionV2::ExistingTerminal { disposition } => {
+                budget.accept_prepare_completion(
+                    attempt,
+                    transport_ref,
+                    v1_budget_disposition_for_terminal(disposition),
+                )?;
+                self.phase = ReconnectDurabilityPhaseV1::Terminal;
+                Ok(ReconnectPrepareActionV2::Terminal(
+                    ReconnectPrepareDispositionV2::ExistingTerminal { disposition },
+                ))
+            }
+            terminal @ (ReconnectPrepareDispositionV2::AttemptCapacityExceeded
+            | ReconnectPrepareDispositionV2::IdempotencyConflict) => {
+                self.phase = ReconnectDurabilityPhaseV1::Terminal;
+                Ok(ReconnectPrepareActionV2::Terminal(terminal))
+            }
+        }
+    }
+
+    pub fn accept_reconciliation(
+        &mut self,
+        snapshot: ReconnectDurableReconciliationSnapshotV2,
+        current: ReconnectCurrentAuthorityV1,
+        budget: &mut ReconnectAttemptBudgetV1,
+    ) -> Result<ReconnectProjectionDecisionV2, ReconnectDurabilityErrorV1> {
+        if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired {
+            return Err(ReconnectDurabilityErrorV1::InvalidPhase);
+        }
+        if snapshot.record != self.record {
+            return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
+        }
+
+        match snapshot.outcome {
+            ReconnectDurableOutcomeV2::Prepared => {
+                budget.accept_prepare_completion(
+                    self.record.identity().reconnect_attempt_ref(),
+                    self.record.connection().transport_ref(),
+                    ReconnectPrepareDispositionV1::ExistingPrepared,
+                )?;
+                self.phase = ReconnectDurabilityPhaseV1::AwaitFinalRevalidation;
+                Ok(ReconnectProjectionDecisionV2::AwaitFinalRevalidation)
+            }
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation,
+                current_transport_ref,
+            } => {
+                if current_generation != self.record.connection().candidate()
+                    || current_transport_ref != self.record.connection().transport_ref()
+                    || current.observed_at > self.record.authorization_deadline()?
+                    || !current_authority_matches_record(&self.record, &current)?
+                {
+                    return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
+                }
+                self.phase = ReconnectDurabilityPhaseV1::Completed;
+                Ok(ReconnectProjectionDecisionV2::InstallController {
+                    generation: current_generation,
+                    transport_ref: current_transport_ref,
+                })
+            }
+            ReconnectDurableOutcomeV2::Terminal { disposition } => {
+                budget.accept_prepare_completion(
+                    self.record.identity().reconnect_attempt_ref(),
+                    self.record.connection().transport_ref(),
+                    v1_budget_disposition_for_terminal(disposition),
+                )?;
+                self.phase = ReconnectDurabilityPhaseV1::Terminal;
+                Ok(ReconnectProjectionDecisionV2::Terminal { disposition })
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReconnectDurabilityFlowV1 {
     record: ReconnectDurabilityRecordV1,
@@ -896,16 +1682,15 @@ impl ReconnectDurabilityFlowV1 {
         match completion.disposition {
             ReconnectPrepareDispositionV1::Prepared | ReconnectPrepareDispositionV1::ExistingPrepared => { self.phase = ReconnectDurabilityPhaseV1::AwaitFinalRevalidation; Ok(ReconnectPrepareActionV1::AwaitFinalRevalidation) }
             ReconnectPrepareDispositionV1::Unavailable => Ok(ReconnectPrepareActionV1::RetrySameRequest(self.prepare_request.clone())),
-            ReconnectPrepareDispositionV1::Ambiguous => { self.phase = ReconnectDurabilityPhaseV1::ReconciliationRequired; Ok(ReconnectPrepareActionV1::ReconcileSameAttempt) }
+            ReconnectPrepareDispositionV1::Ambiguous | ReconnectPrepareDispositionV1::ExistingTerminal => { self.phase = ReconnectDurabilityPhaseV1::ReconciliationRequired; Ok(ReconnectPrepareActionV1::ReconcileSameAttempt) }
             terminal => { self.phase = ReconnectDurabilityPhaseV1::Terminal; Ok(ReconnectPrepareActionV1::Terminal(terminal)) }
         }
     }
     pub fn authorize_commit(&mut self, current: ReconnectCurrentAuthorityV1, now: i64) -> Result<ReconnectCommitRequestV1, ReconnectDurabilityErrorV1> {
         if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation { return Err(ReconnectDurabilityErrorV1::InvalidPhase); }
-        let expected = ReconnectCurrentAuthorityV1::from_record(&self.record, current.observed_at)?;
-        if current != expected || current.session_state != GameSessionState::Reconnectable || current.current_controller_present { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
+        if !current_authority_matches_record(&self.record, &current)? || !authenticated_evidence_observed_by(&self.record, now) { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
         let deadline = self.record.authorization_deadline()?;
-        if now > deadline { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::DeadlineExpired); }
+        if now > deadline || current.observed_at > deadline { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::DeadlineExpired); }
         let request = ReconnectCommitRequestV1 { record: Box::new(self.record.clone()), authorization: ReconnectCommitAuthorizationV1 { authorization_deadline: deadline } };
         self.commit_request = Some(request.clone()); self.phase = ReconnectDurabilityPhaseV1::PendingCommit; Ok(request)
     }
@@ -918,12 +1703,12 @@ impl ReconnectDurabilityFlowV1 {
             terminal => { self.phase = ReconnectDurabilityPhaseV1::Terminal; Ok(ReconnectCommitActionV1::Terminal(terminal)) }
         }
     }
-    pub fn accept_reconciliation(&mut self, snapshot: ReconnectDurableReconciliationSnapshotV1, current_scope_generation: ScopeOwnershipGeneration) -> Result<ReconnectProjectionDecisionV1, ReconnectDurabilityErrorV1> {
+    pub fn accept_reconciliation(&mut self, snapshot: ReconnectDurableReconciliationSnapshotV1, current: ReconnectCurrentAuthorityV1) -> Result<ReconnectProjectionDecisionV1, ReconnectDurabilityErrorV1> {
         if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired { return Err(ReconnectDurabilityErrorV1::InvalidPhase); }
-        if snapshot.record != self.record || current_scope_generation != self.record.authority().scope_ownership_generation() { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }
+        if snapshot.record != self.record { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }
         match snapshot.durable_state {
             DurableReconnectStateV1::Prepared => { if snapshot.current_generation.is_some() || snapshot.current_transport_ref.is_some() { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); } self.phase = ReconnectDurabilityPhaseV1::AwaitFinalRevalidation; Ok(ReconnectProjectionDecisionV1::AwaitFinalRevalidation) }
-            DurableReconnectStateV1::Committed => { if snapshot.current_generation != Some(self.record.connection().candidate()) || snapshot.current_transport_ref != Some(self.record.connection().transport_ref()) { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); } self.phase = ReconnectDurabilityPhaseV1::Completed; Ok(ReconnectProjectionDecisionV1::InstallController { generation: self.record.connection().candidate(), transport_ref: self.record.connection().transport_ref() }) }
+            DurableReconnectStateV1::Committed => { if snapshot.current_generation != Some(self.record.connection().candidate()) || snapshot.current_transport_ref != Some(self.record.connection().transport_ref()) || current.observed_at > self.record.authorization_deadline()? || !current_authority_matches_record(&self.record, &current)? { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); } self.phase = ReconnectDurabilityPhaseV1::Completed; Ok(ReconnectProjectionDecisionV1::InstallController { generation: self.record.connection().candidate(), transport_ref: self.record.connection().transport_ref() }) }
             DurableReconnectStateV1::Terminal => { self.phase = ReconnectDurabilityPhaseV1::Terminal; Ok(ReconnectProjectionDecisionV1::Terminal) }
         }
     }
@@ -1051,7 +1836,7 @@ mod durability_reconnect_v1_tests {
         assert_eq!(snapshot.durable_state, DurableReconnectStateV1::Terminal);
         assert_eq!(snapshot.current_generation, None);
         assert_eq!(snapshot.current_transport_ref, None);
-        assert_eq!(flow.accept_reconciliation(snapshot, record.authority().scope_ownership_generation())?, ReconnectProjectionDecisionV1::Terminal);
+        assert_eq!(flow.accept_reconciliation(snapshot, ReconnectCurrentAuthorityV1::from_record(&record, 105)?)?, ReconnectProjectionDecisionV1::Terminal);
         assert_eq!(flow.phase(), ReconnectDurabilityPhaseV1::Terminal);
         Ok(())
     }
@@ -1081,12 +1866,346 @@ mod durability_reconnect_v1_tests {
         let commit_request = flow.authorize_commit(ReconnectCurrentAuthorityV1::from_record(&record, 105)?, 104)?;
         assert_eq!(flow.accept_commit_completion(ReconnectCommitCompletionV1::for_request(&commit_request, ReconnectCommitDispositionV1::Ambiguous))?, ReconnectCommitActionV1::ReconcileSameAttempt);
         assert_eq!(flow.phase(), ReconnectDurabilityPhaseV1::ReconciliationRequired);
-        assert_eq!(flow.accept_reconciliation(ReconnectDurableReconciliationSnapshotV1::committed(record.clone()), record.authority().scope_ownership_generation())?, ReconnectProjectionDecisionV1::InstallController { generation: record.connection().candidate(), transport_ref: record.connection().transport_ref() });
+        assert_eq!(flow.accept_reconciliation(ReconnectDurableReconciliationSnapshotV1::committed(record.clone()), ReconnectCurrentAuthorityV1::from_record(&record, 105)?)?, ReconnectProjectionDecisionV1::InstallController { generation: record.connection().candidate(), transport_ref: record.connection().transport_ref() });
         let (mut mismatch_flow, mismatch_request) = ReconnectDurabilityFlowV1::begin(record.clone());
         mismatch_flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(&mismatch_request, ReconnectPrepareDispositionV1::Ambiguous))?;
-        let mut mismatch = ReconnectDurableReconciliationSnapshotV1::committed(record);
+        let mut mismatch = ReconnectDurableReconciliationSnapshotV1::committed(record.clone());
         mismatch.current_transport_ref = Some(AuthenticatedTransportRefV1::decode(&[7u8; 16]).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?);
-        assert_eq!(mismatch_flow.accept_reconciliation(mismatch, ScopeOwnershipGeneration::new(10).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?), Err(ReconnectDurabilityErrorV1::ReconciliationMismatch));
+        assert_eq!(mismatch_flow.accept_reconciliation(mismatch, ReconnectCurrentAuthorityV1::from_record(&record, 105)?), Err(ReconnectDurabilityErrorV1::ReconciliationMismatch));
+        Ok(())
+    }
+}
+
+impl ReconnectDurabilityFlowV2 {
+    pub fn authorize_commit(
+        &mut self,
+        current: ReconnectCurrentAuthorityV1,
+        now: i64,
+    ) -> Result<ReconnectCommitRequestV1, ReconnectDurabilityErrorV1> {
+        if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation {
+            return Err(ReconnectDurabilityErrorV1::InvalidPhase);
+        }
+        if !current_authority_matches_record(&self.record, &current)?
+            || !authenticated_evidence_observed_by(&self.record, now)
+        {
+            self.phase = ReconnectDurabilityPhaseV1::Terminal;
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        }
+        let deadline = self.record.authorization_deadline()?;
+        if now > deadline || current.observed_at > deadline {
+            self.phase = ReconnectDurabilityPhaseV1::Terminal;
+            return Err(ReconnectDurabilityErrorV1::DeadlineExpired);
+        }
+        let request = ReconnectCommitRequestV1 {
+            record: Box::new(self.record.clone()),
+            authorization: ReconnectCommitAuthorizationV1 {
+                authorization_deadline: deadline,
+            },
+        };
+        self.phase = ReconnectDurabilityPhaseV1::PendingCommit;
+        Ok(request)
+    }
+
+    pub fn accept_commit_completion(
+        &mut self,
+        completion: ReconnectCommitCompletionV1,
+    ) -> Result<ReconnectCommitActionV1, ReconnectDurabilityErrorV1> {
+        if self.phase != ReconnectDurabilityPhaseV1::PendingCommit {
+            return Err(ReconnectDurabilityErrorV1::InvalidPhase);
+        }
+        let expected = ReconnectCommitRequestV1 {
+            record: Box::new(self.record.clone()),
+            authorization: ReconnectCommitAuthorizationV1 {
+                authorization_deadline: self.record.authorization_deadline()?,
+            },
+        };
+        if completion.request != expected {
+            return Err(ReconnectDurabilityErrorV1::CompletionMismatch);
+        }
+        match completion.disposition {
+            ReconnectCommitDispositionV1::Unavailable => {
+                Ok(ReconnectCommitActionV1::RetrySameRequest(completion.request))
+            }
+            ReconnectCommitDispositionV1::Committed | ReconnectCommitDispositionV1::Ambiguous => {
+                self.phase = ReconnectDurabilityPhaseV1::ReconciliationRequired;
+                Ok(ReconnectCommitActionV1::ReconcileSameAttempt)
+            }
+            terminal => {
+                self.phase = ReconnectDurabilityPhaseV1::Terminal;
+                Ok(ReconnectCommitActionV1::Terminal(terminal))
+            }
+        }
+    }
+}
+
+fn current_authority_matches_record(
+    record: &ReconnectDurabilityRecordV1,
+    current: &ReconnectCurrentAuthorityV1,
+) -> Result<bool, ReconnectDurabilityErrorV1> {
+    let identity = record.identity();
+    let compatibility = record.compatibility();
+    Ok(authenticated_evidence_observed_by(record, current.observed_at)
+        && current.identity == *identity
+        && current.current_account_presence
+            == Some(AccountPresenceClaimV1::from_identity(identity)?)
+        && current.current_character_world_eligibility
+            == Some(CharacterWorldEligibilityClaimV1::from_identity(identity))
+        && current.current_candidate == Some(ReconnectCandidateBindingV1::from_record(record)?)
+        && current.current_runtime_scope == identity.runtime_scope()
+        && current.predecessor == record.connection().predecessor()
+        && current.authority == record.authority()
+        && current.continuity_epoch == record.continuity().control_loss_epoch()
+        && current.original_grace_deadline == record.continuity().original_grace_deadline()
+        && current.proof == *record.proof()
+        && current.fnd02 == *record.fnd02()
+        && current.protocol_major == compatibility.protocol_major()
+        && current.transport_profile == compatibility.transport_profile()
+        && current.ruleset_revision == compatibility.ruleset_revision()
+        && current.content_revision == compatibility.content_revision()
+        && current.map_revision == compatibility.map_revision()
+        && current.world_policy_revision == compatibility.world_policy_revision()
+        && current.account_security_generation == compatibility.account_security_generation()
+        && current.platform_security_evidence == *compatibility.platform_security_evidence()
+        && current.proof_trust_evidence == *compatibility.proof_trust_evidence()
+        && current.credential_expiration == compatibility.credential_expiration()
+        && current
+            .current_candidate
+            .is_some_and(|candidate| candidate.is_live_at(current.observed_at))
+        && current.session_state == GameSessionState::Reconnectable
+        && !current.current_controller_present)
+}
+
+fn authenticated_evidence_observed_by(record: &ReconnectDurabilityRecordV1, observed_at: i64) -> bool {
+    let compatibility = record.compatibility();
+    observed_at >= compatibility.platform_security_evidence().source_observed_at()
+        && observed_at >= compatibility.proof_trust_evidence().source_observed_at()
+}
+
+#[cfg(test)]
+mod durability_reconnect_v2_commit_phase_regression_tests {
+    use super::*;
+
+    fn uuid_v7(raw: u64) -> [u8; 16] {
+        let mut out = [0_u8; 16];
+        out[8..].copy_from_slice(&raw.to_be_bytes());
+        out[6] = 0x70;
+        out[8] = (out[8] & 0x3f) | 0x80;
+        out
+    }
+
+    fn sample_record(
+        attempt_raw: u64,
+        transport_byte: u8,
+    ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        let game_session_id = GameSessionId::decode(&uuid_v7(10))
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let character_id = CharacterId::decode(&uuid_v7(11))
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let world_id = WorldId::decode(&uuid_v7(12))
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let channel_id = ChannelId::decode(&uuid_v7(13))
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        let identity = ReconnectIdentityV1::new(
+            game_session_id,
+            ReconnectAttemptRef::new(attempt_raw)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            "123e4567-e89b-12d3-a456-426614174000",
+            character_id,
+            world_id,
+            RuntimeScopeRefV1::channel(world_id, channel_id),
+        )?;
+        let connection = ReconnectConnectionFenceV1::new(
+            ConnectionGeneration::new(7)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            ConnectionGeneration::new(8)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            AuthenticatedTransportRefV1::decode(&[transport_byte; 16])
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?;
+        let authority = ReconnectAuthorityFenceV1::new(
+            9,
+            ScopeOwnershipGeneration::new(10)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+        )?;
+        let continuity = ReconnectContinuityV1::new(
+            ControlLossEpochRefV1::new(3)?,
+            120,
+            115,
+            ProtectionEntitlementV1::unused(),
+        )?;
+        let fnd02 = Fnd02ReconciliationFenceV1::new(
+            CommandId::new(3).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            vec![],
+            41,
+            vec![],
+        )?;
+        let platform = AuthorityEvidenceFenceV1::new(
+            "platform-security",
+            "reconnect",
+            "account",
+            "sec:17",
+            "decision:sec:17",
+            100,
+        )?;
+        let trust = AuthorityEvidenceFenceV1::new(
+            "proof-trust",
+            "reconnect",
+            "recovery-key",
+            "trust:21",
+            "decision:trust:21",
+            101,
+        )?;
+        let compatibility = ReconnectCompatibilityEvidenceV1::new(
+            1,
+            1,
+            "rules:1",
+            "content:2",
+            "map:3",
+            "world:4",
+            12,
+            platform,
+            trust,
+            Some(110),
+        )?;
+        ReconnectDurabilityRecordV1::new(
+            identity,
+            connection,
+            authority,
+            continuity,
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce: [0x55; 32],
+            },
+            fnd02,
+            compatibility,
+        )
+    }
+
+    #[test]
+    fn direct_and_reconciled_v2_prepared_paths_preserve_commit_progression(
+    ) -> Result<(), ReconnectDurabilityErrorV1> {
+        let direct_record = sample_record(20, 20)?;
+        let mut direct_budget =
+            ReconnectAttemptBudgetV1::new(direct_record.continuity().control_loss_epoch());
+        direct_budget.reserve(
+            direct_record.identity().reconnect_attempt_ref(),
+            direct_record.connection().transport_ref(),
+        )?;
+        let (mut direct_flow, direct_request) =
+            ReconnectDurabilityFlowV2::begin(direct_record.clone(), None);
+        assert_eq!(
+            direct_flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &direct_request,
+                    ReconnectPrepareDispositionV2::Prepared,
+                ),
+                &mut direct_budget,
+            )?,
+            ReconnectPrepareActionV2::AwaitFinalRevalidation
+        );
+        let direct_commit = direct_flow.authorize_commit(
+            ReconnectCurrentAuthorityV1::from_record(&direct_record, 105)?,
+            104,
+        )?;
+        assert_eq!(direct_flow.phase(), ReconnectDurabilityPhaseV1::PendingCommit);
+        assert_eq!(
+            direct_flow.accept_commit_completion(ReconnectCommitCompletionV1::for_request(
+                &direct_commit,
+                ReconnectCommitDispositionV1::Ambiguous,
+            ))?,
+            ReconnectCommitActionV1::ReconcileSameAttempt
+        );
+
+        let reconciled_record = sample_record(21, 21)?;
+        let mut reconciled_budget =
+            ReconnectAttemptBudgetV1::new(reconciled_record.continuity().control_loss_epoch());
+        reconciled_budget.reserve(
+            reconciled_record.identity().reconnect_attempt_ref(),
+            reconciled_record.connection().transport_ref(),
+        )?;
+        let (mut reconciled_flow, reconciled_request) =
+            ReconnectDurabilityFlowV2::begin(reconciled_record.clone(), None);
+        assert_eq!(
+            reconciled_flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &reconciled_request,
+                    ReconnectPrepareDispositionV2::Ambiguous,
+                ),
+                &mut reconciled_budget,
+            )?,
+            ReconnectPrepareActionV2::ReconcileSameAttempt
+        );
+        assert_eq!(
+            reconciled_flow.accept_reconciliation(
+                ReconnectDurableReconciliationSnapshotV2::new(
+                    reconciled_record.clone(),
+                    ReconnectDurableOutcomeV2::Prepared,
+                ),
+                ReconnectCurrentAuthorityV1::from_record(&reconciled_record, 105)?,
+                &mut reconciled_budget,
+            )?,
+            ReconnectProjectionDecisionV2::AwaitFinalRevalidation
+        );
+        let reconciled_commit = reconciled_flow.authorize_commit(
+            ReconnectCurrentAuthorityV1::from_record(&reconciled_record, 105)?,
+            104,
+        )?;
+        assert_eq!(
+            reconciled_flow.accept_commit_completion(ReconnectCommitCompletionV1::for_request(
+                &reconciled_commit,
+                ReconnectCommitDispositionV1::Committed,
+            ))?,
+            ReconnectCommitActionV1::ReconcileSameAttempt
+        );
+        assert_eq!(
+            reconciled_flow.phase(),
+            ReconnectDurabilityPhaseV1::ReconciliationRequired
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn v2_committed_reconciliation_revalidates_complete_current_authority(
+    ) -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record(31, 31)?;
+        let snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation: record.connection().candidate(),
+                current_transport_ref: record.connection().transport_ref(),
+            },
+        );
+        let reconcile = |current: ReconnectCurrentAuthorityV1| {
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+            budget.reserve(
+                record.identity().reconnect_attempt_ref(),
+                record.connection().transport_ref(),
+            )?;
+            let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Ambiguous,
+                ),
+                &mut budget,
+            )?;
+            flow.accept_reconciliation(snapshot.clone(), current, &mut budget)
+        };
+
+        assert!(matches!(
+            reconcile(ReconnectCurrentAuthorityV1::from_record(&record, 105)?)?,
+            ReconnectProjectionDecisionV2::InstallController { .. }
+        ));
+        assert_eq!(
+            reconcile(ReconnectCurrentAuthorityV1::from_record(&record, 106)?),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
+        let mut stale = ReconnectCurrentAuthorityV1::from_record(&record, 105)?;
+        stale.session_state = GameSessionState::Terminal;
+        assert_eq!(
+            reconcile(stale),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
         Ok(())
     }
 }

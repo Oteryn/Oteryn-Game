@@ -3,8 +3,11 @@
 //! Foundation and the protocol/runtime/admission seam are merged. Domain semantics are composed
 //! here while executable gameplay remains fail-closed until the later integration gates.
 
+extern crate self as oteryn_game_server;
+
 pub mod content;
 pub mod domain;
+pub mod durability;
 pub mod foundation;
 
 #[cfg(test)]
@@ -196,5 +199,377 @@ mod tests {
     #[test]
     fn bootstrap_smoke_stays_fail_closed() -> Result<(), BootstrapSmokeError> {
         bootstrap_smoke()
+    }
+}
+
+#[cfg(test)]
+mod v2_reconciled_prepared_budget_regression_tests {
+    use super::foundation::{
+        AccountPresenceClaimV1, AuthenticatedTransportRefV1, AuthorityEvidenceFenceV1, ChannelId,
+        CharacterId, CharacterLease, CharacterWorldEligibilityClaimV1, CommandId,
+        ConnectionGeneration, ControlLossEpochRefV1, Fnd02ReconciliationFenceV1,
+        FreshAdmissionCommit, FreshAdmissionFacts, GameSessionAuthoritySnapshot, GameSessionId,
+        GameSessionState, ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
+        ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1, ReconnectCandidateBindingV1,
+        ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
+        ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
+        ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+        ReconnectDurableReconciliationSnapshotV2, ReconnectIdentityV1, ReconnectPrepareActionV1,
+        ReconnectPrepareActionV2, ReconnectPrepareCompletionV1, ReconnectPrepareCompletionV2,
+        ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
+        ReconnectProjectionDecisionV2, ReconnectProofV1, RuntimeScopeRefV1,
+        ScopeOwnershipGeneration, TerminalGameSessionReplacementAuthorizationV1, WorldId,
+    };
+
+    fn invalid_record<E>(_error: E) -> ReconnectDurabilityErrorV1 {
+        ReconnectDurabilityErrorV1::InvalidRecord
+    }
+
+    fn uuid_v7(raw: u64) -> [u8; 16] {
+        let mut out = [0_u8; 16];
+        out[8..].copy_from_slice(&raw.to_be_bytes());
+        out[6] = 0x70;
+        out[8] = (out[8] & 0x3f) | 0x80;
+        out
+    }
+
+    fn sample_record() -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        let game_session_id = GameSessionId::decode(&uuid_v7(10)).map_err(invalid_record)?;
+        let character_id = CharacterId::decode(&uuid_v7(11)).map_err(invalid_record)?;
+        let world_id = WorldId::decode(&uuid_v7(12)).map_err(invalid_record)?;
+        let channel_id = ChannelId::decode(&uuid_v7(13)).map_err(invalid_record)?;
+        let identity = ReconnectIdentityV1::new(
+            game_session_id,
+            ReconnectAttemptRef::new(1).map_err(invalid_record)?,
+            "123e4567-e89b-12d3-a456-426614174000",
+            character_id,
+            world_id,
+            RuntimeScopeRefV1::channel(world_id, channel_id),
+        )?;
+        let connection = ReconnectConnectionFenceV1::new(
+            ConnectionGeneration::new(7).map_err(invalid_record)?,
+            ConnectionGeneration::new(8).map_err(invalid_record)?,
+            AuthenticatedTransportRefV1::decode(&[1_u8; 16]).map_err(invalid_record)?,
+        )?;
+        let authority = ReconnectAuthorityFenceV1::new(
+            9,
+            ScopeOwnershipGeneration::new(10).map_err(invalid_record)?,
+        )?;
+        let continuity = ReconnectContinuityV1::new(
+            ControlLossEpochRefV1::new(3)?,
+            120,
+            115,
+            ProtectionEntitlementV1::unused(),
+        )?;
+        let fnd02 = Fnd02ReconciliationFenceV1::new(
+            CommandId::new(1).map_err(invalid_record)?,
+            vec![],
+            41,
+            vec![],
+        )?;
+        let platform = AuthorityEvidenceFenceV1::new(
+            "platform-security",
+            "reconnect",
+            "account",
+            "sec:17",
+            "decision:sec:17",
+            100,
+        )?;
+        let trust = AuthorityEvidenceFenceV1::new(
+            "proof-trust",
+            "reconnect",
+            "recovery-key",
+            "trust:21",
+            "decision:trust:21",
+            101,
+        )?;
+        let compatibility = ReconnectCompatibilityEvidenceV1::new(
+            1,
+            1,
+            "rules:1",
+            "content:2",
+            "map:3",
+            "world:4",
+            12,
+            platform,
+            trust,
+            Some(110),
+        )?;
+        ReconnectDurabilityRecordV1::new(
+            identity,
+            connection,
+            authority,
+            continuity,
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce: [0x55; 32],
+            },
+            fnd02,
+            compatibility,
+        )
+    }
+
+    fn terminal_predecessor_snapshot()
+    -> Result<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>, ReconnectDurabilityErrorV1>
+    {
+        let character_id = CharacterId::decode(&uuid_v7(11)).map_err(invalid_record)?;
+        let world_id = WorldId::decode(&uuid_v7(12)).map_err(invalid_record)?;
+        let channel_id = ChannelId::decode(&uuid_v7(13)).map_err(invalid_record)?;
+        let facts = FreshAdmissionFacts::new([0x44; 32], character_id, world_id, channel_id, 9, 10)
+            .map_err(invalid_record)?;
+        let initial_transport =
+            AuthenticatedTransportRefV1::decode(&[0x70; 16]).map_err(invalid_record)?;
+        let commit = FreshAdmissionCommit::from_facts(
+            GameSessionId::decode(&uuid_v7(20)).map_err(invalid_record)?,
+            facts,
+            initial_transport,
+        )
+        .map_err(invalid_record)?;
+        GameSessionAuthoritySnapshot::from_current_facts(
+            commit,
+            GameSessionState::Terminal,
+            ConnectionGeneration::new(7).map_err(invalid_record)?,
+            None,
+            CharacterLease::new(character_id, 9).map_err(invalid_record)?,
+            Some(CharacterWorldEligibilityClaimV1::new(
+                character_id,
+                world_id,
+            )),
+            RuntimeScopeRefV1::channel(world_id, channel_id),
+            ScopeOwnershipGeneration::new(10).map_err(invalid_record)?,
+        )?
+        .with_control_loss_continuity(ControlLossEpochRefV1::new(3)?, 120)
+    }
+
+    #[test]
+    fn reconciled_prepared_marks_the_attempt_prepared_in_the_local_budget()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record()?;
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        assert_eq!(
+            budget.reserve(
+                record.identity().reconnect_attempt_ref(),
+                record.connection().transport_ref(),
+            )?,
+            ReconnectAttemptReservationV1::New
+        );
+        let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        assert_eq!(
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Ambiguous,
+                ),
+                &mut budget,
+            )?,
+            ReconnectPrepareActionV2::ReconcileSameAttempt
+        );
+        assert_eq!(
+            flow.accept_reconciliation(
+                ReconnectDurableReconciliationSnapshotV2::new(
+                    record.clone(),
+                    ReconnectDurableOutcomeV2::Prepared,
+                ),
+                ReconnectCurrentAuthorityV1::from_record(&record, 105)?,
+                &mut budget,
+            )?,
+            ReconnectProjectionDecisionV2::AwaitFinalRevalidation
+        );
+
+        let second_attempt = ReconnectAttemptRef::new(2).map_err(invalid_record)?;
+        let second_transport =
+            AuthenticatedTransportRefV1::decode(&[2_u8; 16]).map_err(invalid_record)?;
+        assert_eq!(
+            budget.reserve(second_attempt, second_transport)?,
+            ReconnectAttemptReservationV1::New
+        );
+        assert_eq!(
+            budget.accept_prepare_completion(
+                second_attempt,
+                second_transport,
+                ReconnectPrepareDispositionV1::Prepared,
+            ),
+            Err(ReconnectDurabilityErrorV1::ConcurrentPrepared)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn final_revalidation_rejects_same_world_different_runtime_scope()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record()?;
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        budget.reserve(
+            record.identity().reconnect_attempt_ref(),
+            record.connection().transport_ref(),
+        )?;
+        let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        assert_eq!(
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Prepared,
+                ),
+                &mut budget,
+            )?,
+            ReconnectPrepareActionV2::AwaitFinalRevalidation
+        );
+
+        let other_channel = ChannelId::decode(&uuid_v7(14)).map_err(invalid_record)?;
+        let current = ReconnectCurrentAuthorityV1::from_current_facts(
+            &record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
+            Some(ReconnectCandidateBindingV1::from_record(&record)?),
+            RuntimeScopeRefV1::channel(record.identity().world_id(), other_channel),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            105,
+        )?;
+        assert_eq!(
+            flow.authorize_commit(current, 104),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn final_revalidation_rejects_authority_observed_after_authorization_deadline()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record()?;
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        budget.reserve(
+            record.identity().reconnect_attempt_ref(),
+            record.connection().transport_ref(),
+        )?;
+        let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        assert_eq!(
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Prepared,
+                ),
+                &mut budget,
+            )?,
+            ReconnectPrepareActionV2::AwaitFinalRevalidation
+        );
+
+        let current = ReconnectCurrentAuthorityV1::from_current_facts(
+            &record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
+            Some(ReconnectCandidateBindingV1::from_record(&record)?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            106,
+        )?;
+        assert_eq!(
+            flow.authorize_commit(current, 104),
+            Err(ReconnectDurabilityErrorV1::DeadlineExpired)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn v1_final_revalidation_rejects_authority_observed_after_authorization_deadline()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record()?;
+        let (mut flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
+        assert_eq!(
+            flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                &request,
+                ReconnectPrepareDispositionV1::Prepared,
+            ))?,
+            ReconnectPrepareActionV1::AwaitFinalRevalidation
+        );
+        let current = ReconnectCurrentAuthorityV1::from_current_facts(
+            &record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
+            Some(ReconnectCandidateBindingV1::from_record(&record)?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            106,
+        )?;
+        assert_eq!(
+            flow.authorize_commit(current, 104),
+            Err(ReconnectDurabilityErrorV1::DeadlineExpired)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn terminal_replacement_authorization_requires_current_account_presence_at_prepare()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record()?;
+        let predecessor_session_id = GameSessionId::decode(&uuid_v7(20)).map_err(invalid_record)?;
+        let exact_presence = AccountPresenceClaimV1::from_identity(record.identity())?;
+        let reassigned_presence = AccountPresenceClaimV1::new(
+            record.identity().account_id(),
+            CharacterId::decode(&uuid_v7(99)).map_err(invalid_record)?,
+        )?;
+
+        assert!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                record.identity().account_id(),
+                Some(&exact_presence),
+                predecessor_session_id,
+                record.identity().game_session_id(),
+                terminal_predecessor_snapshot()?,
+                &record,
+            )
+            .is_ok()
+        );
+        assert_eq!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                record.identity().account_id(),
+                None,
+                predecessor_session_id,
+                record.identity().game_session_id(),
+                terminal_predecessor_snapshot()?,
+                &record,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+        assert_eq!(
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                record.identity().account_id(),
+                Some(&reassigned_presence),
+                predecessor_session_id,
+                record.identity().game_session_id(),
+                terminal_predecessor_snapshot()?,
+                &record,
+            ),
+            Err(ReconnectDurabilityErrorV1::StaleAuthority)
+        );
+        Ok(())
     }
 }
