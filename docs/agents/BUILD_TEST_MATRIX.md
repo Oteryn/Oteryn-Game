@@ -42,7 +42,7 @@ The PostgreSQL test target is present on protected main after terminal-replaceme
 - when the exact PR removes or renames that target, fail the required Linux job;
 - when the target is not yet allocated on the candidate or its PR diff, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
 
-Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Target classification validates the expected head and base SHA both before and after file enumeration, together with open state, repository identity and unchanged file count. An observed change fails before emitting a classification result.
+Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Both upstream scope and target classification enumerate the immutable comparison of exact base/head SHAs, retaining before/after PR identity checks. A transient A-to-B-to-A PR movement cannot substitute another revision's files. GitHub returns at most 300 files for a comparison: larger PRs, missing file arrays or a count mismatch fail closed, never omit evidence. Existing Rust path applicability is unchanged.
 
 The required governance job executes the focused PG/SIM regressions, including the real classifier script against controlled GitHub responses and both evidence-step skip families.
 
