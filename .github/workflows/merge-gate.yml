@@ -350,12 +350,31 @@ jobs:
     timeout-minutes: 45
     permissions:
       contents: read
+    services:
+      postgres:
+        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
       - name: Check out exact head
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
+
+      - name: Verify checked-out SHA
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
@@ -368,6 +387,11 @@ jobs:
 
       - name: Test workspace
         run: cargo +1.94.0 test --locked --workspace
+
+      - name: Run Durability PostgreSQL E2E
+        env:
+          OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+        run: cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres
 
       - name: Run synthetic harness
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
@@ -390,6 +414,15 @@ jobs:
           ref: ${{ needs.scope.outputs.target_sha }}
           persist-credentials: false
 
+      - name: Verify checked-out SHA
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}
+        run: |
+          if ((git rev-parse HEAD).Trim() -ne "$env:EXPECTED_SHA") {
+            throw "checked-out revision does not match exact pull request head"
+          }
+
       - name: Install Rust toolchain
         shell: pwsh
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
@@ -409,6 +442,10 @@ jobs:
       - name: Run synthetic harness
         shell: pwsh
         run: cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
+
+      - name: Verify deterministic simulation golden fixtures
+        shell: pwsh
+        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
 
   rust_supply_chain:
     name: Merge gate / Rust supply chain
