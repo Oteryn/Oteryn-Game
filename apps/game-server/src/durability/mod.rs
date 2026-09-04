@@ -1303,6 +1303,33 @@ mod terminal_replacement_foundation_red_tests {
         scope_generation: u64,
         attempt: u64,
     ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        candidate_record_with_evidence(
+            session_raw,
+            account_id,
+            character_raw,
+            world_raw,
+            predecessor_generation,
+            lease_generation,
+            scope_generation,
+            attempt,
+            100,
+            101,
+        )
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn candidate_record_with_evidence(
+        session_raw: u64,
+        account_id: &str,
+        character_raw: u64,
+        world_raw: u64,
+        predecessor_generation: u64,
+        lease_generation: u64,
+        scope_generation: u64,
+        attempt: u64,
+        platform_source_observed_at: i64,
+        trust_source_observed_at: i64,
+    ) -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
         let world_id = world(world_raw)?;
         let identity = ReconnectIdentityV1::new(
             game_session(session_raw)?,
@@ -1356,7 +1383,7 @@ mod terminal_replacement_foundation_red_tests {
             "account",
             "sec:17",
             "decision:sec:17",
-            100,
+            platform_source_observed_at,
         )?;
         let trust = AuthorityEvidenceFenceV1::new(
             "proof-trust",
@@ -1364,7 +1391,7 @@ mod terminal_replacement_foundation_red_tests {
             "recovery-key",
             "trust:21",
             "decision:trust:21",
-            101,
+            trust_source_observed_at,
         )?;
         let compatibility = ReconnectCompatibilityEvidenceV1::new(
             1,
@@ -1389,6 +1416,115 @@ mod terminal_replacement_foundation_red_tests {
             fnd02,
             compatibility,
         )
+    }
+
+    fn prepared_v1_flow(record: &ReconnectDurabilityRecordV1) -> ReconnectDurabilityFlowV1 {
+        let (mut flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
+        flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+            &request,
+            ReconnectPrepareDispositionV1::Prepared,
+        ))
+        .expect("prepare completion");
+        flow
+    }
+
+    fn prepared_v2_flow(record: &ReconnectDurabilityRecordV1) -> ReconnectDurabilityFlowV2 {
+        let mut budget = ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+        budget
+            .reserve(
+                record.identity().reconnect_attempt_ref(),
+                record.connection().transport_ref(),
+            )
+            .expect("reserve");
+        let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+        flow.accept_prepare_completion(
+            ReconnectPrepareCompletionV2::for_request(
+                &request,
+                ReconnectPrepareDispositionV2::Prepared,
+            ),
+            &mut budget,
+        )
+        .expect("prepare completion");
+        flow
+    }
+
+    #[test]
+    fn commit_authorization_rejects_future_authenticated_evidence_and_accepts_equal_timestamps() {
+        let exact = candidate_record_with_evidence(20, ACCOUNT, 11, 12, 7, 9, 10, 1, 105, 105)
+            .expect("exact record");
+        assert!(
+            prepared_v1_flow(&exact)
+                .authorize_commit(exact_current_authority(&exact, 105).expect("current"), 105)
+                .is_ok()
+        );
+        assert!(
+            prepared_v2_flow(&exact)
+                .authorize_commit(exact_current_authority(&exact, 105).expect("current"), 105)
+                .is_ok()
+        );
+
+        for (platform_at, trust_at) in [(106, 105), (105, 106)] {
+            let record = candidate_record_with_evidence(
+                20,
+                ACCOUNT,
+                11,
+                12,
+                7,
+                9,
+                10,
+                1,
+                platform_at,
+                trust_at,
+            )
+            .expect("future-evidence record");
+            assert_eq!(
+                prepared_v1_flow(&record).authorize_commit(
+                    exact_current_authority(&record, 105).expect("current"),
+                    105,
+                ),
+                Err(ReconnectDurabilityErrorV1::StaleAuthority)
+            );
+            assert_eq!(
+                prepared_v2_flow(&record).authorize_commit(
+                    exact_current_authority(&record, 105).expect("current"),
+                    105,
+                ),
+                Err(ReconnectDurabilityErrorV1::StaleAuthority)
+            );
+        }
+    }
+
+    #[test]
+    fn committed_reconciliation_rejects_authority_observed_before_authenticated_evidence() {
+        for (platform_at, trust_at) in [(106, 105), (105, 106)] {
+            let record = candidate_record_with_evidence(
+                20,
+                ACCOUNT,
+                11,
+                12,
+                7,
+                9,
+                10,
+                1,
+                platform_at,
+                trust_at,
+            )
+            .expect("future-evidence record");
+            let committed = ReconnectDurableReconciliationSnapshotV1::committed(record.clone());
+            let (mut flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
+            flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                &request,
+                ReconnectPrepareDispositionV1::Ambiguous,
+            ))
+            .expect("ambiguous prepare");
+            assert_eq!(
+                flow.accept_reconciliation(
+                    committed,
+                    exact_current_authority(&record, 105).expect("current"),
+                ),
+                Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+            );
+        }
     }
 
     fn predecessor_snapshot(
