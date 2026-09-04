@@ -19,7 +19,7 @@ Do not introduce Canary/legacy-Tibia compatibility code or an alternate login au
 
 ## Authority and recovery qualification discipline
 
-For a high-risk change that can authorize PREPARE or COMMIT, install or restore a controller, replace an authority-bearing session, or interpret persisted recovery evidence, use the executable model:
+For a high-risk change that performs a production mutation gated by current session, lease, generation, authority or other fence evidence; authorizes PREPARE or COMMIT; installs or restores a controller; replaces an authority-bearing session; or interprets persisted recovery evidence, use the executable model:
 
 ```text
 AuthorityInvariant × ConsumerBoundary × MutationOperator
@@ -28,12 +28,14 @@ AuthorityInvariant × ConsumerBoundary × MutationOperator
 Apply these rules before material freeze:
 
 - distinguish immutable prepared/persisted evidence from independently resolved current authority; immutable evidence may define the expected binding, but it is not current authority evidence;
-- production authority-granting APIs must consume independently supplied current facts and must not reconstruct those facts solely from the immutable record they are validating;
+- every production mutation or authority grant that consumes current authority/fence evidence must receive evidence sufficient for that boundary and must not reconstruct supposedly current facts solely from the immutable record being validated;
 - a record-derived matching helper may exist only as an explicitly test-only happy-path convenience and must not be used by negative authority, provenance or mutation cases;
-- classify invariants at least as identity/binding, current liveness/authority, or temporal/provenance, and mutate exactly one applicable invariant per negative case while leaving unrelated facts semantically valid;
-- cover every applicable authority-consuming boundary, including compatibility and typed versions, rather than treating scenario count as authority coverage;
+- classify invariants at least as identity/binding, current liveness/authority, or temporal/provenance;
+- enumerate the concrete applicable mutation operators rather than recording only a cardinality rule; consider at least missing facts, stale facts/generations, mismatched identity or binding, expired/future/non-monotonic time, provenance substitution and boundary-specific replay/concurrency operators, with explicit `NOT_APPLICABLE` evidence where an operator cannot apply;
+- each negative case changes exactly one applicable invariant while leaving unrelated facts semantically valid;
+- cover every applicable authority-consuming mutation boundary, including fenced durable writes, compatibility and typed versions, rather than treating scenario count as authority coverage;
 - run focused RED → minimal GREEN, deterministic affected validation, a finding-family sweep and a whole-diff adversarial self-review before freezing the material candidate.
 
-After a material P0 or P1 finding, the reviewed generation is superseded. Repair it test-first, then sweep sibling APIs, protocol versions, direct and reconciled paths, restart, retry/replay, concurrent replacement and PostgreSQL reload where applicable before requesting another deep review. Historical terminal outcomes may retain typed disposition without current live-authority equality, but they must never reacquire controller authority through a weaker compatibility path.
+On a material P0/P1 report, first verify applicability and correctness against the exact reviewed head. A verified rejection with exact evidence preserves the frozen candidate and does not require repair or re-review. Only an accepted/verified material finding supersedes the reviewed generation; repair it test-first, then sweep sibling APIs, protocol versions, direct and reconciled paths, fenced durable writes, restart, retry/replay, concurrent replacement and PostgreSQL reload where applicable before requesting another deep review. Historical terminal outcomes may retain typed disposition without current live-authority equality, but they must never reacquire controller authority through a weaker compatibility path.
 
-Every P0/P1 finding requires either a verified repair or a verified rejection with exact evidence. Every P2 requires an explicit `fixed`, `accepted` or `deferred` disposition. External AI review remains advisory under the META-owned policy and is never merge authority; repository gates, protection and Merge Queue remain authoritative.
+Every P0/P1 report requires an explicit verified disposition: accepted and repaired, or rejected with exact evidence. Every P2 requires an explicit `fixed`, `accepted` or `deferred` disposition. External AI review remains advisory under the META-owned policy and is never merge authority; repository gates, protection and Merge Queue remain authoritative.
