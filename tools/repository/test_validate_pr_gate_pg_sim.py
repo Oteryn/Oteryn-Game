@@ -220,9 +220,32 @@ def test_evidence_step_condition_family() -> None:
         ("rust_windows", "Verify deterministic simulation golden fixtures"),
     ):
         marker = f"      - name: {name}\n"
-        for condition in ('"if": false', "'if': false", "continue-on-error: true"):
+        for condition in ('"if": false', "'if': false", "continue-on-error: true", '"continue-on-error": true', "'continue-on-error': true"):
             errors = validate_mutated_gate(baseline.replace(marker, marker + f"        {condition}\n", 1))
             assert any(job in error and "evidence step" in error for error in errors), (name, condition, errors)
+
+
+def test_evidence_job_failure_cannot_be_tolerated() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    assert not validate_mutated_gate(baseline), "stable gate must pass before mutation checks"
+    accepted = []
+    for job in ("rust_linux", "rust_windows"):
+        marker = f"  {job}:\n"
+        assert baseline.count(marker) == 1
+        for key in ("continue-on-error", '"continue-on-error"', "'continue-on-error'"):
+            errors = validate_mutated_gate(baseline.replace(marker, marker + f"    {key}: true\n", 1))
+            if not any(job in error and "continue-on-error" in error for error in errors):
+                accepted.append((job, key))
+    assert not accepted, f"validator accepted tolerated evidence-job failure: {accepted}"
+
+
+def test_postgres_early_exit_cannot_preserve_contract_strings() -> None:
+    baseline = MERGE_GATE.read_text(encoding="utf-8")
+    marker = "          set -euo pipefail\n"
+    assert baseline.count(marker) == 1
+    mutated = baseline.replace(marker, marker + "          exit 0\n", 1)
+    errors = validate_mutated_gate(mutated)
+    assert errors, "validator accepted early exit before PG evidence with contract strings intact"
 
 
 def main() -> int:
@@ -237,6 +260,8 @@ def main() -> int:
         test_scope_preserves_stable_classification,
         test_both_classifiers_bind_aba_to_immutable_diff,
         test_both_classifiers_reject_comparison_truncation,
+        test_evidence_job_failure_cannot_be_tolerated,
+        test_postgres_early_exit_cannot_preserve_contract_strings,
     )
     for test in tests:
         test()
