@@ -88,6 +88,7 @@ fn is_missing_table(error: &sqlx::Error) -> bool {
 #[cfg(test)]
 mod contract_tests {
     const MIGRATION: &str = include_str!("../../migrations/0001_admission_reconnect_journal.sql");
+    const ADMISSION_RECOVERY: &str = include_str!("../foundation/admission_recovery_inner.rs");
 
     fn session_schema() -> Option<&'static str> {
         MIGRATION
@@ -101,6 +102,18 @@ mod contract_tests {
             MIGRATION.contains(
                 "ON game_durability_reconnect_attempts (character_id, control_loss_epoch)"
             )
+        );
+    }
+
+    #[test]
+    fn record_derived_current_authority_is_test_only_but_current_facts_remain_public() {
+        assert!(
+            ADMISSION_RECOVERY.contains("pub fn from_current_facts("),
+            "production callers must be able to supply independently observed current authority"
+        );
+        assert!(
+            ADMISSION_RECOVERY.contains("#[cfg(test)]\n    pub fn from_record("),
+            "record-derived current authority must not be production-accessible"
         );
     }
 

@@ -28,8 +28,8 @@ mod runtime_scope_identity_red_tests {
         ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
         ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
         ReconnectDurableReconciliationSnapshotV1, ReconnectDurableReconciliationSnapshotV2,
-        ReconnectIdentityV1, ReconnectPrepareCompletionV1, ReconnectPrepareCompletionV2,
-        ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
+        ReconnectDurableTerminalDispositionV1, ReconnectIdentityV1, ReconnectPrepareCompletionV1,
+        ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
         ReconnectProjectionDecisionV2, ReconnectProofV1, RuntimeScopeRefV1,
         ScopeOwnershipGeneration, TerminalGameSessionReplacementAuthorizationV1, WorldId,
     };
@@ -815,6 +815,93 @@ mod runtime_scope_identity_red_tests {
         );
         assert_eq!(
             reconcile(exact_world, None),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn v2_terminal_reconciliation_survives_scope_advance_but_committed_stays_fenced()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = candidate_record()?;
+        let advanced_authority = ReconnectCurrentAuthorityV1::from_current_facts(
+            &record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
+            Some(ReconnectCandidateBindingV1::from_record(&record)?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            ReconnectAuthorityFenceV1::new(
+                record.authority().character_lease_generation(),
+                ScopeOwnershipGeneration::new(11)
+                    .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
+            )?,
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            105,
+        )?;
+
+        let reconciliation_flow = || {
+            let mut budget =
+                ReconnectAttemptBudgetV1::new(record.continuity().control_loss_epoch());
+            budget.reserve(
+                record.identity().reconnect_attempt_ref(),
+                record.connection().transport_ref(),
+            )?;
+            let (mut flow, request) = ReconnectDurabilityFlowV2::begin(record.clone(), None);
+            flow.accept_prepare_completion(
+                ReconnectPrepareCompletionV2::for_request(
+                    &request,
+                    ReconnectPrepareDispositionV2::Ambiguous,
+                ),
+                &mut budget,
+            )?;
+            Ok::<_, ReconnectDurabilityErrorV1>((flow, budget))
+        };
+
+        let (mut terminal_flow, mut terminal_budget) = reconciliation_flow()?;
+        let terminal_snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Terminal {
+                disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+            },
+        );
+        assert_eq!(
+            terminal_flow.accept_reconciliation(
+                terminal_snapshot,
+                advanced_authority.clone(),
+                &mut terminal_budget,
+            )?,
+            ReconnectProjectionDecisionV2::Terminal {
+                disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+            }
+        );
+        assert!(
+            terminal_budget
+                .replacement_allowed_after_collision(record.identity().reconnect_attempt_ref())
+        );
+
+        let (mut committed_flow, mut committed_budget) = reconciliation_flow()?;
+        let committed_snapshot = ReconnectDurableReconciliationSnapshotV2::new(
+            record.clone(),
+            ReconnectDurableOutcomeV2::Committed {
+                current_generation: record.connection().candidate(),
+                current_transport_ref: record.connection().transport_ref(),
+            },
+        );
+        assert_eq!(
+            committed_flow.accept_reconciliation(
+                committed_snapshot,
+                advanced_authority,
+                &mut committed_budget,
+            ),
             Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
         );
         Ok(())
