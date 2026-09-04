@@ -9,6 +9,16 @@ These rules govern `docs/agents/**`.
 - Architecture decisions belong under `docs/architecture/`; public integration contracts belong under `docs/contracts/` when introduced.
 - Evidence belongs under `docs/agents/evidence/` or immutable workflow artifacts, not in chat.
 
+## META persistent-autonomy continuation
+
+Game adopts the current protected META continuation contract by reference from `Oteryn/Oteryn:docs/agents/contracts/PERSISTENT_AUTONOMOUS_CONTINUATION_POLICY.md` and `Oteryn/Oteryn:ecosystem/agent-continuation-policy.json`; Game must not fork or weaken that contract locally.
+
+For substantial Game work that crosses worker/session, command, external-wait, retry/no-progress, or context boundaries, a worker/session/tool stop is an execution event rather than whole-task completion unless current trusted task and bounded-lifecycle authority are terminal. Live GitHub Issue/PR state remains authoritative; task records and handoffs are durable evidence and reconstruction state, not a competing lifecycle authority.
+
+Persistent continuation is subordinate to the META bounded-execution authority. It must not redefine bounded lifecycle states, reset or enlarge retry/evidence state, thaw a frozen candidate without a material reason, or claim automatic/background continuation without a concrete live, authorized, task-bound resume mechanism. When no such mechanism exists, record the truthful waiting/blocker state and exactly one concrete next action instead of assuming another worker will appear.
+
+This adoption grants no Platform/Atlas, production, secret, deployment, protocol/content, protected-setting, review, or merge authority. Existing stronger Game safety, validation, exact-head review, `game-gate`, protection, and Merge Queue rules remain in force.
+
 ## Task records
 
 Use `tasks/TASK_TEMPLATE.md`. Every substantial task must record:
