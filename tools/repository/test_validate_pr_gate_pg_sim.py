@@ -59,7 +59,7 @@ def test_simulation_evidence_step_cannot_be_skipped() -> None:
     assert any("rust_windows" in error and "if" in error for error in errors), errors
 
 
-def run_classifier(files, initial_change=None, final_change=None, expected_base="b" * 40, scope=False):
+def run_classifier(files, initial_change=None, final_change=None, expected_base="b" * 40, scope=False, immutable_files=None):
     """Execute the real workflow script with only GitHub HTTP responses replaced."""
     validator = load_validator()
     step = validator.step_block(
@@ -86,6 +86,9 @@ def run_classifier(files, initial_change=None, final_change=None, expected_base=
         prefix = "https://api.github.com/repos/Oteryn/Oteryn-Game/pulls/287"
         if request.full_url == prefix:
             return io.StringIO(json.dumps(next(pulls)))
+        comparison = f"https://api.github.com/repos/Oteryn/Oteryn-Game/compare/{'b' * 40}...{'a' * 40}?per_page=1"
+        if request.full_url == comparison:
+            return io.StringIO(json.dumps({"files": files if immutable_files is None else immutable_files}))
         page_prefix = prefix + "/files?per_page=100&page="
         assert request.full_url.startswith(page_prefix), request.full_url
         page = int(request.full_url.removeprefix(page_prefix))
@@ -106,6 +109,29 @@ def run_classifier(files, initial_change=None, final_change=None, expected_base=
             except SystemExit as error:
                 failure = str(error)
         return failure, output.read_text(encoding="utf-8") if output.exists() else ""
+
+
+def test_both_classifiers_bind_aba_to_immutable_diff() -> None:
+    mutable = [{"filename": "docs/new.md", "status": "modified"}]
+    immutable = [{"filename": "apps/game-server/tests/durability_postgres.rs", "status": "removed"}]
+    failures = []
+    for scope in (True, False):
+        failure, output = run_classifier(mutable, immutable_files=immutable, scope=scope)
+        expected = "rust=true\n" if scope else "removed=true\n"
+        if failure is not None or not output.endswith(expected):
+            failures.append((scope, failure, output))
+    assert not failures, f"A-to-B-to-A substituted mutable diff at authority boundary: {failures}"
+
+
+def test_both_classifiers_reject_comparison_truncation() -> None:
+    files = [{"filename": f"docs/{i}.md"} for i in range(301)]
+    for scope in (True, False):
+        failure, output = run_classifier(files[:300], scope=scope)
+        assert failure is None and output, (scope, failure, output)
+        failure, output = run_classifier(files, immutable_files=files[:300], scope=scope)
+        assert failure is not None and not output, "over-cap diff must fail closed"
+        failure, output = run_classifier(files[:2], immutable_files=files[:1], scope=scope)
+        assert failure is not None and not output, "incomplete immutable diff must fail closed"
 
 
 def test_scope_rejects_identity_races() -> None:
@@ -209,6 +235,8 @@ def main() -> int:
         test_evidence_step_condition_family,
         test_scope_rejects_identity_races,
         test_scope_preserves_stable_classification,
+        test_both_classifiers_bind_aba_to_immutable_diff,
+        test_both_classifiers_reject_comparison_truncation,
     )
     for test in tests:
         test()
