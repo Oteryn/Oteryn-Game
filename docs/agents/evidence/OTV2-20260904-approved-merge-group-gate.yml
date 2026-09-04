@@ -133,6 +133,54 @@ jobs:
           EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
+      - name: Classify Durability PostgreSQL target on merge-group base
+        id: pg_target
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import re
+          import urllib.error
+          import urllib.parse
+          import urllib.request
+
+          base_sha = os.environ['BASE_SHA'].strip().lower()
+          repository = os.environ['REPOSITORY']
+          target = 'apps/game-server/tests/durability_postgres.rs'
+          if re.fullmatch(r'[0-9a-f]{40}', base_sha) is None:
+              raise SystemExit('merge-group base SHA is invalid')
+
+          encoded = urllib.parse.quote(target, safe='/')
+          request = urllib.request.Request(
+              f'https://api.github.com/repos/{repository}/contents/{encoded}?ref={base_sha}',
+              headers={
+                  'Accept': 'application/vnd.github+json',
+                  'Authorization': f"Bearer {os.environ['GH_TOKEN']}",
+                  'X-GitHub-Api-Version': '2022-11-28',
+                  'User-Agent': 'Oteryn-v2-merge-group-postgres-target-classifier',
+              },
+          )
+          try:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  payload = json.load(response)
+              base_present = payload.get('type') == 'file'
+              if not base_present:
+                  raise SystemExit('merge-group base target resolved to a non-file object')
+          except urllib.error.HTTPError as error:
+              if error.code == 404:
+                  base_present = False
+              else:
+                  raise
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f"base_present={'true' if base_present else 'false'}\n")
+          print(f'Durability PostgreSQL target present on exact merge-group base: {base_present}.')
+          PY
+
       - name: Install Rust toolchain
         run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
 
@@ -186,10 +234,27 @@ jobs:
           cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
           cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
 
-      - name: Run Durability PostgreSQL E2E
+      - name: Run Durability PostgreSQL E2E when allocated
         env:
+          BASE_TARGET_PRESENT: ${{ steps.pg_target.outputs.base_present }}
           OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
-        run: cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres
+        run: |
+          set -euo pipefail
+          case "$BASE_TARGET_PRESENT" in
+            true|false) ;;
+            *)
+              echo "Durability PostgreSQL base-target classification produced an invalid result; failing closed." >&2
+              exit 1
+              ;;
+          esac
+          if [[ -f apps/game-server/tests/durability_postgres.rs ]]; then
+            cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres
+          elif [[ "$BASE_TARGET_PRESENT" == "true" ]]; then
+            echo "Durability PostgreSQL test target is absent from the merge-group head but present on its protected base; failing closed." >&2
+            exit 1
+          else
+            echo "NOT_APPLICABLE: Durability PostgreSQL test target is not allocated on this merge-group base or head."
+          fi
 
   rust_windows:
     name: Merge Queue / Rust Windows client

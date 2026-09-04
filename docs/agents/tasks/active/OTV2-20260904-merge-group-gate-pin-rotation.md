@@ -8,17 +8,17 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: governance/merge-group-gate-pin-284
-pr: null
+pr: 288
 issue: 284
 parent_issue: 277
 prepares_issue: 285
 base_sha: d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d
 head_sha: null
 final_head_sha: null
-final_head_frozen_at: 2026-09-04T14:14:00Z
+final_head_frozen_at: 2026-09-04T14:31:00Z
 owner: ChatGPT GPT-5.6 Pro implementation worker
 created_at: 2026-09-04T14:14:00Z
-updated_at: 2026-09-04T14:14:00Z
+updated_at: 2026-09-04T14:31:00Z
 execution_budget_minutes: 60
 large_budget_reason: exceptional protected-base merge-authority pin rotation
 owned_paths:
@@ -37,113 +37,134 @@ external_repositories: []
 
 ## Outcome
 
-The protected-base merge-authority audit approves one exact future Merge Queue workflow blob that adds real PostgreSQL durability and deterministic simulation qualification, without activating the future gate or weakening the audit's self-modification refusal.
+The protected-base merge-authority audit approves one exact future Merge Queue workflow blob that adds deterministic Windows simulation and deletion-safe PostgreSQL 17.6 qualification. This task publishes the exact future bytes as inert evidence but does not activate the future gate or weaken the audit's self-modification refusal.
 
 ## Architecture and source of truth
 
 - `PROVEN` — protected Game `main` at admission is `d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d`.
-- `PROVEN` — current protected gate blob is `1e0e7b70a806fe744d394ca8abf43ee434ead3f2`.
-- `PROVEN` — exact future gate bytes were created as inert Git blob `130f7fa876383ec41457ed81e0f54be6f6a79c34`.
-- `PROVEN` — Issue #284 explicitly authorizes an owner-controlled audit rotation and requires the audit's self-modification failure to remain visible.
-- `DERIVED` — committing the exact future bytes as a documentation evidence path gives reviewers an inspectable artifact whose Git blob identity must equal the new pin regardless of path.
+- `PROVEN` — current protected merge-group gate blob is `1e0e7b70a806fe744d394ca8abf43ee434ead3f2`.
+- `PROVEN` — initial future blob `130f7fa876383ec41457ed81e0f54be6f6a79c34` added unconditional PG and was superseded before review after PR-gate execution proved that protected main does not yet contain the `durability_postgres` target.
+- `PROVEN` — final future gate bytes are Git blob `16edc91ce969366640ba8bc82f224d8d11b1965f`.
+- `PROVEN` — Issue #284 authorizes an owner-controlled audit rotation and requires the audit's self-modification failure to remain visible.
+- `DERIVED` — exact base-SHA target presence is the correct Merge Queue discriminator: candidate target present runs PG; target absent from head but present on protected base fails; absent from both base and head is explicit `NOT_APPLICABLE`.
 - `PROVEN` — this task does not modify `.github/workflows/merge-group-gate.yml`, so it does not activate the future policy.
 
 ## High-risk authority/recovery qualification
 
 ```yaml
 applicable: CONTROL_PLANE_AUTHORITY_ROTATION
+model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants:
   - protected_base_audit_remains_non_candidate_controlled
   - exactly_one_future_gate_blob_is_approved
-  - future_gate_adds_pg_and_sim_without_new_write_authority
+  - future_gate_runs_simulation
+  - future_gate_runs_allocated_postgresql_target
+  - future_gate_cannot_drop_a_base_postgresql_target_into_skip
+  - historical_target_absence_is_not_reported_as_postgresql_pass
 consumer_boundaries:
   - pull_request_target_protected_base_audit
   - future_merge_group_gate_activation
 mutation_operators:
   - change_only_expected_gate_blob_pin
+  - remove_or_rename_postgresql_target_from_synthetic_head
 independent_current_fact_sources:
   - protected_main_audit_workflow
   - immutable_git_blob_identity
+  - exact_merge_group_base_sha
+  - exact_merge_group_head_checkout
 record_derived_matching_helper:
   allowed_for_positive_happy_path: NOT_APPLICABLE
   forbidden_for_negative_authority_or_provenance_cases: NOT_APPLICABLE
 finding_family_sweep:
-  sibling_apis: audit_pin_and_future_gate_evidence
+  sibling_apis: PR gate and merge-group gate PostgreSQL routing
   protocol_versions: NOT_APPLICABLE
   direct_and_reconciled_paths: audit_rotation_then_exact_gate_activation
-  restart_retry_replay_concurrency_pg_reload: NOT_APPLICABLE
+  restart_retry_replay_concurrency_pg_reload: allocated durability_postgres target
   evidence:
-    - future_gate_blob_130f7fa876383ec41457ed81e0f54be6f6a79c34
+    - PR 287 run 33881858954 job 101052200653
+    - superseded future blob 130f7fa876383ec41457ed81e0f54be6f6a79c34
+    - final future blob 16edc91ce969366640ba8bc82f224d8d11b1965f
 finding_dispositions:
-  p0_p1_verified_repair_or_rejection: pending_independent_review
+  p0_p1_verified_repair_or_rejection: initial_unconditional_pg_design_superseded_and_repaired
   p2_fixed_accepted_or_deferred: pending_independent_review
 ```
 
 ## Acceptance criteria
 
 - [x] Future gate is represented by one exact lowercase 40-hex Git blob SHA.
-- [x] Evidence file bytes are exactly the future gate blob bytes and therefore have blob SHA `130f7fa876383ec41457ed81e0f54be6f6a79c34`.
-- [x] Audit change is limited to replacing `1e0e7b70...` with `130f7fa8...`.
+- [x] Evidence file bytes are exactly the final future gate blob bytes and therefore have blob SHA `16edc91ce969366640ba8bc82f224d8d11b1965f`.
+- [x] Audit change from protected main is limited to replacing `1e0e7b70...` with `16edc91c...`.
 - [x] Audit trigger, permissions, exact-head/same-repository checks, candidate-code non-checkout and forbidden-behavior checks remain unchanged.
 - [x] Future gate preserves seven job keys and unchanged `game-gate` fan-in.
-- [x] Future Linux job verifies exact synthetic head and runs PostgreSQL 17.6 durability.
+- [x] Future Linux job verifies exact synthetic head, resolves target presence from exact protected base and uses deletion-safe PostgreSQL 17.6 routing.
 - [x] Future Windows job verifies exact synthetic head and runs deterministic simulation golden fixtures.
 - [x] Future gate has no `continue-on-error`, workflow dispatch, `pull_request_target`, write permission or unpinned action.
 - [ ] Exact three-path diff and blob identities pass authoritative GitHub readback.
+- [ ] Ordinary exact-head repository validation is green or has only the expected protected-base self-modification refusal.
 - [ ] One independent deep review has no unresolved actionable finding.
 - [ ] Explicit current owner-controlled integration decision is supplied; this worker does not merge.
 
 ## Excluded scope
 
-No activation of `merge-group-gate.yml`, no PR gate/risk classifier, no ruleset, required-status, runtime, test-source, production, secret or external-repository mutation. Do not suppress, bypass or relabel the expected protected-base audit self-modification failure.
+No activation of `merge-group-gate.yml`, no PR gate/risk classifier, no ruleset, required status, runtime, test-source, production, secret or external-repository mutation. Do not suppress, bypass or relabel the expected protected-base audit self-modification failure.
 
 ## Implementation / findings
 
-- Replaced only the protected audit's exact approved gate blob value.
-- Added the future gate as inert evidence under `docs/agents/evidence/`; its content-addressed blob is the same object that Issue #285 must later activate unchanged.
-- Future gate keeps current candidate/governance, dependency review, CodeQL, Linux, Windows, supply-chain and `game-gate` jobs. It adds PG/SIM within the existing required platform jobs, so the fan-in shape does not change.
-- The protected-base audit is expected to report `candidate modifies the protected-base audit itself`; that outcome is a designed authority boundary, not a product failure and not a PASS.
-- The exact candidate commit is established by authoritative branch/PR readback after publication and is not self-embedded.
+### Superseded pre-review design
+
+- Commit `e6341f282e13218fdd5ed22284e7caecdade4c17` pinned inert future blob `130f7fa8...`.
+- Family sweep from PR #287 revealed that unconditional `cargo ... --test durability_postgres` fails on revisions before the target is integrated.
+- No independent review had been requested on that generation; it is superseded, not qualified.
+
+### Final candidate design
+
+- Protected audit pin points only to `16edc91ce969366640ba8bc82f224d8d11b1965f`.
+- The evidence path contains those exact bytes.
+- Future merge-group Linux verifies exact head and queries the exact `base_sha` for target presence.
+- Head target present → real PG E2E; base present/head absent → fail closed; base/head absent → explicit `NOT_APPLICABLE`.
+- Windows exact-head SIM and all existing candidate, dependency, CodeQL, Linux, Windows client, supply-chain and aggregate semantics remain.
+- Protected audit still rejects any candidate that modifies the audit itself. This expected result is authority evidence, not a condition to bypass.
+- Final commit identity is established by authoritative branch/PR readback after publication rather than self-embedded.
 
 ## Validation
 
 ### Focused
 
-- check: audit diff contains only the exact pin replacement
-- result: pending authoritative PR diff
+- check: audit diff from protected main contains only one pin replacement
+- result: pending final authoritative diff
 - check: evidence file blob identity
-- result: expected `130f7fa876383ec41457ed81e0f54be6f6a79c34`
-- check: future workflow top-level keys, seven jobs, exact SHA steps, PG/SIM commands, pinned actions, forbidden tokens
+- result: expected `16edc91ce969366640ba8bc82f224d8d11b1965f`
+- check: future workflow top-level keys, seven jobs, exact SHA steps, base/head target routing, PG/SIM commands, pinned actions and forbidden tokens
 - result: PASS before publication
 
 ### Component/integration
 
 - command/run: candidate repository policy and canonical `game-gate`
-- result: pending exact head; protected-base audit expected to fail closed on self-modification
+- result: pending exact final head; protected-base audit self-modification refusal expected
 
 ### E2E
 
-- scenario: `NOT_APPLICABLE` — this rotation does not activate or execute the future merge-group workflow
+- scenario: `NOT_APPLICABLE` — this rotation publishes inert bytes and does not execute the future merge-group workflow
 - result: NOT_APPLICABLE
 
 ### Exact-head CI
 
 - final head: established by authoritative GitHub readback
-- trigger source: Draft PR pull_request and pull_request_target
-- expected ordinary result: canonical `game-gate` success if unaffected checks pass
-- expected exceptional result: protected-base merge-authority audit failure identifying candidate self-modification
+- trigger source: Draft PR #288 `pull_request` and `pull_request_target`
+- expected ordinary result: applicable repository checks execute on exact head
+- expected exceptional result: protected-base merge-authority audit fails with candidate-self-modification refusal
 
 ## Self-review
 
 - exact head: pending authoritative readback
-- method/reviewer: implementing agent, exact audit/evidence/task diff
-- material findings: none before publication
+- method/reviewer: implementing agent exact audit/evidence/task diff
+- material findings: initial unconditional PG compatibility defect found by family sweep and repaired before review
 - verdict: PASS_PENDING_REMOTE_READBACK
 
 ## Independent review
 
 - required: YES — protected-base control-plane authority rotation
-- exact head: pending
+- exact head: pending final candidate readback
 - method/auditor: one independent deep review plus explicit human-owner integration decision
 - material findings: pending
 - verdict: pending
@@ -154,20 +175,20 @@ No activation of `merge-group-gate.yml`, no PR gate/risk classifier, no ruleset,
 - unresolved review threads: pending
 - protected auto-merge: prohibited/not requested
 - merge commit/result: explicit owner-controlled integration only
-- ownership release: after protected-main readback and subsequent #285 activation handoff
+- ownership release: after protected-main readback and #285 activation handoff
 
 ## Context checkpoint
 
 ```yaml
-last_progress: exact future gate blob and minimal protected pin rotation prepared
+last_progress: family sweep superseded unconditional future PG and produced exact deletion-safe future gate blob
 status: validating
 branch: governance/merge-group-gate-pin-284
 head_sha: null
-pr: null
+pr: 288
 final_head_sha: null
-final_head_frozen_at: 2026-09-04T14:14:00Z
-ci_trigger_source: pull_request_and_pull_request_target
-ci_check_generation: pending
+final_head_frozen_at: 2026-09-04T14:31:00Z
+ci_trigger_source: pull_request_and_pull_request_target_after_final_publication
+ci_check_generation: final_pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -176,10 +197,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: explicit_current_owner_controlled_integration_decision_after_review
 blocker: protected_base_audit_self_modification_refusal_expected_by_design
-next_action: publish the exact three-path Draft rotation PR, verify audit one-line diff and evidence blob identity, obtain one independent deep review, then hand off for explicit owner-controlled integration without bypass or self-merge
+next_action: publish the final three-path rotation candidate, verify one-line audit diff and exact evidence blob identity, obtain one independent deep review, then hand off for explicit owner-controlled integration without bypass or self-merge
 ```
