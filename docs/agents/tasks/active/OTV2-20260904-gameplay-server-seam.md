@@ -9,6 +9,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-gameplay-server-seam-01
 pr: null
+issue: 247
 lane_id: OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM
 allocation_task_id: OTV2-20260904-gameplay-server-seam-allocation
 allocation_pr: 294
@@ -248,7 +249,7 @@ Dependency changes in root/game-server Cargo files are restricted to exact depen
 ## Context checkpoint
 
 ```yaml
-last_progress: allocation PR #294 is open Draft and records this worker task; runtime authority remains withheld until the allocation itself qualifies, merges and is read back from protected main
+last_progress: allocation PR #294 is open Draft and records this worker task against Issue #247; runtime authority remains withheld until the allocation itself qualifies, merges and is read back from protected main
 status: waiting
 branch: agent/otv2-gameplay-server-seam-01
 head_sha: null
