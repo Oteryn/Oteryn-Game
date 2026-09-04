@@ -2494,6 +2494,74 @@ fn expired_prepared_reconciliation_terminalizes_incumbent_and_allows_later_attem
 }
 
 #[test]
+fn committed_reconciliation_remains_historical_after_later_epoch_opens()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database =
+                postgres::IsolatedPostgres::create("historical_committed_replay").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let first_now = unix_now().map_err(foundation_error)?;
+                let (mut first_flow, first_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(161, 1, 0xa1, first_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&first_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                first_flow
+                    .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                        &first_prepare,
+                        ReconnectPrepareDispositionV1::Prepared,
+                    ))
+                    .map_err(foundation_error)?;
+                let first_commit = first_flow
+                    .authorize_commit(
+                        current_authority_from_record(first_prepare.record(), first_now)
+                            .map_err(foundation_error)?,
+                        first_now,
+                    )
+                    .map_err(foundation_error)?;
+                assert_eq!(
+                    journal.commit(&first_commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+
+                let second_now = first_now + 1;
+                let (_second_flow, second_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_for_epoch(161, 2, 0xa2, second_now, second_now + 115, 4, 8, 9, 0xa3)
+                        .map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&second_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+
+                assert_eq!(
+                    journal.reconcile(&first_prepare).await?,
+                    ReconnectDurableReconciliationSnapshotV1::committed(
+                        first_prepare.record().clone()
+                    ),
+                    "a later loss epoch must not erase historical committed evidence"
+                );
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn committed_replay_fails_closed_when_session_state_is_inconsistent()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
