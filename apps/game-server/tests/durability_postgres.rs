@@ -13,10 +13,10 @@ use oteryn_game_server::foundation::{
     ReconnectAttemptRef, ReconnectAuthorityFenceV1, ReconnectCommitActionV1,
     ReconnectCommitCompletionV1, ReconnectCommitDispositionV1, ReconnectCompatibilityEvidenceV1,
     ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectDurabilityErrorV1,
-    ReconnectDurabilityFlowV1, ReconnectDurabilityRecordV1, ReconnectIdentityV1,
-    ReconnectPrepareActionV1, ReconnectPrepareCompletionV1, ReconnectPrepareDispositionV1,
-    ReconnectProjectionDecisionV1, ReconnectProofV1, RuntimeScopeRefV1, ScopeOwnershipGeneration,
-    StateDomainRevisionV1, WorldId,
+    ReconnectDurabilityFlowV1, ReconnectDurabilityRecordV1,
+    ReconnectDurableReconciliationSnapshotV1, ReconnectIdentityV1, ReconnectPrepareActionV1,
+    ReconnectPrepareCompletionV1, ReconnectPrepareDispositionV1, ReconnectProjectionDecisionV1,
+    ReconnectProofV1, RuntimeScopeRefV1, ScopeOwnershipGeneration, StateDomainRevisionV1, WorldId,
 };
 use postgres::current_authority_from_record;
 use std::process::Command;
