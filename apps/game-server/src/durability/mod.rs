@@ -1184,10 +1184,11 @@ mod terminal_replacement_foundation_red_tests {
         ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
         ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
         ReconnectDurabilityFlowV2, ReconnectDurabilityPhaseV1, ReconnectDurabilityRecordV1,
-        ReconnectDurableOutcomeV2, ReconnectDurableReconciliationSnapshotV2,
-        ReconnectDurableTerminalDispositionV1, ReconnectIdentityV1, ReconnectPrepareActionV1,
-        ReconnectPrepareCompletionV1, ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1,
-        ReconnectPrepareDispositionV2, ReconnectProjectionDecisionV2, ReconnectProofV1,
+        ReconnectDurableOutcomeV2, ReconnectDurableReconciliationSnapshotV1,
+        ReconnectDurableReconciliationSnapshotV2, ReconnectDurableTerminalDispositionV1,
+        ReconnectIdentityV1, ReconnectPrepareActionV1, ReconnectPrepareCompletionV1,
+        ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
+        ReconnectProjectionDecisionV1, ReconnectProjectionDecisionV2, ReconnectProofV1,
         RuntimeScopeRefV1, ScopeOwnershipGeneration, StateDomainRevisionV1,
         TerminalGameSessionReplacementAuthorizationV1, WorldId,
     };
@@ -1199,9 +1200,21 @@ mod terminal_replacement_foundation_red_tests {
         record: &ReconnectDurabilityRecordV1,
         observed_at: i64,
     ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
-        ReconnectCurrentAuthorityV1::from_current_facts(
+        current_authority(
             record,
             Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            observed_at,
+        )
+    }
+
+    fn current_authority(
+        record: &ReconnectDurabilityRecordV1,
+        current_account_presence: Option<AccountPresenceClaimV1>,
+        observed_at: i64,
+    ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
+        ReconnectCurrentAuthorityV1::from_current_facts(
+            record,
+            current_account_presence,
             Some(CharacterWorldEligibilityClaimV1::from_identity(
                 record.identity(),
             )),
@@ -1218,6 +1231,41 @@ mod terminal_replacement_foundation_red_tests {
             false,
             observed_at,
         )
+    }
+
+    #[test]
+    fn v1_committed_reconciliation_requires_complete_current_authority() {
+        let record = candidate_record(20, ACCOUNT, 11, 12, 7, 9, 10, 1).expect("record");
+        let committed = ReconnectDurableReconciliationSnapshotV1::committed(record.clone());
+
+        let (mut exact_flow, exact_request) = ReconnectDurabilityFlowV1::begin(record.clone());
+        exact_flow
+            .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                &exact_request,
+                ReconnectPrepareDispositionV1::Ambiguous,
+            ))
+            .expect("ambiguous prepare enters reconciliation");
+        let exact = exact_current_authority(&record, 105).expect("exact current authority");
+        assert_eq!(
+            exact_flow.accept_reconciliation(committed.clone(), exact),
+            Ok(ReconnectProjectionDecisionV1::InstallController {
+                generation: record.connection().candidate(),
+                transport_ref: record.connection().transport_ref(),
+            })
+        );
+
+        let (mut stale_flow, stale_request) = ReconnectDurabilityFlowV1::begin(record.clone());
+        stale_flow
+            .accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                &stale_request,
+                ReconnectPrepareDispositionV1::Ambiguous,
+            ))
+            .expect("ambiguous prepare enters reconciliation");
+        let stale = current_authority(&record, None, 104).expect("stale current authority");
+        assert_eq!(
+            stale_flow.accept_reconciliation(committed, stale),
+            Err(ReconnectDurabilityErrorV1::ReconciliationMismatch)
+        );
     }
 
     fn uuid_v7(raw: u64) -> [u8; 16] {
