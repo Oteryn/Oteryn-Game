@@ -1579,10 +1579,8 @@ async fn current_prepared_binding_is_valid(
 
     match proof["class"].as_str() {
         Some("fast_reconnect") => Ok(proof["generation"].as_u64().is_some_and(|value| value != 0)),
-        Some("reauthenticated_recovery") => {
-            Ok(canonical_bytes(&proof["recovery_grant_nonce"])
-                .is_some_and(|nonce| nonce.len() == 32))
-        }
+        Some("reauthenticated_recovery") => Ok(canonical_bytes(&proof["recovery_grant_nonce"])
+            .is_some_and(|nonce| nonce.len() == 32 && nonce.iter().any(|byte| *byte != 0))),
         _ => Ok(false),
     }
 }
