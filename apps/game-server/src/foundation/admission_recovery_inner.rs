@@ -1688,7 +1688,7 @@ impl ReconnectDurabilityFlowV1 {
     }
     pub fn authorize_commit(&mut self, current: ReconnectCurrentAuthorityV1, now: i64) -> Result<ReconnectCommitRequestV1, ReconnectDurabilityErrorV1> {
         if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation { return Err(ReconnectDurabilityErrorV1::InvalidPhase); }
-        if !current_authority_matches_record(&self.record, &current)? { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
+        if !current_authority_matches_record(&self.record, &current)? || !authenticated_evidence_observed_by(&self.record, now) { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
         let deadline = self.record.authorization_deadline()?;
         if now > deadline || current.observed_at > deadline { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::DeadlineExpired); }
         let request = ReconnectCommitRequestV1 { record: Box::new(self.record.clone()), authorization: ReconnectCommitAuthorizationV1 { authorization_deadline: deadline } };
@@ -1885,7 +1885,9 @@ impl ReconnectDurabilityFlowV2 {
         if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation {
             return Err(ReconnectDurabilityErrorV1::InvalidPhase);
         }
-        if !current_authority_matches_record(&self.record, &current)? {
+        if !current_authority_matches_record(&self.record, &current)?
+            || !authenticated_evidence_observed_by(&self.record, now)
+        {
             self.phase = ReconnectDurabilityPhaseV1::Terminal;
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
@@ -1942,7 +1944,8 @@ fn current_authority_matches_record(
 ) -> Result<bool, ReconnectDurabilityErrorV1> {
     let identity = record.identity();
     let compatibility = record.compatibility();
-    Ok(current.identity == *identity
+    Ok(authenticated_evidence_observed_by(record, current.observed_at)
+        && current.identity == *identity
         && current.current_account_presence
             == Some(AccountPresenceClaimV1::from_identity(identity)?)
         && current.current_character_world_eligibility
@@ -1970,6 +1973,12 @@ fn current_authority_matches_record(
             .is_some_and(|candidate| candidate.is_live_at(current.observed_at))
         && current.session_state == GameSessionState::Reconnectable
         && !current.current_controller_present)
+}
+
+fn authenticated_evidence_observed_by(record: &ReconnectDurabilityRecordV1, observed_at: i64) -> bool {
+    let compatibility = record.compatibility();
+    observed_at >= compatibility.platform_security_evidence().source_observed_at()
+        && observed_at >= compatibility.proof_trust_evidence().source_observed_at()
 }
 
 #[cfg(test)]
