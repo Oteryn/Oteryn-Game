@@ -8,7 +8,7 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/gameplay-server-seam-allocation-247
-pr: null
+pr: 294
 issue: 247
 parent_coordinator_issue: 162
 preparation_issue: 96
@@ -211,15 +211,15 @@ The future worker allocation also excludes `workspace-boundaries.toml` unless a 
 ## Context checkpoint
 
 ```yaml
-last_progress: three-file docs-only allocation candidate is authored from exact main; one self-review provenance typo was repaired before PR publication
+last_progress: Draft allocation PR #294 is open with exactly the intended three docs paths; task metadata is being synchronized before exact-head qualification
 status: validating
 branch: coord/gameplay-server-seam-allocation-247
 head_sha: null
-pr: null
+pr: 294
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+ci_trigger_source: pull_request
+ci_check_generation: pending_metadata_head
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -233,5 +233,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: open one Draft allocation PR from this branch, record its number in the two task records, verify exact three-path diff and current-main relation, then run exact-head CI plus one independent deep review
+next_action: synchronize PR #294 into the worker task, then freeze the resulting remote head for exact-path/main-relation verification, hosted CI and one independent deep review
 ```
