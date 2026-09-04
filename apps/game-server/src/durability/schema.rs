@@ -149,10 +149,7 @@ mod contract_tests {
 
     #[test]
     fn identity_derived_authority_claim_convenience_is_test_only_across_sibling_family() {
-        for type_name in [
-            "CharacterWorldEligibilityClaimV1",
-            "AccountPresenceClaimV1",
-        ] {
+        for type_name in ["CharacterWorldEligibilityClaimV1", "AccountPresenceClaimV1"] {
             let marker = format!("impl {type_name} {{");
             let implementation = ADMISSION_RECOVERY
                 .split_once(&marker)
@@ -178,9 +175,8 @@ mod contract_tests {
             );
             assert!(
                 implementation.contains("#[cfg(test)]\n    pub fn from_identity(")
-                    || implementation.contains(
-                        "#[cfg(test)]\n    #[must_use]\n    pub fn from_identity("
-                    ),
+                    || implementation
+                        .contains("#[cfg(test)]\n    #[must_use]\n    pub fn from_identity("),
                 "{type_name}: identity-derived convenience must remain available only to tests"
             );
         }
