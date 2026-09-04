@@ -212,10 +212,11 @@ mod v2_reconciled_prepared_budget_regression_tests {
         GameSessionState, ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
         ReconnectAttemptReservationV1, ReconnectAuthorityFenceV1, ReconnectCandidateBindingV1,
         ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
-        ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV2,
-        ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
-        ReconnectDurableReconciliationSnapshotV2, ReconnectIdentityV1, ReconnectPrepareActionV2,
-        ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
+        ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
+        ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+        ReconnectDurableReconciliationSnapshotV2, ReconnectIdentityV1, ReconnectPrepareActionV1,
+        ReconnectPrepareActionV2, ReconnectPrepareCompletionV1, ReconnectPrepareCompletionV2,
+        ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
         ReconnectProjectionDecisionV2, ReconnectProofV1, RuntimeScopeRefV1,
         ScopeOwnershipGeneration, TerminalGameSessionReplacementAuthorizationV1, WorldId,
     };
@@ -461,6 +462,44 @@ mod v2_reconciled_prepared_budget_regression_tests {
             ReconnectPrepareActionV2::AwaitFinalRevalidation
         );
 
+        let current = ReconnectCurrentAuthorityV1::from_current_facts(
+            &record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
+            Some(ReconnectCandidateBindingV1::from_record(&record)?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            106,
+        )?;
+        assert_eq!(
+            flow.authorize_commit(current, 104),
+            Err(ReconnectDurabilityErrorV1::DeadlineExpired)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn v1_final_revalidation_rejects_authority_observed_after_authorization_deadline()
+    -> Result<(), ReconnectDurabilityErrorV1> {
+        let record = sample_record()?;
+        let (mut flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
+        assert_eq!(
+            flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                &request,
+                ReconnectPrepareDispositionV1::Prepared,
+            ))?,
+            ReconnectPrepareActionV1::AwaitFinalRevalidation
+        );
         let current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
             Some(AccountPresenceClaimV1::from_identity(record.identity())?),

@@ -2406,6 +2406,94 @@ fn stale_commit_terminalizes_the_prepared_attempt_for_reconciliation()
 }
 
 #[test]
+fn expired_prepared_reconciliation_terminalizes_incumbent_and_allows_later_attempt()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database =
+                postgres::IsolatedPostgres::create("expired_prepared_reconciliation").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let pool = sqlx::PgPool::connect(&database_url).await?;
+                let record_now = postgres_clock(&pool).await?;
+                let prepared_deadline = record_now + 2;
+                let (_flow, expired_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_with_prepared_deadline(94, 1, 0xe3, record_now, prepared_deadline)
+                        .map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&expired_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                while postgres_clock(&pool).await? <= prepared_deadline {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+
+                assert_eq!(
+                    journal.reconcile(&expired_prepare).await?,
+                    oteryn_game_server::foundation::ReconnectDurableReconciliationSnapshotV1::terminal(
+                        expired_prepare.record().clone(),
+                    ),
+                    "reconciliation must terminalize the exact expired PREPARED attempt"
+                );
+                let session_id = expired_prepare
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                let attempt_ref = expired_prepare
+                    .record()
+                    .identity()
+                    .reconnect_attempt_ref()
+                    .to_be_bytes();
+                let state: i16 = sqlx::query_scalar(
+                    "SELECT state FROM game_durability_reconnect_attempts \
+                     WHERE game_session_id = encode($1, 'hex')::uuid \
+                       AND reconnect_attempt_ref = $2",
+                )
+                .bind(session_id.as_slice())
+                .bind(attempt_ref.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                let prepared_ref: Option<Vec<u8>> = sqlx::query_scalar(
+                    "SELECT prepared_attempt_ref FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(state, 4, "expired PREPARED must be durably terminal");
+                assert!(prepared_ref.is_none(), "expired anchor must be cleared");
+
+                let fresh_deadline = postgres_clock(&pool).await? + 5;
+                let (_fresh_flow, fresh_prepare) = ReconnectDurabilityFlowV1::begin(
+                    record_with_prepared_deadline(94, 2, 0xe4, record_now, fresh_deadline)
+                        .map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&fresh_prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared,
+                    "the expired incumbent must not falsely block a later distinct attempt"
+                );
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn committed_replay_fails_closed_when_session_state_is_inconsistent()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
