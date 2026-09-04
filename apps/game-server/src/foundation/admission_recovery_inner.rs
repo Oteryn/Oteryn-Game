@@ -1690,7 +1690,7 @@ impl ReconnectDurabilityFlowV1 {
         if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation { return Err(ReconnectDurabilityErrorV1::InvalidPhase); }
         if !current_authority_matches_record(&self.record, &current)? { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
         let deadline = self.record.authorization_deadline()?;
-        if now > deadline { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::DeadlineExpired); }
+        if now > deadline || current.observed_at > deadline { self.phase = ReconnectDurabilityPhaseV1::Terminal; return Err(ReconnectDurabilityErrorV1::DeadlineExpired); }
         let request = ReconnectCommitRequestV1 { record: Box::new(self.record.clone()), authorization: ReconnectCommitAuthorizationV1 { authorization_deadline: deadline } };
         self.commit_request = Some(request.clone()); self.phase = ReconnectDurabilityPhaseV1::PendingCommit; Ok(request)
     }

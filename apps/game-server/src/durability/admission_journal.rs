@@ -654,7 +654,7 @@ impl AdmissionReconnectJournal {
             .get()
             .to_string();
 
-        let Some(session) = load_session_for_share(transaction, session_id.as_slice()).await?
+        let Some(session) = load_session_for_update(transaction, session_id.as_slice()).await?
         else {
             return Err(DurabilityError::InvalidStoredState);
         };
@@ -677,7 +677,7 @@ impl AdmissionReconnectJournal {
         {
             return Err(DurabilityError::InvalidStoredState);
         }
-        let state = attempt.try_get::<i16, _>("state")?;
+        let mut state = attempt.try_get::<i16, _>("state")?;
         let snapshot = match state {
             PREPARED => {
                 if !precommit_protection_binding_is_valid(transaction, record, false).await? {
@@ -700,7 +700,18 @@ impl AdmissionReconnectJournal {
                 {
                     return Err(DurabilityError::InvalidStoredState);
                 }
-                ReconnectDurableReconciliationSnapshotV1::prepared(record.clone())
+                if database_now(transaction).await? > record.continuity().prepared_deadline() {
+                    terminalize_prepared_attempt(
+                        transaction,
+                        session_id.as_slice(),
+                        attempt_ref.as_slice(),
+                    )
+                    .await?;
+                    state = STALE_TERMINAL;
+                    ReconnectDurableReconciliationSnapshotV1::terminal(record.clone())
+                } else {
+                    ReconnectDurableReconciliationSnapshotV1::prepared(record.clone())
+                }
             }
             COMMITTED => {
                 let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
@@ -1097,33 +1108,6 @@ async fn load_session_for_update(
                 session_state, attempt_count, prepared_attempt_ref \
          FROM game_durability_reconnect_sessions \
          WHERE game_session_id = encode($1, 'hex')::uuid FOR UPDATE",
-    )
-    .bind(session_id)
-    .fetch_optional(&mut **transaction)
-    .await
-    .map_err(DurabilityError::from)
-}
-
-async fn load_session_for_share(
-    transaction: &mut Transaction<'_, Postgres>,
-    session_id: &[u8],
-) -> Result<Option<PgRow>, DurabilityError> {
-    sqlx::query(
-        "SELECT account_id::text AS account_id, uuid_send(character_id) AS character_id, \
-                uuid_send(world_id) AS world_id, runtime_scope_kind, \
-                uuid_send(runtime_scope_world_id) AS runtime_scope_world_id, \
-                CASE WHEN runtime_scope_channel_id IS NULL THEN NULL \
-                     ELSE uuid_send(runtime_scope_channel_id) END AS runtime_scope_channel_id, \
-                CASE WHEN runtime_scope_instance_id IS NULL THEN NULL \
-                     ELSE uuid_send(runtime_scope_instance_id) END AS runtime_scope_instance_id, \
-                control_loss_epoch::text AS control_loss_epoch, original_grace_deadline, \
-                predecessor_generation::text AS predecessor_generation, \
-                character_lease_generation::text AS character_lease_generation, \
-                scope_ownership_generation::text AS scope_ownership_generation, \
-                current_generation::text AS current_generation, current_transport_ref, \
-                session_state, attempt_count, prepared_attempt_ref \
-         FROM game_durability_reconnect_sessions \
-         WHERE game_session_id = encode($1, 'hex')::uuid FOR SHARE",
     )
     .bind(session_id)
     .fetch_optional(&mut **transaction)
