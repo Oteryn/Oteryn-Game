@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 MERGE_GATE = ROOT / ".github/workflows/merge-gate.yml"
+DURABILITY_TARGET = "apps/game-server/tests/durability_postgres.rs"
 POSTGRES_IMAGE = (
     "postgres:17.6-bookworm@"
     "sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3"
@@ -56,6 +57,7 @@ def validate() -> list[str]:
         "rust_linux",
         (
             "    if: needs.scope.outputs.rust == 'true'\n",
+            "      pull-requests: read\n",
             "    services:\n",
             "      postgres:\n",
             f"        image: {POSTGRES_IMAGE}\n",
@@ -64,7 +66,23 @@ def validate() -> list[str]:
             "          POSTGRES_DB: postgres\n",
             "          - 5432:5432\n",
             "          --health-cmd \"pg_isready -U oteryn_test_admin -d postgres\"\n",
+            "      - name: Classify Durability PostgreSQL target\n",
+            "        id: pg_target\n",
+            "          EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}\n",
+            "          GH_TOKEN: ${{ github.token }}\n",
+            "          PULL_NUMBER: ${{ needs.scope.outputs.pr_number }}\n",
+            f"          target = '{DURABILITY_TARGET}'\n",
+            "          previous_filename = item.get('previous_filename')\n",
+            "          status = item.get('status')\n",
+            "          if (filename == target and status == 'removed') or (\n",
+            "              previous_filename == target and filename != target\n",
+            "          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:\n",
             "      OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres\n",
+            "          TARGET_REMOVED: ${{ steps.pg_target.outputs.removed }}\n",
+            f"          if [[ -f {DURABILITY_TARGET} ]]; then\n",
+            "          elif [[ \"$TARGET_REMOVED\" == \"true\" ]]; then\n",
+            "            echo \"Durability PostgreSQL test target was removed or renamed by this pull request; failing closed.\" >&2\n",
+            "            echo \"NOT_APPLICABLE: Durability PostgreSQL test target is not allocated on this revision.\"\n",
             "          ref: ${{ needs.scope.outputs.target_sha }}\n",
             "          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}\n",
             "        run: test \"$(git rev-parse HEAD)\" = \"$EXPECTED_SHA\"\n",
