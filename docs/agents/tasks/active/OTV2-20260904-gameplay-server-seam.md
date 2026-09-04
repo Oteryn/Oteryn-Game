@@ -11,7 +11,7 @@ branch: agent/otv2-gameplay-server-seam-01
 pr: null
 lane_id: OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM
 allocation_task_id: OTV2-20260904-gameplay-server-seam-allocation
-allocation_pr: null
+allocation_pr: 294
 allocation_admission_main_sha: 68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705
 base_sha: null
 head_sha: null
@@ -58,7 +58,7 @@ This task does not make gameplay commands available. Unregistered gameplay remai
 
 ## Architecture and source of truth
 
-- `PROVEN` — write authority is **not active** while the allocation task has not merged. This task remains `waiting`/read-only until Work reads the allocation merge SHA from protected `main` and creates the worker branch from exactly that SHA.
+- `PROVEN` — write authority is **not active** while allocation PR #294 has not merged. This task remains `waiting`/read-only until Work reads the allocation merge SHA from protected `main` and creates the worker branch from exactly that SHA.
 - `PROVEN` — accepted Server Seam architecture is `docs/architecture/reviews/OTERYN_GAME_PRODUCTION_GAMEPLAY_SERVER_SEAM_PLAN_2026-08-24.md`, merged through PR #117.
 - `PROVEN` — current Foundation protocol constants include `PROTOCOL_MAJOR_V1=1`, `TRANSPORT_PROFILE_TCP_TLS13_V1=1`, `ALPN_OTERYN_GAME_V1="oteryn-game/1"`, a 1,048,576-byte FND-02 wire-frame hard maximum and message-specific bounds.
 - `PROVEN` — current `WireEnvelopeView` exposes message type/generation/sequence/raw payload and `decode_wire_envelope` validates current inbound envelopes; the accepted decision requires the missing typed bootstrap/resume consumer bridge and outbound Foundation acknowledgement/error encoding.
@@ -248,7 +248,7 @@ Dependency changes in root/game-server Cargo files are restricted to exact depen
 ## Context checkpoint
 
 ```yaml
-last_progress: fresh worker task is prepared as part of the docs-only allocation candidate; no runtime write authority exists before allocation merge/readback
+last_progress: allocation PR #294 is open Draft and records this worker task; runtime authority remains withheld until the allocation itself qualifies, merges and is read back from protected main
 status: waiting
 branch: agent/otv2-gameplay-server-seam-01
 head_sha: null
@@ -269,6 +269,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: allocation_not_merged
-next_action: after Work proves the allocation PR merged and reads its exact merge SHA from protected main, create this worker branch from exactly that SHA and run the first focused Server Seam RED before any production transport implementation
+blocker: allocation_pr_294_not_merged
+next_action: remain read-only until Work proves PR #294 merged and reads the exact merge SHA from protected main, then create the worker branch from exactly that SHA and run the first focused Server Seam RED before any production transport implementation
 ```
