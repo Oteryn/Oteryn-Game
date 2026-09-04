@@ -788,3 +788,33 @@ metadata_commit_identity: established_by_authoritative_remote_readback_not_self_
 thread_policy: after this docs-only SHA has fresh exact-head CI plus fresh whole-diff self-review and one independent exact-head Codex review with P0_0_P1_0_P2_0, resolve repaired lane-owned technical threads but keep control-plane integration gate PRRT_kwDOT8SzxM6dX3eH unresolved
 next_action: read back this docs-only commit SHA; run fresh exact-head CI on it; perform fresh whole-diff self-review against current protected main; obtain one independent exact-head Codex review whose reviewed commit equals that SHA; repair and repeat any P0/P1/P2; only with P0=P1=P2=0 resolve repaired lane-owned technical threads except PRRT_kwDOT8SzxM6dX3eH and publish READY_FOR_INTEGRATION; do not merge
 ```
+
+## Expired PREPARED and V1 observation-deadline repair qualification checkpoint — 2026-09-04
+
+This checkpoint supersedes earlier current-status checkpoints for live qualification state while retaining them as historical provenance. Its docs-only commit identity is established by authoritative remote readback and is intentionally not self-embedded.
+
+- Protected `main` is `f5f8e3717a48e6854ac36595533046938ceec890`; the prior metadata head reviewed was `f29b15065a3ff0b5e24b519efbae89720b310c5e`.
+- Independent Codex review numeric ID `5112586391` reviewed exact `f29b15065a3ff0b5e24b519efbae89720b310c5e` and produced two actionable P1 findings: thread `PRRT_kwDOT8SzxM6fRtxw`, comment `3933702052`, because expired PREPARED reconciliation did not retire the durable incumbent; and thread `PRRT_kwDOT8SzxM6fRtx5`, comment `3933702061`, because V1 direct `authorize_commit` did not fence `current.observed_at` against the authorization deadline.
+- Fresh test-only RED is `7e8266f251393ecf7d69bec87c473bb0e9bd3ca4`. Rust run `33870483323`, PostgreSQL 17.6 job `101015015095`, verified the exact checkout and completed 109 PASS / 1 expected FAIL for expired reconciliation. Merge Gate Linux job `101015043789` completed 223 PASS / 1 expected FAIL for `v1_final_revalidation_rejects_authority_observed_after_authorization_deadline`.
+- Minimal production GREEN is `eb2225a7dfb99d7489a3d8eb8620ea326e441784`. Reconciliation uses the authoritative session `FOR UPDATE` boundary; an expired exact PREPARED attempt is terminalized with the existing terminalization semantics, its prepared anchor is cleared atomically, and the historical terminal snapshot is returned. Non-expired PREPARED, COMMITTED, and already-terminal semantics are preserved. V1 direct `authorize_commit` now rejects when `now > deadline || current.observed_at > deadline`.
+- Exact-head GREEN CI: Rust `33870834866` SUCCESS; PostgreSQL 17.6 job `101016164225` exact checkout and 110/110 PASS; Windows SIM `101016163956` SUCCESS; Architecture `33870834822` SUCCESS; Agent governance `33870835950` SUCCESS; Merge Gate `33870834794` SUCCESS, including Linux workspace `101016280195` SUCCESS, Windows client `101016280333` SUCCESS, validate `101018645139` SUCCESS, and canonical `game-gate` `101018666111` SUCCESS.
+- Whole diff against protected main is `behind_by=0` and exactly 12/12 allocated paths. There is no Cargo, lockfile, workflow, or registry expansion, and no force-push, rebase, reset, or merge occurred.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+prior_metadata_head_reviewed: f29b15065a3ff0b5e24b519efbae89720b310c5e
+independent_codex_review: 5112586391
+red_head: 7e8266f251393ecf7d69bec87c473bb0e9bd3ca4
+green_head: eb2225a7dfb99d7489a3d8eb8620ea326e441784
+whole_diff: behind_by_0_exactly_12_of_12_allocated_paths
+history_operations: no_force_no_rebase_no_reset_no_merge
+metadata_commit_identity: established_by_authoritative_remote_readback_not_self_embedded
+thread_policy: only_if_P0_P1_P2_zero_resolve_repaired_lane_owned_technical_threads_except_control_plane_gate_PRRT_kwDOT8SzxM6dX3eH
+next_action: run exact-head CI on the authoritative read-back docs SHA, perform a fresh whole-diff self-review, and obtain one independent exact-head Codex review; only if P0=P1=P2=0 resolve repaired lane-owned technical threads except control-plane gate PRRT_kwDOT8SzxM6dX3eH and publish READY_FOR_INTEGRATION; do not merge
+```
