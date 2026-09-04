@@ -31,6 +31,26 @@ def job_block(text: str, key: str) -> str | None:
     return "".join(lines[start:end])
 
 
+def step_block(block: str | None, step_name: str) -> str | None:
+    if block is None:
+        return None
+
+    lines = block.replace("\r\n", "\n").splitlines(keepends=True)
+    marker = re.compile(rf"^      - name: {re.escape(step_name)}\s*(?:#.*)?\n$")
+    starts = [index for index, line in enumerate(lines) if marker.fullmatch(line)]
+    if len(starts) != 1:
+        return None
+
+    start = starts[0]
+    end = len(lines)
+    sibling_step = re.compile(r"^      - ")
+    for index in range(start + 1, len(lines)):
+        if sibling_step.match(lines[index]):
+            end = index
+            break
+    return "".join(lines[start:end])
+
+
 def require_fragments(block: str | None, job: str, fragments: tuple[str, ...]) -> list[str]:
     if block is None:
         return [f"merge gate missing canonical job: {job}"]
@@ -41,6 +61,36 @@ def require_fragments(block: str | None, job: str, fragments: tuple[str, ...]) -
             errors.append(f"merge gate job {job} missing canonical contract: {fragment.strip()}")
     if re.search(r"^\s*continue-on-error\s*:", block, re.MULTILINE):
         errors.append(f"merge gate job {job} must not permit continue-on-error")
+    return errors
+
+
+def require_unconditional_evidence_step(
+    block: str | None,
+    job: str,
+    step_name: str,
+    fragments: tuple[str, ...],
+) -> list[str]:
+    step = step_block(block, step_name)
+    if step is None:
+        return [f"merge gate job {job} missing canonical evidence step: {step_name}"]
+
+    errors: list[str] = []
+    for fragment in fragments:
+        if fragment not in step:
+            errors.append(
+                f"merge gate job {job} evidence step {step_name!r} missing canonical contract: "
+                f"{fragment.strip()}"
+            )
+
+    if re.search(r"^        (?:if|['\"]if['\"])\s*:", step, re.MULTILINE):
+        errors.append(
+            f"merge gate job {job} evidence step {step_name!r} must not define if; "
+            "applicable PG/SIM evidence is unconditional inside the required Rust job"
+        )
+    if re.search(r"^        (?:continue-on-error|['\"]continue-on-error['\"])\s*:", step, re.MULTILINE):
+        errors.append(
+            f"merge gate job {job} evidence step {step_name!r} must not permit continue-on-error"
+        )
     return errors
 
 
@@ -99,6 +149,31 @@ def validate() -> list[str]:
                 "          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}\n",
                 "if ((git rev-parse HEAD).Trim() -ne \"$env:EXPECTED_SHA\")",
                 "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
+            ),
+        )
+    )
+
+    errors.extend(
+        require_unconditional_evidence_step(
+            linux,
+            "rust_linux",
+            "Run Durability PostgreSQL E2E when allocated",
+            (
+                "        run: |\n",
+                "          TARGET_REMOVED: ${{ steps.pg_target.outputs.removed }}\n",
+                f"          if [[ -f {DURABILITY_TARGET} ]]; then\n",
+                "cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres",
+            ),
+        )
+    )
+    errors.extend(
+        require_unconditional_evidence_step(
+            windows,
+            "rust_windows",
+            "Verify deterministic simulation golden fixtures",
+            (
+                "        shell: pwsh\n",
+                "        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n",
             ),
         )
     )
