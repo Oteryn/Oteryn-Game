@@ -1703,12 +1703,12 @@ impl ReconnectDurabilityFlowV1 {
             terminal => { self.phase = ReconnectDurabilityPhaseV1::Terminal; Ok(ReconnectCommitActionV1::Terminal(terminal)) }
         }
     }
-    pub fn accept_reconciliation(&mut self, snapshot: ReconnectDurableReconciliationSnapshotV1, current_scope_generation: ScopeOwnershipGeneration) -> Result<ReconnectProjectionDecisionV1, ReconnectDurabilityErrorV1> {
+    pub fn accept_reconciliation(&mut self, snapshot: ReconnectDurableReconciliationSnapshotV1, current: ReconnectCurrentAuthorityV1) -> Result<ReconnectProjectionDecisionV1, ReconnectDurabilityErrorV1> {
         if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired { return Err(ReconnectDurabilityErrorV1::InvalidPhase); }
-        if snapshot.record != self.record || current_scope_generation != self.record.authority().scope_ownership_generation() { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }
+        if snapshot.record != self.record { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }
         match snapshot.durable_state {
             DurableReconnectStateV1::Prepared => { if snapshot.current_generation.is_some() || snapshot.current_transport_ref.is_some() { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); } self.phase = ReconnectDurabilityPhaseV1::AwaitFinalRevalidation; Ok(ReconnectProjectionDecisionV1::AwaitFinalRevalidation) }
-            DurableReconnectStateV1::Committed => { if snapshot.current_generation != Some(self.record.connection().candidate()) || snapshot.current_transport_ref != Some(self.record.connection().transport_ref()) { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); } self.phase = ReconnectDurabilityPhaseV1::Completed; Ok(ReconnectProjectionDecisionV1::InstallController { generation: self.record.connection().candidate(), transport_ref: self.record.connection().transport_ref() }) }
+            DurableReconnectStateV1::Committed => { if snapshot.current_generation != Some(self.record.connection().candidate()) || snapshot.current_transport_ref != Some(self.record.connection().transport_ref()) || current.observed_at > self.record.authorization_deadline()? || !current_authority_matches_record(&self.record, &current)? { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); } self.phase = ReconnectDurabilityPhaseV1::Completed; Ok(ReconnectProjectionDecisionV1::InstallController { generation: self.record.connection().candidate(), transport_ref: self.record.connection().transport_ref() }) }
             DurableReconnectStateV1::Terminal => { self.phase = ReconnectDurabilityPhaseV1::Terminal; Ok(ReconnectProjectionDecisionV1::Terminal) }
         }
     }
@@ -1836,7 +1836,7 @@ mod durability_reconnect_v1_tests {
         assert_eq!(snapshot.durable_state, DurableReconnectStateV1::Terminal);
         assert_eq!(snapshot.current_generation, None);
         assert_eq!(snapshot.current_transport_ref, None);
-        assert_eq!(flow.accept_reconciliation(snapshot, record.authority().scope_ownership_generation())?, ReconnectProjectionDecisionV1::Terminal);
+        assert_eq!(flow.accept_reconciliation(snapshot, ReconnectCurrentAuthorityV1::from_record(&record, 105)?)?, ReconnectProjectionDecisionV1::Terminal);
         assert_eq!(flow.phase(), ReconnectDurabilityPhaseV1::Terminal);
         Ok(())
     }
@@ -1866,12 +1866,12 @@ mod durability_reconnect_v1_tests {
         let commit_request = flow.authorize_commit(ReconnectCurrentAuthorityV1::from_record(&record, 105)?, 104)?;
         assert_eq!(flow.accept_commit_completion(ReconnectCommitCompletionV1::for_request(&commit_request, ReconnectCommitDispositionV1::Ambiguous))?, ReconnectCommitActionV1::ReconcileSameAttempt);
         assert_eq!(flow.phase(), ReconnectDurabilityPhaseV1::ReconciliationRequired);
-        assert_eq!(flow.accept_reconciliation(ReconnectDurableReconciliationSnapshotV1::committed(record.clone()), record.authority().scope_ownership_generation())?, ReconnectProjectionDecisionV1::InstallController { generation: record.connection().candidate(), transport_ref: record.connection().transport_ref() });
+        assert_eq!(flow.accept_reconciliation(ReconnectDurableReconciliationSnapshotV1::committed(record.clone()), ReconnectCurrentAuthorityV1::from_record(&record, 105)?)?, ReconnectProjectionDecisionV1::InstallController { generation: record.connection().candidate(), transport_ref: record.connection().transport_ref() });
         let (mut mismatch_flow, mismatch_request) = ReconnectDurabilityFlowV1::begin(record.clone());
         mismatch_flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(&mismatch_request, ReconnectPrepareDispositionV1::Ambiguous))?;
-        let mut mismatch = ReconnectDurableReconciliationSnapshotV1::committed(record);
+        let mut mismatch = ReconnectDurableReconciliationSnapshotV1::committed(record.clone());
         mismatch.current_transport_ref = Some(AuthenticatedTransportRefV1::decode(&[7u8; 16]).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?);
-        assert_eq!(mismatch_flow.accept_reconciliation(mismatch, ScopeOwnershipGeneration::new(10).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?), Err(ReconnectDurabilityErrorV1::ReconciliationMismatch));
+        assert_eq!(mismatch_flow.accept_reconciliation(mismatch, ReconnectCurrentAuthorityV1::from_record(&record, 105)?), Err(ReconnectDurabilityErrorV1::ReconciliationMismatch));
         Ok(())
     }
 }

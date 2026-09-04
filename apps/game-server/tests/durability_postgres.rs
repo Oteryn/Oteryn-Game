@@ -728,8 +728,8 @@ fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
                 assert_eq!(
                     flow.accept_reconciliation(
                         recovered_journal.reconcile(&prepare).await?,
-                        ScopeOwnershipGeneration::new(10)
-                            .map_err(|_error| std::io::Error::other("invalid scope generation"))?,
+                        current_authority_from_record(prepare.record(), record_now)
+                            .map_err(foundation_error)?,
                     )
                     .map_err(foundation_error)?,
                     ReconnectProjectionDecisionV1::InstallController {
@@ -999,9 +999,8 @@ fn committed_prepare_replay_after_process_restart_routes_to_reconciliation()
                     recovered_flow
                         .accept_reconciliation(
                             recovered_journal.reconcile(&replay_prepare).await?,
-                            ScopeOwnershipGeneration::new(10).map_err(|_error| {
-                                std::io::Error::other("invalid scope generation")
-                            })?,
+                            current_authority_from_record(replay_prepare.record(), record_now)
+                                .map_err(foundation_error)?,
                         )
                         .map_err(foundation_error)?,
                     ReconnectProjectionDecisionV1::InstallController {
