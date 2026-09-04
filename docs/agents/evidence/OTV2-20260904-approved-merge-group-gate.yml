@@ -1,0 +1,272 @@
+name: Game Merge Queue gate
+
+on:
+  merge_group:
+    types: [checks_requested]
+
+permissions: {}
+
+concurrency:
+  group: game-merge-group-${{ github.event.merge_group.head_sha }}
+  cancel-in-progress: true
+
+jobs:
+  candidate:
+    name: Merge Queue / candidate and governance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Validate exact merge-group identity
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          BASE_REF: ${{ github.event.merge_group.base_ref || '' }}
+          BASE_SHA: ${{ github.event.merge_group.base_sha || '' }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha || '' }}
+          GITHUB_SHA_VALUE: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          [[ "$EVENT_NAME" == "merge_group" ]]
+          [[ "$EVENT_ACTION" == "checks_requested" ]]
+          [[ "$BASE_REF" == "refs/heads/main" ]]
+          [[ "$BASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$HEAD_SHA" == "$GITHUB_SHA_VALUE" ]]
+          [[ "$HEAD_SHA" != "$BASE_SHA" ]]
+
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate candidate repository contracts
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          git cat-file -e "${BASE_SHA}^{commit}"
+          git diff --check "$BASE_SHA" "$HEAD_SHA"
+          python tools/agents/validate_governance.py
+          python tools/repository/validate_repository_policy.py
+
+  dependency_review:
+    name: Merge Queue / dependency review
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Review dependency changes in exact queue candidate
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+        with:
+          fail-on-severity: high
+          base-ref: ${{ github.event.merge_group.base_sha }}
+          head-ref: ${{ github.event.merge_group.head_sha }}
+
+  codeql:
+    name: Merge Queue / CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      security-events: write
+      packages: read
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [python, actions]
+    steps:
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
+        with:
+          languages: ${{ matrix.language }}
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4
+        with:
+          category: /language:${{ matrix.language }}-merge-queue
+
+  rust_linux:
+    name: Merge Queue / Rust Linux workspace
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out merge-group SHA
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+      - name: Verify policy metadata and formatting
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.94.0 metadata --locked --format-version 1 >/dev/null
+          cargo +1.94.0 fmt --all --check
+          cargo +1.94.0 run --locked -p oteryn-architecture-check -- workspace .
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          for path in (
+              Path('docs/migration/rust-client-provenance.json'),
+              Path('docs/migration/rust-client-path-map.json'),
+              Path('docs/migration/rust-dependency-delta.json'),
+          ):
+              json.loads(path.read_text(encoding='utf-8'))
+          PY
+
+      - name: Verify production dependency closure
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in oteryn-client oteryn-game-server; do
+            cargo +1.94.0 tree --locked -p "$package" --edges normal,build > "${package}-production-tree.txt"
+          done
+          python - <<'PY'
+          from pathlib import Path
+          forbidden = (
+              'protocol-canary', 'protocol-core', 'protocol-oteryn',
+              'transport', 'game-session', 'oteryn-client-domain',
+              'oteryn-client-simulation', 'oteryn-synthetic-assets',
+              'oteryn-test-support', 'oteryn-synthetic-client-harness',
+          )
+          for package in ('oteryn-client', 'oteryn-game-server'):
+              tree = Path(f'{package}-production-tree.txt').read_text(encoding='utf-8')
+              found = [name for name in forbidden if name in tree]
+              if found:
+                  raise SystemExit(f'{package} production closure contains forbidden entries: {found}')
+          PY
+
+      - name: Build lint and test workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.94.0 build --locked --workspace --all-targets
+          cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings
+          cargo +1.94.0 test --locked --workspace
+          cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
+          cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
+
+      - name: Run Durability PostgreSQL E2E
+        env:
+          OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+        run: cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres
+
+  rust_windows:
+    name: Merge Queue / Rust Windows client
+    runs-on: windows-2025
+    timeout-minutes: 60
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          persist-credentials: false
+
+      - name: Verify checked-out merge-group SHA
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          if ((git rev-parse HEAD).Trim() -ne "$env:EXPECTED_SHA") {
+            throw "checked-out revision does not match exact merge-group head"
+          }
+
+      - name: Install Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install 1.94.0 --profile minimal --component clippy,rustfmt
+
+      - name: Build lint and smoke production client
+        shell: pwsh
+        run: |
+          cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
+          cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
+          cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke
+          cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
+
+      - name: Verify deterministic simulation golden fixtures
+        shell: pwsh
+        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc
+
+  rust_supply_chain:
+    name: Merge Queue / Rust supply chain
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Check out exact merge-group candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.head_sha }}
+          persist-credentials: false
+
+      - name: Check advisories licenses bans and sources
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # cargo-deny 0.20.2
+        with:
+          rust-version: '1.94.0'
+          command: check
+          arguments: --all-features
+
+  game_gate:
+    name: game-gate
+    if: always()
+    needs: [candidate, dependency_review, codeql, rust_linux, rust_windows, rust_supply_chain]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Require every Merge Queue qualification layer
+        shell: bash
+        env:
+          CANDIDATE: ${{ needs.candidate.result }}
+          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
+          CODEQL: ${{ needs.codeql.result }}
+          RUST_LINUX: ${{ needs.rust_linux.result }}
+          RUST_WINDOWS: ${{ needs.rust_windows.result }}
+          RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
+        run: |
+          set -euo pipefail
+          for result in "$CANDIDATE" "$DEPENDENCY_REVIEW" "$CODEQL" "$RUST_LINUX" "$RUST_WINDOWS" "$RUST_SUPPLY_CHAIN"; do
+            test "$result" = success
