@@ -118,6 +118,28 @@ mod contract_tests {
     }
 
     #[test]
+    fn record_derived_candidate_binding_is_internal_and_its_convenience_is_test_only() {
+        let candidate_impl = ADMISSION_RECOVERY
+            .split_once("impl ReconnectCandidateBindingV1 {")
+            .and_then(|(_before, rest)| rest.split_once("\n}\n"))
+            .map(|(implementation, _after)| implementation)
+            .expect("candidate binding implementation must remain present");
+
+        assert!(
+            !candidate_impl.contains("\n    pub fn from_record("),
+            "record-derived candidate binding must not be production-public"
+        );
+        assert!(
+            candidate_impl.contains("fn expected_binding_from_record("),
+            "immutable record derivation must remain an internal expected-binding helper"
+        );
+        assert!(
+            candidate_impl.contains("#[cfg(test)]\n    pub fn from_record("),
+            "the record-derived candidate convenience must remain available only to tests"
+        );
+    }
+
+    #[test]
     fn generic_v1_terminal_reconciliation_is_not_a_production_recovery_api() {
         const ADMISSION_JOURNAL: &str = include_str!("admission_journal.rs");
         const DURABILITY: &str = include_str!("../durability/mod.rs");
