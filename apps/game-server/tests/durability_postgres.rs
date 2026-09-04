@@ -2577,6 +2577,7 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
             let corruptions = [
                 "session_generation",
                 "canonical_attempt",
+                "candidate_generation",
                 "transport_reservation",
                 "protection_continuity",
                 "fnd02_mirror",
@@ -2682,6 +2683,19 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
                                 "UPDATE game_durability_reconnect_attempts \
                                  SET record_json = jsonb_set(record_json::jsonb, \
                                      '{connection,transport_ref}', '[1]'::jsonb)::text \
+                                 WHERE game_session_id = encode($1, 'hex')::uuid \
+                                   AND reconnect_attempt_ref = $2",
+                            )
+                            .bind(session_id.as_slice())
+                            .bind(attempt_ref.as_slice())
+                            .execute(&pool)
+                            .await?;
+                        }
+                        "candidate_generation" => {
+                            sqlx::query(
+                                "UPDATE game_durability_reconnect_attempts \
+                                 SET record_json = jsonb_set(record_json::jsonb, \
+                                     '{connection,candidate_generation}', '10'::jsonb)::text \
                                  WHERE game_session_id = encode($1, 'hex')::uuid \
                                    AND reconnect_attempt_ref = $2",
                             )
