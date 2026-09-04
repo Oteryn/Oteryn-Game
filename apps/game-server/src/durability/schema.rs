@@ -294,9 +294,13 @@ mod terminal_replacement_postgres_red_tests {
     ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
         ReconnectCurrentAuthorityV1::from_current_facts(
             record,
-            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
-            Some(CharacterWorldEligibilityClaimV1::from_identity(
-                record.identity(),
+            Some(AccountPresenceClaimV1::new(
+                record.identity().account_id(),
+                record.identity().character_id(),
+            )?),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
             )),
             Some(ReconnectCandidateBindingV1::new(
                 record.identity().game_session_id(),
@@ -642,8 +646,9 @@ mod terminal_replacement_postgres_red_tests {
         )?;
         TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
-            Some(&AccountPresenceClaimV1::from_identity(
-                candidate.identity(),
+            Some(&AccountPresenceClaimV1::new(
+                candidate.identity().account_id(),
+                candidate.identity().character_id(),
             )?),
             predecessor,
             candidate.identity().game_session_id(),

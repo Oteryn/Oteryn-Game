@@ -1203,7 +1203,10 @@ mod terminal_replacement_foundation_red_tests {
     ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
         current_authority(
             record,
-            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(AccountPresenceClaimV1::new(
+                record.identity().account_id(),
+                record.identity().character_id(),
+            )?),
             observed_at,
         )
     }
@@ -1216,8 +1219,9 @@ mod terminal_replacement_foundation_red_tests {
         ReconnectCurrentAuthorityV1::from_current_facts(
             record,
             current_account_presence,
-            Some(CharacterWorldEligibilityClaimV1::from_identity(
-                record.identity(),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
             )),
             Some(ReconnectCandidateBindingV1::new(
                 record.identity().game_session_id(),
@@ -1572,8 +1576,9 @@ mod terminal_replacement_foundation_red_tests {
     ) -> Result<TerminalGameSessionReplacementAuthorizationV1, ReconnectDurabilityErrorV1> {
         TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
-            Some(&AccountPresenceClaimV1::from_identity(
-                candidate.identity(),
+            Some(&AccountPresenceClaimV1::new(
+                candidate.identity().account_id(),
+                candidate.identity().character_id(),
             )?),
             expected_predecessor,
             expected_candidate,
@@ -1604,9 +1609,16 @@ mod terminal_replacement_foundation_red_tests {
 
         let exact_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
-            Some(AccountPresenceClaimV1::from_identity(record.identity()).expect("presence")),
-            Some(CharacterWorldEligibilityClaimV1::from_identity(
-                record.identity(),
+            Some(
+                AccountPresenceClaimV1::new(
+                    record.identity().account_id(),
+                    record.identity().character_id(),
+                )
+                .expect("presence"),
+            ),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
             )),
             Some(
                 ReconnectCandidateBindingV1::new(
@@ -1659,9 +1671,16 @@ mod terminal_replacement_foundation_red_tests {
         .expect("changed authority");
         let changed_current = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
-            Some(AccountPresenceClaimV1::from_identity(record.identity()).expect("presence")),
-            Some(CharacterWorldEligibilityClaimV1::from_identity(
-                record.identity(),
+            Some(
+                AccountPresenceClaimV1::new(
+                    record.identity().account_id(),
+                    record.identity().character_id(),
+                )
+                .expect("presence"),
+            ),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
             )),
             Some(
                 ReconnectCandidateBindingV1::new(
@@ -1709,8 +1728,9 @@ mod terminal_replacement_foundation_red_tests {
             ReconnectCurrentAuthorityV1::from_current_facts(
                 &record,
                 presence,
-                Some(CharacterWorldEligibilityClaimV1::from_identity(
-                    record.identity(),
+                Some(CharacterWorldEligibilityClaimV1::new(
+                    record.identity().character_id(),
+                    record.identity().world_id(),
                 )),
                 Some(
                     ReconnectCandidateBindingV1::new(

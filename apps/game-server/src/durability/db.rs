@@ -49,9 +49,13 @@ mod runtime_scope_identity_red_tests {
     ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
         ReconnectCurrentAuthorityV1::from_current_facts(
             record,
-            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
-            Some(CharacterWorldEligibilityClaimV1::from_identity(
-                record.identity(),
+            Some(AccountPresenceClaimV1::new(
+                record.identity().account_id(),
+                record.identity().character_id(),
+            )?),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
             )),
             Some(ReconnectCandidateBindingV1::new(
                 record.identity().game_session_id(),
@@ -521,8 +525,9 @@ mod runtime_scope_identity_red_tests {
     ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
         current_authority_with_bindings(
             record,
-            Some(CharacterWorldEligibilityClaimV1::from_identity(
-                record.identity(),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
             )),
             Some(ReconnectCandidateBindingV1::new(
                 record.identity().game_session_id(),
@@ -552,7 +557,10 @@ mod runtime_scope_identity_red_tests {
     ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
         ReconnectCurrentAuthorityV1::from_current_facts(
             record,
-            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(AccountPresenceClaimV1::new(
+                record.identity().account_id(),
+                record.identity().character_id(),
+            )?),
             current_character_world_eligibility,
             current_candidate,
             runtime_scope,
@@ -656,8 +664,9 @@ mod runtime_scope_identity_red_tests {
     fn v2_final_revalidation_requires_current_world_and_live_candidate_binding()
     -> Result<(), ReconnectDurabilityErrorV1> {
         let record = candidate_record()?;
-        let exact_world = Some(CharacterWorldEligibilityClaimV1::from_identity(
-            record.identity(),
+        let exact_world = Some(CharacterWorldEligibilityClaimV1::new(
+            record.identity().character_id(),
+            record.identity().world_id(),
         ));
         let exact_candidate = ReconnectCandidateBindingV1::new(
             record.identity().game_session_id(),
@@ -844,8 +853,9 @@ mod runtime_scope_identity_red_tests {
                 )
             };
 
-        let exact_world = Some(CharacterWorldEligibilityClaimV1::from_identity(
-            record.identity(),
+        let exact_world = Some(CharacterWorldEligibilityClaimV1::new(
+            record.identity().character_id(),
+            record.identity().world_id(),
         ));
         let exact_candidate = Some(ReconnectCandidateBindingV1::new(
             record.identity().game_session_id(),
@@ -875,9 +885,13 @@ mod runtime_scope_identity_red_tests {
         let record = candidate_record()?;
         let advanced_authority = ReconnectCurrentAuthorityV1::from_current_facts(
             &record,
-            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
-            Some(CharacterWorldEligibilityClaimV1::from_identity(
-                record.identity(),
+            Some(AccountPresenceClaimV1::new(
+                record.identity().account_id(),
+                record.identity().character_id(),
+            )?),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
             )),
             Some(ReconnectCandidateBindingV1::new(
                 record.identity().game_session_id(),
@@ -1060,9 +1074,13 @@ mod runtime_scope_identity_red_tests {
         let current = |original_grace_deadline: i64| {
             ReconnectCurrentAuthorityV1::from_current_facts(
                 &record,
-                Some(AccountPresenceClaimV1::from_identity(record.identity())?),
-                Some(CharacterWorldEligibilityClaimV1::from_identity(
-                    record.identity(),
+                Some(AccountPresenceClaimV1::new(
+                    record.identity().account_id(),
+                    record.identity().character_id(),
+                )?),
+                Some(CharacterWorldEligibilityClaimV1::new(
+                    record.identity().character_id(),
+                    record.identity().world_id(),
                 )),
                 Some(ReconnectCandidateBindingV1::new(
                     record.identity().game_session_id(),

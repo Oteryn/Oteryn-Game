@@ -21,9 +21,13 @@ pub fn current_authority_from_record(
 
     ReconnectCurrentAuthorityV1::from_current_facts(
         record,
-        Some(AccountPresenceClaimV1::from_identity(record.identity())?),
-        Some(CharacterWorldEligibilityClaimV1::from_identity(
-            record.identity(),
+        Some(AccountPresenceClaimV1::new(
+            record.identity().account_id(),
+            record.identity().character_id(),
+        )?),
+        Some(CharacterWorldEligibilityClaimV1::new(
+            record.identity().character_id(),
+            record.identity().world_id(),
         )),
         Some(ReconnectCandidateBindingV1::new(
             record.identity().game_session_id(),
