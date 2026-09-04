@@ -672,3 +672,36 @@ thread_policy: do_not_resolve_any_technical_thread_or_mark_READY_until_fresh_met
 owner_action_required: null
 next_action: read back this metadata commit SHA; require fresh exact-head hosted CI on it, perform complete whole-diff self-review against current protected main, then request fresh independent native @codex review pinned to the same immutable SHA; repair and repeat any P0/P1/P2; do not merge
 ```
+
+## Replacement-attempt receipt binding repair checkpoint — 2026-09-04
+
+This checkpoint supersedes earlier current-status checkpoints for live continuation state while preserving them as historical provenance. Independent Codex review `5109280292` of parent `293449a1fdabbebbc725b1fb3ec5c4f6343bcf2b` produced P1 inline comment `3930961564`: the replacement receipt lacked the original candidate `ReconnectAttemptRef`, so permitted later fresh same-fence attempts could be misclassified as the original replacement attempt.
+
+- Fresh RED is `891a1a166826abcf28deb92be29cef4ed53c2f15`. Rust run `33838542287`, PostgreSQL 17.6 job `100915905592`, failed at the expected build boundary with `terminal replacement receipt must persist the exact candidate reconnect attempt ref`.
+- Minimal GREEN is `cf97f713ad452cf3a51118a34b247296749966f4`, commit `fix(durability): bind replacement attempt receipts`.
+- GREEN Rust run `33850409050`, PostgreSQL 17.6 job `100951668541`, verified the exact checkout and completed `106 passed; 0 failed`, including `replacement_created_session_can_replay_fresh_same_fence_attempt_after_collision`.
+- Windows SIM job `100951668289`: SUCCESS. Architecture semantic audit `33850408950`: SUCCESS. Agent governance `33850409016`: SUCCESS.
+- Merge Gate run `33850409137`: SUCCESS; validate job `100953719857`: SUCCESS; canonical `game-gate` job `100953738250`: SUCCESS; Linux job `100951700436`: SUCCESS; Windows client job `100951700454`: SUCCESS; policy/metadata job `100951700548`: SUCCESS.
+- Protected `main` remains `f5f8e3717a48e6854ac36595533046938ceec890`.
+- The repair delta from RED to GREEN is exactly four allocated files: `apps/game-server/migrations/0001_admission_reconnect_journal.sql`, `apps/game-server/src/durability/admission_journal.rs`, `apps/game-server/src/durability/mod.rs`, and `apps/game-server/src/durability/schema.rs`. PR #252 remains exactly 12/12 allocated changed paths.
+- No force, rebase, reset, or merge occurred. PR #252 remains Draft, open, and unmerged.
+- After this docs-only publication, its remote SHA, established by authoritative readback, becomes the sole final exact-head qualification candidate. This document intentionally does not embed a self-referential SHA placeholder.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+reviewed_parent: 293449a1fdabbebbc725b1fb3ec5c4f6343bcf2b
+independent_codex_review: 5109280292
+p1_inline_comment: 3930961564
+red_head: 891a1a166826abcf28deb92be29cef4ed53c2f15
+green_head: cf97f713ad452cf3a51118a34b247296749966f4
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+allocated_paths: 12_of_12
+history_operations: no_force_no_rebase_no_reset_no_merge
+thread_policy: do_not_resolve_threads_or_declare_READY_before_fresh_exact_head_review_reports_P0_0_P1_0_P2_0
+next_action: run fresh exact-head CI on the authoritative read-back docs head, then perform whole-diff self-review and independent read-only Codex review; repair and repeat only if a fresh P0/P1/P2 appears; do not resolve threads or declare READY before P0=P1=P2=0
+```
