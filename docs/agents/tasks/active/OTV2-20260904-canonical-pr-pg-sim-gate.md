@@ -14,10 +14,10 @@ parent_issue: 277
 base_sha: d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d
 head_sha: null
 final_head_sha: null
-final_head_frozen_at: 2026-09-04T14:00:00Z
+final_head_frozen_at: 2026-09-04T14:24:00Z
 owner: ChatGPT GPT-5.6 Pro implementation worker
 created_at: 2026-09-04T13:56:00Z
-updated_at: 2026-09-04T14:00:00Z
+updated_at: 2026-09-04T14:24:00Z
 execution_budget_minutes: 60
 large_budget_reason: required-check composition with hosted RED/GREEN evidence
 owned_paths:
@@ -38,15 +38,17 @@ external_repositories: []
 
 ## Outcome
 
-Every currently Rust/workspace-relevant pull-request head must pass real PostgreSQL durability and deterministic Windows simulation tests inside the canonical `game-gate`, without removing any existing lane or changing the protected Merge Queue gate.
+Every Rust/workspace-relevant pull-request head executes deterministic Windows simulation inside canonical `game-gate`. The same required Linux job owns a pinned PostgreSQL 17.6 service and runs the real `durability_postgres` target whenever that target exists on the exact candidate. A PR cannot turn existing PostgreSQL evidence into a skip by deleting or renaming the target; revisions predating its allocation report an explicit `NOT_APPLICABLE` rather than a false E2E PASS.
 
 ## Architecture and source of truth
 
 - `PROVEN` — protected `main` at admission is `d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d`.
-- `PROVEN` — ruleset `20991995` requires the stable `game-gate`; this task does not change the ruleset or status name.
-- `PROVEN` — adjacent `rust.yml` PG/SIM results are not child predicates of the PR aggregate.
-- `PROVEN` — protected-base merge-authority audit pins `merge-group-gate.yml`; this task leaves the gate and pin byte-identical.
-- `DERIVED` — putting PG in the already-required Linux job and SIM in the already-required Windows job strengthens canonical evidence while preserving the existing scope, validate and `game-gate` fan-in implementations and their pinned hashes.
+- `PROVEN` — ruleset `20991995` requires stable `game-gate`; this task does not change the ruleset or status name.
+- `PROVEN` — `durability_postgres.rs` is absent from protected main and exists only in still-unmerged PR #252 at the current implementation stage.
+- `PROVEN` — adjacent `rust.yml` PG/SIM results are not canonical child predicates of PR `game-gate`.
+- `PROVEN` — protected-base merge-authority audit pins `merge-group-gate.yml`; this task leaves both the gate and pin byte-identical.
+- `DERIVED` — PG in the already-required Linux job and SIM in the already-required Windows job strengthen evidence while preserving the existing scope, validate and final fan-in implementations.
+- `DERIVED` — exact-PR file-status classification is required to distinguish historical non-allocation from candidate removal/rename without trusting a stale base assumption.
 
 ## High-risk authority/recovery qualification
 
@@ -54,41 +56,50 @@ Every currently Rust/workspace-relevant pull-request head must pass real Postgre
 applicable: CONTROL_PLANE_REQUIRED_CHECK_COMPOSITION
 model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
 authority_invariants:
-  - canonical_gate_must_include_real_postgresql_for_rust_surface
-  - canonical_gate_must_include_windows_simulation_for_rust_surface
+  - canonical_windows_job_runs_simulation
+  - allocated_postgresql_target_runs_in_canonical_linux_job
+  - candidate_cannot_remove_or_rename_postgresql_target_into_skip
+  - historical_absence_is_not_misreported_as_postgresql_pass
 consumer_boundaries:
   - pull_request_game_gate
 mutation_operators:
-  - remove_postgresql_contract
   - remove_simulation_contract
+  - remove_postgresql_contract
+  - remove_or_rename_postgresql_test_target
 independent_current_fact_sources:
-  - exact_pull_request_head_resolved_by_merge_gate_scope
+  - exact_pull_request_head_resolved_by_scope
+  - exact_head_checkout
+  - exact_live_pull_request_changed_file_statuses
 record_derived_matching_helper:
   allowed_for_positive_happy_path: NOT_APPLICABLE
   forbidden_for_negative_authority_or_provenance_cases: NOT_APPLICABLE
 finding_family_sweep:
   sibling_apis: pull_request_gate_only_in_this_task
   protocol_versions: NOT_APPLICABLE
-  direct_and_reconciled_paths: required_linux_and_windows_jobs_plus_existing_aggregate
-  restart_retry_replay_concurrency_pg_reload: real_postgresql_reload_harness
+  direct_and_reconciled_paths: linux_postgresql_windows_simulation_and_existing_aggregate
+  restart_retry_replay_concurrency_pg_reload: durability_postgres_target_when_allocated
   evidence:
     - tools/repository/validate_pr_gate_pg_sim.py
-    - hosted RED run 33881045461 job 101049506434
+    - RED 95812aaffe88974958b73803760e070e8c2abe2b
+    - RED 891adbf70723ef5f558e15aa69e58ce1a6c957a1
 finding_dispositions:
-  p0_p1_verified_repair_or_rejection: pending_independent_review
-  p2_fixed_accepted_or_deferred: pending_independent_review
+  p0_p1_verified_repair_or_rejection: pending_exact_head_green_and_independent_review
+  p2_fixed_accepted_or_deferred: pending_exact_head_green_and_independent_review
 ```
 
 ## Acceptance criteria
 
-- [x] Deterministic validator names the exact required PG and SIM contracts.
-- [x] Validator-only RED executed on exact `95812aaffe88974958b73803760e070e8c2abe2b` and failed only on missing canonical PG/SIM contracts.
-- [x] Required Linux job starts pinned PostgreSQL 17.6, verifies exact PR SHA and runs `durability_postgres`.
+- [x] Deterministic validator names the exact PG, SIM and deletion-safe routing contracts.
+- [x] Original validator RED failed before PG/SIM were added.
+- [x] Initial runtime GREEN attempt proved exact Windows SIM success and exposed the missing-target compatibility defect.
+- [x] A distinct second RED requires exact-head changed-file classification and deletion-safe conditional execution.
+- [x] Required Linux job starts pinned PostgreSQL 17.6 and verifies exact PR SHA.
+- [x] If `durability_postgres.rs` exists, the required Linux job runs it; if the PR removes/renames it, the job fails closed; if it was never allocated on that revision, the job records `NOT_APPLICABLE`.
 - [x] Required Windows job verifies exact PR SHA and runs simulation golden fixtures.
 - [x] Existing Linux, Windows client, dependency review, CodeQL, governance and supply-chain work remains intact.
-- [x] Existing scope, validate and `game-gate` fan-in implementations remain unchanged; their protected policy hashes match the current baseline.
+- [x] Existing scope, validate and `game-gate` fan-in implementations remain unchanged.
 - [x] `merge-group-gate.yml`, protected audit pin and `rust.yml` remain unchanged.
-- [ ] Exact-head canonical `game-gate` passes with inspectable PostgreSQL and simulation steps.
+- [ ] Exact final-head canonical `game-gate` passes with inspectable target-classification, PostgreSQL disposition and simulation steps.
 - [ ] One independent deep review has no unresolved actionable finding.
 
 ## Excluded scope
@@ -97,48 +108,61 @@ No runtime/test-source edit, no #252-owned path, no merge-group gate, protected 
 
 ## Implementation / findings
 
-### TDD RED
+### RED 1 — missing canonical PG/SIM contracts
 
-- Exact RED head: `95812aaffe88974958b73803760e070e8c2abe2b`.
-- Agent Governance run `33881045461`, job `101049506434`, checked out the exact RED SHA.
-- All existing governance/prompt checks passed.
-- Repository policy then failed only on 15 expected missing job-local fragments: PostgreSQL service/image/user/password/database/port/health/env/SHA/test in `rust_linux`, and exact-SHA/simulation execution in `rust_windows`.
-- Architecture run `33881045529` passed on the same RED generation.
+- Exact head `95812aaffe88974958b73803760e070e8c2abe2b`.
+- Agent Governance run `33881045461`, job `101049506434`, verified exact checkout.
+- Existing governance passed; repository policy failed only on the expected missing PG/SIM job fragments.
+- Architecture run `33881045529` passed.
 
-### Minimal GREEN
+### Initial GREEN attempt — root-cause evidence
 
-- `rust_linux` retains its existing build, strict Clippy, workspace tests, synthetic harness and server smoke. It adds the already pinned PostgreSQL 17.6 service, exact checkout verification and one explicit `durability_postgres` execution with the admin URL scoped to that step so ordinary workspace tests do not acquire PostgreSQL provenance accidentally.
-- `rust_windows` retains client build, strict Clippy, smoke and synthetic harness. It adds exact checkout verification and deterministic simulation golden execution.
-- `validate_pr_gate_pg_sim.py` remains the executable regression contract; the wrapper still runs the protected-base audit and existing core validator.
-- `BUILD_TEST_MATRIX.md` now distinguishes stable `game-gate`, internal `Merge gate / validate`, canonical PR PG/SIM and the still-pending merge-group work.
-- The exact GREEN commit SHA is established by authoritative branch/PR readback after publication and is not self-embedded here.
+- Exact head `fe8e76c617472b6281e519647cc099ebc7b7d1ad` added unconditional PG and exact-head SIM.
+- Merge Gate run `33881858954`: Windows job `101052200457` passed, including exact SHA and simulation golden execution.
+- Linux job `101052200653` failed only at the new PG command: Cargo reported no `durability_postgres` test target; the target is not present on protected main.
+- Root cause is target allocation state, not PostgreSQL service startup or a test failure.
+
+### RED 2 — deletion-safe target routing
+
+- Exact head `891adbf70723ef5f558e15aa69e58ce1a6c957a1` extends the deterministic validator only.
+- Agent Governance run `33883182869`, job `101056524350`, verified exact checkout; all existing governance checks passed and repository policy failed only on the 17 newly required target-routing fragments.
+- Architecture run `33883182811` passed.
+
+### Minimal GREEN repair
+
+- `rust_linux` receives `pull-requests: read` only, then revalidates the exact live PR head and enumerates every changed file before classifying removal/rename of `apps/game-server/tests/durability_postgres.rs`.
+- API failure, moved head, invalid/over-cap count or enumeration mismatch fails the required job.
+- Exact candidate file present → execute real PostgreSQL E2E; target removed/renamed → fail; historical non-allocation → explicit `NOT_APPLICABLE`.
+- `rust_windows` retains its exact-SHA and simulation golden proof.
+- No scope, aggregate, lane-selection, merge-group or protected-setting semantics are changed.
+- The final exact commit SHA is established by authoritative GitHub branch/PR readback after this already-known metadata is committed.
 
 ## Validation
 
 ### Focused
 
-- command/run: `python tools/repository/validate_pr_gate_pg_sim.py` against final candidate
-- result: local isolated static execution PASS
-- command/run: PyYAML syntax parse of final `merge-gate.yml`
-- result: PASS; mapping contains 10 jobs
-- command/run: repository-policy block hash check
-- result: `scope=c4ed68e5e828897500f6fe0cde71f0bbc4de853c585508b893e1c066bb900ab1` MATCH; `validate=c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a` MATCH
-- command/run: fail-closed scan of modified jobs
-- result: no `continue-on-error`
+- command/run: `python tools/repository/validate_pr_gate_pg_sim.py`
+- result: pending exact final head; validator design proven RED on `891adbf7...`
+- command/run: repository-policy protected block hashes
+- expected: current protected `scope` and `validate` SHA-256 values unchanged
+- command/run: workflow YAML syntax and forbidden-token review
+- expected: parse PASS; no `continue-on-error`
 
 ### Component/integration
 
 - command/run: `python tools/repository/validate_repository_policy.py`; canonical hosted `game-gate`
-- result: pending exact GREEN head
+- result: pending exact final head
 
 ### E2E
 
-- scenario: real isolated PostgreSQL durability binary and deterministic Windows simulation golden fixtures on exact PR head
-- result: pending hosted GREEN
+- scenario: deterministic Windows simulation on final head
+- result: pending exact final head
+- scenario: PostgreSQL target on this pre-#252 candidate
+- result: expected explicit `NOT_APPLICABLE`, not PASS; real execution becomes mandatory when the exact candidate contains the target
 
 ### Exact-head CI
 
-- final head: established by authoritative GitHub readback after GREEN publication
+- final head: established by authoritative GitHub readback after publication
 - trigger source: Draft PR #287 synchronize
 - workflow/run/job: pending
 - runner assignment: GitHub-hosted Linux and Windows
@@ -147,10 +171,10 @@ No runtime/test-source edit, no #252-owned path, no merge-group gate, protected 
 
 ## Self-review
 
-- exact head: established after GREEN publication
+- exact head: established after publication
 - method/reviewer: implementing agent whole-diff review
-- material findings: none in local generated candidate; hosted evidence pending
-- verdict: PASS_PENDING_EXACT_HEAD_HOSTED_VALIDATION
+- material findings: pending hosted evidence
+- verdict: pending
 
 ## Independent review
 
@@ -162,9 +186,9 @@ No runtime/test-source edit, no #252-owned path, no merge-group gate, protected 
 
 ## PR and closeout
 
-- changed-file review: five allocated paths only
+- changed-file review: exactly five allocated paths
 - unresolved review threads: pending
-- related/superseded PRs: #284 and #285 are subsequent staged merge-group work
+- related/superseded PRs: #284 and #285 are staged merge-group work
 - protected auto-merge: disabled/not requested
 - merge commit/result: pending control-plane integration
 - ownership release: after protected-main terminal readback
@@ -172,30 +196,36 @@ No runtime/test-source edit, no #252-owned path, no merge-group gate, protected 
 ## Context checkpoint
 
 ```yaml
-last_progress: hosted exact-head RED proven and minimal GREEN prepared with unchanged aggregate hashes
+last_progress: two exact RED generations proved missing contracts and missing-target routing; minimal deletion-safe GREEN is frozen for publication
 status: validating
 branch: ci/canonical-pr-pg-sim-279
 head_sha: null
 pr: 287
 final_head_sha: null
-final_head_frozen_at: 2026-09-04T14:00:00Z
-ci_trigger_source: pull_request_synchronize_after_green_publication
-ci_check_generation: green_pending
+final_head_frozen_at: 2026-09-04T14:24:00Z
+ci_trigger_source: pull_request_synchronize_after_final_green
+ci_check_generation: final_green_pending
 ci_checks_for_current_head: 0
 ci_run_ids:
-  - 33881045461_RED_FAILURE_EXPECTED
-  - 33881045529_RED_ARCHITECTURE_SUCCESS
+  - 33881045461_RED1_POLICY_FAILURE_EXPECTED
+  - 33881045529_RED1_ARCHITECTURE_SUCCESS
+  - 33881858954_INITIAL_GREEN_RUNTIME_FAILURE
+  - 33883182869_RED2_POLICY_FAILURE_EXPECTED
+  - 33883182811_RED2_ARCHITECTURE_SUCCESS
 ci_job_ids:
-  - 101049506434_RED_POLICY_FAILURE_EXPECTED
-runner_assignment_state: github_hosted_green_pending
+  - 101049506434_RED1
+  - 101052200457_INITIAL_GREEN_WINDOWS_SIM_SUCCESS
+  - 101052200653_INITIAL_GREEN_LINUX_MISSING_TARGET_FAILURE
+  - 101056524350_RED2
+runner_assignment_state: github_hosted_final_green_pending
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish the minimal GREEN, verify branch and PR exact head, then require exact-head repository policy, Linux PostgreSQL, Windows simulation, canonical game-gate, whole-diff self-review and one independent deep review before READY_FOR_INTEGRATION; do not merge
+next_action: publish the deletion-safe GREEN, verify exact branch/PR head and require repository policy, explicit PostgreSQL disposition, Windows simulation, canonical game-gate, whole-diff self-review and one independent deep review before READY_FOR_INTEGRATION; do not merge
 ```

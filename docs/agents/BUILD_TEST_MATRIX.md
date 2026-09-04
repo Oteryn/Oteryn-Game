@@ -31,10 +31,18 @@ When Rust/workspace-relevant paths change, the same merge gate additionally requ
 
 - Rust policy/metadata validation;
 - exact-head Linux workspace build, strict Clippy, tests and synthetic harness;
-- real isolated PostgreSQL 17.6 execution of `oteryn-game-server --test durability_postgres` inside the required Linux job;
+- a pinned PostgreSQL 17.6 service plus deletion-safe routing for `oteryn-game-server --test durability_postgres` inside the required Linux job;
 - exact-head Windows production-client build, strict Clippy, smoke and synthetic harness;
 - deterministic Windows `oteryn-simulation-determinism` golden fixtures inside the required Windows job;
 - `cargo-deny` advisory/license/ban/source validation.
+
+The PostgreSQL test target is currently introduced by the still-unmerged terminal-replacement work. The canonical Linux job therefore uses these fail-closed rules:
+
+- when `apps/game-server/tests/durability_postgres.rs` exists on the exact candidate, run it against PostgreSQL 17.6;
+- when the exact PR removes or renames that target, fail the required Linux job;
+- when the target is not yet allocated on the candidate or its PR diff, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
+
+After the target enters protected `main`, ordinary Rust-relevant candidates run it automatically; deleting or renaming it cannot convert that evidence into a skip.
 
 The existing broad Rust/workspace classifier is deliberately retained for this safety stage. Risk-scoped lane omission and adjacent-workflow deduplication are separate work after canonical PR and Merge Queue PG/SIM coverage is proven.
 
@@ -53,7 +61,7 @@ PostgreSQL durability and deterministic simulation are not yet present in that m
 | Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` | `Merge gate / governance` → `Merge gate / validate` → `game-gate` |
 | Repository/GitHub policy | `python tools/repository/validate_repository_policy.py` | governance + dependency review + CodeQL + applicable Rust jobs → aggregate gate |
 | Architecture/contracts only | governance validator plus applicable link/JSON/schema checks | always-required merge-gate subchecks; runtime E2E may be `NOT_APPLICABLE` with reason |
-| Rust/workspace/client code | package-focused tests while editing | full Rust policy/Linux+PostgreSQL/Windows+SIM/supply-chain merge-gate set |
+| Rust/workspace/client code | package-focused tests while editing | full Rust policy/Linux+allocated PostgreSQL/Windows+SIM/supply-chain merge-gate set |
 | GitHub workflow affecting Rust validation | repository-policy validation plus workflow review | full Rust merge-gate set because merge-gate/rust workflow paths are Rust-validation-sensitive |
 
 ## Current Rust workspace commands
@@ -69,7 +77,7 @@ Current exact baseline uses Rust `1.94.0` and includes:
 - `cargo +1.94.0 build --locked --workspace --all-targets` on Linux;
 - `cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings` on Linux;
 - `cargo +1.94.0 test --locked --workspace`;
-- `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres` against pinned PostgreSQL 17.6 for Rust-relevant pull requests;
+- deletion-safe conditional `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres` against pinned PostgreSQL 17.6 when the target is allocated on the exact PR head;
 - `cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness`;
 - Windows release build for `oteryn-client` on `x86_64-pc-windows-msvc`;
 - Windows strict client Clippy and `--smoke` launch;
