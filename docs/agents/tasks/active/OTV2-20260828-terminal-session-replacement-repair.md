@@ -739,3 +739,52 @@ next_action: run fresh exact-head CI on the read-back metadata-complete SHA, per
 ```
 
 Disposition remains `FINAL_EXACT_HEAD_QUALIFICATION_PENDING`; this task is not ready for integration. Fresh exact-head CI, whole-diff self-review, and independent Codex review are still required on the externally read-back docs publication SHA before READY.
+
+## V1 complete-current-authority reconciliation repair checkpoint — 2026-09-04
+
+This checkpoint supersedes all earlier current-status checkpoints for live continuation state while preserving their historical evidence. The code generation is frozen at immutable GREEN `98561d780f4e266272965dcd074ad28d5f2c575b`; this docs-only publication must be identified by authoritative remote readback and is not self-referential.
+
+- Protected `main` is `f5f8e3717a48e6854ac36595533046938ceec890`.
+- Independent Codex review `5111393923` / `PRR_kwDOT8SzxM8AAAABMKmugw` reviewed exact metadata head `e9dfbe773fdd7a0bfd138972bf3f792521549ed7` and produced one actionable P1: thread `PRRT_kwDOT8SzxM6fPQmE`, comment `3932741432`, because public V1 committed reconciliation could restore a controller from scope generation alone without complete current authority.
+- Fresh test-only RED is `61545bd4197e857f5ad88f7a751888abd121ceaa`. Rust run `33859990960`, PostgreSQL 17.6 job `100981982717`, verified exact checkout and failed at the intended V1 complete-current-authority boundary. Windows SIM job `100981982910` was SUCCESS.
+- Minimal GREEN is `98561d780f4e266272965dcd074ad28d5f2c575b`. `ReconnectDurabilityFlowV1::accept_reconciliation` now consumes independently supplied `ReconnectCurrentAuthorityV1`; `Committed` requires exact candidate generation/transport, `current.observed_at <= record.authorization_deadline()`, and the same complete fail-closed `current_authority_matches_record` predicate used by V2 before `InstallController`. `Prepared` still transitions to final revalidation and historical `Terminal` remains historical without live-authority equality. Production `ReconnectCurrentAuthorityV1::from_record` remains test-only.
+- Exact GREEN CI on `98561d780f4e266272965dcd074ad28d5f2c575b`: Rust `33860194846` SUCCESS; PostgreSQL 17.6 job `100982630189` exact checkout and 109/109 PASS; Windows SIM `100982630036` SUCCESS; Architecture `33860194875` SUCCESS; Merge authority `33860194840` SUCCESS; Agent governance `33860194878` SUCCESS; Merge Gate `33860194885` SUCCESS, including Windows client `100982758550`, Linux workspace `100982758578`, validate `100984359185`, and canonical `game-gate` `100984379832` all SUCCESS.
+- Whole diff against current protected main remains `behind_by=0` and exactly 12/12 allocated paths. No Cargo/lock/workflow/registry or other scope expansion occurred. No force-push, rebase, reset, or merge occurred.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+protected_main: f5f8e3717a48e6854ac36595533046938ceec890
+reviewed_metadata_head: e9dfbe773fdd7a0bfd138972bf3f792521549ed7
+independent_codex_review:
+  numeric_id: 5111393923
+  node_id: PRR_kwDOT8SzxM8AAAABMKmugw
+  reviewed_commit: e9dfbe773fdd7a0bfd138972bf3f792521549ed7
+  actionable_p1_thread: PRRT_kwDOT8SzxM6fPQmE
+  actionable_p1_comment: 3932741432
+red_head: 61545bd4197e857f5ad88f7a751888abd121ceaa
+green_head: 98561d780f4e266272965dcd074ad28d5f2c575b
+green_ci:
+  rust_run: 33860194846_SUCCESS
+  postgres_job: 100982630189_SUCCESS_109_pass_0_fail
+  windows_sim_job: 100982630036_SUCCESS
+  architecture_run: 33860194875_SUCCESS
+  merge_authority_run: 33860194840_SUCCESS
+  agent_governance_run: 33860194878_SUCCESS
+  merge_gate_run: 33860194885_SUCCESS
+  windows_client_job: 100982758550_SUCCESS
+  linux_workspace_job: 100982758578_SUCCESS
+  validate_job: 100984359185_SUCCESS
+  game_gate_job: 100984379832_SUCCESS
+whole_diff_pre_metadata:
+  behind_by: 0
+  allocated_paths: 12_of_12
+history_operations: no_force_no_rebase_no_reset_no_merge
+metadata_commit_identity: established_by_authoritative_remote_readback_not_self_embedded
+thread_policy: after this docs-only SHA has fresh exact-head CI plus fresh whole-diff self-review and one independent exact-head Codex review with P0_0_P1_0_P2_0, resolve repaired lane-owned technical threads but keep control-plane integration gate PRRT_kwDOT8SzxM6dX3eH unresolved
+next_action: read back this docs-only commit SHA; run fresh exact-head CI on it; perform fresh whole-diff self-review against current protected main; obtain one independent exact-head Codex review whose reviewed commit equals that SHA; repair and repeat any P0/P1/P2; only with P0=P1=P2=0 resolve repaired lane-owned technical threads except PRRT_kwDOT8SzxM6dX3eH and publish READY_FOR_INTEGRATION; do not merge
+```
