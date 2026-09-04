@@ -2,6 +2,7 @@
 """Validate canonical PR PostgreSQL and simulation qualification contracts."""
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 
@@ -12,6 +13,11 @@ POSTGRES_IMAGE = (
     "postgres:17.6-bookworm@"
     "sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3"
 )
+# Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
+EXPECTED_EVIDENCE_JOB_SHA256 = {
+    "rust_linux": "4480575980e6392b533881aa045d3f6b6e19308c5320c4cd84369b0df5786f75",
+    "rust_windows": "0d46dc7b5c74285d1b989b92adf307b9857ed9297d5a2da9c4c40855a7032e4f",
+}
 
 
 def job_block(text: str, key: str) -> str | None:
@@ -59,7 +65,7 @@ def require_fragments(block: str | None, job: str, fragments: tuple[str, ...]) -
     for fragment in fragments:
         if fragment not in block:
             errors.append(f"merge gate job {job} missing canonical contract: {fragment.strip()}")
-    if re.search(r"^\s*continue-on-error\s*:", block, re.MULTILINE):
+    if re.search(r"^\s*(?:continue-on-error|['\"]continue-on-error['\"])\s*:", block, re.MULTILINE):
         errors.append(f"merge gate job {job} must not permit continue-on-error")
     return errors
 
@@ -198,6 +204,13 @@ def validate() -> list[str]:
             ),
         )
     )
+
+    for job, block in (("rust_linux", linux), ("rust_windows", windows)):
+        if (
+            block is not None
+            and hashlib.sha256(block.encode("utf-8")).hexdigest() != EXPECTED_EVIDENCE_JOB_SHA256[job]
+        ):
+            errors.append(f"merge gate job {job} must exactly match the canonical evidence job")
 
     return errors
 

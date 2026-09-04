@@ -17,7 +17,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Codex single mutating writer authorized by owner continuation
 created_at: 2026-09-04T13:56:00Z
-updated_at: 2026-09-04T22:45:57Z
+updated_at: 2026-09-04T23:05:48Z
 execution_budget_minutes: 60
 large_budget_reason: required-check composition with hosted RED/GREEN and review-repair evidence
 owned_paths:
@@ -70,6 +70,8 @@ The upstream scope now re-reads the PR after file enumeration and rejects change
 - GREEN5 `10c8813aa718be46591f95ee0317c5a918f3aa2a` passed canonical run `33925804076` including PG 115/115 and SIM 7/7. Review `PRR_kwDOT8SzxM8AAAABMRQeNw` accepted P1 `3938338845`: before/after PR sampling cannot detect A-to-B-to-A substitution.
 - RED6 `22ebdd0c893b6c2aa4ab39acce24d011fc331e7f` reproduced ABA at BOTH output boundaries: upstream emitted rust=false and downstream removed=false from substituted mutable files while initial/final metadata matched. GREEN6 enumerates `/compare/{base_sha}...{head_sha}?per_page=1` at both boundaries, preserving metadata rechecks, positive routing and fail-closed count validation. The canonical scope pin is updated under the already-approved core allocation.
 - GitHub comparison files are capped at 300; larger PRs and missing/incomplete file arrays fail closed. This deliberate limit is tested at 300/301 and below-cap count mismatch, and documented in BUILD_TEST_MATRIX. See https://docs.github.com/en/rest/commits/commits#compare-two-commits.
+- GREEN6 `9017f2179ad8f3ea1b96773e7fad672136879389` passed canonical run `33926994377`, PG 115/115 and SIM 7/7. Review `PRR_kwDOT8SzxM8AAAABMRWEmA` found P2 `3938427638`: quoted job-level continue-on-error escaped the validator.
+- RED7 `7932a3533a4a7a25db8a2edaa1b1119d21bfbe62` independently reproduced both quoted forms on both jobs. The renewed family sweep also proved an early PG exit could preserve required strings and pass the old validator. GREEN7 handles quoted keys and pins both complete evidence-job blocks with the existing canonical SHA256 pattern, closing semantic edits that preserve fragments. The workflow itself remains byte-identical to reviewed GREEN6. Twelve regression functions now pass, including job/step forms and early-exit rejection. Future intentional evidence-job changes require reviewed pin updates.
 - P2 `3936176060` accepted and fixed: this task and BUILD_TEST_MATRIX now identify #252 as integrated and real PostgreSQL as applicable.
 
 ## AuthorityInvariant × ConsumerBoundary × MutationOperator sweep
@@ -86,7 +88,7 @@ The upstream scope now re-reads the PR after file enumeration and rejects change
 | Main remains the scope target | upstream scope before routing | changed base ref rejected |
 | Rust lanes cannot be omitted using another head | upstream scope | 101-file docs listing with moved event head rejected; stable docs/Rust/rename controls pass |
 | Allocated target cannot become an absence skip | classification / Linux E2E | stable removal and rename produce `removed=true`; existing workflow fails missing removed target |
-| Applicable evidence runs | Linux PG / Windows SIM | unquoted/quoted `if` and `continue-on-error` mutations rejected for both steps |
+| Applicable evidence runs | Linux PG / Windows SIM jobs and steps | unquoted/quoted failure-tolerance and step-condition mutations rejected; early-success PG exit rejected; complete evidence-job blocks pinned |
 | Stable input remains accepted | classifier happy paths | unchanged target, historical empty diff, deletion and rename outputs checked independently |
 | Exact checkout and aggregate remain enforced | existing jobs / final game-gate | unchanged source and core policy validation |
 
@@ -98,7 +100,7 @@ Fenced Game writes, game-session authority, replay and runtime concurrency are `
 
 - [x] Published RED4 and fresh local behavioral RED observed before workflow repair.
 - [x] Minimal classifier GREEN preserves original positive behavior and fails closed for the accepted race family.
-- [x] `python3 tools/repository/test_validate_pr_gate_pg_sim.py`: 10 test functions PASS, including both classifiers' metadata and ABA mutation families, comparison-cap/count checks, base failures, stable scope/target controls and both skip-condition families.
+- [x] `python3 tools/repository/test_validate_pr_gate_pg_sim.py`: 12 test functions PASS, including both classifiers' metadata and ABA mutation families, comparison-cap/count checks, base failures, stable scope/target controls and both skip-condition families.
 - [x] `python3 tools/repository/validate_pr_gate_pg_sim.py`: PASS.
 - [x] Repository policy PASS after the owner-authorized exact scope digest update. Before expansion it failed only on the old scope pin. No wrapper suppression, bypass, aggregate-pin change or other core-policy modification.
 - [x] `python3 tools/agents/validate_governance.py`: PASS.
@@ -116,7 +118,7 @@ The current META AI review policy selects one deep review because this is requir
 ## Context checkpoint
 
 ```yaml
-last_progress: GREEN6 immutable diff provenance at both boundaries and ten regression functions pass after witnessed RED6
+last_progress: GREEN7 whole evidence-job pinning and quoted failure-tolerance guards pass twelve regressions after witnessed RED7
 status: QUALIFYING
 branch: ci/canonical-pr-pg-sim-279
 head_sha: null
@@ -124,7 +126,7 @@ pr: 287
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: review_repair_green6
+ci_check_generation: review_repair_green7
 ci_checks_for_current_head: pending_publication
 ci_run_ids: []
 ci_job_ids: []
@@ -133,7 +135,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 6
+repair_cycles_for_current_gate: 7
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null

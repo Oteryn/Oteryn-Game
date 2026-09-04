@@ -44,7 +44,7 @@ The PostgreSQL test target is present on protected main after terminal-replaceme
 
 Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Both upstream scope and target classification enumerate the immutable comparison of exact base/head SHAs, retaining before/after PR identity checks. A transient A-to-B-to-A PR movement cannot substitute another revision's files. GitHub returns at most 300 files for a comparison: larger PRs, missing file arrays or a count mismatch fail closed, never omit evidence. Existing Rust path applicability is unchanged.
 
-The required governance job executes the focused PG/SIM regressions, including the real classifier script against controlled GitHub responses and both evidence-step skip families.
+The required governance job executes the focused PG/SIM regressions, including both real classifiers against controlled GitHub responses and job/step failure-tolerance/skip families. The complete Linux and Windows evidence jobs are pinned by SHA256 using the existing canonical-job validation pattern. Future intentional job changes must update their reviewed pins; preserving command strings while inserting an early successful exit cannot pass policy.
 
 The existing broad Rust/workspace classifier is deliberately retained for this safety stage. Risk-scoped lane omission and adjacent-workflow deduplication are separate work after canonical PR and Merge Queue PG/SIM coverage is proven.
 
