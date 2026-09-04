@@ -946,3 +946,36 @@ allocated_paths: 12_of_12
 final_evidence_authority: final_exact_SHA_CI_review_and_READY_must_live_in_immutable_GitHub_evidence_after_freeze
 next_action: coordinator performs final exact-head CI, whole-diff self-review, independent review, thread reconciliation, and READY handoff after this pre-freeze checkpoint; do not merge
 ```
+
+## Prepared recovery nonce repair checkpoint — 2026-09-04
+
+This single superseding pre-freeze checkpoint replaces earlier current-status checkpoints for continuation state while retaining all prior later-PREPARED evidence, including `825f5cbf05c6217ae4144caf52d9daa333d43d5d` and `aa417c90d809239d70185e415ed01d1c1aea90ba`, as historical provenance. Its own commit identity is intentionally not self-embedded.
+
+- Independent review `5114161969` on frozen head `ae5e029ec0b0347c3ac340adc7815881e4077f46` produced P2 comment `3934958938`, thread `PRRT_kwDOT8SzxM6fU6Ju`: historical COMMITTED reconciliation accepted a corrupt later PREPARED reauthenticated-recovery nonce that was canonically encoded as exactly 32 zero bytes.
+- Executable RED `2f18073dfc90cd28deb363feb0e9c379639372e5` was proven by Rust workflow `33884112579`, PostgreSQL 17.6 job `101059606720`, with exact checkout and 114 PASS / exactly 1 expected FAIL, solely `historical_committed_reconciliation_rejects_corrupt_later_prepared_projection` at the `proof_zero_nonce` assertion. Windows SIM was green. This RED remains unchanged.
+- Production GREEN `cc05a136d96e0b160eb2392e8d53ef90250bb89b` makes later-PREPARED reauthenticated-recovery proof validation require a canonically decoded nonce that is exactly 32 bytes and not all zero, matching typed `ReconnectProofV1` validity. Existing session, attempt, transport, protection, FND-02, and fast-reconnect validation is unchanged.
+- Protected `main@d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d` remains the merge base, GitHub compare reports `behind_by=0`, and the effective PR diff remains exactly the allocated 12/12 paths with no scope expansion.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+issue: 250
+pr: 252
+branch: impl/game-terminal-session-replacement-250
+pr_state: Draft_open_unmerged
+review: 5114161969
+reviewed_head: ae5e029ec0b0347c3ac340adc7815881e4077f46
+p2_comment: 3934958938
+p2_thread: PRRT_kwDOT8SzxM6fU6Ju
+red_head: 2f18073dfc90cd28deb363feb0e9c379639372e5
+red_rust_run: 33884112579_FAILURE
+red_postgres_job: 101059606720_114_pass_1_expected_fail_proof_zero_nonce
+green_head: cc05a136d96e0b160eb2392e8d53ef90250bb89b
+green_rule: canonical_reauthenticated_recovery_nonce_is_exactly_32_bytes_and_nonzero_matching_typed_proof_validity
+protected_main: d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d
+whole_diff: behind_by_0_exactly_12_of_12_allocated_paths_no_scope_expansion
+final_candidate_identity: authoritative_remote_readback_after_this_docs_only_commit
+final_evidence_authority: final_exact_SHA_CI_review_thread_and_READY_evidence_must_live_in_immutable_GitHub_evidence_with_no_post_freeze_metadata_only_commit
+next_action: run final exact-head CI and independent qualification on the authoritative read-back frozen candidate; keep the PR Draft and unmerged until the control plane records final evidence
+```
