@@ -619,7 +619,8 @@ impl AdmissionReconnectJournal {
         Ok(ReconnectCommitDispositionV1::Committed)
     }
 
-    pub async fn reconcile(
+    #[allow(dead_code)]
+    pub(crate) async fn reconcile(
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {

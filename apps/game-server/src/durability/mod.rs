@@ -102,7 +102,8 @@ impl AdmissionReconnectJournalV2 {
     }
 
     #[must_use]
-    pub const fn legacy(&self) -> &AdmissionReconnectJournal {
+    #[allow(dead_code)]
+    pub(crate) const fn legacy(&self) -> &AdmissionReconnectJournal {
         &self.legacy
     }
 
