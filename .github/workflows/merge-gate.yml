@@ -125,6 +125,22 @@ jobs:
                   f'collected {len(files)}; fail closed'
               )
 
+          if not errors:
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  pull_after_files = json.load(response)
+              if pull_after_files.get('state') != 'open':
+                  errors.append('pull request closed during scope classification')
+              if pull_after_files.get('head', {}).get('sha', '').lower() != expected_head:
+                  errors.append('pull request head moved during scope classification')
+              if pull_after_files.get('head', {}).get('repo', {}).get('full_name') != repository:
+                  errors.append('pull request repository changed during scope classification')
+              if pull_after_files.get('base', {}).get('sha', '').lower() != base_sha:
+                  errors.append('pull request base moved during scope classification')
+              if pull_after_files.get('base', {}).get('ref') != 'main':
+                  errors.append('pull request base ref changed during scope classification')
+              if pull_after_files.get('changed_files') != changed_files:
+                  errors.append('pull request file count changed during scope classification')
+
           if errors:
               for error in errors:
                   print(f'- {error}', file=sys.stderr)
