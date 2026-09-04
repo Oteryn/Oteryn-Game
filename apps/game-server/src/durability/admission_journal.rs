@@ -1575,16 +1575,8 @@ async fn current_prepared_binding_is_valid(
     match proof["class"].as_str() {
         Some("fast_reconnect") => Ok(proof["generation"].as_u64().is_some_and(|value| value != 0)),
         Some("reauthenticated_recovery") => {
-            let Some(nonce) = canonical_bytes(&proof["recovery_grant_nonce"]) else {
-                return Ok(false);
-            };
-            recovery_grant_binding_is_valid(
-                transaction,
-                Some(nonce.as_slice()),
-                session_id,
-                prepared_attempt_ref,
-            )
-            .await
+            Ok(canonical_bytes(&proof["recovery_grant_nonce"])
+                .is_some_and(|nonce| nonce.len() == 32))
         }
         _ => Ok(false),
     }

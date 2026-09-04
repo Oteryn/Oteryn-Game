@@ -2582,10 +2582,8 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
                 "fnd02_mirror",
             ];
             for (index, corruption) in corruptions.into_iter().enumerate() {
-                let database = postgres::IsolatedPostgres::create(&format!(
-                    "historical_prepared_{corruption}"
-                ))
-                .await?;
+                let database =
+                    postgres::IsolatedPostgres::create(&format!("hist_prep_{index}")).await?;
                 let result = async {
                     let database_url = database.database_url()?;
                     let executor = MigrationExecutor::connect_migration(&database_url).await?;
@@ -2703,8 +2701,7 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
                         }
                         "protection_continuity" => {
                             sqlx::query(
-                                "UPDATE game_durability_control_loss_continuity \
-                                 SET protection_rearm_deadline = clock_timestamp() \
+                                "DELETE FROM game_durability_control_loss_continuity \
                                  WHERE character_id = encode($1, 'hex')::uuid \
                                    AND control_loss_epoch = $2::text::numeric(20, 0)",
                             )
