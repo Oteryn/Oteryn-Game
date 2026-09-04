@@ -43,6 +43,31 @@ mod runtime_scope_identity_red_tests {
     static DB_SEQUENCE: AtomicU64 = AtomicU64::new(0);
     type TestResult = Result<(), Box<dyn Error>>;
 
+    fn exact_current_authority(
+        record: &ReconnectDurabilityRecordV1,
+        observed_at: i64,
+    ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
+        ReconnectCurrentAuthorityV1::from_current_facts(
+            record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
+            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            observed_at,
+        )
+    }
+
     struct IsolatedDatabase {
         admin_url: String,
         database_name: String,
@@ -1208,7 +1233,7 @@ mod runtime_scope_identity_red_tests {
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(|_| "predecessor prepare completion")?;
-            let current = ReconnectCurrentAuthorityV1::from_record(&predecessor_record, now)
+            let current = exact_current_authority(&predecessor_record, now)
                 .map_err(|_| "predecessor current authority")?;
             let predecessor_commit = predecessor_flow
                 .authorize_commit(current, now)

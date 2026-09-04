@@ -7,6 +7,39 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 static DATABASE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
+pub fn current_authority_from_record(
+    record: &oteryn_game_server::foundation::ReconnectDurabilityRecordV1,
+    observed_at: i64,
+) -> Result<
+    oteryn_game_server::foundation::ReconnectCurrentAuthorityV1,
+    oteryn_game_server::foundation::ReconnectDurabilityErrorV1,
+> {
+    use oteryn_game_server::foundation::{
+        AccountPresenceClaimV1, CharacterWorldEligibilityClaimV1, GameSessionState,
+        ReconnectCandidateBindingV1, ReconnectCurrentAuthorityV1,
+    };
+
+    ReconnectCurrentAuthorityV1::from_current_facts(
+        record,
+        Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+        Some(CharacterWorldEligibilityClaimV1::from_identity(
+            record.identity(),
+        )),
+        Some(ReconnectCandidateBindingV1::from_record(record)?),
+        record.identity().runtime_scope(),
+        record.connection().predecessor(),
+        record.authority(),
+        record.continuity().control_loss_epoch(),
+        record.continuity().original_grace_deadline(),
+        record.proof().clone(),
+        record.fnd02().clone(),
+        record.compatibility().clone(),
+        GameSessionState::Reconnectable,
+        false,
+        observed_at,
+    )
+}
+
 #[derive(Debug)]
 pub enum IsolatedPostgresError {
     MissingAdminUrl,
@@ -170,10 +203,10 @@ mod durability_contract_tests {
         PendingCommandDispositionV1, PendingCommandReconciliationV1, ProtectionEntitlementV1,
         ReconnectAttemptRef, ReconnectAuthorityFenceV1, ReconnectCommitDispositionV1,
         ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
-        ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
-        ReconnectDurabilityRecordV1, ReconnectIdentityV1, ReconnectPrepareCompletionV1,
-        ReconnectPrepareDispositionV1, ReconnectProofV1, RuntimeScopeRefV1,
-        ScopeOwnershipGeneration, StateDomainRevisionV1, WorldId,
+        ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1, ReconnectDurabilityRecordV1,
+        ReconnectIdentityV1, ReconnectPrepareCompletionV1, ReconnectPrepareDispositionV1,
+        ReconnectProofV1, RuntimeScopeRefV1, ScopeOwnershipGeneration, StateDomainRevisionV1,
+        WorldId,
     };
     use sqlx::{Connection, Executor, PgConnection};
     use std::error::Error;
@@ -523,7 +556,7 @@ mod durability_contract_tests {
                 ReconnectPrepareDispositionV1::Prepared,
             ))
             .map_err(crate::foundation_error)?;
-            let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+            let current = super::current_authority_from_record(prepare.record(), record_now)
                 .map_err(crate::foundation_error)?;
             let commit = flow
                 .authorize_commit(current, record_now)
@@ -557,7 +590,7 @@ mod durability_contract_tests {
                 ))
                 .map_err(crate::foundation_error)?;
             let first_current =
-                ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), record_now)
+                super::current_authority_from_record(first_prepare.record(), record_now)
                     .map_err(crate::foundation_error)?;
             let first_commit = first_flow
                 .authorize_commit(first_current, record_now)
@@ -582,7 +615,7 @@ mod durability_contract_tests {
                 ))
                 .map_err(crate::foundation_error)?;
             let second_current =
-                ReconnectCurrentAuthorityV1::from_record(second_prepare.record(), record_now)
+                super::current_authority_from_record(second_prepare.record(), record_now)
                     .map_err(crate::foundation_error)?;
             let second_commit = second_flow
                 .authorize_commit(second_current, record_now)
@@ -959,7 +992,7 @@ mod durability_contract_tests {
                 ReconnectPrepareDispositionV1::Prepared,
             ))
             .map_err(crate::foundation_error)?;
-            let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+            let current = super::current_authority_from_record(prepare.record(), record_now)
                 .map_err(crate::foundation_error)?;
             let commit = flow
                 .authorize_commit(current, record_now)

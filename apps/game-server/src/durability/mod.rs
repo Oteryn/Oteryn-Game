@@ -1195,6 +1195,31 @@ mod terminal_replacement_foundation_red_tests {
     const ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174000";
     const OTHER_ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174001";
 
+    fn exact_current_authority(
+        record: &ReconnectDurabilityRecordV1,
+        observed_at: i64,
+    ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
+        ReconnectCurrentAuthorityV1::from_current_facts(
+            record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
+            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            observed_at,
+        )
+    }
+
     fn uuid_v7(raw: u64) -> [u8; 16] {
         let mut value = [0_u8; 16];
         value[8..].copy_from_slice(&raw.to_be_bytes());
@@ -1905,8 +1930,7 @@ mod terminal_replacement_foundation_red_tests {
             let decision = flow
                 .accept_reconciliation(
                     snapshot,
-                    ReconnectCurrentAuthorityV1::from_record(&record, 105)
-                        .expect("current authority"),
+                    exact_current_authority(&record, 105).expect("current authority"),
                     &mut budget,
                 )
                 .expect("typed reconciliation");

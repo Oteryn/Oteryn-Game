@@ -12,12 +12,13 @@ use oteryn_game_server::foundation::{
     PendingCommandDispositionV1, PendingCommandReconciliationV1, ProtectionEntitlementV1,
     ReconnectAttemptRef, ReconnectAuthorityFenceV1, ReconnectCommitActionV1,
     ReconnectCommitCompletionV1, ReconnectCommitDispositionV1, ReconnectCompatibilityEvidenceV1,
-    ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectCurrentAuthorityV1,
-    ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1, ReconnectDurabilityRecordV1,
-    ReconnectIdentityV1, ReconnectPrepareActionV1, ReconnectPrepareCompletionV1,
-    ReconnectPrepareDispositionV1, ReconnectProjectionDecisionV1, ReconnectProofV1,
-    RuntimeScopeRefV1, ScopeOwnershipGeneration, StateDomainRevisionV1, WorldId,
+    ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectDurabilityErrorV1,
+    ReconnectDurabilityFlowV1, ReconnectDurabilityRecordV1, ReconnectIdentityV1,
+    ReconnectPrepareActionV1, ReconnectPrepareCompletionV1, ReconnectPrepareDispositionV1,
+    ReconnectProjectionDecisionV1, ReconnectProofV1, RuntimeScopeRefV1, ScopeOwnershipGeneration,
+    StateDomainRevisionV1, WorldId,
 };
+use postgres::current_authority_from_record;
 use std::process::Command;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -699,9 +700,8 @@ fn exact_prepared_attempt_commits_once_and_reconciles_after_response_loss()
                     .map_err(foundation_error)?,
                     ReconnectPrepareActionV1::AwaitFinalRevalidation
                 );
-                let current =
-                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
-                        .map_err(foundation_error)?;
+                let current = current_authority_from_record(prepare.record(), record_now)
+                    .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
                     .map_err(foundation_error)?;
@@ -864,7 +864,7 @@ fn new_epoch_rejects_zero_fast_reconnect_generation_in_committed_winner()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current = ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), record_now)
+                let current = current_authority_from_record(first_prepare.record(), record_now)
                     .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
@@ -965,9 +965,8 @@ fn committed_prepare_replay_after_process_restart_routes_to_reconciliation()
                         ReconnectPrepareDispositionV1::Prepared,
                     ))
                     .map_err(foundation_error)?;
-                let current =
-                    ReconnectCurrentAuthorityV1::from_record(original_prepare.record(), record_now)
-                        .map_err(foundation_error)?;
+                let current = current_authority_from_record(original_prepare.record(), record_now)
+                    .map_err(foundation_error)?;
                 let commit = original_flow
                     .authorize_commit(current, record_now)
                     .map_err(foundation_error)?;
@@ -1052,9 +1051,8 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current =
-                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
-                        .map_err(foundation_error)?;
+                let current = current_authority_from_record(prepare.record(), record_now)
+                    .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
                     .map_err(foundation_error)?;
@@ -1139,9 +1137,8 @@ fn fresh_commit_holds_the_transport_reservation_lock_through_commit()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current =
-                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
-                        .map_err(foundation_error)?;
+                let current = current_authority_from_record(prepare.record(), record_now)
+                    .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
                     .map_err(foundation_error)?;
@@ -1218,7 +1215,7 @@ fn fresh_commit_requires_the_exact_retained_transport_reservation()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                let current = current_authority_from_record(prepare.record(), record_now)
                     .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
@@ -1330,7 +1327,7 @@ fn successful_commit_activates_unused_protection_exactly_once()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                let current = current_authority_from_record(prepare.record(), record_now)
                     .map_err(foundation_error)?;
                 let commit = flow.authorize_commit(current, record_now).map_err(foundation_error)?;
                 assert_eq!(journal.commit(&commit).await?, ReconnectCommitDispositionV1::Committed);
@@ -1489,7 +1486,7 @@ fn reconnect_sessions_reject_a_distinct_game_session_for_a_later_control_loss_ep
                     ))
                     .map_err(foundation_error)?;
                 let first_current =
-                    ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), first_now)
+                    current_authority_from_record(first_prepare.record(), first_now)
                         .map_err(foundation_error)?;
                 let first_commit = first_flow
                     .authorize_commit(first_current, first_now)
@@ -1554,7 +1551,7 @@ fn fenced_entitlement_does_not_create_a_second_protection_window_on_later_epoch(
                     &first_prepare,
                     ReconnectPrepareDispositionV1::Prepared,
                 )).map_err(foundation_error)?;
-                let first_current = ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), first_now)
+                let first_current = current_authority_from_record(first_prepare.record(), first_now)
                     .map_err(foundation_error)?;
                 let first_commit = first_flow.authorize_commit(first_current, first_now).map_err(foundation_error)?;
                 assert_eq!(journal.commit(&first_commit).await?, ReconnectCommitDispositionV1::Committed);
@@ -1581,7 +1578,7 @@ fn fenced_entitlement_does_not_create_a_second_protection_window_on_later_epoch(
                     &second_prepare,
                     ReconnectPrepareDispositionV1::Prepared,
                 )).map_err(foundation_error)?;
-                let second_current = ReconnectCurrentAuthorityV1::from_record(second_prepare.record(), second_now)
+                let second_current = current_authority_from_record(second_prepare.record(), second_now)
                     .map_err(foundation_error)?;
                 let second_commit = second_flow.authorize_commit(second_current, second_now).map_err(foundation_error)?;
                 assert_eq!(journal.commit(&second_commit).await?, ReconnectCommitDispositionV1::Committed);
@@ -1726,7 +1723,7 @@ fn new_epoch_requires_complete_committed_fnd02_fence() -> Result<(), Box<dyn std
                 ))
                 .map_err(foundation_error)?;
                 let current =
-                    ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), record_now)
+                    current_authority_from_record(first_prepare.record(), record_now)
                         .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
@@ -1932,9 +1929,8 @@ fn new_epoch_rejects_committed_winner_without_compatibility_evidence()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current =
-                    ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), record_now)
-                        .map_err(foundation_error)?;
+                let current = current_authority_from_record(first_prepare.record(), record_now)
+                    .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
                     .map_err(foundation_error)?;
@@ -2013,7 +2009,7 @@ fn new_epoch_requires_a_valid_committed_active_transport_binding()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current = ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), record_now)
+                let current = current_authority_from_record(first_prepare.record(), record_now)
                     .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
@@ -2111,7 +2107,7 @@ fn committed_session_accepts_a_later_non_reused_control_loss_epoch()
                     ))
                     .map_err(foundation_error)?;
                 let first_current =
-                    ReconnectCurrentAuthorityV1::from_record(first_prepare.record(), first_now)
+                    current_authority_from_record(first_prepare.record(), first_now)
                         .map_err(foundation_error)?;
                 let first_commit = first_flow
                     .authorize_commit(first_current, first_now)
@@ -2174,7 +2170,7 @@ fn committed_session_accepts_a_later_non_reused_control_loss_epoch()
                     ))
                     .map_err(foundation_error)?;
                 let second_current =
-                    ReconnectCurrentAuthorityV1::from_record(second_prepare.record(), second_now)
+                    current_authority_from_record(second_prepare.record(), second_now)
                         .map_err(foundation_error)?;
                 let second_commit = second_flow
                     .authorize_commit(second_current, second_now)
@@ -2360,7 +2356,7 @@ fn stale_commit_terminalizes_the_prepared_attempt_for_reconciliation()
                     ReconnectPrepareActionV1::AwaitFinalRevalidation
                 );
                 let current =
-                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                    current_authority_from_record(prepare.record(), record_now)
                         .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
@@ -2439,9 +2435,8 @@ fn committed_replay_fails_closed_when_session_state_is_inconsistent()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current =
-                    ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
-                        .map_err(foundation_error)?;
+                let current = current_authority_from_record(prepare.record(), record_now)
+                    .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)
                     .map_err(foundation_error)?;
@@ -2506,7 +2501,7 @@ fn commit_row_lock_wait_cannot_outlive_authorization_deadline()
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(foundation_error)?;
-                let current = ReconnectCurrentAuthorityV1::from_record(prepare.record(), record_now)
+                let current = current_authority_from_record(prepare.record(), record_now)
                     .map_err(foundation_error)?;
                 let commit = flow
                     .authorize_commit(current, record_now)

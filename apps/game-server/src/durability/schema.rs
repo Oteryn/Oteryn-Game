@@ -180,10 +180,10 @@ mod terminal_replacement_postgres_red_tests {
         FreshAdmissionCommit, FreshAdmissionFacts, GameSessionAuthoritySnapshot, GameSessionId,
         GameSessionState, PendingCommandDispositionV1, PendingCommandReconciliationV1,
         ProtectionEntitlementV1, ReconnectAttemptBudgetV1, ReconnectAttemptRef,
-        ReconnectAuthorityFenceV1, ReconnectCommitDispositionV1, ReconnectCompatibilityEvidenceV1,
-        ReconnectConnectionFenceV1, ReconnectContinuityV1, ReconnectCurrentAuthorityV1,
-        ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1, ReconnectDurabilityFlowV2,
-        ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
+        ReconnectAuthorityFenceV1, ReconnectCandidateBindingV1, ReconnectCommitDispositionV1,
+        ReconnectCompatibilityEvidenceV1, ReconnectConnectionFenceV1, ReconnectContinuityV1,
+        ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1, ReconnectDurabilityFlowV1,
+        ReconnectDurabilityFlowV2, ReconnectDurabilityRecordV1, ReconnectDurableOutcomeV2,
         ReconnectDurableReconciliationSnapshotV1, ReconnectDurableReconciliationSnapshotV2,
         ReconnectDurableTerminalDispositionV1, ReconnectIdentityV1, ReconnectPrepareCompletionV1,
         ReconnectPrepareCompletionV2, ReconnectPrepareDispositionV1, ReconnectPrepareDispositionV2,
@@ -199,6 +199,31 @@ mod terminal_replacement_postgres_red_tests {
     const ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174000";
     static DB_SEQUENCE: AtomicU64 = AtomicU64::new(0);
     type TestResult = Result<(), Box<dyn Error>>;
+
+    fn exact_current_authority(
+        record: &ReconnectDurabilityRecordV1,
+        observed_at: i64,
+    ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
+        ReconnectCurrentAuthorityV1::from_current_facts(
+            record,
+            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
+            Some(CharacterWorldEligibilityClaimV1::from_identity(
+                record.identity(),
+            )),
+            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            record.identity().runtime_scope(),
+            record.connection().predecessor(),
+            record.authority(),
+            record.continuity().control_loss_epoch(),
+            record.continuity().original_grace_deadline(),
+            record.proof().clone(),
+            record.fnd02().clone(),
+            record.compatibility().clone(),
+            GameSessionState::Reconnectable,
+            false,
+            observed_at,
+        )
+    }
 
     #[derive(Clone)]
     struct AdmissionReconnectJournal {
@@ -802,7 +827,7 @@ mod terminal_replacement_postgres_red_tests {
                 .map_err(|_| "replacement prepare completion")?;
             let replacement_commit = replacement_flow
                 .authorize_commit(
-                    ReconnectCurrentAuthorityV1::from_record(&candidate, now)
+                    exact_current_authority(&candidate, now)
                         .map_err(|_| "current replacement authority")?,
                     now,
                 )
@@ -1098,9 +1123,8 @@ mod terminal_replacement_postgres_red_tests {
                     ReconnectPrepareDispositionV1::Prepared,
                 ))
                 .map_err(|_| "predecessor completion")?;
-            let current =
-                ReconnectCurrentAuthorityV1::from_record(predecessor_prepare.record(), now)
-                    .map_err(|_| "predecessor current authority")?;
+            let current = exact_current_authority(predecessor_prepare.record(), now)
+                .map_err(|_| "predecessor current authority")?;
             let predecessor_commit = predecessor_flow
                 .authorize_commit(current, now)
                 .map_err(|_| "predecessor commit authorization")?;
@@ -1609,8 +1633,7 @@ mod terminal_replacement_postgres_red_tests {
                 ReconnectPrepareDispositionV1::Prepared,
             ))
             .map_err(|_| "prepare completion")?;
-            let current = ReconnectCurrentAuthorityV1::from_record(&record, now)
-                .map_err(|_| "current authority")?;
+            let current = exact_current_authority(&record, now).map_err(|_| "current authority")?;
             let commit_request = flow
                 .authorize_commit(current, now)
                 .map_err(|_| "commit authorization")?;
