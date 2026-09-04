@@ -155,8 +155,12 @@ mod contract_tests {
                 .split_once(&marker)
                 .and_then(|(_before, rest)| rest.split_once("\n}\n"))
                 .map(|(implementation, _after)| implementation);
+            assert!(
+                implementation.is_some(),
+                "{type_name}: implementation missing"
+            );
             let Some(implementation) = implementation else {
-                panic!("{type_name}: implementation missing");
+                continue;
             };
             let production_impl = implementation
                 .replace(
