@@ -1435,34 +1435,209 @@ async fn current_prepared_binding_is_valid(
     let Some(prepared_attempt_ref) = prepared_attempt_ref else {
         return Ok(false);
     };
-    let count: i64 = sqlx::query_scalar(
-        "SELECT COUNT(*) FROM game_durability_reconnect_attempts \
+    let attempt = sqlx::query(
+        "SELECT control_loss_epoch::text AS control_loss_epoch, transport_ref, \
+                account_id::text AS account_id, uuid_send(character_id) AS character_id, \
+                uuid_send(world_id) AS world_id, runtime_scope_kind, \
+                uuid_send(runtime_scope_world_id) AS runtime_scope_world_id, \
+                CASE WHEN runtime_scope_channel_id IS NULL THEN NULL \
+                     ELSE uuid_send(runtime_scope_channel_id) END AS runtime_scope_channel_id, \
+                CASE WHEN runtime_scope_instance_id IS NULL THEN NULL \
+                     ELSE uuid_send(runtime_scope_instance_id) END AS runtime_scope_instance_id, \
+                fnd02_next_command_id::text AS fnd02_next_command_id, record_json \
+         FROM game_durability_reconnect_attempts \
          WHERE game_session_id = encode($1, 'hex')::uuid \
-           AND reconnect_attempt_ref = $2 AND state = $3 \
-           AND control_loss_epoch = $4::text::numeric(20, 0) \
-           AND account_id = $5::text::uuid AND character_id = encode($6, 'hex')::uuid \
-           AND world_id = encode($7, 'hex')::uuid \
-           AND runtime_scope_kind = $8 \
-           AND runtime_scope_world_id = encode($9, 'hex')::uuid \
-           AND runtime_scope_channel_id IS NOT DISTINCT FROM \
-               CASE WHEN $10::bytea IS NULL THEN NULL ELSE encode($10, 'hex')::uuid END \
-           AND runtime_scope_instance_id IS NOT DISTINCT FROM \
-               CASE WHEN $11::bytea IS NULL THEN NULL ELSE encode($11, 'hex')::uuid END",
+           AND reconnect_attempt_ref = $2 AND state = $3",
     )
     .bind(session_id)
     .bind(prepared_attempt_ref)
     .bind(PREPARED)
-    .bind(session.try_get::<String, _>("control_loss_epoch")?)
-    .bind(session.try_get::<String, _>("account_id")?)
-    .bind(session.try_get::<Vec<u8>, _>("character_id")?)
-    .bind(session.try_get::<Vec<u8>, _>("world_id")?)
-    .bind(session.try_get::<i16, _>("runtime_scope_kind")?)
-    .bind(session.try_get::<Vec<u8>, _>("runtime_scope_world_id")?)
-    .bind(session.try_get::<Option<Vec<u8>>, _>("runtime_scope_channel_id")?)
-    .bind(session.try_get::<Option<Vec<u8>>, _>("runtime_scope_instance_id")?)
-    .fetch_one(&mut **transaction)
+    .fetch_optional(&mut **transaction)
     .await?;
-    Ok(count == 1)
+    let Some(attempt) = attempt else {
+        return Ok(false);
+    };
+    let transport_ref: Vec<u8> = attempt.try_get("transport_ref")?;
+    let stored_channel: Option<Vec<u8>> = attempt.try_get("runtime_scope_channel_id")?;
+    let stored_instance: Option<Vec<u8>> = attempt.try_get("runtime_scope_instance_id")?;
+    let session_channel: Option<Vec<u8>> = session.try_get("runtime_scope_channel_id")?;
+    let session_instance: Option<Vec<u8>> = session.try_get("runtime_scope_instance_id")?;
+    if attempt.try_get::<String, _>("control_loss_epoch")?
+        != session.try_get::<String, _>("control_loss_epoch")?
+        || attempt.try_get::<String, _>("account_id")?
+            != session.try_get::<String, _>("account_id")?
+        || attempt.try_get::<Vec<u8>, _>("character_id")?
+            != session.try_get::<Vec<u8>, _>("character_id")?
+        || attempt.try_get::<Vec<u8>, _>("world_id")?
+            != session.try_get::<Vec<u8>, _>("world_id")?
+        || attempt.try_get::<i16, _>("runtime_scope_kind")?
+            != session.try_get::<i16, _>("runtime_scope_kind")?
+        || attempt.try_get::<Vec<u8>, _>("runtime_scope_world_id")?
+            != session.try_get::<Vec<u8>, _>("runtime_scope_world_id")?
+        || stored_channel != session_channel
+        || stored_instance != session_instance
+        || session.try_get::<String, _>("current_generation")?
+            != session.try_get::<String, _>("predecessor_generation")?
+        || session
+            .try_get::<Option<Vec<u8>>, _>("current_transport_ref")?
+            .is_some()
+        || session.try_get::<i16, _>("session_state")? != RECONNECTABLE
+    {
+        return Ok(false);
+    }
+
+    let stored_record: String = attempt.try_get("record_json")?;
+    let canonical: Value = serde_json::from_str(&stored_record)
+        .map_err(|_error| DurabilityError::InvalidStoredState)?;
+    let identity = &canonical["identity"];
+    let scope = &identity["runtime_scope"];
+    let connection = &canonical["connection"];
+    let authority = &canonical["authority"];
+    let continuity = &canonical["continuity"];
+    let proof = &canonical["proof"];
+    let fnd02 = &canonical["fnd02"];
+    let compatibility = &canonical["compatibility"];
+    let scope_matches = match session.try_get::<i16, _>("runtime_scope_kind")? {
+        CHANNEL_SCOPE => {
+            scope["kind"].as_str() == Some("channel")
+                && canonical_bytes(&scope["world_id"])
+                    == Some(session.try_get::<Vec<u8>, _>("runtime_scope_world_id")?)
+                && canonical_bytes(&scope["channel_id"]) == session_channel
+                && scope["instance_id"].is_null()
+        }
+        INSTANCE_SCOPE => {
+            scope["kind"].as_str() == Some("instance")
+                && canonical_bytes(&scope["world_id"])
+                    == Some(session.try_get::<Vec<u8>, _>("runtime_scope_world_id")?)
+                && scope["channel_id"].is_null()
+                && canonical_bytes(&scope["instance_id"]) == session_instance
+        }
+        _ => false,
+    };
+    if canonical["version"].as_u64() != Some(1)
+        || canonical_bytes(&identity["game_session_id"]) != Some(session_id.to_vec())
+        || canonical_bytes(&identity["reconnect_attempt_ref"])
+            != Some(prepared_attempt_ref.to_vec())
+        || identity["account_id"].as_str()
+            != Some(session.try_get::<String, _>("account_id")?.as_str())
+        || canonical_bytes(&identity["character_id"])
+            != Some(session.try_get::<Vec<u8>, _>("character_id")?)
+        || canonical_bytes(&identity["world_id"])
+            != Some(session.try_get::<Vec<u8>, _>("world_id")?)
+        || !scope_matches
+        || canonical_u64_text(&connection["predecessor_generation"])
+            != Some(session.try_get::<String, _>("predecessor_generation")?)
+        || canonical_u64_text(&connection["candidate_generation"])
+            == Some(session.try_get::<String, _>("predecessor_generation")?)
+        || canonical_bytes(&connection["transport_ref"]) != Some(transport_ref.clone())
+        || canonical_u64_text(&authority["character_lease_generation"])
+            != Some(session.try_get::<String, _>("character_lease_generation")?)
+        || canonical_u64_text(&authority["scope_ownership_generation"])
+            != Some(session.try_get::<String, _>("scope_ownership_generation")?)
+        || canonical_u64_text(&continuity["control_loss_epoch"])
+            != Some(session.try_get::<String, _>("control_loss_epoch")?)
+        || continuity["original_grace_deadline"].as_i64()
+            != Some(session.try_get::<i64, _>("original_grace_deadline")?)
+        || !canonical_compatibility_evidence_is_valid(compatibility)
+        || attempt.try_get::<String, _>("fnd02_next_command_id")?
+            != canonical_u64_text(&fnd02["next_command_id"])
+                .ok_or(DurabilityError::InvalidStoredState)?
+    {
+        return Ok(false);
+    }
+
+    if !canonical_precommit_protection_binding_is_valid(
+        transaction,
+        session_id,
+        session,
+        continuity,
+    )
+    .await?
+        || !canonical_fnd02_mirrors_are_valid(
+            transaction,
+            session_id,
+            prepared_attempt_ref,
+            &attempt,
+            fnd02,
+        )
+        .await?
+        || !transport_reservation_binding_is_valid(
+            transaction,
+            transport_ref.as_slice(),
+            session_id,
+            prepared_attempt_ref,
+        )
+        .await?
+    {
+        return Ok(false);
+    }
+
+    match proof["class"].as_str() {
+        Some("fast_reconnect") => Ok(proof["generation"].as_u64().is_some_and(|value| value != 0)),
+        Some("reauthenticated_recovery") => {
+            let Some(nonce) = canonical_bytes(&proof["recovery_grant_nonce"]) else {
+                return Ok(false);
+            };
+            recovery_grant_binding_is_valid(
+                transaction,
+                Some(nonce.as_slice()),
+                session_id,
+                prepared_attempt_ref,
+            )
+            .await
+        }
+        _ => Ok(false),
+    }
+}
+
+async fn canonical_precommit_protection_binding_is_valid(
+    transaction: &mut Transaction<'_, Postgres>,
+    session_id: &[u8],
+    session: &PgRow,
+    continuity: &Value,
+) -> Result<bool, DurabilityError> {
+    let character_id: Vec<u8> = session.try_get("character_id")?;
+    let Some(epoch) = canonical_u64_text(&continuity["control_loss_epoch"]) else {
+        return Ok(false);
+    };
+    let Some(row) =
+        load_protection_row(transaction, character_id.as_slice(), &epoch, false).await?
+    else {
+        return Ok(false);
+    };
+    if row.try_get::<String, _>("account_id")? != session.try_get::<String, _>("account_id")?
+        || row.try_get::<Vec<u8>, _>("world_id")? != session.try_get::<Vec<u8>, _>("world_id")?
+        || row
+            .try_get::<Vec<u8>, _>("context_game_session_id")?
+            .as_slice()
+            != session_id
+        || row.try_get::<i64, _>("original_grace_deadline")?
+            != continuity["original_grace_deadline"]
+                .as_i64()
+                .ok_or(DurabilityError::InvalidStoredState)?
+        || !row.try_get::<bool, _>("protection_activation_missing")?
+        || !row.try_get::<bool, _>("protection_expiry_missing")?
+        || row
+            .try_get::<Option<i64>, _>("protection_duration_seconds")?
+            .is_some()
+        || !row.try_get::<bool, _>("protection_rearm_deadline_missing")?
+    {
+        return Ok(false);
+    }
+    match continuity["protection_entitlement"]["state"].as_str() {
+        Some("unused") => Ok(row.try_get::<i16, _>("protection_entitlement_state")?
+            == PROTECTION_UNUSED
+            && row
+                .try_get::<Option<String>, _>("protection_fenced_generation")?
+                .is_none()
+            && row.try_get::<i16, _>("protection_rearm_state")? == PROTECTION_REARM_READY),
+        Some("fenced") => Ok(row.try_get::<i16, _>("protection_entitlement_state")?
+            == PROTECTION_FENCED
+            && row.try_get::<Option<String>, _>("protection_fenced_generation")?
+                == canonical_u64_text(&continuity["protection_entitlement"]["generation"])
+            && row.try_get::<i16, _>("protection_rearm_state")? == PROTECTION_REARM_PENDING),
+        _ => Ok(false),
+    }
 }
 
 async fn canonical_fnd02_mirrors_are_valid(
