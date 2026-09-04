@@ -122,11 +122,19 @@ mod contract_tests {
         let candidate_impl = ADMISSION_RECOVERY
             .split_once("impl ReconnectCandidateBindingV1 {")
             .and_then(|(_before, rest)| rest.split_once("\n}\n"))
-            .map(|(implementation, _after)| implementation)
-            .expect("candidate binding implementation must remain present");
+            .map(|(implementation, _after)| implementation);
+        assert!(
+            candidate_impl.is_some(),
+            "candidate binding implementation must remain present"
+        );
+        let Some(candidate_impl) = candidate_impl else {
+            return;
+        };
+        let production_candidate_impl =
+            candidate_impl.replace("#[cfg(test)]\n    pub fn from_record(", "");
 
         assert!(
-            !candidate_impl.contains("\n    pub fn from_record("),
+            !production_candidate_impl.contains("\n    pub fn from_record("),
             "record-derived candidate binding must not be production-public"
         );
         assert!(
@@ -251,7 +259,13 @@ mod terminal_replacement_postgres_red_tests {
             Some(CharacterWorldEligibilityClaimV1::from_identity(
                 record.identity(),
             )),
-            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            Some(ReconnectCandidateBindingV1::new(
+                record.identity().game_session_id(),
+                record.identity().reconnect_attempt_ref(),
+                record.connection().candidate(),
+                record.connection().transport_ref(),
+                record.continuity().prepared_deadline(),
+            )?),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             record.authority(),

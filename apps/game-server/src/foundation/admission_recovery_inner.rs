@@ -756,7 +756,7 @@ impl ReconnectCandidateBindingV1 {
         })
     }
 
-    pub fn from_record(
+    fn expected_binding_from_record(
         record: &ReconnectDurabilityRecordV1,
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         Self::new(
@@ -766,6 +766,13 @@ impl ReconnectCandidateBindingV1 {
             record.connection().transport_ref(),
             record.continuity().prepared_deadline(),
         )
+    }
+
+    #[cfg(test)]
+    pub fn from_record(
+        record: &ReconnectDurabilityRecordV1,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        Self::expected_binding_from_record(record)
     }
 
     #[must_use]
@@ -1260,7 +1267,7 @@ impl ReconnectCurrentAuthorityV1 {
             record,
             Some(AccountPresenceClaimV1::from_identity(record.identity())?),
             Some(CharacterWorldEligibilityClaimV1::from_identity(record.identity())),
-            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            Some(ReconnectCandidateBindingV1::expected_binding_from_record(record)?),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             record.authority(),
@@ -1950,7 +1957,8 @@ fn current_authority_matches_record(
             == Some(AccountPresenceClaimV1::from_identity(identity)?)
         && current.current_character_world_eligibility
             == Some(CharacterWorldEligibilityClaimV1::from_identity(identity))
-        && current.current_candidate == Some(ReconnectCandidateBindingV1::from_record(record)?)
+        && current.current_candidate
+            == Some(ReconnectCandidateBindingV1::expected_binding_from_record(record)?)
         && current.current_runtime_scope == identity.runtime_scope()
         && current.predecessor == record.connection().predecessor()
         && current.authority == record.authority()

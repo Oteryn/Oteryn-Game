@@ -25,7 +25,13 @@ pub fn current_authority_from_record(
         Some(CharacterWorldEligibilityClaimV1::from_identity(
             record.identity(),
         )),
-        Some(ReconnectCandidateBindingV1::from_record(record)?),
+        Some(ReconnectCandidateBindingV1::new(
+            record.identity().game_session_id(),
+            record.identity().reconnect_attempt_ref(),
+            record.connection().candidate(),
+            record.connection().transport_ref(),
+            record.continuity().prepared_deadline(),
+        )?),
         record.identity().runtime_scope(),
         record.connection().predecessor(),
         record.authority(),

@@ -53,7 +53,13 @@ mod runtime_scope_identity_red_tests {
             Some(CharacterWorldEligibilityClaimV1::from_identity(
                 record.identity(),
             )),
-            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            Some(ReconnectCandidateBindingV1::new(
+                record.identity().game_session_id(),
+                record.identity().reconnect_attempt_ref(),
+                record.connection().candidate(),
+                record.connection().transport_ref(),
+                record.continuity().prepared_deadline(),
+            )?),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             record.authority(),
@@ -518,7 +524,13 @@ mod runtime_scope_identity_red_tests {
             Some(CharacterWorldEligibilityClaimV1::from_identity(
                 record.identity(),
             )),
-            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            Some(ReconnectCandidateBindingV1::new(
+                record.identity().game_session_id(),
+                record.identity().reconnect_attempt_ref(),
+                record.connection().candidate(),
+                record.connection().transport_ref(),
+                record.continuity().prepared_deadline(),
+            )?),
             runtime_scope,
             connection_generation,
             control_loss_epoch,
@@ -647,7 +659,13 @@ mod runtime_scope_identity_red_tests {
         let exact_world = Some(CharacterWorldEligibilityClaimV1::from_identity(
             record.identity(),
         ));
-        let exact_candidate = ReconnectCandidateBindingV1::from_record(&record)?;
+        let exact_candidate = ReconnectCandidateBindingV1::new(
+            record.identity().game_session_id(),
+            record.identity().reconnect_attempt_ref(),
+            record.connection().candidate(),
+            record.connection().transport_ref(),
+            record.continuity().prepared_deadline(),
+        )?;
         let exact_scope = record.identity().runtime_scope();
         let exact_connection = record.connection().predecessor();
         let exact_epoch = record.continuity().control_loss_epoch();
@@ -829,7 +847,13 @@ mod runtime_scope_identity_red_tests {
         let exact_world = Some(CharacterWorldEligibilityClaimV1::from_identity(
             record.identity(),
         ));
-        let exact_candidate = Some(ReconnectCandidateBindingV1::from_record(&record)?);
+        let exact_candidate = Some(ReconnectCandidateBindingV1::new(
+            record.identity().game_session_id(),
+            record.identity().reconnect_attempt_ref(),
+            record.connection().candidate(),
+            record.connection().transport_ref(),
+            record.continuity().prepared_deadline(),
+        )?);
         assert!(matches!(
             reconcile(exact_world, exact_candidate)?,
             ReconnectProjectionDecisionV2::InstallController { .. }
@@ -855,7 +879,13 @@ mod runtime_scope_identity_red_tests {
             Some(CharacterWorldEligibilityClaimV1::from_identity(
                 record.identity(),
             )),
-            Some(ReconnectCandidateBindingV1::from_record(&record)?),
+            Some(ReconnectCandidateBindingV1::new(
+                record.identity().game_session_id(),
+                record.identity().reconnect_attempt_ref(),
+                record.connection().candidate(),
+                record.connection().transport_ref(),
+                record.continuity().prepared_deadline(),
+            )?),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             ReconnectAuthorityFenceV1::new(
@@ -1034,7 +1064,13 @@ mod runtime_scope_identity_red_tests {
                 Some(CharacterWorldEligibilityClaimV1::from_identity(
                     record.identity(),
                 )),
-                Some(ReconnectCandidateBindingV1::from_record(&record)?),
+                Some(ReconnectCandidateBindingV1::new(
+                    record.identity().game_session_id(),
+                    record.identity().reconnect_attempt_ref(),
+                    record.connection().candidate(),
+                    record.connection().transport_ref(),
+                    record.continuity().prepared_deadline(),
+                )?),
                 record.identity().runtime_scope(),
                 record.connection().predecessor(),
                 record.authority(),
