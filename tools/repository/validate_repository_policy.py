@@ -47,6 +47,28 @@ def validate_protected_base_audit() -> list[str]:
         errors.append("protected-base merge-authority audit must not checkout candidate code")
     if re.search(r'^\s*continue-on-error\s*:', text, re.MULTILINE):
         errors.append("protected-base merge-authority audit must not permit continue-on-error")
+
+    for fragment in (
+        "merge_group_head_expression = '$' + '{{ github.event.merge_group.head_sha }}'",
+        "durability_result_expression = '$' + '{{ needs.durability_postgres.result }}'",
+        "f'          EXPECTED_SHA: {merge_group_head_expression}\\n'",
+        "f'          DURABILITY_POSTGRES: {durability_result_expression}\\n'",
+    ):
+        if fragment not in text:
+            errors.append(
+                "protected-base merge-authority audit must construct future-context "
+                f"workflow expressions at Python runtime: {fragment}"
+            )
+
+    for unsafe in (
+        "          EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}\\n",
+        "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\\n",
+    ):
+        if unsafe in text:
+            errors.append(
+                "protected-base merge-authority audit must not embed a future-context "
+                f"GitHub expression directly in its pull_request_target run script: {unsafe.strip()}"
+            )
     return errors
 
 
