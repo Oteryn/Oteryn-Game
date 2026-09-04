@@ -9,15 +9,15 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/rested-death-owner-checkpoint-20260904
 issue: 220
-pr: pending
+pr: 295
 admission_main_sha: 68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705
-head_sha: pending
+head_sha: live_pr_head
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn architecture continuation
 worker_alias: "Oteryn: architektura"
 created_at: 2026-09-04T19:46:00+02:00
-updated_at: 2026-09-04T19:46:00+02:00
+updated_at: 2026-09-04T20:05:27+02:00
 execution_budget_minutes: 240
 large_budget_reason: owner-driven continuation spans Rested progression semantics, raw-XP accounting, death progression, corpse recovery, anti-abuse and explicit deferred balance boundaries
 owned_paths:
@@ -125,21 +125,21 @@ selected semantic invariants
 ## PR and closeout
 
 - previous checkpoint PR: #221 merged; not reopened
-- current PR: pending
+- current PR: #295 (draft)
 - merge authority: normal protected repository path; no direct `main` mutation
 - ownership release: pending
 
 ## Context checkpoint
 
 ```yaml
-last_progress: owner-selected Rested XP semantics and current death/corpse-recovery direction persisted on a fresh continuation branch; housing and food/cooking/fishing held for later
+last_progress: owner-selected Rested XP semantics and current death/corpse-recovery direction persisted on branch and bound to draft PR #295; housing and food/cooking/fishing held for later
 status: investigating
 branch: arch/rested-death-owner-checkpoint-20260904
-head_sha: pending
-pr: pending
+head_sha: live_pr_head
+pr: 295
 final_head_sha: null
 final_head_frozen_at: null
 owner_action_required: null
 blocker: none for checkpoint persistence; exact balance constants remain intentionally open
-next_action: publish/open the checkpoint PR, verify exact changed files/diff and then continue the next genuinely open owner decision without freezing deferred balance values
+next_action: verify exact changed files/diff and PR checks, then continue the next genuinely open owner decision without freezing deferred balance values
 ```
