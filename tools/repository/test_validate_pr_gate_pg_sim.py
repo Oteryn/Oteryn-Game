@@ -9,7 +9,7 @@ import json
 import os
 import tempfile
 import textwrap
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
@@ -59,12 +59,12 @@ def test_simulation_evidence_step_cannot_be_skipped() -> None:
     assert any("rust_windows" in error and "if" in error for error in errors), errors
 
 
-def run_classifier(files, initial_change=None, final_change=None, expected_base="b" * 40):
+def run_classifier(files, initial_change=None, final_change=None, expected_base="b" * 40, scope=False):
     """Execute the real workflow script with only GitHub HTTP responses replaced."""
     validator = load_validator()
     step = validator.step_block(
-        validator.job_block(MERGE_GATE.read_text(encoding="utf-8"), "rust_linux"),
-        "Classify Durability PostgreSQL target",
+        validator.job_block(MERGE_GATE.read_text(encoding="utf-8"), "scope" if scope else "rust_linux"),
+        "Resolve and validate exact pull request head" if scope else "Classify Durability PostgreSQL target",
     )
     assert step is not None
     script = textwrap.dedent(step.split("python - <<'PY'\n", 1)[1].rsplit("          PY", 1)[0])
@@ -96,15 +96,49 @@ def run_classifier(files, initial_change=None, final_change=None, expected_base=
         env = {
             "REPOSITORY": "Oteryn/Oteryn-Game", "PULL_NUMBER": "287",
             "EXPECTED_HEAD": "a" * 40, "EXPECTED_BASE": expected_base,
+            "EVENT_PR_NUMBER": "287", "EVENT_PR_HEAD_SHA": "a" * 40,
             "GH_TOKEN": "test-only", "GITHUB_OUTPUT": str(output),
         }
         failure = None
-        with patch.dict(os.environ, env), patch("urllib.request.urlopen", urlopen), redirect_stdout(io.StringIO()):
+        with patch.dict(os.environ, env), patch("urllib.request.urlopen", urlopen), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             try:
                 exec(compile(script, "merge-gate.yml:pg_target", "exec"), {})
             except SystemExit as error:
                 failure = str(error)
         return failure, output.read_text(encoding="utf-8") if output.exists() else ""
+
+
+def test_scope_rejects_identity_races() -> None:
+    # A Rust event head can otherwise consume a replacement docs-only listing of the same size.
+    files = [{"filename": f"docs/file-{index}.md"} for index in range(101)]
+    failure, output = run_classifier(files, scope=True)
+    assert failure is None and output.endswith("rust=false\n"), (failure, output)
+    mutations = {
+        "closed": lambda pull: pull.update(state="closed"),
+        "head": lambda pull: pull["head"].update(sha="c" * 40),
+        "repository": lambda pull: pull["head"]["repo"].update(full_name="other/repository"),
+        "base": lambda pull: pull["base"].update(sha="c" * 40),
+        "base_ref": lambda pull: pull["base"].update(ref="other"),
+        "count": lambda pull: pull.update(changed_files=102),
+    }
+    accepted = []
+    for name, change in mutations.items():
+        failure, output = run_classifier(files, final_change=change, scope=True)
+        if failure is None or output:
+            accepted.append(name)
+    assert not accepted, f"scope emitted authority after PR identity changed: {accepted}"
+
+
+def test_scope_preserves_stable_classification() -> None:
+    for files, rust in (
+        ([], False),
+        ([{"filename": "README.md"}], False),
+        ([{"filename": "apps/game-server/src/lib.rs"}], True),
+        ([{"filename": "docs/old.md", "previous_filename": "crates/old.rs"}], True),
+    ):
+        failure, output = run_classifier(files, scope=True)
+        expected = f"pr_number=287\ntarget_sha={'a' * 40}\nbase_sha={'b' * 40}\nrust={str(rust).lower()}\n"
+        assert failure is None and output == expected, (failure, output)
 
 
 def test_classifier_rejects_identity_races() -> None:
@@ -173,6 +207,8 @@ def main() -> int:
         test_classifier_rejects_unbound_base,
         test_classifier_preserves_stable_removal_classification,
         test_evidence_step_condition_family,
+        test_scope_rejects_identity_races,
+        test_scope_preserves_stable_classification,
     )
     for test in tests:
         test()
