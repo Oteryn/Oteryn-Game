@@ -15,9 +15,9 @@ base_sha: d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-owner: ChatGPT GPT-5.6 Sol implementation worker
+owner: Codex single mutating writer authorized by owner continuation
 created_at: 2026-09-04T13:56:00Z
-updated_at: 2026-09-04T17:14:00Z
+updated_at: 2026-09-04T22:06:04Z
 execution_budget_minutes: 60
 large_budget_reason: required-check composition with hosted RED/GREEN and review-repair evidence
 owned_paths:
@@ -40,181 +40,73 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-## Outcome
+## Outcome and authority
 
-Every Rust/workspace-relevant pull-request head executes deterministic Windows simulation inside canonical `game-gate`. The same required Linux job owns a pinned PostgreSQL 17.6 service and runs the real `durability_postgres` target whenever that target exists on the exact candidate. Removal/rename fails closed; revisions predating allocation are explicit `NOT_APPLICABLE`; and the actual PG/SIM evidence steps cannot be converted into non-failing skips while repository-policy validation remains green.
+Every applicable PR Linux job executes real PostgreSQL durability tests and every applicable Windows job executes deterministic simulation. Removing or renaming the allocated PostgreSQL target fails closed. Historical pre-allocation absence is explicit `NOT_APPLICABLE`, never DB E2E PASS.
 
-## Architecture and source of truth
+Protected main at this repair admission is `68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705`; the existing branch includes it. Original admission provenance remains unchanged above. PR #252 is integrated and the PostgreSQL target exists on both protected main and this candidate.
 
-- `PROVEN` — ruleset `20991995` uses the stable canonical `game-gate`; this task does not change the ruleset or required status name.
-- `PROVEN` — governance convergence #286 is integrated at protected `main@68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705` and now governs this repair.
-- `PROVEN` — PR #252 is integrated, so `apps/game-server/tests/durability_postgres.rs` is now present and current exact-head PR qualification can execute the real PostgreSQL harness.
-- `PROVEN` — adjacent `rust.yml` results are not canonical PR child predicates; C1 therefore places PG/SIM inside already-required Merge Gate Rust jobs.
-- `PROVEN` — protected merge-group gate remains unchanged in this task; #284/#285 own that separate control-plane transition.
-- `DERIVED` — evidence-step structure must itself be validated, because command-presence checks alone do not prove GitHub Actions will execute a step.
+The owner explicitly authorized this session to take over repair and qualification of #287 and #291, still without merge. One writer handles the branches serially because they share the repository-policy wrapper. Read-only #291 inspection can run independently. This grants no production, protected-setting, external-repository or merge authority.
 
-## High-risk authority/recovery qualification
+## Scope and invariants
 
-```yaml
-applicable: CONTROL_PLANE_REQUIRED_CHECK_COMPOSITION
-model: AuthorityInvariant_x_ConsumerBoundary_x_MutationOperator
-authority_invariants:
-  - canonical_windows_job_runs_simulation
-  - allocated_postgresql_target_runs_in_canonical_linux_job
-  - candidate_cannot_remove_or_rename_postgresql_target_into_skip
-  - applicable_postgresql_and_simulation_steps_are_unconditional
-  - historical_absence_is_not_misreported_as_postgresql_pass
-consumer_boundaries:
-  - pull_request_game_gate
-mutation_operators:
-  - remove_simulation_contract
-  - remove_postgresql_contract
-  - remove_or_rename_postgresql_test_target
-  - add_false_condition_to_postgresql_evidence_step
-  - add_false_condition_to_simulation_evidence_step
-  - add_continue_on_error_to_evidence_step
-independent_current_fact_sources:
-  - exact_pull_request_head_resolved_by_scope
-  - exact_head_checkout
-  - exact_live_pull_request_changed_file_statuses
-record_derived_matching_helper:
-  allowed_for_positive_happy_path: NOT_APPLICABLE
-  forbidden_for_negative_authority_or_provenance_cases: NOT_APPLICABLE
-finding_family_sweep:
-  sibling_apis: both_canonical_PR_evidence_steps
-  protocol_versions: NOT_APPLICABLE
-  direct_and_reconciled_paths: linux_postgresql_windows_simulation_and_existing_aggregate
-  fenced_durable_writes: NOT_APPLICABLE_control_plane_only
-  restart_retry_replay_concurrency_pg_reload: durability_postgres_target_when_allocated
-  evidence:
-    - tools/repository/validate_pr_gate_pg_sim.py
-    - tools/repository/test_validate_pr_gate_pg_sim.py
-    - RED 95812aaffe88974958b73803760e070e8c2abe2b
-    - RED 891adbf70723ef5f558e15aa69e58ce1a6c957a1
-    - RED 8636afc54da0c9a900aca1a37a490432cf764c87
-finding_dispositions:
-  p0_p1_accepted_and_repaired:
-    - review_comment_3936176055_step_skip_gap
-  p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
-```
+The six-path Issue #279 allocation is unchanged. Existing Rust applicability, scope resolution, dependency review, CodeQL, supply chain, Linux/Windows validation and aggregate fan-in remain intact. No `rust.yml`, merge-group gate, protected audit or ruleset mutation belongs to this task. #284/#285 separately own merge-group gate strengthening.
 
-## Acceptance criteria
+The current-PR target classifier consumes exact expected head and base SHA, validates initial identity, enumerates all file pages, and re-reads the PR before emitting any result. Changes to open state, head, repository, base or file count fail closed. The PG/SIM evidence steps remain unconditional inside their applicable Rust jobs.
 
-- [x] Deterministic validator names the exact PG, SIM and deletion-safe routing contracts.
-- [x] RED 1 proves the pre-change PR gate lacked canonical PG/SIM contracts.
-- [x] Initial runtime GREEN proves Windows SIM execution and exposed historical target-allocation compatibility.
-- [x] RED 2 proves deletion/rename routing contracts were missing before their repair.
-- [x] Required Linux job starts pinned PostgreSQL 17.6, verifies exact PR SHA and runs real `durability_postgres` when allocated.
-- [x] Required Windows job verifies exact PR SHA and runs deterministic simulation golden fixtures.
-- [x] Exact current-head PostgreSQL execution is proven after #252 integration.
-- [x] Independent review finding `3936176055` is accepted: whole-job substring validation could not prevent `if: false` on evidence steps.
-- [x] RED 3 at `8636afc54da0c9a900aca1a37a490432cf764c87` independently proves both PostgreSQL and simulation skipped-step mutations were accepted by the old validator.
-- [ ] Structural evidence-step validation rejects any step-level `if:` and `continue-on-error` for canonical PG/SIM execution while preserving the required job-level Rust applicability condition.
-- [ ] Focused regression suite and repository-policy validator pass on the repaired candidate.
-- [ ] Exact final-head canonical `game-gate` passes with real PostgreSQL and Windows SIM evidence.
-- [ ] Whole-diff family sweep finds no sibling bypass.
-- [ ] One independent deep re-review after the P1 repair has no unresolved actionable finding.
+## TDD lineage and findings
 
-## Excluded scope
+- RED1 `95812aaffe88974958b73803760e070e8c2abe2b`: canonical PG/SIM contracts absent.
+- Initial runtime GREEN `fe8e76c617472b6281e519647cc099ebc7b7d1ad`: Windows simulation passed; historical PG absence correctly surfaced.
+- RED2 `891adbf70723ef5f558e15aa69e58ce1a6c957a1`: missing deletion/rename routing contracts.
+- GREEN2 `2ac8ac57d75310510f56e4426cf3cd5e5cfc7113`, later normally reconciled through `f2d5bf340e3e5c256424f017275bcac66be33460`.
+- P1 `3936176055` accepted: substring checks permitted skipped evidence steps. RED3 `8636afc54da0c9a900aca1a37a490432cf764c87` independently failed PostgreSQL and simulation skip regressions. GREEN3 `e33bcabf3a0710ff0857addcd3691f0fde3abd8b` added scoped unconditional-step validation.
+- P2 `3936294911` accepted: mutable file enumeration was not revalidated. Published RED4 `445bc91de4c4b0f8c9415e194c6ea2ea06c6b947` failed 17 exact-base/post-enumeration contracts in hosted job `101111526699`.
+- RED4 was reproduced locally on the clean exact branch. New behavioral regressions execute the actual embedded classifier, replacing only GitHub HTTP responses. Before GREEN it emitted a result for all five independently changed post-enumeration fields (closed/head/repository/base/count) and accepted an invalid or mismatched expected base. Stable non-removal/removal/rename controls passed.
+- GREEN4 adds expected-base input/validation and the post-enumeration identity check before output, preserving classification behavior for stable inputs. The behavioral regressions and all focused validators pass locally. The required governance job now executes the focused regressions.
+- P2 `3936176060` accepted and fixed: this task and BUILD_TEST_MATRIX now identify #252 as integrated and real PostgreSQL as applicable.
 
-No Game runtime/test-source edit, no merge-group gate or protected audit mutation, no ruleset/branch-protection change, no risk-scoped lane omission, no `rust.yml` deduplication, no production/secret/external-repository mutation.
+## AuthorityInvariant × ConsumerBoundary × MutationOperator sweep
 
-## Implementation / findings
+| Invariant | Consumer boundary | One-field mutation / evidence |
+| --- | --- | --- |
+| PR remains open | PG target classification before output | closed state after two file pages is rejected |
+| Head remains exact | same boundary | moved head with unchanged count is rejected |
+| Repository remains the same | same boundary | changed head repository is rejected |
+| Base remains exact | initial admission and post-enumeration | missing/malformed expected base, initial mismatch and later base change are rejected |
+| Enumeration count remains bound | post-enumeration | changed count is rejected |
+| Allocated target cannot become an absence skip | classification / Linux E2E | stable removal and rename produce `removed=true`; existing workflow fails missing removed target |
+| Applicable evidence runs | Linux PG / Windows SIM | unquoted/quoted `if` and `continue-on-error` mutations rejected for both steps |
+| Stable input remains accepted | classifier happy paths | unchanged target, historical empty diff, deletion and rename outputs checked independently |
+| Exact checkout and aggregate remain enforced | existing jobs / final game-gate | unchanged source and core policy validation |
 
-### RED 1 — missing canonical PG/SIM contracts
+The race fixture uses 101 files across two pages; head/base/repository/state mutations preserve the file count. It does not infer correctness from strings alone. The controlled HTTP seam models the accepted before/after identity contract; this is not a claim of an atomic snapshot from GitHub's mutable files API.
 
-- exact `95812aaffe88974958b73803760e070e8c2abe2b`;
-- Agent Governance `33881045461` failed only on expected missing PG/SIM contracts;
-- Architecture `33881045529` passed.
+Fenced Game writes, game-session authority, replay and runtime concurrency are `NOT_APPLICABLE` to this workflow-only repair. Real PostgreSQL and simulation execution are still required hosted predicates.
 
-### Initial GREEN and compatibility discovery
+## Acceptance and validation
 
-- `fe8e76c617472b6281e519647cc099ebc7b7d1ad` proved exact Windows SIM in Merge Gate `33881858954` but Linux exposed that pre-#252 main had no durability test target.
+- [x] Published RED4 and fresh local behavioral RED observed before workflow repair.
+- [x] Minimal classifier GREEN preserves original positive behavior and fails closed for the accepted race family.
+- [x] `python3 tools/repository/test_validate_pr_gate_pg_sim.py`: 6 test functions PASS, including 5 post-enumeration mutations, 3 base cases, 4 stable controls and both skip-condition families.
+- [x] `python3 tools/repository/validate_pr_gate_pg_sim.py`: PASS.
+- [x] `python3 tools/repository/validate_repository_policy.py`: PASS (22 files, 17 workflows).
+- [x] `python3 tools/agents/validate_governance.py`: PASS.
+- [x] Whole-diff/family self-review and `git diff --check`: PASS before publication.
+- [ ] Fresh published-head canonical game-gate including real PostgreSQL 17.6 and Windows simulation.
+- [ ] One independent deep review on the stable repaired material candidate; accepted material findings repaired if any.
+- [ ] Native review-thread dispositions and final exact-head readback; no merge by this writer.
 
-### RED 2 / deletion-safe routing
+## Self-review and independent review
 
-- exact `891adbf70723ef5f558e15aa69e58ce1a6c957a1`;
-- Agent Governance `33883182869` failed only on the newly required exact-head changed-file/removal/rename contracts.
+The implementation changes only the target-classifier identity checks, adds executable regression coverage to the existing governance job, and reconciles already-known metadata. It does not change the scope job, aggregate, permissions, service pin or PG/SIM commands. The full diff remains inside the six allocated paths. No additional confirmed actionable finding was identified in pre-publication self-review.
 
-### First stable GREEN generation
-
-- `2ac8ac57d75310510f56e4426cf3cd5e5cfc7113`, later non-force reconciled to `10f21fb0...` and `f2d5bf340e3e5c256424f017275bcac66be33460` as protected main advanced.
-- On `f2d5bf340...`, Linux exact-head job executed real PostgreSQL 17.6 durability successfully and Windows exact-head qualification was progressing under the new governance.
-
-### Accepted review P1 — evidence step may be skipped
-
-- Independent review `5115755399` produced P1 comment `3936176055`: inserting a false step-level `if:` preserves all required strings yet GitHub marks the step skipped/non-failing, allowing the job/aggregate to pass without evidence.
-- The current-head review summary later identified `f2d5bf3` as the reviewed generation; the finding therefore applies to the material candidate and is accepted rather than dismissed as historical noise.
-
-### RED 3 — structural step condition
-
-- regression-only exact head `8636afc54da0c9a900aca1a37a490432cf764c87` adds no production/workflow change;
-- `python tools/repository/test_validate_pr_gate_pg_sim.py` exits 1 with `AssertionError: validator accepted a skipped PostgreSQL evidence step`;
-- an independent invocation of `test_simulation_evidence_step_cannot_be_skipped()` exits 1 with `AssertionError: validator accepted a skipped simulation evidence step`;
-- `python tools/repository/validate_repository_policy.py` remains 0 on the unmutated real gate, proving the RED isolates the mutation-detection gap.
-
-### Minimal GREEN design
-
-- extract exactly one named step block from each already-required Rust job;
-- require the canonical evidence command inside that step;
-- reject any step-local `if:` (quoted or unquoted) and `continue-on-error`;
-- preserve job-level `if: needs.scope.outputs.rust == 'true'`, exact SHA checks, PG target classifier and aggregate fan-in unchanged.
-
-## Validation
-
-### Focused
-
-- `python tools/repository/test_validate_pr_gate_pg_sim.py`: pending GREEN
-- `python tools/repository/validate_pr_gate_pg_sim.py`: pending GREEN
-- `python tools/repository/validate_repository_policy.py`: pending GREEN
-
-### Component/integration
-
-- canonical hosted PR Merge Gate with PostgreSQL 17.6 and Windows SIM: pending repaired exact head
-
-### E2E
-
-- real PostgreSQL durability target: required on repaired exact head
-- deterministic Windows simulation: required on repaired exact head
-
-### Exact-head CI
-
-- final head: established by authoritative GitHub readback after repair publication
-- trigger source: PR #287 synchronize
-- workflow/run/job: pending repaired generation
-- runner assignment: GitHub-hosted Linux and Windows
-- classification: material control-plane required-check repair
-- result: pending
-
-## Self-review
-
-- exact head: pending repaired generation
-- method/reviewer: implementing agent whole-diff + finding-family sweep
-- material findings: accepted P1 `3936176055` under repair
-- verdict: pending
-
-## Independent review
-
-- required: YES — required-check composition; accepted material P1 invalidates prior review as final evidence
-- exact head: pending stable repair generation
-- method/auditor: one independent deep Codex re-review
-- material findings: pending
-- verdict: pending
-
-## PR and closeout
-
-- changed-file review: exactly six allocated paths maximum
-- unresolved review threads: P1 `PRRT_kwDOT8SzxM6fV1h3` remains unresolved until GREEN + exact-head qualification + re-review
-- related work: #284/#285 separately stage merge-group PG/SIM; #283 remains blocked
-- protected auto-merge: disabled/not requested
-- merge commit/result: pending
-- ownership release: after protected-main readback
+The current META AI review policy selects one deep review because this is required-check control-plane behavior. Deterministic hosted validation must pass first. No final review is claimed yet. Review/head/run/READY bookkeeping after this material commit belongs on Issue/PR, not in a new bookkeeping-only commit. `final_head_sha` is resolved externally after publication, not self-referentially embedded here.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: independent P1 converted into two precise skipped-evidence RED regressions on exact 8636afc5
+last_progress: GREEN4 classifier and behavioral race regressions pass locally after witnessed RED4
 status: implementing
 branch: ci/canonical-pr-pg-sim-279
 head_sha: null
@@ -222,19 +114,19 @@ pr: 287
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: review_repair_red3
-ci_checks_for_current_head: 0
+ci_check_generation: review_repair_green4
+ci_checks_for_current_head: pending_publication
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: github_hosted
+runner_assignment_state: pending_publication
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 4
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: publish minimal structural evidence-step GREEN, then require focused regressions, repository policy, exact-head PostgreSQL/SIM game-gate, whole-diff family sweep and one independent re-review before integration
+next_action: publish this coherent GREEN4 on the existing branch, then verify exact-head canonical PG/SIM qualification and one independent deep review, dispose all findings, and return the reviewed candidate without merge
 ```

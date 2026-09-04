@@ -231,6 +231,9 @@ jobs:
       - name: Validate repository policy
         run: python tools/repository/validate_repository_policy.py
 
+      - name: Test canonical PG/SIM gate regressions
+        run: python tools/repository/test_validate_pr_gate_pg_sim.py
+
   dependency_review:
     name: Merge gate / dependency review
     needs: scope
@@ -381,6 +384,7 @@ jobs:
         id: pg_target
         env:
           EXPECTED_HEAD: ${{ needs.scope.outputs.target_sha }}
+          EXPECTED_BASE: ${{ needs.scope.outputs.base_sha }}
           GH_TOKEN: ${{ github.token }}
           PULL_NUMBER: ${{ needs.scope.outputs.pr_number }}
           REPOSITORY: ${{ github.repository }}
@@ -395,12 +399,15 @@ jobs:
           repository = os.environ['REPOSITORY']
           number_text = os.environ['PULL_NUMBER'].strip()
           expected_head = os.environ['EXPECTED_HEAD'].strip().lower()
+          expected_base = os.environ['EXPECTED_BASE'].strip().lower()
           target = 'apps/game-server/tests/durability_postgres.rs'
 
           if re.fullmatch(r'[1-9][0-9]*', number_text) is None:
               raise SystemExit('pull request number must be a positive integer')
           if re.fullmatch(r'[0-9a-f]{40}', expected_head) is None:
               raise SystemExit('expected pull request head SHA is invalid')
+          if re.fullmatch(r'[0-9a-f]{40}', expected_base) is None:
+              raise SystemExit('expected pull request base SHA is invalid')
 
           headers = {
               'Accept': 'application/vnd.github+json',
@@ -424,6 +431,8 @@ jobs:
               raise SystemExit('pull request head moved after exact target resolution')
           if pull.get('head', {}).get('repo', {}).get('full_name') != repository:
               raise SystemExit('PostgreSQL target classification accepts only same-repository heads')
+          if pull.get('base', {}).get('sha', '').lower() != expected_base:
+              raise SystemExit('pull request base moved after exact target resolution')
 
           changed_files = pull.get('changed_files')
           if not isinstance(changed_files, int) or changed_files < 0 or changed_files > 3000:
@@ -453,6 +462,18 @@ jobs:
                   f'changed-files enumeration mismatch: API reports {changed_files}, '
                   f'collected {len(files)}; fail closed'
               )
+
+          pull_after_files = api(f'/pulls/{number_text}')
+          if pull_after_files.get('state') != 'open':
+              raise SystemExit('pull request closed during Durability PostgreSQL target classification')
+          if pull_after_files.get('head', {}).get('sha', '').lower() != expected_head:
+              raise SystemExit('pull request head moved during Durability PostgreSQL target classification')
+          if pull_after_files.get('head', {}).get('repo', {}).get('full_name') != repository:
+              raise SystemExit('pull request repository changed during Durability PostgreSQL target classification')
+          if pull_after_files.get('base', {}).get('sha', '').lower() != expected_base:
+              raise SystemExit('pull request base moved during Durability PostgreSQL target classification')
+          if pull_after_files.get('changed_files') != changed_files:
+              raise SystemExit('pull request changed-files count moved during Durability PostgreSQL target classification')
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
               output.write(f"removed={'true' if removed else 'false'}\n")

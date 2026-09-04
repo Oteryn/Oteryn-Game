@@ -36,13 +36,15 @@ When Rust/workspace-relevant paths change, the same merge gate additionally requ
 - deterministic Windows `oteryn-simulation-determinism` golden fixtures inside the required Windows job;
 - `cargo-deny` advisory/license/ban/source validation.
 
-The PostgreSQL test target is currently introduced by the still-unmerged terminal-replacement work. The canonical Linux job therefore uses these fail-closed rules:
+The PostgreSQL test target is present on protected main after terminal-replacement PR #252. The canonical Linux job uses these fail-closed rules:
 
 - when `apps/game-server/tests/durability_postgres.rs` exists on the exact candidate, run it against PostgreSQL 17.6;
 - when the exact PR removes or renames that target, fail the required Linux job;
 - when the target is not yet allocated on the candidate or its PR diff, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
 
-After the target enters protected `main`, ordinary Rust-relevant candidates run it automatically; deleting or renaming it cannot convert that evidence into a skip.
+Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Target classification validates the expected head and base SHA both before and after file enumeration, together with open state, repository identity and unchanged file count. An observed change fails before emitting a classification result.
+
+The required governance job executes the focused PG/SIM regressions, including the real classifier script against controlled GitHub responses and both evidence-step skip families.
 
 The existing broad Rust/workspace classifier is deliberately retained for this safety stage. Risk-scoped lane omission and adjacent-workflow deduplication are separate work after canonical PR and Merge Queue PG/SIM coverage is proven.
 
