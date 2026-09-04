@@ -919,3 +919,30 @@ whole_diff: behind_by_0_exactly_12_of_12_allocated_paths
 metadata_commit_identity: established_by_authoritative_remote_readback_not_self_embedded
 next_action: run fresh exact-head hosted CI on the authoritative read-back checkpoint SHA, perform whole-diff self-review, and obtain one independent exact-head review; repair and repeat any P0/P1/P2 before READY_FOR_INTEGRATION; do not resolve threads, mark Ready, enqueue, or merge
 ```
+
+## Later PREPARED candidate-generation regression completion checkpoint — 2026-09-04
+
+This single superseding pre-freeze checkpoint replaces earlier current-status checkpoints for continuation state while retaining all earlier evidence as historical provenance. Its own commit identity is intentionally not self-embedded.
+
+- Review `5113765290`, P2 comment `3934639680`, required complete validation of a later PREPARED projection. Original executable RED `6a11c453e2fb2a39cf50c8ae39be3a3aab58f682` and the hosted intermediate failure on `55e95945d91c95ce5874a10758b89c130c5d20b4` demonstrated that candidate-generation corruption was accepted.
+- Production completion `825f5cbf05c6217ae4144caf52d9daa333d43d5d` requires the canonical candidate generation to equal the predecessor generation plus one.
+- Regression restoration commit `aa417c90d809239d70185e415ed01d1c1aea90ba` retains the existing five corruption classes and adds a distinct canonical-record candidate-generation corruption (`10` for predecessor `7` / valid candidate `8`) that must fail closed with `InvalidStoredState`; the transport corruption case remains unchanged.
+- Commit `1355cb61fcf6c5d02dd8404268afd0963348b3b9` and its PostgreSQL 17.6 evidence (`115/115`) remain pre-restoration evidence only because that generation replaced, rather than retained, the candidate-generation corruption case.
+- Protected `main@d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d` remains the integration base, and the effective PR scope remains exactly the allocated 12/12 paths.
+
+```yaml
+status: qualifying
+integration_state: FINAL_EXACT_HEAD_QUALIFICATION_PENDING
+ready_for_integration: false
+review: 5113765290
+p2_comment: 3934639680
+original_red: 6a11c453e2fb2a39cf50c8ae39be3a3aab58f682
+hosted_intermediate_failure: 55e95945d91c95ce5874a10758b89c130c5d20b4
+production_completion: 825f5cbf05c6217ae4144caf52d9daa333d43d5d
+restored_regression_commit: aa417c90d809239d70185e415ed01d1c1aea90ba
+pre_restoration_evidence: 1355cb61fcf6c5d02dd8404268afd0963348b3b9_115_pass_0_fail
+protected_main: d8e6233fa6b6b06f9ef643d5fdd9083d7bb3314d
+allocated_paths: 12_of_12
+final_evidence_authority: final_exact_SHA_CI_review_and_READY_must_live_in_immutable_GitHub_evidence_after_freeze
+next_action: coordinator performs final exact-head CI, whole-diff self-review, independent review, thread reconciliation, and READY handoff after this pre-freeze checkpoint; do not merge
+```
