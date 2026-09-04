@@ -717,32 +717,41 @@ impl AdmissionReconnectJournal {
             COMMITTED => {
                 let current_ref: Option<Vec<u8>> = session.try_get("current_transport_ref")?;
                 let prepared_ref: Option<Vec<u8>> = session.try_get("prepared_attempt_ref")?;
-                if session.try_get::<String, _>("control_loss_epoch")? != epoch
-                    || session.try_get::<i64, _>("original_grace_deadline")?
-                        != original_grace_deadline
-                    || session.try_get::<String, _>("predecessor_generation")? != predecessor
-                    || session.try_get::<String, _>("character_lease_generation")?
-                        != character_lease
-                    || session.try_get::<String, _>("scope_ownership_generation")?
-                        != scope_generation
-                    || session.try_get::<String, _>("current_generation")? != candidate
-                    || current_ref.as_deref() != Some(transport_ref.as_slice())
-                    || session.try_get::<i16, _>("session_state")? != ACTIVE
-                    || prepared_ref.is_some()
-                    || !recovery_grant_binding_is_valid(
-                        transaction,
-                        recovery_grant_nonce.as_deref(),
-                        session_id.as_slice(),
-                        attempt_ref.as_slice(),
-                    )
-                    .await?
-                    || !active_committed_binding_is_valid(
+                let recovery_grant_is_valid = recovery_grant_binding_is_valid(
+                    transaction,
+                    recovery_grant_nonce.as_deref(),
+                    session_id.as_slice(),
+                    attempt_ref.as_slice(),
+                )
+                .await?;
+                let current_epoch = session
+                    .try_get::<String, _>("control_loss_epoch")?
+                    .parse::<u64>()
+                    .map_err(|_error| DurabilityError::InvalidStoredState)?;
+                let is_current_projection = current_epoch
+                    == record.continuity().control_loss_epoch().get()
+                    && session.try_get::<i64, _>("original_grace_deadline")?
+                        == original_grace_deadline
+                    && session.try_get::<String, _>("predecessor_generation")? == predecessor
+                    && session.try_get::<String, _>("character_lease_generation")?
+                        == character_lease
+                    && session.try_get::<String, _>("scope_ownership_generation")?
+                        == scope_generation
+                    && session.try_get::<String, _>("current_generation")? == candidate
+                    && current_ref.as_deref() == Some(transport_ref.as_slice())
+                    && session.try_get::<i16, _>("session_state")? == ACTIVE
+                    && prepared_ref.is_none()
+                    && recovery_grant_is_valid
+                    && active_committed_binding_is_valid(
                         transaction,
                         session_id.as_slice(),
                         &session,
                     )
-                    .await?
-                {
+                    .await?;
+                let is_historical_projection = current_epoch
+                    > record.continuity().control_loss_epoch().get()
+                    && recovery_grant_is_valid;
+                if !is_current_projection && !is_historical_projection {
                     return Err(DurabilityError::InvalidStoredState);
                 }
                 ReconnectDurableReconciliationSnapshotV1::committed(record.clone())

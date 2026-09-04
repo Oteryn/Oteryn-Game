@@ -2186,10 +2186,13 @@ fn committed_session_accepts_a_later_non_reused_control_loss_epoch()
                     journal.commit(&first_commit).await,
                     Err(DurabilityError::InvalidStoredState)
                 ));
-                assert!(matches!(
-                    journal.reconcile(&first_prepare).await,
-                    Err(DurabilityError::InvalidStoredState)
-                ));
+                assert_eq!(
+                    journal.reconcile(&first_prepare).await?,
+                    ReconnectDurableReconciliationSnapshotV1::committed(
+                        first_prepare.record().clone()
+                    ),
+                    "a later committed projection must retain historical committed evidence"
+                );
 
                 let (_reused_epoch_flow, reused_epoch_prepare) =
                     ReconnectDurabilityFlowV1::begin(
