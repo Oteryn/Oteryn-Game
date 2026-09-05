@@ -8,16 +8,21 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 CORE_PATH = Path(__file__).with_name("validate_repository_policy_core.py")
+PR_GATE_CONTRACT_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
 MERGE_AUTHORITY_AUDIT = ROOT / ".github/workflows/merge-authority-audit.yml"
 
 
-def load_core():
-    spec = importlib.util.spec_from_file_location("validate_repository_policy_core", CORE_PATH)
+def load_module(path: Path, name: str):
+    spec = importlib.util.spec_from_file_location(name, path)
     if spec is None or spec.loader is None:
-        raise RuntimeError(f"cannot load repository policy core: {CORE_PATH}")
+        raise RuntimeError(f"cannot load repository policy module: {path}")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def load_core():
+    return load_module(CORE_PATH, "validate_repository_policy_core")
 
 
 def validate_protected_base_audit() -> list[str]:
@@ -72,8 +77,14 @@ def validate_protected_base_audit() -> list[str]:
     return errors
 
 
+def validate_pr_gate_contract() -> list[str]:
+    module = load_module(PR_GATE_CONTRACT_PATH, "validate_pr_gate_pg_sim")
+    return module.validate()
+
+
 def main() -> int:
     errors = validate_protected_base_audit()
+    errors.extend(validate_pr_gate_contract())
     if errors:
         print("Repository policy validation failed:")
         for error in errors:
