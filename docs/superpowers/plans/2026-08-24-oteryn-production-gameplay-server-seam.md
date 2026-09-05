@@ -1,152 +1,174 @@
 # Production Gameplay Server Seam Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans task-by-task. Every implementation task below is fresh RED -> minimal GREEN.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Add the smallest accepted production TCP/TLS gameplay entry seam that consumes canonical Foundation/Durability authority, remains fail-closed for unallocated gameplay, enforces registered hard limits, and proves the seam itself through a real local production-path TCP/TLS integration journey.
+**Goal:** Add the smallest accepted production TCP/TLS gameplay entry seam that consumes canonical Foundation/Durability authority, remains fail-closed for unallocated gameplay, enforces registered resource limits, and proves real local production-path bootstrap/resume integration without claiming formal ADR-0007 QA Tier 1/Tier 2.
 
-**Evidence boundary:** The Server Seam must make the later ADR-0007 physical Tier 1 journey executable, but it does **not** own or declare QA Tier 1 `PROVEN`. Formal Tier 1/Tier 2 evidence remains `NOT_EVALUATED` until a separately allocated QA lane runs after the Server Seam is merged. The local socket/TLS tests in this plan are Server Seam implementation/integration evidence only.
+**Architecture:** Keep Foundation as the sole owner of protocol parsing/registered wire semantics and admission/reconnect authority. Add one `gameplay_transport` module whose TCP/TLS I/O layer performs bounded framing only, then hands validated envelopes to one connection state machine that invokes existing FND-04/GameSession/Durability consumers. Configuration and TLS material are caller-supplied; this plan does not choose production endpoint or secret topology.
 
-**Architecture:** Foundation remains the sole owner of protocol parsing, registered wire semantics, admission/GameSession/reconnect/fencing authority. `gameplay_transport` performs bounded TCP/TLS/framing and delegates authority decisions to the current Foundation/FND-04/Durability consumers. Configuration and TLS material are caller-supplied; this lane selects no production endpoint, certificate, key, secret or deployment topology.
+**Tech Stack:** Rust 1.94, Tokio, current Foundation/Durability modules, SQLx-backed reconnect durability where already consumed, exact-pinned Rust TLS dependencies selected inside the allocated Cargo lease, repository-native tests and GitHub merge gates.
 
 **Spec:** `docs/architecture/reviews/OTERYN_GAME_PRODUCTION_GAMEPLAY_SERVER_SEAM_PLAN_2026-08-24.md`
 
-## Verified prerequisites at allocation admission
+## Global Constraints
 
-- Issue #115 production FND-04 verifier/consumer is completed; implementation PR #151 merged as `2d0e951ce37c2e28773c22966bb816c00bebaa0a` and the archived task is `completed_released`.
-- Issue #116 is closed and the current Resource Limits Registry contains the accepted Server Seam NET03 ceilings.
-- The Durability prerequisite is terminal on protected `main`; current coordinator checkpoints record PR #252 plus archival PR #290 and released ownership.
-- Server Seam preparation #96 / PR #117 is merged and defines the exact conditional topology and shared paths used here.
-- These facts MUST be re-read from protected `main` when the worker branch is actually released. A changed or conflicting prerequisite is a control-plane blocker, not an assumption.
-
-## Global constraints
-
-- Execute only after `OTV2-20260904-gameplay-server-seam-allocation` merges and Work reads the exact merge SHA from protected `main`.
-- Create `agent/otv2-gameplay-server-seam-01` from exactly that allocation merge SHA.
-- Owned paths are exactly those in `docs/agents/tasks/active/OTV2-20260904-gameplay-server-seam.md`; no implicit path expansion.
-- Preserve protocol major `1`, transport profile `1`, TLS 1.3 and ALPN `oteryn-game/1`.
-- Preserve BE32 framing, the 1,048,576-byte FND-02 frame maximum and every smaller message-specific hard limit.
-- Preserve registered Server Seam maxima: 256 pre-admission connections, 64 handshake/auth work units, 64 outbound queue entries/session, 1,048,576 outbound queued bytes/session, 8 pending writes/session and 256 drain tasks/batch.
-- No new protocol/event/state/capability/stable numeric ID, gameplay semantics, Reference fact, permanent Content format or production deployment choice.
-- No second admission/GameSession/CharacterLease/reconnect/durability authority.
-- `workspace-boundaries.toml`, workflows, rulesets, stable registries and architecture/contracts are not allocated.
-- High-risk authority work follows `AuthorityInvariant × ConsumerBoundary × MutationOperator`, uses independently current facts at each authority-consuming boundary, and changes one invariant per negative case.
-- Open Dependabot #259/#260/#261 are non-owning Cargo candidates; re-read them before the first Cargo write and before integration. Do not absorb unrelated upgrades.
-
-## File structure
-
-- `apps/game-server/src/foundation/protocol.rs` — minimum Foundation-owned crate-internal typed bootstrap/resume extraction and registered-only server encoders.
-- `apps/game-server/src/gameplay_transport/tcp_tls.rs` — TCP/TLS 1.3/ALPN/profile-1 handshake and bounded BE32 frame I/O only.
-- `apps/game-server/src/gameplay_transport/connection.rs` — connection-local state machine delegating admission/reconnect to canonical Foundation/Durability authority.
-- `apps/game-server/src/gameplay_transport/mod.rs` — configuration/lifecycle composition and registered resource budgets.
-- `apps/game-server/src/lib.rs` — compose exactly one transport seam without moving gameplay authority.
-- `apps/game-server/src/main.rs` — explicit configuration-driven startup; preserve `--smoke`; no hard-coded production endpoint/TLS material.
-- `apps/game-server/Cargo.toml`, `Cargo.toml`, `Cargo.lock` — only minimum direct TLS/transport dependency/features required by the accepted profile.
-- `apps/game-server/tests/gameplay_server_seam.rs` — real loopback production-path seam integration plus negative/resource/authority/backpressure/shutdown evidence. It is not the QA Tier 1 evidence envelope.
-
-The Foundation bridge MUST remain `pub(crate)` or narrower unless an already-canonical current consumer proves wider visibility is required. A new externally public API/schema/wire semantic is `ARCHITECTURE_ESCALATION_REQUIRED` before mutation.
+- Execute only after `OTV2-20260904-gameplay-server-seam-allocation` has merged and protected-main readback supplies the exact worker base SHA.
+- Owned runtime paths are exactly those in `docs/agents/tasks/active/OTV2-20260904-gameplay-server-seam.md`; no implicit path expansion.
+- Preserve FND-02 protocol major `1`, transport profile `1` and ALPN `oteryn-game/1`.
+- Preserve the FND-02 wire-frame hard maximum of 1,048,576 bytes and every smaller message-specific bound in the current registry/code.
+- Preserve registered Server Seam hard maxima: 256 pre-admission connections, 64 concurrent handshake/auth units, 64 outbound queue entries/session, 1,048,576 outbound queued bytes/session, 8 pending writes/session and 256 drain tasks/batch.
+- No new protocol/event/state/capability/stable numeric ID, no Reference formula/value and no permanent Content-format decision.
+- No second admission/GameSession/CharacterLease/reconnect/durability authority; transport is a consumer only.
+- No production bind address/port/certificate/private-key/secret/deployment choice. Tests use loopback/ephemeral endpoints and non-shipping test TLS material.
+- `workspace-boundaries.toml`, workflows, rulesets and architecture/contracts are not allocated.
+- High-risk authority work follows `AuthorityInvariant × ConsumerBoundary × MutationOperator`, one invariant per negative case, current facts independent of immutable records, full finding-family sweep before freeze.
+- Every implementation task follows fresh RED -> minimal GREEN. Do not weaken an assertion, fail-closed path, limit or authority boundary to make a test pass.
+- Real local production-path tests in this plan qualify the Server Seam boundary only. They MUST NOT be reported as formal ADR-0007 QA Tier 1/Tier 2; QA owns that later evidence after the seam is merged.
 
 ---
 
-## Task 1 — Foundation typed consumer bridge and registered server encoding
+## File Structure
 
-**Files**
+- `apps/game-server/src/foundation/protocol.rs` — Foundation-owned crate-internal typed extraction for already-registered bootstrap/resume messages and crate-internal outbound encoding for already-registered server Foundation messages.
+- `apps/game-server/src/gameplay_transport/tcp_tls.rs` — TCP accept/TLS 1.3/ALPN/profile-1 handshake plus bounded big-endian-u32 frame I/O; no admission semantics.
+- `apps/game-server/src/gameplay_transport/connection.rs` — one connection state machine that maps validated Foundation messages to existing FND-04/GameSession/Durability consumers and owns connection-local backpressure/generation state only.
+- `apps/game-server/src/gameplay_transport/mod.rs` — configuration/lifecycle composition, registered semaphores/budgets, listener/drain orchestration and testable start/stop API.
+- `apps/game-server/src/lib.rs` — compose the transport module and preserve existing bootstrap/foundation regression modules.
+- `apps/game-server/src/main.rs` — configuration-driven startup entry; preserve `--smoke`; no hard-coded production endpoint or TLS material.
+- `apps/game-server/Cargo.toml`, `Cargo.toml`, `Cargo.lock` — only exact TLS/transport dependency/features needed by the seam; no unrelated dependency updates.
+- `apps/game-server/tests/gameplay_server_seam.rs` — real loopback production-path TCP/TLS bootstrap/resume integration plus malformed/limit/authority/backpressure/shutdown evidence; not formal QA Tier evidence.
+
+The Foundation bridge MUST stay `pub(crate)` or narrower unless an already-canonical consumer requires wider visibility. If a new externally public API/schema is required, stop before that mutation with `ARCHITECTURE_ESCALATION_REQUIRED`.
+
+---
+
+### Task 1: Foundation Typed Consumer Bridge
+
+**Files:**
 - Modify: `apps/game-server/src/foundation/protocol.rs`
-- Test: existing protocol unit tests and `apps/game-server/tests/gameplay_server_seam.rs`
+- Test: existing `protocol.rs` unit-test module and `apps/game-server/tests/gameplay_server_seam.rs`
 
-- [ ] **1.1 RED — typed bootstrap/resume extraction**
+**Interfaces:**
+- Consumes: existing `WireEnvelopeView<'a>`, `MessageType`, `decode_wire_envelope`, existing protocol constants/identifier decoders and current FND-04 material formats.
+- Produces: crate-internal typed views for validated `ClientBootstrap`/`ClientResume`; crate-internal encoders for already-registered `ServerAccepted`, `ServerResumeAccepted` and `ProtocolError`; no new wire IDs.
 
-Add focused tests that decode canonical `ClientBootstrap`/`ClientResume` envelopes and require crate-internal typed views without transport-side raw protobuf reinterpretation.
+- [ ] **1.1 RED — typed extraction**
 
-Negative cases must include, independently where applicable:
+Add tests that decode canonical bootstrap/resume envelopes, call the new crate-internal typed extraction, and assert exact validated fields are available without reparsing raw bytes in transport code. Negative cases include wrong message type, missing required field, duplicate singular field, oversized material/build ID, invalid UUID/capability shape, wrong `protocol_major`, wrong `transport_profile` and bootstrap-phase generation misuse.
 
-- wrong message type;
-- missing required field;
-- duplicate singular field;
-- malformed/unknown field behavior required by current FND-02 semantics;
-- oversized admission/reconnect/build material;
-- invalid UUID/capability shape;
-- wrong protocol major;
-- wrong transport profile;
-- illegal direction/phase/generation.
+The intended API stays crate-internal, for example:
 
-Run:
+```rust
+let envelope = decode_wire_envelope(&encoded_bootstrap)?;
+let bootstrap = envelope.client_bootstrap()?;
+assert_eq!(bootstrap.protocol_major(), PROTOCOL_MAJOR_V1);
+assert_eq!(bootstrap.transport_profile(), TRANSPORT_PROFILE_TCP_TLS13_V1);
+assert_eq!(bootstrap.admission_material(), expected_material.as_slice());
+```
+
+For resume:
+
+```rust
+let envelope = decode_wire_envelope(&encoded_resume)?;
+let resume = envelope.client_resume()?;
+assert_eq!(resume.game_session_id(), expected_session);
+assert_eq!(resume.connection_generation(), expected_generation);
+assert_eq!(resume.reconnect_material(), expected_material.as_slice());
+```
+
+- [ ] **1.2 Run focused RED**
 
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server foundation::protocol -- --nocapture
 ```
 
-Expected RED: the typed consumer bridge does not yet exist.
+Expected FAIL because typed extraction does not exist yet.
 
-- [ ] **1.2 GREEN — minimum borrowed typed views**
+- [ ] **1.3 Minimal typed extraction GREEN**
 
-Implement only bounded crate-internal extraction using the existing Foundation parser/validator helpers. Return borrowed data where possible. Do not add a second parser/schema or expose caller-selected numeric message IDs.
+Parse fields once inside Foundation using the bounded helpers already used for validation. Return borrowed views where possible; do not copy untrusted payload merely to expose validated values. Do not export outside the game-server crate.
 
-- [ ] **1.3 RED — server encoder golden/cross-oracle evidence**
+Equivalent shape:
 
-Require registered-only encoding for `ServerAccepted`, `ServerResumeAccepted` and `ProtocolError`.
+```rust
+pub(crate) struct ClientBootstrapView<'a> { /* validated borrowed fields */ }
+pub(crate) struct ClientResumeView<'a> { /* validated borrowed fields */ }
 
-Tests MUST include:
+impl<'a> WireEnvelopeView<'a> {
+    pub(crate) fn client_bootstrap(&self) -> Result<ClientBootstrapView<'a>, FoundationProtocolError>;
+    pub(crate) fn client_resume(&self) -> Result<ClientResumeView<'a>, FoundationProtocolError>;
+}
+```
 
-- canonical/golden bytes derived from the accepted `foundation.proto` semantics;
-- an independent cross-oracle or otherwise non-self-referential wire check, so encode->the-same-decoder alone is not sufficient;
-- direction/phase/generation/server-sequence legality;
-- message/global limits;
-- proof that no generic unregistered numeric message ID can be supplied.
+- [ ] **1.4 RED — registered outbound encoders with independent oracle**
 
-- [ ] **1.4 GREEN — registered-only encoders**
+Add encoder tests for `ServerAccepted`, `ServerResumeAccepted` and `ProtocolError` that use **fixed canonical/golden byte vectors or another independent cross-oracle derived from the registered `foundation.proto` contract**. A same-implementation `encode -> decode_wire_envelope` round trip is useful secondary evidence but MUST NOT be the sole oracle.
 
-Implement only those three existing Foundation server message families with checked lengths and existing typed IDs/values.
+For every family require:
 
-Run the focused protocol tests again; expected PASS.
+1. exact encoded bytes equal the independent canonical vector;
+2. decoding those canonical bytes yields the expected registered type/fields;
+3. encoding the typed value yields those same canonical bytes;
+4. illegal generation/server-sequence values and over-limit payloads fail;
+5. no caller-selected generic numeric message-ID encoder exists.
 
-- [ ] **1.5 Commit Task 1**
+Example secondary round trip:
+
+```rust
+let encoded = encode_server_accepted(&accepted)?;
+assert_eq!(encoded, CANONICAL_SERVER_ACCEPTED_BYTES);
+let decoded = decode_wire_envelope(CANONICAL_SERVER_ACCEPTED_BYTES)?;
+assert_eq!(decoded.message_type(), MessageType::ServerAccepted);
+```
+
+- [ ] **1.5 GREEN — minimal registered-only encoders**
+
+Implement only the three accepted server Foundation message families using existing protobuf/wire rules and checked lengths; no generic message-ID API. Run focused protocol tests and independent golden/cross-oracle cases to GREEN.
+
+- [ ] **1.6 Commit Task 1**
 
 ```bash
-git add apps/game-server/src/foundation/protocol.rs
+git add apps/game-server/src/foundation/protocol.rs apps/game-server/tests/gameplay_server_seam.rs
 git commit -m "feat(foundation): expose server seam protocol bridge"
 ```
 
 ---
 
-## Task 2 — Bounded TCP/TLS framing boundary
+### Task 2: Bounded TCP/TLS Framing Boundary
 
-**Files**
+**Files:**
 - Create: `apps/game-server/src/gameplay_transport/tcp_tls.rs`
-- Modify: `apps/game-server/tests/gameplay_server_seam.rs`
-- Modify under serialized lease: `apps/game-server/Cargo.toml`, `Cargo.toml`, `Cargo.lock`
+- Create/Modify: `apps/game-server/tests/gameplay_server_seam.rs`
+- Modify: `apps/game-server/Cargo.toml`
+- Modify: `Cargo.toml`
+- Modify: `Cargo.lock`
 
-- [ ] **2.1 Re-read shared Cargo ownership before mutation**
+**Interfaces:**
+- Consumes: Tokio async TCP/I/O; TLS implementation pinned under workspace policy; `ALPN_OTERYN_GAME_V1`; `MAX_WIRE_FRAME_BYTES`/current FND limits.
+- Produces: authenticated TLS stream wrapper plus bounded encoded Foundation frame read/write operations.
 
-If any active non-Dependabot writer now owns a shared Cargo path, stop with `SHARED_LEASE_REQUIRED`. Dependabot candidates do not gain lane ownership, but their current state must be recorded for later reconciliation.
+- [ ] **2.1 RED — raw frame boundary**
 
-- [ ] **2.2 RED — frame boundaries before peer-sized allocation**
+On a real loopback transport reader require 0, 1,048,577, truncated prefix/body and checked accounting failures before peer-sized allocation; exact 1,048,576 is accepted when a complete body exists and message-specific validation permits it.
 
-Require:
-
-- length `0` rejected;
-- `1_048_576` accepted only when the complete body exists;
-- `1_048_577` rejected before body allocation/read;
-- truncated prefix/body rejected deterministically;
-- checked conversion/accounting, including relevant overflow cases.
-
-Run:
+- [ ] **2.2 Run frame RED**
 
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam frame_ -- --nocapture
 ```
 
-Expected RED: transport framing is absent.
+Expected FAIL because gameplay transport does not exist.
 
-- [ ] **2.3 Add minimum exact-pinned TLS dependencies**
+- [ ] **2.3 Add only required TLS dependencies**
 
-Select only Rust-1.94-compatible dependencies/features required for Tokio TCP + TLS 1.3 + ALPN and non-shipping test certificate loading. Follow workspace exact-pinning/supply-chain policy. Do not take unrelated bot upgrades.
+Inspect compatible Rust TLS crates at implementation time and add exact-pinned workspace dependencies/features required for Tokio TCP + TLS 1.3 + ALPN + non-shipping test certificate material. Do not absorb Dependabot #259/#260/#261 upgrades as convenience.
 
-- [ ] **2.4 GREEN — bounded TLS/profile-1 transport**
+Before any Cargo edit, re-read active ownership. A new non-Dependabot Cargo writer is `SHARED_LEASE_REQUIRED`.
 
-Required order:
+- [ ] **2.4 Minimal bounded TLS/frame GREEN**
 
 ```text
-pre-admission slot
+registered pre-admission slot held
 -> TCP accept
 -> bounded handshake/auth slot
 -> TLS 1.3
@@ -160,14 +182,19 @@ pre-admission slot
 
 Write-side framing obeys the same hard maximum. TLS/profile failure closes before admission mutation.
 
-- [ ] **2.5 RED/GREEN — TLS/ALPN/plaintext failures**
+- [ ] **2.5 RED/GREEN — TLS/ALPN/version/profile/plaintext failures through the composed listener**
 
-Using non-shipping loopback TLS material, prove:
+Using the actual local production listener/composition path with non-shipping loopback TLS material, prove:
 
 - TLS 1.3 + exact ALPN succeeds;
 - missing/wrong ALPN fails before admission;
+- a correctly framed `ClientBootstrap` carrying the wrong `protocol_major` fails before FND-04 verification, `GameSession` creation or any admission mutation;
+- a correctly framed `ClientBootstrap` carrying the wrong `transport_profile` fails at that same real listener boundary before FND-04/admission mutation;
+- both wrong-version/profile cases traverse TCP -> TLS -> BE32 frame read -> Foundation decode through the composed listener; direct decoder-unit rejection alone does **not** satisfy these two cases;
 - plaintext never reaches Foundation admission;
 - malformed/truncated/oversized frames fail closed.
+
+Name the two production-path cases under the `tls_` selector (for example `tls_wrong_protocol_major_rejected_before_admission` and `tls_wrong_transport_profile_rejected_before_admission`) so the focused command below cannot omit them accidentally.
 
 Run:
 
@@ -176,7 +203,7 @@ cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam fr
 cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam tls_ -- --nocapture
 ```
 
-Expected PASS.
+Expected PASS with explicit evidence that neither invalid envelope reaches the FND-04/admission mutation boundary.
 
 - [ ] **2.6 Commit Task 2**
 
@@ -187,82 +214,69 @@ git commit -m "feat(server): add bounded TLS transport framing"
 
 ---
 
-## Task 3 — Authority-safe connection state machine
+### Task 3: Authority-Safe Connection State Machine
 
-**Files**
+**Files:**
 - Create: `apps/game-server/src/gameplay_transport/connection.rs`
 - Modify: `apps/game-server/tests/gameplay_server_seam.rs`
 
+**Interfaces:**
+- Consumes: bounded decoded Foundation envelope, typed bridge from Task 1, canonical FND-04 verifier/consumer, `AdmissionAuthority`, current reconnect/Durability flow and current-authority facts.
+- Produces: one connection-local state transition result and encoded registered Foundation response; no gameplay mutation interface.
+
 - [ ] **3.1 RED — pre-admission legality**
 
-Unknown, malformed, server-to-client, phase-invalid and `ClientCommand`-before-admission messages must fail before FND-04, GameSession or durable mutation.
+Require a new connection to reject client commands/server-direction types/unknown messages/non-zero pre-admission generation/malformed payload before FND-04 or durable mutation.
 
-- [ ] **3.2 RED — fresh-admission authority before mutation**
+- [ ] **3.2 RED — fresh admission authority before mutation**
 
-Use the current production FND-04 verifier/consumer seam and current-authority evidence. Prove one invariant per negative case for at least:
+Use current verifier/evidence builders. One invariant per negative case, with unrelated facts valid, including:
 
-- malformed/invalid authentication material;
-- expired material;
-- replayed material;
-- wrong binding;
-- stale/missing current authoritative evidence;
-- account/character/world/lease mismatch;
-- concurrent/replayed fresh admission cannot create two sessions.
+- missing evidence;
+- invalid signature/authentication;
+- expired evidence;
+- already-consumed/replayed grant/nonce;
+- wrong transport/candidate binding;
+- account/character/world mismatch;
+- current CharacterLease/runtime authority mismatch;
+- concurrent use of the **same valid grant/material** by two fresh-admission attempts.
 
-The positive order is fixed:
+For the replay/concurrent cases assert exactly one canonical `GameSession`/controller can become authoritative and the losing path fails/reconciles according to current FND-04/Foundation semantics; transport-local state cannot mark itself admitted first.
+
+Positive route:
 
 ```text
 validated ClientBootstrap
--> production FND-04 verifier/consumer
--> independently current authoritative facts
+-> FND-04 verifier/consumer
+-> independently current FreshAdmissionFacts/current authority
 -> canonical AdmissionAuthority commit
--> resulting GameSession/current ConnectionGeneration
--> attach transport
+-> bind admitted transport generation
 -> ServerAccepted
 ```
 
-Transport-local state must not become admitted before canonical commit succeeds.
-
-Run:
+- [ ] **3.3 Run fresh-admission RED**
 
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam admission_ -- --nocapture
 ```
 
-Expected RED before implementation, then PASS after minimal GREEN.
+Expected FAIL because connection state machine is absent.
 
-- [ ] **3.3 RED — reconnect/resume authority family**
+- [ ] **3.4 Minimal fresh-admission GREEN**
 
-Cover independently:
+Keep connection state local (`PreAdmission`, `Admitted { generation }`, `Closing` or equivalent) and do not duplicate GameSession/CharacterLease authority or cache a supposedly current fact beyond the boundary where it is valid.
 
-- expected GameSession mismatch;
-- account/character/world mismatch;
-- same-world runtime-scope mismatch;
-- stale/mismatched predecessor connection generation;
-- stale ownership generation/authority fence;
-- stale/missing control-loss epoch/liveness fact;
-- candidate transport/binding mismatch;
-- persisted-record provenance substituted for independently current facts;
-- PREPARED/reconciled path and final COMMIT revalidation;
-- replay of terminal outcomes without reacquiring current controller authority;
-- concurrent replacement/stale attempt distinction.
+- [ ] **3.5 RED — reconnect authority family**
 
-Each negative case changes exactly one applicable invariant while unrelated facts remain semantically valid.
+One independent invariant per case across expected GameSession, account presence, character/world eligibility, runtime scope, predecessor generation, ownership generation/fence, control-loss/liveness, candidate transport binding, record provenance substitution, direct/reconciled PREPARED path, final COMMIT revalidation, terminal replay and concurrent replacement/stale-attempt distinction.
 
-- [ ] **3.4 GREEN — consume current Foundation/Durability replacement flow**
+- [ ] **3.6 Minimal reconnect GREEN**
 
-Never derive supposedly current session/lease/runtime/generation/ownership facts from immutable reconnect records. Resolve current facts through canonical Foundation sources at the exact consuming boundary and pass them to the current durable flow.
+Consume current Foundation/Durability APIs. Resolve live facts through canonical current-authority sources; do not rebuild current authority from the persisted record. Direct and reconciled terminal outcomes remain historical unless current controller authority is independently reacquired.
 
-Run:
+Run `admission_` and `reconnect_` focused suites to GREEN.
 
-```bash
-cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam admission_ -- --nocapture
-cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam reconnect_ -- --nocapture
-```
-
-Expected PASS.
-
-- [ ] **3.5 Commit Task 3**
+- [ ] **3.7 Commit Task 3**
 
 ```bash
 git add apps/game-server/src/gameplay_transport/connection.rs apps/game-server/tests/gameplay_server_seam.rs
@@ -271,56 +285,47 @@ git commit -m "feat(server): bind transport to admission authority"
 
 ---
 
-## Task 4 — Registered resource budgets, backpressure and drain
+### Task 4: Registered Resource Budgets, Backpressure and Drain
 
-**Files**
+**Files:**
 - Create: `apps/game-server/src/gameplay_transport/mod.rs`
 - Modify: `apps/game-server/src/gameplay_transport/connection.rs`
 - Modify: `apps/game-server/tests/gameplay_server_seam.rs`
 
-- [ ] **4.1 RED — exact hard-limit boundaries**
+- [ ] **4.1 RED — every registered Server Seam limit**
 
-Prove max accepted, max+1 rejected/backpressured before partial mutation, plus relevant checked overflow for:
+Prove max accepted, max+1 rejected/backpressured before partial mutation, and checked overflow where applicable:
 
 ```text
 pre-admission connections: 256 / 257
-handshake/auth work: 64 / 65
-outbound queue entries/session: 64 / 65
-outbound queue bytes/session: 1,048,576 / +1
-pending writes/session: 8 / 9
-drain tasks/batch: 256 / excess bounded into later work
+handshake/auth units: 64 / 65
+outbound queue entries: 64 / 65
+outbound queue bytes: 1,048,576 / +1
+pending writes: 8 / 9
+drain tasks: max 256 per batch
 ```
+
+- [ ] **4.2 Implement bounded lifecycle GREEN**
+
+Use bounded primitives only. Configuration supplies endpoint/TLS/admission dependencies; configurable values can reduce but never exceed/disable hard maxima. No unbounded channel/task/retry loop.
+
+- [ ] **4.3 RED/GREEN — slow client and authoritative shutdown**
+
+Prove one slow client consumes only its own queue/write budget. Then exercise at least these distinct shutdown states:
+
+1. pre-authority connection-local work may be cancelled/released;
+2. already-authoritative reserved work is either completed before shutdown returns **or** durably/reconcilably preserved by the owning Foundation/Durability contract;
+3. a reconnect/controller transfer in progress cannot leave a stale transport authoritative after drain.
+
+The shutdown assertion MUST observe the authoritative work's terminal/preserved state, not merely that tasks/permits disappeared. Silently dropping already-authoritative reserved work is a test failure.
 
 Run:
 
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam resource_ -- --nocapture
-```
-
-Expected RED before lifecycle orchestration exists.
-
-- [ ] **4.2 GREEN — bounded primitives only**
-
-Use bounded semaphores/queues/write slots/drain batches. No option may raise or disable an absolute registered maximum. One slow client may consume only its own bounded queue/write budget; no unbounded spawn/channel/retry-until-success path.
-
-- [ ] **4.3 RED/GREEN — shutdown/drain authority preservation**
-
-Prove shutdown:
-
-- stops accepts/new admission;
-- drains or explicitly resolves already-authoritative reserved transport work according to canonical Foundation lifecycle semantics rather than silently dropping it;
-- releases bounded transport-local work/permits;
-- never transfers or resurrects stale controller/session authority;
-- never turns drain into unbounded tasks.
-
-Run:
-
-```bash
 cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam backpressure_ -- --nocapture
 cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam shutdown_ -- --nocapture
 ```
-
-Expected PASS.
 
 - [ ] **4.4 Commit Task 4**
 
@@ -331,37 +336,22 @@ git commit -m "feat(server): bound gameplay transport lifecycle"
 
 ---
 
-## Task 5 — Library/executable composition and fail-closed unsupported gameplay
+### Task 5: Compose Library and Configuration-Driven Startup
 
-**Files**
+**Files:**
 - Modify: `apps/game-server/src/lib.rs`
 - Modify: `apps/game-server/src/main.rs`
 - Modify: `apps/game-server/tests/gameplay_server_seam.rs`
 
 - [ ] **5.1 RED — composition invariants**
 
-Require:
+Require `--smoke` to remain green without gameplay bind; missing config/TLS to fail closed; explicit caller-supplied loopback endpoint/TLS to compose the exact production transport in tests; no default production address/port/certificate/secret; no gameplay command becomes accepted merely because a listener exists.
 
-- `--smoke` still succeeds without binding gameplay;
-- absent configuration opens no listener and remains fail-closed;
-- invalid/missing TLS material never falls back to plaintext;
-- caller-supplied loopback endpoint/test TLS material starts the exact production transport module in integration tests;
-- after successful admission, an unsupported/unregistered `ClientCommand` fails closed with zero command reservation/domain mutation and no invented message/capability ID.
+- [ ] **5.2 Minimal composition GREEN**
 
-Run:
+Wire exactly one transport module into `lib.rs`. `main.rs` consumes only explicit configuration; if a product-wide configuration contract is materially missing, stop with `ARCHITECTURE_ESCALATION_REQUIRED` rather than inventing it.
 
-```bash
-cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam composition_ -- --nocapture
-cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
-```
-
-- [ ] **5.2 GREEN — configuration-driven composition only**
-
-Compose exactly one transport seam in `lib.rs`. `main.rs` may enter serving only from explicit valid configuration input. Do not add a default production address, port, certificate path, private key, secret name or deployment topology.
-
-If making `main` production-operable requires a new product-wide configuration contract, return `ARCHITECTURE_ESCALATION_REQUIRED`; the physical integration test may use library composition with caller-supplied loopback/test material.
-
-Run the composition tests and smoke command again; expected PASS.
+Run composition suite + `cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke`.
 
 - [ ] **5.3 Commit Task 5**
 
@@ -372,67 +362,41 @@ git commit -m "feat(server): compose gameplay server seam"
 
 ---
 
-## Task 6 — Real local production-path seam integration
+### Task 6: Real Local Production-Path Bootstrap and Resume Integration
 
-**Files**
+**Files:**
 - Modify: `apps/game-server/tests/gameplay_server_seam.rs`
 
-**Evidence rule:** These tests traverse the actual Server Seam implementation and are required implementation/integration evidence. They do **not** mark ADR-0007 QA Tier 1/Tier 2 `PROVEN`.
+This task demonstrates the Server Seam itself. It is **not** the later ADR-0007 QA Tier 1/Tier 2 evidence envelope.
 
-- [ ] **6.1 RED/GREEN — bootstrap/admission physical seam test**
+- [ ] **6.1 Bootstrap/admission path**
 
-Start the real transport on `127.0.0.1:0` with caller-supplied non-shipping TLS material. Connect via a real TLS client using TLS 1.3 + ALPN `oteryn-game/1`, send a correctly framed `ClientBootstrap`, and require a correctly framed `ServerAccepted` only after canonical admission authority commits.
+Start the actual transport on `127.0.0.1:0` with caller-supplied non-shipping TLS material, connect with TLS 1.3 + exact ALPN, send framed `ClientBootstrap`, and require `ServerAccepted` only after canonical FND-04 verification and Foundation admission authority commits.
 
-The assertion must observe the authoritative GameSession/current-generation outcome, not merely an open socket.
+Also prove unsupported post-admission `ClientCommand`/gameplay state fails closed with zero domain/gameplay mutation; use an already registered applicable Foundation error/close semantic and never allocate a new gameplay ID.
 
-Run:
+- [ ] **6.2 Resume/reconnect path**
 
-```bash
-cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam physical_bootstrap_ -- --nocapture
-```
+Drive a real admitted session through supported transport/control-loss setup, reconnect on fresh TLS, send `ClientResume`, exercise current durable PREPARE/direct-or-reconciled outcome/final current-authority revalidation as applicable, and require `ServerResumeAccepted` only for current candidate authority. A stale-generation sibling must remain fenced and cannot regain controller authority.
 
-- [ ] **6.2 RED/GREEN — resume/reconnect physical seam test**
-
-Drive supported transport-loss/control-loss setup, reconnect over a fresh real TLS connection, send `ClientResume`, exercise current durable PREPARE/reconcile/final-current-authority validation, and require `ServerResumeAccepted` only for the current candidate generation. A stale-generation sibling must fail and never reacquire controller authority.
-
-Run:
-
-```bash
-cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam physical_reconnect_ -- --nocapture
-```
-
-- [ ] **6.3 Run complete Server Seam integration target**
+- [ ] **6.3 Whole production-path target**
 
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam -- --nocapture
 ```
 
-Expected: all required physical/negative/resource tests PASS with no ignored substitute for required evidence.
+All physical and negative Server Seam tests PASS. Record exact candidate SHA, loopback topology, TLS/ALPN, bounded framing, canonical admission/reconnect outcome and explicit statement `FORMAL_ADR0007_QA_TIER1_TIER2=NOT_EVALUATED`.
 
-- [ ] **6.4 Record truthful QA state**
-
-The worker handoff MUST state:
-
-```text
-Server Seam physical integration: PROVEN for the exact candidate
-ADR-0007 QA Tier 1: NOT_EVALUATED (separately allocated QA after merge)
-ADR-0007 QA Tier 2: NOT_EVALUATED unless a later owning QA allocation proves it
-```
-
-- [ ] **6.5 Commit Task 6**
+- [ ] **6.4 Commit Task 6**
 
 ```bash
 git add apps/game-server/tests/gameplay_server_seam.rs
-git commit -m "test(server): prove gameplay seam physical boundary"
+git commit -m "test(server): prove gameplay seam production boundary"
 ```
 
 ---
 
-## Task 7 — Affected validation and authority finding-family sweep
-
-**Files**
-- Modify only allocated paths if an accepted finding requires repair.
-- Update `docs/agents/tasks/active/OTV2-20260904-gameplay-server-seam.md` before material freeze with evidence/dispositions known before the final metadata commit.
+### Task 7: Validation, Finding-Family Sweep and Stable Candidate
 
 - [ ] **7.1 Focused/package validation**
 
@@ -443,8 +407,6 @@ cargo +1.94.0 test --locked -p oteryn-game-server
 cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings
 ```
 
-All must PASS.
-
 - [ ] **7.2 Affected workspace validation**
 
 ```bash
@@ -454,66 +416,59 @@ cargo +1.94.0 test --locked --workspace
 cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness
 ```
 
-All applicable commands must PASS on the coherent candidate.
-
-- [ ] **7.3 Finding-family sweep**
+- [ ] **7.3 Authority finding-family sweep before material freeze**
 
 Review every applicable cell:
 
 ```text
-Authority invariant
-x fresh admission / direct resume / reconciled resume / final COMMIT / admitted I/O / drain
-x missing / stale / mismatch / temporal / provenance-substitution / replay-concurrency operator
+AuthorityInvariant
+  x fresh admission / direct resume / reconciled resume / final commit / admitted I/O / drain
+  x missing / stale / mismatch / temporal / provenance-substitution / replay-concurrency
 ```
 
-Explicitly inspect sibling APIs, protocol v1 paths, direct/reconciled paths, fenced durable writes, restart/retry/replay/concurrent replacement and PostgreSQL reload implications. Existing Durability tests may be reused only when the Server Seam diff has not invalidated their claim. A required unowned test path is `SHARED_LEASE_REQUIRED`, not implicit expansion.
+Inspect sibling APIs, protocol v1, direct/reconciled paths, fenced durable writes, restart/retry/replay/concurrent replacement and PostgreSQL reload implications. Current #302/#303 tests are reusable evidence only where the Server Seam diff leaves the underlying boundary representative; otherwise add owned-path physical proof or report the smallest `SHARED_LEASE_REQUIRED`.
 
-- [ ] **7.4 Whole-diff adversarial self-review**
+- [ ] **7.4 Whole-diff self-review**
 
-Check specifically for duplicate protocol/session authority, record-derived current facts, unchecked peer allocation, unbounded work, TLS downgrade/plaintext fallback, wrong ALPN/profile, new IDs, queue accounting drift, stale-generation authority, silent shutdown loss of authoritative reserved work, accidental production defaults, unrelated dependency upgrades and path expansion.
+Check duplicate protocol/admission/session authority; record-derived current facts; unchecked allocation; unbounded queues/tasks/retries; TLS downgrade/plaintext; wrong ALPN/version/profile; new IDs; accounting divergence; stale generation; authoritative-work shutdown; production defaults; unrelated dependency upgrades/path expansion; accidental QA Tier overclaim.
 
-Every reported P0/P1 must be verified and either repaired test-first or rejected with exact evidence. Every P2 gets an explicit disposition.
+Verify every P0/P1 finding against the exact head and accept+repair test-first or reject with exact evidence. Every P2 gets explicit disposition.
 
-- [ ] **7.5 Commit pre-freeze task evidence**
+- [ ] **7.5 Pre-freeze task metadata**
 
-```bash
-git add docs/agents/tasks/active/OTV2-20260904-gameplay-server-seam.md
-git commit -m "docs(agents): qualify gameplay server seam candidate"
-```
-
-Do not create a commit solely to record that commit's own SHA.
+Record known validation/family-sweep/finding dispositions in the worker task before material freeze without trying to write the commit's own SHA into the same commit. Commit only real evidence/repair metadata, not a no-op retrigger.
 
 ---
 
-## Task 8 — Exact-head CI, independent review and handoff
+### Task 8: Exact-Head CI, Independent Review and Handoff
 
-- [ ] **8.1 Publish one stable Draft PR without force/rebase/reset**
+- [ ] **8.1 Publish stable candidate normally**
 
-Verify remote head and exact changed-file allowlist from GitHub.
+No force/rebase/reset. Verify remote head and exact allowlist on GitHub.
 
-- [ ] **8.2 Require exact-head repository gates**
+- [ ] **8.2 Exact-head repository qualification**
 
-Require current path-triggered governance/repository, Rust Linux/Windows/supply-chain and canonical `game-gate` as applicable. If protected `main` advances and current policy requires refresh, integrate it with normal history-preserving Git, then rerun every invalidated layer on the new head.
+Require all current protected-base selected gates for the exact head, including Linux/real PostgreSQL, Windows/SIM, supply chain and canonical `game-gate` whenever current trusted policy classifies them applicable. If protected `main` advances, reconcile normally and rerun invalidated evidence.
 
-- [ ] **8.3 Obtain one genuinely independent exact-head deep review**
+- [ ] **8.3 One genuinely independent exact-head deep review**
 
-The review must cover protocol/session/admission/reconnect/fencing, TLS/framing, resource accounting, shutdown and evidence ownership. The implementing session's self-review is not independent; green CI is not independent review.
+Review protocol/session/admission/reconnect/fencing/transport/resource risks. The implementing session's self-review cannot qualify as independent. External AI remains advisory/non-mutating.
 
-- [ ] **8.4 Reconcile findings**
+- [ ] **8.4 Finding reconciliation**
 
-Accepted material P0/P1 -> fresh RED -> minimal GREEN -> family sweep -> affected validation -> new exact-head review where the risk-bearing repair invalidated prior evidence. Do not make no-op retrigger commits.
+Accepted material finding -> fresh RED -> minimal GREEN -> affected family sweep/validation -> new representative review when required. Verified rejection with exact evidence preserves the candidate. No no-op commit just to retrigger checks/review.
 
-- [ ] **8.5 Return canonical handoff without self-merging**
+- [ ] **8.5 Handoff without self-merge**
 
 ```yaml
 lane: SERVER_SEAM
 issue: 247
 task_id: OTV2-20260904-gameplay-server-seam
 admission_main_sha: <allocation merge SHA used to create worker branch>
-integration_main_sha: <fresh protected main used for integration preflight>
+integration_main_sha: <fresh main SHA at integration preflight>
 branch: agent/otv2-gameplay-server-seam-01
 pr: <worker PR>
-final_head_sha: <exact remote PR head>
+final_head_sha: <exact remote head>
 changed_paths: []
 shared_lease_used:
   - apps/game-server/src/foundation/protocol.rs
@@ -525,15 +480,14 @@ shared_lease_used:
 state: READY_FOR_INTEGRATION
 focused_validation: []
 component_validation: []
-server_seam_physical_integration: <exact-head real TCP/TLS bootstrap+resume evidence>
-qa_tier1: NOT_EVALUATED
-qa_tier2: NOT_EVALUATED
+server_seam_physical_integration: <exact local production-path evidence>
+formal_adr0007_qa_tier1_tier2: NOT_EVALUATED
 self_review: <exact-head verdict>
-independent_review: <exact-head independent verdict>
+independent_review: <exact-head verdict>
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate
 next_action: Work independently verifies exact head/main relation/checks/review/threads/paths and integrates through protected controls if every predicate remains proven
 ```
 
-Use `READY_FOR_INTEGRATION` only when every predicate is actually proven. The worker never merges its own PR.
+If any predicate is not proven, use a truthful non-ready state rather than `READY_FOR_INTEGRATION`.
