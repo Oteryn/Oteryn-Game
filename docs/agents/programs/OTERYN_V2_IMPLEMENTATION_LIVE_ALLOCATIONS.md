@@ -1,5 +1,16 @@
 # Oteryn v2 Implementation Live Allocations
 
+## Current Work allocation checkpoint — 2026-09-05
+
+This checkpoint supersedes stale current-status interpretations of the historical Durability and Server Seam rows below. Those rows retain provenance, not active leases. The sole mutating #162 control plane remains `OTV2_WORK_DELIVERY_COORDINATOR`; no controller transfer occurs.
+
+- Architecture #313 is completed: PR #317 protected integration `a8678d4a94e479a9aa2a92920379a4b32f95143b`, successful Merge Queue run `33983003548`.
+- Existing reconnect/terminal Durability delivery #252 and archive #290 are complete/released; historical #167/#240/#243 prose does not allocate Foundation.
+- Child A #318 is the next prospective allocation, governed by `OTV2-20260905-foundation-fresh-admission-318` below. It activates only when this allocation merges, from that future protected merge SHA.
+- #247 is `WAITING_DEPENDENCY`; preserve `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`, its existing paths and partial evidence. Architecture acceptance alone does not resume it.
+- Child B persistence and Child C actual producer/composition/readiness require separate allocations after their prerequisite protected integrations. Test sources establish no production availability. A+B alone cannot release Server Seam.
+- Earlier Foundation #208/#280 and harness #281 are closed/released. Fresh open-PR/path readback remains mandatory before dispatch.
+
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
 - Coordinator task: `OTV2-20260825-close-next-wave-blockers` - Issue #131 completed and released
 - Canonical repository: `Oteryn/Oteryn-Game`
@@ -718,3 +729,37 @@ OTV2-IMPL-ANALYTICS:
 ```
 
 No production/protected/live-data/Platform/external-repository authority is introduced by this closeout or lease transfer.
+
+## Prospective Child A — Foundation fresh-admission durability semantics
+
+```yaml
+lane_id: OTV2-IMPL-FOUNDATION-FRESH-ADMISSION
+task_id: OTV2-20260905-foundation-fresh-admission-318
+issue: 318
+coordinator_issue: 162
+status: waiting
+allocation_state: pending_protected_integration
+allocation_preparation_main_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
+admission_main_sha: null
+admission_base_rule: exact protected merge SHA of this coordinator allocation; record on GitHub before worker mutation
+branch: agent/foundation-fresh-admission-318
+branch_state: planned_not_created_by_this_record
+worker_alias: Oteryn Foundation fresh-admission worker
+task_packet: docs/agents/tasks/active/OTV2-20260905-foundation-fresh-admission-318.md
+implementation_plan: docs/superpowers/plans/2026-09-05-foundation-fresh-admission-durability.md
+architecture_pr: 317
+architecture_merge_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
+owned_paths:
+  - apps/game-server/src/foundation/fresh_admission_durability.rs
+  - apps/game-server/src/foundation/admission_authority_publication.rs
+  - apps/game-server/src/foundation/admission.rs
+  - apps/game-server/src/foundation/admission_facade.rs
+  - apps/game-server/src/foundation/fnd04_verifier.rs
+  - apps/game-server/src/foundation/mod.rs
+  - apps/game-server/src/foundation/fresh_admission_durability_tests.rs
+  - docs/agents/tasks/active/OTV2-20260905-foundation-fresh-admission-318.md
+shared_cargo_composition_lease: none
+write_authority: only_after_exact_allocation_protected_integration_and_GitHub_dispatch
+```
+
+The worker allowlist is exactly seven Foundation surfaces plus its task. Single-writer execution is serial because the functional steps share these APIs. No SQL, migration, Cargo, workflow, listener, composition, `admission_recovery_inner.rs` or producer registration is allocated. Work retains child integration/closeout authority. Future B/C remain unallocated.

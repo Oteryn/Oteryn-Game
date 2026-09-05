@@ -4,7 +4,7 @@
 task_id: OTV2-20260904-gameplay-server-seam
 title: Implement production gameplay Server Seam
 mode: IMPLEMENT
-status: WAITING_ARCHITECTURE
+status: WAITING_DEPENDENCY
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/otv2-gameplay-server-seam-01
@@ -48,12 +48,23 @@ depends_on:
   - merged_pr: 252
   - merged_pr: 289
   - architecture_issue: 313
+    state: completed
+    merged_pr: 317
+    protected_merge_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
+  - foundation_child_issue: 318
+  - separately allocated Child B persistence and Child C producer readiness; source prerequisite Issue 319
 blocks:
   - native Client allocation/readiness
   - physical gameplay Tier 1/Tier 2 QA sequence
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+## Coordinated dependency correction — 2026-09-05
+
+Work explicitly coordinates this metadata-only ownership correction after #313 completed through PR #317 / protected `a8678d4a94e479a9aa2a92920379a4b32f95143b`, successful Merge Queue run `33983003548`. Current state is `WAITING_DEPENDENCY` on Child A #318, separately allocated B and C, and actual C producer readiness (source prerequisite #319). Architecture acceptance alone does not resume this worker. The branch/head, immutable admission base, owned paths and all partial implementation/test evidence below are preserved; no runtime/worker-branch mutation, archival or ownership release occurs.
+
+Historical architecture-hold wording below describes the original discovery. Its unresolved-architecture status and architect next-action are superseded by this correction. Work may re-evaluate resume only after A+B+C protected integration and C readiness proof.
 
 ## Current execution evidence — 2026-09-05
 
@@ -287,8 +298,8 @@ Historical allocation-review findings requiring golden encoding, listener versio
 ## Context checkpoint
 
 ```yaml
-last_progress: worker partial checkpoint 9370b254c6ac4f6529e069c1968ae6bfa1e1750e preserved; missing production durable fresh-admission/GameSession boundary verified and routed as architecture escalation #313; #247 and parent #162 synchronized by Work
-status: WAITING_ARCHITECTURE
+last_progress: worker checkpoint and partial evidence preserved; #313 completed via #317; Work corrects #247 to WAITING_DEPENDENCY on A318 then B then C and actual producer readiness319
+status: WAITING_DEPENDENCY
 branch: agent/otv2-gameplay-server-seam-01
 head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 head_reference_kind: current_branch_head_verified_by_work
@@ -310,6 +321,6 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 architecture_escalation_issue: 313
 owner_action_required: null
-blocker: architecture_issue_313_durable_fresh_admission_initial_GameSession_boundary
-next_action: Oteryn: sol supervising architect resolves Issue #313 and returns a reviewed and qualified architecture decision integrated to protected main
+blocker: Foundation_318_then_Child_B_then_Child_C_actual_producer_readiness_319
+next_action: Work integrates and dispatches Child A318 while this Server Seam worker remains preserved and paused
 ```
