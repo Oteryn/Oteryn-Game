@@ -53,6 +53,8 @@ sqlx = {
 }
 sha2 = { version = "=0.11.0", default-features = false }
 tokio = { version = "=1.53.1", default-features = false, features = ["io-util", "net", "rt-multi-thread", "sync", "time"] }
+tokio-rustls = { version = "=0.26.4", default-features = false, features = ["ring", "tls12"] }
+rcgen = { version = "=0.14.10", default-features = false, features = ["crypto", "ring"] }
 wgpu = { version = "=30.0.0", default-features = false, features = ["std", "dx12"] }
 winit = { version = "=0.30.13", default-features = false, features = ["rwh_06"] }
 

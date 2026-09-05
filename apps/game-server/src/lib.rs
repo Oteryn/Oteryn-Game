@@ -9,6 +9,7 @@ pub mod content;
 pub mod domain;
 pub mod durability;
 pub mod foundation;
+mod gameplay_transport;
 
 #[cfg(test)]
 #[path = "foundation/recovery_tests.rs"]

@@ -15,13 +15,13 @@ allocation_task_id: OTV2-20260904-gameplay-server-seam-allocation
 allocation_pr: 294
 allocation_admission_main_sha: 68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705
 allocation_integration_main_sha: b9b1a4317858bffc25ad6af3cffcf7b5eff93445
-base_sha: null
-head_sha: null
+base_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
+head_sha: fb7f448ad728bbfa8462b99633dc4c0506d6ee10
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: sol server seam lead"
 created_at: 2026-09-04T19:27:00+02:00
-updated_at: 2026-09-05T16:07:15+02:00
+updated_at: 2026-09-05T15:42:51+00:00
 execution_budget_minutes: 120
 large_budget_reason: high-risk TCP/TLS plus Foundation admission/reconnect integration, bounded-resource proof, production-path integration and independent exact-head review
 owned_paths:
@@ -53,6 +53,48 @@ blocks:
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+## Current execution evidence — 2026-09-05
+
+This section supersedes historical pre-release status/checkpoint prose below. Issue #247 comment 5552715601 releases the worker after #294 merged as `bc9f5dac5642b56135cce31f91b9ed23e5258a70`; that is the immutable worker admission base. Current protected main readback is `d89f063ea7ad7f1d8fa09688309c8d898fae856e`. Its one-commit delta is docs consumer CI classification/evidence only, with no Foundation/Durability/Cargo change. Final integration main has not been selected.
+
+State: `WAITING_DEPENDENCY`, not ready and not task completion. The blocking operation is accepted Task 3 fresh admission through `AdmissionAuthority<T, J>` with a production durable `ReconnectAttemptJournal<T>`.
+
+### Proven prerequisite gap
+
+At the protected readback:
+
+- `apps/game-server/src/foundation/admission_facade.rs` defines the public `ReconnectAttemptJournal<T>` requirement: atomic `commit_fresh`, `load_session`, current session/attempt reconciliation and lifecycle operations. Its blanket implementation only forwards an existing implementation to the private core trait.
+- `apps/game-server/src/foundation/admission.rs` requires atomic fresh-grant consumption, never-reused session issuance, the immutable initial binding and independently current lifecycle/controller state. Its `commit_fresh` explicitly requires the same authoritative owner for fresh admission and reconnect.
+- Repository-wide Rust implementation search finds concrete journals only in tests. No production adapter implements that contract.
+- `apps/game-server/src/durability/mod.rs` deliberately implements journal-only reconnect persistence/classification. `AdmissionReconnectJournal` and V2 accept Foundation reconnect requests; they do not provide fresh admission or the complete current GameSession journal facade.
+- `apps/game-server/migrations/0001_admission_reconnect_journal.sql` has reconnect sessions/attempts, recovery-grant consumption and replacement receipts. Its session rows require predecessor/control-loss data. No fresh-grant replay mapping retaining the initial admission commit is present.
+
+A transport-local in-memory journal would split authority and lose restart/replay protection. Synthesizing a reconnect record for a fresh admission would invent predecessor/control-loss facts. Neither is an authorized repair. The missing canonical durable fresh-admission/GameSession bridge requires its Foundation/Durability owner's allocation, including any necessary interface, persistence and migration paths; those are outside this worker's allowlist. No new persistence schema or public authority contract was selected here.
+
+### Completed and deliberately incomplete work
+
+- Task 1 protocol bridge: typed borrowed bootstrap/resume material and validated metadata cached by Foundation; bounded capability storage; private registered-only acceptance/resume/error encoders; independent fixed protobuf vectors. No wire ID or public bridge was added.
+- Initial Task 2 private transport primitives: TLS 1.3-only configuration, exact negotiated ALPN check, early data disabled, canonical BE32 length validation before body allocation/output, and real loopback primitive tests. **Task 2 is partial**: registered pre-admission/handshake permit ownership, orchestration and lifecycle remain unimplemented. The primitive TLS stream is not an FND-04 identity/admission grant.
+- Tasks 3–6 production authority/composition/physical qualification are incomplete. The canonical ordinary executable remains fail-closed. No gameplay listener was activated and no formal QA result is claimed.
+- New exact transport dependency uses already-locked `tokio-rustls =0.26.4`; `rcgen =0.14.10` is dev-only non-shipping certificate generation. Existing dependency versions were not upgraded. Dependabot #259/#260/#261 remained non-owning Cargo reconciliation candidates on fresh pre-edit readback; open-PR changed-file scan showed no other allocated writer of this allowlist.
+
+### Validation and review
+
+Fresh REDs:
+
+1. `cargo +1.94.0 test --locked -p oteryn-game-server foundation::protocol -- --nocapture`: missing typed extraction methods, E0599; minimal extraction GREEN: 35 protocol tests.
+2. `cargo +1.94.0 test --locked -p oteryn-game-server --lib foundation::protocol`: missing registered encoder types/functions, E0422/E0425; GREEN: 36 protocol tests including independently transcribed vectors.
+3. Private frame selector: missing `read_frame`, E0425; GREEN accepts 1 and 1,048,576 and rejects zero, max+1, truncated prefix/body.
+4. Private TLS/write selector: missing `tls_config`, `accept_tls`, `write_frame`, E0425; GREEN: 3 transport tests, including explicit TLS1.2-only + exact ALPN rejection before frame handoff, TLS1.3 success, absent/wrong ALPN, plaintext and write-before-output rejection.
+
+Current source verification: `cargo +1.94.0 test --locked -p oteryn-game-server --lib`: 236 passed, zero failed/ignored. This is library/component evidence, not the physical production-listener target. Formatting, whitespace, governance and repository-policy checks are recorded by this checkpoint's verification. No real PostgreSQL or full-workspace qualification was run for this partial candidate.
+
+Strict `cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings` is **not green**: private bridge/transport APIs have no production consumers until composition exists. The separately observed single-element test-loop lint was repaired without changing assertions. Dead-code enforcement was not suppressed and visibility was not widened merely to satisfy lint. The partial branch must not be integrated.
+
+Whole-diff self-inspection covered typed validation, fixed-array bounds, immutable schema tags, generation/phase behavior, TLS downgrade/ALPN and before-allocation framing. A read-only subagent independently checked the missing durable bridge against GitHub blob identities and inspected Task 1/initial Task 2; no concrete P1/P2 regression was reported, with Task 2 permit ownership explicitly unimplemented. This is advisory evidence, **not formal independent exact-head review**. Full authority finding-family sweep, production projection, hosted CI and genuinely independent final review remain pending.
+
+GitHub publication uses native blob/tree/commit/ref operations after local `git push` failed with missing HTTPS credentials. Task 1 native commit `fb7f448ad728bbfa8462b99633dc4c0506d6ee10` has exactly the same tree `38941ff48b4ba039d0e0c9370cdbadcac062fc78` as local execution commit `aed6dac`. Published branch history is preserved by non-force native commits. No implementation PR exists; PR creation remains repository-control-plane responsibility. No automatic worker continuation or ownership release is claimed.
 
 ## Outcome
 
@@ -196,17 +238,17 @@ Historical allocation-review findings requiring golden encoding, listener versio
 ### Focused
 
 - command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam`
-- result: not run — write authority waits on allocation merge/readback
+- result: not run — production composition is blocked on the missing canonical durable fresh-admission bridge
 
 ### Component/integration
 
 - command/run: `cargo +1.94.0 test --locked -p oteryn-game-server`
-- result: not run — write authority waits on allocation merge/readback
+- result: not run — production composition is blocked on the missing canonical durable fresh-admission bridge
 
 ### E2E
 
 - scenario: local production-path TCP/TLS listener -> FND-02 bootstrap/resume -> FND-04/Foundation admission/reconnect -> bounded registered server acknowledgement/error path
-- result: not run — write authority waits on allocation merge/readback; formal QA Tier 1/Tier 2 is separately owned
+- result: not run — production composition is blocked on the missing canonical durable fresh-admission bridge; formal QA Tier 1/Tier 2 is separately owned
 
 ### Exact-head CI
 
@@ -244,10 +286,11 @@ Historical allocation-review findings requiring golden encoding, listener versio
 ## Context checkpoint
 
 ```yaml
-last_progress: allocation PR #294 has been reconciled to current protected main b9b1a4317858bffc25ad6af3cffcf7b5eff93445 through normal non-force merge-up a0ca3118a418d5b2e7b47d83cd2c2f1a65b8eb65; #307 is docs-only and does not alter the Server Seam API/lease; current plan repair bc6578c77deb23150dad231955de0f6e2a7a0ae9 resolves the private-module sequencing and explicit TLS-1.2 negative P1s; worker authority remains withheld pending allocation final exact-head qualification/review/integration
+last_progress: Task 1 and initial private transport primitives verified; canonical durable fresh-admission bridge absence proven outside allocation
 status: waiting
 branch: agent/otv2-gameplay-server-seam-01
-head_sha: null
+head_sha: fb7f448ad728bbfa8462b99633dc4c0506d6ee10
+head_reference_kind: last_published_pre_checkpoint_commit
 pr: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -256,7 +299,7 @@ ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: unknown
+runner_assignment_state: not_requested
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -264,7 +307,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
-blocker: allocation_pr_294_not_merged
-next_action: wait for Work to finish the final allocation exact-head qualification/review and protected Merge Queue integration; only after allocation merge-SHA readback may this worker branch be created from that exact protected-main merge SHA
+owner_action_required: coordinator_allocation_of_canonical_durable_fresh_admission_bridge
+blocker: missing_production_ReconnectAttemptJournal_commit_fresh_and_GameSession_lifecycle_adapter
+next_action: Work coordinator allocates the missing canonical durable fresh-admission/GameSession bridge to its Foundation/Durability owner using the exact dependency evidence in this task
 ```

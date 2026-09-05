@@ -1515,22 +1515,20 @@ mod tests {
             assert_eq!(envelope.server_sequence(), 0);
             envelope.validate(Direction::ServerToClient, false)?;
         }
-        for generation in [0] {
-            assert!(
-                encode_server_accepted(&ServerAcceptedValue {
-                    connection_generation: generation,
-                    ..accepted
-                })
-                .is_err()
-            );
-            assert!(
-                encode_server_resume_accepted(&ServerResumeAcceptedValue {
-                    connection_generation: generation,
-                    ..resumed
-                })
-                .is_err()
-            );
-        }
+        assert!(
+            encode_server_accepted(&ServerAcceptedValue {
+                connection_generation: 0,
+                ..accepted
+            })
+            .is_err()
+        );
+        assert!(
+            encode_server_resume_accepted(&ServerResumeAcceptedValue {
+                connection_generation: 0,
+                ..resumed
+            })
+            .is_err()
+        );
         assert!(
             encode_server_accepted(&ServerAcceptedValue {
                 next_command_id: 0,
