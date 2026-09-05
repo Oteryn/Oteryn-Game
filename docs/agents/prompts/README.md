@@ -28,7 +28,8 @@ Canonical implementation order and dependencies are defined by:
 
 - `../programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
 - `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md` for the Terra + Sol execution profile;
-- `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for owner-facing launch/model/effort/status guidance.
+- `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for owner-facing launch/model/effort/status guidance;
+- `../programs/OTERYN_DURABILITY_MULTIAGENT_LAUNCH_RUNBOOK.md` for the exact Durability one-writer + three-read-only-chat launch order, packet relay and stale-head/rerun rules.
 
 ### Normal entry point
 
@@ -70,6 +71,8 @@ Historical coordinator Issue numbers in these prompts are provenance only; alway
 - `OTV2_SOL_TOOLING_OPS_PREP.md` - post-VSL Tooling/Ops read-only preparation; no mutation before exact later allocation. **`Oteryn: sol tooling ops prep`.**
 
 The three Durability analyst aliases are acceleration roles, not independent lanes. They may run concurrently with the active Durability Lead because they perform no tracked-file or GitHub mutation and consume no writer slot. They return explicit exact-head packets; the Durability Lead must refresh GitHub, reject stale packets, verify findings and synthesize all implementation itself. If they run in separate ChatGPT chats, cross-chat memory is not authority: only an explicit returned packet may be consumed.
+
+Use `../programs/OTERYN_DURABILITY_MULTIAGENT_LAUNCH_RUNBOOK.md` when the operator needs the exact sequence, model/effort settings, complete packet handoff text or guidance on which analyst to rerun after head movement.
 
 The Terra profile is additive and does **not** silently supersede `Oteryn: work coordinator` or `OTV2_IMPLEMENTATION_COORDINATOR`. When a programme has durably selected Terra as its unique active control plane, Terra may apply only deterministic GitHub/DAG/ownership/merge predicates; technical findings route to the owning Sol lead, material cross-lane decisions route to `Oteryn: sol supervising architect`, and owner-only scope/authority decisions return `OWNER_DECISION_REQUIRED`.
 

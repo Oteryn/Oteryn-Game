@@ -60,6 +60,8 @@ separate chat: Oteryn: sol durability qualification analyst -> READ_ONLY, Sol Hi
 
 The three analysts may run concurrently because they have no tracked-file or GitHub mutation authority. They return exact-head packets only. The Durability Lead refreshes live GitHub, rejects stale packets, verifies findings and performs every edit/commit/push/reconciliation/qualification step itself. If separate chats are used, do not assume hidden cross-chat state: only an explicitly returned packet may be handed to the lead.
 
+For the exact launch order, copy/paste aliases, packet-relay directive, stale-head rules and selective analyst rerun guidance, use `docs/agents/programs/OTERYN_DURABILITY_MULTIAGENT_LAUNCH_RUNBOOK.md`.
+
 Analyst fanout is optional acceleration, not a dependency. Do not stall authorized Durability work merely because one analyst chat is unavailable.
 
 Keep `Oteryn: work auditor` in a separate non-authoring chat when its result must count as independent. Keep `Oteryn: owner execution guide` read-only; it advises the owner and never becomes a second coordinator.
