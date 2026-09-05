@@ -266,6 +266,11 @@ def main() -> int:
     for test in tests:
         test()
         print(f"PASS {test.__name__}")
+    spec = importlib.util.spec_from_file_location("queue_regressions", Path(__file__).with_name("test_validate_merge_group_pg_sim.py"))
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.main() == 0
     print(f"Canonical PR PG/SIM validator regressions PASS: {len(tests)}")
     return 0
 

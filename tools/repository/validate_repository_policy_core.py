@@ -45,6 +45,7 @@ EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a"
 )
+EXPECTED_MERGE_GROUP_GATE_BLOB = "e3291fe8fca8fcf70166d5652b43d5a26fa0d762"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -61,6 +62,7 @@ EXPECTED_MERGE_GROUP_JOB_KEYS = [
     "dependency_review",
     "codeql",
     "rust_linux",
+    "durability_postgres",
     "rust_windows",
     "rust_supply_chain",
     "game_gate",
@@ -394,6 +396,8 @@ def main() -> int:
     merge_group_gate = ROOT / ".github/workflows/merge-group-gate.yml"
     if merge_group_gate.is_file():
         text = merge_group_gate.read_text(encoding="utf-8")
+        if git_blob_sha(text.encode("utf-8")) != EXPECTED_MERGE_GROUP_GATE_BLOB:
+            errors.append("merge-group gate must equal the protected-base preapproved PG/SIM blob")
         top_level_keys = canonical_top_level_yaml_keys(text)
         if top_level_keys != EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS:
             errors.append(
@@ -440,8 +444,17 @@ def main() -> int:
                 "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
                 "cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke",
             ),
+            "durability_postgres": (
+                "    name: Merge Queue / Durability PostgreSQL harness\n",
+                "image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "test -f apps/game-server/tests/durability_postgres.rs",
+                "cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres",
+            ),
             "rust_windows": (
                 "    name: Merge Queue / Rust Windows client\n",
+                "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
                 "--target x86_64-pc-windows-msvc",
                 "cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke",
                 "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
@@ -455,11 +468,12 @@ def main() -> int:
             "game_gate": (
                 "    name: game-gate\n",
                 "    if: always()\n",
-                "    needs: [candidate, dependency_review, codeql, rust_linux, rust_windows, rust_supply_chain]\n",
+                "    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain]\n",
                 "          CANDIDATE: ${{ needs.candidate.result }}\n",
                 "          DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}\n",
                 "          CODEQL: ${{ needs.codeql.result }}\n",
                 "          RUST_LINUX: ${{ needs.rust_linux.result }}\n",
+                "          DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}\n",
                 "          RUST_WINDOWS: ${{ needs.rust_windows.result }}\n",
                 "          RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}\n",
                 "            test \"$result\" = success\n",
