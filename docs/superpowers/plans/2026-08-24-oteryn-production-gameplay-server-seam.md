@@ -177,33 +177,30 @@ registered pre-admission slot held
 -> read 4-byte BE length
 -> validate 1..=1_048_576 before body allocation/read
 -> read exact body
--> Foundation decode/connection state machine
+-> return one bounded frame to the caller
 ```
 
-Write-side framing obeys the same hard maximum. TLS/profile failure closes before admission mutation.
+Write-side framing obeys the same hard maximum. This task owns transport framing only; Foundation decode, the connection state machine and production composition are integrated by later tasks. TLS/ALPN/framing failure closes before any admission boundary can be reached.
 
-- [ ] **2.5 RED/GREEN — TLS/ALPN/version/profile/plaintext failures through the composed listener**
+- [ ] **2.5 RED/GREEN — transport-level TLS/ALPN/plaintext failures**
 
-Using the actual local production listener/composition path with non-shipping loopback TLS material, prove:
+Using the real loopback `tcp_tls.rs` transport boundary with non-shipping test TLS material, prove:
 
-- TLS 1.3 + exact ALPN succeeds;
-- missing/wrong ALPN fails before admission;
-- a correctly framed `ClientBootstrap` carrying the wrong `protocol_major` fails before FND-04 verification, `GameSession` creation or any admission mutation;
-- a correctly framed `ClientBootstrap` carrying the wrong `transport_profile` fails at that same real listener boundary before FND-04/admission mutation;
-- both wrong-version/profile cases traverse TCP -> TLS -> BE32 frame read -> Foundation decode through the composed listener; direct decoder-unit rejection alone does **not** satisfy these two cases;
-- plaintext never reaches Foundation admission;
-- malformed/truncated/oversized frames fail closed.
+- TLS 1.3 + exact ALPN succeeds to one bounded frame handoff;
+- missing/wrong ALPN fails before frame handoff;
+- plaintext never yields an authenticated gameplay transport stream;
+- malformed/truncated/oversized frames fail closed before peer-sized allocation or any higher-layer handoff.
 
-Name the two production-path cases under the `tls_` selector (for example `tls_wrong_protocol_major_rejected_before_admission` and `tls_wrong_transport_profile_rejected_before_admission`) so the focused command below cannot omit them accidentally.
+Name these transport-only cases under a `transport_tls_` selector. Do **not** claim production-listener version/profile evidence here: `protocol_major` and `transport_profile` are Foundation-envelope semantics, and their required composed-listener negatives are introduced test-first in Task 5 after Tasks 3-4 have supplied the connection state machine and lifecycle module.
 
 Run:
 
 ```bash
 cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam frame_ -- --nocapture
-cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam tls_ -- --nocapture
+cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam transport_tls_ -- --nocapture
 ```
 
-Expected PASS with explicit evidence that neither invalid envelope reaches the FND-04/admission mutation boundary.
+Expected PASS at the transport boundary only; this task does not yet claim FND-04/admission or production-composition evidence.
 
 - [ ] **2.6 Commit Task 2**
 
@@ -343,15 +340,34 @@ git commit -m "feat(server): bound gameplay transport lifecycle"
 - Modify: `apps/game-server/src/main.rs`
 - Modify: `apps/game-server/tests/gameplay_server_seam.rs`
 
-- [ ] **5.1 RED — composition invariants**
+- [ ] **5.1 RED — composition invariants and listener version/profile negatives**
 
-Require `--smoke` to remain green without gameplay bind; missing config/TLS to fail closed; explicit caller-supplied loopback endpoint/TLS to compose the exact production transport in tests; no default production address/port/certificate/secret; no gameplay command becomes accepted merely because a listener exists.
+Before modifying `lib.rs` or `main.rs`, add tests against the intended production composition entry point. They must fail because that composition does not exist yet. Require:
+
+- `--smoke` to remain green without gameplay bind;
+- missing config/TLS to fail closed;
+- explicit caller-supplied loopback endpoint/TLS to compose the exact production transport in tests;
+- no default production address/port/certificate/secret;
+- no gameplay command to become accepted merely because a listener exists;
+- a correctly framed `ClientBootstrap` carrying the wrong `protocol_major` to fail before FND-04 verification, `GameSession` creation or any admission mutation;
+- a correctly framed `ClientBootstrap` carrying the wrong `transport_profile` to fail at that same real listener boundary before FND-04/admission mutation.
+
+The two version/profile cases MUST traverse TCP -> TLS -> BE32 frame read -> Foundation decode through the actual composed listener. Direct decoder-unit rejection or the Task 2 transport-only harness is insufficient. Name them under the `tls_` selector as `tls_wrong_protocol_major_rejected_before_admission` and `tls_wrong_transport_profile_rejected_before_admission` so the focused production-composition command cannot omit them accidentally.
+
+Run the new composition/listener target before implementation and record RED caused by the missing production composition path, not by weakening Foundation validation.
 
 - [ ] **5.2 Minimal composition GREEN**
 
 Wire exactly one transport module into `lib.rs`. `main.rs` consumes only explicit configuration; if a product-wide configuration contract is materially missing, stop with `ARCHITECTURE_ESCALATION_REQUIRED` rather than inventing it.
 
-Run composition suite + `cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke`.
+Run:
+
+```bash
+cargo +1.94.0 test --locked -p oteryn-game-server --test gameplay_server_seam tls_ -- --nocapture
+cargo +1.94.0 run --locked -p oteryn-game-server -- --smoke
+```
+
+Expected PASS with both wrong-version/profile envelopes rejected through the real composed listener before FND-04/admission mutation, while `--smoke` remains fail-closed from gameplay serving.
 
 - [ ] **5.3 Commit Task 5**
 
