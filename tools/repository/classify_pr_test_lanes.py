@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import subprocess
 import sys
 
@@ -98,8 +99,18 @@ def input_digest(metadata: dict, include_server: bool = False) -> str:
     return hashlib.sha256(b"\0".join(sorted(selected)) + b"\0").hexdigest()
 
 
-def classify(files, changed_count, metadata, digest, complete=True, docs_digest=None) -> dict:
+def candidate_modes_safe(sha: str) -> bool:
+    if re.fullmatch(r"[0-9a-f]{40}", sha) is None:
+        return False
+    rows = subprocess.check_output(["git", "ls-tree", "-r", "-z", sha]).split(b"\0")
+    entries = [row for row in rows if row]
+    return bool(entries) and all(row.split(b"\t", 1)[0].split()[0] in {b"100644", b"100755"} for row in entries)
+
+
+def classify(files, changed_count, metadata, digest, complete=True, docs_digest=None, candidate_modes_verified=False) -> dict:
     try:
+        if candidate_modes_verified is not True:
+            return full("unverified-or-special-candidate-modes")
         if complete is not True or type(changed_count) is not int or not isinstance(files, list) or len(files) != changed_count or not files:
             return full("incomplete-enumeration")
         paths, filenames = [], set()
@@ -160,7 +171,8 @@ def main() -> int:
         metadata = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
         digest = input_digest(metadata)
         result = classify(json.loads(os.environ["CHANGED_FILE_RECORDS"]), int(os.environ["CHANGED_FILE_COUNT"]), metadata, digest,
-                          complete=os.environ["ENUMERATION_COMPLETE"] == "true", docs_digest=input_digest(metadata, include_server=True))
+                          complete=os.environ["ENUMERATION_COMPLETE"] == "true", docs_digest=input_digest(metadata, include_server=True),
+                          candidate_modes_verified=candidate_modes_safe(os.environ["EXPECTED_HEAD"]))
     except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError, subprocess.SubprocessError):
         result = full("classifier-or-metadata-failure")
     print(json.dumps(result, sort_keys=True))
