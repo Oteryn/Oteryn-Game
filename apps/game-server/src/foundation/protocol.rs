@@ -191,8 +191,214 @@ pub struct WireEnvelopeView<'a> {
     connection_generation: u64,
     server_sequence: u64,
     payload: &'a [u8],
+    bootstrap: Option<BootstrapIngressView<'a>>,
 }
+
+// Fixed-size validated metadata preserves the envelope's Copy contract without
+// allocating from peer-controlled counts. Material/build strings borrow input.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct BootstrapIngressView<'a> {
+    schema_revision: u32,
+    identity: [u8; 16],
+    material: &'a [u8],
+    build_id: &'a str,
+    capabilities: [u32; MAX_CAPABILITY_COUNT],
+    capability_count: usize,
+    last_applied_sequence: u64,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ClientBootstrapView<'a> {
+    pub(crate) protocol_major: u32,
+    pub(crate) transport_profile: u32,
+    pub(crate) schema_revision: u32,
+    pub(crate) character_id: CharacterId,
+    pub(crate) admission_material: &'a [u8],
+    pub(crate) client_build_id: &'a str,
+    pub(crate) supported_capabilities: &'a [u32],
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct ClientResumeView<'a> {
+    pub(crate) protocol_major: u32,
+    pub(crate) transport_profile: u32,
+    pub(crate) schema_revision: u32,
+    pub(crate) game_session_id: GameSessionId,
+    pub(crate) reconnect_material: &'a [u8],
+    pub(crate) client_build_id: &'a str,
+    pub(crate) supported_capabilities: &'a [u32],
+    pub(crate) last_applied_server_sequence: u64,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct ServerAcceptedValue<'a> {
+    pub(crate) game_session_id: GameSessionId,
+    pub(crate) world_id: WorldId,
+    pub(crate) channel_id: ChannelId,
+    pub(crate) connection_generation: u64,
+    pub(crate) current_server_sequence: u64,
+    pub(crate) next_command_id: u64,
+    pub(crate) schema_revision: u32,
+    pub(crate) selected_capabilities: &'a [u32],
+}
+
+#[derive(Debug, Clone, Copy)]
+pub(crate) struct ServerResumeAcceptedValue<'a> {
+    pub(crate) game_session_id: GameSessionId,
+    pub(crate) connection_generation: u64,
+    pub(crate) current_server_sequence: u64,
+    pub(crate) next_command_id: u64,
+    pub(crate) schema_revision: u32,
+    pub(crate) selected_capabilities: &'a [u32],
+}
+
+fn push_varint(output: &mut Vec<u8>, mut value: u64) {
+    while value >= 128 {
+        output.push((value as u8 & 0x7f) | 0x80);
+        value >>= 7;
+    }
+    output.push(value as u8);
+}
+
+fn push_scalar(output: &mut Vec<u8>, field: u32, value: u64) {
+    if value != 0 {
+        push_varint(output, u64::from(field) << 3);
+        push_varint(output, value);
+    }
+}
+
+fn push_bytes(output: &mut Vec<u8>, field: u32, value: &[u8]) {
+    push_varint(output, (u64::from(field) << 3) | 2);
+    push_varint(output, value.len() as u64);
+    output.extend_from_slice(value);
+}
+
+fn validate_acceptance_value(
+    generation: u64,
+    command: u64,
+    schema: u32,
+    capabilities: &[u32],
+) -> Result<(), FoundationProtocolError> {
+    if generation == 0 || command == 0 || schema == 0 {
+        return Err(FoundationProtocolError::MalformedEnvelope);
+    }
+    if capabilities.len() > MAX_CAPABILITY_COUNT {
+        return Err(FoundationProtocolError::BootstrapLimitExceeded);
+    }
+    let mut count = 0;
+    let mut previous = None;
+    for &capability in capabilities {
+        validate_capability(u64::from(capability), &mut count, &mut previous, true)?;
+    }
+    Ok(())
+}
+
+pub(crate) fn encode_server_accepted(
+    value: &ServerAcceptedValue<'_>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    validate_acceptance_value(
+        value.connection_generation,
+        value.next_command_id,
+        value.schema_revision,
+        value.selected_capabilities,
+    )?;
+    let mut payload = Vec::new();
+    push_bytes(&mut payload, 1, value.game_session_id.as_bytes());
+    push_bytes(&mut payload, 2, value.world_id.as_bytes());
+    push_bytes(&mut payload, 3, value.channel_id.as_bytes());
+    push_scalar(&mut payload, 4, value.connection_generation);
+    push_scalar(&mut payload, 5, value.current_server_sequence);
+    push_scalar(&mut payload, 6, value.next_command_id);
+    push_scalar(&mut payload, 7, u64::from(PROTOCOL_MAJOR_V1));
+    push_scalar(&mut payload, 8, u64::from(TRANSPORT_PROFILE_TCP_TLS13_V1));
+    push_scalar(&mut payload, 9, u64::from(value.schema_revision));
+    for &capability in value.selected_capabilities {
+        push_scalar(&mut payload, 10, u64::from(capability));
+    }
+    let mut output = vec![8, 2];
+    push_bytes(&mut output, 4, &payload);
+    Ok(output)
+}
+
+pub(crate) fn encode_server_resume_accepted(
+    value: &ServerResumeAcceptedValue<'_>,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    validate_acceptance_value(
+        value.connection_generation,
+        value.next_command_id,
+        value.schema_revision,
+        value.selected_capabilities,
+    )?;
+    let mut payload = Vec::new();
+    push_bytes(&mut payload, 1, value.game_session_id.as_bytes());
+    push_scalar(&mut payload, 2, value.connection_generation);
+    push_scalar(&mut payload, 3, value.current_server_sequence);
+    push_scalar(&mut payload, 4, value.next_command_id);
+    push_scalar(&mut payload, 5, u64::from(value.schema_revision));
+    for &capability in value.selected_capabilities {
+        push_scalar(&mut payload, 6, u64::from(capability));
+    }
+    let mut output = vec![8, 4];
+    push_bytes(&mut output, 4, &payload);
+    Ok(output)
+}
+
+pub(crate) fn encode_protocol_error(
+    error: FoundationProtocolError,
+    generation: u64,
+) -> Result<Vec<u8>, FoundationProtocolError> {
+    let mut payload = Vec::new();
+    push_scalar(&mut payload, 1, u64::from(error.code()));
+    push_scalar(&mut payload, 2, u64::from(error.disposition() as u32));
+    let mut output = vec![8, 14];
+    push_scalar(&mut output, 2, generation);
+    push_bytes(&mut output, 4, &payload);
+    Ok(output)
+}
+
 impl<'a> WireEnvelopeView<'a> {
+    pub(crate) fn client_bootstrap(
+        &self,
+    ) -> Result<ClientBootstrapView<'_>, FoundationProtocolError> {
+        self.validate(Direction::ClientToServer, false)?;
+        if self.message_type != MessageType::ClientBootstrap {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        let view = self
+            .bootstrap
+            .as_ref()
+            .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+        Ok(ClientBootstrapView {
+            protocol_major: PROTOCOL_MAJOR_V1,
+            transport_profile: TRANSPORT_PROFILE_TCP_TLS13_V1,
+            schema_revision: view.schema_revision,
+            character_id: CharacterId(view.identity),
+            admission_material: view.material,
+            client_build_id: view.build_id,
+            supported_capabilities: &view.capabilities[..view.capability_count],
+        })
+    }
+
+    pub(crate) fn client_resume(&self) -> Result<ClientResumeView<'_>, FoundationProtocolError> {
+        self.validate(Direction::ClientToServer, false)?;
+        if self.message_type != MessageType::ClientResume {
+            return Err(FoundationProtocolError::MalformedEnvelope);
+        }
+        let view = self
+            .bootstrap
+            .as_ref()
+            .ok_or(FoundationProtocolError::MalformedEnvelope)?;
+        Ok(ClientResumeView {
+            protocol_major: PROTOCOL_MAJOR_V1,
+            transport_profile: TRANSPORT_PROFILE_TCP_TLS13_V1,
+            schema_revision: view.schema_revision,
+            game_session_id: GameSessionId(view.identity),
+            reconnect_material: view.material,
+            client_build_id: view.build_id,
+            supported_capabilities: &view.capabilities[..view.capability_count],
+            last_applied_server_sequence: view.last_applied_sequence,
+        })
+    }
     pub const fn message_type(&self) -> MessageType {
         self.message_type
     }
@@ -463,7 +669,7 @@ fn read_singular_bytes<'a>(
 fn validate_bootstrap_ingress(
     message_type: MessageType,
     payload: &[u8],
-) -> Result<(), FoundationProtocolError> {
+) -> Result<BootstrapIngressView<'_>, FoundationProtocolError> {
     let (
         protocol_field,
         transport_field,
@@ -497,7 +703,7 @@ fn validate_bootstrap_ingress(
             Some(3u32),
             MAX_RECONNECT_MATERIAL_BYTES,
         ),
-        _ => return Ok(()),
+        _ => return Err(FoundationProtocolError::MalformedEnvelope),
     };
     let mut cursor = 0usize;
     let mut protocol_major = None;
@@ -509,6 +715,7 @@ fn validate_bootstrap_ingress(
     let mut build_id = None;
     let mut capability_count = 0usize;
     let mut previous_capability = None;
+    let mut capabilities = [0u32; MAX_CAPABILITY_COUNT];
     while cursor < payload.len() {
         let key = read_varint(payload, &mut cursor)?;
         let field = decode_field_number(key)?;
@@ -520,14 +727,23 @@ fn validate_bootstrap_ingress(
         } else if field == schema_field {
             read_singular_varint(payload, &mut cursor, wire, &mut schema_revision)?;
         } else if field == capabilities_field {
-            validate_capability_field(
-                payload,
-                &mut cursor,
-                wire,
-                &mut capability_count,
-                &mut previous_capability,
-                false,
-            )?;
+            let mut push = |raw| -> Result<(), FoundationProtocolError> {
+                validate_capability(raw, &mut capability_count, &mut previous_capability, false)?;
+                capabilities[capability_count - 1] =
+                    previous_capability.ok_or(FoundationProtocolError::InvalidCapabilitySet)?;
+                Ok(())
+            };
+            match wire {
+                0 => push(read_varint(payload, &mut cursor)?)?,
+                2 => {
+                    let packed = unbounded_length_delimited(payload, &mut cursor)?;
+                    let mut packed_cursor = 0;
+                    while packed_cursor < packed.len() {
+                        push(read_varint(packed, &mut packed_cursor)?)?;
+                    }
+                }
+                _ => return Err(FoundationProtocolError::MalformedEnvelope),
+            }
         } else if field == material_field {
             read_singular_bytes(
                 payload,
@@ -588,7 +804,19 @@ fn validate_bootstrap_ingress(
     if build_id.is_none() {
         return Err(FoundationProtocolError::MalformedEnvelope);
     }
-    Ok(())
+    Ok(BootstrapIngressView {
+        schema_revision: u32::try_from(
+            schema_revision.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        )
+        .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+        identity: decode_uuid_v7(identity.ok_or(FoundationProtocolError::InvalidWireIdentifier)?)?,
+        material: material.ok_or(FoundationProtocolError::MalformedEnvelope)?,
+        build_id: std::str::from_utf8(build_id.ok_or(FoundationProtocolError::MalformedEnvelope)?)
+            .map_err(|_| FoundationProtocolError::MalformedEnvelope)?,
+        capabilities,
+        capability_count,
+        last_applied_sequence: last_applied_sequence.unwrap_or(0),
+    })
 }
 
 fn validate_client_command_ingress(payload: &[u8]) -> Result<(), FoundationProtocolError> {
@@ -867,7 +1095,7 @@ fn validate_client_ingress_payload(
 ) -> Result<(), FoundationProtocolError> {
     match message_type {
         MessageType::ClientBootstrap | MessageType::ClientResume => {
-            validate_bootstrap_ingress(message_type, payload)
+            validate_bootstrap_ingress(message_type, payload).map(|_| ())
         }
         MessageType::ClientCommand => validate_client_command_ingress(payload),
         MessageType::ResyncRequest => validate_resync_request_ingress(payload),
@@ -939,15 +1167,24 @@ pub fn decode_wire_envelope(input: &[u8]) -> Result<WireEnvelopeView<'_>, Founda
     {
         return Err(FoundationProtocolError::BootstrapLimitExceeded);
     }
-    match message_type.direction() {
-        Direction::ClientToServer => validate_client_ingress_payload(message_type, payload)?,
-        Direction::ServerToClient => validate_server_ingress_payload(message_type, payload)?,
-    }
+    let bootstrap = if matches!(
+        message_type,
+        MessageType::ClientBootstrap | MessageType::ClientResume
+    ) {
+        Some(validate_bootstrap_ingress(message_type, payload)?)
+    } else {
+        match message_type.direction() {
+            Direction::ClientToServer => validate_client_ingress_payload(message_type, payload)?,
+            Direction::ServerToClient => validate_server_ingress_payload(message_type, payload)?,
+        }
+        None
+    };
     Ok(WireEnvelopeView {
         message_type,
         connection_generation: generation.unwrap_or(0),
         server_sequence: sequence.unwrap_or(0),
         payload,
+        bootstrap,
     })
 }
 
@@ -1228,6 +1465,168 @@ impl SnapshotBarrier {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn seam_server_encoders_match_independent_proto_vectors() -> Result<(), FoundationProtocolError>
+    {
+        // Field tags and lengths transcribed from foundation.proto, not produced
+        // by the encoder or the existing test serialization helpers.
+        const ACCEPTED: &[u8] = &[
+            8, 2, 34, 64, 10, 16, 0, 0, 0, 0, 0, 0, 112, 0, 128, 0, 0, 0, 0, 0, 0, 1, 18, 16, 0, 0,
+            0, 0, 0, 0, 112, 0, 128, 0, 0, 0, 0, 0, 0, 2, 26, 16, 0, 0, 0, 0, 0, 0, 112, 0, 128, 0,
+            0, 0, 0, 0, 0, 3, 32, 1, 48, 1, 56, 1, 64, 1, 72, 1,
+        ];
+        const RESUMED: &[u8] = &[
+            8, 4, 34, 26, 10, 16, 0, 0, 0, 0, 0, 0, 112, 0, 128, 0, 0, 0, 0, 0, 0, 1, 16, 2, 24,
+            42, 32, 3, 40, 1,
+        ];
+        const ERROR: &[u8] = &[8, 14, 34, 5, 8, 235, 7, 16, 4];
+        let accepted = ServerAcceptedValue {
+            game_session_id: GameSessionId::decode(&test_uuid_v7(1))?,
+            world_id: WorldId::decode(&test_uuid_v7(2))?,
+            channel_id: ChannelId::decode(&test_uuid_v7(3))?,
+            connection_generation: 1,
+            current_server_sequence: 0,
+            next_command_id: 1,
+            schema_revision: 1,
+            selected_capabilities: &[],
+        };
+        let resumed = ServerResumeAcceptedValue {
+            game_session_id: accepted.game_session_id,
+            connection_generation: 2,
+            current_server_sequence: 42,
+            next_command_id: 3,
+            schema_revision: 1,
+            selected_capabilities: &[],
+        };
+        assert_eq!(encode_server_accepted(&accepted)?, ACCEPTED);
+        assert_eq!(encode_server_resume_accepted(&resumed)?, RESUMED);
+        assert_eq!(
+            encode_protocol_error(FoundationProtocolError::MalformedEnvelope, 0)?,
+            ERROR
+        );
+        for (wire, kind) in [
+            (ACCEPTED, MessageType::ServerAccepted),
+            (RESUMED, MessageType::ServerResumeAccepted),
+            (ERROR, MessageType::ProtocolError),
+        ] {
+            let envelope = decode_wire_envelope(wire)?;
+            assert_eq!(envelope.message_type(), kind);
+            assert_eq!(envelope.server_sequence(), 0);
+            envelope.validate(Direction::ServerToClient, false)?;
+        }
+        for generation in [0] {
+            assert!(
+                encode_server_accepted(&ServerAcceptedValue {
+                    connection_generation: generation,
+                    ..accepted
+                })
+                .is_err()
+            );
+            assert!(
+                encode_server_resume_accepted(&ServerResumeAcceptedValue {
+                    connection_generation: generation,
+                    ..resumed
+                })
+                .is_err()
+            );
+        }
+        assert!(
+            encode_server_accepted(&ServerAcceptedValue {
+                next_command_id: 0,
+                ..accepted
+            })
+            .is_err()
+        );
+        assert!(
+            encode_server_resume_accepted(&ServerResumeAcceptedValue {
+                schema_revision: 0,
+                ..resumed
+            })
+            .is_err()
+        );
+        assert!(
+            encode_server_accepted(&ServerAcceptedValue {
+                selected_capabilities: &[1],
+                ..accepted
+            })
+            .is_err()
+        );
+        assert!(
+            encode_server_resume_accepted(&ServerResumeAcceptedValue {
+                selected_capabilities: &[1; 129],
+                ..resumed
+            })
+            .is_err()
+        );
+        let post_admission_error =
+            encode_protocol_error(FoundationProtocolError::MalformedEnvelope, 7)?;
+        decode_wire_envelope(&post_admission_error)?.validate(Direction::ServerToClient, true)?;
+        Ok(())
+    }
+
+    #[test]
+    fn seam_typed_bootstrap_borrows_validated_material() -> Result<(), FoundationProtocolError> {
+        let id = test_uuid_v7(1);
+        let wire = test_envelope(1, &test_client_bootstrap_payload(1, 1, 2, &id, &[7, 9]));
+        let envelope = decode_wire_envelope(&wire)?;
+        let view = envelope.client_bootstrap()?;
+        assert_eq!(view.protocol_major, 1);
+        assert_eq!(view.transport_profile, 1);
+        assert_eq!(view.schema_revision, 2);
+        assert_eq!(view.character_id.as_bytes(), &id);
+        assert_eq!(view.admission_material, &[0xaa]);
+        assert_eq!(view.client_build_id, "test-client");
+        assert_eq!(view.supported_capabilities, &[7, 9]);
+        let start = wire.as_ptr() as usize;
+        assert!((start..start + wire.len()).contains(&(view.admission_material.as_ptr() as usize)));
+        assert!(envelope.client_resume().is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn seam_typed_resume_preserves_sequence_and_identity() -> Result<(), FoundationProtocolError> {
+        let id = test_uuid_v7(2);
+        let mut payload = test_client_resume_payload(1, 1, 3, &id, &[8]);
+        push_test_varint_field(&mut payload, 3, 42);
+        let wire = test_envelope(3, &payload);
+        let envelope = decode_wire_envelope(&wire)?;
+        let view = envelope.client_resume()?;
+        assert_eq!(view.protocol_major, 1);
+        assert_eq!(view.transport_profile, 1);
+        assert_eq!(view.schema_revision, 3);
+        assert_eq!(view.game_session_id.as_bytes(), &id);
+        assert_eq!(view.reconnect_material, &[0xbb]);
+        assert_eq!(view.client_build_id, "test-client");
+        assert_eq!(view.supported_capabilities, &[8]);
+        assert_eq!(view.last_applied_server_sequence, 42);
+        assert!(envelope.client_bootstrap().is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn seam_typed_extraction_rejects_bootstrap_generation_and_sequence()
+    -> Result<(), FoundationProtocolError> {
+        for message in [1, 3] {
+            let id = test_uuid_v7(1);
+            let payload = if message == 1 {
+                test_client_bootstrap_payload(1, 1, 1, &id, &[])
+            } else {
+                test_client_resume_payload(1, 1, 1, &id, &[])
+            };
+            for field in [2, 3] {
+                let mut wire = test_envelope(message, &payload);
+                push_test_varint_field(&mut wire, field, 1);
+                let envelope = decode_wire_envelope(&wire)?;
+                if message == 1 {
+                    assert!(envelope.client_bootstrap().is_err());
+                } else {
+                    assert!(envelope.client_resume().is_err());
+                }
+            }
+        }
+        Ok(())
+    }
     use crate::foundation::ProtocolDisposition;
 
     #[test]
