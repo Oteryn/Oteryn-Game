@@ -118,6 +118,75 @@ mod contract_tests {
     }
 
     #[test]
+    fn record_derived_candidate_binding_is_internal_and_its_convenience_is_test_only() {
+        let candidate_impl = ADMISSION_RECOVERY
+            .split_once("impl ReconnectCandidateBindingV1 {")
+            .and_then(|(_before, rest)| rest.split_once("\n}\n"))
+            .map(|(implementation, _after)| implementation);
+        assert!(
+            candidate_impl.is_some(),
+            "candidate binding implementation must remain present"
+        );
+        let Some(candidate_impl) = candidate_impl else {
+            return;
+        };
+        let production_candidate_impl =
+            candidate_impl.replace("#[cfg(test)]\n    pub fn from_record(", "");
+
+        assert!(
+            !production_candidate_impl.contains("\n    pub fn from_record("),
+            "record-derived candidate binding must not be production-public"
+        );
+        assert!(
+            candidate_impl.contains("fn expected_binding_from_record("),
+            "immutable record derivation must remain an internal expected-binding helper"
+        );
+        assert!(
+            candidate_impl.contains("#[cfg(test)]\n    pub fn from_record("),
+            "the record-derived candidate convenience must remain available only to tests"
+        );
+    }
+
+    #[test]
+    fn identity_derived_authority_claim_convenience_is_test_only_across_sibling_family() {
+        for type_name in ["CharacterWorldEligibilityClaimV1", "AccountPresenceClaimV1"] {
+            let marker = format!("impl {type_name} {{");
+            let implementation = ADMISSION_RECOVERY
+                .split_once(&marker)
+                .and_then(|(_before, rest)| rest.split_once("\n}\n"))
+                .map(|(implementation, _after)| implementation);
+            assert!(
+                implementation.is_some(),
+                "{type_name}: implementation missing"
+            );
+            let Some(implementation) = implementation else {
+                continue;
+            };
+            let production_impl = implementation
+                .replace(
+                    "#[cfg(test)]\n    #[must_use]\n    pub fn from_identity(",
+                    "",
+                )
+                .replace("#[cfg(test)]\n    pub fn from_identity(", "");
+
+            assert!(
+                !production_impl.contains("\n    pub fn from_identity("),
+                "{type_name}: identity-derived authority convenience must not be production-public"
+            );
+            assert!(
+                implementation.contains("fn expected_from_identity("),
+                "{type_name}: immutable identity derivation must remain an internal expected-value helper"
+            );
+            assert!(
+                implementation.contains("#[cfg(test)]\n    pub fn from_identity(")
+                    || implementation
+                        .contains("#[cfg(test)]\n    #[must_use]\n    pub fn from_identity("),
+                "{type_name}: identity-derived convenience must remain available only to tests"
+            );
+        }
+    }
+
+    #[test]
     fn generic_v1_terminal_reconciliation_is_not_a_production_recovery_api() {
         const ADMISSION_JOURNAL: &str = include_str!("admission_journal.rs");
         const DURABILITY: &str = include_str!("../durability/mod.rs");
@@ -225,11 +294,21 @@ mod terminal_replacement_postgres_red_tests {
     ) -> Result<ReconnectCurrentAuthorityV1, ReconnectDurabilityErrorV1> {
         ReconnectCurrentAuthorityV1::from_current_facts(
             record,
-            Some(AccountPresenceClaimV1::from_identity(record.identity())?),
-            Some(CharacterWorldEligibilityClaimV1::from_identity(
-                record.identity(),
+            Some(AccountPresenceClaimV1::new(
+                record.identity().account_id(),
+                record.identity().character_id(),
+            )?),
+            Some(CharacterWorldEligibilityClaimV1::new(
+                record.identity().character_id(),
+                record.identity().world_id(),
             )),
-            Some(ReconnectCandidateBindingV1::from_record(record)?),
+            Some(ReconnectCandidateBindingV1::new(
+                record.identity().game_session_id(),
+                record.identity().reconnect_attempt_ref(),
+                record.connection().candidate(),
+                record.connection().transport_ref(),
+                record.continuity().prepared_deadline(),
+            )?),
             record.identity().runtime_scope(),
             record.connection().predecessor(),
             record.authority(),
@@ -567,8 +646,9 @@ mod terminal_replacement_postgres_red_tests {
         )?;
         TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             ACCOUNT,
-            Some(&AccountPresenceClaimV1::from_identity(
-                candidate.identity(),
+            Some(&AccountPresenceClaimV1::new(
+                candidate.identity().account_id(),
+                candidate.identity().character_id(),
             )?),
             predecessor,
             candidate.identity().game_session_id(),
