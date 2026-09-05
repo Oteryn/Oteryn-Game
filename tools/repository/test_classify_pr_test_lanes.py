@@ -133,18 +133,34 @@ def test_trusted_job_mutations():
     print("Trusted-base job mutation family PASS: candidate checkout, skip, tolerance, weakened fallback, early exit")
 
 
+def test_candidate_modes(module):
+    assert callable(getattr(module, "candidate_modes_safe", None)), "candidate tree modes are not verified before reduced-lane selection"
+    sha = "a" * 40
+    for mode, safe in ((b"100644", True), (b"100755", True), (b"120000", False), (b"160000", False)):
+        row = mode + b" blob " + b"b" * 40 + b"\tdocs/link.md\0"
+        with patch.object(module.subprocess, "check_output", return_value=row):
+            assert module.candidate_modes_safe(sha) is safe, mode
+    assert module.candidate_modes_safe("not-an-exact-sha") is False
+    for path in ("docs/link.md", "apps/game-server/src/link.rs"):
+        result = module.classify([dict(filename=path, status="added")], 1, fixture(), module.AUDITED_INPUT_SHA256,
+                                 docs_digest=module.AUDITED_DOC_INPUT_SHA256, candidate_modes_verified=False)
+        assert result["rust"] and result["windows"], "missing candidate modes permitted reduced lanes"
+    print("Candidate mode family PASS: executable/regular controls, symlink/gitlink rejection and missing evidence FULL")
+
+
 def main() -> int:
     assert MODULE.is_file(), "dependency-aware trusted-base classifier is not implemented"
     spec = importlib.util.spec_from_file_location("risk_classifier", MODULE)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    test_candidate_modes(module)
 
     def classify(paths, metadata=None, digest=None, **kwargs):
         files = [dict(filename=p, status="modified") if isinstance(p, str) else p for p in paths]
         return module.classify(files, kwargs.pop("count", len(files)), fixture() if metadata is None else metadata,
                                module.AUDITED_INPUT_SHA256 if digest is None else digest,
-                               docs_digest=kwargs.pop("docs_digest", module.AUDITED_DOC_INPUT_SHA256), **kwargs)
+                               docs_digest=kwargs.pop("docs_digest", module.AUDITED_DOC_INPUT_SHA256), candidate_modes_verified=True, **kwargs)
 
     server = "apps/game-server/src/lib.rs"
     result = classify([server])
