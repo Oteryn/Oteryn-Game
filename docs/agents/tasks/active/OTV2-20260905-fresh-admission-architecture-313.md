@@ -8,14 +8,14 @@ status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/fresh-admission-authority-313
-pr: null
+pr: 317
 base_sha: 5639dc28c3ac27b7da2772778f71d797cfd60537
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: sol supervising architect
 created_at: 2026-09-05T19:30:00+02:00
-updated_at: 2026-09-05T19:30:00+02:00
+updated_at: 2026-09-05T19:44:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -173,8 +173,8 @@ No material architecture conflict was found that requires an owner product decis
 
 ### Exact-head CI
 
-- final head: pending PR creation/freeze
-- trigger source: pull_request
+- final head: pending final material candidate freeze; exact SHA will be recorded in immutable PR/check evidence rather than self-referential task content
+- trigger source: pull_request / PR #317
 - workflow/run/job: pending
 - runner assignment: pending
 - classification: docs/governance architecture candidate
@@ -182,7 +182,7 @@ No material architecture conflict was found that requires an owner product decis
 
 ## Self-review
 
-- exact head: pending final candidate head
+- exact head: pending final material candidate freeze
 - method/reviewer: `Oteryn: sol supervising architect`
 - material findings: pending final changed-file readback
 - verdict: pending
@@ -190,14 +190,14 @@ No material architecture conflict was found that requires an owner product decis
 ## Independent review
 
 - required: YES — material admission/session/persistence authority decision under root and game-server governance
-- exact head: pending final candidate head
+- exact head: pending final material candidate freeze
 - method/auditor: governing Work/control-plane authorized independent deep review
 - material findings: pending
 - verdict: pending
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: PR #317 is exactly the two owned docs paths; final-head reread pending after this metadata bind
 - unresolved review threads: pending
 - related/superseded PRs: none found for #313 at admission readback
 - protected auto-merge: forbidden for this architecture role
@@ -207,11 +207,11 @@ No material architecture conflict was found that requires an owner product decis
 ## Context checkpoint
 
 ```yaml
-last_progress: architecture decision candidate authored from current protected main and exact #313 evidence
+last_progress: architecture decision candidate published as PR #317; task binding updated before final material freeze
 status: validating
 branch: arch/fresh-admission-authority-313
 head_sha: null
-pr: null
+pr: 317
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
@@ -229,5 +229,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: independent review and protected integration are owned by the governing Work/control plane, not this architecture role
-next_action: open the bounded architecture PR and hand the exact candidate to Oteryn: work coordinator for independent review, checks and protected integration
+next_action: qualify PR #317 exact head through repository checks and one independent deep review, then integrate only through the governing protected control plane
 ```
