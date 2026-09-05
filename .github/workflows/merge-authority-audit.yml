@@ -25,7 +25,7 @@ jobs:
       contents: read
       pull-requests: read
     env:
-      EXPECTED_MERGE_GROUP_GATE_BLOB: "1e0e7b70a806fe744d394ca8abf43ee434ead3f2"
+      EXPECTED_MERGE_GROUP_GATE_BLOB: "e3291fe8fca8fcf70166d5652b43d5a26fa0d762"
     steps:
       - name: Validate control-plane candidate as inert data
         shell: bash
@@ -133,11 +133,20 @@ jobs:
                   f'expected {expected_gate_blob}, got {actual_blob}'
               )
 
+          merge_group_head_expression = '$' + '{{ github.event.merge_group.head_sha }}'
+          durability_result_expression = '$' + '{{ needs.durability_postgres.result }}'
           required = (
               '  merge_group:\n    types: [checks_requested]\n',
               '    name: game-gate\n',
               '    if: always()\n',
-              '    needs: [candidate, dependency_review, codeql, rust_linux, rust_windows, rust_supply_chain]\n',
+              '    needs: [candidate, dependency_review, codeql, rust_linux, durability_postgres, rust_windows, rust_supply_chain]\n',
+              '    name: Merge Queue / Durability PostgreSQL harness\n',
+              '        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3\n',
+              f'          EXPECTED_SHA: {merge_group_head_expression}\n',
+              '          cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres\n',
+              '    name: Merge Queue / Rust Windows client\n',
+              '        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc\n',
+              f'          DURABILITY_POSTGRES: {durability_result_expression}\n',
               '            test "$result" = success\n',
           )
           for fragment in required:
