@@ -9,7 +9,7 @@ Canonical native E2E architecture: `docs/architecture/ADR-0007-native-end-to-end
 - Validate proportionally to changed paths and risk.
 - Cheap focused checks run during implementation; heavy checks run at coherent package/final head.
 - Exact-head required checks cannot be replaced by historical or parent results.
-- `Merge gate / validate` is the stable protected-branch PR check and may succeed only when every applicable sub-gate succeeds.
+- `game-gate` is the stable protected-branch status; on pull requests it may succeed only when internal `Merge gate / validate` proves every applicable sub-gate.
 - Rust/workspace validation is path-proportional but cannot be bypassed by changing CI/workspace policy itself.
 - Environment startup alone is not successful E2E.
 - Hidden retry-until-green is forbidden; every physical attempt and cleanup outcome remains visible.
@@ -24,25 +24,46 @@ Always-required sub-gates:
 - PR metadata, agent-governance and repository-policy validation;
 - GitHub Dependency Review with `high` severity as the failure threshold;
 - CodeQL for repository Python and GitHub Actions code;
-- final aggregate `Merge gate / validate`.
+- internal aggregate `Merge gate / validate`;
+- final stable status `game-gate`.
 
 When Rust/workspace-relevant paths change, the same merge gate additionally requires:
 
 - Rust policy/metadata validation;
-- Linux workspace build, strict Clippy, tests and synthetic harness;
-- Windows production-client build, strict Clippy, smoke and synthetic harness;
+- exact-head Linux workspace build, strict Clippy, tests and synthetic harness;
+- a pinned PostgreSQL 17.6 service plus deletion-safe routing for `oteryn-game-server --test durability_postgres` inside the required Linux job;
+- exact-head Windows production-client build, strict Clippy, smoke and synthetic harness;
+- deterministic Windows `oteryn-simulation-determinism` golden fixtures inside the required Windows job;
 - `cargo-deny` advisory/license/ban/source validation.
 
-The protected `main` ruleset requires only the stable aggregate `Merge gate / validate` context. Individual sub-gates are intentionally composed behind it so path-proportional jobs may be skipped without creating missing required-status deadlocks.
+The PostgreSQL test target is present on protected main after terminal-replacement PR #252. The canonical Linux job uses these fail-closed rules:
+
+- when `apps/game-server/tests/durability_postgres.rs` exists on the exact candidate, run it against PostgreSQL 17.6;
+- when the exact PR removes or renames that target, fail the required Linux job;
+- when the target is not yet allocated on the candidate or its PR diff, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
+
+Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Both upstream scope and target classification enumerate the immutable comparison of exact base/head SHAs, retaining before/after PR identity checks. A transient A-to-B-to-A PR movement cannot substitute another revision's files. GitHub returns at most 300 files for a comparison: larger PRs, missing file arrays or a count mismatch fail closed, never omit evidence. Existing Rust path applicability is unchanged.
+
+The required governance job executes the focused PG/SIM regressions, including both real classifiers against controlled GitHub responses and job/step failure-tolerance/skip families. The complete Linux and Windows evidence jobs are pinned by SHA256 using the existing canonical-job validation pattern. Future intentional job changes must update their reviewed pins; preserving command strings while inserting an early successful exit cannot pass policy.
+
+The existing broad Rust/workspace classifier is deliberately retained for this safety stage. Risk-scoped lane omission and adjacent-workflow deduplication are separate work after canonical PR and Merge Queue PG/SIM coverage is proven.
+
+The protected `main` ruleset requires only the stable `game-gate` context. Individual sub-gates are intentionally composed behind it so applicable path-proportional jobs may be skipped without creating missing required-status deadlocks.
+
+## Current Merge Queue gate
+
+`.github/workflows/merge-group-gate.yml` validates the exact synthetic merge-group head and currently requires candidate/governance validation, dependency review, CodeQL, Linux workspace, Windows production client and supply-chain checks before emitting `game-gate`.
+
+PostgreSQL durability and deterministic simulation are not yet present in that merge-group workflow on this candidate. Their protected-base audit-pin rotation and exact preapproved gate activation are staged through Issues #284 and #285. Do not claim full merge-group PG/SIM qualification until #285 is integrated and protected-main readback proves the actual workflow.
 
 ## Current focused validation
 
 | Change | Focused validation | Exact-head PR validation |
 |---|---|---|
-| Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` | `Merge gate / governance` → `Merge gate / validate` |
+| Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` | `Merge gate / governance` → `Merge gate / validate` → `game-gate` |
 | Repository/GitHub policy | `python tools/repository/validate_repository_policy.py` | governance + dependency review + CodeQL + applicable Rust jobs → aggregate gate |
 | Architecture/contracts only | governance validator plus applicable link/JSON/schema checks | always-required merge-gate subchecks; runtime E2E may be `NOT_APPLICABLE` with reason |
-| Rust/workspace/client code | package-focused tests while editing | full path-triggered Rust policy/Linux/Windows/supply-chain merge-gate set |
+| Rust/workspace/client code | package-focused tests while editing | full Rust policy/Linux+allocated PostgreSQL/Windows+SIM/supply-chain merge-gate set |
 | GitHub workflow affecting Rust validation | repository-policy validation plus workflow review | full Rust merge-gate set because merge-gate/rust workflow paths are Rust-validation-sensitive |
 
 ## Current Rust workspace commands
@@ -58,12 +79,14 @@ Current exact baseline uses Rust `1.94.0` and includes:
 - `cargo +1.94.0 build --locked --workspace --all-targets` on Linux;
 - `cargo +1.94.0 clippy --locked --workspace --all-targets -- -D warnings` on Linux;
 - `cargo +1.94.0 test --locked --workspace`;
+- deletion-safe conditional `cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres` against pinned PostgreSQL 17.6 when the target is allocated on the exact PR head;
 - `cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness`;
 - Windows release build for `oteryn-client` on `x86_64-pc-windows-msvc`;
 - Windows strict client Clippy and `--smoke` launch;
+- `cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc` for Rust-relevant pull requests;
 - `cargo-deny check --all-features` through the pinned cargo-deny action.
 
-Post-merge/manual `.github/workflows/rust.yml` preserves the same current workspace baseline independently of the PR aggregate gate.
+Post-merge/manual `.github/workflows/rust.yml` temporarily preserves its PostgreSQL and simulation jobs independently of the PR aggregate gate. Removing duplication or scoping expensive lanes belongs to Issue #283 only after Issues #279 and #285 are integrated and read back.
 
 ## Required additions as owning layers appear
 
@@ -71,7 +94,6 @@ Do not create speculative tests for nonexistent runtime layers. Add these when t
 
 - parser property/fuzz tests for untrusted protocol/content inputs;
 - canonical/golden protocol byte fixtures and malformed/adversarial corpora;
-- deterministic simulation/replay tests;
 - server target/feature builds and strict Clippy;
 - persistence migration, concurrency, rollback and crash-recovery tests;
 - shared foundation failure-scenario tests, including time/clock, dependency loss, stale generation and overload cases;
