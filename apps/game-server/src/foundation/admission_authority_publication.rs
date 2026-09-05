@@ -268,7 +268,7 @@ fn source_age_valid(observed: i64, uncertainty: u64, now: i64) -> bool {
             .is_some_and(|age| age <= 5)
 }
 
-fn validate_change(
+pub(super) fn validate_change(
     change: &AdmissionAuthorityPublicationChangeV1,
     now: i64,
 ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {

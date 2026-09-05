@@ -142,14 +142,14 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] Verified fresh result preserves AccountId and every final evidence fence without changing authentication/classification precedence.
-- [ ] Private owning-source capability/publication API prevents grant, caller fact struct or old receipt from seeding current guard truth; no default-forged evidence.
-- [ ] Typed bootstrap/CAS/source-order/publication completion semantics keep readiness closed before acknowledged or reconciled publication; exact replay cannot re-age source time.
-- [ ] Fresh bounded submit/yield/completion/reconciliation flow distinguishes committed, existing committed, replay conflict, incumbent rejection, stale authority and ambiguous/unavailable.
-- [ ] Same-key retry preserves original immutable binding and decision evidence; ambiguity only reconciles the original candidate/transport and cannot mint another session.
-- [ ] Strict NumericDate and conservative source-age semantics use checked math; final authority is decided at L, not BEGIN or COMMIT acknowledgment.
-- [ ] Committed or historical receipt alone cannot install a controller; stale or replaced current facts, reconnectable/terminal lifecycle and higher connection generation fail closed.
-- [ ] Synchronous compatibility remains explicitly non-production and cannot be the production SQLx path.
+- [x] Verified fresh result preserves AccountId and every final evidence fence without changing authentication/classification precedence.
+- [x] Private owning-source capability/publication API prevents grant, caller fact struct or old receipt from seeding current guard truth; no default-forged evidence.
+- [x] Typed bootstrap/CAS/source-order/publication completion semantics keep readiness closed before acknowledged or reconciled publication; exact replay cannot re-age source time.
+- [x] Fresh bounded submit/yield/completion/reconciliation flow distinguishes committed, existing committed, replay conflict, incumbent rejection, stale authority and ambiguous/unavailable.
+- [x] Same-key retry preserves original immutable binding and decision evidence; ambiguity only reconciles the original candidate/transport and cannot mint another session.
+- [x] Strict NumericDate and conservative source-age semantics use checked math; final authority is decided at L, not BEGIN or COMMIT acknowledgment.
+- [x] Committed or historical receipt alone cannot install a controller; stale or replaced current facts, reconnectable/terminal lifecycle and higher connection generation fail closed.
+- [x] Synchronous compatibility remains explicitly non-production and cannot be the production SQLx path.
 - [ ] Focused RED -> GREEN, affected regressions, full-diff/finding-family review, genuinely independent exact-head review and canonical CI pass before Work integration.
 
 ## Excluded scope
@@ -171,12 +171,12 @@ Complete verified evidence, publication, durable flow/adoption and qualification
 ### Focused
 
 - command/run: `cargo +1.94.0 test --locked -p oteryn-game-server foundation::` and `cargo +1.94.0 test --locked -p oteryn-game-server --doc`
-- result: NOT_RUN; future worker evidence required
+- result: PASS locally on the Task3/4 material candidate: Foundation 158/158 and doctests 7/7; exact published head and canonical CI remain Work-owned qualification.
 
 ### Component/integration
 
 - command/run: `cargo +1.94.0 test --locked -p oteryn-game-server --test authority_invariants`; existing verifier/reconnect regression suite; formatting and strict all-target Clippy
-- result: NOT_RUN; canonical PR CI also runs selected locked workspace/PG checks
+- result: PASS locally on the Task3/4 material candidate: authority_invariants 4/4, cargo fmt and strict all-target Clippy; canonical PR CI also runs selected locked workspace/PG checks.
 
 ### E2E
 
@@ -196,8 +196,8 @@ Complete verified evidence, publication, durable flow/adoption and qualification
 
 - exact head: pending worker material head
 - method/reviewer: implementing worker whole-diff/adversarial/finding-family review
-- material findings: not evaluated
-- verdict: NOT_EVALUATED
+- material findings: independently reproduced and repaired equal-source Game state substitution, equal-Platform-revision security decision substitution, historical deadline extension, absent original physical transport and non-monotonic adoption time; signing guard/source revision disagreement and retained owned request API also repaired test-first
+- verdict: PASS_LOCAL_CANDIDATE; independent exact-head review and canonical CI remain outstanding
 
 ## Independent review
 
@@ -284,3 +284,45 @@ Counters and custody: prior `7141845` CI generation ordinary observations = 2; n
 Remaining work is substantial: Task3 immutable retained authorization/receipt audit DTOs, six durable outcomes, same-key exact/conflicting replay, ambiguity-only original-binding reconciliation, independently-current adoption and stale projection clearing; a production durable entry independent of the synchronous journal generic bound; full direct/reconciled/restart/transport-collision qualification and independent exact-head review. The persisted historical binding must remain distinct from the private current verified capability so B can restore receipts without forging live authority. Task2 still needs whole-boundary independent review and canonical current-head qualification; physical PostgreSQL semantics belong to B. Child C/source #319 and Server Seam #247 remain unavailable and unallocated here.
 
 One next action: implement Task3 retained authorization/outcome/reconcile/adoption on this same allocated branch after coordinator-controlled continuation, preserving the existing budget/counter history and ownership.
+
+
+## Task3/4 material candidate — 2026-09-05T20:58Z
+
+The owner explicitly resumed foreground continuation through qualification and integration; Work recorded this on PR #321 comment `5554630920`. This continuation preserves the immutable admission SHA, original 18:44Z dispatch and 60-minute allocation history, existing counters and sole writer/branch custody. It does not reset a budget or declare background execution. Work independently reported prior checkpoint `33f0324` canonical run `33987697014` and `game-gate` SUCCESS; that is historical evidence, not qualification of this new candidate.
+
+Implemented in the seven allocated Foundation paths:
+
+- Separate historical audit binding/receipt DTOs and private verified authorization/request capabilities. Historical restore validates retained NumericDate/source deadlines and original expected/acquired lease bindings; it never constructs live authorization. Owned immutable requests can be retained in a bounded queue for later L validation.
+- Four exact typed accepted guard bindings retain source authority/purpose/revision/decision/time, authenticated Platform security and signing trust, account/character/world/channel, every independent runtime/protocol/transport/gameplay revision and original credential times. The pure final-L helper requires independently locked exact rows and trustworthy in-bound time, after all potentially blocking acquisitions; it performs no SQL.
+- Six required durable dispositions plus explicit proven candidate/session and shared transport collision classifications. Exact same-key replay returns the original immutable receipt/decision time; changed candidate, transport, account, deadline, credential or guard binding conflicts. Submit and reconciliation only enqueue/yield; wrong, duplicate and out-of-order inputs reject. Missing/ambiguous reconciliation retains the original binding and yields for bounded re-read.
+- Direct completion and atomic reconciliation retain history without controller installation. Adoption independently checks owning current guards, actual current session/lifecycle, exact acquired lease/scope, generation one and original transport, plus the original authenticated physical transport mapping. Every failed adoption clears the process projection without erasing historical receipt. Reconnectable/terminal/new-generation/different-scope sources cannot revive the initial controller.
+- The narrow core projection and `DurableFreshAdmissionAuthorityV1` have no synchronous journal generic bound or synchronous persistence call. Existing compatibility remains explicitly non-production; reconnect V1/V2 source and behavior are preserved.
+
+Executed RED/GREEN evidence in this foreground continuation:
+
+1. Missing module/protocol accessor and owned-request/reconciliation/final-L APIs produced expected compilation REDs before their implementation. These are API-shape evidence, not behavioral coverage.
+2. Independently sourced direct/reconciled adoption control returned `StaleAuthority` against the fail-closed stub (0 passed / 1 failed); checked installation made the positive control GREEN.
+3. Equal Game source revision with acquired state, equal Platform revision with changed still-allowed security minimum, extended historical deadline and absent original physical transport each returned success instead of rejection (10 passed / 4 failed), then GREEN after narrow repairs.
+4. Adoption at time 99 before the original L=100 returned success (0 passed / 1 failed), then GREEN. A separate delayed completion control at 200 succeeds only with independently newer current sources while retaining original L=100/deadline=103 and occupied same-session presence/acquired lease.
+5. Signing guard revision changed independently from verified trust source returned successful authorization (0 passed / 1 failed), then GREEN after exact precommit source agreement.
+
+Finding-family/negative sweep:
+
+- 28 individually mutated owning-guard cases and 9 individually mutated current-session cases, each exercised on both direct and restart-reconciled adoption with a separately constructed current source and positive adoption control first. Guard cases cover presence/holder, account, security minimum/deny/provenance/age/order, character/world/eligibility/lease, runtime readiness/scope/route/runtime/rules/content/map/policy/offer/transport, and trust deny/key/source time/order. Session cases cover terminal/reconnectable lifecycle, generation, missing/different transport, lease, missing world eligibility, same-world different-channel scope and newer scope generation.
+- Initial authorization includes all four missing guard domains, protocol mismatch, occupied presence, accepted publication mismatch and independently mismatched signing-source revision. Existing verifier cases preserve authentication/classification order and independent signed revisions.
+- Original-binding ambiguity, restart without source floor, missing physical mapping, exact/conflicting replay, both identity collision categories, immutable audit time, strict/inclusive trusted-L bounds, missing time, overflow and one outstanding reconciliation are exercised. Physical same-account/character winner races, fresh/reconnect reservation uniqueness, PostgreSQL locking/reload/WAL and migrations belong to B; actual source registration/readiness and producer mutation inventory belong to C, as already allocated.
+
+Final local commands on these runtime bytes (all exit 0):
+
+- `/root/.cargo/bin/cargo +1.94.0 test --locked -p oteryn-game-server --lib foundation::`: **158 passed, 0 failed**, including 20 Task3/4 tests and preserved publication/verifier/reconnect behavior.
+- `/root/.cargo/bin/cargo +1.94.0 test --locked -p oteryn-game-server --test authority_invariants`: **4 passed, 0 failed**.
+- `/root/.cargo/bin/cargo +1.94.0 test --locked -p oteryn-game-server --doc`: **7 passed, 0 failed**, including the historical-DTO/live-capability misuse negative.
+- `/root/.cargo/bin/cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: PASS. Three local collapsible-if findings were repaired without suppression.
+- `/root/.cargo/bin/cargo +1.94.0 fmt --all --check`: PASS; no unowned formatting changes.
+- `git diff --check`: PASS.
+
+Full logs are retained for Work in `/workspace/scratch/1a8583297af8/foundation-validation-318/` during this foreground execution. New local PostgreSQL execution is NOT_RUN; no physical durability, producer availability or production readiness claim is made.
+
+Counters remain preserved: prior CI-generation observations and formatting repair count 3 are historical, no identical-failure CI retry, CI recovery action, no-op/rerun trigger, force/rebase/reset, second PR or scope expansion occurred here. Root will publish the tested tree natively because local GitHub credentials are absent; no unauthenticated push is attempted. Native publication establishes the final material SHA and new canonical CI generation.
+
+One next action: Work publishes this exact tested tree to the existing PR #321, obtains canonical exact-head checks and genuinely independent authority/security review, repairs only material findings as required, then performs protected integration/readback. The worker remains available for authorized repairs; no Task3 checkpoint stop or whole-task completion is claimed. Child B/C and Server Seam remain dependency-held.

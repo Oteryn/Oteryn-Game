@@ -10,7 +10,8 @@ mod protocol;
 mod snapshot_facade;
 pub use admission::*;
 pub use admission_facade::{
-    AdmissionAuthority, ReconnectAttemptAuthoritySnapshot, ReconnectAttemptJournal,
+    AdmissionAuthority, DurableFreshAdmissionAuthorityV1, ReconnectAttemptAuthoritySnapshot,
+    ReconnectAttemptJournal,
 };
 pub use fnd04_verifier::{
     Fnd04ConsumerError, Fnd04EvidenceAuthority, Fnd04EvidenceError, Fnd04EvidenceScope,
@@ -668,3 +669,5 @@ mod tests {
 }
 
 pub mod admission_authority_publication;
+
+pub mod fresh_admission_durability;

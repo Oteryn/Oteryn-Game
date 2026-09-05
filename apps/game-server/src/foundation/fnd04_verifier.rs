@@ -982,6 +982,9 @@ fn hex(byte: u8) -> Option<u8> {
 
 #[cfg(test)]
 mod tests {
+    mod fresh_admission_durability_tests {
+        include!("fresh_admission_durability_tests.rs");
+    }
     use super::*;
     use base64::Engine;
     use ed25519_dalek::{Signer, SigningKey};
@@ -2249,6 +2252,11 @@ impl VerifiedFreshDurabilityFactsV1 {
         self.claims.account_security_generation
     }
 
+    #[must_use]
+    pub const fn protocol_transport(&self) -> (u64, u64) {
+        (self.claims.protocol_major, self.claims.transport_profile)
+    }
+
     /// Re-resolves current evidence without reparsing or re-aging signed claims.
     /// This is pre-commit eligibility; the durable adapter must still check L.
     pub fn revalidate(
@@ -2271,7 +2279,7 @@ impl VerifiedFreshDurabilityFactsV1 {
     }
 }
 
-fn fresh_source_deadline(
+pub(super) fn fresh_source_deadline(
     provenance: &FreshEvidenceProvenanceV1,
     purpose: FreshEvidencePurposeV1,
     now: i64,
