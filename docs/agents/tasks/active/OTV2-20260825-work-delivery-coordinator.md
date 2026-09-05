@@ -5,20 +5,20 @@ task_id: OTV2-20260825-work-delivery-coordinator
 title: Coordinate the post-blocker gameplay vertical slice
 mode: COORDINATE
 status: COORDINATING
-programme_state: WAITING_ARCHITECTURE
+programme_state: WAITING_DEPENDENCY
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: 730c8bd12cc8c8c2588a97ddcd28f595c0018bca
+protected_main_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
 server_seam_issue: 247
 server_seam_allocation_pr: 294
 server_seam_allocation_merge_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
-server_seam_state: WAITING_ARCHITECTURE
+server_seam_state: WAITING_DEPENDENCY
 architecture_escalation_issue: 313
 nonblocking_governance_reconciliation_issue: 316
 owner: ChatGPT Work Delivery Coordinator
@@ -28,6 +28,9 @@ execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration and closeout; no single worker owns the programme
 owned_paths:
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
+  - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md
+  - docs/superpowers/plans/2026-09-05-foundation-fresh-admission-durability.md
+  - docs/agents/tasks/active/OTV2-20260905-foundation-fresh-admission-318.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-interaction-lifecycle.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-ability-engine.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-durability-journal.md
@@ -36,7 +39,8 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
 public_contracts: []
 depends_on:
-  - architecture_issue: 313
+  - foundation_child_issue: 318
+  - separately allocated Child B persistence and Child C producer readiness
 blocks:
   - compatible native Client release
   - real applicable Tier 1/Tier 2 gameplay QA
@@ -56,6 +60,12 @@ This packet records the **current** coordinator state. The previous Durability-r
 
 ## Current protected state — 2026-09-05
 
+Current correction: #313 is completed after reviewed PR #317 passed Merge Queue run `33983003548` and integrated as `a8678d4a94e479a9aa2a92920379a4b32f95143b`, tree `d7224da9885fd1b55406c3f64d48f2c239508df8`. #247 is now `WAITING_DEPENDENCY` on A (#318), separately allocated B and C, and actual C producer readiness. Its worker checkpoint/path lease is preserved. The historical architecture-hold observations below remain provenance, not a current unresolved design.
+
+The exact prospective A allocation names `agent/foundation-fresh-admission-318`, seven Foundation paths and its task; its immutable admission base is this allocation's future protected merge SHA. Work remains the sole control plane and gains no lane runtime ownership. The separately coordinated #247 task edit is metadata-only and preserves worker head, owned paths and all partial test evidence.
+
+Historical pre-architecture checkpoint:
+
 - `PROVEN` — protected `main` is `730c8bd12cc8c8c2588a97ddcd28f595c0018bca` after coordinator correction PR #314 passed the required GitHub Merge Queue and terminal `game-gate`.
 - `PROVEN` — the current #162 lifecycle still names `OTV2_WORK_DELIVERY_COORDINATOR`; no merged selector/transfer changes the active mutating control-plane profile.
 - `PROVEN` — Interaction Issue #165 is closed `completed`.
@@ -71,37 +81,26 @@ This packet records the **current** coordinator state. The previous Durability-r
 
 ## Current critical-path blocker
 
-Server Seam Task 3 needs one canonical production-durable fresh-admission / initial `GameSession` commit-and-reconciliation boundary. Current accepted Foundation and Durability surfaces do not provide an ownership-correct production adapter for that operation. The gap is material public authority/persistence architecture and is outside the Server Seam allocation.
-
-Issue #313 therefore owns exactly one architecture decision. It must define the smallest versioned Foundation -> Durability split-phase request/evidence and typed-completion contract, durable linearization, restart/retry/lost-response reconciliation, independently current final-authority checks, forward-migration/schema disposition, implementation ownership and compatibility treatment of synchronous `ReconnectAttemptJournal<T>::commit_fresh`, without redesigning already-frozen reconnect semantics.
-
-Holding action:
-
-- preserve `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e` unchanged;
-- no reset/rebase/force/restart and no implementation PR for the partial candidate;
-- no Foundation/Durability scope seizure, schema invention, lease widening or transport-local in-memory substitute;
-- no Client, Movement or Combat allocation through the unresolved boundary;
-- independent path-disjoint work may continue only under its own current allocation/control plane.
+Accepted decision `FND-DUR-FRESH-ADMISSION-V1` is integrated; the missing implementation is now the blocker. Child A #318 supplies only Foundation semantic authorization/publication/completion APIs. Child B must persist them atomically; Child C must bind actual authenticated/owning producers and prove admission readiness. Existing test-only verifier authorities do not establish production sources. No A scope expansion or fabricated source can substitute for C.
 
 ## Next authorized sequence
 
-1. `Oteryn: sol supervising architect` resolves only Issue #313 and returns a reviewed/qualified architecture decision integrated to protected `main`.
-2. Work re-reads the then-current protected `main`, active Issues/PRs/tasks, ownership and path overlaps.
-3. If the architecture return requires Foundation/Durability implementation, Work creates and integrates the smallest fresh bounded allocation for the proper owner; the Server Seam lease is not widened to absorb it.
-4. The owning Foundation/Durability worker implements and qualifies that prerequisite through normal protected controls; Work integrates it and verifies protected-main readback.
-5. Work re-evaluates the preserved Server Seam branch against that exact main. Only then may the existing Server Seam worker reconcile normally and resume Task 3+.
-6. When the Server Seam worker returns `READY_FOR_INTEGRATION`, Work performs the full exact-head diff/review/CI/Merge Queue/post-merge lifecycle and releases the lane.
-7. Recompute compatible Client -> applicable real Tier 1/Tier 2 QA -> Movement -> Combat readiness from the new protected main.
+1. Work integrates the exact Child A allocation and records that future protected merge SHA as immutable worker admission provenance.
+2. Work creates `agent/foundation-fresh-admission-318` from that SHA and dispatches its sole worker after fresh ownership/readback checks.
+3. Qualify/integrate/read back A; only then freshly allocate B. Qualify/integrate/read back B; only then freshly allocate C.
+4. Require C's actual producer inventory, commit-before-publish, source nonrollback and readiness evidence; missing sources keep admission closed.
+5. After A+B+C protected integrations and readiness, Work re-evaluates the preserved Server Seam branch and decides lawful resume/reconciliation. No reset/rebase/force/restart or partial-candidate integration is authorized.
+6. Qualify Server Seam through its existing full production-path/review/CI lifecycle, then recompute compatible Client -> applicable real QA -> Movement -> Combat.
 
-No owner-only product decision is currently requested. If the Supervising Architect reports a genuine owner-only semantic choice, Work records the exact blocker instead of guessing.
+The architecture author's task is left unchanged; #313 and Work evidence record protected integration. No architecture-worker archive/release role is assumed by this bounded correction.
 
 ## Open-state disposition
 
 A repository search may still find historical, template, draft, Dependabot or separately owned PR/task prose containing `READY_FOR_INTEGRATION` or old Durability/Server Seam states. Those strings are not current authority. A Work integration action requires a fresh lane return tied to the exact current allocation, exact head, changed-path allowlist, required review and CI generation.
 
-The current #162 critical path has no such Server Seam return: #247 is explicitly `WAITING_ARCHITECTURE`, and the downstream Client/QA/Movement/Combat chain remains dependency-blocked by that fact.
+The current #162 critical path has no integration-ready Server Seam return: #247 is `WAITING_DEPENDENCY` on A+B+C implementation/readiness; Client/QA/Movement/Combat remain blocked.
 
-Issue #316 separately records a non-blocking shared-programme provenance defect discovered during this coordinator readback. Current `OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md` still carries an unqualified historical `PR #314` release predicate from the retired `blakinio/Oteryn-v2` repository. Fresh external-history readback proves that `blakinio/Oteryn-v2#314` lawfully merged the DAG as `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`; current `Oteryn/Oteryn-Game#314` is unrelated. Nearest `docs/agents/AGENTS.md` explicitly makes active task/live PR state authoritative over stale shared indexes, so #316 does not block this checkpoint or #313. It must be reconciled before a future allocation treats the DAG header itself as release proof.
+Issue #316's narrow coordinator cleanup qualifies the DAG historical release as `blakinio/Oteryn-v2#314` / `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`, retaining source-retirement provenance. Only the release header/paragraph changes; DAG dependencies, lane semantics and existing implementation authority remain unchanged. The active Work control plane owns this bounded shared-programme correction; #316 itself grants no independent worker lease.
 
 ## Architecture and source of truth
 
@@ -133,7 +132,7 @@ Relevant protected authority:
 - [x] Material fresh-admission persistence/authority gap was escalated as #313 instead of being guessed through.
 - [x] Server Seam task/Issue/parent control-plane state was reconciled through PR #314 and protected-main readback.
 - [x] Ambiguous historical executor-DAG PR-number provenance was isolated as non-blocking governance Issue #316 rather than silently reinterpreted.
-- [ ] #313 architecture decision is reviewed, qualified and integrated to protected `main`.
+- [x] #313 architecture decision is reviewed, qualified and integrated to protected `main` through PR #317.
 - [ ] Any architecture-required Foundation/Durability prerequisite is freshly allocated, implemented, qualified, merged and read back.
 - [ ] Server Seam is completed, independently reviewed, exact-head qualified and merged through protected controls.
 - [ ] Compatible native Client is allocated/merged from the post-Server-Seam main.
@@ -152,7 +151,7 @@ The coordinator may create bounded allocations and integrate qualified worker re
 
 This reconciliation removes obsolete active-state claims from the coordinator packet. It does not reopen or reinterpret completed Wave A work, does not ratify historical invalid Durability branches, and does not modify any worker branch or runtime path.
 
-The current critical-path material finding is #313 only. Issue #316 is independent low-risk governance provenance cleanup and grants no write authority by itself. The Server Seam partial checkpoint is preserved as evidence, not as a merge candidate. No other lane is promoted merely to occupy concurrency capacity.
+The current critical path is A #318 -> separately allocated B -> separately allocated C/real producer readiness -> Server Seam. #313 is completed. #316 release-provenance correction remains documentation-only. No other lane is promoted or implicitly allocated.
 
 ## Validation
 
@@ -164,7 +163,7 @@ The current critical-path material finding is #313 only. Issue #316 is independe
 ### Component/integration
 
 - scenario: documentation/control-plane reconciliation only
-- result: runtime/component/E2E execution is `NOT_APPLICABLE`; this change grants no runtime, contract, schema, Cargo or worker authority
+- result: runtime/component/E2E execution is `NOT_APPLICABLE`; this package makes an exact prospective Child A allocation; it performs no runtime, contract, schema or Cargo mutation
 
 ### E2E
 
@@ -179,37 +178,37 @@ The current critical-path material finding is #313 only. Issue #316 is independe
 ## Self-review
 
 - exact head: recorded in immutable PR evidence after the final material content change
-- method: whole-diff review against the single owned coordinator packet path
-- verdict: `PASS` at content freeze; zero authority expansion, zero worker lease mutation, zero architecture decision, zero runtime/Cargo/schema/workflow mutation
+- method: whole-diff review against the six-path coordinator allocation package
+- verdict: pending exact package review; prospective Child A lease follows accepted architecture and activates only on protected integration; no runtime/Cargo/schema/workflow mutation
 
 ## Independent review
 
-- required: `NO` for this low-risk coordinator metadata/docs reconciliation under current protected root `AGENTS.md` AI review policy
-- reason: no runtime/protocol/persistence/value/production semantics, no safety reduction, no authority expansion and no gate weakening; external AI review is explicitly unnecessary for trivial docs/metadata
+- required: `YES` for this exact allocation package under current protected root `AGENTS.md` AI review policy
+- reason: the package prospectively allocates a high-risk admission/security authority boundary; independent non-author exact-head review must verify scope, accepted contracts, lease activation and preserved Server Seam ownership before integration
 - enforcement remains: exact-head repository checks, `game-gate`, protection and Merge Queue
 
 ## PR and closeout
 
-- changed-file allowlist for this reconciliation: `docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md` only
+- changed-file allowlist: Child A task and plan, LIVE_ALLOCATIONS, executor DAG provenance, this Work task, and explicitly coordinated Server Seam task metadata only
 - terminal merge authority: normal protected repository control plane only; no direct/self/bypass merge
 - coordinator programme remains active after this checkpoint; this is not Movement/Combat programme closeout
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Server Seam architecture hold is durably recorded on protected main by PR #314; Work coordinator packet is reconciled to the current #313-gated critical path and non-blocking DAG provenance defect is tracked as #316
+last_progress: architecture #317 protected integration verified; prospective A #318 allocation and metadata-only #247 dependency correction prepared; #316 historical release provenance reconciled
 status: COORDINATING
-programme_state: WAITING_ARCHITECTURE
+programme_state: WAITING_DEPENDENCY
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
-protected_main_sha: 730c8bd12cc8c8c2588a97ddcd28f595c0018bca
+protected_main_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
 server_seam_issue: 247
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 server_seam_pr: null
-server_seam_state: WAITING_ARCHITECTURE
+server_seam_state: WAITING_DEPENDENCY
 architecture_escalation_issue: 313
 nonblocking_governance_reconciliation_issue: 316
 owner_action_required: null
-blocker: architecture_issue_313_durable_fresh_admission_initial_GameSession_boundary
-next_action: Oteryn: sol supervising architect resolves Issue #313 and returns a reviewed and qualified architecture decision integrated to protected main
+blocker: Foundation_318_then_Child_B_then_Child_C_actual_producer_readiness
+next_action: Work integrates the exact Child A allocation and records its protected merge SHA before worker branch creation and dispatch
 ```
