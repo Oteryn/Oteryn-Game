@@ -11,7 +11,7 @@ branch: agent/foundation-fresh-admission-318
 planned_worker_branch: agent/foundation-fresh-admission-318
 issue: 318
 parent_issue: 162
-pr: null
+pr: 321
 base_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
 admission_main_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
 allocation_preparation_main_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
@@ -158,7 +158,7 @@ No SQLx/SQL/schema/migration, Cargo/lockfile, workflow/registry/stable-ID, liste
 
 ## Implementation / findings
 
-First test-only checkpoint adds two fail-closed durability-entry expectations with real signed grants and one existing NumericDate boundary control, all inside the existing cfg(test) verifier module. The new durability entry/context APIs deliberately do not exist yet, so expected canonical RED is missing-API compilation, not behavioral coverage or a passing test claim. The compatibility positive control demonstrates that missing production source provenance must not silently fall back to legacy caller-filled facts. Rich positive provenance and individual authority/time mutation cases remain subsequent Task 1 test cycles. No production implementation is added. Follow the four functional tasks in the plan. Preserve published history, reject record-derived current authority, and repair verified material findings test-first within this allocation. Place exact frozen head/review/check evidence on the PR rather than adding self-referential bookkeeping commits.
+Executed initial compile-time RED is preserved at e88c106a41e130f90cd9d6c41b8a8ab237ade18e: run33985311543, Linux job101357665714, six expected missing-API E0433/E0425 errors. PR321 comment5554057753 records the evidence. The first minimal implementation only defines unavailable contexts and an uninhabited successful result, with no producer registration or admission success path. Its runtime result remains fail-closed; full Task1 provenance and Tasks2-4 are not complete. The separate rustfmt call-layout findings are repaired without assertion changes. First test-only checkpoint adds two fail-closed durability-entry expectations with real signed grants and one existing NumericDate boundary control, all inside the existing cfg(test) verifier module. The new durability entry/context APIs deliberately do not exist yet, so expected canonical RED is missing-API compilation, not behavioral coverage or a passing test claim. The compatibility positive control demonstrates that missing production source provenance must not silently fall back to legacy caller-filled facts. Rich positive provenance and individual authority/time mutation cases remain subsequent Task 1 test cycles. No production implementation is added. Follow the four functional tasks in the plan. Preserve published history, reject record-derived current authority, and repair verified material findings test-first within this allocation. Place exact frozen head/review/check evidence on the PR rather than adding self-referential bookkeeping commits.
 
 ## Validation
 
@@ -214,7 +214,7 @@ First test-only checkpoint adds two fail-closed durability-entry expectations wi
 ## Context checkpoint
 
 ```yaml
-last_progress: PR320 integrated and sole worker dispatched; bounded test-only verifier RED prepared with immutable admission provenance; awaiting Work implementation PR and actual canonical CI
+last_progress: canonical compile-time RED observed on e88c106; minimal unavailable-only entry and exact rustfmt repairs prepared for canonical verification; complete authority implementation remains pending
 status: waiting
 branch: agent/foundation-fresh-admission-318
 head_sha: null
@@ -235,8 +235,8 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: first test-only candidate requires Work PR creation and executed canonical RED before GREEN
-next_action: Work opens the sole implementation PR for this test-only head so canonical CI can establish executed RED before worker GREEN
+blocker: null
+next_action: verify minimal unavailable-entry checkpoint in canonical CI and add independently sourced positive provenance behavioral RED
 ```
 
 Source readiness prerequisite is tracked separately in Issue #319 for Child C. It does not block Child A semantic implementation or widen this allocation.

@@ -993,23 +993,14 @@ mod tests {
             fresh_payload(),
         );
 
-        let compatibility = verify_fresh_grant(
-            &grant,
-            100,
-            &compatibility_trust,
-            &compatibility_current,
-        )?;
+        let compatibility =
+            verify_fresh_grant(&grant, 100, &compatibility_trust, &compatibility_current)?;
         assert_eq!(compatibility.replay_key().to_bytes()[1..], [7; 32]);
 
         let durability_trust = FreshDurabilityTrustContext::unavailable();
         let durability_current = FreshDurabilityCurrentAuthorityV1::unavailable();
         assert!(matches!(
-            verify_fresh_grant_durability_v1(
-                &grant,
-                100,
-                &durability_trust,
-                &durability_current,
-            ),
+            verify_fresh_grant_durability_v1(&grant, 100, &durability_trust, &durability_current),
             Err(Fnd04ConsumerError::FreshSecurityEvidenceStale),
         ));
         Ok(())
@@ -1031,12 +1022,7 @@ mod tests {
         let durability_current = FreshDurabilityCurrentAuthorityV1::unavailable();
 
         assert!(matches!(
-            verify_fresh_grant_durability_v1(
-                &grant,
-                100,
-                &durability_trust,
-                &durability_current,
-            ),
+            verify_fresh_grant_durability_v1(&grant, 100, &durability_trust, &durability_current),
             Err(Fnd04ConsumerError::FreshSecurityEvidenceStale),
         ));
     }
@@ -1716,4 +1702,50 @@ pub fn verify_recovery_grant_durability_v1(
         world_policy_revision: claims.world_policy_revision,
         credential_expiration: claims.exp,
     })
+}
+
+/// Fail-closed fresh durability trust context.
+///
+/// Owning source registration is required before this context can carry current
+/// security/trust authority. The unavailable value grants no such capability.
+pub struct FreshDurabilityTrustContext {
+    _private: (),
+}
+
+impl FreshDurabilityTrustContext {
+    #[must_use]
+    pub const fn unavailable() -> Self {
+        Self { _private: () }
+    }
+}
+
+/// Fail-closed current owning-source context, separate from compatibility facts.
+pub struct FreshDurabilityCurrentAuthorityV1 {
+    _private: (),
+}
+
+impl FreshDurabilityCurrentAuthorityV1 {
+    #[must_use]
+    pub const fn unavailable() -> Self {
+        Self { _private: () }
+    }
+}
+
+/// No successful durability result is constructible until owning-source
+/// provenance and complete current-authority validation are implemented.
+#[derive(Debug)]
+pub enum VerifiedFreshDurabilityFactsV1 {}
+
+/// Closed fresh-durability entry for an unavailable owning source.
+///
+/// Compatibility facts and an otherwise valid grant cannot substitute for
+/// authenticated publication provenance. This initial boundary exposes no
+/// production readiness or successful authorization.
+pub fn verify_fresh_grant_durability_v1(
+    _token: &str,
+    _now: i64,
+    _trust: &FreshDurabilityTrustContext,
+    _current: &FreshDurabilityCurrentAuthorityV1,
+) -> Result<VerifiedFreshDurabilityFactsV1, Fnd04ConsumerError> {
+    Err(Fnd04ConsumerError::FreshSecurityEvidenceStale)
 }
