@@ -133,7 +133,8 @@ impl LiveSource {
             "candidate_generation":8,"candidate_transport":seed.transport,"candidate_deadline":seed.now+115,
             "runtime_channel":13,"predecessor_session":10,"predecessor_generation":7,"lease_character":11,"lease_generation":9,"scope_generation":10,
             "epoch":3,"grace_deadline":seed.now+120,"proof_nonce":0x55,"fast_proof":null,
-            "next_command":3,"pending_terminal":false,"last_sequence":41,"domain_revision":4,
+            "next_command":3,"pending_terminal":false,"pending_present":true,"pending_id":1,
+            "last_sequence":41,"domain_revision":4,"domain_present":true,"domain_id":1,
         });
         let second = json!({
             "protocol_major":1,"transport_profile":1,"rules":"rules:1","content":"content:2","map":"map:3","world_policy":"world:4",
@@ -224,19 +225,27 @@ impl LiveSource {
         };
         let fnd02 = checked(Fnd02ReconciliationFenceV1::new(
             checked(CommandId::new(self.number("next_command")?))?,
-            vec![PendingCommandReconciliationV1::new(
-                checked(CommandId::new(1))?,
-                if self.flag("pending_terminal")? {
-                    PendingCommandDispositionV1::TerminalOutcomeRetained
-                } else {
-                    PendingCommandDispositionV1::PendingOriginal
-                },
-            )],
+            if self.flag("pending_present")? {
+                vec![PendingCommandReconciliationV1::new(
+                    checked(CommandId::new(self.number("pending_id")?))?,
+                    if self.flag("pending_terminal")? {
+                        PendingCommandDispositionV1::TerminalOutcomeRetained
+                    } else {
+                        PendingCommandDispositionV1::PendingOriginal
+                    },
+                )]
+            } else {
+                vec![]
+            },
             self.number("last_sequence")?,
-            vec![checked(StateDomainRevisionV1::new(
-                1,
-                self.number("domain_revision")?,
-            ))?],
+            if self.flag("domain_present")? {
+                vec![checked(StateDomainRevisionV1::new(
+                    self.number("domain_id")?.try_into()?,
+                    self.number("domain_revision")?,
+                ))?]
+            } else {
+                vec![]
+            },
         ))?;
         let compatibility = checked(ReconnectCompatibilityEvidenceV1::new(
             self.number("protocol_major")?.try_into()?,
@@ -401,6 +410,10 @@ invariants! {
     RecoveryProof => ("proof_nonce",IdentityBinding,false,[Different]),
     ProofKind => ("fast_proof",IdentityBinding,false,[Present]),
     NextCommand => ("next_command",IdentityBinding,false,[Newer]),
+    PendingMembership => ("pending_present",IdentityBinding,false,[Missing]),
+    PendingIdentifier => ("pending_id",IdentityBinding,false,[Different]),
+    DomainMembership => ("domain_present",IdentityBinding,false,[Missing]),
+    DomainIdentifier => ("domain_id",IdentityBinding,false,[Different]),
     PendingCommand => ("pending_terminal",IdentityBinding,false,[Different]),
     ServerSequence => ("last_sequence",IdentityBinding,false,[Older,Newer]),
     DomainRevision => ("domain_revision",IdentityBinding,false,[Older,Newer]),
