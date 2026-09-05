@@ -144,6 +144,14 @@ jobs:
                   print(f'- {error}', file=sys.stderr)
               raise SystemExit(1)
 
+          records = [
+              {key: item[key] for key in ('filename', 'status', 'previous_filename') if key in item}
+              for item in batch
+          ] if complete else []
+          serialized = json.dumps(records, separators=(',', ':'))
+          if len(serialized.encode('utf-8')) > 32768:
+              complete = False
+              serialized = '[]'
           print(f'Validated PR #{number_text} exact head {head_sha} against base {base_sha}.')
           print(f'Changed files: {changed_files}; complete immutable enumeration: {complete}')
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
@@ -151,7 +159,7 @@ jobs:
               output.write(f'target_sha={head_sha}\n')
               output.write(f'base_sha={base_sha}\n')
               output.write(f'file_count={changed_files}\n')
-              output.write(f'file_records={json.dumps(batch if complete else [], separators=(",", ":"))}\n')
+              output.write(f'file_records={serialized}\n')
               output.write(f"complete={'true' if complete else 'false'}\n")
           PY
 
