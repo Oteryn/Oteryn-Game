@@ -117,8 +117,8 @@ def test_both_classifiers_bind_aba_to_immutable_diff() -> None:
     failures = []
     for scope in (True, False):
         failure, output = run_classifier(mutable, immutable_files=immutable, scope=scope)
-        expected = "rust=true\n" if scope else "removed=true\n"
-        if failure is not None or not output.endswith(expected):
+        expected_ok = json.loads(dict(line.split("=", 1) for line in output.splitlines()).get("file_records", "[]")) == immutable if scope else output == "removed=true\n"
+        if failure is not None or not expected_ok:
             failures.append((scope, failure, output))
     assert not failures, f"A-to-B-to-A substituted mutable diff at authority boundary: {failures}"
 
@@ -129,16 +129,16 @@ def test_both_classifiers_reject_comparison_truncation() -> None:
         failure, output = run_classifier(files[:300], scope=scope)
         assert failure is None and output, (scope, failure, output)
         failure, output = run_classifier(files, immutable_files=files[:300], scope=scope)
-        assert failure is not None and not output, "over-cap diff must fail closed"
+        assert (failure is None and output.endswith("complete=false\n")) if scope else (failure is not None and not output), "over-cap diff must select full or reject qualification"
         failure, output = run_classifier(files[:2], immutable_files=files[:1], scope=scope)
-        assert failure is not None and not output, "incomplete immutable diff must fail closed"
+        assert (failure is None and output.endswith("complete=false\n")) if scope else (failure is not None and not output), "incomplete diff must select full or reject qualification"
 
 
 def test_scope_rejects_identity_races() -> None:
     # A Rust event head can otherwise consume a replacement docs-only listing of the same size.
     files = [{"filename": f"docs/file-{index}.md"} for index in range(101)]
     failure, output = run_classifier(files, scope=True)
-    assert failure is None and output.endswith("rust=false\n"), (failure, output)
+    assert failure is None and output.endswith("complete=true\n"), (failure, output)
     mutations = {
         "closed": lambda pull: pull.update(state="closed"),
         "head": lambda pull: pull["head"].update(sha="c" * 40),
@@ -163,8 +163,21 @@ def test_scope_preserves_stable_classification() -> None:
         ([{"filename": "docs/old.md", "previous_filename": "crates/old.rs"}], True),
     ):
         failure, output = run_classifier(files, scope=True)
-        expected = f"pr_number=287\ntarget_sha={'a' * 40}\nbase_sha={'b' * 40}\nrust={str(rust).lower()}\n"
+        expected = f"pr_number=287\ntarget_sha={'a' * 40}\nbase_sha={'b' * 40}\nfile_count={len(files)}\nfile_records={json.dumps(files, separators=(',', ':'))}\ncomplete=true\n"
         assert failure is None and output == expected, (failure, output)
+
+
+def test_scope_bounds_environment_transport() -> None:
+    files = [{"filename": "apps/game-server/src/lib.rs", "status": "modified", "patch": "x" * 140000}]
+    failure, output = run_classifier(files, scope=True)
+    fields = dict(line.split("=", 1) for line in output.splitlines())
+    assert failure is None and fields["complete"] == "true"
+    assert json.loads(fields["file_records"]) == [{"filename": files[0]["filename"], "status": "modified"}], "scope must transport classification fields only"
+    # Even projected paths must not exceed an environment-variable launch limit.
+    files = [{"filename": f"docs/{i}/" + "x" * 200 + ".md", "status": "modified"} for i in range(300)]
+    failure, output = run_classifier(files, scope=True)
+    fields = dict(line.split("=", 1) for line in output.splitlines())
+    assert failure is None and fields["complete"] == "false" and fields["file_records"] == "[]", "oversize scope must select FULL before process launch"
 
 
 def test_classifier_rejects_identity_races() -> None:
@@ -242,8 +255,9 @@ def test_evidence_job_failure_cannot_be_tolerated() -> None:
 def test_postgres_early_exit_cannot_preserve_contract_strings() -> None:
     baseline = MERGE_GATE.read_text(encoding="utf-8")
     marker = "          set -euo pipefail\n"
-    assert baseline.count(marker) == 1
-    mutated = baseline.replace(marker, marker + "          exit 0\n", 1)
+    linux = load_validator().job_block(baseline, "rust_linux")
+    assert linux is not None and linux.count(marker) == 1
+    mutated = baseline.replace(linux, linux.replace(marker, marker + "          exit 0\n", 1), 1)
     errors = validate_mutated_gate(mutated)
     assert errors, "validator accepted early exit before PG evidence with contract strings intact"
 
@@ -258,6 +272,7 @@ def main() -> int:
         test_evidence_step_condition_family,
         test_scope_rejects_identity_races,
         test_scope_preserves_stable_classification,
+        test_scope_bounds_environment_transport,
         test_both_classifiers_bind_aba_to_immutable_diff,
         test_both_classifiers_reject_comparison_truncation,
         test_evidence_job_failure_cannot_be_tolerated,
@@ -267,6 +282,11 @@ def main() -> int:
         test()
         print(f"PASS {test.__name__}")
     spec = importlib.util.spec_from_file_location("queue_regressions", Path(__file__).with_name("test_validate_merge_group_pg_sim.py"))
+    assert spec is not None and spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    assert module.main() == 0
+    spec = importlib.util.spec_from_file_location("risk_regressions", Path(__file__).with_name("test_classify_pr_test_lanes.py"))
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

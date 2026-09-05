@@ -20,16 +20,6 @@ on:
       - '.gitattributes'
       - '.github/workflows/rust.yml'
       - '.github/workflows/merge-gate.yml'
-  pull_request:
-    branches:
-      - main
-    paths:
-      - Cargo.toml
-      - Cargo.lock
-      - '.gitattributes'
-      - 'apps/game-server/**'
-      - 'crates/simulation-determinism/**'
-      - '.github/workflows/rust.yml'
   workflow_dispatch:
 
 permissions:

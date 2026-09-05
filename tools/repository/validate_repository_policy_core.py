@@ -40,11 +40,12 @@ EXPECTED_MERGE_GATE_TRIGGER_BLOCK = """on:
       - edited
 """
 EXPECTED_MERGE_GATE_SCOPE_JOB_SHA256 = (
-    "fa5af1dcc17d7dfe443200e6ed731f45cde56d065fe5f808a295267586c3bc1d"
+    "e07bc086f0000756e46be7cd2259e47c222a4aae7b64f1af9eabf4bd1329e0cd"
 )
 EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
-    "c10c941048014cfc8712b0d02eee438a3dabaf6578c212e4c861d36a02d4f11a"
+    "bed1966b918ef7548bcaa0ac5b1a4563d4c7cc7464a34e35128fdaf72d8b5160"
 )
+EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "7f101b51bfeff7c63495f8d9662a9369a1abd597485d852a5b4964d1fad221c5"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "e3291fe8fca8fcf70166d5652b43d5a26fa0d762"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -352,6 +353,10 @@ def main() -> int:
                 "merge gate scope job must exactly match the canonical exact-head, "
                 "changed-path classification and output implementation"
             )
+        lanes_block = indented_yaml_mapping_block(text, "lanes", 2)
+        lanes_digest = hashlib.sha256(lanes_block.encode("utf-8")).hexdigest() if lanes_block else None
+        if lanes_digest != EXPECTED_MERGE_GATE_LANES_JOB_SHA256:
+            errors.append("merge gate risk lanes must exactly match trusted-base classification and fail-closed outputs")
         validate_block = indented_yaml_mapping_block(text, "validate", 2)
         validate_digest = hashlib.sha256(validate_block.encode("utf-8")).hexdigest() if validate_block else None
         if validate_digest != EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256:
@@ -375,11 +380,9 @@ def main() -> int:
         for required_fragment in (
             "pull request head moved after event head was resolved",
             "changed_files = pull.get('changed_files')",
-            "changed_files > 3000",
             "len(files) != changed_files",
             "previous_filename = item.get('previous_filename')",
-            "classification_paths.append(previous_filename)",
-            "prefixes = ('.cargo/', 'apps/', 'crates/', 'tests/', 'tools/', 'docs/migration/')",
+            "Merge gate / trusted-base risk lanes",
             "base-ref: ${{ needs.scope.outputs.base_sha }}",
             "head-ref: ${{ needs.scope.outputs.target_sha }}",
             "Merge gate / governance",

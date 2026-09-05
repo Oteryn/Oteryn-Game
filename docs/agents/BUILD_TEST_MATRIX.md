@@ -10,7 +10,7 @@ Canonical native E2E architecture: `docs/architecture/ADR-0007-native-end-to-end
 - Cheap focused checks run during implementation; heavy checks run at coherent package/final head.
 - Exact-head required checks cannot be replaced by historical or parent results.
 - `game-gate` is the stable protected-branch status; on pull requests it may succeed only when internal `Merge gate / validate` proves every applicable sub-gate.
-- Rust/workspace validation is path-proportional but cannot be bypassed by changing CI/workspace policy itself.
+- Rust/workspace validation is dependency-aware and conservative but cannot be bypassed by changing CI/workspace policy itself.
 - Environment startup alone is not successful E2E.
 - Hidden retry-until-green is forbidden; every physical attempt and cleanup outcome remains visible.
 - A headless system scenario does not prove native-client presentation, and an instrumented client does not prove the exact production binary.
@@ -21,13 +21,14 @@ Canonical native E2E architecture: `docs/architecture/ADR-0007-native-end-to-end
 
 Always-required sub-gates:
 
+- exact PR identity and protected-base risk classification;
 - PR metadata, agent-governance and repository-policy validation;
 - GitHub Dependency Review with `high` severity as the failure threshold;
 - CodeQL for repository Python and GitHub Actions code;
 - internal aggregate `Merge gate / validate`;
 - final stable status `game-gate`.
 
-When Rust/workspace-relevant paths change, the same merge gate additionally requires:
+For full-risk changes, the same merge gate additionally requires:
 
 - Rust policy/metadata validation;
 - exact-head Linux workspace build, strict Clippy, tests and synthetic harness;
@@ -42,11 +43,28 @@ The PostgreSQL test target is present on protected main after terminal-replaceme
 - when the exact PR removes or renames that target, fail the required Linux job;
 - when the target is not yet allocated on the candidate or its PR diff, record an explicit `NOT_APPLICABLE` result rather than claiming PostgreSQL E2E PASS.
 
-Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Both upstream scope and target classification enumerate the immutable comparison of exact base/head SHAs, retaining before/after PR identity checks. A transient A-to-B-to-A PR movement cannot substitute another revision's files. GitHub returns at most 300 files for a comparison: larger PRs, missing file arrays or a count mismatch fail closed, never omit evidence. Existing Rust path applicability is unchanged.
+Ordinary Rust-relevant candidates run the target automatically; deleting or renaming it cannot convert that evidence into a skip. Both upstream scope and target classification enumerate the immutable comparison of exact base/head SHAs, retaining before/after PR identity checks. A transient A-to-B-to-A PR movement cannot substitute another revision's files. GitHub returns at most 300 files for a comparison: larger PRs, missing file arrays or a count mismatch make scope explicitly incomplete and select FULL. The downstream PG target classifier still rejects an incomplete comparison, so uncertain target evidence cannot yield a green gate. PR identity movement remains a hard failure.
 
 The required governance job executes the focused PG/SIM regressions, including both real classifiers against controlled GitHub responses and job/step failure-tolerance/skip families. The complete Linux and Windows evidence jobs are pinned by SHA256 using the existing canonical-job validation pattern. Future intentional job changes must update their reviewed pins; preserving command strings while inserting an early successful exit cannot pass policy.
 
-The existing broad Rust/workspace classifier is deliberately retained for this safety stage. Risk-scoped lane omission and adjacent-workflow deduplication are separate work after canonical PR and Merge Queue PG/SIM coverage is proven.
+### Trusted-base risk lanes (#283)
+
+The lane job checks out and verifies the exact protected base, then runs its classifier and pinned Cargo1.94 metadata there. Candidate labels/body/code do not determine selection. Every local normal/dev/build/optional/target-specific dependency participates in reverse closure. The implementation PR runs FULL because its protected base lacks the classifier; candidate-classifier observation in Rust policy is diagnostic only and cannot alter lane selection.
+
+| Proven surface | Required Rust lanes |
+|---|---|
+| Neutral root/documentation Markdown | none; all always-required checks still run |
+| Server-only, including durability/migrations/reconnect | Linux workspace + real PG17.6 + strict Clippy, policy and supply chain |
+| Client, shared or simulation | full Linux/PG + Windows production/SIM + policy and supply chain |
+| Control plane, dependencies/build inputs, unknown/mixed/incomplete evidence | full set |
+
+Server-only Windows/SIM omission also requires the reviewed SHA256 snapshot of all non-server workspace package trees and root Cargo/toolchain/build inputs. Cargo alone does not model include macros, symlinks or runtime file reads. Current reviewed consumers do not read server inputs; any consumer-tree/dependency change disables the optimization until a reviewed classifier update adopts its new input contract. Symlinks/submodules select FULL. This deliberately conservative snapshot may reduce savings after unrelated consumer changes; it never silently assumes their new input dependencies are safe.
+
+Neutral Markdown is limited to README/CHANGELOG/CONTRIBUTING and docs Markdown, with AGENTS and migration exclusions. Rust omission also requires a separate reviewed snapshot including the server tree: a later server change may introduce a document input, so stale document-consumer assumptions select FULL. Other dedicated contract/architecture workflows remain unchanged. Mixed material surfaces select FULL; accompanying neutral task documentation does not invalidate an otherwise proven server change. Cross-surface renames select FULL.
+
+Missing classifier, malformed metadata or enumeration select explicit FULL outputs. The aggregate requires successful classification, strict boolean outputs and success for every selected predicate; missing/cancelled/failed/selected-skipped results fail closed. Scope, classifier job, aggregate and evidence-job execution are pinned and mutation-tested.
+
+After #285 protected-main integration proved canonical ownership, rust.yml loses only its redundant PR trigger. Existing main/manual triggers and full Merge Queue qualification remain intact. Actual hosted skip/run and runner/wall-time benchmark evidence belongs on Issue #283/PR #297; staged implementation integration alone does not complete benchmark acceptance.
 
 The protected `main` ruleset requires only the stable `game-gate` context. Individual sub-gates are intentionally composed behind it so applicable path-proportional jobs may be skipped without creating missing required-status deadlocks.
 
@@ -63,7 +81,7 @@ Issue #285 activates exactly the workflow blob preapproved by integrated #284. P
 | Agent governance/prompt/task docs | `python tools/agents/validate_governance.py` | `Merge gate / governance` → `Merge gate / validate` → `game-gate` |
 | Repository/GitHub policy | `python tools/repository/validate_repository_policy.py` | governance + dependency review + CodeQL + applicable Rust jobs → aggregate gate |
 | Architecture/contracts only | governance validator plus applicable link/JSON/schema checks | always-required merge-gate subchecks; runtime E2E may be `NOT_APPLICABLE` with reason |
-| Rust/workspace/client code | package-focused tests while editing | full Rust policy/Linux+allocated PostgreSQL/Windows+SIM/supply-chain merge-gate set |
+| Rust/workspace/client code | package-focused tests while editing | conservative trusted-base lanes above; selected predicates must all succeed |
 | GitHub workflow affecting Rust validation | repository-policy validation plus workflow review | full Rust merge-gate set because merge-gate/rust workflow paths are Rust-validation-sensitive |
 
 ## Current Rust workspace commands
