@@ -20,6 +20,7 @@ server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 server_seam_state: WAITING_ARCHITECTURE
 architecture_escalation_issue: 313
+nonblocking_governance_reconciliation_issue: 316
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
 updated_at: 2026-09-05
@@ -100,6 +101,8 @@ A repository search may still find historical, template, draft, Dependabot or se
 
 The current #162 critical path has no such Server Seam return: #247 is explicitly `WAITING_ARCHITECTURE`, and the downstream Client/QA/Movement/Combat chain remains dependency-blocked by that fact.
 
+Issue #316 separately records a non-blocking shared-programme provenance defect discovered during this coordinator readback. Current `OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md` still carries an unqualified historical `PR #314` release predicate from the retired `blakinio/Oteryn-v2` repository. Fresh external-history readback proves that `blakinio/Oteryn-v2#314` lawfully merged the DAG as `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`; current `Oteryn/Oteryn-Game#314` is unrelated. Nearest `docs/agents/AGENTS.md` explicitly makes active task/live PR state authoritative over stale shared indexes, so #316 does not block this checkpoint or #313. It must be reconciled before a future allocation treats the DAG header itself as release proof.
+
 ## Architecture and source of truth
 
 Governing order:
@@ -129,6 +132,7 @@ Relevant protected authority:
 - [x] Server Seam received a lawful merged exact allocation and its worker checkpoint is preserved.
 - [x] Material fresh-admission persistence/authority gap was escalated as #313 instead of being guessed through.
 - [x] Server Seam task/Issue/parent control-plane state was reconciled through PR #314 and protected-main readback.
+- [x] Ambiguous historical executor-DAG PR-number provenance was isolated as non-blocking governance Issue #316 rather than silently reinterpreted.
 - [ ] #313 architecture decision is reviewed, qualified and integrated to protected `main`.
 - [ ] Any architecture-required Foundation/Durability prerequisite is freshly allocated, implemented, qualified, merged and read back.
 - [ ] Server Seam is completed, independently reviewed, exact-head qualified and merged through protected controls.
@@ -148,13 +152,13 @@ The coordinator may create bounded allocations and integrate qualified worker re
 
 This reconciliation removes obsolete active-state claims from the coordinator packet. It does not reopen or reinterpret completed Wave A work, does not ratify historical invalid Durability branches, and does not modify any worker branch or runtime path.
 
-The current material finding is #313 only. The Server Seam partial checkpoint is preserved as evidence, not as a merge candidate. No other lane is promoted merely to occupy concurrency capacity.
+The current critical-path material finding is #313 only. Issue #316 is independent low-risk governance provenance cleanup and grants no write authority by itself. The Server Seam partial checkpoint is preserved as evidence, not as a merge candidate. No other lane is promoted merely to occupy concurrency capacity.
 
 ## Validation
 
 ### Focused
 
-- validation target: coordinator task/control-plane consistency against protected `main`, Issues #162/#165/#166/#174/#247/#250/#313, merged allocation #294 and protected correction #314
+- validation target: coordinator task/control-plane consistency against protected `main`, Issues #162/#165/#166/#174/#247/#250/#313/#316, merged allocation #294 and protected correction #314
 - result: live GitHub readback performed before mutation
 
 ### Component/integration
@@ -169,20 +173,20 @@ The current material finding is #313 only. The Server Seam partial checkpoint is
 
 ### Exact-head CI
 
-- exact head: pending this coordinator-only PR
+- exact head: recorded in PR/CI evidence rather than self-referential task content
 - required result: repository PR governance/checks green, then normal protected Merge Queue qualification and `game-gate`
 
 ## Self-review
 
-- exact head: pending this coordinator-only PR
+- exact head: recorded in immutable PR evidence after the final material content change
 - method: whole-diff review against the single owned coordinator packet path
-- required findings disposition: zero authority expansion, zero worker lease mutation, zero architecture decision, zero runtime/Cargo/schema/workflow mutation
+- verdict: `PASS` at content freeze; zero authority expansion, zero worker lease mutation, zero architecture decision, zero runtime/Cargo/schema/workflow mutation
 
 ## Independent review
 
-- required: according to current repository review policy for the exact docs/governance candidate
-- exact head: pending
-- verdict: pending
+- required: `NO` for this low-risk coordinator metadata/docs reconciliation under current protected root `AGENTS.md` AI review policy
+- reason: no runtime/protocol/persistence/value/production semantics, no safety reduction, no authority expansion and no gate weakening; external AI review is explicitly unnecessary for trivial docs/metadata
+- enforcement remains: exact-head repository checks, `game-gate`, protection and Merge Queue
 
 ## PR and closeout
 
@@ -193,7 +197,7 @@ The current material finding is #313 only. The Server Seam partial checkpoint is
 ## Context checkpoint
 
 ```yaml
-last_progress: Server Seam architecture hold is durably recorded on protected main by PR #314; Work coordinator packet is being reconciled from obsolete Durability-recovery state to the current #313-gated critical path
+last_progress: Server Seam architecture hold is durably recorded on protected main by PR #314; Work coordinator packet is reconciled to the current #313-gated critical path and non-blocking DAG provenance defect is tracked as #316
 status: COORDINATING
 programme_state: WAITING_ARCHITECTURE
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
@@ -204,6 +208,7 @@ server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 server_seam_pr: null
 server_seam_state: WAITING_ARCHITECTURE
 architecture_escalation_issue: 313
+nonblocking_governance_reconciliation_issue: 316
 owner_action_required: null
 blocker: architecture_issue_313_durable_fresh_admission_initial_GameSession_boundary
 next_action: Oteryn: sol supervising architect resolves Issue #313 and returns a reviewed and qualified architecture decision integrated to protected main
