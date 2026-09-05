@@ -59,8 +59,8 @@ affected_paths:
   implementation_surfaces: see_section_10
 implementation_owner: >-
   fresh coordinator allocations: Foundation semantic child first, then Durability
-  persistence child; existing Server Seam worker remains paused until both are
-  protected-main integrated and Work explicitly resumes it
+  persistence child, then a producer/composition integration child; existing Server
+  Seam worker remains paused until all three are protected-main integrated and Work explicitly resumes it
 resource_values_changed: false
 stable_ids_changed: false
 protocol_changed: false
@@ -107,7 +107,7 @@ Use one **Foundation-owned versioned fresh-admission authorization plus asynchro
 verified fresh credential + independently current game facts
         |
         v
-Foundation final revalidation
+Foundation final revalidation against published current authority guards
         |
         +-- build immutable FreshAdmissionCommitAuthorizationV1
         +-- candidate GameSessionId (not canonical until durable commit)
@@ -119,6 +119,9 @@ bounded persistence submission -> YIELD FND-03 writer
         v
 Durability PostgreSQL transaction
         |
+        +-- lock independently-current authority guards; reject stale expected fences
+        +-- establish AccountPresence / CharacterLease atomically
+        +-- reserve transport ref in the shared fresh/reconnect uniqueness set
         +-- classify replay key
         +-- enforce account/character single-winner constraints
         +-- create current ACTIVE GameSession generation 1
@@ -152,6 +155,7 @@ The absence of a fresh PREPARE row does not permit waiting on the database in th
 - AccountPresence, CharacterLease and RuntimeScope authority interpretation;
 - the candidate `GameSessionId` issuance rule;
 - construction of `FreshAdmissionCommitAuthorizationV1` only after complete final revalidation;
+- authenticated publication of game-current guard state and commit-before-publish activation of relevant authority changes under Section 6.1;
 - interpreting a durable completion as a new FND-03 normalized input;
 - independently-current post-commit adoption of the current durable session/controller projection.
 
@@ -207,6 +211,12 @@ final FND-04A evidence fences
   world_policy_revision
   offer_revision
   credential expiration / accepted final authorization deadline
+
+expected current guard bindings
+  exact typed guard keys + expected accepted publication revisions
+  authenticated source authority / purpose / scope and source revision
+  expected current lease generation + proposed acquired generation
+  // expected values only; never substitutes for transactionally current guard reads
 ```
 
 The authorization deadline is derived only from already accepted FND-04A time/freshness semantics. This decision introduces **no new numeric freshness value**. If trusted current time or the accepted deadline cannot be proved at the durable commit boundary, commit fails closed.
@@ -242,14 +252,43 @@ The first canonical fresh-admission durable linearization point is **one Postgre
 
 For a new replay key, the transaction must atomically:
 
-1. prove the authorization is structurally/version valid and still inside its accepted time/fence envelope;
-2. prove no conflicting receipt already consumed the replay key;
-3. enforce one compatible nonterminal current session for the AccountId and CharacterId;
-4. insert the immutable fresh-admission receipt;
-5. create the current `GameSession` authority row as `ACTIVE`, connection generation `1`, exact CharacterLease/scope generations and exact `AuthenticatedTransportRefV1`;
-6. commit all effects together.
+1. prove structural/version validity and lock independently-current authority guard rows under Section 6.1; compare every expected binding against those rows, preserving AccountId -> CharacterId classification before world eligibility;
+2. prove the accepted source-time/deadline envelope using trusted database time after all potentially blocking lock acquisition; missing, stale, revoked, contradictory or superseded authority rejects before candidate mutation;
+3. prove no conflicting receipt already consumed the replay key and enforce account-global/character nonterminal exclusion;
+4. atomically establish the AccountPresence claim and acquire/advance the CharacterLease under their current guard CAS, retaining the exact candidate session binding; an authorization is not a pre-acquired lease;
+5. reserve the exact transport reference in the global fresh/reconnect uniqueness set under Section 9.6, insert the immutable receipt and create the current `GameSession` as `ACTIVE`, generation `1`, with the acquired CharacterLease, current scope generation and exact transport ref;
+6. commit all effects together while holding the authority guards; a rollback leaves no candidate claim, lease, reservation, receipt or session effect.
 
 No success is returned before the transaction commits.
+
+### 6.1 Current authority publication and atomic guard protocol
+
+The immutable authorization is an **expected binding**, never current authority by itself. The selected physical serialization point is PostgreSQL: typed current guard rows, published by the owning Foundation authority and locked in the same transaction as fresh-admission effects. This is a durable projection/enforcement of Game authority, not a second credential verifier, independent world owner, or a new Platform authority.
+
+The guard domains are bounded, typed, and independently versioned; no generic nullable evidence bag or composite replacement for the signed revisions is permitted:
+
+| Guard key | Owning source and guarded state |
+|---|---|
+| AccountId + fixed security scope | Authenticated Platform-security observation accepted by `Fnd04EvidenceAuthority`; source revision/decision/provenance, minimum generation/state; Game AccountPresence claim names its current CharacterId/session or absence |
+| CharacterId | Current Game account ownership, world/lifecycle eligibility, CharacterLease current generation and holder; transfer/handoff/terminal supersession |
+| RuntimeScopeRefV1 | Current externally granted FND-03 owner/generation and target lifecycle/readiness; independent route/runtime and protocol/transport/rules/content/map/world-policy/offer bindings |
+| Fixed verifier trust scope + key/profile identity | Authenticated signing-key/profile trust/revocation observation accepted by `Fnd04EvidenceAuthority`, source revision/decision/provenance and validity |
+
+Foundation introduces typed `AdmissionAuthorityPublicationV1` and `AdmissionAuthorityPublicationReceiptV1` families alongside the fresh semantic port. Only the owning authority adapter can construct a publication after independently authenticating/resolving its source; token claims, a caller-filled `FreshCurrentEvidence`, old fresh receipts and the admission authorization cannot seed current guard truth. A RuntimeScope publication cannot self-grant ownership from NodeId or a locally incremented generation.
+
+Each publication binds its fixed domain/key, authenticated source authority/purpose/scope, source observation provenance and comparable source revision/decision identity, expected preceding accepted guard revision, and new typed state. PostgreSQL performs compare-and-set under the same guard locks used by fresh COMMIT. Lower source/publication revisions and same-revision different decisions reject; exact replay is idempotent and cannot refresh source time. Initial publication requires independent authoritative bootstrap evidence and single-winner insert; absence is not permission to infer a state from the admission candidate. Conflicting initialization rejects. Tombstones/denials and monotonic high-water marks survive restart and are not deleted to permit reinitialization.
+
+For Game-owned eligibility/lease/runtime changes, publication COMMIT is the admission-relevant activation boundary: the owner submits asynchronously and yields, then may expose the new authoritative result/readiness only after receiving/reconciling the publication receipt. All producers that transfer ownership/world, replace a runtime, change admission-relevant revisions or acquire/release/fence a lease/presence must use this protocol. They must never change current authoritative state first and asynchronously mirror the change later. Multi-domain changes update all affected guards atomically. Other domain payload preparation may precede activation without becoming current authority.
+
+For Platform-security/trust, this protocol governs Game's durable acceptance of an authenticated source observation, not the time of a remote Platform action. FND-04A's existing bounded source-age semantics remain unchanged. A newer accepted deny/revision cannot be hidden by a still-unexpired older authorization. Pending source acceptance is not represented as already accepted; an unavailable or uncertain source makes fresh authorization unavailable, and old persisted provenance is never re-aged on restart.
+
+Fresh COMMIT obtains all relevant guard locks in one canonical domain/key order, with exclusive locks for mutable account/character claims and locks conflicting with publisher updates for runtime/trust guards. It then compares the authorization's expected fences with the current rows, checks each independently signed revision and current source-time validity, and performs the Section 6 effects. Publisher CAS and COMMIT therefore have one order: a publisher that commits first invalidates stale admission before nonce consumption; an admission that commits first was current at its boundary, and later replacement follows normal fencing/lifecycle rules. No database/network operation holds the FND-03 logical writer.
+
+A provider cannot claim this contract by doing an unlocked second read immediately before INSERT, reconstructing matching guards from the request, or updating a cache after mutation. Database isolation/locks must preserve the comparison through the transaction's irreversible decision; any wait or retry that invalidates the time proof requires revalidation, and no success is reported if commit-time validity cannot be proved. Implementations must explicitly qualify expiry during lock wait/commit, not merely sample time before beginning SQL work.
+
+All account/character claim lifecycle operations, including the existing reconnect adapter when it changes a guarded holder/generation or performs terminal replacement, must preserve the same locking/CAS discipline. This adds serialization to the physical adapter without changing accepted reconnect V1/V2 decisions. A guard is not an independent current-session row; its holder must reference the canonical session, and fresh acquisition/release and canonical session changes are atomic.
+
+Startup/admission readiness requires a registered owning publisher and restored non-rollback current guards for every required domain. Missing producer binding, absent or uncertain current state, unsupported source bootstrap, or an authority mutation path that bypasses publication keeps fresh admission unavailable. The architecture does not assert that those production sources already exist: Child C must supply and verify their Game-side bindings before Server Seam release. Unsupported future transfers/revisions remain fail-closed until their owning producer integrates this same protocol.
 
 ### Same-key retry
 
@@ -338,9 +377,23 @@ No zero, dummy or fabricated reconnect/control-loss value is permitted for a fre
 
 The current schema already enforces one nonterminal session per CharacterId. `0002` must also enforce the accepted FND-04A account-global playable exclusion with a database-visible single-winner uniqueness rule for nonterminal AccountId state. Migration fails closed if existing data violates the invariant; it does not silently pick a winner.
 
-### 9.4 Existing reconnect compatibility
+### 9.4 Current authority guards
+
+Forward `0002` adds typed guard storage for Section 6.1 and the required source/publication high-water marks, CAS versions, claim holder references and integrity constraints. Foundation owns meaning and authenticated publication; Durability only enforces typed comparisons and transactional effects. Existing session/lease state must be reconciled from authoritative owning sources, never invented from an old session row or a fresh grant. Migration does not bootstrap source truth; until independently authorized bootstrap/readback succeeds, affected admission remains closed.
+
+Guard claim holders refer to the existing canonical current-session row. Their acquisition/advance/release must be in the same transaction as corresponding canonical session effects; no independently writable parallel session/presence owner is introduced.
+
+### 9.5 Existing reconnect compatibility
 
 All existing reconnect rows and V1/V2 durable reconciliation semantics remain valid after migration. Every reconnect read/write path affected by nullable initial-origin continuity fields must be updated so it never interprets absence as zero/default history and requires real continuity before entering reconnectable semantics.
+
+### 9.6 One transport-reference uniqueness namespace
+
+The existing `game_durability_transport_ref_reservations` primary key remains the one global non-reuse set for `AuthenticatedTransportRefV1`. Forward `0002` adds a closed reservation-owner discriminator and a typed fresh replay-key binding, while allowing `reconnect_attempt_ref` to be absent only for a fresh owner. CHECK constraints require exactly one truthful owner: fresh replay key or existing reconnect attempt binding, always with its exact GameSessionId. Existing rows retain their reconnect owner/binding; no dummy reconnect attempt is created.
+
+Fresh COMMIT atomically reserves its reference with receipt/session creation. Reconnect PREPARE continues reserving in the same table and must reject a reference already owned by any other fresh/reconnect binding. An exact committed retry may reuse only its original reservation. No pruning or terminal transition releases a reference for another physical transport. A precommit collision returns a typed conflict without consuming the grant; Foundation may generate a new candidate only after proving the earlier transaction did not commit. Ambiguous outcomes reconcile the original candidate first.
+
+Qualification must include fresh/fresh, fresh/reconnect and reconnect/fresh collisions, plus same-binding replay and migration/reload of pre-existing reconnect reservations.
 
 ## 10. Exact implementation ownership and sequencing
 
@@ -354,6 +407,7 @@ Exact allowed surfaces:
 
 ```text
 apps/game-server/src/foundation/fresh_admission_durability.rs        # new
+apps/game-server/src/foundation/admission_authority_publication.rs  # new
 apps/game-server/src/foundation/admission.rs
 apps/game-server/src/foundation/admission_facade.rs
 apps/game-server/src/foundation/fnd04_verifier.rs
@@ -364,6 +418,7 @@ apps/game-server/src/foundation/fresh_admission_durability_tests.rs  # new, if s
 Responsibilities:
 
 - define the V1 authorization/result/reconciliation semantic types and split-phase state machine;
+- define typed owning-source publication/CAS/bootstrap ports, producer capabilities and normalized publication completion; prevent grant/receipt-derived current guard construction;
 - expose durability-ready verified fresh evidence without weakening verifier classification;
 - preserve synchronous compatibility as non-production;
 - no SQLx, schema, migration, Cargo, listener or reconnect redesign.
@@ -378,6 +433,7 @@ Exact allowed surfaces:
 
 ```text
 apps/game-server/src/durability/fresh_admission.rs                   # new
+apps/game-server/src/durability/admission_authority_guards.rs        # new
 apps/game-server/src/durability/admission_journal.rs
 apps/game-server/src/durability/db.rs
 apps/game-server/src/durability/mod.rs
@@ -389,16 +445,39 @@ apps/game-server/tests/support/postgres.rs
 
 Responsibilities:
 
-- implement asynchronous COMMIT/reconcile semantics;
+- implement asynchronous COMMIT/reconcile semantics and publication guard CAS with one atomic presence/lease/session boundary;
+- preserve source high-water marks and global fresh/reconnect transport reservations, including reconnect/session mutations that touch the guarded claims;
 - apply only the forward schema change in Section 9;
 - preserve reconnect V1/V2 semantics;
 - real PostgreSQL qualification for fresh admission, replay, concurrency, restart and existing reconnect compatibility.
 
 No Cargo/lockfile dependency is expected: current Durability already has the SQLx stack. If live implementation evidence proves a Cargo or other path is genuinely necessary, Work must stop and explicitly amend the allocation rather than letting the child seize it.
 
-### Child C — existing Server Seam resume
+### Child C — owning producer and composition integration
 
-There is no architecture-authorized Server Seam mutation until A and B are merged/read back. Work then re-reads protected main, active leases and the preserved `agent/otv2-gameplay-server-seam-01` branch. Only Work may decide whether the existing allocation can be lawfully resumed/reconciled or needs a fresh narrow amendment.
+Starts only from protected main containing A and B. Serialized owner: Foundation integration, with a coordinator-granted shared composition lease. Exact surfaces:
+
+```text
+apps/game-server/src/admission_authority.rs                         # new
+apps/game-server/src/lib.rs                                        # serialized composition export only
+apps/game-server/src/foundation/admission_authority_publication.rs
+apps/game-server/src/foundation/fnd04_verifier.rs
+apps/game-server/src/foundation/admission_facade.rs
+apps/game-server/tests/admission_authority_postgres.rs              # new
+apps/game-server/tests/support/postgres.rs
+```
+
+The composition module binds the authenticated `Fnd04EvidenceAuthority` security/trust providers and owning Game character/presence/lease/runtime/revision providers to B's publication adapter. It exposes the bounded registration/readiness and publication-completion interface that the Server Seam can consume; it does not open a listener or authorize deployment.
+
+Mandatory delivery: an executable producer inventory mapping every Section 6.1 guard domain to its registered source, initialization, updates, denial/fencing, restart and public mutation entry points. Production constructors must require these owning source capabilities; an arbitrary fixture, caller-created fact struct or receipt cannot satisfy registration. Tests exercise the actual registered adapter and SQL path with independently controlled source mutations. A fixture proves only that test source's behavior; it does not establish production source availability.
+
+C must prove commit-before-publish ordering, source anti-rollback, atomic multi-domain publication, stale publisher CAS rejection and admission races against each producer. The synchronous evidence lookup used during verification may read an already-published validated projection, but cannot block on SQLx or treat an unacknowledged publication as current. The coordinator must record any genuinely unavailable owning source as a precise implementation prerequisite and keep readiness closed; no production provider or source connectivity is claimed by this architecture artifact. Integration of A+B alone is insufficient.
+
+These are prospective paths, not a lease. Any concrete existing mutation caller outside the enumerated surfaces requires a fresh exact coordinator allocation before editing; its bypass must be closed before C can qualify. Adding a new Game product authority or external-repository protocol is outside this decision.
+
+### Child D — existing Server Seam resume
+
+There is no architecture-authorized Server Seam mutation until A, B and C are merged/read back and C's registered owning-source readiness is proven. Work then re-reads protected main, active leases and the preserved `agent/otv2-gameplay-server-seam-01` branch. Only Work may decide whether the existing allocation can be lawfully resumed/reconciled or needs a fresh narrow amendment.
 
 The preserved Server Seam worker does not receive Foundation-admission or Durability migration paths from this decision.
 
@@ -450,7 +529,11 @@ Each applicable negative case changes exactly one authority invariant while keep
 - candidate GameSessionId or transport-ref collision;
 - response lost after DB commit;
 - process restart before completion delivery;
-- runtime ownership replacement while DB commit is in flight;
+- runtime ownership replacement while DB commit is in flight, in both publisher-before-admission and admission-before-publisher order;
+- character-world transfer, lease/presence replacement, independent revision change or accepted security/trust deny between authorization and durable COMMIT;
+- absent guard/source, forged bootstrap, stale publisher CAS, equal-revision contradiction and restart high-water-mark rollback;
+- expiry while waiting for a guard lock or final transaction completion;
+- every cross-origin fresh/reconnect transport reservation collision;
 - replay after session became reconnectable or terminal;
 - PostgreSQL reload/reconnect and migration compatibility paths.
 
@@ -479,7 +562,9 @@ Real isolated PostgreSQL evidence must include:
 - fresh row contains no fabricated control-loss/predecessor history;
 - real control loss populates required continuity before reconnect semantics consume it;
 - reconnect V1/V2 regression suite remains green across migration `0002`;
-- stale deadline/fence fails closed;
+- stale deadline/fence fails closed before nonce, presence, lease, receipt or session mutation, including source publication committed after authorization but before admission;
+- atomic guard bootstrap/publication, publisher-before-admission and admission-before-publisher races, lease/presence acquisition and global transport reservation collisions;
+- expiry during SQL lock waits/commit is explicitly qualified;
 - restart/reload reconstructs exact receipt + current session snapshot;
 - runtime credentials still cannot perform migration DDL;
 - migration fresh/ahead/behind/checksum/locking rules remain intact.
@@ -505,7 +590,7 @@ High-risk exact-head independent review is mandatory before integration. Reposit
 
 ### Primary failure risk
 
-The highest-risk mistake is treating the immutable fresh receipt or stored final authorization as current authority during completion/restart. The implementation must therefore test independently-current post-commit adoption as a first-class boundary, not only idempotent database writes.
+The highest-risk mistake is treating immutable authorization/receipt as current authority at durable COMMIT or completion/restart. Section 6.1 therefore requires independently published current guards and serialization with all authority-changing producers before any nonce/session effect. The implementation must therefore test independently-current post-commit adoption as a first-class boundary, not only idempotent database writes.
 
 ## 14. Explicit non-decisions
 
@@ -514,7 +599,7 @@ This decision does not select:
 - production DB host/topology/credentials;
 - receipt pruning horizon;
 - deployment or listener configuration;
-- AccountPresence implementation outside the durable single-winner constraint required here;
+- AccountPresence product policy outside the atomic guarded claim/exclusion required here;
 - gameplay command/state/event IDs;
 - character transfer/takeover product policy;
 - new reconnect grace/protection/resource numbers;
@@ -533,4 +618,4 @@ SERVER_SEAM_WORKER = PRESERVE 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 IMPLEMENTATION_AUTHORITY = NONE
 ```
 
-After lawful protected-main integration, Work should mark the architecture decision accepted, close/reconcile #313 as appropriate, allocate Child A then Child B, and only after their protected-main integration re-evaluate the preserved Server Seam.
+After lawful protected-main integration, Work should mark the architecture decision accepted, close/reconcile #313 as appropriate, allocate Child A, then Child B, then Child C, and only after their protected-main integration and producer-readiness proof re-evaluate the preserved Server Seam.

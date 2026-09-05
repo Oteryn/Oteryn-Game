@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: Oteryn: sol supervising architect
 created_at: 2026-09-05T19:30:00+02:00
-updated_at: 2026-09-05T19:44:00+02:00
+updated_at: 2026-09-05
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -31,6 +31,7 @@ depends_on:
 blocks:
   - Foundation fresh-admission durability implementation allocation
   - Durability fresh-admission/session adapter allocation
+  - Foundation producer/composition integration allocation
   - Server Seam Task 3 resume
 cross_repository_coordination_id: null
 external_repositories: []
@@ -53,7 +54,9 @@ Produce one bounded, ownership-correct architecture decision for Issue #313 that
 - `DERIVED`: a production SQLx implementation behind the synchronous compatibility trait would violate the accepted writer boundary.
 - `DERIVED`: one forward migration can evolve the existing current-session row for truthful fresh origin while a separate immutable receipt provides replay/lost-response identity.
 - `UNKNOWN`: final receipt retention/archival policy; deliberately deferred because it does not block first safe implementation.
-- `CONFLICT`: none found in current accepted authority.
+- `CONFLICT`: initial candidate left the durable current-authority serialization and fresh transport reservation disposition incomplete; accepted P1/P2 repairs are specified below. Existing accepted FND-03/FND-04A invariants remain unchanged.
+
+Review provenance: [PR #317 finding disposition](https://github.com/Oteryn/Oteryn-Game/pull/317#issuecomment-5553646145), reviewed initial head `1748e02ad61ec69589fc1b154b0bbf91cfe0fb12`. The repairing architect is now an author of the material change and cannot supply its independent final-head review.
 
 Candidate decision:
 
@@ -77,7 +80,8 @@ authority_invariants:
   - current GameSession lifecycle/controller authority
 consumer_boundaries:
   - Foundation final authorization construction
-  - Durability atomic fresh-admission COMMIT
+  - Foundation owning-source publication and activation
+  - Durability guard publication CAS and atomic fresh-admission COMMIT
   - Durability retry/lost-response/restart reconciliation
   - Foundation post-commit independently-current adoption
   - first control-loss/reconnect transition from a fresh-origin session
@@ -94,7 +98,12 @@ mutation_operators:
     - session-id or transport-ref collision
     - lost DB response after commit
     - process restart before completion consumption
-    - runtime-scope replacement during in-flight commit
+    - runtime-scope replacement during in-flight commit in both serialization orders
+    - source publication after authorization and before COMMIT
+    - absent or forged guard bootstrap and stale publisher CAS
+    - same-revision source contradiction and restart rollback
+    - expiry during database lock wait or transaction completion
+    - cross-origin fresh/reconnect transport reservation collision
     - replay after reconnectable or terminal lifecycle transition
     - PostgreSQL reload/reconnect
   considered_not_applicable:
@@ -117,9 +126,11 @@ finding_family_sweep:
   restart_retry_replay_concurrency_pg_reload: required
   evidence: []
 finding_dispositions:
-  p0_p1_accepted_and_repaired: []
+  p0_p1_accepted_and_repaired:
+    - P1 durable current-authority serialization; decision Sections 5, 6.1, 9.4 and Child C define source publication, atomic guard/claim protocol and producer qualification
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred:
+    - fixed P2 fresh transport global uniqueness; decision Section 9.6 specifies truthful tagged ownership and cross-origin collision qualification
 ```
 
 ## Acceptance criteria
@@ -128,7 +139,7 @@ finding_dispositions:
 - [x] Candidate answers the exact ownership, split-phase execution, durable linearization, retry/lost-response, current-authority and migration questions from #313.
 - [x] Existing reconnect V1/V2 semantics are preserved rather than redesigned.
 - [x] No runtime, migration, Cargo, workflow, resource-value, stable-ID, production or cross-repository authority is granted by the architecture candidate.
-- [x] Exact future Foundation and Durability implementation surfaces and ordering are named.
+- [x] Exact future Foundation, Durability and owning-producer/composition implementation surfaces and ordering are named; no A+B-only Server Seam release.
 - [x] Synchronous `commit_fresh` compatibility disposition is explicit and forbids production SQLx blocking.
 - [ ] Exact-head repository/governance checks are green.
 - [ ] Required independent high-risk architecture review is complete with all findings explicitly disposed.
@@ -144,15 +155,15 @@ Selected candidate: `FND-DUR-FRESH-ADMISSION-V1`.
 
 Key design result:
 
-- Foundation performs complete final FND-04A revalidation and emits a versioned `FreshAdmissionCommitAuthorizationV1` carrying the exact durable binding and existing accepted current evidence fences/deadline.
+- Foundation performs complete FND-04A revalidation and emits an immutable expected authorization. The durable boundary separately locks independently published current authority guards, compares each expected fence, and rechecks trusted source age/deadline after SQL waits.
 - Persistence submission is bounded and asynchronous; FND-03 writer yields.
-- Durability performs one PostgreSQL COMMIT transaction that consumes the typed replay key via immutable receipt and creates the canonical ACTIVE GameSession generation 1 under account/character single-winner constraints.
+- Durability performs one PostgreSQL COMMIT that atomically establishes the AccountPresence/CharacterLease claims, consumes the typed replay key, reserves the shared fresh/reconnect transport reference and creates the canonical ACTIVE GameSession generation 1.
 - Ambiguous/lost response reconciles by the same replay key and cannot mint another winner.
 - Foundation consumes completion as a new normalized input and independently resolves current authority before installing/binding the physical transport.
 - `ReconnectAttemptJournal<T>` stays test/in-memory compatibility; SQLx must not hide behind the synchronous surface.
 - migration `0001` remains immutable; later implementation uses only forward `0002_fresh_admission_authority.sql`.
 
-No material architecture conflict was found that requires an owner product decision. Independent review and protected integration remain mandatory because this is a high-risk authority/persistence boundary.
+P1 is repaired at the architecture level by the explicit typed guard publication/serialization protocol; P2 by the global tagged reservation migration contract. Neither repair changes owner product policy or grants implementation authority. Child C must bind and qualify actual owning sources; missing sources keep admission closed. A new independent review of the repaired exact head and protected integration remain mandatory.
 
 ## Validation
 
@@ -184,7 +195,7 @@ No material architecture conflict was found that requires an owner product decis
 
 - exact head: pending final material candidate freeze
 - method/reviewer: `Oteryn: sol supervising architect`
-- material findings: pending final changed-file readback
+- material findings: P1/P2 dispositions above; full changed-file readback required on the published repair head
 - verdict: pending
 
 ## Independent review
@@ -207,7 +218,7 @@ No material architecture conflict was found that requires an owner product decis
 ## Context checkpoint
 
 ```yaml
-last_progress: architecture decision candidate published as PR #317; task binding updated before final material freeze
+last_progress: PR 317 architecture repair defines current-source atomic guard protocol, global transport reservations and mandatory producer integration
 status: validating
 branch: arch/fresh-admission-authority-313
 head_sha: null
@@ -229,5 +240,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: independent review and protected integration are owned by the governing Work/control plane, not this architecture role
-next_action: qualify PR #317 exact head through repository checks and one independent deep review, then integrate only through the governing protected control plane
+next_action: Work independently reviews the repaired PR 317 exact head, verifies checks and integrates only through the governing protected control plane
 ```
