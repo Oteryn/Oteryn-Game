@@ -54,7 +54,7 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-This is Child A of accepted decision `FND-DUR-FRESH-ADMISSION-V1`. The allowlist above is prospective until this allocation receives normal protected integration. The planned branch is not evidence that it exists. The worker starts from this allocation's future protected merge SHA, never merely from the earlier architecture merge. Work records the immutable admission SHA and creates the canonical branch/PR through GitHub before dispatch; the worker verifies them before writing. No worker self-allocation or self-merge is authorized.
+This is Child A of accepted decision `FND-DUR-FRESH-ADMISSION-V1`. The allowlist above is prospective until this allocation receives normal protected integration. The planned branch is not evidence that it exists. The worker starts from this allocation's future protected merge SHA, never merely from the earlier architecture merge. Work records the immutable admission SHA and creates the canonical branch through GitHub before dispatch; the worker verifies both before writing. The sole worker first publishes a bounded test-only RED commit, then Work opens the one implementation PR so canonical CI can execute that candidate before GREEN implementation. An empty branch is not treated as an existing PR. No worker self-allocation or self-merge is authorized.
 
 ## Outcome
 
