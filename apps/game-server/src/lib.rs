@@ -573,3 +573,5 @@ mod v2_reconciled_prepared_budget_regression_tests {
         Ok(())
     }
 }
+
+// Nonshipping #283 hosted benchmark stimulus: server source surface.
