@@ -21,6 +21,9 @@ fn independently_read_fnd02_membership_and_ids_reach_every_consumer()
             ("pending_id", json!(2)),
             ("domain_present", json!(false)),
             ("domain_id", json!(2)),
+            ("pending_extra", json!(true)),
+            ("domain_extra", json!(true)),
+            ("next_command", json!(2)),
         ] {
             let mut changed = source.clone();
             changed.0[field] = value;

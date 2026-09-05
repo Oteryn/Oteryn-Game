@@ -133,8 +133,8 @@ impl LiveSource {
             "candidate_generation":8,"candidate_transport":seed.transport,"candidate_deadline":seed.now+115,
             "runtime_channel":13,"predecessor_session":10,"predecessor_generation":7,"lease_character":11,"lease_generation":9,"scope_generation":10,
             "epoch":3,"grace_deadline":seed.now+120,"proof_nonce":0x55,"fast_proof":null,
-            "next_command":3,"pending_terminal":false,"pending_present":true,"pending_id":1,
-            "last_sequence":41,"domain_revision":4,"domain_present":true,"domain_id":1,
+            "next_command":3,"pending_terminal":false,"pending_present":true,"pending_id":1,"pending_extra":false,
+            "last_sequence":41,"domain_revision":4,"domain_present":true,"domain_id":1,"domain_extra":false,
         });
         let second = json!({
             "protocol_major":1,"transport_profile":1,"rules":"rules:1","content":"content:2","map":"map:3","world_policy":"world:4",
@@ -223,29 +223,40 @@ impl LiveSource {
                 reconnect_proof_generation: self.number("fast_proof")?,
             }
         };
+        let mut pending = if self.flag("pending_present")? {
+            vec![PendingCommandReconciliationV1::new(
+                checked(CommandId::new(self.number("pending_id")?))?,
+                if self.flag("pending_terminal")? {
+                    PendingCommandDispositionV1::TerminalOutcomeRetained
+                } else {
+                    PendingCommandDispositionV1::PendingOriginal
+                },
+            )]
+        } else {
+            vec![]
+        };
+        if self.flag("pending_extra")? {
+            pending.push(PendingCommandReconciliationV1::new(
+                checked(CommandId::new(2))?,
+                PendingCommandDispositionV1::PendingOriginal,
+            ));
+        }
+        let mut domains = if self.flag("domain_present")? {
+            vec![checked(StateDomainRevisionV1::new(
+                self.number("domain_id")?.try_into()?,
+                self.number("domain_revision")?,
+            ))?]
+        } else {
+            vec![]
+        };
+        if self.flag("domain_extra")? {
+            domains.push(checked(StateDomainRevisionV1::new(2, 4))?);
+        }
         let fnd02 = checked(Fnd02ReconciliationFenceV1::new(
             checked(CommandId::new(self.number("next_command")?))?,
-            if self.flag("pending_present")? {
-                vec![PendingCommandReconciliationV1::new(
-                    checked(CommandId::new(self.number("pending_id")?))?,
-                    if self.flag("pending_terminal")? {
-                        PendingCommandDispositionV1::TerminalOutcomeRetained
-                    } else {
-                        PendingCommandDispositionV1::PendingOriginal
-                    },
-                )]
-            } else {
-                vec![]
-            },
+            pending,
             self.number("last_sequence")?,
-            if self.flag("domain_present")? {
-                vec![checked(StateDomainRevisionV1::new(
-                    self.number("domain_id")?.try_into()?,
-                    self.number("domain_revision")?,
-                ))?]
-            } else {
-                vec![]
-            },
+            domains,
         ))?;
         let compatibility = checked(ReconnectCompatibilityEvidenceV1::new(
             self.number("protocol_major")?.try_into()?,
@@ -409,7 +420,9 @@ invariants! {
     GraceDeadline => ("grace_deadline",TemporalProvenance,true,[Older,Newer]),
     RecoveryProof => ("proof_nonce",IdentityBinding,false,[Different]),
     ProofKind => ("fast_proof",IdentityBinding,false,[Present]),
-    NextCommand => ("next_command",IdentityBinding,false,[Newer]),
+    NextCommand => ("next_command",IdentityBinding,false,[Older,Newer]),
+    PendingExtraMember => ("pending_extra",IdentityBinding,false,[Present]),
+    DomainExtraMember => ("domain_extra",IdentityBinding,false,[Present]),
     PendingMembership => ("pending_present",IdentityBinding,false,[Missing]),
     PendingIdentifier => ("pending_id",IdentityBinding,false,[Different]),
     DomainMembership => ("domain_present",IdentityBinding,false,[Missing]),
