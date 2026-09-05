@@ -14,14 +14,14 @@ lane_id: OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM
 allocation_task_id: OTV2-20260904-gameplay-server-seam-allocation
 allocation_pr: 294
 allocation_admission_main_sha: 68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705
-allocation_integration_main_sha: 187c6b83c6945d79aabef2c5730c3ddba13fcab1
+allocation_integration_main_sha: 6295e4079a53cc95a3021e5c34b9004b2e9bd50c
 base_sha: null
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: sol server seam lead"
 created_at: 2026-09-04T19:27:00+02:00
-updated_at: 2026-09-05T13:44:00+02:00
+updated_at: 2026-09-05T13:58:00+02:00
 execution_budget_minutes: 120
 large_budget_reason: high-risk TCP/TLS plus Foundation admission/reconnect integration, bounded-resource proof, production-path integration and independent exact-head review
 owned_paths:
@@ -56,9 +56,9 @@ external_repositories: []
 
 ## Outcome
 
-After the allocation PR #294 lawfully integrates and Work creates this worker branch from the exact allocation merge SHA, implement the smallest accepted production gameplay server/client-entry seam on top of current Foundation, FND-04 verifier/consumer and Durability authorities.
+After allocation PR #294 lawfully integrates and Work creates this branch from the exact allocation merge SHA, implement the smallest accepted production gameplay server/client-entry seam on current Foundation, FND-04 verifier/consumer and Durability authority.
 
-The seam is bounded TCP + TLS 1.3 with ALPN `oteryn-game/1`, FND-02 framing/validation, canonical fresh-admission/reconnect verification, current GameSession/CharacterLease/fencing authority, durable reconnect journal consumption, bounded backpressure/drain and real local production-path TCP/TLS integration evidence.
+The seam is bounded TCP + TLS 1.3 with ALPN `oteryn-game/1`, FND-02 framing/validation, canonical fresh-admission/reconnect verification, current GameSession/CharacterLease/fencing authority, durable reconnect-journal consumption, bounded backpressure/drain and real local production-path TCP/TLS integration evidence.
 
 This lane makes later ADR-0007 physical QA possible but does **not** own or declare QA Tier 1/Tier 2 `PROVEN`. Formal QA remains `NOT_EVALUATED` until separately allocated after Server Seam integration.
 
@@ -66,13 +66,14 @@ This lane makes later ADR-0007 physical QA possible but does **not** own or decl
 
 - `PROVEN` — this worker has no write authority while allocation PR #294 is unmerged. No worker branch may be created before protected-main allocation readback.
 - `PROVEN` — accepted Server Seam architecture is `docs/architecture/reviews/OTERYN_GAME_PRODUCTION_GAMEPLAY_SERVER_SEAM_PLAN_2026-08-24.md`, merged through PR #117.
-- `PROVEN` — current protected-main authority API floor from #289 removes production record/identity-derived current-authority convenience constructors; tests #302/#303 further qualify independently sourced current authority and replay/restart behavior without changing production semantics.
-- `PROVEN` — Foundation protocol major 1, transport profile 1, ALPN `oteryn-game/1`, FND-02 bounded BE32 framing and registered message semantics remain authoritative.
-- `PROVEN` — current `apps/game-server/src/main.rs` remains fail-closed outside `--smoke`; no production listener exists.
+- `PROVEN` — protected-main authority API floor from #289 removes production record/identity-derived current-authority convenience constructors; #302/#303 further qualify independently sourced current authority and retry/replay/restart/PostgreSQL behavior without changing production semantics.
+- `PROVEN` — current main `6295e4079a53cc95a3021e5c34b9004b2e9bd50c` adds protected-main post-merge Rust lane selection only. PR game-gate, Merge Queue and ruleset remain unchanged; this does not alter the Server Seam API/lease.
+- `PROVEN` — Foundation protocol major 1, transport profile 1, TLS 1.3, ALPN `oteryn-game/1`, FND-02 bounded BE32 framing and registered message semantics remain authoritative.
+- `PROVEN` — current `apps/game-server/src/main.rs` is fail-closed outside `--smoke`; no production listener exists.
 - `PROVEN` — FND-04 verifier/consumer and current Durability terminal-replacement/reconnect implementation are merged.
-- `PROVEN` — Server Seam hard maxima are registered: pre-admission connections 256, handshake/auth work 64, outbound queue 64 entries/session, outbound queue 1,048,576 bytes/session, pending writes 8/session and drain tasks 256/batch.
-- `PROVEN` — no current active non-Dependabot PR owns any path in this task's primary/shared allowlist. Dependabot #259/#260/#261 remain root Cargo/lock candidates only and must be re-read before shared Cargo mutation.
-- `DERIVED` — the accepted seam can be implemented without new gameplay IDs, resource maxima, a second admission/session authority or production deployment decision by keeping endpoint/TLS material caller-supplied and using non-shipping loopback test fixtures.
+- `PROVEN` — Server Seam hard maxima remain registered: pre-admission connections 256, handshake/auth work 64, outbound queue 64 entries/session, outbound queue 1,048,576 bytes/session, pending writes 8/session and drain tasks 256/batch.
+- `PROVEN` — current open-PR scan finds no active non-Dependabot owner on this task's primary/shared allowlist. Dependabot #259/#260/#261 remain root Cargo/lock candidates only and must be re-read before Cargo mutation/integration.
+- `DERIVED` — the accepted seam can be implemented without new gameplay IDs, resource maxima, a second admission/session authority or a production deployment decision by keeping endpoint/TLS material caller-supplied and using non-shipping loopback fixtures.
 
 Governing source order is protected-main governance -> merged allocation -> accepted #117 -> current FND/DUR contracts/registries -> live implementation. A lower source cannot widen the allocation.
 
@@ -162,7 +163,7 @@ Every negative authority/provenance case changes exactly one applicable invarian
 - [ ] `lib.rs` composes exactly one Server Seam without changing foreign gameplay authority.
 - [ ] `main.rs` preserves `--smoke` and may serve gameplay only from explicit valid configuration; no hard-coded production address/port/cert/key/secret/topology.
 - [ ] `apps/game-server/tests/gameplay_server_seam.rs` traverses the actual local production listener/TLS/framing/FND-04/Foundation/Durability path for bootstrap/admission and resume/reconnect using non-shipping test material.
-- [ ] The Server Seam integration result is not relabeled as formal ADR-0007 QA Tier 1/Tier 2 proof.
+- [ ] Server Seam integration evidence is not relabeled as formal ADR-0007 QA Tier 1/Tier 2 proof.
 
 ### TDD and qualification
 
@@ -170,7 +171,7 @@ Every negative authority/provenance case changes exactly one applicable invarian
 - [ ] Minimal GREEN stays within the exact allowlist; any required unowned path is `SHARED_LEASE_REQUIRED` rather than implicit expansion.
 - [ ] Focused/package/workspace tests, fmt and strict Clippy pass on the stable candidate.
 - [ ] Applicable current exact-head repository CI, including canonical PG/SIM behavior selected by protected-base policy, is green.
-- [ ] Whole-diff self-review and the complete authority finding-family sweep are clean with explicit P0/P1/P2 disposition.
+- [ ] Whole-diff self-review and complete authority finding-family sweep are clean with explicit P0/P1/P2 disposition.
 - [ ] One genuinely independent exact-head deep review covers protocol/session/admission/reconnect/fencing/transport/resource risks.
 - [ ] Zero unresolved required threads and no material head movement after final qualifying review.
 - [ ] Worker returns `READY_FOR_INTEGRATION`; worker does not merge its own PR.
@@ -187,7 +188,7 @@ Implementation follows `docs/superpowers/plans/2026-08-24-oteryn-production-game
 
 Before editing root/game-server Cargo files, re-read active owners and #259/#260/#261. Do not absorb unrelated dependency upgrades. If a non-Dependabot writer acquires a shared path, stop with `SHARED_LEASE_REQUIRED`.
 
-Historical allocation-review findings requiring golden encoding, listener version/profile negatives, replay/binding/concurrent admission and authoritative-work shutdown preservation are already incorporated into the plan/task and must be preserved by implementation.
+Historical allocation-review findings requiring golden encoding, listener version/profile negatives, replay/binding/concurrent admission and authoritative-work shutdown preservation are incorporated into the plan/task and must be preserved by implementation.
 
 ## Validation
 
@@ -242,7 +243,7 @@ Historical allocation-review findings requiring golden encoding, listener versio
 ## Context checkpoint
 
 ```yaml
-last_progress: current protected main is 187c6b83c6945d79aabef2c5730c3ddba13fcab1; authority-floor #289 is terminal and #302/#303 add independent authority/recovery qualification without changing production semantics; allocation PR #294 has been normally merged up to current main and is undergoing fresh docs-only qualification
+last_progress: allocation PR #294 has been reconciled to current protected main 6295e4079a53cc95a3021e5c34b9004b2e9bd50c; the authority floor remains terminal, #305 changes only standalone protected-main push qualification, and no active non-Dependabot Server Seam path collision is present; worker authority remains withheld pending allocation exact-head review/integration
 status: waiting
 branch: agent/otv2-gameplay-server-seam-01
 head_sha: null
@@ -264,5 +265,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: allocation_pr_294_not_merged
-next_action: wait for Work to finish exact-head qualification/review and protected integration of allocation PR #294; only after merge-SHA readback may this worker branch be created
+next_action: wait for Work to finish the final allocation exact-head qualification/review and protected integration; only after allocation merge-SHA readback may this worker branch be created
 ```
