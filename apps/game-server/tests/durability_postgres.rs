@@ -1,5 +1,7 @@
 #[path = "support/authority_matrix.rs"]
 mod authority_matrix;
+#[path = "support/authority_recovery.rs"]
+mod authority_recovery;
 #[path = "../src/durability/mod.rs"]
 mod durability;
 #[path = "support/postgres.rs"]
