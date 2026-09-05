@@ -978,6 +978,78 @@ mod tests {
     use base64::Engine;
     use ed25519_dalek::{Signer, SigningKey};
 
+    // Child A starts with a deliberately unavailable production source context.
+    // This must never fall back to the legacy caller-filled compatibility facts.
+    #[test]
+    fn fresh_durability_missing_sources_fail_closed_after_valid_compatibility_control()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[29; 32]);
+        let authority = fresh_authority("fresh-1", signing_key.verifying_key().to_bytes());
+        let compatibility_trust = FreshTrustContext::new(&authority);
+        let compatibility_current = FreshCurrentEvidence::for_test(100)?;
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+
+        let compatibility = verify_fresh_grant(
+            &grant,
+            100,
+            &compatibility_trust,
+            &compatibility_current,
+        )?;
+        assert_eq!(compatibility.replay_key().to_bytes()[1..], [7; 32]);
+
+        let durability_trust = FreshDurabilityTrustContext::unavailable();
+        let durability_current = FreshDurabilityCurrentAuthorityV1::unavailable();
+        assert!(matches!(
+            verify_fresh_grant_durability_v1(
+                &grant,
+                100,
+                &durability_trust,
+                &durability_current,
+            ),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale),
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_durability_missing_sources_cannot_disclose_payload_semantics() {
+        let signing_key = SigningKey::from_bytes(&[30; 32]);
+        let payload = fresh_payload().replace(
+            "oteryn-pre-admission-v1",
+            "oteryn-pre-admission-unsupported",
+        );
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            payload,
+        );
+        let durability_trust = FreshDurabilityTrustContext::unavailable();
+        let durability_current = FreshDurabilityCurrentAuthorityV1::unavailable();
+
+        assert!(matches!(
+            verify_fresh_grant_durability_v1(
+                &grant,
+                100,
+                &durability_trust,
+                &durability_current,
+            ),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale),
+        ));
+    }
+
+    #[test]
+    fn fresh_credential_expiry_keeps_existing_strict_boundary() {
+        assert_eq!(NumericDate::validate(134, 100, 100, 130), Ok(()));
+        assert_eq!(
+            NumericDate::validate(135, 100, 100, 130),
+            Err(NumericDateError::Expired),
+        );
+    }
+
     #[test]
     fn numeric_date_extremes_fail_closed_without_panicking() {
         for value in [i64::MIN, i64::MAX] {

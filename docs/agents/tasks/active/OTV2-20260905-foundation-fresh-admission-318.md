@@ -4,7 +4,7 @@
 task_id: OTV2-20260905-foundation-fresh-admission-318
 title: Foundation fresh-admission durability semantics
 mode: IMPLEMENT
-status: waiting
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/foundation-fresh-admission-318
@@ -12,8 +12,8 @@ planned_worker_branch: agent/foundation-fresh-admission-318
 issue: 318
 parent_issue: 162
 pr: null
-base_sha: null
-admission_main_sha: null
+base_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
+admission_main_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
 allocation_preparation_main_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
 admission_base_rule: exact protected merge SHA of the coordinator allocation containing this task; resolve and record in GitHub before first worker mutation
 head_sha: null
@@ -25,7 +25,11 @@ created_at: 2026-09-05
 updated_at: 2026-09-05
 execution_budget_minutes: 60
 large_budget_reason: null
-allocation_state: pending_protected_integration
+allocation_state: protected_integrated
+allocation_pr: 320
+allocation_merge_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
+allocation_merge_queue_run: 33984473923
+worker_dispatched_at: 2026-09-05T18:44:00Z
 owned_paths:
   - apps/game-server/src/foundation/fresh_admission_durability.rs
   - apps/game-server/src/foundation/admission_authority_publication.rs
@@ -45,7 +49,9 @@ depends_on:
   - issue: 313
     architecture_pr: 317
     protected_merge_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
-  - protected integration of this exact coordinator allocation
+  - allocation_pr: 320
+    state: merged
+    protected_merge_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
 blocks:
   - Child B Durability fresh-admission adapter allocation
   - Child C owning producer and composition integration
@@ -54,7 +60,7 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-This is Child A of accepted decision `FND-DUR-FRESH-ADMISSION-V1`. The allowlist above is prospective until this allocation receives normal protected integration. The planned branch is not evidence that it exists. The worker starts from this allocation's future protected merge SHA, never merely from the earlier architecture merge. Work records the immutable admission SHA and creates the canonical branch through GitHub before dispatch; the worker verifies both before writing. The sole worker first publishes a bounded test-only RED commit, then Work opens the one implementation PR so canonical CI can execute that candidate before GREEN implementation. An empty branch is not treated as an existing PR. No worker self-allocation or self-merge is authorized.
+This is Child A of accepted decision `FND-DUR-FRESH-ADMISSION-V1`, allocated by protected PR #320. Work created and the worker independently read back `agent/foundation-fresh-admission-318` at immutable admission base `8fd0a40928c4089b453556edbf0a5abebe46986d`. Governing dispatch is Issue #318 comment `5553991516`. Only the exact allowlist is active. Work owns implementation PR creation and integration; no worker self-allocation or self-merge is authorized.
 
 ## Outcome
 
@@ -152,7 +158,7 @@ No SQLx/SQL/schema/migration, Cargo/lockfile, workflow/registry/stable-ID, liste
 
 ## Implementation / findings
 
-Planning and source inspection are complete; no runtime implementation or test PASS is claimed. Follow the four functional tasks in the plan. Preserve published history, reject record-derived current authority, and repair verified material findings test-first within this allocation. Place exact frozen head/review/check evidence on the PR rather than adding self-referential bookkeeping commits.
+First test-only checkpoint adds two fail-closed durability-entry expectations with real signed grants and one existing NumericDate boundary control, all inside the existing cfg(test) verifier module. The new durability entry/context APIs deliberately do not exist yet, so expected canonical RED is missing-API compilation, not behavioral coverage or a passing test claim. The compatibility positive control demonstrates that missing production source provenance must not silently fall back to legacy caller-filled facts. Rich positive provenance and individual authority/time mutation cases remain subsequent Task 1 test cycles. No production implementation is added. Follow the four functional tasks in the plan. Preserve published history, reject record-derived current authority, and repair verified material findings test-first within this allocation. Place exact frozen head/review/check evidence on the PR rather than adding self-referential bookkeeping commits.
 
 ## Validation
 
@@ -208,7 +214,7 @@ Planning and source inspection are complete; no runtime implementation or test P
 ## Context checkpoint
 
 ```yaml
-last_progress: accepted architecture #317 read back; exact Child A allocation prepared for protected integration
+last_progress: PR320 integrated and sole worker dispatched; bounded test-only verifier RED prepared with immutable admission provenance; awaiting Work implementation PR and actual canonical CI
 status: waiting
 branch: agent/foundation-fresh-admission-318
 head_sha: null
@@ -229,8 +235,8 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: exact allocation is not yet protected-main integrated
-next_action: Work integrates this allocation and records its exact protected merge SHA before creating and dispatching the named worker branch
+blocker: first test-only candidate requires Work PR creation and executed canonical RED before GREEN
+next_action: Work opens the sole implementation PR for this test-only head so canonical CI can establish executed RED before worker GREEN
 ```
 
 Source readiness prerequisite is tracked separately in Issue #319 for Child C. It does not block Child A semantic implementation or widen this allocation.
