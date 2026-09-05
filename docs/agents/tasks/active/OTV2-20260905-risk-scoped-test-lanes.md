@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/risk-scoped-lanes-283
-pr: null
+pr: 297
 issue: 283
 parent_issue: 277
 base_sha: e9584d1466f7021b5c542fac4ef0fec6291ff20e
@@ -60,3 +60,7 @@ Fresh tests fail because trusted-base classifier is absent, and actual current a
 ## Context checkpoint
 
 Next action: preserve RED, implement classifier and fail-closed workflow wiring, then GREEN and hosted qualification. No owner action required.
+
+## GREEN and self-review refinement
+
+RED653b8289d27cb972b5c32bfc50931df28d5e01bb is preserved. Classifier, workflow wiring and aggregate fixtures pass. Self-review reproduced an additional docs-only input-assumption gap: a future server include could consume Markdown. Fresh failing assertion preceded a separate full-workspace document-input snapshot. Both stale consumer and stale server snapshots now select FULL. The Windows snapshot binds63 inputs; the document snapshot binds120 inputs at admission. Classifier job mutations and original PR/queue regression families remain mandatory. Exact final source head, hosted observation/review and benchmark evidence will be published on PR297/Issue283.

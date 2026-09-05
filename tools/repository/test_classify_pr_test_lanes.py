@@ -8,6 +8,9 @@ import importlib.util
 import io
 import os
 from pathlib import Path
+import subprocess
+import sys
+import tempfile
 import textwrap
 from unittest.mock import patch
 
@@ -53,6 +56,7 @@ def fixture():
         "oteryn-simulation-determinism": "crates/simulation-determinism",
         "oteryn-foundation": "crates/foundation",
     }
+
     edges = {
         "oteryn-game-server": ["oteryn-foundation", "oteryn-simulation-determinism"],
         "oteryn-client": ["oteryn-foundation"],
@@ -69,6 +73,66 @@ def fixture():
     }
 
 
+def test_snapshot_and_fallbacks(module):
+    rows = [b"100644 blob " + b"a" * 40 + b"\tapps/client/src/lib.rs",
+            b"100644 blob " + b"b" * 40 + b"\tapps/game-server/src/lib.rs"]
+    with patch.object(module.subprocess, "check_output", return_value=b"\0".join(rows) + b"\0"):
+        digest = module.input_digest(fixture())
+    for index, changes_digest in ((0, True), (1, False)):
+        changed = rows.copy()
+        changed[index] = changed[index].replace(b"blob ", b"blob c", 1)
+        with patch.object(module.subprocess, "check_output", return_value=b"\0".join(changed) + b"\0"):
+            assert (module.input_digest(fixture()) != digest) is changes_digest
+    with patch.object(module.subprocess, "check_output", return_value=b"120000 blob " + b"a" * 40 + b"\tlink\0"):
+        try:
+            module.input_digest(fixture())
+        except ValueError:
+            pass
+        else:
+            raise AssertionError("symlink input accepted")
+    gate = (ROOT / ".github/workflows/merge-gate.yml").read_text()
+    assert "  lanes:\n" in gate, "trusted-base lane job is absent"
+    block = gate.split("  lanes:\n", 1)[1].split("  governance:\n", 1)[0]
+    script = textwrap.dedent(block.split("        run: |\n", 1)[1])
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(directory) / "output"
+        env = dict(os.environ, GITHUB_OUTPUT=str(output), RUNNER_TEMP=directory)
+        result = subprocess.run(["bash", "-c", script], cwd=directory, env=env, capture_output=True, text=True)
+        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+        output.unlink()
+        invalid = Path(directory) / "metadata.json"
+        invalid.write_text("{}")
+        result = subprocess.run([sys.executable, str(MODULE), str(invalid)], env=env, capture_output=True, text=True)
+        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+    print("Risk snapshot and CLI fallbacks PASS: consumer changes, server isolation, symlinks, missing base classifier, malformed metadata")
+
+
+def test_trusted_job_mutations():
+    spec = importlib.util.spec_from_file_location("risk_core", MODULE.with_name("validate_repository_policy_core.py"))
+    assert spec is not None and spec.loader is not None
+    core = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(core)
+    path = ROOT / ".github/workflows/merge-gate.yml"
+    original = path.read_text()
+    block = core.indented_yaml_mapping_block(original, "lanes", 2)
+    assert block is not None
+    read_text = Path.read_text
+    mutations = [block.replace("needs.scope.outputs.base_sha", "needs.scope.outputs.target_sha"),
+                 block.replace("  lanes:\n", "  lanes:\n    if: false\n"),
+                 block.replace("  lanes:\n", "  lanes:\n    continue-on-error: true\n"),
+                 block.replace("rust=true", "rust=false"),
+                 block.replace("windows=true", "windows=false"),
+                 block.replace("          python -I", "          exit 0\n          python -I")]
+    for changed in mutations:
+        assert changed != block
+        mutated = original.replace(block, changed, 1)
+        def read(file, *args, **kwargs):
+            return mutated if file == path else read_text(file, *args, **kwargs)
+        with patch.object(Path, "read_text", read), contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            assert core.main() != 0, "trusted-base lane mutation passed policy"
+    print("Trusted-base job mutation family PASS: candidate checkout, skip, tolerance, weakened fallback, early exit")
+
+
 def main() -> int:
     assert MODULE.is_file(), "dependency-aware trusted-base classifier is not implemented"
     spec = importlib.util.spec_from_file_location("risk_classifier", MODULE)
@@ -79,7 +143,8 @@ def main() -> int:
     def classify(paths, metadata=None, digest=None, **kwargs):
         files = [dict(filename=p, status="modified") if isinstance(p, str) else p for p in paths]
         return module.classify(files, kwargs.pop("count", len(files)), fixture() if metadata is None else metadata,
-                               module.AUDITED_INPUT_SHA256 if digest is None else digest, **kwargs)
+                               module.AUDITED_INPUT_SHA256 if digest is None else digest,
+                               docs_digest=kwargs.pop("docs_digest", module.AUDITED_DOC_INPUT_SHA256), **kwargs)
 
     server = "apps/game-server/src/lib.rs"
     result = classify([server])
@@ -109,6 +174,10 @@ def main() -> int:
     for paths in (["README.md"], ["docs/architecture/example.md"], ["docs/agents/tasks/active/task.md"]):
         result = classify(paths)
         assert result["rust"] is False and result["windows"] is False, result
+        result = classify(paths, digest="unreviewed-document-consumer")
+        assert result["rust"] and result["windows"], "docs skip ignored changed input assumptions"
+        result = classify(paths, docs_digest="server-started-reading-docs")
+        assert result["rust"] and result["windows"], "docs skip ignored changed server input assumptions"
     result = classify([server, "docs/agents/tasks/active/task.md"])
     assert result["rust"] and not result["windows"], result
 
@@ -148,6 +217,8 @@ def main() -> int:
         assert result["rust"] and result["windows"], result
     print("Risk classifier fixtures PASS: surfaces, transitive dependency kinds, protected inputs and fail-closed enumeration")
     test_aggregate()
+    test_snapshot_and_fallbacks(module)
+    test_trusted_job_mutations()
     return 0
 
 

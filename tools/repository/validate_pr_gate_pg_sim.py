@@ -15,8 +15,8 @@ POSTGRES_IMAGE = (
 )
 # Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
 EXPECTED_EVIDENCE_JOB_SHA256 = {
-    "rust_linux": "4480575980e6392b533881aa045d3f6b6e19308c5320c4cd84369b0df5786f75",
-    "rust_windows": "0d46dc7b5c74285d1b989b92adf307b9857ed9297d5a2da9c4c40855a7032e4f",
+    "rust_linux": "e3456ee08bb579dc5235077766a7c80af4c656ee31984affc016b79db6f51053",
+    "rust_windows": "de7eca96c0dd87d6a7c6d119a619f3ab67211bbb0982b5a1f1125d8ea7a5ca08",
 }
 
 
@@ -112,7 +112,7 @@ def validate() -> list[str]:
         linux,
         "rust_linux",
         (
-            "    if: needs.scope.outputs.rust == 'true'\n",
+            "    if: needs.lanes.outputs.rust == 'true'\n",
             "      pull-requests: read\n",
             "    services:\n",
             "      postgres:\n",
@@ -171,7 +171,7 @@ def validate() -> list[str]:
             windows,
             "rust_windows",
             (
-                "    if: needs.scope.outputs.rust == 'true'\n",
+                "    if: needs.lanes.outputs.windows == 'true'\n",
                 "          ref: ${{ needs.scope.outputs.target_sha }}\n",
                 "          EXPECTED_SHA: ${{ needs.scope.outputs.target_sha }}\n",
                 "if ((git rev-parse HEAD).Trim() -ne \"$env:EXPECTED_SHA\")",
