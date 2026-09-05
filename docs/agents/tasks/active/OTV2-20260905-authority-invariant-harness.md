@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: test/authority-invariant-harness-281
-pr: null
+pr: 302
 issue: 281
 parent_issue: 277
 base_sha: 9631cbfe718e75d6bc530352fb811e08a444b6b0
@@ -44,4 +44,15 @@ One writer/exclusive checkout. Independent read-only Foundation analysis is comp
 
 ## Context checkpoint
 
-Next action: preserve missing-boundary RED, implement independent source and executable matrix, then qualify the material candidate. Final SHA and review/CI evidence live on Issue/PR; no post-freeze bookkeeping commit. Issue282 remains blocked until protected-main readback.
+Initial RED checkpoint: missing-boundary failure preserved before implementing the independent source and executable matrix. Final SHA and review/CI evidence live on Issue/PR; no post-freeze bookkeeping commit. Issue282 remains blocked until protected-main readback.
+
+
+## Material candidate evidence
+
+Fresh RED is preserved on GitHub `eeaca228f8103330347459d44cf35ec431ead9e7`: the focused test fails at missing terminal-prepare execution. GREEN adds separate prepared and live-source builders, a macro-derived enum registry that cannot silently omit newly declared variants, per-case single-field mutation assertions, positive controls on every consumer and V1/V2 negative projection phase checks. The PG target reloads actual committed snapshots through both public journal versions, then executes the same independently sourced mutation matrix. Existing assertions are unchanged.
+
+Explicit N/A: terminal replacement authorization does not consume reconnect candidate attempt/transport/proof/security/time inputs; those are revalidated at COMMIT and InstallController. Predecessor receipt session/lease-character/state inputs belong to replacement PREPARE, while the reconnect API carries the candidate identity and scalar lease fence. Missing typed nonoptional fields are constructor/type constraints. A separate grace expiry is dominated by the valid prepared deadline; no artificial multi-invariant expiry case is counted. Runtime/source observation ordering follows current production semantics, not an invented requirement that commit time exceed source observation.
+
+Next action: complete deterministic and exact-head PostgreSQL validation, perform whole-diff and independent review, then integrate through protected Merge Queue and release #282.
+
+Local GREEN: 274 isolated negative cases across five positive boundaries; full game-server tests and strict all-target Clippy passed. Canonical PG target compiles; actual database execution remains a hosted exact-head requirement. Full four-file diff reviewed; no runtime or existing assertion changes. Missing isolated epoch/deadline is unrepresentable through the public snapshot builder (both set together), explicitly N/A instead of counting a compound absence as one invariant.

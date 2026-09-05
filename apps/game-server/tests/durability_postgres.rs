@@ -1,7 +1,65 @@
+#[path = "support/authority_matrix.rs"]
+mod authority_matrix;
 #[path = "../src/durability/mod.rs"]
 mod durability;
 #[path = "support/postgres.rs"]
 mod postgres;
+
+#[test]
+fn independent_authority_matrix_rejects_mutations_after_postgres_reload()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database =
+                postgres::IsolatedPostgres::create("independent_authority_matrix").await?;
+            let result = async {
+                use authority_matrix::{LiveSource, Seed, checked, prepared_record};
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let seed = Seed {
+                    now: unix_now().map_err(foundation_error)?,
+                    ..Seed::fixed()
+                };
+                let record = prepared_record(seed)?;
+                let source = LiveSource::read(seed);
+                let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+                let (mut flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
+                let prepared = journal.prepare(&request).await?;
+                assert_eq!(prepared, ReconnectPrepareDispositionV1::Prepared);
+                checked(flow.accept_prepare_completion(
+                    ReconnectPrepareCompletionV1::for_request(&request, prepared),
+                ))?;
+                let commit = checked(flow.authorize_commit(source.bind(&record)?, seed.now + 2))?;
+                assert_eq!(
+                    journal.commit(&commit).await?,
+                    ReconnectCommitDispositionV1::Committed
+                );
+                drop(journal);
+                let reloaded = AdmissionReconnectJournal::connect_runtime(&url).await?;
+                let v1 = reloaded.reconcile(&request).await?;
+                let typed = durability::AdmissionReconnectJournalV2::connect_runtime(&url).await?;
+                let (_, request_v2) =
+                    oteryn_game_server::foundation::ReconnectDurabilityFlowV2::begin(
+                        record.clone(),
+                        None,
+                    );
+                let v2 = typed.reconcile(&request_v2).await?;
+                authority_matrix::run_loaded_matrix(seed, &record, &source, v1, v2)?;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
 
 use durability::{
     AdmissionReconnectJournal, DurabilityError, MigrationExecutor, SchemaCompatibility,
