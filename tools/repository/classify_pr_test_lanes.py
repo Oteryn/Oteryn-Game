@@ -166,13 +166,62 @@ def classify(files, changed_count, metadata, digest, complete=True, docs_digest=
         return full("classifier-input-failure")
 
 
+def classify_post_merge(event, metadata) -> dict:
+    """Reuse PR risk semantics only for a verified, complete protected-main push.
+
+    The workflow executes this code and Cargo metadata at the already-protected
+    event SHA. Neither the event's capped commit list nor PR metadata is used.
+    Git's complete before/after tree diff also covers batched queue merges.
+    """
+    try:
+        if (os.environ.get("GITHUB_EVENT_NAME") != "push"
+                or os.environ.get("GITHUB_REF") != "refs/heads/main"
+                or os.environ.get("GITHUB_REF_PROTECTED") != "true"
+                or os.environ.get("GITHUB_REPOSITORY") != "Oteryn/Oteryn-Game"
+                or event["repository"]["full_name"] != "Oteryn/Oteryn-Game"
+                or event["ref"] != "refs/heads/main"
+                or any(event[key] is not False for key in ("forced", "created", "deleted"))):
+            return full("not-a-normal-protected-main-push")
+        before, after = event["before"], event["after"]
+        if any(not isinstance(sha, str) or re.fullmatch(r"[0-9a-f]{40}", sha) is None or sha == "0" * 40 for sha in (before, after)):
+            return full("invalid-push-range")
+        if before == after or after != os.environ.get("GITHUB_SHA"):
+            return full("push-identity-mismatch")
+        actual = subprocess.check_output(["git", "rev-parse", "HEAD"]).decode().strip()
+        if actual != after or subprocess.check_output(["git", "rev-parse", "--is-shallow-repository"]).strip() != b"false":
+            return full("unverified-or-incomplete-protected-checkout")
+        subprocess.check_output(["git", "merge-base", "--is-ancestor", before, after], stderr=subprocess.PIPE)
+        # --no-renames retains both sides of renames/copies as ordinary paths.
+        raw = subprocess.check_output(["git", "diff", "--no-ext-diff", "--no-textconv", "--no-renames", "--name-status", "-z", before, after, "--"])
+        if not raw or not raw.endswith(b"\0"):
+            return full("empty-or-incomplete-git-diff")
+        fields = raw[:-1].split(b"\0")
+        if len(fields) % 2:
+            return full("malformed-git-diff")
+        statuses = {b"A": "added", b"M": "modified", b"D": "removed"}
+        files = [{"filename": fields[index + 1].decode("utf-8"), "status": statuses[fields[index]]}
+                 for index in range(0, len(fields), 2)]
+        result = classify(files, len(files), metadata, input_digest(metadata),
+                          candidate_modes_verified=candidate_modes_safe(after))
+        # Post-merge policy never omits Linux/PG/policy/supply chain, even docs.
+        if result["rust"] is True and result["windows"] is False and result["surface"] in {"server", "durability"}:
+            return result
+        return full(result["reason"], result["surface"])
+    except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError, subprocess.SubprocessError):
+        return full("post-merge-input-or-git-failure")
+
+
 def main() -> int:
     try:
-        metadata = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-        digest = input_digest(metadata)
-        result = classify(json.loads(os.environ["CHANGED_FILE_RECORDS"]), int(os.environ["CHANGED_FILE_COUNT"]), metadata, digest,
-                          complete=os.environ["ENUMERATION_COMPLETE"] == "true", docs_digest=input_digest(metadata, include_server=True),
-                          candidate_modes_verified=candidate_modes_safe(os.environ["EXPECTED_HEAD"]))
+        post_merge = sys.argv[1] == "--post-merge"
+        metadata = json.loads(Path(sys.argv[2] if post_merge else sys.argv[1]).read_text(encoding="utf-8"))
+        if post_merge:
+            result = classify_post_merge(json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text(encoding="utf-8")), metadata)
+        else:
+            digest = input_digest(metadata)
+            result = classify(json.loads(os.environ["CHANGED_FILE_RECORDS"]), int(os.environ["CHANGED_FILE_COUNT"]), metadata, digest,
+                              complete=os.environ["ENUMERATION_COMPLETE"] == "true", docs_digest=input_digest(metadata, include_server=True),
+                              candidate_modes_verified=candidate_modes_safe(os.environ["EXPECTED_HEAD"]))
     except (OSError, ValueError, KeyError, IndexError, TypeError, AttributeError, subprocess.SubprocessError):
         result = full("classifier-or-metadata-failure")
     print(json.dumps(result, sort_keys=True))

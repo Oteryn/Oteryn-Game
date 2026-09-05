@@ -6,6 +6,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -47,6 +48,7 @@ EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
 )
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "7f101b51bfeff7c63495f8d9662a9369a1abd597485d852a5b4964d1fad221c5"
 EXPECTED_MERGE_GROUP_GATE_BLOB = "e3291fe8fca8fcf70166d5652b43d5a26fa0d762"
+EXPECTED_POST_MERGE_RUST_SHA256 = "303b0bbc0a71b7405f7c662e604494dfcea89c3a2db3ecd2b535eedaee9d03c9"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
     "on",
@@ -178,6 +180,14 @@ def indented_yaml_mapping_block(text: str, key: str, indent: int) -> str | None:
 
 def top_level_yaml_mapping_block(text: str, key: str) -> str | None:
     return indented_yaml_mapping_block(text, key, 0)
+
+
+def validate_post_merge_rust(text: str) -> list[str]:
+    # Reuse the repository's canonical workflow/job pin pattern. This binds
+    # selection, failure fallbacks and evidence commands, not just substrings.
+    if hashlib.sha256(text.encode("utf-8")).hexdigest() != EXPECTED_POST_MERGE_RUST_SHA256:
+        return ["Rust post-merge workflow must match the reviewed fail-closed contract"]
+    return []
 
 
 def main() -> int:
@@ -496,8 +506,11 @@ def main() -> int:
     rust_workflow = ROOT / ".github/workflows/rust.yml"
     if rust_workflow.is_file():
         text = rust_workflow.read_text(encoding="utf-8")
-        if "      - '.cargo/**'" not in text:
-            errors.append("Rust post-merge workflow must treat .cargo/** as Rust-sensitive")
+        errors.extend(validate_post_merge_rust(text))
+        if not errors:
+            regression = subprocess.run([sys.executable, str(ROOT / "tools/repository/test_classify_post_merge_lanes.py")], cwd=ROOT, check=False)
+            if regression.returncode != 0:
+                errors.append("Rust post-merge behavioral regressions failed")
 
     dependabot = ROOT / ".github/dependabot.yml"
     if dependabot.is_file():
