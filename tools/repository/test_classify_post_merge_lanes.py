@@ -114,7 +114,7 @@ def main():
     assert "    paths:" not in workflow, "unknown main inputs must trigger FULL"
     assert "    needs: lanes\n" in workflow
     assert "needs.lanes.result != 'success' || needs.lanes.outputs.windows != 'false'" in workflow
-    assert "cancel-in-progress: false" in workflow, "a later push must not cancel an earlier required post-merge run"
+    assert "concurrency:" not in workflow, "branch concurrency can replace a pending protected-main run"
     assert "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc" in workflow
     # Execute the actual shell fallback with a failed toolchain dependency.
     block = policy.indented_yaml_mapping_block(workflow, "lanes", 2)
@@ -128,7 +128,8 @@ def main():
         assert result.returncode == 0 and output.read_text() == "windows=true\n", result
     assert hasattr(policy, "validate_post_merge_rust"), "post-merge workflow regression contract is missing"
     assert not policy.validate_post_merge_rust(workflow)
-    for before_text, after_text in (("always()", "success()"), ("windows != 'false'", "windows == 'true'"), ("fetch-depth: 0", "fetch-depth: 1"), ("    needs: lanes", "    needs: policy"), ("--test durability_postgres", "--test nonexistent"), ("--post-merge", "--pr"), ("  workflow_dispatch:", "  pull_request:"), ("cancel-in-progress: false", "cancel-in-progress: true")):
+    assert policy.validate_post_merge_rust(workflow + "\nconcurrency:\n  group: main\n  cancel-in-progress: false\n")
+    for before_text, after_text in (("always()", "success()"), ("windows != 'false'", "windows == 'true'"), ("fetch-depth: 0", "fetch-depth: 1"), ("    needs: lanes", "    needs: policy"), ("--test durability_postgres", "--test nonexistent"), ("--post-merge", "--pr"), ("  workflow_dispatch:", "  pull_request:")):
         mutated = workflow.replace(before_text, after_text)
         assert mutated != workflow and policy.validate_post_merge_rust(mutated), before_text
     print("Post-merge fixtures PASS: real Git ranges, event/protection identity, full fallback, consumer/rename/mode families and workflow wiring")

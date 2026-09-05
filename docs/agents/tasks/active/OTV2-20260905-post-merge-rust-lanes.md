@@ -48,6 +48,8 @@ NOT_APPLICABLE to runtime authority/recovery matrices: this task changes standal
 
 Fresh RED: missing-adapter assertion on original protected code, preserved in remote commit `52a7852be5e1313d5c0c2c75f9200dbc308594c1`. Minimal GREEN adds only the post-merge adapter and uses existing classifier semantics. A second RED proves the missing workflow regression contract before its addition.
 
+Independent review on `5183ef36f71960505ed7d33250b7bae818122e7b` verified one P2: branch-wide concurrency still replaces pending runs despite `cancel-in-progress: false`. Fresh RED rejected that group before minimal removal of the concurrency block. Regression now forbids cross-run cancellation of either manual or push qualification; full workflow pin family rejects reintroduction. The repair does not change classification or evidence commands.
+
 Focused checks: new real-Git fixtures cover protection/event/SHA bindings, disconnected or absent before SHA, full 301-file enumeration, bad/truncated diff, dependency/client/shared/SIM changes, cross-consumer rename, special file modes, stale consumer snapshot and actual shell fallback. Existing #283 PR classifier/aggregate/mode/job mutation families remain required, along with existing PR/MQ PG/SIM regressions and repository/governance checks.
 
 Exact-head full GitHub CI, whole-diff self-review and one independent deep review are required before normal Merge Queue integration. Actual post-merge hosted evidence and timing are required after readback; clearly distinguish observed runs from historical replay/inferred savings. No synthetic runtime changes solely to manufacture a benchmark. Final SHA and CI/review evidence stay external; no self-referential metadata commits.

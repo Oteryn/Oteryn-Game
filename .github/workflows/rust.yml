@@ -9,10 +9,6 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: rust-workspace-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
   lanes:
     name: Rust / protected-main risk lanes
