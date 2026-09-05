@@ -220,34 +220,34 @@ Complete verified evidence, publication, durable flow/adoption and qualification
 ## Context checkpoint
 
 ```yaml
-last_progress: canonical positive-source behavioral RED observed; local rich-verifier GREEN 27 tests passed; full A remains incomplete
-status: waiting
+last_progress: coherent verifier and typed publication checkpoint locally qualified; Task3 remains; controlled rotation without completion
+status: implementing
 branch: agent/foundation-fresh-admission-318
 head_sha: null
-pr: null
+pr: 321
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: [33985311543, 33985663094, 33985944120]
-ci_job_ids: [101357665714, 101358627615, 101359375408]
+ci_run_ids: [33985311543, 33985663094, 33985944120, 33986616753]
+ci_job_ids: [101357665714, 101358627615, 101359375408, 101361296047, 101361296064]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
+repair_cycles_for_current_gate: 3
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: implement and qualify typed publication then fresh split-phase flow and independently current adoption
+next_action: implement Task3 retained authorization/outcome/reconcile/adoption using separate historical DTOs and a journal-independent durable projection
 ```
 
 Source readiness prerequisite is tracked separately in Issue #319 for Child C. It does not block Child A semantic implementation or widen this allocation.
 
-## Rich verifier checkpoint
+## Historical rich verifier checkpoint (7141845)
 
 - Executed behavioral RED: `776fcf3ba47b66f660f9f0d56717239ef1011ee4`, run `33985944120`, Linux job `101359375408`: build/strict Clippy passed; independently published positive control failed at the expected `is_ok` assertion, 233 passed / 1 failed. Separate formatting failure was not RED evidence. Work recorded comment `5554135439`.
 - Local tool discovery corrected the initial PATH-only assessment: `/root/.cargo/bin/cargo` and `rustfmt +1.94.0` are available. Exclusive clone `foundation-worktree-318` was clean at exact remote `776fcf3` before edits; native GitHub publication preserves parent history.
@@ -255,3 +255,32 @@ Source readiness prerequisite is tracked separately in Issue #319 for Child C. I
 - Executed local `cargo +1.94.0 test --locked -p oteryn-game-server --lib foundation::fnd04_verifier`: 27 passed, 0 failed. Owned-file rustfmt applied. An earlier unqualified focused invocation also linked the unrelated `durability_postgres` integration target and failed with undefined hidden Tokio `Runtime::block_on` symbols; no baseline conclusion is claimed. Canonical workspace/PG CI remains required.
 - Remaining: typed publication/bootstrap/CAS/activation, immutable fresh authorization and six outcomes, split-phase reconciliation, independently current adoption, capability doctests and full Child A qualification. This checkpoint is not integration-ready.
 - Deadline accessor is the greatest accepted integer NumericDate second. A future durable adapter must preserve the accepted strict credential predicate for its actual trusted timestamp precision; truncating a subsecond L cannot relax expiration. Original receipt audit/deadline values remain immutable once committed.
+
+## Controlled rotation checkpoint — 2026-09-05 19:37Z
+
+Status remains **IN_PROGRESS** (`implementing`); `integration_ready=false`. No task completion, lease release, production source registration or background execution is claimed. The original 60-minute foreground allocation began at 18:44Z and is not reset by this checkpoint.
+
+Implemented since `7141845d2742d10b8fdeae8a8166fa4aa3defb0c`:
+
+- Closed Account/Character/Runtime/SigningTrust publication guards; a sealed owning publisher prepares an immutable atomic request. Raw state/provenance fields cannot register a publisher.
+- Independent bootstrap/high-water and locked CAS comparisons, exact idempotent replay preserving source time, source identity/order/decision checks, security/lease/runtime high-water retention and conflicting tombstone/bootstrap rejection.
+- Account security retains its own subject and Platform provenance separately from Game presence publication. Advancing only the accepted Game guard wrapper preserves the Platform source revision, decision and observation time; that wrapper must equal the accepted Account guard revision.
+- Bounded submit/reconcile ports yield; exact receipt completion additionally checks a separate sealed independently-current source before activation. An older receipt cannot activate after a newer deny. There is no SQL, production adapter or source registration.
+- Capability misuse compile-fail doctests, plus edition-2024 formatting of owned source files. The earlier standalone edition-2021 formatting caused signature differences; `cargo +1.94.0 fmt --all --check` now passes.
+
+Executed local evidence:
+
+- Publication bootstrap RED: independently owned positive control failed its expected `is_ok` assertion before implementation (0 passed / 1 failed).
+- Account wrapper RED: preserving the same Platform source at a new Game guard wrapper initially returned `Stale` (0 passed / 1 failed), then GREEN after the narrow wrapper comparison fix.
+- Independent Platform authority substitution and observation-time rollback RED: both isolated tests returned `Ok(())` instead of `Err(Stale)` (0 passed / 2 failed), then GREEN after identity/time monotonic checks.
+- `/root/.cargo/bin/cargo +1.94.0 test --locked -p oteryn-game-server --lib foundation::`: **138 passed, 0 failed**, including 17 publication tests and preserved Foundation/reconnect behavior.
+- `/root/.cargo/bin/cargo +1.94.0 test --locked -p oteryn-game-server --doc`: **6 passed, 0 failed**, including both new capability misuse doctests.
+- `/root/.cargo/bin/cargo +1.94.0 fmt --all --check`: passed.
+- `/root/.cargo/bin/cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings`: passed. Three local test-fixture `expect` lint findings were repaired with explicit propagated fixture errors.
+- Canonical CI for this material checkpoint is not yet observed. Previous `7141845` run `33986616753` had two ordinary observations by Work, last observed running; this worker did not repeat them. Earlier canonical runs and outcomes remain historical evidence, not current-head qualification.
+
+Counters and custody: prior `7141845` CI generation ordinary observations = 2; no identical-failure retry, no CI recovery action, no no-op/rerun trigger, no force/rebase/reset, no second PR. Formatting repair count for the current gate = 3. New material head opens a new CI generation; its first observation belongs to Work. Local test/lint fixes do not convert an expected RED into a completion claim.
+
+Remaining work is substantial: Task3 immutable retained authorization/receipt audit DTOs, six durable outcomes, same-key exact/conflicting replay, ambiguity-only original-binding reconciliation, independently-current adoption and stale projection clearing; a production durable entry independent of the synchronous journal generic bound; full direct/reconciled/restart/transport-collision qualification and independent exact-head review. The persisted historical binding must remain distinct from the private current verified capability so B can restore receipts without forging live authority. Task2 still needs whole-boundary independent review and canonical current-head qualification; physical PostgreSQL semantics belong to B. Child C/source #319 and Server Seam #247 remain unavailable and unallocated here.
+
+One next action: implement Task3 retained authorization/outcome/reconcile/adoption on this same allocated branch after coordinator-controlled continuation, preserving the existing budget/counter history and ownership.

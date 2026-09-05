@@ -989,8 +989,8 @@ mod tests {
     // Child A starts with a deliberately unavailable production source context.
     // This must never fall back to the legacy caller-filled compatibility facts.
     #[test]
-    fn fresh_durability_missing_sources_fail_closed_after_valid_compatibility_control(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn fresh_durability_missing_sources_fail_closed_after_valid_compatibility_control()
+    -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[29; 32]);
         let authority = fresh_authority("fresh-1", signing_key.verifying_key().to_bytes());
         let compatibility_trust = FreshTrustContext::new(&authority);
@@ -1154,8 +1154,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_durability_accepts_independently_published_current_sources(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn fresh_durability_accepts_independently_published_current_sources()
+    -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[31; 32]);
         let source = published_fresh_source(signing_key.verifying_key().to_bytes())?;
         let grant = signed_token(
@@ -1171,8 +1171,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_durability_retains_account_and_all_independent_fences(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn fresh_durability_retains_account_and_all_independent_fences()
+    -> Result<(), Fnd04ConsumerError> {
         let key = SigningKey::from_bytes(&[33; 32]);
         let source = published_fresh_source(key.verifying_key().to_bytes())?;
         let token = signed_token(
@@ -1199,8 +1199,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_durability_current_mutations_preserve_independent_classification(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn fresh_durability_current_mutations_preserve_independent_classification()
+    -> Result<(), Fnd04ConsumerError> {
         let key = SigningKey::from_bytes(&[34; 32]);
         let token = signed_token(
             &key,
@@ -1332,8 +1332,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_durability_revalidation_preserves_original_credential_time(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn fresh_durability_revalidation_preserves_original_credential_time()
+    -> Result<(), Fnd04ConsumerError> {
         let key = SigningKey::from_bytes(&[35; 32]);
         let mut source = published_fresh_source(key.verifying_key().to_bytes())?;
         let token = signed_token(
@@ -1368,8 +1368,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_durability_rejects_older_security_even_within_source_age_bound(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn fresh_durability_rejects_older_security_even_within_source_age_bound()
+    -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[32; 32]);
         let mut source = published_fresh_source(signing_key.verifying_key().to_bytes())?;
         source.security_revision = 6;
@@ -1437,8 +1437,8 @@ mod tests {
     }
 
     #[test]
-    fn protected_header_enforces_exact_members_and_algorithm_precedence(
-    ) -> Result<(), Fnd04VerificationError> {
+    fn protected_header_enforces_exact_members_and_algorithm_precedence()
+    -> Result<(), Fnd04VerificationError> {
         let malformed = compact_token(r#"{"alg":"Ed25519","kid":"fresh"}"#);
         let non_exact_algorithm = compact_token(r#"{"alg":"EdDSA","kid":"fresh","typ":"x"}"#);
         let valid = compact_token(r#"{"alg":"Ed25519","kid":"fresh","typ":"x"}"#);
@@ -1460,8 +1460,8 @@ mod tests {
     }
 
     #[test]
-    fn signature_validation_only_uses_verifier_fixed_trust_keys(
-    ) -> Result<(), Fnd04VerificationError> {
+    fn signature_validation_only_uses_verifier_fixed_trust_keys()
+    -> Result<(), Fnd04VerificationError> {
         let signing_key = SigningKey::from_bytes(&[7; 32]);
         let header = r#"{"alg":"Ed25519","kid":"fresh","typ":"x"}"#;
         let encoded_header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(header);
@@ -1491,8 +1491,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_consumer_returns_facts_only_after_fixed_context_and_current_evidence_match(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn fresh_consumer_returns_facts_only_after_fixed_context_and_current_evidence_match()
+    -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[9; 32]);
         let authority = fresh_authority("fresh-1", signing_key.verifying_key().to_bytes());
         let trust = FreshTrustContext::new(&authority);
@@ -1510,8 +1510,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_consumer_classifies_explicit_current_key_revocation_as_authentication_failure(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn fresh_consumer_classifies_explicit_current_key_revocation_as_authentication_failure()
+    -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[10; 32]);
         let authority =
             TestAuthority::default().deny_key(Fnd04EvidenceScope::FreshAdmission, "fresh-1");
@@ -1530,8 +1530,8 @@ mod tests {
     }
 
     #[test]
-    fn revoked_kid_is_rejected_while_a_different_current_kid_remains_usable(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn revoked_kid_is_rejected_while_a_different_current_kid_remains_usable()
+    -> Result<(), Fnd04ConsumerError> {
         let active = SigningKey::from_bytes(&[16; 32]);
         let revoked = SigningKey::from_bytes(&[17; 32]);
         let authority = TestAuthority::default()
@@ -1606,8 +1606,8 @@ mod tests {
     }
 
     #[test]
-    fn recovery_consumer_returns_non_authoritative_facts_from_only_recovery_context(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn recovery_consumer_returns_non_authoritative_facts_from_only_recovery_context()
+    -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[11; 32]);
         let authority = recovery_authority("recovery-1", signing_key.verifying_key().to_bytes());
         let trust = RecoveryTrustContext::new(&authority);
@@ -1630,8 +1630,8 @@ mod tests {
     }
 
     #[test]
-    fn invalid_signature_masks_authenticated_schema_and_profile_classifications(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn invalid_signature_masks_authenticated_schema_and_profile_classifications()
+    -> Result<(), Fnd04ConsumerError> {
         let trusted_key = SigningKey::from_bytes(&[12; 32]);
         let untrusted_key = SigningKey::from_bytes(&[13; 32]);
         let authority = fresh_authority("fresh-1", trusted_key.verifying_key().to_bytes());
@@ -1657,8 +1657,8 @@ mod tests {
     }
 
     #[test]
-    fn authenticated_unsupported_profile_is_not_reinterpreted_as_fresh_admission(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn authenticated_unsupported_profile_is_not_reinterpreted_as_fresh_admission()
+    -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[14; 32]);
         let authority = fresh_authority("fresh-1", signing_key.verifying_key().to_bytes());
         let trust = FreshTrustContext::new(&authority);
@@ -1676,8 +1676,8 @@ mod tests {
     }
 
     #[test]
-    fn unavailable_current_security_evidence_fails_before_any_fresh_facts_are_returned(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn unavailable_current_security_evidence_fails_before_any_fresh_facts_are_returned()
+    -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[15; 32]);
         let authority = fresh_authority("fresh-1", signing_key.verifying_key().to_bytes())
             .unavailable_account();
@@ -1898,8 +1898,8 @@ mod durability_evidence_v1_tests {
     }
 
     #[test]
-    fn recovery_durability_facts_preserve_signed_security_revision_and_expiry(
-    ) -> Result<(), Fnd04ConsumerError> {
+    fn recovery_durability_facts_preserve_signed_security_revision_and_expiry()
+    -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[23; 32]);
         let authority = RecoveryAuthority {
             key: signing_key.verifying_key().to_bytes(),
@@ -2195,6 +2195,11 @@ impl<'a> FreshDurabilityCurrentAuthorityV1<'a> {
 
 /// Authenticated claims and independently published evidence. There is deliberately
 /// no public constructor, deserializer or default implementation.
+///
+/// ```compile_fail
+/// use oteryn_game_server::foundation::fnd04_verifier::VerifiedFreshDurabilityFactsV1;
+/// let evidence = VerifiedFreshDurabilityFactsV1::default();
+/// ```
 #[derive(Debug, Clone)]
 pub struct VerifiedFreshDurabilityFactsV1 {
     claims: Claims,

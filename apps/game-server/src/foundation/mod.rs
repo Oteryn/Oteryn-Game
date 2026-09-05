@@ -666,3 +666,5 @@ mod tests {
         Ok(())
     }
 }
+
+pub mod admission_authority_publication;
