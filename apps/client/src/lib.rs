@@ -106,3 +106,5 @@ mod tests {
         Ok(())
     }
 }
+
+// Nonshipping #283 hosted benchmark stimulus: client source surface.
