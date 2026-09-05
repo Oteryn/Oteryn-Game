@@ -4,7 +4,7 @@
 task_id: OTV2-20260904-gameplay-server-seam-allocation
 title: Allocate production gameplay Server Seam
 mode: COORDINATE
-status: blocked
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/gameplay-server-seam-allocation-247
@@ -13,7 +13,8 @@ issue: 247
 parent_coordinator_issue: 162
 preparation_issue: 96
 preparation_pr: 117
-preparation_merge_sha: 4079804b7f1f29cc2b7db2e746d4da2861bff084
+admission_main_sha: 68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705
+integration_main_sha: 187c6b83c6945d79aabef2c5730c3ddba13fcab1
 base_sha: 68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705
 head_sha: null
 final_head_sha: null
@@ -26,7 +27,7 @@ worker_task_id: OTV2-20260904-gameplay-server-seam
 worker_branch: agent/otv2-gameplay-server-seam-01
 worker_pr: null
 created_at: 2026-09-04T19:27:00+02:00
-updated_at: 2026-09-04T20:00:00+02:00
+updated_at: 2026-09-05T13:44:00+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -37,74 +38,55 @@ public_contracts:
   - OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM allocation authority
   - serialized Server Seam shared-path ownership
   - accepted production gameplay server-seam plan from PR #117
-runtime_write_authority: none
-production_authority: none
 depends_on:
-  - issue: 247
   - issue: 162
-  - issue: 280
+  - issue: 247
   - merged_pr: 117
   - merged_pr: 151
   - merged_pr: 252
-  - merged_pr: 290
+  - merged_pr: 289
 blocks:
   - OTV2-20260904-gameplay-server-seam
+cross_repository_coordination_id: null
 external_repositories: []
 ```
 
 ## Outcome
 
-Prepare one fresh docs-only allocation for the accepted production gameplay Server Seam, while withholding every runtime/shared-path write right until the live post-#252 authority API floor is terminally repaired and read back from protected `main`.
+Create and qualify one docs-only control-plane allocation for the already accepted production gameplay Server Seam. This PR itself changes no runtime, protocol bytes, durable/session state, Cargo dependency, workflow/protection, production setting, secret or external repository.
 
-PR #294 may remain open Draft and may receive deterministic docs/control-plane qualification while the dependency is active. It MUST NOT integrate, release the worker, create `agent/otv2-gameplay-server-seam-01`, or authorize any Server Seam runtime write while Issue #280 / PR #289 is nonterminal.
-
-This PR changes no runtime behavior, wire bytes, session/durable state, Cargo dependency, workflow/protection, production setting, secret or external repository.
+Only after PR #294 integrates through protected controls and Work reads the resulting merge SHA from protected `main` may one mutating worker branch be created from exactly that merge SHA.
 
 ## Architecture and source of truth
 
-- `PROVEN` — allocation admission `main` is `68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705`.
-- `PROVEN` — Issue #162 is the live Work coordinator lifecycle; its prior checkpoint selected a fresh Server Seam allocation after historical Durability closeout.
-- `PROVEN` — Issue #247 is open and its allocation checkpoint grants no implementation write authority by itself.
-- `PROVEN` — preparation #96 / PR #117 merged as `4079804b7f1f29cc2b7db2e746d4da2861bff084` and defines the accepted conditional Server Seam topology, shared paths, negative tests and QA evidence boundary.
-- `PROVEN` — FND-04 verifier/consumer Issue #115 is terminal; archived task `OTV2-20260825-fnd04-verifier-consumer` records PR #151 merged as `2d0e951ce37c2e28773c22966bb816c00bebaa0a` with ownership released.
-- `PROVEN` — Issue #116 is closed and the current Resource Limits Registry contains the accepted Server Seam NET03 ceilings.
-- `PROVEN` — historical Durability implementation/archival work #252/#290 is merged and released.
-- `PROVEN` — live Issue #280 is OPEN / `IMPLEMENTING` and PR #289 is OPEN Draft on branch `refactor/authority-api-floor-280`; this is a later post-#252 authority-contract-floor repair, not historical Durability ownership.
-- `PROVEN` — current PR #289 head observed during this allocation review is `ddbb44d2644c6f66bf86aba837d7712b01878fac` and its `admission_recovery_inner.rs` patch makes `ReconnectCandidateBindingV1::from_record(...)` test-only/internal for expected matching.
-- `PROVEN` — on that same current #289 head, `CharacterWorldEligibilityClaimV1::from_identity(&ReconnectIdentityV1)` remains production-public and directly derives a supposedly current eligibility claim from immutable reconnect identity.
-- `PROVEN` — on that same current #289 head, `AccountPresenceClaimV1::from_identity(&ReconnectIdentityV1)` remains production-public and directly derives a supposedly current presence claim from immutable reconnect identity.
-- `DERIVED` — because Server Seam will consume FND-04/current-authority/reconnect boundaries, the nonterminal #280 sibling-family repair is a semantic release dependency even though PR #289 does not own the exact Server Seam files.
-- `PROVEN` — PR #289 itself states final integration qualification is pending later convergence before its own terminal review/integration; therefore PR #294 cannot infer #280 completion from #289 being mergeable or from a historical green head.
-- `PROVEN` — current `apps/game-server/src/main.rs` has no gameplay listener; ordinary gameplay execution remains fail-closed.
-- `PROVEN` — current `apps/game-server/src/foundation/protocol.rs` owns FND-02 inbound wire validation and remains the accepted shared lease for only the minimum Server Seam typed bridge/registered server encoders.
-- `PROVEN` — current open non-Dependabot path scan found no exact Server Seam path collision. #289 is a semantic authority dependency, not a path-ownership collision.
-- `PROVEN` — Dependabot #259/#260/#261 touch root Cargo files but have no task/allocation ownership; they remain later reconciliation candidates.
-- `CONFLICT` — `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md` contains stale release-candidate prose referring to nonexistent PR #314. It does not override the newer live coordinator/Issue state and is outside this allocation repair.
+- `PROVEN` — current protected `main` is `187c6b83c6945d79aabef2c5730c3ddba13fcab1`.
+- `PROVEN` — Issue #162 remains open and names `OTV2_WORK_DELIVERY_COORDINATOR` as the canonical control plane; no later profile transfer is recorded.
+- `PROVEN` — Issue #247 remains open and is `READY_FOR_FRESH_ALLOCATION`; it grants no implementation authority by itself.
+- `PROVEN` — preparation #96 / PR #117 defines the exact conditional Server Seam topology and one-writer shared paths.
+- `PROVEN` — FND-04 verifier/consumer #115 / PR #151 is terminal and released.
+- `PROVEN` — NET/FND-03 Server Seam ceilings are registered: pre-admission connections 256, handshake/auth work 64, outbound queue 64 entries / 1,048,576 bytes per session, pending writes 8 and drain tasks 256, plus inherited FND-02 limits.
+- `PROVEN` — Durability terminal replacement #252 and its lifecycle closeout are merged/released.
+- `PROVEN` — authority API floor Issue #280 is closed `completed`; PR #289 merged as `be708dc5be5290274f635d534d83f62b2f14b732` with P0=0/P1=0/P2=0, exact-head CI/review and protected-main readback.
+- `PROVEN` — on current protected `main`, `ReconnectCandidateBindingV1::from_record(...)`, `AccountPresenceClaimV1::from_identity(...)` and `CharacterWorldEligibilityClaimV1::from_identity(...)` are not production current-authority conveniences; the identity-derived siblings are `#[cfg(test)]` wrappers over private expected-value helpers.
+- `PROVEN` — subsequent #302/#303 add independent authority/recovery test harness coverage only and explicitly preserve production behavior; they do not consume Server Seam runtime paths.
+- `PROVEN` — `apps/game-server/src/main.rs` still only succeeds for `--smoke`; ordinary gameplay remains fail-closed and there is no production gameplay listener.
+- `PROVEN` — the latest open-PR path scan finds no active non-Dependabot writer on the Server Seam primary/shared paths. #305 is workflow/classifier/docs; #295/#293 are docs; #288/#262 are workflow/governance; historical #243 is Durability-only.
+- `PROVEN` — Dependabot #259/#260/#261 still touch `Cargo.toml`/`Cargo.lock` but carry no task/allocation ownership. They remain later shared-path reconciliation candidates, not active Server Seam writers.
+- `PROVEN` — PR #294 was reconciled to current protected main by normal two-parent merge commit `2d7cc7f21e232b17ab20838f0be6516972357c25`, with no rebase/reset/force update. After that merge-up, compare is `behind_by=0` and the PR still changes exactly these three docs paths.
+- `DERIVED` — the prior semantic dependency blocker is cleared; one Server Seam allocation candidate can now be qualified, subject to current-head deterministic checks, whole-diff self-review, independent deep review and review-thread reconciliation.
 
-Accepted technical authority remains merged #117, current FND-02/FND-03/FND-04 contracts/registries, current protected-main Foundation/Durability implementation, current high-risk authority qualification policy and QA-E2E evidence ownership. A lower implementation artifact may not widen them.
+Accepted technical authority remains merged #117, current FND-02/FND-03/FND-04 contracts/registries, current protected-main Foundation/Durability implementation, current authority-qualification discipline and QA evidence ownership. A lower implementation artifact may not widen them.
 
-## Blocking dependency gate
+## High-risk authority/recovery qualification
 
-The following gate is mandatory before PR #294 can leave Draft for protected integration:
-
-1. Issue #280 is terminally completed and its final repair is integrated to protected `main` through repository controls.
-2. PR #289 (or its explicitly superseding terminal repair) has protected-main readback; a Draft/open/green branch head is not enough.
-3. Work refreshes protected `main`, Issue #280, PR #289/successor, exact current authority API declarations, current Server Seam path ownership, Dependabot Cargo candidates and all required checks/review state.
-4. Work repeats the authority sibling-family sweep for production-public record/identity-derived convenience constructors relevant to current authority.
-5. Only if that sweep leaves no unresolved P0/P1 authority-floor finding does Work recompute PR #294's plan/leases against the new protected-main APIs.
-6. Any material API/lease/plan change invalidates prior PR #294 exact-head review/qualification and receives a fresh stable-candidate generation before integration.
-
-No amount of green CI on this docs-only allocation can substitute for that semantic dependency.
-
-## Evidence ownership correction from coordinator self-review
-
-Merged #117 requires the Server Seam implementation to traverse the actual production listener/composition path in real local TCP/TLS integration tests, while formal ADR-0007 QA Tier 1/Tier 2 remains owned by a separate post-merge QA lane. Therefore the worker may prove **Server Seam physical integration** for its candidate, but must report QA Tier 1/Tier 2 as `NOT_EVALUATED` until separately allocated QA proves them.
-
-The child plan also carries #117's golden/cross-oracle server encoding, wrong protocol/profile, invalid/expired/replayed/wrong-binding FND-04 material, concurrent fresh-admission replay, unsupported gameplay and non-silent shutdown handling of already-authoritative reserved work.
+```yaml
+applicable: false
+reason: docs-only control-plane allocation; it performs no production authority-consuming mutation, but the released worker is high-risk and must complete the full model in its own task
+```
 
 ## Allocation decision
 
-When — and only when — the blocking dependency gate above is fully proven and PR #294 itself subsequently qualifies/merges, Work may release:
+After — and only after — this PR itself qualifies, integrates and is read back from protected `main`, Work may release:
 
 ```text
 lane_id: OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM
@@ -113,16 +95,16 @@ worker: Oteryn: sol server seam lead
 branch: agent/otv2-gameplay-server-seam-01
 ```
 
-The worker branch is created from exactly the eventual allocation merge SHA read back from protected `main`, never from this admission SHA or a cached SHA.
+The worker branch MUST be created from exactly the allocation merge SHA, never from the historical admission SHA or a cached chat SHA.
 
-### Primary worker paths after lawful release
+### Primary worker paths
 
 - `apps/game-server/src/gameplay_transport/mod.rs`
 - `apps/game-server/src/gameplay_transport/tcp_tls.rs`
 - `apps/game-server/src/gameplay_transport/connection.rs`
 - `apps/game-server/tests/gameplay_server_seam.rs`
 
-### Serialized shared paths after lawful release
+### Serialized shared paths
 
 - `apps/game-server/src/foundation/protocol.rs`
 - `apps/game-server/src/lib.rs`
@@ -135,57 +117,64 @@ Worker governance metadata:
 
 - `docs/agents/tasks/active/OTV2-20260904-gameplay-server-seam.md`
 
-The shared lease authorizes only the accepted Server Seam consumer. It does not authorize #280/#289 repair, unrelated Foundation/Durability refactoring, bot upgrades, stable registry changes or workspace restructuring.
+The shared lease authorizes only the accepted Server Seam consumer. It does not authorize unrelated Foundation/Durability refactoring, bot upgrades, stable registry changes, `workspace-boundaries.toml`, workflows or workspace restructuring.
 
 ## Dependabot reconciliation
 
-Before first Cargo mutation and before final worker integration, re-read #259/#260/#261 plus every active non-Dependabot owner. Never merge bot branches into the worker lane merely for convenience. A predecessor merge is reconciled from fresh protected `main` with normal history-preserving integration and requalification.
+Before the worker's first Cargo mutation and again before final integration, re-read #259/#260/#261 and every active non-Dependabot owner. Never absorb a bot upgrade merely to resolve the lease. If a predecessor merges first, reconcile from fresh protected `main` with normal history-preserving integration and rerun invalidated qualification.
 
-## Mandatory execution order
+## Review finding reconciliation
 
-1. Keep PR #294 docs-only and Draft while #280 is nonterminal.
-2. Do not mutate #280/#289 paths; their existing writer retains single-writer authority.
-3. Observe #280/#289 only for terminal handoff/integration evidence.
-4. After protected-main #280 terminal readback, refresh current authority APIs and rerun the sibling-family sweep.
-5. Reconcile PR #294 plan/lease metadata if the final authority API shape changes any Server Seam assumption.
-6. Qualify the resulting stable PR #294 head with deterministic exact-head checks, whole-diff Work self-review and one genuinely independent deep review.
-7. Integrate only a clean, current, expected-head allocation through protected controls.
-8. Read allocation merge SHA from protected `main`; then create the worker branch from exactly that SHA and release one Sol writer.
-9. Worker performs fresh RED -> minimal GREEN, preserves canonical Foundation/Durability authority, proves physical Server Seam integration without claiming QA Tier 1/Tier 2 completion, completes family sweep/exact-head CI/independent review and returns `READY_FOR_INTEGRATION` without self-merging.
-10. Work independently verifies/integrates the worker and only then recomputes Client and QA readiness.
+The earlier Codex review on historical head `8df5f60f...` produced four actionable threads, now all `outdated` because the plan changed:
+
+- P1 `3936600517` — require independent golden/cross-oracle server encoder vectors;
+- P1 `3936600524` — exercise wrong protocol-major / transport-profile rejection through the composed listener;
+- P1 `3936600529` — add invalid/expired/replayed/wrong-binding and concurrent fresh-admission RED cases;
+- P2 `3936600539` — prove shutdown does not silently lose already-authoritative reserved work.
+
+`PROVEN` — the current child plan contains each of those requirements. The threads remain unresolved historical review records and MUST NOT be counted as final review evidence. Fresh independent review of the new stable exact head is required before their final disposition/resolution.
+
+## Evidence ownership
+
+The Server Seam worker must traverse the actual production listener/composition path in real local TCP/TLS integration tests. That proves the Server Seam boundary only. Formal ADR-0007 QA Tier 1/Tier 2 remains `NOT_EVALUATED` until separately allocated post-merge QA executes it.
 
 ## Acceptance criteria
 
-- [ ] PR #294 changes exactly these three docs paths and no runtime/Cargo/workflow/registry path.
-- [ ] Issue #280 / PR #289 or its explicit successor is terminal on protected `main` before PR #294 integration/release.
-- [ ] Fresh post-#280 authority sibling-family sweep finds no production-public record/identity-derived current-authority convenience that violates the active authority API floor.
-- [ ] Any final #280 API change is reconciled into the Server Seam plan/task before final allocation review.
-- [ ] No active non-Dependabot writer owns any final Server Seam primary/shared path.
-- [ ] Primary/shared lease remains within accepted #117 topology and excludes `workspace-boundaries.toml`, stable registries, workflows and architecture contracts.
+- [ ] PR #294 changes exactly the three allocated docs paths and no runtime/Cargo/workflow/registry path.
+- [ ] Final compare to protected `main` has `behind_by=0`.
+- [ ] Issue #280 / PR #289 remains terminal on protected `main`; the current authority sibling-family remains production-safe.
+- [ ] No active non-Dependabot writer owns any Server Seam primary/shared path.
+- [ ] Primary/shared lease remains exactly within accepted #117 topology; `workspace-boundaries.toml`, stable registries, workflows and architecture contracts remain excluded.
 - [ ] Worker task binds `AuthorityInvariant × ConsumerBoundary × MutationOperator` and independent current facts.
 - [ ] Child plan retains fresh RED -> minimal GREEN, bounded framing/resource proof, FND-04 authority/fencing, golden/cross-oracle encoding, replay/concurrency, unsupported-gameplay fail-close, bounded drain and production-path seam integration.
 - [ ] Formal ADR-0007 QA Tier 1/Tier 2 remains separate post-merge QA authority.
 - [ ] No production endpoint/certificate/key/secret/deployment topology, gameplay IDs/semantics, Reference fact or Content-format decision is selected.
-- [ ] Final allocation stable head has all required current-head checks, self-review, independent review, zero unresolved required threads and no actionable P0/P1.
-- [ ] Worker branch is not created before both dependency readback and allocation protected-main merge/readback.
+- [ ] Final allocation head has all current required checks, Work whole-diff self-review, one genuinely independent deep review, zero unresolved required threads and no actionable P0/P1/P2 disposition gap.
+- [ ] Worker branch is not created before allocation protected-main merge/readback.
 
 ## Excluded scope
 
-No runtime/test-runtime/Cargo/lockfile/Foundation implementation/Durability implementation/#280 repair/registry/workspace policy/workflow/ruleset/production environment/secret/certificate/production endpoint/live account/session/data/Client/QA execution/Movement/Combat/Ability/Interaction/AI/Channel/Analytics/Content-format/Platform/Atlas/META or other external-repository mutation is allowed in this allocation PR.
+No runtime/test-runtime/Cargo/lockfile/Foundation implementation/Durability implementation/registry/workspace policy/workflow/ruleset/production environment/secret/certificate/production endpoint/live account/session/data/Client/QA execution/Movement/Combat/Ability/Interaction/AI/Channel/Analytics/Content-format/Platform/Atlas/META or other external-repository mutation is allowed in this allocation PR.
 
 A required unowned path is `SHARED_LEASE_REQUIRED`; a material public API/protocol/trust/fencing/persistence/resource/evidence-ownership decision is `ARCHITECTURE_ESCALATION_REQUIRED` rather than implicit expansion.
+
+## Implementation / findings
+
+Current candidate reconciliation is control-plane only. The semantic dependency on #280 was correctly discovered before release; it is now terminal and verified on protected main. No runtime authority has been released during the wait.
+
+Do not make bookkeeping-only commits after the next material freeze. Exact head/check/review evidence belongs on the PR/Issue once the stable tracked candidate exists.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python tools/agents/validate_governance.py`
-- result: pending new exact-head generation after dependency-gate correction
+- result: pending fresh exact-head generation after this current-main reconciliation
 
 ### Component/integration
 
 - command/run: `python tools/repository/validate_repository_policy.py`
-- result: pending new exact-head generation after dependency-gate correction
+- result: pending fresh exact-head generation after this current-main reconciliation
 
 ### E2E
 
@@ -194,52 +183,54 @@ A required unowned path is `SHARED_LEASE_REQUIRED`; a material public API/protoc
 
 ### Exact-head CI
 
-- final head: null
+- final head: pending stable candidate produced by this reconciliation
 - trigger source: pull_request
-- workflow/run/job: prior generations are historical after this tracked dependency-gate correction
-- classification: docs-only high-risk allocation/control-plane change
-- result: pending new current-head generation
+- workflow/run/job: pending fresh generation
+- runner assignment: repository-managed/GitHub-hosted as routed by current protected policy
+- classification: docs-only high-risk control-plane allocation
+- result: pending
 
 ## Self-review
 
-- exact head: pending new stable candidate
-- method/reviewer: ChatGPT Work Delivery Coordinator whole-diff review against merged #117 plus live authority programme
+- exact head: pending stable candidate
+- method/reviewer: ChatGPT Work Delivery Coordinator whole-diff review against merged #117 and current protected main
 - material findings:
-  - repaired pre-qualification provenance typo in historical Durability text
-  - repaired worker task schema omission by binding Issue #247
-  - repaired QA evidence-ownership overclaim and literal #117 negative/golden/shutdown coverage
-  - `P1 accepted`: path-only collision analysis missed the semantic dependency on active authority-floor Issue #280 / PR #289; direct exact-head inspection proved both `CharacterWorldEligibilityClaimV1::from_identity(...)` and `AccountPresenceClaimV1::from_identity(...)` remain production-public on current #289 head, so allocation integration/release is now gated on terminal #280 readback and a fresh sibling-family sweep
-- verdict: `BLOCKED_DEPENDENCY` pending #280 terminal readback; no Server Seam runtime authority released
+  - accepted/repaired historical provenance typo and worker task schema omission;
+  - accepted/repaired QA evidence-ownership overclaim;
+  - accepted/repaired four historical Codex P1/P2 plan findings listed above;
+  - accepted semantic dependency on #280 before release; now terminally cleared by protected-main readback;
+  - no current non-Dependabot path collision found after current-main rescan
+- verdict: pending final exact-head review after this tracked reconciliation
 
 ## Independent review
 
-- required: `YES` for the eventual stable integrable allocation candidate
-- exact head: null
+- required: `YES` — this docs-only PR grants later high-risk protocol/session/admission/fencing and serialized shared-path authority
+- exact head: pending stable candidate
 - method/auditor: one genuinely independent deep exact-head review under current policy
-- material findings: all prior requests are historical after tracked corrections; do not count them for final integration
-- verdict: pending after #280 terminal reconciliation
+- material findings: historical reviews are non-final after tracked repairs
+- verdict: pending
 
 ## PR and closeout
 
 - changed-file review: exactly three allocated docs paths expected
-- unresolved review threads: must be re-read for final candidate
-- related PRs: #289 is a semantic prerequisite but owns no Server Seam path; #259/#260/#261 are non-owning Cargo candidates
-- protected integration: `BLOCKED` while Issue #280 is nonterminal
+- unresolved review threads: four historical/outdated threads remain; final reconciliation follows fresh representative review
+- related PRs: #289 terminal semantic prerequisite; #259/#260/#261 non-owning Cargo candidates
+- protected integration: pending current-head qualification/review only; dependency blocker cleared
 - merge/result: none
-- ownership release: none; worker write authority remains withheld
+- ownership release: none; worker write authority remains withheld until allocation merge/readback
 
 ## Context checkpoint
 
 ```yaml
-last_progress: live semantic dependency review proved authority-floor Issue #280 / PR #289 is still implementing and both AccountPresenceClaimV1::from_identity(...) and CharacterWorldEligibilityClaimV1::from_identity(...) remain production-public on current PR #289 head; PR #294 was therefore converted from merely validating to dependency-blocked before any integration or worker release
-status: blocked
+last_progress: protected main advanced to 187c6b83c6945d79aabef2c5730c3ddba13fcab1; #287/#291/#289 and subsequent authority test harness work are integrated; the authority sibling-family is safe on current main, no active non-Dependabot Server Seam path collision exists, and PR #294 was normally merged up to current main without force/rebase/reset
+status: validating
 branch: coord/gameplay-server-seam-allocation-247
 head_sha: null
 pr: 294
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pending_dependency_gate_head
+ci_check_generation: pending_reconciled_head
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -248,10 +239,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 4
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: authority_api_floor_issue_280_pr_289_nonterminal
-next_action: leave PR #294 Draft; observe the existing #280/#289 single-writer lane to terminal protected-main integration/readback, then refresh main and authority APIs, rerun the sibling-family sweep, reconcile this allocation if necessary, and only then perform final exact-head qualification/review/integration
+blocker: null
+next_action: publish the matching current-main worker task reconciliation on this same branch, then freeze the resulting remote head for exact-path/main-relation checks, fresh hosted CI and one independent deep review
 ```
