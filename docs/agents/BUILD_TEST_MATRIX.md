@@ -104,7 +104,20 @@ Current exact baseline uses Rust `1.94.0` and includes:
 - `cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc` for Rust-relevant pull requests;
 - `cargo-deny check --all-features` through the pinned cargo-deny action.
 
-Post-merge/manual `.github/workflows/rust.yml` temporarily preserves its PostgreSQL and simulation jobs independently of the PR aggregate gate. Removing duplication or scoping expensive lanes belongs to Issue #283 only after Issues #279 and #285 are integrated and read back.
+### Protected-main post-merge lanes (#304)
+
+Standalone `.github/workflows/rust.yml` runs on every push to main, without path filters, and on manual dispatch. Linux workspace, PostgreSQL 17.6, policy and supply chain always run. Manual dispatch always includes Windows production and SIM. Merge Queue remains FULL and its workflow and PR `game-gate` are unchanged.
+
+Only a normal push to protected `refs/heads/main` can omit Windows/SIM. The lane job verifies the exact already-protected event SHA, obtains full Git history, checks before/after ancestry, and enumerates the complete tree diff locally (including both rename sides, without the API's 300-file cap). It runs the existing #283 classifier and Cargo metadata from that protected revision. It does not trust PR labels/body or the push event's capped commits array. This is post-integration protected code, unlike the PR classifier's untrusted candidate.
+
+| Post-merge input | Standalone lanes |
+|---|---|
+| Proven server-only with matching reviewed consumer snapshot | Linux + PostgreSQL + policy + supply chain |
+| Client/shared/simulation, mixed material surfaces | FULL, including Windows production/SIM |
+| Cargo/toolchain/build/workflow/control-plane/unknown/incomplete | FULL |
+| Manual dispatch; malformed event, missing ancestry/metadata, classifier failure | FULL |
+
+The #283 reverse dependency closure and reviewed consumer snapshot retain their conservative semantics; stale snapshots select FULL. Missing or failed classification cannot silently skip Windows: the job's `always()` fallback requires successful classification and the exact `false` output before omission. A subsequent push does not cancel an earlier post-merge run. The unreachable PR-only `sim-windows-golden` job is removed; the real golden command remains unconditional inside Windows. Canonical repository-policy validation executes real-Git adapter fixtures and checks the reviewed workflow pin. Actual timing and run evidence live in Issue #304/PR #305; replay or projected savings do not substitute for observed hosted decisions.
 
 ## Required additions as owning layers appear
 
