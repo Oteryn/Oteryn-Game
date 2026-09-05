@@ -56,7 +56,7 @@ Produce one bounded, ownership-correct architecture decision for Issue #313 that
 - `UNKNOWN`: final receipt retention/archival policy; deliberately deferred because it does not block first safe implementation.
 - `CONFLICT`: initial candidate left the durable current-authority serialization and fresh transport reservation disposition incomplete; accepted P1/P2 repairs are specified below. Existing accepted FND-03/FND-04A invariants remain unchanged.
 
-Review provenance: [PR #317 finding disposition](https://github.com/Oteryn/Oteryn-Game/pull/317#issuecomment-5553646145), reviewed initial head `1748e02ad61ec69589fc1b154b0bbf91cfe0fb12`. The repairing architect is now an author of the material change and cannot supply its independent final-head review.
+Review provenance: [PR #317 finding disposition](https://github.com/Oteryn/Oteryn-Game/pull/317#issuecomment-5553646145), reviewed initial head `1748e02ad61ec69589fc1b154b0bbf91cfe0fb12`. The repairing architect is now an author of the material change and cannot supply its independent final-head review. Subsequent [physical-COMMIT deadline finding](https://github.com/Oteryn/Oteryn-Game/pull/317#issuecomment-5553720206) on `a83600338c694b25d699ed5440b86bcc4089edb0` is accepted: ordinary PostgreSQL cannot guarantee WAL/fsync completion before credential expiry.
 
 Candidate decision:
 
@@ -102,7 +102,9 @@ mutation_operators:
     - source publication after authorization and before COMMIT
     - absent or forged guard bootstrap and stale publisher CAS
     - same-revision source contradiction and restart rollback
-    - expiry during database lock wait or transaction completion
+    - expiry before final guarded decision L after every blocking acquisition
+    - WAL/backend delay after valid L and independently current post-commit adoption
+    - unexpected post-decision semantic contention abort and fresh transaction decision
     - cross-origin fresh/reconnect transport reservation collision
     - replay after reconnectable or terminal lifecycle transition
     - PostgreSQL reload/reconnect
@@ -128,6 +130,7 @@ finding_family_sweep:
 finding_dispositions:
   p0_p1_accepted_and_repaired:
     - P1 durable current-authority serialization; decision Sections 5, 6.1, 9.4 and Child C define source publication, atomic guard/claim protocol and producer qualification
+    - P1 physical-COMMIT deadline overconstraint; Sections 3, 5, 6 and 11-12 distinguish final guarded authorization L from durable acknowledgement
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred:
     - fixed P2 fresh transport global uniqueness; decision Section 9.6 specifies truthful tagged ownership and cross-origin collision qualification
@@ -155,7 +158,7 @@ Selected candidate: `FND-DUR-FRESH-ADMISSION-V1`.
 
 Key design result:
 
-- Foundation performs complete FND-04A revalidation and emits an immutable expected authorization. The durable boundary separately locks independently published current authority guards, compares each expected fence, and rechecks trusted source age/deadline after SQL waits.
+- Foundation performs complete FND-04A revalidation and emits an immutable expected authorization. The transaction acquires every authority/claim/replay/session/transport serialization protection, then makes one final guarded decision L using current fences and trusted source age/deadline including all preceding waits. Atomic effects are conditional on successful COMMIT; later persistence delay is not a new authorization.
 - Persistence submission is bounded and asynchronous; FND-03 writer yields.
 - Durability performs one PostgreSQL COMMIT that atomically establishes the AccountPresence/CharacterLease claims, consumes the typed replay key, reserves the shared fresh/reconnect transport reference and creates the canonical ACTIVE GameSession generation 1.
 - Ambiguous/lost response reconciles by the same replay key and cannot mint another winner.
@@ -163,7 +166,7 @@ Key design result:
 - `ReconnectAttemptJournal<T>` stays test/in-memory compatibility; SQLx must not hide behind the synchronous surface.
 - migration `0001` remains immutable; later implementation uses only forward `0002_fresh_admission_authority.sql`.
 
-P1 is repaired at the architecture level by the explicit typed guard publication/serialization protocol; P2 by the global tagged reservation migration contract. Neither repair changes owner product policy or grants implementation authority. Child C must bind and qualify actual owning sources; missing sources keep admission closed. A new independent review of the repaired exact head and protected integration remain mandatory.
+P1 current-authority serialization is repaired by the typed guard protocol; P2 by the global tagged reservation migration contract. The subsequent P1 physical-COMMIT deadline contradiction is corrected by explicitly separating FND-04A's guarded logical decision L from durable acknowledgement, with no deadline/age threshold change and no physical-fsync timing guarantee. Neither repair changes owner product policy or grants implementation authority. Child C must bind and qualify actual owning sources; missing sources keep admission closed. A new independent review of the repaired exact head and protected integration remain mandatory.
 
 ## Validation
 
@@ -218,7 +221,7 @@ P1 is repaired at the architecture level by the explicit typed guard publication
 ## Context checkpoint
 
 ```yaml
-last_progress: PR 317 architecture repair defines current-source atomic guard protocol, global transport reservations and mandatory producer integration
+last_progress: PR 317 clarification defines final guarded decision L after acquisitions, conditional atomic effects and durable completion without an impossible physical-COMMIT expiry guarantee
 status: validating
 branch: arch/fresh-admission-authority-313
 head_sha: null

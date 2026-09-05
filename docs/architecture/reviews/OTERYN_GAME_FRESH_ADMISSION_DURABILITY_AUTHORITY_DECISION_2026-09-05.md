@@ -119,14 +119,15 @@ bounded persistence submission -> YIELD FND-03 writer
         v
 Durability PostgreSQL transaction
         |
-        +-- lock independently-current authority guards; reject stale expected fences
+        +-- acquire all authority/claim/replay/session/transport serialization locks
+        +-- L: final current-fence and trusted-time decision; reject stale authorization
         +-- establish AccountPresence / CharacterLease atomically
         +-- reserve transport ref in the shared fresh/reconnect uniqueness set
         +-- classify replay key
         +-- enforce account/character single-winner constraints
         +-- create current ACTIVE GameSession generation 1
         +-- consume replay key by immutable receipt
-        +-- commit atomically
+        +-- durable COMMIT confirms all conditional effects; never a new authorization
         |
         v
 typed completion / atomic reconcile snapshot
@@ -139,7 +140,7 @@ new normalized Foundation input
         +-- otherwise fail closed and reconcile existing durable authority
 ```
 
-There is **no durable fresh-admission PREPARE row** in V1. Fresh admission has one final durable COMMIT transaction after Foundation final revalidation. This is intentionally smaller than reconnect PREPARE/COMMIT because there is no predecessor controller to replace and no reconnect candidate whose durable PREPARED state must survive a two-step handoff.
+There is **no durable fresh-admission PREPARE row** in V1. Fresh admission has one transaction containing the final guarded authorization decision `L` and the conditional atomic effects, followed by durable COMMIT. Foundation's earlier revalidation is eligibility only; it is not `L`. This is intentionally smaller than reconnect PREPARE/COMMIT because there is no predecessor controller to replace and no reconnect candidate whose durable PREPARED state must survive a two-step handoff.
 
 The absence of a fresh PREPARE row does not permit waiting on the database in the logical writer. Submission remains asynchronous; the writer yields and consumes the completion as a later normalized input.
 
@@ -219,7 +220,7 @@ expected current guard bindings
   // expected values only; never substitutes for transactionally current guard reads
 ```
 
-The authorization deadline is derived only from already accepted FND-04A time/freshness semantics. This decision introduces **no new numeric freshness value**. If trusted current time or the accepted deadline cannot be proved at the durable commit boundary, commit fails closed.
+The authorization deadline is derived only from already accepted FND-04A time/freshness semantics. This decision introduces **no new numeric freshness value**. At the final guarded authorization decision `L` defined in Section 6, trusted current time, credential validity and accepted source-age bounds must be provable or the transaction rejects without committing candidate authority. The deadline applies to `L`, not to subsequent WAL flush, fsync or COMMIT acknowledgement; those cannot refresh an expired authorization or create another decision.
 
 The Foundation verifier/consumer must expose a verified durability-ready fresh result sufficient to construct this authorization without reparsing unauthenticated token material or reconstructing current evidence from a durable record. The existing `FreshAdmissionFacts` may remain the narrower compatibility value; production V1 durable authorization must not discard AccountId or the current final evidence fences required above.
 
@@ -235,7 +236,7 @@ FreshAdmissionDurableOutcomeV1
   EXISTING_COMMITTED            // exact same replay key and immutable committed binding
   REJECTED_REPLAY_CONFLICT      // same replay key, different immutable binding
   REJECTED_INCUMBENT            // account or character already has incompatible nonterminal authority
-  REJECTED_STALE_AUTHORITY      // accepted deadline/fence no longer valid at durable boundary
+  REJECTED_STALE_AUTHORITY      // accepted deadline/fence invalid at guarded decision L
   AMBIGUOUS_OR_UNAVAILABLE      // caller must reconcile, never assume abort
 
 FreshAdmissionDurableReconciliationSnapshotV1
@@ -248,16 +249,18 @@ Names may be adjusted to existing Rust conventions, but the distinctions above a
 
 ## 6. Durable linearization and retry rules
 
-The first canonical fresh-admission durable linearization point is **one PostgreSQL transaction commit**.
+Fresh admission has one **logical game-domain linearization point `L`: the final guarded authorization decision inside one PostgreSQL transaction, conditional on that transaction successfully committing**. Durable COMMIT makes the entire decision/effect set visible and recoverable; it is not a second authorization decision and does not sample a new credential-validity instant.
+
+This explicitly maps FND-04A Sections 7.1/7.2's final revalidation and all-or-nothing authority creation to a transaction primitive that FND-04A leaves to Durability. Every required current fact and time bound is evaluated at `L`; effects remain uncommitted and confer no externally usable authority until durable COMMIT. A rolled-back transaction contributes no successful linearization or candidate authority. No success, physical controller or gameplay action may be published from the tentative decision.
 
 For a new replay key, the transaction must atomically:
 
-1. prove structural/version validity and lock independently-current authority guard rows under Section 6.1; compare every expected binding against those rows, preserving AccountId -> CharacterId classification before world eligibility;
-2. prove the accepted source-time/deadline envelope using trusted database time after all potentially blocking lock acquisition; missing, stale, revoked, contradictory or superseded authority rejects before candidate mutation;
-3. prove no conflicting receipt already consumed the replay key and enforce account-global/character nonterminal exclusion;
+1. prove structural/version validity and acquire all Section 6.1 serialization protections, including account/character incumbent and lease claims, runtime/trust guards, replay key, candidate session identity and the global transport reference; finish any potentially blocking acquisition before deciding admission;
+2. at `L`, sample trusted current database time and atomically evaluate the complete conditional admission predicate against the locked current state: each expected fence, AccountId -> CharacterId before world eligibility, every independent revision, source provenance/anti-rollback and unchanged credential/source-age bounds including all elapsed time before `L`;
+3. the same predicate proves no conflicting replay receipt or incumbent and that the candidate session identity and transport reference are available for this exact binding; if any predicate is invalid, reject without committing candidate authority;
 4. atomically establish the AccountPresence claim and acquire/advance the CharacterLease under their current guard CAS, retaining the exact candidate session binding; an authorization is not a pre-acquired lease;
 5. reserve the exact transport reference in the global fresh/reconnect uniqueness set under Section 9.6, insert the immutable receipt and create the current `GameSession` as `ACTIVE`, generation `1`, with the acquired CharacterLease, current scope generation and exact transport ref;
-6. commit all effects together while holding the authority guards; a rollback leaves no candidate claim, lease, reservation, receipt or session effect.
+6. hold every serialization protection through durable COMMIT; all candidate claim, lease, reservation, receipt and session effects commit together or none do. Elapsed persistence time after `L` neither re-dates `L` nor constitutes a new authorization. A transaction retry must reacquire/revalidate and decide at a new `L`; an ambiguous outcome must reconcile the original binding.
 
 No success is returned before the transaction commits.
 
@@ -282,9 +285,13 @@ For Game-owned eligibility/lease/runtime changes, publication COMMIT is the admi
 
 For Platform-security/trust, this protocol governs Game's durable acceptance of an authenticated source observation, not the time of a remote Platform action. FND-04A's existing bounded source-age semantics remain unchanged. A newer accepted deny/revision cannot be hidden by a still-unexpired older authorization. Pending source acceptance is not represented as already accepted; an unavailable or uncertain source makes fresh authorization unavailable, and old persisted provenance is never re-aged on restart.
 
-Fresh COMMIT obtains all relevant guard locks in one canonical domain/key order, with exclusive locks for mutable account/character claims and locks conflicting with publisher updates for runtime/trust guards. It then compares the authorization's expected fences with the current rows, checks each independently signed revision and current source-time validity, and performs the Section 6 effects. Publisher CAS and COMMIT therefore have one order: a publisher that commits first invalidates stale admission before nonce consumption; an admission that commits first was current at its boundary, and later replacement follows normal fencing/lifecycle rules. No database/network operation holds the FND-03 logical writer.
+The transaction obtains all relevant protections in one canonical domain/key order before `L`: exclusive locks for account/character claims, locks conflicting with publisher updates for runtime/trust guards, and database-visible serialization for replay keys, candidate session IDs and transport references, including keys whose rows do not yet exist. Existing uniqueness constraints remain defense in depth. An absence read alone does not lock an absent key.
 
-A provider cannot claim this contract by doing an unlocked second read immediately before INSERT, reconstructing matching guards from the request, or updating a cache after mutation. Database isolation/locks must preserve the comparison through the transaction's irreversible decision; any wait or retry that invalidates the time proof requires revalidation, and no success is reported if commit-time validity cannot be proved. Implementations must explicitly qualify expiry during lock wait/commit, not merely sample time before beginning SQL work.
+All competing fresh/reconnect/publication paths must follow the same serialization protocol. Durability may use transaction-scoped database key locks or equivalent lock rows for absent-key serialization; a lock-key collision may serialize unrelated work but must never grant authority or alias semantic identities. Checks still compare the full typed keys. Candidate uniqueness/foreign-key/claim prerequisites and any other constraint that could introduce semantic contention must be resolved under these protections before `L`. Implementation qualification must inventory the actual SQL statements and constraints rather than assume that row locks remove every wait. A newly required conflicting acquisition or transaction retry after the tentative decision invalidates that attempt: abort it and make a fresh decision in a new transaction, never continue candidate effects using its old time sample. Ordinary WAL/storage/backend delay after the fully guarded decision is persistence delay, not another authority acquisition. Publisher CAS and admission therefore have one order: a publisher completed before the admission acquires its guards is included at `L`; a publisher contending after those guards are held cannot activate its replacement until the admission transaction ends. Successful admission was current at `L`; subsequent replacement follows normal fencing/lifecycle rules. No database/network operation holds the FND-03 logical writer.
+
+A provider cannot claim this contract by doing an unlocked second read immediately before INSERT, reconstructing matching guards from the request, or updating a cache after mutation. Locks preserve the decision's authority order through COMMIT, but do not stop wall-clock time. Time is sampled at `L` after acquisitions, never at BEGIN or before a lock wait.
+
+The implementation must distinguish expiry before `L` (reject with no committed candidate effects) from a backend/WAL/fsync stall after a valid `L` (the already-decided transaction may commit later). PostgreSQL timeouts, deferred triggers and a final time read are not proof of a physical COMMIT deadline. This contract requires no such guarantee. Persist the immutable `authorization_decided_at` and the accepted source/deadline evidence needed to audit `L`; a persistence/acknowledgement timestamp is separate and cannot replace or re-age source provenance. Historical decision evidence is not current controller authority: Section 7 revalidation still governs adoption after the delay.
 
 All account/character claim lifecycle operations, including the existing reconnect adapter when it changes a guarded holder/generation or performs terminal replacement, must preserve the same locking/CAS discipline. This adds serialization to the physical adapter without changing accepted reconnect V1/V2 decisions. A guard is not an independent current-session row; its holder must reference the canonical session, and fresh acquisition/release and canonical session changes are atomic.
 
@@ -292,7 +299,7 @@ Startup/admission readiness requires a registered owning publisher and restored 
 
 ### Same-key retry
 
-If the replay key already has an **exactly matching immutable receipt**, retry returns `EXISTING_COMMITTED` plus a freshly read current-session authority snapshot. It never inserts a second session and never rewinds current lifecycle state.
+If the replay key already has an **exactly matching immutable committed identity/binding**, retry returns `EXISTING_COMMITTED` plus its original immutable receipt and a freshly read current-session authority snapshot. Replay comparison uses the original replay key/candidate binding, not a newly sampled decision time; the persisted `L` and audit evidence describe that prior decision and are never replaced by a retry. It never inserts a second session and never rewinds current lifecycle state.
 
 If the same replay key is presented with any different immutable identity/binding, the result is `REJECTED_REPLAY_CONFLICT`. Arrival order cannot choose a new winner.
 
@@ -361,7 +368,8 @@ Add a dedicated immutable `game_durability_fresh_admission_receipts` table keyed
 - initial connection generation, constrained to `1`;
 - `AuthenticatedTransportRefV1` exact 16 bytes;
 - semantic version;
-- non-authoritative commit timestamp for operations/evidence.
+- immutable `authorization_decided_at` for `L` plus the exact accepted source-time/deadline evidence for auditing that decision; no replay attempt overwrites or re-dates it;
+- separate non-authoritative persistence/acknowledgement timestamp, if recorded, for operations/evidence.
 
 The table is immutable after commit except for a future separately accepted retention/archival mechanism. Current lifecycle changes belong to the current-session row, not the immutable receipt.
 
@@ -509,7 +517,7 @@ At minimum:
 At minimum:
 
 1. Foundation final authorization construction;
-2. Durability COMMIT transaction;
+2. Durability's final guarded decision `L` and conditional transaction effects;
 3. Durability retry/lost-response reconciliation;
 4. Foundation post-commit current-authority adoption;
 5. first real control-loss/reconnect transition consuming a fresh-origin session row.
@@ -530,9 +538,9 @@ Each applicable negative case changes exactly one authority invariant while keep
 - response lost after DB commit;
 - process restart before completion delivery;
 - runtime ownership replacement while DB commit is in flight, in both publisher-before-admission and admission-before-publisher order;
-- character-world transfer, lease/presence replacement, independent revision change or accepted security/trust deny between authorization and durable COMMIT;
+- character-world transfer, lease/presence replacement, independent revision change or accepted security/trust deny between initial authorization and `L`, and a contending publication held until admission transaction completion;
 - absent guard/source, forged bootstrap, stale publisher CAS, equal-revision contradiction and restart high-water-mark rollback;
-- expiry while waiting for a guard lock or final transaction completion;
+- expiry during any acquisition before `L` rejects; a WAL/backend delay after a valid `L` may finish durable COMMIT later but cannot bypass current post-commit adoption;
 - every cross-origin fresh/reconnect transport reservation collision;
 - replay after session became reconnectable or terminal;
 - PostgreSQL reload/reconnect and migration compatibility paths.
@@ -562,9 +570,11 @@ Real isolated PostgreSQL evidence must include:
 - fresh row contains no fabricated control-loss/predecessor history;
 - real control loss populates required continuity before reconnect semantics consume it;
 - reconnect V1/V2 regression suite remains green across migration `0002`;
-- stale deadline/fence fails closed before nonce, presence, lease, receipt or session mutation, including source publication committed after authorization but before admission;
+- stale deadline/fence at `L` fails closed without committed nonce, presence, lease, receipt or session effects, including source publication completed after initial authorization but before `L`;
 - atomic guard bootstrap/publication, publisher-before-admission and admission-before-publisher races, lease/presence acquisition and global transport reservation collisions;
-- expiry during SQL lock waits/commit is explicitly qualified;
+- expiry during each pre-`L` SQL/uniqueness/claim acquisition rejects; no BEGIN-time sampling;
+- a backend/WAL stall after valid `L` may commit later with the original decision timestamp; post-commit adoption uses independently current facts and never reconstructs freshness from `L`;
+- unexpected additional semantic contention or transaction retry abandons the tentative decision and revalidates in a fresh transaction; lost COMMIT response reconciles the original binding;
 - restart/reload reconstructs exact receipt + current session snapshot;
 - runtime credentials still cannot perform migration DDL;
 - migration fresh/ahead/behind/checksum/locking rules remain intact.
