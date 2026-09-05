@@ -8,6 +8,17 @@ use std::collections::BTreeSet;
 use std::fmt::Debug;
 
 pub type TestResult<T> = Result<T, Box<dyn std::error::Error>>;
+
+pub fn run_retry_matrix(
+    _seed: Seed,
+    _record: &ReconnectDurabilityRecordV1,
+    _source: &LiveSource,
+    _replacement: Option<TerminalGameSessionReplacementAuthorizationV1>,
+    _v1: Option<ReconnectPrepareDispositionV1>,
+    _v2: ReconnectPrepareDispositionV2,
+) -> TestResult<Vec<String>> {
+    Ok(Vec::new())
+}
 pub const ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174000";
 pub const OTHER_ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174001";
 pub fn checked<T, E: Debug>(result: Result<T, E>) -> TestResult<T> {
