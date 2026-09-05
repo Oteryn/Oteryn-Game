@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: test/authority-recovery-matrix-282
-pr: null
+pr: 303
 issue: 282
 parent_issue: 277
 base_sha: d4c71aebed6431df4759af2ff1ad875a5c17af18
@@ -45,3 +45,13 @@ Create/migrate before sampling PG time and immediate initial COMMIT. Child obser
 Fresh focused RED requires actual execution of every retry revalidation case before implementation. Then focused/full-server tests, strict all-target Clippy, validators, real PG17.6, repeated deterministic races, exact-head canonical gate, whole-diff/family sweep and independent deep review. Integrate only through protected Merge Queue and read back main. Final SHA/CI/review evidence stays on PR/Issue; no post-freeze bookkeeping commit.
 
 Next action: preserve the focused retry-matrix RED, then implement recovery helpers and real PG/process boundaries.
+
+## Material candidate evidence
+
+RED `077881c8d5fb0387d8ca3f4c632389a78cc4e62f` fails at missing executed retry revalidation `commit-v1/AccountPresence/Missing`. GREEN locally executes142 isolated retry revalidations and444 changed-source terminal projections (three exact typed reasons, both versions); inherited302 direct authority negatives and28 FND02 regression combinations remain intact. Full game-server tests and strict all-target Clippy pass; real PG execution is still a hosted requirement, not claimed from local skip-capable tests.
+
+The PG module adds six test entry points: lost PREPARE/COMMIT response; signed replacement replay; three typed terminal histories; three repeated rounds each of identical/distinct synchronized replacement; valid later durable epoch; process replacement. Every successful race winner performs actual COMMIT and typed projection checks, with one receipt/attempt/reservation/proof consumption; loser lacks a valid receipt. Recovered Prepared snapshots reach AwaitFinalRevalidation and the whole applicable matrix must fail closed at subsequent COMMIT. Exact replay preserves the complete stored protection row. Process test runs71 fresh children against independent resolver revisions:69 single-field negative cases across both versions and positive controls before/after. Counts are registry-derived and checked at runtime; elapsed PG timings are printed for optional E assessment.
+
+N/A: historical terminal disposition does not require live equality but must return exact V2 reason/V1 Terminal and Terminal phases for every source mutation. PREPARE replay and Prepared reconciliation grant no controller; current facts are consumed at final COMMIT. V1 PREPARE and unsigned V2 replacement requests are rejected; private V1 reconciliation is not represented as a supported replacement recovery API. Later durable epoch is a separately valid scenario, while single-field current-epoch mutation remains separately isolated. Logical observation times in restarted resolver fixtures are not a claim of freshness after arbitrary wall time.
+
+Whole five-file diff/finding-family self-review complete; no runtime/schema/workflow/ruleset change and no existing assertion weakened. Freeze this candidate for canonical exact-head PG17.6 and independent deep whole-diff review, then protected Merge Queue/readback and programme277 closeout. Final evidence remains on Issue/PR.

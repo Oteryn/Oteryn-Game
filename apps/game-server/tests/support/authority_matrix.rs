@@ -9,16 +9,6 @@ use std::fmt::Debug;
 
 pub type TestResult<T> = Result<T, Box<dyn std::error::Error>>;
 
-pub fn run_retry_matrix(
-    _seed: Seed,
-    _record: &ReconnectDurabilityRecordV1,
-    _source: &LiveSource,
-    _replacement: Option<TerminalGameSessionReplacementAuthorizationV1>,
-    _v1: Option<ReconnectPrepareDispositionV1>,
-    _v2: ReconnectPrepareDispositionV2,
-) -> TestResult<Vec<String>> {
-    Ok(Vec::new())
-}
 pub const ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174000";
 pub const OTHER_ACCOUNT: &str = "123e4567-e89b-12d3-a456-426614174001";
 pub fn checked<T, E: Debug>(result: Result<T, E>) -> TestResult<T> {
@@ -50,6 +40,10 @@ pub fn transport(raw: u8) -> TestResult<AuthenticatedTransportRefV1> {
 #[derive(Clone, Copy, Debug)]
 pub struct Seed {
     pub session: u64,
+    pub character: u64,
+    pub generation: u64,
+    pub epoch: u64,
+    pub proof_nonce: u8,
     pub attempt: u64,
     pub transport: u8,
     pub now: i64,
@@ -58,6 +52,10 @@ impl Seed {
     pub const fn fixed() -> Self {
         Self {
             session: 20,
+            character: 11,
+            generation: 7,
+            epoch: 3,
+            proof_nonce: 0x55,
             attempt: 1,
             transport: 0x71,
             now: 100,
@@ -72,13 +70,13 @@ pub fn prepared_record(seed: Seed) -> TestResult<ReconnectDurabilityRecordV1> {
             session(seed.session)?,
             checked(ReconnectAttemptRef::new(seed.attempt))?,
             ACCOUNT,
-            character(11)?,
+            character(seed.character)?,
             world(12)?,
             RuntimeScopeRefV1::channel(world(12)?, channel(13)?),
         ))?,
         checked(ReconnectConnectionFenceV1::new(
-            checked(ConnectionGeneration::new(7))?,
-            checked(ConnectionGeneration::new(8))?,
+            checked(ConnectionGeneration::new(seed.generation))?,
+            checked(ConnectionGeneration::new(seed.generation + 1))?,
             transport(seed.transport)?,
         ))?,
         checked(ReconnectAuthorityFenceV1::new(
@@ -86,13 +84,13 @@ pub fn prepared_record(seed: Seed) -> TestResult<ReconnectDurabilityRecordV1> {
             checked(ScopeOwnershipGeneration::new(10))?,
         ))?,
         checked(ReconnectContinuityV1::new(
-            checked(ControlLossEpochRefV1::new(3))?,
+            checked(ControlLossEpochRefV1::new(seed.epoch))?,
             seed.now + 120,
             seed.now + 115,
             ProtectionEntitlementV1::unused(),
         ))?,
         ReconnectProofV1::ReauthenticatedRecovery {
-            recovery_grant_nonce: [0x55; 32],
+            recovery_grant_nonce: [seed.proof_nonce; 32],
         },
         checked(Fnd02ReconciliationFenceV1::new(
             checked(CommandId::new(3))?,
@@ -139,11 +137,11 @@ pub struct LiveSource(pub Value);
 impl LiveSource {
     pub fn read(seed: Seed) -> Self {
         let mut first = json!({
-            "account":ACCOUNT,"presence_character":11,"eligible_character":11,"eligible_world":12,
+            "account":ACCOUNT,"presence_character":seed.character,"eligible_character":seed.character,"eligible_world":12,
             "candidate_present":true,"candidate_session":seed.session,"attempt":seed.attempt,
-            "candidate_generation":8,"candidate_transport":seed.transport,"candidate_deadline":seed.now+115,
-            "runtime_channel":13,"predecessor_session":10,"predecessor_generation":7,"lease_character":11,"lease_generation":9,"scope_generation":10,
-            "epoch":3,"grace_deadline":seed.now+120,"proof_nonce":0x55,"fast_proof":null,
+            "candidate_generation":seed.generation+1,"candidate_transport":seed.transport,"candidate_deadline":seed.now+115,
+            "runtime_channel":13,"predecessor_session":10,"predecessor_generation":seed.generation,"lease_character":seed.character,"lease_generation":9,"scope_generation":10,
+            "epoch":seed.epoch,"grace_deadline":seed.now+120,"proof_nonce":seed.proof_nonce,"fast_proof":null,
             "next_command":3,"pending_terminal":false,"pending_present":true,"pending_id":1,"pending_extra":false,
             "last_sequence":41,"domain_revision":4,"domain_present":true,"domain_id":1,"domain_extra":false,
         });
@@ -553,7 +551,8 @@ pub fn prepared_v1(record: &ReconnectDurabilityRecordV1) -> TestResult<Reconnect
     Ok(flow)
 }
 pub fn v2_budget(seed: Seed) -> TestResult<ReconnectAttemptBudgetV1> {
-    let mut budget = ReconnectAttemptBudgetV1::new(checked(ControlLossEpochRefV1::new(3))?);
+    let mut budget =
+        ReconnectAttemptBudgetV1::new(checked(ControlLossEpochRefV1::new(seed.epoch))?);
     checked(budget.reserve(
         checked(ReconnectAttemptRef::new(seed.attempt))?,
         transport(seed.transport)?,
@@ -593,6 +592,18 @@ pub fn reconcile_v1(
             ReconnectDurabilityPhaseV1::ReconciliationRequired
         );
     }
+    if let Ok(decision) = &result {
+        assert_eq!(
+            flow.phase(),
+            match decision {
+                ReconnectProjectionDecisionV1::InstallController { .. } =>
+                    ReconnectDurabilityPhaseV1::Completed,
+                ReconnectProjectionDecisionV1::Terminal => ReconnectDurabilityPhaseV1::Terminal,
+                ReconnectProjectionDecisionV1::AwaitFinalRevalidation =>
+                    ReconnectDurabilityPhaseV1::AwaitFinalRevalidation,
+            }
+        );
+    }
     checked(result)
 }
 pub fn reconcile_v2(
@@ -615,6 +626,19 @@ pub fn reconcile_v2(
         assert_eq!(
             flow.phase(),
             ReconnectDurabilityPhaseV1::ReconciliationRequired
+        );
+    }
+    if let Ok(decision) = &result {
+        assert_eq!(
+            flow.phase(),
+            match decision {
+                ReconnectProjectionDecisionV2::InstallController { .. } =>
+                    ReconnectDurabilityPhaseV1::Completed,
+                ReconnectProjectionDecisionV2::Terminal { .. } =>
+                    ReconnectDurabilityPhaseV1::Terminal,
+                ReconnectProjectionDecisionV2::AwaitFinalRevalidation =>
+                    ReconnectDurabilityPhaseV1::AwaitFinalRevalidation,
+            }
         );
     }
     checked(result)
@@ -799,4 +823,169 @@ pub fn run_loaded_matrix(
         "PostgreSQL reload authority matrix: {count} isolated negative cases, both positive InstallController controls"
     );
     Ok(())
+}
+
+pub fn registered_cases(boundary: ConsumerBoundary) -> Vec<(AuthorityInvariant, MutationOperator)> {
+    AuthorityInvariant::ALL
+        .iter()
+        .copied()
+        .filter(|&invariant| boundary.not_applicable(invariant).is_none())
+        .flat_map(|invariant| {
+            invariant
+                .operators()
+                .iter()
+                .map(move |&operator| (invariant, operator))
+        })
+        .collect()
+}
+
+/// The durable replay result is supplied by the caller (real PG in the E2E).
+/// Replay itself grants no authority: final COMMIT must reread independent facts.
+pub fn run_retry_matrix(
+    seed: Seed,
+    record: &ReconnectDurabilityRecordV1,
+    source: &LiveSource,
+    replacement: Option<TerminalGameSessionReplacementAuthorizationV1>,
+    v1: Option<ReconnectPrepareDispositionV1>,
+    v2: ReconnectPrepareDispositionV2,
+) -> TestResult<Vec<String>> {
+    assert_eq!(v2, ReconnectPrepareDispositionV2::ExistingPrepared);
+    if let Some(disposition) = v1 {
+        assert_eq!(disposition, ReconnectPrepareDispositionV1::ExistingPrepared);
+    }
+    let mut executed = Vec::new();
+    for boundary in [ConsumerBoundary::CommitV1, ConsumerBoundary::CommitV2] {
+        if boundary == ConsumerBoundary::CommitV1 && v1.is_none() {
+            assert!(
+                replacement.is_some(),
+                "V1 N/A only for signed replacement recovery"
+            );
+            continue;
+        }
+        let exercise_retry = |live: &LiveSource| -> TestResult<bool> {
+            let accepted = if boundary == ConsumerBoundary::CommitV1 {
+                let (mut flow, request) = ReconnectDurabilityFlowV1::begin(record.clone());
+                assert_eq!(
+                    checked(flow.accept_prepare_completion(
+                        ReconnectPrepareCompletionV1::for_request(
+                            &request,
+                            ReconnectPrepareDispositionV1::Unavailable
+                        )
+                    ))?,
+                    ReconnectPrepareActionV1::RetrySameRequest(request.clone())
+                );
+                assert_eq!(
+                    checked(flow.accept_prepare_completion(
+                        ReconnectPrepareCompletionV1::for_request(
+                            &request,
+                            v1.ok_or("missing V1 disposition")?
+                        )
+                    ))?,
+                    ReconnectPrepareActionV1::AwaitFinalRevalidation
+                );
+                let result =
+                    flow.authorize_commit(live.bind(record)?, live.time("authorization_at")?);
+                assert_eq!(
+                    flow.phase(),
+                    if result.is_ok() {
+                        ReconnectDurabilityPhaseV1::PendingCommit
+                    } else {
+                        ReconnectDurabilityPhaseV1::Terminal
+                    }
+                );
+                result.is_ok()
+            } else {
+                let (mut flow, request) =
+                    ReconnectDurabilityFlowV2::begin(record.clone(), replacement.clone());
+                let mut budget = v2_budget(seed)?;
+                assert_eq!(
+                    checked(flow.accept_prepare_completion(
+                        ReconnectPrepareCompletionV2::for_request(
+                            &request,
+                            ReconnectPrepareDispositionV2::Unavailable
+                        ),
+                        &mut budget
+                    ))?,
+                    ReconnectPrepareActionV2::RetrySameRequest(request.clone())
+                );
+                assert_eq!(
+                    checked(flow.accept_prepare_completion(
+                        ReconnectPrepareCompletionV2::for_request(&request, v2),
+                        &mut budget
+                    ))?,
+                    ReconnectPrepareActionV2::AwaitFinalRevalidation
+                );
+                assert_eq!(
+                    budget.distinct_attempts(),
+                    1,
+                    "retry consumed another attempt"
+                );
+                let result =
+                    flow.authorize_commit(live.bind(record)?, live.time("authorization_at")?);
+                assert_eq!(
+                    flow.phase(),
+                    if result.is_ok() {
+                        ReconnectDurabilityPhaseV1::PendingCommit
+                    } else {
+                        ReconnectDurabilityPhaseV1::Terminal
+                    }
+                );
+                result.is_ok()
+            };
+            Ok(accepted)
+        };
+        assert!(exercise_retry(source)?, "retry positive {boundary:?}");
+        for (invariant, operator) in registered_cases(boundary) {
+            let live = mutated(source, invariant, operator, seed)?;
+            assert!(
+                !exercise_retry(&live)?,
+                "retry granted {boundary:?}/{invariant:?}/{operator:?}"
+            );
+            executed.push(format!("{}/{invariant:?}/{operator:?}", boundary.label()));
+        }
+    }
+    println!(
+        "retry authority matrix: {} isolated revalidation cases",
+        executed.len()
+    );
+    Ok(executed)
+}
+
+/// Historical terminal evidence retains its exact meaning despite changed live
+/// facts. Live equality is explicitly N/A, but controller installation is forbidden.
+pub fn run_terminal_matrix(
+    seed: Seed,
+    record: &ReconnectDurabilityRecordV1,
+    source: &LiveSource,
+    v1: ReconnectDurableReconciliationSnapshotV1,
+    v2: ReconnectDurableReconciliationSnapshotV2,
+    disposition: ReconnectDurableTerminalDispositionV1,
+) -> TestResult<usize> {
+    assert_eq!(
+        v2.outcome(),
+        ReconnectDurableOutcomeV2::Terminal { disposition }
+    );
+    let project = |live: &LiveSource| -> TestResult<()> {
+        assert_eq!(
+            reconcile_v1(record, live.bind(record)?, v1.clone())?,
+            ReconnectProjectionDecisionV1::Terminal
+        );
+        assert_eq!(
+            reconcile_v2(record, live.bind(record)?, v2.clone(), seed)?,
+            ReconnectProjectionDecisionV2::Terminal { disposition }
+        );
+        Ok(())
+    };
+    project(source)?;
+    let mut count = 0;
+    for &invariant in AuthorityInvariant::ALL {
+        for &operator in invariant.operators() {
+            project(&mutated(source, invariant, operator, seed)?)?;
+            count += 2;
+        }
+    }
+    println!(
+        "historical terminal {disposition:?}: {count} changed-source projections, exact reasons/no controller"
+    );
+    Ok(count)
 }
