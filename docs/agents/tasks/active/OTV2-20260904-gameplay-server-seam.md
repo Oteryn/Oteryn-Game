@@ -14,14 +14,14 @@ lane_id: OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM
 allocation_task_id: OTV2-20260904-gameplay-server-seam-allocation
 allocation_pr: 294
 allocation_admission_main_sha: 68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705
-allocation_integration_main_sha: 6295e4079a53cc95a3021e5c34b9004b2e9bd50c
+allocation_integration_main_sha: 62590071b7e47e3221af0e180c73bbc7cdf37c31
 base_sha: null
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: "Oteryn: sol server seam lead"
 created_at: 2026-09-04T19:27:00+02:00
-updated_at: 2026-09-05T13:58:00+02:00
+updated_at: 2026-09-05T15:27:42+02:00
 execution_budget_minutes: 120
 large_budget_reason: high-risk TCP/TLS plus Foundation admission/reconnect integration, bounded-resource proof, production-path integration and independent exact-head review
 owned_paths:
@@ -67,7 +67,7 @@ This lane makes later ADR-0007 physical QA possible but does **not** own or decl
 - `PROVEN` — this worker has no write authority while allocation PR #294 is unmerged. No worker branch may be created before protected-main allocation readback.
 - `PROVEN` — accepted Server Seam architecture is `docs/architecture/reviews/OTERYN_GAME_PRODUCTION_GAMEPLAY_SERVER_SEAM_PLAN_2026-08-24.md`, merged through PR #117.
 - `PROVEN` — protected-main authority API floor from #289 removes production record/identity-derived current-authority convenience constructors; #302/#303 further qualify independently sourced current authority and retry/replay/restart/PostgreSQL behavior without changing production semantics.
-- `PROVEN` — current main `6295e4079a53cc95a3021e5c34b9004b2e9bd50c` adds protected-main post-merge Rust lane selection only. PR game-gate, Merge Queue and ruleset remain unchanged; this does not alter the Server Seam API/lease.
+- `PROVEN` — protected main `62590071b7e47e3221af0e180c73bbc7cdf37c31` contains #305 standalone post-merge Rust lane selection plus #306's durable `apps/game-server/tests/server_ci_qualification.rs`; #306 changes no runtime source, Cargo/dependency, classifier, workflow, ruleset, Merge Queue or fan-in authority and does not alter the Server Seam API/lease.
 - `PROVEN` — Foundation protocol major 1, transport profile 1, TLS 1.3, ALPN `oteryn-game/1`, FND-02 bounded BE32 framing and registered message semantics remain authoritative.
 - `PROVEN` — current `apps/game-server/src/main.rs` is fail-closed outside `--smoke`; no production listener exists.
 - `PROVEN` — FND-04 verifier/consumer and current Durability terminal-replacement/reconnect implementation are merged.
@@ -188,7 +188,7 @@ Implementation follows `docs/superpowers/plans/2026-08-24-oteryn-production-game
 
 Before editing root/game-server Cargo files, re-read active owners and #259/#260/#261. Do not absorb unrelated dependency upgrades. If a non-Dependabot writer acquires a shared path, stop with `SHARED_LEASE_REQUIRED`.
 
-Historical allocation-review findings requiring golden encoding, listener version/profile negatives, replay/binding/concurrent admission and authoritative-work shutdown preservation are incorporated into the plan/task and must be preserved by implementation.
+Historical allocation-review findings requiring golden encoding, listener version/profile negatives, replay/binding/concurrent admission and authoritative-work shutdown preservation are incorporated into the plan/task and must be preserved by implementation. The later allocation ordering repair keeps Task 2 transport-only and introduces the required real composed-listener protocol/profile negatives test-first in Task 5, after the connection/lifecycle prerequisites exist.
 
 ## Validation
 
@@ -243,7 +243,7 @@ Historical allocation-review findings requiring golden encoding, listener versio
 ## Context checkpoint
 
 ```yaml
-last_progress: allocation PR #294 has been reconciled to current protected main 6295e4079a53cc95a3021e5c34b9004b2e9bd50c; the authority floor remains terminal, #305 changes only standalone protected-main push qualification, and no active non-Dependabot Server Seam path collision is present; worker authority remains withheld pending allocation exact-head review/integration
+last_progress: allocation PR #294 has been reconciled to current protected main 62590071b7e47e3221af0e180c73bbc7cdf37c31 through a normal non-force two-parent merge; #306 adds only the durable server-process CI qualification test and does not alter the Server Seam API/lease; the authority floor remains terminal, no active non-Dependabot Server Seam path collision is present, and worker authority remains withheld pending allocation final exact-head qualification/review/integration
 status: waiting
 branch: agent/otv2-gameplay-server-seam-01
 head_sha: null
