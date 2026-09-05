@@ -107,6 +107,48 @@ def test_snapshot_and_fallbacks(module):
     print("Risk snapshot and CLI fallbacks PASS: consumer changes, server isolation, symlinks, missing base classifier, malformed metadata")
 
 
+def test_reviewed_document_consumers(module):
+    # Independent reviewed input contract from the protected tree documented in
+    # OTV2-20260905-doc-consumer-snapshot. Do not derive these fixtures from the
+    # classifier constants or current HEAD: later consumer edits must remain
+    # legitimate FULL inputs, not make repository regression validation fail.
+    reviewed_nonserver = "9f7aff4dc25c9c6561b77ea73342b675eeccb1d008ab9d1fbdbd504618ec5ab8"
+    reviewed_docs = "f8eed774249df64a5a64612b4a169a73bac093a7bcbfb21e59ea0e06dd2ddc26"
+    for path in ("README.md", "docs/agents/tasks/archive/finished.md"):
+        result = module.classify([dict(filename=path, status="modified")], 1,
+                                 fixture(), reviewed_nonserver, docs_digest=reviewed_docs,
+                                 candidate_modes_verified=True)
+        assert result["rust"] is False and result["windows"] is False, result
+
+    # Exercise real tree hashing and classification together. A new or changed
+    # consumer can add a document read without changing any Cargo edge.
+    rows = [b"100644 blob " + b"a" * 40 + b"\tapps/client/src/lib.rs",
+            b"100644 blob " + b"b" * 40 + b"\tapps/game-server/src/lib.rs"]
+    def digests(records):
+        with patch.object(module.subprocess, "check_output", return_value=b"\0".join(records) + b"\0"):
+            return module.input_digest(fixture()), module.input_digest(fixture(), include_server=True)
+    baseline_nonserver, baseline_docs = digests(rows)
+    with patch.object(module, "AUDITED_INPUT_SHA256", baseline_nonserver), \
+            patch.object(module, "AUDITED_DOC_INPUT_SHA256", baseline_docs):
+        result = module.classify([dict(filename="README.md", status="modified")], 1,
+                                 fixture(), baseline_nonserver, docs_digest=baseline_docs,
+                                 candidate_modes_verified=True)
+        assert result["rust"] is False and result["windows"] is False, result
+        for root, index in (("apps/client", 0), ("apps/game-server", 1)):
+            for added in (False, True):
+                changed = rows.copy()
+                if added:
+                    changed.append(b"100644 blob " + b"c" * 40 + b"\t" + root.encode() + b"/src/document_reader.rs")
+                else:
+                    changed[index] = changed[index].replace(b"a" * 40 if index == 0 else b"b" * 40, b"c" * 40)
+                nonserver, docs = digests(changed)
+                result = module.classify([dict(filename="README.md", status="modified")], 1,
+                                         fixture(), nonserver, docs_digest=docs,
+                                         candidate_modes_verified=True)
+                assert result["rust"] is True and result["windows"] is True, (root, added, result)
+    print("Reviewed document consumers PASS: admitted docs and changed/new server/nonserver consumers FULL")
+
+
 def test_trusted_job_mutations():
     spec = importlib.util.spec_from_file_location("risk_core", MODULE.with_name("validate_repository_policy_core.py"))
     assert spec is not None and spec.loader is not None
@@ -155,6 +197,7 @@ def main() -> int:
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     test_candidate_modes(module)
+    test_reviewed_document_consumers(module)
 
     def classify(paths, metadata=None, digest=None, **kwargs):
         files = [dict(filename=p, status="modified") if isinstance(p, str) else p for p in paths]
