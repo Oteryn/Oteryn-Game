@@ -4,22 +4,6 @@ on:
   push:
     branches:
       - main
-    paths:
-      - Cargo.toml
-      - Cargo.lock
-      - rust-toolchain.toml
-      - rustfmt.toml
-      - deny.toml
-      - workspace-boundaries.toml
-      - '.cargo/**'
-      - 'apps/**'
-      - 'crates/**'
-      - 'tests/**'
-      - 'tools/**'
-      - 'docs/migration/**'
-      - '.gitattributes'
-      - '.github/workflows/rust.yml'
-      - '.github/workflows/merge-gate.yml'
   workflow_dispatch:
 
 permissions:
@@ -27,9 +11,45 @@ permissions:
 
 concurrency:
   group: rust-workspace-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  lanes:
+    name: Rust / protected-main risk lanes
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && github.ref_protected
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      windows: ${{ steps.classify.outputs.windows }}
+    steps:
+      - name: Check out exact protected revision and complete history
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact protected revision
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+
+      - name: Classify protected-main push using existing risk model
+        id: classify
+        env:
+          GITHUB_REF_PROTECTED: ${{ github.ref_protected }}
+        run: |
+          set -euo pipefail
+          if ! rustup toolchain install 1.94.0 --profile minimal || ! cargo +1.94.0 metadata --locked --no-deps --all-features --format-version 1 > "$RUNNER_TEMP/post-merge-metadata.json"; then
+            echo 'FULL: protected metadata unavailable.'
+            printf 'windows=true\n' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! python -I tools/repository/classify_pr_test_lanes.py --post-merge "$RUNNER_TEMP/post-merge-metadata.json"; then
+            echo 'FULL: post-merge classifier failed.'
+            printf 'windows=true\n' >> "$GITHUB_OUTPUT"
+          fi
+
   policy:
     name: Rust / policy and metadata
     if: github.event_name != 'pull_request'
@@ -179,7 +199,8 @@ jobs:
 
   windows:
     name: Rust / Windows pre-native client
-    if: github.event_name != 'pull_request'
+    needs: lanes
+    if: ${{ always() && !cancelled() && (github.event_name != 'push' || needs.lanes.result != 'success' || needs.lanes.outputs.windows != 'false') }}
     runs-on: windows-2025
     timeout-minutes: 60
     steps:
@@ -245,32 +266,3 @@ jobs:
           rust-version: '1.94.0'
           command: check
           arguments: --all-features
-
-  sim-windows-golden:
-    name: Rust / Windows SIM golden exact head
-    if: github.event_name == 'pull_request'
-    runs-on: windows-2025
-    timeout-minutes: 20
-    steps:
-      - name: Check out exact pull request head
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          persist-credentials: false
-
-      - name: Verify exact pull request head
-        shell: pwsh
-        env:
-          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
-        run: |
-          if ((git rev-parse HEAD).Trim() -ne "$env:EXPECTED_SHA") {
-            throw "checked-out revision does not match exact pull request head"
-          }
-
-      - name: Install Rust toolchain
-        shell: pwsh
-        run: rustup toolchain install 1.94.0 --profile minimal
-
-      - name: Verify deterministic simulation golden fixtures
-        shell: pwsh
-        run: cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc

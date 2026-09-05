@@ -2,18 +2,18 @@
 """Exercise post-merge selection against real immutable Git ranges."""
 from __future__ import annotations
 
-import copy
-import importlib.util
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import textwrap
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import classify_pr_test_lanes as lanes
+import validate_repository_policy_core as policy
 from test_classify_pr_test_lanes import fixture
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -63,6 +63,25 @@ def main():
                 assert classify(meta={})["windows"] is True
                 with patch.object(lanes, "AUDITED_INPUT_SHA256", "stale"):
                     assert classify()["windows"] is True
+                real_output = lanes.subprocess.check_output
+                for broken in (b"M\0apps/game-server/src/main.rs", b"M\0", b"T\0apps/game-server/src/main.rs\0", b"M\0bad\xff\0"):
+                    def incomplete(args, **kwargs):
+                        return broken if args[:2] == ["git", "diff"] else real_output(args, **kwargs)
+                    with patch.object(lanes.subprocess, "check_output", side_effect=incomplete):
+                        assert classify()["windows"] is True, broken
+                # A disconnected before commit is not protected ancestry proof.
+                other_tree = git("rev-parse", "HEAD^{tree}")
+                unrelated = git("commit-tree", other_tree, "-m", "disconnected")
+                assert classify({"before": unrelated})["windows"] is True
+                # Full local enumeration has no API's 300-file truncation boundary.
+                for index in range(301):
+                    (source.parent / f"fixture_{index}.rs").write_text("// server fixture\n")
+                git("add", ".")
+                git("commit", "-qm", "large server range")
+                large_head = git("rev-parse", "HEAD")
+                with patch.dict(os.environ, GITHUB_SHA=large_head):
+                    assert classify({"after": large_head, "commits": []})["windows"] is False
+                git("checkout", "-q", after)
                 # Independent Git history, not event commit arrays, determines every path.
                 for path in ("apps/client/src/lib.rs", "crates/simulation-determinism/src/lib.rs", "crates/foundation/src/lib.rs", "Cargo.lock", "apps/game-server/Cargo.toml", ".github/workflows/other.yml", "unknown.bin", "tools/repository/other.py"):
                     git("checkout", "-q", after)
@@ -97,6 +116,21 @@ def main():
     assert "needs.lanes.result != 'success' || needs.lanes.outputs.windows != 'false'" in workflow
     assert "cancel-in-progress: false" in workflow, "a later push must not cancel an earlier required post-merge run"
     assert "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc" in workflow
+    # Execute the actual shell fallback with a failed toolchain dependency.
+    block = policy.indented_yaml_mapping_block(workflow, "lanes", 2)
+    script = textwrap.dedent(block.split("        run: |\n", 1)[1])
+    with tempfile.TemporaryDirectory() as directory:
+        output = Path(directory) / "outputs"
+        rustup = Path(directory) / "rustup"
+        rustup.write_text("#!/bin/sh\nexit 1\n")
+        rustup.chmod(0o755)
+        result = subprocess.run(["bash", "-c", script], env=dict(os.environ, PATH=directory + os.pathsep + os.environ["PATH"], RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output)), capture_output=True, text=True)
+        assert result.returncode == 0 and output.read_text() == "windows=true\n", result
+    assert hasattr(policy, "validate_post_merge_rust"), "post-merge workflow regression contract is missing"
+    assert not policy.validate_post_merge_rust(workflow)
+    for before_text, after_text in (("always()", "success()"), ("windows != 'false'", "windows == 'true'"), ("fetch-depth: 0", "fetch-depth: 1"), ("    needs: lanes", "    needs: policy"), ("--test durability_postgres", "--test nonexistent"), ("--post-merge", "--pr"), ("  workflow_dispatch:", "  pull_request:"), ("cancel-in-progress: false", "cancel-in-progress: true")):
+        mutated = workflow.replace(before_text, after_text)
+        assert mutated != workflow and policy.validate_post_merge_rust(mutated), before_text
     print("Post-merge fixtures PASS: real Git ranges, event/protection identity, full fallback, consumer/rename/mode families and workflow wiring")
     return 0
 
