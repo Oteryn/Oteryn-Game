@@ -10,7 +10,7 @@
 
 **Spec:** `docs/architecture/reviews/OTERYN_GAME_FRESH_ADMISSION_DURABILITY_AUTHORITY_DECISION_2026-09-05.md`, decision `FND-DUR-FRESH-ADMISSION-V1`, integrated by #317 at `a8678d4a94e479a9aa2a92920379a4b32f95143b`; accepted FND-03/FND-04A and preserved reconnect V1/V2.
 
-**Allocation:** `docs/agents/tasks/active/OTV2-20260905-foundation-fresh-admission-318.md`. This plan does not activate its prospective lease. Start `agent/foundation-fresh-admission-318` only from the exact protected merge SHA of that allocation, resolved on GitHub before first mutation.
+**Historical completed allocation:** `docs/agents/tasks/archive/OTV2-20260905-foundation-fresh-admission-318.md`. Child A is integrated and its worker lease is released. The implementation steps below preserve the original plan and do not authorize another worker or branch.
 
 ## File map and limits
 
@@ -133,3 +133,5 @@ cargo +1.94.0 clippy --locked -p oteryn-game-server --all-targets -- -D warnings
 - [ ] Return the qualified head to Work for protected integration/readback. B starts after A; C after A+B; Server Seam remains held until A+B+C integration and C producer readiness. No new physical E2E or production-ready claim from A.
 
 Source readiness prerequisite is tracked separately in Issue #319 for Child C. It does not block Child A semantic implementation or widen this allocation.
+
+Child A completed through PR #321 / `f77a160a480cb1bb08bbbd83e0061b2a8a424734`. The plan and its start/allocation instructions above are retained as implementation history; the archived task records protected closeout.

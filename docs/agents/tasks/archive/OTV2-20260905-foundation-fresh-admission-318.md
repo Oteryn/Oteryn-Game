@@ -4,7 +4,7 @@
 task_id: OTV2-20260905-foundation-fresh-admission-318
 title: Foundation fresh-admission durability semantics
 mode: IMPLEMENT
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/foundation-fresh-admission-318
@@ -16,8 +16,15 @@ base_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
 admission_main_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
 allocation_preparation_main_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
 admission_base_rule: exact protected merge SHA of the coordinator allocation containing this task; resolve and record in GitHub before first worker mutation
-head_sha: null
-final_head_sha: null
+head_sha: a94cd13fa3741780bd108220bb893c3d9be8a1ac
+final_head_sha: a94cd13fa3741780bd108220bb893c3d9be8a1ac
+final_tree_sha: 6c1e6eaa73adb06eaf27dc8526b78ebeb1d8f1bf
+integration_main_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
+delivery_merge_sha: f77a160a480cb1bb08bbbd83e0061b2a8a424734
+integration_state: protected_integrated
+ownership_state: released
+owned_paths_disposition: historical_allocation_released
+write_authority: none
 final_head_frozen_at: null
 owner: Oteryn Foundation fresh-admission worker
 coordinator: Oteryn Work Delivery Coordinator
@@ -60,7 +67,19 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
-This is Child A of accepted decision `FND-DUR-FRESH-ADMISSION-V1`, allocated by protected PR #320. Work created and the worker independently read back `agent/foundation-fresh-admission-318` at immutable admission base `8fd0a40928c4089b453556edbf0a5abebe46986d`. Governing dispatch is Issue #318 comment `5553991516`. Only the exact allowlist is active. Work owns implementation PR creation and integration; no worker self-allocation or self-merge is authorized.
+## Terminal coordinator closeout
+
+This terminal record supersedes all earlier in-progress checkpoints below; their counters and RED/GREEN evidence remain historical provenance.
+
+Child A #318 / PR #321 is protected-main integrated as `f77a160a480cb1bb08bbbd83e0061b2a8a424734`, tree `6c1e6eaa73adb06eaf27dc8526b78ebeb1d8f1bf`, from integration base `8fd0a40928c4089b453556edbf0a5abebe46986d`. Final reviewed worker head is `a94cd13fa3741780bd108220bb893c3d9be8a1ac`. [Exact-head CI](https://github.com/Oteryn/Oteryn-Game/actions/runs/33991815173), [independent review](https://github.com/Oteryn/Oteryn-Game/pull/321#issuecomment-5554779078) (P0/P1/P2=0), and [full Merge Queue](https://github.com/Oteryn/Oteryn-Game/actions/runs/33992173480) passed. Work verified the actual merge and protected-main readback before this archive change.
+
+Worker path/branch custody is released; the original eight-path allocation below is historical, not an active lease. Branch disposition: `deleted_after_merge`; no further worker mutation is authorized by this task. Original admission, budget and retry/evidence history are preserved. Local Foundation158/158, authority4/4, doctests7/7, formatting and strict Clippy evidence remains in the candidate; canonical CI additionally qualified selected workspace and existing PostgreSQL regressions.
+
+Completion is Foundation semantics only. Child B physical persistence and Child C actual producer/readiness remain unallocated dependencies; Server Seam #247 remains held. Historical fixture evidence does not establish production-source availability.
+
+Task next action: none. The coordinator's separate next action is preparation of the bounded Child B allocation from protected main containing A.
+
+This is Child A of accepted decision `FND-DUR-FRESH-ADMISSION-V1`, allocated by protected PR #320. Work created and the worker independently read back `agent/foundation-fresh-admission-318` at immutable admission base `8fd0a40928c4089b453556edbf0a5abebe46986d`. Governing dispatch is Issue #318 comment `5553991516`. The historical allowlist is preserved below; its worker authority is now released. Work owns implementation PR creation and integration; no worker self-allocation or self-merge is authorized.
 
 ## Outcome
 

@@ -12,7 +12,7 @@ base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
+protected_main_sha: f77a160a480cb1bb08bbbd83e0061b2a8a424734
 server_seam_issue: 247
 server_seam_allocation_pr: 294
 server_seam_allocation_merge_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
@@ -30,7 +30,7 @@ owned_paths:
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md
   - docs/superpowers/plans/2026-09-05-foundation-fresh-admission-durability.md
-  - docs/agents/tasks/active/OTV2-20260905-foundation-fresh-admission-318.md
+  - docs/agents/tasks/archive/OTV2-20260905-foundation-fresh-admission-318.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-interaction-lifecycle.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-ability-engine.md
   - docs/superpowers/plans/2026-08-25-oteryn-game-durability-journal.md
@@ -39,7 +39,6 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
 public_contracts: []
 depends_on:
-  - foundation_child_issue: 318
   - separately allocated Child B persistence and Child C producer readiness
 blocks:
   - compatible native Client release
@@ -60,9 +59,9 @@ This packet records the **current** coordinator state. The previous Durability-r
 
 ## Current protected state — 2026-09-05
 
-Current correction: #313 is completed after reviewed PR #317 passed Merge Queue run `33983003548` and integrated as `a8678d4a94e479a9aa2a92920379a4b32f95143b`, tree `d7224da9885fd1b55406c3f64d48f2c239508df8`. #247 is now `WAITING_DEPENDENCY` on A (#318), separately allocated B and C, and actual C producer readiness. Its worker checkpoint/path lease is preserved. The historical architecture-hold observations below remain provenance, not a current unresolved design.
+Current correction: Child A #318 / PR #321 is completed/released after exact-head CI, independent review (P0/P1/P2=0), full Merge Queue `33992173480` and protected readback of `f77a160a480cb1bb08bbbd83e0061b2a8a424734` / tree `6c1e6eaa73adb06eaf27dc8526b78ebeb1d8f1bf`. The worker's final head is `a94cd13fa3741780bd108220bb893c3d9be8a1ac` and immutable admission remains `8fd0a40928c4089b453556edbf0a5abebe46986d`. The archived task retains its original allocation and counters.
 
-The exact prospective A allocation names `agent/foundation-fresh-admission-318`, seven Foundation paths and its task; its immutable admission base is this allocation's future protected merge SHA. Work remains the sole control plane and gains no lane runtime ownership. The separately coordinated #247 task edit is metadata-only and preserves worker head, owned paths and all partial test evidence.
+Architecture #313 / PR #317 remains accepted. #247 remains `WAITING_DEPENDENCY` on separately allocated B and C plus actual C producer readiness. Preserve Server Seam branch/head/partial evidence. Work remains the sole control plane; no lane or shared lease is granted by this closeout.
 
 Historical pre-architecture checkpoint:
 
@@ -81,18 +80,16 @@ Historical pre-architecture checkpoint:
 
 ## Current critical-path blocker
 
-Accepted decision `FND-DUR-FRESH-ADMISSION-V1` is integrated; the missing implementation is now the blocker. Child A #318 supplies only Foundation semantic authorization/publication/completion APIs. Child B must persist them atomically; Child C must bind actual authenticated/owning producers and prove admission readiness. Existing test-only verifier authorities do not establish production sources. No A scope expansion or fabricated source can substitute for C.
+Child A Foundation semantic authorization/publication/completion APIs are protected-main integrated and released. Child B must persist them atomically; Child C must bind actual authenticated/owning producers and prove admission readiness. Test-only authorities do not establish production sources. No B/C allocation is created by this closeout.
 
 ## Next authorized sequence
 
-1. Work integrates the exact Child A allocation and records that future protected merge SHA as immutable worker admission provenance.
-2. Work creates `agent/foundation-fresh-admission-318` from that SHA and dispatches its sole worker after fresh ownership/readback checks.
-3. Qualify/integrate/read back A; only then freshly allocate B. Qualify/integrate/read back B; only then freshly allocate C.
+1. Completed: A #318 / #321 qualification, protected integration and ownership release.
+2. Prepare, qualify and integrate a fresh bounded Child B allocation from protected main containing A; bind its actual allocation merge as immutable admission before dispatch.
+3. Qualify/integrate/read back B; only then freshly allocate C.
 4. Require C's actual producer inventory, commit-before-publish, source nonrollback and readiness evidence; missing sources keep admission closed.
-5. After A+B+C protected integrations and readiness, Work re-evaluates the preserved Server Seam branch and decides lawful resume/reconciliation. No reset/rebase/force/restart or partial-candidate integration is authorized.
-6. Qualify Server Seam through its existing full production-path/review/CI lifecycle, then recompute compatible Client -> applicable real QA -> Movement -> Combat.
-
-The architecture author's task is left unchanged; #313 and Work evidence record protected integration. No architecture-worker archive/release role is assumed by this bounded correction.
+5. After A+B+C protected integrations and readiness, re-evaluate the preserved Server Seam branch for lawful resume/reconciliation; no reset/rebase/force/restart or partial-candidate integration.
+6. Qualify Server Seam through production-path/review/CI requirements, then recompute Client -> real QA -> Movement -> Combat.
 
 ## Open-state disposition
 
@@ -151,7 +148,7 @@ The coordinator may create bounded allocations and integrate qualified worker re
 
 This reconciliation removes obsolete active-state claims from the coordinator packet. It does not reopen or reinterpret completed Wave A work, does not ratify historical invalid Durability branches, and does not modify any worker branch or runtime path.
 
-The current critical path is A #318 -> separately allocated B -> separately allocated C/real producer readiness -> Server Seam. #313 is completed. #316 release-provenance correction remains documentation-only. No other lane is promoted or implicitly allocated.
+Child A #318 is completed/released. The current critical path is separately allocated B -> separately allocated C/real producer readiness -> Server Seam. #313 is completed. #316 release-provenance correction remains documentation-only. No other lane is promoted or implicitly allocated.
 
 ## Validation
 
@@ -189,18 +186,19 @@ The current critical path is A #318 -> separately allocated B -> separately allo
 
 ## PR and closeout
 
-- changed-file allowlist: Child A task and plan, LIVE_ALLOCATIONS, executor DAG provenance, this Work task, and explicitly coordinated Server Seam task metadata only
+- current closeout Issue: #322
+- changed-file allowlist: Child A active-to-archive task move, its plan archive link, LIVE_ALLOCATIONS and this Work task only
 - terminal merge authority: normal protected repository control plane only; no direct/self/bypass merge
 - coordinator programme remains active after this checkpoint; this is not Movement/Combat programme closeout
 
 ## Context checkpoint
 
 ```yaml
-last_progress: architecture #317 protected integration verified; prospective A #318 allocation and metadata-only #247 dependency correction prepared; #316 historical release provenance reconciled
+last_progress: Child A #318 / PR #321 protected integration verified; terminal task archive and released ownership recorded under closeout #322
 status: COORDINATING
 programme_state: WAITING_DEPENDENCY
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
-protected_main_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
+protected_main_sha: f77a160a480cb1bb08bbbd83e0061b2a8a424734
 server_seam_issue: 247
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
@@ -209,6 +207,6 @@ server_seam_state: WAITING_DEPENDENCY
 architecture_escalation_issue: 313
 nonblocking_governance_reconciliation_issue: 316
 owner_action_required: null
-blocker: Foundation_318_then_Child_B_then_Child_C_actual_producer_readiness
-next_action: Work integrates the exact Child A allocation and records its protected merge SHA before worker branch creation and dispatch
+blocker: Child_B_then_Child_C_actual_producer_readiness
+next_action: prepare the fresh bounded Child B allocation from protected main containing Child A
 ```

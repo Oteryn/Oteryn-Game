@@ -6,7 +6,7 @@ This checkpoint supersedes stale current-status interpretations of the historica
 
 - Architecture #313 is completed: PR #317 protected integration `a8678d4a94e479a9aa2a92920379a4b32f95143b`, successful Merge Queue run `33983003548`.
 - Existing reconnect/terminal Durability delivery #252 and archive #290 are complete/released; historical #167/#240/#243 prose does not allocate Foundation.
-- Child A #318 is the next prospective allocation, governed by `OTV2-20260905-foundation-fresh-admission-318` below. It activates only when this allocation merges, from that future protected merge SHA.
+- Child A #318 is completed/released: PR #321 integrated as `f77a160a480cb1bb08bbbd83e0061b2a8a424734` after exact-head CI, independent review and full Merge Queue `33992173480` passed. Archived task below preserves immutable admission `8fd0a40928c4089b453556edbf0a5abebe46986d`; B/C remain separate unallocated dependencies.
 - #247 is `WAITING_DEPENDENCY`; preserve `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`, its existing paths and partial evidence. Architecture acceptance alone does not resume it.
 - Child B persistence and Child C actual producer/composition/readiness require separate allocations after their prerequisite protected integrations. Test sources establish no production availability. A+B alone cannot release Server Seam.
 - Earlier Foundation #208/#280 and harness #281 are closed/released. Fresh open-PR/path readback remains mandatory before dispatch.
@@ -730,36 +730,32 @@ OTV2-IMPL-ANALYTICS:
 
 No production/protected/live-data/Platform/external-repository authority is introduced by this closeout or lease transfer.
 
-## Prospective Child A — Foundation fresh-admission durability semantics
+## Completed Child A — Foundation fresh-admission durability semantics
 
 ```yaml
 lane_id: OTV2-IMPL-FOUNDATION-FRESH-ADMISSION
 task_id: OTV2-20260905-foundation-fresh-admission-318
 issue: 318
 coordinator_issue: 162
-status: waiting
-allocation_state: pending_protected_integration
-allocation_preparation_main_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
-admission_main_sha: null
-admission_base_rule: exact protected merge SHA of this coordinator allocation; record on GitHub before worker mutation
+status: completed_released
+allocation_state: protected_integrated
+allocation_pr: 320
+allocation_merge_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
+admission_main_sha: 8fd0a40928c4089b453556edbf0a5abebe46986d
+delivery_pr: 321
+delivery_final_head_sha: a94cd13fa3741780bd108220bb893c3d9be8a1ac
+delivery_merge_sha: f77a160a480cb1bb08bbbd83e0061b2a8a424734
+delivery_merge_queue_run: 33992173480
 branch: agent/foundation-fresh-admission-318
-branch_state: planned_not_created_by_this_record
-worker_alias: Oteryn Foundation fresh-admission worker
-task_packet: docs/agents/tasks/active/OTV2-20260905-foundation-fresh-admission-318.md
+branch_state: deleted_after_merge
+task_packet: docs/agents/tasks/archive/OTV2-20260905-foundation-fresh-admission-318.md
 implementation_plan: docs/superpowers/plans/2026-09-05-foundation-fresh-admission-durability.md
 architecture_pr: 317
 architecture_merge_sha: a8678d4a94e479a9aa2a92920379a4b32f95143b
-owned_paths:
-  - apps/game-server/src/foundation/fresh_admission_durability.rs
-  - apps/game-server/src/foundation/admission_authority_publication.rs
-  - apps/game-server/src/foundation/admission.rs
-  - apps/game-server/src/foundation/admission_facade.rs
-  - apps/game-server/src/foundation/fnd04_verifier.rs
-  - apps/game-server/src/foundation/mod.rs
-  - apps/game-server/src/foundation/fresh_admission_durability_tests.rs
-  - docs/agents/tasks/active/OTV2-20260905-foundation-fresh-admission-318.md
+owned_paths: []
+owned_paths_disposition: historical_eight_path_allocation_preserved_in_archive_released
 shared_cargo_composition_lease: none
-write_authority: only_after_exact_allocation_protected_integration_and_GitHub_dispatch
+write_authority: none
 ```
 
-The worker allowlist is exactly seven Foundation surfaces plus its task. Single-writer execution is serial because the functional steps share these APIs. No SQL, migration, Cargo, workflow, listener, composition, `admission_recovery_inner.rs` or producer registration is allocated. Work retains child integration/closeout authority. Future B/C remain unallocated.
+The complete eight-path allocation and RED/GREEN/review/check history are preserved in the archive. Work verified protected integration and releases the sole Foundation worker. This factual closeout allocates no SQL, migration, Cargo, workflow, listener, composition, producer registration or B/C work. Server Seam remains held until separately allocated B/C integrate and actual source readiness is proven.
