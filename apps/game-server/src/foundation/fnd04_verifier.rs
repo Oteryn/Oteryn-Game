@@ -1036,6 +1036,156 @@ mod tests {
         );
     }
 
+
+    struct PublishedFreshSource {
+        key: [u8; 32],
+        current: FreshCurrentEvidence,
+        trust_observed_at: i64,
+        security_observed_at: i64,
+        security_revision: u64,
+        security_floor: u64,
+        security_allowed: bool,
+    }
+
+    impl fresh_source_sealed::Sealed for PublishedFreshSource {}
+
+    fn source_provenance(
+        purpose: FreshEvidencePurposeV1,
+        observed_at: i64,
+    ) -> FreshEvidenceProvenanceV1 {
+        FreshEvidenceProvenanceV1 {
+            source_authority: "independently-authenticated-test-source".to_owned(),
+            purpose,
+            scope: Fnd04EvidenceScope::FreshAdmission,
+            source_revision: 7,
+            accepted_source_revision: 7,
+            decision_identity: "source-decision-seven".to_owned(),
+            accepted_decision_identity: "source-decision-seven".to_owned(),
+            source_observed_at: observed_at,
+            clock_uncertainty_seconds: 0,
+            publication_revision: 11,
+        }
+    }
+
+    impl FreshDurabilityEvidenceSourceV1 for PublishedFreshSource {
+        fn signing_trust(
+            &self,
+            key_id: &str,
+            _now: i64,
+        ) -> Result<FreshSigningTrustObservationV1, Fnd04EvidenceError> {
+            if key_id != "fresh-1" {
+                return Err(Fnd04EvidenceError::ExplicitlyDenied);
+            }
+            Ok(FreshSigningTrustObservationV1 {
+                key_id: "fresh-1".to_owned(),
+                public_key: self.key,
+                trusted: true,
+                provenance: source_provenance(
+                    FreshEvidencePurposeV1::SigningTrust,
+                    self.trust_observed_at,
+                ),
+            })
+        }
+
+        fn account_security(
+            &self,
+            account_id: &str,
+            _now: i64,
+        ) -> Result<FreshAccountSecurityObservationV1, Fnd04EvidenceError> {
+            if account_id != "00000000-0000-4000-8000-000000000001" {
+                return Err(Fnd04EvidenceError::ExplicitlyDenied);
+            }
+            let mut provenance = source_provenance(
+                FreshEvidencePurposeV1::PlatformSecurity,
+                self.security_observed_at,
+            );
+            provenance.source_revision = self.security_revision;
+            provenance.accepted_source_revision = self.security_floor;
+            Ok(FreshAccountSecurityObservationV1 {
+                account_id: account_id.to_owned(),
+                minimum_generation: 1,
+                allowed: self.security_allowed,
+                provenance,
+            })
+        }
+    }
+
+    impl FreshDurabilityCurrentSourceV1 for PublishedFreshSource {
+        fn current(
+            &self,
+            account_id: &str,
+            character_id: CharacterId,
+            _now: i64,
+        ) -> Result<FreshPublishedCurrentObservationV1, Fnd04ConsumerError> {
+            if account_id != self.current.account_id || character_id != self.current.character_id {
+                return Err(Fnd04ConsumerError::FreshAccountCharacterConflict);
+            }
+            Ok(FreshPublishedCurrentObservationV1 {
+                facts: self.current.clone(),
+                account_publication_revision: 11,
+                character_publication_revision: 13,
+                runtime_publication_revision: 17,
+                expected_lease_generation: 1,
+                proposed_lease_generation: 2,
+                account_presence_available: true,
+                character_eligible: true,
+                runtime_ready: true,
+            })
+        }
+    }
+
+    fn published_fresh_source(
+        key: [u8; 32],
+    ) -> Result<PublishedFreshSource, Fnd04ConsumerError> {
+        Ok(PublishedFreshSource {
+            key,
+            current: FreshCurrentEvidence::for_test(100)?,
+            trust_observed_at: 99,
+            security_observed_at: 98,
+            security_revision: 7,
+            security_floor: 7,
+            security_allowed: true,
+        })
+    }
+
+    #[test]
+    fn fresh_durability_accepts_independently_published_current_sources()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[31; 32]);
+        let source = published_fresh_source(signing_key.verifying_key().to_bytes())?;
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        let trust = FreshDurabilityTrustContext::from_owning_source(&source);
+        let current = FreshDurabilityCurrentAuthorityV1::from_owning_source(&source);
+
+        assert!(verify_fresh_grant_durability_v1(&grant, 100, &trust, &current).is_ok());
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_durability_rejects_older_security_even_within_source_age_bound()
+    -> Result<(), Fnd04ConsumerError> {
+        let signing_key = SigningKey::from_bytes(&[32; 32]);
+        let mut source = published_fresh_source(signing_key.verifying_key().to_bytes())?;
+        source.security_revision = 6;
+        let grant = signed_token(
+            &signing_key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        let trust = FreshDurabilityTrustContext::from_owning_source(&source);
+        let current = FreshDurabilityCurrentAuthorityV1::from_owning_source(&source);
+
+        assert!(matches!(
+            verify_fresh_grant_durability_v1(&grant, 100, &trust, &current),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale),
+        ));
+        Ok(())
+    }
+
     #[test]
     fn numeric_date_extremes_fail_closed_without_panicking() {
         for value in [i64::MIN, i64::MAX] {
@@ -1704,48 +1854,154 @@ pub fn verify_recovery_grant_durability_v1(
     })
 }
 
-/// Fail-closed fresh durability trust context.
+
+/// Provenance purpose is fixed by the consuming Game boundary.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FreshEvidencePurposeV1 {
+    PlatformSecurity,
+    SigningTrust,
+}
+
+/// Authenticated observation metadata; it grants no source registration.
 ///
-/// Owning source registration is required before this context can carry current
-/// security/trust authority. The unavailable value grants no such capability.
-pub struct FreshDurabilityTrustContext {
-    _private: (),
+/// The comparable revision is supplied by the owning source adapter. It is not
+/// parsed from, or ordered by, an arbitrary opaque token revision string.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FreshEvidenceProvenanceV1 {
+    pub source_authority: String,
+    pub purpose: FreshEvidencePurposeV1,
+    pub scope: Fnd04EvidenceScope,
+    pub source_revision: u64,
+    pub accepted_source_revision: u64,
+    pub decision_identity: String,
+    pub accepted_decision_identity: String,
+    pub source_observed_at: i64,
+    pub clock_uncertainty_seconds: u64,
+    pub publication_revision: u64,
 }
 
-impl FreshDurabilityTrustContext {
+/// A raw observation becomes usable only through a sealed owning source.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FreshSigningTrustObservationV1 {
+    pub key_id: String,
+    pub public_key: [u8; 32],
+    pub trusted: bool,
+    pub provenance: FreshEvidenceProvenanceV1,
+}
+
+/// A raw observation is not a producer capability or current guard bootstrap.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FreshAccountSecurityObservationV1 {
+    pub account_id: String,
+    pub minimum_generation: u64,
+    pub allowed: bool,
+    pub provenance: FreshEvidenceProvenanceV1,
+}
+
+/// Published Game facts returned by the owning adapter, not token claims.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FreshPublishedCurrentObservationV1 {
+    pub facts: FreshCurrentEvidence,
+    pub account_publication_revision: u64,
+    pub character_publication_revision: u64,
+    pub runtime_publication_revision: u64,
+    pub expected_lease_generation: u64,
+    pub proposed_lease_generation: u64,
+    pub account_presence_available: bool,
+    pub character_eligible: bool,
+    pub runtime_ready: bool,
+}
+
+/// Crate-owned producer registration boundary. External callers cannot implement
+/// either source trait by filling an observation struct or presenting a receipt.
+/// Child C owns actual production implementations and source authentication.
+pub(crate) mod fresh_source_sealed {
+    pub trait Sealed {}
+}
+
+pub trait FreshDurabilityEvidenceSourceV1: fresh_source_sealed::Sealed {
+    fn signing_trust(
+        &self,
+        key_id: &str,
+        now: i64,
+    ) -> Result<FreshSigningTrustObservationV1, Fnd04EvidenceError>;
+
+    fn account_security(
+        &self,
+        account_id: &str,
+        now: i64,
+    ) -> Result<FreshAccountSecurityObservationV1, Fnd04EvidenceError>;
+}
+
+pub trait FreshDurabilityCurrentSourceV1: fresh_source_sealed::Sealed {
+    /// Resolves an already-published projection without database/network waiting.
+    /// Account ownership is resolved before world eligibility is disclosed.
+    fn current(
+        &self,
+        account_id: &str,
+        character_id: CharacterId,
+        now: i64,
+    ) -> Result<FreshPublishedCurrentObservationV1, Fnd04ConsumerError>;
+}
+
+/// Owning-source capability; raw observations cannot construct one.
+pub struct FreshDurabilityTrustContext<'a> {
+    source: Option<&'a dyn FreshDurabilityEvidenceSourceV1>,
+}
+
+impl<'a> FreshDurabilityTrustContext<'a> {
     #[must_use]
     pub const fn unavailable() -> Self {
-        Self { _private: () }
+        Self { source: None }
+    }
+
+    #[must_use]
+    pub const fn from_owning_source(source: &'a dyn FreshDurabilityEvidenceSourceV1) -> Self {
+        Self {
+            source: Some(source),
+        }
+    }
+
+    #[must_use]
+    pub const fn has_registered_source(&self) -> bool {
+        self.source.is_some()
     }
 }
 
-/// Fail-closed current owning-source context, separate from compatibility facts.
-pub struct FreshDurabilityCurrentAuthorityV1 {
-    _private: (),
+/// Separate owning Game source capability, never a compatibility fact wrapper.
+pub struct FreshDurabilityCurrentAuthorityV1<'a> {
+    source: Option<&'a dyn FreshDurabilityCurrentSourceV1>,
 }
 
-impl FreshDurabilityCurrentAuthorityV1 {
+impl<'a> FreshDurabilityCurrentAuthorityV1<'a> {
     #[must_use]
     pub const fn unavailable() -> Self {
-        Self { _private: () }
+        Self { source: None }
+    }
+
+    #[must_use]
+    pub const fn from_owning_source(source: &'a dyn FreshDurabilityCurrentSourceV1) -> Self {
+        Self {
+            source: Some(source),
+        }
+    }
+
+    #[must_use]
+    pub const fn has_registered_source(&self) -> bool {
+        self.source.is_some()
     }
 }
 
-/// No successful durability result is constructible until owning-source
-/// provenance and complete current-authority validation are implemented.
+/// No successful durability result exists until the verifier's independently
+/// sourced positive-control test is implemented.
 #[derive(Debug)]
 pub enum VerifiedFreshDurabilityFactsV1 {}
 
-/// Closed fresh-durability entry for an unavailable owning source.
-///
-/// Compatibility facts and an otherwise valid grant cannot substitute for
-/// authenticated publication provenance. This initial boundary exposes no
-/// production readiness or successful authorization.
 pub fn verify_fresh_grant_durability_v1(
     _token: &str,
     _now: i64,
-    _trust: &FreshDurabilityTrustContext,
-    _current: &FreshDurabilityCurrentAuthorityV1,
+    _trust: &FreshDurabilityTrustContext<'_>,
+    _current: &FreshDurabilityCurrentAuthorityV1<'_>,
 ) -> Result<VerifiedFreshDurabilityFactsV1, Fnd04ConsumerError> {
     Err(Fnd04ConsumerError::FreshSecurityEvidenceStale)
 }

@@ -158,7 +158,13 @@ No SQLx/SQL/schema/migration, Cargo/lockfile, workflow/registry/stable-ID, liste
 
 ## Implementation / findings
 
-Executed initial compile-time RED is preserved at e88c106a41e130f90cd9d6c41b8a8ab237ade18e: run33985311543, Linux job101357665714, six expected missing-API E0433/E0425 errors. PR321 comment5554057753 records the evidence. The first minimal implementation only defines unavailable contexts and an uninhabited successful result, with no producer registration or admission success path. Its runtime result remains fail-closed; full Task1 provenance and Tasks2-4 are not complete. The separate rustfmt call-layout findings are repaired without assertion changes. First test-only checkpoint adds two fail-closed durability-entry expectations with real signed grants and one existing NumericDate boundary control, all inside the existing cfg(test) verifier module. The new durability entry/context APIs deliberately do not exist yet, so expected canonical RED is missing-API compilation, not behavioral coverage or a passing test claim. The compatibility positive control demonstrates that missing production source provenance must not silently fall back to legacy caller-filled facts. Rich positive provenance and individual authority/time mutation cases remain subsequent Task 1 test cycles. No production implementation is added. Follow the four functional tasks in the plan. Preserve published history, reject record-derived current authority, and repair verified material findings test-first within this allocation. Place exact frozen head/review/check evidence on the PR rather than adding self-referential bookkeeping commits.
+Historical compile-time RED: `e88c106a41e130f90cd9d6c41b8a8ab237ade18e`, canonical run `33985311543`, Linux job `101357665714`, six expected E0433/E0425 missing-API errors; PR321 comment5554057753 retains exact evidence. The separate rustfmt findings were not RED.
+
+Initial unavailable-entry GREEN: `4e0ce78479efa7fb17dc541695297704b7564f27`, run `33985663094`, Linux job `101358627615` completed SUCCESS, including strict Clippy, workspace tests and existing PostgreSQL regression. Policy/formatting passed. This proves only the initial unavailable-source boundary, not full Child A.
+
+The next behavioral RED adds sealed owning-source traits and raw observation payloads without a successful verification implementation. A real signed grant plus independently published current source must succeed; the existing closed entry still rejects it. Source traits cannot be implemented outside the Game crate; raw payloads, grants or receipts cannot register a capability. Child B may follow the existing test-target path-inclusion convention to exercise crate-owned sources without a public fixture constructor or Cargo/workflow change. No production producer registration is claimed.
+
+Complete verified evidence, publication, durable flow/adoption and qualification remain in progress. Preserve assertions and independently controlled sources; use exact PR evidence for frozen heads.
 
 ## Validation
 
@@ -214,7 +220,7 @@ Executed initial compile-time RED is preserved at e88c106a41e130f90cd9d6c41b8a8a
 ## Context checkpoint
 
 ```yaml
-last_progress: canonical compile-time RED observed on e88c106; minimal unavailable-only entry and exact rustfmt repairs prepared for canonical verification; complete authority implementation remains pending
+last_progress: initial unavailable-entry canonical GREEN verified; sealed-source positive behavioral RED prepared on the same branch/PR
 status: waiting
 branch: agent/foundation-fresh-admission-318
 head_sha: null
@@ -224,19 +230,19 @@ final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
+ci_run_ids: [33985311543, 33985663094]
+ci_job_ids: [101357665714, 101358627615]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: verify minimal unavailable-entry checkpoint in canonical CI and add independently sourced positive provenance behavioral RED
+next_action: observe the independently published source positive control fail in canonical CI before implementing successful verification
 ```
 
 Source readiness prerequisite is tracked separately in Issue #319 for Child C. It does not block Child A semantic implementation or widen this allocation.
