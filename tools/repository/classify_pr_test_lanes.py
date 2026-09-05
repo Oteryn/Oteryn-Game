@@ -202,8 +202,11 @@ def classify_post_merge(event, metadata) -> dict:
         files = [{"filename": fields[index + 1].decode("utf-8"), "status": statuses[fields[index]]}
                  for index in range(0, len(fields), 2)]
         result = classify(files, len(files), metadata, input_digest(metadata),
+                          docs_digest=input_digest(metadata, include_server=True),
                           candidate_modes_verified=candidate_modes_safe(after))
-        # Post-merge policy never omits Linux/PG/policy/supply chain, even docs.
+        # Only reviewed docs may omit runtime lanes; policy/supply chain remain.
+        if result["rust"] is False and result["windows"] is False and result["surface"] == "docs":
+            return result
         if result["rust"] is True and result["windows"] is False and result["surface"] in {"server", "durability"}:
             return result
         return full(result["reason"], result["surface"])

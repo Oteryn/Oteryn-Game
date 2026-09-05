@@ -49,7 +49,11 @@ def main():
             with patch.dict(os.environ, env), patch.object(lanes, "AUDITED_INPUT_SHA256", lanes.input_digest(metadata)):
                 def classify(change=None, environment=None, meta=None):
                     with patch.dict(os.environ, environment or {}):
-                        return lanes.classify_post_merge(dict(event, **(change or {})), metadata if meta is None else meta)
+                        result = lanes.classify_post_merge(dict(event, **(change or {})), metadata if meta is None else meta)
+                        assert type(result["rust"]) is bool and type(result["windows"]) is bool, result
+                        if result["windows"]:
+                            assert result["rust"] is True, result
+                        return result
                 result = classify()
                 assert result["rust"] is True and result["windows"] is False, result
                 for key, values in {"GITHUB_EVENT_NAME": ["workflow_dispatch", "merge_group", "pull_request"], "GITHUB_REF": ["refs/heads/feature", ""], "GITHUB_REF_PROTECTED": ["false", "", "TRUE"], "GITHUB_SHA": [before, "", "x" * 40], "GITHUB_REPOSITORY": ["other/repo", ""]}.items():
@@ -59,7 +63,8 @@ def main():
                     for value in values:
                         assert classify({key: value})["windows"] is True, (key, value)
                 for malformed in (None, [], {}, "invalid"):
-                    assert lanes.classify_post_merge(malformed, metadata)["windows"] is True
+                    result = lanes.classify_post_merge(malformed, metadata)
+                    assert result["rust"] is True and result["windows"] is True, result
                 assert classify(meta={})["windows"] is True
                 with patch.object(lanes, "AUDITED_INPUT_SHA256", "stale"):
                     assert classify()["windows"] is True
@@ -100,6 +105,56 @@ def main():
                 with patch.dict(os.environ, GITHUB_SHA=head):
                     assert classify({"after": head})["windows"] is True
                 git("checkout", "-q", after)
+                doc = root / "README.md"
+                doc.write_text("original documentation\n")
+                git("add", ".")
+                git("commit", "-qm", "document baseline")
+                doc_before = git("rev-parse", "HEAD")
+                with patch.object(lanes, "AUDITED_DOC_INPUT_SHA256", lanes.input_digest(metadata, include_server=True)):
+                    for rename in (False, True):
+                        git("checkout", "-q", doc_before)
+                        if rename:
+                            git("mv", "README.md", "CHANGELOG.md")
+                        else:
+                            doc.write_text("revised documentation\n")
+                        git("add", ".")
+                        git("commit", "-qm", "neutral documentation")
+                        doc_head = git("rev-parse", "HEAD")
+                        with patch.dict(os.environ, GITHUB_SHA=doc_head):
+                            result = classify({"before": doc_before, "after": doc_head})
+                            assert result["rust"] is False and result["windows"] is False, result
+                            with patch.object(lanes, "AUDITED_DOC_INPUT_SHA256", "stale"):
+                                assert classify({"before": doc_before, "after": doc_head})["windows"] is True
+                            with patch.object(lanes, "AUDITED_INPUT_SHA256", "stale"):
+                                assert classify({"before": doc_before, "after": doc_head})["windows"] is True
+                    # A changed/new consumer can acquire a document dependency.
+                    # Both server and non-server trees must invalidate docs proof.
+                    for path in ("apps/game-server/src/main.rs", "apps/game-server/src/doc_reader.rs",
+                                 "apps/client/src/doc_reader.rs", "Cargo.lock", ".github/workflows/other.yml", "unknown.bin"):
+                        git("checkout", "-q", doc_before)
+                        doc.write_text("changed docs\n")
+                        target = root / path
+                        target.parent.mkdir(parents=True, exist_ok=True)
+                        target.write_text("changed input\n")
+                        git("add", ".")
+                        git("commit", "-qm", "mixed documentation input")
+                        mixed = git("rev-parse", "HEAD")
+                        with patch.dict(os.environ, GITHUB_SHA=mixed):
+                            result = classify({"before": doc_before, "after": mixed})
+                            if path.startswith("apps/game-server/"):
+                                assert result["rust"] is True and result["windows"] is False, result
+                            else:
+                                assert result["rust"] is True and result["windows"] is True, result
+                        # A subsequent docs-only range uses the changed protected
+                        # consumers; it must not inherit the previous docs proof.
+                        doc.write_text("another document change\n")
+                        git("add", ".")
+                        git("commit", "-qm", "docs after consumer change")
+                        head = git("rev-parse", "HEAD")
+                        with patch.dict(os.environ, GITHUB_SHA=head):
+                            if path.startswith("apps/") or path == "Cargo.lock":
+                                assert classify({"before": mixed, "after": head})["windows"] is True
+                git("checkout", "-q", after)
                 (root / "link").symlink_to("apps/game-server/src/main.rs")
                 git("add", ".")
                 git("commit", "-qm", "special mode")
@@ -125,13 +180,41 @@ def main():
         rustup.write_text("#!/bin/sh\nexit 1\n")
         rustup.chmod(0o755)
         result = subprocess.run(["bash", "-c", script], env=dict(os.environ, PATH=directory + os.pathsep + os.environ["PATH"], RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output)), capture_output=True, text=True)
-        assert result.returncode == 0 and output.read_text() == "windows=true\n", result
+        assert result.returncode == 0 and output.read_text() == "rust=true\nwindows=true\n", result
+        rustup.write_text("#!/bin/sh\nexit 0\n")
+        cargo = Path(directory) / "cargo"
+        cargo.write_text("#!/bin/sh\nprintf '{}\\n'\nexit \"$METADATA_EXIT\"\n")
+        cargo.chmod(0o755)
+        python = Path(directory) / "python"
+        python.write_text("#!/bin/sh\nprintf '%s' \"$WIRE_OUTPUT\" >> \"$GITHUB_OUTPUT\"\nexit \"$CLASSIFIER_EXIT\"\n")
+        python.chmod(0o755)
+        full = "rust=true\nwindows=true\n"
+        valid = ("rust=false\nwindows=false\n", "rust=true\nwindows=false\n", full)
+        invalid = ("", "rust=false\n", "windows=false\n", "rust=false\nwindows=true\n",
+                   "rust=false\nwindows=unknown\n", "rust=FALSE\nwindows=false\n",
+                   "rust=false\nwindows=false", "rust=false\nwindows=false\nwindows=false\n",
+                   "rust=false\nwindows=false\nother=false\n", "rust=false\nwindows=false\n\n")
+        for payload in valid + invalid:
+            for metadata_exit, classifier_exit in ((0, 0), (1, 0), (0, 1)):
+                output.unlink()
+                result = subprocess.run(["bash", "-c", script], env=dict(os.environ,
+                    PATH=directory + os.pathsep + os.environ["PATH"], RUNNER_TEMP=directory, GITHUB_OUTPUT=str(output),
+                    WIRE_OUTPUT=payload, METADATA_EXIT=str(metadata_exit), CLASSIFIER_EXIT=str(classifier_exit)), capture_output=True, text=True)
+                expected = payload if payload in valid and metadata_exit == classifier_exit == 0 else full
+                assert result.returncode == 0 and output.read_text() == expected, (payload, metadata_exit, classifier_exit, result)
     assert hasattr(policy, "validate_post_merge_rust"), "post-merge workflow regression contract is missing"
     assert not policy.validate_post_merge_rust(workflow)
     assert policy.validate_post_merge_rust(workflow + "\nconcurrency:\n  group: main\n  cancel-in-progress: false\n")
     for before_text, after_text in (("always()", "success()"), ("windows != 'false'", "windows == 'true'"), ("fetch-depth: 0", "fetch-depth: 1"), ("    needs: lanes", "    needs: policy"), ("--test durability_postgres", "--test nonexistent"), ("--post-merge", "--pr"), ("  workflow_dispatch:", "  pull_request:")):
         mutated = workflow.replace(before_text, after_text)
         assert mutated != workflow and policy.validate_post_merge_rust(mutated), before_text
+    for job in ("linux", "durability-postgres", "windows"):
+        block = policy.indented_yaml_mapping_block(workflow, job, 2)
+        for before_text, after_text in (("needs.lanes.result != 'success'", "false"),
+                                        ("github.event_name != 'push'", "false"),
+                                        ("    needs: lanes\n", "")):
+            mutated = block.replace(before_text, after_text)
+            assert mutated != block and policy.validate_post_merge_rust(workflow.replace(block, mutated)), (job, before_text)
     print("Post-merge fixtures PASS: real Git ranges, event/protection identity, full fallback, consumer/rename/mode families and workflow wiring")
     return 0
 
