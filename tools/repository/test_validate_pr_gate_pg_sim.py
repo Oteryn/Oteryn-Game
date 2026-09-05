@@ -167,6 +167,19 @@ def test_scope_preserves_stable_classification() -> None:
         assert failure is None and output == expected, (failure, output)
 
 
+def test_scope_bounds_environment_transport() -> None:
+    files = [{"filename": "apps/game-server/src/lib.rs", "status": "modified", "patch": "x" * 140000}]
+    failure, output = run_classifier(files, scope=True)
+    fields = dict(line.split("=", 1) for line in output.splitlines())
+    assert failure is None and fields["complete"] == "true"
+    assert json.loads(fields["file_records"]) == [{"filename": files[0]["filename"], "status": "modified"}], "scope must transport classification fields only"
+    # Even projected paths must not exceed an environment-variable launch limit.
+    files = [{"filename": f"docs/{i}/" + "x" * 200 + ".md", "status": "modified"} for i in range(300)]
+    failure, output = run_classifier(files, scope=True)
+    fields = dict(line.split("=", 1) for line in output.splitlines())
+    assert failure is None and fields["complete"] == "false" and fields["file_records"] == "[]", "oversize scope must select FULL before process launch"
+
+
 def test_classifier_rejects_identity_races() -> None:
     # Two pages and an unchanged file count reproduce the review's race, not a count mismatch.
     files = [{"filename": f"docs/file-{index}.md", "status": "modified"} for index in range(101)]
@@ -259,6 +272,7 @@ def main() -> int:
         test_evidence_step_condition_family,
         test_scope_rejects_identity_races,
         test_scope_preserves_stable_classification,
+        test_scope_bounds_environment_transport,
         test_both_classifiers_bind_aba_to_immutable_diff,
         test_both_classifiers_reject_comparison_truncation,
         test_evidence_job_failure_cannot_be_tolerated,
