@@ -14,7 +14,7 @@ parent_coordinator_issue: 162
 preparation_issue: 96
 preparation_pr: 117
 admission_main_sha: 68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705
-integration_main_sha: 62590071b7e47e3221af0e180c73bbc7cdf37c31
+integration_main_sha: b9b1a4317858bffc25ad6af3cffcf7b5eff93445
 base_sha: 68ecbad7f6a0dbe7d6214654f8a57c75a3d7c705
 head_sha: null
 final_head_sha: null
@@ -27,7 +27,7 @@ worker_task_id: OTV2-20260904-gameplay-server-seam
 worker_branch: agent/otv2-gameplay-server-seam-01
 worker_pr: null
 created_at: 2026-09-04T19:27:00+02:00
-updated_at: 2026-09-05T15:27:42+02:00
+updated_at: 2026-09-05T16:07:15+02:00
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
@@ -59,7 +59,7 @@ Only after PR #294 integrates through protected controls and Work reads the resu
 
 ## Architecture and source of truth
 
-- `PROVEN` — current protected `main` is `62590071b7e47e3221af0e180c73bbc7cdf37c31`.
+- `PROVEN` — current protected `main` is `b9b1a4317858bffc25ad6af3cffcf7b5eff93445`.
 - `PROVEN` — Issue #162 remains open and names `OTV2_WORK_DELIVERY_COORDINATOR` as the canonical control plane; no later profile transfer is recorded.
 - `PROVEN` — Issue #247 remains open and grants no implementation authority by itself; worker authority still depends on allocation PR #294 protected integration/readback.
 - `PROVEN` — preparation #96 / PR #117 defines the exact conditional Server Seam topology, primary paths and serialized shared paths.
@@ -70,13 +70,14 @@ Only after PR #294 integrates through protected controls and Work reads the resu
 - `PROVEN` — current protected-main `ReconnectCandidateBindingV1::from_record(...)`, `AccountPresenceClaimV1::from_identity(...)` and `CharacterWorldEligibilityClaimV1::from_identity(...)` are not production current-authority conveniences; the identity-derived siblings are `#[cfg(test)]` wrappers over private expected-value helpers.
 - `PROVEN` — subsequent #302/#303 extend independent current-authority/retry/restart/PostgreSQL test coverage and explicitly preserve production semantics.
 - `PROVEN` — PR #305 changed standalone protected-main `rust.yml` lane selection only and explicitly left PR `game-gate`, Merge Queue workflow and ruleset unchanged.
-- `PROVEN` — PR #306 merged as current main `62590071b7e47e3221af0e180c73bbc7cdf37c31` and adds exactly `apps/game-server/tests/server_ci_qualification.rs`; it changes no runtime source, Cargo/dependency, classifier, workflow, ruleset, Merge Queue or fan-in authority and creates no Server Seam path ownership.
+- `PROVEN` — PR #306 added exactly `apps/game-server/tests/server_ci_qualification.rs`; it changes no runtime source, Cargo/dependency, classifier, workflow, ruleset, Merge Queue or fan-in authority and creates no Server Seam path ownership.
+- `PROVEN` — PR #307 advanced protected `main` to `b9b1a4317858bffc25ad6af3cffcf7b5eff93445` by archiving the measured post-merge Rust-lane task only; it changes no runtime/test/Cargo/classifier/workflow/ruleset/Merge Queue authority and does not alter the Server Seam API or lease.
 - `PROVEN` — current `apps/game-server/src/main.rs` remains fail-closed outside `--smoke`; no production gameplay listener exists.
 - `PROVEN` — latest open-PR scan finds no active non-Dependabot writer on any Server Seam primary/shared path. #295/#293 are docs; #288/#262 are workflow/governance; historical #243 is Durability-only.
 - `PROVEN` — Dependabot #259/#260/#261 still touch `Cargo.toml`/`Cargo.lock` but carry no task/allocation ownership. They remain later shared-path reconciliation candidates, not active Server Seam writers.
-- `PROVEN` — PR #294 was reconciled to protected main by normal two-parent merges without rebase/reset/force. The latest merge-up is `ffb10d5d263de4d2f0d81fead71442a1e49f66ae` with parents `252198ddd8ee9c605b343c4643b4cc0ffa3bef63` and current main `62590071b7e47e3221af0e180c73bbc7cdf37c31`; the branch ref update was fast-forward with `force=false`.
-- `PROVEN` — compare immediately after the #306 merge-up is `behind_by=0` and exactly the same three allocated docs paths remain changed relative to current protected main.
-- `DERIVED` — the historical #280 semantic blocker is cleared; #305/#306 do not alter the accepted Server Seam architecture, API lease or review repair, so the allocation can proceed to one final exact-head qualification/review generation after this authority-record synchronization.
+- `PROVEN` — PR #294 was reconciled to current protected main by normal two-parent merges without rebase/reset/force. The latest merge-up is `a0ca3118a418d5b2e7b47d83cd2c2f1a65b8eb65` with parents `bc6578c77deb23150dad231955de0f6e2a7a0ae9` and current main `b9b1a4317858bffc25ad6af3cffcf7b5eff93445`; the branch ref update was fast-forward with `force=false`.
+- `PROVEN` — compare immediately after the #307 merge-up is `behind_by=0` and exactly the same three allocated docs paths remain changed relative to current protected main.
+- `DERIVED` — the historical #280 semantic blocker is cleared; #305/#306/#307 do not alter the accepted Server Seam architecture, API lease or review repairs, so the allocation can proceed to one final exact-head qualification/review generation after this authority-record synchronization.
 
 Accepted technical authority remains merged #117, current FND-02/FND-03/FND-04 contracts/registries, current protected-main Foundation/Durability implementation, current authority-qualification discipline and QA evidence ownership. A lower implementation artifact may not widen them.
 
@@ -135,12 +136,14 @@ Historical Codex review on head `8df5f60f...` produced four actionable threads, 
 - P1 `3936600529` — invalid/expired/replayed/wrong-binding and concurrent fresh-admission RED cases;
 - P2 `3936600539` — shutdown must not silently lose already-authoritative reserved work.
 
-Later exact-head review generations found two further P1s:
+Later exact-head review generations found four further P1s:
 
 - P1 `3940618846` — composed-listener wrong protocol-major/profile cases were not literally included in the focused listener suite; accepted and repaired before head `6b3a5d73...`;
-- P1 `3940738538` — those listener-path cases were placed in Task 2 before the production composition existed; accepted and repaired in `252198ddd8ee9c605b343c4643b4cc0ffa3bef63` by keeping Task 2 transport-only and moving the production-listener RED/GREEN to Task 5 after connection/lifecycle prerequisites.
+- P1 `3940738538` — those listener-path cases were placed in Task 2 before the production composition existed; accepted and repaired in `252198ddd8ee9c605b343c4643b4cc0ffa3bef63` by keeping Task 2 transport-only and moving the production-listener RED/GREEN to Task 5 after connection/lifecycle prerequisites;
+- P1 `3940802875` — Task 3 could not make its authority tests GREEN if `connection.rs` was not reachable as an in-crate private module; accepted and repaired in `bc6578c77deb23150dad231955de0f6e2a7a0ae9` by registering the private `gameplay_transport` module shell in Task 2 and private `mod connection;` in Task 3, with in-crate unit tests and no public/test-only façade;
+- P1 `3940802880` — TLS 1.3-only enforcement lacked an explicit TLS 1.2 negative; accepted and repaired in `bc6578c77deb23150dad231955de0f6e2a7a0ae9` with a TLS-1.2-only + exact-ALPN transport negative and physical real-listener projection in Tasks 5-6.
 
-`PROVEN` — the current child plan contains all six required finding-family dispositions. All prior CI/review generations are historical after the tracked repairs and #306 main reconciliation. One fresh representative independent review of the final exact head is required before final thread reconciliation/resolution.
+`PROVEN` — the current child plan contains all eight required finding-family dispositions. The #307 merge-up preserved the plan blob unchanged. All prior CI/review generations are historical after the tracked repairs and main reconciliation. One fresh representative independent review of the final exact head is required before final thread reconciliation/resolution.
 
 ## Evidence ownership
 
@@ -170,7 +173,7 @@ A required unowned path is `SHARED_LEASE_REQUIRED`; a material public API/protoc
 
 The earlier semantic dependency on #280 was correctly discovered before release and is now terminally cleared. No runtime authority was released while it was open.
 
-The post-review plan repair `252198ddd8ee9c605b343c4643b4cc0ffa3bef63` resolved the verified Task-2/Task-5 ordering P1. Protected main then advanced through #306; `ffb10d5d263de4d2f0d81fead71442a1e49f66ae` normally merged that protected main into the branch without changing the final three-path PR scope. This task-record synchronization is the final current-main authority update before the next material freeze.
+The post-review plan repair `252198ddd8ee9c605b343c4643b4cc0ffa3bef63` resolved the verified Task-2/Task-5 ordering P1. The later repair `bc6578c77deb23150dad231955de0f6e2a7a0ae9` resolved P1 `3940802875` by making Tasks 2-4 private in-crate TDD sequentially executable and P1 `3940802880` by requiring explicit TLS 1.2-only rejection at both private transport and production-listener boundaries. Protected main then advanced through docs-only #307; `a0ca3118a418d5b2e7b47d83cd2c2f1a65b8eb65` normally merged that protected main into the branch without changing the final three-path PR scope or the repaired plan blob. This task-record synchronization is the final current-main authority update before material freeze.
 
 Do not make bookkeeping-only commits after that freeze. Exact head/check/review evidence belongs on the PR/Issue once the stable tracked candidate exists.
 
@@ -179,12 +182,12 @@ Do not make bookkeeping-only commits after that freeze. Exact head/check/review 
 ### Focused
 
 - command/run: `python tools/agents/validate_governance.py`
-- result: pending fresh exact-head generation after final #306 authority-record synchronization
+- result: pending fresh exact-head generation after final #307 authority-record synchronization
 
 ### Component/integration
 
 - command/run: `python tools/repository/validate_repository_policy.py`
-- result: pending fresh exact-head generation after final #306 authority-record synchronization
+- result: pending fresh exact-head generation after final #307 authority-record synchronization
 
 ### E2E
 
@@ -210,9 +213,11 @@ Do not make bookkeeping-only commits after that freeze. Exact head/check/review 
   - accepted/repaired four historical Codex P1/P2 plan findings;
   - accepted/repaired exact-head listener-suite P1 `3940618846`;
   - accepted/repaired exact-head sequential-composition P1 `3940738538`;
+  - accepted/repaired exact-head private-module sequencing P1 `3940802875`;
+  - accepted/repaired exact-head TLS-1.2 negative P1 `3940802880`;
   - accepted semantic dependency on #280 before release; terminally cleared by protected-main readback;
   - no current non-Dependabot path collision;
-  - #305/#306 do not require Server Seam plan/lease expansion
+  - #305/#306/#307 do not require Server Seam plan/lease expansion
 - verdict: pending final exact-head review after this authority-record synchronization
 
 ## Independent review
@@ -227,7 +232,7 @@ Do not make bookkeeping-only commits after that freeze. Exact head/check/review 
 
 - changed-file review: exactly three allocated docs paths expected
 - unresolved review threads: historical/repaired threads remain; final reconciliation follows fresh representative review
-- related PRs: #289 terminal semantic prerequisite; #305/#306 protected-main predecessors; #259/#260/#261 non-owning Cargo candidates
+- related PRs: #289 terminal semantic prerequisite; #305/#306/#307 protected-main predecessors; #259/#260/#261 non-owning Cargo candidates
 - protected integration: pending final exact-head qualification/review only
 - merge/result: none
 - ownership release: none; worker authority withheld until allocation merge/readback
@@ -235,7 +240,7 @@ Do not make bookkeeping-only commits after that freeze. Exact head/check/review 
 ## Context checkpoint
 
 ```yaml
-last_progress: protected main advanced to 62590071b7e47e3221af0e180c73bbc7cdf37c31 via #306; #306 adds exactly one durable server-only CI qualification test and does not alter Server Seam runtime/API/lease or protected Merge Queue authority; PR #294 was normally merged up as ffb10d5d263de4d2f0d81fead71442a1e49f66ae and remains behind_by=0 with exactly the same three docs paths; this task-record sync records the current authority before final freeze
+last_progress: protected main advanced to b9b1a4317858bffc25ad6af3cffcf7b5eff93445 via docs-only #307; PR #294 was normally merged up as a0ca3118a418d5b2e7b47d83cd2c2f1a65b8eb65 and remains behind_by=0 with exactly the same three docs paths; plan repair bc6578c77deb23150dad231955de0f6e2a7a0ae9 resolves P1 3940802875 and 3940802880 without widening API/lease; this two-record sync is the final authority update before exact-head freeze
 status: validating
 branch: coord/gameplay-server-seam-allocation-247
 head_sha: null
@@ -243,7 +248,7 @@ pr: 294
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: pending_post_306_task_record_sync
+ci_check_generation: pending_post_307_task_record_sync
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -252,10 +257,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 6
+repair_cycles_for_current_gate: 8
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: synchronize the matching waiting worker task to current main, then freeze the resulting remote head and perform exact-path/main-relation checks, fresh hosted CI, Work whole-diff self-review and one independent exact-head deep review
+next_action: freeze the resulting remote head and perform exact-path/main-relation checks, fresh hosted CI, Work whole-diff self-review and one independent exact-head deep review; resolve repaired threads only after that fresh review is clean, then use protected Merge Queue and release the worker only after protected-main merge-SHA readback
 ```
