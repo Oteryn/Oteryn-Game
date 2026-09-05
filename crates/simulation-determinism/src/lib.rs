@@ -667,3 +667,5 @@ mod tests {
         );
     }
 }
+
+// Nonshipping #283 hosted benchmark stimulus: simulation source surface.
