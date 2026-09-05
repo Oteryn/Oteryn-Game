@@ -8,7 +8,7 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/merge-group-pg-sim-285
-pr: null
+pr: 296
 issue: 285
 parent_issue: 277
 base_sha: be708dc5be5290274f635d534d83f62b2f14b732
@@ -49,7 +49,7 @@ Activate exactly blob e3291fe8fca8fcf70166d5652b43d5a26fa0d762, already approved
 
 ## Validation
 
-RED: test_validate_merge_group_pg_sim.py fails on the existing gate with queue PG/SIM activation absent or altered. The suite is wired into the existing canonical regression driver, preserving all12 prior regression functions. Final exact-head evidence belongs on Issue/PR after publication, not a bookkeeping-only commit.
+Preserved RED commit2f7f02f608e6a8544ecfda808d5b2c655002e915: test_validate_merge_group_pg_sim.py fails on the existing gate with queue PG/SIM activation absent or altered. The suite is wired into the existing canonical regression driver, preserving all12 prior regression functions. Final exact-head evidence belongs on Issue/PR after publication, not a bookkeeping-only commit.
 
 ## High-risk authority/recovery qualification
 
@@ -62,3 +62,7 @@ Required once deterministic GREEN is stable, under current META AI review policy
 ## Context checkpoint
 
 Next action: preserve RED, activate exact approved gate, update executable policy and run GREEN. Owner authorizes protected integration then immediate #283 continuation. No force/rebase/reset or protection bypass.
+
+## GREEN candidate
+
+Activated exact approved blob; core policy requires its identity, eight job keys, PostgreSQL and simulation fragments and expanded aggregate. Regression suite retains12 prior tests and adds whole-workflow mutation and 28 independent fan-in failures plus success control. Exact final CI/review/queue readback will be recorded on Issue285/PR296 without another bookkeeping-only commit. Next action: deterministic GREEN, hosted qualification, whole-diff review and one independent deep review, then protected queue integration/readback.

@@ -52,9 +52,9 @@ The protected `main` ruleset requires only the stable `game-gate` context. Indiv
 
 ## Current Merge Queue gate
 
-`.github/workflows/merge-group-gate.yml` validates the exact synthetic merge-group head and currently requires candidate/governance validation, dependency review, CodeQL, Linux workspace, Windows production client and supply-chain checks before emitting `game-gate`.
+`.github/workflows/merge-group-gate.yml` validates the exact synthetic merge-group head and requires candidate/governance validation, dependency review, CodeQL, Linux workspace, real PostgreSQL17.6, Windows production client plus deterministic simulation and supply-chain checks before emitting `game-gate`.
 
-PostgreSQL durability and deterministic simulation are not yet present in that merge-group workflow on this candidate. Their protected-base audit-pin rotation and exact preapproved gate activation are staged through Issues #284 and #285. Do not claim full merge-group PG/SIM qualification until #285 is integrated and protected-main readback proves the actual workflow.
+Issue #285 activates exactly the workflow blob preapproved by integrated #284. PostgreSQL runs in an unconditional job with a pinned17.6 service, verifies the synthetic head, requires the durability test target and executes it. Windows verifies that same head before its production client and simulation tests. The aggregate requires success from PostgreSQL and Windows; skipped, missing, cancelled or failed results reject integration. The complete queue workflow is pinned by executable policy; intentional changes require a separately reviewed protected-base pin rotation. Current exact-head execution and protected-main integration evidence are recorded on Issue #285/PR #296; source presence alone is not execution evidence. The queue regression suite runs through the existing canonical governance regression driver.
 
 ## Current focused validation
 
