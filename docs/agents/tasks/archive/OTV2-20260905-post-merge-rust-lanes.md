@@ -4,18 +4,18 @@
 task_id: OTV2-20260905-post-merge-rust-lanes
 title: Scope protected-main post-merge Rust lanes
 mode: IMPLEMENT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: ci/post-merge-rust-lanes
+branch: null
 issue: 304
 pr: 305
 base_sha: 187c6b83c6945d79aabef2c5730c3ddba13fcab1
-head_sha: null
-final_head_sha: null
-owner: Codex sole writer
+head_sha: 865443ca75e980ab4d216dc843960ff0a92f805b
+final_head_sha: 865443ca75e980ab4d216dc843960ff0a92f805b
+owner: null
 created_at: 2026-09-05T11:33:03Z
-updated_at: 2026-09-05T11:40:00Z
+updated_at: 2026-09-05T13:25:28Z
 execution_budget_minutes: 120
 large_budget_reason: Full hosted CI, independent review, protected integration and actual post-merge measurements
 owned_paths:
@@ -64,4 +64,16 @@ Normal protected Merge Queue only, then exact protected-main tree/workflow/rules
 
 ## Context checkpoint
 
-Next action: finish deterministic qualification and whole-diff review, then publish the stable candidate for independent review and exact-head hosted CI.
+The implementation and measured benchmark are accepted; the historical allocation above is released. No implementation next action remains. Issue #304 final closure is conditional on this terminal archive's normal protected integration/readback and applicable post-merge CI.
+
+## Terminal implementation and benchmark evidence
+
+PR #305 integrated the independently reviewed implementation through full Merge Queue at `6295e4079a53cc95a3021e5c34b9004b2e9bd50c`. Its actual control-plane post-merge run `33964871201` correctly executed FULL: 14.1500 allocated runner-minutes and 8.5833 wall-minutes, PostgreSQL 124/124 and Windows SIM 7/7.
+
+The owner subsequently authorized exactly one permanent server-only validation prerequisite. PR #306 added only `apps/game-server/tests/server_ci_qualification.rs`, covering the actual executable's smoke success and fail-closed default/near-miss CLI invocations without changing runtime behavior. The test remains in the repository. Exact reviewed head `a2b5dcc01fb81f2fa6e0275e3b2a0e8a58568e72` passed focused qualification, negative sensitivity, Clippy, format, regression families, self-review and independent review. Required PR run `33967983424` and full Merge Queue `33968249032` passed. It merged at `62590071b7e47e3221af0e180c73bbc7cdf37c31`, tree `65e4af400821a2c34ad27d727336d3ecd099ca1f`, identical to the reviewed candidate.
+
+Actual protected-main push run `33968711222` completed successfully on 2026-09-05, 13:22:31-13:25:28 UTC: **2.9500 wall-minutes, 5.9667 allocated runner-minutes**. Trusted classifier job `101313293874` selected server-only. Linux `101313293879` passed including the permanent tests; PostgreSQL `101313293853` passed 124/124 against real 17.6; Windows/SIM `101313326088` was skipped with no runner or steps. Five allocated job durations total 358 seconds; skipped-job placeholder timestamps are excluded. The complete protected before/after diff contains only the reviewed test addition. Classifier/Cargo trust inputs, PR/MQ workflows, required fan-in and ruleset semantics are unchanged; MQ and manual dispatch remain FULL, with no bypass actors.
+
+Compared with actual server FULL baselines `33962958617` and `33961442773`, allocated runner time decreased by 54.85% and 58.28% respectively. These are separate observed hosted samples, not a controlled A/B experiment, a future performance guarantee or billed-cost measurements. Author and independent reviewer both verified the actual GitHub evidence.
+
+Exact run/job timestamps, comparison method, safety readback and final lifecycle evidence are authoritative in [Issue #304](https://github.com/Oteryn/Oteryn-Game/issues/304#issuecomment-5552136169). Do not add self-referential head/readiness commits to this archived packet.
