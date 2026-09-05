@@ -220,7 +220,7 @@ Complete verified evidence, publication, durable flow/adoption and qualification
 ## Context checkpoint
 
 ```yaml
-last_progress: initial unavailable-entry canonical GREEN verified; sealed-source positive behavioral RED prepared on the same branch/PR
+last_progress: canonical positive-source behavioral RED observed; local rich-verifier GREEN 27 tests passed; full A remains incomplete
 status: waiting
 branch: agent/foundation-fresh-admission-318
 head_sha: null
@@ -230,19 +230,28 @@ final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: [33985311543, 33985663094]
-ci_job_ids: [101357665714, 101358627615]
+ci_run_ids: [33985311543, 33985663094, 33985944120]
+ci_job_ids: [101357665714, 101358627615, 101359375408]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: observe the independently published source positive control fail in canonical CI before implementing successful verification
+next_action: implement and qualify typed publication then fresh split-phase flow and independently current adoption
 ```
 
 Source readiness prerequisite is tracked separately in Issue #319 for Child C. It does not block Child A semantic implementation or widen this allocation.
+
+## Rich verifier checkpoint
+
+- Executed behavioral RED: `776fcf3ba47b66f660f9f0d56717239ef1011ee4`, run `33985944120`, Linux job `101359375408`: build/strict Clippy passed; independently published positive control failed at the expected `is_ok` assertion, 233 passed / 1 failed. Separate formatting failure was not RED evidence. Work recorded comment `5554135439`.
+- Local tool discovery corrected the initial PATH-only assessment: `/root/.cargo/bin/cargo` and `rustfmt +1.94.0` are available. Exclusive clone `foundation-worktree-318` was clean at exact remote `776fcf3` before edits; native GitHub publication preserves parent history.
+- Current candidate implements private verified facts, authenticated source provenance and accepted revision/decision checks, conservative source-age arithmetic, original credential times, proposed acquired lease, independent current-field classification and pre-commit revalidation. No production source is registered.
+- Executed local `cargo +1.94.0 test --locked -p oteryn-game-server --lib foundation::fnd04_verifier`: 27 passed, 0 failed. Owned-file rustfmt applied. An earlier unqualified focused invocation also linked the unrelated `durability_postgres` integration target and failed with undefined hidden Tokio `Runtime::block_on` symbols; no baseline conclusion is claimed. Canonical workspace/PG CI remains required.
+- Remaining: typed publication/bootstrap/CAS/activation, immutable fresh authorization and six outcomes, split-phase reconciliation, independently current adoption, capability doctests and full Child A qualification. This checkpoint is not integration-ready.
+- Deadline accessor is the greatest accepted integer NumericDate second. A future durable adapter must preserve the accepted strict credential predicate for its actual trusted timestamp precision; truncating a subsecond L cannot relax expiration. Original receipt audit/deadline values remain immutable once committed.

@@ -581,6 +581,14 @@ pub fn verify_fresh_grant(
     if claims.account_security_generation < minimum_generation {
         return Err(kind.security_revoked());
     }
+    fresh_claims_against_current(&claims, current)
+}
+
+fn fresh_claims_against_current(
+    claims: &Claims,
+    current: &FreshCurrentEvidence,
+) -> Result<FreshAdmissionFacts, Fnd04ConsumerError> {
+    let kind = GrantKind::Fresh;
     if claims.protocol_major != 1 || claims.transport_profile != 1 {
         return Err(kind.revision_unsupported());
     }
@@ -981,8 +989,8 @@ mod tests {
     // Child A starts with a deliberately unavailable production source context.
     // This must never fall back to the legacy caller-filled compatibility facts.
     #[test]
-    fn fresh_durability_missing_sources_fail_closed_after_valid_compatibility_control()
-    -> Result<(), Fnd04ConsumerError> {
+    fn fresh_durability_missing_sources_fail_closed_after_valid_compatibility_control(
+    ) -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[29; 32]);
         let authority = fresh_authority("fresh-1", signing_key.verifying_key().to_bytes());
         let compatibility_trust = FreshTrustContext::new(&authority);
@@ -1035,7 +1043,6 @@ mod tests {
             Err(NumericDateError::Expired),
         );
     }
-
 
     struct PublishedFreshSource {
         key: [u8; 32],
@@ -1134,9 +1141,7 @@ mod tests {
         }
     }
 
-    fn published_fresh_source(
-        key: [u8; 32],
-    ) -> Result<PublishedFreshSource, Fnd04ConsumerError> {
+    fn published_fresh_source(key: [u8; 32]) -> Result<PublishedFreshSource, Fnd04ConsumerError> {
         Ok(PublishedFreshSource {
             key,
             current: FreshCurrentEvidence::for_test(100)?,
@@ -1149,8 +1154,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_durability_accepts_independently_published_current_sources()
-    -> Result<(), Fnd04ConsumerError> {
+    fn fresh_durability_accepts_independently_published_current_sources(
+    ) -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[31; 32]);
         let source = published_fresh_source(signing_key.verifying_key().to_bytes())?;
         let grant = signed_token(
@@ -1166,8 +1171,205 @@ mod tests {
     }
 
     #[test]
-    fn fresh_durability_rejects_older_security_even_within_source_age_bound()
-    -> Result<(), Fnd04ConsumerError> {
+    fn fresh_durability_retains_account_and_all_independent_fences(
+    ) -> Result<(), Fnd04ConsumerError> {
+        let key = SigningKey::from_bytes(&[33; 32]);
+        let source = published_fresh_source(key.verifying_key().to_bytes())?;
+        let token = signed_token(
+            &key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        let verified = verify_fresh_grant_durability_v1(
+            &token,
+            100,
+            &FreshDurabilityTrustContext::from_owning_source(&source),
+            &FreshDurabilityCurrentAuthorityV1::from_owning_source(&source),
+        )?;
+        assert_eq!(verified.account_id(), source.current.account_id);
+        assert_eq!(verified.current().facts, source.current);
+        assert_eq!(verified.credential_times(), (100, 100, 110));
+        assert_eq!(verified.signed_security_generation(), 1);
+        assert_eq!(verified.accepted_deadline(), 103);
+        assert_eq!(verified.current().proposed_lease_generation, 2);
+        assert_eq!(verified.current().expected_lease_generation, 1);
+        assert_eq!(verified.signing().provenance.source_observed_at, 99);
+        assert_eq!(verified.security().provenance.source_observed_at, 98);
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_durability_current_mutations_preserve_independent_classification(
+    ) -> Result<(), Fnd04ConsumerError> {
+        let key = SigningKey::from_bytes(&[34; 32]);
+        let token = signed_token(
+            &key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        for (field, expected) in [
+            (0, Fnd04ConsumerError::FreshAccountCharacterConflict),
+            (1, Fnd04ConsumerError::FreshWorldStale),
+            (2, Fnd04ConsumerError::FreshRuntimeStale),
+            (3, Fnd04ConsumerError::FreshRouteStale),
+            (4, Fnd04ConsumerError::FreshRevisionUnsupported),
+            (5, Fnd04ConsumerError::FreshRevisionUnsupported),
+            (6, Fnd04ConsumerError::FreshRevisionUnsupported),
+            (7, Fnd04ConsumerError::FreshRevisionUnsupported),
+            (8, Fnd04ConsumerError::FreshRevisionUnsupported),
+        ] {
+            let mut source = published_fresh_source(key.verifying_key().to_bytes())?;
+            match field {
+                0 => source.current.account_id = "00000000-0000-4000-8000-000000000099".into(),
+                1 => {
+                    source.current.world_id =
+                        WorldId::decode(&[0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9])
+                            .map_err(|_| Fnd04ConsumerError::FreshMalformed)?
+                }
+                2 => source.current.runtime_observation_revision = "runtime-2".into(),
+                3 => source.current.route_revision = "route-2".into(),
+                4 => source.current.ruleset_revision = "rules-2".into(),
+                5 => source.current.content_revision = "content-2".into(),
+                6 => source.current.map_revision = "map-2".into(),
+                7 => source.current.world_policy_revision = "policy-2".into(),
+                _ => source.current.offer_revision = "offer-2".into(),
+            }
+            assert!(
+                matches!(verify_fresh_grant_durability_v1(&token, 100,
+                &FreshDurabilityTrustContext::from_owning_source(&source),
+                &FreshDurabilityCurrentAuthorityV1::from_owning_source(&source)), Err(actual) if actual == expected),
+                "mutation {field}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_durability_checks_account_character_before_world() -> Result<(), Fnd04ConsumerError> {
+        let key = SigningKey::from_bytes(&[36; 32]);
+        let mut source = published_fresh_source(key.verifying_key().to_bytes())?;
+        let token = signed_token(
+            &key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        source.current.account_id = "00000000-0000-4000-8000-000000000099".into();
+        source.current.world_id =
+            WorldId::decode(&[0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9])
+                .map_err(|_| Fnd04ConsumerError::FreshMalformed)?;
+        assert!(matches!(
+            verify_fresh_grant_durability_v1(
+                &token,
+                100,
+                &FreshDurabilityTrustContext::from_owning_source(&source),
+                &FreshDurabilityCurrentAuthorityV1::from_owning_source(&source)
+            ),
+            Err(Fnd04ConsumerError::FreshAccountCharacterConflict)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_durability_source_age_is_inclusive_without_refresh() {
+        let mut provenance = source_provenance(FreshEvidencePurposeV1::PlatformSecurity, 100);
+        assert_eq!(
+            fresh_source_deadline(&provenance, FreshEvidencePurposeV1::PlatformSecurity, 105),
+            Ok(105)
+        );
+        assert_eq!(
+            fresh_source_deadline(&provenance, FreshEvidencePurposeV1::PlatformSecurity, 106),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale)
+        );
+        assert_eq!(
+            fresh_source_deadline(&provenance, FreshEvidencePurposeV1::PlatformSecurity, 99),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale)
+        );
+        provenance.clock_uncertainty_seconds = 1;
+        assert_eq!(
+            fresh_source_deadline(&provenance, FreshEvidencePurposeV1::PlatformSecurity, 104),
+            Ok(104)
+        );
+        assert_eq!(
+            fresh_source_deadline(&provenance, FreshEvidencePurposeV1::PlatformSecurity, 105),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale)
+        );
+        provenance.clock_uncertainty_seconds = u64::MAX;
+        assert_eq!(
+            fresh_source_deadline(&provenance, FreshEvidencePurposeV1::PlatformSecurity, 100),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale)
+        );
+        provenance.clock_uncertainty_seconds = 0;
+        provenance.source_observed_at = i64::MAX;
+        assert_eq!(
+            fresh_source_deadline(
+                &provenance,
+                FreshEvidencePurposeV1::PlatformSecurity,
+                i64::MAX
+            ),
+            Err(Fnd04ConsumerError::FreshSecurityEvidenceStale)
+        );
+    }
+
+    #[test]
+    fn fresh_durability_provenance_substitution_and_rollback_fail_closed() {
+        for mutation in 0..7 {
+            let mut provenance = source_provenance(FreshEvidencePurposeV1::PlatformSecurity, 100);
+            match mutation {
+                0 => provenance.source_authority.clear(),
+                1 => provenance.purpose = FreshEvidencePurposeV1::SigningTrust,
+                2 => provenance.source_revision = 6,
+                3 => provenance.source_revision = 8,
+                4 => provenance.accepted_decision_identity = "contradictory".into(),
+                5 => provenance.publication_revision = 0,
+                _ => provenance.decision_identity.clear(),
+            }
+            assert_eq!(
+                fresh_source_deadline(&provenance, FreshEvidencePurposeV1::PlatformSecurity, 100),
+                Err(Fnd04ConsumerError::FreshSecurityEvidenceStale),
+                "mutation {mutation}"
+            );
+        }
+    }
+
+    #[test]
+    fn fresh_durability_revalidation_preserves_original_credential_time(
+    ) -> Result<(), Fnd04ConsumerError> {
+        let key = SigningKey::from_bytes(&[35; 32]);
+        let mut source = published_fresh_source(key.verifying_key().to_bytes())?;
+        let token = signed_token(
+            &key,
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        );
+        let verified = verify_fresh_grant_durability_v1(
+            &token,
+            100,
+            &FreshDurabilityTrustContext::from_owning_source(&source),
+            &FreshDurabilityCurrentAuthorityV1::from_owning_source(&source),
+        )?;
+        source.trust_observed_at = 114;
+        source.security_observed_at = 114;
+        let refreshed = verified.revalidate(
+            114,
+            &FreshDurabilityTrustContext::from_owning_source(&source),
+            &FreshDurabilityCurrentAuthorityV1::from_owning_source(&source),
+        )?;
+        assert_eq!(refreshed.credential_times(), (100, 100, 110));
+        assert_eq!(refreshed.accepted_deadline(), 114);
+        assert!(matches!(
+            verified.revalidate(
+                115,
+                &FreshDurabilityTrustContext::from_owning_source(&source),
+                &FreshDurabilityCurrentAuthorityV1::from_owning_source(&source)
+            ),
+            Err(Fnd04ConsumerError::FreshExpired)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn fresh_durability_rejects_older_security_even_within_source_age_bound(
+    ) -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[32; 32]);
         let mut source = published_fresh_source(signing_key.verifying_key().to_bytes())?;
         source.security_revision = 6;
@@ -1235,8 +1437,8 @@ mod tests {
     }
 
     #[test]
-    fn protected_header_enforces_exact_members_and_algorithm_precedence()
-    -> Result<(), Fnd04VerificationError> {
+    fn protected_header_enforces_exact_members_and_algorithm_precedence(
+    ) -> Result<(), Fnd04VerificationError> {
         let malformed = compact_token(r#"{"alg":"Ed25519","kid":"fresh"}"#);
         let non_exact_algorithm = compact_token(r#"{"alg":"EdDSA","kid":"fresh","typ":"x"}"#);
         let valid = compact_token(r#"{"alg":"Ed25519","kid":"fresh","typ":"x"}"#);
@@ -1258,8 +1460,8 @@ mod tests {
     }
 
     #[test]
-    fn signature_validation_only_uses_verifier_fixed_trust_keys()
-    -> Result<(), Fnd04VerificationError> {
+    fn signature_validation_only_uses_verifier_fixed_trust_keys(
+    ) -> Result<(), Fnd04VerificationError> {
         let signing_key = SigningKey::from_bytes(&[7; 32]);
         let header = r#"{"alg":"Ed25519","kid":"fresh","typ":"x"}"#;
         let encoded_header = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(header);
@@ -1289,8 +1491,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_consumer_returns_facts_only_after_fixed_context_and_current_evidence_match()
-    -> Result<(), Fnd04ConsumerError> {
+    fn fresh_consumer_returns_facts_only_after_fixed_context_and_current_evidence_match(
+    ) -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[9; 32]);
         let authority = fresh_authority("fresh-1", signing_key.verifying_key().to_bytes());
         let trust = FreshTrustContext::new(&authority);
@@ -1308,8 +1510,8 @@ mod tests {
     }
 
     #[test]
-    fn fresh_consumer_classifies_explicit_current_key_revocation_as_authentication_failure()
-    -> Result<(), Fnd04ConsumerError> {
+    fn fresh_consumer_classifies_explicit_current_key_revocation_as_authentication_failure(
+    ) -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[10; 32]);
         let authority =
             TestAuthority::default().deny_key(Fnd04EvidenceScope::FreshAdmission, "fresh-1");
@@ -1328,8 +1530,8 @@ mod tests {
     }
 
     #[test]
-    fn revoked_kid_is_rejected_while_a_different_current_kid_remains_usable()
-    -> Result<(), Fnd04ConsumerError> {
+    fn revoked_kid_is_rejected_while_a_different_current_kid_remains_usable(
+    ) -> Result<(), Fnd04ConsumerError> {
         let active = SigningKey::from_bytes(&[16; 32]);
         let revoked = SigningKey::from_bytes(&[17; 32]);
         let authority = TestAuthority::default()
@@ -1404,8 +1606,8 @@ mod tests {
     }
 
     #[test]
-    fn recovery_consumer_returns_non_authoritative_facts_from_only_recovery_context()
-    -> Result<(), Fnd04ConsumerError> {
+    fn recovery_consumer_returns_non_authoritative_facts_from_only_recovery_context(
+    ) -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[11; 32]);
         let authority = recovery_authority("recovery-1", signing_key.verifying_key().to_bytes());
         let trust = RecoveryTrustContext::new(&authority);
@@ -1428,8 +1630,8 @@ mod tests {
     }
 
     #[test]
-    fn invalid_signature_masks_authenticated_schema_and_profile_classifications()
-    -> Result<(), Fnd04ConsumerError> {
+    fn invalid_signature_masks_authenticated_schema_and_profile_classifications(
+    ) -> Result<(), Fnd04ConsumerError> {
         let trusted_key = SigningKey::from_bytes(&[12; 32]);
         let untrusted_key = SigningKey::from_bytes(&[13; 32]);
         let authority = fresh_authority("fresh-1", trusted_key.verifying_key().to_bytes());
@@ -1455,8 +1657,8 @@ mod tests {
     }
 
     #[test]
-    fn authenticated_unsupported_profile_is_not_reinterpreted_as_fresh_admission()
-    -> Result<(), Fnd04ConsumerError> {
+    fn authenticated_unsupported_profile_is_not_reinterpreted_as_fresh_admission(
+    ) -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[14; 32]);
         let authority = fresh_authority("fresh-1", signing_key.verifying_key().to_bytes());
         let trust = FreshTrustContext::new(&authority);
@@ -1474,8 +1676,8 @@ mod tests {
     }
 
     #[test]
-    fn unavailable_current_security_evidence_fails_before_any_fresh_facts_are_returned()
-    -> Result<(), Fnd04ConsumerError> {
+    fn unavailable_current_security_evidence_fails_before_any_fresh_facts_are_returned(
+    ) -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[15; 32]);
         let authority = fresh_authority("fresh-1", signing_key.verifying_key().to_bytes())
             .unavailable_account();
@@ -1696,8 +1898,8 @@ mod durability_evidence_v1_tests {
     }
 
     #[test]
-    fn recovery_durability_facts_preserve_signed_security_revision_and_expiry()
-    -> Result<(), Fnd04ConsumerError> {
+    fn recovery_durability_facts_preserve_signed_security_revision_and_expiry(
+    ) -> Result<(), Fnd04ConsumerError> {
         let signing_key = SigningKey::from_bytes(&[23; 32]);
         let authority = RecoveryAuthority {
             key: signing_key.verifying_key().to_bytes(),
@@ -1854,7 +2056,6 @@ pub fn verify_recovery_grant_durability_v1(
     })
 }
 
-
 /// Provenance purpose is fixed by the consuming Game boundary.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FreshEvidencePurposeV1 {
@@ -1992,16 +2193,222 @@ impl<'a> FreshDurabilityCurrentAuthorityV1<'a> {
     }
 }
 
-/// No successful durability result exists until the verifier's independently
-/// sourced positive-control test is implemented.
-#[derive(Debug)]
-pub enum VerifiedFreshDurabilityFactsV1 {}
+/// Authenticated claims and independently published evidence. There is deliberately
+/// no public constructor, deserializer or default implementation.
+#[derive(Debug, Clone)]
+pub struct VerifiedFreshDurabilityFactsV1 {
+    claims: Claims,
+    facts: FreshAdmissionFacts,
+    signing: FreshSigningTrustObservationV1,
+    security: FreshAccountSecurityObservationV1,
+    current: FreshPublishedCurrentObservationV1,
+    verified_at: i64,
+    accepted_deadline: i64,
+}
+
+impl VerifiedFreshDurabilityFactsV1 {
+    #[must_use]
+    pub fn account_id(&self) -> &str {
+        &self.claims.account_id
+    }
+    #[must_use]
+    pub const fn facts(&self) -> &FreshAdmissionFacts {
+        &self.facts
+    }
+    #[must_use]
+    pub const fn signing(&self) -> &FreshSigningTrustObservationV1 {
+        &self.signing
+    }
+    #[must_use]
+    pub const fn security(&self) -> &FreshAccountSecurityObservationV1 {
+        &self.security
+    }
+    #[must_use]
+    pub const fn current(&self) -> &FreshPublishedCurrentObservationV1 {
+        &self.current
+    }
+    #[must_use]
+    pub const fn verified_at(&self) -> i64 {
+        self.verified_at
+    }
+    #[must_use]
+    pub const fn accepted_deadline(&self) -> i64 {
+        self.accepted_deadline
+    }
+    #[must_use]
+    pub const fn credential_times(&self) -> (i64, i64, i64) {
+        (self.claims.iat, self.claims.nbf, self.claims.exp)
+    }
+    #[must_use]
+    pub const fn signed_security_generation(&self) -> u64 {
+        self.claims.account_security_generation
+    }
+
+    /// Re-resolves current evidence without reparsing or re-aging signed claims.
+    /// This is pre-commit eligibility; the durable adapter must still check L.
+    pub fn revalidate(
+        &self,
+        now: i64,
+        trust: &FreshDurabilityTrustContext<'_>,
+        current: &FreshDurabilityCurrentAuthorityV1<'_>,
+    ) -> Result<Self, Fnd04ConsumerError> {
+        let source = trust
+            .source
+            .ok_or(Fnd04ConsumerError::FreshSecurityEvidenceStale)?;
+        let signing = source
+            .signing_trust(&self.signing.key_id, now)
+            .map_err(|error| map_evidence_error(error, GrantKind::Fresh, true))?;
+        validate_fresh_signing(&signing, &self.signing.key_id, now)?;
+        if signing.public_key != self.signing.public_key {
+            return Err(Fnd04ConsumerError::FreshAuthenticationFailed);
+        }
+        finish_fresh_durability(self.claims.clone(), signing, now, source, current)
+    }
+}
+
+fn fresh_source_deadline(
+    provenance: &FreshEvidenceProvenanceV1,
+    purpose: FreshEvidencePurposeV1,
+    now: i64,
+) -> Result<i64, Fnd04ConsumerError> {
+    let stale = Fnd04ConsumerError::FreshSecurityEvidenceStale;
+    if provenance.source_authority.is_empty()
+        || provenance.purpose != purpose
+        || provenance.scope != Fnd04EvidenceScope::FreshAdmission
+        || provenance.source_revision == 0
+        || provenance.source_revision != provenance.accepted_source_revision
+        || provenance.decision_identity.is_empty()
+        || provenance.decision_identity != provenance.accepted_decision_identity
+        || provenance.publication_revision == 0
+        || provenance.source_observed_at < 0
+        || now < provenance.source_observed_at
+    {
+        return Err(stale);
+    }
+    let uncertainty = i64::try_from(provenance.clock_uncertainty_seconds).map_err(|_| stale)?;
+    let deadline = provenance
+        .source_observed_at
+        .checked_add(5)
+        .and_then(|value| value.checked_sub(uncertainty))
+        .ok_or(stale)?;
+    if now > deadline {
+        return Err(stale);
+    }
+    Ok(deadline)
+}
+
+fn validate_fresh_signing(
+    signing: &FreshSigningTrustObservationV1,
+    key_id: &str,
+    now: i64,
+) -> Result<i64, Fnd04ConsumerError> {
+    let deadline = fresh_source_deadline(
+        &signing.provenance,
+        FreshEvidencePurposeV1::SigningTrust,
+        now,
+    )?;
+    if signing.key_id != key_id || !signing.trusted {
+        return Err(Fnd04ConsumerError::FreshAuthenticationFailed);
+    }
+    Ok(deadline)
+}
 
 pub fn verify_fresh_grant_durability_v1(
-    _token: &str,
-    _now: i64,
-    _trust: &FreshDurabilityTrustContext<'_>,
-    _current: &FreshDurabilityCurrentAuthorityV1<'_>,
+    token: &str,
+    now: i64,
+    trust: &FreshDurabilityTrustContext<'_>,
+    current: &FreshDurabilityCurrentAuthorityV1<'_>,
 ) -> Result<VerifiedFreshDurabilityFactsV1, Fnd04ConsumerError> {
-    Err(Fnd04ConsumerError::FreshSecurityEvidenceStale)
+    let kind = GrantKind::Fresh;
+    let compact = parse_compact_jws(token).map_err(|_| kind.malformed())?;
+    let map_auth = |error| match error {
+        Fnd04VerificationError::Malformed => kind.malformed(),
+        Fnd04VerificationError::AuthenticationFailed => kind.authentication_failed(),
+    };
+    let header = parse_protected_header(&compact).map_err(map_auth)?;
+    let source = trust.source.ok_or(kind.evidence_stale())?;
+    let signing = source
+        .signing_trust(&header.kid, now)
+        .map_err(|error| map_evidence_error(error, kind, true))?;
+    validate_fresh_signing(&signing, &header.kid, now)?;
+    let fixed = FixedTrustContext {
+        keys: [(header.kid.clone(), signing.public_key)]
+            .into_iter()
+            .collect(),
+    };
+    verify_compact_signature(&compact, &header, &fixed).map_err(map_auth)?;
+    let payload = decode_canonical_base64url(&compact.payload_segment, 3_072)
+        .map_err(|_| kind.malformed())?;
+    let claims = parse_claims(&payload, kind)?;
+    validate_bindings(&header, &claims, kind)?;
+    finish_fresh_durability(claims, signing, now, source, current)
+}
+
+fn finish_fresh_durability(
+    claims: Claims,
+    signing: FreshSigningTrustObservationV1,
+    now: i64,
+    source: &dyn FreshDurabilityEvidenceSourceV1,
+    current_source: &FreshDurabilityCurrentAuthorityV1<'_>,
+) -> Result<VerifiedFreshDurabilityFactsV1, Fnd04ConsumerError> {
+    let kind = GrantKind::Fresh;
+    validate_time(&claims, now, kind)?;
+    let signing_deadline = validate_fresh_signing(&signing, &signing.key_id, now)?;
+    let security = source
+        .account_security(&claims.account_id, now)
+        .map_err(|error| map_evidence_error(error, kind, false))?;
+    let security_deadline = fresh_source_deadline(
+        &security.provenance,
+        FreshEvidencePurposeV1::PlatformSecurity,
+        now,
+    )?;
+    if security.account_id != claims.account_id {
+        return Err(Fnd04ConsumerError::FreshAccountCharacterConflict);
+    }
+    if !security.allowed || claims.account_security_generation < security.minimum_generation {
+        return Err(kind.security_revoked());
+    }
+    let character = CharacterId::decode(&claims.character).map_err(|_| kind.malformed())?;
+    let current = current_source
+        .source
+        .ok_or(kind.evidence_stale())?
+        .current(&claims.account_id, character, now)?;
+    // Preserve the compatibility verifier's ownership-before-world classification.
+    fresh_claims_against_current(&claims, &current.facts)?;
+    if !current.account_presence_available || !current.character_eligible {
+        return Err(Fnd04ConsumerError::FreshAccountCharacterConflict);
+    }
+    if !current.runtime_ready {
+        return Err(Fnd04ConsumerError::FreshRuntimeStale);
+    }
+    if current.account_publication_revision == 0
+        || current.account_publication_revision != security.provenance.publication_revision
+        || current.character_publication_revision == 0
+        || current.runtime_publication_revision == 0
+        || current.expected_lease_generation != current.facts.character_lease_generation
+        || current.expected_lease_generation.checked_add(1)
+            != Some(current.proposed_lease_generation)
+    {
+        return Err(kind.evidence_stale());
+    }
+    let credential_deadline = claims
+        .exp
+        .checked_add(4)
+        .ok_or(kind.malformed())?
+        .min(claims.iat.checked_add(35).ok_or(kind.malformed())?);
+    let accepted_deadline = credential_deadline
+        .min(signing_deadline)
+        .min(security_deadline);
+    let mut acquired = current.facts.clone();
+    acquired.character_lease_generation = current.proposed_lease_generation;
+    let facts = fresh_claims_against_current(&claims, &acquired)?;
+    Ok(VerifiedFreshDurabilityFactsV1 {
+        claims,
+        facts,
+        signing,
+        security,
+        current,
+        verified_at: now,
+        accepted_deadline,
+    })
 }
