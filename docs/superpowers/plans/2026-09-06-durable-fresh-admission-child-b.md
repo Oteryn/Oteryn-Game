@@ -28,6 +28,14 @@ This exact prospective allocation activates only after protected integration and
 
 No Foundation, Cargo, lockfile, workflow, released 0001, listener, production provider/registration, deployment or external repository writes. Concrete missing surfaces require Work amendment before mutation. Steps are serialized because schema, shared lock order and canonical lifecycle mutations are coupled; independent read-only analysis and exact-head review can run alongside the sole writer.
 
+## Protected fixture amendment (window 2)
+
+PR340 protected merge `4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee` / MQ34023932923 and Work comment5558302168 add exactly `apps/game-server/tests/support/authority_matrix.rs` and `apps/game-server/tests/support/authority_recovery.rs` to the eleven paths above. These paths isolate transport/nonce fixture accounts and preserve independent source mutation evidence; they do not expand runtime policy or permit assertion weakening. Immutable B admission, same branch/PR and cumulative counters are retained. The semantic Foundation338 allocation remains separate and disjoint.
+
+## Protected migration-binary composition amendment (window 3)
+
+Allocation344 merge `9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2` / Merge Queue34032269848 adds exactly `apps/game-server/src/bin/oteryn-game-migrate.rs`, fourteen total paths. The permitted change only imports the canonical-library `MigrationExecutor` in place of duplicate source inclusion; migration-only environment/connection/embedded ledger behavior and private seals are unchanged. No additional Foundation/Cargo/lib/registry scope follows.
+
 ## Execution windows and custody
 
 The worker has one 60-minute execution window, not a multi-hour grant. The numbered checkpoints below are technical milestones, not seven automatically authorized hours. At the window boundary publish an authorized durable checkpoint and one next action; Work decides continuation/rotation. Preserve the same canonical branch/history and immutable admission. Only one writer owns the worktree at any time.
@@ -121,3 +129,21 @@ No absent local PostgreSQL run qualifies these cases. The actual hosted head/run
 - [ ] Work verifies remote exact head/tree mapping, scope, review findings and checks, integrates normally, reads protected main and archives/releases custody. Upstream movement is reconciled without resets/force pushes; affected validation reruns only for concrete invalidation.
 
 **Single current next action:** Work qualifies this exact allocation, then binds its actual protected merge and dispatches the sole worker.
+
+### Window 4 first-loss safety repair and exact dependency
+
+Published fresh/rollback SQL checkpoints have actual PostgreSQL17.6 evidence304/305 passed respectively (canonical34033443274 and34033942736). Independent review rejected unpublished first-loss tree77bc: raw PREPARE is not owning unexpected-loss authority, and initial stale attempt persistence can poison an unopened epoch. Repair cycle3 removes those optional-context APIs and rejects initial NULL continuity before retained effects. Configured V1/V2 expired-then-distinct-current negative checks unchanged session/receipt/claims and zero attempt/child/continuity rows; actual SQL is pending.
+
+No existing exported sealed real-loss capability was found: the owning facade currently calls synchronous unsealed mark_control_loss. A separately allocated additive Foundation owning-loss source/request must bind the exact current transport/generation/actor/runtime fence and real epoch/grace/protection continuity, with pure locked-current revalidation. PREPARE then consumes established continuity. A public raw record or immutable expected snapshot cannot substitute for that prerequisite. This is a concrete minimal Foundation dependency, not permission to edit outside B's lease. Continue other admitted lifecycle/resource/locking work while Work handles it. All full-plan acceptance above remains mandatory.
+
+### Window 4 accepted resource preflight progress
+
+After protected345 registry readback, runtime operation/guard configuration is fixed to65536/8192 bytes and selected complete-row SQL transfer is bounded at131072 bytes. Complete codec length counting precedes allocation; encoded size is not a substitute for charging all private request copies and retained capacities. Four executable component boundary/codec tests pass; configured oversized-mirror rejection/restoration awaits actual PostgreSQL. This is partial enforcement only: one shared executor, all retained copies,32-variable-column/result aggregates, two durable pending slots with predecessor custody, every V1/V2/lifecycle sibling and adaptive lock qualification remain open.
+
+### Window 4 durable custody storage
+
+Work329comment5559558326 allows a DB generation fence with shared backend transactions and exclusive takeover, stable logical identity and the same two pending slots. Added low-level custody/checkpoint storage in unreleased0002 (15 relations total); no clearing API, new empty-capacity fallback or owning authority. Configured exact retry/takeover/stale/missing-slot tests await actual SQL. Every backend and the shared executor still require end-to-end integration, process-singleton admission, retained deadlines/uncertainty and complete resident accounting. Actual prior resource SQL307/1 exposed an INT4/i64 test decode mismatch; repair6 casts both boundary length expressions tobigint without changing assertions.
+
+### User-stop handoff at window 5
+
+Window5 starts13:47Z under Work5559643400, completed4/rotation1/repair6, base native68609f8. User requested save/next-agent handoff at13:50Z. Unqualified shared backend wiring is preserved: nine semantic transaction starts and V2 terminal lookup now acquire registered shared custody; one backend/pool is reused by handles, historical test constructors remain explicitly separate. Strict Clippy currently fails item placement after db.rs test module and unused unexercised production registration in integration-test compilation. Add actual registered-runtime test and repair layout before claiming any checkpoint qualification. Full queue/active/copy/deadline/ack/driver/locking/lifecycle acceptance remains unchanged; no further implementation after the stop request.
