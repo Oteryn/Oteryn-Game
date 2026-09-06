@@ -4,7 +4,7 @@
 task_id: OTV2-20260906-foundation-claim-transition-326
 title: Pair atomic claim transitions with admission and lifecycle effects
 mode: IMPLEMENT
-status: in_progress
+status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/foundation-claim-transition-326
@@ -13,7 +13,7 @@ pr: null
 allocation_source_main_sha: 93f31ba05972d3b96afb0d9ea08e2c6753507d8c
 admission_main_sha: 3ab7a72d41dae10933785ce846b8e3f186a1feac
 base_sha: 3ab7a72d41dae10933785ce846b8e3f186a1feac
-head_sha: null
+head_sha: 8211684e0761314230614d406cde6f04dbce371f
 final_head_sha: null
 final_head_frozen_at: null
 owner: allocated Foundation claim-transition worker
@@ -69,22 +69,34 @@ finding_family_sweep:
   direct_and_reconciled_paths: required
   fenced_durable_writes: pure_semantic_predicates_here_SQL_in_B
   restart_retry_replay_concurrency_pg_reload: semantic_history_here_real_PG_in_B
-  evidence: []
+  evidence:
+    - standalone_publication_claim_and_character_owner_substitution_RED_GREEN
+    - mandatory_pairing_and_private_owner_history_compile_fail
+    - exact_transition_successor_adoption_floor_RED_GREEN
+    - fresh_owner_22_single_invariant_mutations_and_5_locked_L_mutations
+    - replacement_exact_candidate_current_generation_and_6_effect_mutations
+    - release_both_holders_lease_floor_RED_GREEN_and_10_owner_effect_mutations
+    - shared_claim_preserving_predicate_current_fence_and_metadata_negatives
+    - publication_and_source_u64_exhaustion_and_bootstrap_occupied_claim_negatives
+    - direct_reconciled_retry_restart_original_operation_and_existing_V1_V2_regressions
 finding_dispositions:
-  p0_p1_accepted_and_repaired: []
+  p0_p1_accepted_and_repaired:
+    - committed_successor_decision_substitution_at_equal_revision_fixed_RED_GREEN
+    - standalone_character_account_world_binding_substitution_fixed_RED_GREEN
+    - terminal_release_current_lease_below_initial_floor_fixed_RED_GREEN
   p0_p1_rejected_with_exact_evidence: []
   p2_fixed_accepted_or_deferred: []
 ```
 
 ## Acceptance criteria
 
-- [ ] Registered owner-sealed fresh transition prepares exactly Account/Character successors from independent accepted predecessors, bound to full authorization/replay/session/transport and strict source/CAS advancement.
-- [ ] Paired production request and final-L predicate require both live capabilities; no raw DTO/receipt path creates one. No pre-COMMIT activation or source high-water consumption.
-- [ ] Lossless historical operation envelope, receipt, retry/completion and reconciliation bind exact transition decisions/effects; restoration is historical-only. No original-binding replacement on ambiguity.
-- [ ] Ordinary publication cannot acquire/release/change claims independently of matching session effects; nested Platform provenance remains unchanged except its permitted local publication wrapper.
-- [ ] Explicit narrow lifecycle siblings cover claim-preserving reconnect/control loss, already accepted terminal replacement, and fenced terminal release. They consume existing public authorization/current-session getters, expose inert exact effects and historical binding, and never authorize arbitrary transfer/takeover policy.
-- [ ] Wrong owner/binding/predecessor/current session/lease/source/CAS/time/provenance cases fail closed with one invariant mutated per case. Source decision reuse across transactions is explicitly B's durable obligation, not a stateless-proof claim.
-- [ ] Existing equal-revision, verifier/reconnect, ambiguity/restart and independent adoption regressions remain green; actual fixture acquisition applies the submitted owner-prepared transition rather than handwritten post-hoc increments.
+- [x] Registered owner-sealed fresh transition prepares exactly Account/Character successors from independent accepted predecessors, bound to full authorization/replay/session/transport and strict source/CAS advancement.
+- [x] Paired production request and final-L predicate require both live capabilities; no raw DTO/receipt path creates one. No pre-COMMIT activation or source high-water consumption.
+- [x] Lossless historical operation envelope, receipt, retry/completion and reconciliation bind exact transition decisions/effects; restoration is historical-only. No original-binding replacement on ambiguity.
+- [x] Ordinary publication cannot acquire/release/change claims independently of matching session effects; nested Platform provenance remains unchanged except its permitted local publication wrapper.
+- [x] Explicit narrow lifecycle siblings cover claim-preserving reconnect/control loss, already accepted terminal replacement, and fenced terminal release. They consume existing public authorization/current-session getters, expose inert exact effects and historical binding, and never authorize arbitrary transfer/takeover policy.
+- [x] Wrong owner/binding/predecessor/current session/lease/source/CAS/time/provenance cases fail closed with one invariant mutated per case. Source decision reuse across transactions is explicitly B's durable obligation, not a stateless-proof claim.
+- [x] Existing equal-revision, verifier/reconnect, ambiguity/restart and independent adoption regressions remain green; actual fixture acquisition applies the submitted owner-prepared transition rather than handwritten post-hoc increments.
 - [ ] Focused RED/GREEN, component/doctests, fmt/strict Clippy, whole-diff adversarial self-review and required independent exact-head review pass; all material findings dispositioned.
 - [ ] Canonical exact-head CI and normal Merge Queue pass; Work verifies protected integration, archives task and releases custody.
 
@@ -105,7 +117,12 @@ Prepare known task metadata before final freeze. Review/check evidence after fre
 - RED: paired fresh API and lifecycle sibling APIs absent; compiler rejected new required-capability tests. GREEN fresh family: 37 passed, including exact candidate/current generation replacement and stale-generation terminal release.
 - RED: adoption accepted a substituted decision at the committed successor source revision. Fixed by validating current projection against immutable accepted successor floors; focused test passed.
 - Fresh submit now carries owner-prepared two-guard effects and full historical operation identity. Fixture COMMIT applies those submitted effects. Historical receipt/retry/reconciliation retain exact transition evidence. Standalone publication preserves claims. Lifecycle capabilities remain inert and require matching canonical session writes.
-- Remaining before material freeze: full component/doctest/format/strict Clippy, overflow/bootstrap and lifecycle negative sweep, whole-diff adversarial review and independent exact-head review. No SQL/source-readiness proof claimed.
+- Additional self-review REDs reproduced and repaired: standalone Character owner binding substitution; current session/row agreeing on a lease below the immutable initial floor. The latter repair also covers the claim-preserving sibling.
+- Final source validation PASS: package lib 289, remaining test binaries 69/0/8/9/4/124/17/15/2, doctests 1+12; Foundation subset 170; fmt and package all-target strict Clippy. PostgreSQL was unconfigured locally, so those harness completions are regression/compilation evidence only, never SQL qualification.
+- Whole changed-content adversarial self-review PASS after repairs: no unresolved material finding; independently controlled owner/predecessor/current session facts, mandatory pairing, final-L, historical-only recovery, direct/reconciled adoption and lifecycle sibling sweep completed. Scope remains exactly four allocated paths.
+- Publication transport: local checkpoint `11a4604b256d7b43e7bae145922a52252f170941` maps to canonical native `8211684e0761314230614d406cde6f04dbce371f` with equal tree `1f0f05979e6a9e0608b68d4aeef16aa0eab9feef` (Issue #326 comment 5557661055). Local Git publication lacks authentication; Work publishes immutable local tree snapshots using native commits on the same allocated remote branch. Both histories are preserved without reset/rebase/force; native head is sole PR/CI authority. `head_sha` above is this durable preceding checkpoint; Work records the final native SHA/tree mapping externally after publication.
+- Work reported documentation-only upstream advance `5412215718d66c743fb78eadc561e6a23b5e2b5f` (#330), with no runtime delta or admission change. Immutable admission remains `3ab7a72d41dae10933785ce846b8e3f186a1feac`; final integration main selection belongs to Work.
+- Worker releases writable custody with final local checkpoint. Remaining: independent exact-native-head review, canonical CI and protected integration/closeout by Work. No SQL/source-readiness proof claimed.
 
 ## Validation
 
@@ -127,11 +144,11 @@ Final head is recorded after publication in immutable PR/check evidence. Require
 
 ## Self-review
 
-Required whole-diff adversarial review by the writer, with invariant/caller/finding-family sweep; result pending implementation.
+Completed PASS on all changed content and caller/finding-family sweep. Three verified safety findings were repaired test-first as recorded above; no unresolved self-review finding. Native exact-head independent review remains separate.
 
 ## Independent review
 
-Required YES: high-risk admission/provenance/session lifecycle semantics. Separate non-author exact-head reviewer; result pending stable candidate. External review remains advisory; protected controls own integration.
+Required YES: high-risk admission/provenance/session lifecycle semantics. Separate non-author exact-head reviewer; result pending Work publication of the stable candidate. External review remains advisory; protected controls own integration.
 
 ## PR and closeout
 
@@ -140,10 +157,10 @@ Worker returns one exact-head candidate within the four paths. Work creates/upda
 ## Context checkpoint
 
 ```yaml
-last_progress: prospective bounded followup allocation prepared after accepted claim-publication decision
-status: in_progress
+last_progress: semantic candidate implemented and locally qualified; writable custody released for Work exact-head review
+status: waiting
 branch: agent/foundation-claim-transition-326
-head_sha: null
+head_sha: 8211684e0761314230614d406cde6f04dbce371f
 pr: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -162,5 +179,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Finish lifecycle/overflow negative sweep and full component qualification before candidate freeze.
+next_action: Work publishes the final immutable local tree on the existing allocated branch and obtains independent exact-native-head qualification.
 ```

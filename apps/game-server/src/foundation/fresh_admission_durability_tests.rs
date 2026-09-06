@@ -1024,6 +1024,24 @@ fn fresh_owner_transition_is_required_and_bound() -> TestResult {
     )
     .map_err(|e| format!("{e:?}"))?;
     assert!(FreshAdmissionDurabilityFlowV1::begin(other, transition.clone()).is_err());
+    let other_transport = FreshAdmissionCommitAuthorizationV1::new(
+        &facts,
+        GameSessionId::decode(&id(9))?,
+        AuthenticatedTransportRefV1::decode(&[10; 16])?,
+        &source,
+        100,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    assert!(FreshAdmissionDurabilityFlowV1::begin(other_transport, transition.clone()).is_err());
+    let other_replay = source.authorize_payload(fresh_payload().replace(
+        &base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([7; 32]),
+        &base64::engine::general_purpose::URL_SAFE_NO_PAD.encode([8; 32]),
+    ))?;
+    assert_ne!(
+        other_replay.binding().facts.replay_key(),
+        authorization.binding().facts.replay_key()
+    );
+    assert!(FreshAdmissionDurabilityFlowV1::begin(other_replay, transition.clone()).is_err());
     let flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
         .map_err(|e| format!("{e:?}"))?;
     assert!(flow.controller().is_none());
@@ -1243,6 +1261,75 @@ fn fresh_terminal_replacement_binds_exact_candidate_and_current_generation() -> 
             .validate_locked(&source.rows[..2], old, &candidate, 100)
             .is_err()
     );
+    // Proposed effects are independently controlled at the owning boundary.
+    // Candidate/current session remain valid while one claim invariant changes.
+    for mutation in 0..6 {
+        let mut proposal = transition.evidence().transition.clone();
+        match mutation {
+            0 => {
+                if let AdmissionAuthorityGuardStateV1::Account { presence, .. } =
+                    &mut proposal.successors[0].state
+                {
+                    *presence = None;
+                }
+            }
+            1 => {
+                if let AdmissionAuthorityGuardStateV1::Character { holder, .. } =
+                    &mut proposal.successors[1].state
+                {
+                    *holder = Some(old.commit().game_session_id());
+                }
+            }
+            2 => {
+                if let AdmissionAuthorityGuardStateV1::Character {
+                    lease_generation, ..
+                } = &mut proposal.successors[1].state
+                {
+                    *lease_generation += 1;
+                }
+            }
+            3 => {
+                proposal.successors[0].source.decision_identity =
+                    proposal.predecessors[0].source.decision_identity.clone()
+            }
+            4 => {
+                if let AdmissionAuthorityGuardStateV1::Account { security, .. } =
+                    &mut proposal.successors[0].state
+                {
+                    security.provenance.source_authority = "substituted-platform".into();
+                }
+            }
+            _ => {
+                proposal.successors.pop();
+            }
+        }
+        let owner = MutatedClaimOwner {
+            proposal,
+            current_session: source.snapshot,
+        };
+        assert!(
+            TerminalReplacementClaimTransitionV1::prepare(
+                &owner,
+                &auth,
+                source.snapshot,
+                &candidate,
+                100
+            )
+            .is_err(),
+            "replacement mutation {mutation}"
+        );
+    }
+    assert!(
+        transition
+            .validate_locked(&source.rows[..2], source.snapshot, &candidate, 99)
+            .is_err()
+    );
+    assert!(
+        transition
+            .validate_locked(&source.rows[..2], source.snapshot, &candidate, 106)
+            .is_err()
+    );
+    assert!(transition.evidence().validate_historical(100).is_ok());
     Ok(())
 }
 
@@ -1278,7 +1365,7 @@ fn fresh_owner_transition_rejects_independently_mutated_invariants() -> TestResu
     let baseline = source
         .prepare_fresh_claim(authorization.binding(), 100)
         .map_err(|e| format!("{e:?}"))?;
-    for mutation in 0..20 {
+    for mutation in 0..22 {
         let mut proposal = baseline.clone();
         match mutation {
             0 => {
@@ -1357,7 +1444,9 @@ fn fresh_owner_transition_rejects_independently_mutated_invariants() -> TestResu
                 proposal.predecessors[1].source.decision_identity = "different-predecessor".into()
             }
             18 => proposal.prepared_at = 101,
-            _ => proposal.successors[0].source.clock_uncertainty_seconds = 6,
+            19 => proposal.successors[0].source.clock_uncertainty_seconds = 6,
+            20 => proposal.successors.push(proposal.successors[0].clone()),
+            _ => proposal.predecessors.push(proposal.predecessors[0].clone()),
         }
         let owner = MutatedClaimOwner {
             proposal,
@@ -1508,5 +1597,152 @@ fn fresh_lifecycle_claim_preservation_and_release_bind_both_holders() -> TestRes
             .is_err()
     );
     assert!(release.evidence().validate_historical(100).is_ok());
+    Ok(())
+}
+
+#[test]
+fn fresh_terminal_release_cannot_accept_lease_below_initial_floor() -> TestResult {
+    let mut source = Independent::new()?;
+    let flow = source.begin()?;
+    source.commit_sources(flow.operation())?;
+    let old = source.snapshot;
+    source.snapshot = GameSessionAuthoritySnapshot::from_current_facts(
+        old.commit(),
+        old.session_state(),
+        old.current_connection_generation(),
+        old.current_transport(),
+        CharacterLease::new(old.commit().character_id(), 1)?,
+        old.current_character_world_eligibility(),
+        old.current_runtime_scope(),
+        old.current_scope_generation(),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    if let AdmissionAuthorityGuardStateV1::Character {
+        lease_generation, ..
+    } = &mut source.rows[1].as_mut().ok_or("row")?.state
+    {
+        *lease_generation = 1;
+    }
+    // Current session and current row independently agree with each other, but
+    // both violate the immutable initial lease floor. No matching-record helper.
+    assert!(
+        TerminalReleaseClaimTransitionV1::prepare(
+            &source,
+            &source.source.current.account_id,
+            source.snapshot,
+            100
+        )
+        .is_err()
+    );
+    let claims: Vec<_> = source.rows[..2]
+        .iter()
+        .cloned()
+        .collect::<Option<Vec<_>>>()
+        .ok_or("rows")?;
+    assert!(
+        validate_claim_preserving_session_v1(
+            &source.source.current.account_id,
+            source.snapshot,
+            source.snapshot,
+            &claims,
+            &source.rows[..2]
+        )
+        .is_err()
+    );
+    Ok(())
+}
+
+#[test]
+fn fresh_release_owner_rejects_provenance_partial_effects_and_exhaustion() -> TestResult {
+    let mut source = Independent::new()?;
+    let flow = source.begin()?;
+    source.commit_sources(flow.operation())?;
+    let operation = AdmissionClaimLifecycleOperationV1::TerminalRelease {
+        account_id: source.source.current.account_id.clone(),
+        current_session: source.snapshot,
+    };
+    let baseline = source
+        .prepare_lifecycle_claim(&operation, 100)
+        .map_err(|e| format!("{e:?}"))?;
+    for mutation in 0..10 {
+        let mut proposal = baseline.evidence.clone();
+        let mut current_session = source.snapshot;
+        match mutation {
+            0 => {
+                proposal.successors.pop();
+            }
+            1 => {
+                if let AdmissionAuthorityGuardStateV1::Character { holder, .. } =
+                    &mut proposal.successors[1].state
+                {
+                    *holder = Some(source.snapshot.commit().game_session_id());
+                }
+            }
+            2 => proposal.successors[0].source.authority = "different-owner".into(),
+            3 => {
+                proposal.successors[0].source.decision_identity =
+                    proposal.predecessors[0].source.decision_identity.clone()
+            }
+            4 => {
+                if let AdmissionAuthorityGuardStateV1::Account { security, .. } =
+                    &mut proposal.successors[0].state
+                {
+                    security.minimum_generation += 1;
+                }
+            }
+            5 => proposal.prepared_at = 101,
+            6 => {
+                let prior = &mut proposal.predecessors[1];
+                prior.publication_revision = u64::MAX;
+                prior.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: u64::MAX - 1,
+                };
+                let next = &mut proposal.successors[1];
+                next.publication_revision = 0;
+                next.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: u64::MAX,
+                };
+            }
+            7 => {
+                proposal.predecessors[1].source.source_revision = u64::MAX;
+                proposal.successors[1].source.source_revision = 1;
+            }
+            8 => {
+                if let AdmissionAuthorityGuardStateV1::Character {
+                    lease_generation, ..
+                } = &mut proposal.successors[1].state
+                {
+                    *lease_generation += 1;
+                }
+            }
+            _ => {
+                current_session = GameSessionAuthoritySnapshot::from_current_facts(
+                    current_session.commit(),
+                    current_session.session_state(),
+                    ConnectionGeneration::new(2)?,
+                    current_session.current_transport(),
+                    current_session.current_character_lease(),
+                    current_session.current_character_world_eligibility(),
+                    current_session.current_runtime_scope(),
+                    current_session.current_scope_generation(),
+                )
+                .map_err(|e| format!("{e:?}"))?
+            }
+        }
+        let owner = MutatedClaimOwner {
+            proposal,
+            current_session,
+        };
+        assert!(
+            TerminalReleaseClaimTransitionV1::prepare(
+                &owner,
+                &source.source.current.account_id,
+                source.snapshot,
+                100
+            )
+            .is_err(),
+            "release mutation {mutation}"
+        );
+    }
     Ok(())
 }

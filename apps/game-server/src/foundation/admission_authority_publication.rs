@@ -264,14 +264,18 @@ fn same_claims(
             AdmissionAuthorityGuardStateV1::Character {
                 holder: a,
                 lease_generation: ag,
+                account_id: aa,
+                world_id: aw,
                 ..
             },
             AdmissionAuthorityGuardStateV1::Character {
                 holder: b,
                 lease_generation: bg,
+                account_id: ba,
+                world_id: bw,
                 ..
             },
-        ) => a == b && ag == bg,
+        ) => a == b && ag == bg && aa == ba && aw == bw,
         (
             AdmissionAuthorityGuardStateV1::Runtime { .. },
             AdmissionAuthorityGuardStateV1::Runtime { .. },
@@ -419,6 +423,8 @@ pub(super) fn validate_change(
 }
 
 /// Lossless historical conditional effects. Public data is not an owning capability.
+/// The adapter must atomically enforce source/decision high-water marks across
+/// transactions: these stateless predicates cannot prove global decision uniqueness.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AdmissionClaimTransitionEvidenceV1 {
     pub predecessors: Vec<AdmissionAuthorityPublicationChangeV1>,
@@ -430,7 +436,12 @@ pub struct AdmissionClaimTransitionEvidenceV1 {
 /// ```compile_fail
 /// use oteryn_game_server::foundation::admission_authority_publication::*;
 /// struct Unregistered;
-/// impl AdmissionClaimOwningSourceV1 for Unregistered {}
+/// impl AdmissionClaimOwningSourceV1 for Unregistered {
+///     fn prepare_fresh_claim(&self, _: &oteryn_game_server::foundation::fresh_admission_durability::FreshAdmissionAuditBindingV1, _: i64)
+///         -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1> {
+///         Err(AdmissionAuthorityPublicationErrorV1::Unavailable)
+///     }
+/// }
 /// ```
 pub trait AdmissionClaimOwningSourceV1: fresh_source_sealed::Sealed {
     fn prepare_lifecycle_claim(
@@ -471,15 +482,9 @@ impl FreshAdmissionClaimTransitionV1 {
             binding: binding.clone(),
             evidence,
         };
-        result.validate_locked(
-            &binding
-                .expected_guards
-                .iter()
-                .cloned()
-                .map(Some)
-                .collect::<Vec<_>>(),
-            now,
-        )?;
+        // The owner supplied independent predecessors; compare them to the
+        // authorization here. Actual locked current rows are required at L.
+        validate_fresh_claim_evidence(binding, &result.evidence, now)?;
         Ok(result)
     }
     #[must_use]
@@ -613,6 +618,12 @@ impl TerminalReleaseClaimTransitionV1 {
 
 /// Inert owner-authored replacement; canonical reconnect V1/V2 authorization
 /// and all candidate/session effects remain the durable adapter's prerequisites.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::admission_authority_publication::*;
+/// fn forge(history: AdmissionClaimLifecycleEvidenceV1) -> TerminalReplacementClaimTransitionV1 {
+///     TerminalReplacementClaimTransitionV1::from(history)
+/// }
+/// ```
 #[derive(Debug, Clone)]
 pub struct TerminalReplacementClaimTransitionV1 {
     evidence: AdmissionClaimLifecycleEvidenceV1,
@@ -718,6 +729,7 @@ fn validate_session_claims(
     if claims.len() != 2
         || account_id.is_empty()
         || lease.character_id() != commit.character_id()
+        || lease.generation() < commit.character_lease_generation()
         || snapshot.current_connection_generation().get() < commit.connection_generation().get()
         || snapshot.current_scope_generation().get() < commit.scope_ownership_generation()
         || snapshot.current_runtime_scope().world_id() != commit.world_id()
@@ -1271,6 +1283,52 @@ mod tests {
                     "domain {domain}, operation {operation}"
                 );
             }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn publication_standalone_cannot_substitute_character_claim_owner()
+    -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        let prior = game_domain_changes()?.remove(0);
+        let mut next = prior.clone();
+        next.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: 1,
+        };
+        next.publication_revision = 2;
+        next.source.source_revision = 8;
+        next.source.decision_identity = "new-owner-eight".into();
+        if let AdmissionAuthorityGuardStateV1::Character { account_id, .. } = &mut next.state {
+            *account_id = "00000000-0000-4000-8000-000000000002".into();
+        }
+        let request = AdmissionAuthorityPublicationV1::prepare(&ChangedOwner(vec![next]), 100)?;
+        assert!(request.validate_locked(&[Some(prior)]).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn publication_bootstrap_cannot_restore_an_occupied_claim()
+    -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        let bytes = [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9];
+        let session = GameSessionId::decode(&bytes)
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        let character = CharacterId::decode(&bytes)
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        for domain in 0..2 {
+            let mut row = if domain == 0 {
+                Owner.resolve_publication(100)?.remove(0)
+            } else {
+                game_domain_changes()?.remove(0)
+            };
+            match &mut row.state {
+                AdmissionAuthorityGuardStateV1::Account { presence, .. } => {
+                    *presence = Some((character, session))
+                }
+                AdmissionAuthorityGuardStateV1::Character { holder, .. } => *holder = Some(session),
+                _ => unreachable!(),
+            }
+            let request = AdmissionAuthorityPublicationV1::prepare(&ChangedOwner(vec![row]), 100)?;
+            assert!(request.validate_locked(&[None]).is_err());
         }
         Ok(())
     }
