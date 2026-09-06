@@ -2607,13 +2607,28 @@ fn validate_recovery_observation_successor(
     }
     Ok(())
 }
+/// Necessary per-field bound from accepted DFR-OPERATION-BYTES (65,536).
+/// A field cannot exceed its complete lifecycle operation. This bounds local
+/// comparisons/copies; the owning codec must still enforce the complete encoded
+/// sum and executor accounting. It does not invent a narrower provenance cap.
+pub(super) fn recovery_lifecycle_fields_bounded(fields: &[&str]) -> bool {
+    fields.iter().all(|field| field.len() <= 65_536)
+}
+pub(super) fn recovery_lifecycle_provenance_bounded(p: &FreshEvidenceProvenanceV1) -> bool {
+    recovery_lifecycle_fields_bounded(&[
+        &p.source_authority,
+        &p.decision_identity,
+        &p.accepted_decision_identity,
+    ])
+}
 fn recovery_source_deadline(
     provenance: &FreshEvidenceProvenanceV1,
     purpose: FreshEvidencePurposeV1,
     now: i64,
 ) -> Result<i64, Fnd04ConsumerError> {
     let stale = Fnd04ConsumerError::RecoverySecurityEvidenceStale;
-    if provenance.source_authority.is_empty()
+    if !recovery_lifecycle_provenance_bounded(provenance)
+        || provenance.source_authority.is_empty()
         || provenance.purpose != purpose
         || provenance.scope != Fnd04EvidenceScope::ExistingActorRecovery
         || provenance.source_revision == 0
@@ -2647,7 +2662,10 @@ fn validate_recovery_signing(
         FreshEvidencePurposeV1::SigningTrust,
         now,
     )?;
-    if signing.key_id != key_id || !signing.trusted {
+    if !recovery_lifecycle_fields_bounded(&[&signing.key_id, key_id])
+        || signing.key_id != key_id
+        || !signing.trusted
+    {
         return Err(Fnd04ConsumerError::RecoveryAuthenticationFailed);
     }
     Ok(deadline)
@@ -2703,7 +2721,9 @@ fn finish_recovery_durability(
     if security.minimum_generation == 0 {
         return Err(kind.evidence_stale());
     }
-    if security.account_id != claims.account_id {
+    if !recovery_lifecycle_fields_bounded(&[&security.account_id])
+        || security.account_id != claims.account_id
+    {
         return Err(kind.binding_mismatch());
     }
     if !security.allowed || claims.account_security_generation < security.minimum_generation {
@@ -2818,6 +2838,19 @@ impl RecoveryCredentialAuditV2 {
     /// not authenticate stored claims or register a live evidence source.
     pub fn validate_historical(&self) -> Result<(), Fnd04ConsumerError> {
         let invalid = Fnd04ConsumerError::RecoveryMalformed;
+        if !recovery_lifecycle_fields_bounded(&[
+            &self.account_id,
+            &self.ruleset_revision,
+            &self.content_revision,
+            &self.map_revision,
+            &self.world_policy_revision,
+            &self.security.account_id,
+            &self.signing.key_id,
+        ]) || !recovery_lifecycle_provenance_bounded(&self.signing.provenance)
+            || !recovery_lifecycle_provenance_bounded(&self.security.provenance)
+        {
+            return Err(invalid);
+        }
         NumericDate::validate(
             self.verified_at,
             self.issued_at,
@@ -2873,6 +2906,7 @@ impl RecoveryCredentialAuditV2 {
     ) -> Result<(), Fnd04ConsumerError> {
         let stale = Fnd04ConsumerError::RecoverySecurityEvidenceStale;
         self.validate_historical()?;
+        original.validate_historical()?;
         if self.verified_at != now
             || now < original.verified_at
             || self.signing.public_key != original.signing.public_key
@@ -2910,6 +2944,10 @@ pub(super) fn validate_recovery_adoption_sources(
     security: &RecoveryAccountSecurityObservationV2,
     now: i64,
 ) -> Result<(), Fnd04ConsumerError> {
+    prior.validate_historical()?;
+    if !recovery_lifecycle_fields_bounded(&[&security.account_id]) {
+        return Err(Fnd04ConsumerError::RecoverySecurityEvidenceStale);
+    }
     validate_recovery_signing(signing, &prior.signing.key_id, now)?;
     recovery_source_deadline(
         &security.provenance,

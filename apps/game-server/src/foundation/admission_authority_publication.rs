@@ -1902,6 +1902,62 @@ mod tests {
     }
 }
 
+/// Necessary field limits derived from complete DFR-OPERATION-BYTES. This is
+/// not a replacement for the owning codec's complete canonical encoded-size or
+/// active-slot accounting. Existing V1 validators/representations stay unchanged.
+pub(super) fn validate_post_grace_claim_resource_fields(
+    changes: &[AdmissionAuthorityPublicationChangeV1],
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use super::fnd04_verifier::{
+        recovery_lifecycle_fields_bounded as bounded, recovery_lifecycle_provenance_bounded,
+    };
+    let invalid = AdmissionAuthorityPublicationErrorV1::Invalid;
+    if changes.len() > 2 {
+        return Err(invalid);
+    }
+    for change in changes {
+        if !bounded(&[&change.source.authority, &change.source.decision_identity]) {
+            return Err(invalid);
+        }
+        let key_valid = match &change.key {
+            AdmissionAuthorityGuardKeyV1::Account { account_id } => bounded(&[account_id]),
+            AdmissionAuthorityGuardKeyV1::SigningTrust { key_id, profile } => {
+                bounded(&[key_id, profile])
+            }
+            _ => true,
+        };
+        let state_valid = match &change.state {
+            AdmissionAuthorityGuardStateV1::Account { security, .. } => {
+                bounded(&[&security.account_id])
+                    && recovery_lifecycle_provenance_bounded(&security.provenance)
+            }
+            AdmissionAuthorityGuardStateV1::Character { account_id, .. } => bounded(&[account_id]),
+            AdmissionAuthorityGuardStateV1::Runtime {
+                route_revision,
+                runtime_observation_revision,
+                ruleset_revision,
+                content_revision,
+                map_revision,
+                world_policy_revision,
+                offer_revision,
+                ..
+            } => bounded(&[
+                route_revision,
+                runtime_observation_revision,
+                ruleset_revision,
+                content_revision,
+                map_revision,
+                world_policy_revision,
+                offer_revision,
+            ]),
+            AdmissionAuthorityGuardStateV1::SigningTrust { .. } => true,
+        };
+        if !key_valid || !state_valid {
+            return Err(invalid);
+        }
+    }
+    Ok(())
+}
 /// Historical full operation for the additive post-grace claim boundary. The
 /// original nested Fresh observation is retained as history, never current
 /// Recovery evidence. No V1 guard or validator meaning changes.
@@ -1917,6 +1973,8 @@ impl PostGraceClaimEvidenceV1 {
         &self,
         decided_at: i64,
     ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        validate_post_grace_claim_resource_fields(&self.transition.predecessors)?;
+        validate_post_grace_claim_resource_fields(&self.transition.successors)?;
         self.operation
             .validate_historical()
             .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
@@ -1971,6 +2029,12 @@ impl PostGraceClaimTransitionV1 {
             return Err(stale);
         }
         let resolved = owner.prepare_post_grace_claim(authorization.operation(), now)?;
+        resolved
+            .current_actor
+            .validate_resource_fields()
+            .map_err(|_| stale)?;
+        validate_post_grace_claim_resource_fields(&resolved.transition.predecessors)?;
+        validate_post_grace_claim_resource_fields(&resolved.transition.successors)?;
         if &resolved.current_actor != authorization.actor()
             || resolved.transition.prepared_at != now
         {
@@ -2015,6 +2079,12 @@ impl PostGraceClaimTransitionV1 {
     ) -> Result<&[AdmissionAuthorityPublicationChangeV1], AdmissionAuthorityPublicationErrorV1>
     {
         let stale = AdmissionAuthorityPublicationErrorV1::Stale;
+        if rows.len() != 2 {
+            return Err(stale);
+        }
+        for row in rows.iter().flatten() {
+            validate_post_grace_claim_resource_fields(std::slice::from_ref(row))?;
+        }
         if current.operation() != &self.evidence.operation
             || rows.len() != 2
             || rows
@@ -2124,6 +2194,7 @@ impl PostGraceClaimTransitionV1 {
         current: &super::PostGraceRecoveryAuthorizationV1,
         now: i64,
     ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        evidence.validate_historical(now)?;
         if current.operation() != &evidence.operation {
             return Err(AdmissionAuthorityPublicationErrorV1::Stale);
         }

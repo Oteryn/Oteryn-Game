@@ -16,10 +16,10 @@ pr: 343
 allocation_source_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
 admission_main_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
 base_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
-head_sha: f2ccc7de74ed58bd47c7c71c0d1e62c8a5fce331
+head_sha: ceccd130b50c871236b096723754c6a26f1c11bf
 final_head_sha: null
 final_head_frozen_at: null
-owner: allocated post-grace Foundation worker
+owner: foundation_audit (Work custody rebind 5559848749)
 coordinator: Oteryn Work Delivery Coordinator
 created_at: 2026-09-06
 updated_at: 2026-09-06
@@ -30,6 +30,7 @@ owned_paths:
   - apps/game-server/src/foundation/fnd04_verifier.rs
   - apps/game-server/src/foundation/admission_authority_publication.rs
   - apps/game-server/src/foundation/post_grace_recovery_tests.rs
+  - apps/game-server/src/foundation/control_loss_durability_tests.rs
   - docs/agents/tasks/active/OTV2-20260906-post-grace-foundation-successor-338.md
   - docs/superpowers/plans/2026-09-06-post-grace-foundation-successor.md
 public_contracts: [FND-DUR-POST-GRACE-TIMING-V1]
@@ -138,17 +139,17 @@ Work owns PR creation and binds protected admission; worker publishes only alloc
 ## Context checkpoint
 
 ```yaml
-last_progress: expanded PREPARE/final signed credential and retained continuity matrices pass; local semantic milestones implemented; exact-head publication review and integration remain
+last_progress: owning loss plus adoption-continuity and bounded-field review repairs pass; full package339 and25doctests, strict lint and B source-inclusion rerun; Work final review/publication remains
 status: running
 admission_state: ADMITTED
 branch: agent/post-grace-foundation-successor-338
 head_sha: null
 pr: 343
 execution_budget_minutes: 60
-execution_window_number: 3
-execution_window_started_at: 2026-09-06T12:49:00Z
-execution_window_elapsed_minutes: 51
-execution_windows_completed: 2
+execution_window_number: 4
+execution_window_started_at: 2026-09-06T13:49:00Z
+execution_window_elapsed_minutes: 40
+execution_windows_completed: 3
 worker_rotations: 1
 final_head_sha: null
 final_head_frozen_at: null
@@ -162,7 +163,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 4
+repair_cycles_for_current_gate: 9
 prior_unpublished_repair_history: UNKNOWN
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
@@ -195,3 +196,42 @@ Checkpoint5 qualification at 2026-09-06T13:37:35+00:00:34 focused family cases p
 
 
 Checkpoint5 independent/root review P2 accepted: the eight canonical predecessor negatives reused actor source revision11 while changing canonical content, so same-revision contradiction masked their intended fences. The repaired matrix starts from coherent independent actor revision12/accepted12/new decision/time101, first proves unchanged canonical facts succeed at BOTH PREPARE/final locked boundaries, and then changes exactly one canonical predicate per negative. Focused repaired matrix passes. Runtime semantics did not change; this is evidence-strength repair, not a claimed runtime RED. Cumulative known repair counter is4; priorUNKNOWN preserved. Full package324/20-doctest evidence immediately above predates this test-only repair; repaired focused and strict Clippy evidence are fresh.
+
+
+## Checkpoint 6 — owning unexpected-control-loss window4
+
+Work custody rebind [5559848749](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5559848749) resumes the paused/unstarted window4 under sole writer `foundation_audit`. Existing admission `4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee`, branch/PR343, completed windows3, rotation1 and prior UNKNOWN history remain unchanged. Protected348 `d9d1b566acb57b537ff901d9765c32a95110c259` adds the seventh test path; its owning-loss addendum governs this checkpoint. A normal merge-up to that exact main is staged with both original parents preserved, not committed/published by the worker. Work retains native publication/integration. Paused time is not charged as productive time.
+
+Implemented a separate owning unexpected-loss source, private authorization, single-take split request, pure final effect, sealed completion, immutable receipt and history-only reconciliation flow. Exact scope plus ownership generation and existing owner-issued loss epoch identify the source/decision; complete original origin/grace, canonical session, controller/transport, connection generation, actor placement, Account presence, lease and retained prior budget/protection remain bound. Fresh-origin continuity is an explicit sealed-owner assertion, never inferred from a missing row. Resumed history retains the completed budget and consumed/rearm evidence. Post-grace generation-one sessions remain eligible for a later independently proven loss. The effect makes only that session reconnectable and removes only its exact controller; no claim, actor, lease or protection mutation is included.
+
+The later durable adapter must call the final predicate using independently current owning facts under the same atomic fences as its mutation. Historical reports classify persistence only; they cannot produce another live request/effect or restore controller authority. Exact committed retry returns its original receipt; conflicting original operation/time/disposition rejects. Actual SQL atomicity, runtime source registration and production liveness/rearm policy remain outside this semantic allocation.
+
+Actual missing-API REDs precede initial loss and split flow. Twelve focused cases cover first and resumed loss, post-grace generation1, six non-authoritative causes at both authorization/final, nineteen independently changed final predicates with newer coherent positive controls, ten missing/provenance/time negatives at both boundaries, absent source, immutable retry/completion conflicts, closed versions/terminal dispositions and restart without a live capability. Five additional compile-fail examples deny external loss-source/completion-source registration, raw authorization/effect construction and receipt-to-request conversion.
+
+Self-review accepted two predicate findings with actual 9-pass/2-fail RED: protection must validate at immutable loss origin, not a later observation time; resumed retained committed transport must match the current lost controller. Both repaired, then eleven focused cases passed. Independent review additionally identified unbounded new String identities in the supposedly bounded predicate. Replaced them with existing fixed-size `RuntimeScopeRefV1` and `ControlLossEpochRefV1`, retaining exact equality and complete immutable origin/grace; no Platform byte cap, new entity/wire identity, hashing or truncation. The only variable-sized fields are the existing canonical UUID account claim and at-most-eight retained budget entries. Known repair cycles now6 plus priorUNKNOWN (self-review cycle5, boundedness cycle6).
+
+Final material validation and independent exact-tree disposition are recorded below before publication. Actual B-integrated source inclusion, selected exact-head CI/Merge Queue/protected closeout remain outstanding. This is not Server Seam release.
+
+Next action: Work reviews and native-publishes the exact staged two-parent candidate on existing PR343, then qualifies canonical CI and the remaining integrated source/adapter dependencies without resetting custody/history.
+
+
+Checkpoint6 final local evidence at 2026-09-06T14:43Z: complete locked package passes336 library tests and25 compile-fail doctests; all selected integration targets pass. The unconfigured PostgreSQL124 cases are skip/compile compatibility only, not SQL execution. Strict all-target Clippy passes4.02s; formatting/whitespace, governance26 policy documents/9 lanes and workspace architecture check pass. Dedicated semantic workflow remains a canonical-CI check; its exact staged seven-file scope does not match a local dedicated semantic profile. No local authored commit was manufactured for that check.
+
+Work separately authorized qualification-only composition from exact remote B `0b47fff257902bdcc71c4ee68a6123fd1d9585c1` with the five Foundation runtime/test blobs from staged tree `9ebb421b518b0b29e45d597362b2329c5cc879c5`. Disposable archive `/workspace/scratch/c123eb18789e/foundation-b-qualification` passed `cargo test --locked -p oteryn-game-server --test durability_postgres --no-run` in19.91s using the Foundation-exclusive target. This proves actual B-candidate source-inclusion/API compatibility, not protected integration or database execution. Canonical B branch/worktree was untouched. Runtime bytes remain those of this tested tree; subsequent evidence-only task/plan updates require final review rebind.
+
+Window4 retains its original13:49 allocation timestamp and owner pause. Productive continuation is under5559848749; normal merge-up first mutation is observed locally14:23:26Z. The25-minute checkpoint charge conservatively includes preceding read-only re-entry/qualification work; no stopped time is charged and no window is reset. Completed windows3/rotation1/known repairs6+priorUNKNOWN remain. Work must preserve the remaining window budget across publication/review.
+
+
+## Checkpoint6 independent whole-diff repairs (supersedes prior candidate freeze)
+
+The independent reviewer accepted a test-only P2: after typed loss decision binding, the reused-epoch negative changed the epoch but left decision identities incoherent, masking the epoch reuse predicate. Fixed both decision identities together with the epoch; the final changed-epoch case additionally proves fresh authorization of the coherent new event succeeds before the old immutable operation rejects it. Focused12 PASS; this is evidence repair, not a runtime RED claim (cycle7).
+
+Verified P1: post-grace adoption did not require the canonical successor session to retain loss epoch/original grace. The old positive fixture itself omitted both fields. Actual RED reproduced controller adoption from missing continuity. The repair independently compares current successor epoch to the retained prior budget epoch and its grace to the original predecessor grace. Direct and reconciled isolated missing/changed epoch/grace negatives now reject and clear the projection. A true adopted canonical snapshot then successfully authorizes a later generation1 owning loss without budget/protection reset. Existing adoption fixtures now establish their complete retained session continuity (cycle8).
+
+Verified sibling resource finding: new post-grace actor/provenance/audit/claim paths could compare or clone unbounded source strings. Accepted resource decision341 §4 `DFR-OPERATION-BYTES` covers complete claim lifecycle operations/effects including nested provenance. Therefore a single retained field cannot exceed its65,536-byte complete operation. Apply that necessary conservative per-field check before owned new raw actor, audit, provenance, completion and claim-row comparisons/clones; fixed two-row and existing bounded reconciliation/budget collections keep local work finite. Actual source-deadline RED precedes repair. Independent inclusive65,536/65,537 controls now cover source provenance, new actor authorization and claim transitions. Keep exact external provenance strings and all existing V1 representations/validators unchanged (cycle9).
+
+This necessary per-field guard is not a complete canonical encoded-size check: sums, framing/escaped encoding, retained copies and the active4MiB execution envelope remain mandatory at the later owning codec/adapter/source boundaries. No new smaller provenance cap, Platform wire mapping, truncation, identity hashing, serializer or resource registration is introduced. No claim of full SQL/producer memory accounting follows.
+
+Runtime/test candidate `bac051bc5e784abb955fb9099a923bd68d77a8f6` passes full locked game-server package339 library tests and25 compile-fail doctests; strict all-target Clippy4.49s; source/actor/claim inclusive-bound tests; post-grace38 cases. These supersede prior336/335 candidate counts. All seven allocated paths now contain authored material; upstream merge-only paths remain exact protected main. Final B composition compatibility and independent review rebind follow below. Window4 conservative cumulative productive charge40minutes, completed3/rotation1/known repairs9+priorUNKNOWN; no budget reset.
+
+Final reviewed-material composition: exact remote B0b47fff257902bdcc71c4ee68a6123fd1d9585c1 plus Foundationbac051bc5e784abb955fb9099a923bd68d77a8f6 five runtime/test blobs again passes source-included durability_postgres --no-run20.67s. Full local validation above binds these same runtime bytes. Formatting/whitespace and governance26/9 rerun PASS after evidence updates. Actual SQL execution and canonical protected integration remain unclaimed.

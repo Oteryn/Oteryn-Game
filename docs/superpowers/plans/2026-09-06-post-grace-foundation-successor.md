@@ -110,3 +110,22 @@ Final local checkpoint5 evidence: full locked package library324 and20 doctests,
 
 
 Checkpoint5 review disposition: accepted P2 canonical-negative masking repaired. Both locked boundaries now first accept an unchanged canonical observation with coherent new actor revision12/accepted12/decision/time101, then reject each single canonical mutation using that valid refreshed baseline. The original unchanged revision11 control remains, and same-revision contradiction has its own separate tests. Focused repaired matrix passes; runtime unchanged. Known cumulative repairs4, priorUNKNOWN retained. Prior full-package evidence remains explicitly before this test-only repair.
+
+
+## Protected348 owning-loss implementation and evidence
+
+Work rebind162/5559848749 continues existing338 window4 and the protected `2026-09-06-control-loss-foundation-amendment.md` allocation. Seventh path `apps/game-server/src/foundation/control_loss_durability_tests.rs` is included inside the already-owned inner module; no facade/lib/Cargo/SQL/source/registry changes.
+
+Implemented distinct source-authorized unexpected-loss operation before PREPARE. Existing typed runtime scope/ownership generation and loss epoch bind the owning decision with complete original time/grace evidence. Independently current final resolution compares the exact session/controller/actor/claim/lease/protection facts and yields only the bounded loss effect. The explicit fresh-origin versus resumed-history representation preserves prior restored budget/protection, rejects guessed missing continuity, and permits later genuine loss after either same-session generation advance or post-grace generation1. No liveness/grace/rearm duration is selected here.
+
+Single-take live requests and sealed exact-operation completion preserve original retry/disposition. Public history permits reconciliation only; receipts cannot construct authorization/effect/request or project stale current control. Five compile-fail examples enforce these boundaries. Twelve focused tests cover the addendum matrix, including independently refreshed valid controls before final mutations and both-boundary missing/provenance/cause negatives.
+
+Accepted self-review RED/GREEN repairs: validate rearm/protection at loss origin; require retained committed winner transport to match lost controller. Accepted independent boundedness repair: use existing fixed-size scope and epoch types rather than unbounded strings, with exact source/decision equality and no new identity protocol. Final full package/strict lint/review/CI evidence belongs to the exact forthcoming checkpoint; actual SQL/source qualification remains separate.
+
+
+Checkpoint6 qualified material:12 focused loss tests; full package336 library/25doctests; strict all-target Clippy4.02s, fmt/whitespace/governance/workspace architecture PASS. Exact B0b47fff257902bdcc71c4ee68a6123fd1d9585c1 archive plus Foundation9ebb421b518b0b29e45d597362b2329c5cc879c5 runtime blobs passes source-included durability_postgres --no-run19.91s. No configured database or actual owning-source registration is claimed. Independent final rebind, native publication, canonical CI/Merge Queue/protected readback remain Work-owned gates.
+
+
+Final whole-diff review repairs supersede the previous material freeze: coherent epoch/decision negative controls (P2); canonical successor loss epoch/grace required at direct and reconciled adoption (actual P1 RED/GREEN); and necessary65,536-byte per-field bounds derived from accepted DFR-OPERATION-BYTES ahead of owned post-grace provenance/actor/audit/claim raw comparisons and copies. Keep complete canonical codec-size and4MiB active accounting as separate mandatory adapter/source qualification. True adopted snapshot→later owning loss now passes; source/actor/claim max/max+1 controls pass. Candidatebac051bc5e784abb955fb9099a923bd68d77a8f6 full package339/25doctests and strict Clippy4.49s pass. Known repair cycles9 plus priorUNKNOWN; preserve original window4 and lineage.
+
+The final exact B0b47fff plus Foundationbac051bc runtime composition passes source-included durability_postgres --no-run20.67s. Canonical source/API compatibility is demonstrated for these two published/prepared candidates; this remains distinct from actual PostgreSQL execution and protected integrated readback.
