@@ -299,7 +299,7 @@ fn same_security_observation(
     accepted == *right
 }
 
-fn valid_security_provenance(provenance: &FreshEvidenceProvenanceV1, now: i64) -> bool {
+fn valid_security_history(provenance: &FreshEvidenceProvenanceV1, now: i64) -> bool {
     provenance.purpose == FreshEvidencePurposeV1::PlatformSecurity
         && provenance.scope == Fnd04EvidenceScope::FreshAdmission
         && !provenance.source_authority.is_empty()
@@ -308,6 +308,13 @@ fn valid_security_provenance(provenance: &FreshEvidenceProvenanceV1, now: i64) -
         && !provenance.decision_identity.is_empty()
         && provenance.decision_identity == provenance.accepted_decision_identity
         && provenance.publication_revision > 0
+        && provenance.source_observed_at >= 0
+        && provenance.source_observed_at <= now
+        && provenance.clock_uncertainty_seconds <= 5
+}
+
+fn valid_security_provenance(provenance: &FreshEvidenceProvenanceV1, now: i64) -> bool {
+    valid_security_history(provenance, now)
         && source_age_valid(
             provenance.source_observed_at,
             provenance.clock_uncertainty_seconds,
@@ -808,7 +815,14 @@ fn validate_lifecycle_effects(
     now: i64,
 ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
     use AdmissionAuthorityPublicationErrorV1::Invalid;
-    validate_claim_pair(evidence, now)?;
+    match operation {
+        AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => {
+            validate_release_pair(evidence, now)?
+        }
+        AdmissionClaimLifecycleOperationV1::TerminalReplacement { .. } => {
+            validate_claim_pair(evidence, now)?
+        }
+    }
     validate_session_claims(
         operation.account_id(),
         operation.current_session(),
@@ -945,6 +959,93 @@ fn validate_claim_pair(
     evidence: &AdmissionClaimTransitionEvidenceV1,
     now: i64,
 ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    validate_claim_pair_structure(evidence, now)?;
+    for row in evidence.predecessors.iter().chain(&evidence.successors) {
+        validate_change(row, now)?;
+    }
+    Ok(())
+}
+
+// Relinquishment preserves authenticated historical provenance; it does not
+// acquire a controller and must not require a fresh Platform admission signal.
+fn validate_release_pair(
+    evidence: &AdmissionClaimTransitionEvidenceV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    validate_claim_pair_structure(evidence, now)?;
+    for row in evidence.predecessors.iter().chain(&evidence.successors) {
+        validate_release_change(row, now)?;
+    }
+    for row in &evidence.successors {
+        if row.source.purpose == AdmissionPublicationPurposeV1::AccountSecurityAndPresence
+            && !source_age_valid(
+                row.source.source_observed_at,
+                row.source.clock_uncertainty_seconds,
+                now,
+            )
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+    }
+    Ok(())
+}
+
+fn validate_release_change(
+    change: &AdmissionAuthorityPublicationChangeV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use AdmissionAuthorityPublicationErrorV1::Invalid;
+    let valid = match (&change.key, &change.state, change.source.purpose) {
+        (
+            AdmissionAuthorityGuardKeyV1::Account { account_id },
+            AdmissionAuthorityGuardStateV1::Account { security, .. },
+            AdmissionPublicationPurposeV1::AccountSecurityAndPresence,
+        ) => {
+            let provenance = &security.provenance;
+            !account_id.is_empty()
+                && security.account_id == *account_id
+                && security.minimum_generation > 0
+                && provenance.publication_revision == change.publication_revision
+                && valid_security_history(provenance, now)
+                && change.source.clock_uncertainty_seconds <= 5
+        }
+        (
+            AdmissionAuthorityGuardKeyV1::Character(_),
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id,
+                lease_generation,
+                ..
+            },
+            AdmissionPublicationPurposeV1::CharacterOwnershipAndLease,
+        ) => !account_id.is_empty() && *lease_generation > 0,
+        _ => false,
+    };
+    let expected = match change.precondition {
+        AdmissionPublicationPreconditionV1::Bootstrap {
+            restored_publication_high_water: Some(0),
+        } => Some(1),
+        AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision,
+        } if expected_publication_revision > 0 => expected_publication_revision.checked_add(1),
+        _ => None,
+    };
+    if !valid
+        || expected != Some(change.publication_revision)
+        || change.source.authority.is_empty()
+        || change.source.source_revision == 0
+        || change.source.decision_identity.is_empty()
+        || change.source.source_observed_at < 0
+        || change.source.source_observed_at > now
+    {
+        return Err(Invalid);
+    }
+    Ok(())
+}
+
+fn validate_claim_pair_structure(
+    evidence: &AdmissionClaimTransitionEvidenceV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
     use AdmissionAuthorityPublicationErrorV1::{Invalid, Stale};
     if evidence.predecessors.len() != 2
         || evidence.successors.len() != 2
@@ -954,8 +1055,6 @@ fn validate_claim_pair(
         return Err(Invalid);
     }
     for (prior, next) in evidence.predecessors.iter().zip(&evidence.successors) {
-        validate_change(prior, now)?;
-        validate_change(next, now)?;
         if prior.key != next.key
             || prior.source.authority != next.source.authority
             || prior.source.purpose != next.source.purpose

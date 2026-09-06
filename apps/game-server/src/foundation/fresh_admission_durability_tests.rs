@@ -1746,3 +1746,75 @@ fn fresh_release_owner_rejects_provenance_partial_effects_and_exhaustion() -> Te
     }
     Ok(())
 }
+
+#[test]
+fn fresh_terminal_release_after_remote_observation_expiry_still_relinquishes() -> TestResult {
+    let mut source = Independent::new()?;
+    let flow = source.begin()?;
+    source.commit_sources(flow.operation())?;
+    // Independently current claims/session remain the same. Only wall clock
+    // advances beyond the nested Platform observation's admission freshness.
+    let release = TerminalReleaseClaimTransitionV1::prepare(
+        &source,
+        &source.source.current.account_id,
+        source.snapshot,
+        106,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let effects = release
+        .validate_locked(&source.rows[..2], source.snapshot, 106)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(matches!(
+        &effects[0].state,
+        AdmissionAuthorityGuardStateV1::Account { presence: None, .. }
+    ));
+    assert!(matches!(
+        &effects[1].state,
+        AdmissionAuthorityGuardStateV1::Character { holder: None, .. }
+    ));
+    if let AdmissionAuthorityGuardStateV1::Account { security, .. } = &effects[0].state {
+        assert_eq!(security.provenance.source_observed_at, 98);
+        assert_eq!(effects[0].source.source_observed_at, 106);
+    }
+    let operation = release.evidence().operation.clone();
+    let original = source
+        .prepare_lifecycle_claim(&operation, 106)
+        .map_err(|e| format!("{e:?}"))?;
+    for mutation in 0..4 {
+        let mut proposal = original.evidence.clone();
+        if let AdmissionAuthorityGuardStateV1::Account { security, .. } =
+            &mut proposal.successors[0].state
+        {
+            match mutation {
+                0 => security.provenance.source_authority = "different-platform".into(),
+                1 => security.provenance.source_observed_at = 106,
+                2 => security.provenance.accepted_source_revision += 1,
+                _ => security.allowed = !security.allowed,
+            }
+        }
+        let owner = MutatedClaimOwner {
+            proposal,
+            current_session: source.snapshot,
+        };
+        assert!(
+            TerminalReleaseClaimTransitionV1::prepare(
+                &owner,
+                &source.source.current.account_id,
+                source.snapshot,
+                106
+            )
+            .is_err(),
+            "aged release provenance mutation {mutation}"
+        );
+    }
+
+    assert!(
+        FreshAdmissionClaimTransitionV1::prepare(
+            &Independent::new()?,
+            &Independent::new()?.authorize()?,
+            106
+        )
+        .is_err()
+    );
+    Ok(())
+}

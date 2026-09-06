@@ -9,11 +9,11 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/foundation-claim-transition-326
 issue: 326
-pr: null
+pr: 331
 allocation_source_main_sha: 93f31ba05972d3b96afb0d9ea08e2c6753507d8c
 admission_main_sha: 3ab7a72d41dae10933785ce846b8e3f186a1feac
 base_sha: 3ab7a72d41dae10933785ce846b8e3f186a1feac
-head_sha: 8211684e0761314230614d406cde6f04dbce371f
+head_sha: a1a5fc8790d7cfe9f580a6bba882c24685d91ed9
 final_head_sha: null
 final_head_frozen_at: null
 owner: allocated Foundation claim-transition worker
@@ -85,7 +85,8 @@ finding_dispositions:
     - standalone_character_account_world_binding_substitution_fixed_RED_GREEN
     - terminal_release_current_lease_below_initial_floor_fixed_RED_GREEN
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred:
+    - fixed_terminal_release_does_not_require_fresh_Platform_admission_observation
 ```
 
 ## Acceptance criteria
@@ -124,6 +125,15 @@ Prepare known task metadata before final freeze. Review/check evidence after fre
 - Work reported documentation-only upstream advance `5412215718d66c743fb78eadc561e6a23b5e2b5f` (#330), with no runtime delta or admission change. Immutable admission remains `3ab7a72d41dae10933785ce846b8e3f186a1feac`; final integration main selection belongs to Work.
 - Worker releases writable custody with final local checkpoint. Remaining: independent exact-native-head review, canonical CI and protected integration/closeout by Work. No SQL/source-readiness proof claimed.
 
+## Independent review repair cycle 1
+
+- Review target: PR #331 native `a1a5fc8790d7cfe9f580a6bba882c24685d91ed9`, matching local `30d95b82fdf5d36370434e73147a5d039e7933c9` tree `0182f576c2a104dd5f82c16b1acef55bde13f8e4`.
+- Accepted P2: terminal release incorrectly required the nested Platform admission observation to remain at most five seconds old, blocking correctly fenced relinquishment. RED reproduced with independently unchanged current claims/session, trusted time 106 and fresh owner-authored Game successor at 106; nested authenticated observation remains its original 98.
+- Fixed through a typed release-only historical-provenance validator. Exact predecessor/key/purpose/authority, two-row count, checked CAS, monotonic source/new decision, immutable nested Platform fields, current session/generation/lease/both holders and fresh Game successor observation remain required. Fresh acquisition, ordinary publication and replacement retain existing admission freshness validation.
+- Family sweep: aged-observation cleanup passes; source-authority substitution, observation re-aging, accepted-source mismatch and allowed-state substitution reject. Existing stale Game proposal, lease/source overflow, stale session/holders and paired fresh expiry cases remain green. No additional lifecycle policy was changed by this repair.
+- Qualification: Foundation 171; package lib 290 and all remaining binaries 69/0/8/9/4/124/17/15/2; doctests 1+12; strict all-target Clippy, fmt and changed-content self-review PASS. Local PostgreSQL remains unconfigured and is not SQL proof.
+- Work disposition: replacement after original grace is an inherited limitation, not a new #326 regression. Existing `ReconnectContinuityV1` and canonical authorization deadlines already enforce that bound. No replacement policy change is included or authorized in this repair.
+
 ## Validation
 
 ### Focused
@@ -157,11 +167,11 @@ Worker returns one exact-head candidate within the four paths. Work creates/upda
 ## Context checkpoint
 
 ```yaml
-last_progress: semantic candidate implemented and locally qualified; writable custody released for Work exact-head review
+last_progress: accepted release-freshness P2 repaired and qualified; final candidate returned and writable custody released
 status: waiting
 branch: agent/foundation-claim-transition-326
-head_sha: 8211684e0761314230614d406cde6f04dbce371f
-pr: null
+head_sha: a1a5fc8790d7cfe9f580a6bba882c24685d91ed9
+pr: 331
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -174,10 +184,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Work publishes the final immutable local tree on the existing allocated branch and obtains independent exact-native-head qualification.
+next_action: Work publishes the immutable repair tree on existing PR 331 and requalifies the material release-freshness repair on its exact native head.
 ```
