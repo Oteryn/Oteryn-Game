@@ -22,6 +22,7 @@ members = [
     "tools/synthetic-asset-compiler",
     "tools/synthetic-client-harness",
 ]
+exclude = ["vendor/sqlx-core-0.9.0", "vendor/sqlx-postgres-0.9.0"]
 resolver = "3"
 
 [workspace.package]
@@ -68,3 +69,7 @@ panic = "deny"
 todo = "deny"
 unimplemented = "deny"
 unwrap_used = "deny"
+
+[patch.crates-io]
+sqlx-core = { path = "vendor/sqlx-core-0.9.0" }
+sqlx-postgres = { path = "vendor/sqlx-postgres-0.9.0" }
