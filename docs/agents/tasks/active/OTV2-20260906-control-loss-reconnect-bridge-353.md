@@ -25,6 +25,7 @@ execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
   - apps/game-server/src/foundation/admission_recovery_inner.rs
+  - apps/game-server/src/foundation/admission_authority_publication.rs
   - apps/game-server/src/foundation/control_loss_reconnect_bridge_tests.rs
   - docs/agents/tasks/active/OTV2-20260906-control-loss-reconnect-bridge-353.md
   - docs/superpowers/plans/2026-09-06-control-loss-reconnect-bridge.md
@@ -44,6 +45,7 @@ PROVEN: protected343 atedef416745f92b79371f98739272c840b0a9b357 provides sealed 
 ## Acceptance criteria
 
 - [ ] Additive closed continuity/operation and split-phase consumer preserve complete original owning-loss operation, epoch/grace, protection/rearm, retained budget/attempts and owner-generation namespaces.
+- [ ] Cover both same-session recovery and V2 early-terminal replacement within original grace, with complete continuity and exact current claim binding through additive publication predicates.
 - [ ] Existing verified V1/V2 credential semantics, public signatures, exhaustive enums and wire protocol stay unchanged. Never manufacture a legacy record for an unrepresentable state.
 - [ ] PREPARE and final predicates independently validate current owner, canonical reconnectable session, account/character/world/lease/runtime, claims, transport/generation and immutable timing. History/receipt alone cannot recreate live authorization.
 - [ ] NotEntitled never gains protection; unused entitlement activates only by its accepted rule; existing activation/deadline/consumption/rearm history is neither reset nor relabeled. No invented fence or policy duration.
@@ -54,7 +56,7 @@ PROVEN: protected343 atedef416745f92b79371f98739272c840b0a9b357 provides sealed 
 
 ## Scope, parallelism and exclusions
 
-Exactly four paths activate only after this package is protected, Work reads back its allocation and338 release, verifies overlaps and grants immutable admission. One new branch and one sole writable worktree; no second Foundation writer. Tests may be included from the already-owned inner module; no demonstrated facade/export need. Report any additional concrete file before mutation.
+Exactly five paths activate only after this package is protected, Work reads back its allocation and338 release, verifies overlaps and grants immutable admission. One new branch and one sole writable worktree; no second Foundation writer. Tests may be included from the already-owned inner module; no demonstrated facade/export need. The publication module is required for an additive owner-sealed V2 early-terminal replacement claim transition carrying complete continuity: existing replacement authorization/claim APIs require a legacy reconnect record and cannot faithfully represent all protection histories. Preserve those existing APIs and closed enums; do not manufacture a legacy record. Report any additional concrete file before mutation.
 
 B owns its fourteen SQL/codec/harness paths, driver351 owns its protected vendor/Cargo lease, and this worker owns only the semantic bridge. Work162 comment5560287018 explicitly permits this bounded path-disjoint third lane because both missing prerequisites block complete B. No shared writable worktree/control plane or Cargo/lib/registry overlap follows. Same programme budget; task counters begin only on actual admission and persist across later windows.
 
