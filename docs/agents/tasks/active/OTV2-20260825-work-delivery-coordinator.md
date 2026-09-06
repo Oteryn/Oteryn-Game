@@ -1,5 +1,16 @@
 # OTV2-20260825-work-delivery-coordinator
 
+## Current Work checkpoint — bounded native evidence wire346
+
+This checkpoint supersedes earlier current-status prose while preserving all historical admissions. Work162 remains the unique control plane.
+
+- Protected allocation344 is `9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2`, actual Merge Queue34032269848 SUCCESS. Registry342 delivery PR345 is independently reviewed at `ddf718a89851f4da3641872d2447b04958a23bd1`; exact CI/integration remains pending. No registry lease transfers to this package.
+- B329/PR335 initial fresh checkpoint `4139f552a952c392e5f47139aed60e64f32b8cf4` passes actual PostgreSQL17.6:304/304 in canonical34033443274/Linux101487176414 at12:37:45Z. Full lifecycle, shared bounded executor/resources and locking qualification remain open. Same branch, immutable admission and counters persist.
+- Foundation338/PR343 actor checkpoint `ddee1ef6f2038c5b8bfa1588828aca4c7b1a297d` has independent intermediate review; full operation/flow/claims remain open on its same six paths and original admission.
+- Issue346 is a separately mergeable pure wire codec prerequisite. It produces no live source capability, authenticated provenance, floor, publication or actual-source readiness. Its five paths activate only after this exact allocation is protected and Work performs fresh readback/admission.
+- Server Seam247 remains WAITING_DEPENDENCY at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. The explicit one-export lib.rs amendment below is not Task3 release. Actual Platform native producers/PKI/bootstrap and Game owning-source composition remain unqualified.
+
+
 ## Current Work checkpoint — resource registry342 continuation
 
 This checkpoint supersedes earlier current-status prose below without rewriting historical admissions. Work162 remains the unique mutating control plane.
@@ -24,14 +35,14 @@ base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: 0d354091dfc3a144a9c83c31434dec2aff4fe0c4
+protected_main_sha: 9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2
 server_seam_issue: 247
 server_seam_allocation_pr: 294
 server_seam_allocation_merge_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 server_seam_state: WAITING_DEPENDENCY
-architecture_escalation_issue: 342
+architecture_escalation_issue: null
 nonblocking_governance_reconciliation_issue: 316
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
@@ -39,15 +50,10 @@ updated_at: 2026-09-06
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration and closeout; no single worker owns the programme
 owned_paths:
-  - docs/architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md
-  - docs/agents/tasks/active/OTV2-20260906-native-admission-resource-registry-342.md
-  - docs/superpowers/plans/2026-09-06-native-admission-resource-registry.md
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
-  - docs/agents/tasks/active/OTV2-20260906-native-source-bounds-recovery-336.md
-  - docs/agents/tasks/archive/OTV2-20260906-native-source-bounds-recovery-336.md
-  - docs/agents/tasks/active/OTV2-20260906-durable-fresh-resource-envelope-337.md
-  - docs/agents/tasks/archive/OTV2-20260906-durable-fresh-resource-envelope-337.md
+  - docs/agents/tasks/active/OTV2-20260906-native-evidence-wire-346.md
+  - docs/superpowers/plans/2026-09-06-native-evidence-wire.md
 public_contracts: []
 depends_on:
   - Verified 326 closeout, then freshly allocated Child B329 persistence and Child C actual producer readiness; separately qualify architecture332 before relying on accepted-recovery semantics
