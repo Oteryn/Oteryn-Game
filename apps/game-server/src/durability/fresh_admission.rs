@@ -253,6 +253,48 @@ pub enum FreshLossReconciliation {
     },
 }
 
+/// A single-use delivery source constructed only by a validated durable read.
+/// It reports persistence to the matching owning flow, never live authorization,
+/// acknowledgement of consumption, or permission to release an executor slot.
+/// ```compile_fail
+/// use oteryn_game_server::durability::fresh_admission::DurableLossCompletionSource;
+/// use oteryn_game_server::foundation::ControlLossCompletionV1;
+/// fn promote_history(history: ControlLossCompletionV1) -> DurableLossCompletionSource {
+///     history.into()
+/// }
+/// ```
+#[derive(Debug)]
+pub struct DurableLossCompletionSource {
+    completion: Option<Box<ControlLossCompletionV1>>,
+    current: Box<FreshAdmissionDurableReconciliationSnapshotV1>,
+}
+impl DurableLossCompletionSource {
+    #[must_use]
+    pub fn current_snapshot(&self) -> &FreshAdmissionDurableReconciliationSnapshotV1 {
+        &self.current
+    }
+}
+impl oteryn_game_server::foundation::fnd04_verifier::recovery_source_sealed::Sealed
+    for DurableLossCompletionSource
+{
+}
+impl ControlLossCompletionSourceV1 for DurableLossCompletionSource {
+    fn take_loss_completion(
+        &mut self,
+        original: &ControlLossOperationV1,
+    ) -> std::result::Result<Option<ControlLossCompletionV1>, ReconnectDurabilityErrorV1> {
+        if self
+            .completion
+            .as_ref()
+            .is_some_and(|completion| &completion.operation != original)
+        {
+            // A wrong recipient does not consume or replace the real original.
+            return Err(ReconnectDurabilityErrorV1::IdempotencyConflict);
+        }
+        Ok(self.completion.take().map(|completion| *completion))
+    }
+}
+
 /// Asynchronous storage only. Production bounded scheduling/completion remains
 /// a separate adapter requirement; runtime arguments must match fixed registry caps.
 #[derive(Clone)]
@@ -527,6 +569,25 @@ impl FreshAdmissionStore {
             return Ok(ControlLossOutcomeV1::Ambiguous);
         }
         Ok(ControlLossOutcomeV1::Committed { decided_at })
+    }
+
+    /// Bind sealed delivery to an actual validated durable original. Absence or
+    /// a conflicting original supplies no definitive completion and no rejection
+    /// authority. This does not clear pending custody or reconstruct live inputs.
+    pub async fn loss_completion_source(
+        &self,
+        original: &ControlLossOperationV1,
+    ) -> Result<Option<DurableLossCompletionSource>> {
+        match self.reconcile_fresh_loss(original).await? {
+            FreshLossReconciliation::Committed {
+                completion,
+                current,
+            } => Ok(Some(DurableLossCompletionSource {
+                completion: Some(completion),
+                current,
+            })),
+            FreshLossReconciliation::Absent | FreshLossReconciliation::Conflict => Ok(None),
+        }
     }
 
     /// Read the original loss receipt and current canonical session in one fenced

@@ -457,8 +457,31 @@ fn registered_process_restart_reconciles_real_originals_without_releasing_custod
                 assert_eq!(current.current_session.current_transport(), None);
                 assert!(matches!(completion.outcome, ControlLossOutcomeV1::Committed { decided_at } if decided_at >= loss.authorized_at));
             }
-            let mut history = authority_matrix::checked(ControlLossFlowV1::restore(loss))?;
+            let mut history = authority_matrix::checked(ControlLossFlowV1::restore(loss.clone()))?;
             assert!(history.take_request().is_err());
+            let delivery = fresh.loss_completion_source(&loss).await?;
+            if std::env::var(CHILD_MODE)? == "recover_absent" {
+                assert!(delivery.is_none(), "absence is not a definitive rejection completion");
+                assert_eq!(history.phase(), ControlLossPhaseV1::ReconciliationRequired);
+            } else {
+                let mut delivery = delivery.ok_or("missing registered durable completion")?;
+                assert_eq!(delivery.current_snapshot(), current.as_ref());
+                let mut wrong = loss.clone();
+                wrong.observation.source_revision = 2;
+                wrong.observation.accepted_source_revision = 2;
+                assert!(matches!(delivery.take_loss_completion(&wrong), Err(ReconnectDurabilityErrorV1::IdempotencyConflict)));
+                authority_matrix::checked(history.accept_completion(&mut delivery))?;
+                assert_eq!(history.phase(), ControlLossPhaseV1::Completed);
+                let receipt = history.receipt().ok_or("missing owning flow receipt")?.clone();
+                assert_eq!(receipt.operation(), &loss);
+                let original_l: i64 = sqlx::query_scalar("SELECT decided_at FROM game_durability_admission_lifecycle_receipts").fetch_one(&pool).await?;
+                assert_eq!(receipt.decided_at(), original_l);
+                assert!(authority_matrix::checked(delivery.take_loss_completion(&loss))?.is_none(), "one source instance delivers at most once");
+                authority_matrix::checked(history.accept_completion(&mut delivery))?;
+                assert_eq!(history.receipt(), Some(&receipt));
+                assert!(history.take_request().is_err());
+                assert!(fresh.loss_completion_source(&wrong).await?.is_none(), "conflicting original cannot acquire completion authority");
+            }
             assert!(matches!(runtime.enqueue_checkpoint(1, "different third work")?.establish().await, Err(DurabilityError::Unavailable)));
             let attempts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts").fetch_one(&pool).await?;
             assert_eq!(attempts, 0);
