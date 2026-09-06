@@ -4,17 +4,23 @@
 task_id: OTV2-20260906-atomic-fresh-claim-publication-324
 title: Atomic fresh claim publication architecture resolution
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/fresh-claim-publication-324
 issue: 324
-pr: null
+pr: 325
 base_sha: 12143ca171832e6c8ff341e266d126cb486515c8
 admission_main_sha: 12143ca171832e6c8ff341e266d126cb486515c8
-head_sha: null
-final_head_sha: null
+head_sha: 6ce45ada3ee6a2cf1c34348a639bf926841a3b70
+final_head_sha: 6ce45ada3ee6a2cf1c34348a639bf926841a3b70
 final_head_frozen_at: null
+delivery_merge_sha: 93f31ba05972d3b96afb0d9ea08e2c6753507d8c
+final_tree_sha: 24ef8644b393a1b9dd5199cc2a58f7af3d630bd4
+integration_state: protected_integrated
+ownership_state: released
+owned_paths_disposition: historical_allocation_released
+write_authority: none
 owner: Oteryn Sol Supervising Architect
 coordinator: Oteryn Work Delivery Coordinator
 created_at: 2026-09-06
@@ -30,6 +36,14 @@ blocks: [Child_B_allocation, 247]
 cross_repository_coordination_id: null
 external_repositories: []
 ```
+
+## Terminal coordinator closeout
+
+This terminal record supersedes the candidate checkpoints below, which remain historical evidence rather than live authority. Issue #324 is closed completed; PR #325 merged at `93f31ba05972d3b96afb0d9ea08e2c6753507d8c` on 2026-09-06T06:26:16Z. Its final head `6ce45ada3ee6a2cf1c34348a639bf926841a3b70` and tree `24ef8644b393a1b9dd5199cc2a58f7af3d630bd4` passed independent non-author review (P0/P1/P2=0, PR comment 5557370134), canonical CI `34015666506` and complete Merge Queue `34016129389`, including PostgreSQL, Linux, Windows and game-gate. Protected main readback matches that exact merge/tree.
+
+The architecture handoff is accepted; author custody and the two historical paths below are released. No runtime or production readiness follows. Work separately allocates Foundation followup #326 before B; #319 remains the actual-source readiness dependency and #247 stays held at its preserved branch/head. No retry or validation counter is reset by this archival move.
+
+## Historical candidate evidence
 
 ## Outcome
 
