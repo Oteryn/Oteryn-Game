@@ -55,11 +55,15 @@ As prerequisites become real, support bounded journeys such as:
 
 Do not invent missing domain behavior just to make a scenario green.
 
-## Lifecycle / budget / durable handover
+## Lifecycle / continuous execution / durable handover
 
-Before the first write, create or resume the coordinator-allocated task with exact base SHA, branch/PR, owned paths/public evidence contracts, dependencies/blockers and execution budget. Default foreground budget is **60 minutes**; **120 minutes** requires explicit declaration and justification.
+Before the first write, create or resume the coordinator-allocated task with exact base SHA, branch/PR, owned paths/public evidence contracts and dependencies/blockers.
 
-Maintain exactly one compact `## Context checkpoint` with one `next_action`. Before any genuine stop/rotation persist exact head, validation/review state, blocker, latest counted E2E attempt IDs/outcomes, cleanup status and ownership state. Never collapse failed historical attempts into a later repaired run. Terminal completion includes post-merge verification, task archive and ownership release.
+There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized QA work is making material progress, continue until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, freeze, discard productive minutes or require a fresh coordinator grant solely because an hour elapsed.
+
+Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical window/minute counters are provenance only and do not limit continued productive execution.
+
+Maintain exactly one compact `## Context checkpoint` with one `next_action`. Before any genuine stop/rotation persist exact head, validation/review state, blocker, latest counted E2E attempt IDs/outcomes, cleanup status and ownership state. Never collapse failed historical attempts into a later repaired run. Do not create hourly checkpoint churn. Terminal completion includes post-merge verification, task archive and ownership release.
 
 ## Validation
 
