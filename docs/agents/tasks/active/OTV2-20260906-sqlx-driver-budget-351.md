@@ -69,11 +69,11 @@ Core provenance: checksum `05b44e85bf579a8eeb4ceaa77a3a523baf2bf0e9bac7e40f405d5
 
 ## Implementation / findings
 
-NOT_STARTED / NOT_ADMITTED. No product write before Work's protected readback, exact Cargo overlap check and immutable admission grant. Parallel-first: B,338 and346 retain disjoint lanes;351 has one exclusive worktree/branch. Cargo publication/integration is serial because247 and Dependabot259/260/261 overlap. No second driver writer.
+Historical allocation state: NOT_STARTED / NOT_ADMITTED before protection. Admitted by Work comment5560220858 at protected main `53c6bdf06a2282d893035a995c46052c88f935b4`, tree `ae5ef391163f79158dd723940edf819a275985c2`, branch `agent/sqlx-driver-budget-351`. Window1 began 2026-09-06T15:25:35Z. First checkpoint remains OPEN: exact two-crate import and same-owner reservation primitive are implemented; TLS accounting is not activated and PostgreSQL decoders remain upstream. Parallel-first: B,338 and346 retain disjoint lanes;351 has one exclusive worktree/branch. Cargo publication/integration is serial because247 and Dependabot259/260/261 overlap. No second driver writer.
 
 ## Validation and review
 
-Focused: allocation-denial RED/GREEN and hostile-input/lifetime matrix in the plan. Component: vendored unit tests plus all affected normal workspace tests, fmt, strict Clippy, dependency/provenance checks and governance. Actual PostgreSQL17.6 is mandatory for driver integration; unconfigured/skipped tests are not SQL proof. E2E Server Seam/live source qualification remains outside scope and unclaimed. Self-review and genuinely independent full-change parser/resource review are required before final material freeze. Exact-head canonical CI and normal protected Merge Queue/readback remain pending. Audit result and unresolved findings: NOT_STARTED.
+Focused: allocation-denial RED/GREEN and hostile-input/lifetime matrix in the plan. Component: vendored unit tests plus all affected normal workspace tests, fmt, strict Clippy, dependency/provenance checks and governance. Actual PostgreSQL17.6 is mandatory for driver integration; unconfigured/skipped tests are not SQL proof. E2E Server Seam/live source qualification remains outside scope and unclaimed. Self-review and genuinely independent full-change parser/resource review are required before final material freeze. Exact-head canonical CI and normal protected Merge Queue/readback remain pending. Checkpoint validation: owner-ledger RED/GREEN; vendored core library 11/11 tests (9 new), strict vendor Clippy; pinned Game server check, strict Clippy and 340/340 library tests pass. Vendor unit tests use its unchanged upstream lock (rustls0.23.40); Game check/tests use pinned rustls0.23.43. Initial isolated vendor run lacked cached dev dependencies; an initial compiler-shim invocation attempted the dependency toolchain and failed, then explicit Rust1.94 compiler paths resolved it. No tests or dependency declarations were suppressed. Governance passes. Full import whitespace inspection finds20 trailing-whitespace lines already byte-identical in upstream PostgreSQL; they are preserved and disclosed, not normalized or suppressed. Authored delta whitespace passes. These results qualify the primitive and import, not TLS or PostgreSQL17.6 integration. Complete TLS proof remains UNKNOWN: nested decoder capacities, private configuration/cache layouts and phased pre-call ownership bounds require closure. See vendored provenance for exact source terms and patch manifest.
 
 ## PR and closeout
 
@@ -82,15 +82,15 @@ One admitted branch/PR; Work retains publication/integration and lease-release c
 ## Context checkpoint
 
 ```yaml
-last_progress: exact prospective driver scope and247 Cargo lease prepared
-status: waiting
-admission_state: NOT_ADMITTED
-execution_window_number: 0
+last_progress: exact upstream imports and tested owner-ledger primitive; TLS proof remains open
+status: in_progress
+admission_state: ADMITTED
+execution_window_number: 1
 execution_windows_completed: 0
 worker_rotations: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 owner_action_required: null
-blocker: protected_allocation_and_exclusive_Cargo_readback
-next_action: Work independently qualifies and protects the exact351 allocation package
+blocker: complete_TLS_capacity_lifetime_proof
+next_action: independently review TLS proof checkpoint before substantial PostgreSQL decoder work
 ```
