@@ -2,9 +2,9 @@
 
 ```yaml
 task_id: OTV2-20260906-repository-coverage-audit
-title: Audit repository coverage and publish verified evidence
+title: Audit repository and publish a final phase-aware qualified verdict
 mode: AUDIT
-status: waiting
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: audit/repository-coverage-20260906
@@ -12,68 +12,66 @@ issue: 359
 pr: 360
 admission_main_sha: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
 base_sha: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
+instruction_main_sha: b008614881fcc74f09e55e4d1b9e6c64ece04ce9
 head_sha: null
 final_head_sha: null
 owner: repository-coverage auditor
 created_at: 2026-09-06
 updated_at: 2026-09-06
-execution_budget_minutes: 120
-large_budget_reason: historical field only; current main supersedes fixed wall-clock stop semantics
+historical_execution_budget_minutes: 120
 owned_paths:
   - docs/agents/reports/repository-audit-20260906/
   - docs/agents/tasks/active/OTV2-20260906-repository-coverage-audit.md
 public_contracts: []
-depends_on: []
-blocks: []
 external_repositories: []
 ```
 
-## Outcome and current authority
+## Outcome and authority
 
-Owner-requested audit and repository publication, tracked in #359 and PR #360. The report records all 803 pinned source entries, 32 audit controls, 17 findings, fresh hosted executions and their remaining limitations. Inventory/static scanning is not full semantic review. The open Issue must not be closed merely by integrating this report while its applicable semantic/runtime controls remain incomplete.
+The original owner request is assessed in a self-contained 14-section report. All35 chapters of the supplemental repository audit prompt and32 controls have explicit dispositions. The programme verdict is AT_RISK / FAIL, not a 100-percent correctness certificate. Complete803-file byte/static inventory, historical97 focused paths and supplemental exact read ranges remain distinct. The final report assesses current/next-gate risk; it does not require implementing every future game or operations system to conclude an audit.
 
-The audited product remains pinned at `7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3` / tree `359a52348bfdf8088a7cd456f4015b05279721b6`. Protected main later advanced to `b008614881fcc74f09e55e4d1b9e6c64ece04ce9` only through three agent-instruction documents. The audit branch adopts that instruction delta by normal merge-up; it does not silently redefine the pinned product snapshot.
+Publication uses the existing #359/#360 lineage. The later explicit user request authorizes report persistence and isolated audit evidence, not product repairs, external writes, production access or changing accepted architecture. Current META AI policy controls review routing. Existing OWNER STOP for #162 product workers is respected; this audit does not reactivate them. Historical foreground budgets are provenance, not a current wall-clock stop rule under b008 instructions.
 
-## Completed evidence
+## Findings and previous-report corrections
 
-- Complete Git blob/size identity and full-text census: 803 files; 557 Markdown; 102 Rust; 53 Python; all 17 workflows.
-- Actual hosted Cargo metadata: 21 workspace packages, 43 internal edges, 369 resolved packages.
-- Run 34049229486: Linux release all-targets/all-features workspace build and tests with actual PostgreSQL 17.6; exact release bootstrap/harness invocation. 718 passed test executions, not unique scenarios.
-- Run 34049958965: original-test LLVM export with retained limitations; separate actual Rust parser/PKCE and SQL probes; Windows exact release, 33 original component tests and a real production DX12 first-frame probe.
-- Run 34050635585: standalone Rust 11 tests PASS; Python 3.12.14 26 of 27 commands PASS. The original lifecycle suite raises three setup errors; this audit run remains FAILURE and the failure is retained.
-- Run 34056706385: native libFuzzer/ASan continuation against the exact pinned product. Wire parser: 69,627,322 units in 301 seconds, 5,819 new units, no crash. Content parser: 4,757,388 units in 301 seconds, 1,511 new units, no crash. Full bounded interpretation and artifact digests are retained in `CONTINUATION.md`.
-- README, per-file coverage definition/reconstructor, findings, controls, compact raw reproduction evidence and exact run/artifact/binary hashes are retained in the report directory. Full original archives and generated CSV accompany the owner package.
+Current assessment contains20 entries. F18/F19 were reproduced in original Rust using isolated probes. F05 now includes an observed Windows release exit0 after OS minimization. Isolated LLVM measurement removed the previous38 mapping warnings but still includes test code and measures no branch/MC/DC denominator. A real synthetic PostgreSQL dump/restore and runtime-role DDL denial are proven only in that test topology.
 
-## Publication scope
+Critically, #353 is not semantically complete: #358 merged while P1 was on hold; #361 preserves paused incomplete phase repair at16e9898b. Original phase contract and source inspection corroborate the owner finding F20. Old green runs cannot qualify that repair. B335 and driver356 have newer heads than their stale descriptions; their protected integration and current dependencies remain separate.
 
-Temporary audit observers existed only on this task branch to collect bounded evidence. They never became required checks or standing merge authority. The current checkpoint removes `.github/workflows/repository-audit-evidence-20260906.yml` from the branch tree after the successful native fuzz run; its historical commits and Actions runs remain immutable provenance.
+## Acceptance / completed audit work
 
-Active product/CI allocations remain untouched. No runtime, Cargo, migration, protocol, registry, canonical workflow, ruleset, Merge Queue, deployment, live-data, secret or external-repository product write is part of this checkpoint. Audit probe sources under the report directory are evidence, not product fixes or canonical test targets.
+- [x] Pinned byte identity and per-file static/focused-depth register.
+- [x] Server/client/product/CI/build/test/Markdown assessment with phase-aware evidence.
+- [x] Interpret original and continuation native artifacts, retaining failed outcomes.
+- [x] Complete original-request and35-chapter traceability into14 report sections.
+- [x] Reconcile current controls,20 findings, historical corrections and next safe milestone.
+- [x] Record depth limitations, external/prod unknowns and future qualification without labeling them PASS.
+- [x] Remove temporary observer from publication tree; preserve historical execution provenance.
+- [ ] Exact final publication-head CI/readback; record on PR after commit creation.
+- [ ] Repository control-plane acceptance/integration when selected; no self-merge.
 
-## Acceptance and residual controls
+Product repairs, full all-line/dependency-history review, representative long-running load/GPU/deployed recovery/distribution qualification and model/token ablation were not performed or claimed. These are explicit limits and product/future evidence obligations, not silently passed checks.
 
-- [x] Complete pinned file inventory with distinct identity/static/focused-semantic coverage.
-- [x] Exact command, environment, run/job, checksum and outcome evidence for executed checks.
-- [x] Findings distinguish defects, recommendations, readiness gaps and measurement limitations.
-- [x] Previous report reconciliation: #353 is implemented through #358, not allocation-only.
-- [x] Every audit control has an explicit status and missing-evidence statement.
-- [x] Bounded native coverage-guided fuzzing executed for wire and content parser targets; no crash in either five-minute campaign.
-- [ ] Resolve all remaining semantic, runtime, external-source, performance, operations and distribution controls in controls.json.
-- [ ] Genuinely independent semantic review where required; none is claimed for this audit's own work.
-- [ ] Final protected integration, if separately selected by the owning repository control plane; saving this report does not authorize a bypass.
+## High-risk authority/recovery qualification
 
-## Validation and self-review
+NOT_APPLICABLE to mutation: this final candidate changes only audit reports, inert probes and this task. It activates no controller, source, migration, gameplay path, required gate or production operation. F20 is a finding about inspected source and an existing owner-held repair, not a new implementation.
 
-The evidence verifier reconstructs the exact 803-row CSV from the original Git tree and checks its SHA256. Downloaded fuzz artifacts were independently hashed after download and matched the Actions artifact digests. The bounded fuzz run is stronger parser robustness evidence but not exhaustive or release-equivalent execution.
+## Validation
 
-Current upstream instruction changes were read before this checkpoint. They explicitly supersede historical fixed 60/120-minute stop semantics; the budget field above is retained only as provenance and does not stop productive continuation.
+Original executed runs34049229486,34049958965,34050635585; continuation34054707605; bounded native fuzz34056706385; new semantic characterization34059391572. Each is tied to audited product7ce, not to a fictional combined product head. Audit failure34050635585 and the earlier metadata/tooling failures remain retained.
+
+`verify_evidence.py` checks the historic evidence/inventory; `verify_closeout.py` validates final traceability, finding/control identities, provenance claims and content digests without project execution or network. Positive and negative publication checks are author verification. Final GitHub scope/blob readback and canonical CI are recorded on PR #360 after publishing, not by embedding a commit's own SHA in its contents.
+
+## Self-review and independent review
+
+Mandatory author self-review: every changed report/register/probe/task and whole diff, with particular attention to source versus publication SHA, owner-stop/P1 hold, snapshot freshness, severity/phase and no invented execution. No genuinely independent second-agent review is claimed. Final documentation/evidence-only publication grants no new authority and has no automatic external AI review under current META policy.
 
 ## Context checkpoint
 
 ```yaml
-status: waiting
-last_progress: native wire/content libFuzzer campaigns passed; current main instruction delta reconciled; temporary audit workflow removed from checkpoint tree
+status: ready
+last_progress: phase-aware final negative report and reconciled evidence ready for exact-head publication validation
 owner_action_required: null
-blocker: applicable residual controls remain unverified; report publication is not a 100-percent semantic certificate
-next_action: continue the explicitly listed residual controls under current main authority without repeating completed inventory, release builds, PostgreSQL execution or the completed five-minute parser fuzz campaigns
+blocker: no evidence access blocker; product findings and explicit scope qualifications remain
+next_action: verify final publication head and canonical checks on PR360 without relabeling product FAIL or merging paused work
 ```
