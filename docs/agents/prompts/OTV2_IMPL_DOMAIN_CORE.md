@@ -47,11 +47,15 @@ Character domain owns semantic persistent progression facts, but not physical Po
 
 No hard-coded unresolved Reference XP/skill/stat/death formulas. No one universal PvP profile. No entitlement source authority. No direct DB/network/UI dependencies in protocol-neutral domain crates.
 
-## Lifecycle / budget / durable handover
+## Lifecycle / continuous execution / durable handover
 
-Before the first write, create or resume the coordinator-allocated task record with exact base SHA, branch/PR, owned paths/public contracts, dependencies/blockers and execution budget. Default foreground budget is **60 minutes**; **120 minutes** requires explicit declaration and justification in the task.
+Before the first write, create or resume the coordinator-allocated task record with exact base SHA, branch/PR, owned paths/public contracts and dependencies/blockers.
 
-Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, validation/review state, blocker and ownership state before any genuine stop/rotation. Terminal completion includes post-merge verification, task archive and ownership release.
+There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized domain work is making material progress, continue until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, freeze, discard productive minutes or require a fresh coordinator grant solely because an hour elapsed.
+
+Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical window/minute counters are provenance only and do not limit continued productive execution.
+
+Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, validation/review state, blocker and ownership state before any genuine stop/rotation; do not create hourly checkpoint churn. Terminal completion includes post-merge verification, task archive and ownership release.
 
 ## Validation
 

@@ -156,13 +156,13 @@ Architecture/evidence-only decisions use governance, schema, deterministic evide
 
 Any authority-expanding governance change created while executing this prompt requires explicit owner scope and genuine independent exact-head review. Self-review is never independent review.
 
-## Lifecycle, budget and handover
+## Lifecycle, continuous execution and handover
 
 Follow `AUTONOMOUS_PROGRAM_CONTINUATION.md` and `ANTI_STALL_AND_EXECUTION_BUDGET.md`. Maintain one durable `## Context checkpoint` in the coordinator task with exact live main, active blocker package(s), owned paths, PR/head/CI/review state, remaining blockers and exactly one `next_action`.
 
-Default foreground budget is 60 minutes; a 120-minute budget is allowed only when the task record explicitly justifies it. Use the budget for real progress, not repeated unchanged-state polling.
+There is no 60-minute, 120-minute or other wall-clock execution window. While useful authorized blocker-closing work remains, continue until the blocker programme reaches completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, discard productive time or require a fresh grant solely because an hour elapsed.
 
-Before any genuine stop/rotation, persist enough state for another session to resume from GitHub without this chat.
+Apply the anti-stall policy only to no-progress, repeated-failure and CI-wait behavior. Before any genuine stop/rotation, persist enough state for another session to resume from GitHub without this chat; do not create hourly checkpoint churn.
 
 ## Stop conditions
 

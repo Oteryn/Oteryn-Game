@@ -45,11 +45,15 @@ As allocated:
 
 No gameplay formula values, drop rates, XP curves or Reference rules. No process-global mutable gameplay RNG. No direct system-clock reads inside authoritative formula helpers. No gameplay domain ownership or transport/persistence dependencies in the core simulation crate.
 
-## Lifecycle / budget / durable handover
+## Lifecycle / continuous execution / durable handover
 
-Before the first write, create or resume the coordinator-allocated task record with exact base SHA, branch/PR, owned paths, dependencies/blockers and execution budget. Default foreground budget is **60 minutes**; **120 minutes** requires an explicit task declaration and justification.
+Before the first write, create or resume the coordinator-allocated task record with exact base SHA, branch/PR, owned paths and dependencies/blockers.
 
-Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, validation/review state, blocker and ownership state before any genuine stop/rotation. Terminal completion includes post-merge verification, task archive and ownership release.
+There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized simulation work is making material progress, continue until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, freeze, discard productive minutes or require a fresh coordinator grant solely because an hour elapsed.
+
+Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical window/minute counters are provenance only and do not limit continued productive execution.
+
+Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, validation/review state, blocker and ownership state before any genuine stop/rotation; do not create hourly checkpoint churn. Terminal completion includes post-merge verification, task archive and ownership release.
 
 ## Validation
 

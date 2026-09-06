@@ -18,6 +18,16 @@ For an already-authorized Oteryn programme or task with an approved canonical de
 
 A skill or plugin MUST NOT weaken repository safety, validation, review, GitHub-first, or authorization requirements. When a skill workflow conflicts with applicable user instructions, this `AGENTS.md`, repository policy, or canonical task authority, the applicable higher-priority Oteryn authority controls.
 
+## Continuous productive execution
+
+Productive authorized repository work has no 60-minute, 120-minute, per-window or per-invocation wall-clock stop requirement.
+
+- Continue while material safe progress is possible until the allocated work is complete, reaches a genuine evidence-backed `WAITING`/`BLOCKED` condition, the owner explicitly stops it, or a real safety/authority/tool boundary requires handover.
+- Elapsed implementation time alone MUST NOT trigger `ROTATE`, freeze, discarded productive minutes, task re-admission, a fresh coordinator grant, branch/worktree replacement or a new execution window.
+- `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` bounds no-progress, repeated identical failures and passive CI waiting; it is not an implementation timer.
+- Older task records, programme overlays, prompts, handoffs, evidence and Superpowers plans that mention `60-minute window`, `120-minute budget`, `windowN`, `remaining productive minutes`, discarded minutes or equivalent retain provenance only. Their time counters are non-operative for current execution and cannot override this repository-wide rule.
+- A genuine worker/session/tool interruption still requires durable handover. Removing wall-clock windows does not weaken task/path ownership, scope, validation, review, exact-head CI, protected merge, Merge Queue, retry/no-progress or safety requirements.
+
 ## GitHub-first execution gate
 
 GitHub is the authoritative control plane for Game repository identity, `main`, Issue/task status, PR, task branch, exact remote SHA, checks, reviews and merge state.

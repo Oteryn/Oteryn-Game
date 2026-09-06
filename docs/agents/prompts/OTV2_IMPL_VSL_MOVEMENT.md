@@ -52,11 +52,15 @@ Before implementation acceptance, register/own finite limits for affected view/i
 
 Reject stale generation/revision/duplicate/replayed/illegal movement deterministically without partial position mutation. Resync repairs client observation from server authority.
 
-## Lifecycle / budget / durable handover
+## Lifecycle / continuous execution / durable handover
 
-Before the first write, create or resume the coordinator-allocated task with exact base SHA, branch/PR, owned paths/public registrations, prerequisite merge SHAs, dependencies/blockers and execution budget. Default foreground budget is **60 minutes**; **120 minutes** requires explicit declaration and justification.
+Before the first write, create or resume the coordinator-allocated task with exact base SHA, branch/PR, owned paths/public registrations, prerequisite merge SHAs and dependencies/blockers.
 
-Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, validation/E2E/review state, blocker, active content/protocol revision evidence and ownership state before any genuine stop/rotation. Terminal completion includes post-merge verification, task archive and ownership release.
+There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized Movement work is making material progress, continue until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, freeze, discard productive minutes or require a fresh coordinator grant solely because an hour elapsed.
+
+Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical window/minute counters are provenance only and do not limit continued productive execution.
+
+Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, validation/E2E/review state, blocker, active content/protocol revision evidence and ownership state before any genuine stop/rotation; do not create hourly checkpoint churn. Terminal completion includes post-merge verification, task archive and ownership release.
 
 ## Validation
 
