@@ -1,5 +1,5 @@
 //! Strict historical fresh-operation storage. No decoded value is a live capability.
-//! Budgets are explicit caller allocations; this module selects no production ceiling.
+//! Runtime ceilings follow the accepted DFR registry; codec bounds remain explicit.
 use super::DurabilityError;
 use super::admission_authority_guards::*;
 use base64::Engine;
@@ -156,6 +156,7 @@ pub fn encode_operation(
     operation: &FreshAdmissionOperationV1,
     maximum_bytes: usize,
 ) -> Result<String> {
+    encoded_operation_size(operation, maximum_bytes)?;
     let mut writer = Writer::new(maximum_bytes);
     write_operation(&mut writer, operation)?;
     // The historical predicate clones guard evidence internally: first establish
@@ -163,22 +164,36 @@ pub fn encode_operation(
     checked(operation.validate_historical(operation.transition.prepared_at))?;
     encode_envelope(&writer.bytes, maximum_bytes)
 }
-pub(super) fn encode_envelope(bytes: &[u8], maximum_bytes: usize) -> Result<String> {
-    let groups = bytes
-        .len()
+/// Nonallocating checked complete operation wire-size preflight. Private request
+/// copies and executor resident charges remain a separate accounting obligation.
+pub fn encoded_operation_size(
+    operation: &FreshAdmissionOperationV1,
+    maximum_bytes: usize,
+) -> Result<usize> {
+    let mut counter = Writer::counter(maximum_bytes);
+    write_operation(&mut counter, operation)?;
+    envelope_size(counter.measured(), maximum_bytes)
+}
+pub(super) fn envelope_size(length: usize, maximum_bytes: usize) -> Result<usize> {
+    let groups = length
         .checked_div(3)
         .and_then(|groups| groups.checked_mul(4));
-    let tail = match bytes.len() % 3 {
+    let tail = match length % 3 {
         0 => 0,
         1 => 2,
         _ => 3,
     };
     let required = groups
         .and_then(|size| size.checked_add(tail))
-        .and_then(|size| size.checked_add("{\"version\":1,\"payload\":\"\"}".len()));
-    if required.is_none_or(|required| required > maximum_bytes) {
+        .and_then(|size| size.checked_add("{\"version\":1,\"payload\":\"\"}".len()))
+        .ok_or(DurabilityError::InvalidStoredState)?;
+    if required > maximum_bytes {
         return Err(DurabilityError::InvalidStoredState);
     }
+    Ok(required)
+}
+pub(super) fn encode_envelope(bytes: &[u8], maximum_bytes: usize) -> Result<String> {
+    envelope_size(bytes.len(), maximum_bytes)?;
     let payload = URL_SAFE_NO_PAD.encode(bytes);
     checked(serde_json::to_string(&Envelope {
         version: 1,
@@ -227,7 +242,7 @@ pub enum FreshReconciliation {
 }
 
 /// Asynchronous storage only. Production bounded scheduling/completion remains
-/// a separate adapter requirement; these arguments select no policy defaults.
+/// a separate adapter requirement; runtime arguments must match fixed registry caps.
 #[derive(Clone)]
 pub struct FreshAdmissionStore {
     guards: AdmissionGuardStore,
@@ -239,7 +254,7 @@ impl FreshAdmissionStore {
         maximum_operation_bytes: usize,
         maximum_guard_bytes: usize,
     ) -> Result<Self> {
-        if maximum_operation_bytes == 0 {
+        if maximum_operation_bytes != super::MAX_FRESH_OPERATION_BYTES {
             return Err(DurabilityError::InvalidStoredState);
         }
         Ok(Self {
@@ -254,8 +269,8 @@ impl FreshAdmissionStore {
         replay: &[u8],
     ) -> Result<Option<FreshAdmissionCommitReceiptV1>> {
         use sqlx::Row;
-        let row = sqlx::query("SELECT CASE WHEN octet_length(operation_json) <= $2 THEN operation_json END AS payload, to_jsonb(r) - 'operation_json' AS mirrors FROM game_durability_fresh_admission_receipts r WHERE replay_key = $1")
-            .bind(replay).bind(checked(i64::try_from(self.maximum_operation_bytes))?).fetch_optional(&mut **tx).await?;
+        let row = sqlx::query("SELECT CASE WHEN octet_length(operation_json) <= $2 AND octet_length(to_jsonb(r)::text) <= $3 THEN operation_json END AS payload, CASE WHEN octet_length(to_jsonb(r)::text) <= $3 THEN to_jsonb(r) - 'operation_json' END AS mirrors FROM game_durability_fresh_admission_receipts r WHERE replay_key = $1")
+            .bind(replay).bind(checked(i64::try_from(self.maximum_operation_bytes))?).bind(super::MAX_ADMISSION_ROW_BYTES).fetch_optional(&mut **tx).await?;
         let Some(row) = row else {
             return Ok(None);
         };
@@ -398,8 +413,9 @@ impl FreshAdmissionStore {
             return Ok(FreshReconciliation::Conflict);
         }
         let b = receipt.binding();
-        let row = sqlx::query("SELECT to_jsonb(s) AS state FROM game_durability_reconnect_sessions s WHERE game_session_id = encode($1,'hex')::uuid").bind(b.candidate_session.as_bytes().as_slice()).fetch_optional(&mut *tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
-        let state: serde_json::Value = row.try_get("state")?;
+        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(s)::text) <= $2 THEN to_jsonb(s) END AS state FROM game_durability_reconnect_sessions s WHERE game_session_id = encode($1,'hex')::uuid").bind(b.candidate_session.as_bytes().as_slice()).bind(super::MAX_ADMISSION_ROW_BYTES).fetch_optional(&mut *tx).await?.ok_or(DurabilityError::InvalidStoredState)?;
+        let state: Option<serde_json::Value> = row.try_get("state")?;
+        let state = state.ok_or(DurabilityError::InvalidStoredState)?;
         let initial = checked(b.initial_commit())?;
         if json_text(&state, "account_id")? != b.account_id
             || json_text(&state, "character_id")? != uuid_text(initial.character_id().as_bytes())
@@ -545,4 +561,63 @@ fn json_bytea(value: &serde_json::Value, key: &str) -> Result<Vec<u8>> {
             .strip_prefix("\\x")
             .ok_or(DurabilityError::InvalidStoredState)?,
     )
+}
+
+#[cfg(test)]
+mod resource_preflight_tests {
+    use super::*;
+    #[test]
+    fn envelope_preflight_checks_exact_boundary_and_overflow() -> Result<()> {
+        let exact = envelope_size(49_132, usize::MAX)?;
+        assert_eq!(exact, super::super::MAX_FRESH_OPERATION_BYTES);
+        assert!(envelope_size(49_133, exact).is_err());
+        assert_eq!(envelope_size(49_132, exact)?, exact);
+        assert!(envelope_size(49_132, exact - 1).is_err());
+        assert!(envelope_size(usize::MAX, usize::MAX).is_err());
+        let mut counter = Writer::counter(3);
+        counter.bytes(&[1, 2, 3])?;
+        assert_eq!(counter.measured(), 3);
+        assert_eq!(counter.bytes.capacity(), 0);
+        assert!(counter.bytes(&[4]).is_err());
+        assert_eq!(counter.measured(), 3);
+        assert_eq!(counter.bytes.capacity(), 0);
+        Ok(())
+    }
+    #[test]
+    fn runtime_caps_cannot_be_inflated_or_reconfigured() -> Result<()> {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .map_err(|_| DurabilityError::InvalidStoredState)?
+            .block_on(async {
+                for invalid in [
+                    0,
+                    super::super::MAX_FRESH_OPERATION_BYTES - 1,
+                    super::super::MAX_FRESH_OPERATION_BYTES + 1,
+                    usize::MAX,
+                ] {
+                    assert!(matches!(
+                        FreshAdmissionStore::connect_runtime(
+                            "not-a-database-url",
+                            invalid,
+                            super::super::MAX_ADMISSION_GUARD_BYTES
+                        )
+                        .await,
+                        Err(DurabilityError::InvalidStoredState)
+                    ));
+                }
+                for invalid in [
+                    0,
+                    super::super::MAX_ADMISSION_GUARD_BYTES - 1,
+                    super::super::MAX_ADMISSION_GUARD_BYTES + 1,
+                    usize::MAX,
+                ] {
+                    assert!(matches!(
+                        AdmissionGuardStore::connect_runtime("not-a-database-url", invalid).await,
+                        Err(DurabilityError::InvalidStoredState)
+                    ));
+                }
+                Ok(())
+            })
+    }
 }

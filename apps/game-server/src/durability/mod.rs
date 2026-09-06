@@ -25,6 +25,12 @@ use serde_json::json;
 use sqlx::{PgPool, Postgres, Row, Transaction};
 use std::fmt::{self, Display, Formatter};
 
+// Accepted fixed first-slice registry345 at c9890968ce4c71165bdd9cd1d6938f9af75eaa00.
+// Codec callers may test tighter byte bounds; runtime configuration is exact.
+pub const MAX_FRESH_OPERATION_BYTES: usize = 65_536;
+pub const MAX_ADMISSION_GUARD_BYTES: usize = 8_192;
+pub const MAX_ADMISSION_ROW_BYTES: i64 = 131_072;
+
 const V2_PREPARED: i16 = 1;
 const V2_COLLISION_TERMINAL: i16 = 2;
 const V2_CONCURRENT_TERMINAL: i16 = 3;

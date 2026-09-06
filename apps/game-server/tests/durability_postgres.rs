@@ -387,6 +387,27 @@ fn guard_publication_is_atomic_replayable_and_retains_decision_history()
                 .fetch_one(&pool)
                 .await?;
                 assert_eq!(history, 8);
+                // Observe the exact production SELECT before decoding/mirror
+                // validation. Old per-mirror rejection cannot satisfy this test.
+                if restarted.projected_guard_presence(&keys[1]).await? != (true, true) {
+                    return Err("bounded positive guard projection missing".into());
+                }
+                let overhead: i64 = sqlx::query_scalar("SELECT octet_length(to_jsonb(g)::text) - octet_length(source_authority) FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
+                for (size, presence) in [(131072_i64, (true, true)), (131073, (false, false))] {
+                    let padding = size.checked_sub(overhead).and_then(|n| i32::try_from(n).ok()).filter(|n| *n > 0).ok_or("invalid complete-row boundary fixture")?;
+                    sqlx::query("UPDATE game_durability_admission_character_guards SET source_authority = repeat('x', $1)").bind(padding).execute(&pool).await?;
+                    let actual: i64 = sqlx::query_scalar("SELECT octet_length(to_jsonb(g)::text) FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
+                    if actual != size || restarted.projected_guard_presence(&keys[1]).await? != presence {
+                        return Err(format!("guard SQL complete-row boundary failed: wanted {size}, actual {actual}").into());
+                    }
+                    if !matches!(restarted.load(&keys).await, Err(DurabilityError::InvalidStoredState)) {
+                        return Err("corrupt mirror passed full guard consistency checks".into());
+                    }
+                }
+                sqlx::query("UPDATE game_durability_admission_character_guards SET source_authority = $1").bind(&source.rows[1].source.authority).execute(&pool).await?;
+                if restarted.load(&keys).await? != source.rows.iter().cloned().map(Some).collect::<Vec<_>>() {
+                    return Err("bounded guard row failed after restoring its exact mirror".into());
+                }
                 // Isolated administrator corrupts one mirror; decoded history
                 // must not override the independently stored eligibility field.
                 sqlx::query(
@@ -431,13 +452,17 @@ fn fresh_sealed_fixture_prepares_complete_owner_operation() -> Result<(), Box<dy
 #[test]
 fn fresh_operation_codec_retains_effects_and_rejects_trailing_or_oversized_storage()
 -> Result<(), Box<dyn std::error::Error>> {
-    use durability::fresh_admission::{decode_operation, encode_operation};
+    use durability::fresh_admission::{decode_operation, encode_operation, encoded_operation_size};
     let source = postgres::fresh::Source::new(100)?;
     let request = source.request()?;
     // Test allocation budget; no production resource ceiling is selected here.
     let budget = 65_536;
     let encoded = encode_operation(request.operation(), budget)?;
-    println!("fresh operation fixture encoded bytes: {}", encoded.len());
+    assert_eq!(
+        encoded_operation_size(request.operation(), budget)?,
+        encoded.len()
+    );
+    assert!(encoded_operation_size(request.operation(), encoded.len() - 1).is_err());
     assert_eq!(
         encode_operation(request.operation(), encoded.len())?,
         encoded
@@ -464,7 +489,7 @@ fn fresh_guard_codec_preserves_full_u64_and_rejects_invalid_binary()
 -> Result<(), Box<dyn std::error::Error>> {
     use base64::Engine;
     use base64::engine::general_purpose::URL_SAFE_NO_PAD;
-    use durability::admission_authority_guards::{decode_guard, encode_guard};
+    use durability::admission_authority_guards::{decode_guard, encode_guard, encoded_guard_size};
     use foundation::admission_authority_publication::AdmissionPublicationPreconditionV1;
     let source = postgres::fresh::Source::new(100)?;
     let budget = 65_536;
@@ -475,6 +500,8 @@ fn fresh_guard_codec_preserves_full_u64_and_rejects_invalid_binary()
             original.source.purpose,
             encoded.len()
         );
+        assert_eq!(encoded_guard_size(original, budget)?, encoded.len());
+        assert!(encoded_guard_size(original, encoded.len() - 1).is_err());
         assert_eq!(decode_guard(&encoded, budget)?, *original);
         let mut maximum = original.clone();
         maximum.publication_revision = u64::MAX;

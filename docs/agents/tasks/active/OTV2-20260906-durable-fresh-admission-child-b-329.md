@@ -228,7 +228,7 @@ pr: 335
 execution_budget_minutes: 60
 execution_window_number: 4
 execution_window_started_at: 2026-09-06T12:46:00Z
-execution_window_elapsed_minutes: 22
+execution_window_elapsed_minutes: 38
 execution_windows_completed: 3
 worker_rotations: 1
 final_head_sha: null
@@ -236,14 +236,14 @@ final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: [34021756196, 34022664262, 34023568404, 34024400873, 34024853688, 34031174082, 34031690145, 34033443274, 34033942736]
-ci_job_ids: [101455557352, 101458035139, 101460507857, 101462735824, 101463943071, 101480959285, 101482307338, 101487176414, 101488525245]
+ci_run_ids: [34021756196, 34022664262, 34023568404, 34024400873, 34024853688, 34031174082, 34031690145, 34033443274, 34033942736, 34035642462]
+ci_job_ids: [101455557352, 101458035139, 101460507857, 101462735824, 101463943071, 101480959285, 101482307338, 101487176414, 101488525245, 101493135940]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 4
+repair_cycles_for_current_gate: 5
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
@@ -264,3 +264,13 @@ Exact dependency: admission.rs mark_unexpected_control_loss checks local current
 Strict all-target Clippy passed4.75s including the final no-child SQL assertion (b329-first-loss-repair-clippy.log); formatting, whitespace and governance26 documents/9 lanes passed. Full sealed lifecycle, shared bounded executor/custody, adaptive locking and qualification remain required. Resource registry345 is accepted at protectedc9890968ce4c71165bdd9cd1d6938f9af75eaa00; all23 DFR dimensions were read at that immutable blob.
 
 Independent repair review P2: the fixture adds115 seconds to its seed time, so offset−60 did not expire the first request. Repair cycle4 changes it to−180 and explicitly checks first deadline < actual database clock and second deadline >= actual database clock before submission. Both full no-effects assertions remain. Same window4/admission and cumulative counters; actual SQL remains pending.
+
+## Window 4 — accepted resource preflight checkpoint
+
+Safe first-loss rejection was published asfd7293427e76fbb334d80b1b5d6e6cf58dcb4c5a / tree283836a52caa59512f6c994d12f48b3abe0761c0 and normally fast-forwarded clean. Actual PostgreSQL17.6 canonical34035642462/Linux101493135940 passed the new no-effects test13:21:27Z and full306/306 tests13:21:41Z; all applicable CI SUCCESS, PR335comment5559500731. Same window4/completed3/rotation1/repair4.
+
+Protected registry345 c9890968ce4c71165bdd9cd1d6938f9af75eaa00 supplies exact runtime caps65536 operation/8192 guard/131072 complete row bytes. Runtime constructors reject altered caps before connecting. The lossless encoders now count the complete binary and envelope length without allocation before making buffers or invoking cloning historical predicates. The size observation is explicitly encoded bytes, not a complete request resident charge. Complete guard, fresh receipt and current-session JSON row lengths are checked under the same relation fence before SQL transfers payload/mirrors; oversized state is invalid storage, never absence. Four guard changes at8192 each remain below the65536 operation envelope.
+
+Focused executable component tests passed: two preflight/overflow/configuration cases and both existing codec cases (4 total), not skipped PostgreSQL bodies. The configured guard test now corrupts a mirror beyond the complete-row bound, requires rejection, restores the exact mirror and verifies the accepted projection. Actual new SQL remains pending. All23 resource dimensions remain accepted obligations: this checkpoint does not claim the32-variable-column/full-result aggregate, all V1/V2 row families, resident copy accounting, process singleton, queue/slots, pending custody or adaptive-lock protocol are complete.
+
+Resource review P2 repaired in cycle5: a generic oversized mirror rejection could already pass the old per-mirror consistency check. The test now invokes the exact production guarded SELECT through a test-only projection observer before decoding. An unchanged bounded control returns both payload/mirrors; complete JSON rows sized exactly131072 return both, while131073 returns SQL NULL for both. Explicit actual SQL length assertions establish representable boundary fixtures. Full mirror consistency still rejects both corrupted rows and restoring exact original source authority restores acceptance. The previous query fails these projection assertions (payload remains present above the row cap, mirrors absent at the cap); actual hosted execution remains pending, so no executed prepatch RED is claimed.

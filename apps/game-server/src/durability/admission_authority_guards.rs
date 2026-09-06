@@ -15,22 +15,38 @@ pub(super) fn checked<T, E>(result: std::result::Result<T, E>) -> Result<T> {
 pub(super) struct Writer {
     pub bytes: Vec<u8>,
     maximum: usize,
+    measured: usize,
+    counting: bool,
 }
 impl Writer {
     pub fn new(maximum: usize) -> Self {
         Self {
             bytes: Vec::new(),
             maximum,
+            measured: 0,
+            counting: false,
         }
+    }
+    pub fn counter(maximum: usize) -> Self {
+        Self {
+            counting: true,
+            ..Self::new(maximum)
+        }
+    }
+    pub fn measured(&self) -> usize {
+        self.measured
     }
     pub fn bytes(&mut self, bytes: &[u8]) -> Result<()> {
         let length = self
-            .bytes
-            .len()
+            .measured
             .checked_add(bytes.len())
             .ok_or(DurabilityError::InvalidStoredState)?;
         if length > self.maximum {
             return invalid();
+        }
+        self.measured = length;
+        if self.counting {
+            return Ok(());
         }
         checked(self.bytes.try_reserve_exact(bytes.len()))?;
         self.bytes.extend_from_slice(bytes);
@@ -444,9 +460,19 @@ pub fn encode_guard(
     change: &AdmissionAuthorityPublicationChangeV1,
     maximum_bytes: usize,
 ) -> Result<String> {
+    encoded_guard_size(change, maximum_bytes)?;
     let mut writer = Writer::new(maximum_bytes);
     write_change(&mut writer, change)?;
     super::fresh_admission::encode_envelope(&writer.bytes, maximum_bytes)
+}
+/// Nonallocating checked wire-size preflight; does not grant publication authority.
+pub fn encoded_guard_size(
+    change: &AdmissionAuthorityPublicationChangeV1,
+    maximum_bytes: usize,
+) -> Result<usize> {
+    let mut counter = Writer::counter(maximum_bytes);
+    write_change(&mut counter, change)?;
+    super::fresh_admission::envelope_size(counter.measured(), maximum_bytes)
 }
 /// Decode a historical guard; consumers must still compare every SQL mirror and
 /// invoke their sealed Foundation predicate against independently current rows.
@@ -470,7 +496,7 @@ pub enum GuardPublicationDisposition {
     Conflict,
 }
 
-/// Explicit caller allocation pending production executor/resource integration.
+/// Fixed accepted storage byte caps; shared executor integration remains required.
 #[derive(Clone)]
 pub struct AdmissionGuardStore {
     pub(super) pool: sqlx::PgPool,
@@ -638,7 +664,7 @@ fn key_predicate(query: &mut sqlx::QueryBuilder<sqlx::Postgres>, fields: Mirror)
 
 impl AdmissionGuardStore {
     pub async fn connect_runtime(database_url: &str, maximum_guard_bytes: usize) -> Result<Self> {
-        if maximum_guard_bytes == 0 {
+        if maximum_guard_bytes != super::MAX_ADMISSION_GUARD_BYTES {
             return invalid();
         }
         let pool = super::schema::connect_runtime(database_url).await?;
@@ -665,21 +691,51 @@ impl AdmissionGuardStore {
         Ok(rows)
     }
 
+    async fn guard_projection_locked(
+        &self,
+        transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        key: &AdmissionAuthorityGuardKeyV1,
+    ) -> Result<(Option<sqlx::postgres::PgRow>, Vec<u8>)> {
+        let (table, fields, encoded_key) = key_storage(key, self.maximum_guard_bytes)?;
+        // Guard payload length before transfer in the same protected snapshot.
+        // NULL marks oversized/corrupt storage, never authoritative absence.
+        let mut query = sqlx::QueryBuilder::new("SELECT CASE WHEN octet_length(change_json) <= ");
+        query.push_bind(checked(i64::try_from(self.maximum_guard_bytes))?)
+            .push(" AND octet_length(to_jsonb(g)::text) <= ")
+            .push_bind(super::MAX_ADMISSION_ROW_BYTES)
+            .push(" THEN change_json END AS payload, CASE WHEN octet_length(to_jsonb(g)::text) <= ")
+            .push_bind(super::MAX_ADMISSION_ROW_BYTES)
+            .push(" THEN (SELECT jsonb_object_agg(key, value) FROM jsonb_each_text(to_jsonb(g) - 'change_json')) END AS mirrors FROM ").push(table).push(" g WHERE ");
+        key_predicate(&mut query, fields);
+        let row = query.build().fetch_optional(&mut **transaction).await?;
+        Ok((row, encoded_key))
+    }
+
+    // Tests observe the production SQL projection, before decoding/mirror checks.
+    // This exposes no owner capability and is absent from production builds.
+    #[cfg(test)]
+    pub async fn projected_guard_presence(
+        &self,
+        key: &AdmissionAuthorityGuardKeyV1,
+    ) -> Result<(bool, bool)> {
+        use sqlx::Row;
+        let mut transaction = self.pool.begin().await?;
+        super::db::lock_admission_relations(&mut transaction).await?;
+        let (row, _) = self.guard_projection_locked(&mut transaction, key).await?;
+        let row = row.ok_or(DurabilityError::InvalidStoredState)?;
+        let payload: Option<String> = row.try_get("payload")?;
+        let mirrors: Option<serde_json::Value> = row.try_get("mirrors")?;
+        transaction.commit().await?;
+        Ok((payload.is_some(), mirrors.is_some()))
+    }
+
     pub(super) async fn load_locked(
         &self,
         transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         key: &AdmissionAuthorityGuardKeyV1,
     ) -> Result<Option<AdmissionAuthorityPublicationChangeV1>> {
         use sqlx::Row;
-        let (table, fields, encoded_key) = key_storage(key, self.maximum_guard_bytes)?;
-        // Guard payload length before transfer in the same protected snapshot.
-        // NULL marks oversized/corrupt storage, never authoritative absence.
-        let mut query = sqlx::QueryBuilder::new("SELECT CASE WHEN octet_length(change_json) <= ");
-        query.push_bind(checked(i64::try_from(self.maximum_guard_bytes))?).push(" THEN change_json END AS payload, CASE WHEN octet_length((to_jsonb(g) - 'change_json')::text) <= ")
-            .push_bind(checked(i64::try_from(self.maximum_guard_bytes))?)
-            .push(" THEN (SELECT jsonb_object_agg(key, value) FROM jsonb_each_text(to_jsonb(g) - 'change_json')) END AS mirrors FROM ").push(table).push(" g WHERE ");
-        key_predicate(&mut query, fields);
-        let row = query.build().fetch_optional(&mut **transaction).await?;
+        let (row, encoded_key) = self.guard_projection_locked(transaction, key).await?;
         let Some(row) = row else {
             let history: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1)").bind(encoded_key).fetch_one(&mut **transaction).await?;
             if history {
