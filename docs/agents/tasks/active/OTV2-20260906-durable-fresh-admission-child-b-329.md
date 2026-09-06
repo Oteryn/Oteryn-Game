@@ -26,6 +26,7 @@ updated_at: 2026-09-06
 execution_budget_minutes: 60
 large_budget_reason: null
 owned_paths:
+  - apps/game-server/src/bin/oteryn-game-migrate.rs
   - apps/game-server/src/durability/fresh_admission.rs
   - apps/game-server/src/durability/admission_authority_guards.rs
   - apps/game-server/src/durability/admission_journal.rs
@@ -85,7 +86,7 @@ finding_family_sweep:
 finding_dispositions:
   p0_p1_accepted_and_repaired: []
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred: [retained_replay_priority_fixed, rollback_test_cleanup_preserved_on_failed_checks]
 ```
 
 ## Acceptance criteria
@@ -109,6 +110,16 @@ finding_dispositions:
 No Foundation, Cargo/lockfile, workflow/protection, 0001 edits, production DB/source/bootstrap/key/live-account work, external repositories, listener/deployment, arbitrary transfer/takeover or new post-grace policy. No local PostgreSQL privilege/root-check bypass. Missing concrete path needs go to Work before mutation. No automatic source readiness or B/C release claims.
 
 ## Implementation / findings
+
+### Window 3 — migration composition and atomic rollback qualification
+
+Independent checkpoint review identified P2: panic-based checks inside the rollback test could skip its outer isolated-database cleanup. Accepted and repaired: SQLSTATE, absent reconciliation, unchanged guards and exact row-count mismatches now return diagnostic errors; every failure reaches `database.cleanup().await` before propagation. No assertion condition is weakened. This increments the persistent repair counter to2; prior hosted evidence and the original fixed priority finding remain retained.
+
+Work verified native fresh checkpoint `4139f552a952c392e5f47139aed60e64f32b8cf4` / tree `c1769c1e0b29fbdfc6c22ac4b9c4ead63539944e`, normal fast-forward and independent intermediate review P0/P1/P2=0 before returning custody at12:34Z. This is still the same window3 ending12:43Z, not a counter reset. Actual fresh PostgreSQL result remains pending coordinator readback.
+
+Protected allocation344 merge `9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2`, Merge Queue34032269848 SUCCESS, explicitly grants the fourteenth path `apps/game-server/src/bin/oteryn-game-migrate.rs`. Its protected LIVE amendment was read before editing. The migration binary now imports canonical-library `MigrationExecutor` instead of source-including Durability; environment, connection and embedded-ledger execution remain unchanged. This removes the duplicate crate identity without widening any seal or omitting canonical library/PG coverage.
+
+New configured PostgreSQL case `fresh_failure_at_each_effect_rolls_back_claims_receipt_and_reservation` uses six fresh isolated databases and an administrator-owned test trigger interrupting receipt, session, Account guard, Character guard, guard history or transport reservation respectively. Each starts from valid independently published guards, requires the specific injected SQL error, then checks authoritative absence, unchanged guard payloads, zero receipt/session/reservation and exactly four prior history rows. Cleanup removes each isolated database; no production fault path is introduced. The existing publication case additionally verifies full-u64 source/runtime generations through actual NUMERIC/mirror/restart reads. Hosted execution is mandatory and pending; these tests do not claim full race/lifecycle qualification.
 
 ### Window 3 — initial fresh transaction and original-operation recovery
 
@@ -217,7 +228,7 @@ pr: 335
 execution_budget_minutes: 60
 execution_window_number: 3
 execution_window_started_at: 2026-09-06T11:43:00Z
-execution_window_elapsed_minutes: 23
+execution_window_elapsed_minutes: 57
 execution_windows_completed: 2
 worker_rotations: 1
 final_head_sha: null
@@ -232,7 +243,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null

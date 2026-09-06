@@ -14,6 +14,66 @@ mod durability;
 mod postgres;
 
 #[test]
+fn fresh_failure_at_each_effect_rolls_back_claims_receipt_and_reservation()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::admission_authority_guards::AdmissionGuardStore;
+    use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
+    use foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        // Fixed test-only SQL identifiers. Each trigger interrupts a different
+        // tentative effect after an independently valid bootstrap publication.
+        for table in [
+            "game_durability_fresh_admission_receipts",
+            "game_durability_reconnect_sessions",
+            "game_durability_admission_account_guards",
+            "game_durability_admission_character_guards",
+            "game_durability_admission_guard_history",
+            "game_durability_transport_ref_reservations",
+        ] {
+            let database = postgres::IsolatedPostgres::create("fresh_effect_rollback").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let now = postgres_clock(&pool).await?;
+                let source = postgres::fresh::Source::new(now)?;
+                let guards = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+                let publication = authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&source, now))?;
+                guards.publish(&publication).await?;
+                let request = source.request()?;
+                let store = FreshAdmissionStore::connect_runtime(&url, 65536, 8192).await?;
+                sqlx::raw_sql("CREATE FUNCTION inject_fresh_effect_failure() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected fresh effect failure' USING ERRCODE = 'P0001'; END $$;").execute(&pool).await?;
+                sqlx::query(sqlx::AssertSqlSafe(format!("CREATE TRIGGER injected_fresh_effect BEFORE INSERT OR UPDATE ON {table} FOR EACH ROW EXECUTE FUNCTION inject_fresh_effect_failure()"))).execute(&pool).await?;
+                let Err(error) = store.commit(&request).await else { return Err("injected effect did not abort".into()); };
+                if !matches!(error, DurabilityError::Database(sqlx::Error::Database(ref error)) if error.code().as_deref() == Some("P0001")) {
+                    return Err(format!("unexpected failure at {table}: {error}").into());
+                }
+                let reconciliation = store.reconcile(request.operation()).await?;
+                if reconciliation != FreshReconciliation::Absent {
+                    return Err(format!("receipt survived failed effect at {table}: {reconciliation:?}").into());
+                }
+                let keys: Vec<_> = source.rows.iter().map(|row| row.key.clone()).collect();
+                if guards.load(&keys).await? != source.rows.iter().cloned().map(Some).collect::<Vec<_>>() {
+                    return Err(format!("partial claims at {table}").into());
+                }
+                let counts: (i64, i64, i64, i64) = sqlx::query_as("SELECT (SELECT COUNT(*) FROM game_durability_fresh_admission_receipts), (SELECT COUNT(*) FROM game_durability_reconnect_sessions), (SELECT COUNT(*) FROM game_durability_transport_ref_reservations), (SELECT COUNT(*) FROM game_durability_admission_guard_history)").fetch_one(&pool).await?;
+                if counts != (0, 0, 0, 4) {
+                    return Err(format!("partial durable effects at {table}: expected (0, 0, 0, 4), got {counts:?}").into());
+                }
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }.await;
+            database.cleanup().await?;
+            result?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
 fn fresh_commit_persists_complete_operation_and_reconciles_original_decision()
 -> Result<(), Box<dyn std::error::Error>> {
     use durability::admission_authority_guards::AdmissionGuardStore;
@@ -123,6 +183,16 @@ fn guard_publication_is_atomic_replayable_and_retains_decision_history()
                     {
                         security.provenance.publication_revision = 2;
                     }
+                }
+                // Independently valid full-u64 source/runtime fences survive SQL
+                // NUMERIC storage and exact textual mirror reconstruction.
+                source.rows[2].source.source_revision = u64::MAX;
+                if let AdmissionAuthorityGuardStateV1::Runtime {
+                    ownership_generation,
+                    ..
+                } = &mut source.rows[2].state
+                {
+                    *ownership_generation = u64::MAX;
                 }
                 // Reusing an accepted decision for different effects must reject the
                 // entire batch, including otherwise valid changes preceding it.
