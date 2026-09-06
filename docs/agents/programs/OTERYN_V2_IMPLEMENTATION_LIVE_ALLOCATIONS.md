@@ -7,9 +7,12 @@ This checkpoint supersedes stale current-status interpretations of the historica
 - Architecture #313 is completed: PR #317 protected integration `a8678d4a94e479a9aa2a92920379a4b32f95143b`, successful Merge Queue run `33983003548`.
 - Existing reconnect/terminal Durability delivery #252 and archive #290 are complete/released; historical #167/#240/#243 prose does not allocate Foundation.
 - Child A #318 is completed/released: PR #321 integrated as `f77a160a480cb1bb08bbbd83e0061b2a8a424734` after exact-head CI, independent review and full Merge Queue `33992173480` passed. Archived task below preserves immutable admission `8fd0a40928c4089b453556edbf0a5abebe46986d`; B/C remain separate unallocated dependencies.
-- Claim handoff #324 is completed/released: PR #325 integrated as `93f31ba05972d3b96afb0d9ea08e2c6753507d8c`, independent review P0/P1/P2=0 and full Merge Queue `34016129389` PASS. Narrow Foundation followup #326 below precedes Child B; original A remains complete.
+- Claim handoff #324 remains completed/released through PR #325 / `93f31ba05972d3b96afb0d9ea08e2c6753507d8c`, independent review P0/P1/P2=0 and full Merge Queue `34016129389` PASS; original A remains complete.
+- Foundation followup #326 is completed/released: PR #331 native candidate `14389fe41e8d3053e5143bdeee2acc7dd97eff00`, tree `b1348af0baecc10e2f54eba5766d45b3060e3208`; protected merge `f69e9c12c8b69b625a7ce9d911bf3132c141ada6`, Merge Queue `34019841021`. Exact-head CI/review and full Merge Queue passed; its terminal task is archived by this package.
+- Native source-contract architecture #328 / PR #330 is accepted at `5412215718d66c743fb78eadc561e6a23b5e2b5f`, Merge Queue `34018062415` PASS; terminal task is archived in this coordinator package. Acceptance establishes no production source connectivity.
+- #332 is a separate documentation-only accepted-recovery architecture candidate requiring its own qualification/protected acceptance; no runtime lease follows from it. Its bounded dependency remains separate from B implementation and C's actual readiness.
 - #247 is `WAITING_DEPENDENCY`; preserve `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`, its existing paths and partial evidence. Architecture acceptance alone does not resume it.
-- Child B persistence and Child C actual producer/composition/readiness require separate allocations after their prerequisite protected integrations. Test sources establish no production availability. A+B alone cannot release Server Seam.
+- Prospective Child B #329 below has exactly nine SQL/harness paths plus task/plan. It activates only after #331 protected closeout and the actual B allocation merge/readback. C then requires separate allocation and actual registered producer/readiness evidence, including any applicable accepted #332 recovery contract; test sources establish no production availability. A+B alone cannot release Server Seam.
 - Earlier Foundation #208/#280 and harness #281 are closed/released. Fresh open-PR/path readback remains mandatory before dispatch.
 
 - Coordination ID: `OTV2-NATIVE-FOUNDATION`
@@ -761,32 +764,75 @@ write_authority: none
 
 The complete eight-path allocation and RED/GREEN/review/check history are preserved in the archive. Work verified protected integration and releases the sole Foundation worker. This factual closeout allocates no SQL, migration, Cargo, workflow, listener, composition, producer registration or B/C work. Server Seam remains held until separately allocated B/C integrate and actual source readiness is proven.
 
-## Prospective allocation — Foundation atomic claim transition followup
+## Completed Foundation atomic claim-transition followup
+
+Work verified protected PR331 integration, qualification, issue completion and branch deletion. The four-path worker lease is released; its original allocation and counters remain in the archive.
 
 ```yaml
 lane_id: OTV2-FOUNDATION-CLAIM-TRANSITION
 task_id: OTV2-20260906-foundation-claim-transition-326
 issue: 326
-status: allocated_waiting_for_protected_integration
-worker_alias: Oteryn Foundation claim-transition worker
-risk: XHigh
+status: completed_released
+allocation_pr: 327
 allocation_source_main_sha: 93f31ba05972d3b96afb0d9ea08e2c6753507d8c
-admission_main_sha: null
-base_sha: null
+allocation_merge_sha: 3ab7a72d41dae10933785ce846b8e3f186a1feac
+admission_main_sha: 3ab7a72d41dae10933785ce846b8e3f186a1feac
+base_sha: 3ab7a72d41dae10933785ce846b8e3f186a1feac
+delivery_pr: 331
+delivery_final_head_sha: 14389fe41e8d3053e5143bdeee2acc7dd97eff00
+delivery_tree_sha: b1348af0baecc10e2f54eba5766d45b3060e3208
+delivery_merge_sha: f69e9c12c8b69b625a7ce9d911bf3132c141ada6
+delivery_merge_queue_run: 34019841021
 branch: agent/foundation-claim-transition-326
-task_packet: docs/agents/tasks/active/OTV2-20260906-foundation-claim-transition-326.md
+branch_state: deleted_after_merge
+task_packet: docs/agents/tasks/archive/OTV2-20260906-foundation-claim-transition-326.md
 implementation_plan: docs/superpowers/plans/2026-09-06-foundation-claim-transition.md
-depends_on: [324, 325]
-blocks: [Child_B_allocation, 247]
-owned_paths:
-  - apps/game-server/src/foundation/admission_authority_publication.rs
-  - apps/game-server/src/foundation/fresh_admission_durability.rs
-  - apps/game-server/src/foundation/fresh_admission_durability_tests.rs
-  - docs/agents/tasks/active/OTV2-20260906-foundation-claim-transition-326.md
+owned_paths: []
+owned_paths_disposition: historical_four_path_allocation_preserved_in_terminal_archive_released
 shared_cargo_workflow_registry_lease: none
-external_repository_write_authority: none
+write_authority: none
 ```
 
-This exact four-path lease activates only after its allocation is protected-main integrated and Work verifies the actual merge. That allocation merge, not the source SHA above, is the immutable admission/base recorded before first worker mutation and in its first material checkpoint. Work creates the sole canonical branch from it. The worker then exclusively owns these paths; coordinator programme documents stay with Work. No B/C or Server Seam mutation is admitted here. #243 is immutable historical evidence under completed #250/#252/#290, not a competing lease. A fresh open-PR/path readback is required before dispatch.
+The archive preserves immutable admission, final exact-head/tree review/check evidence, release-freshness repair, counters and original allocation. Work must complete readback and custody release before activating B. The inherited post-grace limitation is separate and does not authorize new B policy.
 
-The accepted FND-DUR-FRESH-CLAIM-PUBLICATION-V1 decision requires sealed fresh claim effects, lossless historical operation binding and narrowly accepted reconnect/control-loss/replacement/release siblings. SQL, facade/verifier/export, Cargo, workflow and actual source implementation remain outside this lease. Additional paths require a concrete evidenced Work amendment before editing. Original Child A remains archived/released; #324's completed task is archived as `docs/agents/tasks/archive/OTV2-20260906-atomic-fresh-claim-publication-324.md`.
+## Prospective allocation — Durability fresh-admission Child B
+
+```yaml
+lane_id: OTV2-DURABILITY-FRESH-ADMISSION-CHILD-B
+task_id: OTV2-20260906-durable-fresh-admission-child-b-329
+issue: 329
+coordinator_issue: 162
+status: NOT_ADMITTED
+worker_alias: Oteryn Durability Child B worker
+risk: XHigh
+allocation_source_main_sha: f69e9c12c8b69b625a7ce9d911bf3132c141ada6
+allocation_pr: null
+allocation_merge_sha: NOT_ADMITTED
+admission_main_sha: NOT_ADMITTED
+base_sha: NOT_ADMITTED
+branch: agent/durable-fresh-admission-child-b-329
+task_packet: docs/agents/tasks/active/OTV2-20260906-durable-fresh-admission-child-b-329.md
+implementation_plan: docs/superpowers/plans/2026-09-06-durable-fresh-admission-child-b.md
+depends_on: [326, 331]
+blocks: [Child_C_composition, 247]
+execution_budget_minutes: 60
+owned_paths:
+  - apps/game-server/src/durability/fresh_admission.rs
+  - apps/game-server/src/durability/admission_authority_guards.rs
+  - apps/game-server/src/durability/admission_journal.rs
+  - apps/game-server/src/durability/db.rs
+  - apps/game-server/src/durability/mod.rs
+  - apps/game-server/src/durability/schema.rs
+  - apps/game-server/migrations/0002_fresh_admission_authority.sql
+  - apps/game-server/tests/durability_postgres.rs
+  - apps/game-server/tests/support/postgres.rs
+  - docs/agents/tasks/active/OTV2-20260906-durable-fresh-admission-child-b-329.md
+  - docs/superpowers/plans/2026-09-06-durable-fresh-admission-child-b.md
+shared_cargo_workflow_registry_lease: none
+external_repository_write_authority: none
+write_authority: none_until_actual_protected_allocation_integration_and_Work_readback
+```
+
+These exact eleven paths activate only after Work verifies #331 protected closeout, integrates this allocation and binds the actual allocation merge as immutable admission/base. Work then creates the sole worker branch and dispatches one writer. Shared coordinator documents and terminal archives remain with Work. No Foundation/Cargo/workflow/0001/listener/production registration/external writes are leased. Existing hosted PostgreSQL17.6 is the actual SQL gate; local unconfigured skips do not qualify. Sixty-minute windows are bounded custody checkpoints, not automatic retries or counter resets. Full acceptance, independent exact-head review, canonical CI and Merge Queue remain required.
+
+After B protected integration, separately allocate C and prove actual owner registration, current-source/restart recovery and readiness. Qualify #332 independently before relying on its proposed accepted-recovery semantics. Actual C readiness remains UNKNOWN; preserve Server Seam `9370b254c6ac4f6529e069c1968ae6bfa1e1750e` without new write authority.
