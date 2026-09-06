@@ -1,5 +1,4 @@
 name: Repository audit evidence 20260906
-
 on:
   pull_request:
     branches: [main]
@@ -9,195 +8,81 @@ permissions: {}
 concurrency:
   group: repository-audit-evidence-20260906-${{ github.event.pull_request.number }}
   cancel-in-progress: true
-
 jobs:
-  coverage_linux:
+  auxiliary:
     if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/repository-coverage-20260906'
-    name: Audit / original-test LLVM coverage and native probes
+    name: Audit / non-workspace Rust and complete Python test discovery
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: 15
     permissions:
       contents: read
-    services:
-      postgres:
-        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
-        env:
-          POSTGRES_USER: oteryn_test_admin
-          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
-          POSTGRES_DB: postgres
-        ports: ['5432:5432']
-        options: >-
-          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
-          --health-interval 5s --health-timeout 5s --health-retries 20
-    env:
-      OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
-      RUSTFLAGS: '-C instrument-coverage'
     steps:
-      - name: Check out original audited product
+      - name: Check out exact audited source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-          path: source
           persist-credentials: false
-      - name: Read this audit's isolated probe sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Configure documented verification toolchains
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          path: audit-driver
-          persist-credentials: false
-      - name: Execute unchanged workspace tests under instrumentation
-        working-directory: source
+          python-version: '3.12'
+      - name: Verify non-workspace limit evidence program
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-          mkdir -p ../audit-output/profiles
-          rustup toolchain install 1.94.0 --profile minimal --component llvm-tools-preview
-          rustc +1.94.0 -Vv > ../audit-output/rustc.txt
-          export LLVM_PROFILE_FILE="$GITHUB_WORKSPACE/audit-output/profiles/%p-%m.profraw"
-          cargo +1.94.0 test --locked --workspace --all-features 2>&1 | tee ../audit-output/original-tests.log
-          cargo +1.94.0 test --locked --workspace --all-features --no-run --message-format=json > ../audit-output/test-artifacts.jsonl
-          git diff --exit-code
-      - name: Export original-test coverage before adding probes
-        working-directory: source
-        shell: bash
-        run: |
-          set -euo pipefail
-          python - <<'PY'
-          import json, os, pathlib, subprocess
-          out = pathlib.Path('../audit-output').resolve()
-          sysroot = pathlib.Path(subprocess.check_output(['rustc', '+1.94.0', '--print', 'sysroot'], text=True).strip())
-          llvm = sysroot / 'lib/rustlib/x86_64-unknown-linux-gnu/bin'
-          profiles = sorted(str(p) for p in (out/'profiles').glob('*.profraw'))
-          if not profiles:
-              raise SystemExit('no original-test profiles')
-          subprocess.run([str(llvm/'llvm-profdata'), 'merge', '-sparse', *profiles, '-o', str(out/'original.profdata')], check=True)
-          objects = set()
-          for line in (out/'test-artifacts.jsonl').read_text().splitlines():
-              obj = json.loads(line)
-              if obj.get('reason') == 'compiler-artifact' and obj.get('profile', {}).get('test') and obj.get('executable'):
-                  objects.add(obj['executable'])
-          if not objects:
-              raise SystemExit('no instrumented test objects')
-          command = [str(llvm/'llvm-cov'), 'export', '-instr-profile='+str(out/'original.profdata'), '-ignore-filename-regex=(/\\.cargo/|/rustc/)']
-          for obj in sorted(objects):
-              command.extend(['-object', obj])
-          with (out/'original-coverage.json').open('w') as stdout, (out/'coverage-stderr.log').open('w') as stderr:
-              subprocess.run(command, stdout=stdout, stderr=stderr, check=True)
-          report = json.loads((out/'original-coverage.json').read_text())
-          summary = {'scope': 'original Linux workspace tests, configured PostgreSQL; excludes later audit probes, Windows-only code and uninstantiated code', 'object_count': len(objects), 'profile_files': len(profiles), 'totals': [d['totals'] for d in report['data']], 'command': command}
-          (out/'coverage-summary.json').write_text(json.dumps(summary, indent=2)+'\n')
-          print(json.dumps(summary['totals'], indent=2))
-          PY
-      - name: Execute actual Rust boundary and malformed-input probes
-        working-directory: source
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p apps/client/tests
-          cp ../audit-driver/docs/agents/reports/repository-audit-20260906/probes/client_boundary.rs apps/client/tests/audit_boundary_20260906.rs
-          cp ../audit-driver/docs/agents/reports/repository-audit-20260906/probes/parser_boundaries.rs apps/game-server/tests/audit_parser_20260906.rs
-          export LLVM_PROFILE_FILE="$RUNNER_TEMP/audit-probes-%p-%m.profraw"
-          cargo +1.94.0 test --locked -p oteryn-client --test audit_boundary_20260906 -- --nocapture 2>&1 | tee ../audit-output/client-boundary-probes.log
-          cargo +1.94.0 test --locked -p oteryn-game-server --test audit_parser_20260906 -- --nocapture 2>&1 | tee ../audit-output/parser-probes.log
-          git diff --exit-code
-      - name: Observe SQL three-valued CHECK behavior in a rolled-back test transaction
-        shell: bash
-        run: |
-          set -euo pipefail
-          psql "$OTERYN_TEST_POSTGRES_ADMIN_URL" --no-psqlrc --set ON_ERROR_STOP=1 <<'SQL' > audit-output/sql-check-probe.log
-          BEGIN;
-          CREATE TEMP TABLE audit_check_probe (
-            activated_at TIMESTAMPTZ,
-            expires_at TIMESTAMPTZ,
-            CHECK ((activated_at IS NULL AND expires_at IS NULL) OR
-                   (activated_at IS NOT NULL AND expires_at = activated_at + INTERVAL '4 seconds'))
-          );
-          INSERT INTO audit_check_probe VALUES (TIMESTAMPTZ '2026-09-06 00:00:00+00', NULL);
-          SELECT COUNT(*) AS accepted_nonnull_activation_null_expiry FROM audit_check_probe;
-          SELECT version();
-          ROLLBACK;
-          SQL
-      - name: Preserve audit outputs without secrets or generated binaries
-        if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
-        with:
-          name: repository-audit-coverage-linux-7ce1d88
-          path: |
-            audit-output/*.log
-            audit-output/*.json
-            audit-output/*.jsonl
-            audit-output/*.txt
-          retention-days: 1
-          if-no-files-found: error
-
-  native_windows:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/repository-coverage-20260906'
-    name: Audit / exact Windows release and real DX12 probe
-    runs-on: windows-2025
-    timeout-minutes: 40
-    permissions:
-      contents: read
-    steps:
-      - name: Check out exact audited product
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-          path: source
-          persist-credentials: false
-      - name: Read isolated probe sources
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          path: audit-driver
-          persist-credentials: false
-      - name: Verify source and capture native shell behavior
-        working-directory: source
-        shell: pwsh
-        run: |
-          if ((git rev-parse HEAD).Trim() -ne '7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3') { throw 'source identity mismatch' }
-          New-Item -ItemType Directory -Force ../audit-output | Out-Null
-          $PSVersionTable | Out-String | Set-Content ../audit-output/powershell.txt
-          $nested = '$ErrorActionPreference="Stop"; cmd /c exit 7; $first=$LASTEXITCODE; cmd /c exit 0; Write-Output "first=$first last=$LASTEXITCODE"; exit $LASTEXITCODE'
-          & pwsh -NoProfile -NonInteractive -Command $nested | Set-Content ../audit-output/native-exit-probe.txt
-          $observed = $LASTEXITCODE
-          "nested_exit=$observed" | Add-Content ../audit-output/native-exit-probe.txt
-          if ($observed -ne 0) { throw 'grouped native exit behavior differs from audit hypothesis' }
+          mkdir -p audit-output
           rustup toolchain install 1.94.0 --profile minimal
-          if ($LASTEXITCODE -ne 0) { throw 'Rust install failed' }
-          rustc +1.94.0 -Vv | Set-Content ../audit-output/rustc.txt
-          if ($LASTEXITCODE -ne 0) { throw 'Rust metadata failed' }
-      - name: Build and launch the exact release executable
-        working-directory: source
-        shell: pwsh
+          rustc +1.94.0 --edition 2024 -D warnings --test tools/next-wave-limit-evidence/main.rs -o "$RUNNER_TEMP/oteryn-limit-audit-tests"
+          "$RUNNER_TEMP/oteryn-limit-audit-tests" 2>&1 | tee audit-output/non-workspace-rust-tests.log
+          rustc +1.94.0 --edition 2024 -D warnings -O tools/next-wave-limit-evidence/main.rs -o "$RUNNER_TEMP/oteryn-limit-audit"
+          "$RUNNER_TEMP/oteryn-limit-audit" > audit-output/limit-emitter.json
+          python -m json.tool audit-output/limit-emitter.json >/dev/null
+          "$RUNNER_TEMP/oteryn-limit-audit" --stress 8 2>&1 | tee audit-output/limit-model-stress.log
+      - name: Execute every existing isolated Python test entrypoint
+        shell: bash
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+          PYTHONHASHSEED: '0'
         run: |
-          cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc 2>&1 | Tee-Object ../audit-output/release-build.log
-          if ($LASTEXITCODE -ne 0) { throw 'release build failed' }
-          $exe = (Resolve-Path target/x86_64-pc-windows-msvc/release/oteryn-client.exe).Path
-          Get-FileHash -Algorithm SHA256 $exe | Format-List | Out-String | Set-Content ../audit-output/release-sha256.txt
-          & $exe --smoke 2>&1 | Tee-Object ../audit-output/release-shell-smoke.log
-          if ($LASTEXITCODE -ne 0) { throw 'exact release shell smoke failed' }
-      - name: Run original Windows client renderer input and simulation tests
-        working-directory: source
-        shell: pwsh
-        run: |
-          cargo +1.94.0 test --locked -p oteryn-client -p oteryn-renderer -p oteryn-input-platform -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc 2>&1 | Tee-Object ../audit-output/original-windows-tests.log
-          if ($LASTEXITCODE -ne 0) { throw 'Windows component tests failed' }
-      - name: Exercise actual DX12 creation and presentation through production renderer
-        working-directory: source
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Force apps/client/tests | Out-Null
-          Copy-Item ../audit-driver/docs/agents/reports/repository-audit-20260906/probes/client_boundary.rs apps/client/tests/audit_boundary_20260906.rs
-          cargo +1.94.0 test --locked -p oteryn-client --test audit_boundary_20260906 --target x86_64-pc-windows-msvc -- --nocapture 2>&1 | Tee-Object ../audit-output/dx12-probe.log
-          if ($LASTEXITCODE -ne 0) { throw 'native renderer probe failed; classify log, do not infer success' }
-          git diff --exit-code
-          if ($LASTEXITCODE -ne 0) { throw 'tracked product source changed' }
-      - name: Preserve exact execution results even when a probe fails
+          python - <<'PY'
+          import concurrent.futures, datetime, hashlib, json, os, pathlib, re, subprocess, sys, time
+          root = pathlib.Path.cwd()
+          out = root / 'audit-output'
+          tracked = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          tests = sorted(p for p in tracked if p.endswith('.py') and (pathlib.PurePosixPath(p).name.startswith('test_') or pathlib.PurePosixPath(p).name.endswith('self_test.py')))
+          targets = tests + ['tools/agents/validate_governance.py', 'tools/repository/validate_repository_policy.py', 'tools/agents/validate_inherited_prompt_policy.py']
+          def execute(path):
+              started = datetime.datetime.now(datetime.timezone.utc).isoformat()
+              begin = time.monotonic()
+              env = dict(os.environ, PYTHONPATH=str(root/'tools/tibia-worldmap-reconstruction'))
+              for key in ('GH', 'GH_TOKEN', 'GITHUB_TOKEN', 'DATABASE_URL', 'OTERYN_TEST_POSTGRES_ADMIN_URL'):
+                  env.pop(key, None)
+              command = [sys.executable, path]
+              try:
+                  result = subprocess.run(command, cwd=root, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=90)
+                  code, log = result.returncode, result.stdout
+              except subprocess.TimeoutExpired as error:
+                  code, log = 124, str(error)
+              name = re.sub(r'[^A-Za-z0-9._-]', '_', path) + '.log'
+              (out/name).write_text(log)
+              return {'path': path, 'command': command, 'started_at': started, 'duration_seconds': round(time.monotonic()-begin, 3), 'exit_code': code, 'log': name, 'log_sha256': hashlib.sha256(log.encode()).hexdigest()}
+          with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+              results = list(pool.map(execute, targets))
+          summary = {'audited_commit': '7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3', 'python': sys.version, 'commands': len(results), 'passed': sum(r['exit_code']==0 for r in results), 'failed': sum(r['exit_code']!=0 for r in results), 'results': results}
+          (out/'python-tests.json').write_text(json.dumps(summary, indent=2)+'\n')
+          subprocess.run(['git','diff','--exit-code'],check=True)
+          print(json.dumps({k:v for k,v in summary.items() if k != 'results'}, indent=2))
+          for result in results:
+              print(('PASS' if result['exit_code']==0 else 'FAIL'),result['path'])
+          # A discovered failing suite makes this observer fail. Never hide it as PASS.
+          raise SystemExit(1 if summary['failed'] else 0)
+          PY
+      - name: Retain complete outcomes including discovered failures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: repository-audit-native-windows-7ce1d88
+          name: repository-audit-auxiliary-7ce1d88
           path: audit-output/
           retention-days: 1
           if-no-files-found: error
