@@ -541,6 +541,7 @@ impl VerifiedRecoveryFacts {
 
 #[derive(Debug, Clone)]
 struct Claims {
+    credential_attempt_ref: [u8; 16],
     issuer: String,
     audience: String,
     profile: String,
@@ -835,6 +836,7 @@ fn parse_claims(payload: &[u8], kind: GrantKind) -> Result<Claims, Fnd04Consumer
         })
     };
     Ok(Claims {
+        credential_attempt_ref: canonical_uuid(&attempt, true).ok_or_else(|| kind.malformed())?,
         issuer: string("iss", 128)?,
         audience: string("aud", 128)?,
         profile: string("profile", 64)?,
@@ -2424,4 +2426,551 @@ fn finish_fresh_durability(
         verified_at: now,
         accepted_deadline,
     })
+}
+
+#[cfg(test)]
+#[path = "post_grace_recovery_tests.rs"]
+mod post_grace_recovery_tests;
+
+/// Recovery-scoped observations deliberately have a separate producer registration
+/// from fresh admission. The shared provenance DTO is inert metadata; its scope
+/// must already be ExistingActorRecovery and is never rewritten by this verifier.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoverySigningTrustObservationV2 {
+    pub key_id: String,
+    pub public_key: [u8; 32],
+    pub trusted: bool,
+    pub provenance: FreshEvidenceProvenanceV1,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoveryAccountSecurityObservationV2 {
+    pub account_id: String,
+    pub minimum_generation: u64,
+    pub allowed: bool,
+    pub provenance: FreshEvidenceProvenanceV1,
+}
+pub(crate) mod recovery_source_sealed {
+    pub trait Sealed {}
+}
+/// Only an owning, authenticated recovery source may implement this capability.
+/// Raw observations and the legacy evidence authority cannot register one.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::fnd04_verifier::*;
+/// struct Unregistered;
+/// impl RecoveryDurabilityEvidenceSourceV2 for Unregistered {
+///     fn signing_trust(&self, _: &str, _: i64) -> Result<RecoverySigningTrustObservationV2, Fnd04EvidenceError> { unreachable!() }
+///     fn account_security(&self, _: &str, _: i64) -> Result<RecoveryAccountSecurityObservationV2, Fnd04EvidenceError> { unreachable!() }
+/// }
+/// ```
+pub trait RecoveryDurabilityEvidenceSourceV2: recovery_source_sealed::Sealed {
+    fn signing_trust(
+        &self,
+        key_id: &str,
+        now: i64,
+    ) -> Result<RecoverySigningTrustObservationV2, Fnd04EvidenceError>;
+    fn account_security(
+        &self,
+        account_id: &str,
+        now: i64,
+    ) -> Result<RecoveryAccountSecurityObservationV2, Fnd04EvidenceError>;
+}
+pub struct RecoveryDurabilityTrustContextV2<'a> {
+    source: Option<&'a dyn RecoveryDurabilityEvidenceSourceV2>,
+}
+impl<'a> RecoveryDurabilityTrustContextV2<'a> {
+    #[must_use]
+    pub const fn unavailable() -> Self {
+        Self { source: None }
+    }
+    #[must_use]
+    pub const fn from_owning_source(source: &'a dyn RecoveryDurabilityEvidenceSourceV2) -> Self {
+        Self {
+            source: Some(source),
+        }
+    }
+}
+/// Authenticated recovery credentials, immutable signed bindings and the exact
+/// scoped source observations that established a finite eligibility deadline.
+/// This is not actor authority or permission to construct a live post-grace flow.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::fnd04_verifier::*;
+/// fn forge(old: VerifiedRecoveryDurabilityFactsV1) -> VerifiedRecoveryDurabilityFactsV2 { old.into() }
+/// ```
+#[derive(Debug, Clone)]
+pub struct VerifiedRecoveryDurabilityFactsV2 {
+    claims: Claims,
+    facts: VerifiedRecoveryDurabilityFactsV1,
+    signing: RecoverySigningTrustObservationV2,
+    security: RecoveryAccountSecurityObservationV2,
+    verified_at: i64,
+    accepted_deadline: i64,
+}
+impl VerifiedRecoveryDurabilityFactsV2 {
+    /// Signed credential correlation UUID, distinct from the Game reconnect attempt.
+    #[must_use]
+    pub const fn credential_attempt_ref(&self) -> [u8; 16] {
+        self.claims.credential_attempt_ref
+    }
+
+    #[must_use]
+    pub const fn facts(&self) -> &VerifiedRecoveryDurabilityFactsV1 {
+        &self.facts
+    }
+    #[must_use]
+    pub const fn signing(&self) -> &RecoverySigningTrustObservationV2 {
+        &self.signing
+    }
+    #[must_use]
+    pub const fn security(&self) -> &RecoveryAccountSecurityObservationV2 {
+        &self.security
+    }
+    #[must_use]
+    pub const fn verified_at(&self) -> i64 {
+        self.verified_at
+    }
+    #[must_use]
+    pub const fn accepted_deadline(&self) -> i64 {
+        self.accepted_deadline
+    }
+    #[must_use]
+    pub const fn credential_times(&self) -> (i64, i64, i64) {
+        (self.claims.iat, self.claims.nbf, self.claims.exp)
+    }
+    pub fn revalidate(
+        &self,
+        now: i64,
+        trust: &RecoveryDurabilityTrustContextV2<'_>,
+        current: &RecoveryCurrentEvidence,
+    ) -> Result<Self, Fnd04ConsumerError> {
+        let kind = GrantKind::Recovery;
+        if now < self.verified_at {
+            return Err(kind.evidence_stale());
+        }
+        let source = trust.source.ok_or(kind.evidence_stale())?;
+        let signing = source
+            .signing_trust(&self.signing.key_id, now)
+            .map_err(|error| map_evidence_error(error, kind, true))?;
+        validate_recovery_signing(&signing, &self.signing.key_id, now)?;
+        if signing.public_key != self.signing.public_key {
+            return Err(kind.authentication_failed());
+        }
+        validate_recovery_observation_successor(
+            &self.signing.provenance,
+            &signing.provenance,
+            same_recovery_signing_observation(&self.signing, &signing),
+        )?;
+        let next = finish_recovery_durability(self.claims.clone(), signing, now, source, current)?;
+        if next.security.minimum_generation < self.security.minimum_generation {
+            return Err(kind.evidence_stale());
+        }
+        validate_recovery_observation_successor(
+            &self.security.provenance,
+            &next.security.provenance,
+            same_recovery_security_observation(&self.security, &next.security),
+        )?;
+        Ok(next)
+    }
+}
+// Local publication wrappers may advance when the exact immutable source
+// observation is replayed. No source-authored field is normalized or refreshed.
+fn same_recovery_signing_observation(
+    old: &RecoverySigningTrustObservationV2,
+    next: &RecoverySigningTrustObservationV2,
+) -> bool {
+    let mut expected = old.clone();
+    expected.provenance.publication_revision = next.provenance.publication_revision;
+    expected == *next
+}
+fn same_recovery_security_observation(
+    old: &RecoveryAccountSecurityObservationV2,
+    next: &RecoveryAccountSecurityObservationV2,
+) -> bool {
+    let mut expected = old.clone();
+    expected.provenance.publication_revision = next.provenance.publication_revision;
+    expected == *next
+}
+fn validate_recovery_observation_successor(
+    old: &FreshEvidenceProvenanceV1,
+    next: &FreshEvidenceProvenanceV1,
+    equal: bool,
+) -> Result<(), Fnd04ConsumerError> {
+    if old.source_authority != next.source_authority
+        || next.source_revision < old.source_revision
+        || next.publication_revision < old.publication_revision
+        || next.source_observed_at < old.source_observed_at
+        || (next.source_revision == old.source_revision && !equal)
+        || (next.publication_revision == old.publication_revision && !equal)
+        || (next.source_revision > old.source_revision
+            && next.decision_identity == old.decision_identity)
+    {
+        return Err(Fnd04ConsumerError::RecoverySecurityEvidenceStale);
+    }
+    Ok(())
+}
+/// Necessary per-field bound from accepted DFR-OPERATION-BYTES (65,536).
+/// A field cannot exceed its complete lifecycle operation. This bounds local
+/// comparisons/copies; the owning codec must still enforce the complete encoded
+/// sum and executor accounting. It does not invent a narrower provenance cap.
+pub(super) fn recovery_lifecycle_fields_bounded(fields: &[&str]) -> bool {
+    fields.iter().all(|field| field.len() <= 65_536)
+}
+pub(super) fn recovery_lifecycle_provenance_bounded(p: &FreshEvidenceProvenanceV1) -> bool {
+    recovery_lifecycle_fields_bounded(&[
+        &p.source_authority,
+        &p.decision_identity,
+        &p.accepted_decision_identity,
+    ])
+}
+fn recovery_source_deadline(
+    provenance: &FreshEvidenceProvenanceV1,
+    purpose: FreshEvidencePurposeV1,
+    now: i64,
+) -> Result<i64, Fnd04ConsumerError> {
+    let stale = Fnd04ConsumerError::RecoverySecurityEvidenceStale;
+    if !recovery_lifecycle_provenance_bounded(provenance)
+        || provenance.source_authority.is_empty()
+        || provenance.purpose != purpose
+        || provenance.scope != Fnd04EvidenceScope::ExistingActorRecovery
+        || provenance.source_revision == 0
+        || provenance.source_revision != provenance.accepted_source_revision
+        || provenance.decision_identity.is_empty()
+        || provenance.decision_identity != provenance.accepted_decision_identity
+        || provenance.publication_revision == 0
+        || provenance.source_observed_at < 0
+        || now < provenance.source_observed_at
+    {
+        return Err(stale);
+    }
+    let uncertainty = i64::try_from(provenance.clock_uncertainty_seconds).map_err(|_| stale)?;
+    let deadline = provenance
+        .source_observed_at
+        .checked_add(5)
+        .and_then(|value| value.checked_sub(uncertainty))
+        .ok_or(stale)?;
+    if now > deadline {
+        return Err(stale);
+    }
+    Ok(deadline)
+}
+fn validate_recovery_signing(
+    signing: &RecoverySigningTrustObservationV2,
+    key_id: &str,
+    now: i64,
+) -> Result<i64, Fnd04ConsumerError> {
+    let deadline = recovery_source_deadline(
+        &signing.provenance,
+        FreshEvidencePurposeV1::SigningTrust,
+        now,
+    )?;
+    if !recovery_lifecycle_fields_bounded(&[&signing.key_id, key_id])
+        || signing.key_id != key_id
+        || !signing.trusted
+    {
+        return Err(Fnd04ConsumerError::RecoveryAuthenticationFailed);
+    }
+    Ok(deadline)
+}
+pub fn verify_recovery_grant_durability_v2(
+    token: &str,
+    now: i64,
+    trust: &RecoveryDurabilityTrustContextV2<'_>,
+    current: &RecoveryCurrentEvidence,
+) -> Result<VerifiedRecoveryDurabilityFactsV2, Fnd04ConsumerError> {
+    let kind = GrantKind::Recovery;
+    let compact = parse_compact_jws(token).map_err(|_| kind.malformed())?;
+    let map_auth = |error| match error {
+        Fnd04VerificationError::Malformed => kind.malformed(),
+        Fnd04VerificationError::AuthenticationFailed => kind.authentication_failed(),
+    };
+    let header = parse_protected_header(&compact).map_err(map_auth)?;
+    let source = trust.source.ok_or(kind.evidence_stale())?;
+    let signing = source
+        .signing_trust(&header.kid, now)
+        .map_err(|error| map_evidence_error(error, kind, true))?;
+    validate_recovery_signing(&signing, &header.kid, now)?;
+    let fixed = FixedTrustContext {
+        keys: [(header.kid.clone(), signing.public_key)]
+            .into_iter()
+            .collect(),
+    };
+    verify_compact_signature(&compact, &header, &fixed).map_err(map_auth)?;
+    let payload = decode_canonical_base64url(&compact.payload_segment, 3_072)
+        .map_err(|_| kind.malformed())?;
+    let claims = parse_claims(&payload, kind)?;
+    validate_bindings(&header, &claims, kind)?;
+    finish_recovery_durability(claims, signing, now, source, current)
+}
+fn finish_recovery_durability(
+    claims: Claims,
+    signing: RecoverySigningTrustObservationV2,
+    now: i64,
+    source: &dyn RecoveryDurabilityEvidenceSourceV2,
+    current: &RecoveryCurrentEvidence,
+) -> Result<VerifiedRecoveryDurabilityFactsV2, Fnd04ConsumerError> {
+    let kind = GrantKind::Recovery;
+    validate_time(&claims, now, kind)?;
+    let signing_deadline = validate_recovery_signing(&signing, &signing.key_id, now)?;
+    let security = source
+        .account_security(&claims.account_id, now)
+        .map_err(|error| map_evidence_error(error, kind, false))?;
+    let security_deadline = recovery_source_deadline(
+        &security.provenance,
+        FreshEvidencePurposeV1::PlatformSecurity,
+        now,
+    )?;
+    if security.minimum_generation == 0 {
+        return Err(kind.evidence_stale());
+    }
+    if !recovery_lifecycle_fields_bounded(&[&security.account_id])
+        || security.account_id != claims.account_id
+    {
+        return Err(kind.binding_mismatch());
+    }
+    if !security.allowed || claims.account_security_generation < security.minimum_generation {
+        return Err(kind.security_revoked());
+    }
+    if claims.protocol_major != 1 || claims.transport_profile != 1 {
+        return Err(kind.revision_unsupported());
+    }
+    let character = CharacterId::decode(&claims.character).map_err(|_| kind.malformed())?;
+    let world = WorldId::decode(&claims.world).map_err(|_| kind.malformed())?;
+    if claims.account_id != current.account_id || character != current.character_id {
+        return Err(kind.binding_mismatch());
+    }
+    if world != current.world_id {
+        return Err(kind.world_stale());
+    }
+    if claims.ruleset_revision != current.ruleset_revision
+        || claims.content_revision != current.content_revision
+        || claims.map_revision != current.map_revision
+        || claims.world_policy_revision != current.world_policy_revision
+    {
+        return Err(kind.revision_unsupported());
+    }
+    let credential_deadline = claims
+        .exp
+        .checked_add(4)
+        .ok_or(kind.malformed())?
+        .min(claims.iat.checked_add(35).ok_or(kind.malformed())?);
+    let accepted_deadline = credential_deadline
+        .min(signing_deadline)
+        .min(security_deadline);
+    let facts = VerifiedRecoveryDurabilityFactsV1 {
+        verified: VerifiedRecoveryFacts {
+            grant_nonce: claims.nonce,
+            account_id: claims.account_id.clone(),
+            character_id: character,
+            world_id: world,
+        },
+        account_security_generation: claims.account_security_generation,
+        protocol_major: claims.protocol_major,
+        transport_profile: claims.transport_profile,
+        ruleset_revision: claims.ruleset_revision.clone(),
+        content_revision: claims.content_revision.clone(),
+        map_revision: claims.map_revision.clone(),
+        world_policy_revision: claims.world_policy_revision.clone(),
+        credential_expiration: claims.exp,
+    };
+    Ok(VerifiedRecoveryDurabilityFactsV2 {
+        claims,
+        facts,
+        signing,
+        security,
+        verified_at: now,
+        accepted_deadline,
+    })
+}
+
+/// Lossless historical recovery credential/evidence binding. Fixed recovery
+/// issuer/profile/purpose are selected by this version, never by stored input.
+/// This DTO has no conversion into a verified capability.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoveryCredentialAuditV2 {
+    pub credential_attempt_ref: [u8; 16],
+    pub grant_nonce: [u8; 32],
+    pub account_id: String,
+    pub character_id: CharacterId,
+    pub world_id: WorldId,
+    pub account_security_generation: u64,
+    pub protocol_major: u64,
+    pub transport_profile: u64,
+    pub ruleset_revision: String,
+    pub content_revision: String,
+    pub map_revision: String,
+    pub world_policy_revision: String,
+    pub issued_at: i64,
+    pub not_before: i64,
+    pub expires_at: i64,
+    pub signing: RecoverySigningTrustObservationV2,
+    pub security: RecoveryAccountSecurityObservationV2,
+    pub verified_at: i64,
+    pub accepted_deadline: i64,
+}
+impl VerifiedRecoveryDurabilityFactsV2 {
+    #[must_use]
+    pub fn audit(&self) -> RecoveryCredentialAuditV2 {
+        RecoveryCredentialAuditV2 {
+            credential_attempt_ref: self.claims.credential_attempt_ref,
+            grant_nonce: self.claims.nonce,
+            account_id: self.claims.account_id.clone(),
+            character_id: self.facts.character_id(),
+            world_id: self.facts.world_id(),
+            account_security_generation: self.claims.account_security_generation,
+            protocol_major: self.claims.protocol_major,
+            transport_profile: self.claims.transport_profile,
+            ruleset_revision: self.claims.ruleset_revision.clone(),
+            content_revision: self.claims.content_revision.clone(),
+            map_revision: self.claims.map_revision.clone(),
+            world_policy_revision: self.claims.world_policy_revision.clone(),
+            issued_at: self.claims.iat,
+            not_before: self.claims.nbf,
+            expires_at: self.claims.exp,
+            signing: self.signing.clone(),
+            security: self.security.clone(),
+            verified_at: self.verified_at,
+            accepted_deadline: self.accepted_deadline,
+        }
+    }
+}
+
+impl RecoveryCredentialAuditV2 {
+    /// Validate stored structure at its original verification time. This does
+    /// not authenticate stored claims or register a live evidence source.
+    pub fn validate_historical(&self) -> Result<(), Fnd04ConsumerError> {
+        let invalid = Fnd04ConsumerError::RecoveryMalformed;
+        if !recovery_lifecycle_fields_bounded(&[
+            &self.account_id,
+            &self.ruleset_revision,
+            &self.content_revision,
+            &self.map_revision,
+            &self.world_policy_revision,
+            &self.security.account_id,
+            &self.signing.key_id,
+        ]) || !recovery_lifecycle_provenance_bounded(&self.signing.provenance)
+            || !recovery_lifecycle_provenance_bounded(&self.security.provenance)
+        {
+            return Err(invalid);
+        }
+        NumericDate::validate(
+            self.verified_at,
+            self.issued_at,
+            self.not_before,
+            self.expires_at,
+        )
+        .map_err(|_| invalid)?;
+        let signing_deadline =
+            validate_recovery_signing(&self.signing, &self.signing.key_id, self.verified_at)?;
+        let security_deadline = recovery_source_deadline(
+            &self.security.provenance,
+            FreshEvidencePurposeV1::PlatformSecurity,
+            self.verified_at,
+        )?;
+        let expected = self
+            .expires_at
+            .checked_add(4)
+            .ok_or(invalid)?
+            .min(self.issued_at.checked_add(35).ok_or(invalid)?)
+            .min(signing_deadline)
+            .min(security_deadline);
+        if self.accepted_deadline != expected
+            || self.account_security_generation == 0
+            || self.security.minimum_generation == 0
+            || self.account_security_generation < self.security.minimum_generation
+            || !self.security.allowed
+            || self.security.account_id != self.account_id
+            || canonical_uuid(&self.account_id, false).is_none()
+            || self.credential_attempt_ref[6] >> 4 != 7
+            || self.credential_attempt_ref[8] >> 6 != 2
+            || self.protocol_major != 1
+            || self.transport_profile != 1
+            || ![
+                &self.ruleset_revision,
+                &self.content_revision,
+                &self.map_revision,
+                &self.world_policy_revision,
+            ]
+            .iter()
+            .all(|value| valid_revision(value))
+        {
+            return Err(invalid);
+        }
+        Ok(())
+    }
+}
+
+impl RecoveryCredentialAuditV2 {
+    pub(super) fn validate_successor_of(
+        &self,
+        original: &Self,
+        now: i64,
+    ) -> Result<(), Fnd04ConsumerError> {
+        let stale = Fnd04ConsumerError::RecoverySecurityEvidenceStale;
+        self.validate_historical()?;
+        original.validate_historical()?;
+        if self.verified_at != now
+            || now < original.verified_at
+            || self.signing.public_key != original.signing.public_key
+            || self.signing.key_id != original.signing.key_id
+            || self.security.minimum_generation < original.security.minimum_generation
+        {
+            return Err(stale);
+        }
+        let mut signed = original.clone();
+        signed.signing = self.signing.clone();
+        signed.security = self.security.clone();
+        signed.verified_at = self.verified_at;
+        signed.accepted_deadline = self.accepted_deadline;
+        if signed != *self {
+            return Err(stale);
+        }
+        validate_recovery_observation_successor(
+            &original.signing.provenance,
+            &self.signing.provenance,
+            same_recovery_signing_observation(&original.signing, &self.signing),
+        )?;
+        validate_recovery_observation_successor(
+            &original.security.provenance,
+            &self.security.provenance,
+            same_recovery_security_observation(&original.security, &self.security),
+        )
+    }
+}
+
+/// Current adoption checks intentionally do not reopen the original credential
+/// time window: a sealed committed receipt retains its original decision time.
+pub(super) fn validate_recovery_adoption_sources(
+    prior: &RecoveryCredentialAuditV2,
+    signing: &RecoverySigningTrustObservationV2,
+    security: &RecoveryAccountSecurityObservationV2,
+    now: i64,
+) -> Result<(), Fnd04ConsumerError> {
+    prior.validate_historical()?;
+    if !recovery_lifecycle_fields_bounded(&[&security.account_id]) {
+        return Err(Fnd04ConsumerError::RecoverySecurityEvidenceStale);
+    }
+    validate_recovery_signing(signing, &prior.signing.key_id, now)?;
+    recovery_source_deadline(
+        &security.provenance,
+        FreshEvidencePurposeV1::PlatformSecurity,
+        now,
+    )?;
+    if signing.public_key != prior.signing.public_key
+        || security.account_id != prior.account_id
+        || !security.allowed
+        || security.minimum_generation == 0
+        || security.minimum_generation < prior.security.minimum_generation
+        || security.minimum_generation > prior.account_security_generation
+    {
+        return Err(Fnd04ConsumerError::RecoverySecurityEvidenceStale);
+    }
+    validate_recovery_observation_successor(
+        &prior.signing.provenance,
+        &signing.provenance,
+        same_recovery_signing_observation(&prior.signing, signing),
+    )?;
+    validate_recovery_observation_successor(
+        &prior.security.provenance,
+        &security.provenance,
+        same_recovery_security_observation(&prior.security, security),
+    )
 }

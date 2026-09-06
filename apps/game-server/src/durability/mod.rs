@@ -185,6 +185,15 @@ impl AdmissionReconnectJournalV2 {
             }
             return Err(DurabilityError::InvalidStoredState);
         };
+        if let Some(epoch) = predecessor.try_get::<Option<String>, _>("control_loss_epoch")? {
+            let epoch = epoch
+                .parse::<u64>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            let session: Vec<u8> = predecessor.try_get("game_session_id")?;
+            if fresh_admission::has_owning_loss_receipt(&mut transaction, &session, epoch).await? {
+                return Ok(ReconnectPrepareDispositionV2::Unavailable);
+            }
+        }
         if !replacement_predecessor_row_matches(&predecessor, authorization)? {
             return Err(DurabilityError::InvalidStoredState);
         }

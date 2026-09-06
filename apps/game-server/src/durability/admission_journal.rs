@@ -189,6 +189,21 @@ impl AdmissionReconnectJournal {
         {
             return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
         }
+        // Owning-loss protection uses independent entitlement/rearm namespaces.
+        // Legacy records cannot safely translate those facts into candidate-
+        // connection protection flags; require the separately qualified bridge.
+        if super::fresh_admission::has_owning_loss_receipt(
+            &mut transaction,
+            &session_id,
+            session
+                .try_get::<String, _>("control_loss_epoch")?
+                .parse::<u64>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?,
+        )
+        .await?
+        {
+            return Ok(ReconnectPrepareDispositionV1::Unavailable);
+        }
         let receipt_backed = !receipt_authorized
             && replacement_receipt_matches_record(&mut transaction, record).await?;
         let existing = sqlx::query(
