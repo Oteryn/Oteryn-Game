@@ -22,3 +22,7 @@ Max and max+1 tests are future implementation obligations, not tests executed by
 ## Separate B amendment
 
 Coordinator must explicitly allocate apps/game-server/src/bin/oteryn-game-migrate.rs to B before any edit. Minimal intended composition change removes source-included Durability and imports the public library MigrationExecutor; no semantics, public seal visibility, Cargo or Foundation change. This draft does not write or allocate that path.
+
+## Admitted execution evidence
+
+Work5559231769 admitted immutable9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2, window1 12:24–13:24UTC. Complete87-dimensional mapping prepared;154 total unique IDs and67 original objects unchanged verified. All new configured ranges fixed; semantic exact widths remain separate. Coupled totals and64/256 legacy collections preserve their own meaning. Future boundary tests are obligations, not runtime proof. Independent review and exact-head CI/Merge Queue remain required.
