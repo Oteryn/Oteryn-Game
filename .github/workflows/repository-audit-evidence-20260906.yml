@@ -1,4 +1,4 @@
-name: Repository audit coverage-guided fuzz 20260906
+name: Repository audit final native probes 20260906
 on:
   pull_request:
     types: [opened, synchronize]
@@ -25,103 +25,55 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           path: audit-packet
           persist-credentials: false
-      - name: Install versioned isolated fuzz tooling
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir evidence
-          test "$(git rev-parse HEAD)" = 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-          rustup toolchain install nightly-2026-09-05 --profile minimal
-          rustup toolchain install 1.94.0 --profile minimal
-          rustc +nightly-2026-09-05 -vV > evidence/fuzz-compiler.txt
-          cargo +1.94.0 install cargo-fuzz --version 0.12.0 --locked > evidence/fuzz-tool-install.log 2>&1
-          cargo +1.94.0 fuzz --version > evidence/fuzz-tool-version.txt
-      - name: Compose temporary standalone targets and positive seeds
+      - name: Run source-preserving coverage-guided probe
         env:
           AUDIT_TARGET: ${{ matrix.target }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p fuzz/fuzz_targets fuzz/corpus/wire fuzz/corpus/content fuzz/artifacts
-          cp audit-packet/docs/agents/reports/repository-audit-20260906/probes/fuzz_wire.rs fuzz/fuzz_targets/wire.rs
-          cp audit-packet/docs/agents/reports/repository-audit-20260906/probes/fuzz_content.rs fuzz/fuzz_targets/content.rs
-          cat > fuzz/Cargo.toml <<'TOML'
-          [package]
-          name = "oteryn-audit-fuzz"
-          version = "0.0.0"
-          publish = false
-          edition = "2024"
-          [package.metadata]
-          cargo-fuzz = true
-          [dependencies]
-          libfuzzer-sys = "=0.4.13"
-          oteryn-game-server = { path = "../apps/game-server" }
-          sha2 = { version = "=0.11.0", default-features = false }
-          [workspace]
-          members = ["."]
-          [[bin]]
-          name = "wire"
-          path = "fuzz_targets/wire.rs"
-          test = false
-          doc = false
-          bench = false
-          [[bin]]
-          name = "content"
-          path = "fuzz_targets/content.rs"
-          test = false
-          doc = false
-          bench = false
-          TOML
-          cp Cargo.lock fuzz/Cargo.lock
-          python - <<'PY'
-          from pathlib import Path
-          Path('fuzz/corpus/wire/valid-protocol-error').write_bytes(bytes([8,14,34,0]))
-          Path('fuzz/corpus/wire/framed-protocol-error').write_bytes(bytes([0,0,0,4,8,14,34,0]))
-          PY
-          if [[ "$AUDIT_TARGET" == content ]]; then
-            cp audit-packet/docs/agents/reports/repository-audit-20260906/probes/fuzz_seed_writer.rs apps/game-server/tests/audit_fuzz_seed.rs
-            cargo +1.94.0 test --locked -p oteryn-game-server --test audit_fuzz_seed > evidence/positive-seeds.log 2>&1
-          fi
-          cargo +nightly-2026-09-05 metadata --manifest-path fuzz/Cargo.toml --format-version 1 > evidence/fuzz-metadata.json
-          cp fuzz/Cargo.lock evidence/fuzz-Cargo.lock
-          python - <<'PY'
-          import tomllib,json
-          from pathlib import Path
-          old=tomllib.loads(Path('Cargo.lock').read_text())['package'];new=tomllib.loads(Path('fuzz/Cargo.lock').read_text())['package']
-          old_versions={(p['name'],p['version']):p.get('checksum') for p in old if 'source' in p}
-          old_names={n for n,v in old_versions}
-          changes=[p for p in new if p['name'] in old_names and ((p['name'],p['version']) not in old_versions or old_versions[(p['name'],p['version'])]!=p.get('checksum'))]
-          Path('evidence/fuzz-lock-comparison.json').write_text(json.dumps({'changed_existing_external_packages':changes,'new_fuzz_dependencies':[{'name':p['name'],'version':p['version']} for p in new if p['name'] not in old_names]},indent=2))
-          assert not changes,'audit dependency resolution changed original package versions'
-          PY
-          git diff --exit-code
-      - name: Run bounded coverage-guided ASan campaign
-        env:
-          AUDIT_TARGET: ${{ matrix.target }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo +nightly-2026-09-05 fuzz build "$AUDIT_TARGET" > evidence/fuzz-build.log 2>&1
-          set +e
-          cargo +nightly-2026-09-05 fuzz run "$AUDIT_TARGET" -- -seed=60906 -max_total_time=300 -max_len=1048576 -rss_limit_mb=2048 -timeout=5 -print_final_stats=1 > evidence/fuzz-run.log 2>&1
-          result=$?
-          set -e
-          printf '{"target":"%s","exit":%s,"source":"7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3","seconds_budget":300,"max_input_bytes":1048576,"note":"coverage-guided ASan campaign; not exhaustive proof or production traffic"}\n' "$AUDIT_TARGET" "$result" > evidence/fuzz-result.json
-          python - <<'PY'
-          import hashlib,json
-          from pathlib import Path
-          inventory=[]
-          for path in Path('fuzz/corpus').rglob('*'):
-              if path.is_file(): inventory.append({'path':str(path),'bytes':path.stat().st_size,'sha256':hashlib.sha256(path.read_bytes()).hexdigest()})
-          Path('evidence/corpus-inventory.json').write_text(json.dumps(inventory,indent=2))
-          PY
-          git diff --exit-code
-          exit "$result"
+        run: python audit-packet/docs/agents/reports/repository-audit-20260906/probes/run_fuzz.py "$AUDIT_TARGET"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: continuation-fuzz-${{ matrix.target }}-7ce1d88
+          name: continuation-fuzz-${{ matrix.target }}-attempt2-7ce1d88
           path: |
             evidence
             fuzz/artifacts
+          retention-days: 1
+  input-composition:
+    if: github.event.pull_request.head.ref == 'audit/repository-coverage-20260906' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: audit-packet
+          persist-credentials: false
+      - name: Compose actual input adapter and action router
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
+          mkdir evidence
+          rustup toolchain install 1.94.0 --profile minimal
+          rustc +1.94.0 -vV > evidence/compiler.txt
+          rustc +1.94.0 --edition=2024 --crate-type=rlib --crate-name oteryn_input_actions crates/input-actions/src/lib.rs -o evidence/liboteryn_input_actions.rlib
+          python - <<'PY'
+          from pathlib import Path
+          root=Path.cwd()
+          src=root/'audit-packet/docs/agents/reports/repository-audit-20260906/probes/input_pipeline.rs'
+          (root/'evidence/input-probe.rs').write_text(src.read_text().replace('../../../../../',root.as_posix()+'/'))
+          PY
+          rustc +1.94.0 --edition=2024 evidence/input-probe.rs --extern oteryn_input_actions=evidence/liboteryn_input_actions.rlib -o evidence/input-probe
+          evidence/input-probe > evidence/input-pipeline.log
+          git diff --exit-code
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: continuation-input-composition-7ce1d88
+          path: |
+            evidence/*.txt
+            evidence/*.log
           retention-days: 1
