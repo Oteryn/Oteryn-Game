@@ -4,7 +4,7 @@
 
 Work162/Issue353 implements the concrete caller bridge excluded by protected348, under existing accepted FND-04B/recovery/protection and resource contracts. Foundation343 is protected atedef416745f92b79371f98739272c840b0a9b357 and remains completed; original338 history is retained. Current allocation source53c6bdf06a2282d893035a995c46052c88f935b4. No writer is admitted until this exact allocation and338 release are protected and Work binds readback.
 
-Own only `apps/game-server/src/foundation/admission_recovery_inner.rs`, new `apps/game-server/src/foundation/control_loss_reconnect_bridge_tests.rs`, own353 task and this plan. No B/SQL/Cargo/lib/facade/verifier/registry/workflow/source/other repository edits. Preserve existing V1/V2 public representations and wire semantics; concrete additional paths require protected amendment. One sole semantic writer, path-disjoint from B and351, explicit Work third-lane justification5560287018; no two Foundation writers.
+Own only `apps/game-server/src/foundation/admission_recovery_inner.rs`, `apps/game-server/src/foundation/admission_authority_publication.rs`, new `apps/game-server/src/foundation/control_loss_reconnect_bridge_tests.rs`, own353 task and this plan. No B/SQL/Cargo/lib/facade/verifier/registry/workflow/source/other repository edits. Preserve existing V1/V2 public representations and wire semantics; concrete additional paths require protected amendment. One sole semantic writer, path-disjoint from B and351, explicit Work third-lane justification5560287018; no two Foundation writers.
 
 ## 1. Trace and reproduce the integration boundary
 
@@ -13,6 +13,8 @@ Read accepted FND-04B §§5/12, protected owning-loss addendum, complete control
 ## 2. Implement the additive complete envelope
 
 Design an independently versioned internal durability continuity/operation, not a new network protocol, preserving original loss identity and all complete retained state. Existing verified V1/V2 credential binding remains consumed normally. Keep legacy APIs/enums unchanged; use distinct additive predicates/flow where no faithful existing representation exists. Do not downcast NotEntitled or re-label entitlement/rearm generation as connection generation.
+
+Cover same-session recovery and V2 early-terminal replacement within original grace and the accepted candidate generation. The publication module must supply additive owner-sealed complete claim transitions and predicates: its existing replacement authorization and lifecycle operation require a legacy reconnect record, so reusing them for unrepresentable continuity would invent history. Preserve existing public signatures and closed enums; bind the complete successor operation without a legacy downcast. This is not a post-grace SQL allocation.
 
 Separate immutable historical operation from live current capability. PREPARE and final decisions re-resolve independently current owning source/session/controller absence, actor/account/world/lease/runtime and claims under supplied trusted time/fences. Bind exact original grace/loss epoch, current connection generation and candidate transport. New current facts must not be derived from the same stored record merely to make equality pass. Missing source or unknown version fails closed. Preserve accepted original-deadline/budget and retry behavior, including all eight retained attempts.
 
