@@ -1,21 +1,21 @@
 # OTV2-20260906-post-grace-foundation-successor-338
 
-This exact prospective allocation activates only after protected integration and Work readback. The actual allocation merge becomes immutable worker admission/base before first mutation.
+Work admitted this allocation at protected PR340 merge `4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee` (comment5558312039). Resumed under Work comment5558970336, same branch and immutable admission; previous unpublished local work receives no completion credit.
 
 ```yaml
 task_id: OTV2-20260906-post-grace-foundation-successor-338
 title: Add sealed post-grace recovery timing and authority successor
 mode: IMPLEMENT
-status: waiting
-admission_state: NOT_ADMITTED
+status: running
+admission_state: ADMITTED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/post-grace-foundation-successor-338
 issue: 338
 pr: null
 allocation_source_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
-admission_main_sha: NOT_ADMITTED
-base_sha: NOT_ADMITTED
+admission_main_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
+base_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -76,7 +76,7 @@ finding_family_sweep:
 finding_dispositions:
   p0_p1_accepted_and_repaired: []
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred: [fixed_exact_source_replay_local_publication_advance]
 ```
 
 ## Acceptance criteria
@@ -99,13 +99,17 @@ No SQL/migrations or future migration number, B329 worktree/harness edits, Cargo
 
 ## Implementation / findings
 
-NOT_STARTED. Existing V1 connection fence requires predecessor+1; continuity caps prepared deadline by original grace. Existing verified recovery facts lack authenticated source deadlines/provenance and current evidence lacks present-uncontrolled placement/retained-continuity proof. Existing replacement claim capability embeds V1 record. The four proposed paths address these concrete additive gaps without borrowing B paths.
+Checkpoint 1: additive sealed recovery-scoped source/verifier and signed negative fixtures implemented. Existing V1 connection fence requires predecessor+1; continuity caps prepared deadline by original grace. Existing verified recovery facts lack authenticated source deadlines/provenance and current evidence lacks present-uncontrolled placement/retained-continuity proof. Existing replacement claim capability embeds V1 record. The four proposed paths address these concrete additive gaps without borrowing B paths.
 
 ## Validation
 
 ### Focused
 
+Actual local RED: `recovery-red.log`, missing recovery deadline API E0425 (five errors). GREEN: `cargo +1.94.0 test --locked -p oteryn-game-server --lib post_grace`, 5 passed after review repair. Independent signed fixture covers exact recovery scope/deadline, unavailable source, new denial, same-revision contradictory decision and backwards time. Scope metadata is validated as ExistingActorRecovery, never rewritten from FreshAdmission. This credential capability alone grants no actor or flow authority. Strict all-target Clippy passed after replacing test-only expect calls with propagated errors; fmt passed. Full package/doctest and final review are still pending.
+
 Run focused post-grace RED/GREEN and independent invariant matrix, retaining valid controls. Include equality, strict-after-grace, generation1, exact frozen deadline, actor disappearance/controller return, attempts8/9, consumed entitlement and historical forgery cases.
+
+Review P2 fixed: exact immutable source replay must permit a newer local publication wrapper. Actual `recovery-wrapper-red.log` failed with RecoverySecurityEvidenceStale; repair normalizes only publication_revision in equality. Five focused tests now pass, retaining wrapper rollback and source content/decision/time/uncertainty/authority contradiction negatives. Source provenance is never re-aged.
 
 ### Component/integration
 
@@ -130,18 +134,18 @@ Work owns PR creation and binds protected admission; worker publishes only alloc
 ## Context checkpoint
 
 ```yaml
-last_progress: exact prospective semantic allocation and plan prepared under issue338
-status: waiting
-admission_state: NOT_ADMITTED
+last_progress: sealed recovery evidence verifier first material checkpoint; actor continuity and flow remain open
+status: running
+admission_state: ADMITTED
 branch: agent/post-grace-foundation-successor-338
 head_sha: null
 pr: null
 execution_budget_minutes: 60
-execution_window_number: 0
-execution_window_started_at: null
+execution_window_number: 2
+execution_window_started_at: 2026-09-06T11:43:00Z
 execution_window_elapsed_minutes: 0
-execution_windows_completed: 0
-worker_rotations: 0
+execution_windows_completed: 1
+worker_rotations: 1
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -154,10 +158,11 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
+prior_unpublished_repair_history: UNKNOWN
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: NOT_ADMITTED
-next_action: Work qualifies this protected allocation, then binds its actual merge as immutable admission and dispatches the sole338writer.
+blocker: null
+next_action: Continue the sealed owning actor and retained continuity prerequisites, then exact immutable post-grace flow and claim successor on this branch.
 ```
