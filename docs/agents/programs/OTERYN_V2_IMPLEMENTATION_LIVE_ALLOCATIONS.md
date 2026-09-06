@@ -1,5 +1,17 @@
 # Oteryn v2 Implementation Live Allocations
 
+## Current Work checkpoint — owner-requested SAVE / STOP, 2026-09-06 13:50 UTC
+
+This checkpoint supersedes historical current-status sections below. All implementation workers are stopped; this is preservation, not qualification or integration. Work162 remains the unique control plane. No supervising-architect escalation is active. Resume only after fresh remote reconstruction and a coordinator rebind; retain original admissions and consumed counters.
+
+- Protected main: `d9d1b566acb57b537ff901d9765c32a95110c259` (PR348, full Merge Queue34036760848 SUCCESS).
+- B329/PR335: saved failing WIP `97eb86f01d22b9d8bc42282a341799369412bba1`, tree `79c500b1d9054b2adca54335e66b244183749690`. Strict Clippy fails; no WIP SQL qualification. Last green parent `68609f8ae93e9fb74bff817eaa30e48045eb1b95` passed actual PostgreSQL17.6 309/309.
+- Foundation338/PR343: clean published `ceccd130b50c871236b096723754c6a26f1c11bf`; exact CI34036889769 SUCCESS. Owning-loss amendment is protected by348 and granted in338 comment5559655141, but implementation has NOT started.
+- Wire346/PR349: clean frozen `843792e5b94baff4f6db4036bd303ed4e2f49302`; exact CI34036664393 SUCCESS, not integrated or enqueued.
+- Server Seam247 remains WAITING_DEPENDENCY. Full B executor/resource enforcement, Foundation loss plus SQL integration, codec integration and actual authenticated source/bootstrap readiness remain open. SQLx driver accounting remediation is unallocated.
+- Durable successor instructions: [handoff](../evidence/OTV2-20260906-server-seam-handoff-1350.md). Owner pause does not release ownership, reset budgets or grant new paths.
+
+
 ## Current Work checkpoint — owning loss Foundation338 amendment
 
 This checkpoint supersedes earlier status prose without resetting historical admissions. Work162 remains the unique control plane.

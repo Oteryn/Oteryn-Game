@@ -1,5 +1,17 @@
 # OTV2-20260825-work-delivery-coordinator
 
+## Current Work checkpoint — owner-requested SAVE / STOP, 2026-09-06 13:50 UTC
+
+This checkpoint supersedes historical current-status sections below. All implementation workers are stopped; this is preservation, not qualification or integration. Work162 remains the unique control plane. No supervising-architect escalation is active. Resume only after fresh remote reconstruction and a coordinator rebind; retain original admissions and consumed counters.
+
+- Protected main: `d9d1b566acb57b537ff901d9765c32a95110c259` (PR348, full Merge Queue34036760848 SUCCESS).
+- B329/PR335: saved failing WIP `97eb86f01d22b9d8bc42282a341799369412bba1`, tree `79c500b1d9054b2adca54335e66b244183749690`. Strict Clippy fails; no WIP SQL qualification. Last green parent `68609f8ae93e9fb74bff817eaa30e48045eb1b95` passed actual PostgreSQL17.6 309/309.
+- Foundation338/PR343: clean published `ceccd130b50c871236b096723754c6a26f1c11bf`; exact CI34036889769 SUCCESS. Owning-loss amendment is protected by348 and granted in338 comment5559655141, but implementation has NOT started.
+- Wire346/PR349: clean frozen `843792e5b94baff4f6db4036bd303ed4e2f49302`; exact CI34036664393 SUCCESS, not integrated or enqueued.
+- Server Seam247 remains WAITING_DEPENDENCY. Full B executor/resource enforcement, Foundation loss plus SQL integration, codec integration and actual authenticated source/bootstrap readiness remain open. SQLx driver accounting remediation is unallocated.
+- Durable successor instructions: [handoff](../../evidence/OTV2-20260906-server-seam-handoff-1350.md). Owner pause does not release ownership, reset budgets or grant new paths.
+
+
 ## Current Work checkpoint — owning loss Foundation338 amendment
 
 This checkpoint supersedes earlier status prose without resetting historical admissions. Work162 remains the unique control plane.
@@ -46,7 +58,7 @@ base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
+protected_main_sha: d9d1b566acb57b537ff901d9765c32a95110c259
 server_seam_issue: 247
 server_seam_allocation_pr: 294
 server_seam_allocation_merge_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
@@ -61,11 +73,10 @@ updated_at: 2026-09-06
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration and closeout; no single worker owns the programme
 owned_paths:
+  - docs/agents/HANDOVER_LIFECYCLE.json
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
-  - docs/superpowers/plans/2026-09-06-control-loss-foundation-amendment.md
-  - docs/agents/tasks/active/OTV2-20260906-native-admission-resource-registry-342.md
-  - docs/agents/tasks/archive/OTV2-20260906-native-admission-resource-registry-342.md
+  - docs/agents/evidence/OTV2-20260906-server-seam-handoff-1350.md
 public_contracts: []
 depends_on:
   - Verified 326 closeout, then freshly allocated Child B329 persistence and Child C actual producer readiness; separately qualify architecture332 before relying on accepted-recovery semantics
@@ -245,7 +256,7 @@ last_progress: resource341 protected acceptance verified; exact342registry alloc
 status: COORDINATING
 programme_state: WAITING_DEPENDENCY
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
-protected_main_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
+protected_main_sha: d9d1b566acb57b537ff901d9765c32a95110c259
 server_seam_issue: 247
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
