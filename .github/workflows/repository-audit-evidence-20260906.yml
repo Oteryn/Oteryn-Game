@@ -1,4 +1,4 @@
-name: Repository audit final native probes 20260906
+name: Repository audit native libFuzzer 20260906
 on:
   pull_request:
     types: [opened, synchronize]
@@ -6,7 +6,7 @@ on:
 permissions:
   contents: read
 jobs:
-  fuzz:
+  native-fuzz:
     if: github.event.pull_request.head.ref == 'audit/repository-coverage-20260906' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -25,55 +25,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           path: audit-packet
           persist-credentials: false
-      - name: Run source-preserving coverage-guided probe
+      - name: Execute direct native sanitizer campaign on unchanged product
         env:
           AUDIT_TARGET: ${{ matrix.target }}
         run: python audit-packet/docs/agents/reports/repository-audit-20260906/probes/run_fuzz.py "$AUDIT_TARGET"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: continuation-fuzz-${{ matrix.target }}-attempt2-7ce1d88
+          name: continuation-native-fuzz-${{ matrix.target }}-7ce1d88
           path: |
             evidence
             fuzz/artifacts
-          retention-days: 1
-  input-composition:
-    if: github.event.pull_request.head.ref == 'audit/repository-coverage-20260906' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-          persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          path: audit-packet
-          persist-credentials: false
-      - name: Compose actual input adapter and action router
-        shell: bash
-        run: |
-          set -euo pipefail
-          test "$(git rev-parse HEAD)" = 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-          mkdir evidence
-          rustup toolchain install 1.94.0 --profile minimal
-          rustc +1.94.0 -vV > evidence/compiler.txt
-          rustc +1.94.0 --edition=2024 --crate-type=rlib --crate-name oteryn_input_actions crates/input-actions/src/lib.rs -o evidence/liboteryn_input_actions.rlib
-          python - <<'PY'
-          from pathlib import Path
-          root=Path.cwd()
-          src=root/'audit-packet/docs/agents/reports/repository-audit-20260906/probes/input_pipeline.rs'
-          (root/'evidence/input-probe.rs').write_text(src.read_text().replace('../../../../../',root.as_posix()+'/'))
-          PY
-          rustc +1.94.0 --edition=2024 evidence/input-probe.rs --extern oteryn_input_actions=evidence/liboteryn_input_actions.rlib -o evidence/input-probe
-          evidence/input-probe > evidence/input-pipeline.log
-          git diff --exit-code
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        if: always()
-        with:
-          name: continuation-input-composition-7ce1d88
-          path: |
-            evidence/*.txt
-            evidence/*.log
           retention-days: 1
