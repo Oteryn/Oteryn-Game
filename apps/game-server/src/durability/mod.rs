@@ -2190,3 +2190,150 @@ mod terminal_replacement_foundation_red_tests {
         }
     }
 }
+
+/// Stable database custody, not an owning source or a process resource budget.
+/// The final shared executor must use this fence for every backend transaction.
+/// Tokens do not clear pending work and cannot create a third durable slot.
+#[derive(Debug)]
+pub struct DurabilityCustody {
+    generation: u64,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DurablePendingCheckpoint {
+    pub slot: i16,
+    pub operation_kind: i16,
+    pub operation_json: String,
+}
+// Domain-separated fixed serialization identity, shared by predecessor/successor.
+const EXECUTOR_CUSTODY_LOCK: i64 = 0x4f54_4446_5243_3031;
+impl DurabilityCustody {
+    /// Exclusive takeover waits for every predecessor's shared transaction fence.
+    /// Reload both fixed slots before returning; never synthesize an empty queue.
+    /// This low-level I/O must remain charged through uncertain commit in executor.
+    pub async fn acquire(
+        pool: &PgPool,
+    ) -> Result<(Self, [Option<DurablePendingCheckpoint>; 2]), DurabilityError> {
+        let mut tx = pool.begin().await?;
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(EXECUTOR_CUSTODY_LOCK)
+            .execute(&mut *tx)
+            .await?;
+        // Custody precedes the common lexical relation fence everywhere.
+        db::lock_admission_relations(&mut tx).await?;
+        let old: Option<String> = sqlx::query_scalar("SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0 FOR UPDATE")
+            .fetch_optional(&mut *tx).await?;
+        let previous_generation = old
+            .ok_or(DurabilityError::InvalidStoredState)?
+            .parse::<u64>()
+            .map_err(|_| DurabilityError::InvalidStoredState)?;
+        let generation = previous_generation
+            .checked_add(1)
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let pending = Self::read_pending(&mut tx, previous_generation).await?;
+        let changed = sqlx::query("UPDATE game_durability_executor_custody SET generation = $1::text::numeric(20,0) WHERE slot = 0")
+            .bind(generation.to_string()).execute(&mut *tx).await?;
+        if changed.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        tx.commit().await?;
+        Ok((Self { generation }, pending))
+    }
+
+    /// Call before relations/rows and keep this transaction through COMMIT.
+    /// A superseded token can neither effect nor checkpoint a new operation.
+    pub async fn fence<'a>(
+        &self,
+        pool: &'a PgPool,
+    ) -> Result<Transaction<'a, Postgres>, DurabilityError> {
+        let mut tx = pool.begin().await?;
+        sqlx::query("SELECT pg_advisory_xact_lock_shared($1)")
+            .bind(EXECUTOR_CUSTODY_LOCK)
+            .execute(&mut *tx)
+            .await?;
+        self.validate_generation(&mut tx).await?;
+        Ok(tx)
+    }
+
+    async fn validate_generation(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<(), DurabilityError> {
+        let current: Option<String> = sqlx::query_scalar(
+            "SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0",
+        )
+        .fetch_optional(&mut **tx)
+        .await?;
+        if current.as_deref() != Some(self.generation.to_string().as_str()) {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        Ok(())
+    }
+
+    async fn read_pending(
+        tx: &mut Transaction<'_, Postgres>,
+        previous_generation: u64,
+    ) -> Result<[Option<DurablePendingCheckpoint>; 2], DurabilityError> {
+        let rows = sqlx::query("SELECT slot, generation::text AS generation, operation_kind, CASE WHEN octet_length(operation_json) <= 65536 AND octet_length(to_jsonb(p)::text) <= 131072 THEN operation_json END AS payload, operation_json IS NOT NULL AS occupied FROM game_durability_executor_custody p WHERE slot IN (1,2) ORDER BY slot FOR UPDATE")
+            .fetch_all(&mut **tx).await?;
+        if rows.len() != 2 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let mut result = [None, None];
+        for (index, row) in rows.into_iter().enumerate() {
+            let slot: i16 = row.try_get("slot")?;
+            if usize::try_from(slot).ok() != Some(index + 1) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let occupied: bool = row.try_get("occupied")?;
+            let stored_generation = row
+                .try_get::<String, _>("generation")?
+                .parse::<u64>()
+                .map_err(|_| DurabilityError::InvalidStoredState)?;
+            if stored_generation > previous_generation || (occupied && stored_generation == 0) {
+                return Err(DurabilityError::InvalidStoredState);
+            }
+            let kind: Option<i16> = row.try_get("operation_kind")?;
+            let payload: Option<String> = row.try_get("payload")?;
+            result[index] = match (occupied, kind, payload) {
+                (false, None, None) => None,
+                (true, Some(operation_kind @ 1..=8), Some(operation_json)) => {
+                    Some(DurablePendingCheckpoint {
+                        slot,
+                        operation_kind,
+                        operation_json,
+                    })
+                }
+                _ => return Err(DurabilityError::InvalidStoredState),
+            };
+        }
+        Ok(result)
+    }
+
+    /// Establish/reconcile one original checkpoint. Different work cannot overwrite
+    /// an occupied slot. Clearing requires future definitive outcome + owner ack.
+    pub async fn checkpoint(
+        &self,
+        pool: &PgPool,
+        slot: i16,
+        operation_kind: i16,
+        operation_json: &str,
+    ) -> Result<(), DurabilityError> {
+        if !(1..=2).contains(&slot)
+            || !(1..=8).contains(&operation_kind)
+            || operation_json.is_empty()
+            || operation_json.len() > MAX_FRESH_OPERATION_BYTES
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        let mut tx = self.fence(pool).await?;
+        db::lock_admission_relations(&mut tx).await?;
+        let changed = sqlx::query("UPDATE game_durability_executor_custody SET generation = $1::text::numeric(20,0), operation_kind = $2, operation_json = $3 WHERE slot = $4 AND (operation_json IS NULL OR (operation_kind = $2 AND operation_json = $3)) AND octet_length(jsonb_build_object('slot', $4::smallint, 'generation', $1::text, 'operation_kind', $2::smallint, 'operation_json', $3::text)::text) <= 131072")
+            .bind(self.generation.to_string()).bind(operation_kind).bind(operation_json).bind(slot)
+            .execute(&mut *tx).await?;
+        if changed.rows_affected() != 1 {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        tx.commit().await?;
+        Ok(())
+    }
+}

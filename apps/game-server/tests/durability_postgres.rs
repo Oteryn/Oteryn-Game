@@ -14,6 +14,112 @@ mod durability;
 mod postgres;
 
 #[test]
+fn executor_custody_retains_two_original_slots_and_fences_predecessor()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::DurabilityCustody;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("executor_custody").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let (first, empty) = DurabilityCustody::acquire(&pool).await?;
+                if empty != [None, None] {
+                    return Err("new custody did not read both empty slots".into());
+                }
+                first
+                    .checkpoint(&pool, 1, 1, "original fresh operation")
+                    .await?;
+                first
+                    .checkpoint(&pool, 2, 2, "original publication operation")
+                    .await?;
+                first
+                    .checkpoint(&pool, 1, 1, "original fresh operation")
+                    .await?;
+                if !matches!(
+                    first.checkpoint(&pool, 1, 1, "different operation").await,
+                    Err(DurabilityError::InvalidStoredState)
+                ) || !matches!(
+                    first.checkpoint(&pool, 3, 1, "third slot").await,
+                    Err(DurabilityError::InvalidStoredState)
+                ) {
+                    return Err("checkpoint overwrite or third slot admitted".into());
+                }
+                // Observe the successor actually waiting on the predecessor's
+                // shared advisory transaction fence; no timing-only sleep proof.
+                let predecessor_pass = first.fence(&pool).await?;
+                let release_after_observation = async {
+                    let observed = tokio::time::timeout(std::time::Duration::from_secs(2), async {
+                        loop {
+                            let waiting: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND NOT granted AND database = (SELECT oid FROM pg_database WHERE datname = current_database()))").fetch_one(&pool).await?;
+                            if waiting { return Ok::<(), sqlx::Error>(()); }
+                            tokio::task::yield_now().await;
+                        }
+                    }).await;
+                    // Always release the predecessor even if observation fails;
+                    // join retains the successor future until it settles.
+                    predecessor_pass.commit().await?;
+                    observed.map_err(|_| "successor did not wait on predecessor custody")??;
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                };
+                let successor_pool = pool.clone();
+                let successor = tokio::spawn(async move { DurabilityCustody::acquire(&successor_pool).await });
+                let observed = release_after_observation.await;
+                // Retain and await the handle even when observation returned an error.
+                let takeover = successor.await?;
+                observed?;
+                let (second, recovered) = takeover?;
+                if recovered[0]
+                    .as_ref()
+                    .map(|p| (p.slot, p.operation_kind, p.operation_json.as_str()))
+                    != Some((1, 1, "original fresh operation"))
+                    || recovered[1]
+                        .as_ref()
+                        .map(|p| (p.slot, p.operation_kind, p.operation_json.as_str()))
+                        != Some((2, 2, "original publication operation"))
+                {
+                    return Err("takeover lost or replaced original pending slots".into());
+                }
+                if !matches!(
+                    first
+                        .checkpoint(&pool, 1, 1, "original fresh operation")
+                        .await,
+                    Err(DurabilityError::InvalidStoredState)
+                ) {
+                    return Err("superseded custody was still able to write".into());
+                }
+                second
+                    .checkpoint(&pool, 2, 2, "original publication operation")
+                    .await?;
+                // Missing storage is corruption, never a new capacity allowance.
+                sqlx::query("DELETE FROM game_durability_executor_custody WHERE slot = 2")
+                    .execute(&pool)
+                    .await?;
+                if !matches!(
+                    DurabilityCustody::acquire(&pool).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ) {
+                    return Err("missing durable slot created empty replacement capacity".into());
+                }
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn fresh_prepare_cannot_invent_control_loss_or_poison_an_unopened_epoch()
 -> Result<(), Box<dyn std::error::Error>> {
     use authority_matrix::{Seed, checked};
@@ -392,11 +498,11 @@ fn guard_publication_is_atomic_replayable_and_retains_decision_history()
                 if restarted.projected_guard_presence(&keys[1]).await? != (true, true) {
                     return Err("bounded positive guard projection missing".into());
                 }
-                let overhead: i64 = sqlx::query_scalar("SELECT octet_length(to_jsonb(g)::text) - octet_length(source_authority) FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
+                let overhead: i64 = sqlx::query_scalar("SELECT (octet_length(to_jsonb(g)::text) - octet_length(source_authority))::bigint FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
                 for (size, presence) in [(131072_i64, (true, true)), (131073, (false, false))] {
                     let padding = size.checked_sub(overhead).and_then(|n| i32::try_from(n).ok()).filter(|n| *n > 0).ok_or("invalid complete-row boundary fixture")?;
                     sqlx::query("UPDATE game_durability_admission_character_guards SET source_authority = repeat('x', $1)").bind(padding).execute(&pool).await?;
-                    let actual: i64 = sqlx::query_scalar("SELECT octet_length(to_jsonb(g)::text) FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
+                    let actual: i64 = sqlx::query_scalar("SELECT octet_length(to_jsonb(g)::text)::bigint FROM game_durability_admission_character_guards g").fetch_one(&pool).await?;
                     if actual != size || restarted.projected_guard_presence(&keys[1]).await? != presence {
                         return Err(format!("guard SQL complete-row boundary failed: wanted {size}, actual {actual}").into());
                     }

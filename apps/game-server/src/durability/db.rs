@@ -110,6 +110,7 @@ pub(super) async fn lock_admission_relations(
         "game_durability_admission_runtime_guards",
         "game_durability_admission_signing_trust_guards",
         "game_durability_control_loss_continuity",
+        "game_durability_executor_custody",
         "game_durability_fresh_admission_receipts",
         "game_durability_reconnect_attempts",
         "game_durability_reconnect_pending_commands",

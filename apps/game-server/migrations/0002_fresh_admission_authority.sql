@@ -150,3 +150,15 @@ CREATE TRIGGER game_lifecycle_receipt_immutable BEFORE UPDATE OR DELETE
 CREATE TRIGGER game_transport_reservation_immutable BEFORE UPDATE OR DELETE
     ON game_durability_transport_ref_reservations FOR EACH ROW
     EXECUTE FUNCTION game_durability_reject_history_mutation();
+
+-- One stable logical executor: row0 is its generation; rows1/2 are the only
+-- durable pending slots. These are custody checkpoints, never owner authority.
+CREATE TABLE game_durability_executor_custody (
+    slot SMALLINT PRIMARY KEY CHECK (slot BETWEEN 0 AND 2),
+    generation NUMERIC(20, 0) NOT NULL CHECK (generation BETWEEN 0 AND 18446744073709551615),
+    operation_kind SMALLINT NULL CHECK (operation_kind BETWEEN 1 AND 8),
+    operation_json TEXT NULL CHECK (octet_length(operation_json) BETWEEN 1 AND 65536),
+    CHECK ((operation_kind IS NULL) = (operation_json IS NULL)),
+    CHECK (slot <> 0 OR operation_json IS NULL)
+);
+INSERT INTO game_durability_executor_custody (slot, generation) VALUES (0, 0), (1, 0), (2, 0);

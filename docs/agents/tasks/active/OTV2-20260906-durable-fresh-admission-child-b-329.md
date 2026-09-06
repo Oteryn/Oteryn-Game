@@ -228,7 +228,7 @@ pr: 335
 execution_budget_minutes: 60
 execution_window_number: 4
 execution_window_started_at: 2026-09-06T12:46:00Z
-execution_window_elapsed_minutes: 38
+execution_window_elapsed_minutes: 53
 execution_windows_completed: 3
 worker_rotations: 1
 final_head_sha: null
@@ -236,14 +236,14 @@ final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: [34021756196, 34022664262, 34023568404, 34024400873, 34024853688, 34031174082, 34031690145, 34033443274, 34033942736, 34035642462]
-ci_job_ids: [101455557352, 101458035139, 101460507857, 101462735824, 101463943071, 101480959285, 101482307338, 101487176414, 101488525245, 101493135940]
+ci_run_ids: [34021756196, 34022664262, 34023568404, 34024400873, 34024853688, 34031174082, 34031690145, 34033443274, 34033942736, 34035642462, 34036298616]
+ci_job_ids: [101455557352, 101458035139, 101460507857, 101462735824, 101463943071, 101480959285, 101482307338, 101487176414, 101488525245, 101493135940, 101494928507]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 5
+repair_cycles_for_current_gate: 6
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
@@ -274,3 +274,11 @@ Protected registry345 c9890968ce4c71165bdd9cd1d6938f9af75eaa00 supplies exact ru
 Focused executable component tests passed: two preflight/overflow/configuration cases and both existing codec cases (4 total), not skipped PostgreSQL bodies. The configured guard test now corrupts a mirror beyond the complete-row bound, requires rejection, restores the exact mirror and verifies the accepted projection. Actual new SQL remains pending. All23 resource dimensions remain accepted obligations: this checkpoint does not claim the32-variable-column/full-result aggregate, all V1/V2 row families, resident copy accounting, process singleton, queue/slots, pending custody or adaptive-lock protocol are complete.
 
 Resource review P2 repaired in cycle5: a generic oversized mirror rejection could already pass the old per-mirror consistency check. The test now invokes the exact production guarded SELECT through a test-only projection observer before decoding. An unchanged bounded control returns both payload/mirrors; complete JSON rows sized exactly131072 return both, while131073 returns SQL NULL for both. Explicit actual SQL length assertions establish representable boundary fixtures. Full mirror consistency still rejects both corrupted rows and restoring exact original source authority restores acceptance. The previous query fails these projection assertions (payload remains present above the row cap, mirrors absent at the cap); actual hosted execution remains pending, so no executed prepatch RED is claimed.
+
+Actual resource checkpoint86c5935d97ab87dccfc29b6344cb3ddb1607b182 / treef55b1a3fff0b218de52362e2b85b3dcc07087a19 was published and normally fast-forwarded clean. Actual PostgreSQL canonical34036298616/Linux101494928507 failed307 passed/1 failed13:35:06Z: the new boundary fixture decoded SQL octet_length INT4 as Rusti64. Repair cycle6 explicitly casts both boundary length expressions tobigint, preserving exact131072/131073 assertions. No unchanged rerun or gate reset.
+
+## Window 4 — durable custody storage checkpoint
+
+Work329comment5559558326 authorizes the DB-fenced stable logical executor mechanism under accepted341. Unreleased owned0002 adds one relation (15 total): row0generation and exactly two initialized pending slots1/2; no source truth or controller authority. Exclusive transaction advisory custody waits for predecessor shared fences, reads both existing bounded slots, then advances generation. A shared custody token validates current generation and remains tied to the returned transaction through COMMIT. Checkpoint writes cannot overwrite a different original operation, cannot address a third slot, and cannot clear an occupied slot. Takeover retains exact originals; missing slots and generation overflow fail closed. Canonical effects are not granted by an opaque checkpoint.
+
+Configured SQL test covers both fixed slots, exact checkpoint retry, changed-operation/third-slot rejection, successor lock waiting observed through pg_locks before releasing the predecessor transaction, generation takeover retaining both originals, stale-token rejection, and missing-slot corruption. Joined futures are retained until settlement; no detached task or sleep-only assertion. Actual execution remains pending. This is low-level custody storage, not the completed process singleton/shared queue: every existing production backend still needs integration with shared custody and retained end-to-end slots, complete2s pass/acquisition accounting, owner acknowledgement/definitive clear, sized owned request clones and all protocol tests. No completion or timeout/fencing proof beyond this explicit scope is claimed.
