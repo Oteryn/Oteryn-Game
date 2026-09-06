@@ -13,6 +13,7 @@ issue: null
 owner_scope: explicit owner instruction 2026-09-06
 base_sha: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
 owned_paths:
+  - AGENTS.md
   - docs/agents/AGENTS.md
   - docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md
   - docs/agents/AUTONOMOUS_PROGRAM_CONTINUATION.md
@@ -46,13 +47,13 @@ Remove the repository-created 60/120-minute implementation stop/rotation mechani
 
 - productive authorized work has no wall-clock execution window;
 - elapsed time alone cannot trigger `ROTATE`, freeze, discarded minutes, re-admission or a fresh Work grant;
-- legacy `windowN` and minute counters in existing tasks/plans/programme overlays remain historical provenance only;
+- repository-root instructions make legacy `windowN`/minute counters in existing tasks/plans/programme overlays non-operative across the whole repository, including `docs/superpowers/**`;
 - new tasks no longer receive `execution_budget_minutes` / `large_budget_reason` from the mandatory template;
 - the autonomous programme policy now treats elapsed implementation time as non-terminal;
 - every reusable prompt entry previously found with a default 60/120-minute foreground budget now states continuous productive execution instead;
 - no-progress, repeated-failure, bounded passive exact-head CI waiting, ownership, scope, validation, review, Merge Queue and safety gates remain intact.
 
-Historical evidence, archived tasks and old Superpowers plans are intentionally not rewritten; `docs/agents/AGENTS.md` makes their old window counters non-operative for current execution while preserving provenance.
+Historical evidence, archived tasks and old plans are intentionally not rewritten; root `AGENTS.md` preserves them as provenance while explicitly making their old execution-time counters non-operative.
 
 ## Validation required
 
