@@ -2230,3 +2230,291 @@ mod durability_reconnect_v2_commit_phase_regression_tests {
         Ok(())
     }
 }
+
+/// Historical actor loss-epoch finality. Session terminality alone does not
+/// close an otherwise eligible actor epoch; restoration and retirement do.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecoveryEpochStateV1 {
+    Open,
+    Restored,
+    Retired,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RetainedRecoveryAttemptDispositionV1 {
+    Prepared,
+    TransportCollision,
+    Terminal,
+}
+
+/// One retained budget entry. These are historical facts, not live authority.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RetainedRecoveryAttemptV1 {
+    pub attempt: ReconnectAttemptRef,
+    pub transport: AuthenticatedTransportRefV1,
+    pub disposition: RetainedRecoveryAttemptDispositionV1,
+}
+
+/// Complete retained actor-bound budget. There is deliberately no Default/new
+/// empty constructor; restart must explicitly establish completeness. A public
+/// historical value cannot register the separately sealed current actor source.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RetainedRecoveryBudgetV1 {
+    epoch: ControlLossEpochRefV1,
+    state: RecoveryEpochStateV1,
+    entries: Vec<RetainedRecoveryAttemptV1>,
+}
+impl RetainedRecoveryBudgetV1 {
+    pub fn restore(
+        epoch: ControlLossEpochRefV1,
+        state: RecoveryEpochStateV1,
+        complete: bool,
+        entries: Vec<RetainedRecoveryAttemptV1>,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if !complete || entries.len() > RECONNECT_ATTEMPTS_PER_LOSS_EPOCH_V1
+            || entries.iter().enumerate().any(|(index, entry)| entries[..index].iter().any(|prior| prior.attempt == entry.attempt))
+        {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        Ok(Self { epoch, state, entries })
+    }
+    #[must_use]
+    pub const fn epoch(&self) -> ControlLossEpochRefV1 { self.epoch }
+    #[must_use]
+    pub const fn state(&self) -> RecoveryEpochStateV1 { self.state }
+    #[must_use]
+    pub fn entries(&self) -> &[RetainedRecoveryAttemptV1] { &self.entries }
+    pub fn check_candidate(
+        &self,
+        attempt: ReconnectAttemptRef,
+        transport: AuthenticatedTransportRefV1,
+    ) -> Result<ReconnectAttemptReservationV1, ReconnectDurabilityErrorV1> {
+        if self.state != RecoveryEpochStateV1::Open {
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        }
+        if let Some(entry) = self.entries.iter().find(|entry| entry.attempt == attempt) {
+            if entry.transport != transport { return Err(ReconnectDurabilityErrorV1::IdempotencyConflict); }
+            return match entry.disposition {
+                RetainedRecoveryAttemptDispositionV1::Prepared => Ok(ReconnectAttemptReservationV1::Existing),
+                RetainedRecoveryAttemptDispositionV1::TransportCollision | RetainedRecoveryAttemptDispositionV1::Terminal => Err(ReconnectDurabilityErrorV1::StaleAuthority),
+            };
+        }
+        if self.entries.len() >= RECONNECT_ATTEMPTS_PER_LOSS_EPOCH_V1 {
+            return Err(ReconnectDurabilityErrorV1::AttemptCapacityExceeded);
+        }
+        Ok(ReconnectAttemptReservationV1::New)
+    }
+}
+
+/// Closed historical timing representation. This public value alone cannot
+/// select a live post-grace operation; that requires sealed current sources.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecoveryTimingV2 {
+    SameSession(ReconnectContinuityV1),
+    TerminalSessionPostGrace {
+        original_grace_deadline: i64,
+        attempt_deadline: i64,
+    },
+}
+impl RecoveryTimingV2 {
+    pub fn validate_at(self, now: i64) -> Result<(), ReconnectDurabilityErrorV1> {
+        let valid = match self {
+            Self::SameSession(continuity) => now >= 0 && now <= continuity.prepared_deadline() && now <= continuity.original_grace_deadline(),
+            Self::TerminalSessionPostGrace { original_grace_deadline, attempt_deadline } => original_grace_deadline > 0 && attempt_deadline > original_grace_deadline && now > original_grace_deadline && now <= attempt_deadline,
+        };
+        if valid { Ok(()) } else { Err(ReconnectDurabilityErrorV1::StaleAuthority) }
+    }
+}
+
+/// Retained protection history, never inferred from an empty session row.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecoveryProtectionUseV1 {
+    NotEntitled,
+    Unused { entitlement_generation: u64 },
+    Activated { entitlement_generation: u64, activated_at: i64, deadline: i64 },
+}
+/// Source-authored stable-control evidence. This representation chooses no
+/// re-arm threshold and cannot start or restart its timer.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum RecoveryProtectionRearmV1 {
+    NotRearmed { generation: u64, stable_control_started_at: Option<i64>, accepted_deadline: Option<i64> },
+    Satisfied { generation: u64, established_at: i64 },
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RecoveryProtectionContinuityV1 {
+    pub usage: RecoveryProtectionUseV1,
+    pub rearm: RecoveryProtectionRearmV1,
+}
+impl RecoveryProtectionContinuityV1 {
+    fn validate(self, now: i64) -> Result<(), ReconnectDurabilityErrorV1> {
+        let usage_valid = match self.usage {
+            RecoveryProtectionUseV1::NotEntitled => true,
+            RecoveryProtectionUseV1::Unused { entitlement_generation } => entitlement_generation > 0,
+            RecoveryProtectionUseV1::Activated { entitlement_generation, activated_at, deadline } => entitlement_generation > 0 && activated_at >= 0 && activated_at <= now && activated_at.checked_add(4) == Some(deadline),
+        };
+        let rearm_valid = match self.rearm {
+            RecoveryProtectionRearmV1::NotRearmed { generation, stable_control_started_at, accepted_deadline } => generation > 0 && match (stable_control_started_at, accepted_deadline) {
+                (None, None) => true,
+                (Some(start), Some(deadline)) => start >= 0 && start <= now && deadline > start,
+                _ => false,
+            },
+            RecoveryProtectionRearmV1::Satisfied { generation, established_at } => generation > 0 && established_at >= 0 && established_at <= now,
+        };
+        if usage_valid && rearm_valid { Ok(()) } else { Err(ReconnectDurabilityErrorV1::InvalidRecord) }
+    }
+}
+
+/// An inert observation returned only through the sealed Game owning source.
+/// Placement identity is an opaque owner-authored placement binding, not a peer
+/// coordinate or relocation request. All mutable facts are independently read.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PostGraceActorObservationV1 {
+    pub source_authority: String,
+    pub source_revision: u64,
+    pub accepted_source_revision: u64,
+    pub decision_identity: String,
+    pub accepted_decision_identity: String,
+    pub source_observed_at: i64,
+    pub current: super::fnd04_verifier::RecoveryCurrentEvidence,
+    pub predecessor: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    pub account_presence: Option<AccountPresenceClaimV1>,
+    pub present_uncontrolled: bool,
+    pub placement_identity: [u8; 16],
+    pub placement_revision: u64,
+    /// Shared accepted Account security source floor across fresh and recovery.
+    pub account_security_source_revision: u64,
+    pub budget: RetainedRecoveryBudgetV1,
+    pub protection: Option<RecoveryProtectionContinuityV1>,
+}
+impl PostGraceActorObservationV1 {
+    fn validate(&self, now: i64) -> Result<(), ReconnectDurabilityErrorV1> {
+        let invalid = ReconnectDurabilityErrorV1::StaleAuthority;
+        let snapshot = self.predecessor;
+        let commit = snapshot.commit();
+        if !self.present_uncontrolled || self.placement_revision == 0 || self.placement_identity == [0; 16]
+            || self.source_authority.is_empty() || self.source_revision == 0 || self.source_revision != self.accepted_source_revision
+            || self.decision_identity.is_empty() || self.decision_identity != self.accepted_decision_identity
+            || self.source_observed_at < 0 || self.source_observed_at > now || self.account_security_source_revision == 0
+            || snapshot.session_state() != GameSessionState::Terminal || snapshot.current_transport().is_some()
+            || !canonical_uuid(&self.current.account_id) || self.current.character_id != commit.character_id() || self.current.world_id != commit.world_id()
+            || snapshot.current_character_lease().character_id() != self.current.character_id
+            || snapshot.current_character_world_eligibility() != Some(CharacterWorldEligibilityClaimV1::new(self.current.character_id, self.current.world_id))
+            || snapshot.current_runtime_scope().world_id() != self.current.world_id
+            || self.account_presence.as_ref().is_none_or(|presence| presence.account_id() != self.current.account_id || presence.character_id() != self.current.character_id)
+            || snapshot.current_control_loss_epoch() != Some(self.budget.epoch()) || self.budget.state() != RecoveryEpochStateV1::Open
+            || snapshot.current_original_grace_deadline().is_none_or(|grace| grace <= 0 || now <= grace)
+        { return Err(invalid); }
+        validate_current_authority(commit.game_session_id(), snapshot).map_err(|_| invalid)?;
+        self.protection.ok_or(invalid)?.validate(now)?;
+        Ok(())
+    }
+}
+/// A DTO or historical receipt cannot implement the registration supertrait.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::*;
+/// struct History;
+/// impl PostGraceActorSourceV1 for History {
+///     fn resolve_current_actor(&self, _: &str, _: CharacterId, _: i64) -> Result<PostGraceActorObservationV1, ReconnectDurabilityErrorV1> { unreachable!() }
+/// }
+/// ```
+pub trait PostGraceActorSourceV1: super::fnd04_verifier::recovery_source_sealed::Sealed {
+    /// Resolve the owning in-memory projection without SQL/network waiting.
+    fn resolve_current_actor(&self, account_id: &str, character_id: CharacterId, now: i64) -> Result<PostGraceActorObservationV1, ReconnectDurabilityErrorV1>;
+}
+pub struct PostGraceActorAuthorityV1<'a> {
+    source: Option<&'a dyn PostGraceActorSourceV1>,
+}
+impl<'a> PostGraceActorAuthorityV1<'a> {
+    #[must_use]
+    pub const fn unavailable() -> Self { Self { source: None } }
+    #[must_use]
+    pub const fn from_owning_source(source: &'a dyn PostGraceActorSourceV1) -> Self { Self { source: Some(source) } }
+    fn resolve(&self, account_id: &str, character_id: CharacterId, now: i64) -> Result<PostGraceActorObservationV1, ReconnectDurabilityErrorV1> {
+        let result = self.source.ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?.resolve_current_actor(account_id, character_id, now)?;
+        result.validate(now)?;
+        if result.current.account_id != account_id || result.current.character_id != character_id { return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
+        Ok(result)
+    }
+}
+
+/// Private live eligibility. No historical timing, observation, receipt or caller
+/// flag can construct this capability. It remains inert until its exact owning
+/// transaction; final authorization must independently resolve current sources.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::*;
+/// fn forge(history: PostGraceActorObservationV1) -> PostGraceRecoveryAuthorizationV1 { history.into() }
+/// ```
+#[derive(Debug, Clone)]
+pub struct PostGraceRecoveryAuthorizationV1 {
+    verified: super::fnd04_verifier::VerifiedRecoveryDurabilityFactsV2,
+    actor: PostGraceActorObservationV1,
+    candidate: GameSessionId,
+    attempt: ReconnectAttemptRef,
+    transport: AuthenticatedTransportRefV1,
+    deadline: i64,
+    prepared_at: i64,
+}
+impl PostGraceRecoveryAuthorizationV1 {
+    #[allow(clippy::too_many_arguments)]
+    pub fn prepare(
+        verified: &super::fnd04_verifier::VerifiedRecoveryDurabilityFactsV2,
+        trust: &super::fnd04_verifier::RecoveryDurabilityTrustContextV2<'_>,
+        authority: &PostGraceActorAuthorityV1<'_>,
+        candidate: GameSessionId,
+        attempt: ReconnectAttemptRef,
+        transport: AuthenticatedTransportRefV1,
+        now: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        let actor = authority.resolve(verified.facts().account_id(), verified.facts().character_id(), now)?;
+        let verified = verified.revalidate(now, trust, &actor.current).map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
+        if candidate == actor.predecessor.commit().game_session_id() || actor.account_security_source_revision != verified.security().provenance.source_revision {
+            return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+        }
+        actor.budget.check_candidate(attempt, transport)?;
+        let deadline = verified.accepted_deadline();
+        RecoveryTimingV2::TerminalSessionPostGrace {
+            original_grace_deadline: actor.predecessor.current_original_grace_deadline().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?,
+            attempt_deadline: deadline,
+        }.validate_at(now)?;
+        Ok(Self { verified, actor, candidate, attempt, transport, deadline, prepared_at: now })
+    }
+    #[must_use]
+    pub const fn attempt_deadline(&self) -> i64 { self.deadline }
+    #[must_use]
+    pub const fn candidate_generation(&self) -> ConnectionGeneration { ConnectionFence::fresh_admission().current() }
+    #[must_use]
+    pub const fn predecessor(&self) -> GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1> { self.actor.predecessor }
+    #[must_use]
+    pub const fn candidate(&self) -> GameSessionId { self.candidate }
+    #[must_use]
+    pub const fn attempt(&self) -> ReconnectAttemptRef { self.attempt }
+    #[must_use]
+    pub const fn transport(&self) -> AuthenticatedTransportRefV1 { self.transport }
+    #[must_use]
+    pub const fn actor(&self) -> &PostGraceActorObservationV1 { &self.actor }
+    #[must_use]
+    pub const fn verified(&self) -> &super::fnd04_verifier::VerifiedRecoveryDurabilityFactsV2 { &self.verified }
+    pub fn revalidate(
+        &self,
+        trust: &super::fnd04_verifier::RecoveryDurabilityTrustContextV2<'_>,
+        authority: &PostGraceActorAuthorityV1<'_>,
+        now: i64,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if now < self.prepared_at || now > self.deadline { return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
+        let next = Self::prepare(&self.verified, trust, authority, self.candidate, self.attempt, self.transport, now)?;
+        let before = &self.actor;
+        let after = &next.actor;
+        if before.source_authority != after.source_authority || after.source_revision < before.source_revision || after.source_observed_at < before.source_observed_at
+            || (before.source_revision == after.source_revision && before != after)
+            || (before.source_revision < after.source_revision && before.decision_identity == after.decision_identity)
+            || before.current != after.current || before.predecessor != after.predecessor
+            || before.account_presence != after.account_presence || before.placement_identity != after.placement_identity || before.placement_revision != after.placement_revision
+            || before.protection != after.protection || before.budget.epoch() != after.budget.epoch()
+            || before.budget.entries().iter().any(|entry| entry.attempt == self.attempt && !after.budget.entries().contains(entry))
+            || before.budget.entries().iter().filter(|entry| entry.attempt != self.attempt).ne(after.budget.entries().iter().filter(|entry| entry.attempt != self.attempt))
+        { return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
+        // A stricter current bound may reject; no refresh may extend this attempt.
+        if now > next.deadline { return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
+        Ok(Self { deadline: self.deadline, prepared_at: self.prepared_at, ..next })
+    }
+}

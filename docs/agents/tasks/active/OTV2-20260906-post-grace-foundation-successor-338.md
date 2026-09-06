@@ -99,7 +99,7 @@ No SQL/migrations or future migration number, B329 worktree/harness edits, Cargo
 
 ## Implementation / findings
 
-Checkpoint 1: additive sealed recovery-scoped source/verifier and signed negative fixtures implemented. Existing V1 connection fence requires predecessor+1; continuity caps prepared deadline by original grace. Existing verified recovery facts lack authenticated source deadlines/provenance and current evidence lacks present-uncontrolled placement/retained-continuity proof. Existing replacement claim capability embeds V1 record. The four proposed paths address these concrete additive gaps without borrowing B paths.
+Checkpoint 2: sealed current actor source and private post-grace prepare/current revalidation capability implemented alongside explicit complete retained budget, epoch finality, protection/rearm history and closed timing. Credential signed attempt UUID is retained independently of the Game attempt; malformed zero source security generation rejects. No immutable historical operation, split completion/reconcile/adoption flow or successor claim capability yet; these remain required. Existing V1 connection fence requires predecessor+1; continuity caps prepared deadline by original grace. Existing verified recovery facts lack authenticated source deadlines/provenance and current evidence lacks present-uncontrolled placement/retained-continuity proof. Existing replacement claim capability embeds V1 record. The four proposed paths address these concrete additive gaps without borrowing B paths.
 
 ## Validation
 
@@ -110,6 +110,8 @@ Actual local RED: `recovery-red.log`, missing recovery deadline API E0425 (five 
 Run focused post-grace RED/GREEN and independent invariant matrix, retaining valid controls. Include equality, strict-after-grace, generation1, exact frozen deadline, actor disappearance/controller return, attempts8/9, consumed entitlement and historical forgery cases.
 
 Review P2 fixed: exact immutable source replay must permit a newer local publication wrapper. Actual `recovery-wrapper-red.log` failed with RecoverySecurityEvidenceStale; repair normalizes only publication_revision in equality. Five focused tests now pass, retaining wrapper rollback and source content/decision/time/uncertainty/authority contradiction negatives. Source provenance is never re-aged.
+
+Checkpoint 2 actual RED/GREEN: missing signed-attempt API; zero security generation assertion; missing retained-budget/timing/current-actor APIs; retained own-attempt deletion assertion. Final focused post_grace family: 14 passed; strict all-target Clippy passed (7.91s). New tests use independent actor/source fixtures, and cover absent/changed placement/presence/protection/revisions/security floor, final epoch closure, 8/9 budget, existing retry, same-revision actor contradiction and frozen deadline despite refreshed evidence. The retained own-attempt deletion finding was repaired by requiring every pre-existing own entry remain exact; peer entries already compare completely. Full local package passed: library304, all selected integration binaries including unconfigured PostgreSQL target124, and16 doctests including actor/source anti-forgery. PostgreSQL target cases skip SQL when unconfigured: this is compile/compatibility evidence, not SQL execution proof.
 
 ### Component/integration
 
@@ -134,7 +136,7 @@ Work owns PR creation and binds protected admission; worker publishes only alloc
 ## Context checkpoint
 
 ```yaml
-last_progress: sealed recovery evidence verifier first material checkpoint; actor continuity and flow remain open
+last_progress: sealed actor and retained continuity preparation checkpoint; immutable operation and full flow/claims remain open
 status: running
 admission_state: ADMITTED
 branch: agent/post-grace-foundation-successor-338
@@ -164,5 +166,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Continue the sealed owning actor and retained continuity prerequisites, then exact immutable post-grace flow and claim successor on this branch.
+next_action: Add exact immutable historical operation and split post-grace completion/reconcile/adoption flow with owner-sealed claim successor on this same branch.
 ```

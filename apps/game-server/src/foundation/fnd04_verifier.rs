@@ -541,6 +541,7 @@ impl VerifiedRecoveryFacts {
 
 #[derive(Debug, Clone)]
 struct Claims {
+    credential_attempt_ref: [u8; 16],
     issuer: String,
     audience: String,
     profile: String,
@@ -835,6 +836,7 @@ fn parse_claims(payload: &[u8], kind: GrantKind) -> Result<Claims, Fnd04Consumer
         })
     };
     Ok(Claims {
+        credential_attempt_ref: canonical_uuid(&attempt, true).ok_or_else(|| kind.malformed())?,
         issuer: string("iss", 128)?,
         audience: string("aud", 128)?,
         profile: string("profile", 64)?,
@@ -2504,6 +2506,12 @@ pub struct VerifiedRecoveryDurabilityFactsV2 {
     accepted_deadline: i64,
 }
 impl VerifiedRecoveryDurabilityFactsV2 {
+    /// Signed credential correlation UUID, distinct from the Game reconnect attempt.
+    #[must_use]
+    pub const fn credential_attempt_ref(&self) -> [u8; 16] {
+        self.claims.credential_attempt_ref
+    }
+
     #[must_use]
     pub const fn facts(&self) -> &VerifiedRecoveryDurabilityFactsV1 {
         &self.facts
@@ -2689,6 +2697,9 @@ fn finish_recovery_durability(
         FreshEvidencePurposeV1::PlatformSecurity,
         now,
     )?;
+    if security.minimum_generation == 0 {
+        return Err(kind.evidence_stale());
+    }
     if security.account_id != claims.account_id {
         return Err(kind.binding_mismatch());
     }
