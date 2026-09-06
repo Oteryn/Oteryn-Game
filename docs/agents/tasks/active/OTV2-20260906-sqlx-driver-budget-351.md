@@ -79,11 +79,21 @@ Focused: allocation-denial RED/GREEN and hostile-input/lifetime matrix in the pl
 
 Work published draft PR356 at native `703da76a870356f2ab94d6e7af11675dd24f6c04`, tree `07591d3c8668dec06c4190eb4784be04b3351469`. Independent review found no primitive P0/P1; P2 complete-license evidence was repaired additively in both provenance files with VCS-pinned notices/digests, preserving imported bytes/modes. One repair cycle is recorded. Full TLS gate remains OPEN. Independent source review supports a behavior-equivalent private write-discard session store, but no adapter is implemented. Correlated ECH upper3276720 plus span327680/request524288/deframer65536 leaves80 bytes before other required owners; current conservative bounds therefore cannot certify accepted maxima. This is an unresolved proof, not an impossibility claim or permission to change limits. Complete source findings and conditional hook paths are recorded in core provenance.
 
+## Window2 checkpoint
+
+Work comment5560554622 opened window2 at2026-09-06T16:25:30Z after fresh native `1363c9b5b238f4922615eda9b502866c305e83bf` bind. Prior55m14s/4m46s-used/unused window1 history is preserved; no unused time was carried forward. Accepted337 maxima are independently conjunctive, so the historical80/254-byte arithmetic remainder is not a scope or architecture blocker. The actual owner ledger decides capacity, with no new semantic cap.
+
+Implemented and independently reviewed unactivated components: complete pre-state grammar bound3276650, input-derived private unverified chain bound, and bounded synchronous Reader/File data-owner primitives with pre-growth old/new reservations and result custody. Sixteen core library tests and strict vendor/root Clippy pass; vendor tests use its upstream lock, root compilation uses pinned rustls0.23.43. The actual ECH8193 test and separately recorded mixed witness are distinguished in provenance. One strict-Clippy fixture cast repair advances repair count to2; rotations/retries remain0. Full TLS proof remains OPEN at complete phase composition and blocking-loader scheduler/Cell lifetime ownership. No TLS adapter, PostgreSQL decoder or actual hosted SQL/TLS qualification is claimed.
+
+Prospective test lease PR357 is NOT_ACTIVE until protected admission and explicit grant; the shared durability test target remains untouched. Root owns publication and normal merge-up of that allocation. Core provenance contains source formulas, proof limitations and the smallest conditional loader owner/hooks.
+
 ## PR and closeout
 
 One admitted branch/PR; Work retains publication/integration and lease-release control. Preserve immutable admission and all counters across normal merge-up and bounded windows. No force-push/rebase/reset, no-op retrigger or self-approval. Final head belongs in PR/check evidence, not a self-referential metadata commit. Work archives/releases only after terminal protected readback; technical scope insufficiency is not completion.
 
 Window1 stopped at 2026-09-06T16:20:49Z: 3314 productive seconds conservatively charged, 286 unused seconds, no deducted pauses or reset. A further implementation window requires explicit Work continuation.
+
+Window2 stopped at 2026-09-06T17:16:20Z: 3050 productive seconds conservatively charged, 550 unused seconds, zero deducted pauses and zero counter reset. Completed windows:2; repair cycles:2; rotations:0; identical-failure retries:0. Further implementation requires explicit Work continuation. Full TLS and PostgreSQL adapter gates remain OPEN; prospective PR357 remains NOT_ACTIVE.
 
 ## Context checkpoint
 
@@ -91,11 +101,11 @@ Window1 stopped at 2026-09-06T16:20:49Z: 3314 productive seconds conservatively 
 last_progress: published tested primitive and independently reviewed source bounds; TLS proof remains open
 status: in_progress
 admission_state: ADMITTED
-execution_window_number: 1
-execution_windows_completed: 1
+execution_window_number: 2
+execution_windows_completed: 2
 worker_rotations: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 2
 owner_action_required: null
 blocker: complete_TLS_capacity_lifetime_proof
 next_action: independently review TLS proof checkpoint before substantial PostgreSQL decoder work

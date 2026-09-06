@@ -338,3 +338,109 @@ impl ServerCertVerifier for NoHostnameTlsVerifier {
         self.verifier.supported_verify_schemes()
     }
 }
+
+/// Requested heap capacity during one pre-state handshake decode, including
+/// moving Vec growth. This is only a phase bound: configuration, input buffers,
+/// fragment spans, crypto, retained certificates and returned errors are separate
+/// owners. It must never be used as a complete TLS allowance.
+///
+/// Proof profile: pinned rustls 0.23.43, Rust 1.94, 64-bit selected ring graph.
+/// `OTERYN_PROVENANCE.md` records the exhaustive grammar and independent review.
+/// An unqualified layout fails closed rather than borrowing a guessed allowance.
+#[cfg(feature = "_tls-rustls-ring-webpki")]
+pub(super) fn handshake_decode_heap_bound(
+) -> Result<usize, crate::net::resource_budget::BudgetError> {
+    use crate::net::resource_budget::BudgetError;
+    use rustls::internal::msgs::handshake::{EchConfigPayload, HpkeSymmetricCipherSuite};
+    if size_of::<usize>() != 8
+        || size_of::<EchConfigPayload>() != 112
+        || size_of::<HpkeSymmetricCipherSuite>() != 8
+    {
+        return Err(BudgetError::Unavailable);
+    }
+
+    // Existing rustls handshake limit; this does not introduce a wire cap.
+    let wire = 0xffffusize;
+    // Across non-ECH grammar, disjoint wire partitions fund vector elements,
+    // moving old allocations, payload copies and unknown-tag BTree nodes.
+    // 744 pays minimum-capacity overhead of all 14 ClientHello vector families;
+    // 560 is the pinned largest extension Box (ClientExtensions).
+    let non_ech = 39usize
+        .checked_mul(wire)
+        .and_then(|bytes| bytes.checked_add(744 + 560))
+        .ok_or(BudgetError::Overflow)?;
+
+    // Parent ECH Vec's maximal moving growth is 8192 -> 16384 entries.
+    // Remaining child wire costs <=16 bytes of stable heap per wire byte.
+    // A known configuration pays at least174 bytes of grammar-derived slack;
+    // all-unknown configurations have the smaller byte-payload-only bound.
+    // Six bytes belong to the containing extension header and ECH list prefix.
+    // Unknown-tag BTree nodes fit the same16*remaining-wire envelope. The
+    // enclosing ServerExtensions Box adds200. Duplicate known ECH is rejected
+    // before decoding, so two ECH ASTs cannot coexist here.
+    let old_capacity = 8192usize;
+    let remaining = wire
+        .checked_sub(4 * (old_capacity + 1))
+        .ok_or(BudgetError::Overflow)?;
+    let ech = 3usize
+        .checked_mul(old_capacity)
+        .and_then(|n| n.checked_mul(size_of::<EchConfigPayload>()))
+        .and_then(|bytes| bytes.checked_add(16 * remaining))
+        .and_then(|bytes| bytes.checked_sub(174 + 16 * 6))
+        .and_then(|bytes| bytes.checked_add(200))
+        .ok_or(BudgetError::Overflow)?;
+    Ok(non_ech.max(ech))
+}
+
+/// Finite input-derived bound for the private, not-yet-verified peer chain.
+///
+/// A budgeted I/O loop must add bytes returned by `read_tls` and reserve before
+/// every `process_new_packets` call. Stock `complete_io` may process repeatedly
+/// before returning and is not a sufficient preallocation hook. After handshake,
+/// use the public actual peer chain instead; this is not a lifetime read quota.
+#[cfg(feature = "_tls-rustls-ring-webpki")]
+#[derive(Default)]
+pub(super) struct HandshakeInputBound {
+    bytes: usize,
+}
+
+#[cfg(feature = "_tls-rustls-ring-webpki")]
+impl HandshakeInputBound {
+    pub(super) fn add_read(&mut self, bytes: usize) {
+        // The existing rustls message maximum bounds one peer chain even if
+        // more wire bytes were consumed. Saturation cannot reject a read.
+        const HANDSHAKE_MAX: usize = 0xffff;
+        self.bytes = (self.bytes + bytes.min(HANDSHAKE_MAX)).min(HANDSHAKE_MAX);
+    }
+
+    pub(super) fn peer_chain_heap_bound(
+        &self,
+    ) -> Result<usize, crate::net::resource_budget::BudgetError> {
+        use crate::net::resource_budget::BudgetError;
+        fn capacity(count: usize) -> Result<usize, BudgetError> {
+            if count == 0 {
+                Ok(0)
+            } else {
+                count
+                    .checked_next_power_of_two()
+                    .map(|n| n.max(4))
+                    .ok_or(BudgetError::Overflow)
+            }
+        }
+        // TLS1.2: each entry needs its three-byte length prefix, slot24.
+        // TLS1.3: each entry also needs its two-byte extension prefix, slot48.
+        // Into-owned conversion can retain the original48-byte allocation
+        // while reusing it as24-byte slots; do not substitute len*24.
+        let tls12 = capacity(self.bytes / 3)?
+            .checked_mul(24)
+            .ok_or(BudgetError::Overflow)?;
+        let tls13 = capacity(self.bytes / 5)?
+            .checked_mul(48)
+            .ok_or(BudgetError::Overflow)?;
+        // DER and retained OCSP payloads occupy disjoint source wire bytes.
+        tls12
+            .max(tls13)
+            .checked_add(self.bytes)
+            .ok_or(BudgetError::Overflow)
+    }
+}
