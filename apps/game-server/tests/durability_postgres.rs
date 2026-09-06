@@ -372,6 +372,135 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
 }
 
 #[test]
+fn registered_process_restart_reconciles_real_originals_without_releasing_custody()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::AdmissionRuntime;
+    use durability::fresh_admission::{
+        FreshLossReconciliation, FreshReconciliation, decode_fresh_loss, decode_operation,
+        encode_fresh_loss, encode_operation,
+    };
+    use foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
+    use foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+    use foundation::*;
+    const CHILD_URL: &str = "OTERYN_ORIGINAL_RESTART_TEST_DATABASE";
+    const CHILD_MODE: &str = "OTERYN_ORIGINAL_RESTART_TEST_MODE";
+    const TEST: &str =
+        "registered_process_restart_reconciles_real_originals_without_releasing_custody";
+    struct LossSource(ControlLossObservationV1);
+    impl foundation::fnd04_verifier::recovery_source_sealed::Sealed for LossSource {}
+    impl ControlLossSourceV1 for LossSource {
+        fn resolve_loss(
+            &self,
+            _: GameSessionId,
+            _: i64,
+        ) -> Result<ControlLossObservationV1, ReconnectDurabilityErrorV1> {
+            Ok(self.0.clone())
+        }
+    }
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        if let Ok(url) = std::env::var(CHILD_URL) {
+            let runtime = AdmissionRuntime::connect(&url).await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let fresh = runtime.fresh();
+            if std::env::var(CHILD_MODE)?.starts_with("produce") {
+                assert!(runtime.recovered_pending().iter().all(Option::is_none));
+                let now = postgres_clock(&pool).await?;
+                let owner = postgres::fresh::Source::new(now)?;
+                runtime.guards().publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&owner, now))?).await?;
+                let request = owner.request()?;
+                let original = encode_operation(request.operation(), 65536)?;
+                assert_eq!(runtime.enqueue_checkpoint(1, &original)?.establish().await?, 1);
+                assert!(matches!(fresh.commit(&request).await?, FreshAdmissionDurableOutcomeV1::Committed(_)));
+                let FreshReconciliation::Committed(initial) = fresh.reconcile(request.operation()).await? else { return Err("producer fresh receipt absent".into()); };
+                let session = initial.current_session;
+                let source = LossSource(ControlLossObservationV1 {
+                    source_authority: session.current_runtime_scope(), source_revision: 1, accepted_source_revision: 1,
+                    decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?, accepted_decision_identity: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+                    observed_at: now, session,
+                    account_presence: authority_matrix::checked(AccountPresenceClaimV1::new("00000000-0000-4000-8000-000000000001", session.commit().character_id()))?,
+                    placement_identity: [9;16], placement_revision: 1, actor_present: true, runtime_ready: true,
+                    cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss, loss_epoch: authority_matrix::checked(ControlLossEpochRefV1::new(1))?,
+                    loss_origin: now, original_grace_deadline: now + 120, history: ControlLossHistoryV1::FreshOrigin,
+                    protection: RecoveryProtectionContinuityV1 { usage: RecoveryProtectionUseV1::NotEntitled,
+                        rearm: RecoveryProtectionRearmV1::NotRearmed { generation: 7, stable_control_started_at: None, accepted_deadline: None } },
+                });
+                let authorization = authority_matrix::checked(ControlLossAuthorizationV1::authorize(&source, session.commit().game_session_id(), now))?;
+                let mut flow = ControlLossFlowV1::begin(authorization);
+                let request = authority_matrix::checked(flow.take_request())?;
+                assert_eq!(runtime.enqueue_checkpoint(2, &encode_fresh_loss(request.operation())?)?.establish().await?, 2);
+                if std::env::var(CHILD_MODE)? == "produce_absent" { std::process::exit(0); }
+                assert!(matches!(fresh.commit_fresh_loss(&request, &source).await?, ControlLossOutcomeV1::Committed { .. }));
+                // Terminate this actual producer process with unresolved originals;
+                // neither destructors nor an acknowledgement release active slots.
+                std::process::exit(0);
+            }
+            let pending = runtime.recovered_pending();
+            let first = pending[0].as_ref().ok_or("lost first pending original")?;
+            let second = pending[1].as_ref().ok_or("lost second pending original")?;
+            assert_eq!((first.slot, first.operation_kind), (1,1));
+            assert_eq!((second.slot, second.operation_kind), (2,2));
+            let original = decode_operation(&first.operation_json, 65536)?;
+            let FreshReconciliation::Committed(current) = fresh.reconcile(&original).await? else { return Err("restart fresh receipt absent".into()); };
+            let loss = decode_fresh_loss(&second.operation_json, current.receipt.binding().initial_commit().map_err(|_| "invalid initial receipt")?)?;
+            if std::env::var(CHILD_MODE)? == "recover_absent" {
+                assert_eq!(fresh.reconcile_fresh_loss(&loss).await?, FreshLossReconciliation::Absent);
+                assert_eq!(current.current_session.session_state(), GameSessionState::Active);
+                assert_eq!(current.current_session.current_transport(), Some(current.receipt.binding().transport));
+            } else {
+                let FreshLossReconciliation::Committed { completion, current: loss_current } = fresh.reconcile_fresh_loss(&loss).await? else { return Err("restart loss receipt absent".into()); };
+                assert_eq!(completion.operation, loss);
+                assert_eq!(loss_current, current);
+                assert_eq!(current.current_session.session_state(), GameSessionState::Reconnectable);
+                assert_eq!(current.current_session.current_transport(), None);
+                assert!(matches!(completion.outcome, ControlLossOutcomeV1::Committed { decided_at } if decided_at >= loss.authorized_at));
+            }
+            let mut history = authority_matrix::checked(ControlLossFlowV1::restore(loss))?;
+            assert!(history.take_request().is_err());
+            assert!(matches!(runtime.enqueue_checkpoint(1, "different third work")?.establish().await, Err(DurabilityError::Unavailable)));
+            let attempts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts").fetch_one(&pool).await?;
+            assert_eq!(attempts, 0);
+            pool.close().await;
+            return Ok(());
+        }
+        for committed in [true, false] {
+        let database = postgres::IsolatedPostgres::create("real_original_restart").await?;
+        let result = async {
+            let url = database.database_url()?;
+            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let run = |mode: &str| -> Result<(), Box<dyn std::error::Error>> {
+                let status = std::process::Command::new(std::env::current_exe()?).args(["--exact", TEST, "--nocapture"])
+                    .env(CHILD_URL, &url).env(CHILD_MODE, mode).status()?;
+                if !status.success() { return Err(format!("restart child failed: {mode}").into()); }
+                Ok(())
+            };
+            run(if committed { "produce" } else { "produce_absent" })?;
+            let originals: Vec<(i16, i16, String)> = sqlx::query_as("SELECT slot, operation_kind, operation_json FROM game_durability_executor_custody WHERE slot IN (1,2) ORDER BY slot").fetch_all(&pool).await?;
+            let receipt: Option<(Vec<u8>, String, i64)> = sqlx::query_as("SELECT operation_key, operation_json, decided_at FROM game_durability_admission_lifecycle_receipts").fetch_optional(&pool).await?;
+            assert_eq!(receipt.is_some(), committed);
+            let session: String = sqlx::query_scalar("SELECT to_jsonb(s)::text FROM game_durability_reconnect_sessions s").fetch_one(&pool).await?;
+            for expected_generation in [2u64,3] {
+                run(if committed { "recover" } else { "recover_absent" })?;
+                let generation: String = sqlx::query_scalar("SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0").fetch_one(&pool).await?;
+                assert_eq!(generation, expected_generation.to_string());
+                assert_eq!(sqlx::query_as::<_, (i16,i16,String)>("SELECT slot, operation_kind, operation_json FROM game_durability_executor_custody WHERE slot IN (1,2) ORDER BY slot").fetch_all(&pool).await?, originals);
+                assert_eq!(sqlx::query_as::<_, (Vec<u8>,String,i64)>("SELECT operation_key, operation_json, decided_at FROM game_durability_admission_lifecycle_receipts").fetch_optional(&pool).await?, receipt);
+                assert_eq!(sqlx::query_scalar::<_,String>("SELECT to_jsonb(s)::text FROM game_durability_reconnect_sessions s").fetch_one(&pool).await?, session);
+            }
+            pool.close().await;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result?;
+        }
+        Ok(())
+    })
+}
+
+#[test]
 fn registered_checkpoint_queue_retains_timeout_and_completion_custody()
 -> Result<(), Box<dyn std::error::Error>> {
     use durability::AdmissionRuntime;
