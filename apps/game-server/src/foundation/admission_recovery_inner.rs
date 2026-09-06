@@ -2690,6 +2690,10 @@ pub trait PostGraceCompletionSourceV1: super::fnd04_verifier::recovery_source_se
 }
 /// Historical committed proof, created only after a sealed exact-operation
 /// completion. It is not a controller or a source registration capability.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::*;
+/// fn install(history: PostGraceCommitReceiptV1) -> PostGraceControllerBindingV1 { history.into() }
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PostGraceCommitReceiptV1 {
     operation: super::admission_authority_publication::PostGraceClaimEvidenceV1,
@@ -2805,6 +2809,13 @@ pub struct PostGraceAdoptionCurrentV1 {
     pub signing: super::fnd04_verifier::RecoverySigningTrustObservationV2,
     pub claims: Vec<super::admission_authority_publication::AdmissionAuthorityPublicationChangeV1>,
 }
+/// ```compile_fail
+/// use oteryn_game_server::foundation::*;
+/// struct PeerHistory;
+/// impl PostGraceAdoptionSourceV1 for PeerHistory {
+/// fn current_adoption(&self, _: &oteryn_game_server::foundation::admission_authority_publication::PostGraceClaimEvidenceV1, _: i64) -> Result<PostGraceAdoptionCurrentV1, ReconnectDurabilityErrorV1> { unreachable!() }
+/// }
+/// ```
 pub trait PostGraceAdoptionSourceV1: super::fnd04_verifier::recovery_source_sealed::Sealed {
     fn current_adoption(&self, operation: &super::admission_authority_publication::PostGraceClaimEvidenceV1, now: i64) -> Result<PostGraceAdoptionCurrentV1, ReconnectDurabilityErrorV1>;
 }

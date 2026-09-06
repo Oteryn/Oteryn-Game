@@ -16,7 +16,7 @@ pr: 343
 allocation_source_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
 admission_main_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
 base_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
-head_sha: 8a72a305330011edb9021abc1f8449d65a377909
+head_sha: f2ccc7de74ed58bd47c7c71c0d1e62c8a5fce331
 final_head_sha: null
 final_head_frozen_at: null
 owner: allocated post-grace Foundation worker
@@ -81,14 +81,14 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] Private live successor requires newly verified reauthenticated recovery with correct source scope/provenance/deadlines and independently owning current actor/continuity source. Raw DTO/history/caller flag/reconnect proof cannot select it.
-- [ ] Explicit closed timing discriminant preserves SameSession/V1/V2 behavior. Missing/unknown/mixed variant rejects; old failures/history cannot upgrade into live post-grace privilege.
-- [ ] At preparation and final authority now is strictly after exact historical grace and within frozen finite deadline derived from accepted credential/security/trust bounds with checked arithmetic. Refresh cannot extend the same attempt; equality/early-terminal legacy behavior remains unchanged.
-- [ ] Candidate session differs from terminal predecessor and starts connection generation exactly1; predecessor generation is separate. Same uncontrolled actor/placement/state, account/world, lease/scope/revisions and absent controller remain current prerequisites.
-- [ ] Retained loss epoch/grace and complete actor-bound attempt budget/dispositions span replacement. Eight/nine and exact retries qualified; missing compacted state fails closed, no new empty budget inferred on restart.
-- [ ] Protection entitlement/consumption/activation/rearm evidence is retained; no mint/reset/rearm/new epoch/respawn/heal/relocation. Existing eligible once-only activation and retirement/restoration finality preserved.
-- [ ] Additive PREPARE/final/completion/reconcile/adoption surfaces use exact immutable operation and independently current facts. Later source deny/fence change rejects; historical committed outcome cannot reinstall stale controller.
-- [ ] Owner-sealed successor claim effects bind exact successor operation and current predecessor/claims; standalone publication cannot apply them. Existing B-consumed claim APIs and enum variants remain compatible.
+- [x] Private live successor requires newly verified reauthenticated recovery with correct source scope/provenance/deadlines and independently owning current actor/continuity source. Raw DTO/history/caller flag/reconnect proof cannot select it.
+- [x] Explicit closed timing discriminant preserves SameSession/V1/V2 behavior. Missing/unknown/mixed variant rejects; old failures/history cannot upgrade into live post-grace privilege.
+- [x] At preparation and final authority now is strictly after exact historical grace and within frozen finite deadline derived from accepted credential/security/trust bounds with checked arithmetic. Refresh cannot extend the same attempt; equality/early-terminal legacy behavior remains unchanged.
+- [x] Candidate session differs from terminal predecessor and starts connection generation exactly1; predecessor generation is separate. Same uncontrolled actor/placement/state, account/world, lease/scope/revisions and absent controller remain current prerequisites.
+- [x] Retained loss epoch/grace and complete actor-bound attempt budget/dispositions span replacement. Eight/nine and exact retries qualified; missing compacted state fails closed, no new empty budget inferred on restart.
+- [x] Protection entitlement/consumption/activation/rearm evidence is retained; no mint/reset/rearm/new epoch/respawn/heal/relocation. Existing eligible once-only activation and retirement/restoration finality preserved.
+- [x] Additive PREPARE/final/completion/reconcile/adoption surfaces use exact immutable operation and independently current facts. Later source deny/fence change rejects; historical committed outcome cannot reinstall stale controller.
+- [x] Owner-sealed successor claim effects bind exact successor operation and current predecessor/claims; standalone publication cannot apply them. Existing B-consumed claim APIs and enum variants remain compatible.
 - [ ] Complete single-invariant matrix, compile-fail anti-forgery, direct/reconciled positive post-grace and existing V1/V2/early-terminal regressions pass. Source-included B integration target compile is proven on the integrated source before compatible handoff.
 - [ ] Focused RED/GREEN, package/doctest/fmt/strict Clippy/architecture/governance, whole-diff self-review and independent exact-head review pass; findings dispositioned.
 - [ ] Canonical selected CI and Merge Queue pass; Work verifies protected readback/archive/releases custody. Semantic completion makes no actual PostgreSQL or source/listener readiness claim.
@@ -138,7 +138,7 @@ Work owns PR creation and binds protected admission; worker publishes only alloc
 ## Context checkpoint
 
 ```yaml
-last_progress: sealed claim-time Recovery authorization and split flow/current adoption implemented; 30 focused and full package tests pass; independent review pending
+last_progress: expanded PREPARE/final signed credential and retained continuity matrices pass; local semantic milestones implemented; exact-head publication review and integration remain
 status: running
 admission_state: ADMITTED
 branch: agent/post-grace-foundation-successor-338
@@ -147,7 +147,7 @@ pr: 343
 execution_budget_minutes: 60
 execution_window_number: 3
 execution_window_started_at: 2026-09-06T12:49:00Z
-execution_window_elapsed_minutes: 32
+execution_window_elapsed_minutes: 51
 execution_windows_completed: 2
 worker_rotations: 1
 final_head_sha: null
@@ -162,7 +162,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 3
+repair_cycles_for_current_gate: 4
 prior_unpublished_repair_history: UNKNOWN
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
@@ -183,3 +183,15 @@ Split PREPARE/COMMIT/reconcile requests preserve the exact complete operation. R
 Actual missing-API REDs cover claim, split flow, adoption, prepared restart and typed terminal outcomes. Self-review actual RED found omitted candidate initial transport in adoption; repair adds exact canonical initial transport/generation and lease/scope origins. Known repair counter is3: prior wrapper1, claim-time review1, canonical-origin self-review1; prior unpublished history remainsUNKNOWN.
 
 Fresh local evidence:30 focused post_grace tests GREEN; full locked game-server package passes library320, all selected integration binaries and18 compile-fail doctests. Strict all-target Clippy passes7.66s; fmt and governance pass. Unconfigured PostgreSQL124 is skip/compile compatibility evidence only, not actual SQL execution. Root still must review exact published content, run canonical selected CI/MQ and later normal merge-up/source-inclusion qualification. Current adoption conservatively requires exact committed claim successor rows; further owner publication prevents this attempt from installing a projection. The later SQL/provider child must implement registered owning sources and atomic current locked boundaries; this semantic child establishes no production registration or server seam readiness.
+
+
+## Checkpoint 5 — remaining semantic matrix
+
+Same window3 and branch; parentf2ccc7de74ed58bd47c7c71c0d1e62c8a5fce331 has independent/root P0/P1/P2=0 and canonical CI success recorded by Work3435559531198/5559562859. Additive qualification expands both PREPARE/final locked boundaries across12 actor,8 source,8 canonical mutations plus stale/missing claims, unavailable source and queue delay. Thirteen authentically re-signed credential negatives cover profile/purpose/issuer/audience/protocol/transport/revisions/time/generation. A full8-entry retained mixed history with already consumed protection successfully commits/adopts without reset; dropping an old entry rejects. Adoption-source forgery and receipt-to-controller conversion add compile-fail checks. No runtime semantics changed after checkpoint4; two rustdoc anti-forgery examples are the only runtime-source edit.
+
+Acceptance evidence is mapped directly in the plan; implemented semantic items are checked, while actual B-integrated compile, selected exact-head integration/MQ and Work release remain open. Signed nbf+1 was a mistaken test expectation because accepted tolerance is+5; corrected to nbf+6 without changing runtime policy. Repair counter3 and priorUNKNOWN remain. Unexpected-control-loss amendment348 is not active in this checkpoint; no new path written.
+
+Checkpoint5 qualification at 2026-09-06T13:37:35+00:00:34 focused family cases pass in full locked package library324; all integration targets and20 compile-fail doctests pass. Strict all-target Clippy passes6.05s; fmt/diff/governance pass. Explicit protected-source durability_postgres --no-run passes; this is current checkout source compatibility, not future B-integrated source or SQL execution proof. No runtime behavior changes beyond checkpoint4.
+
+
+Checkpoint5 independent/root review P2 accepted: the eight canonical predecessor negatives reused actor source revision11 while changing canonical content, so same-revision contradiction masked their intended fences. The repaired matrix starts from coherent independent actor revision12/accepted12/new decision/time101, first proves unchanged canonical facts succeed at BOTH PREPARE/final locked boundaries, and then changes exactly one canonical predicate per negative. Focused repaired matrix passes. Runtime semantics did not change; this is evidence-strength repair, not a claimed runtime RED. Cumulative known repair counter is4; priorUNKNOWN preserved. Full package324/20-doctest evidence immediately above predates this test-only repair; repaired focused and strict Clippy evidence are fresh.

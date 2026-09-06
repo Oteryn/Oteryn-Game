@@ -1768,3 +1768,442 @@ fn post_grace_adoption_rejects_changed_canonical_candidate_origin()
     assert!(flow.controller().is_none());
     Ok(())
 }
+
+#[test]
+fn post_grace_prepare_and_final_locked_matrix_reads_independent_current_fences()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::foundation::*;
+    let (authorization, source, actor) = prepared_fixture()?;
+    let owner = claim_fixture()?;
+    let mut flow =
+        PostGraceDurabilityFlowV1::begin(authorization, &owner, 100).map_err(|_| "begin")?;
+    let mut queue = RecoveryQueue::default();
+    flow.submit_prepare(&mut queue).map_err(|_| "prepare")?;
+    let prepared = PostGraceDurableCompletionV1 {
+        operation: flow.operation().clone(),
+        phase: PostGraceFlowPhaseV1::PendingPrepare,
+        outcome: PostGraceDurableOutcomeV1::Prepared,
+    };
+    flow.poll(&mut RecoveryCompletion(Some(prepared)))
+        .map_err(|_| "prepared")?;
+    flow.submit_commit(
+        &mut queue,
+        &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+        &PostGraceActorAuthorityV1::from_owning_source(&actor),
+        100,
+    )
+    .map_err(|_| "commit")?;
+    let rows = owner
+        .transition
+        .predecessors
+        .iter()
+        .cloned()
+        .map(Some)
+        .collect::<Vec<_>>();
+    let actor_changes: [fn(&mut PostGraceActorObservationV1); 12] = [
+        |a| a.present_uncontrolled = false,
+        |a| a.runtime_ready = false,
+        |a| a.account_presence = None,
+        |a| a.placement_identity = [9; 16],
+        |a| a.placement_revision += 1,
+        |a| a.protection = None,
+        |a| a.account_security_source_revision += 1,
+        |a| a.current.ruleset_revision = "rules-2".into(),
+        |a| a.current.content_revision = "content-2".into(),
+        |a| a.current.map_revision = "map-2".into(),
+        |a| a.current.world_policy_revision = "policy-2".into(),
+        |a| a.current.account_id = "00000000-0000-4000-8000-000000000009".into(),
+    ];
+    let source_changes: [fn(&mut RecoverySource); 8] = [
+        |s| s.security.allowed = false,
+        |s| s.security.minimum_generation = 2,
+        |s| s.security.provenance.scope = Fnd04EvidenceScope::FreshAdmission,
+        |s| s.security.provenance.accepted_source_revision += 1,
+        |s| s.signing.trusted = false,
+        |s| s.signing.key_id = "wrong-key".into(),
+        |s| s.signing.provenance.scope = Fnd04EvidenceScope::FreshAdmission,
+        |s| s.security.provenance.decision_identity = "contradiction".into(),
+    ];
+    for request in &queue.submitted {
+        assert!(
+            request
+                .validate_locked(
+                    &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                    &PostGraceActorAuthorityV1::from_owning_source(&actor),
+                    &rows,
+                    101
+                )
+                .is_ok()
+        );
+        for (index, change) in actor_changes.iter().enumerate() {
+            let mut changed = actor.clone();
+            changed.0.source_revision = 12;
+            changed.0.accepted_source_revision = 12;
+            changed.0.decision_identity = "actor-12".into();
+            changed.0.accepted_decision_identity = "actor-12".into();
+            changed.0.source_observed_at = 101;
+            change(&mut changed.0);
+            assert!(
+                request
+                    .validate_locked(
+                        &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                        &PostGraceActorAuthorityV1::from_owning_source(&changed),
+                        &rows,
+                        101
+                    )
+                    .is_err(),
+                "{:?} actor {index}",
+                request.kind()
+            );
+        }
+        for (index, change) in source_changes.iter().enumerate() {
+            let mut changed = source.clone();
+            change(&mut changed);
+            assert!(
+                request
+                    .validate_locked(
+                        &RecoveryDurabilityTrustContextV2::from_owning_source(&changed),
+                        &PostGraceActorAuthorityV1::from_owning_source(&actor),
+                        &rows,
+                        101
+                    )
+                    .is_err(),
+                "{:?} source {index}",
+                request.kind()
+            );
+        }
+        // A coherently newer source observation is an independently valid
+        // control. Canonical mutations must not hide behind a same-revision
+        // contradiction, which is a different invariant.
+        let mut refreshed_actor = actor.clone();
+        refreshed_actor.0.source_revision = 12;
+        refreshed_actor.0.accepted_source_revision = 12;
+        refreshed_actor.0.decision_identity = "actor-12".into();
+        refreshed_actor.0.accepted_decision_identity = "actor-12".into();
+        refreshed_actor.0.source_observed_at = 101;
+        assert!(
+            request
+                .validate_locked(
+                    &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                    &PostGraceActorAuthorityV1::from_owning_source(&refreshed_actor),
+                    &rows,
+                    101
+                )
+                .is_ok(),
+            "{:?} refreshed canonical control",
+            request.kind()
+        );
+        for index in 0..8 {
+            let mut changed = refreshed_actor.clone();
+            let old = changed.0.predecessor;
+            let state = match index {
+                0 => GameSessionState::Active,
+                1 => GameSessionState::Reconnectable,
+                _ => GameSessionState::Terminal,
+            };
+            let snapshot = GameSessionAuthoritySnapshot::from_current_facts(
+                old.commit(),
+                state,
+                if index == 2 {
+                    ConnectionGeneration::new(8).map_err(|_| "generation")?
+                } else {
+                    old.current_connection_generation()
+                },
+                if index == 3 {
+                    Some(AuthenticatedTransportRefV1::decode(&[9; 16]).map_err(|_| "transport")?)
+                } else {
+                    None
+                },
+                if index == 4 {
+                    CharacterLease::new(old.commit().character_id(), 3)?
+                } else {
+                    old.current_character_lease()
+                },
+                if index == 5 {
+                    None
+                } else {
+                    old.current_character_world_eligibility()
+                },
+                old.current_runtime_scope(),
+                if index == 6 {
+                    ScopeOwnershipGeneration::new(4).map_err(|_| "scope")?
+                } else {
+                    old.current_scope_generation()
+                },
+            )
+            .map_err(|_| "snapshot")?
+            .with_control_loss_continuity(
+                old.current_control_loss_epoch().ok_or("epoch")?,
+                if index == 7 { 100 } else { 99 },
+            )
+            .map_err(|_| "continuity")?;
+            changed.0.predecessor = snapshot;
+            assert!(
+                request
+                    .validate_locked(
+                        &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                        &PostGraceActorAuthorityV1::from_owning_source(&changed),
+                        &rows,
+                        101
+                    )
+                    .is_err(),
+                "{:?} canonical {index}",
+                request.kind()
+            );
+        }
+        let mut missing = rows.clone();
+        missing[0] = None;
+        assert!(
+            request
+                .validate_locked(
+                    &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                    &PostGraceActorAuthorityV1::from_owning_source(&actor),
+                    &missing,
+                    101
+                )
+                .is_err()
+        );
+        let mut changed = rows.clone();
+        changed[1].as_mut().ok_or("row")?.publication_revision += 1;
+        assert!(
+            request
+                .validate_locked(
+                    &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                    &PostGraceActorAuthorityV1::from_owning_source(&actor),
+                    &changed,
+                    101
+                )
+                .is_err()
+        );
+        assert!(
+            request
+                .validate_locked(
+                    &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                    &PostGraceActorAuthorityV1::from_owning_source(&actor),
+                    &rows,
+                    104
+                )
+                .is_err()
+        );
+        assert!(
+            request
+                .validate_locked(
+                    &RecoveryDurabilityTrustContextV2::unavailable(),
+                    &PostGraceActorAuthorityV1::from_owning_source(&actor),
+                    &rows,
+                    101
+                )
+                .is_err()
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn post_grace_signed_credential_matrix_preserves_reauth_profile_and_bindings()
+-> Result<(), Box<dyn std::error::Error>> {
+    use ed25519_dalek::{Signer, SigningKey};
+    let (token, source, current) = fixture().map_err(|_| "fixture")?;
+    let parts = token.split('.').collect::<Vec<_>>();
+    let payload =
+        String::from_utf8(base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(parts[1])?)?;
+    let changes = [
+        ("oteryn-reauth-recovery-v1", "oteryn-fast-reconnect-v1"),
+        ("existing_actor_recovery", "fresh_admission"),
+        (
+            "urn:oteryn:platform:game-recovery",
+            "urn:oteryn:platform:game-reconnect",
+        ),
+        ("urn:oteryn:game:recovery", "urn:oteryn:game:admission"),
+        ("\"protocol_major\":1", "\"protocol_major\":2"),
+        ("\"transport_profile\":1", "\"transport_profile\":2"),
+        ("rules-1", "rules-2"),
+        ("content-1", "content-2"),
+        ("map-1", "map-2"),
+        ("policy-1", "policy-2"),
+        ("\"nbf\":100", "\"nbf\":106"),
+        ("\"exp\":110", "\"exp\":95"),
+        (
+            "\"account_security_generation\":\"1\"",
+            "\"account_security_generation\":\"0\"",
+        ),
+    ];
+    let trust = RecoveryDurabilityTrustContextV2::from_owning_source(&source);
+    assert!(verify_recovery_grant_durability_v2(&token, 100, &trust, &current).is_ok());
+    for (index, (old, new)) in changes.iter().enumerate() {
+        assert!(payload.contains(old));
+        let changed = payload.replace(old, new);
+        let input = format!(
+            "{}.{}",
+            parts[0],
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(changed)
+        );
+        let signed = format!(
+            "{input}.{}",
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(
+                SigningKey::from_bytes(&[23; 32])
+                    .sign(input.as_bytes())
+                    .to_bytes()
+            )
+        );
+        assert!(
+            verify_recovery_grant_durability_v2(&signed, 100, &trust, &current).is_err(),
+            "signed binding {index}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn post_grace_adoption_preserves_full_budget_and_consumed_protection()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::foundation::*;
+    let (original, source, mut actor) = prepared_fixture()?;
+    let mut owner = claim_fixture()?;
+    let mut entries = vec![RetainedRecoveryAttemptV1 {
+        attempt: original.attempt(),
+        transport: original.transport(),
+        disposition: RetainedRecoveryAttemptDispositionV1::Prepared,
+    }];
+    for attempt in 2..=8 {
+        entries.push(RetainedRecoveryAttemptV1 {
+            attempt: ReconnectAttemptRef::new(attempt)?,
+            transport: AuthenticatedTransportRefV1::decode(&[attempt as u8; 16])
+                .map_err(|_| "transport")?,
+            disposition: if attempt % 2 == 0 {
+                RetainedRecoveryAttemptDispositionV1::Terminal
+            } else {
+                RetainedRecoveryAttemptDispositionV1::TransportCollision
+            },
+        });
+    }
+    actor.0.budget = RetainedRecoveryBudgetV1::restore(
+        actor.0.budget.epoch(),
+        RecoveryEpochStateV1::Open,
+        true,
+        entries.clone(),
+    )
+    .map_err(|_| "budget")?;
+    actor.0.protection.as_mut().ok_or("protection")?.usage = RecoveryProtectionUseV1::Activated {
+        entitlement_generation: 1,
+        activated_at: 90,
+        deadline: 94,
+    };
+    owner.actor = actor.clone();
+    let trust = RecoveryDurabilityTrustContextV2::from_owning_source(&source);
+    let actor_context = PostGraceActorAuthorityV1::from_owning_source(&actor);
+    let authorization = PostGraceRecoveryAuthorizationV1::prepare(
+        original.verified(),
+        &trust,
+        &actor_context,
+        original.candidate(),
+        original.attempt(),
+        original.transport(),
+        100,
+    )
+    .map_err(|_| "authorization")?;
+    let mut flow =
+        PostGraceDurabilityFlowV1::begin(authorization, &owner, 100).map_err(|_| "begin")?;
+    let mut queue = RecoveryQueue::default();
+    flow.submit_prepare(&mut queue).map_err(|_| "prepare")?;
+    let prepared = PostGraceDurableCompletionV1 {
+        operation: flow.operation().clone(),
+        phase: PostGraceFlowPhaseV1::PendingPrepare,
+        outcome: PostGraceDurableOutcomeV1::Prepared,
+    };
+    flow.poll(&mut RecoveryCompletion(Some(prepared)))
+        .map_err(|_| "prepared")?;
+    flow.submit_commit(&mut queue, &trust, &actor_context, 100)
+        .map_err(|_| "commit")?;
+    let rows = owner
+        .transition
+        .predecessors
+        .iter()
+        .cloned()
+        .map(Some)
+        .collect::<Vec<_>>();
+    let decision = queue.submitted[1]
+        .validate_locked(&trust, &actor_context, &rows, 100)
+        .map_err(|_| "decision")?;
+    let committed = PostGraceDurableCompletionV1 {
+        operation: flow.operation().clone(),
+        phase: PostGraceFlowPhaseV1::PendingCommit,
+        outcome: PostGraceDurableOutcomeV1::Committed {
+            decided_at: 100,
+            decision: Box::new(decision),
+        },
+    };
+    flow.poll(&mut RecoveryCompletion(Some(committed)))
+        .map_err(|_| "committed")?;
+    let mut current = adoption_fixture()?;
+    current.0.actor.protection = actor.0.protection;
+    entries[0].disposition = RetainedRecoveryAttemptDispositionV1::Committed;
+    current.0.actor.budget = RetainedRecoveryBudgetV1::restore(
+        actor.0.budget.epoch(),
+        RecoveryEpochStateV1::Restored,
+        true,
+        entries.clone(),
+    )
+    .map_err(|_| "restored budget")?;
+    flow.adopt(&current, 101)
+        .map_err(|_| "adopt full retained history")?;
+    assert!(flow.controller().is_some());
+    assert_eq!(current.0.actor.protection, actor.0.protection);
+    entries.pop();
+    current.0.actor.budget = RetainedRecoveryBudgetV1::restore(
+        actor.0.budget.epoch(),
+        RecoveryEpochStateV1::Restored,
+        true,
+        entries,
+    )
+    .map_err(|_| "compacted")?;
+    assert!(flow.adopt(&current, 101).is_err());
+    assert!(flow.controller().is_none());
+    Ok(())
+}
+
+#[test]
+fn post_grace_completion_rejects_changed_operation_and_mixed_timing()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::foundation::*;
+    let (authorization, _, _) = prepared_fixture()?;
+    let owner = claim_fixture()?;
+    let mut flow =
+        PostGraceDurabilityFlowV1::begin(authorization, &owner, 100).map_err(|_| "begin")?;
+    let mut queue = RecoveryQueue::default();
+    flow.submit_prepare(&mut queue).map_err(|_| "prepare")?;
+    for index in 0..4 {
+        let mut operation = flow.operation().clone();
+        match index {
+            0 => {
+                operation.operation.transport =
+                    AuthenticatedTransportRefV1::decode(&[9; 16]).map_err(|_| "transport")?
+            }
+            1 => operation.operation.attempt = ReconnectAttemptRef::new(9)?,
+            2 => operation.transition.successors[0].publication_revision += 1,
+            _ => operation.operation.credential.accepted_deadline += 1,
+        };
+        let completion = PostGraceDurableCompletionV1 {
+            operation,
+            phase: PostGraceFlowPhaseV1::PendingPrepare,
+            outcome: PostGraceDurableOutcomeV1::Prepared,
+        };
+        assert!(
+            flow.poll(&mut RecoveryCompletion(Some(completion)))
+                .is_err()
+        );
+        assert_eq!(flow.phase(), PostGraceFlowPhaseV1::PendingPrepare);
+    }
+    let mut history = flow.operation().clone();
+    history.operation.timing = RecoveryTimingV2::SameSession(
+        ReconnectContinuityV1::new(
+            history.operation.actor.budget.epoch(),
+            99,
+            98,
+            ProtectionEntitlementV1::unused(),
+        )
+        .map_err(|_| "same session timing")?,
+    );
+    assert!(PostGraceDurabilityFlowV1::restore_history(history).is_err());
+    Ok(())
+}
