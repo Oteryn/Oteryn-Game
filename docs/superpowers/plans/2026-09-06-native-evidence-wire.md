@@ -49,3 +49,7 @@ Actual authenticated mTLS/HTTP, rollback-protected descriptor, four-operation sh
 ## Execution checkpoint
 
 Admitted Work5559516855 atad7273e3e91a4e4254abb9aa2710c7e0c9754afe, window1 13:27–14:27UTC. Closed flat parser uses fixed inline slots and manual bounded Unicode decoding; no generic DOM or escaped-string heap scratch. Independent fixture literals remain V1 binding demonstrations only. Tests cover four families and failure variants, each required field, substitutions, numeric and encoding boundaries, truncated input and fixed-buffer rejection before growth. Foundation mutations/SQL/TLS/live source are not exercised or claimed. Independent review then exact-head CI remain required.
+
+## Repair2 qualification addendum
+
+Accepted UUID and decoded-payload P2 findings add matching malformed request/response identity tests for both Account purposes, exact all-field observation assertions with independent nonzero key bytes, both booleans and exact four-way failure assertions. Prove sensitivity in an isolated copied-code harness with UUID checks removed, each boolean inverted and one substituted failure; restore afterward and rerun GREEN. Runtime/Cargo/contract scope stays unchanged. Preserve original admission/window1 and prior repair1; this is cycle2 under Work5559866827, followed by fresh non-author review and normal protected-main reconciliation.

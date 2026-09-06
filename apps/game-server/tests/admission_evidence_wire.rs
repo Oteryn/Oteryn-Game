@@ -391,3 +391,106 @@ fn independent_numeric_zero_and_generation_boundaries() {
         }
     }
 }
+
+#[test]
+fn malformed_expected_uuid_cannot_hide_behind_binding_mismatch() {
+    for i in [0, 2] {
+        let (purpose, scope) = if i == 0 {
+            ("fixture_security", "fixture_fresh")
+        } else {
+            ("platform_security", "existing_actor_recovery")
+        };
+        for invalid in [
+            "01890F4e-7c00-7000-8000-000000000001",
+            "01890f4e-7c00-4000-8000-000000000001",
+            "01890f4e-7c00-7000-c000-000000000001",
+            "00000000-0000-0000-0000-000000000000",
+            "01890f4e-7c00-7000-8000-00000000001",
+            "01890f4e-7c00-7000-8000-0000000000001",
+            "01890f4e_7c00-7000-8000-000000000001",
+            "01890f4e-7c00-7000-8000-00000000000g",
+            "",
+        ] {
+            let request = Request::Account {
+                recovery: i == 2,
+                account_id: invalid,
+                purpose,
+                scope,
+            };
+            let mut response = golden(i);
+            response["account_id"] = serde_json::json!(invalid);
+            assert!(encode_request(&request).is_err(), "encode {i}/{invalid}");
+            assert!(
+                decode_response(&request, "platform", &bytes(&response)).is_err(),
+                "decode matching malformed UUID {i}/{invalid}"
+            );
+        }
+        assert!(encode_request(&requests()[i]).is_ok());
+        assert!(decode_response(&requests()[i], "platform", &bytes(&golden(i))).is_ok());
+    }
+}
+
+#[test]
+fn decoded_observation_and_failure_payloads_are_exact() {
+    use oteryn_game_server::admission_evidence::{Facts, Failure, Response};
+    // Independent byte fixture: 00..1f encoded in canonical unpadded base64url.
+    const KEY: [u8; 32] = [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24,
+        25, 26, 27, 28, 29, 30, 31,
+    ];
+    for (i, request) in requests().iter().enumerate() {
+        for flag in [false, true] {
+            let mut value = golden(i);
+            value["source_authority"] = serde_json::json!("independent-source");
+            value["source_revision"] = serde_json::json!("37");
+            value["decision_identity"] = serde_json::json!("37");
+            value["source_observed_at"] = serde_json::json!("1700000123");
+            value["clock_uncertainty_seconds"] = serde_json::json!("19");
+            let expected = if i % 2 == 0 {
+                value["allowed"] = serde_json::json!(flag);
+                value["minimum_valid_generation"] = serde_json::json!("41");
+                Facts::Account {
+                    allowed: flag,
+                    minimum_valid_generation: 41,
+                }
+            } else {
+                value["trusted"] = serde_json::json!(flag);
+                value["public_key"] =
+                    serde_json::json!("AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8");
+                Facts::Trust {
+                    trusted: flag,
+                    public_key: KEY,
+                }
+            };
+            let observation =
+                match decode_response(request, "independent-source", &bytes(&value)).unwrap() {
+                    Response::Observed(observation) => Some(observation),
+                    Response::Failure(_) => None,
+                }
+                .unwrap();
+            assert_eq!(observation.source_authority.as_str(), "independent-source");
+            assert_eq!(observation.source_revision, 37);
+            assert_eq!(observation.decision_identity.as_str(), "37");
+            assert_eq!(observation.source_observed_at, 1_700_000_123);
+            assert_eq!(observation.clock_uncertainty_seconds, 19);
+            assert_eq!(observation.facts, expected, "facts {i}/{flag}");
+        }
+        for (result, expected) in [
+            ("not_found", Failure::NotFound),
+            ("unavailable", Failure::Unavailable),
+            ("unauthorized", Failure::Unauthorized),
+            ("unsupported", Failure::Unsupported),
+        ] {
+            let original = golden(i);
+            let response = serde_json::json!({
+                "version": original["version"], "operation": original["operation"],
+                "result": result
+            });
+            assert_eq!(
+                decode_response(request, "platform", &bytes(&response)),
+                Ok(Response::Failure(expected)),
+                "failure payload {i}/{result}"
+            );
+        }
+    }
+}
