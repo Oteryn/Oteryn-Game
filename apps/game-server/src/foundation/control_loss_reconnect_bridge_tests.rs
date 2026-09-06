@@ -1701,3 +1701,20 @@ fn complete_bridge_all_modes_require_current_activated_successor_proof() {
         }
     }
 }
+
+#[test]
+fn early_terminal_prepare_transfers_claims_before_candidate_commit() {
+    let (owner, identity, token) = bridge_fixture(true);
+    let auth = CompleteReconnectAuthorizationV1::authorize(
+        &owner, identity, proof(&owner, &token, true, 100), 100,
+    ).require("terminal authorization");
+    let transition = CompleteReconnectClaimTransitionV1::prepare(&owner, &auth, 100)
+        .require("independent claim source");
+    let mut flow = CompleteReconnectFlowV1::begin(auth, Some(transition)).require("flow");
+    let expected = flow.operation().replacement.as_ref().require("receipt")
+        .transition.successors.clone();
+    let effect = flow.take_request(CompleteReconnectRequestKindV1::Prepare).require("request")
+        .validate_locked(&owner, 100).require("prepare");
+    assert_eq!(effect.claims(), expected);
+    assert_eq!(effect.session().commit(), owner.current.snapshot.session.commit());
+}
