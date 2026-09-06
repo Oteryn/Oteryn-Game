@@ -76,7 +76,7 @@ finding_family_sweep:
 finding_dispositions:
   p0_p1_accepted_and_repaired: []
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred: [fixed_PR330_clock_uncertainty_seconds_explicit_u64_decimal_string_encoding]
 ```
 
 ## Acceptance criteria
@@ -98,6 +98,8 @@ The source candidate selects mutually authenticated TLS 1.3 private JSON request
 The assignment candidate selects Game-owned PostgreSQL CAS records with dedicated assignment-writer privileges, atomic nonready fencing, authorized bootstrap and receiver enforcement. Runtime identities consume assignments and cannot issue them. No expiring lease or automatic failover policy is invented. Unsupported/unfenced consumers prevent activation.
 
 The docs are separable decisions; serial authoring uses one branch/worktree because this is one bounded three-document packet with shared task custody. #326/#327 and subsequent B proceed independently. Work allocates exact implementation paths only after applicable acceptance and resolves any shared Foundation/Durability lease before dispatch.
+
+Independent PR #330 P2 accepted on reviewed head `270f416a98d87a66a2b97e23037e6aae5f220447`: the required uncertainty duration lacked an explicit wire encoding. The narrow repair specifies canonical unsigned 64-bit decimal JSON string including zero, preserving existing checked arithmetic and conservative freshness rejection. Source evidence: `FreshEvidenceProvenanceV1::clock_uncertainty_seconds` is `u64`; existing fixtures include zero and overflow rejection. Required-field family sweep covered version, revision/generation, timestamp, decision identity, UUID, public key, booleans and closed operation/result/scope fields; no further concrete ambiguity requiring repair was identified. Assignment decision remains byte-identical. This is one repair cycle; independent exact-head recheck remains pending after Work publication.
 
 ## Validation
 
@@ -151,7 +153,7 @@ The docs are separable decisions; serial authoring uses one branch/worktree beca
 ## Context checkpoint
 
 ```yaml
-last_progress: two bounded source candidate decisions prepared
+last_progress: PR330 accepted uncertainty encoding P2 repaired; independent recheck pending
 status: validating
 branch: arch/native-source-contracts-328
 head_sha: null
@@ -168,7 +170,7 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
