@@ -124,6 +124,7 @@ impl AdmissionReconnectJournalV2 {
         let candidate_session_id = record.identity().game_session_id().as_bytes().to_vec();
         let character_id = record.identity().character_id().as_bytes().to_vec();
         let mut transaction = self.pool.begin().await?;
+        db::lock_admission_domain(&mut transaction, record).await?;
 
         let candidate_exists =
             candidate_session_exists(&mut transaction, candidate_session_id.as_slice()).await?;
@@ -325,6 +326,7 @@ impl AdmissionReconnectJournalV2 {
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
         let mut transaction = self.pool.begin().await?;
+        db::lock_admission_domain(&mut transaction, record).await?;
         if let Some(authorization) = request.terminal_replacement()
             && (!replacement_authorization_matches_record(authorization, record)
                 || !replacement_receipt_matches(&mut transaction, authorization, record).await?)

@@ -14,6 +14,111 @@ pub async fn connect(database_url: &str, max_connections: u32) -> Result<PgPool,
         .map_err(DurabilityError::from)
 }
 
+/// Conservative first implementation: all journal writers and row-locking
+/// readers serialize before any semantic clock sample. EXCLUSIVE still permits
+/// ordinary snapshot readers. This intentionally makes no concurrency claim.
+pub(super) async fn lock_admission_domain(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &oteryn_game_server::foundation::ReconnectDurabilityRecordV1,
+) -> Result<(), DurabilityError> {
+    // Lexical order, complete current ledger. Immediate FK/unique/index work on
+    // these relations cannot introduce a new competing writer/row lock after L.
+    for relation in [
+        "game_durability_admission_account_guards",
+        "game_durability_admission_character_guards",
+        "game_durability_admission_guard_history",
+        "game_durability_admission_lifecycle_receipts",
+        "game_durability_admission_runtime_guards",
+        "game_durability_admission_signing_trust_guards",
+        "game_durability_control_loss_continuity",
+        "game_durability_fresh_admission_receipts",
+        "game_durability_reconnect_attempts",
+        "game_durability_reconnect_pending_commands",
+        "game_durability_reconnect_sessions",
+        "game_durability_recovery_grant_consumptions",
+        "game_durability_session_replacements",
+        "game_durability_transport_ref_reservations",
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "LOCK TABLE {relation} IN EXCLUSIVE MODE"
+        )))
+        .execute(&mut **transaction)
+        .await?;
+    }
+    let identity = record.identity();
+    let mut keys = vec![
+        (
+            b"account".as_slice(),
+            identity.account_id().as_bytes().to_vec(),
+        ),
+        (
+            b"character".as_slice(),
+            identity.character_id().as_bytes().to_vec(),
+        ),
+        (
+            b"session".as_slice(),
+            identity.game_session_id().as_bytes().to_vec(),
+        ),
+        (
+            b"transport".as_slice(),
+            record.connection().transport_ref().to_bytes().to_vec(),
+        ),
+        (
+            b"attempt".as_slice(),
+            [
+                identity.game_session_id().as_bytes().as_slice(),
+                &identity.reconnect_attempt_ref().to_be_bytes(),
+            ]
+            .concat(),
+        ),
+        (
+            b"epoch".as_slice(),
+            [
+                identity.character_id().as_bytes().as_slice(),
+                &record.continuity().control_loss_epoch().get().to_be_bytes(),
+            ]
+            .concat(),
+        ),
+    ];
+    let mut scope = super::admission_authority_guards::Writer::new(33);
+    super::admission_authority_guards::write_scope(&mut scope, identity.runtime_scope())?;
+    keys.push((b"runtime".as_slice(), scope.bytes));
+    if let oteryn_game_server::foundation::ReconnectProofV1::ReauthenticatedRecovery {
+        recovery_grant_nonce,
+        ..
+    } = record.proof()
+    {
+        keys.push((b"recovery-nonce".as_slice(), recovery_grant_nonce.to_vec()));
+    }
+    // Stable FNV-1a only chooses serialization buckets. Hash collisions may
+    // over-serialize; complete typed identities remain mandatory SQL predicates.
+    let mut physical: Vec<i64> = keys
+        .into_iter()
+        .map(|(domain, key)| {
+            let mut hash = 0xcbf2_9ce4_8422_2325_u64;
+            for byte in b"oteryn-admission-v1"
+                .iter()
+                .chain(domain)
+                .chain([0].iter())
+                .chain(&key)
+            {
+                hash ^= u64::from(*byte);
+                hash = hash.wrapping_mul(0x0000_0100_0000_01b3);
+            }
+            i64::from_be_bytes(hash.to_be_bytes())
+        })
+        .collect();
+    physical.sort_unstable();
+    physical.dedup();
+    for key in physical {
+        sqlx::query("SELECT pg_advisory_xact_lock($1)")
+            .bind(key)
+            .execute(&mut **transaction)
+            .await?;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod runtime_scope_identity_red_tests {
     use crate::durability::{AdmissionReconnectJournalV2, MigrationExecutor};

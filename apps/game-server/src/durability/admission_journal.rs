@@ -113,6 +113,19 @@ impl AdmissionReconnectJournal {
             scope_storage(record);
 
         let mut transaction = self.pool.begin().await?;
+        super::db::lock_admission_domain(&mut transaction, record).await?;
+        let occupied: bool = sqlx::query_scalar(
+            "SELECT EXISTS (SELECT 1 FROM game_durability_reconnect_sessions \
+             WHERE account_id = $1::text::uuid AND session_state IN (1, 2) \
+               AND game_session_id <> encode($2, 'hex')::uuid)",
+        )
+        .bind(identity.account_id())
+        .bind(session_id.as_slice())
+        .fetch_one(&mut *transaction)
+        .await?;
+        if occupied {
+            return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
+        }
         let inserted_session = sqlx::query(
             "INSERT INTO game_durability_reconnect_sessions (\
                 game_session_id, account_id, character_id, world_id, runtime_scope_kind, \
@@ -446,6 +459,7 @@ impl AdmissionReconnectJournal {
             .to_string();
 
         let mut transaction = self.pool.begin().await?;
+        super::db::lock_admission_domain(&mut transaction, record).await?;
         let Some(session) =
             load_session_for_update(&mut transaction, session_id.as_slice()).await?
         else {
@@ -625,6 +639,7 @@ impl AdmissionReconnectJournal {
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
         let mut transaction = self.pool.begin().await?;
+        super::db::lock_admission_domain(&mut transaction, request.record()).await?;
         let (snapshot, _state) =
             Self::reconcile_record_in_transaction(&mut transaction, request.record()).await?;
         transaction.commit().await?;

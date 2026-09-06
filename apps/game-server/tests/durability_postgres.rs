@@ -446,7 +446,7 @@ fn record_for_actor_epoch_with_protection(
         game_session_id,
         ReconnectAttemptRef::new(attempt_raw)
             .map_err(|_error| ReconnectDurabilityErrorV1::InvalidRecord)?,
-        "123e4567-e89b-12d3-a456-426614174000",
+        &postgres::fixture_account_for_character(character_raw),
         character_id,
         world_id,
         RuntimeScopeRefV1::channel(world_id, channel_id),
@@ -735,6 +735,81 @@ fn transport_ref_collision_is_durable_and_same_attempt_replays_terminal()
                     journal.prepare(&colliding).await?,
                     ReconnectPrepareDispositionV1::ExistingTerminal
                 );
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn reconnect_account_incumbent_is_a_stale_denial_without_candidate_effects()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("account_incumbent_denial").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let now = postgres_clock(&pool).await?;
+                let (_, first) = ReconnectDurabilityFlowV1::begin(
+                    record(20, 1, 0x33, now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&first).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                let candidate =
+                    record_for_actor(21, 121, 1, 0x34, now).map_err(foundation_error)?;
+                let identity = candidate.identity();
+                // Independent fixture account intent deliberately targets the already
+                // occupied account; current authority comes from the locked DB row.
+                let same_account = ReconnectIdentityV1::new(
+                    identity.game_session_id(),
+                    identity.reconnect_attempt_ref(),
+                    "123e4567-e89b-12d3-a456-426614174000",
+                    identity.character_id(),
+                    identity.world_id(),
+                    identity.runtime_scope(),
+                )
+                .map_err(foundation_error)?;
+                let candidate = ReconnectDurabilityRecordV1::new(
+                    same_account,
+                    candidate.connection(),
+                    candidate.authority(),
+                    candidate.continuity(),
+                    candidate.proof().clone(),
+                    candidate.fnd02().clone(),
+                    candidate.compatibility().clone(),
+                )
+                .map_err(foundation_error)?;
+                let (_, request) = ReconnectDurabilityFlowV1::begin(candidate);
+                assert_eq!(
+                    journal.prepare(&request).await?,
+                    ReconnectPrepareDispositionV1::RejectedStaleAuthority
+                );
+                let sessions: i64 =
+                    sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_reconnect_sessions")
+                        .fetch_one(&pool)
+                        .await?;
+                let references: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_transport_ref_reservations",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!((sessions, references), (1, 1));
+                pool.close().await;
                 Ok::<(), Box<dyn std::error::Error>>(())
             }
             .await;

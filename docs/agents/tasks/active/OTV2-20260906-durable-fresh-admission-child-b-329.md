@@ -131,6 +131,15 @@ The plan's milestones preserve full acceptance and are not separate task/PR allo
 - Measured fixtures only: complete operation3934 encoded bytes /2931 binary bytes; account478, character278, runtime385, signing-trust280 encoded guard bytes. These are not maxima/capacity proof. Encode retains bounded binary + base64 + JSON, historical validation clones guard evidence only after bounded encoding; decode borrows envelope and retains binary + typed string copies, without canonical re-encode copies.
 - New actual hosted RED prepared: `commit_nonce_relation_wait_cannot_outlive_authorization_deadline`. It holds the nonce relation in SHARE mode, observes the blocked request through pg_locks, lets trusted PostgreSQL time cross the accepted deadline, then requires stale rejection with no consumption. Existing code samples time before this later relation acquisition. This new RED is pending; common strongest-needed relation locks and sorted domain/key/row footprint closure are not implemented yet. No new hosted run or result is claimed here.
 
+### Window 1 material handoff — relation wait repair and owned fixture family
+
+- Canonical codec checkpoint `d8fb43e727a4052464bbd40d66c6d8df53fd8889`, tree `3b2e57876565264e513c4bfe09c504a25e04a16e`; independent intermediate codec/test review P0/P1/P2=0. Same branch and normal fast-forward; immutable admission remains `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd`.
+- Actual relation-wait RED: PostgreSQL17.6 run `34023568404`, Linux `101460507857`, `2026-09-06T09:08:33Z`; `commit_nonce_relation_wait_cannot_outlive_authorization_deadline` observed `Committed` instead of `RejectedStaleAuthority` after its pg_locks barrier and trusted database deadline crossing. Full target 291 passed / 9 failed (eight known fixture cases plus this RED). No unchanged run was requested.
+- Repair now takes all14 journal relations in lexical EXCLUSIVE order before any effect/time sample in all five current V1/V2 transaction entry points. It also takes stable domain-tagged, globally sorted/deduplicated advisory IDs for request account/character/session/runtime/transport/attempt/epoch/nonce; hashing chooses locks only, never identity. The strong complete relation fence excludes other writers and row-locking readers throughout COMMIT, intentionally serializing the journal. SQL GREEN is pending. Adaptive incumbent/predecessor advisory footprint discovery and explicit affected row/PK closure remain open; retain this strong relation mode while completing them, and cover future fresh/publication/lifecycle entry points before qualification.
+- Actual different nonterminal account occupancy is independently queried under the common fence and returns existing `RejectedStaleAuthority` before any candidate/nonce/reference effect. Existing mismatched stored candidate bindings still report `InvalidStoredState`. Added a configured SQL same-account denial/no-effects case; its execution remains pending.
+- Owned collision/nonce fixture constructors now supply independent canonical accounts for independent non-anchor character seeds; actor11 retains the original ACCOUNT and independent replacement/current-session anchor. Assertions and source-negative meaning are retained. Seven affected owned cases await hosted repair confirmation; the remaining authority_recovery/matrix family still awaits Work's protected two-path amendment. No unallocated path was edited. Migration-binary tests compile separately, so schema.rs retains its own test-only account constructor. Strict all-target Clippy passed11.97s after repair; fmt/diff checks passed. Logs `b329-owned-fixture-clippy.log`, `b329-lock-clippy.log`. Full local `cargo +1.94.0 test --locked -p oteryn-game-server` passed all package targets and doctests (library290; PostgreSQL integration target301 includes explicitly unconfigured/skip DB bodies, not SQL proof). Log `b329-window1-component.log`. Governance validator passed26 policy documents/9 lanes.
+- Whole changed-content self-review confirms no Foundation/0001/resource default/source registration changes, no receipt-to-live conversion, no account-exclusion relaxation, no production trigger bypass, and unchanged release historical-provenance policy. Full SQL, full adapter/lifecycle, resource #337 adoption after its allocation, independent final review and canonical gates remain mandatory and incomplete.
+
 ## Validation
 
 ### Focused
@@ -166,7 +175,7 @@ Work creates/identifies the sole implementation PR after protected allocation; w
 ## Context checkpoint
 
 ```yaml
-last_progress: hosted schema case GREEN but eight fixture regressions open; codec mechanics GREEN; relation-wait RED prepared
+last_progress: actual relation-wait RED repaired with conservative common fence; owned fixture family repaired; hosted validation and full adapter remain open
 status: in_progress
 admission_state: ADMITTED
 branch: agent/durable-fresh-admission-child-b-329
@@ -175,7 +184,7 @@ pr: 335
 execution_budget_minutes: 60
 execution_window_number: 1
 execution_window_started_at: 2026-09-06T08:17:20Z
-execution_window_elapsed_minutes: 0
+execution_window_elapsed_minutes: 57
 execution_windows_completed: 0
 worker_rotations: 0
 final_head_sha: null
@@ -183,17 +192,17 @@ final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: [34021756196, 34022664262]
-ci_job_ids: [101455557352, 101458035139]
+ci_run_ids: [34021756196, 34022664262, 34023568404]
+ci_job_ids: [101455557352, 101458035139, 101460507857]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Work publishes codec/relation-wait RED checkpoint; worker repairs common pre-L locking after actual RED and fixture accounts only after protected amendment.
+next_action: Work publishes this material checkpoint; continue same branch with actual hosted repair validation, complete adaptive footprint/SQL guard and fresh adapters, and amend fixtures only after protected allocation readback.
 ```

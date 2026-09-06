@@ -492,6 +492,20 @@ mod terminal_replacement_postgres_red_tests {
         ChannelId::decode(&uuid_v7(raw)).map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)
     }
 
+    // This module is also compiled in the migrate binary's separate test crate.
+    fn fixture_account_for_character(character: u64) -> String {
+        if character == 11 {
+            ACCOUNT.into()
+        } else {
+            format!(
+                "{:08x}-{:04x}-4000-8000-{:012x}",
+                character >> 32,
+                (character >> 16) & 0xffff,
+                character & 0xffff
+            )
+        }
+    }
+
     #[allow(clippy::too_many_arguments)]
     fn record(
         game_session_raw: u64,
@@ -508,7 +522,7 @@ mod terminal_replacement_postgres_red_tests {
             game_session(game_session_raw)?,
             ReconnectAttemptRef::new(attempt_raw)
                 .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?,
-            ACCOUNT,
+            &fixture_account_for_character(character_raw),
             character(character_raw)?,
             world_id,
             RuntimeScopeRefV1::channel(world_id, channel(13)?),

@@ -7,6 +7,21 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 static DATABASE_SEQUENCE: AtomicU64 = AtomicU64::new(0);
 
+/// Independent actor seeds use independent accounts so transport/nonce negatives
+/// do not first violate the separately enforced account-global session exclusion.
+pub fn fixture_account_for_character(character: u64) -> String {
+    if character == 11 {
+        "123e4567-e89b-12d3-a456-426614174000".into()
+    } else {
+        format!(
+            "{:08x}-{:04x}-4000-8000-{:012x}",
+            character >> 32,
+            (character >> 16) & 0xffff,
+            character & 0xffff
+        )
+    }
+}
+
 pub fn current_authority_from_record(
     record: &oteryn_game_server::foundation::ReconnectDurabilityRecordV1,
     observed_at: i64,
