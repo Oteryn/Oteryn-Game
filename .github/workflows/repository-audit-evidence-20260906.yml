@@ -1,0 +1,153 @@
+name: Repository audit evidence 20260906
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/repository-audit-evidence-20260906.yml'
+
+permissions: {}
+
+concurrency:
+  group: repository-audit-evidence-20260906-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/repository-coverage-20260906'
+    name: Audit / pinned source and complete inventory
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Read exact audited public revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
+          persist-credentials: false
+      - name: Inventory every tracked entry without executing repository code
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
+          mkdir -p audit-output
+          python - <<'PY'
+          import collections, hashlib, json, pathlib, re, subprocess, zipfile
+          root = pathlib.Path.cwd()
+          out = root / 'audit-output'
+          sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+          tree = subprocess.check_output(['git', 'rev-parse', 'HEAD^{tree}'], text=True).strip()
+          rows = []
+          sensitive = re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----|gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{50,}')
+          records = subprocess.check_output(['git', 'ls-tree', '-r', '-l', '-z', 'HEAD']).split(b'\0')
+          with zipfile.ZipFile(out / 'audited-source-text.zip', 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+              for record in records:
+                  if not record:
+                      continue
+                  info, raw_path = record.split(b'\t', 1)
+                  mode, kind, blob, size = info.decode('ascii').split()
+                  path = raw_path.decode('utf-8')
+                  entry = {'path': path, 'mode': mode, 'type': kind, 'git_blob_sha': blob, 'size': None if size == '-' else int(size), 'semantic_review': 'NOT_REVIEWED', 'text_archived': False}
+                  if kind == 'blob':
+                      data = subprocess.check_output(['git', 'cat-file', 'blob', blob])
+                      actual = hashlib.sha1(b'blob ' + str(len(data)).encode() + b'\0' + data).hexdigest()
+                      if actual != blob or len(data) != entry['size']:
+                          raise SystemExit('blob mismatch: ' + path)
+                      entry['sha256'] = hashlib.sha256(data).hexdigest()
+                      try:
+                          text = data.decode('utf-8')
+                          is_text = '\x00' not in text
+                      except UnicodeDecodeError:
+                          is_text = False
+                      entry['utf8_text'] = is_text
+                      if is_text:
+                          entry['lines'] = len(text.splitlines())
+                      safe_path = not pathlib.PurePosixPath(path).is_absolute() and '..' not in pathlib.PurePosixPath(path).parts
+                      if is_text and mode in {'100644', '100755'} and safe_path and not sensitive.search(data):
+                          archive.writestr(path, data)
+                          entry['text_archived'] = True
+                      else:
+                          entry['archive_exclusion'] = 'binary_or_special_mode_or_sensitive_pattern'
+                  rows.append(entry)
+          (out / 'inventory.json').write_text(json.dumps({'repository': 'Oteryn/Oteryn-Game', 'audited_commit': sha, 'audited_tree': tree, 'entries': rows}, indent=2) + '\n', encoding='utf-8')
+          summary = {'commit': sha, 'tree': tree, 'tracked_entries': len(rows), 'tracked_bytes': sum(x['size'] or 0 for x in rows), 'text_archived': sum(x['text_archived'] for x in rows), 'extensions': dict(collections.Counter(pathlib.PurePosixPath(x['path']).suffix or '[none]' for x in rows))}
+          (out / 'inventory-summary.json').write_text(json.dumps(summary, indent=2) + '\n', encoding='utf-8')
+          print(json.dumps(summary, sort_keys=True))
+          PY
+      - name: Retain source and inventory for this audit only
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: repository-audit-source-7ce1d88
+          path: audit-output/
+          if-no-files-found: error
+          retention-days: 1
+
+  release_linux:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'audit/repository-coverage-20260906'
+    name: Audit / Linux release with configured PostgreSQL
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    services:
+      postgres:
+        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+        env:
+          POSTGRES_USER: oteryn_test_admin
+          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U oteryn_test_admin -d postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
+    steps:
+      - name: Check out exact audited revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
+          persist-credentials: false
+      - name: Verify source and toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
+          mkdir -p audit-output
+          rustup toolchain install 1.94.0 --profile minimal
+          rustc +1.94.0 -Vv > audit-output/rustc.txt
+          cargo +1.94.0 metadata --locked --all-features --format-version 1 > audit-output/cargo-metadata.json
+      - name: Build all release targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.94.0 build --locked --release --workspace --all-targets --all-features 2>&1 | tee audit-output/release-build.log
+      - name: Run release workspace tests with actual PostgreSQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo +1.94.0 test --locked --release --workspace --all-features 2>&1 | tee audit-output/release-tests.log
+      - name: Exercise exact release bootstrap without claiming gameplay
+        shell: bash
+        run: |
+          set -euo pipefail
+          sha256sum target/release/oteryn-game-server target/release/oteryn-client target/release/oteryn-synthetic-client-harness > audit-output/release-sha256.txt
+          target/release/oteryn-game-server --smoke 2>&1 | tee audit-output/server-smoke.log
+          target/release/oteryn-synthetic-client-harness 2>&1 | tee audit-output/synthetic-smoke.log
+          set +e
+          target/release/oteryn-game-server > audit-output/server-no-gameplay.log 2>&1
+          result=$?
+          set -e
+          printf 'non_smoke_exit=%s\n' "$result" > audit-output/server-exit.txt
+          test "$result" -ne 0
+      - name: Preserve executed verification evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: repository-audit-release-linux-7ce1d88
+          path: audit-output/
+          if-no-files-found: warn
+          retention-days: 1
