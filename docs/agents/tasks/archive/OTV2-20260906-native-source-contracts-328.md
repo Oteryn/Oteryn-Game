@@ -1,5 +1,41 @@
 # OTV2-20260906-native-source-contracts-328
 
+## Terminal closeout overlay
+
+```yaml
+task_id: OTV2-20260906-native-source-contracts-328
+status: completed
+repository: Oteryn/Oteryn-Game
+issue: 328
+pr: 330
+branch: arch/native-source-contracts-328
+admission_main_sha: 93f31ba05972d3b96afb0d9ea08e2c6753507d8c
+base_sha: 93f31ba05972d3b96afb0d9ea08e2c6753507d8c
+final_head_sha: a8363eef7501ff180c6410e9856edd1f13e6df1f
+merge_sha: 5412215718d66c743fb78eadc561e6a23b5e2b5f
+merge_time: 2026-09-06T07:11:16Z
+canonical_ci_run: 34017527771
+canonical_ci_result: success
+merge_queue_run: 34018062415
+merge_queue_result: success
+independent_review_evidence: 5557563839
+issue_terminal_readback: closed_completed
+branch_deletion_readback: deleted
+worker_custody: released
+ownership_release: released
+coordinator: Oteryn Work Delivery Coordinator
+repair_cycles_for_current_gate: 1
+next_action: Work owns separate implementation allocations and actual-source qualification; no further action belongs to this released architecture task.
+```
+
+Work's supplied protected readback confirms PR #330 merged, Issue #328 closed completed, branch deleted, independent review and required CI/Merge Queue passed. Direct PR readback also confirms final head, protected merge SHA and merge time above. This archive retains the original three-document allocation, immutable admission and one uncertainty-encoding repair cycle; no counter or source-authority reset occurs.
+
+The accepted Game-side decisions are `FND-NATIVE-SOURCE-EVIDENCE-V1` and `OPS-SCOPE-ASSIGNMENT-FENCING-V1`. Contract acceptance is not actual source availability, Platform counterpart acceptance, authenticated bootstrap/connectivity, runtime readiness or authority to mutate an external repository. Game character initialization/owner storage, external producer implementation and every-writer fencing still require their own exact allocations and proof under #319. Foundation #326 and Child B #329 proceed through their independent programme gates; Server Seam #247 remains held until its actual dependencies qualify.
+
+## Historical packet boundary
+
+Everything below preserves the architect's worker packet from protected merge `5412215` as historical allocation, validation and counter evidence. Its candidate/pending prose and old next actions describe the pre-integration checkpoints and do not compete with this terminal overlay. The historical three-path list is provenance; all task ownership is released.
+
 ```yaml
 task_id: OTV2-20260906-native-source-contracts-328
 title: Native evidence and first-slice assignment contracts
@@ -32,11 +68,11 @@ cross_repository_coordination_id: OTV2-NATIVE-SOURCE-EVIDENCE
 external_repositories: [Oteryn/Oteryn-Platform_read_only]
 ```
 
-## Outcome
+## Historical worker packet — Outcome
 
 Two separable Game candidate decisions make the deferred source boundaries concrete: authenticated private security/trust observations with independent bootstrap, and durable external scope assignment with every-writer fencing. Neither is accepted by this task; Work is the sole control plane/integrator. Foundation #326 and Child B retain independent sequencing. Character creation authorization/bootstrap and actual Platform counterpart acceptance/implementation remain precise dependencies.
 
-## Architecture and source of truth
+## Historical worker packet — Architecture and source of truth
 
 PROVEN: live #328 and #319 comments read; live main and allocated branch independently resolve to immutable admission. Applicable root/docs agent instructions, supervising architect prompt and decision discipline govern. Read-only Platform evidence independently resolves to `3b2ea1c7392187d5d22488673073dc8f8305a374`.
 
@@ -51,7 +87,7 @@ Existing authorities preserved:
 
 DERIVED: these two consumer/assignment decisions remove material design ambiguity while actual source implementation, accepted external counterpart and authorized bootstrap remain required. UNKNOWN: actual connectivity, bootstrap materials, production source availability and character initializer implementation. CONFLICT: none; no prior accepted identity, crypto, fresh linearization, claim or product ownership decision is reopened.
 
-## High-risk authority/recovery qualification
+## Historical worker packet — High-risk authority/recovery qualification
 
 ```yaml
 applicable: true
@@ -79,7 +115,7 @@ finding_dispositions:
   p2_fixed_accepted_or_deferred: [fixed_PR330_clock_uncertainty_seconds_explicit_u64_decimal_string_encoding]
 ```
 
-## Acceptance criteria
+## Historical worker packet — Acceptance criteria
 
 - [x] Define a concrete source transport/envelope/order/bootstrap requirement without accepting Platform's side or inventing availability.
 - [x] Define durable manual assignment/revocation/replacement and mandatory writer/readiness fencing without self-grant or autoscaling.
@@ -87,11 +123,11 @@ finding_dispositions:
 - [x] Explicitly retain character operation authorization/bootstrap and actual source prerequisites.
 - [ ] Independent exact-head review and protected integration through Work.
 
-## Excluded scope
+## Historical worker packet — Excluded scope
 
 Exactly three docs. No code/migration/resource registry/workflow changes, commits, PR creation, posts, merge/auto-merge, external writes, live credentials/keys/PKI/production state, B/C allocation or #327 edits. No service/deployment topology claim. No source availability inferred from descriptor configuration, mock fixtures or semantic ports.
 
-## Implementation / findings
+## Historical worker packet — Implementation / findings
 
 The source candidate selects mutually authenticated TLS 1.3 private JSON request/response and separate security/trust response families. New observations commit their owner revision/time under current-state serialization; equal revision never refreshes evidence. Game persists authenticated provenance before publication/adoption. External acceptance/implementation is an unresolved dependency, not authority this Game task can create.
 
@@ -101,7 +137,7 @@ The docs are separable decisions; serial authoring uses one branch/worktree beca
 
 Independent PR #330 P2 accepted on reviewed head `270f416a98d87a66a2b97e23037e6aae5f220447`: the required uncertainty duration lacked an explicit wire encoding. The narrow repair specifies canonical unsigned 64-bit decimal JSON string including zero, preserving existing checked arithmetic and conservative freshness rejection. Source evidence: `FreshEvidenceProvenanceV1::clock_uncertainty_seconds` is `u64`; existing fixtures include zero and overflow rejection. Required-field family sweep covered version, revision/generation, timestamp, decision identity, UUID, public key, booleans and closed operation/result/scope fields; no further concrete ambiguity requiring repair was identified. Assignment decision remains byte-identical. This is one repair cycle; independent exact-head recheck remains pending after Work publication.
 
-## Validation
+## Historical worker packet — Validation
 
 ### Focused
 
@@ -125,14 +161,14 @@ Independent PR #330 P2 accepted on reviewed head `270f416a98d87a66a2b97e23037e6a
 - classification: high-risk architecture candidate
 - result: pending
 
-## Self-review
+## Historical worker packet — Self-review
 
 - exact head: local final candidate bytes; remote exact head recorded by Work after publication
 - method/reviewer: architect whole-candidate adversarial review against accepted contracts and independently read source
 - material findings: explicit external acceptance, real bootstrap, all-writer fence, nonready assignment and separate character operation authority required; addressed in candidate
 - verdict: candidate ready for independent qualification; no unresolved author findings
 
-## Independent review
+## Historical worker packet — Independent review
 
 - required: YES; source authentication and durable ownership/fencing
 - exact head: pending publication
@@ -140,7 +176,7 @@ Independent PR #330 P2 accepted on reviewed head `270f416a98d87a66a2b97e23037e6a
 - material findings: pending
 - verdict: pending
 
-## PR and closeout
+## Historical worker packet — PR and closeout
 
 - changed-file review: exactly three allocated docs
 - unresolved review threads: pending PR
@@ -150,7 +186,7 @@ Independent PR #330 P2 accepted on reviewed head `270f416a98d87a66a2b97e23037e6a
 - ownership release: author releases writable custody on handoff; Work owns lifecycle
 - `MERGE_AUTHORITY: REPOSITORY_CONTROL_PLANE_ONLY`
 
-## Context checkpoint
+## Historical worker packet — Context checkpoint
 
 ```yaml
 last_progress: PR330 accepted uncertainty encoding P2 repaired; independent recheck pending
