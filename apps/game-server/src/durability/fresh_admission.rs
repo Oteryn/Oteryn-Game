@@ -241,6 +241,18 @@ pub enum FreshReconciliation {
     Committed(Box<FreshAdmissionDurableReconciliationSnapshotV1>),
 }
 
+/// Inert historical outcome and independently read current snapshot. This is not
+/// a registered completion source or permission to activate a controller.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum FreshLossReconciliation {
+    Absent,
+    Conflict,
+    Committed {
+        completion: Box<ControlLossCompletionV1>,
+        current: Box<FreshAdmissionDurableReconciliationSnapshotV1>,
+    },
+}
+
 /// Asynchronous storage only. Production bounded scheduling/completion remains
 /// a separate adapter requirement; runtime arguments must match fixed registry caps.
 #[derive(Clone)]
@@ -517,6 +529,112 @@ impl FreshAdmissionStore {
         Ok(ControlLossOutcomeV1::Committed { decided_at })
     }
 
+    /// Read the original loss receipt and current canonical session in one fenced
+    /// snapshot. Restoring this report never reconstructs a live loss request.
+    pub async fn reconcile_fresh_loss(
+        &self,
+        original: &ControlLossOperationV1,
+    ) -> Result<FreshLossReconciliation> {
+        use sqlx::Row;
+        let encoded = encode_fresh_loss(original)?;
+        let session_id = original.observation.session.commit().game_session_id();
+        let mut key = b"owning-loss-v1".to_vec();
+        key.extend_from_slice(session_id.as_bytes());
+        key.extend_from_slice(&original.observation.loss_epoch.get().to_be_bytes());
+        let mut tx = self.guards.backend.begin().await?;
+        super::db::lock_admission_relations(&mut tx).await?;
+        let Some(row) = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json, decided_at FROM game_durability_admission_lifecycle_receipts r WHERE operation_key = $1 FOR SHARE")
+            .bind(&key).fetch_optional(&mut *tx).await? else {
+                tx.commit().await?;
+                return Ok(FreshLossReconciliation::Absent);
+            };
+        let stored: Option<String> = row.try_get("operation_json")?;
+        let stored = stored.ok_or(DurabilityError::InvalidStoredState)?;
+        let decided_at: i64 = row.try_get("decided_at")?;
+        // The canonical fresh receipt supplies the initial commit; inventing a
+        // replay key merely to deserialize the loss DTO would lose provenance.
+        let row = sqlx::query("SELECT CASE WHEN octet_length(to_jsonb(r)::text) <= 131072 THEN operation_json END AS operation_json FROM game_durability_fresh_admission_receipts r WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
+            .bind(session_id.as_bytes().as_slice()).fetch_optional(&mut *tx).await?
+            .ok_or(DurabilityError::InvalidStoredState)?;
+        let fresh_json: Option<String> = row.try_get("operation_json")?;
+        let fresh = decode_operation(
+            &fresh_json.ok_or(DurabilityError::InvalidStoredState)?,
+            self.maximum_operation_bytes,
+        )?;
+        let operation = decode_fresh_loss(&stored, checked(fresh.authorization.initial_commit())?)?;
+        if operation.observation.session.commit().game_session_id() != session_id
+            || operation.observation.loss_epoch != original.observation.loss_epoch
+            || operation.observation.account_presence.account_id() != fresh.authorization.account_id
+            || decided_at < operation.authorized_at
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        if stored != encoded {
+            tx.commit().await?;
+            return Ok(FreshLossReconciliation::Conflict);
+        }
+        let FreshReconciliation::Committed(current) =
+            self.reconcile_locked(&mut tx, &fresh).await?
+        else {
+            return Err(DurabilityError::InvalidStoredState);
+        };
+        // The public session snapshot does not retain the SQL predecessor
+        // mirror. Read it under the same fence rather than silently dropping its
+        // relationship to the immutable original loss.
+        let predecessor: Option<String> = sqlx::query_scalar("SELECT predecessor_generation::text FROM game_durability_reconnect_sessions WHERE game_session_id = encode($1,'hex')::uuid FOR SHARE")
+            .bind(session_id.as_bytes().as_slice()).fetch_one(&mut *tx).await?;
+        let predecessor: u64 = checked(
+            predecessor
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .parse(),
+        )?;
+        if current.current_session.current_control_loss_epoch()
+            == Some(operation.observation.loss_epoch)
+            && predecessor
+                != operation
+                    .observation
+                    .session
+                    .current_connection_generation()
+                    .get()
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        if current
+            .current_session
+            .current_connection_generation()
+            .get()
+            < operation
+                .observation
+                .session
+                .current_connection_generation()
+                .get()
+            || current
+                .current_session
+                .current_control_loss_epoch()
+                .is_none_or(|epoch| epoch.get() < operation.observation.loss_epoch.get())
+            || (current.current_session.current_control_loss_epoch()
+                == Some(operation.observation.loss_epoch)
+                && current.current_session.current_original_grace_deadline()
+                    != Some(operation.observation.original_grace_deadline))
+            || (current.current_session.current_connection_generation()
+                == operation
+                    .observation
+                    .session
+                    .current_connection_generation()
+                && current.current_session.current_transport().is_some())
+        {
+            return Err(DurabilityError::InvalidStoredState);
+        }
+        tx.commit().await?;
+        Ok(FreshLossReconciliation::Committed {
+            completion: Box::new(ControlLossCompletionV1 {
+                operation,
+                outcome: ControlLossOutcomeV1::Committed { decided_at },
+            }),
+            current,
+        })
+    }
+
     pub async fn reconcile(
         &self,
         original: &FreshAdmissionOperationV1,
@@ -636,7 +754,9 @@ impl FreshAdmissionStore {
             (Some(epoch), Some(grace), Some(predecessor))
                 if !epoch.is_null()
                     && !grace.is_null()
-                    && predecessor.as_u64().is_some_and(|value| value > 0) =>
+                    && predecessor.as_u64().is_some_and(|value| {
+                        value > 0 && value <= current_session.current_connection_generation().get()
+                    }) =>
             {
                 current_session = checked(current_session.with_control_loss_continuity(
                     checked(ControlLossEpochRefV1::new(
@@ -779,6 +899,157 @@ pub fn encode_fresh_loss(operation: &ControlLossOperationV1) -> Result<String> {
     let mut writer = Writer::new(maximum);
     write_fresh_loss(&mut writer, operation)?;
     encode_envelope(&writer.bytes, maximum)
+}
+
+/// Restore bounded historical loss bytes against the actual durable fresh
+/// receipt's initial commit. No replay key or live authority is synthesized.
+pub fn decode_fresh_loss(
+    encoded: &str,
+    initial: FreshAdmissionCommit<AuthenticatedTransportRefV1>,
+) -> Result<ControlLossOperationV1> {
+    let bytes = decode_envelope(encoded, super::MAX_FRESH_OPERATION_BYTES)?;
+    let mut r = Reader::new(&bytes);
+    if r.tag()? != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let authorized_at = r.i64()?;
+    let source_authority = read_scope(&mut r)?;
+    let source_revision = r.u64()?;
+    let accepted_source_revision = r.u64()?;
+    let decision_identity = checked(ControlLossEpochRefV1::new(r.u64()?))?;
+    let accepted_decision_identity = checked(ControlLossEpochRefV1::new(r.u64()?))?;
+    let observed_at = r.i64()?;
+    if r.bytes::<16>()? != *initial.game_session_id().as_bytes()
+        || r.bytes::<16>()? != *initial.character_id().as_bytes()
+        || r.bytes::<16>()? != *initial.world_id().as_bytes()
+        || r.bytes::<16>()? != *initial.channel_id().as_bytes()
+        || r.u64()? != initial.character_lease_generation()
+        || r.u64()? != initial.scope_ownership_generation()
+        || r.u64()? != initial.connection_generation().get()
+        || r.bytes::<16>()? != initial.initial_transport().to_bytes()
+    {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let state = match r.tag()? {
+        1 => GameSessionState::Active,
+        2 => GameSessionState::Reconnectable,
+        3 => GameSessionState::Terminal,
+        _ => return Err(DurabilityError::InvalidStoredState),
+    };
+    let generation = checked(ConnectionGeneration::new(r.u64()?))?;
+    let transport = if r.boolean()? {
+        Some(checked(AuthenticatedTransportRefV1::decode(
+            &r.bytes::<16>()?,
+        ))?)
+    } else {
+        None
+    };
+    let lease = checked(CharacterLease::new(
+        checked(CharacterId::decode(&r.bytes::<16>()?))?,
+        r.u64()?,
+    ))?;
+    let eligibility = if r.boolean()? {
+        Some(CharacterWorldEligibilityClaimV1::new(
+            checked(CharacterId::decode(&r.bytes::<16>()?))?,
+            checked(WorldId::decode(&r.bytes::<16>()?))?,
+        ))
+    } else {
+        None
+    };
+    let scope = read_scope(&mut r)?;
+    let scope_generation = checked(ScopeOwnershipGeneration::new(r.u64()?))?;
+    let epoch = if r.boolean()? {
+        Some(checked(ControlLossEpochRefV1::new(r.u64()?))?)
+    } else {
+        None
+    };
+    let grace = if r.boolean()? { Some(r.i64()?) } else { None };
+    let mut session = checked(GameSessionAuthoritySnapshot::from_current_facts(
+        initial,
+        state,
+        generation,
+        transport,
+        lease,
+        eligibility,
+        scope,
+        scope_generation,
+    ))?;
+    match (epoch, grace) {
+        (Some(epoch), Some(grace)) => {
+            session = checked(session.with_control_loss_continuity(epoch, grace))?
+        }
+        (None, None) => {}
+        _ => return Err(DurabilityError::InvalidStoredState),
+    }
+    let account_presence = checked(AccountPresenceClaimV1::new(
+        &r.text()?,
+        checked(CharacterId::decode(&r.bytes::<16>()?))?,
+    ))?;
+    let placement_identity = r.bytes::<16>()?;
+    let placement_revision = r.u64()?;
+    let actor_present = r.boolean()?;
+    let runtime_ready = r.boolean()?;
+    if r.tag()? != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let loss_epoch = checked(ControlLossEpochRefV1::new(r.u64()?))?;
+    let loss_origin = r.i64()?;
+    let original_grace_deadline = r.i64()?;
+    if r.tag()? != 1 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let usage = match r.tag()? {
+        0 => RecoveryProtectionUseV1::NotEntitled,
+        1 => RecoveryProtectionUseV1::Unused {
+            entitlement_generation: r.u64()?,
+        },
+        2 => RecoveryProtectionUseV1::Activated {
+            entitlement_generation: r.u64()?,
+            activated_at: r.i64()?,
+            deadline: r.i64()?,
+        },
+        _ => return Err(DurabilityError::InvalidStoredState),
+    };
+    let rearm = match r.tag()? {
+        0 => RecoveryProtectionRearmV1::NotRearmed {
+            generation: r.u64()?,
+            stable_control_started_at: if r.boolean()? { Some(r.i64()?) } else { None },
+            accepted_deadline: if r.boolean()? { Some(r.i64()?) } else { None },
+        },
+        1 => RecoveryProtectionRearmV1::Satisfied {
+            generation: r.u64()?,
+            established_at: r.i64()?,
+        },
+        _ => return Err(DurabilityError::InvalidStoredState),
+    };
+    r.finish()?;
+    let operation = ControlLossOperationV1 {
+        version: 1,
+        authorized_at,
+        observation: ControlLossObservationV1 {
+            source_authority,
+            source_revision,
+            accepted_source_revision,
+            decision_identity,
+            accepted_decision_identity,
+            observed_at,
+            session,
+            account_presence,
+            placement_identity,
+            placement_revision,
+            actor_present,
+            runtime_ready,
+            cause: ControlLossCauseV1::AuthoritativeUnexpectedLoss,
+            loss_epoch,
+            loss_origin,
+            original_grace_deadline,
+            history: ControlLossHistoryV1::FreshOrigin,
+            protection: RecoveryProtectionContinuityV1 { usage, rearm },
+        },
+    };
+    // Historical Foundation validation cannot yield another live request.
+    checked(ControlLossFlowV1::restore(operation.clone()))?;
+    Ok(operation)
 }
 
 pub(super) async fn has_owning_loss_receipt(

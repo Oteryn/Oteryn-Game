@@ -17,7 +17,7 @@ mod postgres;
 fn owning_loss_codec_retains_distinct_protection_and_source_generations()
 -> Result<(), Box<dyn std::error::Error>> {
     use authority_matrix::checked;
-    use durability::fresh_admission::encode_fresh_loss;
+    use durability::fresh_admission::{decode_fresh_loss, encode_fresh_loss};
     use foundation::*;
     let facts = checked(FreshAdmissionFacts::new(
         [7; 32],
@@ -82,30 +82,114 @@ fn owning_loss_codec_retains_distinct_protection_and_source_generations()
     };
     let encoded = encode_fresh_loss(&operation)?;
     assert_eq!(encode_fresh_loss(&operation)?, encoded);
+    assert_eq!(decode_fresh_loss(&encoded, commit)?, operation);
+    let mut restored = checked(ControlLossFlowV1::restore(decode_fresh_loss(
+        &encoded, commit,
+    )?))?;
+    assert!(
+        restored.take_request().is_err(),
+        "decoded history cannot yield live authority"
+    );
+    for end in 0..encoded.len() {
+        assert!(decode_fresh_loss(&encoded[..end], commit).is_err());
+    }
+    assert!(decode_fresh_loss(&(encoded.clone() + " "), commit).is_err());
+    use base64::Engine;
+    let payload = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(
+        serde_json::from_str::<serde_json::Value>(&encoded)?["payload"]
+            .as_str()
+            .ok_or("missing payload")?,
+    )?;
+    let wrap = |bytes: &[u8]| {
+        format!(
+            "{{\"version\":1,\"payload\":\"{}\"}}",
+            base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
+        )
+    };
+    for end in 0..payload.len() {
+        assert!(decode_fresh_loss(&wrap(&payload[..end]), commit).is_err());
+    }
+    let mut malformed = payload.clone();
+    malformed.push(0);
+    assert!(decode_fresh_loss(&wrap(&malformed), commit).is_err());
+    malformed = payload.clone();
+    malformed[0] = 2;
+    assert!(decode_fresh_loss(&wrap(&malformed), commit).is_err());
+    malformed = payload;
+    malformed[1..9].copy_from_slice(&0i64.to_be_bytes());
+    assert!(
+        decode_fresh_loss(&wrap(&malformed), commit).is_err(),
+        "historically impossible authorization must reject"
+    );
+    assert!(decode_fresh_loss(&"x".repeat(65_537), commit).is_err());
+    let other_commit = checked(FreshAdmissionCommit::from_facts(
+        authority_matrix::session(8)?,
+        facts,
+        commit.initial_transport(),
+    ))?;
+    assert!(decode_fresh_loss(&encoded, other_commit).is_err());
     let mut changed = operation.clone();
     changed.observation.protection.usage = RecoveryProtectionUseV1::Unused {
         entitlement_generation: 2,
     };
     assert_ne!(encode_fresh_loss(&changed)?, encoded);
+    assert_eq!(
+        decode_fresh_loss(&encode_fresh_loss(&changed)?, commit)?,
+        changed
+    );
     changed = operation.clone();
     changed.observation.protection.rearm = RecoveryProtectionRearmV1::Satisfied {
         generation: 8,
         established_at: 90,
     };
     assert_ne!(encode_fresh_loss(&changed)?, encoded);
+    assert_eq!(
+        decode_fresh_loss(&encode_fresh_loss(&changed)?, commit)?,
+        changed
+    );
     changed = operation.clone();
     changed.observation.source_revision = 2;
     changed.observation.accepted_source_revision = 2;
     assert_ne!(encode_fresh_loss(&changed)?, encoded);
+    assert_eq!(
+        decode_fresh_loss(&encode_fresh_loss(&changed)?, commit)?,
+        changed
+    );
     changed = operation;
     changed.observation.protection.usage = RecoveryProtectionUseV1::NotEntitled;
     assert_ne!(encode_fresh_loss(&changed)?, encoded);
+    assert_eq!(
+        decode_fresh_loss(&encode_fresh_loss(&changed)?, commit)?,
+        changed
+    );
     changed.observation.protection.rearm = RecoveryProtectionRearmV1::NotRearmed {
         generation: 8,
         stable_control_started_at: Some(90),
         accepted_deadline: Some(110),
     };
     assert_ne!(encode_fresh_loss(&changed)?, encoded);
+    assert_eq!(
+        decode_fresh_loss(&encode_fresh_loss(&changed)?, commit)?,
+        changed
+    );
+    changed.observation.protection.rearm = RecoveryProtectionRearmV1::NotRearmed {
+        generation: 8,
+        stable_control_started_at: None,
+        accepted_deadline: None,
+    };
+    assert_eq!(
+        decode_fresh_loss(&encode_fresh_loss(&changed)?, commit)?,
+        changed
+    );
+    changed.observation.protection.usage = RecoveryProtectionUseV1::Activated {
+        entitlement_generation: 2,
+        activated_at: 95,
+        deadline: 99,
+    };
+    assert!(
+        encode_fresh_loss(&changed).is_err(),
+        "Activated is not lawful FreshOrigin history"
+    );
     Ok(())
 }
 
@@ -113,7 +197,9 @@ fn owning_loss_codec_retains_distinct_protection_and_source_generations()
 fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
 -> Result<(), Box<dyn std::error::Error>> {
     use durability::admission_authority_guards::AdmissionGuardStore;
-    use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
+    use durability::fresh_admission::{
+        FreshAdmissionStore, FreshLossReconciliation, FreshReconciliation,
+    };
     use foundation::admission_authority_publication::*;
     use foundation::*;
     struct LossSource(std::cell::RefCell<ControlLossObservationV1>);
@@ -182,6 +268,7 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             let authorization = authority_matrix::checked(ControlLossAuthorizationV1::authorize(&source, session.commit().game_session_id(), now))?;
             let mut flow = ControlLossFlowV1::begin(authorization);
             let loss = authority_matrix::checked(flow.take_request())?;
+            assert_eq!(store.reconcile_fresh_loss(loss.operation()).await?, FreshLossReconciliation::Absent);
             if scenario >= 2 {
                 // Publish one independently valid current runtime change while
                 // leaving the session, claims, and loss source exactly unchanged.
@@ -229,18 +316,50 @@ fn owning_fresh_loss_is_atomic_and_raw_prepare_does_not_supply_authority()
             assert_eq!(current.current_session.current_control_loss_epoch().map(ControlLossEpochRefV1::get), Some(1));
             assert_eq!(current.current_session.current_character_lease(), session.current_character_lease());
             assert_eq!(current.receipt, initial.receipt);
+            let reopened = FreshAdmissionStore::connect_runtime(&url, 65536, 8192).await?;
+            let FreshLossReconciliation::Committed { completion, current: recovered_current } = reopened.reconcile_fresh_loss(loss.operation()).await? else { return Err("missing durable original loss".into()); };
+            assert_eq!(completion.operation, *loss.operation());
+            assert_eq!(completion.outcome, outcome);
+            assert_eq!(recovered_current, current);
+            let mut historical = authority_matrix::checked(ControlLossFlowV1::restore(completion.operation.clone()))?;
+            assert!(historical.take_request().is_err());
+            let mut conflicting = loss.operation().clone();
+            conflicting.observation.source_revision = 2;
+            conflicting.observation.accepted_source_revision = 2;
+            assert_eq!(reopened.reconcile_fresh_loss(&conflicting).await?, FreshLossReconciliation::Conflict);
             let receipts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_admission_lifecycle_receipts").fetch_one(&pool).await?;
             assert_eq!(receipts, 1);
             let attempts: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts").fetch_one(&pool).await?;
             assert_eq!(attempts, 0);
             assert_eq!(reconnect.legacy().prepare(&raw_v1).await?, ReconnectPrepareDispositionV1::Unavailable);
             assert_eq!(reconnect.prepare(&raw_v2).await?, ReconnectPrepareDispositionV2::Unavailable);
+            // A valid historical DTO for a different account cannot be paired
+            // with this canonical fresh receipt, even though the session matches.
+            let mut wrong_account = loss.operation().clone();
+            wrong_account.observation.account_presence = authority_matrix::checked(AccountPresenceClaimV1::new("00000000-0000-4000-8000-000000000099", session.commit().character_id()))?;
+            let bad_original = durability::fresh_admission::encode_fresh_loss(&wrong_account)?;
+            sqlx::query("ALTER TABLE game_durability_admission_lifecycle_receipts DISABLE TRIGGER USER").execute(&pool).await?;
+            sqlx::query("UPDATE game_durability_admission_lifecycle_receipts SET operation_json = $1").bind(bad_original).execute(&pool).await?;
+            sqlx::query("ALTER TABLE game_durability_admission_lifecycle_receipts ENABLE TRIGGER USER").execute(&pool).await?;
+            assert!(matches!(reopened.reconcile_fresh_loss(loss.operation()).await, Err(DurabilityError::InvalidStoredState)));
+            sqlx::query("ALTER TABLE game_durability_admission_lifecycle_receipts DISABLE TRIGGER USER").execute(&pool).await?;
+            sqlx::query("UPDATE game_durability_admission_lifecycle_receipts SET operation_json = $1").bind(durability::fresh_admission::encode_fresh_loss(loss.operation())?).execute(&pool).await?;
+            sqlx::query("ALTER TABLE game_durability_admission_lifecycle_receipts ENABLE TRIGGER USER").execute(&pool).await?;
+            // One mirror corruption: predecessor2 cannot precede current1.
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET predecessor_generation = 2").execute(&pool).await?;
+            assert!(matches!(reopened.reconcile_fresh_loss(loss.operation()).await, Err(DurabilityError::InvalidStoredState)));
+            assert!(matches!(store.reconcile(request.operation()).await, Err(DurabilityError::InvalidStoredState)));
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET predecessor_generation = 1").execute(&pool).await?;
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET original_grace_deadline = original_grace_deadline + 1").execute(&pool).await?;
+            assert!(matches!(reopened.reconcile_fresh_loss(loss.operation()).await, Err(DurabilityError::InvalidStoredState)));
+            sqlx::query("UPDATE game_durability_reconnect_sessions SET original_grace_deadline = original_grace_deadline - 1").execute(&pool).await?;
             // Corrupt only the stored original decision time in this isolated
             // fixture; exact bytes alone must not authenticate an impossible L.
             sqlx::query("ALTER TABLE game_durability_admission_lifecycle_receipts DISABLE TRIGGER USER").execute(&pool).await?;
             sqlx::query("UPDATE game_durability_admission_lifecycle_receipts SET decided_at = 0").execute(&pool).await?;
             sqlx::query("ALTER TABLE game_durability_admission_lifecycle_receipts ENABLE TRIGGER USER").execute(&pool).await?;
             assert!(matches!(store.commit_fresh_loss(&loss, &source).await, Err(DurabilityError::InvalidStoredState)));
+            assert!(matches!(reopened.reconcile_fresh_loss(loss.operation()).await, Err(DurabilityError::InvalidStoredState)));
             assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Committed(current));
             pool.close().await;
             Ok::<(), Box<dyn std::error::Error>>(())
