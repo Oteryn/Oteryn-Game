@@ -97,16 +97,22 @@ impl From<sqlx::migrate::MigrateError> for DurabilityError {
 /// replay/reconciliation surface; ordinary V1 behavior is delegated unchanged.
 #[derive(Clone)]
 pub struct AdmissionReconnectJournalV2 {
-    pool: PgPool,
+    backend: std::sync::Arc<db::RuntimeBackend>,
     legacy: AdmissionReconnectJournal,
 }
 
 impl AdmissionReconnectJournalV2 {
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
-        Ok(Self {
-            pool: schema::connect_runtime(database_url).await?,
-            legacy: AdmissionReconnectJournal::connect_runtime(database_url).await?,
-        })
+        Ok(Self::from_backend(
+            db::backend_for_constructor(database_url).await?,
+        ))
+    }
+
+    fn from_backend(backend: std::sync::Arc<db::RuntimeBackend>) -> Self {
+        Self {
+            legacy: AdmissionReconnectJournal::from_backend(backend.clone()),
+            backend,
+        }
     }
 
     #[must_use]
@@ -129,7 +135,7 @@ impl AdmissionReconnectJournalV2 {
 
         let candidate_session_id = record.identity().game_session_id().as_bytes().to_vec();
         let character_id = record.identity().character_id().as_bytes().to_vec();
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
         db::lock_admission_domain(&mut transaction, record).await?;
 
         let candidate_exists =
@@ -331,7 +337,7 @@ impl AdmissionReconnectJournalV2 {
         request: &ReconnectPrepareRequestV2,
     ) -> Result<ReconnectDurableReconciliationSnapshotV2, DurabilityError> {
         let record = request.record();
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
         db::lock_admission_domain(&mut transaction, record).await?;
         if let Some(authorization) = request.terminal_replacement()
             && (!replacement_authorization_matches_record(authorization, record)
@@ -449,6 +455,8 @@ impl AdmissionReconnectJournalV2 {
         &self,
         record: &ReconnectDurabilityRecordV1,
     ) -> Result<i16, DurabilityError> {
+        let mut transaction = self.backend.begin().await?;
+        db::lock_admission_domain(&mut transaction, record).await?;
         let row = sqlx::query(
             "SELECT state, record_json FROM game_durability_reconnect_attempts \
              WHERE game_session_id = encode($1, 'hex')::uuid AND reconnect_attempt_ref = $2",
@@ -461,7 +469,7 @@ impl AdmissionReconnectJournalV2 {
                 .to_be_bytes()
                 .as_slice(),
         )
-        .fetch_optional(&self.pool)
+        .fetch_optional(&mut *transaction)
         .await?;
         let Some(row) = row else {
             return Err(DurabilityError::InvalidStoredState);
@@ -472,7 +480,9 @@ impl AdmissionReconnectJournalV2 {
         if stored_record != encode_record_v2(record) {
             return Err(DurabilityError::InvalidStoredState);
         }
-        row.try_get("state").map_err(DurabilityError::from)
+        let state = row.try_get("state")?;
+        transaction.commit().await?;
+        Ok(state)
     }
 }
 
@@ -2335,5 +2345,39 @@ impl DurabilityCustody {
         }
         tx.commit().await?;
         Ok(())
+    }
+}
+
+/// Canonical shared process backend. Handles preserve the existing async APIs;
+/// bounded enqueue/completion integration remains the next executor layer.
+#[derive(Clone)]
+pub struct AdmissionRuntime {
+    backend: std::sync::Arc<db::RuntimeBackend>,
+}
+impl AdmissionRuntime {
+    pub async fn connect(database_url: &str) -> Result<Self, DurabilityError> {
+        Ok(Self {
+            backend: db::registered_backend(database_url).await?,
+        })
+    }
+    #[must_use]
+    pub fn reconnect_v1(&self) -> AdmissionReconnectJournal {
+        AdmissionReconnectJournal::from_backend(self.backend.clone())
+    }
+    #[must_use]
+    pub fn reconnect_v2(&self) -> AdmissionReconnectJournalV2 {
+        AdmissionReconnectJournalV2::from_backend(self.backend.clone())
+    }
+    #[must_use]
+    pub fn fresh(&self) -> fresh_admission::FreshAdmissionStore {
+        fresh_admission::FreshAdmissionStore::from_backend(self.backend.clone())
+    }
+    #[must_use]
+    pub fn guards(&self) -> admission_authority_guards::AdmissionGuardStore {
+        admission_authority_guards::AdmissionGuardStore::from_backend(self.backend.clone())
+    }
+    #[must_use]
+    pub fn recovered_pending(&self) -> &[Option<DurablePendingCheckpoint>; 2] {
+        &self.backend.pending
     }
 }

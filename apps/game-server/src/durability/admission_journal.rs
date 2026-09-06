@@ -1,4 +1,4 @@
-use crate::durability::{DurabilityError, schema};
+use crate::durability::DurabilityError;
 use oteryn_game_server::foundation::{
     MAX_OUTSTANDING_COMMANDS, PendingCommandDispositionV1, ProtectionEntitlementV1,
     ReconnectCommitDispositionV1, ReconnectCommitRequestV1, ReconnectDurabilityRecordV1,
@@ -7,7 +7,7 @@ use oteryn_game_server::foundation::{
 };
 use serde_json::{Value, json};
 use sqlx::postgres::PgRow;
-use sqlx::{PgPool, Postgres, Row, Transaction};
+use sqlx::{Postgres, Row, Transaction};
 
 const PREPARED: i16 = 1;
 const COLLISION_TERMINAL: i16 = 2;
@@ -63,14 +63,18 @@ pub(super) async fn replacement_receipt_matches_record(
 
 #[derive(Clone)]
 pub struct AdmissionReconnectJournal {
-    pool: PgPool,
+    backend: std::sync::Arc<super::db::RuntimeBackend>,
 }
 
 impl AdmissionReconnectJournal {
     pub async fn connect_runtime(database_url: &str) -> Result<Self, DurabilityError> {
-        Ok(Self {
-            pool: schema::connect_runtime(database_url).await?,
-        })
+        Ok(Self::from_backend(
+            super::db::backend_for_constructor(database_url).await?,
+        ))
+    }
+
+    pub(super) fn from_backend(backend: std::sync::Arc<super::db::RuntimeBackend>) -> Self {
+        Self { backend }
     }
 
     pub async fn prepare(
@@ -112,7 +116,7 @@ impl AdmissionReconnectJournal {
         let (scope_kind, scope_world_id, scope_channel_id, scope_instance_id) =
             scope_storage(record);
 
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_domain(&mut transaction, record).await?;
         // Exclusion applies only to a new session for another character. Existing
         // sessions must retain binding, replay and actor-budget classification;
@@ -475,7 +479,7 @@ impl AdmissionReconnectJournal {
             .get()
             .to_string();
 
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_domain(&mut transaction, record).await?;
         let Some(session) =
             load_session_for_update(&mut transaction, session_id.as_slice()).await?
@@ -655,7 +659,7 @@ impl AdmissionReconnectJournal {
         &self,
         request: &ReconnectPrepareRequestV1,
     ) -> Result<ReconnectDurableReconciliationSnapshotV1, DurabilityError> {
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_domain(&mut transaction, request.record()).await?;
         let (snapshot, _state) =
             Self::reconcile_record_in_transaction(&mut transaction, request.record()).await?;

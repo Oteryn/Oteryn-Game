@@ -1440,3 +1440,86 @@ mod runtime_scope_identity_red_tests {
         })
     }
 }
+
+/// One shared production backend, including the recovered fixed-slot custody.
+/// This is not yet the executor's queue/active-operation budget.
+pub(super) struct RuntimeBackend {
+    pub pool: PgPool,
+    custody: BackendCustody,
+    pub pending: [Option<super::DurablePendingCheckpoint>; 2],
+}
+enum BackendCustody {
+    Registered(super::DurabilityCustody),
+    #[cfg(test)]
+    LegacyFixture,
+}
+impl RuntimeBackend {
+    pub async fn begin(&self) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, DurabilityError> {
+        match &self.custody {
+            BackendCustody::Registered(custody) => custody.fence(&self.pool).await,
+            #[cfg(test)]
+            BackendCustody::LegacyFixture => self.pool.begin().await.map_err(DurabilityError::from),
+        }
+    }
+}
+enum RuntimeRegistration {
+    Empty,
+    Starting,
+    Ready {
+        database_url: String,
+        backend: std::sync::Arc<RuntimeBackend>,
+    },
+}
+static RUNTIME_REGISTRATION: tokio::sync::Mutex<RuntimeRegistration> =
+    tokio::sync::Mutex::const_new(RuntimeRegistration::Empty);
+
+pub(super) async fn registered_backend(
+    database_url: &str,
+) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
+    if database_url.is_empty() || database_url.len() > 4096 {
+        return Err(DurabilityError::InvalidStoredState);
+    }
+    let mut registration = RUNTIME_REGISTRATION.lock().await;
+    match &*registration {
+        RuntimeRegistration::Ready {
+            database_url: expected,
+            backend,
+        } if expected == database_url => return Ok(backend.clone()),
+        RuntimeRegistration::Empty => {}
+        _ => return Err(DurabilityError::InvalidStoredState),
+    }
+    // Cancellation or uncertain initialization remains Starting. A fresh caller
+    // cannot mint replacement capacity or silently retry an ambiguous takeover.
+    *registration = RuntimeRegistration::Starting;
+    let pool = super::schema::connect_runtime(database_url).await?;
+    let (custody, pending) = super::DurabilityCustody::acquire(&pool).await?;
+    let backend = std::sync::Arc::new(RuntimeBackend {
+        pool,
+        custody: BackendCustody::Registered(custody),
+        pending,
+    });
+    *registration = RuntimeRegistration::Ready {
+        database_url: database_url.to_owned(),
+        backend: backend.clone(),
+    };
+    Ok(backend)
+}
+
+// Historical isolated PostgreSQL fixtures are not production executor proof.
+// Explicit AdmissionRuntime::connect always tests registered production wiring.
+pub(super) async fn backend_for_constructor(
+    database_url: &str,
+) -> Result<std::sync::Arc<RuntimeBackend>, DurabilityError> {
+    #[cfg(not(test))]
+    {
+        registered_backend(database_url).await
+    }
+    #[cfg(test)]
+    {
+        Ok(std::sync::Arc::new(RuntimeBackend {
+            pool: super::schema::connect_runtime(database_url).await?,
+            custody: BackendCustody::LegacyFixture,
+            pending: [None, None],
+        }))
+    }
+}

@@ -219,17 +219,17 @@ Work creates/identifies the sole implementation PR after protected allocation; w
 ## Context checkpoint
 
 ```yaml
-last_progress: independent review rejected unsealed first-loss path; safe initial-null PREPARE rejection prepared with no-effects negative tests
+last_progress: user requested save and handoff; unqualified shared backend wiring preserved as WIP after native custody checkpoint68609
 status: in_progress
 admission_state: ADMITTED
 branch: agent/durable-fresh-admission-child-b-329
 head_sha: null
 pr: 335
 execution_budget_minutes: 60
-execution_window_number: 4
-execution_window_started_at: 2026-09-06T12:46:00Z
-execution_window_elapsed_minutes: 53
-execution_windows_completed: 3
+execution_window_number: 5
+execution_window_started_at: 2026-09-06T13:47:00Z
+execution_window_elapsed_minutes: 4
+execution_windows_completed: 4
 worker_rotations: 1
 final_head_sha: null
 final_head_frozen_at: null
@@ -248,7 +248,7 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Work publishes the first-loss checkpoint; qualify actual SQL then complete sealed lifecycle, shared bounded executor and adaptive footprint within the unchanged full plan.
+next_action: Next allocated writer repairs WIP strict Clippy layout and adds actual registered-runtime qualification before continuing full shared executor; Work preserves this stopped-user checkpoint.
 ```
 
 ## Window 4 — first fresh control loss
@@ -282,3 +282,13 @@ Actual resource checkpoint86c5935d97ab87dccfc29b6344cb3ddb1607b182 / treef55b1a3
 Work329comment5559558326 authorizes the DB-fenced stable logical executor mechanism under accepted341. Unreleased owned0002 adds one relation (15 total): row0generation and exactly two initialized pending slots1/2; no source truth or controller authority. Exclusive transaction advisory custody waits for predecessor shared fences, reads both existing bounded slots, then advances generation. A shared custody token validates current generation and remains tied to the returned transaction through COMMIT. Checkpoint writes cannot overwrite a different original operation, cannot address a third slot, and cannot clear an occupied slot. Takeover retains exact originals; missing slots and generation overflow fail closed. Canonical effects are not granted by an opaque checkpoint.
 
 Configured SQL test covers both fixed slots, exact checkpoint retry, changed-operation/third-slot rejection, successor lock waiting observed through pg_locks before releasing the predecessor transaction, generation takeover retaining both originals, stale-token rejection, and missing-slot corruption. Joined futures are retained until settlement; no detached task or sleep-only assertion. Actual execution remains pending. This is low-level custody storage, not the completed process singleton/shared queue: every existing production backend still needs integration with shared custody and retained end-to-end slots, complete2s pass/acquisition accounting, owner acknowledgement/definitive clear, sized owned request clones and all protocol tests. No completion or timeout/fencing proof beyond this explicit scope is claimed.
+
+## User-stop handoff — window 5 WIP
+
+Work329comment5559643400 admitted window5 13:47–14:47Z on native68609f8ae93e9fb74bff817eaa30e48045eb1b95 / treeb7f239f9278f97db11e5843210f11a62c706415b; normal FF clean verified. Completed windows4, rotations1, repair cycles6 remain cumulative. At13:50Z the user requested all work saved for the next agent; implementation stopped immediately. No authored local commit/push.
+
+UNQUALIFIED WIP in five owned Rust files: shared RuntimeBackend and process registration state in db.rs; unchanged public constructors route through registered backend in production, historical cfg(test) constructors remain isolated fixture-only; explicit AdmissionRuntime::connect always exercises production registration. Registered backend owns one pool, custody generation and restored original pending slots. Cancellation/failed initialization leaves registration Starting and cannot silently create another backend. URL mismatch rejects. V1/V2/fresh/guard handles share the same backend; all nine semantic transaction starts plus V2 terminal-state lookup and test projection now call backend.begin, obtaining shared custody before relation/domain locks. V2's former duplicate legacy pool is removed. This is not yet queue/active budget enforcement.
+
+Verification at stop: formatting and git diff --check pass. Strict all-target Clippy is RED (b329-runtime-wiring-clippy.log): db.rs appends new production items after an existing test module (items_after_test_module), and registered AdmissionRuntime is not yet exercised in the source-included PostgreSQL test crate, producing dead-code errors for the runtime/registration path. No new configured SQL test has been written/run for this WIP. Do not hide these errors with blanket allows or claim qualification. Next writer should move db production items before its test module and add a real configured registered-runtime test proving shared handles, stale custody exclusion and retained pending slots, then continue complete executor integration.
+
+Full open acceptance remains: process queue8/active2 retained across timeout/cancel/uncertain checkpoint/COMMIT, checked complete owned-request clone charging (three binding copies plus two effect copies), pending reconciliation/definitive outcome+owner acknowledgement before clear, complete2s pass including acquisition, complete row/result/physical-child resource enforcement, adaptive logical lock expansion/order, sealed loss/release/replacement and current adoption, whole matrix/independent review/CI/MQ. No driver bound is claimed: pinned SQLx0.9 PgStream recv accepts peer-u32 frame length before ReadBuffer reserve, and ParameterStatus map is unbounded; SELECT byte checks and timeout cannot prove4MiB driver memory. Dependency changes remain unallocated pending Work's exact driver resolution.

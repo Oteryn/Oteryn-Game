@@ -263,6 +263,13 @@ impl FreshAdmissionStore {
         })
     }
 
+    pub(super) fn from_backend(backend: std::sync::Arc<super::db::RuntimeBackend>) -> Self {
+        Self {
+            guards: AdmissionGuardStore::from_backend(backend),
+            maximum_operation_bytes: super::MAX_FRESH_OPERATION_BYTES,
+        }
+    }
+
     async fn receipt_locked(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -322,7 +329,7 @@ impl FreshAdmissionStore {
             .map(|change| encode_guard(change, self.guards.maximum_guard_bytes))
             .collect::<Result<_>>()?;
         let replay = b.facts.replay_key().to_bytes();
-        let mut tx = self.guards.pool.begin().await?;
+        let mut tx = self.guards.backend.begin().await?;
         super::db::lock_admission_relations(&mut tx).await?;
         if let Some(receipt) = self.receipt_locked(&mut tx, &replay).await? {
             let outcome = receipt.classify_retry(operation);
@@ -403,7 +410,7 @@ impl FreshAdmissionStore {
         original: &FreshAdmissionOperationV1,
     ) -> Result<FreshReconciliation> {
         use sqlx::Row;
-        let mut tx = self.guards.pool.begin().await?;
+        let mut tx = self.guards.backend.begin().await?;
         super::db::lock_admission_relations(&mut tx).await?;
         let replay = original.authorization.facts.replay_key().to_bytes();
         let Some(receipt) = self.receipt_locked(&mut tx, &replay).await? else {

@@ -499,7 +499,7 @@ pub enum GuardPublicationDisposition {
 /// Fixed accepted storage byte caps; shared executor integration remains required.
 #[derive(Clone)]
 pub struct AdmissionGuardStore {
-    pub(super) pool: sqlx::PgPool,
+    pub(super) backend: std::sync::Arc<super::db::RuntimeBackend>,
     pub(super) maximum_guard_bytes: usize,
 }
 
@@ -667,11 +667,16 @@ impl AdmissionGuardStore {
         if maximum_guard_bytes != super::MAX_ADMISSION_GUARD_BYTES {
             return invalid();
         }
-        let pool = super::schema::connect_runtime(database_url).await?;
-        Ok(Self {
-            pool,
-            maximum_guard_bytes,
-        })
+        Ok(Self::from_backend(
+            super::db::backend_for_constructor(database_url).await?,
+        ))
+    }
+
+    pub(super) fn from_backend(backend: std::sync::Arc<super::db::RuntimeBackend>) -> Self {
+        Self {
+            backend,
+            maximum_guard_bytes: super::MAX_ADMISSION_GUARD_BYTES,
+        }
     }
 
     pub async fn load(
@@ -681,7 +686,7 @@ impl AdmissionGuardStore {
         if keys.len() > 4 {
             return invalid();
         }
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_relations(&mut transaction).await?;
         let mut rows = Vec::with_capacity(keys.len());
         for key in keys {
@@ -719,7 +724,7 @@ impl AdmissionGuardStore {
         key: &AdmissionAuthorityGuardKeyV1,
     ) -> Result<(bool, bool)> {
         use sqlx::Row;
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_relations(&mut transaction).await?;
         let (row, _) = self.guard_projection_locked(&mut transaction, key).await?;
         let row = row.ok_or(DurabilityError::InvalidStoredState)?;
@@ -784,7 +789,7 @@ impl AdmissionGuardStore {
             .iter()
             .map(|row| encode_guard(row, self.maximum_guard_bytes))
             .collect::<Result<_>>()?;
-        let mut transaction = self.pool.begin().await?;
+        let mut transaction = self.backend.begin().await?;
         super::db::lock_admission_relations(&mut transaction).await?;
         let mut current = Vec::with_capacity(request.changes().len());
         for change in request.changes() {
