@@ -6,8 +6,8 @@ Work admitted this allocation at protected PR340 merge `4f35ec5a56f5e8b0c32db450
 task_id: OTV2-20260906-post-grace-foundation-successor-338
 title: Add sealed post-grace recovery timing and authority successor
 mode: IMPLEMENT
-status: running
-admission_state: ADMITTED
+status: completed
+admission_state: RELEASED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/post-grace-foundation-successor-338
@@ -16,9 +16,9 @@ pr: 343
 allocation_source_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
 admission_main_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
 base_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
-head_sha: ceccd130b50c871236b096723754c6a26f1c11bf
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 1e9fcc47df6da5506d3aff9f751af4d6f4205153
+final_head_sha: 1e9fcc47df6da5506d3aff9f751af4d6f4205153
+final_head_frozen_at: recorded_in_PR_343_comment_5560070031
 owner: foundation_audit (Work custody rebind 5559848749)
 coordinator: Oteryn Work Delivery Coordinator
 created_at: 2026-09-06
@@ -90,9 +90,9 @@ finding_dispositions:
 - [x] Protection entitlement/consumption/activation/rearm evidence is retained; no mint/reset/rearm/new epoch/respawn/heal/relocation. Existing eligible once-only activation and retirement/restoration finality preserved.
 - [x] Additive PREPARE/final/completion/reconcile/adoption surfaces use exact immutable operation and independently current facts. Later source deny/fence change rejects; historical committed outcome cannot reinstall stale controller.
 - [x] Owner-sealed successor claim effects bind exact successor operation and current predecessor/claims; standalone publication cannot apply them. Existing B-consumed claim APIs and enum variants remain compatible.
-- [ ] Complete single-invariant matrix, compile-fail anti-forgery, direct/reconciled positive post-grace and existing V1/V2/early-terminal regressions pass. Source-included B integration target compile is proven on the integrated source before compatible handoff.
-- [ ] Focused RED/GREEN, package/doctest/fmt/strict Clippy/architecture/governance, whole-diff self-review and independent exact-head review pass; findings dispositioned.
-- [ ] Canonical selected CI and Merge Queue pass; Work verifies protected readback/archive/releases custody. Semantic completion makes no actual PostgreSQL or source/listener readiness claim.
+- [x] Complete single-invariant matrix, compile-fail anti-forgery, direct/reconciled positive post-grace and existing V1/V2/early-terminal regressions pass. Source-included B integration target compile is proven on the integrated source before compatible handoff.
+- [x] Focused RED/GREEN, package/doctest/fmt/strict Clippy/architecture/governance, whole-diff self-review and independent exact-head review pass; findings dispositioned.
+- [x] Canonical selected CI and Merge Queue pass; Work verifies protected readback/archive/releases custody. Semantic completion makes no actual PostgreSQL or source/listener readiness claim.
 
 ## Excluded scope
 
@@ -235,3 +235,11 @@ This necessary per-field guard is not a complete canonical encoded-size check: s
 Runtime/test candidate `bac051bc5e784abb955fb9099a923bd68d77a8f6` passes full locked game-server package339 library tests and25 compile-fail doctests; strict all-target Clippy4.49s; source/actor/claim inclusive-bound tests; post-grace38 cases. These supersede prior336/335 candidate counts. All seven allocated paths now contain authored material; upstream merge-only paths remain exact protected main. Final B composition compatibility and independent review rebind follow below. Window4 conservative cumulative productive charge40minutes, completed3/rotation1/known repairs9+priorUNKNOWN; no budget reset.
 
 Final reviewed-material composition: exact remote B0b47fff257902bdcc71c4ee68a6123fd1d9585c1 plus Foundationbac051bc5e784abb955fb9099a923bd68d77a8f6 five runtime/test blobs again passes source-included durability_postgres --no-run20.67s. Full local validation above binds these same runtime bytes. Formatting/whitespace and governance26/9 rerun PASS after evidence updates. Actual SQL execution and canonical protected integration remain unclaimed.
+
+## Protected terminal closeout — Work162
+
+PR343 merged through normal protected Merge Queue at `edef416745f92b79371f98739272c840b0a9b357` on2026-09-06T15:22:29Z. Current protected main `53c6bdf06a2282d893035a995c46052c88f935b4` contains it; owning-loss runtime blob `e956e1609b8eeb4fb1ff1b960098e854b843e63d` was independently read back through GitHub. Final head `1e9fcc47df6da5506d3aff9f751af4d6f4205153`, tree `9a9d0ae172f8e13122dc76e9e6104cbeca2b186f`, preserves ceccd history and normal9be69 reconciliation. Exact-head34040928428/game-gate and MQ34041639320/game-gate succeeded. All seven allocated files received author review and independent non-author b_checkpoint_review whole-diff/final rebind, with no remaining P0/P1/P2; immutable PR343 comment5560070031 records dispositions.
+
+Current-main local validation passed340 library tests,25 compile-fail doctests,11 Wire integration cases, strict all-target Clippy9.08s, fmt/whitespace and governance26/9. Before any subsequent B loss edit, actual canonical B8f73 normally merged protected53c6; merged tree `99e2d492ce7a172638fcd83694232598948c26b3` passed Rust1.94 locked source-included `durability_postgres --no-run` in21.02s. This fresh consumer compatibility proof supersedes the prior0b47-only checkpoint; it does not claim actual loss SQL execution.
+
+Work162 comment5560227773 authorizes terminal archive/release of all seven338 paths. Preserve immutable admission4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee, final window4/completed3/rotation1, conservative40 productive minutes and knownrepair9+priorUNKNOWN. Previous pending prose is historical evidence superseded by this closeout. Keep the merged branch for continuing programme provenance until programme closeout. B owns distinct atomic loss persistence under329 comment5560220922; a later post-grace SQL successor requires its own authorized integration scope. No source registration, real producer/SQL recovery or Server Seam readiness follows from semantic completion.

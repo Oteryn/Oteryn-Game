@@ -1,5 +1,28 @@
 # Oteryn v2 Implementation Live Allocations
 
+## Current prospective complete-continuity bridge353 amendment
+
+Work162 comment5560287018 extends this coordinator closeout to exactly six documentation paths: the four338 archive/LIVE/Work paths plus the353 task and plan. The earlier four-path description remains historical scope provenance. Protected348 explicitly requires separate allocation for this concrete caller bridge; this package supplies it without reopening/replacing338 or granting runtime authority to Work.
+
+Issue353 is NOT_ADMITTED until this exact package and338 release are protected/read back. Prospective branch `agent/control-loss-reconnect-bridge-353`, one60-minute worker window. Sole owned implementation paths: `apps/game-server/src/foundation/admission_recovery_inner.rs`, new `apps/game-server/src/foundation/control_loss_reconnect_bridge_tests.rs`, `docs/agents/tasks/active/OTV2-20260906-control-loss-reconnect-bridge-353.md`, and `docs/superpowers/plans/2026-09-06-control-loss-reconnect-bridge.md`. Preserve existing V1/V2 signatures/enums/wire; full protection/rearm and original loss identity require an additive complete durability envelope, not an invented legacy fence. Detailed acceptance/exclusions are in that task/plan.
+
+No second Foundation writer:338 releases first,353 admits later. Explicit bounded parallel exception permits semantic353 beside disjoint B SQL and351 vendor/Cargo because full B requires both; no shared path or control plane. Existing admissions/counters and held247/Cargo policies remain unchanged. B's interim loss persistence must refuse legacy consumption where full continuity is not representable; receipt retention alone is not an authority bridge. Next action: independently qualify and protect this exact six-path allocation/closeout, then Work binds actual353 admission.
+
+
+## Current Work checkpoint — protected Foundation338 closeout
+
+This is the current override; older checkpoint sections below preserve history, not conflicting active leases. Protected main `53c6bdf06a2282d893035a995c46052c88f935b4` contains Foundation343 (`edef416745f92b79371f98739272c840b0a9b357`) and allocation/closeout352, both merged2026-09-06T15:22:29Z after successful MQ34041639320/34041640323.
+
+- Foundation338 is completed and its seven paths released by this Work closeout. Archived task: `docs/agents/tasks/archive/OTV2-20260906-post-grace-foundation-successor-338.md`. Original admission, branch/history and cumulative repair/window evidence remain preserved.
+- Wire346 is already completed/archived/released by protected352. Its single247 lib.rs export transfer is ended; no worker inherits another composition lease.
+- B329 remains solely on `agent/durable-fresh-admission-child-b-329`, PR335. Native8f73 has actual PostgreSQL17.6 checkpoint314/0 evidence; new distinct owning-loss persistence runs after normal53c6 merge under329 comment5560220922. Full lifecycle/executor/resource acceptance remains open.
+- Driver351 is ADMITTED on `agent/sqlx-driver-budget-351` at immutable53c6 under351 comment5560220858: sole driver_allocation writer, first60-minute productive window, exact protected vendor/core accounting paths and exclusive two-crate Cargo patch lease. Dependabot259/260/261 Cargo integrations remain held; no B activation before protected driver delivery.
+- Server Seam247 remains WAITING_DEPENDENCY at preserved `9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. Actual ChildC319 native Platform producers and Game owning-source/bootstrap work remain separate; current Game authority grants no Platform writes.
+- Historical handoff350 is closed as superseded after352; its exact0131 branch/files are retained as provenance, not a competing pause/current overlay.
+
+Work162 comment5560227773 allocates only four documentation paths to this package: LIVE_ALLOCATIONS, the Work162 task, and Foundation338 active-to-archive pair. B/351 task and implementation paths remain exclusively worker-owned. No runtime, registry, workflow or external change. Next action: independently qualify and protect this bounded archive/release while the two disjoint admitted workers continue within preserved budgets.
+
+
 ## Current Work checkpoint — prospective SQLx driver351 allocation
 
 This checkpoint supersedes earlier current-status prose without resetting historical admissions. Work162 remains the unique control plane. GitHub preflight: [issue162 comment5559883406](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5559883406), protected main `d9d1b566acb57b537ff901d9765c32a95110c259`.
