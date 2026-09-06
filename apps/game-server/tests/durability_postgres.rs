@@ -1,3 +1,9 @@
+// Include the unchanged Foundation source in this test crate so privately sealed
+// fixture owners and Durability use one type universe, without a production seal.
+extern crate self as oteryn_game_server;
+#[path = "../src/foundation/mod.rs"]
+pub mod foundation;
+
 #[path = "support/authority_matrix.rs"]
 mod authority_matrix;
 #[path = "support/authority_recovery.rs"]
@@ -6,6 +12,50 @@ mod authority_recovery;
 mod durability;
 #[path = "support/postgres.rs"]
 mod postgres;
+
+#[test]
+fn fresh_admission_forward_schema_supports_truthful_atomic_session()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("fresh_forward_schema").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let receipt_exists: bool = sqlx::query_scalar(
+                    "SELECT to_regclass('public.game_durability_fresh_admission_receipts') IS NOT NULL",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert!(receipt_exists, "fresh atomic admission requires its immutable receipt table");
+                for column in ["control_loss_epoch", "original_grace_deadline", "predecessor_generation"] {
+                    let nullable: String = sqlx::query_scalar(
+                        "SELECT is_nullable FROM information_schema.columns \
+                         WHERE table_schema = 'public' \
+                           AND table_name = 'game_durability_reconnect_sessions' \
+                           AND column_name = $1",
+                    )
+                    .bind(column)
+                    .fetch_one(&pool)
+                    .await?;
+                    assert_eq!(nullable, "YES", "fresh ACTIVE cannot fabricate {column}");
+                }
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }.await;
+            database.cleanup().await?;
+            result
+        })
+}
 
 #[test]
 fn independent_authority_matrix_rejects_mutations_after_postgres_reload()

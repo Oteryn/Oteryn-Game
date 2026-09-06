@@ -199,6 +199,31 @@ fn database_name(test_name: &str) -> Result<String, IsolatedPostgresError> {
     Ok(format!("oteryn_game_test_{process}_{ordinal}_{normalized}"))
 }
 
+/// The owner is compiled only into this integration test crate. Evidence is an
+/// independently supplied fixture state; this seal does not exist in production.
+#[allow(dead_code)] // The first checkpoint compiles the seal before the SQL adapter exists.
+pub struct FreshClaimFixtureOwner {
+    pub evidence:
+        crate::foundation::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
+}
+
+impl crate::foundation::fnd04_verifier::fresh_source_sealed::Sealed for FreshClaimFixtureOwner {}
+
+impl crate::foundation::admission_authority_publication::AdmissionClaimOwningSourceV1
+    for FreshClaimFixtureOwner
+{
+    fn prepare_fresh_claim(
+        &self,
+        _binding: &crate::foundation::fresh_admission_durability::FreshAdmissionAuditBindingV1,
+        _now: i64,
+    ) -> Result<
+        crate::foundation::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
+        crate::foundation::admission_authority_publication::AdmissionAuthorityPublicationErrorV1,
+    > {
+        Ok(self.evidence.clone())
+    }
+}
+
 #[cfg(test)]
 mod durability_contract_tests {
     use super::{

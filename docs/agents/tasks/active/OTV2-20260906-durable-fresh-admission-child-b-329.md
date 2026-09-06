@@ -1,21 +1,21 @@
 # OTV2-20260906-durable-fresh-admission-child-b-329
 
-This exact prospective allocation activates only after protected integration and Work readback. The actual allocation merge becomes immutable worker admission/base before first mutation.
+Work admitted this allocation after protected PR #333 integration and readback at `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd` (tree `d7f5a1a07d2a27b81de75ad8c3264848981d4279`); issue #329 admission comment `5557972460` precedes worker mutation.
 
 ```yaml
 task_id: OTV2-20260906-durable-fresh-admission-child-b-329
 title: Persist atomic fresh admission and owner-authored claim effects
 mode: IMPLEMENT
-status: waiting
-admission_state: NOT_ADMITTED
+status: in_progress
+admission_state: ADMITTED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/durable-fresh-admission-child-b-329
 issue: 329
 pr: null
 allocation_source_main_sha: f69e9c12c8b69b625a7ce9d911bf3132c141ada6
-admission_main_sha: NOT_ADMITTED
-base_sha: NOT_ADMITTED
+admission_main_sha: b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd
+base_sha: b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -108,13 +108,15 @@ No Foundation, Cargo/lockfile, workflow/protection, 0001 edits, production DB/so
 
 ## Implementation / findings
 
-NOT_STARTED. This draft contains no implementation/test success claim. Early compiler proof and SQL RED must use the existing hosted configured PostgreSQL route for actual DB assertions. Local PostgreSQL cannot start under the current user-namespace/unprivileged-identity constraints; continue useful local compilation and hosted qualification without weakening gates.
+Window 1 started at `2026-09-06T08:17:20Z` on the verified clean canonical branch and dedicated worktree. Initial material checkpoint adds the source-identical integration Foundation module/alias and a test-only sealed claim owner. The focused SQL schema case requires the fresh receipt table and truthful nullable initial continuity; its real hosted RED is pending. No schema or adapter success is claimed. Early compiler proof and SQL RED must use the existing hosted configured PostgreSQL route for actual DB assertions. Local PostgreSQL cannot start under the current user-namespace/unprivileged-identity constraints; continue useful local compilation and hosted qualification without weakening gates.
 
 The plan's milestones preserve full acceptance and are not separate task/PR allocations. At each authorized 60-minute window boundary, checkpoint exact durable head, changed paths, evidence, unresolved findings and one next action. Work controls continuation/custody rotation. A frozen failing candidate remains frozen/failing until dispositioned; rotation does not reset failure, repair or CI counters. No metadata/no-op commits for counter resets.
 
 ## Validation
 
 ### Focused
+
+Checkpoint 1 compiler verification: `CARGO_TARGET_DIR=/workspace/scratch/ec4cc99115b7/game-live/target /root/.cargo/bin/cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres --no-run` passed (28.81s); log `/workspace/scratch/ec4cc99115b7/b329-harness-compile.log`. Source-identical Foundation/Durability types and the test-crate owner seal compile without production changes. `cargo +1.94.0 fmt --all -- --check` passed. Focused strict Clippy initially caught fixture placement after an internal test module; moving that fixture before the module repaired it, and `cargo +1.94.0 clippy --locked -p oteryn-game-server --test durability_postgres -- -D warnings` passed (10.20s). This was a pre-publication compiler repair, not a hosted SQL RED. Focused case `fresh_admission_forward_schema_supports_truthful_atomic_session` is prepared for configured hosted execution; expected RED is the missing immutable receipt table. This assertion proves the missing schema prerequisite only; it does not claim an atomic transaction test or SQL GREEN.
 
 Record intended RED, observed failure, minimal GREEN and affected-family sweep on each risk-bearing change. Compiler/harness RED and actual configured SQL RED are separate evidence. Never count a skipped PostgreSQL case as passed SQL qualification.
 
@@ -145,15 +147,15 @@ Work creates/identifies the sole implementation PR after protected allocation; w
 ## Context checkpoint
 
 ```yaml
-last_progress: prerequisite331 integrated; exact prospective B allocation prepared; no worker admitted
-status: waiting
-admission_state: NOT_ADMITTED
+last_progress: admitted; source-identical harness and focused fresh-schema SQL RED prepared
+status: in_progress
+admission_state: ADMITTED
 branch: agent/durable-fresh-admission-child-b-329
 head_sha: null
 pr: null
 execution_budget_minutes: 60
-execution_window_number: 0
-execution_window_started_at: null
+execution_window_number: 1
+execution_window_started_at: 2026-09-06T08:17:20Z
 execution_window_elapsed_minutes: 0
 execution_windows_completed: 0
 worker_rotations: 0
@@ -173,6 +175,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: NOT_ADMITTED
-next_action: Work qualifies this exact allocation, then binds its actual protected merge and dispatches the sole worker.
+blocker: null
+next_action: Work publishes the staged harness checkpoint and obtains actual configured PostgreSQL RED; worker then implements the forward schema and adapter under the unchanged full acceptance.
 ```
