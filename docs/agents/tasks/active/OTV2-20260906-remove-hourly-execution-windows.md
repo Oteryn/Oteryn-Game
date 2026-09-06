@@ -4,7 +4,7 @@
 task_id: OTV2-20260906-remove-hourly-execution-windows
 title: Remove wall-clock worker execution windows
 mode: GOVERNANCE
-status: READY_FOR_REVIEW
+status: ready
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: governance/remove-hourly-execution-windows
@@ -15,6 +15,7 @@ base_sha: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
 owned_paths:
   - docs/agents/AGENTS.md
   - docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md
+  - docs/agents/tasks/TASK_TEMPLATE.md
   - docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md
   - docs/agents/prompts/OTV2_IMPL_FOUNDATION_RUNTIME.md
   - docs/agents/prompts/OTV2_IMPL_SERVER_SEAM.md
@@ -31,6 +32,7 @@ Remove the repository-created 60/120-minute implementation stop/rotation mechani
 - productive authorized work has no wall-clock execution window;
 - elapsed time alone cannot trigger `ROTATE`, freeze, discarded minutes, re-admission or a fresh Work grant;
 - legacy `windowN` and minute counters remain historical provenance only;
+- new tasks no longer receive `execution_budget_minutes` / `large_budget_reason` from the mandatory template;
 - no-progress, repeated-failure, exact-head CI waiting, ownership, scope, validation, review, Merge Queue and safety gates remain intact;
 - Server Seam, Foundation, Bootstrap and the Implementation Coordinator prompts state the continuous-execution rule directly.
 
@@ -42,6 +44,11 @@ Remove the repository-created 60/120-minute implementation stop/rotation mechani
 - exact-head `agent-governance` / protected PR checks;
 - independent exact-head review because this is a material governance change.
 
+## Review findings
+
+- P2 `3944819203`: fixed — mandatory `TASK_TEMPLATE.md` no longer creates 60/120-minute execution-budget metadata; it uses `execution_policy: continuous_progress` and points time-independent anti-stall behavior to the central policy.
+- P2 `3944819204`: fixed — task status is the registered `ready` state.
+
 ## Context checkpoint
 
-`next_action`: qualify PR #362 through exact-head checks and independent review, then integrate normally without bypass.
+`next_action`: requalify PR #362 on the repaired exact head through checks and independent review, then integrate normally without bypass.
