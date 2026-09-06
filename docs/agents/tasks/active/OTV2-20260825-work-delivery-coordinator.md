@@ -4,6 +4,7 @@
 
 This checkpoint supersedes earlier current-status prose without resetting historical admissions. Work162 remains the unique control plane. GitHub preflight: [issue162 comment5559883406](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5559883406), protected main `d9d1b566acb57b537ff901d9765c32a95110c259`.
 
+- Pre-admission accounting-scope correction: [issue351 comment5559999529](https://github.com/Oteryn/Oteryn-Game/issues/351#issuecomment-5559999529) amends existing allocation PR352. Prior `7140f869060a1dd1f9ac37f5c80c62e9582e23e7` green CI is historical after this material repair; fresh exact-head review/CI is required. No driver admission follows.
 - Issue351 is a prospective implementation prerequisite under accepted337/341 and protected registry342. Driver work is **NOT_ADMITTED** until independent allocation qualification, protected integration/readback and a Work admission grant.
 - B329/PR335, Foundation338/PR343 and Wire346/PR349 retain their existing writer custody, branches, admissions and cumulative counters. Their current GitHub checkpoints govern repairs/qualification; this package makes no delivery claim or change to their paths.
 - Server Seam247 remains WAITING_DEPENDENCY. Its Cargo lease is amended only by the exact prospective transfer below; its other held paths, original history and source/bootstrap obligations remain intact.
@@ -282,3 +283,11 @@ Under issue162 comment5559883406, this documentation package on `coord/sqlx-driv
 This current scope supersedes earlier coordinator package path lists only; it preserves their historical evidence. The351 task/plan pass to the sole driver writer only at protected readback/admission. Work grants no runtime ownership to itself. Original programme budget/history and existing workers' paused/resumed windows remain unchanged. The shared Cargo transfer and admission requirements are specified in LIVE's prospective351 amendment. Driver implementation, B activation and Server Seam readiness remain distinct gates.
 
 Next action: Work independently qualifies and protects this exact four-path allocation package before considering driver admission.
+
+## Current continuation and six-path package override
+
+Work162 comment5560037097 extends this same coordinator PR352 by only the346 active-to-archive pair. Current package therefore owns the four351 allocation documents above plus `docs/agents/tasks/{active,archive}/OTV2-20260906-native-evidence-wire-346.md` (six paths). It terminally archives/releases protected349 at9be69b4e0a06f3978d5c5c5603ca3e5670a9f18a and amends prospective351 for the exact sqlx-core accounting paths. Issue351 comment5559999529 records why untouched TLS reservation is NOT_PROVEN and the smallest scoped correction. No driver worker is yet admitted. Earlier package lists/checkpoints are historical, not current conflicting custody.
+
+Foundation338/PR343 and B329/PR335 retain their canonical branches, original admissions and counters. B native8f73d12c105e230817524fa91287d82586a65b8a is partial queue/custody work awaiting hosted qualification, not full acceptance. Foundation repaired owning-loss candidate is in final integration qualification. ChildC319 remains separate: protected Platform3b2ea1c7392187d5d22488673073dc8f8305a374 lacks the inspected native UUID/account-security/signing-trust producers; read-only evidence and exact external boundary are recorded in319 comment5559932791. Platform mutation is outside current Game authority. Preserve Server Seam247 branch9370b254c6ac4f6529e069c1968ae6bfa1e1750e WAITING_DEPENDENCY.
+
+Next action: qualify and protect this six-path allocation/closeout package, read back, then consider sole driver351 admission under preserved programme budget and overlap checks.
