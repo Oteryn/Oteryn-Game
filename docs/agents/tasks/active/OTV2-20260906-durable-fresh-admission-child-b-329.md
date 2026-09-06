@@ -110,6 +110,15 @@ No Foundation, Cargo/lockfile, workflow/protection, 0001 edits, production DB/so
 
 ## Implementation / findings
 
+### Window 3 — retained replay and continuity priority repair
+
+Work continuation comment `5558970279` grants successor writer `b_resume_audit` the same canonical branch/PR and thirteen paths, from `2026-09-06T11:43:00Z` to `12:43:00Z`. The recreated worktree is clean at native `35d7c8445dda1b1aef3899dbe2a119c8cd781b2f`; unpublished previous-worker work is unavailable and receives no completion credit. Immutable admission is retained; completed windows2, worker rotations1 and prior repair/retry evidence persist.
+
+Configured PostgreSQL17.6 run `34024853688`, Linux job `101463943071`, at `09:35:05Z` proves 298 passed / 4 failed. Focused `replaced_collision_replay_retains_terminal_and_idempotency_priority` is RED: RejectedStaleAuthority instead of ExistingTerminal. Delayed predecessor epoch capacity and two same-character session-continuity cases also fail because the new occupancy check precedes their established classifications. The independently-accounted authority recovery fixture now passes.
+
+The narrow repair checks that the candidate session is absent and the current same-account incumbent has a different CharacterId, within the existing common relation fence. Existing-session binding/replay/conflict/attempt-budget classification and same-character continuity errors retain their original paths. Global account uniqueness and the independent occupied-account/no-effects negative remain unchanged. No assertion is weakened. Actual configured SQL GREEN and all full-adapter qualification remain pending; this checkpoint is not integration-ready.
+
+
 Window2 authority: Work issue329 comment `5558302168`, starts `2026-09-06T09:22:00Z`, ends `10:22:00Z`. Native checkpoint `c92340d052b9e82c5757748a38357f5091fc37f4` / tree `1bafd017bb7ab987d975085fcd198e59396a02ed` was normally fast-forwarded clean. Immutable admission is unchanged. Protected fixture amendment PR340 merge `4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee`, tree `f88a083b0a05a18fa3b0448afe204da10a7b589f`, MQ34023932923 PASS, adds exactly authority_matrix.rs and authority_recovery.rs (13 paths total); exact comment and protected LIVE amendment read before mutation. Window1 is closed; prior failure/repair counters persist. Open review P2: account occupancy before existing attempt classification overrides retained terminal and idempotency outcomes after canonical replacement. First priority is focused reproduction/repair, then full adapter completion. Focused configured SQL case `replaced_collision_replay_retains_terminal_and_idempotency_priority` is now prepared; actual hosted RED remains pending. Newly allocated fixtures use explicit independent `Seed.account` in both original record and LiveSource; collision actor selects OTHER_ACCOUNT, account mutation always differs from current source, and replacement authorization consumes independent LiveSource account. Strict all-target Clippy/fmt/diff checks pass; log `b329-window2-replay-red-compile.log`. No occupancy repair is claimed yet.
 
 Window 1 started at `2026-09-06T08:17:20Z` on the verified clean canonical branch and dedicated worktree. Initial material checkpoint adds the source-identical integration Foundation module/alias and a test-only sealed claim owner. The focused SQL schema case requires the fresh receipt table and truthful nullable initial continuity; its real hosted RED is pending. No schema or adapter success is claimed. Early compiler proof and SQL RED must use the existing hosted configured PostgreSQL route for actual DB assertions. Local PostgreSQL cannot start under the current user-namespace/unprivileged-identity constraints; continue useful local compilation and hosted qualification without weakening gates.
@@ -186,18 +195,18 @@ branch: agent/durable-fresh-admission-child-b-329
 head_sha: null
 pr: 335
 execution_budget_minutes: 60
-execution_window_number: 2
-execution_window_started_at: 2026-09-06T09:22:00Z
-execution_window_elapsed_minutes: 2
-execution_windows_completed: 1
-worker_rotations: 0
+execution_window_number: 3
+execution_window_started_at: 2026-09-06T11:43:00Z
+execution_window_elapsed_minutes: 1
+execution_windows_completed: 2
+worker_rotations: 1
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: [34021756196, 34022664262, 34023568404]
-ci_job_ids: [101455557352, 101458035139, 101460507857]
+ci_run_ids: [34021756196, 34022664262, 34023568404, 34024400873, 34024853688]
+ci_job_ids: [101455557352, 101458035139, 101460507857, 101462735824, 101463943071]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
