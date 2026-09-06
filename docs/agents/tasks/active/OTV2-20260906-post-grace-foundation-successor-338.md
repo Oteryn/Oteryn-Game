@@ -12,11 +12,11 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/post-grace-foundation-successor-338
 issue: 338
-pr: null
+pr: 343
 allocation_source_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
 admission_main_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
 base_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
-head_sha: null
+head_sha: ddee1ef6f2038c5b8bfa1588828aca4c7b1a297d
 final_head_sha: null
 final_head_frozen_at: null
 owner: allocated post-grace Foundation worker
@@ -99,7 +99,7 @@ No SQL/migrations or future migration number, B329 worktree/harness edits, Cargo
 
 ## Implementation / findings
 
-Checkpoint 2: sealed current actor source and private post-grace prepare/current revalidation capability implemented alongside explicit complete retained budget, epoch finality, protection/rearm history and closed timing. Credential signed attempt UUID is retained independently of the Game attempt; malformed zero source security generation rejects. No immutable historical operation, split completion/reconcile/adoption flow or successor claim capability yet; these remain required. Existing V1 connection fence requires predecessor+1; continuity caps prepared deadline by original grace. Existing verified recovery facts lack authenticated source deadlines/provenance and current evidence lacks present-uncontrolled placement/retained-continuity proof. Existing replacement claim capability embeds V1 record. The four proposed paths address these concrete additive gaps without borrowing B paths.
+Checkpoint 2: sealed current actor source and private post-grace prepare/current revalidation capability implemented alongside explicit complete retained budget, epoch finality, protection/rearm history and closed timing. Credential signed attempt UUID is retained independently of the Game attempt; malformed zero source security generation rejects. Checkpoint 3 adds immutable original admission operation and lossless credential audit separate from refreshed live facts, with historical version/timing consistency validation. Split completion/reconcile/adoption flow and successor claim capability remain required. The core admission operation still needs the exact owner-authored claim transition bound by the later flow layer. Existing V1 connection fence requires predecessor+1; continuity caps prepared deadline by original grace. Existing verified recovery facts lack authenticated source deadlines/provenance and current evidence lacks present-uncontrolled placement/retained-continuity proof. Existing replacement claim capability embeds V1 record. The four proposed paths address these concrete additive gaps without borrowing B paths.
 
 ## Validation
 
@@ -112,6 +112,8 @@ Run focused post-grace RED/GREEN and independent invariant matrix, retaining val
 Review P2 fixed: exact immutable source replay must permit a newer local publication wrapper. Actual `recovery-wrapper-red.log` failed with RecoverySecurityEvidenceStale; repair normalizes only publication_revision in equality. Five focused tests now pass, retaining wrapper rollback and source content/decision/time/uncertainty/authority contradiction negatives. Source provenance is never re-aged.
 
 Checkpoint 2 actual RED/GREEN: missing signed-attempt API; zero security generation assertion; missing retained-budget/timing/current-actor APIs; retained own-attempt deletion assertion. Final focused post_grace family: 14 passed; strict all-target Clippy passed (7.91s). New tests use independent actor/source fixtures, and cover absent/changed placement/presence/protection/revisions/security floor, final epoch closure, 8/9 budget, existing retry, same-revision actor contradiction and frozen deadline despite refreshed evidence. The retained own-attempt deletion finding was repaired by requiring every pre-existing own entry remain exact; peer entries already compare completely. Full local package passed: library304, all selected integration binaries including unconfigured PostgreSQL target124, and16 doctests including actor/source anti-forgery. PostgreSQL target cases skip SQL when unconfigured: this is compile/compatibility evidence, not SQL execution proof.
+
+Checkpoint 3 (window2 before12:43): actual signed generation2/source floor2 to newer floor1 RED repaired with comparative minimum-generation monotonicity. Actual missing FND02/readiness and immutable operation/history APIs REDs followed by 18 focused tests passing. Current actor now supplies independent FND02 reconciliation and runtime readiness; refresh preserves the original complete admission operation while current evidence advances. Unknown stored version and changed derived deadline reject. Strict all-target Clippy passed7.50s and fmt/diff passed. Full package evidence above belongs to checkpoint2; no claim of fresh full-package or PostgreSQL execution for checkpoint3.
 
 ### Component/integration
 
@@ -136,12 +138,12 @@ Work owns PR creation and binds protected admission; worker publishes only alloc
 ## Context checkpoint
 
 ```yaml
-last_progress: sealed actor and retained continuity preparation checkpoint; immutable operation and full flow/claims remain open
+last_progress: original admission operation frozen across source refresh; current FND02 and security generation floors qualified; flow/claims remain open
 status: running
 admission_state: ADMITTED
 branch: agent/post-grace-foundation-successor-338
 head_sha: null
-pr: null
+pr: 343
 execution_budget_minutes: 60
 execution_window_number: 2
 execution_window_started_at: 2026-09-06T11:43:00Z
@@ -166,5 +168,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Add exact immutable historical operation and split post-grace completion/reconcile/adoption flow with owner-sealed claim successor on this same branch.
+next_action: Continue split post-grace completion/reconcile/adoption flow and resolve the exact additive recovery claim representation under Work on this same branch.
 ```

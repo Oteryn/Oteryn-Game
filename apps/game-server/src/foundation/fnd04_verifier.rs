@@ -2560,6 +2560,9 @@ impl VerifiedRecoveryDurabilityFactsV2 {
             same_recovery_signing_observation(&self.signing, &signing),
         )?;
         let next = finish_recovery_durability(self.claims.clone(), signing, now, source, current)?;
+        if next.security.minimum_generation < self.security.minimum_generation {
+            return Err(kind.evidence_stale());
+        }
         validate_recovery_observation_successor(
             &self.security.provenance,
             &next.security.provenance,
@@ -2756,4 +2759,108 @@ fn finish_recovery_durability(
         verified_at: now,
         accepted_deadline,
     })
+}
+
+/// Lossless historical recovery credential/evidence binding. Fixed recovery
+/// issuer/profile/purpose are selected by this version, never by stored input.
+/// This DTO has no conversion into a verified capability.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RecoveryCredentialAuditV2 {
+    pub credential_attempt_ref: [u8; 16],
+    pub grant_nonce: [u8; 32],
+    pub account_id: String,
+    pub character_id: CharacterId,
+    pub world_id: WorldId,
+    pub account_security_generation: u64,
+    pub protocol_major: u64,
+    pub transport_profile: u64,
+    pub ruleset_revision: String,
+    pub content_revision: String,
+    pub map_revision: String,
+    pub world_policy_revision: String,
+    pub issued_at: i64,
+    pub not_before: i64,
+    pub expires_at: i64,
+    pub signing: RecoverySigningTrustObservationV2,
+    pub security: RecoveryAccountSecurityObservationV2,
+    pub verified_at: i64,
+    pub accepted_deadline: i64,
+}
+impl VerifiedRecoveryDurabilityFactsV2 {
+    #[must_use]
+    pub fn audit(&self) -> RecoveryCredentialAuditV2 {
+        RecoveryCredentialAuditV2 {
+            credential_attempt_ref: self.claims.credential_attempt_ref,
+            grant_nonce: self.claims.nonce,
+            account_id: self.claims.account_id.clone(),
+            character_id: self.facts.character_id(),
+            world_id: self.facts.world_id(),
+            account_security_generation: self.claims.account_security_generation,
+            protocol_major: self.claims.protocol_major,
+            transport_profile: self.claims.transport_profile,
+            ruleset_revision: self.claims.ruleset_revision.clone(),
+            content_revision: self.claims.content_revision.clone(),
+            map_revision: self.claims.map_revision.clone(),
+            world_policy_revision: self.claims.world_policy_revision.clone(),
+            issued_at: self.claims.iat,
+            not_before: self.claims.nbf,
+            expires_at: self.claims.exp,
+            signing: self.signing.clone(),
+            security: self.security.clone(),
+            verified_at: self.verified_at,
+            accepted_deadline: self.accepted_deadline,
+        }
+    }
+}
+
+impl RecoveryCredentialAuditV2 {
+    /// Validate stored structure at its original verification time. This does
+    /// not authenticate stored claims or register a live evidence source.
+    pub fn validate_historical(&self) -> Result<(), Fnd04ConsumerError> {
+        let invalid = Fnd04ConsumerError::RecoveryMalformed;
+        NumericDate::validate(
+            self.verified_at,
+            self.issued_at,
+            self.not_before,
+            self.expires_at,
+        )
+        .map_err(|_| invalid)?;
+        let signing_deadline =
+            validate_recovery_signing(&self.signing, &self.signing.key_id, self.verified_at)?;
+        let security_deadline = recovery_source_deadline(
+            &self.security.provenance,
+            FreshEvidencePurposeV1::PlatformSecurity,
+            self.verified_at,
+        )?;
+        let expected = self
+            .expires_at
+            .checked_add(4)
+            .ok_or(invalid)?
+            .min(self.issued_at.checked_add(35).ok_or(invalid)?)
+            .min(signing_deadline)
+            .min(security_deadline);
+        if self.accepted_deadline != expected
+            || self.account_security_generation == 0
+            || self.security.minimum_generation == 0
+            || self.account_security_generation < self.security.minimum_generation
+            || !self.security.allowed
+            || self.security.account_id != self.account_id
+            || canonical_uuid(&self.account_id, false).is_none()
+            || self.credential_attempt_ref[6] >> 4 != 7
+            || self.credential_attempt_ref[8] >> 6 != 2
+            || self.protocol_major != 1
+            || self.transport_profile != 1
+            || ![
+                &self.ruleset_revision,
+                &self.content_revision,
+                &self.map_revision,
+                &self.world_policy_revision,
+            ]
+            .iter()
+            .all(|value| valid_revision(value))
+        {
+            return Err(invalid);
+        }
+        Ok(())
+    }
 }

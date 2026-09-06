@@ -2379,6 +2379,8 @@ pub struct PostGraceActorObservationV1 {
     pub predecessor: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     pub account_presence: Option<AccountPresenceClaimV1>,
     pub present_uncontrolled: bool,
+    pub runtime_ready: bool,
+    pub reconciliation: Fnd02ReconciliationFenceV1,
     pub placement_identity: [u8; 16],
     pub placement_revision: u64,
     /// Shared accepted Account security source floor across fresh and recovery.
@@ -2391,7 +2393,7 @@ impl PostGraceActorObservationV1 {
         let invalid = ReconnectDurabilityErrorV1::StaleAuthority;
         let snapshot = self.predecessor;
         let commit = snapshot.commit();
-        if !self.present_uncontrolled || self.placement_revision == 0 || self.placement_identity == [0; 16]
+        if !self.present_uncontrolled || !self.runtime_ready || self.placement_revision == 0 || self.placement_identity == [0; 16]
             || self.source_authority.is_empty() || self.source_revision == 0 || self.source_revision != self.accepted_source_revision
             || self.decision_identity.is_empty() || self.decision_identity != self.accepted_decision_identity
             || self.source_observed_at < 0 || self.source_observed_at > now || self.account_security_source_revision == 0
@@ -2437,6 +2439,22 @@ impl<'a> PostGraceActorAuthorityV1<'a> {
     }
 }
 
+/// Original admission operation retained byte-for-byte logically across current
+/// source refreshes. This is inert history, not a live source or completion.
+/// The later claim/flow layer must bind its exact owner-authored transition too.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PostGraceRecoveryOperationV1 {
+    pub version: u16,
+    pub credential: super::fnd04_verifier::RecoveryCredentialAuditV2,
+    pub actor: PostGraceActorObservationV1,
+    pub candidate: GameSessionId,
+    pub candidate_generation: ConnectionGeneration,
+    pub attempt: ReconnectAttemptRef,
+    pub transport: AuthenticatedTransportRefV1,
+    pub timing: RecoveryTimingV2,
+    pub prepared_at: i64,
+}
+
 /// Private live eligibility. No historical timing, observation, receipt or caller
 /// flag can construct this capability. It remains inert until its exact owning
 /// transaction; final authorization must independently resolve current sources.
@@ -2446,6 +2464,7 @@ impl<'a> PostGraceActorAuthorityV1<'a> {
 /// ```
 #[derive(Debug, Clone)]
 pub struct PostGraceRecoveryAuthorizationV1 {
+    operation: PostGraceRecoveryOperationV1,
     verified: super::fnd04_verifier::VerifiedRecoveryDurabilityFactsV2,
     actor: PostGraceActorObservationV1,
     candidate: GameSessionId,
@@ -2476,10 +2495,26 @@ impl PostGraceRecoveryAuthorizationV1 {
             original_grace_deadline: actor.predecessor.current_original_grace_deadline().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?,
             attempt_deadline: deadline,
         }.validate_at(now)?;
-        Ok(Self { verified, actor, candidate, attempt, transport, deadline, prepared_at: now })
+        let operation = PostGraceRecoveryOperationV1 {
+            version: 1,
+            credential: verified.audit(),
+            actor: actor.clone(),
+            candidate,
+            candidate_generation: ConnectionFence::fresh_admission().current(),
+            attempt,
+            transport,
+            timing: RecoveryTimingV2::TerminalSessionPostGrace {
+                original_grace_deadline: actor.predecessor.current_original_grace_deadline().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?,
+                attempt_deadline: deadline,
+            },
+            prepared_at: now,
+        };
+        Ok(Self { operation, verified, actor, candidate, attempt, transport, deadline, prepared_at: now })
     }
     #[must_use]
     pub const fn attempt_deadline(&self) -> i64 { self.deadline }
+    #[must_use]
+    pub const fn operation(&self) -> &PostGraceRecoveryOperationV1 { &self.operation }
     #[must_use]
     pub const fn candidate_generation(&self) -> ConnectionGeneration { ConnectionFence::fresh_admission().current() }
     #[must_use]
@@ -2509,12 +2544,35 @@ impl PostGraceRecoveryAuthorizationV1 {
             || (before.source_revision < after.source_revision && before.decision_identity == after.decision_identity)
             || before.current != after.current || before.predecessor != after.predecessor
             || before.account_presence != after.account_presence || before.placement_identity != after.placement_identity || before.placement_revision != after.placement_revision
+            || before.reconciliation != after.reconciliation
             || before.protection != after.protection || before.budget.epoch() != after.budget.epoch()
             || before.budget.entries().iter().any(|entry| entry.attempt == self.attempt && !after.budget.entries().contains(entry))
             || before.budget.entries().iter().filter(|entry| entry.attempt != self.attempt).ne(after.budget.entries().iter().filter(|entry| entry.attempt != self.attempt))
         { return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
         // A stricter current bound may reject; no refresh may extend this attempt.
         if now > next.deadline { return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
-        Ok(Self { deadline: self.deadline, prepared_at: self.prepared_at, ..next })
+        Ok(Self { operation: self.operation.clone(), deadline: self.deadline, prepared_at: self.prepared_at, ..next })
+    }
+}
+
+impl PostGraceRecoveryOperationV1 {
+    /// Historical consistency only. Callers cannot upgrade this result into
+    /// live preparation, completion, claims or controller authority.
+    pub fn validate_historical(&self) -> Result<(), ReconnectDurabilityErrorV1> {
+        let invalid=ReconnectDurabilityErrorV1::InvalidRecord;
+        self.credential.validate_historical().map_err(|_| invalid)?;
+        self.actor.validate(self.prepared_at)?;
+        self.actor.budget.check_candidate(self.attempt,self.transport)?;
+        let expected=RecoveryTimingV2::TerminalSessionPostGrace {
+            original_grace_deadline:self.actor.predecessor.current_original_grace_deadline().ok_or(invalid)?,
+            attempt_deadline:self.credential.accepted_deadline,
+        };
+        if self.version!=1 || self.timing!=expected || self.prepared_at<self.credential.verified_at
+            || self.candidate==self.actor.predecessor.commit().game_session_id() || self.candidate_generation.get()!=1
+            || self.credential.account_id!=self.actor.current.account_id || self.credential.character_id!=self.actor.current.character_id || self.credential.world_id!=self.actor.current.world_id
+            || self.credential.ruleset_revision!=self.actor.current.ruleset_revision || self.credential.content_revision!=self.actor.current.content_revision
+            || self.credential.map_revision!=self.actor.current.map_revision || self.credential.world_policy_revision!=self.actor.current.world_policy_revision
+            || self.credential.security.provenance.source_revision!=self.actor.account_security_source_revision { return Err(invalid); }
+        expected.validate_at(self.prepared_at)
     }
 }

@@ -473,6 +473,14 @@ fn actor_fixture() -> Result<ActorSource, Box<dyn std::error::Error>> {
         current,
         predecessor: snapshot,
         present_uncontrolled: true,
+        runtime_ready: true,
+        reconciliation: Fnd02ReconciliationFenceV1::new(
+            CommandId::new(1).map_err(|_| "command")?,
+            vec![],
+            4,
+            vec![],
+        )
+        .map_err(|_| "reconciliation")?,
         placement_identity: [5; 16],
         placement_revision: 2,
         account_security_source_revision: 7,
@@ -737,5 +745,148 @@ fn post_grace_revalidation_cannot_drop_its_retained_attempt()
             )
             .is_err()
     );
+    Ok(())
+}
+
+#[test]
+fn post_grace_newer_security_observation_cannot_lower_generation_floor()
+-> Result<(), Box<dyn std::error::Error>> {
+    use ed25519_dalek::{Signer, SigningKey};
+    let (token, mut source, current) = fixture().map_err(|_| "fixture")?;
+    let segments: Vec<_> = token.split('.').collect();
+    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD.decode(segments[1])?;
+    let payload = String::from_utf8(decoded)?.replace(
+        "\"account_security_generation\":\"1\"",
+        "\"account_security_generation\":\"2\"",
+    );
+    let input = format!(
+        "{}.{}",
+        segments[0],
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(payload)
+    );
+    let token = format!(
+        "{input}.{}",
+        base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(
+            SigningKey::from_bytes(&[23; 32])
+                .sign(input.as_bytes())
+                .to_bytes()
+        )
+    );
+    source.security.minimum_generation = 2;
+    let verified = verify_recovery_grant_durability_v2(
+        &token,
+        100,
+        &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+        &current,
+    )
+    .map_err(|_| "verify")?;
+    source.security.minimum_generation = 1;
+    source.security.provenance.source_revision += 1;
+    source.security.provenance.accepted_source_revision += 1;
+    source.security.provenance.publication_revision += 1;
+    source.security.provenance.decision_identity = "source-8".into();
+    source.security.provenance.accepted_decision_identity = "source-8".into();
+    assert!(
+        verified
+            .revalidate(
+                101,
+                &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                &current
+            )
+            .is_err()
+    );
+    Ok(())
+}
+
+#[test]
+fn post_grace_current_fnd02_and_runtime_readiness_are_not_reconstructed()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::foundation::*;
+    let (prepared, source, actor) = prepared_fixture()?;
+    let mut changed = actor.clone();
+    changed.0.reconciliation = Fnd02ReconciliationFenceV1::new(
+        CommandId::new(1).map_err(|_| "command")?,
+        vec![],
+        99,
+        vec![],
+    )
+    .map_err(|_| "reconciliation")?;
+    changed.0.source_revision += 1;
+    changed.0.accepted_source_revision += 1;
+    changed.0.decision_identity = "actor-12".into();
+    changed.0.accepted_decision_identity = "actor-12".into();
+    assert!(
+        prepared
+            .revalidate(
+                &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                &PostGraceActorAuthorityV1::from_owning_source(&changed),
+                101
+            )
+            .is_err()
+    );
+    let mut unready = actor.clone();
+    unready.0.runtime_ready = false;
+    assert!(
+        prepared
+            .revalidate(
+                &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+                &PostGraceActorAuthorityV1::from_owning_source(&unready),
+                101
+            )
+            .is_err()
+    );
+    Ok(())
+}
+
+#[test]
+fn post_grace_original_operation_is_immutable_across_source_refresh()
+-> Result<(), Box<dyn std::error::Error>> {
+    use crate::foundation::*;
+    let (prepared, mut source, mut actor) = prepared_fixture()?;
+    let original = prepared.operation().clone();
+    for p in [
+        &mut source.security.provenance,
+        &mut source.signing.provenance,
+    ] {
+        p.source_revision += 1;
+        p.accepted_source_revision += 1;
+        p.publication_revision += 1;
+        p.decision_identity = "source-8".into();
+        p.accepted_decision_identity = "source-8".into();
+        p.source_observed_at = 102;
+    }
+    actor.0.source_revision += 1;
+    actor.0.accepted_source_revision += 1;
+    actor.0.decision_identity = "actor-12".into();
+    actor.0.accepted_decision_identity = "actor-12".into();
+    actor.0.source_observed_at = 102;
+    actor.0.account_security_source_revision = 8;
+    let refreshed = prepared
+        .revalidate(
+            &RecoveryDurabilityTrustContextV2::from_owning_source(&source),
+            &PostGraceActorAuthorityV1::from_owning_source(&actor),
+            102,
+        )
+        .map_err(|_| "refresh")?;
+    assert_eq!(refreshed.operation(), &original);
+    assert_ne!(
+        refreshed.verified().security().provenance.source_revision,
+        original.credential.security.provenance.source_revision
+    );
+    Ok(())
+}
+
+#[test]
+fn post_grace_historical_operation_rejects_unknown_version_and_changed_deadline()
+-> Result<(), Box<dyn std::error::Error>> {
+    let (prepared, _, _) = prepared_fixture()?;
+    let original = prepared.operation();
+    assert!(original.validate_historical().is_ok());
+    let mut unknown = original.clone();
+    unknown.version = 99;
+    assert!(unknown.validate_historical().is_err());
+    let mut changed = original.clone();
+    changed.credential.accepted_deadline += 1;
+    assert!(changed.validate_historical().is_err());
     Ok(())
 }
