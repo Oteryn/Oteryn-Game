@@ -219,34 +219,48 @@ Work creates/identifies the sole implementation PR after protected allocation; w
 ## Context checkpoint
 
 ```yaml
-last_progress: retained replay priority repair published; initial typed guard publication storage and configured test prepared; actual SQL and full adapter remain open
+last_progress: independent review rejected unsealed first-loss path; safe initial-null PREPARE rejection prepared with no-effects negative tests
 status: in_progress
 admission_state: ADMITTED
 branch: agent/durable-fresh-admission-child-b-329
 head_sha: null
 pr: 335
 execution_budget_minutes: 60
-execution_window_number: 3
-execution_window_started_at: 2026-09-06T11:43:00Z
-execution_window_elapsed_minutes: 57
-execution_windows_completed: 2
+execution_window_number: 4
+execution_window_started_at: 2026-09-06T12:46:00Z
+execution_window_elapsed_minutes: 22
+execution_windows_completed: 3
 worker_rotations: 1
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: [34021756196, 34022664262, 34023568404, 34024400873, 34024853688, 34031174082, 34031690145]
-ci_job_ids: [101455557352, 101458035139, 101460507857, 101462735824, 101463943071, 101480959285, 101482307338]
+ci_run_ids: [34021756196, 34022664262, 34023568404, 34024400873, 34024853688, 34031174082, 34031690145, 34033443274, 34033942736]
+ci_job_ids: [101455557352, 101458035139, 101460507857, 101462735824, 101463943071, 101480959285, 101482307338, 101487176414, 101488525245]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 2
+repair_cycles_for_current_gate: 4
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Work publishes this material checkpoint; continue same branch with actual hosted repair validation, complete adaptive footprint/SQL guard and fresh adapters, and amend fixtures only after protected allocation readback.
+next_action: Work publishes the first-loss checkpoint; qualify actual SQL then complete sealed lifecycle, shared bounded executor and adaptive footprint within the unchanged full plan.
 ```
+
+## Window 4 — first fresh control loss
+
+Work comment5559297399 grants12:46–13:46Z on the same branch and fourteen allocated paths; completed windows3, rotations1, repair cycles2 remain cumulative. Native8a807a4d7d47c2ed0c758d8a30e2df5617189841 was normally fast-forwarded clean. Fresh checkpoint4139f552 passed actual PostgreSQL17.6 canonical34033443274/Linux101487176414,304 passed/0 failed. Rollback checkpoint8a807 passed actual PostgreSQL17.6 canonical34033942736/Linux101488525245,305 passed/0 failed12:47:50Z, including six effect rollback boundaries and full-u64 publication mirrors. Unconfigured local test bodies are excluded.
+
+Independent review found two P1 defects in unpublished tree77bcf86d878d9c8938521a815a3733055b1d1dea: public raw-record PREPARE requests cannot authorize unexpected loss of a healthy controller; and expired initial preparation could persist stale attempts while continuity remained NULL, poisoning a later epoch. Publication was held. Repair cycle3 removes the unsafe optional-context APIs entirely and returns RejectedStaleAuthority for initial NULL continuity before any retained attempt/children. Existing established-epoch behavior is unchanged. No unsafe checkpoint was committed.
+
+Configured negative tests cover both V1 and V2: expired raw request then a distinct otherwise-valid request for the same unopened epoch both reject with unchanged complete fresh reconciliation and claim rows, zero attempts/pending commands/control-loss continuity. Actual SQL remains pending. A successful owning real-loss positive is deliberately not claimed.
+
+Exact dependency: admission.rs mark_unexpected_control_loss checks local current transport/generation then calls synchronous public ReconnectAttemptJournal::mark_control_loss; no exported sealed durable unexpected-loss capability binds owning current loss observation, exact actor/session/transport/generation/runtime fence and authoritative epoch/grace/protection continuity. ReconnectDurabilityFlowV1/V2::begin accepts public raw records; validate_claim_preserving_session_v1 is only an additional predicate for an already authorized write. Work must allocate the minimal additive sealed owner-source/request and pure locked-current validator to the Foundation lane (admission_recovery_inner.rs and dedicated tests; facade only if the real caller bridge requires it). B cannot widen its own fourteen-path lease or substitute a raw DTO/boolean. PREPARE must follow separately authorized loss, never originate it.
+
+Strict all-target Clippy passed4.75s including the final no-child SQL assertion (b329-first-loss-repair-clippy.log); formatting, whitespace and governance26 documents/9 lanes passed. Full sealed lifecycle, shared bounded executor/custody, adaptive locking and qualification remain required. Resource registry345 is accepted at protectedc9890968ce4c71165bdd9cd1d6938f9af75eaa00; all23 DFR dimensions were read at that immutable blob.
+
+Independent repair review P2: the fixture adds115 seconds to its seed time, so offset−60 did not expire the first request. Repair cycle4 changes it to−180 and explicitly checks first deadline < actual database clock and second deadline >= actual database clock before submission. Both full no-effects assertions remain. Same window4/admission and cumulative counters; actual SQL remains pending.

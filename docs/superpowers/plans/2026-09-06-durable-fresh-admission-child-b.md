@@ -129,3 +129,9 @@ No absent local PostgreSQL run qualifies these cases. The actual hosted head/run
 - [ ] Work verifies remote exact head/tree mapping, scope, review findings and checks, integrates normally, reads protected main and archives/releases custody. Upstream movement is reconciled without resets/force pushes; affected validation reruns only for concrete invalidation.
 
 **Single current next action:** Work qualifies this exact allocation, then binds its actual protected merge and dispatches the sole worker.
+
+### Window 4 first-loss safety repair and exact dependency
+
+Published fresh/rollback SQL checkpoints have actual PostgreSQL17.6 evidence304/305 passed respectively (canonical34033443274 and34033942736). Independent review rejected unpublished first-loss tree77bc: raw PREPARE is not owning unexpected-loss authority, and initial stale attempt persistence can poison an unopened epoch. Repair cycle3 removes those optional-context APIs and rejects initial NULL continuity before retained effects. Configured V1/V2 expired-then-distinct-current negative checks unchanged session/receipt/claims and zero attempt/child/continuity rows; actual SQL is pending.
+
+No existing exported sealed real-loss capability was found: the owning facade currently calls synchronous unsealed mark_control_loss. A separately allocated additive Foundation owning-loss source/request must bind the exact current transport/generation/actor/runtime fence and real epoch/grace/protection continuity, with pure locked-current revalidation. PREPARE then consumes established continuity. A public raw record or immutable expected snapshot cannot substitute for that prerequisite. This is a concrete minimal Foundation dependency, not permission to edit outside B's lease. Continue other admitted lifecycle/resource/locking work while Work handles it. All full-plan acceptance above remains mandatory.

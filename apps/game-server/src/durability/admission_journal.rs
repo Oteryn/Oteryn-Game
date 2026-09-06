@@ -175,6 +175,16 @@ impl AdmissionReconnectJournal {
         if !session_binding_is_valid(&session, record)? {
             return Err(DurabilityError::InvalidStoredState);
         }
+        // PREPARE is not owning evidence of unexpected controller loss.
+        // Initial fresh continuity remains absent until an independently
+        // authorized canonical loss operation installs it. Reject before any
+        // stale attempt/children can poison a future legitimate epoch.
+        if session
+            .try_get::<Option<String>, _>("control_loss_epoch")?
+            .is_none()
+        {
+            return Ok(ReconnectPrepareDispositionV1::RejectedStaleAuthority);
+        }
         let receipt_backed = !receipt_authorized
             && replacement_receipt_matches_record(&mut transaction, record).await?;
         let existing = sqlx::query(

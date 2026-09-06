@@ -14,6 +14,157 @@ mod durability;
 mod postgres;
 
 #[test]
+fn fresh_prepare_cannot_invent_control_loss_or_poison_an_unopened_epoch()
+-> Result<(), Box<dyn std::error::Error>> {
+    use authority_matrix::{Seed, checked};
+    use durability::admission_authority_guards::AdmissionGuardStore;
+    use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
+    use foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
+    use foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            for use_v2 in [false, true] {
+                let database = postgres::IsolatedPostgres::create("fresh_first_loss").await?;
+                let result = async {
+                    let url = database.database_url()?;
+                    MigrationExecutor::connect_migration(&url)
+                        .await?
+                        .apply_embedded_ledger()
+                        .await?;
+                    let pool = sqlx::PgPool::connect(&url).await?;
+                    let now = postgres_clock(&pool).await?;
+                    let owner = postgres::fresh::Source::new(now)?;
+                    let guards = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+                    guards
+                        .publish(&checked(AdmissionAuthorityPublicationV1::prepare(
+                            &owner, now,
+                        ))?)
+                        .await?;
+                    let fresh = FreshAdmissionStore::connect_runtime(&url, 65536, 8192).await?;
+                    let fresh_request = owner.request()?;
+                    if !matches!(
+                        fresh.commit(&fresh_request).await?,
+                        FreshAdmissionDurableOutcomeV1::Committed(_)
+                    ) {
+                        return Err("fresh setup failed".into());
+                    }
+                    let FreshReconciliation::Committed(initial) =
+                        fresh.reconcile(fresh_request.operation()).await?
+                    else {
+                        return Err("missing fresh setup".into());
+                    };
+                    let claim_keys: Vec<_> =
+                        owner.rows[..2].iter().map(|row| row.key.clone()).collect();
+                    let claims = guards
+                        .load(&claim_keys)
+                        .await?
+                        .into_iter()
+                        .collect::<Option<Vec<_>>>()
+                        .ok_or("missing acquired claims")?;
+                    // Raw records are independently authored; even matching facts
+                    // cannot authorize loss of a healthy current controller.
+                    for (attempt, offset) in [(1, -180), (2, 0)] {
+                        let seed = Seed {
+                            account: "00000000-0000-4000-8000-000000000001",
+                            session: 9,
+                            character: 2,
+                            generation: 1,
+                            epoch: 1,
+                            attempt,
+                            transport: 10,
+                            now: now + offset,
+                            ..Seed::fixed()
+                        };
+                        let template = authority_matrix::prepared_record(seed)?;
+                        let reconnect = checked(ReconnectDurabilityRecordV1::new(
+                            checked(ReconnectIdentityV1::new(
+                                authority_matrix::session(9)?,
+                                checked(ReconnectAttemptRef::new(attempt))?,
+                                seed.account,
+                                authority_matrix::character(2)?,
+                                authority_matrix::world(3)?,
+                                RuntimeScopeRefV1::channel(
+                                    authority_matrix::world(3)?,
+                                    authority_matrix::channel(4)?,
+                                ),
+                            ))?,
+                            template.connection(),
+                            checked(ReconnectAuthorityFenceV1::new(
+                                2,
+                                checked(ScopeOwnershipGeneration::new(1))?,
+                            ))?,
+                            template.continuity(),
+                            template.proof().clone(),
+                            template.fnd02().clone(),
+                            template.compatibility().clone(),
+                        ))?;
+                        let decision_now = postgres_clock(&pool).await?;
+                        let expired = reconnect.continuity().prepared_deadline() < decision_now;
+                        if expired != (attempt == 1) {
+                            return Err(
+                                "fresh PREPARE deadline fixture is not expired/current as intended"
+                                    .into(),
+                            );
+                        }
+                        let (_, request) = ReconnectDurabilityFlowV1::begin(reconnect.clone());
+                        let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+                        if use_v2 {
+                            let (_, request_v2) =
+                                foundation::ReconnectDurabilityFlowV2::begin(reconnect, None);
+                            let journal_v2 =
+                                durability::AdmissionReconnectJournalV2::connect_runtime(&url)
+                                    .await?;
+                            if journal_v2.prepare(&request_v2).await?
+                                != foundation::ReconnectPrepareDispositionV2::RejectedStaleAuthority
+                            {
+                                return Err("raw V2 prepare invented owning loss authority".into());
+                            }
+                        } else if journal.prepare(&request).await?
+                            != ReconnectPrepareDispositionV1::RejectedStaleAuthority
+                        {
+                            return Err("raw V1 prepare invented owning loss authority".into());
+                        }
+                        let FreshReconciliation::Committed(unchanged) =
+                            fresh.reconcile(fresh_request.operation()).await?
+                        else {
+                            return Err("rejected preparation lost fresh authority".into());
+                        };
+                        if unchanged != initial
+                            || guards.load(&claim_keys).await?
+                                != claims.iter().cloned().map(Some).collect::<Vec<_>>()
+                        {
+                            return Err(
+                                "rejected prepare altered healthy session/receipt/claims".into()
+                            );
+                        }
+                        let attempts: i64 = sqlx::query_scalar(
+                            "SELECT (SELECT count(*) FROM game_durability_reconnect_attempts) + \
+                             (SELECT count(*) FROM game_durability_reconnect_pending_commands) + \
+                             (SELECT count(*) FROM game_durability_control_loss_continuity)",
+                        )
+                        .fetch_one(&pool)
+                        .await?;
+                        if attempts != 0 {
+                            return Err("unopened epoch poisoned by retained attempt".into());
+                        }
+                    }
+                    pool.close().await;
+                    Ok::<(), Box<dyn std::error::Error>>(())
+                }
+                .await;
+                database.cleanup().await?;
+                result?;
+            }
+            Ok(())
+        })
+}
+
+#[test]
 fn fresh_failure_at_each_effect_rolls_back_claims_receipt_and_reservation()
 -> Result<(), Box<dyn std::error::Error>> {
     use durability::admission_authority_guards::AdmissionGuardStore;
