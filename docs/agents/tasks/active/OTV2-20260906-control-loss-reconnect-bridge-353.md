@@ -4,20 +4,20 @@
 task_id: OTV2-20260906-control-loss-reconnect-bridge-353
 title: Bridge complete owning-loss continuity into reconnect
 mode: IMPLEMENT
-status: waiting
-admission_state: NOT_ADMITTED
+status: in_progress
+admission_state: ADMITTED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/control-loss-reconnect-bridge-353
 issue: 353
 pr: null
 allocation_source_main_sha: 53c6bdf06a2282d893035a995c46052c88f935b4
-admission_main_sha: NOT_ADMITTED
-base_sha: NOT_ADMITTED
+admission_main_sha: b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a
+base_sha: b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-owner: prospective sole Foundation bridge worker
+owner: foundation_audit sole Foundation bridge worker
 coordinator: Oteryn Work Delivery Coordinator
 created_at: 2026-09-06
 updated_at: 2026-09-06
@@ -69,15 +69,27 @@ TDD begins with the representability/authority failure: NotEntitled cannot be co
 ## Context checkpoint
 
 ```yaml
-last_progress: concrete separate caller bridge allocated prospectively under348 exclusion
-status: waiting
-admission_state: NOT_ADMITTED
-execution_window_number: 0
+last_progress: verified clean canonical cache bound at 2026-09-06T16:30:51Z under Work353 comment5560585146
+status: in_progress
+admission_state: ADMITTED
+execution_window_number: 1
 execution_windows_completed: 0
 worker_rotations: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 2
 owner_action_required: null
-blocker: protected_allocation_and_338_release_readback
-next_action: Work qualifies and protects exact353 allocation before worker admission
+blocker: null
+next_action: independently review exact repaired five-path candidate then publish through Work
 ```
+
+## Window 1 material checkpoint
+
+Immutable admission and canonical cache bind remain b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a /2026-09-06T16:30:51Z under Work353 comment5560585146. Implementation covers complete Fast, recoveryV1/recoveryV2 same-session and recoveryV2 early-terminal replacement. Full original loss history/protection/rearm/budget/FND02 and separate loss/reconnect decision times are preserved. V1 captures only actual successful verifier key/floor lookups; V2 retains genuine source audit. Every proof class has owner-issued inactive successor metadata and requires independently current active proof before adoption. Actual source registration, secret mechanics, B codec/SQL and driver accounting remain separate acceptance.
+
+Author and independent review findings repaired test-first: original loss commit substitution; restored V2 provenance rollback; signed-audit/deadline inconsistency; canonical eligibility/shared-floor and claim-history validation; impossible PREPARE-after-COMMIT history; unresolved other Prepared budget; missing Recovery proof rotation; incomplete Fast current security/proof freshness; equal-revision inactive-to-active proof substitution. Two material candidate repair cycles, completed windows0/rotations0, no retry reset. Full local package, Clippy, fmt, governance and source-included actualB6036 were green on the first candidate; all affected layers are rerun for the repaired final tree. Independent exact-material review and remote canonical CI/Merge Queue/readback remain required before completion.
+
+### Final local qualification, 2026-09-06T17:13:42Z
+
+Runtime material frozen in tree cf660986f176d47d793478ca0f7bd8f37ec6236a. Full `cargo test -p oteryn-game-server --offline` PASS:364 library tests (24 complete-bridge tests), all remaining package targets,29 doctests including new anti-forgery controls. Strict all-target Clippy, workspace fmt check, whitespace and governance PASS. Exact three owned runtime/test blobs composed with canonical B6036bee65dd798609dcfa63d7189d2ea12abfee3 in isolated qualification cache: `cargo test -p oteryn-game-server --test durability_postgres --no-run --offline` PASS. This is source compatibility compile, not configured PostgreSQL execution or complete B consumer activation.
+
+Independent non-author allocation_review rebound the whole five-path cf660 material and reported no remaining P0/P1/P2 source findings; all accepted material repairs are resolved. This evidence-only checkpoint preserves the runtime freeze. Window1 remains rooted at16:30:51Z (42m51s elapsed,17m09s remaining at qualification); completed0/rotation0/repair2 unchanged pending Work publication/integration. Current local branch HEAD still immutable admission b61f9d8; Work must publish the exact reviewed tree, verify remote head, run canonical exact-head CI and normal Merge Queue/readback. No local-only completion or Server Seam release is claimed.
