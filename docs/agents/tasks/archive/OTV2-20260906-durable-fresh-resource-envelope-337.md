@@ -4,16 +4,17 @@
 task_id: OTV2-20260906-durable-fresh-resource-envelope-337
 title: Bound complete durable fresh records and retained asynchronous work
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: arch/durable-fresh-resource-envelope-337
+branch: null
+historical_branch: arch/durable-fresh-resource-envelope-337
 issue: 337
-pr: null
+pr: 341
 base_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
 admission_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
 head_sha: null
-final_head_sha: null
+final_head_sha: aa8cdf5d1d3e87d1fe5fb89a96db46f2734417a8
 final_head_frozen_at: null
 owner: Oteryn Sol Supervising Architect
 coordinator: Oteryn Work Delivery Coordinator
@@ -22,7 +23,8 @@ updated_at: 2026-09-06
 execution_budget_minutes: 30
 execution_window_started_at: 2026-09-06T08:51:28Z
 large_budget_reason: null
-owned_paths:
+owned_paths: []
+historical_owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md
   - docs/agents/tasks/active/OTV2-20260906-durable-fresh-resource-envelope-337.md
 public_contracts: [DUR-FRESH-RESOURCE-ENVELOPE-V1]
@@ -172,3 +174,7 @@ owner_action_required: null
 blocker: Independent publication/review/acceptance and separate registry integration remain required
 next_action: Work publishes the exact staged two-doc candidate for independent qualification and protected integration.
 ```
+
+## Terminal protected closeout
+
+Work verified PR #341 protected merge `0d354091dfc3a144a9c83c31434dec2aff4fe0c4`, final reviewed head `aa8cdf5d1d3e87d1fe5fb89a96db46f2734417a8`, actual full Merge Queue `34030885168` SUCCESS and exact-head independent review P0/P1/P2=0. Architecture delivery is completed; branch/owned-path custody is released and this record is archived. Immutable admission, historical findings and execution evidence above remain provenance; older candidate/waiting prose does not reopen the task. This is accepted documentation, not registry/runtime/source availability. Next programme action: separately allocate and qualify resource registry342; preserve Server Seam dependency hold.
