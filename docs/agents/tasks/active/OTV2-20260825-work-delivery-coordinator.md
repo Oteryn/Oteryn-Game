@@ -12,14 +12,14 @@ base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: f69e9c12c8b69b625a7ce9d911bf3132c141ada6
+protected_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
 server_seam_issue: 247
 server_seam_allocation_pr: 294
 server_seam_allocation_merge_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 server_seam_state: WAITING_DEPENDENCY
-architecture_escalation_issue: 332
+architecture_escalation_issue: 337
 nonblocking_governance_reconciliation_issue: 316
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
@@ -27,6 +27,10 @@ updated_at: 2026-09-06
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration and closeout; no single worker owns the programme
 owned_paths:
+  - docs/agents/tasks/active/OTV2-20260906-post-grace-foundation-successor-338.md
+  - docs/superpowers/plans/2026-09-06-post-grace-foundation-successor.md
+  - docs/agents/tasks/active/OTV2-20260906-post-grace-recovery-timing-332.md
+  - docs/agents/tasks/archive/OTV2-20260906-post-grace-recovery-timing-332.md
   - docs/agents/tasks/active/OTV2-20260906-foundation-claim-transition-326.md
   - docs/agents/tasks/archive/OTV2-20260906-foundation-claim-transition-326.md
   - docs/agents/tasks/active/OTV2-20260906-native-source-contracts-328.md
@@ -65,7 +69,17 @@ Drive the accepted Oteryn Game post-blocker programme to the first real authorit
 
 This packet records the **current** coordinator state. The previous Durability-recovery-era version remains immutable Git history and Issue #162 provenance; its old dispatch/status prose is historical and grants no current worker, merge or architecture authority.
 
-## Current protected state — 2026-09-06
+## Current protected state — post-grace allocation
+
+This checkpoint supersedes earlier current-status prose below while preserving historical evidence. Work remains the unique mutating #162 control plane.
+
+- A318/321 and Foundation326/331 are completed/released; no reopen or history reset.
+- B329 is admitted at allocation333 merge `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd`, branch `agent/durable-fresh-admission-child-b-329`, PR335. Its schema checkpoint `d371e0a61e8a39c8c3f6875bf2343da60984ae2b` passes the new actual PostgreSQL17.6 schema case but has eight fixture/account-exclusion regressions in run34022664262. Full adapter/qualification remains open. This package additionally allocates only two named fixture paths below after protected readback; no worker history/window/counter reset.
+- Architecture332/334 is accepted at `1bcdc951e90a56310d24dfb5f3953ec0f86e1695`, Merge Queue34022052840 PASS; task archived here and custody released. Its semantic implementation is separate338, prospectively allocated below.
+- Source336/339 resource/recovery transport is still an independently reviewed candidate awaiting CI/protected integration. B resource envelope337 is a genuine separate architecture gap; neither unmerged candidate authorizes runtime/registry values.
+- C actual authenticated producers/bootstrap remain unqualified; preserve Server Seam247 branch/head `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`, WAITING_DEPENDENCY. A+B or docs alone cannot release it.
+
+## Prior protected state — 2026-09-06
 
 Current correction: Child A #318 / PR #321 is completed/released after exact-head CI, independent review (P0/P1/P2=0), full Merge Queue `33992173480` and protected readback of `f77a160a480cb1bb08bbbd83e0061b2a8a424734` / tree `6c1e6eaa73adb06eaf27dc8526b78ebeb1d8f1bf`. The worker's final head is `a94cd13fa3741780bd108220bb893c3d9be8a1ac` and immutable admission remains `8fd0a40928c4089b453556edbf0a5abebe46986d`. The archived task retains its original allocation and counters.
 
@@ -94,16 +108,16 @@ Historical pre-architecture checkpoint:
 
 ## Current critical-path blocker
 
-Original A remains complete/released. With #331 verified, B #329 must persist the complete owner-authored operation and canonical lifecycle effects; C must then bind actual authenticated/owning producers and prove readiness. Current delivery path is B -> C readiness -> preserved Server Seam. #332 recovery-architecture qualification proceeds separately; its proposal grants no runtime lease and the inherited post-grace gap does not block B. Worker admission still requires this allocation's protected integration and Work readback.
+B329 full durability implementation/qualification remains open. Its new schema case passes actual PostgreSQL17.6 but eight existing collision fixtures need isolation from global Account exclusion. B337 numeric resource authority/registration is also required before final acceptance. Source336/339 and actual C owners/bootstrap remain separate. Accepted332/334 now permits the exact Foundation338 semantic allocation; this does not grant later SQL/source readiness. Server Seam247 stays preserved and waiting.
 
 ## Next authorized sequence
 
-1. Preserve completed A #318/#321 and accepted #324/#325 evidence. Verify #331 protected merge/MQ and #326 terminal custody; archive #326 and accepted #328 without resetting historical counters.
-2. Qualify/integrate B #329's exact eleven-path allocation, bind the actual allocation merge as immutable admission and dispatch one writer on `agent/durable-fresh-admission-child-b-329`.
-3. Require B's hosted PostgreSQL17.6 matrix, independent exact-head review, full canonical CI/Merge Queue and protected readback; archive/release B before C mutation.
-4. Independently qualify docs-only #332 before consuming its accepted-recovery semantics. Separately allocate C after B and require actual producer inventory, commit-before-publish, source nonrollback/restart and readiness evidence. Missing sources keep admission closed.
-5. Only after required A/B/C integrations and actual C readiness, reassess preserved Server Seam `9370b254c6ac4f6529e069c1968ae6bfa1e1750e` for lawful resume/reconciliation; no implicit write lease, reset/force/restart or partial-candidate integration.
-6. Qualify Server Seam through production-path/review/CI gates, then recompute Client -> real QA -> Movement -> Combat.
+1. Qualify this exact Foundation338 allocation,332archive and B329two-fixture amendment; bind actual protected merge and dispatch338 while continuing same Bbranch/window/counters.
+2. Complete B codec/common-lock/lifecycle/race matrix and resource337/registry prerequisites, independent review and full canonical CI/Merge Queue. Do not treat schema-only GREEN as full qualification.
+3. Complete338 semantic independent review/CI/MQ; later post-grace SQL successor receives a fresh allocation after B actual schema integration, with no preselected migration number.
+4. Qualify source336/339 and separately allocated registry/actual C source composition. Missing Platform counterpart/bootstrap/character operation authority remains an explicit dependency, without external writes.
+5. Resume preserved Server Seam only after required implementation/source readiness; normal reconcile, no reset/force/restart, then its production-path/review/CI gates.
+6. Recompute compatible Client, physical QA, Movement and Combat after Server Seam actual integration.
 
 ## Open-state disposition
 
@@ -210,19 +224,21 @@ Child A #318 remains completed/released. After verified #331 closeout the curren
 ## Context checkpoint
 
 ```yaml
-last_progress: PR331 integration verified; 326 and328 archive plus exact prospective B329 allocation prepared
+last_progress: PR334 integration verified; exact338allocation and332archive plus B329fixture amendment prepared
 status: COORDINATING
 programme_state: WAITING_DEPENDENCY
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
-protected_main_sha: f69e9c12c8b69b625a7ce9d911bf3132c141ada6
+protected_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
 server_seam_issue: 247
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 server_seam_pr: null
 server_seam_state: WAITING_DEPENDENCY
-architecture_escalation_issue: 332
+architecture_escalation_issue: 337
 nonblocking_governance_reconciliation_issue: 316
 owner_action_required: null
-blocker: B329_allocation_and_delivery_then_C_actual_readiness
-next_action: qualify this exact closeout_and_B329_allocation package, bind actual protected admission, then dispatch the sole B worker
+blocker: B329_full_delivery_resource337_and_C_actual_readiness_then_Server_Seam
+next_action: qualify this exact338allocation_and_Bfixture_amendment, bind protected readback and dispatch338 while continuing B329
 ```
+
+This package changes only allocation/task/archive coordination documents. It grants no second control plane and no runtime mutation to Work. Prospective338 and Bfixture amendment activate only after protected integration/readback; existing B runtime custody remains with its writer.

@@ -1,6 +1,16 @@
 # Oteryn v2 Implementation Live Allocations
 
-## Current Work allocation checkpoint — 2026-09-06
+## Current Work checkpoint — post-grace Foundation338 allocation
+
+This checkpoint supersedes earlier current-status prose below while preserving historical evidence. Work remains the unique mutating #162 control plane.
+
+- A318/321 and Foundation326/331 are completed/released; no reopen or history reset.
+- B329 is admitted at allocation333 merge `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd`, branch `agent/durable-fresh-admission-child-b-329`, PR335. Its schema checkpoint `d371e0a61e8a39c8c3f6875bf2343da60984ae2b` passes the new actual PostgreSQL17.6 schema case but has eight fixture/account-exclusion regressions in run34022664262. Full adapter/qualification remains open. This package additionally allocates only two named fixture paths below after protected readback; no worker history/window/counter reset.
+- Architecture332/334 is accepted at `1bcdc951e90a56310d24dfb5f3953ec0f86e1695`, Merge Queue34022052840 PASS; task archived here and custody released. Its semantic implementation is separate338, prospectively allocated below.
+- Source336/339 resource/recovery transport is still an independently reviewed candidate awaiting CI/protected integration. B resource envelope337 is a genuine separate architecture gap; neither unmerged candidate authorizes runtime/registry values.
+- C actual authenticated producers/bootstrap remain unqualified; preserve Server Seam247 branch/head `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`, WAITING_DEPENDENCY. A+B or docs alone cannot release it.
+
+## Prior Work allocation checkpoint — 2026-09-06
 
 This checkpoint supersedes stale current-status interpretations of the historical Durability and Server Seam rows below. Those rows retain provenance, not active leases. The sole mutating #162 control plane remains `OTV2_WORK_DELIVERY_COORDINATOR`; no controller transfer occurs.
 
@@ -836,3 +846,38 @@ write_authority: none_until_actual_protected_allocation_integration_and_Work_rea
 These exact eleven paths activate only after Work verifies #331 protected closeout, integrates this allocation and binds the actual allocation merge as immutable admission/base. Work then creates the sole worker branch and dispatches one writer. Shared coordinator documents and terminal archives remain with Work. No Foundation/Cargo/workflow/0001/listener/production registration/external writes are leased. Existing hosted PostgreSQL17.6 is the actual SQL gate; local unconfigured skips do not qualify. Sixty-minute windows are bounded custody checkpoints, not automatic retries or counter resets. Full acceptance, independent exact-head review, canonical CI and Merge Queue remain required.
 
 After B protected integration, separately allocate C and prove actual owner registration, current-source/restart recovery and readiness. Qualify #332 independently before relying on its proposed accepted-recovery semantics. Actual C readiness remains UNKNOWN; preserve Server Seam `9370b254c6ac4f6529e069c1968ae6bfa1e1750e` without new write authority.
+
+## Prospective exact semantic allocation — post-grace Foundation338
+
+```yaml
+lane_id: OTV2-POST-GRACE-FOUNDATION-SUCCESSOR
+task_id: OTV2-20260906-post-grace-foundation-successor-338
+issue: 338
+status: prospective_not_admitted
+allocation_source_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
+admission_main_sha: NOT_ADMITTED
+branch: agent/post-grace-foundation-successor-338
+task_packet: docs/agents/tasks/active/OTV2-20260906-post-grace-foundation-successor-338.md
+plan: docs/superpowers/plans/2026-09-06-post-grace-foundation-successor.md
+depends_on: [332, 334]
+owned_paths:
+  - apps/game-server/src/foundation/admission_recovery_inner.rs
+  - apps/game-server/src/foundation/fnd04_verifier.rs
+  - apps/game-server/src/foundation/admission_authority_publication.rs
+  - apps/game-server/src/foundation/post_grace_recovery_tests.rs
+  - docs/agents/tasks/active/OTV2-20260906-post-grace-foundation-successor-338.md
+  - docs/superpowers/plans/2026-09-06-post-grace-foundation-successor.md
+shared_cargo_lease: none
+resource_registry_authority: none
+```
+
+Exactly six paths activate only after protected allocation integration, fresh main/open-PR readback and Work binding of the actual merge as immutable admission. Four semantic/test paths are disjoint from B SQL/harness paths; source-inclusion compatibility still requires compile and final integration checks. No SQL/migration/lib/facade/Cargo/workflow/source/bootstrap/external writes. The accepted334 timing/authority matrix is mandatory; later SQL successor serializes after B actual schema release. One60-minute writer window, samebranch/PR across Work-controlled rotations, persistent failure/repair/CI counters.
+
+## Coordinated B329 fixture allocation amendment
+
+After this package is protected and Work reads it back, B329 additionally owns exactly:
+
+- `apps/game-server/tests/support/authority_recovery.rs`
+- `apps/game-server/tests/support/authority_matrix.rs`
+
+The existing eleven paths and immutable admissionb8ae4c9 remain unchanged; same PR335 and writer window. This only isolates existing transport/nonce collision fixtures from the newly correct global Account occupancy invariant and keeps independent source/record/account mutation evidence. Hardcoded OTHER_ACCOUNT negatives must differ from the actual source; no no-op mutation, assertion weakening or incumbent exclusion removal. Keep an explicit legitimate occupied-account negative. No Foundation helper/Cargo/registry/0001 mutation follows. Work recorded concrete source diagnosis in issue329 comment5558160574. Runtime writer receives these paths only after protected amendment readback.
