@@ -8,6 +8,7 @@ status: READY_FOR_REVIEW
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: governance/remove-hourly-execution-windows
+pr: 362
 issue: null
 owner_scope: explicit owner instruction 2026-09-06
 base_sha: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
@@ -43,4 +44,4 @@ Remove the repository-created 60/120-minute implementation stop/rotation mechani
 
 ## Context checkpoint
 
-`next_action`: qualify this exact branch through PR checks and independent review, then integrate normally without bypass.
+`next_action`: qualify PR #362 through exact-head checks and independent review, then integrate normally without bypass.
