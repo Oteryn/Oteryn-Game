@@ -4,7 +4,11 @@ use super::fnd04_verifier::{
     Fnd04EvidenceScope, FreshAccountSecurityObservationV1, FreshEvidenceProvenanceV1,
     FreshEvidencePurposeV1, fresh_source_sealed,
 };
-use super::{CharacterId, GameSessionId, RuntimeScopeRefV1, WorldId};
+use super::{
+    AuthenticatedTransportRefV1, CharacterId, GameSessionAuthoritySnapshot, GameSessionId,
+    GameSessionState, ReconnectDurabilityRecordV1, RuntimeScopeRefV1,
+    TerminalGameSessionReplacementAuthorizationV1, WorldId,
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AdmissionAuthorityGuardKeyV1 {
@@ -161,7 +165,11 @@ impl AdmissionAuthorityPublicationV1 {
                         restored_publication_high_water: Some(0),
                     },
                     None,
-                ) => {}
+                ) => {
+                    if has_claim(&change.state) {
+                        return Err(Conflict);
+                    }
+                }
                 (
                     AdmissionPublicationPreconditionV1::CompareAndSet {
                         expected_publication_revision,
@@ -224,11 +232,59 @@ impl AdmissionAuthorityPublicationV1 {
                         ) if new < old => return Err(Stale),
                         _ => {}
                     }
+                    if !same_claims(&prior.state, &change.state) {
+                        return Err(Conflict);
+                    }
                 }
                 _ => return Err(Stale),
             }
         }
         Ok(())
+    }
+}
+
+fn has_claim(state: &AdmissionAuthorityGuardStateV1) -> bool {
+    match state {
+        AdmissionAuthorityGuardStateV1::Account { presence, .. } => presence.is_some(),
+        AdmissionAuthorityGuardStateV1::Character { holder, .. } => holder.is_some(),
+        _ => false,
+    }
+}
+
+fn same_claims(
+    left: &AdmissionAuthorityGuardStateV1,
+    right: &AdmissionAuthorityGuardStateV1,
+) -> bool {
+    match (left, right) {
+        (
+            AdmissionAuthorityGuardStateV1::Account { presence: a, .. },
+            AdmissionAuthorityGuardStateV1::Account { presence: b, .. },
+        ) => a == b,
+        (
+            AdmissionAuthorityGuardStateV1::Character {
+                holder: a,
+                lease_generation: ag,
+                account_id: aa,
+                world_id: aw,
+                ..
+            },
+            AdmissionAuthorityGuardStateV1::Character {
+                holder: b,
+                lease_generation: bg,
+                account_id: ba,
+                world_id: bw,
+                ..
+            },
+        ) => a == b && ag == bg && aa == ba && aw == bw,
+        (
+            AdmissionAuthorityGuardStateV1::Runtime { .. },
+            AdmissionAuthorityGuardStateV1::Runtime { .. },
+        )
+        | (
+            AdmissionAuthorityGuardStateV1::SigningTrust { .. },
+            AdmissionAuthorityGuardStateV1::SigningTrust { .. },
+        ) => true,
+        _ => false,
     }
 }
 
@@ -243,7 +299,7 @@ fn same_security_observation(
     accepted == *right
 }
 
-fn valid_security_provenance(provenance: &FreshEvidenceProvenanceV1, now: i64) -> bool {
+fn valid_security_history(provenance: &FreshEvidenceProvenanceV1, now: i64) -> bool {
     provenance.purpose == FreshEvidencePurposeV1::PlatformSecurity
         && provenance.scope == Fnd04EvidenceScope::FreshAdmission
         && !provenance.source_authority.is_empty()
@@ -252,6 +308,13 @@ fn valid_security_provenance(provenance: &FreshEvidenceProvenanceV1, now: i64) -
         && !provenance.decision_identity.is_empty()
         && provenance.decision_identity == provenance.accepted_decision_identity
         && provenance.publication_revision > 0
+        && provenance.source_observed_at >= 0
+        && provenance.source_observed_at <= now
+        && provenance.clock_uncertainty_seconds <= 5
+}
+
+fn valid_security_provenance(provenance: &FreshEvidenceProvenanceV1, now: i64) -> bool {
+    valid_security_history(provenance, now)
         && source_age_valid(
             provenance.source_observed_at,
             provenance.clock_uncertainty_seconds,
@@ -364,6 +427,689 @@ pub(super) fn validate_change(
         return Err(AdmissionAuthorityPublicationErrorV1::Invalid);
     }
     Ok(())
+}
+
+/// Lossless historical conditional effects. Public data is not an owning capability.
+/// The adapter must atomically enforce source/decision high-water marks across
+/// transactions: these stateless predicates cannot prove global decision uniqueness.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdmissionClaimTransitionEvidenceV1 {
+    pub predecessors: Vec<AdmissionAuthorityPublicationChangeV1>,
+    pub successors: Vec<AdmissionAuthorityPublicationChangeV1>,
+    pub prepared_at: i64,
+}
+
+/// Registration belongs to the owning Game adapter, never to an audit/receipt consumer.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::admission_authority_publication::*;
+/// struct Unregistered;
+/// impl AdmissionClaimOwningSourceV1 for Unregistered {
+///     fn prepare_fresh_claim(&self, _: &oteryn_game_server::foundation::fresh_admission_durability::FreshAdmissionAuditBindingV1, _: i64)
+///         -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1> {
+///         Err(AdmissionAuthorityPublicationErrorV1::Unavailable)
+///     }
+/// }
+/// ```
+pub trait AdmissionClaimOwningSourceV1: fresh_source_sealed::Sealed {
+    fn prepare_lifecycle_claim(
+        &self,
+        _operation: &AdmissionClaimLifecycleOperationV1,
+        _now: i64,
+    ) -> Result<AdmissionClaimLifecycleResolutionV1, AdmissionAuthorityPublicationErrorV1> {
+        Err(AdmissionAuthorityPublicationErrorV1::Unavailable)
+    }
+    fn prepare_fresh_claim(
+        &self,
+        binding: &super::fresh_admission_durability::FreshAdmissionAuditBindingV1,
+        now: i64,
+    ) -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1>;
+}
+
+/// Prepared source changes remain inert until the matching atomic session COMMIT.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::admission_authority_publication::*;
+/// fn forge(history: AdmissionClaimTransitionEvidenceV1) -> FreshAdmissionClaimTransitionV1 {
+///     FreshAdmissionClaimTransitionV1::from(history)
+/// }
+/// ```
+#[derive(Debug, Clone)]
+pub struct FreshAdmissionClaimTransitionV1 {
+    binding: super::fresh_admission_durability::FreshAdmissionAuditBindingV1,
+    evidence: AdmissionClaimTransitionEvidenceV1,
+}
+impl FreshAdmissionClaimTransitionV1 {
+    pub fn prepare(
+        owner: &dyn AdmissionClaimOwningSourceV1,
+        authorization: &super::fresh_admission_durability::FreshAdmissionCommitAuthorizationV1,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        let binding = authorization.binding();
+        let evidence = owner.prepare_fresh_claim(binding, now)?;
+        let result = Self {
+            binding: binding.clone(),
+            evidence,
+        };
+        // The owner supplied independent predecessors; compare them to the
+        // authorization here. Actual locked current rows are required at L.
+        validate_fresh_claim_evidence(binding, &result.evidence, now)?;
+        Ok(result)
+    }
+    #[must_use]
+    pub const fn binding(
+        &self,
+    ) -> &super::fresh_admission_durability::FreshAdmissionAuditBindingV1 {
+        &self.binding
+    }
+    #[must_use]
+    pub const fn evidence(&self) -> &AdmissionClaimTransitionEvidenceV1 {
+        &self.evidence
+    }
+    pub fn validate_locked(
+        &self,
+        rows: &[Option<AdmissionAuthorityPublicationChangeV1>],
+        now: i64,
+    ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        validate_fresh_claim_evidence(&self.binding, &self.evidence, now)?;
+        if rows.len() != 4
+            || rows
+                .iter()
+                .zip(&self.binding.expected_guards)
+                .any(|(row, prior)| row.as_ref() != Some(prior))
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        Ok(())
+    }
+}
+
+/// Exact intended canonical session effect, not authorization to apply it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum AdmissionClaimLifecycleOperationV1 {
+    TerminalRelease {
+        account_id: String,
+        current_session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    },
+    TerminalReplacement {
+        account_id: String,
+        current_session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        candidate: Box<ReconnectDurabilityRecordV1>,
+    },
+}
+impl AdmissionClaimLifecycleOperationV1 {
+    #[must_use]
+    pub fn account_id(&self) -> &str {
+        match self {
+            Self::TerminalRelease { account_id, .. }
+            | Self::TerminalReplacement { account_id, .. } => account_id,
+        }
+    }
+    #[must_use]
+    pub const fn current_session(
+        &self,
+    ) -> GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1> {
+        match self {
+            Self::TerminalRelease {
+                current_session, ..
+            }
+            | Self::TerminalReplacement {
+                current_session, ..
+            } => *current_session,
+        }
+    }
+}
+
+/// The registered owner independently resolves both session and claim predecessors.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdmissionClaimLifecycleResolutionV1 {
+    pub current_session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    pub evidence: AdmissionClaimTransitionEvidenceV1,
+}
+
+/// Persistable historical operation/effects; no conversion into a live capability.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct AdmissionClaimLifecycleEvidenceV1 {
+    pub operation: AdmissionClaimLifecycleOperationV1,
+    pub transition: AdmissionClaimTransitionEvidenceV1,
+}
+impl AdmissionClaimLifecycleEvidenceV1 {
+    pub fn validate_historical(
+        &self,
+        decided_at: i64,
+    ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        validate_lifecycle_effects(&self.operation, &self.transition, decided_at)
+    }
+}
+
+/// Only a registered owner can prepare this inert release, and it must accompany
+/// the exact fenced canonical terminal session write. A receipt is not authority.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::admission_authority_publication::*;
+/// fn forge(history: AdmissionClaimLifecycleEvidenceV1) -> TerminalReleaseClaimTransitionV1 {
+///     TerminalReleaseClaimTransitionV1::from(history)
+/// }
+/// ```
+#[derive(Debug, Clone)]
+pub struct TerminalReleaseClaimTransitionV1 {
+    evidence: AdmissionClaimLifecycleEvidenceV1,
+}
+impl TerminalReleaseClaimTransitionV1 {
+    pub fn prepare(
+        owner: &dyn AdmissionClaimOwningSourceV1,
+        account_id: &str,
+        current_session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        let operation = AdmissionClaimLifecycleOperationV1::TerminalRelease {
+            account_id: account_id.into(),
+            current_session,
+        };
+        Ok(Self {
+            evidence: prepare_lifecycle(owner, operation, now)?,
+        })
+    }
+    #[must_use]
+    pub const fn evidence(&self) -> &AdmissionClaimLifecycleEvidenceV1 {
+        &self.evidence
+    }
+    pub fn validate_locked(
+        &self,
+        rows: &[Option<AdmissionAuthorityPublicationChangeV1>],
+        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        now: i64,
+    ) -> Result<&[AdmissionAuthorityPublicationChangeV1], AdmissionAuthorityPublicationErrorV1>
+    {
+        validate_lifecycle_locked(&self.evidence, rows, current, now)?;
+        Ok(&self.evidence.transition.successors)
+    }
+}
+
+/// Inert owner-authored replacement; canonical reconnect V1/V2 authorization
+/// and all candidate/session effects remain the durable adapter's prerequisites.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::admission_authority_publication::*;
+/// fn forge(history: AdmissionClaimLifecycleEvidenceV1) -> TerminalReplacementClaimTransitionV1 {
+///     TerminalReplacementClaimTransitionV1::from(history)
+/// }
+/// ```
+#[derive(Debug, Clone)]
+pub struct TerminalReplacementClaimTransitionV1 {
+    evidence: AdmissionClaimLifecycleEvidenceV1,
+}
+impl TerminalReplacementClaimTransitionV1 {
+    pub fn prepare(
+        owner: &dyn AdmissionClaimOwningSourceV1,
+        authorization: &TerminalGameSessionReplacementAuthorizationV1,
+        current_session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        candidate: &ReconnectDurabilityRecordV1,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        let presence = super::AccountPresenceClaimV1::new(
+            authorization.account_id(),
+            current_session.commit().character_id(),
+        )
+        .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        let expected = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+            authorization.account_id(),
+            Some(&presence),
+            current_session.commit().game_session_id(),
+            candidate.identity().game_session_id(),
+            current_session,
+            candidate,
+        )
+        .map_err(|_| AdmissionAuthorityPublicationErrorV1::Stale)?;
+        if &expected != authorization {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        let operation = AdmissionClaimLifecycleOperationV1::TerminalReplacement {
+            account_id: authorization.account_id().into(),
+            current_session,
+            candidate: Box::new(candidate.clone()),
+        };
+        Ok(Self {
+            evidence: prepare_lifecycle(owner, operation, now)?,
+        })
+    }
+    #[must_use]
+    pub const fn evidence(&self) -> &AdmissionClaimLifecycleEvidenceV1 {
+        &self.evidence
+    }
+    pub fn validate_locked(
+        &self,
+        rows: &[Option<AdmissionAuthorityPublicationChangeV1>],
+        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+        candidate: &ReconnectDurabilityRecordV1,
+        now: i64,
+    ) -> Result<&[AdmissionAuthorityPublicationChangeV1], AdmissionAuthorityPublicationErrorV1>
+    {
+        if !matches!(&self.evidence.operation, AdmissionClaimLifecycleOperationV1::TerminalReplacement { candidate: expected, .. } if expected.as_ref() == candidate)
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Conflict);
+        }
+        validate_lifecycle_locked(&self.evidence, rows, current, now)?;
+        Ok(&self.evidence.transition.successors)
+    }
+}
+
+fn prepare_lifecycle(
+    owner: &dyn AdmissionClaimOwningSourceV1,
+    operation: AdmissionClaimLifecycleOperationV1,
+    now: i64,
+) -> Result<AdmissionClaimLifecycleEvidenceV1, AdmissionAuthorityPublicationErrorV1> {
+    let resolution = owner.prepare_lifecycle_claim(&operation, now)?;
+    if resolution.current_session != operation.current_session() {
+        return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+    }
+    let evidence = AdmissionClaimLifecycleEvidenceV1 {
+        operation,
+        transition: resolution.evidence,
+    };
+    evidence.validate_historical(now)?;
+    Ok(evidence)
+}
+
+fn validate_lifecycle_locked(
+    evidence: &AdmissionClaimLifecycleEvidenceV1,
+    rows: &[Option<AdmissionAuthorityPublicationChangeV1>],
+    current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    if current != evidence.operation.current_session()
+        || rows.len() != 2
+        || rows
+            .iter()
+            .zip(&evidence.transition.predecessors)
+            .any(|(row, prior)| row.as_ref() != Some(prior))
+    {
+        return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+    }
+    evidence.validate_historical(now)
+}
+
+fn validate_session_claims(
+    account_id: &str,
+    snapshot: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    claims: &[AdmissionAuthorityPublicationChangeV1],
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use AdmissionAuthorityPublicationErrorV1::Stale;
+    let commit = snapshot.commit();
+    let lease = snapshot.current_character_lease();
+    if claims.len() != 2
+        || account_id.is_empty()
+        || lease.character_id() != commit.character_id()
+        || lease.generation() < commit.character_lease_generation()
+        || snapshot.current_connection_generation().get() < commit.connection_generation().get()
+        || snapshot.current_scope_generation().get() < commit.scope_ownership_generation()
+        || snapshot.current_runtime_scope().world_id() != commit.world_id()
+        || !matches!(
+            (snapshot.session_state(), snapshot.current_transport()),
+            (GameSessionState::Active, Some(_))
+                | (
+                    GameSessionState::Reconnectable | GameSessionState::Terminal,
+                    None
+                )
+        )
+    {
+        return Err(Stale);
+    }
+    match (
+        &claims[0].key,
+        &claims[0].state,
+        &claims[1].key,
+        &claims[1].state,
+    ) {
+        (
+            AdmissionAuthorityGuardKeyV1::Account { account_id: a },
+            AdmissionAuthorityGuardStateV1::Account {
+                presence: Some((character, session)),
+                ..
+            },
+            AdmissionAuthorityGuardKeyV1::Character(c),
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id: b,
+                world_id,
+                lease_generation,
+                holder: Some(holder),
+                ..
+            },
+        ) if a == account_id
+            && b == account_id
+            && *character == commit.character_id()
+            && *c == *character
+            && *session == commit.game_session_id()
+            && *holder == *session
+            && *world_id == commit.world_id()
+            && *lease_generation == lease.generation() =>
+        {
+            Ok(())
+        }
+        _ => Err(Stale),
+    }
+}
+
+/// Additional predicate for an already authorized reconnect/control-loss write.
+/// It cannot grant that write: both snapshots and both complete claim rows must
+/// be independently locked, and all holder/lease/source values are preserved.
+pub fn validate_claim_preserving_session_v1(
+    account_id: &str,
+    expected: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    expected_claims: &[AdmissionAuthorityPublicationChangeV1],
+    current_claims: &[Option<AdmissionAuthorityPublicationChangeV1>],
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    if current != expected
+        || current_claims.len() != 2
+        || expected_claims.len() != 2
+        || current_claims
+            .iter()
+            .zip(expected_claims)
+            .any(|(current, expected)| current.as_ref() != Some(expected))
+    {
+        return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+    }
+    validate_session_claims(account_id, current, expected_claims)
+}
+
+fn validate_lifecycle_effects(
+    operation: &AdmissionClaimLifecycleOperationV1,
+    evidence: &AdmissionClaimTransitionEvidenceV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use AdmissionAuthorityPublicationErrorV1::Invalid;
+    match operation {
+        AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => {
+            validate_release_pair(evidence, now)?
+        }
+        AdmissionClaimLifecycleOperationV1::TerminalReplacement { .. } => {
+            validate_claim_pair(evidence, now)?
+        }
+    }
+    validate_session_claims(
+        operation.account_id(),
+        operation.current_session(),
+        &evidence.predecessors,
+    )?;
+    match operation {
+        AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => {
+            match (
+                &evidence.successors[0].state,
+                &evidence.predecessors[1].state,
+                &evidence.successors[1].state,
+            ) {
+                (
+                    AdmissionAuthorityGuardStateV1::Account { presence: None, .. },
+                    AdmissionAuthorityGuardStateV1::Character {
+                        lease_generation: old,
+                        ..
+                    },
+                    AdmissionAuthorityGuardStateV1::Character {
+                        holder: None,
+                        lease_generation: new,
+                        ..
+                    },
+                ) if old == new => Ok(()),
+                _ => Err(Invalid),
+            }
+        }
+        AdmissionClaimLifecycleOperationV1::TerminalReplacement {
+            account_id,
+            current_session,
+            candidate,
+        } => {
+            let presence = super::AccountPresenceClaimV1::new(
+                account_id,
+                current_session.commit().character_id(),
+            )
+            .map_err(|_| Invalid)?;
+            TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+                account_id,
+                Some(&presence),
+                current_session.commit().game_session_id(),
+                candidate.identity().game_session_id(),
+                *current_session,
+                candidate,
+            )
+            .map_err(|_| Invalid)?;
+            let identity = candidate.identity();
+            if now > candidate.continuity().prepared_deadline()
+                || now > candidate.continuity().original_grace_deadline()
+            {
+                return Err(Invalid);
+            }
+            match (
+                &evidence.successors[0].state,
+                &evidence.predecessors[1].state,
+                &evidence.successors[1].state,
+            ) {
+                (
+                    AdmissionAuthorityGuardStateV1::Account {
+                        presence: Some((character, session)),
+                        ..
+                    },
+                    AdmissionAuthorityGuardStateV1::Character {
+                        lease_generation: old,
+                        ..
+                    },
+                    AdmissionAuthorityGuardStateV1::Character {
+                        holder: Some(holder),
+                        lease_generation: new,
+                        ..
+                    },
+                ) if *character == identity.character_id()
+                    && *session == identity.game_session_id()
+                    && *holder == *session
+                    && old == new
+                    && *new == candidate.authority().character_lease_generation() =>
+                {
+                    Ok(())
+                }
+                _ => Err(Invalid),
+            }
+        }
+    }
+}
+
+pub(super) fn validate_fresh_claim_evidence(
+    binding: &super::fresh_admission_durability::FreshAdmissionAuditBindingV1,
+    evidence: &AdmissionClaimTransitionEvidenceV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use AdmissionAuthorityPublicationErrorV1::Invalid;
+    binding.validate_historical().map_err(|_| Invalid)?;
+    if evidence.prepared_at < binding.verified_at
+        || now > binding.accepted_deadline
+        || now < evidence.prepared_at
+        || evidence.predecessors.as_slice() != &binding.expected_guards[..2]
+    {
+        return Err(Invalid);
+    }
+    validate_claim_pair(evidence, now)?;
+    let commit = binding.initial_commit().map_err(|_| Invalid)?;
+    let expected_presence = Some((commit.character_id(), commit.game_session_id()));
+    match (
+        &evidence.predecessors[0].state,
+        &evidence.successors[0].state,
+        &evidence.predecessors[1].state,
+        &evidence.successors[1].state,
+    ) {
+        (
+            AdmissionAuthorityGuardStateV1::Account { presence: None, .. },
+            AdmissionAuthorityGuardStateV1::Account { presence, .. },
+            AdmissionAuthorityGuardStateV1::Character {
+                holder: None,
+                lease_generation: old,
+                ..
+            },
+            AdmissionAuthorityGuardStateV1::Character {
+                holder,
+                lease_generation,
+                ..
+            },
+        ) if *presence == expected_presence
+            && *holder == Some(commit.game_session_id())
+            && old.checked_add(1) == Some(*lease_generation)
+            && *lease_generation == commit.character_lease_generation() =>
+        {
+            Ok(())
+        }
+        _ => Err(Invalid),
+    }
+}
+
+fn validate_claim_pair(
+    evidence: &AdmissionClaimTransitionEvidenceV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    validate_claim_pair_structure(evidence, now)?;
+    for row in evidence.predecessors.iter().chain(&evidence.successors) {
+        validate_change(row, now)?;
+    }
+    Ok(())
+}
+
+// Relinquishment preserves authenticated historical provenance; it does not
+// acquire a controller and must not require a fresh Platform admission signal.
+fn validate_release_pair(
+    evidence: &AdmissionClaimTransitionEvidenceV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    validate_claim_pair_structure(evidence, now)?;
+    for row in evidence.predecessors.iter().chain(&evidence.successors) {
+        validate_release_change(row, now)?;
+    }
+    for row in &evidence.successors {
+        if row.source.purpose == AdmissionPublicationPurposeV1::AccountSecurityAndPresence
+            && !source_age_valid(
+                row.source.source_observed_at,
+                row.source.clock_uncertainty_seconds,
+                now,
+            )
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+    }
+    Ok(())
+}
+
+fn validate_release_change(
+    change: &AdmissionAuthorityPublicationChangeV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use AdmissionAuthorityPublicationErrorV1::Invalid;
+    let valid = match (&change.key, &change.state, change.source.purpose) {
+        (
+            AdmissionAuthorityGuardKeyV1::Account { account_id },
+            AdmissionAuthorityGuardStateV1::Account { security, .. },
+            AdmissionPublicationPurposeV1::AccountSecurityAndPresence,
+        ) => {
+            let provenance = &security.provenance;
+            !account_id.is_empty()
+                && security.account_id == *account_id
+                && security.minimum_generation > 0
+                && provenance.publication_revision == change.publication_revision
+                && valid_security_history(provenance, now)
+                && change.source.clock_uncertainty_seconds <= 5
+        }
+        (
+            AdmissionAuthorityGuardKeyV1::Character(_),
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id,
+                lease_generation,
+                ..
+            },
+            AdmissionPublicationPurposeV1::CharacterOwnershipAndLease,
+        ) => !account_id.is_empty() && *lease_generation > 0,
+        _ => false,
+    };
+    let expected = match change.precondition {
+        AdmissionPublicationPreconditionV1::Bootstrap {
+            restored_publication_high_water: Some(0),
+        } => Some(1),
+        AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision,
+        } if expected_publication_revision > 0 => expected_publication_revision.checked_add(1),
+        _ => None,
+    };
+    if !valid
+        || expected != Some(change.publication_revision)
+        || change.source.authority.is_empty()
+        || change.source.source_revision == 0
+        || change.source.decision_identity.is_empty()
+        || change.source.source_observed_at < 0
+        || change.source.source_observed_at > now
+    {
+        return Err(Invalid);
+    }
+    Ok(())
+}
+
+fn validate_claim_pair_structure(
+    evidence: &AdmissionClaimTransitionEvidenceV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use AdmissionAuthorityPublicationErrorV1::{Invalid, Stale};
+    if evidence.predecessors.len() != 2
+        || evidence.successors.len() != 2
+        || evidence.prepared_at < 0
+        || now < evidence.prepared_at
+    {
+        return Err(Invalid);
+    }
+    for (prior, next) in evidence.predecessors.iter().zip(&evidence.successors) {
+        if prior.key != next.key
+            || prior.source.authority != next.source.authority
+            || prior.source.purpose != next.source.purpose
+            || next.precondition
+                != (AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: prior.publication_revision,
+                })
+            || prior.publication_revision.checked_add(1) != Some(next.publication_revision)
+            || next.source.source_revision <= prior.source.source_revision
+            || next.source.decision_identity == prior.source.decision_identity
+            || next.source.source_observed_at < prior.source.source_observed_at
+            || next.source.source_observed_at != evidence.prepared_at
+        {
+            return Err(Stale);
+        }
+    }
+    match (
+        &evidence.predecessors[0].key,
+        &evidence.predecessors[0].state,
+        &evidence.successors[0].state,
+        &evidence.predecessors[1].key,
+        &evidence.predecessors[1].state,
+        &evidence.successors[1].state,
+    ) {
+        (
+            AdmissionAuthorityGuardKeyV1::Account { account_id },
+            AdmissionAuthorityGuardStateV1::Account {
+                security: before, ..
+            },
+            AdmissionAuthorityGuardStateV1::Account {
+                security: after, ..
+            },
+            AdmissionAuthorityGuardKeyV1::Character(_),
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id: a,
+                world_id: w,
+                eligible: e,
+                ..
+            },
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id: b,
+                world_id: x,
+                eligible: f,
+                ..
+            },
+        ) if same_security_observation(before, after)
+            && a == b
+            && a == account_id
+            && w == x
+            && e == f =>
+        {
+            Ok(())
+        }
+        _ => Err(Invalid),
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -572,6 +1318,120 @@ mod tests {
             }])
         }
     }
+    #[test]
+    fn publication_standalone_cannot_acquire_release_or_advance_claims()
+    -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        let session =
+            GameSessionId::decode(&[0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9])
+                .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        let character = match game_domain_changes()?.remove(0).key {
+            AdmissionAuthorityGuardKeyV1::Character(id) => id,
+            _ => unreachable!(),
+        };
+        for domain in 0..2 {
+            for operation in 0..3 {
+                let mut prior = if domain == 0 {
+                    Owner.resolve_publication(100)?.remove(0)
+                } else {
+                    game_domain_changes()?.remove(0)
+                };
+                if operation == 1 {
+                    match &mut prior.state {
+                        AdmissionAuthorityGuardStateV1::Account { presence, .. } => {
+                            *presence = Some((character, session))
+                        }
+                        AdmissionAuthorityGuardStateV1::Character { holder, .. } => {
+                            *holder = Some(session)
+                        }
+                        _ => unreachable!(),
+                    }
+                }
+                let mut next = prior.clone();
+                next.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                    expected_publication_revision: 1,
+                };
+                next.publication_revision = 2;
+                next.source.source_revision = 8;
+                next.source.decision_identity = "claim-eight".into();
+                match &mut next.state {
+                    AdmissionAuthorityGuardStateV1::Account { presence, security } => {
+                        security.provenance.publication_revision = 2;
+                        *presence = if operation == 1 {
+                            None
+                        } else {
+                            Some((character, session))
+                        };
+                    }
+                    AdmissionAuthorityGuardStateV1::Character {
+                        holder,
+                        lease_generation,
+                        ..
+                    } => {
+                        if operation == 2 {
+                            *lease_generation += 1;
+                        } else {
+                            *holder = if operation == 1 { None } else { Some(session) };
+                        }
+                    }
+                    _ => unreachable!(),
+                }
+                let request =
+                    AdmissionAuthorityPublicationV1::prepare(&ChangedOwner(vec![next]), 100)?;
+                assert!(
+                    request.validate_locked(&[Some(prior)]).is_err(),
+                    "domain {domain}, operation {operation}"
+                );
+            }
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn publication_standalone_cannot_substitute_character_claim_owner()
+    -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        let prior = game_domain_changes()?.remove(0);
+        let mut next = prior.clone();
+        next.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: 1,
+        };
+        next.publication_revision = 2;
+        next.source.source_revision = 8;
+        next.source.decision_identity = "new-owner-eight".into();
+        if let AdmissionAuthorityGuardStateV1::Character { account_id, .. } = &mut next.state {
+            *account_id = "00000000-0000-4000-8000-000000000002".into();
+        }
+        let request = AdmissionAuthorityPublicationV1::prepare(&ChangedOwner(vec![next]), 100)?;
+        assert!(request.validate_locked(&[Some(prior)]).is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn publication_bootstrap_cannot_restore_an_occupied_claim()
+    -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        let bytes = [0, 0, 0, 0, 0, 0, 0x70, 0, 0x80, 0, 0, 0, 0, 0, 0, 9];
+        let session = GameSessionId::decode(&bytes)
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        let character = CharacterId::decode(&bytes)
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        for domain in 0..2 {
+            let mut row = if domain == 0 {
+                Owner.resolve_publication(100)?.remove(0)
+            } else {
+                game_domain_changes()?.remove(0)
+            };
+            match &mut row.state {
+                AdmissionAuthorityGuardStateV1::Account { presence, .. } => {
+                    *presence = Some((character, session))
+                }
+                AdmissionAuthorityGuardStateV1::Character { holder, .. } => *holder = Some(session),
+                _ => unreachable!(),
+            }
+            let request = AdmissionAuthorityPublicationV1::prepare(&ChangedOwner(vec![row]), 100)?;
+            assert!(request.validate_locked(&[None]).is_err());
+        }
+        Ok(())
+    }
+
     #[test]
     fn publication_accepts_independently_owned_bootstrap() {
         assert!(AdmissionAuthorityPublicationV1::prepare(&Owner, 100).is_ok());

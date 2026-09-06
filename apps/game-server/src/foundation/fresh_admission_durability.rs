@@ -206,51 +206,79 @@ impl FreshAdmissionCommitAuthorizationV1 {
     }
 }
 
+/// Complete immutable identity used for durable replay and recovery. This is
+/// historical data, not a live authorization or owning-source registration.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FreshAdmissionOperationV1 {
+    pub authorization: FreshAdmissionAuditBindingV1,
+    pub transition: AdmissionClaimTransitionEvidenceV1,
+}
+impl FreshAdmissionOperationV1 {
+    pub fn validate_historical(
+        &self,
+        decided_at: i64,
+    ) -> Result<(), FreshAdmissionDurabilityErrorV1> {
+        self.authorization.validate_historical()?;
+        validate_fresh_claim_evidence(&self.authorization, &self.transition, decided_at)
+            .map_err(|_| FreshAdmissionDurabilityErrorV1::Invalid)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct FreshAdmissionCommitRequestV1 {
     authorization: FreshAdmissionCommitAuthorizationV1,
+    transition: FreshAdmissionClaimTransitionV1,
+    operation: FreshAdmissionOperationV1,
 }
 impl FreshAdmissionCommitRequestV1 {
     pub fn validate_at_decision(
         &self,
         rows: &[Option<AdmissionAuthorityPublicationChangeV1>],
         trusted_now: Option<i64>,
-    ) -> Result<(), FreshAdmissionDurabilityErrorV1> {
-        self.authorization.validate_at_decision(rows, trusted_now)
+    ) -> Result<&[AdmissionAuthorityPublicationChangeV1], FreshAdmissionDurabilityErrorV1> {
+        self.authorization.validate_at_decision(rows, trusted_now)?;
+        self.transition
+            .validate_locked(
+                rows,
+                trusted_now.ok_or(FreshAdmissionDurabilityErrorV1::StaleAuthority)?,
+            )
+            .map_err(|_| FreshAdmissionDurabilityErrorV1::StaleAuthority)?;
+        Ok(&self.transition.evidence().successors)
     }
     #[must_use]
     pub const fn binding(&self) -> &FreshAdmissionAuditBindingV1 {
         self.authorization.binding()
     }
+    #[must_use]
+    pub const fn operation(&self) -> &FreshAdmissionOperationV1 {
+        &self.operation
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FreshAdmissionCommitReceiptV1 {
-    binding: FreshAdmissionAuditBindingV1,
+    operation: FreshAdmissionOperationV1,
     decided_at: i64,
 }
 impl FreshAdmissionCommitReceiptV1 {
-    /// Restore only historical committed evidence. `decided_at` is L, never a
-    /// cache-load or COMMIT acknowledgment time. No live capability is returned.
+    /// Restore historical committed evidence at original L; never a submit capability.
     pub fn restore(
-        binding: FreshAdmissionAuditBindingV1,
+        operation: FreshAdmissionOperationV1,
         decided_at: i64,
     ) -> Result<Self, FreshAdmissionDurabilityErrorV1> {
-        binding.validate_historical()?;
-        if decided_at < binding.verified_at
-            || decided_at > binding.accepted_deadline
-            || binding.expected_guards.len() != 4
-        {
-            return Err(FreshAdmissionDurabilityErrorV1::Invalid);
-        }
+        operation.validate_historical(decided_at)?;
         Ok(Self {
-            binding,
+            operation,
             decided_at,
         })
     }
     #[must_use]
     pub const fn binding(&self) -> &FreshAdmissionAuditBindingV1 {
-        &self.binding
+        &self.operation.authorization
+    }
+    #[must_use]
+    pub const fn operation(&self) -> &FreshAdmissionOperationV1 {
+        &self.operation
     }
     #[must_use]
     pub const fn decided_at(&self) -> i64 {
@@ -258,9 +286,9 @@ impl FreshAdmissionCommitReceiptV1 {
     }
     pub fn classify_retry(
         &self,
-        binding: &FreshAdmissionAuditBindingV1,
+        operation: &FreshAdmissionOperationV1,
     ) -> FreshAdmissionDurableOutcomeV1 {
-        if &self.binding == binding {
+        if &self.operation == operation {
             FreshAdmissionDurableOutcomeV1::ExistingCommitted(self.clone())
         } else {
             FreshAdmissionDurableOutcomeV1::RejectedReplayConflict
@@ -298,7 +326,7 @@ pub trait FreshAdmissionDurabilityPortV1 {
     /// Try one bounded enqueue, never wait for I/O or completion in the writer.
     fn submit(&mut self, request: &FreshAdmissionCommitRequestV1) -> FreshAdmissionSubmissionV1;
     /// Read/reconcile only the original replay/candidate/transport binding.
-    fn reconcile(&mut self, original: &FreshAdmissionAuditBindingV1) -> FreshAdmissionSubmissionV1;
+    fn reconcile(&mut self, original: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1;
 }
 /// An owning current source, not a receipt-to-current conversion. Child C binds
 /// real producers; missing source/floor/physical transport mapping stays closed.
@@ -331,34 +359,60 @@ pub enum FreshAdmissionPhaseV1 {
 pub struct FreshAdmissionDurabilityFlowV1 {
     request: Option<FreshAdmissionCommitRequestV1>,
     binding: FreshAdmissionAuditBindingV1,
+    operation: FreshAdmissionOperationV1,
     phase: FreshAdmissionPhaseV1,
     receipt: Option<FreshAdmissionCommitReceiptV1>,
     reconciled_session: Option<GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>>,
     projection: super::admission::FreshAdmissionProjectionV1,
 }
 impl FreshAdmissionDurabilityFlowV1 {
-    #[must_use]
-    pub fn begin(authorization: FreshAdmissionCommitAuthorizationV1) -> Self {
-        Self {
+    /// ```compile_fail
+    /// use oteryn_game_server::foundation::fresh_admission_durability::*;
+    /// fn unpaired(auth: FreshAdmissionCommitAuthorizationV1) {
+    ///     FreshAdmissionDurabilityFlowV1::begin(auth);
+    /// }
+    /// ```
+    pub fn begin(
+        authorization: FreshAdmissionCommitAuthorizationV1,
+        transition: FreshAdmissionClaimTransitionV1,
+    ) -> Result<Self, FreshAdmissionDurabilityErrorV1> {
+        if authorization.binding() != transition.binding() {
+            return Err(FreshAdmissionDurabilityErrorV1::WrongBinding);
+        }
+        let operation = FreshAdmissionOperationV1 {
+            authorization: authorization.binding().clone(),
+            transition: transition.evidence().clone(),
+        };
+        Ok(Self {
             binding: authorization.binding.clone(),
-            request: Some(FreshAdmissionCommitRequestV1 { authorization }),
+            operation: operation.clone(),
+            request: Some(FreshAdmissionCommitRequestV1 {
+                authorization,
+                transition,
+                operation,
+            }),
             phase: FreshAdmissionPhaseV1::Ready,
             receipt: None,
             reconciled_session: None,
             projection: super::admission::FreshAdmissionProjectionV1::default(),
-        }
+        })
     }
     /// Restart can reconcile historical data, but cannot submit a new commit.
     #[must_use]
-    pub fn resume_reconciliation(binding: FreshAdmissionAuditBindingV1) -> Self {
+    pub fn resume_reconciliation(operation: FreshAdmissionOperationV1) -> Self {
         Self {
             request: None,
-            binding,
+            binding: operation.authorization.clone(),
+            operation,
             phase: FreshAdmissionPhaseV1::ReconciliationRequired,
             receipt: None,
             reconciled_session: None,
             projection: super::admission::FreshAdmissionProjectionV1::default(),
         }
+    }
+    #[must_use]
+    pub const fn operation(&self) -> &FreshAdmissionOperationV1 {
+        &self.operation
     }
     #[must_use]
     pub const fn binding(&self) -> &FreshAdmissionAuditBindingV1 {
@@ -403,13 +457,13 @@ impl FreshAdmissionDurabilityFlowV1 {
     }
     pub fn accept_completion(
         &mut self,
-        binding: FreshAdmissionAuditBindingV1,
+        operation: FreshAdmissionOperationV1,
         outcome: FreshAdmissionDurableOutcomeV1,
     ) -> Result<(), FreshAdmissionDurabilityErrorV1> {
         if self.phase != FreshAdmissionPhaseV1::PendingCommit {
             return Err(FreshAdmissionDurabilityErrorV1::WrongPhase);
         }
-        if binding != self.binding {
+        if operation != self.operation {
             return Err(FreshAdmissionDurabilityErrorV1::WrongBinding);
         }
         match outcome {
@@ -428,7 +482,7 @@ impl FreshAdmissionDurabilityFlowV1 {
         &mut self,
         receipt: FreshAdmissionCommitReceiptV1,
     ) -> Result<(), FreshAdmissionDurabilityErrorV1> {
-        if receipt.binding != self.binding {
+        if receipt.operation != self.operation {
             return Err(FreshAdmissionDurabilityErrorV1::WrongBinding);
         }
         self.receipt = Some(receipt);
@@ -442,7 +496,7 @@ impl FreshAdmissionDurabilityFlowV1 {
         if self.phase != FreshAdmissionPhaseV1::ReconciliationRequired {
             return Err(FreshAdmissionDurabilityErrorV1::WrongPhase);
         }
-        if port.reconcile(&self.binding) == FreshAdmissionSubmissionV1::Accepted {
+        if port.reconcile(&self.operation) == FreshAdmissionSubmissionV1::Accepted {
             self.phase = FreshAdmissionPhaseV1::PendingReconciliation;
         }
         Ok(())
@@ -451,12 +505,12 @@ impl FreshAdmissionDurabilityFlowV1 {
     /// the same immutable binding for another bounded reconciliation request.
     pub fn accept_reconciliation_unavailable(
         &mut self,
-        original: &FreshAdmissionAuditBindingV1,
+        original: &FreshAdmissionOperationV1,
     ) -> Result<(), FreshAdmissionDurabilityErrorV1> {
         if self.phase != FreshAdmissionPhaseV1::PendingReconciliation {
             return Err(FreshAdmissionDurabilityErrorV1::WrongPhase);
         }
-        if original != &self.binding {
+        if original != &self.operation {
             return Err(FreshAdmissionDurabilityErrorV1::WrongBinding);
         }
         self.phase = FreshAdmissionPhaseV1::ReconciliationRequired;
@@ -501,6 +555,18 @@ impl FreshAdmissionDurabilityFlowV1 {
             .current_publications(&self.binding.keys())
             .map_err(|_| fail)?;
         validate_current_guards(&self.binding, &rows, now, true)?;
+        for (row, committed) in rows.iter().zip(&self.operation.transition.successors) {
+            let current = row.as_ref().ok_or(fail)?;
+            if current.publication_revision < committed.publication_revision
+                || current.source.source_revision < committed.source.source_revision
+                || current.source.source_observed_at < committed.source.source_observed_at
+                || ((current.publication_revision == committed.publication_revision
+                    || current.source.source_revision == committed.source.source_revision)
+                    && current != committed)
+            {
+                return Err(fail);
+            }
+        }
         if !source.has_live_transport(self.binding.transport) {
             return Err(fail);
         }
