@@ -12,7 +12,7 @@ base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: f77a160a480cb1bb08bbbd83e0061b2a8a424734
+protected_main_sha: 93f31ba05972d3b96afb0d9ea08e2c6753507d8c
 server_seam_issue: 247
 server_seam_allocation_pr: 294
 server_seam_allocation_merge_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
@@ -23,10 +23,12 @@ architecture_escalation_issue: 313
 nonblocking_governance_reconciliation_issue: 316
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-09-05
+updated_at: 2026-09-06
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration and closeout; no single worker owns the programme
 owned_paths:
+  - docs/superpowers/plans/2026-09-06-foundation-claim-transition.md
+  - docs/agents/tasks/archive/OTV2-20260906-atomic-fresh-claim-publication-324.md
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md
   - docs/superpowers/plans/2026-09-05-foundation-fresh-admission-durability.md
@@ -39,7 +41,7 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
 public_contracts: []
 depends_on:
-  - separately allocated Child B persistence and Child C producer readiness
+  - Foundation claim-transition followup 326, then separately allocated Child B persistence and Child C producer readiness
 blocks:
   - compatible native Client release
   - real applicable Tier 1/Tier 2 gameplay QA
@@ -57,11 +59,13 @@ Drive the accepted Oteryn Game post-blocker programme to the first real authorit
 
 This packet records the **current** coordinator state. The previous Durability-recovery-era version remains immutable Git history and Issue #162 provenance; its old dispatch/status prose is historical and grants no current worker, merge or architecture authority.
 
-## Current protected state — 2026-09-05
+## Current protected state — 2026-09-06
 
 Current correction: Child A #318 / PR #321 is completed/released after exact-head CI, independent review (P0/P1/P2=0), full Merge Queue `33992173480` and protected readback of `f77a160a480cb1bb08bbbd83e0061b2a8a424734` / tree `6c1e6eaa73adb06eaf27dc8526b78ebeb1d8f1bf`. The worker's final head is `a94cd13fa3741780bd108220bb893c3d9be8a1ac` and immutable admission remains `8fd0a40928c4089b453556edbf0a5abebe46986d`. The archived task retains its original allocation and counters.
 
 Architecture #313 / PR #317 remains accepted. #247 remains `WAITING_DEPENDENCY` on separately allocated B and C plus actual C producer readiness. Preserve Server Seam branch/head/partial evidence. Work remains the sole control plane; no lane or shared lease is granted by this closeout.
+
+Current continuation: bounded material escalation #324 is completed through PR #325 / `93f31ba05972d3b96afb0d9ea08e2c6753507d8c` after independent exact-head review and full Merge Queue `34016129389` PASS. This package archives its released task and prospectively allocates the exact four-path Foundation followup #326. Lease activation requires actual protected allocation integration/readback; Work then creates the canonical worker branch and binds that allocation merge as immutable admission. Existing A evidence above remains unchanged.
 
 Historical pre-architecture checkpoint:
 
@@ -80,12 +84,12 @@ Historical pre-architecture checkpoint:
 
 ## Current critical-path blocker
 
-Child A Foundation semantic authorization/publication/completion APIs are protected-main integrated and released. Child B must persist them atomically; Child C must bind actual authenticated/owning producers and prove admission readiness. Test-only authorities do not establish production sources. No B/C allocation is created by this closeout.
+Child A Foundation semantic authorization/publication/completion APIs are protected-main integrated and released. Child B must persist them atomically; Child C must bind actual authenticated/owning producers and prove admission readiness. Test-only authorities do not establish production sources. Before B, accepted #325 requires Foundation followup #326 to supply owner-sealed atomic claim transitions and close standalone publication bypasses. This package grants no B/C lease.
 
 ## Next authorized sequence
 
 1. Completed: A #318 / #321 qualification, protected integration and ownership release.
-2. Prepare, qualify and integrate a fresh bounded Child B allocation from protected main containing A; bind its actual allocation merge as immutable admission before dispatch.
+2. Qualify/integrate this exact #326 allocation, dispatch its sole worker from the actual allocation merge, then qualify/integrate/archive its implementation. Next freshly allocate B from protected main containing that followup and bind its allocation merge before dispatch.
 3. Qualify/integrate/read back B; only then freshly allocate C.
 4. Require C's actual producer inventory, commit-before-publish, source nonrollback and readiness evidence; missing sources keep admission closed.
 5. After A+B+C protected integrations and readiness, re-evaluate the preserved Server Seam branch for lawful resume/reconciliation; no reset/rebase/force/restart or partial-candidate integration.
@@ -148,7 +152,7 @@ The coordinator may create bounded allocations and integrate qualified worker re
 
 This reconciliation removes obsolete active-state claims from the coordinator packet. It does not reopen or reinterpret completed Wave A work, does not ratify historical invalid Durability branches, and does not modify any worker branch or runtime path.
 
-Child A #318 is completed/released. The current critical path is separately allocated B -> separately allocated C/real producer readiness -> Server Seam. #313 is completed. #316 release-provenance correction remains documentation-only. No other lane is promoted or implicitly allocated.
+Child A #318 is completed/released. The current critical path is Foundation claim-transition followup #326 -> separately allocated B -> separately allocated C/real producer readiness -> Server Seam. #313 is completed. #316 release-provenance correction remains documentation-only. No other lane is promoted or implicitly allocated.
 
 ## Validation
 
@@ -160,7 +164,7 @@ Child A #318 is completed/released. The current critical path is separately allo
 ### Component/integration
 
 - scenario: documentation/control-plane reconciliation only
-- result: runtime/component/E2E execution is `NOT_APPLICABLE`; this package makes an exact prospective Child A allocation; it performs no runtime, contract, schema or Cargo mutation
+- result: runtime/component/E2E execution is `NOT_APPLICABLE`; this package makes the exact prospective Foundation claim-transition followup allocation and archives the accepted architecture task; it performs no runtime, contract, schema or Cargo mutation
 
 ### E2E
 
@@ -176,7 +180,7 @@ Child A #318 is completed/released. The current critical path is separately allo
 
 - exact head: recorded in immutable PR evidence after the final material content change
 - method: whole-diff review against the six-path coordinator allocation package
-- verdict: pending exact package review; prospective Child A lease follows accepted architecture and activates only on protected integration; no runtime/Cargo/schema/workflow mutation
+- verdict: PASS whole-candidate review; prospective #326 lease follows accepted #325 architecture and activates only on protected integration; no runtime/Cargo/schema/workflow mutation. Governance and repository policy passed; independent exact-head review and protected qualification remain pending.
 
 ## Independent review
 
@@ -186,19 +190,19 @@ Child A #318 is completed/released. The current critical path is separately allo
 
 ## PR and closeout
 
-- current closeout Issue: #322
-- changed-file allowlist: Child A active-to-archive task move, its plan archive link, LIVE_ALLOCATIONS and this Work task only
+- current allocation Issue: #326; completed architecture #324 archival is part of the handoff
+- changed-file allowlist: new #326 task and plan, #324 active-to-archive task move, LIVE_ALLOCATIONS and this Work task only
 - terminal merge authority: normal protected repository control plane only; no direct/self/bypass merge
 - coordinator programme remains active after this checkpoint; this is not Movement/Combat programme closeout
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Child A #318 / PR #321 protected integration verified; terminal task archive and released ownership recorded under closeout #322
+last_progress: PR325 protected integration verified; archive324 and exact prospective Foundation followup326 allocation prepared
 status: COORDINATING
 programme_state: WAITING_DEPENDENCY
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
-protected_main_sha: f77a160a480cb1bb08bbbd83e0061b2a8a424734
+protected_main_sha: 93f31ba05972d3b96afb0d9ea08e2c6753507d8c
 server_seam_issue: 247
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
@@ -207,6 +211,6 @@ server_seam_state: WAITING_DEPENDENCY
 architecture_escalation_issue: 313
 nonblocking_governance_reconciliation_issue: 316
 owner_action_required: null
-blocker: Child_B_then_Child_C_actual_producer_readiness
-next_action: prepare the fresh bounded Child B allocation from protected main containing Child A
+blocker: Foundation_claim_transition_326_then_B_then_C_actual_producer_readiness
+next_action: qualify and integrate the exact326 allocation, bind actual admission, then dispatch the sole Foundation worker
 ```
