@@ -14,6 +14,63 @@ mod durability;
 mod postgres;
 
 #[test]
+fn fresh_commit_persists_complete_operation_and_reconciles_original_decision()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::admission_authority_guards::AdmissionGuardStore;
+    use durability::fresh_admission::{FreshAdmissionStore, FreshReconciliation};
+    use foundation::GameSessionState;
+    use foundation::admission_authority_publication::AdmissionAuthorityPublicationV1;
+    use foundation::fresh_admission_durability::FreshAdmissionDurableOutcomeV1;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let database = postgres::IsolatedPostgres::create("fresh_commit_original_l").await?;
+        let result = async {
+            let url = database.database_url()?;
+            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let now = postgres_clock(&pool).await?;
+            let source = postgres::fresh::Source::new(now)?;
+            let guards = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+            let publication = authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&source, now))?;
+            let request = source.request()?;
+            let store = FreshAdmissionStore::connect_runtime(&url, 65536, 8192).await?;
+            let mut partial_source = postgres::fresh::Source::new(now)?;
+            partial_source.rows.pop(); // Only independently current signing trust is absent.
+            guards.publish(&authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(&partial_source, now))?).await?;
+            assert_eq!(store.commit(&request).await?, FreshAdmissionDurableOutcomeV1::RejectedStaleAuthority);
+            assert_eq!(store.reconcile(request.operation()).await?, FreshReconciliation::Absent);
+            guards.publish(&publication).await?;
+            let FreshAdmissionDurableOutcomeV1::Committed(receipt) = store.commit(&request).await? else { return Err("fresh commit did not commit".into()); };
+            assert_eq!(receipt.operation(), request.operation());
+            assert!(receipt.decided_at() >= now);
+            assert_eq!(store.commit(&request).await?, FreshAdmissionDurableOutcomeV1::ExistingCommitted(receipt.clone()));
+            let restarted = FreshAdmissionStore::connect_runtime(&url, 65536, 8192).await?;
+            let FreshReconciliation::Committed(snapshot) = restarted.reconcile(request.operation()).await? else { return Err("missing committed receipt".into()); };
+            assert_eq!(snapshot.receipt, receipt);
+            assert_eq!(snapshot.current_session.session_state(), GameSessionState::Active);
+            assert_eq!(snapshot.current_session.current_connection_generation().get(), 1);
+            assert!(snapshot.current_session.current_control_loss_epoch().is_none());
+            let current = guards.load(&source.rows.iter().map(|row| row.key.clone()).collect::<Vec<_>>()).await?;
+            assert_eq!(current[0].as_ref(), Some(&request.operation().transition.successors[0]));
+            assert_eq!(current[1].as_ref(), Some(&request.operation().transition.successors[1]));
+            let mut changed = request.operation().clone();
+            changed.transition.successors[0].source.decision_identity = "different-historical-operation".into();
+            assert_eq!(restarted.reconcile(&changed).await?, FreshReconciliation::Conflict);
+            let receipts: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_fresh_admission_receipts").fetch_one(&pool).await?;
+            let sessions: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_reconnect_sessions").fetch_one(&pool).await?;
+            let transports: i64 = sqlx::query_scalar("SELECT COUNT(*) FROM game_durability_transport_ref_reservations WHERE reservation_owner = 2").fetch_one(&pool).await?;
+            assert_eq!((receipts, sessions, transports), (1, 1, 1));
+            pool.close().await;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result
+    })
+}
+
+#[test]
 fn guard_publication_is_atomic_replayable_and_retains_decision_history()
 -> Result<(), Box<dyn std::error::Error>> {
     use durability::admission_authority_guards::{

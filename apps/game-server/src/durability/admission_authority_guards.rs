@@ -473,13 +473,13 @@ pub enum GuardPublicationDisposition {
 /// Explicit caller allocation pending production executor/resource integration.
 #[derive(Clone)]
 pub struct AdmissionGuardStore {
-    pool: sqlx::PgPool,
-    maximum_guard_bytes: usize,
+    pub(super) pool: sqlx::PgPool,
+    pub(super) maximum_guard_bytes: usize,
 }
 
 type Mirror = Vec<(&'static str, &'static str, Option<String>)>;
 
-fn uuid_text(bytes: &[u8; 16]) -> String {
+pub(super) fn uuid_text(bytes: &[u8; 16]) -> String {
     let hex: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
     format!(
         "{}-{}-{}-{}-{}",
@@ -490,7 +490,7 @@ fn uuid_text(bytes: &[u8; 16]) -> String {
         &hex[20..]
     )
 }
-fn bytea_text(bytes: &[u8]) -> String {
+pub(super) fn bytea_text(bytes: &[u8]) -> String {
     let mut text = String::from("\\x");
     for byte in bytes {
         const HEX: &[u8; 16] = b"0123456789abcdef";
@@ -665,7 +665,7 @@ impl AdmissionGuardStore {
         Ok(rows)
     }
 
-    async fn load_locked(
+    pub(super) async fn load_locked(
         &self,
         transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
         key: &AdmissionAuthorityGuardKeyV1,
@@ -749,20 +749,52 @@ impl AdmissionGuardStore {
             transaction.commit().await?;
             return Ok(GuardPublicationDisposition::Existing);
         }
+        if !self
+            .successor_history_available(&mut transaction, request.changes(), &current)
+            .await?
+        {
+            return Ok(GuardPublicationDisposition::Conflict);
+        }
+        self.persist_locked(&mut transaction, request.changes(), &current, &encoded)
+            .await?;
+        transaction.commit().await?;
+        Ok(GuardPublicationDisposition::Applied)
+    }
+    pub(super) async fn successor_history_available(
+        &self,
+        transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        changes: &[AdmissionAuthorityPublicationChangeV1],
+        current: &[Option<AdmissionAuthorityPublicationChangeV1>],
+    ) -> Result<bool> {
         // Classify the entire batch before effects. Permanent decision history
         // prevents an owner decision or source revision being reused later.
-        for (change, old) in request.changes().iter().zip(&current) {
+        for (change, old) in changes.iter().zip(current) {
             if old.as_ref() == Some(change) {
                 continue;
             }
             let (_, _, key) = key_storage(&change.key, self.maximum_guard_bytes)?;
             let conflict: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1 AND (publication_revision = $2::text::numeric(20,0) OR (source_authority = $3 AND (source_revision = $4::text::numeric(20,0) OR decision_identity = $5))))")
-                .bind(key).bind(change.publication_revision.to_string()).bind(&change.source.authority).bind(change.source.source_revision.to_string()).bind(&change.source.decision_identity).fetch_one(&mut *transaction).await?;
+                .bind(key).bind(change.publication_revision.to_string()).bind(&change.source.authority).bind(change.source.source_revision.to_string()).bind(&change.source.decision_identity).fetch_one(&mut **transaction).await?;
             if conflict {
-                return Ok(GuardPublicationDisposition::Conflict);
+                return Ok(false);
             }
         }
-        for ((change, old), payload) in request.changes().iter().zip(&current).zip(&encoded) {
+        Ok(true)
+    }
+
+    // Only called after the matching sealed publication/fresh/lifecycle
+    // predicate and history checks in this same protected transaction.
+    pub(super) async fn persist_locked(
+        &self,
+        transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        changes: &[AdmissionAuthorityPublicationChangeV1],
+        current: &[Option<AdmissionAuthorityPublicationChangeV1>],
+        encoded: &[String],
+    ) -> Result<()> {
+        if changes.len() != current.len() || changes.len() != encoded.len() {
+            return invalid();
+        }
+        for ((change, old), payload) in changes.iter().zip(current).zip(encoded) {
             if old.as_ref() == Some(change) {
                 continue;
             }
@@ -798,11 +830,10 @@ impl AdmissionGuardStore {
                 }
                 query.push(*column).push(" = EXCLUDED.").push(*column);
             }
-            query.build().execute(&mut *transaction).await?;
+            query.build().execute(&mut **transaction).await?;
             sqlx::query("INSERT INTO game_durability_admission_guard_history (guard_key, publication_revision, source_authority, source_revision, decision_identity, change_json) VALUES ($1, $2::text::numeric(20,0), $3, $4::text::numeric(20,0), $5, $6)")
-                .bind(key).bind(change.publication_revision.to_string()).bind(&change.source.authority).bind(change.source.source_revision.to_string()).bind(&change.source.decision_identity).bind(payload).execute(&mut *transaction).await?;
+                .bind(key).bind(change.publication_revision.to_string()).bind(&change.source.authority).bind(change.source.source_revision.to_string()).bind(&change.source.decision_identity).bind(payload).execute(&mut **transaction).await?;
         }
-        transaction.commit().await?;
-        Ok(GuardPublicationDisposition::Applied)
+        Ok(())
     }
 }
