@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-08-25T10:25:00+02:00",
+  "updated_at": "2026-09-06T12:33:23+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -846,6 +846,1744 @@
       "allocation_impact": "Reject the ninth distinct attempt before persistent allocation or authority mutation; retry of the same ReconnectAttemptRef is idempotent and consumes no additional slot.",
       "client_visible": true,
       "boundary_tests": ["8 distinct attempts accepted subject to ordinary reconnect eligibility", "9th distinct attempt rejected before allocation or authority mutation", "retry of the same ReconnectAttemptRef consumes no additional slot", "checked arithmetic overflow rejected fail-closed", "closed-epoch compaction preserves deterministic terminal lookup"]
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "8192 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "8193 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 8192,
+        "maximum": 8192
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 8192,
+      "id": "NSRC-HTTP-HEADERS-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Request/response start-line and header section",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "32 fields accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "33 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 32,
+      "id": "NSRC-HTTP-HEADER-FIELDS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "One header section",
+      "unit": "fields"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "2048 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2049 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2048,
+        "maximum": 2048
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2048,
+      "id": "NSRC-HTTP-HEADER-LINE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "One raw header line including delimiters",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "256 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "257 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 256,
+      "id": "NSRC-HTTP-STATUS-LINE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Response status line",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "8192 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "8193 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 8192,
+        "maximum": 8192
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 8192,
+      "id": "NSRC-HTTP-RESPONSE-BODY-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Dechunked response",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1024 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "1025 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1024,
+      "id": "NSRC-HTTP-REQUEST-BODY-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Request body",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "64 chunks accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "65 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 64,
+      "id": "NSRC-HTTP-DATA-CHUNKS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Data chunks per exchange",
+      "unit": "chunks"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4096 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "4097 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 4096,
+      "id": "NSRC-HTTP-TRANSFER-FRAMING-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Total transfer framing excluding data/headers",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "64 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "65 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 64,
+      "id": "NSRC-HTTP-CHUNK-SIZE-LINE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Chunk size line",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "16 members accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "17 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 16,
+      "id": "NSRC-JSON-MEMBERS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Root object only, no arrays or nested containers, unknown members rejected before materialization; raw whitespace/escapes also count against body cap. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Root object members; unknown fields still forbidden",
+      "unit": "members"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "64 ASCII bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "65 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 64,
+      "id": "NSRC-JSON-NAME-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Root object only, no arrays or nested containers, unknown members rejected before materialization; raw whitespace/escapes also count against body cap. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Decoded member name",
+      "unit": "ASCII bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "256 decoded bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "257 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 256,
+      "id": "NSRC-JSON-STRING-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Root object only, no arrays or nested containers, unknown members rejected before materialization; raw whitespace/escapes also count against body cap. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "String unless smaller field rule applies",
+      "unit": "decoded bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "128 ASCII bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "129 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 128,
+      "id": "NSRC-SOURCE-AUTHORITY-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Authenticated exact service identity",
+      "unit": "ASCII bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1 descriptors accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "NSRC-DESCRIPTOR-PRODUCERS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Active producer per process",
+      "unit": "descriptors"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4 mappings accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "5 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 4,
+      "id": "NSRC-DESCRIPTOR-OPERATIONS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Fresh/recovery operation mappings",
+      "unit": "mappings"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "256 ASCII bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "257 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 256,
+      "id": "NSRC-DESCRIPTOR-ORIGIN-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Configured origin",
+      "unit": "ASCII bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "256 ASCII bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "257 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 256,
+        "maximum": 256
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 256,
+      "id": "NSRC-DESCRIPTOR-PATH-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each operation path",
+      "unit": "ASCII bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "128 ASCII bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "129 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 128,
+      "id": "NSRC-DESCRIPTOR-IDENTITY-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each client/service identity",
+      "unit": "ASCII bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4096 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "4097 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 4096,
+      "id": "NSRC-DESCRIPTOR-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Entire noncertificate descriptor",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4 certificates accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "5 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 4,
+      "id": "NSRC-TLS-PEER-CERTIFICATES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Peer chain",
+      "unit": "certificates"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4096 DER bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "4097 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 4096,
+      "id": "NSRC-TLS-PEER-CERTIFICATE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each peer certificate",
+      "unit": "DER bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "16384 DER bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "16385 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 16384,
+      "id": "NSRC-TLS-PEER-CHAIN-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Aggregate peer chain",
+      "unit": "DER bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4 certificates accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "5 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 4,
+      "id": "NSRC-TLS-TRUST-ROOTS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Configured trust roots",
+      "unit": "certificates"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4096 DER bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "4097 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 4096,
+      "id": "NSRC-TLS-TRUST-ROOT-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each configured root",
+      "unit": "DER bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "16384 DER bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "16385 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 16384,
+      "id": "NSRC-TLS-TRUST-ROOTS-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Aggregate configured roots",
+      "unit": "DER bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "16 levels accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "17 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 16,
+      "id": "NSRC-TLS-DER-DEPTH",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "DER nesting",
+      "unit": "levels"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "512 elements accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "513 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 512,
+        "maximum": 512
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 512,
+      "id": "NSRC-TLS-DER-ELEMENTS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Parsed DER elements per certificate",
+      "unit": "elements"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4 verifications accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "5 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 4,
+      "id": "NSRC-TLS-SIGNATURE-VERIFICATIONS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Certificate signatures per handshake",
+      "unit": "verifications"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "65536 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "65537 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 65536,
+      "id": "NSRC-TLS-HANDSHAKE-INBOUND-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Enforce before lower-layer allocation/verification; library enforceability must be demonstrated. No network AIA/CRL or unbounded alternate-chain search. Exceeding transport/PKI envelope makes source unavailable; no chain truncation. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Inbound handshake across all reads",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "2 slots accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "3 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2,
+      "id": "NSRC-PIPELINE-SLOTS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "End-to-end slots per logical registration",
+      "unit": "slots"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1 requests accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "NSRC-HTTP-REQUESTS-PER-SLOT",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. HTTP/1.1 only, one exchange then close; no compression, redirects, conflicting framing, nonempty trailers, informational responses or unbounded excess-byte retention. Structural framing violations remain INVALID_INPUT. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "At most one HTTP request per occupied slot",
+      "unit": "requests"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "8 requests accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "9 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 8,
+        "maximum": 8
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 8,
+      "id": "NSRC-QUEUE-ENTRIES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Pending requests per process",
+      "unit": "requests"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1024 retained bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "1025 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1024,
+      "id": "NSRC-QUEUE-ENTRY-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each pending request",
+      "unit": "retained bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "8192 retained bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "8193 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 8192,
+        "maximum": 8192
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 8192,
+      "id": "NSRC-QUEUE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Aggregate queue per process",
+      "unit": "retained bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "131072 retained bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "131073 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 131072,
+        "maximum": 131072
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 131072,
+      "id": "NSRC-ACTIVE-SLOT-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "All adapter-managed buffers per end-to-end slot",
+      "unit": "retained bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "262144 retained bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "262145 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 262144,
+        "maximum": 262144
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 262144,
+      "id": "NSRC-ACTIVE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Both active slots together",
+      "unit": "retained bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "2 identities accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "3 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2,
+      "id": "NSRC-PENDING-SLOTS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Fixed pending/ambiguous publication identities per registration",
+      "unit": "identities"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "16384 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "16385 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 16384,
+        "maximum": 16384
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 16384,
+      "id": "NSRC-PENDING-CHECKPOINT-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each durable checkpoint",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "32768 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "32769 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 32768,
+        "maximum": 32768
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 32768,
+      "id": "NSRC-PENDING-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Aggregate pending checkpoints",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1 mailboxes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "NSRC-COMPLETION-PER-SLOT",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Completion occupies existing end-to-end capacity; no extra mailbox queue. Source mailboxes derive at most 4096 aggregate bytes; DFR encoded mailboxes derive at most 262144 aggregate bytes. NASG command/result/checkpoint/mailbox together share 4096 bytes. No timeout, cancellation or restart multiplies capacity. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Completion mailbox per slot",
+      "unit": "mailboxes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "2048 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2049 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2048,
+        "maximum": 2048
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2048,
+      "id": "NSRC-COMPLETION-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Completion occupies existing end-to-end capacity; no extra mailbox queue. Source mailboxes derive at most 4096 aggregate bytes; DFR encoded mailboxes derive at most 262144 aggregate bytes. NASG command/result/checkpoint/mailbox together share 4096 bytes. No timeout, cancellation or restart multiplies capacity. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each completion mailbox within active budget",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "64 observations accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "65 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 64,
+      "id": "NSRC-PROJECTION-ENTRIES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Resident typed observations per process",
+      "unit": "observations"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "2048 retained bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2049 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2048,
+        "maximum": 2048
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 2048,
+      "id": "NSRC-PROJECTION-ENTRY-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each resident observation",
+      "unit": "retained bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "131072 retained bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "131073 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 131072,
+        "maximum": 131072
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 131072,
+      "id": "NSRC-PROJECTION-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Aggregate resident observations",
+      "unit": "retained bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "Configured 1000 ms cap accepted; 1001 ms configured cap rejected; smaller configured cap unsupported",
+        "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+        "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 1000,
+      "id": "NSRC-QUEUE-WAIT-MS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Connect and handshake are contained in exchange, not additive extensions; publication never extends authenticated source-age limit of five seconds. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Queue residence",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "Configured 1000 ms cap accepted; 1001 ms configured cap rejected; smaller configured cap unsupported",
+        "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+        "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 1000,
+      "id": "NSRC-CONNECT-MS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Connect and handshake are contained in exchange, not additive extensions; publication never extends authenticated source-age limit of five seconds. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Connection establishment within exchange",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "Configured 2000 ms cap accepted; 2001 ms configured cap rejected; smaller configured cap unsupported",
+        "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+        "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2000,
+        "maximum": 2000
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 2000,
+      "id": "NSRC-HANDSHAKE-MS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Connect and handshake are contained in exchange, not additive extensions; publication never extends authenticated source-age limit of five seconds. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Handshake within exchange",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "Configured 3000 ms cap accepted; 3001 ms configured cap rejected; smaller configured cap unsupported",
+        "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+        "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 3000,
+        "maximum": 3000
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 3000,
+      "id": "NSRC-EXCHANGE-MS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Connect and handshake are contained in exchange, not additive extensions; publication never extends authenticated source-age limit of five seconds. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Dispatch to authenticated decoded result",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "Configured 2000 ms cap accepted; 2001 ms configured cap rejected; smaller configured cap unsupported",
+        "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+        "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2000,
+        "maximum": 2000
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 2000,
+      "id": "NSRC-PUBLISH-MS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Connect and handshake are contained in exchange, not additive extensions; publication never extends authenticated source-age limit of five seconds. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "One publication/reconciliation including DB acquisition",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1 registrations accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "NSRC-ACTIVE-REGISTRATIONS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Active registration per process/producer configuration",
+      "unit": "registrations"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1 operations accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "NSRC-SQL-OPERATIONS-PER-SLOT",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Outstanding SQL operation per slot",
+      "unit": "operations"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "Exactly 32 bytes accepted only with canonical encoding; 31 and 33 rejected",
+        "Text and binary boundaries bind the same opaque operation; conflicting retry cannot mint a new identity"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 32,
+      "id": "NASG-OPERATION-KEY-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Exact opaque operation key",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "Exactly 43 ASCII characters accepted only with canonical encoding; 42 and 44 rejected",
+        "Text and binary boundaries bind the same opaque operation; conflicting retry cannot mint a new identity"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 43,
+        "maximum": 43
+      },
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 43,
+      "id": "NASG-OPERATION-KEY-TEXT",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Exact canonical unpadded base64url key",
+      "unit": "ASCII characters"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1024 retained/encoded bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "1025 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1024,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1024,
+      "id": "NASG-COMMAND-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Complete command bindings",
+      "unit": "retained/encoded bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "128 ASCII bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "129 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 128,
+        "maximum": 128
+      },
+      "failure_category": "INVALID_INPUT",
+      "hard_maximum": 128,
+      "id": "NASG-IDENTITY-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout. Smaller semantic grammar/constant bounds remain binding: canonical UUID, FND04 key ID1–64 ASCII, fixed issuer/profile/purpose, Ed25519 public key32 decoded bytes/43 unpadded base64url characters, uint64 up to20 decimal digits and nonnegative signed64 timestamp up to19 digits. These are representation rules, not replacement body budgets.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each actor/source identity",
+      "unit": "ASCII bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "8 commands accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "9 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 8,
+        "maximum": 8
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 8,
+      "id": "NASG-QUEUE-ENTRIES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Pending commands per writer process",
+      "unit": "commands"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "8192 retained bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "8193 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 8192,
+        "maximum": 8192
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 8192,
+      "id": "NASG-QUEUE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Aggregate pending commands",
+      "unit": "retained bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1 slots accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "NASG-PIPELINE-SLOTS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "End-to-end operation per logical writer registration",
+      "unit": "slots"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4096 retained bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "4097 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 4096,
+      "id": "NASG-ACTIVE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Completion occupies existing end-to-end capacity; no extra mailbox queue. Source mailboxes derive at most 4096 aggregate bytes; DFR encoded mailboxes derive at most 262144 aggregate bytes. NASG command/result/checkpoint/mailbox together share 4096 bytes. No timeout, cancellation or restart multiplies capacity. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Command/result/checkpoint and mailbox combined",
+      "unit": "retained bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "Configured 1000 ms cap accepted; 1001 ms configured cap rejected; smaller configured cap unsupported",
+        "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+        "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 1000,
+      "id": "NASG-QUEUE-WAIT-MS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Queue residence",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "Configured 3000 ms cap accepted; 3001 ms configured cap rejected; smaller configured cap unsupported",
+        "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+        "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 3000,
+        "maximum": 3000
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 3000,
+      "id": "NASG-EXECUTION-MS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Dispatched operation including DB/locks/response",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1 results accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "NASG-READ-RESULT-COUNT",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Read/reconcile one exact scope or operation",
+      "unit": "results"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "4096 bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "4097 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4096,
+        "maximum": 4096
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 4096,
+      "id": "NASG-READ-RESULT-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "One result within active envelope",
+      "unit": "bytes"
+    },
+    {
+      "allocation_impact": "Check before size-controlled allocation/retention and include raw framing, decoded values, copies and lower-layer work. Reserve end-to-end capacity; do not release while submitted work, completion or ambiguity remains.",
+      "boundary_tests": [
+        "1 mailboxes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "hard_maximum": 1,
+      "id": "NASG-COMPLETION-COUNT",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. Fixed profile per #342 addendum; meaningful smaller profiles unsupported. Source-age/authentication constraints remain independent. Completion occupies existing end-to-end capacity; no extra mailbox queue. Source mailboxes derive at most 4096 aggregate bytes; DFR encoded mailboxes derive at most 262144 aggregate bytes. NASG command/result/checkpoint/mailbox together share 4096 bytes. No timeout, cancellation or restart multiplies capacity. Persistent floors/denials/receipts are never evicted to meet resident limits; no automatic retry, background refresh or coalesced waiter fanout.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "One mailbox within active envelope",
+      "unit": "mailboxes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "65536 encoded bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "65537 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 65536,
+        "maximum": 65536
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 65536,
+      "id": "DFR-OPERATION-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each complete fresh operation, standalone publication batch or lifecycle operation/effects",
+      "unit": "encoded bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "8192 encoded bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "8193 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 8192,
+        "maximum": 8192
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 8192,
+      "id": "DFR-GUARD-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Complete typed guard change",
+      "unit": "encoded bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "4 changes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "5 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4,
+        "maximum": 4
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 4,
+      "id": "DFR-PUBLICATION-CHANGES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Whole atomic standalone publication",
+      "unit": "changes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "131072 logical bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "131073 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 131072,
+        "maximum": 131072
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 131072,
+      "id": "DFR-DURABLE-ROW-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Entire affected row including every variable column and mirrors",
+      "unit": "logical bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "32 columns accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "33 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 32,
+      "id": "DFR-DURABLE-ROW-VARIABLE-COLUMNS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Variable-length SQL columns per row",
+      "unit": "columns"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "32 payload rows accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "33 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 32,
+        "maximum": 32
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 32,
+      "id": "DFR-SQL-RESULT-ROWS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Returned payload rows per pass, not physical rows",
+      "unit": "payload rows"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "524288 logical bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "524289 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 524288,
+        "maximum": 524288
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 524288,
+      "id": "DFR-SQL-RESULT-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Aggregate returned bytes per pass including nested payload",
+      "unit": "logical bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "64 logical lock roots accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "65 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 64,
+      "id": "DFR-LOCK-KEYS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Distinct parent/domain roots per pass; full physical child coverage remains required",
+      "unit": "logical lock roots"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "16 relation classes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "17 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 16,
+        "maximum": 16
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 16,
+      "id": "DFR-LOCK-RELATIONS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Required relation classes per pass",
+      "unit": "relation classes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "8 entries accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "9 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 8,
+        "maximum": 8
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 8,
+      "id": "DFR-QUEUE-ENTRIES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Not-yet-submitted operations",
+      "unit": "entries"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "524288 charged resident bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "524289 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 524288,
+        "maximum": 524288
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 524288,
+      "id": "DFR-QUEUE-ENTRY-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each queued operation including all copies",
+      "unit": "charged resident bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "4194304 charged resident bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "4194305 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4194304,
+        "maximum": 4194304
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 4194304,
+      "id": "DFR-QUEUE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Entire queue",
+      "unit": "charged resident bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "2 slots accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "3 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 2,
+      "id": "DFR-ACTIVE-SLOTS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "End-to-end active operations",
+      "unit": "slots"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "4194304 charged resident bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "4194305 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 4194304,
+        "maximum": 4194304
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 4194304,
+      "id": "DFR-ACTIVE-SLOT-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "One active slot including every retained buffer/task",
+      "unit": "charged resident bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "8388608 charged resident bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "8388609 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 8388608,
+        "maximum": 8388608
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 8388608,
+      "id": "DFR-ACTIVE-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Both active slots",
+      "unit": "charged resident bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "1 entries accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 1,
+      "id": "DFR-COMPLETION-PER-SLOT",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate. Completion occupies existing end-to-end capacity; no extra mailbox queue. Source mailboxes derive at most 4096 aggregate bytes; DFR encoded mailboxes derive at most 262144 aggregate bytes. NASG command/result/checkpoint/mailbox together share 4096 bytes. No timeout, cancellation or restart multiplies capacity.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Mailbox per active slot",
+      "unit": "entries"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "131072 encoded bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "131073 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 131072,
+        "maximum": 131072
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 131072,
+      "id": "DFR-COMPLETION-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate. Completion occupies existing end-to-end capacity; no extra mailbox queue. Source mailboxes derive at most 4096 aggregate bytes; DFR encoded mailboxes derive at most 262144 aggregate bytes. NASG command/result/checkpoint/mailbox together share 4096 bytes. No timeout, cancellation or restart multiplies capacity.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Complete disposition/snapshot, resident charge inside active budget",
+      "unit": "encoded bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "2 fixed slots accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "3 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 2,
+      "id": "DFR-PENDING-SLOTS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate. Two checkpoints imply at most 262144 logical durable bytes; resident copies remain inside active budgets, not extra memory allowances.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Durable pending slots per logical executor",
+      "unit": "fixed slots"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "131072 logical bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "131073 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 131072,
+        "maximum": 131072
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 131072,
+      "id": "DFR-PENDING-SLOT-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate. Two checkpoints imply at most 262144 logical durable bytes; resident copies remain inside active budgets, not extra memory allowances.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Each durable pending original operation checkpoint",
+      "unit": "logical bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "Configured 1000 ms cap accepted; 1001 ms configured cap rejected; smaller configured cap unsupported",
+        "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+        "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1000,
+        "maximum": 1000
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 1000,
+      "id": "DFR-QUEUE-WAIT-MS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Queue residence before submission",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "Configured 2000 ms cap accepted; 2001 ms configured cap rejected; smaller configured cap unsupported",
+        "Just-before, at and after deadline verified against trusted monotonic clock; contained connection/handshake deadlines never extend exchange deadline",
+        "Timeout after submission preserves original identity, pending checkpoint and occupied capacity until definitive classification; no automatic retry or detached work"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 2000,
+        "maximum": 2000
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 2000,
+      "id": "DFR-DB-PASS-MS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "One DB/reconciliation pass including waits",
+      "unit": "milliseconds"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "12582912 charged resident bytes accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "12582913 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 12582912,
+        "maximum": 12582912
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 12582912,
+      "id": "DFR-TOTAL-RESIDENT-BYTES",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "Queue plus active; not RSS",
+      "unit": "charged resident bytes"
+    },
+    {
+      "allocation_impact": "Preflight checked sizes/counts and allocated capacity before copies, parsing, SQL transfer or reserve; charge every retained task/buffer. Same protected snapshot guards SQL lengths. No truncation, partial atomic effects, history deletion or ambiguous-slot release.",
+      "boundary_tests": [
+        "1 executors accepted where semantically valid and every coupled limit passes; if encoding cannot represent exact size, test largest representable at/below and first above plus exact generic length comparison",
+        "2 rejected before excess allocation, retention or effect",
+        "Checked arithmetic overflow rejected; coupled count/byte limits and all copies charged without partial authority mutation"
+      ],
+      "client_visible": false,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "UNAVAILABLE",
+      "hard_maximum": 1,
+      "id": "DFR-EXECUTORS-PER-PROCESS",
+      "notes": "Fixed configured cap, not required actual occupancy/size. Internal boundary adds no wire enum. Written boundary tests are future implementation obligations, not executed proof. One shared executor per process; all retained copies charged and ambiguous work retains original slot. The 64 pending commands and 256 domain revisions remain independently valid together; eight epoch attempts may retain 512 physical children as at most eight complete bounded aggregates. Returned payload rows and logical roots never cap required physical child locks or the complete cross-epoch predecessor predicate.",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
+      "resource": "One shared executor; caller creation cannot mint budget",
+      "unit": "executors"
     }
   ]
 }
