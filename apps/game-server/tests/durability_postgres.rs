@@ -14,6 +14,118 @@ mod durability;
 mod postgres;
 
 #[test]
+fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::{AdmissionRuntime, DurabilityCustody};
+    use foundation::ReconnectDurabilityFlowV2;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("registered_runtime").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let (predecessor, _) = DurabilityCustody::acquire(&pool).await?;
+                predecessor
+                    .checkpoint(&pool, 1, 1, "retained fresh original")
+                    .await?;
+                predecessor
+                    .checkpoint(&pool, 2, 2, "retained guard original")
+                    .await?;
+                let runtime = AdmissionRuntime::connect(&url).await?;
+                let repeated = AdmissionRuntime::connect(&url).await?;
+                let generation: String = sqlx::query_scalar(
+                    "SELECT generation::text FROM game_durability_executor_custody WHERE slot = 0",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(
+                    generation, "2",
+                    "same process registration must not take custody twice"
+                );
+                assert_eq!(runtime.recovered_pending(), repeated.recovered_pending());
+                for (slot, expected) in [
+                    (0, "retained fresh original"),
+                    (1, "retained guard original"),
+                ] {
+                    assert_eq!(
+                        runtime.recovered_pending()[slot]
+                            .as_ref()
+                            .ok_or("registered runtime lost pending original")?
+                            .operation_json,
+                        expected
+                    );
+                }
+                assert!(matches!(
+                    predecessor.fence(&pool).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let guards = runtime.guards();
+                assert!(guards.load(&[]).await?.is_empty());
+                let fresh = repeated.fresh();
+                let owner = postgres::fresh::Source::new(postgres_clock(&pool).await?)?;
+                let fresh_request = owner.request()?;
+                assert!(matches!(
+                    fresh.reconcile(fresh_request.operation()).await?,
+                    durability::fresh_admission::FreshReconciliation::Absent
+                ));
+                let record = authority_matrix::prepared_record(authority_matrix::Seed::fixed())?;
+                let v1_request = ReconnectDurabilityFlowV1::begin(record.clone()).1;
+                let v2_request = ReconnectDurabilityFlowV2::begin(record, None).1;
+                let v1 = runtime.reconnect_v1();
+                let v2 = repeated.reconnect_v2();
+                // A real successor invalidates every previously issued handle.
+                let (_successor, retained) = DurabilityCustody::acquire(&pool).await?;
+                assert_eq!(&retained, runtime.recovered_pending());
+                assert!(matches!(
+                    guards.load(&[]).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    fresh.reconcile(fresh_request.operation()).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    v1.prepare(&v1_request).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    v2.prepare(&v2_request).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                // Registration cannot mint replacement capacity after its token is stale.
+                let stale = AdmissionRuntime::connect(&url).await?;
+                assert!(matches!(
+                    stale.guards().load(&[]).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                assert!(matches!(
+                    AdmissionRuntime::connect("postgres://different.invalid/other").await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                let attempts: i64 =
+                    sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_attempts")
+                        .fetch_one(&pool)
+                        .await?;
+                assert_eq!(attempts, 0, "stale handles must retain no command effects");
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn executor_custody_retains_two_original_slots_and_fences_predecessor()
 -> Result<(), Box<dyn std::error::Error>> {
     use durability::DurabilityCustody;
