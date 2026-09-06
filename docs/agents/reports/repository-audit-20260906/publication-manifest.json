@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "scope": "Report consistency only; not product correctness or merge authority.",
+  "sha256": {
+    "EVIDENCE.md": "e1e74e12fb1120af893add550854b1d1dfcfec02b2c957bbf01911a3b6b4ebfe",
+    "README.md": "a1812369d13498401fb2a30de3bd72a46f78ff80f2526ae1667ac8117b541ad3",
+    "assessment.json": "d6feaedb8b9ed082ea5d5097436fba9aa9af9ec4fd43c7cd2c12c8e8fbe5ac1b",
+    "closeout-evidence.json": "ca6a058532dfe85a7df7601f1317415d34e5cc0bd8538ad7eda93c46784ec0fe",
+    "controls.json": "eaf1f8c700648307c4ddbf10767a855e7010d0ff7963883938e1a65c35e8bd4f",
+    "coverage-register.json": "9cf575dba0705c8bce85a32d0b628fd96d0a883394bf87bd5577c2cf0a9c7686",
+    "execution-evidence.json": "450fe6807f621676f0ab8b0b3e6273bb8760435b0ad03be1b0af4534c94da320",
+    "findings.json": "bee1b373b7d18a5fff7dcb8bed9f84287d1d0cf41465e49175139230c152d0f8",
+    "prompt-traceability.json": "bf8a9986829ef5dd45201dd28dad82d278e9def39afa17f6c6869e7fe27afb22",
+    "review-scope.json": "40ffb75b5d38907187bf12fcd231fdf2ed33d99b4112e6ddd7592ce864b89669",
+    "verify_closeout.py": "ac3999261e6a6b8053fd1c81a5545462a689ee421676c402bc6af9b131f40e40",
+    "verify_evidence.py": "b909654b7b9c3083121c3b64f521f30bc5ce88b4429ae93532a1b700edb11ff8"
+  }
+}

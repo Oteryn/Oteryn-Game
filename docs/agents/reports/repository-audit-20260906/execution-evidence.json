@@ -1,0 +1,212 @@
+{
+  "source_commit": "7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3",
+  "source_tree": "359a52348bfdf8088a7cd456f4015b05279721b6",
+  "observer_commits": [
+    "3211b8c9597dfac096cff28fa79a3a3803e367fc",
+    "dee517fe6720c52ca37e71ffc2c3428d476817d8",
+    "bce4a3afec8082c4bba9be022a0b7bd363b46d71"
+  ],
+  "jobs": [
+    {
+      "run": 34049229486,
+      "job": 101529713197,
+      "result": "success",
+      "purpose": "complete source snapshot"
+    },
+    {
+      "run": 34049229486,
+      "job": 101529713591,
+      "result": "success",
+      "purpose": "release Linux workspace and configured PostgreSQL"
+    },
+    {
+      "run": 34049958965,
+      "job": 101531656052,
+      "result": "success",
+      "purpose": "original-test coverage, separate Rust/SQL probes"
+    },
+    {
+      "run": 34049958965,
+      "job": 101531656129,
+      "result": "success",
+      "purpose": "exact Windows release, 33 original tests, real DX12 one-frame probe"
+    },
+    {
+      "run": 34050635585,
+      "job": 101533492650,
+      "result": "failure",
+      "purpose": "standalone Rust PASS; Python 26 PASS / 1 FAIL (3 setup errors)"
+    }
+  ],
+  "artifacts": [
+    {
+      "run": 34049229486,
+      "artifact_id": 9994030051,
+      "name": "repository-audit-source-7ce1d88.zip",
+      "sha256": "a9cb7d3a644e38f3a993e979d52cf3e0a91c1b4aae364bd3f2f39bcad6fc9d66",
+      "downloaded_and_digest_verified": true,
+      "retention_days": 1
+    },
+    {
+      "run": 34049229486,
+      "artifact_id": 9994084255,
+      "name": "repository-audit-release-linux-7ce1d88.zip",
+      "sha256": "6c34c09c8d0f5aaccd21352b8781227e70dae4b0a27faffdb72b70983711ce49",
+      "downloaded_and_digest_verified": true,
+      "retention_days": 1
+    },
+    {
+      "run": 34049958965,
+      "artifact_id": 9994332333,
+      "name": "repository-audit-native-windows-7ce1d88.zip",
+      "sha256": "71d1cef7d33824a94c1222a9405ca0cd6980b283c56f7b8c26bb7dabd437103a",
+      "downloaded_and_digest_verified": true,
+      "retention_days": 1
+    },
+    {
+      "run": 34049958965,
+      "artifact_id": 9994282607,
+      "name": "repository-audit-coverage-linux-7ce1d88.zip",
+      "sha256": "d7ef9889206f7b4764ef6cd63bedbeb1315afddac6d2d75049ac8fe768d1a9a5",
+      "downloaded_and_digest_verified": true,
+      "retention_days": 1
+    },
+    {
+      "run": 34050635585,
+      "artifact_id": 9994423997,
+      "name": "repository-audit-auxiliary-7ce1d88.zip",
+      "sha256": "07eb9c0b935caba8117e2a6b6e67dbea5907c843063bf0535fce8a582621d88e",
+      "downloaded_and_digest_verified": true,
+      "retention_days": 1
+    }
+  ],
+  "retention_note": "Original artifacts expire; compact evidence and exact checks are retained in EVIDENCE.md. Full raw artifacts, derived data and CSV accompany the owner archive.",
+  "release_binary_sha256": {
+    "linux_game_server": "afd555af5c9af696574671c53af79c7d476dddc8646d297802781a5d3d3cd111",
+    "linux_client_stub": "c2f1c32b9469e44c7d66921c70ca9f334847481b0029dbb9493f0e3e9b8a1ae3",
+    "linux_synthetic_harness": "f836a2aba2aa927f0473a22b6af3bf4336c4fe7c01abc58817f4f89280d7ccb2",
+    "windows_client": "7022e7763fe28bbdf84e67c9f0c749ec65badd257177dc7b881dc58a81746d27"
+  },
+  "original_linux_release": {
+    "target_blocks": 52,
+    "passed_executions": 718,
+    "failed": 0,
+    "ignored": 0,
+    "unique_test_cases_claim": false,
+    "log_sha256": "2856443f91651620bed1183855466064502edde869e0eedc88ea05486f79ddc7"
+  },
+  "original_windows": {
+    "passed_executions": 33,
+    "scopes": [
+      "client",
+      "input-platform",
+      "renderer",
+      "simulation-determinism"
+    ],
+    "log_sha256": "c9660f711031a98a9865106dce0f7128818f4de23e874ebbcbdbc08f66933899"
+  },
+  "python": {
+    "version": "3.12.14",
+    "commands": 27,
+    "passed_commands": 26,
+    "failed_commands": 1,
+    "suite": "tools/agents/tests/test_validate_governance_lifecycle.py",
+    "setup_errors": 3,
+    "error": "AttributeError: module 'validate_governance' has no attribute 'ROOT'"
+  },
+  "native_probes": {
+    "pkce": "97 entropy bytes accepted; verifier length130",
+    "powershell": "first=7 last=0; nested_exit=0",
+    "dx12": "production WindowsRenderer frames=1; GPU type not recorded",
+    "sql": "extracted temporary CHECK accepted nonnull activation with null expiry; rolled back",
+    "wire": "20000 buffers through both decoders;1024 valid-seed substitutions;no panic",
+    "content": "6286 corruption/truncation rejects;integrity-path smoke,not deep semantic fuzzing",
+    "standalone_rust": "11 tests PASS;model stress8 accepted192 rejected192;not capacity benchmark"
+  },
+  "coverage": {
+    "raw_totals": [
+      {
+        "branches": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "functions": {
+          "count": 3851,
+          "covered": 3385,
+          "percent": 87.89924694884445
+        },
+        "instantiations": {
+          "count": 5889,
+          "covered": 4141,
+          "percent": 70.31754117846833
+        },
+        "lines": {
+          "count": 52882,
+          "covered": 47992,
+          "percent": 90.75299723913619
+        },
+        "mcdc": {
+          "count": 0,
+          "covered": 0,
+          "notcovered": 0,
+          "percent": 0
+        },
+        "regions": {
+          "count": 82437,
+          "covered": 69732,
+          "notcovered": 12705,
+          "percent": 84.58823101277339
+        }
+      }
+    ],
+    "reported_file_records": 101,
+    "distinct_physical_paths": 93,
+    "source_rust_files": 102,
+    "without_record": [
+      "apps/client/src/windows_shell.rs",
+      "apps/game-server/build.rs",
+      "apps/game-server/src/ability/tests.rs",
+      "apps/game-server/src/content/mod.rs",
+      "apps/game-server/tests/support/mod.rs",
+      "crates/input-platform/src/lib.rs",
+      "crates/input-platform/src/winit_adapter.rs",
+      "crates/renderer/src/windows.rs",
+      "tools/next-wave-limit-evidence/main.rs"
+    ],
+    "aliases": {
+      "apps/game-server/src/durability/admission_journal.rs": [
+        "apps/game-server/src/bin/../durability/admission_journal.rs",
+        "apps/game-server/src/durability/admission_journal.rs",
+        "apps/game-server/tests/../src/durability/admission_journal.rs"
+      ],
+      "apps/game-server/src/durability/db.rs": [
+        "apps/game-server/src/bin/../durability/db.rs",
+        "apps/game-server/src/durability/db.rs",
+        "apps/game-server/tests/../src/durability/db.rs"
+      ],
+      "apps/game-server/src/durability/mod.rs": [
+        "apps/game-server/src/bin/../durability/mod.rs",
+        "apps/game-server/src/durability/mod.rs",
+        "apps/game-server/tests/../src/durability/mod.rs"
+      ],
+      "apps/game-server/src/durability/schema.rs": [
+        "apps/game-server/src/bin/../durability/schema.rs",
+        "apps/game-server/src/durability/schema.rs",
+        "apps/game-server/tests/../src/durability/schema.rs"
+      ]
+    },
+    "warnings": "warning: 38 functions have mismatched data\n",
+    "limitations": [
+      "Test code is included.",
+      "Multiple source-included compilation contexts are not a unique product denominator.",
+      "Zero branch count means not measured, not branch completeness.",
+      "Windows-only implementation was tested separately, not covered by Linux instrumentation.",
+      "38 mismatched-function warnings require clean remeasurement before enforcing a coverage threshold.",
+      "The later audit probes are excluded from profiles used for this export."
+    ],
+    "full_file_export": "Preserved in the owner archive and original artifact 9994282607; the aggregate limitations and alias mapping are retained here."
+  },
+  "raw_artifacts_in_owner_archive": true
+}

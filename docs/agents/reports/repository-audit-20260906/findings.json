@@ -1,0 +1,333 @@
+{
+  "audited_commit": "7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3",
+  "priority_note": "Engineering triage, not CVSS. A finding is not necessarily a current runtime exploit. No repairs performed.",
+  "findings": [
+    {
+      "id": "F01",
+      "priority": "P1",
+      "kind": "VERIFIED_CONTROL_DEFECT",
+      "title": "Grouped Windows native commands can mask an earlier failure",
+      "source_paths": [
+        ".github/workflows/merge-group-gate.yml"
+      ],
+      "evidence": [
+        "owner_archive:evidence/windows-evidence__native-exit-probe.txt",
+        "run 34049958965 / job 101531656129"
+      ],
+      "impact": "Canonical Windows job uses multiple native commands in one PowerShell step. Actual PowerShell 7.6.5 characterization returned first=7, last=0, nested_exit=0. This does not prove the historical build failed.",
+      "recommendation": "Check each native command exit immediately, or use separate steps, in the owning CI allocation. Do not weaken or bypass the protected gate.",
+      "acceptance": "A canary failing each non-final command makes the job and aggregate fail; success controls stay green.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F02",
+      "priority": "P2",
+      "kind": "VERIFIED_TEST_DEFECT",
+      "title": "Lifecycle test suite raises three setup errors and is absent from canonical execution",
+      "source_paths": [
+        "tools/agents/tests/test_validate_governance_lifecycle.py",
+        "tools/agents/validate_governance.py",
+        ".github/workflows/agent-governance.yml"
+      ],
+      "evidence": [
+        "owner_archive:evidence/python-tests.json",
+        "owner_archive:evidence/auxiliary-evidence__tools_agents_tests_test_validate_governance_lifecycle.py.log"
+      ],
+      "impact": "All three cases fail in setUp before their assertions: the wrapper does not export ROOT. Reproduced on local Python 3.13.5 and hosted Python 3.12.14. Current validators still pass.",
+      "recommendation": "Repair the test-to-module contract and add complete appropriate test discovery; merely exporting ROOT may not correctly redirect core module globals.",
+      "acceptance": "All three original cases execute their bodies and pass, and an intentionally failing discovered test fails the owning CI job.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F03",
+      "priority": "P2",
+      "kind": "VERIFIED_COVERAGE_GAP",
+      "title": "Legacy semantic audit selects only three exact file sets",
+      "source_paths": [
+        "tools/architecture/semantic_contract_audit.py",
+        ".github/workflows/architecture-semantic-audit.yml"
+      ],
+      "evidence": [
+        "owner_archive:evidence/semantic-dispatch-probe.json"
+      ],
+      "impact": "The same legacy alpha set plus README becomes NOT_APPLICABLE and never calls alpha. An isolated Git-input stub exercised the actual dispatcher; no hosted bypass or live mutation was attempted.",
+      "recommendation": "Retire or accurately rename legacy profiles; where checks remain useful, use appropriate affected-scope selection and explicit not-applicable reporting.",
+      "acceptance": "An unrelated additive file cannot suppress an applicable semantic check; current source changes have an intentionally defined disposition.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F04",
+      "priority": "P2",
+      "kind": "ARCHITECTURE_GAP",
+      "title": "Library bootstrap and executable client have separate composition roots",
+      "source_paths": [
+        "apps/client/src/lib.rs",
+        "apps/client/src/windows_shell.rs",
+        "crates/client-runtime/src/lib.rs"
+      ],
+      "evidence": [
+        "pinned source inspection"
+      ],
+      "impact": "Tests of ClientBootstrap do not establish that the actual Windows Application wires the same runtime, input and state.",
+      "recommendation": "Converge on one application controller consumed by the native shell and scenario tests; preserve OS adapters as narrow boundaries.",
+      "acceptance": "A scenario follows input through the real production composition, and shutdown/cancellation/errors are exercised through the same controller.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F05",
+      "priority": "P2",
+      "kind": "VERIFIED_TEST_AND_ERROR_GAP",
+      "title": "Client shell smoke bypasses renderer and native errors are discarded",
+      "source_paths": [
+        "apps/client/src/windows_shell.rs",
+        "crates/renderer/src/windows.rs"
+      ],
+      "evidence": [
+        "owner_archive:evidence/windows-evidence__dx12-probe.log",
+        "owner_archive:evidence/coverage-evidence__client-boundary-probes.log"
+      ],
+      "impact": "The audited backend can present a frame, but canonical --smoke exits before renderer creation. Application error branches exit the loop without retaining an error. Zero-size/suspend lifecycle needs an actual application regression.",
+      "recommendation": "Separate window smoke from renderer readiness and propagate application errors to a nonzero result; cover minimize/resume and device/surface recovery.",
+      "acceptance": "A forced renderer initialization error exits nonzero; exact application lifecycle tests prove zero-size handling and successful resume.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F06",
+      "priority": "P2",
+      "kind": "VERIFIED_COMPLIANCE_DEFECT",
+      "title": "PKCE helper accepts an overlong verifier",
+      "source_paths": [
+        "crates/identity/src/lib.rs"
+      ],
+      "evidence": [
+        "owner_archive:evidence/coverage-evidence__client-boundary-probes.log",
+        "owner_archive:evidence/windows-evidence__dx12-probe.log",
+        "RFC 7636 section 4.1"
+      ],
+      "impact": "Actual Rust accepts 97 entropy bytes and returns a 130-character unpadded verifier. The RFC maximum is 128. This is not evidence of account takeover.",
+      "recommendation": "Reject output beyond the specification bound while preserving minimum input and cryptographic caller responsibility.",
+      "acceptance": "31-byte input rejects; 32 and 96 accept with lengths 43 and 128; 97 rejects. Use actual Rust tests, not a Python approximation.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F07",
+      "priority": "P2",
+      "kind": "VERIFIED_SCHEMA_ROBUSTNESS_GAP",
+      "title": "Protection CHECK admits a NULL-valued expiry predicate",
+      "source_paths": [
+        "apps/game-server/migrations/0001_admission_reconnect_journal.sql"
+      ],
+      "evidence": [
+        "owner_archive:evidence/coverage-evidence__sql-check-probe.log"
+      ],
+      "impact": "The extracted predicate accepted non-null activation with NULL expiry in real PostgreSQL 17.6. The probe used a temporary table and rolled back. It does not establish a complete runtime authorization exploit.",
+      "recommendation": "Add explicit nullability requirements through an additive migration after a full runtime/ledger review; do not rewrite released 0001.",
+      "acceptance": "Full owning schema rejects invalid null combinations, accepts valid states, and migrations/old records/reload are qualified with PostgreSQL.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F08",
+      "priority": "P2",
+      "kind": "STATIC_HARDENING_FINDING",
+      "title": "Two PostgreSQL test helpers enforce different connection guards",
+      "source_paths": [
+        "apps/game-server/tests/support/postgres.rs",
+        "apps/game-server/src/durability/db.rs"
+      ],
+      "evidence": [
+        "pinned full source and prior isolated predicate characterization"
+      ],
+      "impact": "The common helper parses connection options and checks environment overrides, while a nested helper checks substrings. This audit did not make an external connection or reproduce every native URL parser case.",
+      "recommendation": "Use one validated helper and typed local-only options, preserving the disposable database boundary.",
+      "acceptance": "Actual PgConnectOptions negative cases cover userinfo/path confusion, override variables and safe positive controls without connecting outside loopback.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F09",
+      "priority": "P2",
+      "kind": "VERIFIED_DOCUMENT_DRIFT",
+      "title": "Reusable coordinator requires an active task path that was archived",
+      "source_paths": [
+        "docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md",
+        "docs/agents/tasks/archive/OTV2-20260805-foundation-preimplementation-contracts.md"
+      ],
+      "evidence": [
+        "full Markdown reference triage and source line 50"
+      ],
+      "impact": "The mandatory startup path under tasks/active is absent; the same record exists in archive. Context routing also sends readers through historical current-status text.",
+      "recommendation": "Resolve the current lifecycle through live locators; retain archive history without making it a mandatory active path.",
+      "acceptance": "The reusable entry point can resolve the active programme without reading a missing path or treating archived status as current.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F10",
+      "priority": "P2",
+      "kind": "VERIFIED_INSTRUCTION_DEBT",
+      "title": "Retired review rules and duplicated routing remain in reusable prompts",
+      "source_paths": [
+        "docs/agents/CODEX_REVIEW_POLICY.json",
+        "docs/agents/prompts/OTV2_SOL_SERVER_SEAM_LEAD.md",
+        "docs/agents/PROMPTING_STANDARD.md",
+        "docs/agents/PROMPT_EVAL_STANDARD.md"
+      ],
+      "evidence": [
+        "owner_archive:evidence/static-summary.json",
+        "47 reusable prompt inheritance validation",
+        "full CommonMark duplicate census"
+      ],
+      "impact": "There are 57 exact repeated long-paragraph groups with 130801 redundant bytes across the corpus. This is not a token bill or predicted saving. Higher-priority current policy overrides retired prose, but agents still encounter the old text.",
+      "recommendation": "Apply the already accepted lean standard rather than invent another policy: one authority statement, thin task delta, focused behavior checks.",
+      "acceptance": "Representative task cases preserve safety and reduce needless reading/approval loops; no token-saving percentage without actual measurement.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F11",
+      "priority": "P2",
+      "kind": "VERIFIED_ARCHITECTURE_CHECK_GAP",
+      "title": "Workspace checker does not validate declared paths against manifest paths",
+      "source_paths": [
+        "tools/architecture-check/src/lib.rs",
+        "workspace-boundaries.toml"
+      ],
+      "evidence": [
+        "owner_archive:evidence/cargo-graph.json",
+        "pinned checker source"
+      ],
+      "impact": "The checker uses path cardinality. Independently resolved Cargo paths and all 43 edges actually match the policy in this snapshot, so no current mismatch is claimed. It also does not police intra-server module boundaries.",
+      "recommendation": "Validate the actual path mapping and only the module boundaries justified by architecture; do not create a crate per diagram box.",
+      "acceptance": "A same-cardinality wrong path fails; real metadata passes; forbidden production-to-fixture and cycle controls remain enforced.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F12",
+      "priority": "P2",
+      "kind": "KNOWN_CI_ROUTING_GAP",
+      "title": "Semantic-search exporter workflow omits a consumed exporter path",
+      "source_paths": [
+        ".github/workflows/game-atlas-semantic-search.yml",
+        "tools/game-atlas-creatures/export.py"
+      ],
+      "evidence": [
+        "full workflow command/path census",
+        "existing CI programme #308"
+      ],
+      "impact": "The workflow consumes the creature exporter but its own paths filter does not cover changes confined to that producer. This overlaps existing CI work and is not claimed as a newly discovered programme.",
+      "recommendation": "Repair in the owning #308 CI scope with minimal-dependency triggers and explicit negative controls.",
+      "acceptance": "A change to the consumed exporter runs downstream semantic qualification; unrelated docs do not force needless full data jobs.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F13",
+      "priority": "P2",
+      "kind": "VERIFIED_RELEASE_ASSURANCE_GAP",
+      "title": "Canonical Windows smoke does not execute its preceding release build",
+      "source_paths": [
+        ".github/workflows/merge-gate.yml",
+        ".github/workflows/merge-group-gate.yml",
+        ".github/workflows/rust.yml"
+      ],
+      "evidence": [
+        "owner_archive:evidence/origin.json",
+        "pinned workflow commands"
+      ],
+      "impact": "Build uses --release; subsequent cargo run omits it. This audit independently built and launched exact Linux/Windows release binaries, but that does not repair future canonical coverage.",
+      "recommendation": "Qualify the exact built artifact by path and digest; keep separate developer and release scopes.",
+      "acceptance": "A tested digest equals the released artifact digest; release-server/client smoke and packaging checks use those files.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F14",
+      "priority": "P2",
+      "kind": "MEASUREMENT_LIMITATION",
+      "title": "Raw LLVM totals are not a clean whole-product coverage denominator",
+      "source_paths": [
+        "apps/game-server/tests/durability_postgres.rs",
+        "apps/game-server/src/bin/oteryn-game-migrate.rs"
+      ],
+      "evidence": [
+        "owner_archive:evidence/coverage-interpreted.json",
+        "owner_archive:evidence/coverage-evidence__coverage-stderr.log"
+      ],
+      "impact": "Raw line coverage 90.753% includes tests and 101 file records mapping to 93 paths; four durability files have three compilation paths each. LLVM reported 38 mismatched functions; branches were not measured.",
+      "recommendation": "Normalize and remeasure a documented denominator before adding any coverage threshold; keep test/production and platform scopes explicit.",
+      "acceptance": "No unexplained mapping warnings, explicit production denominator and platform coverage; uncovered or uninstantiated code cannot disappear from the report.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F15",
+      "priority": "P3",
+      "kind": "DEFENSIVE_API_RECOMMENDATION",
+      "title": "Appearance index helper can be called without companion integrity verification",
+      "source_paths": [
+        "tools/game-atlas-appearances/export.py",
+        "tools/game-atlas-appearances/verify.py",
+        "tools/game-atlas-creatures/animated.py",
+        "tools/game-atlas-fullworld-source/animated.py"
+      ],
+      "evidence": [
+        "owner_archive:evidence/exporter-boundary-probe.json"
+      ],
+      "impact": "The direct index loader accepted a changed synthetic record while the separate verifier rejected it. Current animated CI calls the verifier first. Offline uint64 decoding also accepted a 70-bit ten-byte integer. Neither is asserted to be a live Game protocol exploit.",
+      "recommendation": "Make verified immutable product identity explicit at helper/cache boundaries and reuse bounded parsing; preserve existing pinned-input protection.",
+      "acceptance": "Consumer-facing negative tests reject changed products, stale path-cache content and integer overflow while valid pinned/synthetic products remain accepted.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F16",
+      "priority": "P2",
+      "kind": "VERIFIED_DOCUMENT_DRIFT",
+      "title": "CODEOWNERS commentary overstates enforced review requirements",
+      "source_paths": [
+        ".github/CODEOWNERS",
+        ".github/repository-policy.json"
+      ],
+      "evidence": [
+        "ruleset 20991995 fresh readback",
+        "pinned source"
+      ],
+      "impact": "The comment says Code Owner review is required for control paths; live/declarative policy has require_code_owner_review=false and zero required approvals. This can be intentional governance and is not itself a demand to restore approvals.",
+      "recommendation": "Correct the commentary and distinguish explicit owner authorization from GitHub-enforced approvals.",
+      "acceptance": "Documentation matches actual ruleset and current META governance without adding a retired AI gate or unapproved reviewer requirement.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    },
+    {
+      "id": "F17",
+      "priority": "P2",
+      "kind": "ARCHITECTURE_AND_READINESS_GAP",
+      "title": "Fixture semantics and component success are not production gameplay integration",
+      "source_paths": [
+        "apps/game-server/src/ability/commit.rs",
+        "apps/game-server/src/lib.rs",
+        "tools/synthetic-client-harness/src/main.rs",
+        "crates/renderer/src/resources.rs"
+      ],
+      "evidence": [
+        "pinned source",
+        "release server exit 2",
+        "owner_archive:evidence/origin.json"
+      ],
+      "impact": "Ability uses a fixture-health map/full-map clone and retained plans; AI/Interaction are separately source-included test components. ResourceCache is a minimal generation container. These are useful bounded models, not a completed gameplay or eviction architecture.",
+      "recommendation": "Preserve owner/operation/revision invariants, integrate actual production facades, bound retention and operate on the touched mutation set before activation.",
+      "acceptance": "One real client-server-durable-result-reconnect journey passes through production boundaries; no fixture is promoted to live authority.",
+      "confidence": "HIGH",
+      "repair_performed": false
+    }
+  ],
+  "evidence_note": "Compact retained results: EVIDENCE.md and execution-evidence.json. owner_archive: paths refer to full preserved owner-package files, not repository paths."
+}
