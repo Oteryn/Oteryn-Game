@@ -4,20 +4,20 @@
 task_id: OTV2-20260906-native-evidence-wire-346
 title: Qualify bounded native evidence wire codec
 mode: IMPLEMENT
-status: waiting
-admission_state: NOT_ADMITTED
+status: validating
+admission_state: ADMITTED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/native-evidence-wire-346
 issue: 346
-pr: null
+pr: 349
 allocation_source_main_sha: 9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2
-admission_main_sha: NOT_ADMITTED
-base_sha: NOT_ADMITTED
+admission_main_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
+base_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-owner: allocated wire codec worker
+owner: child_c_audit
 coordinator: Oteryn Work Delivery Coordinator
 created_at: 2026-09-06
 updated_at: 2026-09-06
@@ -66,7 +66,7 @@ No HTTP/TLS client, endpoint/method/status mapping, deployment, producer descrip
 
 ## Implementation / findings
 
-NOT_STARTED. Preserve existing shared247 branch and work; no new runtime write before protected allocation/admission. Consult the exact plan for field matrix and boundary coverage.
+Work5559516855 admitted immutablead7273e3e91a4e4254abb9aa2710c7e0c9754afe in window1 13:27–14:27UTC. Implemented four request/response families with independently supplied V1 expected literals and exact V2 constants. Fixed inline parser/output storage prevents peer-sized heap allocations; raw8192, key64, decoded256, field16 and request1024 bounds precede growth. Output is inert wire facts only. Actual compiler RED unresolved module preceded GREEN. Independent per-field and cross-purpose corpus covers missing/null/duplicate, scalar/binding/substitution, canonical numbers/UUID/key/base64, UTF8/surrogates, truncation and caps. No source capability/transport/schema/Cargo was added. Exact-head CI and independent review pending.
 
 ## Validation
 
@@ -87,15 +87,35 @@ One branch/PR after admission, Work publication/integration control. No force/re
 ## Context checkpoint
 
 ```yaml
-last_progress: exact prospective pure wire prerequisite and247 export lease amendment prepared
-status: waiting
-admission_state: NOT_ADMITTED
-execution_window_number: 0
+last_progress: repair2 adds independently asserted UUID rejection and exact decoded payloads
+status: validating
+admission_state: ADMITTED
+execution_window_number: 1
 execution_windows_completed: 0
 worker_rotations: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 2
 owner_action_required: null
-blocker: protected_allocation_and_registry_readback
-next_action: Work verifies protected allocation and registry then admits one bounded exclusive wire worker
+blocker: independent_review_and_exact_head_CI
+next_action: Work obtains fresh non-author repaired-tree review and publishes normal main reconciliation for exact-head CI
 ```
+
+## Window1 validation evidence
+
+Compiler RED: wire346-red.log unresolved admission_evidence module. Initial five integration cases GREEN; expanded matrix and strict all-target Clippy qualification recorded at handoff. Fixed inline representation intentionally retains bounded stack storage instead of boxing; local large-enum lint explanations preserve this allocation property. The sole UTF8 invariant assertion operates on private parser-validated storage. No unsafe code or global allocator hook is used. Decoder has no heap allocation path; request String is created only after complete1024-byte bounded encoding. This source-level allocation argument is not a measurement of TLS or whole-executor memory.
+
+Final local candidate checks: library291/291 PASS (unconfigured legacy SQL returns are not DB proof), dedicated wire integration8/8 PASS, strict all-target Clippy PASS, fmt and whitespace PASS, governance26/9 PASS. Self-review inspected the full codec, fixed array growth, field masks, scalar/Unicode/number parsing, exact bindings and all eight independent corpus tests. No unresolved self-review finding; independent reviewer must qualify the exact staged tree.
+
+## Independent numeric test repair — cycle1
+
+Accepted P2: malformed source_revision tests retained decision_identity1, allowing secondary identity mismatch to mask numeric validation. Numeric negatives now carry the identical malformed revision/decision text; separate otherwise-valid decision mismatch stays covered. Both Account families test minimum generation0/max/max+1; all four families reject zero source revision while timestamp/uncertainty0 pass. No runtime change was needed. Window1/admission retained, repair_cycles_for_current_gate:1. Focused qualification and repaired-tree independent readback required.
+
+## Independent qualification repair — cycle2
+
+Work rebind5559866827 assigns child_c_audit the sole bounded test-repair custody. Preserve immutable admissionad7273e3e91a4e4254abb9aa2710c7e0c9754afe, window1 13:27–14:27UTC and completed numeric repair1; current repair cycle2. Current published baseline843792e5b94baff4f6db4036bd303ed4e2f49302/PR349 remains historical review provenance. Normal reconciliation with protected maind9d1b566acb57b537ff901d9765c32a95110c259 preserves the five owned blobs and adds only protected348 coordinator documents; Work owns GitHub publication.
+
+Both accepted P2 findings are fixed in tests only. The two Account families now reject matching malformed expected/returned UUIDs (uppercase, version, variant, nil, short/long, separator, nonhex and empty), with valid controls; unrelated identity mismatch cannot mask validation. Exact decoded assertions cover every observation field, both allow/trust booleans, independently specified nonzero32-byte key bytes and all four failure variants for each wire family. These are inert wire facts, not authenticated authority.
+
+Regression sensitivity uses a separate temporary minimal crate containing copied codec/tests: UUID validation removed, allowed inverted, trusted inverted and NotFound substituted each independently produce a failing targeted test; original source is restored afterward. The owning runtime file is unchanged. Full repaired integration corpus11/11 PASS on Rust1.94 locked/offline. Mutant RED results are qualification experiments, not defects in the published runtime. This author cannot independently certify repair2; fresh non-author review and exact-head CI are required. No source/TLS/PostgreSQL/E2E readiness is claimed.
+
+Repair2 final validation: dedicated integration11/11 PASS; strict locked/offline all-target Clippy PASS after removing an explicit test panic flagged by the repository lint (the existing test-only unwrap convention is retained); fmt/whitespace PASS; governance26/9 PASS. Full three-path repair self-review confirms no runtime/Cargo/export changes, original admission and window preserved, and both P2 dispositions fixed. Regression logs are in the isolated scratch wire346-repair2-mutations harness; restored source matches the unchanged owning codec. Fresh non-author review remains the next gate.
