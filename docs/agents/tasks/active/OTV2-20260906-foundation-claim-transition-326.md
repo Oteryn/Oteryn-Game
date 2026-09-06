@@ -4,15 +4,15 @@
 task_id: OTV2-20260906-foundation-claim-transition-326
 title: Pair atomic claim transitions with admission and lifecycle effects
 mode: IMPLEMENT
-status: waiting
+status: in_progress
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/foundation-claim-transition-326
 issue: 326
 pr: null
 allocation_source_main_sha: 93f31ba05972d3b96afb0d9ea08e2c6753507d8c
-admission_main_sha: null
-base_sha: null
+admission_main_sha: 3ab7a72d41dae10933785ce846b8e3f186a1feac
+base_sha: 3ab7a72d41dae10933785ce846b8e3f186a1feac
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
@@ -98,6 +98,15 @@ Work's independent pre-allocation audit found existing public APIs sufficient fo
 
 Prepare known task metadata before final freeze. Review/check evidence after freeze belongs on the exact PR head; no timestamp/no-op commits or counter resets. Worker rotation is nonterminal and preserves the same branch/history and one next action.
 
+## Material checkpoint (2026-09-06)
+
+- Admitted from protected allocation #327 at `3ab7a72d41dae10933785ce846b8e3f186a1feac`; sole worker on allocated branch/worktree. No additional paths or external authority.
+- RED: ordinary Account claim acquisition passed incorrectly; new exclusion test failed as expected. GREEN publication family: 18 passed.
+- RED: paired fresh API and lifecycle sibling APIs absent; compiler rejected new required-capability tests. GREEN fresh family: 37 passed, including exact candidate/current generation replacement and stale-generation terminal release.
+- RED: adoption accepted a substituted decision at the committed successor source revision. Fixed by validating current projection against immutable accepted successor floors; focused test passed.
+- Fresh submit now carries owner-prepared two-guard effects and full historical operation identity. Fixture COMMIT applies those submitted effects. Historical receipt/retry/reconciliation retain exact transition evidence. Standalone publication preserves claims. Lifecycle capabilities remain inert and require matching canonical session writes.
+- Remaining before material freeze: full component/doctest/format/strict Clippy, overflow/bootstrap and lifecycle negative sweep, whole-diff adversarial review and independent exact-head review. No SQL/source-readiness proof claimed.
+
 ## Validation
 
 ### Focused
@@ -132,7 +141,7 @@ Worker returns one exact-head candidate within the four paths. Work creates/upda
 
 ```yaml
 last_progress: prospective bounded followup allocation prepared after accepted claim-publication decision
-status: waiting
+status: in_progress
 branch: agent/foundation-claim-transition-326
 head_sha: null
 pr: null
@@ -152,6 +161,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: allocation_not_yet_protected_integrated
-next_action: Work qualifies and integrates this exact allocation, binds its actual merge SHA, then dispatches the sole worker.
+blocker: null
+next_action: Finish lifecycle/overflow negative sweep and full component qualification before candidate freeze.
 ```

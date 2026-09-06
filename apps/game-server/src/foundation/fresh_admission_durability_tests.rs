@@ -201,50 +201,147 @@ impl Independent {
         )
         .map_err(|e| format!("{e:?}"))?)
     }
-    fn commit_sources(&mut self) -> TestResult {
-        for row in self.rows[..2].iter_mut().flatten() {
+    fn begin(&self) -> Result<FreshAdmissionDurabilityFlowV1, Box<dyn std::error::Error>> {
+        self.begin_authorized(self.authorize()?)
+    }
+    fn begin_authorized(
+        &self,
+        authorization: FreshAdmissionCommitAuthorizationV1,
+    ) -> Result<FreshAdmissionDurabilityFlowV1, Box<dyn std::error::Error>> {
+        let transition = FreshAdmissionClaimTransitionV1::prepare(self, &authorization, 100)
+            .map_err(|e| format!("{e:?}"))?;
+        FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
+            .map_err(|e| format!("{e:?}").into())
+    }
+    fn commit_sources(&mut self, operation: &FreshAdmissionOperationV1) -> TestResult {
+        for (row, effect) in self.rows[..2]
+            .iter_mut()
+            .zip(&operation.transition.successors)
+        {
+            *row = Some(effect.clone());
+        }
+        Ok(())
+    }
+}
+impl AdmissionClaimOwningSourceV1 for Independent {
+    fn prepare_lifecycle_claim(
+        &self,
+        operation: &AdmissionClaimLifecycleOperationV1,
+        now: i64,
+    ) -> Result<AdmissionClaimLifecycleResolutionV1, AdmissionAuthorityPublicationErrorV1> {
+        let predecessors: Vec<_> = self.rows[..2]
+            .iter()
+            .cloned()
+            .collect::<Option<Vec<_>>>()
+            .ok_or(AdmissionAuthorityPublicationErrorV1::Unavailable)?;
+        let mut successors = predecessors.clone();
+        let holder = match operation {
+            AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => None,
+            AdmissionClaimLifecycleOperationV1::TerminalReplacement { candidate, .. } => {
+                Some(candidate.identity().game_session_id())
+            }
+        };
+        for row in &mut successors {
             row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
                 expected_publication_revision: row.publication_revision,
             };
-            row.publication_revision += 1;
-            row.source.source_revision += 1;
-            row.source.decision_identity = "decision-eight".into();
+            row.publication_revision = row
+                .publication_revision
+                .checked_add(1)
+                .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+            row.source.source_revision = row
+                .source
+                .source_revision
+                .checked_add(1)
+                .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+            row.source.decision_identity = "independent-lifecycle-nine".into();
+            row.source.source_observed_at = now;
             match &mut row.state {
                 AdmissionAuthorityGuardStateV1::Account { security, presence } => {
                     security.provenance.publication_revision = row.publication_revision;
-                    *presence = Some((
-                        self.source.current.character_id,
-                        GameSessionId::decode(&id(9))?,
-                    ));
+                    *presence = holder.map(|holder| (self.source.current.character_id, holder));
+                }
+                AdmissionAuthorityGuardStateV1::Character { holder: target, .. } => {
+                    *target = holder
+                }
+                _ => return Err(AdmissionAuthorityPublicationErrorV1::Invalid),
+            }
+        }
+        Ok(AdmissionClaimLifecycleResolutionV1 {
+            current_session: self.snapshot,
+            evidence: AdmissionClaimTransitionEvidenceV1 {
+                predecessors,
+                successors,
+                prepared_at: now,
+            },
+        })
+    }
+    fn prepare_fresh_claim(
+        &self,
+        binding: &FreshAdmissionAuditBindingV1,
+        now: i64,
+    ) -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1> {
+        let predecessors: Vec<_> = self.rows[..2]
+            .iter()
+            .cloned()
+            .collect::<Option<Vec<_>>>()
+            .ok_or(AdmissionAuthorityPublicationErrorV1::Unavailable)?;
+        let mut successors = predecessors.clone();
+        for row in &mut successors {
+            row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: row.publication_revision,
+            };
+            row.publication_revision = row
+                .publication_revision
+                .checked_add(1)
+                .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+            row.source.source_revision = row
+                .source
+                .source_revision
+                .checked_add(1)
+                .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+            row.source.decision_identity = "independent-proposal-eight".into();
+            row.source.source_observed_at = now;
+            match &mut row.state {
+                AdmissionAuthorityGuardStateV1::Account { security, presence } => {
+                    security.provenance.publication_revision = row.publication_revision;
+                    *presence = Some((self.source.current.character_id, binding.candidate_session));
                 }
                 AdmissionAuthorityGuardStateV1::Character {
                     lease_generation,
                     holder,
                     ..
                 } => {
-                    *lease_generation = 2;
-                    *holder = Some(GameSessionId::decode(&id(9))?);
+                    *lease_generation = lease_generation
+                        .checked_add(1)
+                        .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+                    *holder = Some(binding.candidate_session);
                 }
-                _ => unreachable!(),
+                _ => return Err(AdmissionAuthorityPublicationErrorV1::Invalid),
             }
         }
-        Ok(())
+        Ok(AdmissionClaimTransitionEvidenceV1 {
+            predecessors,
+            successors,
+            prepared_at: now,
+        })
     }
 }
+
 struct Queue {
-    requests: Vec<FreshAdmissionAuditBindingV1>,
+    requests: Vec<FreshAdmissionOperationV1>,
     available: bool,
 }
 impl FreshAdmissionDurabilityPortV1 for Queue {
     fn submit(&mut self, request: &FreshAdmissionCommitRequestV1) -> FreshAdmissionSubmissionV1 {
-        self.requests.push(request.binding().clone());
+        self.requests.push(request.operation().clone());
         if self.available {
             FreshAdmissionSubmissionV1::Accepted
         } else {
             FreshAdmissionSubmissionV1::Unavailable
         }
     }
-    fn reconcile(&mut self, original: &FreshAdmissionAuditBindingV1) -> FreshAdmissionSubmissionV1 {
+    fn reconcile(&mut self, original: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1 {
         self.requests.push(original.clone());
         FreshAdmissionSubmissionV1::Accepted
     }
@@ -252,12 +349,12 @@ impl FreshAdmissionDurabilityPortV1 for Queue {
 fn committed(
     flow: &FreshAdmissionDurabilityFlowV1,
 ) -> Result<FreshAdmissionCommitReceiptV1, FreshAdmissionDurabilityErrorV1> {
-    FreshAdmissionCommitReceiptV1::restore(flow.binding().clone(), 100)
+    FreshAdmissionCommitReceiptV1::restore(flow.operation().clone(), 100)
 }
 #[test]
 fn fresh_submit_yields_without_controller() -> TestResult {
     let source = Independent::new()?;
-    let mut flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
+    let mut flow = source.begin()?;
     let mut queue = Queue {
         requests: vec![],
         available: true,
@@ -265,13 +362,13 @@ fn fresh_submit_yields_without_controller() -> TestResult {
     flow.submit(&mut queue).map_err(|e| format!("{e:?}"))?;
     assert_eq!(flow.phase(), FreshAdmissionPhaseV1::PendingCommit);
     assert!(flow.controller().is_none());
-    assert_eq!(queue.requests, vec![flow.binding().clone()]);
+    assert_eq!(queue.requests, vec![flow.operation().clone()]);
     Ok(())
 }
 #[test]
 fn fresh_unavailable_submission_has_no_authority() -> TestResult {
     let source = Independent::new()?;
-    let mut flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
+    let mut flow = source.begin()?;
     flow.submit(&mut Queue {
         requests: vec![],
         available: false,
@@ -285,17 +382,17 @@ fn fresh_unavailable_submission_has_no_authority() -> TestResult {
 fn fresh_direct_and_reconciled_completion_adopt_only_current_sources() -> TestResult {
     for reconcile in [false, true] {
         let mut source = Independent::new()?;
-        let mut flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
+        let mut flow = source.begin()?;
         let mut queue = Queue {
             requests: vec![],
             available: true,
         };
         flow.submit(&mut queue).map_err(|e| format!("{e:?}"))?;
         let receipt = committed(&flow).map_err(|e| format!("{e:?}"))?;
-        source.commit_sources()?;
+        source.commit_sources(flow.operation())?;
         if reconcile {
             flow.accept_completion(
-                flow.binding().clone(),
+                flow.operation().clone(),
                 FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable,
             )
             .map_err(|e| format!("{e:?}"))?;
@@ -307,7 +404,7 @@ fn fresh_direct_and_reconciled_completion_adopt_only_current_sources() -> TestRe
             .map_err(|e| format!("{e:?}"))?;
         } else {
             flow.accept_completion(
-                flow.binding().clone(),
+                flow.operation().clone(),
                 FreshAdmissionDurableOutcomeV1::Committed(receipt.clone()),
             )
             .map_err(|e| format!("{e:?}"))?;
@@ -323,13 +420,13 @@ fn fresh_direct_and_reconciled_completion_adopt_only_current_sources() -> TestRe
 #[test]
 fn fresh_ambiguous_outcome_only_reconciles_original_binding() -> TestResult {
     let source = Independent::new()?;
-    let mut flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
+    let mut flow = source.begin()?;
     let mut queue = Queue {
         requests: vec![],
         available: true,
     };
     flow.submit(&mut queue).map_err(|e| format!("{e:?}"))?;
-    let original = flow.binding().clone();
+    let original = flow.operation().clone();
     flow.accept_completion(
         original.clone(),
         FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable,
@@ -351,19 +448,19 @@ fn fresh_ambiguous_outcome_only_reconciles_original_binding() -> TestResult {
 #[test]
 fn fresh_completion_requires_exact_request_and_order() -> TestResult {
     let source = Independent::new()?;
-    let mut flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
+    let mut flow = source.begin()?;
     let receipt = committed(&flow).map_err(|e| format!("{e:?}"))?;
     assert_eq!(
         flow.accept_completion(
-            flow.binding().clone(),
+            flow.operation().clone(),
             FreshAdmissionDurableOutcomeV1::Committed(receipt.clone())
         ),
         Err(FreshAdmissionDurabilityErrorV1::WrongPhase)
     );
     flow.accept_submission(FreshAdmissionSubmissionV1::Accepted)
         .map_err(|e| format!("{e:?}"))?;
-    let mut wrong = flow.binding().clone();
-    wrong.transport = AuthenticatedTransportRefV1::decode(&[8; 16])?;
+    let mut wrong = flow.operation().clone();
+    wrong.authorization.transport = AuthenticatedTransportRefV1::decode(&[8; 16])?;
     assert_eq!(
         flow.accept_completion(
             wrong,
@@ -372,13 +469,13 @@ fn fresh_completion_requires_exact_request_and_order() -> TestResult {
         Err(FreshAdmissionDurabilityErrorV1::WrongBinding)
     );
     flow.accept_completion(
-        flow.binding().clone(),
+        flow.operation().clone(),
         FreshAdmissionDurableOutcomeV1::Committed(receipt.clone()),
     )
     .map_err(|e| format!("{e:?}"))?;
     assert_eq!(
         flow.accept_completion(
-            flow.binding().clone(),
+            flow.operation().clone(),
             FreshAdmissionDurableOutcomeV1::Committed(receipt)
         ),
         Err(FreshAdmissionDurabilityErrorV1::WrongPhase)
@@ -390,25 +487,25 @@ fn fresh_completion_requires_exact_request_and_order() -> TestResult {
 fn fresh_same_key_exact_retry_preserves_original_commit_and_changed_binding_rejects() -> TestResult
 {
     let source = Independent::new()?;
-    let flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
+    let flow = source.begin()?;
     let receipt = committed(&flow).map_err(|e| format!("{e:?}"))?;
     assert_eq!(
-        receipt.classify_retry(flow.binding()),
+        receipt.classify_retry(flow.operation()),
         FreshAdmissionDurableOutcomeV1::ExistingCommitted(receipt.clone())
     );
     for field in 0..6 {
-        let mut binding = flow.binding().clone();
+        let mut binding = flow.operation().clone();
         match field {
-            0 => binding.candidate_session = GameSessionId::decode(&id(8))?,
-            1 => binding.transport = AuthenticatedTransportRefV1::decode(&[8; 16])?,
-            2 => binding.account_id.push('x'),
-            3 => binding.accepted_deadline += 1,
-            4 => binding.credential_times.2 += 1,
-            _ => binding.expected_guards[2].publication_revision += 1,
+            0 => binding.authorization.candidate_session = GameSessionId::decode(&id(8))?,
+            1 => binding.authorization.transport = AuthenticatedTransportRefV1::decode(&[8; 16])?,
+            2 => binding.authorization.account_id.push('x'),
+            3 => binding.authorization.accepted_deadline += 1,
+            4 => binding.authorization.credential_times.2 += 1,
+            _ => binding.authorization.expected_guards[2].publication_revision += 1,
         }
         assert_eq!(
-            binding.facts.replay_key(),
-            flow.binding().facts.replay_key()
+            binding.authorization.facts.replay_key(),
+            flow.operation().authorization.facts.replay_key()
         );
         assert_eq!(
             receipt.classify_retry(&binding),
@@ -433,10 +530,10 @@ fn fresh_all_known_noncommit_outcomes_remain_authority_free() -> TestResult {
         ),
     ] {
         let source = Independent::new()?;
-        let mut flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
+        let mut flow = source.begin()?;
         flow.accept_submission(FreshAdmissionSubmissionV1::Accepted)
             .map_err(|e| format!("{e:?}"))?;
-        flow.accept_completion(flow.binding().clone(), outcome)
+        flow.accept_completion(flow.operation().clone(), outcome)
             .map_err(|e| format!("{e:?}"))?;
         assert_eq!(flow.phase(), FreshAdmissionPhaseV1::Rejected);
         assert!(flow.controller().is_none());
@@ -448,11 +545,11 @@ fn accepted(
     source: &mut Independent,
     reconcile: bool,
 ) -> Result<FreshAdmissionDurabilityFlowV1, Box<dyn std::error::Error>> {
-    let mut flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
+    let mut flow = source.begin()?;
     let receipt = committed(&flow).map_err(|e| format!("{e:?}"))?;
-    source.commit_sources()?;
+    source.commit_sources(flow.operation())?;
     if reconcile {
-        flow = FreshAdmissionDurabilityFlowV1::resume_reconciliation(flow.binding().clone());
+        flow = FreshAdmissionDurabilityFlowV1::resume_reconciliation(flow.operation().clone());
         flow.reconcile(&mut Queue {
             requests: vec![],
             available: true,
@@ -467,7 +564,7 @@ fn accepted(
         flow.accept_submission(FreshAdmissionSubmissionV1::Accepted)
             .map_err(|e| format!("{e:?}"))?;
         flow.accept_completion(
-            flow.binding().clone(),
+            flow.operation().clone(),
             FreshAdmissionDurableOutcomeV1::Committed(receipt),
         )
         .map_err(|e| format!("{e:?}"))?;
@@ -687,16 +784,16 @@ fn fresh_equal_platform_revision_cannot_change_security_decision() -> TestResult
         "\"account_security_generation\":\"1\"",
         "\"account_security_generation\":\"2\"",
     ))?;
-    let mut flow = FreshAdmissionDurabilityFlowV1::begin(auth);
+    let mut flow = source.begin_authorized(auth)?;
     let receipt = committed(&flow).map_err(|e| format!("{e:?}"))?;
     flow.accept_submission(FreshAdmissionSubmissionV1::Accepted)
         .map_err(|e| format!("{e:?}"))?;
     flow.accept_completion(
-        flow.binding().clone(),
+        flow.operation().clone(),
         FreshAdmissionDurableOutcomeV1::Committed(receipt),
     )
     .map_err(|e| format!("{e:?}"))?;
-    source.commit_sources()?;
+    source.commit_sources(flow.operation())?;
     flow.adopt(&source, 100).map_err(|e| format!("{e:?}"))?;
     if let Some(AdmissionAuthorityPublicationChangeV1 {
         state: AdmissionAuthorityGuardStateV1::Account { security, .. },
@@ -727,9 +824,9 @@ fn fresh_restart_without_original_live_transport_cannot_rebind_reference() -> Te
 #[test]
 fn fresh_historical_restore_cannot_extend_original_deadline() -> TestResult {
     let source = Independent::new()?;
-    let flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
-    let mut binding = flow.binding().clone();
-    binding.accepted_deadline += 1;
+    let flow = source.begin()?;
+    let mut binding = flow.operation().clone();
+    binding.authorization.accepted_deadline += 1;
     assert_eq!(
         FreshAdmissionCommitReceiptV1::restore(binding, 100),
         Err(FreshAdmissionDurabilityErrorV1::Invalid)
@@ -769,7 +866,7 @@ fn fresh_delayed_commit_does_not_reage_receipt_or_require_unoccupied_presence() 
             .map(FreshAdmissionCommitReceiptV1::decided_at),
         Some(100)
     );
-    assert_eq!(flow.binding().accepted_deadline, 103);
+    assert_eq!(flow.operation().authorization.accepted_deadline, 103);
     Ok(())
 }
 
@@ -838,7 +935,7 @@ fn fresh_final_guarded_decision_rechecks_original_deadline_and_exact_rows() -> T
 #[test]
 fn fresh_unavailable_reconciliation_yields_and_retries_only_original() -> TestResult {
     let source = Independent::new()?;
-    let binding = source.authorize()?.binding().clone();
+    let binding = source.begin()?.operation().clone();
     let mut flow = FreshAdmissionDurabilityFlowV1::resume_reconciliation(binding.clone());
     let mut queue = Queue {
         requests: vec![],
@@ -865,18 +962,20 @@ fn fresh_queue_retains_owned_authorization_for_later_guarded_decision() -> TestR
             self.0 = Some(request.clone());
             FreshAdmissionSubmissionV1::Accepted
         }
-        fn reconcile(&mut self, _: &FreshAdmissionAuditBindingV1) -> FreshAdmissionSubmissionV1 {
+        fn reconcile(&mut self, _: &FreshAdmissionOperationV1) -> FreshAdmissionSubmissionV1 {
             FreshAdmissionSubmissionV1::Unavailable
         }
     }
     let source = Independent::new()?;
-    let mut flow = FreshAdmissionDurabilityFlowV1::begin(source.authorize()?);
+    let mut flow = source.begin()?;
     let mut queue = OwnedQueue(None);
     flow.submit(&mut queue).map_err(|e| format!("{e:?}"))?;
     let retained = queue.0.ok_or("queue lost owned request")?;
-    assert_eq!(retained.binding(), flow.binding());
+    assert_eq!(retained.operation(), flow.operation());
     assert_eq!(
-        retained.validate_at_decision(&source.rows, Some(103)),
+        retained
+            .validate_at_decision(&source.rows, Some(103))
+            .map(|_| ()),
         Ok(())
     );
     assert_eq!(
@@ -895,5 +994,519 @@ fn fresh_authorization_signing_guard_must_match_verified_source_revision() -> Te
         row.source.source_revision += 1;
     }
     assert!(source.authorize().is_err());
+    Ok(())
+}
+
+#[test]
+fn fresh_owner_transition_is_required_and_bound() -> TestResult {
+    let source = Independent::new()?;
+    let authorization = source.authorize()?;
+    let transition = FreshAdmissionClaimTransitionV1::prepare(&source, &authorization, 100)
+        .map_err(|e| format!("{e:?}"))?;
+    // A different real candidate, with independently verified grant/source facts.
+    let facts = verify_fresh_grant_durability_v1(
+        &signed_token(
+            &SigningKey::from_bytes(&[31; 32]),
+            r#"{"alg":"Ed25519","kid":"fresh-1","typ":"oteryn-admission+jwt"}"#,
+            fresh_payload(),
+        ),
+        100,
+        &FreshDurabilityTrustContext::from_owning_source(&source.source),
+        &FreshDurabilityCurrentAuthorityV1::from_owning_source(&source.source),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let other = FreshAdmissionCommitAuthorizationV1::new(
+        &facts,
+        GameSessionId::decode(&id(10))?,
+        AuthenticatedTransportRefV1::decode(&[9; 16])?,
+        &source,
+        100,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    assert!(FreshAdmissionDurabilityFlowV1::begin(other, transition.clone()).is_err());
+    let flow = FreshAdmissionDurabilityFlowV1::begin(authorization, transition)
+        .map_err(|e| format!("{e:?}"))?;
+    assert!(flow.controller().is_none());
+    Ok(())
+}
+
+#[test]
+fn fresh_adoption_cannot_substitute_committed_transition_decision() -> TestResult {
+    let mut source = Independent::new()?;
+    let mut flow = source.begin()?;
+    let mut queue = Queue {
+        requests: vec![],
+        available: true,
+    };
+    flow.submit(&mut queue).map_err(|e| format!("{e:?}"))?;
+    source.commit_sources(flow.operation())?;
+    let receipt = committed(&flow).map_err(|e| format!("{e:?}"))?;
+    flow.accept_completion(
+        flow.operation().clone(),
+        FreshAdmissionDurableOutcomeV1::Committed(receipt),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    source.rows[0]
+        .as_mut()
+        .ok_or("missing source")?
+        .source
+        .decision_identity = "substituted-at-same-accepted-revision".into();
+    assert_eq!(
+        flow.adopt(&source, 100),
+        Err(FreshAdmissionDurabilityErrorV1::StaleAuthority)
+    );
+    assert!(flow.controller().is_none());
+    Ok(())
+}
+
+#[test]
+fn fresh_terminal_release_rejects_stale_current_generation() -> TestResult {
+    let mut source = Independent::new()?;
+    let flow = source.begin()?;
+    source.commit_sources(flow.operation())?;
+    let release = TerminalReleaseClaimTransitionV1::prepare(
+        &source,
+        &source.source.current.account_id,
+        source.snapshot,
+        100,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let mut current = source.snapshot;
+    current = GameSessionAuthoritySnapshot::from_current_facts(
+        current.commit(),
+        current.session_state(),
+        ConnectionGeneration::new(2)?,
+        current.current_transport(),
+        current.current_character_lease(),
+        current.current_character_world_eligibility(),
+        current.current_runtime_scope(),
+        current.current_scope_generation(),
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    assert!(
+        release
+            .validate_locked(&source.rows[..2], current, 100)
+            .is_err()
+    );
+    assert!(
+        release
+            .validate_locked(&source.rows[..2], source.snapshot, 100)
+            .is_ok()
+    );
+    Ok(())
+}
+
+fn replacement_candidate(
+    source: &Independent,
+    session: u8,
+    transport: u8,
+) -> Result<crate::foundation::ReconnectDurabilityRecordV1, Box<dyn std::error::Error>> {
+    use crate::foundation::*;
+    let snapshot = source.snapshot;
+    let build = || -> Result<ReconnectDurabilityRecordV1, ReconnectDurabilityErrorV1> {
+        let fail = ReconnectDurabilityErrorV1::InvalidRecord;
+        let identity = ReconnectIdentityV1::new(
+            GameSessionId::decode(&id(session)).map_err(|_| fail)?,
+            ReconnectAttemptRef::new(1).map_err(|_| fail)?,
+            &source.source.current.account_id,
+            snapshot.commit().character_id(),
+            snapshot.commit().world_id(),
+            snapshot.current_runtime_scope(),
+        )?;
+        let connection = ReconnectConnectionFenceV1::new(
+            snapshot.current_connection_generation(),
+            ConnectionGeneration::new(snapshot.current_connection_generation().get() + 1)
+                .map_err(|_| fail)?,
+            AuthenticatedTransportRefV1::decode(&[transport; 16]).map_err(|_| fail)?,
+        )?;
+        let authority = ReconnectAuthorityFenceV1::new(
+            snapshot.current_character_lease().generation(),
+            snapshot.current_scope_generation(),
+        )?;
+        let continuity = ReconnectContinuityV1::new(
+            ControlLossEpochRefV1::new(3)?,
+            120,
+            115,
+            ProtectionEntitlementV1::unused(),
+        )?;
+        let fnd02 = Fnd02ReconciliationFenceV1::new(
+            CommandId::new(3).map_err(|_| fail)?,
+            vec![],
+            41,
+            vec![],
+        )?;
+        let platform = AuthorityEvidenceFenceV1::new(
+            "platform-security",
+            "reconnect",
+            "account",
+            "sec:17",
+            "decision:sec:17",
+            100,
+        )?;
+        let trust = AuthorityEvidenceFenceV1::new(
+            "proof-trust",
+            "reconnect",
+            "key",
+            "trust:21",
+            "decision:trust:21",
+            100,
+        )?;
+        let compatibility = ReconnectCompatibilityEvidenceV1::new(
+            1,
+            1,
+            "rules:1",
+            "content:2",
+            "map:3",
+            "world:4",
+            12,
+            platform,
+            trust,
+            Some(110),
+        )?;
+        ReconnectDurabilityRecordV1::new(
+            identity,
+            connection,
+            authority,
+            continuity,
+            ReconnectProofV1::ReauthenticatedRecovery {
+                recovery_grant_nonce: [0x55; 32],
+            },
+            fnd02,
+            compatibility,
+        )
+    };
+    build().map_err(|e| format!("{e:?}").into())
+}
+
+#[test]
+fn fresh_terminal_replacement_binds_exact_candidate_and_current_generation() -> TestResult {
+    use crate::foundation::{
+        AccountPresenceClaimV1, ControlLossEpochRefV1,
+        TerminalGameSessionReplacementAuthorizationV1,
+    };
+    let mut source = Independent::new()?;
+    let flow = source.begin()?;
+    source.commit_sources(flow.operation())?;
+    let old = source.snapshot;
+    source.snapshot = GameSessionAuthoritySnapshot::from_current_facts(
+        old.commit(),
+        GameSessionState::Terminal,
+        ConnectionGeneration::new(3)?,
+        None,
+        old.current_character_lease(),
+        old.current_character_world_eligibility(),
+        old.current_runtime_scope(),
+        old.current_scope_generation(),
+    )
+    .map_err(|e| format!("{e:?}"))?
+    .with_control_loss_continuity(
+        ControlLossEpochRefV1::new(3).map_err(|e| format!("{e:?}"))?,
+        120,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let candidate = replacement_candidate(&source, 10, 10)?;
+    let presence = AccountPresenceClaimV1::new(
+        &source.source.current.account_id,
+        source.source.current.character_id,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let auth = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+        &source.source.current.account_id,
+        Some(&presence),
+        old.commit().game_session_id(),
+        candidate.identity().game_session_id(),
+        source.snapshot,
+        &candidate,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    let transition = TerminalReplacementClaimTransitionV1::prepare(
+        &source,
+        &auth,
+        source.snapshot,
+        &candidate,
+        100,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    assert!(
+        transition
+            .validate_locked(&source.rows[..2], source.snapshot, &candidate, 100)
+            .is_ok()
+    );
+    let changed = replacement_candidate(&source, 10, 11)?;
+    assert!(
+        transition
+            .validate_locked(&source.rows[..2], source.snapshot, &changed, 100)
+            .is_err()
+    );
+    assert!(
+        transition
+            .validate_locked(&source.rows[..2], old, &candidate, 100)
+            .is_err()
+    );
+    Ok(())
+}
+
+struct MutatedClaimOwner {
+    proposal: AdmissionClaimTransitionEvidenceV1,
+    current_session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+}
+impl fresh_source_sealed::Sealed for MutatedClaimOwner {}
+impl AdmissionClaimOwningSourceV1 for MutatedClaimOwner {
+    fn prepare_fresh_claim(
+        &self,
+        _: &FreshAdmissionAuditBindingV1,
+        _: i64,
+    ) -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1> {
+        Ok(self.proposal.clone())
+    }
+    fn prepare_lifecycle_claim(
+        &self,
+        _: &AdmissionClaimLifecycleOperationV1,
+        _: i64,
+    ) -> Result<AdmissionClaimLifecycleResolutionV1, AdmissionAuthorityPublicationErrorV1> {
+        Ok(AdmissionClaimLifecycleResolutionV1 {
+            current_session: self.current_session,
+            evidence: self.proposal.clone(),
+        })
+    }
+}
+
+#[test]
+fn fresh_owner_transition_rejects_independently_mutated_invariants() -> TestResult {
+    let source = Independent::new()?;
+    let authorization = source.authorize()?;
+    let baseline = source
+        .prepare_fresh_claim(authorization.binding(), 100)
+        .map_err(|e| format!("{e:?}"))?;
+    for mutation in 0..20 {
+        let mut proposal = baseline.clone();
+        match mutation {
+            0 => {
+                proposal.successors.pop();
+            }
+            1 => {
+                proposal.predecessors.pop();
+            }
+            2 => {
+                proposal.successors[0].key =
+                    AdmissionAuthorityGuardKeyV1::Character(source.source.current.character_id)
+            }
+            3 => proposal.successors[0].source.authority = "unrelated-owner".into(),
+            4 => {
+                proposal.successors[0].source.purpose =
+                    AdmissionPublicationPurposeV1::CharacterOwnershipAndLease
+            }
+            5 => proposal.successors[0].source.source_revision = 7,
+            6 => proposal.successors[0].source.source_revision = 6,
+            7 => {
+                proposal.successors[0].source.decision_identity =
+                    proposal.predecessors[0].source.decision_identity.clone()
+            }
+            8 => {
+                proposal.successors[1].precondition =
+                    AdmissionPublicationPreconditionV1::CompareAndSet {
+                        expected_publication_revision: 12,
+                    }
+            }
+            9 => proposal.successors[1].publication_revision = 15,
+            10 => proposal.successors[1].source.source_observed_at = 99,
+            11 => {
+                if let AdmissionAuthorityGuardStateV1::Account { security, .. } =
+                    &mut proposal.successors[0].state
+                {
+                    security.provenance.source_authority = "substituted-platform".into();
+                }
+            }
+            12 => {
+                if let AdmissionAuthorityGuardStateV1::Account { security, .. } =
+                    &mut proposal.successors[0].state
+                {
+                    security.provenance.source_observed_at = 100;
+                }
+            }
+            13 => {
+                if let AdmissionAuthorityGuardStateV1::Account { presence, .. } =
+                    &mut proposal.successors[0].state
+                {
+                    *presence = None;
+                }
+            }
+            14 => {
+                if let AdmissionAuthorityGuardStateV1::Character { holder, .. } =
+                    &mut proposal.successors[1].state
+                {
+                    *holder = Some(GameSessionId::decode(&id(10))?);
+                }
+            }
+            15 => {
+                if let AdmissionAuthorityGuardStateV1::Character {
+                    lease_generation, ..
+                } = &mut proposal.successors[1].state
+                {
+                    *lease_generation = 3;
+                }
+            }
+            16 => {
+                if let AdmissionAuthorityGuardStateV1::Character { eligible, .. } =
+                    &mut proposal.successors[1].state
+                {
+                    *eligible = false;
+                }
+            }
+            17 => {
+                proposal.predecessors[1].source.decision_identity = "different-predecessor".into()
+            }
+            18 => proposal.prepared_at = 101,
+            _ => proposal.successors[0].source.clock_uncertainty_seconds = 6,
+        }
+        let owner = MutatedClaimOwner {
+            proposal,
+            current_session: source.snapshot,
+        };
+        assert!(
+            FreshAdmissionClaimTransitionV1::prepare(&owner, &authorization, 100).is_err(),
+            "mutation {mutation}"
+        );
+    }
+    let transition = FreshAdmissionClaimTransitionV1::prepare(&source, &authorization, 100)
+        .map_err(|e| format!("{e:?}"))?;
+    for mutation in 0..5 {
+        let mut rows = source.rows.clone();
+        let mut now = 100;
+        match mutation {
+            0 => rows[0] = None,
+            1 => {
+                rows[1].as_mut().ok_or("row")?.source.decision_identity =
+                    "concurrent-publisher".into()
+            }
+            2 => {
+                rows.pop();
+            }
+            3 => now = 99,
+            _ => now = 104,
+        }
+        assert!(
+            transition.validate_locked(&rows, now).is_err(),
+            "final L mutation {mutation}"
+        );
+    }
+    Ok(())
+}
+
+#[test]
+fn fresh_transition_history_is_lossless_and_conflicting_retry_stays_original() -> TestResult {
+    let source = Independent::new()?;
+    let mut flow = source.begin()?;
+    let original = flow.operation().clone();
+    let receipt = committed(&flow).map_err(|e| format!("{e:?}"))?;
+    let mut altered = original.clone();
+    altered.transition.successors[0].source.decision_identity = "different-valid-proposal".into();
+    assert_eq!(
+        receipt.classify_retry(&altered),
+        FreshAdmissionDurableOutcomeV1::RejectedReplayConflict
+    );
+    let changed_receipt =
+        FreshAdmissionCommitReceiptV1::restore(altered, 100).map_err(|e| format!("{e:?}"))?;
+    let mut queue = Queue {
+        requests: vec![],
+        available: true,
+    };
+    flow.submit(&mut queue).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(
+        flow.accept_completion(
+            original.clone(),
+            FreshAdmissionDurableOutcomeV1::Committed(changed_receipt)
+        ),
+        Err(FreshAdmissionDurabilityErrorV1::WrongBinding)
+    );
+    flow.accept_completion(
+        original.clone(),
+        FreshAdmissionDurableOutcomeV1::AmbiguousOrUnavailable,
+    )
+    .map_err(|e| format!("{e:?}"))?;
+    flow.reconcile(&mut queue).map_err(|e| format!("{e:?}"))?;
+    assert_eq!(queue.requests.last(), Some(&original));
+    assert!(flow.controller().is_none());
+    Ok(())
+}
+
+#[test]
+fn fresh_lifecycle_claim_preservation_and_release_bind_both_holders() -> TestResult {
+    let mut source = Independent::new()?;
+    let flow = source.begin()?;
+    source.commit_sources(flow.operation())?;
+    let claims: Vec<_> = source.rows[..2]
+        .iter()
+        .cloned()
+        .collect::<Option<Vec<_>>>()
+        .ok_or("rows")?;
+    let account = &source.source.current.account_id;
+    assert!(
+        validate_claim_preserving_session_v1(
+            account,
+            source.snapshot,
+            source.snapshot,
+            &claims,
+            &source.rows[..2]
+        )
+        .is_ok()
+    );
+    let release = TerminalReleaseClaimTransitionV1::prepare(&source, account, source.snapshot, 100)
+        .map_err(|e| format!("{e:?}"))?;
+    for mutation in 0..4 {
+        let mut rows = source.rows[..2].to_vec();
+        match mutation {
+            0 => {
+                if let AdmissionAuthorityGuardStateV1::Account { presence, .. } =
+                    &mut rows[0].as_mut().ok_or("row")?.state
+                {
+                    *presence = Some((
+                        source.source.current.character_id,
+                        GameSessionId::decode(&id(10))?,
+                    ));
+                }
+            }
+            1 => {
+                if let AdmissionAuthorityGuardStateV1::Character { holder, .. } =
+                    &mut rows[1].as_mut().ok_or("row")?.state
+                {
+                    *holder = Some(GameSessionId::decode(&id(10))?);
+                }
+            }
+            2 => {
+                if let AdmissionAuthorityGuardStateV1::Character {
+                    lease_generation, ..
+                } = &mut rows[1].as_mut().ok_or("row")?.state
+                {
+                    *lease_generation += 1;
+                }
+            }
+            _ => {
+                rows[0].as_mut().ok_or("row")?.source.decision_identity =
+                    "new-owner-decision".into()
+            }
+        }
+        assert!(
+            release
+                .validate_locked(&rows, source.snapshot, 100)
+                .is_err()
+        );
+        assert!(
+            validate_claim_preserving_session_v1(
+                account,
+                source.snapshot,
+                source.snapshot,
+                &claims,
+                &rows
+            )
+            .is_err()
+        );
+    }
+    assert!(
+        release
+            .validate_locked(&source.rows[..2], source.snapshot, 106)
+            .is_err()
+    );
+    assert!(release.evidence().validate_historical(100).is_ok());
     Ok(())
 }
