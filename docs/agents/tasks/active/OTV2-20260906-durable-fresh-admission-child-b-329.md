@@ -12,7 +12,7 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/durable-fresh-admission-child-b-329
 issue: 329
-pr: null
+pr: 335
 allocation_source_main_sha: f69e9c12c8b69b625a7ce9d911bf3132c141ada6
 admission_main_sha: b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd
 base_sha: b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd
@@ -112,6 +112,15 @@ Window 1 started at `2026-09-06T08:17:20Z` on the verified clean canonical branc
 
 The plan's milestones preserve full acceptance and are not separate task/PR allocations. At each authorized 60-minute window boundary, checkpoint exact durable head, changed paths, evidence, unresolved findings and one next action. Work controls continuation/custody rotation. A frozen failing candidate remains frozen/failing until dispositioned; rotation does not reset failure, repair or CI counters. No metadata/no-op commits for counter resets.
 
+### Checkpoint 2 — forward schema implementation; SQL GREEN pending
+
+- Canonical first checkpoint: PR #335 head `a251d94b4a23b7ae0b889a0a6dfbb93dfb1574f3`, tree `d3855e4e18bd308952eb7058ef3810dc69a72432`; normal fast-forward preserved one branch/history.
+- Actual configured PostgreSQL17.6 RED: gate `34021756196`, Linux job `101455557352`, `2026-09-06T08:28:13Z`; target reported 295 passed / 1 failed. Sole failure `fresh_admission_forward_schema_supports_truthful_atomic_session`: `fresh atomic admission requires its immutable receipt table`. Compiler and lint succeeded. This is schema prerequisite RED, not full atomic adapter proof.
+- Forward 0002 adds immutable complete-operation receipt storage, canonical fresh-origin continuity, account uniqueness, four typed guard domains and permanent source/decision history, exact fresh/reconnect reservation ownership, and lifecycle receipt storage. Migration does not bootstrap source truth. SQL execution/constraints and all adapter acceptance remain pending until configured hosted evidence.
+- Independent test-only source now verifies a signed fresh grant, prepares paired owner effects and captures the request through the existing bounded port. Local focused fixture check passed 1/1, including independently missing current guard rejection. Compiler RED for the initially absent fixture was observed separately; logs `b329-fixture-red.log` and `b329-fixture-green.log`.
+- Work explicitly dispositioned existing isolated-admin reservation corruption fixtures: disable only the named immutability trigger and inject corruption inside one transaction, then re-enable before commit; error/drop rolls back both changes. Existing reload assertions remain. A separate restricted test runtime role is granted normal DML only and must fail both reservation deletion (23514) and trigger disable (42501). Its role/grants are themselves transactionally rolled back. No production bypass is added.
+- Shared pre-L inventory: V1 prepare session/attempt/actor continuity/transport/pending FK; V1 commit unique nonce and session/attempt/protection state; mutating reconciliation protection activation; V2 broad predecessor attempts and candidate replacement/session/continuity/reservation/pending FK. New receipt/guard/history/account uniqueness must join one protocol. Common locks and lossless codecs are not implemented yet.
+
 ## Validation
 
 ### Focused
@@ -147,12 +156,12 @@ Work creates/identifies the sole implementation PR after protected allocation; w
 ## Context checkpoint
 
 ```yaml
-last_progress: admitted; source-identical harness and focused fresh-schema SQL RED prepared
+last_progress: hosted schema RED proven; forward schema and independent sealed fixture implemented; adapter pending
 status: in_progress
 admission_state: ADMITTED
 branch: agent/durable-fresh-admission-child-b-329
 head_sha: null
-pr: null
+pr: 335
 execution_budget_minutes: 60
 execution_window_number: 1
 execution_window_started_at: 2026-09-06T08:17:20Z
@@ -164,8 +173,8 @@ final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
+ci_run_ids: [34021756196]
+ci_job_ids: [101455557352]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
@@ -176,5 +185,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Work publishes the staged harness checkpoint and obtains actual configured PostgreSQL RED; worker then implements the forward schema and adapter under the unchanged full acceptance.
+next_action: Work publishes forward schema checkpoint for configured SQL qualification; worker continues lossless operation codecs and shared pre-L locking under unchanged acceptance.
 ```

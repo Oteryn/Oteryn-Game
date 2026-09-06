@@ -14,6 +14,27 @@ mod durability;
 mod postgres;
 
 #[test]
+fn fresh_sealed_fixture_prepares_complete_owner_operation() -> Result<(), Box<dyn std::error::Error>>
+{
+    let source = postgres::fresh::Source::new(100)?;
+    let request = source.request()?;
+    authority_matrix::checked(request.operation().validate_historical(100))?;
+    let rows: Vec<_> = source.rows.iter().cloned().map(Some).collect();
+    assert_eq!(
+        authority_matrix::checked(request.validate_at_decision(&rows, Some(100)))?,
+        request.operation().transition.successors,
+    );
+    let mut independently_changed_rows = rows;
+    independently_changed_rows[0] = None;
+    assert!(
+        request
+            .validate_at_decision(&independently_changed_rows, Some(100))
+            .is_err()
+    );
+    Ok(())
+}
+
+#[test]
 fn fresh_admission_forward_schema_supports_truthful_atomic_session()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
@@ -37,6 +58,37 @@ fn fresh_admission_forward_schema_supports_truthful_atomic_session()
                 .fetch_one(&pool)
                 .await?;
                 assert!(receipt_exists, "fresh atomic admission requires its immutable receipt table");
+                // A separately restricted runtime role cannot erase a permanent
+                // legacy reservation or disable its immutability enforcement.
+                sqlx::query("INSERT INTO game_durability_transport_ref_reservations \
+                    (transport_ref, game_session_id, reconnect_attempt_ref) \
+                    VALUES ($1, encode($2, 'hex')::uuid, $3)")
+                    .bind([0x19_u8; 16].as_slice())
+                    .bind(authority_matrix::uuid(9).as_slice())
+                    .bind([0x19_u8; 8].as_slice())
+                    .execute(&pool).await?;
+                let role = format!("oteryn_b329_runtime_{}", std::process::id());
+                let mut role_test = pool.begin().await?;
+                sqlx::query(sqlx::AssertSqlSafe(format!("CREATE ROLE {role} NOLOGIN")))
+                    .execute(&mut *role_test).await?;
+                sqlx::query(sqlx::AssertSqlSafe(format!(
+                    "GRANT SELECT, UPDATE, DELETE ON game_durability_transport_ref_reservations TO {role}")))
+                    .execute(&mut *role_test).await?;
+                sqlx::query(sqlx::AssertSqlSafe(format!("SET LOCAL ROLE {role}")))
+                    .execute(&mut *role_test).await?;
+                for (statement, expected_code) in [
+                    ("DELETE FROM game_durability_transport_ref_reservations", "23514"),
+                    ("ALTER TABLE game_durability_transport_ref_reservations DISABLE TRIGGER game_transport_reservation_immutable", "42501"),
+                ] {
+                    sqlx::query("SAVEPOINT denied_mutation").execute(&mut *role_test).await?;
+                    let denied = sqlx::query(statement).execute(&mut *role_test).await;
+                    let code = denied.as_ref().err().and_then(sqlx::Error::as_database_error)
+                        .and_then(|error| error.code());
+                    assert_eq!(code.as_deref(), Some(expected_code), "{statement}: {denied:?}");
+                    sqlx::query("ROLLBACK TO SAVEPOINT denied_mutation").execute(&mut *role_test).await?;
+                }
+                // Transactional role creation and grants disappear even if the test fails.
+                role_test.rollback().await?;
                 for column in ["control_loss_epoch", "original_grace_deadline", "predecessor_generation"] {
                     let nullable: String = sqlx::query_scalar(
                         "SELECT is_nullable FROM information_schema.columns \
@@ -1171,6 +1223,7 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
                 );
 
                 let pool = sqlx::PgPool::connect(&database_url).await?;
+                let mut corruption = postgres::begin_transport_corruption(&pool).await?;
                 let corrupted = sqlx::query(
                     "UPDATE game_durability_transport_ref_reservations \
                      SET game_session_id = encode($2, 'hex')::uuid, reconnect_attempt_ref = $3 \
@@ -1186,8 +1239,9 @@ fn committed_replay_requires_the_exact_retained_transport_reservation()
                 )
                 .bind(uuid_v7(0x9a))
                 .bind([0xfe_u8; 8].as_slice())
-                .execute(&pool)
+                .execute(&mut *corruption)
                 .await?;
+                postgres::finish_transport_corruption(corruption).await?;
                 assert_eq!(corrupted.rows_affected(), 1);
                 assert!(matches!(
                     journal.commit(&commit).await,
@@ -1331,6 +1385,7 @@ fn fresh_commit_requires_the_exact_retained_transport_reservation()
                     .map_err(foundation_error)?;
 
                 let pool = sqlx::PgPool::connect(&database_url).await?;
+                let mut corruption = postgres::begin_transport_corruption(&pool).await?;
                 let deleted = sqlx::query(
                     "DELETE FROM game_durability_transport_ref_reservations WHERE transport_ref = $1",
                 )
@@ -1342,8 +1397,9 @@ fn fresh_commit_requires_the_exact_retained_transport_reservation()
                         .to_bytes()
                         .as_slice(),
                 )
-                .execute(&pool)
+                .execute(&mut *corruption)
                 .await?;
+                postgres::finish_transport_corruption(corruption).await?;
                 assert_eq!(deleted.rows_affected(), 1);
 
                 assert!(matches!(
@@ -2831,13 +2887,16 @@ fn historical_committed_reconciliation_rejects_corrupt_later_prepared_projection
                             .await?;
                         }
                         "transport_reservation" => {
+                            let mut corruption =
+                                postgres::begin_transport_corruption(&pool).await?;
                             sqlx::query(
                                 "DELETE FROM game_durability_transport_ref_reservations \
                                  WHERE transport_ref = $1",
                             )
                             .bind(transport_ref.as_slice())
-                            .execute(&pool)
+                            .execute(&mut *corruption)
                             .await?;
+                            postgres::finish_transport_corruption(corruption).await?;
                         }
                         "protection_continuity" => {
                             sqlx::query(
