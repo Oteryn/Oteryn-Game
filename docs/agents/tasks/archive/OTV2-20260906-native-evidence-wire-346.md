@@ -4,8 +4,8 @@
 task_id: OTV2-20260906-native-evidence-wire-346
 title: Qualify bounded native evidence wire codec
 mode: IMPLEMENT
-status: validating
-admission_state: ADMITTED
+status: completed
+admission_state: RELEASED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/native-evidence-wire-346
@@ -14,9 +14,9 @@ pr: 349
 allocation_source_main_sha: 9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2
 admission_main_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
 base_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
+head_sha: 7afec2da8bef81bc7ad03f274432c96e61e2bd09
+final_head_sha: 7afec2da8bef81bc7ad03f274432c96e61e2bd09
+final_head_frozen_at: recorded_in_PR_349_comment_5559913540
 owner: child_c_audit
 coordinator: Oteryn Work Delivery Coordinator
 created_at: 2026-09-06
@@ -52,13 +52,13 @@ No production mutation, PREPARE/COMMIT, controller installation or persisted rec
 
 ## Acceptance criteria
 
-- [ ] Exact four request families, Account13/trust14-field observed responses, and exactly3-field failures; all required fields and no extras.
-- [ ] Closed bounded flat parsing rejects unknown, duplicate, nested, malformed, oversized and trailing input before peer-sized decoded allocation; no generic DOM-first path.
-- [ ] Exact operation/version/source/account/trust-scope binding; canonical UUID, decimal u64/i64, booleans, key-ID grammar and Ed25519 base64 bytes preserved.
-- [ ] Every applicable max/max+1/overflow/escape/encoding boundary and both fresh/recovery substitution directions have independent tests and positive controls.
-- [ ] Denial/untrust stays observation; failure carries no fabricated authority facts; unprivileged output cannot bypass Foundation seals.
-- [ ] Focused RED/GREEN, full affected validation and whole-diff self-review; independent exact-head parser/security review with no unresolved material findings.
-- [ ] Protected registry readback, exact-head canonical CI and normal Merge Queue; Work protected readback/archive/release.
+- [x] Exact four request families, Account13/trust14-field observed responses, and exactly3-field failures; all required fields and no extras.
+- [x] Closed bounded flat parsing rejects unknown, duplicate, nested, malformed, oversized and trailing input before peer-sized decoded allocation; no generic DOM-first path.
+- [x] Exact operation/version/source/account/trust-scope binding; canonical UUID, decimal u64/i64, booleans, key-ID grammar and Ed25519 base64 bytes preserved.
+- [x] Every applicable max/max+1/overflow/escape/encoding boundary and both fresh/recovery substitution directions have independent tests and positive controls.
+- [x] Denial/untrust stays observation; failure carries no fabricated authority facts; unprivileged output cannot bypass Foundation seals.
+- [x] Focused RED/GREEN, full affected validation and whole-diff self-review; independent exact-head parser/security review with no unresolved material findings.
+- [x] Protected registry readback, exact-head canonical CI and normal Merge Queue; Work protected readback/archive/release.
 
 ## Excluded scope
 
@@ -88,16 +88,16 @@ One branch/PR after admission, Work publication/integration control. No force/re
 
 ```yaml
 last_progress: repair2 adds independently asserted UUID rejection and exact decoded payloads
-status: validating
-admission_state: ADMITTED
+status: completed
+admission_state: RELEASED
 execution_window_number: 1
 execution_windows_completed: 0
 worker_rotations: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 2
 owner_action_required: null
-blocker: independent_review_and_exact_head_CI
-next_action: Work obtains fresh non-author repaired-tree review and publishes normal main reconciliation for exact-head CI
+blocker: none
+next_action: none — terminal codec delivery; actual source readiness remains319
 ```
 
 ## Window1 validation evidence
@@ -119,3 +119,9 @@ Both accepted P2 findings are fixed in tests only. The two Account families now 
 Regression sensitivity uses a separate temporary minimal crate containing copied codec/tests: UUID validation removed, allowed inverted, trusted inverted and NotFound substituted each independently produce a failing targeted test; original source is restored afterward. The owning runtime file is unchanged. Full repaired integration corpus11/11 PASS on Rust1.94 locked/offline. Mutant RED results are qualification experiments, not defects in the published runtime. This author cannot independently certify repair2; fresh non-author review and exact-head CI are required. No source/TLS/PostgreSQL/E2E readiness is claimed.
 
 Repair2 final validation: dedicated integration11/11 PASS; strict locked/offline all-target Clippy PASS after removing an explicit test panic flagged by the repository lint (the existing test-only unwrap convention is retained); fmt/whitespace PASS; governance26/9 PASS. Full three-path repair self-review confirms no runtime/Cargo/export changes, original admission and window preserved, and both P2 dispositions fixed. Regression logs are in the isolated scratch wire346-repair2-mutations harness; restored source matches the unchanged owning codec. Fresh non-author review remains the next gate.
+
+## Protected terminal closeout — Work162
+
+PR349 integrated through normal protected Merge Queue at9be69b4e0a06f3978d5c5c5603ca3e5670a9f18a on2026-09-06T14:48:04Z; GitHub main readback matches. Final PR head7afec2da8bef81bc7ad03f274432c96e61e2bd09/tree8678db8cf0ffbb85a4a63fb64699778c971b867c preserves original branch history and normal d9d1 main reconciliation. Root whole-five-path review plus independent non-author b_checkpoint_review P0/P1/P2=0 binds the repaired11-case corpus; PR comment5559913540 records final review. Exact-head game-ci34039525638/game-gate and Merge Queue game-ci34039815144/game-gate succeeded. Issue346 closed by protected integration. Prior pending statements above remain historical checkpoints, superseded by this terminal evidence.
+
+Work releases all five346 owned paths and its single admission_evidence module-export lease in lib.rs. Remaining247 composition ownership stays held with preserved branch9370b254c6ac4f6529e069c1968ae6bfa1e1750e; no concurrent writer is admitted by release. Archive authority is Work162 comment5560037097. Preserve immutable admissionad7273e3e91a4e4254abb9aa2710c7e0c9754afe, window1, rotations0 and repair2; no reset. The merged branch retains a documented continuing provenance role until programme closeout. No TLS/SQL/actual producer or Server Seam readiness follows.
