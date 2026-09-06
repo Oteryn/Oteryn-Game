@@ -121,6 +121,16 @@ The plan's milestones preserve full acceptance and are not separate task/PR allo
 - Work explicitly dispositioned existing isolated-admin reservation corruption fixtures: disable only the named immutability trigger and inject corruption inside one transaction, then re-enable before commit; error/drop rolls back both changes. Existing reload assertions remain. A separate restricted test runtime role is granted normal DML only and must fail both reservation deletion (23514) and trigger disable (42501). Its role/grants are themselves transactionally rolled back. No production bypass is added.
 - Shared pre-L inventory: V1 prepare session/attempt/actor continuity/transport/pending FK; V1 commit unique nonce and session/attempt/protection state; mutating reconciliation protection activation; V2 broad predecessor attempts and candidate replacement/session/continuity/reservation/pending FK. New receipt/guard/history/account uniqueness must join one protocol. Common locks and lossless codecs are not implemented yet.
 
+### Checkpoint 3 — lossless codec mechanics and next relation-wait RED
+
+- Canonical schema checkpoint `d371e0a61e8a39c8c3f6875bf2343da60984ae2b`, tree `ec7cdf1d05b39e9b8933458b2ac23140820135c1`, was normally fast-forwarded and independently reviewed P0/P1/P2=0 for that intermediate scope.
+- Hosted gate `34022664262`, Linux job `101458035139`: configured PostgreSQL17.6 schema case GREEN at `08:48:03Z`, including restricted runtime DELETE rejection23514 and trigger-disable rejection42501. Full target FAILED: 289 passed / 8 failed. These failures remain open: old transport/nonce/collision fixtures used multiple nonterminal characters under one AccountId and now encounter the correctly enforced account exclusion before the intended invariant. V1's suppressed insert then missing session reports InvalidStoredState. Preserve account exclusion; independently isolate fixture accounts and normalize real occupancy to existing RejectedStaleAuthority under common serialization. Work controls the prospective two-path fixture amendment; no extra fixture paths are admitted yet.
+- Complete operation and individual guard codecs now use strict version1 JSON with canonical unpadded-base64 lossless binary. Every authorization/effect/provenance field is retained, full-u64/i64 and typed IDs preserved, closed tags/booleans, checked remaining-length string reads and trailing-byte rejection enforced. Raw guard decode remains historical data and still needs adapter mirror/history checks; no live capability is constructed. SQL mirror validation and lifecycle codec remain open.
+- Caller-supplied finite budgets gate copying/allocation; no production ceiling is invented. Work opened resource escalation #337 because retained record/guard/lifecycle and queue/completion accounting lack an applicable accepted ceiling. Codec mechanics may progress, but full readiness depends on that separate disposition/allocation.
+- Focused compiler RED observed for missing codec module. Roundtrip and independent transition-decision identity tests passed. Exact-budget sibling test then exposed padded-length overestimation; repaired exact unpadded size arithmetic. Full-u64 guard roundtrip, duplicate-envelope/trailing/truncated/budget rejection pass. Local selected fresh family: 69 passed; included PostgreSQL cases explicitly skip and are not SQL evidence. Logs `b329-codec-red.log`, `b329-codec-padding-red.log`, `b329-codec-family.log`.
+- Measured fixtures only: complete operation3934 encoded bytes /2931 binary bytes; account478, character278, runtime385, signing-trust280 encoded guard bytes. These are not maxima/capacity proof. Encode retains bounded binary + base64 + JSON, historical validation clones guard evidence only after bounded encoding; decode borrows envelope and retains binary + typed string copies, without canonical re-encode copies.
+- New actual hosted RED prepared: `commit_nonce_relation_wait_cannot_outlive_authorization_deadline`. It holds the nonce relation in SHARE mode, observes the blocked request through pg_locks, lets trusted PostgreSQL time cross the accepted deadline, then requires stale rejection with no consumption. Existing code samples time before this later relation acquisition. This new RED is pending; common strongest-needed relation locks and sorted domain/key/row footprint closure are not implemented yet. No new hosted run or result is claimed here.
+
 ## Validation
 
 ### Focused
@@ -156,7 +166,7 @@ Work creates/identifies the sole implementation PR after protected allocation; w
 ## Context checkpoint
 
 ```yaml
-last_progress: hosted schema RED proven; forward schema and independent sealed fixture implemented; adapter pending
+last_progress: hosted schema case GREEN but eight fixture regressions open; codec mechanics GREEN; relation-wait RED prepared
 status: in_progress
 admission_state: ADMITTED
 branch: agent/durable-fresh-admission-child-b-329
@@ -173,8 +183,8 @@ final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: [34021756196]
-ci_job_ids: [101455557352]
+ci_run_ids: [34021756196, 34022664262]
+ci_job_ids: [101455557352, 101458035139]
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
@@ -185,5 +195,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Work publishes forward schema checkpoint for configured SQL qualification; worker continues lossless operation codecs and shared pre-L locking under unchanged acceptance.
+next_action: Work publishes codec/relation-wait RED checkpoint; worker repairs common pre-L locking after actual RED and fixture accounts only after protected amendment.
 ```

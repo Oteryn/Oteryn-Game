@@ -4,8 +4,10 @@
 //! constructs and revalidates reconnect authority; the runtime must submit the
 //! resulting request asynchronously and consume its completion as new input.
 
+pub mod admission_authority_guards;
 mod admission_journal;
 mod db;
+pub mod fresh_admission;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;

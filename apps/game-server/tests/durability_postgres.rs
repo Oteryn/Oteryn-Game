@@ -35,6 +35,81 @@ fn fresh_sealed_fixture_prepares_complete_owner_operation() -> Result<(), Box<dy
 }
 
 #[test]
+fn fresh_operation_codec_retains_effects_and_rejects_trailing_or_oversized_storage()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::fresh_admission::{decode_operation, encode_operation};
+    let source = postgres::fresh::Source::new(100)?;
+    let request = source.request()?;
+    // Test allocation budget; no production resource ceiling is selected here.
+    let budget = 65_536;
+    let encoded = encode_operation(request.operation(), budget)?;
+    println!("fresh operation fixture encoded bytes: {}", encoded.len());
+    assert_eq!(
+        encode_operation(request.operation(), encoded.len())?,
+        encoded
+    );
+    assert_eq!(decode_operation(&encoded, budget)?, *request.operation());
+    assert!(decode_operation(&encoded, encoded.len() - 1).is_err());
+    assert!(encode_operation(request.operation(), encoded.len() - 1).is_err());
+    assert!(decode_operation(&format!("{encoded}x"), budget).is_err());
+    let duplicate = encoded.replacen("\"version\":1", "\"version\":1,\"version\":1", 1);
+    assert!(decode_operation(&duplicate, budget).is_err());
+    let mut different_effect = request.operation().clone();
+    different_effect.transition.successors[0]
+        .source
+        .decision_identity = "another-exact-decision".into();
+    let other = encode_operation(&different_effect, budget)?;
+    assert_ne!(other, encoded);
+    assert_eq!(encode_operation(&different_effect, other.len())?, other);
+    assert_eq!(decode_operation(&other, budget)?, different_effect);
+    Ok(())
+}
+
+#[test]
+fn fresh_guard_codec_preserves_full_u64_and_rejects_invalid_binary()
+-> Result<(), Box<dyn std::error::Error>> {
+    use base64::Engine;
+    use base64::engine::general_purpose::URL_SAFE_NO_PAD;
+    use durability::admission_authority_guards::{decode_guard, encode_guard};
+    use foundation::admission_authority_publication::AdmissionPublicationPreconditionV1;
+    let source = postgres::fresh::Source::new(100)?;
+    let budget = 65_536;
+    for original in &source.rows {
+        let encoded = encode_guard(original, budget)?;
+        println!(
+            "guard fixture {:?}: {} encoded bytes",
+            original.source.purpose,
+            encoded.len()
+        );
+        assert_eq!(decode_guard(&encoded, budget)?, *original);
+        let mut maximum = original.clone();
+        maximum.publication_revision = u64::MAX;
+        maximum.source.source_revision = u64::MAX;
+        maximum.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: u64::MAX - 1,
+        };
+        let encoded = encode_guard(&maximum, budget)?;
+        assert_eq!(decode_guard(&encoded, budget)?, maximum);
+        let envelope: serde_json::Value = serde_json::from_str(&encoded)?;
+        let payload = envelope["payload"].as_str().ok_or("payload missing")?;
+        let mut bytes = URL_SAFE_NO_PAD.decode(payload)?;
+        bytes.push(0);
+        let trailing = format!(
+            "{{\"version\":1,\"payload\":\"{}\"}}",
+            URL_SAFE_NO_PAD.encode(&bytes)
+        );
+        assert!(decode_guard(&trailing, budget).is_err());
+        bytes.truncate(1);
+        let truncated = format!(
+            "{{\"version\":1,\"payload\":\"{}\"}}",
+            URL_SAFE_NO_PAD.encode(&bytes)
+        );
+        assert!(decode_guard(&truncated, budget).is_err());
+    }
+    Ok(())
+}
+
+#[test]
 fn fresh_admission_forward_schema_supports_truthful_atomic_session()
 -> Result<(), Box<dyn std::error::Error>> {
     if !postgres_e2e_is_configured()? {
@@ -3070,6 +3145,113 @@ fn commit_row_lock_wait_cannot_outlive_authorization_deadline()
                     !blocked.is_finished(),
                     "commit must be waiting on the held per-session row lock"
                 );
+                while postgres_clock(&lock_pool).await? <= deadline {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+                lock.commit().await?;
+
+                assert_eq!(
+                    blocked.await??,
+                    ReconnectCommitDispositionV1::RejectedStaleAuthority
+                );
+                let session: (i64, Option<Vec<u8>>, i16, Option<Vec<u8>>) = sqlx::query_as(
+                    "SELECT current_generation::BIGINT, current_transport_ref, session_state, prepared_attempt_ref \
+                     FROM game_durability_reconnect_sessions \
+                     WHERE game_session_id = encode($1, 'hex')::uuid",
+                )
+                .bind(session_id.as_slice())
+                .fetch_one(&lock_pool)
+                .await?;
+                assert_eq!(session.0, 7);
+                assert!(session.1.is_none());
+                assert_eq!(session.2, 1);
+                assert!(session.3.is_none());
+                let consumed: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_recovery_grant_consumptions",
+                )
+                .fetch_one(&lock_pool)
+                .await?;
+                assert_eq!(consumed, 0, "expired commit must not consume recovery nonce");
+                assert_eq!(
+                    journal.reconcile(&prepare).await?,
+                    oteryn_game_server::foundation::ReconnectDurableReconciliationSnapshotV1::terminal(
+                        prepare.record().clone(),
+                    )
+                );
+                lock_pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
+fn commit_nonce_relation_wait_cannot_outlive_authorization_deadline()
+-> Result<(), Box<dyn std::error::Error>> {
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("commit_nonce_relation_deadline").await?;
+            let result = async {
+                let database_url = database.database_url()?;
+                let executor = MigrationExecutor::connect_migration(&database_url).await?;
+                executor.apply_embedded_ledger().await?;
+                let journal = AdmissionReconnectJournal::connect_runtime(&database_url).await?;
+                let lock_pool = sqlx::PgPool::connect(&database_url).await?;
+                let record_now = postgres_clock(&lock_pool).await?;
+                let (mut flow, prepare) = ReconnectDurabilityFlowV1::begin(
+                    record(90, 1, 0xb1, record_now).map_err(foundation_error)?,
+                );
+                assert_eq!(
+                    journal.prepare(&prepare).await?,
+                    ReconnectPrepareDispositionV1::Prepared
+                );
+                flow.accept_prepare_completion(ReconnectPrepareCompletionV1::for_request(
+                    &prepare,
+                    ReconnectPrepareDispositionV1::Prepared,
+                ))
+                .map_err(foundation_error)?;
+                let current = current_authority_from_record(prepare.record(), record_now)
+                    .map_err(foundation_error)?;
+                let commit = flow
+                    .authorize_commit(current, record_now)
+                    .map_err(foundation_error)?;
+                let deadline = commit.authorization().authorization_deadline();
+                assert!(postgres_clock(&lock_pool).await? <= deadline);
+
+                let session_id = prepare
+                    .record()
+                    .identity()
+                    .game_session_id()
+                    .as_bytes()
+                    .to_vec();
+                let mut lock = lock_pool.begin().await?;
+                sqlx::query("LOCK TABLE game_durability_recovery_grant_consumptions IN SHARE MODE")
+                    .execute(&mut *lock).await?;
+
+                let blocked_journal = journal.clone();
+                let blocked_commit = commit.clone();
+                let blocked = tokio::spawn(async move {
+                    blocked_journal.commit(&blocked_commit).await
+                });
+                tokio::time::timeout(Duration::from_secs(5), async {
+                    loop {
+                        let waiting: bool = sqlx::query_scalar(
+                            "SELECT EXISTS (SELECT 1 FROM pg_locks WHERE \
+                             relation = 'game_durability_recovery_grant_consumptions'::regclass \
+                             AND NOT granted AND pid <> pg_backend_pid())")
+                            .fetch_one(&lock_pool).await?;
+                        if waiting { break Ok::<(), sqlx::Error>(()); }
+                        tokio::task::yield_now().await;
+                    }
+                }).await??;
+                assert!(!blocked.is_finished(), "commit must wait on the observed nonce relation lock");
                 while postgres_clock(&lock_pool).await? <= deadline {
                     tokio::time::sleep(Duration::from_millis(100)).await;
                 }
