@@ -45,3 +45,7 @@ Source authority1–128 ASCII matching [A-Za-z0-9._:/-]+ and exact expected desc
 ## Separate downstream work
 
 Actual authenticated mTLS/HTTP, rollback-protected descriptor, four-operation shared accounting, durable V1/V2 Account floor and distinct signing namespaces, acknowledged PostgreSQL publication and current adoption remain separately allocated. Decoded DTOs are never current authority. No B/338/247 readiness follows from this codec alone.
+
+## Execution checkpoint
+
+Admitted Work5559516855 atad7273e3e91a4e4254abb9aa2710c7e0c9754afe, window1 13:27–14:27UTC. Closed flat parser uses fixed inline slots and manual bounded Unicode decoding; no generic DOM or escaped-string heap scratch. Independent fixture literals remain V1 binding demonstrations only. Tests cover four families and failure variants, each required field, substitutions, numeric and encoding boundaries, truncated input and fixed-buffer rejection before growth. Foundation mutations/SQL/TLS/live source are not exercised or claimed. Independent review then exact-head CI remain required.
