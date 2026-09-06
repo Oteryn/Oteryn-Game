@@ -460,3 +460,349 @@ pub fn decode_guard(
     reader.finish()?;
     Ok(change)
 }
+
+/// Storage classification only; this is not an activated owner projection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum GuardPublicationDisposition {
+    Applied,
+    Existing,
+    Stale,
+    Conflict,
+}
+
+/// Explicit caller allocation pending production executor/resource integration.
+#[derive(Clone)]
+pub struct AdmissionGuardStore {
+    pool: sqlx::PgPool,
+    maximum_guard_bytes: usize,
+}
+
+type Mirror = Vec<(&'static str, &'static str, Option<String>)>;
+
+fn uuid_text(bytes: &[u8; 16]) -> String {
+    let hex: String = bytes.iter().map(|byte| format!("{byte:02x}")).collect();
+    format!(
+        "{}-{}-{}-{}-{}",
+        &hex[..8],
+        &hex[8..12],
+        &hex[12..16],
+        &hex[16..20],
+        &hex[20..]
+    )
+}
+fn bytea_text(bytes: &[u8]) -> String {
+    let mut text = String::from("\\x");
+    for byte in bytes {
+        const HEX: &[u8; 16] = b"0123456789abcdef";
+        text.push(char::from(HEX[usize::from(byte >> 4)]));
+        text.push(char::from(HEX[usize::from(byte & 15)]));
+    }
+    text
+}
+fn key_storage(
+    key: &AdmissionAuthorityGuardKeyV1,
+    maximum: usize,
+) -> Result<(&'static str, Mirror, Vec<u8>)> {
+    let mut encoded = Writer::new(maximum);
+    write_key(&mut encoded, key)?;
+    let (table, fields) = match key {
+        AdmissionAuthorityGuardKeyV1::Account { account_id } => (
+            "game_durability_admission_account_guards",
+            vec![("account_id", "uuid", Some(account_id.clone()))],
+        ),
+        AdmissionAuthorityGuardKeyV1::Character(id) => (
+            "game_durability_admission_character_guards",
+            vec![("character_id", "uuid", Some(uuid_text(id.as_bytes())))],
+        ),
+        AdmissionAuthorityGuardKeyV1::Runtime(scope) => {
+            let mut bytes = Writer::new(maximum);
+            write_scope(&mut bytes, *scope)?;
+            (
+                "game_durability_admission_runtime_guards",
+                vec![("scope_key", "bytea", Some(bytea_text(&bytes.bytes)))],
+            )
+        }
+        AdmissionAuthorityGuardKeyV1::SigningTrust { key_id, profile } => (
+            "game_durability_admission_signing_trust_guards",
+            vec![
+                ("key_id", "text", Some(key_id.clone())),
+                ("profile", "text", Some(profile.clone())),
+            ],
+        ),
+    };
+    Ok((table, fields, encoded.bytes))
+}
+fn guard_mirrors(change: &AdmissionAuthorityPublicationChangeV1, maximum: usize) -> Result<Mirror> {
+    let (_, mut fields, _) = key_storage(&change.key, maximum)?;
+    match &change.state {
+        AdmissionAuthorityGuardStateV1::Account { presence, .. } => fields.extend([
+            (
+                "presence_character_id",
+                "uuid",
+                presence.map(|(id, _)| uuid_text(id.as_bytes())),
+            ),
+            (
+                "holder_game_session_id",
+                "uuid",
+                presence.map(|(_, id)| uuid_text(id.as_bytes())),
+            ),
+        ]),
+        AdmissionAuthorityGuardStateV1::Character {
+            account_id,
+            world_id,
+            eligible,
+            lease_generation,
+            holder,
+        } => fields.extend([
+            ("account_id", "uuid", Some(account_id.clone())),
+            ("world_id", "uuid", Some(uuid_text(world_id.as_bytes()))),
+            ("eligible", "boolean", Some(eligible.to_string())),
+            (
+                "lease_generation",
+                "numeric(20,0)",
+                Some(lease_generation.to_string()),
+            ),
+            (
+                "holder_game_session_id",
+                "uuid",
+                holder.map(|id| uuid_text(id.as_bytes())),
+            ),
+        ]),
+        AdmissionAuthorityGuardStateV1::Runtime {
+            ownership_generation,
+            ready,
+            ..
+        } => fields.extend([
+            (
+                "ownership_generation",
+                "numeric(20,0)",
+                Some(ownership_generation.to_string()),
+            ),
+            ("ready", "boolean", Some(ready.to_string())),
+        ]),
+        AdmissionAuthorityGuardStateV1::SigningTrust {
+            public_key,
+            trusted,
+        } => fields.extend([
+            ("public_key", "bytea", Some(bytea_text(public_key))),
+            ("trusted", "boolean", Some(trusted.to_string())),
+        ]),
+    }
+    fields.extend([
+        (
+            "publication_revision",
+            "numeric(20,0)",
+            Some(change.publication_revision.to_string()),
+        ),
+        (
+            "source_authority",
+            "text",
+            Some(change.source.authority.clone()),
+        ),
+        (
+            "source_revision",
+            "numeric(20,0)",
+            Some(change.source.source_revision.to_string()),
+        ),
+        (
+            "decision_identity",
+            "text",
+            Some(change.source.decision_identity.clone()),
+        ),
+        (
+            "source_observed_at",
+            "bigint",
+            Some(change.source.source_observed_at.to_string()),
+        ),
+        (
+            "clock_uncertainty_seconds",
+            "numeric(20,0)",
+            Some(change.source.clock_uncertainty_seconds.to_string()),
+        ),
+    ]);
+    Ok(fields)
+}
+fn key_predicate(query: &mut sqlx::QueryBuilder<sqlx::Postgres>, fields: Mirror) {
+    for (index, (column, kind, value)) in fields.into_iter().enumerate() {
+        if index != 0 {
+            query.push(" AND ");
+        }
+        query
+            .push(column)
+            .push(" = ")
+            .push_bind(value)
+            .push("::text::")
+            .push(kind);
+    }
+}
+
+impl AdmissionGuardStore {
+    pub async fn connect_runtime(database_url: &str, maximum_guard_bytes: usize) -> Result<Self> {
+        if maximum_guard_bytes == 0 {
+            return invalid();
+        }
+        let pool = super::schema::connect_runtime(database_url).await?;
+        Ok(Self {
+            pool,
+            maximum_guard_bytes,
+        })
+    }
+
+    pub async fn load(
+        &self,
+        keys: &[AdmissionAuthorityGuardKeyV1],
+    ) -> Result<Vec<Option<AdmissionAuthorityPublicationChangeV1>>> {
+        if keys.len() > 4 {
+            return invalid();
+        }
+        let mut transaction = self.pool.begin().await?;
+        super::db::lock_admission_relations(&mut transaction).await?;
+        let mut rows = Vec::with_capacity(keys.len());
+        for key in keys {
+            rows.push(self.load_locked(&mut transaction, key).await?);
+        }
+        transaction.commit().await?;
+        Ok(rows)
+    }
+
+    async fn load_locked(
+        &self,
+        transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+        key: &AdmissionAuthorityGuardKeyV1,
+    ) -> Result<Option<AdmissionAuthorityPublicationChangeV1>> {
+        use sqlx::Row;
+        let (table, fields, encoded_key) = key_storage(key, self.maximum_guard_bytes)?;
+        // Guard payload length before transfer in the same protected snapshot.
+        // NULL marks oversized/corrupt storage, never authoritative absence.
+        let mut query = sqlx::QueryBuilder::new("SELECT CASE WHEN octet_length(change_json) <= ");
+        query.push_bind(checked(i64::try_from(self.maximum_guard_bytes))?).push(" THEN change_json END AS payload, CASE WHEN octet_length((to_jsonb(g) - 'change_json')::text) <= ")
+            .push_bind(checked(i64::try_from(self.maximum_guard_bytes))?)
+            .push(" THEN (SELECT jsonb_object_agg(key, value) FROM jsonb_each_text(to_jsonb(g) - 'change_json')) END AS mirrors FROM ").push(table).push(" g WHERE ");
+        key_predicate(&mut query, fields);
+        let row = query.build().fetch_optional(&mut **transaction).await?;
+        let Some(row) = row else {
+            let history: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1)").bind(encoded_key).fetch_one(&mut **transaction).await?;
+            if history {
+                return invalid();
+            }
+            return Ok(None);
+        };
+        let payload: Option<String> = row.try_get("payload")?;
+        let payload = payload.ok_or(DurabilityError::InvalidStoredState)?;
+        let change = decode_guard(&payload, self.maximum_guard_bytes)?;
+        if &change.key != key {
+            return invalid();
+        }
+        let expected: serde_json::Map<String, serde_json::Value> =
+            guard_mirrors(&change, self.maximum_guard_bytes)?
+                .into_iter()
+                .map(|(name, _, value)| {
+                    (
+                        name.to_owned(),
+                        value.map_or(serde_json::Value::Null, serde_json::Value::String),
+                    )
+                })
+                .collect();
+        let mirrors: serde_json::Value = row.try_get("mirrors")?;
+        if mirrors != serde_json::Value::Object(expected) {
+            return invalid();
+        }
+        let history_matches: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1 AND publication_revision = $2::text::numeric(20,0) AND source_authority = $3 AND source_revision = $4::text::numeric(20,0) AND decision_identity = $5 AND change_json = $6) AND NOT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1 AND publication_revision > $2::text::numeric(20,0))")
+            .bind(encoded_key).bind(change.publication_revision.to_string()).bind(&change.source.authority).bind(change.source.source_revision.to_string()).bind(&change.source.decision_identity).bind(&payload).fetch_one(&mut **transaction).await?;
+        if !history_matches {
+            return invalid();
+        }
+        Ok(Some(change))
+    }
+
+    pub async fn publish(
+        &self,
+        request: &AdmissionAuthorityPublicationV1,
+    ) -> Result<GuardPublicationDisposition> {
+        if request.changes().len() > 4 {
+            return invalid();
+        }
+        // Encode/validate explicit per-record allocation before transaction work.
+        let encoded: Vec<_> = request
+            .changes()
+            .iter()
+            .map(|row| encode_guard(row, self.maximum_guard_bytes))
+            .collect::<Result<_>>()?;
+        let mut transaction = self.pool.begin().await?;
+        super::db::lock_admission_relations(&mut transaction).await?;
+        let mut current = Vec::with_capacity(request.changes().len());
+        for change in request.changes() {
+            current.push(self.load_locked(&mut transaction, &change.key).await?);
+        }
+        if let Err(error) = request.validate_locked(&current) {
+            return Ok(if error == AdmissionAuthorityPublicationErrorV1::Stale {
+                GuardPublicationDisposition::Stale
+            } else {
+                GuardPublicationDisposition::Conflict
+            });
+        }
+        if current
+            .iter()
+            .zip(request.changes())
+            .all(|(old, new)| old.as_ref() == Some(new))
+        {
+            transaction.commit().await?;
+            return Ok(GuardPublicationDisposition::Existing);
+        }
+        // Classify the entire batch before effects. Permanent decision history
+        // prevents an owner decision or source revision being reused later.
+        for (change, old) in request.changes().iter().zip(&current) {
+            if old.as_ref() == Some(change) {
+                continue;
+            }
+            let (_, _, key) = key_storage(&change.key, self.maximum_guard_bytes)?;
+            let conflict: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM game_durability_admission_guard_history WHERE guard_key = $1 AND (publication_revision = $2::text::numeric(20,0) OR (source_authority = $3 AND (source_revision = $4::text::numeric(20,0) OR decision_identity = $5))))")
+                .bind(key).bind(change.publication_revision.to_string()).bind(&change.source.authority).bind(change.source.source_revision.to_string()).bind(&change.source.decision_identity).fetch_one(&mut *transaction).await?;
+            if conflict {
+                return Ok(GuardPublicationDisposition::Conflict);
+            }
+        }
+        for ((change, old), payload) in request.changes().iter().zip(&current).zip(&encoded) {
+            if old.as_ref() == Some(change) {
+                continue;
+            }
+            let (table, keys, key) = key_storage(&change.key, self.maximum_guard_bytes)?;
+            let mut fields = guard_mirrors(change, self.maximum_guard_bytes)?;
+            fields.push(("change_json", "text", Some(payload.clone())));
+            let mut query = sqlx::QueryBuilder::new("INSERT INTO ");
+            query.push(table).push(" (");
+            for (index, (column, _, _)) in fields.iter().enumerate() {
+                if index != 0 {
+                    query.push(", ");
+                }
+                query.push(*column);
+            }
+            query.push(") VALUES (");
+            for (index, (_, kind, value)) in fields.iter().enumerate() {
+                if index != 0 {
+                    query.push(", ");
+                }
+                query.push_bind(value.clone()).push("::text::").push(*kind);
+            }
+            query.push(") ON CONFLICT (");
+            for (index, (column, _, _)) in keys.iter().enumerate() {
+                if index != 0 {
+                    query.push(", ");
+                }
+                query.push(*column);
+            }
+            query.push(") DO UPDATE SET ");
+            for (index, (column, _, _)) in fields.iter().enumerate() {
+                if index != 0 {
+                    query.push(", ");
+                }
+                query.push(*column).push(" = EXCLUDED.").push(*column);
+            }
+            query.build().execute(&mut *transaction).await?;
+            sqlx::query("INSERT INTO game_durability_admission_guard_history (guard_key, publication_revision, source_authority, source_revision, decision_identity, change_json) VALUES ($1, $2::text::numeric(20,0), $3, $4::text::numeric(20,0), $5, $6)")
+                .bind(key).bind(change.publication_revision.to_string()).bind(&change.source.authority).bind(change.source.source_revision.to_string()).bind(&change.source.decision_identity).bind(payload).execute(&mut *transaction).await?;
+        }
+        transaction.commit().await?;
+        Ok(GuardPublicationDisposition::Applied)
+    }
+}

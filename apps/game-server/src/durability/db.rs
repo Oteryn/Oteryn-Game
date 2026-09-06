@@ -21,30 +21,7 @@ pub(super) async fn lock_admission_domain(
     transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: &oteryn_game_server::foundation::ReconnectDurabilityRecordV1,
 ) -> Result<(), DurabilityError> {
-    // Lexical order, complete current ledger. Immediate FK/unique/index work on
-    // these relations cannot introduce a new competing writer/row lock after L.
-    for relation in [
-        "game_durability_admission_account_guards",
-        "game_durability_admission_character_guards",
-        "game_durability_admission_guard_history",
-        "game_durability_admission_lifecycle_receipts",
-        "game_durability_admission_runtime_guards",
-        "game_durability_admission_signing_trust_guards",
-        "game_durability_control_loss_continuity",
-        "game_durability_fresh_admission_receipts",
-        "game_durability_reconnect_attempts",
-        "game_durability_reconnect_pending_commands",
-        "game_durability_reconnect_sessions",
-        "game_durability_recovery_grant_consumptions",
-        "game_durability_session_replacements",
-        "game_durability_transport_ref_reservations",
-    ] {
-        sqlx::query(sqlx::AssertSqlSafe(format!(
-            "LOCK TABLE {relation} IN EXCLUSIVE MODE"
-        )))
-        .execute(&mut **transaction)
-        .await?;
-    }
+    lock_admission_relations(transaction).await?;
     let identity = record.identity();
     let mut keys = vec![
         (
@@ -115,6 +92,37 @@ pub(super) async fn lock_admission_domain(
             .bind(key)
             .execute(&mut **transaction)
             .await?;
+    }
+    Ok(())
+}
+
+/// Shared strongest relation fence, acquired before domain keys and semantic time.
+pub(super) async fn lock_admission_relations(
+    transaction: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+) -> Result<(), DurabilityError> {
+    // Lexical order, complete current ledger. Immediate FK/unique/index work on
+    // these relations cannot introduce a new competing writer/row lock after L.
+    for relation in [
+        "game_durability_admission_account_guards",
+        "game_durability_admission_character_guards",
+        "game_durability_admission_guard_history",
+        "game_durability_admission_lifecycle_receipts",
+        "game_durability_admission_runtime_guards",
+        "game_durability_admission_signing_trust_guards",
+        "game_durability_control_loss_continuity",
+        "game_durability_fresh_admission_receipts",
+        "game_durability_reconnect_attempts",
+        "game_durability_reconnect_pending_commands",
+        "game_durability_reconnect_sessions",
+        "game_durability_recovery_grant_consumptions",
+        "game_durability_session_replacements",
+        "game_durability_transport_ref_reservations",
+    ] {
+        sqlx::query(sqlx::AssertSqlSafe(format!(
+            "LOCK TABLE {relation} IN EXCLUSIVE MODE"
+        )))
+        .execute(&mut **transaction)
+        .await?;
     }
     Ok(())
 }

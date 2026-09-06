@@ -14,6 +14,122 @@ mod durability;
 mod postgres;
 
 #[test]
+fn guard_publication_is_atomic_replayable_and_retains_decision_history()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::admission_authority_guards::{
+        AdmissionGuardStore, GuardPublicationDisposition,
+    };
+    use foundation::admission_authority_publication::*;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread()
+        .enable_all()
+        .build()?
+        .block_on(async {
+            let database = postgres::IsolatedPostgres::create("guard_publication").await?;
+            let result = async {
+                let url = database.database_url()?;
+                MigrationExecutor::connect_migration(&url)
+                    .await?
+                    .apply_embedded_ledger()
+                    .await?;
+                let pool = sqlx::PgPool::connect(&url).await?;
+                let now = postgres_clock(&pool).await?;
+                let mut source = postgres::fresh::Source::new(now)?;
+                // Explicit test allocation, not a selected production resource default.
+                let store = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+                let request = authority_matrix::checked(AdmissionAuthorityPublicationV1::prepare(
+                    &source, now,
+                ))?;
+                assert_eq!(
+                    store.publish(&request).await?,
+                    GuardPublicationDisposition::Applied
+                );
+                assert_eq!(
+                    store.publish(&request).await?,
+                    GuardPublicationDisposition::Existing
+                );
+                let keys: Vec<_> = source.rows.iter().map(|row| row.key.clone()).collect();
+                assert_eq!(
+                    store.load(&keys).await?,
+                    source.rows.iter().cloned().map(Some).collect::<Vec<_>>()
+                );
+                for row in &mut source.rows {
+                    row.publication_revision = 2;
+                    row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                        expected_publication_revision: 1,
+                    };
+                    row.source.source_revision = 2;
+                    row.source.decision_identity = "next-independent-decision".into();
+                    if let AdmissionAuthorityGuardStateV1::Account { security, .. } = &mut row.state
+                    {
+                        security.provenance.publication_revision = 2;
+                    }
+                }
+                // Reusing an accepted decision for different effects must reject the
+                // entire batch, including otherwise valid changes preceding it.
+                source.rows[3].source.decision_identity = "platform-observation-1".into();
+                let conflicting = authority_matrix::checked(
+                    AdmissionAuthorityPublicationV1::prepare(&source, now),
+                )?;
+                assert_eq!(
+                    store.publish(&conflicting).await?,
+                    GuardPublicationDisposition::Conflict
+                );
+                assert_eq!(
+                    store.load(&keys).await?,
+                    request
+                        .changes()
+                        .iter()
+                        .cloned()
+                        .map(Some)
+                        .collect::<Vec<_>>()
+                );
+                source.rows[3].source.decision_identity = "next-independent-decision".into();
+                let successor = authority_matrix::checked(
+                    AdmissionAuthorityPublicationV1::prepare(&source, now),
+                )?;
+                assert_eq!(
+                    store.publish(&successor).await?,
+                    GuardPublicationDisposition::Applied
+                );
+                assert_eq!(
+                    store.publish(&request).await?,
+                    GuardPublicationDisposition::Stale
+                );
+                let restarted = AdmissionGuardStore::connect_runtime(&url, 8192).await?;
+                assert_eq!(
+                    restarted.load(&keys).await?,
+                    source.rows.iter().cloned().map(Some).collect::<Vec<_>>()
+                );
+                let history: i64 = sqlx::query_scalar(
+                    "SELECT COUNT(*) FROM game_durability_admission_guard_history",
+                )
+                .fetch_one(&pool)
+                .await?;
+                assert_eq!(history, 8);
+                // Isolated administrator corrupts one mirror; decoded history
+                // must not override the independently stored eligibility field.
+                sqlx::query(
+                    "UPDATE game_durability_admission_character_guards SET eligible = NOT eligible",
+                )
+                .execute(&pool)
+                .await?;
+                assert!(matches!(
+                    restarted.load(&keys).await,
+                    Err(DurabilityError::InvalidStoredState)
+                ));
+                pool.close().await;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            }
+            .await;
+            database.cleanup().await?;
+            result
+        })
+}
+
+#[test]
 fn fresh_sealed_fixture_prepares_complete_owner_operation() -> Result<(), Box<dyn std::error::Error>>
 {
     let source = postgres::fresh::Source::new(100)?;

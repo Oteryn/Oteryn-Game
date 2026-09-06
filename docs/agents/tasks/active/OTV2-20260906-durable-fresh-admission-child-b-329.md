@@ -110,6 +110,16 @@ No Foundation, Cargo/lockfile, workflow/protection, 0001 edits, production DB/so
 
 ## Implementation / findings
 
+### Window 3 — initial typed publication storage
+
+Native priority repair `df0472e88ce4809d124011f0bae24e6007946257` / tree `b6720ec247e5ecf10e8a3092dafc06cee6e2f28d` was normally fast-forwarded clean and custody returned in the same window. The next focused test first produced compiler RED for absent `AdmissionGuardStore` / disposition API (`b329-guard-api-red.log`); this is compiler evidence, not PostgreSQL RED.
+
+Initial typed storage now applies sealed publications across the four current guard tables and immutable decision/source history in one transaction. Full current payloads and every SQL mirror are compared, and current rows must match their highest retained history. Missing current rows with retained history fail closed. Exact current replay preserves original metadata; source/publication/decision reuse rejects before any batch effects. The existing strongest lexical relation fence is factored into a shared helper for publication and legacy journal operations; this preserves conservative serialization, not completed adaptive key/row closure.
+
+Configured PostgreSQL case `guard_publication_is_atomic_replayable_and_retains_decision_history` covers independent four-domain bootstrap, exact replay, a conflicting fourth decision rolling back the whole proposed batch, valid successor, stale prior retry, new adapter reload, retained history count and single eligibility-mirror corruption. Actual SQL execution is pending hosted qualification. Runtime schema compatibility is checked through the existing helper; no source truth or completion capability is constructed.
+
+Per-record budgets remain explicit caller allocations, not production defaults. SQL guards payload and mirror byte lengths before transfer within the same protected snapshot. Complete all-copy/end-to-end resource accounting, executor slots, pending recovery, full physical lock closure and the remaining fresh/lifecycle adapter are still outstanding and required. No completion seal, migration binary, Foundation, registry or other unallocated path is changed. Local strict all-target Clippy passed and library tests passed291/291 (unconfigured SQL returns remain excluded from DB evidence); formatting and governance remain required before handoff.
+
 ### Window 3 — retained replay and continuity priority repair
 
 Work continuation comment `5558970279` grants successor writer `b_resume_audit` the same canonical branch/PR and thirteen paths, from `2026-09-06T11:43:00Z` to `12:43:00Z`. The recreated worktree is clean at native `35d7c8445dda1b1aef3899dbe2a119c8cd781b2f`; unpublished previous-worker work is unavailable and receives no completion credit. Immutable admission is retained; completed windows2, worker rotations1 and prior repair/retry evidence persist.
@@ -188,7 +198,7 @@ Work creates/identifies the sole implementation PR after protected allocation; w
 ## Context checkpoint
 
 ```yaml
-last_progress: actual relation-wait RED repaired with conservative common fence; owned fixture family repaired; hosted validation and full adapter remain open
+last_progress: retained replay priority repair published; initial typed guard publication storage and configured test prepared; actual SQL and full adapter remain open
 status: in_progress
 admission_state: ADMITTED
 branch: agent/durable-fresh-admission-child-b-329
@@ -197,7 +207,7 @@ pr: 335
 execution_budget_minutes: 60
 execution_window_number: 3
 execution_window_started_at: 2026-09-06T11:43:00Z
-execution_window_elapsed_minutes: 1
+execution_window_elapsed_minutes: 11
 execution_windows_completed: 2
 worker_rotations: 1
 final_head_sha: null
