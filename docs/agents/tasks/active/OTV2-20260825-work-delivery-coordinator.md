@@ -1,5 +1,15 @@
 # OTV2-20260825-work-delivery-coordinator
 
+## Current Work checkpoint — prospective SQLx driver351 allocation
+
+This checkpoint supersedes earlier current-status prose without resetting historical admissions. Work162 remains the unique control plane. GitHub preflight: [issue162 comment5559883406](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5559883406), protected main `d9d1b566acb57b537ff901d9765c32a95110c259`.
+
+- Issue351 is a prospective implementation prerequisite under accepted337/341 and protected registry342. Driver work is **NOT_ADMITTED** until independent allocation qualification, protected integration/readback and a Work admission grant.
+- B329/PR335, Foundation338/PR343 and Wire346/PR349 retain their existing writer custody, branches, admissions and cumulative counters. Their current GitHub checkpoints govern repairs/qualification; this package makes no delivery claim or change to their paths.
+- Server Seam247 remains WAITING_DEPENDENCY. Its Cargo lease is amended only by the exact prospective transfer below; its other held paths, original history and source/bootstrap obligations remain intact.
+- Handoff350 at `0131d990eab956462b389374b2e725427c6de251` is frozen historical evidence. Its LIVE/Work overlap is the same coordinator's custody, serialized to this package; it must not overwrite this current allocation during later integration.
+- This package edits exactly LIVE, the Work task and the new351 task/plan. No vendor/Cargo/runtime write, new numeric architecture policy or Server Seam release occurs here.
+
 ## Current Work checkpoint — owning loss Foundation338 amendment
 
 This checkpoint supersedes earlier status prose without resetting historical admissions. Work162 remains the unique control plane.
@@ -259,3 +269,16 @@ next_action: qualify and integrate this owning-loss allocation after347 then bin
 ```
 
 This package changes only allocation/task/archive coordination documents. It grants no second control plane and no runtime mutation to Work. Prospective338 and Bfixture amendment activate only after protected integration/readback; existing B runtime custody remains with its writer.
+
+## SQLx351 coordinator package custody
+
+Under issue162 comment5559883406, this documentation package on `coord/sqlx-driver-allocation-351` owns exactly:
+
+- docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
+- docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
+- docs/agents/tasks/active/OTV2-20260906-sqlx-driver-budget-351.md
+- docs/superpowers/plans/2026-09-06-sqlx-driver-budget.md
+
+This current scope supersedes earlier coordinator package path lists only; it preserves their historical evidence. The351 task/plan pass to the sole driver writer only at protected readback/admission. Work grants no runtime ownership to itself. Original programme budget/history and existing workers' paused/resumed windows remain unchanged. The shared Cargo transfer and admission requirements are specified in LIVE's prospective351 amendment. Driver implementation, B activation and Server Seam readiness remain distinct gates.
+
+Next action: Work independently qualifies and protects this exact four-path allocation package before considering driver admission.

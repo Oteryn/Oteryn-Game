@@ -1,5 +1,15 @@
 # Oteryn v2 Implementation Live Allocations
 
+## Current Work checkpoint — prospective SQLx driver351 allocation
+
+This checkpoint supersedes earlier current-status prose without resetting historical admissions. Work162 remains the unique control plane. GitHub preflight: [issue162 comment5559883406](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5559883406), protected main `d9d1b566acb57b537ff901d9765c32a95110c259`.
+
+- Issue351 is a prospective implementation prerequisite under accepted337/341 and protected registry342. Driver work is **NOT_ADMITTED** until independent allocation qualification, protected integration/readback and a Work admission grant.
+- B329/PR335, Foundation338/PR343 and Wire346/PR349 retain their existing writer custody, branches, admissions and cumulative counters. Their current GitHub checkpoints govern repairs/qualification; this package makes no delivery claim or change to their paths.
+- Server Seam247 remains WAITING_DEPENDENCY. Its Cargo lease is amended only by the exact prospective transfer below; its other held paths, original history and source/bootstrap obligations remain intact.
+- Handoff350 at `0131d990eab956462b389374b2e725427c6de251` is frozen historical evidence. Its LIVE/Work overlap is the same coordinator's custody, serialized to this package; it must not overwrite this current allocation during later integration.
+- This package edits exactly LIVE, the Work task and the new351 task/plan. No vendor/Cargo/runtime write, new numeric architecture policy or Server Seam release occurs here.
+
 ## Current Work checkpoint — owning loss Foundation338 amendment
 
 This checkpoint supersedes earlier status prose without resetting historical admissions. Work162 remains the unique control plane.
@@ -980,3 +990,29 @@ external_repository_write_authority: none
 After this package and registry342 are protected and Work binds fresh admission, exactly these five paths belong to one worker. This source prerequisite may run beside B329 and338 because its parser/test paths are disjoint and it registers no live authority. The lib.rs lease is a deliberate serialized exception: transfer only the single admission_evidence module export from the held247 composition surface to346 until protected delivery/archive/readback;247 remains paused and must later merge up normally, preserving its existing branch/head/partial work. All other247 lib.rs changes, main/Cargo/lock/protocol and source-bootstrap surfaces remain held/unallocated. No second writer may mutate lib.rs concurrently. This amendment changes no production permission or full Server Seam state.
 
 Source346 is independently mergeable pure codec work, not actual Child C composition. It may not implement sealed source traits, select unspecified fresh wire literals, install descriptors, synthesize floors/publication revisions or claim transport authentication. Work verifies fresh open-PR and held-branch overlap before dispatch. Registry342 retains its exclusive three-path lease and B/338 retain their admissions/counters.
+
+## Prospective SQLx driver351 and247 Cargo lease amendment
+
+```yaml
+issue: 351
+status: NOT_ADMITTED
+allocation_source_main_sha: d9d1b566acb57b537ff901d9765c32a95110c259
+admission_main_sha: NOT_ADMITTED
+branch: agent/sqlx-driver-budget-351
+task_packet: docs/agents/tasks/active/OTV2-20260906-sqlx-driver-budget-351.md
+implementation_plan: docs/superpowers/plans/2026-09-06-sqlx-driver-budget.md
+execution_budget_minutes: 60
+owned_paths:
+  - vendor/sqlx-postgres-0.9.0/**
+  - Cargo.toml
+  - Cargo.lock
+  - docs/agents/tasks/active/OTV2-20260906-sqlx-driver-budget-351.md
+  - docs/superpowers/plans/2026-09-06-sqlx-driver-budget.md
+external_repository_write_authority: none
+```
+
+Only after this exact allocation is protected and Work reads it back, transfer from247 to the sole351 writer the root Cargo.toml scope needed for the explicit sqlx-postgres path patch and necessary workspace exclusion, and Cargo.lock consequences of that patch. Preserve all other247 paths and dependency declarations. The lease is exclusive until protected351 integration/readback or an explicit coordinated release;247 and Dependabot259/260/261 may not mutate or integrate overlapping Cargo changes during it. Work must verify overlap at admission and integration; upstream changes require normal merge-up and exact resulting-diff review. No automatic dependency upgrades, lockfile regeneration churn or general workspace/dependency authority follows.
+
+The vendor subtree contains only exact upstream sqlx-postgres0.9.0, its licenses, OTERYN_PROVENANCE.md and the reviewed driver patch/tests. SQLx-core, other vendor crates and TLS implementation changes are excluded, including TLS changes inside this subtree. Additional concrete dependency paths require a separately protected amendment. Preserve TLS behavior and prove its dependency allocation coverage; no plaintext-only proof or TLS downgrade qualifies delivery.
+
+Enforce accepted337/341/342 resource accounting through preallocation denial against the same B slot balance, including retained/idle allocations and temporary overlap. No arbitrary driver reservation, new wire/count threshold or extra connection budget is granted. B source integration remains solely B329 work after protected driver delivery and Work's serialized activation; driver351 gains no B/SQL/Foundation/bootstrap paths. Missing implementation alone is not architecture escalation; an evidenced required change to accepted envelope, semantics or transport policy is reported to Work for owner-designated architecture resolution.

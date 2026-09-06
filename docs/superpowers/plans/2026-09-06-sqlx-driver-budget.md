@@ -1,0 +1,39 @@
+# SQLx PostgreSQL driver budget351 implementation plan
+
+## Authority, exact scope and sequencing
+
+Issue351 under Work162 implements accepted DUR-FRESH-RESOURCE-ENVELOPE-V1 (#337/#341) and protected registry342. This is the single task plan; no duplicate design approval is required. Source main: d9d1b566acb57b537ff901d9765c32a95110c259. Worker NOT_ADMITTED until independently reviewed allocation is protected and Work binds readback, exclusive Cargo lease and immutable admission.
+
+Prospective paths: `vendor/sqlx-postgres-0.9.0/**`, root `Cargo.toml`, root `Cargo.lock`, `docs/agents/tasks/active/OTV2-20260906-sqlx-driver-budget-351.md` and this plan. Cargo.toml permits only sqlx-postgres path patch and necessary workspace exclusion; Cargo.lock permits only its consequences. No B/SQL/Foundation/registry/workflow, SQLx-core, sibling vendor or TLS implementation changes, including TLS changes within sqlx-postgres. Existing TLS behavior remains required. Report concrete additional dependency paths for a protected amendment; inability to prove coverage keeps acceptance closed.
+
+One writer, one isolated branch/worktree, proposed `agent/sqlx-driver-budget-351`. Parallel B/338/346 work retains existing custody. Serialize Cargo against247 and Dependabot259/260/261; Work verifies current overlap before admission and integration. Only the explicit root Cargo patch scope transfers from247; all its other scope/history stays held. New driver capability is integrated/protected before the existing B writer activates it on B's owned paths. No source/bootstrap or Server Seam release follows.
+
+## 1. Reproduce and inventory before patching
+
+Verify upstream sqlx-postgres0.9.0 crate checksum `87a2bdd6e83f6b3ea525ca9fee568030508b58355a43d0b2c1674d5f79dcd65e`, VCS `003b698e99e024f3621b8043a2426fde5b741171`, subdirectory `sqlx-postgres`. Preserve upstream manifests and licenses; record exact provenance, import method, file/delta manifest and verification commands in `vendor/sqlx-postgres-0.9.0/OTERYN_PROVENANCE.md`. The root patch must keep one compatible SQLx type universe and preserve selected features/version. Review all upstream/modified code relevant to the bounded path, not merely the diff.
+
+Reproduce five-byte announced-length reserve, DataRow/RowDescription peer-count reserve and cumulative ParameterStatus/type/table retention. Inventory every controlled allocation across connect/authentication/TLS, read/write, encode/decode, arguments/results, metadata/errors/logging, caches and disposal. Identify allocation capacity/growth, temporary overlap, Arc/Bytes backing ownership and all cross-operation/idle retention. Inspect SQLx-core/TLS read-only to prove bounds or identify exact additional scope; do not assume an initial8192-byte buffer, disabled statement cache, timeout or shrink_buffers proves them.
+
+## 2. Implement accepted charging without a new policy
+
+Expose a driver reservation capability that the existing B writer can bind to the same executor/slot ledger. No driver constructor may invent an independent budget for B work. Derive allocation admissibility from remaining charged capacity with checked arithmetic and proven allocation overhead. Reserve before buffer/vector/string/cache growth; account capacity rather than length, and release only when backing ownership actually ends or transfers under a held charge. A fixed reservation is permitted only if its finite measured/proved bound is inside the existing budgets; allocating the whole4MiB slot to a fictional driver allowance is forbidden.
+
+A private bounded PostgreSQL buffer using public SQLx-core Socket is a candidate, not a guaranteed complete solution. Validate minimum frame lengths and complete count/body structure before allocation; handle every backend message family, including errors/notices/status and authentication. Bound send encoding as well as receive growth. Track shared backing once only with demonstrable retained ownership; deep clones and growth overlap count separately. Bound status/type/table cache growth through the same ledger, preserving SQL semantics. Retained pooled/idle connection allocations cannot disappear from accounting at task completion.
+
+Accepted conjunctive ceilings remain unchanged: queue8 entries/524288 bytes each/4194304 total; active2 slots/4194304 bytes each/8388608 total; total12582912 charged resident bytes in one executor; operation65536, guard8192, durable row131072, SQL32 payload rows/524288 aggregate logical bytes. All other registry dimensions,32 variable columns,64 pending commands/256 domain revisions and original custody/deadline rules remain binding. Logical SQL row/result bytes are not interchangeable with driver wire/capacity charges. No hidden lower semantic limit, truncation, omitted provenance or count/hash shortcut is allowed.
+
+Resource denial yields bounded unavailable behavior; after possibly effectful submission, preserve ambiguity and original operation custody. No detached backend/task, extra executor, freed permit while work remains, transport downgrade or TLS-disable workaround. Reserve completion/error capacity before irreversible COMMIT. The driver does not itself grant owning authorization or clear B checkpoints.
+
+## 3. Qualification and scope gate
+
+Use independent positive controls and one changed invariant per negative. Demonstrate denial before size-controlled allocation for hostile header lengths, overflow/minimum lengths, huge count/tiny body, malformed row ranges, repeated status names/values and cache growth. Exercise receive/send growth, bounded error formatting, retained rows/Bytes clones, partial messages, cancellation at each phase, repeated operations, idle pooling and close/drop. Compare measured peak capacities to the complete ownership ledger; a post-allocation counter check is insufficient.
+
+Prove compatible actual configured PostgreSQL17.6 behavior at accepted maxima and first representable values above, cumulative rows/bytes and simultaneous active slots. Include full64-command/256-revision records, status/error traffic, original-operation reconciliation and cancellation/ambiguity compatibility through already-authorized B qualification after driver integration. Driver-only fixtures are not proof of production B routing; report the later B activation boundary explicitly. Run existing affected workspace tests unchanged as well as vendored tests; vendor exclusion from workspace is not permission to skip its tests. Keep all normal TLS features and prove the dependency path's capacity coverage. If proof needs excluded code, stop only that implementation boundary and return exact path evidence to Work.
+
+Run fmt, strict applicable Clippy, dependency/lock/provenance review, governance and complete author self-review. Require genuinely independent full-change review of parser/resource and supply-chain changes, exact-head canonical CI, normal Merge Queue and protected readback. No suppressed/ignored test, workflow weakening or skipped PostgreSQL result counts as passing. Preserve all failures/repairs and bounded-window history.
+
+## 4. Integration and material escalation boundary
+
+Work serializes root Cargo overlap, normal merge-up and qualification of the resulting exact head, then protected integration/readback and explicit lease release. The B writer subsequently binds this capability to B's actual slot ledger and proves all backend paths under its own allocation. Driver completion alone does not prove B resources or Server Seam readiness.
+
+Missing implementation or insufficient path scope is not a material architecture question. Escalate through Work to the owner-designated architect only with evidence that accepted envelope, semantic guarantees or supported transport policy must change; do not choose a new numeric threshold or policy locally. Current next action: independently qualify and protect this documentation allocation before driver admission.
