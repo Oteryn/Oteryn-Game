@@ -4,16 +4,17 @@
 task_id: OTV2-20260906-native-source-bounds-recovery-336
 title: Bound native source resources and explicit recovery evidence transport
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: arch/native-source-bounds-recovery-336
+branch: null
+historical_branch: arch/native-source-bounds-recovery-336
 issue: 336
-pr: null
+pr: 339
 base_sha: b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd
 admission_main_sha: b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd
 head_sha: null
-final_head_sha: null
+final_head_sha: 5ebb18fa920bd7d0f6d358677ba655f113efa530
 final_head_frozen_at: null
 owner: Oteryn Sol Supervising Architect
 coordinator: Oteryn Work Delivery Coordinator
@@ -21,7 +22,8 @@ created_at: 2026-09-06
 updated_at: 2026-09-06
 execution_budget_minutes: 30
 large_budget_reason: null
-owned_paths:
+owned_paths: []
+historical_owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md
   - docs/architecture/reviews/OTERYN_GAME_RECOVERY_SOURCE_TRANSPORT_AMENDMENT_2026-09-06.md
   - docs/agents/tasks/active/OTV2-20260906-native-source-bounds-recovery-336.md
@@ -174,3 +176,7 @@ owner_action_required: null
 blocker: independent_review_and_protected_integration_pending
 next_action: Work publishes and independently qualifies the staged candidate for protected integration.
 ```
+
+## Terminal protected closeout
+
+Work verified PR #339 protected merge `c4099a5a626c5fb17cfe40c11cf8dd813b4550e7`, final reviewed head `5ebb18fa920bd7d0f6d358677ba655f113efa530`, actual full Merge Queue `34023487584` SUCCESS and exact-head independent review P0/P1/P2=0. Architecture delivery is completed; branch/owned-path custody is released and this record is archived. Immutable admission, historical findings and execution evidence above remain provenance; older candidate/waiting prose does not reopen the task. This is accepted documentation, not registry/runtime/source availability. Next programme action: separately allocate and qualify resource registry342; preserve Server Seam dependency hold.
