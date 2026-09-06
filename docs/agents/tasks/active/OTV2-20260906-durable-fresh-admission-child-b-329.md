@@ -35,6 +35,8 @@ owned_paths:
   - apps/game-server/migrations/0002_fresh_admission_authority.sql
   - apps/game-server/tests/durability_postgres.rs
   - apps/game-server/tests/support/postgres.rs
+  - apps/game-server/tests/support/authority_matrix.rs
+  - apps/game-server/tests/support/authority_recovery.rs
   - docs/agents/tasks/active/OTV2-20260906-durable-fresh-admission-child-b-329.md
   - docs/superpowers/plans/2026-09-06-durable-fresh-admission-child-b.md
 public_contracts: [FND-DUR-FRESH-ADMISSION-V1, FND-DUR-FRESH-CLAIM-PUBLICATION-V1]
@@ -107,6 +109,8 @@ finding_dispositions:
 No Foundation, Cargo/lockfile, workflow/protection, 0001 edits, production DB/source/bootstrap/key/live-account work, external repositories, listener/deployment, arbitrary transfer/takeover or new post-grace policy. No local PostgreSQL privilege/root-check bypass. Missing concrete path needs go to Work before mutation. No automatic source readiness or B/C release claims.
 
 ## Implementation / findings
+
+Window2 authority: Work issue329 comment `5558302168`, starts `2026-09-06T09:22:00Z`, ends `10:22:00Z`. Native checkpoint `c92340d052b9e82c5757748a38357f5091fc37f4` / tree `1bafd017bb7ab987d975085fcd198e59396a02ed` was normally fast-forwarded clean. Immutable admission is unchanged. Protected fixture amendment PR340 merge `4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee`, tree `f88a083b0a05a18fa3b0448afe204da10a7b589f`, MQ34023932923 PASS, adds exactly authority_matrix.rs and authority_recovery.rs (13 paths total); exact comment and protected LIVE amendment read before mutation. Window1 is closed; prior failure/repair counters persist. Open review P2: account occupancy before existing attempt classification overrides retained terminal and idempotency outcomes after canonical replacement. First priority is focused reproduction/repair, then full adapter completion. Focused configured SQL case `replaced_collision_replay_retains_terminal_and_idempotency_priority` is now prepared; actual hosted RED remains pending. Newly allocated fixtures use explicit independent `Seed.account` in both original record and LiveSource; collision actor selects OTHER_ACCOUNT, account mutation always differs from current source, and replacement authorization consumes independent LiveSource account. Strict all-target Clippy/fmt/diff checks pass; log `b329-window2-replay-red-compile.log`. No occupancy repair is claimed yet.
 
 Window 1 started at `2026-09-06T08:17:20Z` on the verified clean canonical branch and dedicated worktree. Initial material checkpoint adds the source-identical integration Foundation module/alias and a test-only sealed claim owner. The focused SQL schema case requires the fresh receipt table and truthful nullable initial continuity; its real hosted RED is pending. No schema or adapter success is claimed. Early compiler proof and SQL RED must use the existing hosted configured PostgreSQL route for actual DB assertions. Local PostgreSQL cannot start under the current user-namespace/unprivileged-identity constraints; continue useful local compilation and hosted qualification without weakening gates.
 
@@ -182,10 +186,10 @@ branch: agent/durable-fresh-admission-child-b-329
 head_sha: null
 pr: 335
 execution_budget_minutes: 60
-execution_window_number: 1
-execution_window_started_at: 2026-09-06T08:17:20Z
-execution_window_elapsed_minutes: 57
-execution_windows_completed: 0
+execution_window_number: 2
+execution_window_started_at: 2026-09-06T09:22:00Z
+execution_window_elapsed_minutes: 2
+execution_windows_completed: 1
 worker_rotations: 0
 final_head_sha: null
 final_head_frozen_at: null

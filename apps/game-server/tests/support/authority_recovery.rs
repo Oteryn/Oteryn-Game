@@ -369,6 +369,7 @@ fn typed_terminal_reasons_survive_reload_and_every_source_mutation() -> TestResu
                 Seed {
                     session: 30,
                     character: 31,
+                    account: OTHER_ACCOUNT,
                     ..seed
                 },
                 ReconnectPrepareDispositionV2::RejectedTransportRefCollision,

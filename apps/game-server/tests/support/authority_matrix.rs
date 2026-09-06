@@ -39,6 +39,7 @@ pub fn transport(raw: u8) -> TestResult<AuthenticatedTransportRefV1> {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Seed {
+    pub account: &'static str,
     pub session: u64,
     pub character: u64,
     pub generation: u64,
@@ -51,6 +52,7 @@ pub struct Seed {
 impl Seed {
     pub const fn fixed() -> Self {
         Self {
+            account: ACCOUNT,
             session: 20,
             character: 11,
             generation: 7,
@@ -69,7 +71,7 @@ pub fn prepared_record(seed: Seed) -> TestResult<ReconnectDurabilityRecordV1> {
         checked(ReconnectIdentityV1::new(
             session(seed.session)?,
             checked(ReconnectAttemptRef::new(seed.attempt))?,
-            ACCOUNT,
+            seed.account,
             character(seed.character)?,
             world(12)?,
             RuntimeScopeRefV1::channel(world(12)?, channel(13)?),
@@ -137,7 +139,7 @@ pub struct LiveSource(pub Value);
 impl LiveSource {
     pub fn read(seed: Seed) -> Self {
         let mut first = json!({
-            "account":ACCOUNT,"presence_character":seed.character,"eligible_character":seed.character,"eligible_world":12,
+            "account":seed.account,"presence_character":seed.character,"eligible_character":seed.character,"eligible_world":12,
             "candidate_present":true,"candidate_session":seed.session,"attempt":seed.attempt,
             "candidate_generation":seed.generation+1,"candidate_transport":seed.transport,"candidate_deadline":seed.now+115,
             "runtime_channel":13,"predecessor_session":10,"predecessor_generation":seed.generation,"lease_character":seed.character,"lease_generation":9,"scope_generation":10,
@@ -362,7 +364,7 @@ impl LiveSource {
         };
         checked(
             TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
-                ACCOUNT,
+                self.text("account")?,
                 self.presence()?.as_ref(),
                 session(self.number("predecessor_session")?)?,
                 session(self.number("candidate_session")?)?,
@@ -521,7 +523,11 @@ pub fn mutated(
         AfterAuthorization => json!(seed.now + 6),
         Older => json!(source.time(field)? - 1),
         Newer => json!(source.time(field)? + 1),
-        Different if field == "account" => json!(OTHER_ACCOUNT),
+        Different if field == "account" => json!(if source.text("account")? == OTHER_ACCOUNT {
+            ACCOUNT
+        } else {
+            OTHER_ACCOUNT
+        }),
         Different if old.is_boolean() => json!(!source.flag(field)?),
         Different if old.is_string() => json!(format!("{}:other", source.text(field)?)),
         Different => json!(source.number(field)? + 1),

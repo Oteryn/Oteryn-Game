@@ -991,6 +991,55 @@ mod terminal_replacement_postgres_red_tests {
     }
 
     #[test]
+    fn replaced_collision_replay_retains_terminal_and_idempotency_priority() -> TestResult {
+        run_postgres_test(async {
+            let (database, url) = migrated_database("replaced_collision_history").await?;
+            let now = unix_now().map_err(|_| "clock")?;
+            let journal = AdmissionReconnectJournal::connect_runtime(&url).await?;
+            let reserved = record(50, 51, 1, 0xa2, 3, 7, 10, now).map_err(|_| "reservation")?;
+            assert_eq!(
+                journal
+                    .prepare(&ReconnectDurabilityFlowV1::begin(reserved).1)
+                    .await?,
+                ReconnectPrepareDispositionV1::Prepared
+            );
+            let original = record(20, 11, 1, 0xa2, 3, 7, 10, now).map_err(|_| "original")?;
+            let original_request = ReconnectDurabilityFlowV1::begin(original.clone()).1;
+            assert_eq!(
+                journal.prepare(&original_request).await?,
+                ReconnectPrepareDispositionV1::RejectedTransportRefCollision
+            );
+            let successor = record(30, 11, 2, 0xa3, 3, 7, 10, now).map_err(|_| "successor")?;
+            let successor_request =
+                v2_request(successor, 20, 10).map_err(|_| "replacement authority")?;
+            assert_eq!(
+                journal.prepare_v2(&successor_request).await?,
+                ReconnectPrepareDispositionV2::Prepared
+            );
+            assert_eq!(
+                journal.prepare(&original_request).await?,
+                ReconnectPrepareDispositionV1::ExistingTerminal
+            );
+            let typed_original = ReconnectDurabilityFlowV2::begin(original, None).1;
+            assert_eq!(
+                journal.prepare_v2(&typed_original).await?,
+                ReconnectPrepareDispositionV2::ExistingTerminal {
+                    disposition: ReconnectDurableTerminalDispositionV1::TransportRefCollision,
+                }
+            );
+            let changed = record(20, 11, 1, 0xa4, 3, 7, 10, now).map_err(|_| "changed replay")?;
+            assert_eq!(
+                journal
+                    .prepare(&ReconnectDurabilityFlowV1::begin(changed).1)
+                    .await?,
+                ReconnectPrepareDispositionV1::IdempotencyConflict
+            );
+            database.cleanup().await?;
+            Ok(())
+        })
+    }
+
+    #[test]
     fn replacement_created_session_can_replay_fresh_same_fence_attempt_after_collision()
     -> TestResult {
         run_postgres_test(async {

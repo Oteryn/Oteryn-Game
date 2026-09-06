@@ -28,6 +28,10 @@ This exact prospective allocation activates only after protected integration and
 
 No Foundation, Cargo, lockfile, workflow, released 0001, listener, production provider/registration, deployment or external repository writes. Concrete missing surfaces require Work amendment before mutation. Steps are serialized because schema, shared lock order and canonical lifecycle mutations are coupled; independent read-only analysis and exact-head review can run alongside the sole writer.
 
+## Protected fixture amendment (window 2)
+
+PR340 protected merge `4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee` / MQ34023932923 and Work comment5558302168 add exactly `apps/game-server/tests/support/authority_matrix.rs` and `apps/game-server/tests/support/authority_recovery.rs` to the eleven paths above. These paths isolate transport/nonce fixture accounts and preserve independent source mutation evidence; they do not expand runtime policy or permit assertion weakening. Immutable B admission, same branch/PR and cumulative counters are retained. The semantic Foundation338 allocation remains separate and disjoint.
+
 ## Execution windows and custody
 
 The worker has one 60-minute execution window, not a multi-hour grant. The numbered checkpoints below are technical milestones, not seven automatically authorized hours. At the window boundary publish an authorized durable checkpoint and one next action; Work decides continuation/rotation. Preserve the same canonical branch/history and immutable admission. Only one writer owns the worktree at any time.
