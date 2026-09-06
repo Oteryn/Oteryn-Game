@@ -4,20 +4,20 @@
 task_id: OTV2-20260906-native-admission-resource-registry-342
 title: Register native admission resource envelopes
 mode: CONTRACT
-status: waiting
-admission_state: NOT_ADMITTED
+status: validating
+admission_state: ADMITTED
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/native-admission-resource-registry-342
 issue: 342
 pr: null
 allocation_source_main_sha: 0d354091dfc3a144a9c83c31434dec2aff4fe0c4
-admission_main_sha: NOT_ADMITTED
-base_sha: NOT_ADMITTED
+admission_main_sha: 9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2
+base_sha: 9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-owner: allocated registry worker
+owner: resource_integration_audit
 coordinator: Oteryn Work Delivery Coordinator
 created_at: 2026-09-06
 updated_at: 2026-09-06
@@ -61,7 +61,7 @@ No runtime, source/transport implementation, Cargo, migrations/SQL, validator or
 
 ## Implementation / findings
 
-NOT_STARTED. Preserve registry scope and validate all decision subdimensions independently rather than copying a draft mechanically.
+Work admission5559231769 grants window1 12:24–13:24UTC on immutable9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2. Implemented87 independent cap dimensions (51 source,13 assignment,23 durability), preserving67 existing entry objects unchanged. Both decisions and protected configuration addendum read; coupled aggregates, timeout containment, semantic-width distinctions and64/256 physical-row compatibility recorded. No new cap or runtime authority. JSON, required fields, unique154 IDs, fixed ranges and original object equality PASS; governance PASS (26 required policies / 9 lanes); independent review pending.
 
 ## Validation
 
@@ -82,13 +82,17 @@ One implementation branch/PR after protected allocation; Work controls publicati
 ## Context checkpoint
 
 ```yaml
-last_progress: exact prospective registry allocation prepared with explicit configuration addendum
-status: waiting
-admission_state: NOT_ADMITTED
-execution_window_number: 0
+last_progress: complete registry dimensional mapping prepared for independent review
+status: validating
+admission_state: ADMITTED
+execution_window_number: 1
 execution_windows_completed: 0
 worker_rotations: 0
 owner_action_required: null
-blocker: protected_allocation_and_decision_readback
-next_action: Work verifies protected allocation and both decisions then admits one bounded registry writer
+blocker: independent_review_and_exact_head_CI
+next_action: Work independently reviews staged candidate then publishes for exact-head qualification
 ```
+
+## Independent review repair — cycle 1
+
+Accepted P2: TLS row notes accidentally excluded all alternate-chain search rather than only unbounded alternate-chain search. Restored the accepted restriction throughout the TLS family. No numeric values, ranges or other semantics changed. Governance26/9 and whitespace PASS; independent repaired-tree readback pending. Original window1 12:24–13:24UTC and admission retained; repair_cycles:1, no retries/reset.
