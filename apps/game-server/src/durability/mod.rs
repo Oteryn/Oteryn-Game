@@ -11,6 +11,7 @@ pub mod fresh_admission;
 mod schema;
 
 pub use admission_journal::AdmissionReconnectJournal;
+pub use db::QueuedCheckpoint;
 pub use schema::{MigrationExecutor, SchemaCompatibility};
 
 use oteryn_game_server::foundation::{
@@ -50,6 +51,7 @@ type V2ScopeStorage = (i16, Vec<u8>, Option<Vec<u8>>, Option<Vec<u8>>);
 
 #[derive(Debug)]
 pub enum DurabilityError {
+    Unavailable,
     Database(sqlx::Error),
     Migration(sqlx::migrate::MigrateError),
     SchemaIncompatible(SchemaCompatibility),
@@ -59,6 +61,7 @@ pub enum DurabilityError {
 impl Display for DurabilityError {
     fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
         match self {
+            Self::Unavailable => formatter.write_str("durability work is unavailable"),
             Self::Database(error) => {
                 write!(formatter, "PostgreSQL durability operation failed: {error}")
             }
@@ -2355,6 +2358,17 @@ pub struct AdmissionRuntime {
     backend: std::sync::Arc<db::RuntimeBackend>,
 }
 impl AdmissionRuntime {
+    /// Reserve bounded bookkeeping before copying an original operation envelope.
+    /// Existing semantic APIs are not yet routed through this queue. This neither
+    /// constructs live authority nor permits reuse of an unresolved active slot.
+    pub fn enqueue_checkpoint(
+        &self,
+        operation_kind: i16,
+        original: &str,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        self.backend.enqueue(operation_kind, original)
+    }
+
     pub async fn connect(database_url: &str) -> Result<Self, DurabilityError> {
         Ok(Self {
             backend: db::registered_backend(database_url).await?,

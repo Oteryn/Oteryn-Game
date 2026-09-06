@@ -14,6 +14,97 @@ mod durability;
 mod postgres;
 
 #[test]
+fn registered_checkpoint_queue_retains_timeout_and_completion_custody()
+-> Result<(), Box<dyn std::error::Error>> {
+    use durability::AdmissionRuntime;
+    if !postgres_e2e_is_configured()? {
+        return Ok(());
+    }
+    // A separate real process owns its own production singleton. Do not reset the
+    // static registration or give this test a fixture-only constructor bypass.
+    const CHILD: &str = "OTERYN_CHECKPOINT_QUEUE_TEST_CHILD";
+    if std::env::var_os(CHILD).is_none() {
+        for mode in ["timeout", "cancel"] {
+            let status = std::process::Command::new(std::env::current_exe()?)
+                .args([
+                    "--exact",
+                    "registered_checkpoint_queue_retains_timeout_and_completion_custody",
+                    "--nocapture",
+                ])
+                .env(CHILD, mode)
+                .status()?;
+            assert!(
+                status.success(),
+                "registered queue subprocess failed: {mode}"
+            );
+        }
+        return Ok(());
+    }
+    tokio::runtime::Builder::new_current_thread().enable_all().build()?.block_on(async {
+        let database = postgres::IsolatedPostgres::create("registered_queue").await?;
+        let result = async {
+            let url = database.database_url()?;
+            MigrationExecutor::connect_migration(&url).await?.apply_embedded_ledger().await?;
+            let pool = sqlx::PgPool::connect(&url).await?;
+            let runtime = AdmissionRuntime::connect(&url).await?;
+            let shared = AdmissionRuntime::connect(&url).await?;
+            let mut queued = Vec::new();
+            for _ in 0..8 { queued.push(runtime.enqueue_checkpoint(1, "never submitted")?); }
+            assert!(matches!(shared.enqueue_checkpoint(1, "ninth"), Err(DurabilityError::Unavailable)));
+            drop(queued);
+            assert_eq!(runtime.enqueue_checkpoint(1, "first immutable original")?.establish().await?, 1);
+            // Completion alone cannot release the active slot.
+            let mut blocker = pool.begin().await?;
+            sqlx::query("LOCK TABLE game_durability_executor_custody IN SHARE MODE")
+                .execute(&mut *blocker).await?;
+            let second = shared.enqueue_checkpoint(2, "timed out original")?;
+            let observe = async {
+                tokio::time::timeout(std::time::Duration::from_secs(2), async {
+                    loop {
+                        let waiting: bool = sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM pg_locks WHERE relation = 'game_durability_executor_custody'::regclass AND NOT granted)")
+                            .fetch_one(&pool).await?;
+                        if waiting { return Ok::<(), sqlx::Error>(()); }
+                        tokio::task::yield_now().await;
+                    }
+                }).await.map_err(|_| "checkpoint never reached held relation")??;
+                Ok::<(), Box<dyn std::error::Error>>(())
+            };
+            let mut submission = Box::pin(second.establish());
+            let mut observer = Box::pin(observe);
+            std::future::poll_fn(|cx| {
+                if let std::task::Poll::Ready(result) = std::future::Future::poll(observer.as_mut(), cx) {
+                    return std::task::Poll::Ready(result);
+                }
+                if let std::task::Poll::Ready(result) = std::future::Future::poll(submission.as_mut(), cx) {
+                    return std::task::Poll::Ready(Err(format!("checkpoint settled before lock barrier: {result:?}").into()));
+                }
+                std::task::Poll::Pending
+            }).await?;
+            if std::env::var(CHILD)?.as_str() == "cancel" {
+                drop(submission);
+            } else {
+                assert!(matches!(submission.await, Err(DurabilityError::Unavailable)));
+            }
+            blocker.commit().await?;
+            // Releasing the DB blocker, dropping submission, or using another
+            // handle cannot create a third slot for a different identity.
+            assert!(matches!(runtime.enqueue_checkpoint(1, "third different original")?.establish().await,
+                Err(DurabilityError::Unavailable)));
+            let original: String = sqlx::query_scalar("SELECT operation_json FROM game_durability_executor_custody WHERE slot = 1")
+                .fetch_one(&pool).await?;
+            assert_eq!(original, "first immutable original");
+            let effects: i64 = sqlx::query_scalar("SELECT count(*) FROM game_durability_reconnect_sessions")
+                .fetch_one(&pool).await?;
+            assert_eq!(effects, 0, "bookkeeping must not invent admission authority");
+            pool.close().await;
+            Ok::<(), Box<dyn std::error::Error>>(())
+        }.await;
+        database.cleanup().await?;
+        result
+    })
+}
+
+#[test]
 fn registered_runtime_shares_custody_and_retains_originals_across_all_handles()
 -> Result<(), Box<dyn std::error::Error>> {
     use durability::{AdmissionRuntime, DurabilityCustody};

@@ -128,12 +128,173 @@ pub(super) async fn lock_admission_relations(
     Ok(())
 }
 
+// Fixed bookkeeping arrays, not a complete SQL-driver/resident-work proof.
+// Box<str> retains no caller-selected spare capacity. At most eight queued and
+// two active complete envelopes plus two bounded submission copies exist here.
+#[derive(Clone)]
+struct WorkOperation {
+    kind: i16,
+    operation: Box<str>,
+}
+struct QueuedWork {
+    id: u64,
+    enqueued: std::time::Instant,
+    operation: WorkOperation,
+}
+struct WorkCustody {
+    queued: [Option<QueuedWork>; 8],
+    active: [Option<WorkOperation>; 2],
+    next_id: u64,
+}
+impl WorkCustody {
+    fn new(pending: &[Option<super::DurablePendingCheckpoint>; 2]) -> Self {
+        Self {
+            queued: std::array::from_fn(|_| None),
+            active: std::array::from_fn(|i| {
+                pending[i].as_ref().map(|p| WorkOperation {
+                    kind: p.operation_kind,
+                    operation: p.operation_json.as_str().into(),
+                })
+            }),
+            next_id: 1,
+        }
+    }
+
+    fn enqueue(
+        &mut self,
+        kind: i16,
+        operation: &str,
+        now: std::time::Instant,
+    ) -> Result<u64, DurabilityError> {
+        if !(1..=8).contains(&kind)
+            || operation.is_empty()
+            || operation.len() > super::MAX_FRESH_OPERATION_BYTES
+        {
+            return Err(DurabilityError::Unavailable);
+        }
+        let target = self
+            .queued
+            .iter_mut()
+            .find(|slot| slot.is_none())
+            .ok_or(DurabilityError::Unavailable)?;
+        let id = self.next_id;
+        let next = id.checked_add(1).ok_or(DurabilityError::Unavailable)?;
+        // All reservation, length and counter checks precede the only input copy.
+        *target = Some(QueuedWork {
+            id,
+            enqueued: now,
+            operation: WorkOperation {
+                kind,
+                operation: operation.into(),
+            },
+        });
+        self.next_id = next;
+        Ok(id)
+    }
+
+    fn cancel(&mut self, id: u64) {
+        if let Some(slot) = self
+            .queued
+            .iter_mut()
+            .find(|slot| slot.as_ref().is_some_and(|work| work.id == id))
+        {
+            *slot = None;
+        }
+        // There is deliberately no active-slot clear: dropping a submitted
+        // caller is neither definitive outcome nor owner acknowledgement.
+    }
+
+    fn promote(
+        &mut self,
+        id: u64,
+        now: std::time::Instant,
+    ) -> Result<(i16, WorkOperation), DurabilityError> {
+        let index = self
+            .queued
+            .iter()
+            .position(|slot| slot.as_ref().is_some_and(|work| work.id == id))
+            .ok_or(DurabilityError::Unavailable)?;
+        let queued = self.queued[index]
+            .as_ref()
+            .ok_or(DurabilityError::Unavailable)?;
+        if now.saturating_duration_since(queued.enqueued) > Duration::from_millis(1000) {
+            self.queued[index] = None;
+            return Err(DurabilityError::Unavailable);
+        }
+        let active_index = self
+            .active
+            .iter()
+            .position(Option::is_none)
+            .ok_or(DurabilityError::Unavailable)?;
+        let queued = self.queued[index]
+            .take()
+            .ok_or(DurabilityError::Unavailable)?;
+        // The original moves into active custody before the bounded submission
+        // copy or any await. Cancellation can never put this identity back in queue.
+        self.active[active_index] = Some(queued.operation);
+        let submission = self.active[active_index]
+            .as_ref()
+            .ok_or(DurabilityError::Unavailable)?
+            .clone();
+        Ok((if active_index == 0 { 1 } else { 2 }, submission))
+    }
+}
+
+/// A never-submitted queue reservation. Drop releases only this queued identity.
+/// Establishment retains the original active slot on success, error or cancellation.
+/// This does not authorize an admission effect or provide a semantic completion.
+pub struct QueuedCheckpoint {
+    backend: std::sync::Arc<RuntimeBackend>,
+    id: u64,
+}
+impl Drop for QueuedCheckpoint {
+    fn drop(&mut self) {
+        if let Ok(mut work) = self.backend.work.lock() {
+            work.cancel(self.id);
+        }
+    }
+}
+impl QueuedCheckpoint {
+    pub async fn establish(self) -> Result<i16, DurabilityError> {
+        let started = tokio::time::Instant::now();
+        let (slot, operation) = self
+            .backend
+            .work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .promote(self.id, std::time::Instant::now())?;
+        #[cfg(not(test))]
+        let BackendCustody::Registered(custody) = &self.backend.custody;
+        #[cfg(test)]
+        let custody = match &self.backend.custody {
+            BackendCustody::Registered(custody) => custody,
+            #[cfg(test)]
+            BackendCustody::LegacyFixture => return Err(DurabilityError::Unavailable),
+        };
+        // This bounds requested checkpoint-pass waiting only, not backend death,
+        // SQL-driver allocations or full semantic execution. Active custody stays.
+        tokio::time::timeout_at(
+            started + Duration::from_millis(2000),
+            custody.checkpoint(
+                &self.backend.pool,
+                slot,
+                operation.kind,
+                &operation.operation,
+            ),
+        )
+        .await
+        .map_err(|_| DurabilityError::Unavailable)??;
+        Ok(slot)
+    }
+}
+
 /// One shared production backend, including the recovered fixed-slot custody.
 /// This is not yet the executor's queue/active-operation budget.
 pub(super) struct RuntimeBackend {
     pub pool: PgPool,
     custody: BackendCustody,
     pub pending: [Option<super::DurablePendingCheckpoint>; 2],
+    work: std::sync::Mutex<WorkCustody>,
 }
 enum BackendCustody {
     Registered(super::DurabilityCustody),
@@ -141,6 +302,21 @@ enum BackendCustody {
     LegacyFixture,
 }
 impl RuntimeBackend {
+    pub(super) fn enqueue(
+        self: &std::sync::Arc<Self>,
+        kind: i16,
+        original: &str,
+    ) -> Result<QueuedCheckpoint, DurabilityError> {
+        let id = self
+            .work
+            .lock()
+            .map_err(|_| DurabilityError::Unavailable)?
+            .enqueue(kind, original, std::time::Instant::now())?;
+        Ok(QueuedCheckpoint {
+            backend: self.clone(),
+            id,
+        })
+    }
     pub async fn begin(&self) -> Result<sqlx::Transaction<'_, sqlx::Postgres>, DurabilityError> {
         match &self.custody {
             BackendCustody::Registered(custody) => custody.fence(&self.pool).await,
@@ -183,6 +359,7 @@ pub(super) async fn registered_backend(
     let backend = std::sync::Arc::new(RuntimeBackend {
         pool,
         custody: BackendCustody::Registered(custody),
+        work: std::sync::Mutex::new(WorkCustody::new(&pending)),
         pending,
     });
     *registration = RuntimeRegistration::Ready {
@@ -207,7 +384,105 @@ pub(super) async fn backend_for_constructor(
             pool: super::schema::connect_runtime(database_url).await?,
             custody: BackendCustody::LegacyFixture,
             pending: [None, None],
+            work: std::sync::Mutex::new(WorkCustody::new(&[None, None])),
         }))
+    }
+}
+
+#[cfg(test)]
+mod work_custody_tests {
+    use super::*;
+
+    #[test]
+    fn queue_capacity_is_reserved_before_copy_and_cancel_releases_only_queued()
+    -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let mut tickets = Vec::new();
+        for _ in 0..8 {
+            tickets.push(work.enqueue(1, "original", now)?);
+        }
+        assert!(matches!(
+            work.enqueue(1, "ninth", now),
+            Err(DurabilityError::Unavailable)
+        ));
+        let (slot, first) = work.promote(tickets[0], now)?;
+        assert_eq!((slot, first.operation.as_ref()), (1, "original"));
+        work.cancel(tickets[0]);
+        let (_, second) = work.promote(tickets[1], now)?;
+        assert_eq!(second.operation.as_ref(), "original");
+        assert!(matches!(
+            work.promote(tickets[2], now),
+            Err(DurabilityError::Unavailable)
+        ));
+        work.cancel(tickets[2]);
+        assert!(work.enqueue(1, "replacement queued only", now).is_ok());
+        assert_eq!(work.active.iter().filter(|s| s.is_some()).count(), 2);
+        Ok(())
+    }
+
+    #[test]
+    fn envelope_and_ticket_limits_fail_before_retention() -> Result<(), DurabilityError> {
+        let mut work = WorkCustody::new(&[None, None]);
+        let now = std::time::Instant::now();
+        let maximum = "x".repeat(super::super::MAX_FRESH_OPERATION_BYTES);
+        let id = work.enqueue(1, &maximum, now)?;
+        assert!(matches!(
+            work.enqueue(1, &(maximum.clone() + "x"), now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert_eq!(work.queued.iter().filter(|s| s.is_some()).count(), 1);
+        assert_eq!(
+            work.promote(id, now + Duration::from_millis(1000))?
+                .1
+                .operation
+                .len(),
+            maximum.len()
+        );
+        work.next_id = u64::MAX;
+        assert!(matches!(
+            work.enqueue(1, "overflow", now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert!(work.queued.iter().all(Option::is_none));
+        Ok(())
+    }
+
+    #[test]
+    fn queue_expiry_and_recovered_slots_never_create_active_capacity() -> Result<(), DurabilityError>
+    {
+        let recovered = [
+            Some(super::super::DurablePendingCheckpoint {
+                slot: 1,
+                operation_kind: 1,
+                operation_json: "recovered original".into(),
+            }),
+            None,
+        ];
+        let mut work = WorkCustody::new(&recovered);
+        let now = std::time::Instant::now();
+        let expired = work.enqueue(2, "never submitted", now)?;
+        assert!(matches!(
+            work.promote(expired, now + Duration::from_millis(1001)),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert!(work.queued.iter().all(Option::is_none));
+        let next = work.enqueue(2, "second original", now)?;
+        assert_eq!(work.promote(next, now)?.0, 2);
+        let blocked = work.enqueue(2, "third original", now)?;
+        assert!(matches!(
+            work.promote(blocked, now),
+            Err(DurabilityError::Unavailable)
+        ));
+        assert_eq!(
+            work.active[0]
+                .as_ref()
+                .ok_or(DurabilityError::InvalidStoredState)?
+                .operation
+                .as_ref(),
+            "recovered original"
+        );
+        Ok(())
     }
 }
 
