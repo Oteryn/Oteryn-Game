@@ -4,16 +4,16 @@
 task_id: OTV2-20260906-post-grace-recovery-timing-332
 title: Separate post-grace attempt timing from predecessor continuity
 mode: CONTRACT
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/post-grace-recovery-timing-332
 issue: 332
-pr: null
+pr: 334
 base_sha: 5412215718d66c743fb78eadc561e6a23b5e2b5f
 admission_main_sha: 5412215718d66c743fb78eadc561e6a23b5e2b5f
-head_sha: null
-final_head_sha: null
+head_sha: 449232311b01d8a744af01b93399215736accb5e
+final_head_sha: 449232311b01d8a744af01b93399215736accb5e
 final_head_frozen_at: null
 owner: Oteryn Sol Supervising Architect
 coordinator: Oteryn Work Delivery Coordinator
@@ -21,7 +21,8 @@ created_at: 2026-09-06
 updated_at: 2026-09-06
 execution_budget_minutes: 30
 large_budget_reason: null
-owned_paths:
+owned_paths: []
+released_owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_POST_GRACE_RECOVERY_TIMING_DECISION_2026-09-06.md
   - docs/agents/tasks/active/OTV2-20260906-post-grace-recovery-timing-332.md
 public_contracts: [FND-DUR-POST-GRACE-TIMING-V1]
@@ -81,7 +82,7 @@ finding_dispositions:
 - [x] Define closed timing successor and deadline derivation without new duration.
 - [x] Preserve old records, epoch/budget/protection, exact replay and independent current authority.
 - [x] Identify narrow supersession, forward compatibility costs and concrete qualification.
-- [ ] Independent exact-head review, selected canonical CI and protected integration.
+- [x] Independent exact-head review, selected canonical CI and protected integration.
 
 ## Excluded scope
 
@@ -145,17 +146,17 @@ Serial authoring is bounded to one two-file decision/task packet. Work checked o
 ## Context checkpoint
 
 ```yaml
-last_progress: bounded post-grace timing candidate prepared
-status: validating
+last_progress: protected334integrated and issue332closedcompleted; architect custody released
+status: completed
 branch: arch/post-grace-recovery-timing-332
-head_sha: null
-pr: null
-final_head_sha: null
+head_sha: 449232311b01d8a744af01b93399215736accb5e
+pr: 334
+final_head_sha: 449232311b01d8a744af01b93399215736accb5e
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
 ci_checks_for_current_head: 0
-ci_run_ids: []
+ci_run_ids: [34021482128, 34021482187, 34021482154, 34022052840]
 ci_job_ids: []
 runner_assignment_state: unknown
 terminal_ci_wait_started_at: null
@@ -166,6 +167,10 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: independent_review_and_protected_integration_pending
-next_action: Work publishes and independently qualifies the staged candidate for protected integration.
+blocker: null
+next_action: Work qualifies separately allocated Foundation338 before later SQL successor and Server Seam recovery readiness.
 ```
+
+## Verified terminal disposition — Work
+
+PR #334 final native `449232311b01d8a744af01b93399215736accb5e`, tree `5b90b7943878e008dcb04fd1cde50bc238d487f7`, passed independent exact-head review (P0/P1/P2=0, comment5557988757), canonical34021482128, governance34021482187 and semantic34021482154. Normal Merge Queue34022052840 passed; protected merge `1bcdc951e90a56310d24dfb5f3953ec0f86e1695` at2026-09-06T08:39:48Z preserves that tree, parentb8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd. Issue332 is closed completed; branch deleted and custody released. Work read back actual protected main/tree/parent and terminal queue result. Original admission5412215718d66c743fb78eadc561e6a23b5e2b5f and prior pending observations above are historical provenance; this terminal readback supersedes their current-status interpretation without resetting counters. Architecture acceptance supplies no SQL, source registration or Server Seam readiness.
