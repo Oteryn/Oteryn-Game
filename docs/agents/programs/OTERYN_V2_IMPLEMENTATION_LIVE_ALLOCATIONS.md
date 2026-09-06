@@ -1,5 +1,16 @@
 # Oteryn v2 Implementation Live Allocations
 
+## Current Work checkpoint — owning loss Foundation338 amendment
+
+This checkpoint supersedes earlier status prose without resetting historical admissions. Work162 remains the unique control plane.
+
+- Registry342/PR345 is completed/released at protected `c9890968ce4c71165bdd9cd1d6938f9af75eaa00`, tree `82b4bd5ff700b37705e63bf730c3fb4409877df3`, full Merge Queue34034188236 SUCCESS. Its terminal task is archived here; all154 registry entries remain unchanged by this package.
+- B329/PR335 published `fd7293427e76fbb334d80b1b5d6e6cf58dcb4c5a` rejects initial NULL-continuity PREPARE before retained effects. Independent/root review P0/P1/P2=0; actual SQL for this head pending. Parent8a807 actual PostgreSQL17.6 passed305/305. Full lifecycle, bounded executor/resources and locking remain open.
+- Foundation338/PR343 remains on its original branch/admission, published `8a72a305330011edb9021abc1f8449d65a377909` with canonical34034048424 SUCCESS. Current claim/full-flow qualification continues under its sole writer. The exact amendment below adds the missing owning-loss semantic boundary only after protected readback.
+- Wire346 allocation PR347 is independently reviewed at45bb348f3c6a491367921930131afc8135599151, exact CI34034740731 SUCCESS and normal Merge Queue requested. Its separately granted scope must remain intact during normal merge-up; no codec worker admission is inferred here.
+- Server Seam247 remains WAITING_DEPENDENCY at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. Actual source/PKI/bootstrap, SQL loss integration and full B/338 qualification remain separate obligations.
+
+
 ## Current Work checkpoint — resource registry342 continuation
 
 This checkpoint supersedes earlier current-status prose below without rewriting historical admissions. Work162 remains the unique mutating control plane.
@@ -905,13 +916,13 @@ status: NOT_ADMITTED
 allocation_source_main_sha: 0d354091dfc3a144a9c83c31434dec2aff4fe0c4
 admission_main_sha: NOT_ADMITTED
 branch: agent/native-admission-resource-registry-342
-task_packet: docs/agents/tasks/active/OTV2-20260906-native-admission-resource-registry-342.md
+task_packet: docs/agents/tasks/archive/OTV2-20260906-native-admission-resource-registry-342.md
 implementation_plan: docs/superpowers/plans/2026-09-06-native-admission-resource-registry.md
 depends_on: [339, 341, protected_342_configuration_addendum]
 execution_budget_minutes: 60
 owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
-  - docs/agents/tasks/active/OTV2-20260906-native-admission-resource-registry-342.md
+  - docs/agents/tasks/archive/OTV2-20260906-native-admission-resource-registry-342.md
   - docs/superpowers/plans/2026-09-06-native-admission-resource-registry.md
 shared_registry_lease: exclusive_after_protected_admission
 external_repository_write_authority: none
@@ -922,3 +933,13 @@ Only these three paths activate after Work verifies this exact allocation/addend
 ## Coordinated B329 migration binary composition amendment
 
 After this package is protected and Work reads it back, B329 additionally owns exactly `apps/game-server/src/bin/oteryn-game-migrate.rs` (fourteen total paths including its existing13). Preserve immutable admission, same branch/PR, counters and writer custody. This allocation only permits replacing source-included Durability with the public library `oteryn_game_server::durability::MigrationExecutor`, so crate-private completion seals share the canonical library universe. Preserve migration-only environment/connection/embedded-ledger execution, public seal visibility and runtime behavior. No Cargo/lib/Foundation/0001/registry/workflow or production authority follows. The canonical library and enforced PostgreSQL target retain tests; removing duplicate binary source inclusion is not permission to omit coverage. Verify strict all-target compilation, migration harness and canonical gate. Historical243 ownership is released by the current checkpoint and does not acquire a new lease.
+
+## Coordinated Foundation338 owning unexpected-control-loss amendment
+
+After this exact package is protected and Work performs fresh readback, extend the existing six-path338 allocation by exactly `apps/game-server/src/foundation/control_loss_durability_tests.rs` (seven total). Implement the additive semantic boundary in already-owned `apps/game-server/src/foundation/admission_recovery_inner.rs`, including its dedicated test file there. Existing task/plan paths remain solely worker-owned; the worker records the amended acceptance in its next checkpoint. Coordinator addendum: `docs/superpowers/plans/2026-09-06-control-loss-foundation-amendment.md`.
+
+Same issue338, branch `agent/post-grace-foundation-successor-338`, PR343, sole writer and immutable admission `4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee`; preserve all windows, rotations and repair/CI history. This adds implementation of accepted FND-04B §§5/12, not a new architecture decision or loss policy. No second Foundation writer or control plane is created.
+
+A distinct split-phase durable loss operation must precede reconnect PREPARE. Only a crate-sealed owning runtime source can independently prove real unexpected playable-control loss, current actor/session/controller/runtime fences and original epoch/grace/protection continuity. Foundation constructs private live authorization and a pure bounded final-current validator; historical operation/receipt/reconciliation cannot recreate it. Preserve claims, lease and protection history. A raw record, fresh receipt, socket close or restart alone cannot authorize loss. Detailed acceptance and exclusions are in the linked addendum.
+
+No facade/module-export/Cargo/SQL/migration/shared harness/resource-registry/actual-source/bootstrap/external write is added. Later concrete caller bridge and actual runtime registration require separate exact allocation; numeric liveness/re-arm policy must not be invented. B initial NULL-continuity PREPARE remains closed until protected semantic delivery plus authorized SQL integration. This amendment alone does not release Server Seam.

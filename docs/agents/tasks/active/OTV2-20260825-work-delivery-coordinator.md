@@ -1,5 +1,16 @@
 # OTV2-20260825-work-delivery-coordinator
 
+## Current Work checkpoint — owning loss Foundation338 amendment
+
+This checkpoint supersedes earlier status prose without resetting historical admissions. Work162 remains the unique control plane.
+
+- Registry342/PR345 is completed/released at protected `c9890968ce4c71165bdd9cd1d6938f9af75eaa00`, tree `82b4bd5ff700b37705e63bf730c3fb4409877df3`, full Merge Queue34034188236 SUCCESS. Its terminal task is archived here; all154 registry entries remain unchanged by this package.
+- B329/PR335 published `fd7293427e76fbb334d80b1b5d6e6cf58dcb4c5a` rejects initial NULL-continuity PREPARE before retained effects. Independent/root review P0/P1/P2=0; actual SQL for this head pending. Parent8a807 actual PostgreSQL17.6 passed305/305. Full lifecycle, bounded executor/resources and locking remain open.
+- Foundation338/PR343 remains on its original branch/admission, published `8a72a305330011edb9021abc1f8449d65a377909` with canonical34034048424 SUCCESS. Current claim/full-flow qualification continues under its sole writer. The exact amendment below adds the missing owning-loss semantic boundary only after protected readback.
+- Wire346 allocation PR347 is independently reviewed at45bb348f3c6a491367921930131afc8135599151, exact CI34034740731 SUCCESS and normal Merge Queue requested. Its separately granted scope must remain intact during normal merge-up; no codec worker admission is inferred here.
+- Server Seam247 remains WAITING_DEPENDENCY at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. Actual source/PKI/bootstrap, SQL loss integration and full B/338 qualification remain separate obligations.
+
+
 ## Current Work checkpoint — resource registry342 continuation
 
 This checkpoint supersedes earlier current-status prose below without rewriting historical admissions. Work162 remains the unique mutating control plane.
@@ -24,14 +35,14 @@ base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: 0d354091dfc3a144a9c83c31434dec2aff4fe0c4
+protected_main_sha: c9890968ce4c71165bdd9cd1d6938f9af75eaa00
 server_seam_issue: 247
 server_seam_allocation_pr: 294
 server_seam_allocation_merge_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 server_seam_state: WAITING_DEPENDENCY
-architecture_escalation_issue: 342
+architecture_escalation_issue: null
 nonblocking_governance_reconciliation_issue: 316
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
@@ -39,15 +50,11 @@ updated_at: 2026-09-06
 execution_budget_minutes: 720
 large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration and closeout; no single worker owns the programme
 owned_paths:
-  - docs/architecture/reviews/OTERYN_GAME_NATIVE_SOURCE_RESOURCE_ENVELOPE_DECISION_2026-09-06.md
-  - docs/agents/tasks/active/OTV2-20260906-native-admission-resource-registry-342.md
-  - docs/superpowers/plans/2026-09-06-native-admission-resource-registry.md
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
-  - docs/agents/tasks/active/OTV2-20260906-native-source-bounds-recovery-336.md
-  - docs/agents/tasks/archive/OTV2-20260906-native-source-bounds-recovery-336.md
-  - docs/agents/tasks/active/OTV2-20260906-durable-fresh-resource-envelope-337.md
-  - docs/agents/tasks/archive/OTV2-20260906-durable-fresh-resource-envelope-337.md
+  - docs/superpowers/plans/2026-09-06-control-loss-foundation-amendment.md
+  - docs/agents/tasks/active/OTV2-20260906-native-admission-resource-registry-342.md
+  - docs/agents/tasks/archive/OTV2-20260906-native-admission-resource-registry-342.md
 public_contracts: []
 depends_on:
   - Verified 326 closeout, then freshly allocated Child B329 persistence and Child C actual producer readiness; separately qualify architecture332 before relying on accepted-recovery semantics
@@ -227,17 +234,17 @@ last_progress: resource341 protected acceptance verified; exact342registry alloc
 status: COORDINATING
 programme_state: WAITING_DEPENDENCY
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
-protected_main_sha: 0d354091dfc3a144a9c83c31434dec2aff4fe0c4
+protected_main_sha: c9890968ce4c71165bdd9cd1d6938f9af75eaa00
 server_seam_issue: 247
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
 server_seam_pr: null
 server_seam_state: WAITING_DEPENDENCY
-architecture_escalation_issue: 342
+architecture_escalation_issue: null
 nonblocking_governance_reconciliation_issue: 316
 owner_action_required: null
 blocker: B329_full_delivery_resource337_and_C_actual_readiness_then_Server_Seam
-next_action: qualify and integrate this exact342 package then admit the registry writer while B329 and338 continue
+next_action: qualify and integrate this owning-loss allocation after347 then bind protected338 amendment readback
 ```
 
 This package changes only allocation/task/archive coordination documents. It grants no second control plane and no runtime mutation to Work. Prospective338 and Bfixture amendment activate only after protected integration/readback; existing B runtime custody remains with its writer.
