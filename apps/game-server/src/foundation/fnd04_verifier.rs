@@ -2864,3 +2864,75 @@ impl RecoveryCredentialAuditV2 {
         Ok(())
     }
 }
+
+impl RecoveryCredentialAuditV2 {
+    pub(super) fn validate_successor_of(
+        &self,
+        original: &Self,
+        now: i64,
+    ) -> Result<(), Fnd04ConsumerError> {
+        let stale = Fnd04ConsumerError::RecoverySecurityEvidenceStale;
+        self.validate_historical()?;
+        if self.verified_at != now
+            || now < original.verified_at
+            || self.signing.public_key != original.signing.public_key
+            || self.signing.key_id != original.signing.key_id
+            || self.security.minimum_generation < original.security.minimum_generation
+        {
+            return Err(stale);
+        }
+        let mut signed = original.clone();
+        signed.signing = self.signing.clone();
+        signed.security = self.security.clone();
+        signed.verified_at = self.verified_at;
+        signed.accepted_deadline = self.accepted_deadline;
+        if signed != *self {
+            return Err(stale);
+        }
+        validate_recovery_observation_successor(
+            &original.signing.provenance,
+            &self.signing.provenance,
+            same_recovery_signing_observation(&original.signing, &self.signing),
+        )?;
+        validate_recovery_observation_successor(
+            &original.security.provenance,
+            &self.security.provenance,
+            same_recovery_security_observation(&original.security, &self.security),
+        )
+    }
+}
+
+/// Current adoption checks intentionally do not reopen the original credential
+/// time window: a sealed committed receipt retains its original decision time.
+pub(super) fn validate_recovery_adoption_sources(
+    prior: &RecoveryCredentialAuditV2,
+    signing: &RecoverySigningTrustObservationV2,
+    security: &RecoveryAccountSecurityObservationV2,
+    now: i64,
+) -> Result<(), Fnd04ConsumerError> {
+    validate_recovery_signing(signing, &prior.signing.key_id, now)?;
+    recovery_source_deadline(
+        &security.provenance,
+        FreshEvidencePurposeV1::PlatformSecurity,
+        now,
+    )?;
+    if signing.public_key != prior.signing.public_key
+        || security.account_id != prior.account_id
+        || !security.allowed
+        || security.minimum_generation == 0
+        || security.minimum_generation < prior.security.minimum_generation
+        || security.minimum_generation > prior.account_security_generation
+    {
+        return Err(Fnd04ConsumerError::RecoverySecurityEvidenceStale);
+    }
+    validate_recovery_observation_successor(
+        &prior.signing.provenance,
+        &signing.provenance,
+        same_recovery_signing_observation(&prior.signing, signing),
+    )?;
+    validate_recovery_observation_successor(
+        &prior.security.provenance,
+        &security.provenance,
+        same_recovery_security_observation(&prior.security, security),
+    )
+}

@@ -16,7 +16,7 @@ pr: 343
 allocation_source_main_sha: 1bcdc951e90a56310d24dfb5f3953ec0f86e1695
 admission_main_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
 base_sha: 4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee
-head_sha: ddee1ef6f2038c5b8bfa1588828aca4c7b1a297d
+head_sha: 8a72a305330011edb9021abc1f8449d65a377909
 final_head_sha: null
 final_head_frozen_at: null
 owner: allocated post-grace Foundation worker
@@ -138,17 +138,17 @@ Work owns PR creation and binds protected admission; worker publishes only alloc
 ## Context checkpoint
 
 ```yaml
-last_progress: original admission operation frozen across source refresh; current FND02 and security generation floors qualified; flow/claims remain open
+last_progress: sealed claim-time Recovery authorization and split flow/current adoption implemented; 30 focused and full package tests pass; independent review pending
 status: running
 admission_state: ADMITTED
 branch: agent/post-grace-foundation-successor-338
 head_sha: null
 pr: 343
 execution_budget_minutes: 60
-execution_window_number: 2
-execution_window_started_at: 2026-09-06T11:43:00Z
-execution_window_elapsed_minutes: 0
-execution_windows_completed: 1
+execution_window_number: 3
+execution_window_started_at: 2026-09-06T12:49:00Z
+execution_window_elapsed_minutes: 32
+execution_windows_completed: 2
 worker_rotations: 1
 final_head_sha: null
 final_head_frozen_at: null
@@ -162,11 +162,24 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 1
+repair_cycles_for_current_gate: 3
 prior_unpublished_repair_history: UNKNOWN
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Continue split post-grace completion/reconcile/adoption flow and resolve the exact additive recovery claim representation under Work on this same branch.
+next_action: Work native-publishes this staged material checkpoint, obtains independent review and canonical CI, then returns custody for remaining qualification and any separately protected amendment; no SQL or server-ready claim.
 ```
+
+
+## Checkpoint 4 — window3 material evidence
+
+Work comment5559305170 authorizes window3 from12:49 through13:49 UTC and the bounded architect interpretation: unchanged canonical nested Fresh history plus separate independently current Recovery authorization and the shared Account floor. Existing V1 validators, exhaustive enums and signatures remain unchanged. Prior windows2/rotation1 and unpublished repair historyUNKNOWN persist. Elapsed32 minutes is the material-checkpoint observation, not a window reset.
+
+The new private claim transition binds original admission operation, exact owning-source predecessor/successor CAS and a separate immutable claim-time Recovery/actor audit. Fresh nested provenance is preserved byte-for-byte except its permitted local publication wrapper. Real review P2 RED: original Recovery7, retained Fresh8 and current Recovery9 was incorrectly rejected by comparing history to the original credential. The repair retains the original operation7 while binding claim-time authorization9, and validates subsequent current decisions against both original and claim-time history. Current Recovery cannot be substituted by Fresh observations or regress below the shared floor.
+
+Split PREPARE/COMMIT/reconcile requests preserve the exact complete operation. Raw stored history can request only reconciliation; a sealed completion source supplies typed historical outcomes. A sealed PREPARED report plus newly verified credential/current owning sources is required to resume a restarted prepared operation. Commit receipts do not install controllers. Direct and reconciled success use the same independent current adoption fence: canonical candidate/session origins, exact controller/transport, actor presence/placement, retained closed budget/protection, same-holder claims, independently current Recovery/trust and shared floor. Late adoption preserves original decision time and does not recheck expired original credential time, but current authority still must pass. Failed adoption clears the local projection. Terminal collision/failure reasons remain typed and cannot reopen the flow.
+
+Actual missing-API REDs cover claim, split flow, adoption, prepared restart and typed terminal outcomes. Self-review actual RED found omitted candidate initial transport in adoption; repair adds exact canonical initial transport/generation and lease/scope origins. Known repair counter is3: prior wrapper1, claim-time review1, canonical-origin self-review1; prior unpublished history remainsUNKNOWN.
+
+Fresh local evidence:30 focused post_grace tests GREEN; full locked game-server package passes library320, all selected integration binaries and18 compile-fail doctests. Strict all-target Clippy passes7.66s; fmt and governance pass. Unconfigured PostgreSQL124 is skip/compile compatibility evidence only, not actual SQL execution. Root still must review exact published content, run canonical selected CI/MQ and later normal merge-up/source-inclusion qualification. Current adoption conservatively requires exact committed claim successor rows; further owner publication prevents this attempt from installing a projection. The later SQL/provider child must implement registered owning sources and atomic current locked boundaries; this semantic child establishes no production registration or server seam readiness.

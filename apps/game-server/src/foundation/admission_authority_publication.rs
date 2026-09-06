@@ -1901,3 +1901,238 @@ mod tests {
         reject_security_revision_mutation(1)
     }
 }
+
+/// Historical full operation for the additive post-grace claim boundary. The
+/// original nested Fresh observation is retained as history, never current
+/// Recovery evidence. No V1 guard or validator meaning changes.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PostGraceClaimEvidenceV1 {
+    pub version: u16,
+    pub operation: super::PostGraceRecoveryOperationV1,
+    pub transition: AdmissionClaimTransitionEvidenceV1,
+    pub authorization: super::PostGraceRecoveryDecisionAuditV1,
+}
+impl PostGraceClaimEvidenceV1 {
+    pub fn validate_historical(
+        &self,
+        decided_at: i64,
+    ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        self.operation
+            .validate_historical()
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        if self.version != 1
+            || self.transition.prepared_at < self.operation.prepared_at
+            || decided_at > self.operation.credential.accepted_deadline
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Invalid);
+        }
+        self.authorization
+            .validate_for_operation(&self.operation, self.transition.prepared_at)
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        if decided_at > self.authorization.credential.accepted_deadline {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        validate_post_grace_claim_pair(self, &self.authorization.credential.security, decided_at)
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PostGraceClaimResolutionV1 {
+    pub current_actor: super::PostGraceActorObservationV1,
+    pub transition: AdmissionClaimTransitionEvidenceV1,
+}
+/// Owning Game registration, independent of stored observations or peer claims.
+pub trait PostGraceClaimOwningSourceV1:
+    super::fnd04_verifier::recovery_source_sealed::Sealed
+{
+    fn prepare_post_grace_claim(
+        &self,
+        operation: &super::PostGraceRecoveryOperationV1,
+        now: i64,
+    ) -> Result<PostGraceClaimResolutionV1, AdmissionAuthorityPublicationErrorV1>;
+}
+/// Inert owner-authored claim successors, usable only with the matching canonical
+/// post-grace transaction and independently current Recovery authorization.
+/// ```compile_fail
+/// use oteryn_game_server::foundation::admission_authority_publication::*;
+/// fn forge(history: PostGraceClaimEvidenceV1) -> PostGraceClaimTransitionV1 { history.into() }
+/// ```
+#[derive(Debug, Clone)]
+pub struct PostGraceClaimTransitionV1 {
+    evidence: PostGraceClaimEvidenceV1,
+}
+impl PostGraceClaimTransitionV1 {
+    pub fn prepare(
+        owner: &dyn PostGraceClaimOwningSourceV1,
+        authorization: &super::PostGraceRecoveryAuthorizationV1,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        let stale = AdmissionAuthorityPublicationErrorV1::Stale;
+        if authorization.verified().verified_at() != now || now > authorization.attempt_deadline() {
+            return Err(stale);
+        }
+        let resolved = owner.prepare_post_grace_claim(authorization.operation(), now)?;
+        if &resolved.current_actor != authorization.actor()
+            || resolved.transition.prepared_at != now
+        {
+            return Err(stale);
+        }
+        let evidence = PostGraceClaimEvidenceV1 {
+            version: 1,
+            operation: authorization.operation().clone(),
+            transition: resolved.transition,
+            authorization: authorization.decision_audit(),
+        };
+        evidence.validate_historical(now)?;
+        validate_post_grace_claim_pair(&evidence, authorization.verified().security(), now)?;
+        Ok(Self { evidence })
+    }
+    #[must_use]
+    pub const fn evidence(&self) -> &PostGraceClaimEvidenceV1 {
+        &self.evidence
+    }
+    /// The later SQL adapter supplies contexts backed by its independently
+    /// locked current rows and shared Account floor. Calls never reconstruct
+    /// current source authority from the immutable operation or old Fresh row.
+    pub fn validate_locked(
+        &self,
+        authorization: &super::PostGraceRecoveryAuthorizationV1,
+        trust: &super::fnd04_verifier::RecoveryDurabilityTrustContextV2<'_>,
+        actor: &super::PostGraceActorAuthorityV1<'_>,
+        rows: &[Option<AdmissionAuthorityPublicationChangeV1>],
+        now: i64,
+    ) -> Result<&[AdmissionAuthorityPublicationChangeV1], AdmissionAuthorityPublicationErrorV1>
+    {
+        let current = authorization
+            .revalidate(trust, actor, now)
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Stale)?;
+        self.validate_current(&current, rows, now)
+    }
+    pub(super) fn validate_current(
+        &self,
+        current: &super::PostGraceRecoveryAuthorizationV1,
+        rows: &[Option<AdmissionAuthorityPublicationChangeV1>],
+        now: i64,
+    ) -> Result<&[AdmissionAuthorityPublicationChangeV1], AdmissionAuthorityPublicationErrorV1>
+    {
+        let stale = AdmissionAuthorityPublicationErrorV1::Stale;
+        if current.operation() != &self.evidence.operation
+            || rows.len() != 2
+            || rows
+                .iter()
+                .zip(&self.evidence.transition.predecessors)
+                .any(|(row, expected)| row.as_ref() != Some(expected))
+        {
+            return Err(stale);
+        }
+        current
+            .decision_audit()
+            .validate_successor_of(&self.evidence.authorization, &self.evidence.operation, now)
+            .map_err(|_| stale)?;
+        validate_session_claims(
+            &self.evidence.operation.credential.account_id,
+            current.predecessor(),
+            &self.evidence.transition.predecessors,
+        )?;
+        self.evidence.validate_historical(now)?;
+        validate_post_grace_claim_pair(&self.evidence, current.verified().security(), now)?;
+        Ok(&self.evidence.transition.successors)
+    }
+}
+fn validate_post_grace_claim_pair(
+    evidence: &PostGraceClaimEvidenceV1,
+    recovery: &super::fnd04_verifier::RecoveryAccountSecurityObservationV2,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    let invalid = AdmissionAuthorityPublicationErrorV1::Invalid;
+    // Relinquishment's structural/history checks preserve source bytes and exact
+    // CAS without demanding a simultaneously current Fresh-purpose observation.
+    // Recovery authorization is an additional mandatory, independently scoped
+    // predicate; calling the V1 fresh acquisition validator here would be wrong.
+    validate_release_pair(&evidence.transition, now)?;
+    let operation = &evidence.operation;
+    validate_session_claims(
+        &operation.credential.account_id,
+        operation.actor.predecessor,
+        &evidence.transition.predecessors,
+    )?;
+    let AdmissionAuthorityGuardStateV1::Account {
+        security: history, ..
+    } = &evidence.transition.predecessors[0].state
+    else {
+        return Err(invalid);
+    };
+    if recovery.provenance.scope != Fnd04EvidenceScope::ExistingActorRecovery
+        || recovery.provenance.purpose != FreshEvidencePurposeV1::PlatformSecurity
+        || recovery.account_id != history.account_id
+        || !recovery.allowed
+        || recovery.minimum_generation < history.minimum_generation
+        || recovery.provenance.source_authority != history.provenance.source_authority
+        || recovery.provenance.source_revision <= history.provenance.source_revision
+        || recovery.provenance.source_observed_at < history.provenance.source_observed_at
+    {
+        return Err(invalid);
+    }
+    match (
+        &evidence.transition.successors[0].state,
+        &evidence.transition.predecessors[1].state,
+        &evidence.transition.successors[1].state,
+    ) {
+        (
+            AdmissionAuthorityGuardStateV1::Account {
+                presence: Some((character, session)),
+                ..
+            },
+            AdmissionAuthorityGuardStateV1::Character {
+                lease_generation: old,
+                ..
+            },
+            AdmissionAuthorityGuardStateV1::Character {
+                holder: Some(holder),
+                lease_generation: new,
+                eligible: true,
+                ..
+            },
+        ) if *character == operation.credential.character_id
+            && *session == operation.candidate
+            && *holder == operation.candidate
+            && old == new
+            && *new
+                == operation
+                    .actor
+                    .predecessor
+                    .current_character_lease()
+                    .generation() =>
+        {
+            Ok(())
+        }
+        _ => Err(invalid),
+    }
+}
+
+// Additive adoption entry point; existing V1 validation semantics are unchanged.
+pub(super) fn validate_post_grace_adoption_claims(
+    account: &str,
+    session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    claims: &[AdmissionAuthorityPublicationChangeV1],
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    validate_session_claims(account, session, claims)
+}
+
+impl PostGraceClaimTransitionV1 {
+    pub(super) fn resume_prepared(
+        evidence: PostGraceClaimEvidenceV1,
+        current: &super::PostGraceRecoveryAuthorizationV1,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        if current.operation() != &evidence.operation {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        evidence.validate_historical(now)?;
+        current
+            .decision_audit()
+            .validate_successor_of(&evidence.authorization, &evidence.operation, now)
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Stale)?;
+        validate_post_grace_claim_pair(&evidence, current.verified().security(), now)?;
+        Ok(Self { evidence })
+    }
+}
