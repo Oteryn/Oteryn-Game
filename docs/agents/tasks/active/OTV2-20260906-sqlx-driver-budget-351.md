@@ -75,21 +75,27 @@ Historical allocation state: NOT_STARTED / NOT_ADMITTED before protection. Admit
 
 Focused: allocation-denial RED/GREEN and hostile-input/lifetime matrix in the plan. Component: vendored unit tests plus all affected normal workspace tests, fmt, strict Clippy, dependency/provenance checks and governance. Actual PostgreSQL17.6 is mandatory for driver integration; unconfigured/skipped tests are not SQL proof. E2E Server Seam/live source qualification remains outside scope and unclaimed. Self-review and genuinely independent full-change parser/resource review are required before final material freeze. Exact-head canonical CI and normal protected Merge Queue/readback remain pending. Checkpoint validation: owner-ledger RED/GREEN; vendored core library 11/11 tests (9 new), strict vendor Clippy; pinned Game server check, strict Clippy and 340/340 library tests pass. Vendor unit tests use its unchanged upstream lock (rustls0.23.40); Game check/tests use pinned rustls0.23.43. Initial isolated vendor run lacked cached dev dependencies; an initial compiler-shim invocation attempted the dependency toolchain and failed, then explicit Rust1.94 compiler paths resolved it. No tests or dependency declarations were suppressed. Governance passes. Full import whitespace inspection finds20 trailing-whitespace lines already byte-identical in upstream PostgreSQL; they are preserved and disclosed, not normalized or suppressed. Authored delta whitespace passes. These results qualify the primitive and import, not TLS or PostgreSQL17.6 integration. Complete TLS proof remains UNKNOWN: nested decoder capacities, private configuration/cache layouts and phased pre-call ownership bounds require closure. See vendored provenance for exact source terms and patch manifest.
 
+## Window1 durable checkpoint
+
+Work published draft PR356 at native `703da76a870356f2ab94d6e7af11675dd24f6c04`, tree `07591d3c8668dec06c4190eb4784be04b3351469`. Independent review found no primitive P0/P1; P2 complete-license evidence was repaired additively in both provenance files with VCS-pinned notices/digests, preserving imported bytes/modes. One repair cycle is recorded. Full TLS gate remains OPEN. Independent source review supports a behavior-equivalent private write-discard session store, but no adapter is implemented. Correlated ECH upper3276720 plus span327680/request524288/deframer65536 leaves80 bytes before other required owners; current conservative bounds therefore cannot certify accepted maxima. This is an unresolved proof, not an impossibility claim or permission to change limits. Complete source findings and conditional hook paths are recorded in core provenance.
+
 ## PR and closeout
 
 One admitted branch/PR; Work retains publication/integration and lease-release control. Preserve immutable admission and all counters across normal merge-up and bounded windows. No force-push/rebase/reset, no-op retrigger or self-approval. Final head belongs in PR/check evidence, not a self-referential metadata commit. Work archives/releases only after terminal protected readback; technical scope insufficiency is not completion.
 
+Window1 stopped at 2026-09-06T16:20:49Z: 3314 productive seconds conservatively charged, 286 unused seconds, no deducted pauses or reset. A further implementation window requires explicit Work continuation.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: exact upstream imports and tested owner-ledger primitive; TLS proof remains open
+last_progress: published tested primitive and independently reviewed source bounds; TLS proof remains open
 status: in_progress
 admission_state: ADMITTED
 execution_window_number: 1
-execution_windows_completed: 0
+execution_windows_completed: 1
 worker_rotations: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 owner_action_required: null
 blocker: complete_TLS_capacity_lifetime_proof
 next_action: independently review TLS proof checkpoint before substantial PostgreSQL decoder work
