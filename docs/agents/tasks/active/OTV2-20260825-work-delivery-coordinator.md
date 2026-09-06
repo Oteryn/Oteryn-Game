@@ -5,10 +5,21 @@
 This checkpoint supersedes earlier status prose without resetting historical admissions. Work162 remains the unique control plane.
 
 - Registry342/PR345 is completed/released at protected `c9890968ce4c71165bdd9cd1d6938f9af75eaa00`, tree `82b4bd5ff700b37705e63bf730c3fb4409877df3`, full Merge Queue34034188236 SUCCESS. Its terminal task is archived here; all154 registry entries remain unchanged by this package.
-- B329/PR335 published `fd7293427e76fbb334d80b1b5d6e6cf58dcb4c5a` rejects initial NULL-continuity PREPARE before retained effects. Independent/root review P0/P1/P2=0; actual SQL for this head pending. Parent8a807 actual PostgreSQL17.6 passed305/305. Full lifecycle, bounded executor/resources and locking remain open.
+- B329/PR335 published `fd7293427e76fbb334d80b1b5d6e6cf58dcb4c5a` rejects initial NULL-continuity PREPARE before retained effects. Independent/root review P0/P1/P2=0; actual PostgreSQL17.6 canonical34035642462/Linux101493135940 passed306/306 at13:21:41Z. Full lifecycle, bounded executor/resources and locking remain open.
 - Foundation338/PR343 remains on its original branch/admission, published `8a72a305330011edb9021abc1f8449d65a377909` with canonical34034048424 SUCCESS. Current claim/full-flow qualification continues under its sole writer. The exact amendment below adds the missing owning-loss semantic boundary only after protected readback.
-- Wire346 allocation PR347 is independently reviewed at45bb348f3c6a491367921930131afc8135599151, exact CI34034740731 SUCCESS and normal Merge Queue requested. Its separately granted scope must remain intact during normal merge-up; no codec worker admission is inferred here.
+- Wire346 allocation PR347 is protected atad7273e3e91a4e4254abb9aa2710c7e0c9754afe after full Merge Queue34035534050 SUCCESS. Work admission5559516855 binds the sole codec writer on its five paths, window1 13:27–14:27UTC. Its explicit247 export lease remains intact; no actual-source readiness follows.
 - Server Seam247 remains WAITING_DEPENDENCY at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. Actual source/PKI/bootstrap, SQL loss integration and full B/338 qualification remain separate obligations.
+
+
+## Current Work checkpoint — bounded native evidence wire346
+
+This checkpoint supersedes earlier current-status prose while preserving all historical admissions. Work162 remains the unique control plane.
+
+- Protected allocation344 is `9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2`, actual Merge Queue34032269848 SUCCESS. Registry342 delivery PR345 is independently reviewed at `ddf718a89851f4da3641872d2447b04958a23bd1`; exact CI/integration remains pending. No registry lease transfers to this package.
+- B329/PR335 initial fresh checkpoint `4139f552a952c392e5f47139aed60e64f32b8cf4` passes actual PostgreSQL17.6:304/304 in canonical34033443274/Linux101487176414 at12:37:45Z. Full lifecycle, shared bounded executor/resources and locking qualification remain open. Same branch, immutable admission and counters persist.
+- Foundation338/PR343 actor checkpoint `ddee1ef6f2038c5b8bfa1588828aca4c7b1a297d` has independent intermediate review; full operation/flow/claims remain open on its same six paths and original admission.
+- Issue346 is a separately mergeable pure wire codec prerequisite. It produces no live source capability, authenticated provenance, floor, publication or actual-source readiness. Its five paths activate only after this exact allocation is protected and Work performs fresh readback/admission.
+- Server Seam247 remains WAITING_DEPENDENCY at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. The explicit one-export lib.rs amendment below is not Task3 release. Actual Platform native producers/PKI/bootstrap and Game owning-source composition remain unqualified.
 
 
 ## Current Work checkpoint — resource registry342 continuation
@@ -35,7 +46,7 @@ base_branch: main
 branch: null
 issue: 162
 pr: null
-protected_main_sha: c9890968ce4c71165bdd9cd1d6938f9af75eaa00
+protected_main_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
 server_seam_issue: 247
 server_seam_allocation_pr: 294
 server_seam_allocation_merge_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
@@ -234,7 +245,7 @@ last_progress: resource341 protected acceptance verified; exact342registry alloc
 status: COORDINATING
 programme_state: WAITING_DEPENDENCY
 active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
-protected_main_sha: c9890968ce4c71165bdd9cd1d6938f9af75eaa00
+protected_main_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
 server_seam_issue: 247
 server_seam_branch: agent/otv2-gameplay-server-seam-01
 server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e

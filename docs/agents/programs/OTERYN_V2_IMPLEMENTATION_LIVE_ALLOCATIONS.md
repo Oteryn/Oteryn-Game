@@ -5,10 +5,21 @@
 This checkpoint supersedes earlier status prose without resetting historical admissions. Work162 remains the unique control plane.
 
 - Registry342/PR345 is completed/released at protected `c9890968ce4c71165bdd9cd1d6938f9af75eaa00`, tree `82b4bd5ff700b37705e63bf730c3fb4409877df3`, full Merge Queue34034188236 SUCCESS. Its terminal task is archived here; all154 registry entries remain unchanged by this package.
-- B329/PR335 published `fd7293427e76fbb334d80b1b5d6e6cf58dcb4c5a` rejects initial NULL-continuity PREPARE before retained effects. Independent/root review P0/P1/P2=0; actual SQL for this head pending. Parent8a807 actual PostgreSQL17.6 passed305/305. Full lifecycle, bounded executor/resources and locking remain open.
+- B329/PR335 published `fd7293427e76fbb334d80b1b5d6e6cf58dcb4c5a` rejects initial NULL-continuity PREPARE before retained effects. Independent/root review P0/P1/P2=0; actual PostgreSQL17.6 canonical34035642462/Linux101493135940 passed306/306 at13:21:41Z. Full lifecycle, bounded executor/resources and locking remain open.
 - Foundation338/PR343 remains on its original branch/admission, published `8a72a305330011edb9021abc1f8449d65a377909` with canonical34034048424 SUCCESS. Current claim/full-flow qualification continues under its sole writer. The exact amendment below adds the missing owning-loss semantic boundary only after protected readback.
-- Wire346 allocation PR347 is independently reviewed at45bb348f3c6a491367921930131afc8135599151, exact CI34034740731 SUCCESS and normal Merge Queue requested. Its separately granted scope must remain intact during normal merge-up; no codec worker admission is inferred here.
+- Wire346 allocation PR347 is protected atad7273e3e91a4e4254abb9aa2710c7e0c9754afe after full Merge Queue34035534050 SUCCESS. Work admission5559516855 binds the sole codec writer on its five paths, window1 13:27–14:27UTC. Its explicit247 export lease remains intact; no actual-source readiness follows.
 - Server Seam247 remains WAITING_DEPENDENCY at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. Actual source/PKI/bootstrap, SQL loss integration and full B/338 qualification remain separate obligations.
+
+
+## Current Work checkpoint — bounded native evidence wire346
+
+This checkpoint supersedes earlier current-status prose while preserving all historical admissions. Work162 remains the unique control plane.
+
+- Protected allocation344 is `9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2`, actual Merge Queue34032269848 SUCCESS. Registry342 delivery PR345 is independently reviewed at `ddf718a89851f4da3641872d2447b04958a23bd1`; exact CI/integration remains pending. No registry lease transfers to this package.
+- B329/PR335 initial fresh checkpoint `4139f552a952c392e5f47139aed60e64f32b8cf4` passes actual PostgreSQL17.6:304/304 in canonical34033443274/Linux101487176414 at12:37:45Z. Full lifecycle, shared bounded executor/resources and locking qualification remain open. Same branch, immutable admission and counters persist.
+- Foundation338/PR343 actor checkpoint `ddee1ef6f2038c5b8bfa1588828aca4c7b1a297d` has independent intermediate review; full operation/flow/claims remain open on its same six paths and original admission.
+- Issue346 is a separately mergeable pure wire codec prerequisite. It produces no live source capability, authenticated provenance, floor, publication or actual-source readiness. Its five paths activate only after this exact allocation is protected and Work performs fresh readback/admission.
+- Server Seam247 remains WAITING_DEPENDENCY at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. The explicit one-export lib.rs amendment below is not Task3 release. Actual Platform native producers/PKI/bootstrap and Game owning-source composition remain unqualified.
 
 
 ## Current Work checkpoint — resource registry342 continuation
@@ -943,3 +954,29 @@ Same issue338, branch `agent/post-grace-foundation-successor-338`, PR343, sole w
 A distinct split-phase durable loss operation must precede reconnect PREPARE. Only a crate-sealed owning runtime source can independently prove real unexpected playable-control loss, current actor/session/controller/runtime fences and original epoch/grace/protection continuity. Foundation constructs private live authorization and a pure bounded final-current validator; historical operation/receipt/reconciliation cannot recreate it. Preserve claims, lease and protection history. A raw record, fresh receipt, socket close or restart alone cannot authorize loss. Detailed acceptance and exclusions are in the linked addendum.
 
 No facade/module-export/Cargo/SQL/migration/shared harness/resource-registry/actual-source/bootstrap/external write is added. Later concrete caller bridge and actual runtime registration require separate exact allocation; numeric liveness/re-arm policy must not be invented. B initial NULL-continuity PREPARE remains closed until protected semantic delivery plus authorized SQL integration. This amendment alone does not release Server Seam.
+
+## Prospective bounded native evidence wire346 and247 shared export amendment
+
+```yaml
+lane_id: OTV2-NATIVE-EVIDENCE-WIRE
+task_id: OTV2-20260906-native-evidence-wire-346
+issue: 346
+coordinator_issue: 162
+status: NOT_ADMITTED
+allocation_source_main_sha: 9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2
+admission_main_sha: NOT_ADMITTED
+branch: agent/native-evidence-wire-346
+execution_budget_minutes: 60
+owned_paths:
+  - apps/game-server/src/admission_evidence.rs
+  - apps/game-server/tests/admission_evidence_wire.rs
+  - apps/game-server/src/lib.rs
+  - docs/agents/tasks/active/OTV2-20260906-native-evidence-wire-346.md
+  - docs/superpowers/plans/2026-09-06-native-evidence-wire.md
+depends_on: [330, 339, protected_342_registry, protected_346_allocation]
+external_repository_write_authority: none
+```
+
+After this package and registry342 are protected and Work binds fresh admission, exactly these five paths belong to one worker. This source prerequisite may run beside B329 and338 because its parser/test paths are disjoint and it registers no live authority. The lib.rs lease is a deliberate serialized exception: transfer only the single admission_evidence module export from the held247 composition surface to346 until protected delivery/archive/readback;247 remains paused and must later merge up normally, preserving its existing branch/head/partial work. All other247 lib.rs changes, main/Cargo/lock/protocol and source-bootstrap surfaces remain held/unallocated. No second writer may mutate lib.rs concurrently. This amendment changes no production permission or full Server Seam state.
+
+Source346 is independently mergeable pure codec work, not actual Child C composition. It may not implement sealed source traits, select unspecified fresh wire literals, install descriptors, synthesize floors/publication revisions or claim transport authentication. Work verifies fresh open-PR and held-branch overlap before dispatch. Registry342 retains its exclusive three-path lease and B/338 retain their admissions/counters.
