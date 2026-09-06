@@ -1,232 +1,76 @@
-name: Repository audit continuation 20260906
+name: Repository audit source and model completion 20260906
 on:
   pull_request:
     types: [opened, synchronize]
-    paths: ['.github/workflows/repository-audit-evidence-20260906.yml']
+    paths: ['.github/workflows/repository-audit-evidence-20260906.yml','docs/agents/reports/repository-audit-20260906/probes/local_model_characterization.rs']
 permissions:
   contents: read
 jobs:
-  rust-security:
+  model-characterization:
     if: github.event.pull_request.head.ref == 'audit/repository-coverage-20260906' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
           persist-credentials: false
-      - run: test "$(git rev-parse HEAD)" = 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-      - uses: github/codeql-action/init@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd
-        with:
-          languages: rust
-          build-mode: none
-          queries: security-extended
-      - uses: github/codeql-action/analyze@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd
-        with:
-          output: audit-sarif
-          upload: never
-          upload-database: false
-          category: /audit-only/rust
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        if: always()
-        with:
-          name: continuation-rust-codeql-7ce1d88
-          path: audit-sarif
-          retention-days: 1
-  linux-boundaries:
-    if: github.event.pull_request.head.ref == 'audit/repository-coverage-20260906' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    services:
-      postgres:
-        image: postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
-        env:
-          POSTGRES_USER: oteryn_test_admin
-          POSTGRES_PASSWORD: ci-${{ github.run_id }}-${{ github.run_attempt }}
-          POSTGRES_DB: postgres
-        ports: ['5432:5432']
-        options: --health-cmd "pg_isready -U oteryn_test_admin -d postgres" --health-interval 5s --health-timeout 5s --health-retries 20
-    env:
-      OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
-    steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
-          ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: audit-packet
           persist-credentials: false
-      - name: Isolate each test executable and LLVM profile
+      - name: Characterize original AI and Ability and compare SHA256 with independent oracle
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-          mkdir -p evidence
-          rustup toolchain install 1.94.0 --profile minimal --component llvm-tools-preview
-          rustc +1.94.0 -vV > evidence/compiler.txt
-          export RUSTFLAGS='-C instrument-coverage'
-          export CARGO_TARGET_DIR="$RUNNER_TEMP/isolated-coverage"
+          mkdir evidence
+          rustup toolchain install 1.94.0 --profile minimal
           python - <<'PY'
-          import json,os,pathlib,subprocess,hashlib,time
-          root=pathlib.Path.cwd(); out=root/'evidence'
-          def call(argv,log,env=None):
-              with (out/log).open('w') as stream:
-                  subprocess.run(argv,stdout=stream,stderr=subprocess.STDOUT,env=env,check=True)
-          host=subprocess.check_output(['rustc','+1.94.0','-vV'],text=True).split('host: ')[1].splitlines()[0]
-          sysroot=subprocess.check_output(['rustc','+1.94.0','--print','sysroot'],text=True).strip()
-          tools=pathlib.Path(sysroot)/'lib/rustlib'/host/'bin'
-          summaries=[]
-          for name,args in [('server-lib',['--lib']),('durability-postgres',['--test','durability_postgres'])]:
-              profiles=out/(name+'-profiles');profiles.mkdir()
-              env=dict(os.environ,LLVM_PROFILE_FILE=str(profiles/'%m-%p.profraw'))
-              call(['cargo','+1.94.0','test','--locked','-p','oteryn-game-server',*args,'--no-run','--message-format=json'],name+'-build.jsonl',env)
-              artifacts=[]
-              for line in (out/(name+'-build.jsonl')).read_text().splitlines():
-                  try: item=json.loads(line)
-                  except json.JSONDecodeError: continue
-                  if item.get('reason')=='compiler-artifact' and item.get('executable') and item.get('profile',{}).get('test'):
-                      artifacts.append(item['executable'])
-              assert len(artifacts)==1,artifacts
-              for raw in profiles.glob('*.profraw'): raw.unlink()
-              executable=artifacts[0];start=time.monotonic()
-              call([executable,'--test-threads=4'],name+'-tests.log',env)
-              profile=out/(name+'.profdata')
-              subprocess.run([str(tools/'llvm-profdata'),'merge','-sparse',*map(str,profiles.glob('*.profraw')),'-o',str(profile)],check=True)
-              with (out/(name+'-coverage.json')).open('w') as dst,(out/(name+'-coverage.stderr')).open('w') as err:
-                  subprocess.run([str(tools/'llvm-cov'),'export',executable,'-instr-profile='+str(profile),'-ignore-filename-regex=/(.cargo|rustc)/'],stdout=dst,stderr=err,check=True)
-              coverage=json.loads((out/(name+'-coverage.json')).read_text())
-              summaries.append(dict(target=name,binary_sha256=hashlib.sha256(pathlib.Path(executable).read_bytes()).hexdigest(),elapsed_seconds=time.monotonic()-start,totals=coverage['data'][0]['totals'],warnings=(out/(name+'-coverage.stderr')).read_text(),denominator='single executable; includes its unit/white-box tests; not whole-product branches'))
-          (out/'isolated-coverage-summary.json').write_text(json.dumps(summaries,indent=2))
+          from pathlib import Path
+          import subprocess,hashlib,json,re
+          root=Path.cwd()
+          probe=root/'audit-packet/docs/agents/reports/repository-audit-20260906/probes/local_model_characterization.rs'
+          source=probe.read_text().replace('../../../../../',root.as_posix()+'/')
+          executable=root/'evidence/model-probe'
+          temporary=root/'evidence/model-probe.rs';temporary.write_text(source)
+          subprocess.run(['rustc','+1.94.0','--edition','2024','-O',str(temporary),'-o',str(executable)],check=True)
+          result=subprocess.run([str(executable)],check=True,text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+          (root/'evidence/model-probe.log').write_text(result.stdout)
+          vectors=[]
+          for size,actual in re.findall(r'SHA256_VECTOR size=(\d+) digest=([0-9a-f]{64})',result.stdout):
+              size=int(size);expected=hashlib.sha256(bytes(i%251 for i in range(size))).hexdigest()
+              assert actual==expected,(size,actual,expected)
+              vectors.append(dict(size=size,digest=actual))
+          assert len(vectors)==13
+          paths=['apps/game-server/src/ai/perception.rs','apps/game-server/src/ability/effects.rs','apps/game-server/src/ability/plan.rs','apps/game-server/src/ability/commit.rs','apps/game-server/src/content/digest.rs']
+          (root/'evidence/model-summary.json').write_text(json.dumps(dict(source_commit='7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3',AI='separated duplicate identity accepted in all six orderings',Ability='raw public variants bypass magnitude constructors and plan validation',scope='fixture/bootstrap models, no production transport exploit or product repair',vectors=vectors,source_blobs={p:subprocess.check_output(['git','hash-object',p],text=True).strip() for p in paths}),indent=2))
           PY
-      - name: Exact migration, synthetic dump-restore and least-privilege probe
-        env:
-          PG_CONTAINER: ${{ job.services.postgres.id }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          cargo +1.94.0 build --locked --release -p oteryn-game-server --bin oteryn-game-migrate > evidence/migrate-build.log 2>&1
-          python - <<'PY'
-          import os,subprocess,json,pathlib,hashlib,time
-          out=pathlib.Path('evidence');container=os.environ['PG_CONTAINER']
-          def pg(argv,input=None):
-              return subprocess.check_output(['docker','exec','-i',container,*argv],input=input)
-          def sql(db,query):
-              return pg(['psql','-U','oteryn_test_admin','-d',db,'-v','ON_ERROR_STOP=1','-Atc',query]).decode().strip()
-          src='audit_restore_source';dst='audit_restore_target'
-          for db in (src,dst): pg(['createdb','-U','oteryn_test_admin',db])
-          env=dict(os.environ,OTERYN_GAME_MIGRATION_DATABASE_URL=os.environ['OTERYN_TEST_POSTGRES_ADMIN_URL'].removesuffix('/postgres')+'/'+src)
-          subprocess.run(['target/release/oteryn-game-migrate'],env=env,check=True)
-          sql(src,"INSERT INTO game_durability_transport_ref_reservations(transport_ref,game_session_id,reconnect_attempt_ref) VALUES (decode(repeat('01',16),'hex'),'00000000-0000-7000-8000-000000000001',decode(repeat('02',8),'hex'))")
-          sql(src,"CREATE ROLE audit_runtime LOGIN PASSWORD 'audit-local-only' NOSUPERUSER NOCREATEDB NOCREATEROLE; GRANT CONNECT ON DATABASE audit_restore_source TO audit_runtime; GRANT USAGE ON SCHEMA public TO audit_runtime; GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO audit_runtime")
-          baseline=sql(src,"SELECT encode(transport_ref,'hex'),game_session_id::text,encode(reconnect_attempt_ref,'hex') FROM game_durability_transport_ref_reservations ORDER BY 1")
-          ledger=sql(src,"SELECT version,encode(checksum,'hex'),success FROM _sqlx_migrations ORDER BY 1")
-          started=time.monotonic();dump=pg(['pg_dump','-U','oteryn_test_admin','-Fc',src])
-          pg(['pg_restore','-U','oteryn_test_admin','--no-owner','--no-privileges','-d',dst],dump)
-          assert baseline==sql(dst,"SELECT encode(transport_ref,'hex'),game_session_id::text,encode(reconnect_attempt_ref,'hex') FROM game_durability_transport_ref_reservations ORDER BY 1")
-          assert ledger==sql(dst,"SELECT version,encode(checksum,'hex'),success FROM _sqlx_migrations ORDER BY 1")
-          env['OTERYN_GAME_MIGRATION_DATABASE_URL']=env['OTERYN_GAME_MIGRATION_DATABASE_URL'].removesuffix(src)+dst
-          subprocess.run(['target/release/oteryn-game-migrate'],env=env,check=True)
-          (out/'restore.json').write_text(json.dumps(dict(result='PASS',scope='synthetic reservation and original migration ledger in disposable PostgreSQL; not deployed RPO/RTO or live authority restoration',dump_sha256=hashlib.sha256(dump).hexdigest(),dump_bytes=len(dump),elapsed_seconds=time.monotonic()-started,server_version=sql(src,'SHOW server_version')),indent=2))
-          PY
-          cat > apps/game-server/tests/audit_runtime_role.rs <<'RS'
-          #[test]
-          fn restricted_role_connects_without_ddl_authority() -> Result<(), Box<dyn std::error::Error>> {
-              let rt=tokio::runtime::Builder::new_current_thread().enable_all().build()?;
-              rt.block_on(async {
-                  let url="postgresql://audit_runtime:audit-local-only@127.0.0.1:5432/audit_restore_source";
-                  let _journal=oteryn_game_server::durability::AdmissionReconnectJournal::connect_runtime(url).await?;
-                  let pool=sqlx::PgPool::connect(url).await?;
-                  let err=sqlx::query("CREATE TABLE audit_must_not_create(id bigint)").execute(&pool).await.err().ok_or("runtime DDL unexpectedly permitted")?;
-                  assert_eq!(err.as_database_error().and_then(|e|e.code()).as_deref(),Some("42501"));
-                  println!("AUDIT_RUNTIME_ROLE: original connect_runtime works; CREATE TABLE denied with 42501");
-                  Ok::<(),Box<dyn std::error::Error>>(())
-              })
-          }
-          RS
-          cargo +1.94.0 test --locked -p oteryn-game-server --test audit_runtime_role -- --nocapture > evidence/runtime-role.log 2>&1
           git diff --exit-code
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: continuation-linux-7ce1d88
+          name: continuation-models-7ce1d88
           path: |
             evidence/*.json
-            evidence/*.txt
             evidence/*.log
-            evidence/*.stderr
           retention-days: 1
-  windows-lifecycle:
-    if: github.event.pull_request.head.ref == 'audit/repository-coverage-20260906' && github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: windows-2025
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-          persist-credentials: false
-      - name: Build exact release and observe real window lifecycle
-        shell: pwsh
-        run: |
-          $ErrorActionPreference='Stop'
-          if ((git rev-parse HEAD).Trim() -ne '7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3') { throw 'source mismatch' }
-          New-Item -ItemType Directory evidence -Force | Out-Null
-          rustup toolchain install 1.94.0 --profile minimal
-          if ($LASTEXITCODE -ne 0) { throw 'toolchain failure' }
-          cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc *> evidence/build.log
-          if ($LASTEXITCODE -ne 0) { throw 'release build failure' }
-          Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,VideoProcessor | ConvertTo-Json | Out-File evidence/adapters.json
-          Add-Type @'
-          using System;
-          using System.Runtime.InteropServices;
-          public static class AuditWindow {
-            [DllImport("user32.dll")] public static extern bool ShowWindowAsync(IntPtr hwnd, int command);
-          }
-          '@
-          $exe=(Resolve-Path target/x86_64-pc-windows-msvc/release/oteryn-client.exe).Path
-          $result=@{binary_sha256=(Get-FileHash $exe -Algorithm SHA256).Hash.ToLower();scope='original release process; actual OS minimize/restore; bounded observation, not whole GPU matrix'}
-          $p=Start-Process $exe -PassThru -RedirectStandardOutput evidence/client.stdout -RedirectStandardError evidence/client.stderr
-          try {
-            for ($i=0;$i -lt 100;$i++) { $p.Refresh(); if ($p.HasExited -or $p.MainWindowHandle -ne 0) { break }; Start-Sleep -Milliseconds 100 }
-            $p.Refresh(); $result['initial_exited']=$p.HasExited
-            $result['window_found']=(!$p.HasExited -and $p.MainWindowHandle -ne 0)
-            if ($result.window_found) {
-              Start-Sleep -Seconds 2; $p.Refresh(); $result['exited_before_minimize']=$p.HasExited
-              if (!$p.HasExited) {
-                $handle=$p.MainWindowHandle
-                $result['minimize_requested']=[AuditWindow]::ShowWindowAsync($handle,6)
-                Start-Sleep -Seconds 2; $p.Refresh(); $result['exited_after_minimize']=$p.HasExited
-                if (!$p.HasExited) { $result['restore_requested']=[AuditWindow]::ShowWindowAsync($handle,9); Start-Sleep -Seconds 2; $p.Refresh(); $result['exited_after_restore']=$p.HasExited }
-              }
-            }
-            if ($p.HasExited) { $result['observed_exit_code']=$p.ExitCode }
-            $result | ConvertTo-Json | Out-File evidence/lifecycle.json
-          } finally { $p.Refresh(); if (!$p.HasExited) { Stop-Process -Id $p.Id -Force } }
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
-        if: always()
-        with:
-          name: continuation-windows-7ce1d88
-          path: evidence
-          retention-days: 1
-  source-history:
+  provider-completion:
     if: github.event.pull_request.head.ref == 'audit/repository-coverage-20260906' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          ref: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Read history and pinned public integration sources only
+      - name: Read complete regular UTF8 provider sources including PHP and shell
         shell: bash
         run: |
           set -euo pipefail
           mkdir evidence
-          git log 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3 --format='%H%x09%P%x09%cI%x09%s' --numstat > evidence/main-history.txt
-          git rev-list --count 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3 > evidence/main-commit-count.txt
-          git ls-tree -r -l 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3 > evidence/main-tree.txt
           python - <<'PY'
           import subprocess,pathlib,json,zipfile,hashlib
           out=pathlib.Path('evidence'); inventory=[]
           sources=[('Oteryn-Platform','3b2ea1c7392187d5d22488673073dc8f8305a374'),('Oteryn-Atlas','51623c7dab2346cee39cd51e3caa845bf4b65426')]
-          extensions={'.ts','.tsx','.js','.mjs','.cjs','.json','.md','.sql','.py','.yml','.yaml','.toml','.cs','.csproj','.go','.rs'}
+          font_extensions={'.ttf','.otf','.woff','.woff2','.eot'}
           with zipfile.ZipFile(out/'provider-source-text.zip','w',zipfile.ZIP_DEFLATED) as archive:
             for repo,sha in sources:
               dest=pathlib.Path('/tmp')/('audit-'+repo);dest.mkdir()
@@ -237,21 +81,22 @@ jobs:
               for row in rows:
                 if not row: continue
                 metadata,raw_path=row.split(b'\t',1);mode,kind,oid,size=metadata.split();path=raw_path.decode()
-                item=dict(repository=repo,commit=sha,path=path,mode=mode.decode(),sha=oid.decode(),size=int(size) if size!=b'-' else None,archived=False)
-                if kind==b'blob' and mode in {b'100644',b'100755'} and pathlib.PurePosixPath(path).suffix in extensions and int(size)<=2000000 and total+int(size)<=40000000:
+                item=dict(repository=repo,commit=sha,path=path,mode=mode.decode(),sha=oid.decode(),size=int(size) if size!=b'-' else None,archived=False,reason='special-mode-or-size-budget')
+                if kind==b'blob' and mode in {b'100644',b'100755'} and pathlib.PurePosixPath(path).suffix not in font_extensions and int(size)<=2000000 and total+int(size)<=40000000:
                   data=subprocess.check_output(['git','-C',str(dest),'cat-file','blob',oid.decode()])
                   try: data.decode('utf-8')
-                  except UnicodeDecodeError: pass
+                  except UnicodeDecodeError: item['reason']='binary'
                   else:
                     if b'\0' not in data:
                       assert hashlib.sha1(b'blob '+str(len(data)).encode()+b'\0'+data).hexdigest()==oid.decode()
-                      archive.writestr(repo+'/'+path,data);item['archived']=True;total+=len(data)
+                      archive.writestr(repo+'/'+path,data);item['archived']=True;item['reason']='verified-text';total+=len(data)
+                    else:item['reason']='binary'
                 inventory.append(item)
           (out/'providers-inventory.json').write_text(json.dumps(inventory,indent=2))
           PY
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         if: always()
         with:
-          name: continuation-history-providers-7ce1d88
+          name: continuation-complete-provider-sources
           path: evidence
           retention-days: 1
