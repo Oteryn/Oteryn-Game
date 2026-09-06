@@ -17,6 +17,14 @@ A substantial prompt needs only the task-specific information that materially ch
 
 Omit a section when it has no task-specific content. Do not add a field, example, checklist or procedure solely because an older template contained it.
 
+## Execution-time rule
+
+Do **not** put fixed 60-minute, 120-minute or other wall-clock worker limits into prompts, plans, allocations or task packets as normal stop conditions. Productive authorized work continues until completion or a genuine blocker/owner stop/execution boundary.
+
+Use bounded anti-stall controls for no-progress, identical retry loops, CI polling/recovery and external waiting. Time elapsed by itself must not trigger `WAITING`, `BLOCKED`, `ROTATE`, worker replacement, a fresh coordinator grant, a new branch/PR or counter reset.
+
+Historical execution-window text may remain as provenance in old task records, but new or materially updated prompts must not reproduce it as active authority.
+
 ## Oteryn v2 domain invariants
 
 Prompts must preserve native Rust, `protocol-oteryn` only, multichannel identities/ownership, server authority, session fencing and separate external repository authority unless an owner-approved ADR/task explicitly changes them.
