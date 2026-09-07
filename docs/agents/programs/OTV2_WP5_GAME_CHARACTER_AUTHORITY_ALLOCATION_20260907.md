@@ -23,7 +23,7 @@ platform_write_authority: FORBIDDEN
 production_authority: FORBIDDEN
 migration_number: SELECT_AFTER_WP4_PROTECTED_READBACK
 audit_outbox_prerequisite: OTV2-WP5-CHARACTER-AUDIT-OUTBOX-20260907
-canonical_pg_ci_prerequisite: OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907
+canonical_pg_ci_prerequisite: "PR #416 / OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907"
 ownership_sensitive_mutation_without_audit_outbox: FORBIDDEN
 ```
 
@@ -65,15 +65,18 @@ At the preparation base:
 - ANL-01 requires mutation/audit atomicity, immutable EventId/payload semantics,
   durable audit and at-least-once post-commit publication;
 - `GAME_EVENT_FOUNDATION_REGISTRY.json` has an intentionally empty `event_types`
-  list; runtime code cannot invent Character event IDs;
+  list; runtime code cannot invent Character **event type IDs**. Producer-owned
+  UUIDv7 `EventId` values remain mandatory transaction identities allocated under
+  ANL-01 and are not registry-assigned type IDs;
 - protected migrations contain only immutable `0001_admission_reconnect_journal.sql`;
 - Child B/#329/#335 owns unreleased `0002_fresh_admission_authority.sql` and
   current Durability schema/db/test surfaces;
 - WP3/#351 owns the shared `durability_postgres.rs` qualification target until
   terminal driver acceptance/release;
 - current canonical PostgreSQL workflows execute only `durability_postgres`, so
-  `character_authority_postgres` cannot count as canonical PG evidence until the
-  companion CI routing allocation is protected and exercised;
+  `character_authority_postgres` cannot count as canonical PG evidence until live
+  routing PR **#416** (`OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907`) is
+  protected and materially exercised;
 - no current open Game Character Authority implementation lineage was found on
   the proposed domain/persistence surface; historical domain/DUR-02 ownership is
   archived/released.
@@ -104,9 +107,11 @@ docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json
 docs/contracts/game-events/v1/character_authority.proto
 ```
 
-The companion CI allocation separately governs any workflow/policy/pin source
-needed to make `character_authority_postgres` execute inside canonical PR/MQ PG
-layers. Those are not Character Authority runtime leases.
+Live PR **#416** and its allocation
+`OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907` separately govern any
+workflow/policy/pin source needed to make `character_authority_postgres` execute
+inside canonical PR/MQ PG layers. Those are not Character Authority runtime
+leases.
 
 Existing Durability files, event registry, migration namespace and workflows are
 conditional future paths only. `apps/game-server/tests/durability_postgres.rs` is
@@ -151,7 +156,8 @@ For an enabled create: independently authenticated creation intent is consumed;
 Game allocates fresh UUIDv7 CharacterId, resolves authoritative name ownership,
 persists owner/world/lifecycle/current revision, immutable operation receipt and
 mandatory durable audit events atomically. Exact retry reconciles one semantic
-Character and the same audit identities. Conflicting operation reuse rejects.
+Character and the same producer-owned EventIds/audit identities. Conflicting
+operation reuse rejects.
 
 This allocation selects no product quota, starter value, naming normalization or
 Platform transport.
@@ -166,7 +172,8 @@ Account transfer locks source/destination portfolio guards in canonical complete
 AccountId order and the Character root. A stale owner/revision rejects. Every
 enabled ownership/world/lifecycle transition also stages all mandatory registered
 `DURABLE_AUDIT` events and durable publication state atomically; if audit staging
-or required event registration fails, the Character mutation does not commit.
+or required event **type** registration fails, the Character mutation does not
+commit.
 
 Until the audit companion is protected/applied, **AccountId ownership transfer,
 create/bootstrap, world transfer and ownership-sensitive lifecycle transitions
@@ -185,8 +192,10 @@ reuses the exact immutable semantic envelope/payload. Publication is at-least-on
 after commit; publisher outage leaves durable pending outbox state and never
 downgrades audit to best-effort or replays the Character mutation.
 
-Exact event IDs/payload schema/finite retention profile are assigned only through
-the companion registry allocation, never ad hoc in runtime code.
+Exact numeric event **type IDs**, payload schema and finite retention profile are
+assigned only through the companion registry allocation, never ad hoc in runtime
+code. Producer-owned immutable UUIDv7 `EventId` values are allocated under ANL-01
+for each semantic event and must remain stable across retry/reconciliation.
 
 ### Restart and restore
 
@@ -222,11 +231,12 @@ RED before material implementation proves at least:
 1. current `CharacterRecord`/persistence cannot prove AccountId ownership/current
    WorldId from an independently current Game-owned source;
 2. restart/bootstrap lacks durable canonical owner + operation reconciliation;
-3. current repository has no registered Character durable-audit event/outbox;
+3. current repository has no registered Character durable-audit event **type** /
+   outbox;
 4. current required PG workflows do not execute `character_authority_postgres`.
 
-GREEN requires actual PostgreSQL17.6 through the **protected companion CI routing**
-and includes:
+GREEN requires actual PostgreSQL17.6 through protected live PR **#416** routing
+(`OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907`) and includes:
 
 - authenticated valid AccountId -> CharacterId/world bootstrap positive only with
   mandatory audit/outbox in same commit;
@@ -236,8 +246,8 @@ and includes:
 - concurrent owner/world mutations produce one lawful winner;
 - portfolio serialization under concurrent create/restore/transfer;
 - active-session/lease conflict rejects under FND-04;
-- injected event registration/encoding/outbox failure rolls back Character root,
-  revision and receipt;
+- injected event type registration/encoding/outbox failure rolls back Character
+  root, revision and receipt;
 - DB rollback after staged audit leaves neither mutation nor durable event;
 - publication outage survives restart as pending durable outbox and does not
   reapply domain mutation;
@@ -264,13 +274,13 @@ WP5 readiness requires composed evidence from all required real owners.
 ## Activation sequence
 
 ```text
-main Character allocation + audit companion + dedicated-PG-CI allocation protected
+main Character allocation + audit companion + live PR #416 dedicated-PG-CI allocation protected
 -> WP2 protected semantic/API
 -> WP3 terminal protected + shared PG target released
 -> WP4 protected/read back + Durability/migration paths released
--> exact Character event registration/retention + next migration/path set applied
+-> exact Character event-type registration/retention + next migration/path set applied
 -> dedicated character_authority_postgres target exists
--> protected CI routing activated/exercised for that target
+-> PR #416 control-plane routing materially activated/exercised for that target
 -> one sole Character Authority/audit writer TDD implementation
 -> real PostgreSQL/restart/concurrency/audit qualification
 -> independent high-risk whole-diff review
