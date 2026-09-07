@@ -45,11 +45,15 @@ As allocated:
 
 No Canary fallback or translation. No client-side authoritative collision, damage, loot, item transfer or currency. No hidden retry that consumes one-shot credentials repeatedly. No gameplay ID/schema invention owned by another domain. No test-only fixture mode in production-default artifacts.
 
-## Lifecycle / budget / durable handover
+## Lifecycle / continuous execution / durable handover
 
-Before the first write, create or resume the coordinator-allocated task with exact base SHA, branch/PR, owned paths/public contracts, dependencies/blockers and execution budget. Default foreground budget is **60 minutes**; **120 minutes** requires explicit declaration and justification.
+Before the first write, create or resume the coordinator-allocated task with exact base SHA, branch/PR, owned paths/public contracts and dependencies/blockers.
 
-Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, validation/review state, blocker, active GameSession/connection-generation/reconciliation test state and ownership state before any genuine stop/rotation. Never persist secrets or live credentials in the checkpoint. Terminal completion includes post-merge verification, task archive and ownership release.
+There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized client work is making material progress, continue until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, freeze, discard productive minutes or require a fresh coordinator grant solely because an hour elapsed.
+
+Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical window/minute counters are provenance only and do not limit continued productive execution.
+
+Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, validation/review state, blocker, active GameSession/connection-generation/reconciliation test state and ownership state before any genuine stop/rotation. Never persist secrets or live credentials in the checkpoint. Do not create hourly checkpoint churn. Terminal completion includes post-merge verification, task archive and ownership release.
 
 ## Validation
 

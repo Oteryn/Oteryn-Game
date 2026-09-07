@@ -112,13 +112,15 @@ These may overlap only when exact allocations prove no path/registry ownership c
 - **Analytics** only after concrete producer event families exist.
 - **Content Format Spike** produces evidence/dossier only and cannot select the permanent format without later owner acceptance.
 
-## Lifecycle / budget / durable handover
+## Lifecycle / continuous execution / durable handover
 
-Before the first programme write, create or resume a coordinator task record with exact base SHA, branch/PR, owned coordinator paths, dependencies, blockers and execution budget. For every worker allocation require the same bounded task visibility.
+Before the first programme write, create or resume a coordinator task record with exact base SHA, branch/PR, owned coordinator paths, dependencies and blockers. For every worker allocation require the same bounded task visibility and ownership scope.
 
-Default foreground execution budget is **60 minutes**. A **120-minute** worker/coordinator budget is allowed only when its task explicitly declares and justifies it under repository policy. Never invent an unbounded run.
+There is **no wall-clock execution budget** for productive authorized coordinator or worker implementation. Do not stop, rotate, discard remaining time or require a fresh grant merely because 60/120 minutes or any other elapsed-time threshold was reached. Continue useful work until the task/wave is complete or reaches a genuine evidence-backed blocker, owner stop or other real authority/safety boundary.
 
-Keep one compact `## Context checkpoint` in every active task with exactly one `next_action`. Before any genuine stop/rotation/blocker response, persist at least the exact head, PR, validation/review state, blocker, ownership state and one next action so another session can resume from Git rather than chat.
+Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical task/window counters remain provenance only and do not constrain continued productive execution.
+
+Keep one compact `## Context checkpoint` in every active task with exactly one `next_action`. Persist it before a genuine stop/rotation/blocker response and when it materially improves recovery; do not create hourly checkpoint churn.
 
 Terminal completion of each task requires task archive plus ownership release. Do not leave active-task locks behind after merge/closeout.
 
@@ -162,9 +164,10 @@ Continue autonomously until one of these is true:
 - required independent review is unavailable;
 - required external repository write/production authority is necessary but unauthorized;
 - protected secrets/live resources are required;
-- an unrecoverable CI/service/tool failure blocks truthful completion.
+- an unrecoverable CI/service/tool failure blocks truthful completion;
+- the owner explicitly stops the work.
 
-Do not stop for routine questions, repairable CI failures, review findings or ordinary merge bookkeeping.
+Elapsed implementation time is not a stop condition. Do not stop for routine questions, repairable CI failures, review findings or ordinary merge bookkeeping.
 
 ## Completion rule
 
