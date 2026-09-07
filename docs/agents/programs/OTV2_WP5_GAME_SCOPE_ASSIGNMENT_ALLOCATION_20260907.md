@@ -25,7 +25,7 @@ migration_number: SELECT_AFTER_WP4_PROTECTED_READBACK
 foundation_consumer_activation: FORBIDDEN
 platform_write_authority: FORBIDDEN
 production_authority: FORBIDDEN
-canonical_pg_ci_prerequisite: OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907
+canonical_pg_ci_prerequisite: "PR #416 / OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907"
 ```
 
 ## Authority and resource contracts consumed
@@ -53,6 +53,9 @@ Core rules:
   independently authenticated/authorized control actor;
 - **the assignment writer itself**, not the caller, allocates source revision and
   decision identity as checked monotonic successors;
+- every initial/replacement target NodeId must be independently proven as a
+  **currently valid** authenticated process-incarnation registration; stale,
+  expired or superseded registrations are not assignment authority;
 - replacement/revoke advances a never-reused positive ownership generation and
   fences old readiness/writers;
 - readiness is separate from assignment and requires independently current
@@ -72,10 +75,10 @@ At the preparation base:
   introduces the admission runtime-guard relation;
 - WP3 owns the shared PostgreSQL qualification target until terminal driver
   acceptance/release;
-- current canonical PG workflows execute only `durability_postgres`; companion
-  allocation `OTV2_WP5_DEDICATED_POSTGRES_CI_ROUTING_20260907` must be protected
-  and exercised before a dedicated assignment PG target can count as canonical
-  acceptance evidence;
+- current canonical PG workflows execute only `durability_postgres`; live PR
+  **#416**, allocation `OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907`, must
+  be protected and its later CONTROL routing materially exercised before the
+  dedicated assignment PG target can count as canonical acceptance evidence;
 - therefore this assignment owner must not modify `0002`, B's runtime guard or
   shared tests concurrently;
 - the next forward migration number and exact Durability integration hooks are
@@ -154,11 +157,14 @@ ambiguous slot is reconciled before new work is admitted.
 
 - **initial assign**: independently authenticated fresh-store/bootstrap
   authorization, exact Channel scope, and exact target NodeId proven by the
-  accepted authenticated process-incarnation registration source;
+  accepted authenticated process-incarnation registration source as **currently
+  valid at the authoritative assignment decision**. Unregistered, expired,
+  superseded or wrong-incarnation NodeIds reject before assignment state or writer
+  revision/decision identities advance;
 - **replace**: exact prior Channel/generation/source/publication CAS, with the
-  replacement NodeId independently proven as a currently valid registered
-  process-incarnation identity under the same target-validation contract; the
-  caller cannot nominate an unregistered/stale/mistyped NodeId;
+  replacement NodeId independently proven by the same target-validation contract
+  as a currently valid registered process-incarnation identity; the caller cannot
+  nominate an unregistered/stale/expired/superseded/mistyped NodeId;
 - **revoke**: exact prior CAS, higher generation, no holder, readiness fenced;
 - **read/reconcile**: one exact Channel/operation, bounded by NASG result/custody,
   returns authoritative committed assignment/receipt and cannot create authority.
@@ -199,8 +205,8 @@ Unresponsive-node replacement remains an explicit authorized CAS command.
 RED before implementation must prove current `ScopeRuntimeFence` can consume a
 generation but no protected Game producer can establish/reconcile it durably.
 
-GREEN material implementation requires actual PostgreSQL 17.6 evidence **and the
-protected dedicated-target CI routing prerequisite** for:
+GREEN material implementation requires actual PostgreSQL 17.6 evidence **through
+live PR #416's protected/materially exercised routing prerequisite** for:
 
 - Channel initial assignment, exact replay and conflicting replay;
 - Instance scope assign/replace/read rejected as unsupported;
@@ -216,9 +222,12 @@ protected dedicated-target CI routing prerequisite** for:
 - wrong Channel/source/publication binding rejects;
 - caller-supplied or jumped source revision/decision identity rejects and does not
   advance the writer namespace;
-- replacement target that is unregistered, stale or bound to a different process
-  incarnation rejects before authority mutation;
-- registered exact replacement target succeeds;
+- **initial target** that is unregistered, expired, superseded, stale or bound to
+  a different process incarnation rejects before authority mutation; an exact
+  currently registered initial target succeeds;
+- **replacement target** that is unregistered, expired, superseded, stale or
+  bound to a different process incarnation rejects before authority mutation; an
+  exact currently registered replacement target succeeds;
 - unauthorized GameNode mutation role is denied by PostgreSQL privileges;
 - lost COMMIT response reconciles exactly;
 - restart preserves current assignment plus writer/operation high-water and
@@ -248,14 +257,14 @@ Those remain separate owners and must compose before WP5/G0 readiness.
 
 ```text
 prospective allocation protected
--> companion dedicated-PG-CI allocation protected
+-> live PR #416 allocation protected
 -> WP2 protected
 -> WP3 protected/released
 -> WP4 protected/released
 -> Work chooses exact next migration/path set
 -> explicit sole-writer Channel-assignment application with existing NASG rows
 -> dedicated PG target exists
--> protected CI routing activated/exercised for that target
+-> PR #416 CONTROL routing materially activated/exercised for that target
 -> PostgreSQL TDD implementation + independent review + canonical CI/MQ
 -> separate Foundation consumer/fence integration allocation
 -> compose with Character Authority + Platform security/trust sources
@@ -268,8 +277,8 @@ No Instance runtime assignment, Foundation mutation, Platform/external repo,
 secrets/credentials, production DB/deployment, B/#335, WP3/#356, Character
 Authority source, Server Seam/#247, Cargo/lock, registry edits, timing/lease/
 autoscaling policy beyond the already registered NASG execution bounds, or
-production readiness claim. Workflow source remains separately governed by the
-companion CI allocation.
+production readiness claim. Workflow source remains separately governed by live
+PR #416 and its allocation.
 
 Runtime E2E is NOT_APPLICABLE to this allocation-only document; later material
 producer and consumer integration require real database/restart/fencing evidence.
