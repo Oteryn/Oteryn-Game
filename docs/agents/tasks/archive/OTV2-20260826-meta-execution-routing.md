@@ -4,7 +4,7 @@
 task_id: OTV2-20260826-meta-execution-routing
 title: Adopt merged META execution-routing policy
 mode: GOVERNANCE
-status: implementing
+status: archived
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: governance/meta-execution-routing-201
@@ -46,30 +46,6 @@ Game adopts the merged META execution-routing policy by reference without runtim
 
 No Game runtime, Cargo, workflows, runner configuration, Desktop Commander session or production system change.
 
-## Context checkpoint
+## Supersession
 
-```yaml
-last_progress: Issue #201 and isolated governance branch created from current main
-status: implementing
-branch: governance/meta-execution-routing-201
-head_sha: null
-pr: null
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
-terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
-stall_warnings: 0
-owner_action_required: null
-blocker: null
-next_action: validate the scoped governance change and open the Game PR
-```
+Issue #201 closed after delivery in `c72ef27` (#202). Issue #367 supersedes its local organization-policy copy with the central META v3 binding. This packet is historical and non-dispatchable.

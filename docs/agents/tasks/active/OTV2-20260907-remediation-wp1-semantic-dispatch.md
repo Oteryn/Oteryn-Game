@@ -11,7 +11,7 @@ branch: fix/remediation-wp1-semantic-dispatch-364
 issue: 364
 pr: 371
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
-base_sha: 15164c38a2775e45eaff4001fddddbabf4b63ab6
+base_sha: 10446c31b2508ccf6b65cc609a35246bf2666567
 head_sha: null
 final_head_sha: null
 owner: WP1_F03_SEMANTIC_DISPATCH
@@ -54,7 +54,7 @@ No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/produc
 ## Context checkpoint
 
 ```yaml
-last_progress: repaired the exact-head comparison, cross-method and boolean-connector false-pass family with balanced-brace extraction, complete conjunctive guards, unique terminal actions and valid-Rust operator/RHS/order mutations; reconciled protected main at 15164c38a2775e45eaff4001fddddbabf4b63ab6
+last_progress: repaired the exact-head comparison, cross-method and boolean-connector false-pass family; independent operator probes passed, then the unchanged risk-bearing source was normally reconciled with protected governance main at 10446c31b2508ccf6b65cc609a35246bf2666567
 status: review_pending
 branch: fix/remediation-wp1-semantic-dispatch-364
 pr: 371

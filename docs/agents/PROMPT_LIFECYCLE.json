@@ -376,7 +376,7 @@
       "version": "1.1",
       "status": "reusable",
       "owner": "implementation-programme-control-plane",
-      "scope": "ChatGPT Work/Terra High deterministic Game control plane; zero technical/architecture discretion and no runtime implementation authority.",
+      "scope": "Deterministic Game control plane; zero technical/architecture discretion and no runtime implementation authority.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "Additive Terra-specific profile; it does not supersede OTV2_WORK_DELIVERY_COORDINATOR or OTV2_IMPLEMENTATION_COORDINATOR unless a later explicit lifecycle change says so."
@@ -398,7 +398,7 @@
       "version": "1.2",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
-      "scope": "Sol Extra High Durability lane lead and single mutating writer for its canonical branch/PR; writes require the current exact merged Durability allocation and owned paths, and parallel analyst packets remain advisory.",
+      "scope": "Sol Durability lane lead and single mutating writer for its canonical branch/PR; writes require the current exact merged Durability allocation and owned paths, and parallel analyst packets remain advisory.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This lead profile does not supersede OTV2_IMPL_DURABILITY; it specializes reasoning/leadership under live coordinator allocation."
@@ -442,7 +442,7 @@
       "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
-      "scope": "Sol Extra High Server Seam lane lead; read-only until exact prerequisites/allocation are proven, then writes only within owned paths.",
+      "scope": "Sol Server Seam lane lead; read-only until exact prerequisites/allocation are proven, then writes only within owned paths.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This lead profile does not supersede OTV2_IMPL_SERVER_SEAM; it specializes reasoning/leadership under live coordinator allocation."
@@ -453,7 +453,7 @@
       "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
-      "scope": "Sol Extra High native Client/QA lane lead; writes require current compatible Server Seam and exact merged allocation.",
+      "scope": "Sol native Client/QA lane lead; writes require current compatible Server Seam and exact merged allocation.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This lead profile does not supersede OTV2_IMPL_NATIVE_CLIENT or OTV2_IMPL_QA_E2E; it coordinates the bounded current client/QA lane under live allocation."
@@ -464,7 +464,7 @@
       "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
-      "scope": "Sol Extra High Movement lane lead; writes require terminal current resource gate/prerequisites and exact merged allocation.",
+      "scope": "Sol Movement lane lead; writes require terminal current resource gate/prerequisites and exact merged allocation.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This lead profile does not supersede OTV2_IMPL_VSL_MOVEMENT; it specializes reasoning/leadership under live coordinator allocation."
@@ -475,7 +475,7 @@
       "version": "1.1",
       "status": "reusable",
       "owner": "live-implementation-coordinator-allocation",
-      "scope": "Sol Extra High Combat lane lead; writes require merged Movement/current prerequisites and exact Combat allocation.",
+      "scope": "Sol Combat lane lead; writes require merged Movement/current prerequisites and exact Combat allocation.",
       "reusable": true,
       "superseded_by": null,
       "supersession_rule": "This lead profile does not supersede OTV2_IMPL_VSL_COMBAT; it specializes reasoning/leadership under live coordinator allocation."
