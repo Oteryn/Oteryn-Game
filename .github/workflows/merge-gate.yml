@@ -463,6 +463,7 @@ jobs:
           import sys
           import urllib.error
           import urllib.request
+          import subprocess
 
           repository = os.environ['REPOSITORY']
           number_text = os.environ['PULL_NUMBER'].strip()
@@ -492,7 +493,15 @@ jobs:
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
 
-          def target_present(commit: str) -> bool:
+          def validate_commit(commit: str) -> None:
+              try:
+                  payload = api(f'/commits/{commit}')
+              except (urllib.error.HTTPError, OSError, ValueError, TypeError) as error:
+                  raise SystemExit('exact commit inspection failed; fail closed') from error
+              if not isinstance(payload, dict) or payload.get('sha', '').lower() != commit:
+                  raise SystemExit('exact commit inspection returned mismatched identity; fail closed')
+
+          def target_blob(commit: str) -> str | None:
               path = f'/contents/{target}?ref={commit}'
               try:
                   payload = api(path)
@@ -511,7 +520,7 @@ jobs:
                       raise SystemExit(
                           'exact target inspection returned unexpected not-found payload; fail closed'
                       )
-                  return False
+                  return None
               except (OSError, ValueError, TypeError) as error:
                   raise SystemExit('exact target inspection failed; fail closed') from error
 
@@ -521,7 +530,10 @@ jobs:
                   raise SystemExit('exact target inspection returned mismatched path; fail closed')
               if payload.get('type') != 'file':
                   raise SystemExit('exact target inspection returned unexpected object type; fail closed')
-              return True
+              blob_sha = payload.get('sha')
+              if not isinstance(blob_sha, str) or re.fullmatch(r'[0-9a-f]{40}', blob_sha) is None:
+                  raise SystemExit('exact target inspection returned invalid blob SHA; fail closed')
+              return blob_sha
 
           pull = api(f'/pulls/{number_text}')
           if pull.get('state') != 'open':
@@ -537,13 +549,26 @@ jobs:
           if isinstance(changed_files, bool) or not isinstance(changed_files, int) or changed_files < 0:
               raise SystemExit('invalid changed-files count')
 
-          base_present = target_present(expected_base)
-          head_present = target_present(expected_head)
+          validate_commit(expected_base)
+          validate_commit(expected_head)
+          base_blob = target_blob(expected_base)
+          head_blob = target_blob(expected_head)
+          base_present = base_blob is not None
+          head_present = head_blob is not None
           # The former diff-enumeration authority (`previous_filename = item.get('previous_filename')`)
           # is deliberately replaced by immutable base/head exact-path observations above.
           checkout_present = os.path.isfile(target)
           if checkout_present != head_present:
               raise SystemExit('exact-head checkout and API target state disagree; fail closed')
+          if checkout_present:
+              checkout_blob = subprocess.run(
+                  ['git', 'hash-object', '--', target],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              ).stdout.strip().lower()
+              if checkout_blob != head_blob:
+                  raise SystemExit('exact-head checkout and API target blob disagree; fail closed')
           if base_present and not head_present:
               raise SystemExit('Durability PostgreSQL target was removed or renamed; fail closed')
 
@@ -556,7 +581,14 @@ jobs:
               raise SystemExit('pull request repository changed during Durability PostgreSQL target classification')
           if pull_after_target.get('base', {}).get('sha', '').lower() != expected_base:
               raise SystemExit('pull request base moved during Durability PostgreSQL target classification')
-          if pull_after_target.get('changed_files') != changed_files:
+          changed_files_after = pull_after_target.get('changed_files')
+          if (
+              isinstance(changed_files_after, bool)
+              or not isinstance(changed_files_after, int)
+              or changed_files_after < 0
+          ):
+              raise SystemExit('invalid post-inspection changed-files count')
+          if changed_files_after != changed_files:
               raise SystemExit('pull request changed-files count moved during Durability PostgreSQL target classification')
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:

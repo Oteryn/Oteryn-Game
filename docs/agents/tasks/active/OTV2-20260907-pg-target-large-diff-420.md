@@ -83,9 +83,13 @@ finding_family_sweep:
   restart_retry_replay_concurrency_pg_reload: API race ABA and PostgreSQL target execution
   evidence: []
 finding_dispositions:
-  p0_p1_accepted_and_repaired: []
+  p0_p1_accepted_and_repaired:
+    - depth-1 regression depended on unavailable historical Git object
+    - target-path 404 could conceal unavailable commit or authorization
   p0_p1_rejected_with_exact_evidence: []
-  p2_fixed_accepted_or_deferred: []
+  p2_fixed_accepted_or_deferred:
+    - require valid API blob SHA and exact-head checkout blob parity
+    - strictly validate post-inspection changed-files count before comparison
 ```
 
 ## Acceptance criteria
@@ -107,15 +111,15 @@ No WP3 vendor/Cargo/source, Foundation/WP2, SQL/migration/shared PostgreSQL test
 
 ## Implementation / findings
 
-Replaced the downstream PostgreSQL classifier's immutable compare enumeration with authenticated contents-API observations of the one canonical path at exact base and head SHAs. A strict file payload is presence; only a validated 404 `Not Found` payload is absence. Removal/rename-away and checkout/API disagreement fail closed. The pre/post PR identity, state and count fence remains unchanged, while valid large changed-file counts no longer block target qualification.
+Replaced the downstream PostgreSQL classifier's immutable compare enumeration with authenticated contents-API observations of the one canonical path at exact base and head SHAs. Exact commit identities are authenticated before a strict path 404 may establish absence. A present file must expose a valid blob SHA matching the exact-head checkout. Removal/rename-away, unavailable commits, malformed post-inspection counts and checkout/API blob disagreement fail closed. The pre/post PR identity, state and count fence remains unchanged, while valid large changed-file counts no longer block target qualification.
 
-The actual inline workflow harness preserves RED at protected `main@4bc27844ffde2a645b5df85c7268babae283d866` for the 803-file target-present case and is GREEN for the allocated state/error/race matrix. The Linux job digest and mandatory invocation mutations are both negative controls.
+The actual inline workflow harness preserves the protected 803-file target-present RED as a self-contained fixture that does not require historical Git objects in a depth-1 checkout. It is GREEN for the allocated state/error/race matrix, including missing commit/authentication, invalid or mismatched blobs, and strict post-count controls. The Linux job digest and mandatory invocation mutations are both negative controls.
 
 ## Validation
 
 ### Focused
 
-- command/run: `python tools/repository/validate_pr_gate_pg_sim.py`; direct execution of all 17 inline PG/SIM regression functions in `tools/repository/test_validate_pr_gate_pg_sim.py`
+- command/run: `python tools/repository/validate_pr_gate_pg_sim.py`; direct execution of all 18 inline PG/SIM regression functions in `tools/repository/test_validate_pr_gate_pg_sim.py`
 - result: PASS
 
 ### Component/integration

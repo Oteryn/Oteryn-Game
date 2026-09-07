@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import os
+import subprocess
 import tempfile
 import textwrap
 import urllib.error
@@ -17,6 +18,48 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 VALIDATOR_PATH = Path(__file__).with_name("validate_pr_gate_pg_sim.py")
 MERGE_GATE = ROOT / ".github/workflows/merge-gate.yml"
+TARGET = "apps/game-server/tests/durability_postgres.rs"
+BLOB_SHA = "1" * 40
+
+# Self-contained snapshot of the protected classifier's >300-file rejection path.
+PROTECTED_PG_CLASSIFIER_FIXTURE = """\
+  rust_linux:
+    steps:
+      - name: Classify Durability PostgreSQL target
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          repository = os.environ['REPOSITORY']
+          number_text = os.environ['PULL_NUMBER'].strip()
+          headers = {'Authorization': f"Bearer {os.environ['GH_TOKEN']}"}
+
+          def api(path: str):
+              request = urllib.request.Request(
+                  f'https://api.github.com/repos/{repository}{path}', headers=headers
+              )
+              with urllib.request.urlopen(request, timeout=30) as response:
+                  return json.load(response)
+
+          pull = api(f'/pulls/{number_text}')
+          changed_files = pull.get('changed_files')
+          if (
+              isinstance(changed_files, bool)
+              or not isinstance(changed_files, int)
+              or changed_files < 0
+              or changed_files > 300
+          ):
+              raise SystemExit('invalid or over-cap changed-files count')
+          present = False
+          for page in range(1, (changed_files + 99) // 100 + 1):
+              for item in api(f'/pulls/{number_text}/files?per_page=100&page={page}'):
+                  present |= item.get('filename') == 'apps/game-server/tests/durability_postgres.rs'
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f"present={'true' if present else 'false'}\\n")
+          PY
+"""
 
 
 def load_validator():
@@ -79,6 +122,8 @@ def run_classifier(
     immutable_files=None,
     target_payloads=None,
     checkout_present=True,
+    checkout_blob=BLOB_SHA,
+    commit_payloads=None,
     workflow_text=None,
 ):
     """Execute the real workflow script with only GitHub HTTP responses replaced."""
@@ -105,8 +150,12 @@ def run_classifier(
         final_change(final)
     pulls = iter((initial, final))
     target_payloads = target_payloads or {
-        "b" * 40: {"path": "apps/game-server/tests/durability_postgres.rs", "type": "file"},
-        "a" * 40: {"path": "apps/game-server/tests/durability_postgres.rs", "type": "file"},
+        "b" * 40: {"path": TARGET, "type": "file", "sha": BLOB_SHA},
+        "a" * 40: {"path": TARGET, "type": "file", "sha": BLOB_SHA},
+    }
+    commit_payloads = commit_payloads or {
+        "b" * 40: {"sha": "b" * 40},
+        "a" * 40: {"sha": "a" * 40},
     }
 
     def response(payload):
@@ -122,6 +171,9 @@ def run_classifier(
         contents = "https://api.github.com/repos/Oteryn/Oteryn-Game/contents/apps/game-server/tests/durability_postgres.rs?ref="
         if request.full_url.startswith(contents):
             return response(target_payloads[request.full_url.removeprefix(contents)])
+        commits = "https://api.github.com/repos/Oteryn/Oteryn-Game/commits/"
+        if request.full_url.startswith(commits):
+            return response(commit_payloads[request.full_url.removeprefix(commits)])
         comparison = f"https://api.github.com/repos/Oteryn/Oteryn-Game/compare/{'b' * 40}...{'a' * 40}?per_page=1"
         if request.full_url == comparison:
             return io.StringIO(json.dumps({"files": files if immutable_files is None else immutable_files}))
@@ -139,8 +191,11 @@ def run_classifier(
             "GH_TOKEN": "test-only", "GITHUB_OUTPUT": str(output),
         }
         failure = None
+        completed = subprocess.CompletedProcess([], 0, stdout=f"{checkout_blob}\n")
         with patch.dict(os.environ, env), patch("urllib.request.urlopen", urlopen), patch(
             "os.path.isfile", return_value=checkout_present
+        ), patch(
+            "subprocess.run", return_value=completed
         ), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             try:
                 exec(compile(script, "merge-gate.yml:pg_target", "exec"), {})
@@ -168,12 +223,10 @@ def test_scope_rejects_comparison_truncation_while_pg_accepts_large_diff() -> No
 
 
 def test_protected_classifier_red_for_valid_803_file_target() -> None:
-    protected = os.popen("git show 4bc27844ffde2a645b5df85c7268babae283d866:.github/workflows/merge-gate.yml").read()
-    assert protected
     files = [{"filename": f"docs/{i}.md"} for i in range(802)] + [
         {"filename": "apps/game-server/tests/durability_postgres.rs", "status": "modified"}
     ]
-    failure, output = run_classifier(files, workflow_text=protected)
+    failure, output = run_classifier(files, workflow_text=PROTECTED_PG_CLASSIFIER_FIXTURE)
     assert failure == "invalid or over-cap changed-files count" and not output, (failure, output)
 
 
@@ -256,7 +309,7 @@ def test_classifier_rejects_unbound_base() -> None:
 
 def test_classifier_exact_target_state_matrix() -> None:
     target = "apps/game-server/tests/durability_postgres.rs"
-    present = {"path": target, "type": "file"}
+    present = {"path": target, "type": "file", "sha": BLOB_SHA}
     cases = (
         ("large-present", present, present, True, None, "present=true\n"),
         ("introduced", missing_target(), present, True, None, "present=true\n"),
@@ -276,11 +329,14 @@ def test_classifier_exact_target_state_matrix() -> None:
 
 def test_classifier_rejects_bad_target_evidence_and_checkout_mismatch() -> None:
     target = "apps/game-server/tests/durability_postgres.rs"
-    present = {"path": target, "type": "file"}
+    present = {"path": target, "type": "file", "sha": BLOB_SHA}
     bad = (
         [],
         {"path": "other.rs", "type": "file"},
         {"path": target, "type": "dir"},
+        {"path": target, "type": "file"},
+        {"path": target, "type": "file", "sha": True},
+        {"path": target, "type": "file", "sha": "not-a-sha"},
         missing_target("forbidden"),
         missing_target(code=401),
         missing_target(code=403),
@@ -302,12 +358,29 @@ def test_classifier_rejects_bad_target_evidence_and_checkout_mismatch() -> None:
             checkout_present=checkout_present,
         )
         assert "checkout and API target state disagree" in failure and not output
+    failure, output = run_classifier([], checkout_blob="2" * 40)
+    assert "checkout and API target blob disagree" in failure and not output
+
+
+def test_classifier_rejects_unavailable_exact_commits() -> None:
+    failures = (missing_target(), missing_target(code=403), {"sha": "c" * 40}, [])
+    for commit in ("b" * 40, "a" * 40):
+        for payload in failures:
+            commits = {"b" * 40: {"sha": "b" * 40}, "a" * 40: {"sha": "a" * 40}}
+            commits[commit] = payload
+            failure, output = run_classifier([], commit_payloads=commits)
+            assert "exact commit inspection" in failure and not output, (commit, payload)
 
 
 def test_classifier_rejects_invalid_changed_file_counts() -> None:
     for value in (-1, True, "803", None):
         failure, output = run_classifier([], initial_change=lambda pull, value=value: pull.update(changed_files=value))
         assert failure is not None and not output
+    for value in (-1, True, 1.0, "0", None):
+        failure, output = run_classifier(
+            [], final_change=lambda pull, value=value: pull.update(changed_files=value)
+        )
+        assert "invalid post-inspection changed-files count" in failure and not output
 
 
 def test_evidence_step_condition_family() -> None:
@@ -365,6 +438,7 @@ def main() -> int:
         test_classifier_rejects_unbound_base,
         test_classifier_exact_target_state_matrix,
         test_classifier_rejects_bad_target_evidence_and_checkout_mismatch,
+        test_classifier_rejects_unavailable_exact_commits,
         test_classifier_rejects_invalid_changed_file_counts,
         test_evidence_step_condition_family,
         test_scope_rejects_identity_races,
