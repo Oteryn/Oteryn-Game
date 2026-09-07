@@ -116,8 +116,25 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
                     authority_matcher, "&&", "||", occurrence
                 )
                 mutated = implementation.replace(authority_matcher, mutated_matcher, 1)
-                with self.assertRaisesRegex(SystemExit, "conjunctive current authority"):
+                with self.assertRaisesRegex(SystemExit, "current authority"):
                     audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_early_authority_success(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        authority_matcher = audit.rust_braced_block(
+            implementation,
+            "fn current_authority_matches_record(",
+            "complete current authority matcher",
+        )
+        opening = authority_matcher.index("{") + 1
+        mutated_matcher = (
+            authority_matcher[:opening]
+            + " if current.current_controller_present { return Ok(true); } "
+            + authority_matcher[opening:]
+        )
+        mutated = implementation.replace(authority_matcher, mutated_matcher, 1)
+        with self.assertRaisesRegex(SystemExit, "exclusive current authority"):
+            audit.foundation_reconnect_documents(task, mutated, verifier)
 
     def test_foundation_oracle_rejects_relaxed_evidence_logic(self) -> None:
         task, implementation, verifier = self._foundation_documents()
@@ -132,14 +149,44 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
                     evidence, comparison, comparison.replace(">=", "<", 1)
                 )
                 mutated = implementation.replace(evidence, mutated_evidence, 1)
-                with self.assertRaisesRegex(
-                    SystemExit, "authenticated evidence observation matcher"
-                ):
+                with self.assertRaisesRegex(SystemExit, "authenticated evidence"):
                     audit.foundation_reconnect_documents(task, mutated, verifier)
         mutated_evidence = self._replace_nth(evidence, "&&", "||", 0)
         mutated = implementation.replace(evidence, mutated_evidence, 1)
-        with self.assertRaisesRegex(SystemExit, "conjunctive authenticated evidence"):
+        with self.assertRaisesRegex(SystemExit, "authenticated evidence"):
             audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_early_evidence_success(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        evidence = audit.rust_braced_block(
+            implementation,
+            "fn authenticated_evidence_observed_by(",
+            "authenticated evidence observation matcher",
+        )
+        opening = evidence.index("{") + 1
+        mutated_evidence = (
+            evidence[:opening]
+            + " if observed_at >= 0 { return true; } "
+            + evidence[opening:]
+        )
+        mutated = implementation.replace(evidence, mutated_evidence, 1)
+        with self.assertRaisesRegex(SystemExit, "exclusive authenticated evidence"):
+            audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_allows_nonsemantic_helper_comments(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        for marker in (
+            "fn current_authority_matches_record(",
+            "fn authenticated_evidence_observed_by(",
+        ):
+            helper = audit.rust_braced_block(implementation, marker, marker)
+            opening = helper.index("{") + 1
+            commented = helper[:opening] + " /* formatting note */ " + helper[opening:]
+            mutated = implementation.replace(helper, commented, 1)
+            with self.subTest(marker=marker):
+                self.assertTrue(
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+                )
 
     def test_foundation_oracle_rejects_relaxed_authorize_guards_per_version(self) -> None:
         task, implementation, verifier = self._foundation_documents()

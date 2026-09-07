@@ -59,6 +59,13 @@ CURRENT_AUTHORITY_TERMS = (
 
 CURRENT_AUTHORITY_EXPRESSION = "Ok(" + "&&".join(CURRENT_AUTHORITY_TERMS) + ")"
 
+CURRENT_AUTHORITY_BODY = (
+    "{ let identity = record.identity(); "
+    "let compatibility = record.compatibility(); "
+    + CURRENT_AUTHORITY_EXPRESSION
+    + " }"
+)
+
 AUTHENTICATED_EVIDENCE_COMPARISONS = (
     "observed_at >= compatibility.platform_security_evidence().source_observed_at()",
     "observed_at >= compatibility.proof_trust_evidence().source_observed_at()",
@@ -66,6 +73,12 @@ AUTHENTICATED_EVIDENCE_COMPARISONS = (
 
 AUTHENTICATED_EVIDENCE_EXPRESSION = "&&".join(
     AUTHENTICATED_EVIDENCE_COMPARISONS
+)
+
+AUTHENTICATED_EVIDENCE_BODY = (
+    "{ let compatibility = record.compatibility(); "
+    + AUTHENTICATED_EVIDENCE_EXPRESSION
+    + " }"
 )
 
 AUTHORIZE_AUTHORITY_GUARD = (
@@ -233,6 +246,10 @@ def compact_rust(doc: str) -> str:
     return re.sub(r"\s+", "", doc)
 
 
+def rust_without_comments(doc: str) -> str:
+    return re.sub(r"//[^\n]*|/\*.*?\*/", "", doc, flags=re.DOTALL)
+
+
 def need_ordered(doc: str, fragments: tuple[str, ...], label: str) -> None:
     offset = 0
     for fragment in fragments:
@@ -246,6 +263,11 @@ def need_exactly_once(doc: str, fragment: str, label: str) -> None:
     count = doc.count(fragment)
     if count != 1:
         fail(f"{label}: expected exactly one {fragment!r}, found {count}")
+
+
+def need_exact(doc: str, expected: str, label: str) -> None:
+    if doc != expected:
+        fail(f"{label}: exact scoped body is not satisfied")
 
 
 def need(doc: str, fragment: str, label: str, *, ci: bool = False) -> None:
@@ -518,12 +540,17 @@ def foundation_reconnect_documents(
         "COMMIT committed/ambiguous requires reconciliation",
     )
 
-    authority_matcher = compact_rust(
-        rust_braced_block(
-            implementation,
-            "fn current_authority_matches_record(",
-            "complete current authority matcher",
-        )
+    authority_matcher_source = rust_braced_block(
+        implementation,
+        "fn current_authority_matches_record(",
+        "complete current authority matcher",
+    )
+    authority_matcher = compact_rust(rust_without_comments(authority_matcher_source))
+    authority_body = authority_matcher[authority_matcher.index("{") :]
+    need_exact(
+        authority_body,
+        compact_rust(CURRENT_AUTHORITY_BODY),
+        "exclusive current authority matcher body",
     )
     need(
         authority_matcher,
@@ -537,12 +564,17 @@ def foundation_reconnect_documents(
             "complete current authority matcher",
         )
 
-    evidence_matcher = compact_rust(
-        rust_braced_block(
-            implementation,
-            "fn authenticated_evidence_observed_by(",
-            "authenticated evidence observation matcher",
-        )
+    evidence_matcher_source = rust_braced_block(
+        implementation,
+        "fn authenticated_evidence_observed_by(",
+        "authenticated evidence observation matcher",
+    )
+    evidence_matcher = compact_rust(rust_without_comments(evidence_matcher_source))
+    evidence_body = evidence_matcher[evidence_matcher.index("{") :]
+    need_exact(
+        evidence_body,
+        compact_rust(AUTHENTICATED_EVIDENCE_BODY),
+        "exclusive authenticated evidence observation body",
     )
     for comparison in AUTHENTICATED_EVIDENCE_COMPARISONS:
         need(
