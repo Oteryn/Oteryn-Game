@@ -56,6 +56,8 @@ jobs:
           git diff --check "$BASE_SHA" "$HEAD_SHA"
           python tools/agents/validate_governance.py
           python tools/repository/validate_repository_policy.py
+          python tools/agents/tests/test_governance_lifecycle_discovery.py
+          python tools/repository/test_validate_merge_group_pg_sim.py
 
   dependency_review:
     name: Merge Queue / dependency review
@@ -243,6 +245,8 @@ jobs:
       - name: Build lint and smoke production client
         shell: pwsh
         run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
           cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc
           cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings
           cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke
