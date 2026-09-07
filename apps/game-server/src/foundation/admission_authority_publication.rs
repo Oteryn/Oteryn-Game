@@ -267,6 +267,17 @@ impl<'a> GameSessionUseAuthorityV1<'a> {
         use GameSessionUseAuthorizationErrorV1::{
             CandidateAlreadyUsed, RevisionOverflow, StaleAuthority,
         };
+        let Some(expected_current) = request.expected_current else {
+            return Err(StaleAuthority);
+        };
+        let Some(current_fence) = request.current_fence else {
+            return Err(StaleAuthority);
+        };
+        if current_fence.current_session != expected_current
+            || request.expected_membership_revision > GAME_SESSION_USE_LEDGER_CAPACITY_V1
+        {
+            return Err(StaleAuthority);
+        }
         let observation = self
             .source
             .ok_or(StaleAuthority)?
@@ -281,9 +292,10 @@ impl<'a> GameSessionUseAuthorityV1<'a> {
             || observation.operation_binding != request.operation_binding
             || observation.current_fence != request.current_fence
             || observation.membership_count != observation.membership_revision
+            || observation.membership_revision > GAME_SESSION_USE_LEDGER_CAPACITY_V1
+            || observation.membership_count > GAME_SESSION_USE_LEDGER_CAPACITY_V1
             || request.operation_binding == [0; 16]
             || request.expected_membership_revision == 0
-            || request.current_fence.map(|fence| fence.current_session) != request.expected_current
         {
             return Err(StaleAuthority);
         }

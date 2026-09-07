@@ -3130,16 +3130,23 @@ fn session_use_observation_fails_closed_and_replay_precedes_membership_rejection
         GameSessionCandidateMembershipV1::UsedByExactOperation,
         GAME_SESSION_USE_LEDGER_CAPACITY_V1,
     );
-    assert_eq!(
-        {
-            let owner = SessionUseOwner(replay);
-            GameSessionUseAuthorityV1::from_owning_source(&owner)
-                .authorize_terminal_replacement(replay_request)
-        },
-        Ok(GameSessionUseDecisionV1::ExactCommittedReplay {
-            committed_revision: GAME_SESSION_USE_LEDGER_CAPACITY_V1
-        })
-    );
+    for family in [
+        GameSessionUseFamilyV1::TerminalReplacement,
+        GameSessionUseFamilyV1::EarlyTerminalReplacement,
+        GameSessionUseFamilyV1::PostGraceRecovery,
+    ] {
+        let owner = SessionUseOwner(replay.clone());
+        assert_eq!(
+            authorize_session_use(
+                &GameSessionUseAuthorityV1::from_owning_source(&owner),
+                family,
+                replay_request,
+            ),
+            Ok(GameSessionUseDecisionV1::ExactCommittedReplay {
+                committed_revision: GAME_SESSION_USE_LEDGER_CAPACITY_V1
+            })
+        );
+    }
     let different = session_use_request(session_use_id(3), session_use_id(4), 12, 7);
     let owner = SessionUseOwner(session_use_observation(
         different,
@@ -3179,5 +3186,111 @@ fn session_use_ledger_ceiling_has_permanent_family_specific_results() {
             GAME_SESSION_USE_LEDGER_CAPACITY_V1,
         ));
         assert_eq!(authorize_session_use(&GameSessionUseAuthorityV1::from_owning_source(&owner), family, request), Err(expected));
+    }
+}
+
+#[test]
+fn replacement_session_use_families_require_current_predecessor_and_fence() {
+    for family in [
+        GameSessionUseFamilyV1::TerminalReplacement,
+        GameSessionUseFamilyV1::EarlyTerminalReplacement,
+        GameSessionUseFamilyV1::PostGraceRecovery,
+    ] {
+        for replay_shaped in [false, true] {
+            let mut request = session_use_request(session_use_id(3), session_use_id(4), 16, 7);
+            request.expected_current = None;
+            request.current_fence = None;
+            let membership = if replay_shaped {
+                GameSessionCandidateMembershipV1::UsedByExactOperation
+            } else {
+                GameSessionCandidateMembershipV1::Unused
+            };
+            let owner = SessionUseOwner(session_use_observation(request, membership, 7));
+            assert_eq!(
+                authorize_session_use(
+                    &GameSessionUseAuthorityV1::from_owning_source(&owner),
+                    family,
+                    request,
+                ),
+                Err(GameSessionUseAuthorizationErrorV1::StaleAuthority)
+            );
+        }
+
+        let mut missing_fence =
+            session_use_request(session_use_id(3), session_use_id(4), 17, 7);
+        missing_fence.current_fence = None;
+        let owner = SessionUseOwner(session_use_observation(
+            missing_fence,
+            GameSessionCandidateMembershipV1::UsedByExactOperation,
+            7,
+        ));
+        assert_eq!(
+            authorize_session_use(
+                &GameSessionUseAuthorityV1::from_owning_source(&owner),
+                family,
+                missing_fence,
+            ),
+            Err(GameSessionUseAuthorizationErrorV1::StaleAuthority)
+        );
+
+        let mut missing_predecessor =
+            session_use_request(session_use_id(3), session_use_id(4), 18, 7);
+        missing_predecessor.expected_current = None;
+        let owner = SessionUseOwner(session_use_observation(
+            missing_predecessor,
+            GameSessionCandidateMembershipV1::UsedByExactOperation,
+            7,
+        ));
+        assert_eq!(
+            authorize_session_use(
+                &GameSessionUseAuthorityV1::from_owning_source(&owner),
+                family,
+                missing_predecessor,
+            ),
+            Err(GameSessionUseAuthorizationErrorV1::StaleAuthority)
+        );
+    }
+}
+
+#[test]
+fn session_use_ledger_rejects_impossible_revisions_above_capacity() {
+    for revision in [GAME_SESSION_USE_LEDGER_CAPACITY_V1 + 1, u64::MAX] {
+        let request = session_use_request(session_use_id(3), session_use_id(4), 19, revision);
+        for membership in [
+            GameSessionCandidateMembershipV1::Unused,
+            GameSessionCandidateMembershipV1::UsedByExactOperation,
+        ] {
+            let owner = SessionUseOwner(session_use_observation(request, membership, revision));
+            for family in [
+                GameSessionUseFamilyV1::TerminalReplacement,
+                GameSessionUseFamilyV1::EarlyTerminalReplacement,
+                GameSessionUseFamilyV1::PostGraceRecovery,
+            ] {
+                assert_eq!(
+                    authorize_session_use(
+                        &GameSessionUseAuthorityV1::from_owning_source(&owner),
+                        family,
+                        request,
+                    ),
+                    Err(GameSessionUseAuthorizationErrorV1::StaleAuthority)
+                );
+            }
+        }
+    }
+
+    let request = session_use_request(session_use_id(3), session_use_id(4), 20, 7);
+    for count in [GAME_SESSION_USE_LEDGER_CAPACITY_V1 + 1, u64::MAX] {
+        let mut observation = session_use_observation(
+            request,
+            GameSessionCandidateMembershipV1::Unused,
+            request.expected_membership_revision(),
+        );
+        observation.membership_count = count;
+        let owner = SessionUseOwner(observation);
+        assert_eq!(
+            GameSessionUseAuthorityV1::from_owning_source(&owner)
+                .authorize_terminal_replacement(request),
+            Err(GameSessionUseAuthorizationErrorV1::StaleAuthority)
+        );
     }
 }
