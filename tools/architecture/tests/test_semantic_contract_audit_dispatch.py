@@ -226,6 +226,59 @@ fn target() {
         self.assertIn('"} fn target() { // not a comment"', block)
         self.assertIn('br###"{ /* fn target() {} */ }"###', block)
 
+    def test_rust_scanner_rejects_macro_argument_declarations(self) -> None:
+        macro = "macro_rules! ignore { ($($tokens:tt)*) => {}; }\n"
+        for opening, closing in (("(", ")"), ("[", "]")):
+            helper = macro + f"ignore!{opening}fn target() {{}}{closing};"
+            method = (
+                macro
+                + "impl Flow { "
+                + f"ignore!{opening}fn target(&self) {{}}{closing};"
+                + " }"
+            )
+            implementation = (
+                macro
+                + f"ignore!{opening}impl Flow {{ fn target(&self) {{}} }}{closing};"
+            )
+            with self.subTest(delimiter=opening, declaration="helper"):
+                with self.assertRaisesRegex(SystemExit, "top-level item"):
+                    audit.rust_named_function(helper, "target", "target helper")
+            with self.subTest(delimiter=opening, declaration="method"):
+                with self.assertRaisesRegex(SystemExit, "direct impl item"):
+                    audit.rust_impl_method(
+                        method, "impl Flow {", "fn target(", "Flow target"
+                    )
+            with self.subTest(delimiter=opening, declaration="impl"):
+                with self.assertRaisesRegex(SystemExit, "top-level item"):
+                    audit.rust_impl_method(
+                        implementation, "impl Flow {", "fn target(", "Flow target"
+                    )
+
+    def test_foundation_oracle_rejects_macro_hidden_helper_with_active_alias(
+        self,
+    ) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        helper = audit.rust_named_function(
+            implementation,
+            "current_authority_matches_record",
+            "authority helper",
+        )
+        opening = helper.index("{")
+        bypass = helper[:opening].replace(
+            "current_authority_matches_record", "scanner_bypass", 1
+        ) + "{ Ok(true) }"
+        macro = "macro_rules! scanner_ignore { ($($tokens:tt)*) => {}; }\n"
+        for left, right in (("(", ")"), ("[", "]")):
+            replacement = (
+                f"scanner_ignore!{left}{helper}{right};\n"
+                + bypass
+                + "\nuse self::scanner_bypass as current_authority_matches_record;"
+            )
+            mutated = macro + implementation.replace(helper, replacement, 1)
+            with self.subTest(delimiter=left):
+                with self.assertRaisesRegex(SystemExit, "top-level item"):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
     def test_foundation_oracle_allows_unmatched_comment_braces(self) -> None:
         task, implementation, verifier = self._foundation_documents()
         targets = (
@@ -285,6 +338,63 @@ fn target() {
             1,
         )
         self.assertTrue(audit.foundation_reconnect_documents(task, mutated, verifier))
+
+    def test_foundation_oracle_accepts_qualified_target_impl_paths(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        mutated = implementation.replace(
+            "impl ReconnectDurabilityFlowV1 {",
+            "impl self::r#ReconnectDurabilityFlowV1 {",
+        ).replace(
+            "impl ReconnectDurabilityFlowV2 {",
+            "impl self::r#ReconnectDurabilityFlowV2 {",
+        )
+        self.assertTrue(audit.foundation_reconnect_documents(task, mutated, verifier))
+
+    def test_foundation_oracle_rejects_qualified_impl_shadow_and_inner_cfg(
+        self,
+    ) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        method = audit.rust_impl_method(
+            implementation,
+            "impl ReconnectDurabilityFlowV2 {",
+            "pub fn authorize_commit(",
+            "V2 authorize_commit",
+        )
+        flow_impl = next(
+            block
+            for block in audit.rust_braced_blocks(
+                implementation,
+                "impl ReconnectDurabilityFlowV2 {",
+                "V2 impl",
+            )
+            if "pub fn authorize_commit(" in block
+        )
+        relaxed_method = self._replace_compact_fragment(
+            method,
+            "if !current_authority_matches_record",
+            "if current_authority_matches_record",
+        )
+        qualified_active = (
+            "impl self::r#ReconnectDurabilityFlowV2 {\npub "
+            + relaxed_method
+            + "\n}"
+        )
+        for attribute in (
+            "#![r#cfg(any())]",
+            "#![r#cfg_attr(all(), cfg(any()))]",
+        ):
+            disabled = flow_impl.replace("{", "{\n" + attribute, 1)
+            shadowed = implementation.replace(
+                flow_impl, disabled + "\n" + qualified_active, 1
+            )
+            with self.subTest(attribute=attribute, active_shadow=True):
+                with self.assertRaisesRegex(SystemExit, "exactly one method"):
+                    audit.foundation_reconnect_documents(task, shadowed, verifier)
+
+            only_disabled = implementation.replace(flow_impl, disabled, 1)
+            with self.subTest(attribute=attribute, active_shadow=False):
+                with self.assertRaisesRegex(SystemExit, "conditional audited"):
+                    audit.foundation_reconnect_documents(task, only_disabled, verifier)
 
     def test_foundation_oracle_rejects_raw_cfg_shadowed_declarations(self) -> None:
         task, implementation, verifier = self._foundation_documents()

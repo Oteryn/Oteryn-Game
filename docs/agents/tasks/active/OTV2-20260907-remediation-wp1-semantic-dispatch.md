@@ -54,7 +54,7 @@ No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/produc
 ## Context checkpoint
 
 ```yaml
-last_progress: fresh exact-head review found raw Rust identifiers could hide cfg attributes and active shadow definitions; the coherent repair normalizes raw spellings for conditional attributes and every audited helper, method and impl type while retaining lexical masking, top-level/direct declaration checks and complete method-body validation on protected base 10b6be51551af5d70d45b4f56c2f6d3e8f6dc528
+last_progress: fresh exact-head review plus independent reproduction found macro-token decoys, qualified impl paths and inner impl cfg attributes could evade item discovery; the coherent repair now requires full delimiter context, recognizes qualified/raw target paths and rejects outer or inner conditional impls while retaining lexical masking, exact bodies and prior raw-identifier closure on protected base 10b6be51551af5d70d45b4f56c2f6d3e8f6dc528
 status: review_pending
 branch: fix/remediation-wp1-semantic-dispatch-364
 pr: 371

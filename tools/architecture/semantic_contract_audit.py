@@ -414,8 +414,13 @@ def rust_has_conditional_attribute(code: str, item_start: int) -> bool:
     return re.search(r"#\s*\[\s*(?:r#)?cfg(?:_attr)?\b", prefix) is not None
 
 
-def rust_brace_depth(code: str, position: int) -> int:
-    return code.count("{", 0, position) - code.count("}", 0, position)
+def rust_delimiter_depth(code: str, position: int) -> tuple[int, int, int]:
+    prefix = code[:position]
+    return (
+        prefix.count("{") - prefix.count("}"),
+        prefix.count("(") - prefix.count(")"),
+        prefix.count("[") - prefix.count("]"),
+    )
 
 
 def rust_named_function(doc: str, name: str, label: str) -> str:
@@ -425,7 +430,7 @@ def rust_named_function(doc: str, name: str, label: str) -> str:
     if len(matches) != 1:
         fail(f"{label}: expected exactly one function, found {len(matches)}")
     start = matches[0].start()
-    if rust_brace_depth(code, start) != 0:
+    if rust_delimiter_depth(code, start) != (0, 0, 0):
         fail(f"{label}: audited function must be a top-level item")
     if rust_has_conditional_attribute(code, start):
         fail(f"{label}: conditional audited definition")
@@ -445,23 +450,34 @@ def rust_impl_method(
     methods: list[tuple[int, bool]] = []
     impl_identifier = rf"(?:r#)?{re.escape(impl_type)}\b"
     method_identifier = rf"(?:r#)?{re.escape(method_name)}\b"
+    path_segment = r"(?:r#)?[A-Za-z_][A-Za-z0-9_]*"
+    impl_path = rf"(?:(?:{path_segment})\s*::\s*)*{impl_identifier}"
     impl_pattern = re.compile(
         rf"\bimpl\s+(?:<[^{{}};]*>\s*)?"
-        rf"(?:{impl_identifier}|[^{{}};]*?\bfor\s+{impl_identifier})"
+        rf"(?:{impl_path}|[^{{}};]*?\bfor\s+{impl_path})"
         rf"[^{{}};]*?\{{"
     )
     for impl_match in impl_pattern.finditer(code):
         impl_start = impl_match.start()
         opening = impl_match.end() - 1
-        if rust_brace_depth(code, impl_start) != 0:
+        if rust_delimiter_depth(code, impl_start) != (0, 0, 0):
             fail(f"{label}: audited impl must be a top-level item")
         block_end = rust_braced_end(code, opening, f"{impl_type} impl")
-        impl_conditional = rust_has_conditional_attribute(code, impl_start)
+        inner_conditional = any(
+            rust_delimiter_depth(code, opening + 1 + attribute.start()) == (1, 0, 0)
+            for attribute in re.finditer(
+                r"#\s*!\s*\[\s*(?:r#)?cfg(?:_attr)?\b",
+                code[opening + 1 : block_end - 1],
+            )
+        )
+        impl_conditional = (
+            rust_has_conditional_attribute(code, impl_start) or inner_conditional
+        )
         for method in re.finditer(
             rf"\bfn\s+{method_identifier}", code[opening + 1 : block_end - 1]
         ):
             method_start = opening + 1 + method.start()
-            if rust_brace_depth(code, method_start) != 1:
+            if rust_delimiter_depth(code, method_start) != (1, 0, 0):
                 fail(f"{label}: audited method must be a direct impl item")
             methods.append(
                 (
