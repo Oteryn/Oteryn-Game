@@ -271,7 +271,15 @@ where
         // are allowed to be dangling after their last use, even if the
         // reference has not yet gone out of scope.
         unsafe {
+            // Move the permit outside the allocation, destroy/deallocate the
+            // actual Cell, and only then release its owner custody.
+            let charge = self
+                .cell
+                .as_ref()
+                .oteryn_charge
+                .with_mut(|slot| (*slot).take());
             drop(Box::from_raw(self.cell.as_ptr()));
+            drop(charge);
         }
     }
 

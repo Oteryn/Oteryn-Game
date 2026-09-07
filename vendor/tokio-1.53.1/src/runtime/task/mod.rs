@@ -330,6 +330,36 @@ pub(crate) trait Schedule: Sync + Sized + 'static {
 }
 
 cfg_rt! {
+    pub(crate) struct OterynCharge {
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+        bytes: usize,
+    }
+
+    impl OterynCharge {
+        pub(crate) fn reserve(
+            owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+            bytes: usize,
+        ) -> std::result::Result<Self, crate::task::OwnedSpawnError> {
+            if bytes == 0 || !owner.try_reserve(bytes) {
+                return Err(crate::task::OwnedSpawnError::InsufficientOwnerBalance);
+            }
+            Ok(Self { owner, bytes })
+        }
+
+        pub(crate) fn same_owner(
+            &self,
+            owner: &std::sync::Arc<dyn crate::task::BlockingOwner>,
+        ) -> bool {
+            std::sync::Arc::ptr_eq(&self.owner, owner)
+        }
+    }
+
+    impl Drop for OterynCharge {
+        fn drop(&mut self) {
+            self.owner.release(self.bytes);
+        }
+    }
+
     /// This is the constructor for a new task. Three references to the task are
     /// created. The first task reference is usually put into an `OwnedTasks`
     /// immediately. The Notified is sent to the scheduler as an ordinary
@@ -396,6 +426,31 @@ cfg_rt! {
         std::mem::forget(notified);
 
         (unowned, join)
+    }
+
+    pub(crate) fn unowned_oteryn<T, S>(
+        task: T,
+        scheduler: S,
+        id: Id,
+        spawned_at: SpawnLocation,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> std::result::Result<
+        (UnownedTask<S>, JoinHandle<T::Output>),
+        crate::task::OwnedSpawnError,
+    >
+    where
+        S: Schedule,
+        T: Send + Future + 'static,
+        T::Output: Send + 'static,
+    {
+        let raw = RawTask::new_oteryn(task, scheduler, id, spawned_at, owner)?;
+        let task: Task<S> = Task { raw, _p: PhantomData };
+        let notified: Notified<S> = Notified(Task { raw, _p: PhantomData });
+        let join = JoinHandle::new(raw);
+        let unowned = UnownedTask { raw: task.raw, _p: PhantomData };
+        std::mem::forget(task);
+        std::mem::forget(notified);
+        Ok((unowned, join))
     }
 }
 

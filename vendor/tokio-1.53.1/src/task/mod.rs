@@ -278,7 +278,9 @@ cfg_rt! {
     pub use crate::runtime::task::{JoinError, JoinHandle};
 
     mod blocking;
-    pub use blocking::spawn_blocking;
+    pub use blocking::{
+        spawn_blocking, spawn_blocking_owned, BlockingOwner, BlockingOwnerConfig, OwnedSpawnError,
+    };
 
     mod spawn;
     pub use spawn::spawn;

@@ -226,3 +226,27 @@ status: blocked_pending_shared_lease
 blocker: tokio_task_mod_public_reexport_is_outside_protected_authored_allowlist
 next_action: protect vendor/tokio-1.53.1/src/task/mod.rs only for the owned-blocking API re-export, then resume GREEN without expanding any other path
 ```
+
+## Window5 owned-Tokio intermediate GREEN
+
+Protected re-export authority at `main@feb6db96bd2fc93813cb120b874c61085f6dde45`
+was applied under #351 comment `5575953751`. The owned Tokio entry point now
+compiles and focused tests cover owner denial, overflow, funded completion,
+dropped-handle running custody, idle worker retention, and shutdown release.
+Task Cell custody is reserved from its concrete generic layout before allocation
+and released after final Cell deallocation; the separate finite owner queue does
+not spill into ordinary Tokio work, and an owned-created worker requires funded
+explicit stack plus bookkeeping before OS spawn.
+
+This is an intermediate GREEN, not the complete gate. Queue-full denial ordering,
+queued abort, deterministic OS-spawn failure, loom concurrency, SQLx adapter and
+funded certificate loader, complete TLS composition, actual TLS-positive proof,
+and PostgreSQL 17.6 qualification remain OPEN. No shared PG target mutation was
+made and ordinary `spawn_blocking` remains the control path.
+
+```yaml
+last_progress: implemented and focused-tested the protected Tokio owned task/queue/worker surface
+status: implementation_in_progress
+tls_blocking_owner: NOT_PROVEN
+next_action: close the remaining Tokio pre-admission/lifetime matrix, then adapt the SQLx ledger and prove complete TLS before any PostgreSQL expansion
+```

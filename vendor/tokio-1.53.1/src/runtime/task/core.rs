@@ -133,6 +133,9 @@ pub(super) struct Cell<T: Future, S> {
 
     /// Cold data
     pub(super) trailer: Trailer,
+
+    /// Oteryn-owned task allocation custody, absent for ordinary tasks.
+    pub(super) oteryn_charge: UnsafeCell<Option<super::OterynCharge>>,
 }
 
 pub(super) struct CoreStage<T: Future> {
@@ -238,6 +241,25 @@ impl<T: Future, S: Schedule> Cell<T, S> {
         task_id: Id,
         #[cfg(tokio_unstable)] spawned_at: &'static Location<'static>,
     ) -> Box<Cell<T, S>> {
+        Self::new_with_charge(
+            future,
+            scheduler,
+            state,
+            task_id,
+            #[cfg(tokio_unstable)]
+            spawned_at,
+            None,
+        )
+    }
+
+    pub(super) fn new_with_charge(
+        future: T,
+        scheduler: S,
+        state: State,
+        task_id: Id,
+        #[cfg(tokio_unstable)] spawned_at: &'static Location<'static>,
+        oteryn_charge: Option<super::OterynCharge>,
+    ) -> Box<Cell<T, S>> {
         // Separated into a non-generic function to reduce LLVM codegen
         fn new_header(
             state: State,
@@ -275,6 +297,7 @@ impl<T: Future, S: Schedule> Cell<T, S> {
                 #[cfg(tokio_unstable)]
                 spawned_at,
             },
+            oteryn_charge: UnsafeCell::new(oteryn_charge),
         });
 
         #[cfg(debug_assertions)]

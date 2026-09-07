@@ -46,3 +46,31 @@ After protection/application, resume the required owner queue/task/worker RED to
 GREEN matrix. `TLS_BLOCKING_OWNER` remains unproven, so TLS composition,
 PostgreSQL accounting, the shared include-only target, and real TLS/PG evidence
 remain OPEN.
+
+## Window5 protected task-export amendment checkpoint
+
+Protected PR #417 and Work application #351 comment `5575953751` authorized the
+single missing `src/task/mod.rs` re-export at protected
+`main@feb6db96bd2fc93813cb120b874c61085f6dde45`. The amended RED at
+`45da01b13b848785ad7fe068c6e100b7cc3eebe5` is preserved.
+
+This checkpoint adds the fallible `spawn_blocking_owned` surface and a distinct
+owned queue. A concrete generic `Cell<T, S>` charge is acquired before its Box
+allocation and moved outside the allocation during final harness destruction so
+release follows actual Cell deallocation. Owner-queue storage is separately
+charged, finite, and never uses the ordinary blocking `VecDeque`; an owned-created
+worker requires explicit nonzero stack configuration, reserves stack and concrete
+bookkeeping before `thread::Builder::spawn`, and holds the reservation across idle
+keep-alive until its exit. Ordinary `spawn_blocking` continues through the
+unchanged upstream entry point.
+
+Focused controls prove insufficient-balance denial, checked overflow, funded
+execution, dropped-handle retention while work is running, idle worker retention,
+and final shutdown release. The full amendment gate is nevertheless **not yet
+claimed proven**: queue-full pre-admission ordering, queued abort, forced OS-spawn
+failure, loom concurrency, SQLx ledger adaptation, complete TLS phase composition,
+and actual TLS-positive/PostgreSQL 17.6 qualification remain OPEN. No PostgreSQL
+source or shared test target was changed.
+
+`TLS_BLOCKING_OWNER = NOT_PROVEN` at this intermediate GREEN checkpoint; WP3 is
+not accepted or ready for integration.

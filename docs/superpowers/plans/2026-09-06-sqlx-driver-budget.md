@@ -106,3 +106,13 @@ private and the required `src/task/mod.rs` public re-export list is outside the
 protected authored allowlist. Request only that exact re-export lease. Preserve
 ordinary spawn behavior and all remaining task/queue/worker, TLS and PostgreSQL
 work as OPEN; `TLS_BLOCKING_OWNER = NOT_PROVEN`.
+
+## 2026-09-07 protected task-export continuation
+
+The protected `src/task/mod.rs` lease is active and the prior amended RED remains
+preserved. An intermediate owned-Tokio GREEN now reserves concrete task Cell,
+separate finite owner-queue and explicit-stack worker backing and passes focused
+denial/overflow/funded/drop/idle/shutdown controls. Do not advance to PostgreSQL:
+queue-full pre-admission, queued abort, OS-spawn failure, loom concurrency, SQLx
+ledger adaptation, complete TLS phase composition and real TLS-positive evidence
+remain OPEN. `TLS_BLOCKING_OWNER = NOT_PROVEN` and WP3 is not accepted.

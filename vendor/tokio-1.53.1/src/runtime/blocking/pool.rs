@@ -15,6 +15,7 @@ use std::fmt;
 use std::io;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
+use crate::task::{BlockingOwner, BlockingOwnerConfig, OwnedSpawnError};
 
 pub(crate) struct BlockingPool {
     spawner: Spawner,
@@ -80,6 +81,9 @@ struct Inner {
     /// Pool threads wait on this.
     condvar: Condvar,
 
+    /// Owned workers use a distinct wakeup channel from the ordinary pool.
+    owned_condvar: Condvar,
+
     /// Spawned threads use this name.
     thread_name: ThreadNameFn,
 
@@ -104,6 +108,8 @@ struct Inner {
 
 struct Shared {
     queue: VecDeque<Task>,
+    owned_queue: Option<OwnedQueue>,
+    owned_worker_running: bool,
     num_notify: u32,
     shutdown: bool,
     shutdown_tx: Option<shutdown::Sender>,
@@ -119,6 +125,12 @@ struct Shared {
     /// This is a counter used to iterate `worker_threads` in a consistent order (for loom's
     /// benefit).
     worker_thread_index: usize,
+}
+
+struct OwnedQueue {
+    queue: VecDeque<Task>,
+    limit: usize,
+    _charge: task::OterynCharge,
 }
 
 pub(crate) struct Task {
@@ -216,6 +228,8 @@ impl BlockingPool {
                 inner: Arc::new(Inner {
                     shared: Mutex::new(Shared {
                         queue: VecDeque::new(),
+                        owned_queue: None,
+                        owned_worker_running: false,
                         num_notify: 0,
                         shutdown: false,
                         shutdown_tx: Some(shutdown_tx),
@@ -224,6 +238,7 @@ impl BlockingPool {
                         worker_thread_index: 0,
                     }),
                     condvar: Condvar::new(),
+                    owned_condvar: Condvar::new(),
                     thread_name: builder.thread_name.clone(),
                     stack_size: builder.thread_stack_size,
                     after_start: builder.after_start.clone(),
@@ -254,6 +269,7 @@ impl BlockingPool {
         shared.shutdown = true;
         shared.shutdown_tx = None;
         self.spawner.inner.condvar.notify_all();
+        self.spawner.inner.owned_condvar.notify_all();
 
         let last_exited_thread = std::mem::take(&mut shared.last_exiting_thread);
         let workers = std::mem::take(&mut shared.worker_threads);
@@ -294,6 +310,111 @@ impl fmt::Debug for BlockingPool {
 // ===== impl Spawner =====
 
 impl Spawner {
+    pub(crate) fn spawn_blocking_owned<F, R>(
+        &self,
+        rt: &Handle,
+        owner: Arc<dyn BlockingOwner>,
+        config: BlockingOwnerConfig,
+        func: F,
+    ) -> Result<JoinHandle<R>, OwnedSpawnError>
+    where
+        F: FnOnce() -> R + Send + 'static,
+        R: Send + 'static,
+    {
+        if config.queue_capacity == 0 || config.worker_stack_size == 0 {
+            return Err(OwnedSpawnError::InvalidConfiguration);
+        }
+
+        let id = task::Id::next();
+        let fn_size = std::mem::size_of::<F>();
+        let fut = blocking_task::<F, BlockingTask<F>>(
+            BlockingTask::new(func),
+            SpawnMeta::new_unnamed(fn_size),
+            id.as_u64(),
+        );
+        let (task, handle) = task::unowned_oteryn(
+            fut,
+            BlockingSchedule::new(rt),
+            id,
+            task::SpawnLocation::capture(),
+            owner.clone(),
+        )?;
+        self.spawn_owned_task(Task::new(task, Mandatory::NonMandatory), rt, owner, config)?;
+        Ok(handle)
+    }
+
+    fn spawn_owned_task(
+        &self,
+        task: Task,
+        rt: &Handle,
+        owner: Arc<dyn BlockingOwner>,
+        config: BlockingOwnerConfig,
+    ) -> Result<(), OwnedSpawnError> {
+        let mut shared = self.inner.shared.lock();
+        if shared.shutdown {
+            task.task.shutdown();
+            return Err(OwnedSpawnError::RuntimeShuttingDown);
+        }
+
+        if shared.owned_queue.is_none() {
+            let bytes = config.queue_capacity
+                .checked_mul(std::mem::size_of::<Task>())
+                .ok_or(OwnedSpawnError::AccountingOverflow)?;
+            let charge = task::OterynCharge::reserve(owner.clone(), bytes)?;
+            let queue = VecDeque::with_capacity(config.queue_capacity);
+            shared.owned_queue = Some(OwnedQueue {
+                queue,
+                limit: config.queue_capacity,
+                _charge: charge,
+            });
+        }
+        let queue = shared.owned_queue.as_mut().expect("owned queue initialized");
+        if !queue._charge.same_owner(&owner) || queue.limit != config.queue_capacity {
+            return Err(OwnedSpawnError::InvalidConfiguration);
+        }
+        if queue.queue.len() == queue.limit {
+            return Err(OwnedSpawnError::QueueFull);
+        }
+        queue.queue.push_back(task);
+
+        if !shared.owned_worker_running {
+            let bookkeeping = std::mem::size_of::<thread::JoinHandle<()>>()
+                .checked_add(std::mem::size_of::<usize>())
+                .and_then(|value| value.checked_add(config.worker_stack_size))
+                .ok_or(OwnedSpawnError::AccountingOverflow)?;
+            let worker_charge = task::OterynCharge::reserve(owner, bookkeeping)?;
+            let id = shared.worker_thread_index;
+            let shutdown_tx = shared.shutdown_tx.clone().ok_or(OwnedSpawnError::RuntimeShuttingDown)?;
+            let builder = thread::Builder::new()
+                .name((self.inner.thread_name)())
+                .stack_size(config.worker_stack_size);
+            let rt = rt.clone();
+            let result = builder.spawn(move || {
+                let charge = worker_charge;
+                let enter = rt.enter();
+                rt.inner.blocking_spawner().inner.run_owned(id);
+                // Release charged backing only once the worker has finished all
+                // pool work, then signal shutdown waiters.
+                drop(enter);
+                drop(rt);
+                drop(charge);
+                drop(shutdown_tx);
+            });
+            match result {
+                Ok(handle) => {
+                    // The native thread owns its bookkeeping charge. Detaching the
+                    // handle avoids uncharged HashMap growth; shutdown is tracked by
+                    // the existing sender held by the worker.
+                    drop(handle);
+                    shared.worker_thread_index += 1;
+                    shared.owned_worker_running = true;
+                }
+                Err(error) => return Err(OwnedSpawnError::ThreadSpawn(error)),
+            }
+        }
+        self.inner.owned_condvar.notify_one();
+        Ok(())
+    }
     #[track_caller]
     pub(crate) fn spawn_blocking<F, R>(&self, rt: &Handle, func: F) -> JoinHandle<R>
     where
@@ -500,6 +621,62 @@ fn is_temporary_os_thread_error(error: &io::Error) -> bool {
 }
 
 impl Inner {
+    fn run_owned(&self, _worker_thread_id: usize) {
+        if let Some(f) = &self.after_start {
+            f();
+        }
+
+        let mut shared = self.shared.lock();
+        loop {
+            while let Some(task) = shared
+                .owned_queue
+                .as_mut()
+                .and_then(|queue| queue.queue.pop_front())
+            {
+                drop(shared);
+                task.run();
+                shared = self.shared.lock();
+            }
+
+            if shared.shutdown {
+                loop {
+                    let task = shared
+                        .owned_queue
+                        .as_mut()
+                        .and_then(|queue| queue.queue.pop_front());
+                    let Some(task) = task else { break };
+                    drop(shared);
+                    task.shutdown_or_run_if_mandatory();
+                    shared = self.shared.lock();
+                }
+                break;
+            }
+
+            let (next, timeout) = self
+                .owned_condvar
+                .wait_timeout(shared, self.keep_alive)
+                .unwrap();
+            shared = next;
+            if timeout.timed_out()
+                && shared
+                    .owned_queue
+                    .as_ref()
+                    .map_or(true, |queue| queue.queue.is_empty())
+            {
+                break;
+            }
+        }
+        shared.owned_worker_running = false;
+        if shared.shutdown {
+            self.owned_condvar.notify_one();
+        }
+        drop(shared);
+
+        if let Some(f) = &self.before_stop {
+            f();
+        }
+    }
+
     fn run(&self, worker_thread_id: usize) {
         if let Some(f) = &self.after_start {
             f();

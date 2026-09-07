@@ -1,5 +1,75 @@
 use crate::task::JoinHandle;
 
+use std::fmt;
+use std::sync::Arc;
+
+/// Accounting capability used by Oteryn's fail-closed blocking-task path.
+#[doc(hidden)]
+pub trait BlockingOwner: Send + Sync + 'static {
+    fn try_reserve(&self, bytes: usize) -> bool;
+    fn release(&self, bytes: usize);
+}
+
+/// Finite owner-supplied configuration for an owned blocking pool.
+#[doc(hidden)]
+#[derive(Clone, Copy, Debug)]
+pub struct BlockingOwnerConfig {
+    pub(crate) queue_capacity: usize,
+    pub(crate) worker_stack_size: usize,
+}
+
+impl BlockingOwnerConfig {
+    pub const fn new(queue_capacity: usize, worker_stack_size: usize) -> Self {
+        Self { queue_capacity, worker_stack_size }
+    }
+}
+
+/// A bounded failure from resource-owned blocking admission.
+#[doc(hidden)]
+#[derive(Debug)]
+pub enum OwnedSpawnError {
+    InvalidConfiguration,
+    AccountingOverflow,
+    InsufficientOwnerBalance,
+    QueueFull,
+    RuntimeShuttingDown,
+    ThreadSpawn(std::io::Error),
+}
+
+impl fmt::Display for OwnedSpawnError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::InvalidConfiguration => f.write_str("invalid owned blocking configuration"),
+            Self::AccountingOverflow => f.write_str("owned blocking accounting overflow"),
+            Self::InsufficientOwnerBalance => f.write_str("insufficient blocking owner balance"),
+            Self::QueueFull => f.write_str("owned blocking queue is full"),
+            Self::RuntimeShuttingDown => f.write_str("blocking runtime is shutting down"),
+            Self::ThreadSpawn(error) => write!(f, "failed to spawn owned blocking worker: {error}"),
+        }
+    }
+}
+
+impl std::error::Error for OwnedSpawnError {}
+
+/// Spawns only after the supplied owner has funded task, queue, and worker
+/// backing. Denial never falls back to [`spawn_blocking`].
+#[doc(hidden)]
+#[track_caller]
+pub fn spawn_blocking_owned<F, R>(
+    owner: Arc<dyn BlockingOwner>,
+    config: BlockingOwnerConfig,
+    func: F,
+) -> Result<JoinHandle<R>, OwnedSpawnError>
+where
+    F: FnOnce() -> R + Send + 'static,
+    R: Send + 'static,
+{
+    let rt = crate::runtime::Handle::current();
+    rt.inner
+        .blocking_spawner()
+        .spawn_blocking_owned(&rt, owner, config, func)
+}
+
 cfg_rt_multi_thread! {
     /// Runs the provided blocking function on the current thread without
     /// blocking the executor.

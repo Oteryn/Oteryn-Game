@@ -231,6 +231,32 @@ impl RawTask {
         RawTask { ptr }
     }
 
+    pub(super) fn new_oteryn<T, S>(
+        task: T,
+        scheduler: S,
+        id: Id,
+        _spawned_at: super::SpawnLocation,
+        owner: std::sync::Arc<dyn crate::task::BlockingOwner>,
+    ) -> std::result::Result<RawTask, crate::task::OwnedSpawnError>
+    where
+        T: Future,
+        S: Schedule,
+    {
+        let bytes = std::mem::size_of::<Cell<T, S>>();
+        let charge = super::OterynCharge::reserve(owner, bytes)?;
+        let ptr = Box::into_raw(Cell::<_, S>::new_with_charge(
+            task,
+            scheduler,
+            State::new(),
+            id,
+            #[cfg(tokio_unstable)]
+            _spawned_at.0,
+            Some(charge),
+        ));
+        let ptr = unsafe { NonNull::new_unchecked(ptr.cast()) };
+        Ok(RawTask { ptr })
+    }
+
     /// # Safety
     ///
     /// `ptr` must be a valid pointer to a [`Header`].
