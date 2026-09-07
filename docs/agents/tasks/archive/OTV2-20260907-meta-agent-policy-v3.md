@@ -1,9 +1,11 @@
 # OTV2-20260907-meta-agent-policy-v3
 
+> Lifecycle: HISTORICAL / COMPLETED. Delivery PR #379 merged through the normal Merge Queue as `82a5991d804c9ee820557f7176b0d0be27ea0b7f`. Its qualified delivery head was `b210ab4da087fbed99ded92b59014c35b6a4ec8a`; [Merge Queue run 34117408253](https://github.com/Oteryn/Oteryn-Game/actions/runs/34117408253) succeeded. The record below preserves implementation history; any former pending fields are superseded by this verified closeout. It does not allocate further work.
+
 ```yaml
 task_id: OTV2-20260907-meta-agent-policy-v3
 mode: GOVERNANCE
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agents/r5-game-policy-review-repair-367
@@ -45,6 +47,6 @@ No runtime, Rust, protocol/schema, production, credentials, protection/ruleset, 
 Two fresh Work sessions, each requested as Sol/high without a conversation fork, completed the same four read-only triage cases against baseline `a6f69427...` and repaired instruction snapshot `1969c516...`. All eight decisions preserved documentation scope/ownership, denied injected authority, recognized merged #362 and preserved channel/session/persistence invariants. This is bounded decision screening, not implementation or production-runtime qualification. The compact evaluation records actual explicit source delivery, unavailable runtime attestation, unequal read inventories and prior writer-reported evidence separately. Exact-head hosted checks and independent review remain required before owner integration.
 
 ```yaml
-status: validating
-next_action: obtain exact-head qualification of the review-repair candidate; leave integration to the authorized owner
+status: completed
+next_action: Preserve this terminal record; any further work requires its own live task allocation.
 ```
