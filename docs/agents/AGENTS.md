@@ -19,6 +19,16 @@ Persistent continuation is subordinate to the META bounded-execution authority. 
 
 This adoption grants no Platform/Atlas, production, secret, deployment, protocol/content, protected-setting, review, or merge authority. Existing stronger Game safety, validation, exact-head review, `game-gate`, protection, and Merge Queue rules remain in force.
 
+## Execution runtime semantics
+
+Productive authorized work has **no fixed 60-minute or 120-minute wall-clock stop**. Time elapsed alone must not stop, rotate, freeze, release ownership, discard remaining work time, or require a fresh coordinator grant.
+
+Historical prompt/task/plan language that specifies 60-minute/120-minute foreground budgets, numbered execution windows, remaining-minute accounting, or mandatory stop-at-window-boundary is superseded and non-binding. Preserve such historical counters only as provenance where already recorded; do not use them as current execution authority.
+
+Current anti-stall limits apply to no-progress, repeated identical failures, bounded CI observation/recovery and waiting. A worker making material progress continues in the same authorized lineage until `DONE`, a genuine dependency/authority/safety blocker, an explicit owner stop, or a real execution/context boundary that prevents safe continuation.
+
+Do not create a new task, worker, branch, PR, admission, counter reset or review cycle merely because a historical execution window elapsed.
+
 ## Task records
 
 Use `tasks/TASK_TEMPLATE.md`. Every substantial task must record:
@@ -31,7 +41,7 @@ Use `tasks/TASK_TEMPLATE.md`. Every substantial task must record:
 - focused/component/E2E/exact-head validation;
 - audit result and unresolved findings;
 - compact context checkpoint with exactly one next action;
-- execution-budget counters when applicable.
+- anti-stall/retry counters when applicable.
 
 Do not edit another active task except for an explicitly coordinated ownership correction. Archive only after terminal completion/merge and ownership release.
 
