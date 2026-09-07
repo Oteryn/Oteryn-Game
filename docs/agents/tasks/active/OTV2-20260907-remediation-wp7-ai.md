@@ -4,12 +4,12 @@
 task_id: OTV2-20260907-remediation-wp7-ai
 title: Repair AI perception candidate identity uniqueness
 mode: REPAIR
-status: implementing
+status: implementation_validated
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: fix/remediation-wp7-ai-364
 issue: 364
-pr: null
+pr: 369
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
 base_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
 head_sha: null
@@ -41,11 +41,11 @@ NOT_APPLICABLE: no session authority, PREPARE/COMMIT, durable schema/recovery, p
 
 ## Acceptance criteria
 
-- [ ] Duplicate CandidateId is rejected independently of priority and input position before Perception publication.
-- [ ] At least the six historical priority-separated permutations plus additional head/middle/tail duplicate positions fail closed.
-- [ ] Unique candidates retain exactly the existing canonical priority-descending/id-ascending order.
-- [ ] Existing capacity/error behavior is unchanged.
-- [ ] Focused tests, Rust 1.94 fmt, strict game-server Clippy/tests and applicable exact-head CI pass.
+- [x] Duplicate CandidateId is rejected independently of priority and input position before Perception publication.
+- [x] At least the six historical priority-separated permutations plus additional head/middle/tail duplicate positions fail closed.
+- [x] Unique candidates retain exactly the existing canonical priority-descending/id-ascending order.
+- [x] Existing capacity/error behavior is unchanged.
+- [ ] Focused tests, Rust 1.94 fmt, strict game-server Clippy/tests and local diff checks pass; exact-head CI remains pending as GitHub-owned readiness evidence.
 
 ## Excluded scope
 
@@ -53,19 +53,22 @@ No AI activation/registration, gameplay transport, Foundation/Durability, Abilit
 
 ## Validation
 
-Focused/component/exact-head evidence: pending worker implementation. No historical green check validates future bytes.
+- RED: `cargo +1.94.0 test -p oteryn-game-server ai::tests::priority_separated_duplicate_candidate_ids_fail_for_every_input_permutation -- --exact` failed as expected because the priority-separated duplicate returned `Ok(Perception { .. })` instead of `Err(AiError::InvalidInput)`.
+- GREEN focused AI suite: `cargo +1.94.0 test -p oteryn-game-server --test ai_bootstrap` passed 13 tests.
+- Final local gate: `cargo +1.94.0 fmt --all --check && cargo +1.94.0 clippy -p oteryn-game-server --all-targets --all-features -- -D warnings && cargo +1.94.0 test -p oteryn-game-server && git diff --check` passed in full (364 library tests, 69 migration-binary tests, 13 AI integration tests, 4 authority-invariant tests, 124 durability tests, 17 evidence-shell tests, 15 interaction tests, 2 qualification tests, and 30 doc tests).
+- Exact-head GitHub CI is not claimed by this local implementation record and remains pending after publication.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: exact three-path WP7A allocation created from protected main
-status: implementing
+last_progress: WP7A uniqueness repair and bounded regression matrix validated locally for publication
+status: implementation_validated
 branch: fix/remediation-wp7-ai-364
 head_sha: null
-pr: null
+pr: 369
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 owner_action_required: null
 blocker: null
-next_action: implement priority-independent CandidateId uniqueness and focused permutation regressions
+next_action: publish one coherent commit to PR 369 for remediation-lead exact-head inspection
 ```
