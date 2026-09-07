@@ -9,16 +9,16 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/doc-consumer-snapshot-current-refresh-w6
 issue: 375
-pr: null
+pr: 378
 base_sha: a6f69427d663539c6a8e23f166e69147b66ec078
-integration_main_sha: 686cf85cac3e7f66a473527c198705466dc5c3bd
+integration_main_sha: 15164c38a2775e45eaff4001fddddbabf4b63ab6
 successor_base_sha: 15164c38a2775e45eaff4001fddddbabf4b63ab6
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: Game-W6
 created_at: 2026-09-07T09:00:59Z
-updated_at: 2026-09-07T09:10:10Z
+updated_at: 2026-09-07T09:41:34Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/repository/classify_pr_test_lanes.py
@@ -35,7 +35,7 @@ external_repositories: []
 
 ## Outcome
 
-Restore the existing conservative neutral-document routing only for the newly reviewed protected Game tree. This repair changes one production snapshot constant and its independent regression evidence. It does not change the classifier algorithm, workflow fan-in, required checks, product code or runtime behavior.
+Restore the existing conservative neutral-document routing only for the newly reviewed protected Game tree. This successor changes the two existing production snapshot constants and their independent regression evidence. It does not change the classifier algorithm, workflow fan-in, required checks, product code or runtime behavior.
 
 ## Architecture and source of truth
 
@@ -47,13 +47,15 @@ Restore the existing conservative neutral-document routing only for the newly re
 - `PROVEN` — from the prior audited source through that intermediate main, the selected source delta was exactly 20 `apps/game-server` Rust paths, +15,005/-7, eight added and twelve modified. Cargo, build inputs and non-server package trees were unchanged. The final server increment was six modified server Rust paths, +206/-6.
 - `PROVEN` — independent lexical scans of both the original 14-path delta and the six-path upstream increment found no filesystem, document, Markdown or workspace-boundary reads. The only original broad-`open` match was Tokio `Builder::new_current_thread`, which is not file access.
 - `PROVEN` — before final integration, protected `main` advanced once more through native-client #368 to `686cf85cac3e7f66a473527c198705466dc5c3bd`. Its selected-input delta is exactly two modified non-server Rust paths, `apps/client/src/windows_shell.rs` and `crates/identity/src/lib.rs`, +130/-17. Neither adds a filesystem, document, Markdown or workspace-boundary read.
-- `PROVEN` — final reviewed `main` has 63 non-server records at `669052b19bf8d067d949623ba566e087b43def40b2661f8c3feb16f3d62de180` and 132 all-consumer records at `dc9381615fb7b1f7b06533ac6f6ffebb6d274b8d799894fe54882bf69f638472`. From the original audited tree this is exactly 22 selected Rust paths, +15,135/-24; Cargo/build inputs remain unchanged.
-- `DERIVED` — the audited server, client and identity changes do not introduce a neutral-document consumer; adopting both current digests restores the already designed routing contract without changing its algorithm or modeled inputs.
+- `PROVEN` — intermediate `main` at `686cf85…` had 63 non-server records at `669052b19bf8d067d949623ba566e087b43def40b2661f8c3feb16f3d62de180` and 132 all-consumer records at `dc9381615fb7b1f7b06533ac6f6ffebb6d274b8d799894fe54882bf69f638472`. From the original audited tree this was exactly 22 selected Rust paths, +15,135/-24; Cargo/build inputs remained unchanged.
+- `PROVEN` — #372 then changed selected non-server consumer `tools/architecture-check/src/lib.rs`, +204/-27. Its existing `fs::read_to_string(workspace-boundaries.toml)` remains limited to a protected `BUILD_INPUT`; added code validates Cargo metadata package/path relationships and adds no neutral-document or Markdown dependency.
+- `PROVEN` — actual successor base `15164c38…` has 63 non-server records at `2dbc1273b54b4f63653bc6c5a92ee10a1c095e3bd05dac232751efc4d358fa9d` and 132 all-consumer records at `4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457b66b20d654b3`. From the original audited tree this is exactly 23 selected Rust paths, +15,339/-51; Cargo and protected build inputs are unchanged.
+- `DERIVED` — the audited server, client, identity and architecture-check changes add no neutral-document consumer; adopting both actual-base digests restores the already designed routing contract without changing its algorithm or modeled inputs.
 - `PROVEN` — later consumer-tree advances remain safe: either digest mismatch selects FULL. Optimization freshness may be lost, but safety and required checks remain; this candidate will not chase unrelated future merges absent an actual safety/correctness conflict.
 
 Issue #308 remains the measured-impact programme. Released Issue #309 and its task packet remain historical first-wave evidence and are not reactivated or edited.
 
-PR #377 passed exact-head FULL CI and independent review, entered the normal Merge Queue and had already integrated as protected main `15164c38a2775e45eaff4001fddddbabf4b63ab6` at `2026-09-07T09:22:52Z` before a later draft-conversion response was received. Direct main readback corrected the transient assumption that conversion had stopped the completed queue operation. Auto-deletion of the merged branch caused the subsequent update-ref attempt to return GitHub `422 Reference does not exist`; that was lifecycle evidence, not a candidate or gate failure. The merged `051473d3…` snapshot safely selects FULL against the already-integrated client/identity tree. This clean successor carries the authorized two-constant refresh from actual protected main without rewriting #377 history.
+PR #377 passed exact-head FULL CI and independent review, became ready at `2026-09-07T09:22:44Z` and entered the normal Merge Queue at `09:22:52Z`. A convert-to-draft request completed at `09:26:39Z`, but the already queued candidate remained admitted and merged at `09:31:53Z`; queue removal was recorded at that same terminal time. The resulting protected main is `15164c38a2775e45eaff4001fddddbabf4b63ab6`, parent `6a83ab15d51be5b05adcd31baf48380172b97e7d`. The commit's `09:22:52Z` timestamp reflects queue-candidate creation, not the later merge time. Therefore a draft transition response is not proof of dequeue; verified queue, PR and main readback is required before asserting held or removed state. Auto-deletion of the merged branch caused the subsequent update-ref attempt to return GitHub `422 Reference does not exist`; that was lifecycle evidence, not a candidate or gate failure. The merged `051473d3…` snapshot safely selects FULL against the already-integrated client/identity tree. This clean successor carries the authorized two-constant refresh from actual protected main without rewriting #377 history.
 
 ## High-risk authority/recovery qualification
 
@@ -63,8 +65,8 @@ PR #377 passed exact-head FULL CI and independent review, entered the normal Mer
 
 - [x] RED proves the newly reviewed digest remains FULL with `unreviewed-document-consumer-inputs` before the production constant changes.
 - [x] GREEN changes only the production document-consumer snapshot constant and independent regression literals.
-- [x] Historical/superseded all-consumer snapshots `f8eed774…`, `742350c5…` and `051473d3…` are explicitly rejected as stale after GREEN.
-- [x] The superseded non-server snapshot `9f7aff4d…` is explicitly rejected as stale after GREEN.
+- [x] Historical/superseded all-consumer snapshots `f8eed774…`, `742350c5…`, `051473d3…` and `dc938161…` are explicitly rejected as stale after GREEN.
+- [x] Superseded non-server snapshots `9f7aff4d…` and `669052b1…` are explicitly rejected as stale after GREEN.
 - [x] Existing classifier, post-merge, governance and repository-policy regressions pass.
 - [x] Whole-diff self-review found no unresolved material issue; independent deep review remains pending.
 - [ ] Exact-head FULL CI, normal Merge Queue and protected-main readback pass.
@@ -75,7 +77,7 @@ No workflow, aggregate fan-in, ruleset, Merge Queue, branch protection, Cargo, r
 
 ## Implementation / findings
 
-Focused RED on the initial test-only change failed at the expected neutral-document assertion with `rust=True`, `windows=True`, `surface=docs`, `reason=unreviewed-document-consumer-inputs`. After the two protected-main advances, second and third focused RED generations reproduced the same expected failure for the re-audited digest pairs against each preceding production snapshot. Final minimal GREEN updates the existing non-server and all-consumer constants. Existing negative fixtures continue to vary new and modified server/non-server records and require FULL.
+Focused RED on the initial test-only change failed at the expected neutral-document assertion with `rust=True`, `windows=True`, `surface=docs`, `reason=unreviewed-document-consumer-inputs`. Four focused RED generations reproduced that expected failure as the reviewed tree advanced through the server, client/identity and architecture-check inputs. Final minimal GREEN updates the existing non-server and all-consumer constants to the actual successor base. Existing negative fixtures continue to vary new and modified server/non-server records and require FULL.
 
 ## Validation
 
@@ -115,7 +117,7 @@ Focused RED on the initial test-only change failed at the expected neutral-docum
 - required: YES — material trusted CI selection snapshot
 - exact head: pending
 - method/auditor: one independent deep review after stable publication
-- material findings: pending
+- material findings: accepted P1 — initial successor omitted #372 architecture-check from its selected-input audit; repaired with actual-base digests and expanded stale-value regression
 - verdict: pending
 
 ## PR and closeout
@@ -130,11 +132,11 @@ Focused RED on the initial test-only change failed at the expected neutral-docum
 ## Context checkpoint
 
 ```yaml
-last_progress: direct readback corrected the #377 integration race and a clean successor was prepared from protected main 15164c38
+last_progress: accepted reviewer P1 repaired with actual-base selected-tree digests and fourth focused RED/GREEN
 status: validating
 branch: ci/doc-consumer-snapshot-current-refresh-w6
 head_sha: null
-pr: null
+pr: 378
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
@@ -152,5 +154,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: rerun validation, freeze and publish the clean successor for exact-head review and FULL CI
+next_action: rerun full validation and publish the accepted P1 repair for exact-head rereview and FULL CI
 ```
