@@ -4399,11 +4399,10 @@ fn complete_reconnect_effect(
             .ok_or(ReconnectDurabilityErrorV1::InvalidRecord)?;
         winner.disposition = RetainedRecoveryAttemptDispositionV1::Committed;
         protection = complete_reconnect_protection(protection, now)?;
-        if recovery.mode == CompleteReconnectModeV1::SameSession {
-            session.session_state = GameSessionState::Active;
-            session.current_connection_generation = recovery.original.candidate.connection_generation();
-            session.current_transport = Some(recovery.original.candidate.transport_ref());
-        }
+        session.session_state = GameSessionState::Active;
+        session.current_connection_generation =
+            recovery.original.candidate.connection_generation();
+        session.current_transport = Some(recovery.original.candidate.transport_ref());
     }
     Ok(CompleteReconnectEffectV1 {
         operation: operation.clone(),
