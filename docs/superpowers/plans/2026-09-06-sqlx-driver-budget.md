@@ -83,3 +83,15 @@ Continuation5560554622 begins at native1363c9b, preserving immutable53c6 admissi
 A proven finite config-parameterized peak may remain charged until connection/config/state destruction. Actual remaining owner balance determines admission; independent maxima need not simultaneously attain every maximum. No complete TLS adapter or PostgreSQL decoder implementation starts from these partial component results. Next concrete gate is complete phase/loader ownership proof and an exercised owner-funded positive case, followed by protected test-lease admission and actual configured PostgreSQL/TLS qualification.
 
 Window2 stopped at 2026-09-06T17:16:20Z: 3050 productive seconds conservatively charged, 550 unused seconds, zero deducted pauses and zero counter reset. Completed windows:2; repair cycles:2; rotations:0; identical-failure retries:0. Further implementation requires explicit Work continuation. Full TLS and PostgreSQL adapter gates remain OPEN; prospective PR357 remains NOT_ACTIVE.
+
+## 2026-09-07 protected blocking-owner amendment result
+
+Fresh RED commit `f0dddec27ed8151f73d3db80750a89ccf15f3e77` failed at the
+intended missing sealed pre-spawn owner/API after reaching SQLx-core compilation.
+The configured graph enables Tokio 1.53.1 only. SQLx can wrap closure/result data,
+but Tokio exposes no public fallible hook to reserve and retain the private task,
+blocking queue/map, and worker/thread backing before allocation through actual
+idle/shutdown release. Do not implement a false GREEN in SQLx or use a fake as
+backend proof. Status is `BLOCKED_RUNTIME_BACKEND_OWNER`; request the exact Tokio
+hook or an already-funded registered runtime owner described in core provenance.
+TLS composition, PostgreSQL decoder work and shared-target inclusion remain OPEN.

@@ -529,3 +529,56 @@ Sixteen core library tests passed on the unchanged upstream crate lock (rustls0.
 TDD RED/GREEN was performed for each new component. Strict Clippy found one fixture cast that could truncate; it was repaired with checked u16 conversion, with no suppression. Prior license repair history is preserved. Independent/runtime root review covers the three unactivated runtime diffs only; full adapter gates remain OPEN.
 
 Window2 stopped at 2026-09-06T17:16:20Z: 3050 productive seconds conservatively charged, 550 unused seconds, zero deducted pauses and zero counter reset. Completed windows:2; repair cycles:2; rotations:0; identical-failure retries:0. Further implementation requires explicit Work continuation. Full TLS and PostgreSQL adapter gates remain OPEN; prospective PR357 remains NOT_ACTIVE.
+
+## Window3 amended blocking-owner checkpoint: `BLOCKED_RUNTIME_BACKEND_OWNER`
+
+The protected amendment at Game `main@73c48ce84b98d84298a26c5038ecbf7677d2ac82`
+was merged normally with current protected main before this checkpoint. Its fresh
+TDD RED is commit `f0dddec27ed8151f73d3db80750a89ccf15f3e77`: the focused
+`cargo +1.94.0 test --lib --features _rt-tokio,_tls-rustls-ring-webpki`
+reached SQLx-core compilation and failed specifically because neither the sealed
+`rt::resource_owner::BlockingJobOwner` capability nor
+`rt::spawn_blocking_owned` pre-spawn entry point existed (`E0432`, `E0425`). The
+RED fixture is removed on this stopped checkpoint; no knowingly uncompilable API
+is retained.
+
+`BLOCKED_RUNTIME_BACKEND_OWNER`: the configured root graph enables only SQLx
+`runtime-tokio`, pinned to Tokio 1.53.1 (crate checksum
+`202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed`, upstream
+tag `tokio-1.53.1` commit `75fef53d0a8590c2d1dbb63672aa7b7d1ef51155`).
+SQLx's permitted dispatcher can acquire a Game charge before calling
+`Handle::spawn_blocking`, but the public call accepts only `F` and returns only a
+`JoinHandle<R>`. Inside excluded Tokio
+`src/runtime/blocking/pool.rs:367-390`, `spawn_blocking_inner` constructs
+`BlockingTask<F>`, allocates the private generic task through `task::unowned`,
+and only then admits it to the pool. `spawn_task` then mutates its private
+`VecDeque` at lines 393-407, may create a thread and insert its handle into the
+private worker `HashMap` at lines 409-438, and retains worker state through idle
+and shutdown. The inspected pool source SHA-256 is
+`6e1f4f3c1e6f7974a8ccab4dab8b8784f447097990f763fc5703202e4d278a65`.
+
+No public Tokio hook exposes the generic task layout, a fallible preallocation
+callback, queue-capacity growth custody, worker-map growth custody, thread-packet
+custody, or a final-release callback. Metrics observe counts after admission;
+they cannot deny before allocation or transfer custody through queued, running,
+completed, cancelled, detached, idle and shutdown states. Moving a reservation
+into `F` or `R` charges closure/result data but releases independently of the
+enclosing task and pool backing. A sealed SQLx wrapper would therefore only
+assert ownership it cannot prove, and tests using a fake backend would not prove
+the enabled backend.
+
+GREEN is consequently not implementable within the amended paths. The smallest
+next amendment is either (a) an exact Tokio 1.53.1 runtime hook covering fallible
+preallocation/admission and final release of task plus attributable queue/map/
+thread backing, or (b) an already-funded registered Tokio blocking-pool owner
+with typed admission/custody that covers those same real lifetimes. It requires
+Tokio runtime paths under `src/runtime/blocking/pool.rs` and
+`src/runtime/task/{mod.rs,raw.rs,core.rs}` (plus the owning integration/test
+paths), which remain excluded. This proposal does not authorize a fork, copied
+private layout, fixed per-job share, new budget, TLS change or semantic cap.
+
+TLS modes, protocol versions, certificate/hostname verification, cache semantics
+and all accepted maxima are untouched. Complete TLS phase composition, actual
+TLS-positive evidence, PostgreSQL accounting/17.6 qualification, independent
+full-diff review, exact-head CI/MQ and protected readback remain OPEN. PostgreSQL
+decoder work and shared-target inclusion remain stopped.

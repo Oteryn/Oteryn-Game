@@ -168,3 +168,29 @@ owner_action_required: null
 blocker: excluded_runtime_owners_lack_blocking_task_and_pool_backing_preallocation_and_lifetime_custody_hooks
 next_action: owner decides whether to protect blocking-task plus blocking-pool retained-backing accounting, or an equivalent registered loading/runtime owner; no PostgreSQL work before TLS proof
 ```
+
+## Window3 protected-amendment checkpoint
+
+Current protected main was merged normally before the amendment checkpoint. RED
+commit `f0dddec27ed8151f73d3db80750a89ccf15f3e77` reached SQLx-core compilation
+and failed only for the missing sealed pre-spawn owner/API (`E0432`, `E0425`).
+The configured root graph actually enables only Tokio 1.53.1. Inspection then
+proved SQLx cannot deny before or retain custody through Tokio's private generic
+task allocation, blocking `VecDeque`, worker `HashMap`, and worker/thread backing
+through idle/shutdown. A closure/result reservation cannot own that enclosing
+backing, and public metrics are post-admission observations rather than custody.
+The RED fixture was removed and source mutation stopped.
+
+`TLS_BLOCKING_OWNER = BLOCKED_RUNTIME_BACKEND_OWNER`. Smallest next amendment:
+an exact Tokio preallocation/admission/final-release hook for task and attributable
+pool backing, or an already-funded registered Tokio blocking-pool owner with typed
+admission and real lifetime custody. Required dependency paths begin at Tokio
+`src/runtime/blocking/pool.rs` and `src/runtime/task/{mod.rs,raw.rs,core.rs}`;
+they are not authorized. No PostgreSQL or shared-target work follows.
+
+```yaml
+last_progress: protected amendment RED isolated the missing enabled-Tokio owner boundary
+status: blocked_pending_runtime_backend_owner
+blocker: tokio_1_53_1_has_no_public_preallocation_or_task_pool_custody_hook
+next_action: protect an exact Tokio task-plus-pool owner hook or bind an already-funded registered runtime owner; keep TLS/PG OPEN
+```
