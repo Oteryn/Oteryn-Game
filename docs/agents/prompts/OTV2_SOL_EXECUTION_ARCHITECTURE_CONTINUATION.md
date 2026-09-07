@@ -203,7 +203,7 @@ After the execution-model package is canonical and terminally reconciled, return
 It must tell the owner exactly:
 
 - which aliases to start **now**;
-- which model/effort to choose for each;
+- which available execution surface should host each;
 - which aliases are read-only preparation versus mutating work;
 - which later alias becomes runnable after each dependency merge;
 - what exact escalation alias/message to use when architecture is required.

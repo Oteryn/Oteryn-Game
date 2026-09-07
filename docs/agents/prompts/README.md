@@ -2,7 +2,7 @@
 
 These prompts are execution contracts for recurring Oteryn v2 programmes. They do not replace trusted-base governance, live task checkpoints, accepted ADRs/contracts or live PR/CI state.
 
-Owner-facing placement, model/effort selection, Work-vs-chat launch guidance, AI review flow and live `DONE / ACTIVE / BLOCKED / READY_NEXT / DO_NOT_LAUNCH` reconciliation are standardized in `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`. That runbook is operational guidance only; live GitHub and governing authority still decide whether any profile may mutate.
+Owner-facing placement, Work-vs-chat launch guidance, AI review flow and live `DONE / ACTIVE / BLOCKED / READY_NEXT / DO_NOT_LAUNCH` reconciliation are standardized in `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`. That runbook is operational guidance only; live GitHub and governing authority still decide whether any profile may mutate.
 
 ## Architecture / decision prompts
 
@@ -20,7 +20,7 @@ The Sol Supervising Architect is not a routine coding lane. It resolves `ARCHITE
 
 - `OTV2_OWNER_EXECUTION_STATUS_ADVISOR.md` — read-only owner-facing live execution guide. **Short invocation: `Oteryn: owner execution guide`.**
 
-This advisor does not coordinate or mutate. It freshly resolves protected `main`, the active control plane, active task/Issue/PR/head/check/review state and the scheduler, then tells the owner what to run in Work versus separate chats, which model/effort to use, what is terminally done, what is active/blocked/ready next, which roles must not launch yet, and exactly one next action. It does not trigger Codex or Work Auditor; it only recommends the canonical owning role when review/audit is required.
+This advisor does not coordinate or mutate. It freshly resolves protected `main`, the active control plane, active task/Issue/PR/head/check/review state and the scheduler, then tells the owner what to run in Work versus separate chats, what is terminally done, what is active/blocked/ready next, which roles must not launch yet, and exactly one next action. It does not trigger Codex or Work Auditor; it only recommends the canonical owning role when review/audit is required.
 
 ## Implementation programme
 
@@ -28,7 +28,7 @@ Canonical implementation order and dependencies are defined by:
 
 - `../programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
 - `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md` for the Terra + Sol execution profile;
-- `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for owner-facing launch/model/effort/status guidance.
+- `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for owner-facing launch/status guidance.
 
 ### Normal entry point
 
@@ -82,7 +82,7 @@ Resolve external-review decisions from the META policy named by `../META_AGENT_P
 
 ### Independent Work delivery audit
 
-- `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` — independent high-effort forensic audit of the live Work coordinator lifecycle with **bounded GitHub audit-evidence write** authority. **Short invocation: `Oteryn: work auditor`.**
+- `OTV2_WORK_DELIVERY_INDEPENDENT_AUDITOR.md` — independent forensic audit of the live Work coordinator lifecycle with **bounded GitHub audit-evidence write** authority. **Short invocation: `Oteryn: work auditor`.**
 
 The Work auditor independently reconstructs coordinator execution from live GitHub Issue/task/branch/PR/exact-head check/review/merge evidence, treats Work or requesting-agent summaries as claims rather than proof, and verifies programme resolution, allocation timing, path/lease isolation, DAG order, architecture escalation, worker integration, QA truthfulness and closeout. Any canonical Oteryn Game agent or the owner may request a bounded audit of a uniquely identifiable PR/Issue/task/head. After a completed requested audit, the auditor must persist one exact-target GitHub evidence note as a PR COMMENT review/comment or linked Issue comment. That evidence write is non-dispositive and does not consume an implementation writer slot.
 

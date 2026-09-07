@@ -20,22 +20,16 @@ LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
 PROVIDER = "Oteryn/Oteryn-Game"
 CENTRAL_VALIDATOR_PATH = "tools/governance/central_agent_policy.py"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
-LEGACY_REVIEW_TOKENS = (
-    "CODEX_REVIEW_POLICY",
-    "CODEX_REQUIRED",
-    "CODEX_OPTIONAL",
-    "CODEX_NOT_REQUIRED",
-    "OWNER_FUNDED_AI_POLICY",
-    "REVIEW_RECONCILIATION_REQUIRED",
-    "owner_confirmation_per_covered_run",
-    "codex_review:",
-    "codex_reviews_required_now",
-    "highest reasoning effort",
-    "covered review",
-    "non-covered owner-funded",
-    "canonical review-request owner",
-    "owner_funded_codex",
-    "additional_owner_funded_ai",
+RETIRED_REVIEW_CONTROLLER_RE = re.compile(
+    r"\bCODEX_REVIEW_POLICY(?:\.json)?\b|"
+    r"\bCODEX_(?:REQUIRED|OPTIONAL|NOT_REQUIRED(?:_BY_THIS_POLICY)?)\b",
+    re.IGNORECASE,
+)
+CURRENT_REVIEW_POLICY_CONSUMERS = (
+    "docs/agents/OWNER_FUNDED_AI_POLICY.md",
+)
+CURRENT_ACTIVE_REVIEW_CONSUMERS = (
+    "docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md",
 )
 
 
@@ -114,13 +108,24 @@ def _reusable_prompt_paths(lifecycle: object) -> list[str]:
     return paths
 
 
-def _legacy_review_controller_errors(text: str) -> list[str]:
-    """Reject retired Game review-controller vocabulary left outside central lint."""
-    lowered = text.casefold()
+def _legacy_review_controller_errors(text: str, central: types.ModuleType) -> list[str]:
+    """Reject operative use of Game's retired review controller.
+
+    The bound central policy owns Markdown statement extraction and the explicit
+    audit/negative exemption. Keeping that semantic view here avoids treating
+    comments, fenced examples, quoted evidence or retirement instructions as
+    live authority.
+    """
+    statements = getattr(central, "_statements", None)
+    is_audit_or_negative = getattr(central, "_is_audit_or_negative", None)
+    if not callable(statements) or not callable(is_audit_or_negative):
+        raise ValueError("bound central validator lacks operative-statement helpers")
     return [
-        f"reusable prompt contains retired review controller token: {token}"
-        for token in LEGACY_REVIEW_TOKENS
-        if token.casefold() in lowered
+        f"operative statement uses retired Game review controller: {match.group(0)}"
+        for statement in statements(text)
+        if not is_audit_or_negative(statement)
+        for match in [RETIRED_REVIEW_CONTROLLER_RE.search(statement)]
+        if match is not None
     ]
 
 
@@ -163,14 +168,24 @@ def validate() -> list[str]:
             policy=policy,
         ))
         prompt_paths = _reusable_prompt_paths(lifecycle)
+        present_active_review_consumers = (
+            relative for relative in CURRENT_ACTIVE_REVIEW_CONSUMERS
+            if (ROOT / relative).is_file()
+        )
+        review_consumers = dict.fromkeys(
+            (*prompt_paths, *CURRENT_REVIEW_POLICY_CONSUMERS, *present_active_review_consumers)
+        )
         for relative in prompt_paths:
             prompt_errors = central.validate_task_prompt_text(
                 (ROOT / relative).read_text(encoding="utf-8"), policy=policy,
             )
             errors.extend(f"{relative}: {error}" for error in prompt_errors)
+        for relative in review_consumers:
             errors.extend(
                 f"{relative}: {error}"
-                for error in _legacy_review_controller_errors((ROOT / relative).read_text(encoding="utf-8"))
+                for error in _legacy_review_controller_errors(
+                    (ROOT / relative).read_text(encoding="utf-8"), central,
+                )
             )
         for relative, expected in (
             ("docs/agents/PROMPTING_STANDARD.md", binding["prompting_standard_path"]),

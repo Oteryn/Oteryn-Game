@@ -1,9 +1,7 @@
-# Anti-stall and execution policy
+# Game CI anti-stall extension
 
 ```yaml
-anti_stall_policy_version: 3.0-oteryn-v2
-continuous_progress_execution: true
-wall_clock_execution_windows: false
+extension_version: 1
 no_progress_minutes: 15
 max_ordinary_ci_observations_per_exact_head: 2
 ci_event_grace_minutes: 2
@@ -12,14 +10,13 @@ max_ci_recovery_actions_per_exact_head: 1
 terminal_ci_wait_budget_minutes: 45
 terminal_ci_minimum_interval_minutes: 3
 max_terminal_ci_observations_per_generation: 12
-max_repair_cycles_per_gate: 3
-max_identical_failure_retries_without_new_hypothesis: 1
-max_additional_tasks_after_entry_task: 1
 ```
 
 ## Purpose
 
-Autonomous work is progress-bounded and evidence driven. Productive implementation is **not** limited by a 60-minute, 120-minute, per-window or per-invocation wall-clock budget. A worker that is making material progress continues until the allocated task is complete, reaches a genuine evidence-backed blocker, is explicitly stopped by the owner, or hits one of the anti-stall conditions below.
+Resolve lifecycle states, retry budgets, candidate freeze and continuation dispositions from the META policy pinned by `META_AGENT_POLICY_BINDING.json`. This Game extension supplies only repository-specific GitHub Actions observation and recovery bounds.
+
+Autonomous work is progress-bounded and evidence driven. Productive implementation is **not** limited by a generic wall-clock budget. A worker that is making material progress continues until the allocated task is complete, reaches a state defined by the bound lifecycle authority, is explicitly stopped by the owner, or hits one of the Game CI anti-stall conditions below.
 
 The anti-stall controls exist to prevent endless polling, repeated identical failures, context reconstruction loops, PR/event regeneration and unproductive waiting. They MUST NOT be converted into periodic implementation stops, worker rotations, fresh execution-window grants or discarded productive minutes.
 
@@ -107,7 +104,7 @@ For one frozen exact head:
 1. inspect the exact SHA, PR state, required context, check suites, workflow runs, job assignment and repository Actions;
 2. if a terminal failed/cancelled run exists and a new hypothesis justifies it, rerun it once;
 3. otherwise use one trusted `workflow_dispatch` recovery run that validates the open PR number and exact frozen head;
-4. if the active connector cannot dispatch or cancel Actions, configure protected auto-merge when eligible, record the exact owner action and return `BLOCKED` or `WAITING`;
+4. if the active connector cannot dispatch or cancel Actions, configure protected auto-merge when eligible, then use `BLOCKED` only for a proven permission/policy/owner dependency and `WAITING_EXTERNAL` for an external GitHub/runner dependency;
 5. never create a no-op commit, activity-only task edit, branch rewind, close/reopen cycle, duplicate branch or replacement PR solely to obtain a check.
 
 At most one CI recovery action is allowed per exact head. A second action requires a materially new failure signature or owner instruction.
@@ -120,7 +117,7 @@ Outside final terminal CI:
 2. allow at most one later unchanged observation;
 3. configure protected auto-merge once when eligible;
 4. persist exact head, run IDs, assignment state and one next action;
-5. stop/rotate or execute genuinely independent work already inside the same task.
+5. release external waiting or execute genuinely independent work already inside the same task.
 
 Do not keep a worker active only to wait. This waiting rule does not limit productive implementation work.
 
@@ -145,30 +142,31 @@ The 45-minute cap applies only to passive terminal CI waiting. It is not an impl
 - Make one targeted repair based on an explicit hypothesis.
 - An identical second failure requires a new hypothesis, instrumentation or narrower isolation.
 - Never repeat the same failure again without new evidence.
-- After three repair cycles for one gate, persist evidence and return `BLOCKED` or `ROTATE` for that gate. A materially different failure class must use its own gate/counter; it does not reset or bypass the exhausted gate.
+- Apply the retry budgets from the bound META lifecycle authority. Exhaustion with no changed material fingerprint is `STALLED`, releases active ownership and does not become a permission `BLOCKED`. A materially different failure class uses its own bound fingerprint; narration or a new timestamp does not reset an exhausted counter.
 
 Infrastructure states must not be “repaired” by unrelated repository mutations.
 
 ## Stop handling
 
-Stop when the whole programme/task lineage is terminal, the owner stops it, anti-stall or retry/repair state is exhausted, or required authority/capability is unavailable. Successful completion of an entry task is not a stop when the bounded programme lifecycle explicitly authorizes the one follow-on task.
+Stop or release ownership when the whole programme/task lineage is terminal, the owner stops it, the bound lifecycle reports `WAITING_EXTERNAL`, `BLOCKED` or `STALLED`, or required authority/capability is unavailable. Successful completion of an entry task is not a stop when the bounded programme lifecycle explicitly authorizes the one follow-on task.
 
 For a stop condition:
 
 1. stop polling and starting new work;
 2. preserve the coherent state;
 3. record exact last progress, unchanged state, counters, run/job IDs and attempted hypotheses;
-4. set task `ready`, `waiting` or `blocked` accurately;
+4. set the bound lifecycle state accurately: `WAITING_EXTERNAL` for an external dependency, `BLOCKED` for an owner/permission/policy dependency, or `STALLED` for unchanged retry exhaustion;
 5. record an exact `owner_action_required` when applicable;
 6. leave exactly one `next_action`;
-7. return `DONE`, `WAITING`, `BLOCKED` or `ROTATE` truthfully.
+7. return `DONE`, `WAITING_EXTERNAL`, `BLOCKED` or `STALLED` truthfully and record any separate continuation disposition selected by the bound continuation policy.
 
-Elapsed wall-clock implementation time alone is never a stop condition. `ROTATE` is an execution/handover result, never a task status, and MUST NOT be emitted solely because an hour elapsed.
+Elapsed wall-clock implementation time alone is never a stop condition. Context rotation is a continuation disposition, not a lifecycle state or a substitute for `STALLED`, and must not be emitted solely because an hour elapsed.
 
 ## Canonical terminal report
 
 ```text
-STATUS: DONE | WAITING | BLOCKED | ROTATE
+STATUS: DONE | WAITING_EXTERNAL | BLOCKED | STALLED
+CONTINUATION_DISPOSITION:
 RESULT:
 CHANGED_PATHS:
 VALIDATION:

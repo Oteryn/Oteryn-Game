@@ -26,7 +26,7 @@ Own deep reasoning and implementation for the currently allocated Durability lan
 3. If an existing Durability branch/PR is valid, preserve and continue it. `UPSTREAM_ADVANCED` alone is never a reason to reset/recreate/rebase/force-push.
 4. Before any write, prove exact merged allocation and exact owned paths. Without them, remain `READ_ONLY_PREPARATION` or `WAITING_ALLOCATION`.
 
-The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
 
 ## Technical authority
 

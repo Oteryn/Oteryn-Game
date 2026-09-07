@@ -26,7 +26,7 @@ Own deep reasoning for the compatible native Rust client integration and the tru
 3. Treat historical QA shell completion as infrastructure only. Do not infer physical Tier 1/Tier 2 PASS.
 4. Without exact merged write allocation, remain `READ_ONLY_PREPARATION`.
 
-The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
 
 ## Read-only preparation allowed before Server Seam merge
 

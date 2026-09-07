@@ -26,7 +26,7 @@ Own deep reasoning for the production gameplay server/client-entry seam. Prepare
 3. Do not treat historical preparation #96 or closed blocker Issues as implementation authority.
 4. Without an exact merged implementation allocation, remain `READ_ONLY_PREPARATION`.
 
-The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
 
 ## Read-only preparation allowed before Durability merge
 

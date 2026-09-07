@@ -25,7 +25,7 @@ Own deep reasoning for the first authoritative Movement integration slice. You m
 2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md`, current Movement contracts/resource registry, current Content/Domain/SIM/Foundation/Interaction interfaces and physical QA requirements.
 3. Without terminal evidence for that live canonical resource/dependency gate plus exact merged allocation, remain `READ_ONLY_PREPARATION` or `WAITING_DEPENDENCY`.
 
-The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
 
 ## Read-only preparation
 
