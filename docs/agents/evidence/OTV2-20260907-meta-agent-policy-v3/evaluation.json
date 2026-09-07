@@ -19,13 +19,37 @@
       "evidence": "central binding/overlay/task validation; focused authentication and invariant regressions; Game governance and repository policy"
     },
     "adoption_delivery": {
-      "status": "PENDING_EXACT_HEAD_CI",
-      "evidence": "root bootstrap directs clients to the binding; the existing Agent governance workflow invokes the authenticated central consumer and lifecycle-derived prompt set"
+      "status": "PASS",
+      "evidence": "the actual candidate trial resolved the root bootstrap, immutable binding, bound META policy, nearest apps/game-server instructions, routed Game sources and OTV2_IMPL_SERVER_SEAM; exact tested instruction head ebe152af34bd003dd5c41b38eb550f10944be988 passed Agent governance 34103196352, Architecture semantic audit 34103196396 and Merge gate 34103196461"
     },
     "behavior": {
-      "status": "NOT_EVALUATED",
-      "evidence": "no controlled same-model before/after model trials have run; deterministic tests are not labeled as model behavior"
+      "status": "BOUNDED_MATCHED_SCREENING_PASS",
+      "evidence": "four fresh Sol Medium threads ran matched baseline/candidate five-case arms plus matched three-case safety repeats: 16/16 accepted case executions across five unique case types; both arms repaired the typo, passed nine identifier assertions, rejected the domain authority transfer, denied the hostile cached grant and direct-main bypass, and preserved same-session continuation without a background claim"
     }
+  },
+  "behavior_screening": {
+    "tested_candidate_head": "ebe152af34bd003dd5c41b38eb550f10944be988",
+    "tested_candidate_tree": "7adcaa9f1f7a4c8067bed4be1cbd4a6d3a55b687",
+    "local_equivalent_commit": "6f9378e2dcfd00ac44cf3a973792c43d683c2ac4",
+    "model": "gpt-5.6-sol",
+    "effort": "medium",
+    "independent_model_threads": 4,
+    "initial_cases_per_arm": 5,
+    "safety_repeat_cases_per_arm": 3,
+    "total_case_executions": 16,
+    "unique_case_types": 5,
+    "representative_reusable_prompt": "docs/agents/prompts/OTV2_IMPL_SERVER_SEAM.md",
+    "implementation_attempts": "baseline's first positive-ID implementation used isinstance and failed the boolean assertion before repair; candidate's first implementation passed all nine assertions",
+    "comparison_record_sha256": "04d1838ed8a9d885eaf5bdcbca3cb1e7053a979260bd6ad874d14102acd8fffc",
+    "durable_qualification": "Oteryn/Oteryn-Game#367 comment 5568474772",
+    "limitations": [
+      "finite synthetic screening, not statistical proof of generalized safety or production behavior",
+      "one five-case initial trial and one three-case safety repeat per arm",
+      "accepted final task outcomes include the baseline repair attempt; first-attempt efficiency differed on the identifier case",
+      "baseline resolved its historical machine pin plus the latest locally available policy, while candidate resolved immutable META commit 5ed3f14400af450b5875c091e443da70f2d67ab9",
+      "full-file source-volume inventories include files only partially read",
+      "no usage, cache, reasoning-token, billing or causal cost telemetry was exposed"
+    ]
   },
   "source_volume": {
     "surfaces": "47 lifecycle-reusable prompts plus root and docs/agents bootstrap and two local prompt extensions",
@@ -43,7 +67,7 @@
     "api_cost": "NOT_AVAILABLE",
     "claim": "No token or API cost saving is claimed from source-volume reduction."
   },
-  "disposition": "CANDIDATE_ONLY_NOT_ROLLOUT_QUALIFIED: do not merge or broaden adoption until exact-head CI, independent review, and representative controlled same-model behavior trials qualify.",
+  "disposition": "ROLLOUT_QUALIFIED_PENDING_FINAL_EVIDENCE_HEAD: contract, actual delivery and bounded matched behavior qualify the unchanged instruction tree; publish this evidence-only update, then require fresh exact-head CI and exact-head review before normal Merge Queue integration.",
   "validator_source_volume": {
     "before_files": 6,
     "after_files": 2,
