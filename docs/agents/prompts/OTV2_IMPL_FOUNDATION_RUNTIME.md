@@ -52,11 +52,15 @@ Fail closed on invalid TLS identity, framing, revision, ticket/admission/reconne
 
 Bound all peer-controlled lengths/counts/depths before allocation using the accepted registry. Fuzz/property/negative coverage is required for exposed parser/codec boundaries where practical.
 
-## Lifecycle / budget / durable handover
+## Lifecycle / continuous execution / durable handover
 
-Before the first write, create or resume the lane task record named by the coordinator allocation with exact base SHA, branch/PR, `owned_paths`, public contracts/registries, dependencies, blockers and execution budget.
+Before the first write, create or resume the lane task record named by the coordinator allocation with exact base SHA, branch/PR, `owned_paths`, public contracts/registries, dependencies and blockers.
 
-Default foreground budget is **60 minutes**; use **120 minutes** only when the task explicitly declares and justifies it. Maintain one compact `## Context checkpoint` with exactly one `next_action`. Before any real stop/rotation/blocker response persist exact head, CI/review state, blocker and ownership state.
+There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized Foundation work is making material progress, continue until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, freeze, discard productive minutes or require a fresh coordinator grant solely because an hour elapsed.
+
+Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical window/minute counters are provenance only and do not limit continued productive execution.
+
+Maintain one compact `## Context checkpoint` with exactly one `next_action`. Persist it before a genuine stop/rotation/blocker response and when it materially improves recovery; do not create hourly checkpoint churn.
 
 Terminal completion requires post-merge verification, task archive and ownership release.
 
