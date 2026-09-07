@@ -12,6 +12,7 @@ pr: 362
 issue: null
 owner_scope: explicit owner instruction 2026-09-06
 base_sha: 7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3
+head_sha: da5859e35a63cda629c783e3b0635f8a01ece489
 owned_paths:
   - AGENTS.md
   - docs/agents/AGENTS.md
@@ -68,6 +69,9 @@ Historical evidence, archived tasks and old plans are intentionally not rewritte
 - P2 `3944819203`: fixed — mandatory `TASK_TEMPLATE.md` no longer creates 60/120-minute execution-budget metadata; it uses `execution_policy: continuous_progress` and points time-independent anti-stall behavior to the central policy.
 - P2 `3944819204`: fixed — task status is the registered `ready` state.
 - P2 `3944828549`: fixed — all reusable executor/coordinator prompts returned by the repository search for the default 60-minute foreground budget were updated directly; no direct reusable entry point relies only on the blanket override.
+- P2 `3944868901`: fixed — the three-cycle repair limit is unconditional; a different failure class uses a distinct gate/counter instead of bypassing an exhausted one.
+- P2 `3944868903`: fixed — exhausted anti-stall state stops polling and all new work before state preservation/handoff.
+- P2 `3944877031`: fixed — the task records the exact reviewed candidate head; live PR head remains authoritative after metadata-only checkpoint commits.
 
 ## Context checkpoint
 

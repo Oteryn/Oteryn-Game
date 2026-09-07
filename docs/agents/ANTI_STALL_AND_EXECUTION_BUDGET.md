@@ -145,7 +145,7 @@ The 45-minute cap applies only to passive terminal CI waiting. It is not an impl
 - Make one targeted repair based on an explicit hypothesis.
 - An identical second failure requires a new hypothesis, instrumentation or narrower isolation.
 - Never repeat the same failure again without new evidence.
-- After three repair cycles for one gate, persist evidence and return `BLOCKED` or `ROTATE` for that gate unless a materially new hypothesis/evidence changes the failure class.
+- After three repair cycles for one gate, persist evidence and return `BLOCKED` or `ROTATE` for that gate. A materially different failure class must use its own gate/counter; it does not reset or bypass the exhausted gate.
 
 Infrastructure states must not be “repaired” by unrelated repository mutations.
 
@@ -153,7 +153,7 @@ Infrastructure states must not be “repaired” by unrelated repository mutatio
 
 Stop only on a genuine terminal condition, owner stop, no-progress exhaustion, retry/repair exhaustion, or unavailable required authority/capability:
 
-1. stop polling and starting unrelated new work;
+1. stop polling and starting new work;
 2. preserve the coherent state;
 3. record exact last progress, unchanged state, counters, run/job IDs and attempted hypotheses;
 4. set task `ready`, `waiting` or `blocked` accurately;
