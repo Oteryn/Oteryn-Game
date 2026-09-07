@@ -128,14 +128,20 @@ shutdown and idle retention. Capturing the charge in the closure/result releases
 while the Cell backing still exists. SQLx's runtime dispatcher can also choose
 async-global-executor, smol or async-std, making a copied Tokio-only byte constant
 both incomplete and a forbidden hidden reservation. Exact source hashes, control
-flow and the smallest required amendment are recorded in core provenance.
+flow and the smallest required amendment are recorded in core provenance. Review
+discussion3947483202 P1 is accepted/fixed here: a future protected amendment
+cannot be Cell-only. It must also hold custody for operation-attributable
+blocking-pool queue/map backing and worker/thread packets through their actual
+idle/shutdown retention, or use an equivalent registered loading/runtime owner
+where exact per-operation attribution of shared growth is not expressible.
 
 No rustls/runtime/dependency source was changed and no PostgreSQL decoder work began.
 Issue351 comment5560895137 activated the protected include-only durability-file
 custody lease, superseding the older prospective wording preserved above, but the
 module inclusion itself was not performed because the TLS gate is not proven.
-Remaining OPEN cells: accounting-aware scheduler/Cell
-allocation custody; complete TLS phase composition and retained config/cache/session
+Remaining OPEN cells: accounting-aware blocking-task Cell allocation and
+blocking-pool retained-backing custody (or equivalent registered owner); complete
+TLS phase composition and retained config/cache/session
 ownership; real TLS-positive evidence; PostgreSQL accounting and hostile/positive
 qualification; final whole-diff review, exact-head CI/MQ and protected readback.
 This is an evidence-backed scope insufficiency checkpoint, not WP3 completion, B
@@ -159,6 +165,6 @@ worker_rotations: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 2
 owner_action_required: null
-blocker: excluded_runtime_task_Cell_has_no_preallocation_or_lifetime_custody_hook
-next_action: owner decides whether to protect the minimal runtime/task accounting amendment; no PostgreSQL work before TLS proof
+blocker: excluded_runtime_owners_lack_blocking_task_and_pool_backing_preallocation_and_lifetime_custody_hooks
+next_action: owner decides whether to protect blocking-task plus blocking-pool retained-backing accounting, or an equivalent registered loading/runtime owner; no PostgreSQL work before TLS proof
 ```

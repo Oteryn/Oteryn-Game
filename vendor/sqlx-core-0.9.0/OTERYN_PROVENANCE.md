@@ -47,7 +47,7 @@ These terms are independently useful but are NOT a complete capacity proof or an
 
 Charged resident-work accounting covers requested capacities and owned metadata. It is not an RSS guarantee or an arbitrary allocator-overhead percentage. Inline reservation/enclosing Arc/Box metadata needs its containing owner's charge; an inner destructor cannot certify the enclosing allocation has already been freed.
 
-### Window3 exact scope insufficiency — BLOCKED
+### Window3 exact scope insufficiency — BLOCKED (P1 accepted/fixed)
 
 The blocking-loader/Cell acceptance property cannot be implemented in the admitted
 two-crate paths without guessing or releasing custody early. This is now a concrete
@@ -73,6 +73,12 @@ impossible:
   blocking work may continue after cancellation and the runtime/scheduler retains
   the Cell. Thus either placement releases before backing dies or cannot survive
   cancellation/idle runtime custody.
+- Cell custody alone is also insufficient. An input/job can cause the shared
+  blocking pool to grow its job-queue backing or worker-map backing, or to create
+  or grow a worker/thread packet. That operation-attributable backing can outlive
+  its Cell through pool idle retention or runtime shutdown. Releasing all charge
+  when the Cell is deallocated would therefore release custody while actual
+  backing remains.
 - A numeric duplicate of Tokio's current private layout would be the forbidden
   hidden magic reservation: it cannot be checked through SQLx's public API, differs
   for the alternate supported runtime branches, and does not transfer/release with
@@ -87,16 +93,22 @@ and `blocking/pool.rs` `6e1f4f3c1e6f7974a8ccab4dab8b8784f447097990f763fc5703202e
 The admitted SQLx runtime dispatcher SHA-256 is
 `436902d5a1d1a1b320fbc0b0a2f371db0b85b50bfce066a55d42db7febc1c449`.
 
-Smallest required amendment: an accounting-aware blocking execution primitive at
-the runtime/task allocation owner (or an equivalent allocator-backed custody hook)
-that (1) atomically reserves the actual Cell allocation layout before allocation,
-(2) binds the charge to the Cell itself rather than only its closure/result, and
-(3) releases after Cell deallocation across success, error, cancellation, runtime
-shutdown and idle retention for every enabled runtime branch. Merely leasing
-`sqlx-core/src/fs.rs` or `src/rt/mod.rs` without such a dependency/runtime hook is
-not sufficient. Rustls and other dependencies remain untouched. Per the task
-boundary, source mutation stops here; TLS gate, PostgreSQL expansion, and the
-include-only driver test activation remain OPEN.
+Smallest required amendment: accounting at the blocking runtime's actual owners,
+not a Cell-only hook. The protected amendment must (1) atomically reserve the
+actual generic `Cell<T, S>` allocation before allocation and retain custody through
+its real deallocation, (2) account for input/job-induced blocking-pool backing
+attributable to the operation, including job-queue growth/backing, worker-map
+growth/backing, and worker/thread packet creation or growth, and (3) preserve that
+same ledger/custody across success, failure, cancellation, runtime shutdown and
+idle retention. A charge may release only when its actual backing owner releases
+the backing or through a proved charged transfer. Where shared-pool growth cannot
+be exactly attributed as a per-operation reservation, the evidence-backed
+alternative is a registered loading/runtime owner with explicit capacity custody;
+it is not a fixed per-job share of global pool capacity or a copied private byte
+constant. Merely leasing `sqlx-core/src/fs.rs` or `src/rt/mod.rs` without those
+dependency/runtime owner hooks is not sufficient. Rustls and other dependencies
+remain untouched. Per the task boundary, source mutation stops here; TLS gate,
+PostgreSQL expansion, and the include-only driver test activation remain OPEN.
 
 ## Original file digest manifest
 

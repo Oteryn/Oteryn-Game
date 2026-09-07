@@ -3,8 +3,12 @@
 > **2026-09-07 continuation checkpoint:** TLS activation is BLOCKED at the
 > excluded blocking-runtime task allocation owner. The admitted SQLx paths cannot
 > pre-charge Tokio's private generic `Cell<T, S>` allocation or keep that charge
-> through Cell deallocation/cancellation; alternate runtime branches compound the
-> gap. Exact evidence and the minimal amendment are in sqlx-core
+> through Cell deallocation/cancellation. A Cell-only amendment is insufficient:
+> operation-attributable blocking-pool queue/map backing and worker/thread packets
+> can survive the Cell through idle retention or shutdown. The protected amendment
+> must cover both owner lifetimes, or provide an equivalent registered
+> loading/runtime owner when shared growth cannot be attributed per operation;
+> alternate runtime branches compound the gap. Exact evidence and the minimal amendment are in sqlx-core
 > `OTERYN_PROVENANCE.md`. Stop before PostgreSQL decoder work or test inclusion.
 > Issue351 comment5560895137 activated custody of the include-only test path, but
 > the inclusion remains unperformed because its TLS prerequisite did not close.
