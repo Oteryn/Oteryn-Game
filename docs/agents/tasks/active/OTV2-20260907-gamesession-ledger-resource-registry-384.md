@@ -4,19 +4,19 @@
 task_id: OTV2-20260907-gamesession-ledger-resource-registry-384
 title: Register durable GameSession nonreuse lifetime bound
 mode: CONTRACT
-status: waiting
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 issue: 384
 branch: agent/gamesession-ledger-resource-registry-384
-pr: null
-base_sha: null
+pr: 386
+base_sha: 2dce2162ef62ee75a390b84c1a4d97fab704f97f
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-owner: unassigned_until_protected_allocation
+owner: work-controlled-registry-writer
 created_at: 2026-09-07T14:00:52Z
-updated_at: 2026-09-07T14:06:32Z
+updated_at: 2026-09-07T15:01:48Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
@@ -27,7 +27,7 @@ public_contracts:
   - FND-04C GameSession Ledger Capacity Error Amendment
 depends_on:
   - Oteryn/Oteryn-Game#383 protected as main@6b07f96d47de37971bb54fed5bb9c12decd1be17
-  - Oteryn/Oteryn-Game#384 allocation protected and explicit Work admission
+  - Oteryn/Oteryn-Game#385 protected as main@2dce2162ef62ee75a390b84c1a4d97fab704f97f
 blocks:
   - WP2 Decision A implementation amendment
   - WP4 Decision A persistence/reload amendment
@@ -45,8 +45,9 @@ Protected `RESOURCE_LIMITS_REGISTRY.json` contains exactly one new architecture-
 - `PROVEN`: PR #383 is protected as `main@6b07f96d47de37971bb54fed5bb9c12decd1be17` after full Merge Queue success.
 - `PROVEN`: protected Decision A Section 8 owns the exact row content and hard maximum `65536`.
 - `PROVEN`: protected FND-04C amendment distinguishes permanent ledger exhaustion from retryable transient `ADMISSION_CAPACITY_EXCEEDED`.
-- `PROVEN`: open-PR changed-path preflight found no current writer for `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`.
-- `UNKNOWN`: this task's immutable admission SHA until its allocation PR is protected/read back.
+- `PROVEN`: allocation PR #385 integrated through full Merge Queue run `34134404703` and protected `main` readback is exactly `2dce2162ef62ee75a390b84c1a4d97fab704f97f`.
+- `PROVEN`: Issue #384 comment `5572398472` grants the exclusive three-path registry lease from that immutable admission SHA.
+- `PROVEN`: fresh open-PR reconciliation after #385 found no competing writer for the allocated registry/task/plan paths.
 
 The worker copies protected authority; it does not select resource values, error codes or retry behavior.
 
@@ -56,14 +57,14 @@ The worker copies protected authority; it does not select resource values, error
 
 ## Acceptance criteria
 
-- [ ] Work records one exact protected admission SHA and exclusive registry lease before the worker branch exists or registry bytes change.
-- [ ] Add exactly one new ID: `FND04-GAMESESSION-USED-IDS-PER-CHARACTER`.
-- [ ] Hard maximum and configurable minimum/maximum are exactly `65536`.
-- [ ] Row semantics and boundary tests match protected Decision A Section 8 and its FND-04C amendment; no retryable transient-capacity substitution.
-- [ ] Every pre-existing registry entry object is unchanged.
-- [ ] JSON parses; required fields are present; IDs remain unique; configured ranges satisfy registry rules.
-- [ ] Applicable governance/contract validation and changed-file/diff inspection pass.
-- [ ] Whole-diff self-review reports zero open material findings.
+- [x] Work records one exact protected admission SHA and exclusive registry lease before the worker branch exists or registry bytes change.
+- [x] Add exactly one new ID: `FND04-GAMESESSION-USED-IDS-PER-CHARACTER`.
+- [x] Hard maximum and configurable minimum/maximum are exactly `65536`.
+- [x] Row semantics and boundary tests match protected Decision A Section 8 and its FND-04C amendment; no retryable transient-capacity substitution.
+- [x] Every pre-existing registry entry object is unchanged.
+- [x] JSON parses; required fields are present; IDs remain unique; configured ranges satisfy registry rules.
+- [x] Applicable governance/contract validation and changed-file/diff inspection pass.
+- [x] Whole-diff self-review reports zero open material findings.
 - [ ] Genuinely independent exact-head review reports zero open P0/P1/P2 material findings.
 - [ ] Exact-head repository CI and protected Merge Queue succeed.
 - [ ] Protected-main readback matches the accepted row, task is archived, branch/lease are released, and #162 receives the exact next WP2 action.
@@ -74,19 +75,19 @@ No other registry row change; no Foundation/runtime Rust; no Durability/SQL/migr
 
 ## Implementation / findings
 
-No registry implementation is admitted by this allocation candidate. The first legal implementation action after protected admission is to compare the protected registry object set against the protected Decision A row, then append only that exact row on the dedicated worker branch.
+Protected allocation #385 is terminally integrated and read back. The worker branch was created exactly from `main@2dce2162ef62ee75a390b84c1a4d97fab704f97f` only after the exclusive lease was recorded. PR #386 appends the exact Decision A Section 8 row and changes only the registry's top-level publication timestamp. Deterministic structural and raw-byte comparison proves all 154 admitted entry objects remain unchanged and the new row is the sole final entry.
 
 ## Validation
 
 ### Focused
 
-- command/run: pending after protected admission
-- result: pending
+- command/run: deterministic Python JSON/required-fields/unique-ID/protected-row/admitted-prefix/raw-byte proof
+- result: `PASS` — 155 entries parsed, the new ID occurs once, all required fields exist, IDs are unique, the protected row is exact, all 154 admitted entries are unchanged in order, and raw bytes differ only by `updated_at` plus the exact final insertion
 
 ### Component/integration
 
-- command/run: repository governance/contract validation after protected admission
-- result: pending
+- command/run: `python tools/agents/validate_governance.py`; `python tools/repository/validate_repository_policy.py`; `git diff --check`; allocated-path inspection
+- result: `PASS` — governance validated 26 policy documents and 9 lanes; repository policy validated 22 files and 17 workflows; diff checks are clean; exactly the three allocated paths differ from admission
 
 ### E2E
 
@@ -104,10 +105,10 @@ No registry implementation is admitted by this allocation candidate. The first l
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- exact head: material candidate represented by this commit (the commit cannot embed its own SHA)
+- method/reviewer: implementing agent, complete admission-to-candidate diff and changed-file inspection
+- material findings: zero
+- verdict: `PASS` — no open material findings
 
 ## Independent review
 
@@ -119,9 +120,9 @@ No registry implementation is admitted by this allocation candidate. The first l
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: `PASS` — exactly the three allocated paths; PR #386
 - unresolved review threads: pending
-- related/superseded PRs: #383 architecture prerequisite protected; no replacement registry PR exists at allocation time
+- related/superseded PRs: #383 architecture prerequisite protected; #385 allocation protected
 - protected auto-merge: pending
 - merge commit/result: pending
 - ownership release: pending
@@ -129,11 +130,11 @@ No registry implementation is admitted by this allocation candidate. The first l
 ## Context checkpoint
 
 ```yaml
-last_progress: prospective registry task recorded in coordinator allocation candidate
-status: waiting
+last_progress: exact protected registry row appended and deterministic local validation passed for PR #386
+status: implementing
 branch: agent/gamesession-ledger-resource-registry-384
 head_sha: null
-pr: null
+pr: 386
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -150,6 +151,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: allocation_not_yet_protected
-next_action: protect and read back the coordinator allocation before creating the worker branch
+blocker: null
+next_action: report the stable tested material head to Work for whole-diff and independent exact-head review
 ```
