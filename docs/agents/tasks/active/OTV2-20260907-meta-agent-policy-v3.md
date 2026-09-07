@@ -9,7 +9,7 @@ base_branch: main
 branch: agents/r5-game-policy-review-repair-367
 issue: 367
 base_sha: a6f69427d663539c6a8e23f166e69147b66ec078
-reconciled_main_sha: 15164c38a2775e45eaff4001fddddbabf4b63ab6
+reconciled_main_sha: 10446c31b2508ccf6b65cc609a35246bf2666567
 owner: R5 Game review-repair lane
 owned_paths:
   - AGENTS.md
@@ -24,9 +24,9 @@ public_contracts:
 
 Adopt central META agent policy v3 through an authenticated immutable binding, a small Game bootstrap and task-delta prompts. Retire the completed provider-copy enforcement from #237/#239 while preserving Game domain invariants and existing repository gates.
 
-This candidate continues the same Issue #367 migration from PR #373, including the later evidence-only commit `7e70330e7eab43c9bb0acd82c00e2296bd6c46c5`, and repairs its independent R5 review findings on instruction head `ebe152af34bd003dd5c41b38eb550f10944be988`. The earlier branch remains untouched. The repair targets `main` because the existing governance and merge-gate workflows require that base; it is not a separate adoption programme. D4-only Issue #374 / PR #376 owns its disjoint twelve terminal task moves.
+This candidate continues the same Issue #367 migration from PR #373, including the later evidence-only commit `7e70330e7eab43c9bb0acd82c00e2296bd6c46c5`, and repairs its independent R5 review findings on instruction head `ebe152af34bd003dd5c41b38eb550f10944be988`. PR #373 was integrated externally as protected main `10446c31b2508ccf6b65cc609a35246bf2666567`. This candidate preserves that accepted migration and carries only its remaining R5 review repairs; it is not a separate adoption programme. D4-only Issue #374 / PR #376 owns its disjoint twelve terminal task moves.
 
-Protected main advanced during qualification. Its sixteen changed paths through `15164c38...` are disjoint from this candidate and are preserved byte-for-byte in the integration reconciliation. The R5 diff against that main contains no runtime/product edits; the measured instruction baseline remains the admission revision above.
+Protected main advanced during qualification, including the #373 migration. The complete tree comparison against `10446c31...` contains only the remaining R5 repairs in 21 instruction, consumer, test and evidence paths. Accepted product changes and provider migration are preserved. The measured instruction baseline remains the admission revision above.
 
 ## Acceptance
 
