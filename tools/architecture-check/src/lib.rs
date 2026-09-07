@@ -140,10 +140,7 @@ fn parse_policy(path: &Path) -> Result<Policy, String> {
     })
 }
 
-fn member_path_mapping(
-    members: &[String],
-    paths: &[String],
-) -> Result<MemberPathMapping, String> {
+fn member_path_mapping(members: &[String], paths: &[String]) -> Result<MemberPathMapping, String> {
     if members.len() != paths.len() {
         return Err(format!(
             "workspace policy member/path cardinality differs: {} members, {} paths",
@@ -161,11 +158,7 @@ fn member_path_mapping(
         return Err("workspace policy contains a duplicate package path".to_owned());
     }
 
-    let mapping = members
-        .iter()
-        .cloned()
-        .zip(paths.iter().cloned())
-        .collect();
+    let mapping = members.iter().cloned().zip(paths.iter().cloned()).collect();
     Ok(MemberPathMapping {
         members: member_set,
         paths: path_set,
@@ -185,7 +178,12 @@ fn validate_policy_shape(policy: &Policy) -> Result<(), String> {
         ));
     }
     if policy.member_paths.keys().cloned().collect::<BTreeSet<_>>() != policy.members
-        || policy.member_paths.values().cloned().collect::<BTreeSet<_>>() != policy.paths
+        || policy
+            .member_paths
+            .values()
+            .cloned()
+            .collect::<BTreeSet<_>>()
+            != policy.paths
     {
         return Err("workspace policy package/path mapping is ambiguous".to_owned());
     }
@@ -288,10 +286,7 @@ fn workspace_package_paths(metadata: &Value) -> Result<BTreeMap<String, String>,
                     )
                 })?;
             let manifest_directory = portable_relative_path(manifest_directory)?;
-            if paths
-                .insert(name.to_owned(), manifest_directory)
-                .is_some()
-            {
+            if paths.insert(name.to_owned(), manifest_directory).is_some() {
                 return Err(format!(
                     "workspace metadata contains duplicate package name {name}"
                 ));
