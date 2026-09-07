@@ -1,7 +1,7 @@
 # OTV2 GameSession Ledger Resource Registry Plan — 2026-09-07
 
-Issue: #384  
-Coordinator: #162  
+Issue: #384
+Coordinator: #162
 Protected prerequisite: `main@6b07f96d47de37971bb54fed5bb9c12decd1be17` / PR #383
 
 ## Goal
