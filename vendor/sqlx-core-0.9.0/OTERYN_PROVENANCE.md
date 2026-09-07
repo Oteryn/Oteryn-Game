@@ -582,3 +582,23 @@ and all accepted maxima are untouched. Complete TLS phase composition, actual
 TLS-positive evidence, PostgreSQL accounting/17.6 qualification, independent
 full-diff review, exact-head CI/MQ and protected readback remain OPEN. PostgreSQL
 decoder work and shared-target inclusion remain stopped.
+
+## Window6 enabled-Tokio adapter checkpoint
+
+The protected Tokio owner surface is now adapted directly to the existing
+`ResourceBudget` ledger. The adapter has no unowned fallback: it requires a
+current Tokio runtime, supplies the accepted queue count 8 and explicit 2 MiB
+worker stack configuration, and forwards task/queue/worker reserve and release
+operations to the same operation owner. Other compiled runtime branches are not
+used by the configured server graph and are deliberately not selected by this
+owned entry point.
+
+The Linux certificate-file composition binds the already-existing path backing
+to a reservation before task admission, runs the previously-accounted reader
+only through owned Tokio, and returns the charged `Vec` without detaching its
+backing. Focused funded and denied tests prove denial before Tokio Cell
+allocation, no fallback, returned-byte custody, and pool custody through runtime
+shutdown. This proves the blocking-loader component, not the complete TLS gate:
+activation in `CertificateInput`, retained rustls configuration/session/cache
+ownership, full handshake phase overlap, actual TLS-positive evidence and
+PostgreSQL 17.6 qualification remain OPEN.

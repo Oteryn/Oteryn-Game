@@ -125,3 +125,12 @@ remain OPEN. `TLS_BLOCKING_OWNER = NOT_PROVEN` and WP3 is not accepted.
 - [x] Provide deterministic multithreaded accounting-race evidence in the allocated test surface; record why the pinned private path is unreachable from the existing Loom registration without an unauthorized source/feature change.
 - [ ] Adapt SQLx `BlockingJobOwner` and certificate loading, failing closed for non-Tokio backends.
 - [ ] Complete TLS composition and real TLS-positive proof before PostgreSQL17.6 qualification.
+
+## Window6 SQLx adapter successor
+
+SQLx now binds its existing ResourceBudget to the enabled owned-Tokio API and the
+accounted certificate-file loader has funded/denied custody tests with no
+fallback. Treat `TLS_BLOCKING_OWNER = PROVEN` narrowly: complete TLS phase,
+configuration/session/cache lifetime composition remains the next gate. Do not
+activate the shared PostgreSQL target or claim WP3 accepted until complete TLS
+and separate real TLS-positive evidence are proven.

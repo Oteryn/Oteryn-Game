@@ -6,6 +6,12 @@ use std::time::Duration;
 
 use cfg_if::cfg_if;
 
+#[cfg(feature = "_rt-tokio")]
+pub(crate) mod resource_owner;
+
+#[cfg(all(test, feature = "_rt-tokio"))]
+mod resource_owner_tests;
+
 #[cfg(feature = "_rt-async-io")]
 pub mod rt_async_io;
 

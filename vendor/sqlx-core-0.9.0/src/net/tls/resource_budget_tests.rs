@@ -292,3 +292,47 @@ fn certificate_file_loader_returns_complete_data_under_the_same_ledger() {
     drop(result);
     assert_eq!(budget.used.load(Ordering::Acquire), 0);
 }
+
+#[cfg(all(target_os = "linux", feature = "_rt-tokio"))]
+#[test]
+fn owned_certificate_loader_is_funded_or_denied_without_fallback() {
+    use super::read_certificate_file_owned;
+    let path = std::env::temp_dir().join(format!("oteryn351-owned-cert-{}", std::process::id()));
+    struct Cleanup(std::path::PathBuf);
+    impl Drop for Cleanup {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_file(&self.0);
+        }
+    }
+    let cleanup = Cleanup(path);
+    let data = vec![11u8; 7000];
+    std::fs::write(&cleanup.0, &data).unwrap();
+
+    let denied = ledger(cleanup.0.as_os_str().len());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    assert!(runtime
+        .block_on(read_certificate_file_owned(
+            cleanup.0.clone(),
+            denied.clone()
+        ))
+        .is_err());
+    assert_eq!(denied.used.load(Ordering::Acquire), 0);
+
+    let funded = ledger(4 * 1024 * 1024);
+    let loaded = runtime
+        .block_on(read_certificate_file_owned(
+            cleanup.0.clone(),
+            funded.clone(),
+        ))
+        .unwrap();
+    assert_eq!(loaded.get().as_slice(), data);
+    drop(loaded);
+    assert!(
+        funded.used.load(Ordering::Acquire) > 0,
+        "owned pool remains charged"
+    );
+    drop(runtime);
+    assert_eq!(funded.used.load(Ordering::Acquire), 0);
+}

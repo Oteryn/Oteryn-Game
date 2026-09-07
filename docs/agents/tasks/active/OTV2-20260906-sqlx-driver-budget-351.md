@@ -275,3 +275,24 @@ tls_blocking_owner: NOT_PROVEN
 next_action: adapt SQLx BlockingJobOwner and the certificate loader to the same ResourceBudget, fail closed on every non-Tokio backend, then complete TLS composition before PostgreSQL work
 remaining_acceptance_cells: SQLx adapter and funded/denied loader; non-Tokio fail-closed matrix; complete TLS phase/capacity/lifetime composition; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
 ```
+
+## Window6 SQLx enabled-runtime adapter successor
+
+The SQLx adapter now uses the existing `ResourceBudget` for the configured Tokio
+owner path with no unowned fallback, and the funded/denied certificate-file
+loader retains returned backing on that ledger. The configured root graph enables
+Tokio only; other compiled runtime dispatch is deliberately not selected by this
+owned entry point.
+
+`TLS_BLOCKING_OWNER = PROVEN` for the enabled Tokio blocking prerequisite and
+loader component. This does not prove complete TLS ownership or WP3:
+CertificateInput activation, complete configuration/decoder/session/cache/
+handshake overlap, actual TLS-positive evidence, PostgreSQL accounting and
+configured PostgreSQL 17.6 remain OPEN.
+
+```yaml
+last_progress: adapted the enabled Tokio owner and added funded-denied SQLx certificate-loader composition
+status: implementation_in_progress
+tls_blocking_owner: PROVEN
+next_action: complete and test TLS capacity/lifetime composition before any broad PostgreSQL decoder work or shared-target inclusion
+```

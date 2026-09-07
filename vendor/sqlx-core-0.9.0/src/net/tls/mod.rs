@@ -198,3 +198,28 @@ fn read_certificate_file_accounted(
     drop(path_charge);
     read_certificate_data_accounted(&mut file, budget)
 }
+
+/// Load a certificate file through the configured resource-owned Tokio path.
+/// Returned bytes keep their reservation; task, queue, and worker custody stays
+/// with Tokio until its corresponding backing is actually released.
+#[cfg(all(target_os = "linux", feature = "_rt-tokio"))]
+async fn read_certificate_file_owned(
+    path: PathBuf,
+    budget: std::sync::Arc<dyn crate::net::resource_budget::ResourceBudget>,
+) -> Result<crate::net::resource_budget::Charged<Vec<u8>>, CertificateReadError> {
+    use crate::net::resource_budget::{BudgetError, ResourceReservation};
+
+    let path_bytes = path.as_os_str().len();
+    let path_charge = ResourceReservation::try_new(budget.clone(), path_bytes)?;
+    let path = path_charge.bind(path);
+    let worker_budget = budget.clone();
+    let handle = crate::rt::resource_owner::spawn_blocking_owned(budget, move || {
+        read_certificate_file_accounted(path.get(), worker_budget)
+    })
+    .map_err(|_| CertificateReadError::Budget(BudgetError::Unavailable))?;
+    handle.await.map_err(|_| {
+        CertificateReadError::Io(std::io::Error::other(
+            "owned certificate loader task failed",
+        ))
+    })?
+}
