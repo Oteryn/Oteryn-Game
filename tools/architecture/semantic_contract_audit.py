@@ -411,7 +411,7 @@ def rust_has_conditional_attribute(code: str, item_start: int) -> bool:
             boundary = position
             break
     prefix = code[boundary + 1 : item_start]
-    return re.search(r"#\s*\[\s*cfg(?:_attr)?\b", prefix) is not None
+    return re.search(r"#\s*\[\s*(?:r#)?cfg(?:_attr)?\b", prefix) is not None
 
 
 def rust_brace_depth(code: str, position: int) -> int:
@@ -420,7 +420,8 @@ def rust_brace_depth(code: str, position: int) -> int:
 
 def rust_named_function(doc: str, name: str, label: str) -> str:
     code = rust_lexical_mask(doc, mask_literals=True)
-    matches = list(re.finditer(rf"\bfn\s+{re.escape(name)}\b", code))
+    identifier = rf"(?:r#)?{re.escape(name)}\b"
+    matches = list(re.finditer(rf"\bfn\s+{identifier}", code))
     if len(matches) != 1:
         fail(f"{label}: expected exactly one function, found {len(matches)}")
     start = matches[0].start()
@@ -442,9 +443,11 @@ def rust_impl_method(
     method_name = method_name_match.group(1)
     code = rust_lexical_mask(doc, mask_literals=True)
     methods: list[tuple[int, bool]] = []
+    impl_identifier = rf"(?:r#)?{re.escape(impl_type)}\b"
+    method_identifier = rf"(?:r#)?{re.escape(method_name)}\b"
     impl_pattern = re.compile(
         rf"\bimpl\s+(?:<[^{{}};]*>\s*)?"
-        rf"(?:{re.escape(impl_type)}\b|[^{{}};]*?\bfor\s+{re.escape(impl_type)}\b)"
+        rf"(?:{impl_identifier}|[^{{}};]*?\bfor\s+{impl_identifier})"
         rf"[^{{}};]*?\{{"
     )
     for impl_match in impl_pattern.finditer(code):
@@ -455,7 +458,7 @@ def rust_impl_method(
         block_end = rust_braced_end(code, opening, f"{impl_type} impl")
         impl_conditional = rust_has_conditional_attribute(code, impl_start)
         for method in re.finditer(
-            rf"\bfn\s+{re.escape(method_name)}\b", code[opening + 1 : block_end - 1]
+            rf"\bfn\s+{method_identifier}", code[opening + 1 : block_end - 1]
         ):
             method_start = opening + 1 + method.start()
             if rust_brace_depth(code, method_start) != 1:

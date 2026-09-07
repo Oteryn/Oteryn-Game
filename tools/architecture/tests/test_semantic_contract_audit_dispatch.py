@@ -269,6 +269,72 @@ fn target() {
         )
         self.assertTrue(audit.foundation_reconnect_documents(task, mutated, verifier))
 
+    def test_foundation_oracle_normalizes_raw_audited_identifiers(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        mutated = implementation.replace(
+            "impl ReconnectDurabilityFlowV1 {",
+            "impl r#ReconnectDurabilityFlowV1 {",
+            1,
+        ).replace(
+            "pub fn authorize_commit(",
+            "pub fn r#authorize_commit(",
+            1,
+        ).replace(
+            "fn current_authority_matches_record(",
+            "fn r#current_authority_matches_record(",
+            1,
+        )
+        self.assertTrue(audit.foundation_reconnect_documents(task, mutated, verifier))
+
+    def test_foundation_oracle_rejects_raw_cfg_shadowed_declarations(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        helper = audit.rust_named_function(
+            implementation,
+            "current_authority_matches_record",
+            "authority helper",
+        )
+        active_helper = helper.replace(
+            "fn current_authority_matches_record(",
+            "fn r#current_authority_matches_record(",
+            1,
+        )
+        helper_opening = active_helper.index("{") + 1
+        active_helper = (
+            active_helper[:helper_opening]
+            + " if current.current_controller_present { return Ok(true); } "
+            + active_helper[helper_opening:]
+        )
+        helper_shadow = (
+            "#[r#cfg(any())]\n" + helper + "\n" + active_helper
+        )
+
+        method = audit.rust_impl_method(
+            implementation,
+            "impl ReconnectDurabilityFlowV1 {",
+            "pub fn authorize_commit(",
+            "V1 authorize_commit",
+        )
+        raw_method = method.replace(
+            "fn authorize_commit(", "fn r#authorize_commit(", 1
+        )
+        method_shadow = (
+            "#[r#cfg(any())]\npub " + method + "\npub " + raw_method
+        )
+
+        cases = (
+            implementation.replace(helper, helper_shadow, 1),
+            implementation.replace("pub " + method, method_shadow, 1),
+            implementation.replace(
+                "impl ReconnectDurabilityFlowV1 {",
+                "#[r#cfg(any())]\nimpl r#ReconnectDurabilityFlowV1 {",
+                1,
+            ),
+        )
+        for mutated in cases:
+            with self.subTest(case=cases.index(mutated)):
+                with self.assertRaises(SystemExit):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
     def test_foundation_oracle_rejects_cfg_shadowed_audited_methods(self) -> None:
         task, implementation, verifier = self._foundation_documents()
         for version, method_name in (
