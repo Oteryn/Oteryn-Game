@@ -9,14 +9,15 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/doc-consumer-snapshot-refresh-w6
 issue: 375
-pr: null
+pr: 377
 base_sha: a6f69427d663539c6a8e23f166e69147b66ec078
+integration_main_sha: 728f25461d5a2b029ed60f7db4b14151d31776d7
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: Game-W6
 created_at: 2026-09-07T09:00:59Z
-updated_at: 2026-09-07T09:00:59Z
+updated_at: 2026-09-07T09:10:10Z
 execution_policy: continuous_progress
 owned_paths:
   - tools/repository/classify_pr_test_lanes.py
@@ -39,9 +40,11 @@ Restore the existing conservative neutral-document routing only for the newly re
 
 - `PROVEN` — protected admission `main` is `a6f69427d663539c6a8e23f166e69147b66ec078`; live Issue #375 owns this repair.
 - `PROVEN` — prior audited source `b9b1a4317858bffc25ad6af3cffcf7b5eff93445` has non-server digest `9f7aff4dc25c9c6561b77ea73342b675eeccb1d008ab9d1fbdbd504618ec5ab8` over 63 records and all-consumer digest `f8eed774249df64a5a64612b4a169a73bac093a7bcbfb21e59ea0e06dd2ddc26` over 124 records.
-- `PROVEN` — admission `main` retains the exact same 63-record non-server digest and has all-consumer digest `742350c55587ab94d652e27a4196308f350afaf5140ed3633d33d5d165e807b6` over 132 records.
-- `PROVEN` — the selected source delta is exactly 14 `apps/game-server` Rust paths, +14,799/-1, eight added and six modified. Cargo, build inputs and non-server package trees are unchanged.
-- `PROVEN` — an independent lexical scan of all 14 changed paths found no filesystem, document, Markdown or workspace-boundary reads. The only match for a broad `open` pattern was Tokio `Builder::new_current_thread`, which is not file access.
+- `PROVEN` — admission `main` retained the exact same 63-record non-server digest and advanced the all-consumer digest to `742350c55587ab94d652e27a4196308f350afaf5140ed3633d33d5d165e807b6` over 132 records.
+- `PROVEN` — while the first draft was published, protected `main` advanced normally through AI #369 and Ability #370 to `728f25461d5a2b029ed60f7db4b14151d31776d7`. The branch was merged up before final freeze.
+- `PROVEN` — integration `main` still has the identical 63-record non-server digest and now has all-consumer digest `051473d37842a816e9378c9769fd28cf9c7ddb49fb5483d02b3841d73c2cd403` over 132 records.
+- `PROVEN` — from the prior audited source through integration `main`, the selected source delta is exactly 20 `apps/game-server` Rust paths, +15,005/-7, eight added and twelve modified. Cargo, build inputs and non-server package trees are unchanged. The final upstream increment is six modified server Rust paths, +206/-6.
+- `PROVEN` — independent lexical scans of both the original 14-path delta and the six-path upstream increment found no filesystem, document, Markdown or workspace-boundary reads. The only original broad-`open` match was Tokio `Builder::new_current_thread`, which is not file access.
 - `DERIVED` — those server-only additions do not introduce a neutral-document consumer; adopting the new all-consumer digest restores the already designed routing contract without widening its modeled inputs.
 
 Issue #308 remains the measured-impact programme. Released Issue #309 and its task packet remain historical first-wave evidence and are not reactivated or edited.
@@ -54,7 +57,7 @@ Issue #308 remains the measured-impact programme. Released Issue #309 and its ta
 
 - [x] RED proves the newly reviewed digest remains FULL with `unreviewed-document-consumer-inputs` before the production constant changes.
 - [x] GREEN changes only the production document-consumer snapshot constant and independent regression literals.
-- [x] The prior snapshot is explicitly rejected as stale after GREEN.
+- [x] Both the historical `f8eed774…` snapshot and the superseded pre-merge `742350c5…` candidate snapshot are explicitly rejected as stale after GREEN.
 - [x] Existing classifier, post-merge, governance and repository-policy regressions pass.
 - [x] Whole-diff self-review found no unresolved material issue; independent deep review remains pending.
 - [ ] Exact-head FULL CI, normal Merge Queue and protected-main readback pass.
@@ -65,7 +68,7 @@ No workflow, aggregate fan-in, ruleset, Merge Queue, branch protection, Cargo, r
 
 ## Implementation / findings
 
-Focused RED on the test-only change failed at the expected neutral-document assertion with `rust=True`, `windows=True`, `surface=docs`, `reason=unreviewed-document-consumer-inputs`. Minimal GREEN updates the one production digest. Existing negative fixtures continue to vary new and modified server/non-server records and require FULL.
+Focused RED on the initial test-only change failed at the expected neutral-document assertion with `rust=True`, `windows=True`, `surface=docs`, `reason=unreviewed-document-consumer-inputs`. After protected `main` advanced, a second focused RED reproduced the same expected failure for the re-audited `051473d3…` digest against the intermediate production constant. Minimal GREEN updates the one production digest. Existing negative fixtures continue to vary new and modified server/non-server records and require FULL.
 
 ## Validation
 
@@ -120,11 +123,11 @@ Focused RED on the test-only change failed at the expected neutral-document asse
 ## Context checkpoint
 
 ```yaml
-last_progress: focused RED/GREEN, complete local validation and whole-diff self-review passed
+last_progress: merged-up candidate passed complete local validation and whole-diff self-review
 status: validating
 branch: ci/doc-consumer-snapshot-refresh-w6
 head_sha: null
-pr: null
+pr: 377
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
@@ -142,5 +145,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: freeze the local candidate and request independent review before publication
+next_action: freeze and publish the normal merge-up candidate for exact-head review and FULL CI
 ```
