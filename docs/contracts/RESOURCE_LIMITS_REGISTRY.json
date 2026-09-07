@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-06T12:33:23+00:00",
+  "updated_at": "2026-09-07T15:00:27+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -2584,6 +2584,26 @@
       "owner_contract": "../architecture/reviews/OTERYN_GAME_DURABLE_FRESH_RESOURCE_ENVELOPE_DECISION_2026-09-06.md",
       "resource": "One shared executor; caller creation cannot mint budget",
       "unit": "executors"
+    },
+    {
+      "id": "FND04-GAMESESSION-USED-IDS-PER-CHARACTER",
+      "owner_contract": "../architecture/reviews/OTERYN_GAME_SESSION_NONREUSE_AUTHORITY_DECISION_2026-09-07.md",
+      "resource": "Permanently retained committed GameSessionId memberships for one CharacterId",
+      "unit": "entries per CharacterId",
+      "hard_maximum": 65536,
+      "configurable_range": {"minimum": 65536, "maximum": 65536},
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Under the same serialized durability decision, check complete membership, candidate absence, current membership revision and count before inserting any new membership or committing new-session authority. At the hard maximum reject the new-session operation before membership/session/claim/receipt authority effects. Exact replay of an already committed binding consumes no additional entry. Never evict membership to make room.",
+      "client_visible": true,
+      "boundary_tests": [
+        "65,535 committed memberships plus one unused candidate may commit as entry 65,536 when all authority predicates pass",
+        "65,536 committed memberships plus a distinct unused candidate is rejected as CAPACITY_EXCEEDED before any new authority effect",
+        "each governed new-session family maps lifetime exhaustion to its accepted terminal FND-04C ledger-exhaustion code and SESSION_UNAVAILABLE public class, never retryable ADMISSION_CAPACITY_EXCEEDED",
+        "exact replay at the ceiling reconciles without consuming an additional entry and returns the stable committed result rather than a capacity error",
+        "a GameSessionId already used by a different binding is rejected regardless of remaining per-character capacity",
+        "restart/reload preserves exact membership count, revision, completeness, terminal progression and rejection behavior"
+      ],
+      "notes": "Permanent GameSessionUseLedgerV1 exhaustion uses ADMISSION_GAMESESSION_LEDGER_EXHAUSTED, TERMINAL_REPLACEMENT_GAMESESSION_LEDGER_EXHAUSTED, EARLY_TERMINAL_REPLACEMENT_GAMESESSION_LEDGER_EXHAUSTED, or POST_GRACE_RECOVERY_GAMESESSION_LEDGER_EXHAUSTED according to operation family. All are TERMINAL/SESSION_UNAVAILABLE under the current ledger version and preserve existing authority. The pre-existing retryable ADMISSION_CAPACITY_EXCEEDED code is reserved for transient admission capacity and must not represent this lifetime ceiling."
     }
   ]
 }

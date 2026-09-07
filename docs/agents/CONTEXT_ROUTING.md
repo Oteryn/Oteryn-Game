@@ -2,9 +2,13 @@
 
 Load the smallest context set that can safely execute the task.
 
-## Always
+## Baseline
 
-Read root `AGENTS.md`, `docs/agents/AGENTS.md`, the exact active task checkpoint and live PR/CI state.
+Read root `AGENTS.md` and the nearest `AGENTS.md` applicable to the working path. Resolve the bound META policy required by the operation as directed by the root bootstrap.
+
+Read an active task checkpoint only for a substantial task that has one. Resolve live Issue, PR, branch, head or CI state only when the current mutation, lifecycle decision, review or integration depends on it. Bounded read-only analysis and trivial work do not require a fabricated task, PR or CI lookup.
+
+For an ungoverned, low-risk and reversible implementation detail, state a bounded assumption and continue. Do not infer permission, ownership, production access, destructive intent or a durable product decision from missing context.
 
 For Oteryn-v2 foundation or architecture continuation, also read `docs/architecture/FOUNDATION_PROGRAMME_CURRENT_STATUS.md` before interpreting progress, blockers or next-action text in long-lived backlog/register/baseline documents.
 

@@ -112,13 +112,35 @@ def test_reviewed_document_consumers(module):
     # OTV2-20260905-doc-consumer-snapshot. Do not derive these fixtures from the
     # classifier constants or current HEAD: later consumer edits must remain
     # legitimate FULL inputs, not make repository regression validation fail.
-    reviewed_nonserver = "9f7aff4dc25c9c6561b77ea73342b675eeccb1d008ab9d1fbdbd504618ec5ab8"
-    reviewed_docs = "f8eed774249df64a5a64612b4a169a73bac093a7bcbfb21e59ea0e06dd2ddc26"
+    stale_reviewed_nonserver = (
+        "9f7aff4dc25c9c6561b77ea73342b675eeccb1d008ab9d1fbdbd504618ec5ab8",
+        "669052b19bf8d067d949623ba566e087b43def40b2661f8c3feb16f3d62de180",
+    )
+    reviewed_nonserver = "2dbc1273b54b4f63653bc6c5a92ee10a1c095e3bd05dac232751efc4d358fa9d"
+    stale_reviewed_docs = (
+        "f8eed774249df64a5a64612b4a169a73bac093a7bcbfb21e59ea0e06dd2ddc26",
+        "742350c55587ab94d652e27a4196308f350afaf5140ed3633d33d5d165e807b6",
+        "051473d37842a816e9378c9769fd28cf9c7ddb49fb5483d02b3841d73c2cd403",
+        "dc9381615fb7b1f7b06533ac6f6ffebb6d274b8d799894fe54882bf69f638472",
+    )
+    reviewed_docs = "4b37d0e2e6c70161a29f3def3891a17a9c3e48f4048b883fa457b66b20d654b3"
     for path in ("README.md", "docs/agents/tasks/archive/finished.md"):
         result = module.classify([dict(filename=path, status="modified")], 1,
                                  fixture(), reviewed_nonserver, docs_digest=reviewed_docs,
                                  candidate_modes_verified=True)
         assert result["rust"] is False and result["windows"] is False, result
+        for stale_input in stale_reviewed_nonserver:
+            stale_nonserver = module.classify([dict(filename=path, status="modified")], 1,
+                                              fixture(), stale_input, docs_digest=reviewed_docs,
+                                              candidate_modes_verified=True)
+            assert stale_nonserver["rust"] is True and stale_nonserver["windows"] is True, stale_nonserver
+            assert stale_nonserver["reason"] == "unreviewed-document-consumer-inputs", stale_nonserver
+        for stale_docs in stale_reviewed_docs:
+            stale = module.classify([dict(filename=path, status="modified")], 1,
+                                    fixture(), reviewed_nonserver, docs_digest=stale_docs,
+                                    candidate_modes_verified=True)
+            assert stale["rust"] is True and stale["windows"] is True, stale
+            assert stale["reason"] == "unreviewed-document-consumer-inputs", stale
 
     # Exercise real tree hashing and classification together. A new or changed
     # consumer can add a document read without changing any Cargo edge.

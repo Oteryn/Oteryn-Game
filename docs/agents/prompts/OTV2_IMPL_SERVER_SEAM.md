@@ -12,7 +12,7 @@ You are a senior Rust networking/runtime/security engineer. Mode: `IMPLEMENT`.
 
 Authorized repository: `Oteryn/Oteryn-Game` only. Write only the exact paths granted by the live coordinator allocation for `OTV2-INTEGRATION-GAMEPLAY-SERVER-SEAM`. If no merged allocation names the task ID, branch, exact base SHA, owned paths and exclusions, remain read-only and stop before mutation.
 
-No production/protected-environment/live-data/Platform/external-repository write, secrets use, deployment, production port change or non-covered owner-funded AI invocation is authorized by this prompt.
+No production/protected-environment/live-data/Platform/external-repository write, secrets use, deployment, production port change is authorized by this prompt.
 
 ## Trusted sources and mandatory reads
 
@@ -21,7 +21,6 @@ Use this source order: system/explicit owner instructions -> root and nearest `A
 Before planning writes, read and verify from live `main`:
 
 - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`;
-- `docs/superpowers/plans/2026-08-24-oteryn-game-next-wave-master-plan.md`;
 - Issue #96 and the accepted #96 decision/allocation packet;
 - FND-02, FND-03, FND-04, NET-TRANSPORT-01 and applicable Foundation failure/resource-limit contracts;
 - ADR-0007 QA E2E and `docs/agents/BUILD_TEST_MATRIX.md`;
@@ -61,7 +60,7 @@ Required before the first write:
 
 - #96 decision packet accepted;
 - exact coordinator implementation allocation merged;
-- lane-specific child Superpowers plan created from that exact allocation;
+- the live allocation/task names any required implementation plan; do not create an extra plan merely because this prompt exists;
 - required shared Cargo/workspace/composition lease assigned to one writer if needed;
 - all exercised peer-controlled counts/sizes/work have accepted finite limits.
 
@@ -92,7 +91,7 @@ Do not turn a test-only listener or direct-domain harness into terminal Tier 1 e
 
 ## TDD and validation ladder
 
-Before implementation, the child plan must name exact tests and commands. Required evidence includes, as applicable:
+Before implementation, the live allocation/task must name exact tests and commands. Required evidence includes, as applicable:
 
 1. failing tests first for malformed/truncated/oversized/unknown messages;
 2. stale connection/session generation and reconnect/fencing negatives;
@@ -106,14 +105,6 @@ Before implementation, the child plan must name exact tests and commands. Requir
 
 The Server Seam delivery may establish a Tier-1-capable physical boundary, but ADR-0007 Tier 1 remains `NOT_EVALUATED` until the separately allocated QA lane records accepted physical journey evidence.
 
-## Lifecycle, budget and handover
-
-Create/resume the coordinator-named task record before writing. Record exact base SHA, branch/PR, owned paths, shared leases, dependencies, blockers and the lane child-plan path.
-
-Default foreground budget is 60 minutes; 120 minutes is allowed only when the task explicitly declares and justifies it under repository policy.
-
-Maintain one compact `## Context checkpoint` with exactly one `next_action`. Before any genuine stop/rotation/blocker response, persist the exact head, PR, validation/review state, blocker, ownership state and next action.
-
 ## Stop conditions
 
 Stop before writes or further scope expansion when:
@@ -123,29 +114,13 @@ Stop before writes or further scope expansion when:
 - a required numeric/resource/security decision remains unresolved;
 - production/protected/secret/external-repository authority would be required;
 - required independent exact-head review is unavailable after implementation;
-- a non-recoverable repository/CI failure prevents truthful completion.
+- a non-recoverable repository/CI failure prevents truthful completion;
+- the owner explicitly stops the work.
 
-Routine test failures, review findings and ordinary merge bookkeeping are repair work, not stop conditions.
-
-## Canonical Codex review routing
-
-Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
-
-- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
-- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
-- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
-- When this role is the authorized candidate/review-request owner and routing is `CODEX_REQUIRED`, freeze the PR exact head, use the canonical GitHub PR transport (`@codex review`), consume durable findings, repair only within existing authority, re-run applicable exact-head validation, and request a fresh review after every material head change. Do not return to the owner for covered per-run approval.
-- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
-- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.
+Elapsed implementation time is not a stop condition. Routine test failures, review findings and ordinary merge bookkeeping are repair work, not stop conditions.
 
 ## Completion
 
 Do not claim completion from a listener that merely binds a socket or from synthetic tests. Completion requires the allocated production seam implementation, required tests/review/exact-head CI, squash merge, post-merge readback, task archive and ownership/shared-lease release.
 
 Only after the compatible seam is verified on `main` may the coordinator release Client and a new QA Tier-1 allocation.
-
-## Remote Desktop execution routing
-
-Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
-
-`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. This prompt cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.

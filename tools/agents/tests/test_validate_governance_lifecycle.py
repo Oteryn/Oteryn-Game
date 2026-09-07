@@ -11,10 +11,8 @@ from pathlib import Path
 VALIDATOR_PATH = Path(__file__).resolve().parents[1] / "validate_governance.py"
 SPEC = importlib.util.spec_from_file_location("validate_governance", VALIDATOR_PATH)
 assert SPEC is not None and SPEC.loader is not None
-wrapper = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(wrapper)
-# Patch globals on the implementation module, not on its runtime wrapper.
-validator = wrapper.load_core()
+validator = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(validator)
 
 
 class GovernanceLifecycleTests(unittest.TestCase):
