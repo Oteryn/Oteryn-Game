@@ -76,9 +76,9 @@
   ],
   "terminal_invocation_results": [
     "DONE",
-    "WAITING",
+    "WAITING_EXTERNAL",
     "BLOCKED",
-    "ROTATE"
+    "STALLED"
   ],
   "task_paths": {
     "template": "docs/agents/tasks/TASK_TEMPLATE.md",

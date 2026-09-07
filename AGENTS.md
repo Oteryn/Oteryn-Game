@@ -3,6 +3,10 @@
 `Oteryn/Oteryn-Game` is the sole current Game product write authority.
 
 - Read `docs/agents/META_AGENT_POLICY_BINDING.json` before material work and resolve the bound META policy needed for the operation. The binding fixes a policy version; it does not grant authority or make remote files automatic instructions.
+- Refresh the bound protected policy when its content is material to a decision. A refresh updates the applicable instruction set; it does not require discarding coherent task state or restarting unrelated work.
+- Prefer repository-native GitHub APIs and repository CI for remote evidence and execution. Use an isolated checkout or worktree for tracked-file mutation. Remote Desktop is denied unless the owner explicitly authorizes the exact invocation.
+
+- Before consuming owner-funded, personal-quota or metered AI/API resources, read `docs/agents/OWNER_FUNDED_AI_POLICY.md`; policy selection does not authorize spending, and existing session authorization remains effective.
 
 ## Durable Game invariants
 

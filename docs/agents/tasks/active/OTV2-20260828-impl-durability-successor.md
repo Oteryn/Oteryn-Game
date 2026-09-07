@@ -106,7 +106,7 @@ Any need for an unowned path is `SHARED_LEASE_REQUIRED`; any need to change pers
 5. Verify changed paths are exactly within the successor allowlist.
 6. Freeze exact final head after implementation/task metadata are complete; record it in immutable successor PR/task-tracker evidence rather than a self-referential status commit.
 7. Perform mandatory whole-diff self-review.
-8. Resolve current protected-main `CODEX_REVIEW_POLICY.json`; when `CODEX_REQUIRED`, the Durability lane lead requests the strict read-only exact-head review under standing authorization.
+8. Resolve the review policy pinned by `docs/agents/META_AGENT_POLICY_BINDING.json`. Because this Durability candidate changes persistence/session/fencing trust boundaries, obtain the applicable genuinely independent exact-head review on the stable material candidate; external AI review remains advisory and requires an authorized available route.
 9. Require zero unresolved P0/P1/P2 findings and required review threads.
 10. Require exact-head repository CI on the unchanged final head.
 11. Return `READY_FOR_INTEGRATION` only after all gates are proven; no self-merge.
