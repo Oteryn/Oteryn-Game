@@ -17,6 +17,7 @@ owned_paths:
   - AGENTS.md
   - docs/agents/AGENTS.md
   - docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md
+  - docs/agents/PROMPTING_STANDARD.md
   - docs/agents/AUTONOMOUS_PROGRAM_CONTINUATION.md
   - docs/agents/tasks/TASK_TEMPLATE.md
   - docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md
@@ -72,6 +73,8 @@ Historical evidence, archived tasks and old plans are intentionally not rewritte
 - P2 `3944868901`: fixed — the three-cycle repair limit is unconditional; a different failure class uses a distinct gate/counter instead of bypassing an exhausted one.
 - P2 `3944868903`: fixed — exhausted anti-stall state stops polling and all new work before state preservation/handoff.
 - P2 `3944877031`: fixed — the task records the exact reviewed candidate head; live PR head remains authoritative after metadata-only checkpoint commits.
+- P2 `3947338483`: fixed — stop-all-new-work applies to whole-lineage terminal/exhaustion/authority stop conditions; successful entry-task completion may hand into the one already-authorized follow-on task.
+- P2 `3947338488`: fixed — `docs/agents/PROMPTING_STANDARD.md` is now explicit in `owned_paths`.
 
 ## Context checkpoint
 
