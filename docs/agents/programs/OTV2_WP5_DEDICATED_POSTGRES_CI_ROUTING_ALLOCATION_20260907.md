@@ -22,6 +22,7 @@ required_status_name_change: false
 merge_queue_semantics_change: false
 ruleset_change: false
 protected_pin_rotation_required: true
+policy_core_pin_update_required: true
 ```
 
 ## Fresh protected fact
@@ -46,17 +47,24 @@ exist yet never execute in the required PR/MQ PostgreSQL layers. A workspace tes
 without `OTERYN_TEST_POSTGRES_ADMIN_URL` is not PostgreSQL evidence and may report
 NOT_APPLICABLE.
 
+Protected `tools/repository/validate_repository_policy_core.py` also pins the
+relevant `rust.yml`/PR/MQ workflow hashes and MQ job-set identity. Any material
+routing change must update those protected policy-core pins in the **same gate
+candidate** as the workflow change. Otherwise repository policy would correctly
+fail closed. This policy-core update is distinct from the separate
+`merge-authority-audit.yml` protected-base blob rotation.
+
 ## Exact future control-plane surfaces
 
 After a later explicit Work application, one serialized control-plane writer may
-modify only the minimum required set:
+modify only the minimum required gate-candidate set:
 
 ```text
 .github/workflows/merge-gate.yml
 .github/workflows/merge-group-gate.yml
 .github/workflows/rust.yml
-.github/workflows/merge-authority-audit.yml        # separate pin rotation only
 
+tools/repository/validate_repository_policy_core.py
 tools/repository/validate_pr_gate_pg_sim.py
 tools/repository/test_validate_pr_gate_pg_sim.py
 tools/repository/test_validate_merge_group_pg_sim.py
@@ -64,10 +72,18 @@ tools/repository/test_validate_merge_group_pg_sim.py
 # direct fixed-target wiring cannot prove deletion/rename fail-closed behavior.
 ```
 
-The merge-authority audit path is not part of the gate candidate itself. As in
-WP1, compute the exact future `merge-group-gate.yml` Git blob first, then rotate
-the protected audit pin in a separate reviewed/protected PR before activating the
-new MQ gate blob.
+Separate protected-pin rotation surface:
+
+```text
+.github/workflows/merge-authority-audit.yml
+```
+
+The gate candidate must first compute the exact future `merge-group-gate.yml` Git
+blob and update every directly affected policy-core hash/job-set pin so
+`python tools/repository/validate_repository_policy.py` remains truthful. It must
+**not** modify `merge-authority-audit.yml` in that same candidate. As in WP1, the
+exact future MQ blob then receives a separate reviewed/protected audit-pin
+rotation before the gate candidate may activate.
 
 No new required status, renamed `game-gate`, reduced MQ job set, paths-only bypass,
 permission expansion, `continue-on-error`, direct merge or ruleset change is
@@ -112,6 +128,28 @@ target runs in the MQ PostgreSQL job. The push/post-merge Rust workflow also run
 registered present targets so protected-main evidence does not regress to the old
 single-target harness.
 
+## Policy-core binding contract
+
+`validate_repository_policy_core.py` is part of the material gate candidate, not
+a later cleanup. The candidate must update only the pins/expected job-set data
+whose protected workflow bytes changed. It may not relax unrelated repository
+policy, remove old jobs, accept arbitrary hashes or derive expectations from the
+untrusted candidate at runtime.
+
+Negative proof must demonstrate that each of these independently fails repository
+policy validation:
+
+- candidate workflow bytes change while the corresponding policy-core pin stays
+  stale;
+- policy-core pin is changed without the exact matching workflow bytes;
+- a required MQ job or PG command is removed while hashes are made internally
+  consistent;
+- `rust.yml` post-merge target coverage drifts from PR/MQ registered target
+  policy.
+
+Positive proof requires exact candidate workflow bytes + exact updated protected
+policy-core pins + unchanged unrelated policy expectations.
+
 ## TDD and negative controls
 
 Before workflow mutation, add a test-only RED proving current protected workflow
@@ -132,6 +170,9 @@ GREEN regression proof must include at least:
 - target failure -> final `game-gate` cannot pass;
 - target success does not mask legacy `durability_postgres` failure and vice versa;
 - no PR-controlled manifest may remove/rename a protected target;
+- stale/mismatched `validate_repository_policy_core.py` workflow pins fail;
+- exact matching workflow + policy-core pins pass without weakening unrelated
+  repository policy;
 - exact future MQ blob must fail protected audit until the pin is separately
   rotated, then pass protected-base audit after pin integration.
 
@@ -146,7 +187,7 @@ this allocation protected
 -> material WP5 target implementation exists on a held branch
 -> Work refreshes exact target paths and control-plane custody
 -> test-only RED on one serialized CI branch
--> minimal PR/MQ/push routing GREEN
+-> minimal PR/MQ/push routing + exact policy-core pin GREEN
 -> exact future merge-group gate blob computed
 -> independent review of material control-plane candidate
 -> separate protected merge-authority pin rotation + readback
@@ -167,8 +208,11 @@ actual protected implementation contract without a reviewed amendment.
 No product/runtime/SQL/migration source, target test contents, registry resource
 values, Platform/external repo, production DB, secrets, ruleset, required-status
 name, queue semantics, workflow permissions, unrelated CI optimization or test
-suppression.
+suppression. `validate_repository_policy_core.py` may change only to truthfully
+bind the exact intended workflow/job-set bytes; unrelated policy weakening is
+forbidden.
 
 Runtime product E2E is NOT_APPLICABLE to this allocation document. Material
 workflow activation is CONTROL risk and requires independent review, negative
-gate tests, protected pin rotation, full MQ and readback.
+gate tests, protected policy-core binding, separate protected audit-pin rotation,
+full MQ and readback.
