@@ -73,6 +73,13 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             self.assertNotIn("## Canonical Codex review routing", text)
         self.assertGreaterEqual(alias_count, 35)
 
+    def test_workflow_authenticates_the_bound_meta_consumer(self):
+        workflow = (ROOT / ".github/workflows/agent-governance.yml").read_text(encoding="utf-8")
+        step = workflow.split("- name: Validate bound META policy and task prompts", 1)[1]
+        step = step.split("\n      - name:", 1)[0]
+        self.assertIn("GITHUB_TOKEN: ${{ github.token }}", step)
+        self.assertIn("python tools/agents/validate_inherited_prompt_policy.py", step)
+
     def test_representative_prompts_retain_scope_and_domain_acceptance(self):
         cases = {
             "docs/agents/prompts/OTV2_IMPL_DOMAIN_CORE.md": ("ItemDefinition", "No persistence implementation"),
