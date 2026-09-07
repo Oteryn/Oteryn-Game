@@ -32,8 +32,9 @@ fn owned_adapter_denies_before_tokio_task_allocation() {
         limit: 0,
         used: AtomicUsize::new(0),
     });
-    let result = runtime
-        .block_on(async { super::resource_owner::spawn_blocking_owned(budget.clone(), || ()) });
+    let owner = super::resource_owner::blocking_job_owner(budget.clone());
+    let result =
+        runtime.block_on(async { super::resource_owner::spawn_blocking_owned(&owner, || ()) });
     assert!(matches!(
         result,
         Err(tokio::task::OwnedSpawnError::InsufficientOwnerBalance)
@@ -50,10 +51,15 @@ fn owned_adapter_runs_when_funded_and_releases_on_shutdown() {
         limit: 4 * 1024 * 1024,
         used: AtomicUsize::new(0),
     });
+    let owner = super::resource_owner::blocking_job_owner(budget.clone());
     let handle = runtime
-        .block_on(async { super::resource_owner::spawn_blocking_owned(budget.clone(), || 42) })
+        .block_on(async { super::resource_owner::spawn_blocking_owned(&owner, || 42) })
         .unwrap();
     assert_eq!(runtime.block_on(handle).unwrap(), 42);
+    let second = runtime
+        .block_on(async { super::resource_owner::spawn_blocking_owned(&owner, || 43) })
+        .unwrap();
+    assert_eq!(runtime.block_on(second).unwrap(), 43);
     assert!(budget.used.load(Ordering::SeqCst) > 0);
     drop(runtime);
     assert_eq!(budget.used.load(Ordering::SeqCst), 0);

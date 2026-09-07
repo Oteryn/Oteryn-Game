@@ -637,3 +637,12 @@ No rustls file was modified.  Configuration/decoder/session-cache and handshake
 overlap accounting, actual TLS-positive qualification and PostgreSQL17.6 remain
 OPEN behind this first newly proven owner boundary.  The include-only shared
 PostgreSQL target was not changed or executed, and no PostgreSQL credit follows.
+
+Follow-up exact-owner repair: Tokio's charged owner queue compares Arc identity.
+Constructing a fresh adapter for each root/client certificate or key load would
+therefore reject the second funded load as a different owner while the first
+operation's queue remains alive. `BlockingJobOwner` now retains one runtime-owner
+Arc across all loads in that operation. Focused tests execute two sequential
+owned jobs and two sequential certificate loads on one runtime/ledger, proving
+owner continuity without weakening the identity check or falling back to
+unowned work. The deframer stop boundary above is unchanged.

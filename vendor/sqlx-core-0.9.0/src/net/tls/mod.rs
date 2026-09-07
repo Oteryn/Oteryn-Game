@@ -205,15 +205,16 @@ fn read_certificate_file_accounted(
 #[cfg(all(target_os = "linux", feature = "_rt-tokio"))]
 async fn read_certificate_file_owned(
     path: PathBuf,
-    budget: std::sync::Arc<dyn crate::net::resource_budget::ResourceBudget>,
+    owner: &crate::rt::resource_owner::BlockingJobOwner,
 ) -> Result<crate::net::resource_budget::Charged<Vec<u8>>, CertificateReadError> {
     use crate::net::resource_budget::{BudgetError, ResourceReservation};
 
+    let budget = owner.budget();
     let path_bytes = path.as_os_str().len();
     let path_charge = ResourceReservation::try_new(budget.clone(), path_bytes)?;
     let path = path_charge.bind(path);
     let worker_budget = budget.clone();
-    let handle = crate::rt::resource_owner::spawn_blocking_owned(budget, move || {
+    let handle = crate::rt::resource_owner::spawn_blocking_owned(owner, move || {
         read_certificate_file_accounted(path.get(), worker_budget)
     })
     .map_err(|_| CertificateReadError::Budget(BudgetError::Unavailable))?;

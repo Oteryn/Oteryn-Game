@@ -327,3 +327,9 @@ complete_tls_accounting: NOT_PROVEN
 blocker: rustls_private_deframer_grows_backing_before_sqlx_can_reserve_or_observe_capacity
 next_action: protect a rustls deframer pre-growth same-ledger owner hook and necessary public wiring; do not start PostgreSQL qualification
 ```
+
+Follow-up repair preserves the runtime-owner Arc across all certificate loads in
+one operation. Tokio's protected owner queue compares owner identity; recreating
+the adapter per load would incorrectly reject a funded second certificate/key
+load. Sequential owned-job and sequential loader controls now pass. The exact
+rustls deframer `SHARED_LEASE_REQUIRED` boundary above remains unchanged.
