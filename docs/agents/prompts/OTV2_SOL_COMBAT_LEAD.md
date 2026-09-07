@@ -25,7 +25,7 @@ Own deep reasoning for the first authoritative Combat/death/loot/XP/pickup integ
 2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/prompts/OTV2_IMPL_VSL_COMBAT.md`, current Ability/Interaction/Durability/Domain/Content/SIM contracts and all exercised item/value/resource rules.
 3. Without merged Movement plus exact current allocation, remain `READ_ONLY_PREPARATION` or `WAITING_DEPENDENCY`.
 
-The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
 
 ## Read-only preparation
 

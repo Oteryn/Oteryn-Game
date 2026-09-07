@@ -4,28 +4,23 @@
 task_id: OTV2-20260907-remediation-wp7-ability
 title: Repair Ability effect magnitude boundary validation
 mode: REPAIR
-status: awaiting_review
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: fix/remediation-wp7-ability-364
+branch: null
 issue: 364
 pr: 370
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
 base_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
-head_sha: pending_coherent_commit
-final_head_sha: null
+head_sha: 557e42dcddcc75a7e3d203c1d848100211a60984
+final_head_sha: 557e42dcddcc75a7e3d203c1d848100211a60984
 owner: WP7_ABILITY_REPAIR
 created_at: 2026-09-07
 updated_at: 2026-09-07
-owned_paths:
-  - apps/game-server/src/ability/effects.rs
-  - apps/game-server/src/ability/plan.rs
-  - apps/game-server/src/ability/commit.rs
-  - apps/game-server/tests/ability_engine.rs
-  - docs/agents/tasks/active/OTV2-20260907-remediation-wp7-ability.md
+owned_paths: []
 public_contracts: []
 depends_on: []
-blocks: [WP7_Ability_correctness]
+blocks: []
 external_repositories: []
 ```
 
@@ -65,17 +60,29 @@ Local candidate evidence (all PASS on 2026-09-07):
 
 The focused regression constructs zero and negative `Effect::Damage` and `Effect::Heal` variants directly across `EffectPlan::new` and `EffectPlan::immediate`. A private commit-module harness exercises the pre-mutation apply guard without widening visibility. Existing positive-effect ordering, atomic overflow behavior, sequential retry progress, and occurrence replay tests remain green. This is bounded WP7B kernel repair evidence only; it does not prove production reachability or complete WP7/G1.
 
+- Exact delivery head `557e42dcddcc75a7e3d203c1d848100211a60984`: Merge gate `34102762646`, Architecture semantic audit `34102762682` and Agent governance `34102762609` passed.
+- Full Merge Queue run `34103269624` passed; PR #370 squash-merged as `728f25461d5a2b029ed60f7db4b14151d31776d7` and the exact five-file result was read back from protected `main@728f25461d5a2b029ed60f7db4b14151d31776d7`. Durable evidence: PR #370 comment `5568189238`.
+
+## Self-review and closeout
+
+- Exact delivery head: `557e42dcddcc75a7e3d203c1d848100211a60984`.
+- Full changed-file and effective-diff review: PASS; zero open material findings, no unresolved review threads and no scope outside the five allocated files.
+- Independent review: NOT_REQUIRED under the META-owned policy for this bounded local Ability-kernel repair; exact-head repository gates and Merge Queue passed.
+- Ownership: released after protected-main readback; the implementation branch has no continuing provenance role.
+- Branch disposition: merged task branch deleted; live matching-ref readback returned no branch.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: implemented and locally validated bounded WP7B magnitude guards
-status: awaiting_review
-branch: fix/remediation-wp7-ability-364
-head_sha: pending_coherent_commit
+last_progress: PR 370 integrated through successful Merge Queue and read back from protected main; task archived and ownership released
+status: completed
+branch: null
+head_sha: 557e42dcddcc75a7e3d203c1d848100211a60984
+final_head_sha: 557e42dcddcc75a7e3d203c1d848100211a60984
 pr: 370
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 owner_action_required: null
 blocker: null
-next_action: publish the coherent commit and let the remediation lead inspect the exact remote head
+next_action: null
 ```

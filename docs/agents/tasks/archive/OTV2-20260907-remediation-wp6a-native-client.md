@@ -4,27 +4,24 @@
 task_id: OTV2-20260907-remediation-wp6a-native-client
 title: Repair native client local lifecycle and PKCE bounds
 mode: REPAIR
-status: implementing
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: fix/remediation-wp6a-native-client-364
+branch: null
 issue: 364
 pr: 368
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
 base_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
-head_sha: 4e7b5284c410b3ca9e0f425755c66a1b97483a4d
-final_head_sha: null
+head_sha: 4282af5f3475a3af70dff0b35904b005012d51c1
+final_head_sha: 4282af5f3475a3af70dff0b35904b005012d51c1
 final_head_frozen_at: null
 owner: WP6A_NATIVE_CLIENT_REPAIR
 created_at: 2026-09-07
 updated_at: 2026-09-07
-owned_paths:
-  - apps/client/src/windows_shell.rs
-  - crates/identity/src/lib.rs
-  - docs/agents/tasks/active/OTV2-20260907-remediation-wp6a-native-client.md
+owned_paths: []
 public_contracts: []
 depends_on: []
-blocks: [WP6_local_correctness]
+blocks: []
 cross_repository_coordination_id: null
 external_repositories: []
 ```
@@ -53,8 +50,8 @@ NOT_APPLICABLE: this task changes no gameplay/session authority, PREPARE/COMMIT,
 - [x] An existing Window+renderer resumes through the renderer lifecycle; suspended or zero-size state does not request/render a frame.
 - [x] Normal smoke/close remains successful and no new retry loop is introduced.
 - [x] PKCE rejects 31 and 97 entropy bytes, accepts 32 and 96, and produces verifier lengths 43 and 128 respectively without logging/exposing verifier material.
-- [ ] Focused tests, Rust 1.94 fmt/Clippy and applicable Windows exact-head CI pass.
-- [ ] Complete three-file diff is independently reviewed only if current policy/risk warrants it; no gameplay/G1 claim is made.
+- [x] Executed focused identity/client tests, Rust 1.94 fmt/Clippy and hosted exact-head Windows build/strict Clippy/visible pre-native smoke pass; direct OS minimize/restore callbacks and Windows-only unit tests remain NOT_EXECUTED.
+- [x] Complete three-file diff is reviewed under current policy; no gameplay/G1 claim is made.
 
 ## Excluded scope
 
@@ -87,48 +84,49 @@ PKCE now accepts only 32..=96 bytes and reports a non-material-bearing `EntropyL
 ### E2E
 
 - scenario: NOT_APPLICABLE to gameplay E2E; this slice is local executable lifecycle/identity correctness
-- result: Windows OS callbacks and visible shell smoke cannot be deterministically exercised on this Linux host. Pure helper regressions cover first-fatal retention and configured-only redraw eligibility without allocating a renderer; hosted Windows build/Clippy/smoke remains open and no local E2E claim is made.
+- result: Windows OS callbacks could not be deterministically exercised on the Linux implementation host. Pure helper regressions cover first-fatal retention and configured-only redraw eligibility without allocating a renderer; hosted Windows build/Clippy/visible pre-native smoke later passed in exact-head CI. Direct OS minimize/restore callbacks and Windows-only unit tests remain NOT_EXECUTED, and no gameplay E2E claim is made.
 
 ### Exact-head CI
 
-- final head: pending publication commit
+- final head: `4282af5f3475a3af70dff0b35904b005012d51c1`
 - trigger source: pull_request
-- workflow/run/job: pending new exact-head pull-request generation for #368
-- classification: expected SHARED/client paths
-- result: OPEN — the local cross-target attempt `cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings` could not qualify Windows because this Linux environment has no MSVC toolchain; after installing the Rust target, `aws-lc-sys` rejected the host GNU C compiler. The hosted Windows build/strict Clippy/visible `--smoke` cells remain required.
+- workflow/run/job: Merge gate `34102705942`; hosted Windows job `101680834066`; Linux job `101680834072`
+- classification: SHARED/client paths
+- result: PASS — Windows build, strict Clippy and visible pre-native smoke passed; Linux validation passed. Direct OS minimize/restore callbacks and Windows-only unit tests were not executed and are not claimed.
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: remediation lead after worker publication
-- material findings: pending
-- verdict: pending
+- exact head: `4282af5f3475a3af70dff0b35904b005012d51c1`
+- method/reviewer: remediation lead complete three-file effective-diff review
+- material findings: zero open
+- verdict: PASS
 
 ## Independent review
 
-- required: pending under current META AI review policy
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- required: completed on the stable risk-bearing source candidate; no repeat review required after source-neutral upstream reconciliation
+- exact head: `8c716055469c6430851ea419c6b2cbc4708c24be`; final delivery head `4282af5f3475a3af70dff0b35904b005012d51c1` preserves the reviewed task-source blobs
+- method/auditor: Codex independent review
+- material findings: none
+- verdict: PASS; final reconciliation changed only upstream ancestry, and final-head self-review/blob comparison found no risk-bearing source change requiring re-review
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
-- protected auto-merge: no integration before acceptance
-- merge commit/result: pending
-- ownership release: pending
+- changed-file review: PASS — exact three allocated files; protected-main blob readback matches
+- unresolved review threads: none
+- protected auto-merge: full Merge Queue `34103516674` SUCCESS
+- merge commit/result: PR #368 squash-merged as `686cf85cac3e7f66a473527c198705466dc5c3bd` and read back from protected main
+- ownership release: complete; broader F04/F05/WP6 and G1 remain open
+- branch disposition: merged task branch deleted; live matching-ref readback returned no branch
 
 ## Context checkpoint
 
 ```yaml
-last_progress: WP6A implementation and local validation complete within exact three-path allocation
-status: implementing
-branch: fix/remediation-wp6a-native-client-364
-head_sha: 4e7b5284c410b3ca9e0f425755c66a1b97483a4d
+last_progress: PR 368 integrated through successful Merge Queue and read back from protected main; bounded F06 task archived and ownership released
+status: completed
+branch: null
+head_sha: 4282af5f3475a3af70dff0b35904b005012d51c1
 pr: 368
-final_head_sha: null
+final_head_sha: 4282af5f3475a3af70dff0b35904b005012d51c1
 final_head_frozen_at: null
 ci_trigger_source: null
 ci_check_generation: null
@@ -143,7 +141,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: remediation lead exact-head inspection after publication
+owner_action_required: null
 blocker: null
-next_action: publish one coherent commit to PR #368 and verify its remote exact head
+next_action: null
 ```

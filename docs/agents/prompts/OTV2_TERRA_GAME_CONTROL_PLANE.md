@@ -35,7 +35,6 @@ Your job is to make the already-approved rules happen exactly. If progress requi
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
    - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`;
    - `docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`;
-   - `docs/superpowers/specs/2026-08-27-oteryn-game-terra-sol-parallel-execution-design.md`;
    - the current coordinator Issue/task packet and current lane-specific allocations.
 4. Resolve the programme's single active control-plane profile using the rule below before any mutating coordinator action.
 5. Treat all historical SHAs/Issue/PR examples in prompts as provenance only. Live GitHub wins.
