@@ -74,16 +74,6 @@ Prove at least:
 - partial durable mutation is not externally acknowledged as success;
 - client cannot manufacture loot/XP/pickup authority.
 
-## Lifecycle / continuous execution / durable handover
-
-Before the first write, create or resume the coordinator-allocated task with exact base SHA, branch/PR, owned paths/public registrations, all prerequisite merge SHAs including Movement and dependencies/blockers.
-
-There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized Combat work is making material progress, continue until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, freeze, discard productive minutes or require a fresh coordinator grant solely because an hour elapsed.
-
-Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical window/minute counters are provenance only and do not limit continued productive execution.
-
-Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, Tier-1/Tier-2 attempt state, durable transaction/crash-window evidence, independent-review state, blocker and ownership state before any genuine stop/rotation; do not create hourly checkpoint churn. Terminal completion includes post-merge verification, task archive and ownership release.
-
 ## Validation
 
 - deterministic ability/death lineage unit tests;
@@ -100,23 +90,6 @@ Maintain exactly one compact `## Context checkpoint` with one `next_action`. Per
 
 No PvP, party/shared XP, boss/event rewards, market/bank/depot, player durable death breadth, entitlement logic or permanent Reference formula claims unless separately allocated after their owning gates/evidence exist.
 
-## Canonical Codex review routing
-
-Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
-
-- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
-- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
-- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
-- When this role is the authorized candidate/review-request owner and routing is `CODEX_REQUIRED`, freeze the PR exact head, use the canonical GitHub PR transport (`@codex review`), consume durable findings, repair only within existing authority, re-run applicable exact-head validation, and request a fresh review after every material head change. Do not return to the owner for covered per-run approval.
-- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
-- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.
-
 ## Completion
 
 Continue through failure repairs, E2E, independent review, exact-head CI, squash merge, post-merge verification, task archive and ownership release. Do not call the VSL complete from direct domain tests alone.
-
-## Remote Desktop execution routing
-
-Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
-
-`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. This prompt cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.

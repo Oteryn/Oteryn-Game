@@ -60,18 +60,6 @@ Do not add an empty `protocol-oteryn`, `game-server`, persistence or session cra
 
 No gameplay movement/combat/content semantics, no gameplay command/state ID allocation, no final database schema, no permanent content format, no broad client gameplay path, no Reference formulas, no production deployment.
 
-## Lifecycle / continuous execution / durable handover
-
-Before the first write, create or resume the lane task record named by the coordinator allocation. Record the exact base SHA, branch/PR, `owned_paths`, public contracts/registries, dependencies and blockers.
-
-There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized bootstrap work is making material progress, continue until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, freeze, discard productive minutes or require a fresh coordinator grant solely because an hour elapsed.
-
-Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical window/minute counters are provenance only and do not limit continued productive execution.
-
-Keep exactly one compact `## Context checkpoint` with one `next_action`; persist it before a genuine stop/rotation/blocker response and when it materially improves recovery, not on an hourly schedule.
-
-Terminal completion requires post-merge verification, task archive and ownership release. Never leave this lane's advisory path locks active after completion.
-
 ## Validation
 
 At minimum, on final exact head:
@@ -89,23 +77,6 @@ At minimum, on final exact head:
 
 If this PR changes protocol/session/security semantics rather than only making room for later implementation, apply root independent-review policy. Do not misclassify a high-risk semantic change as bootstrap bookkeeping.
 
-## Canonical Codex review routing
-
-Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
-
-- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
-- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
-- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
-- When this role is the authorized candidate/review-request owner and routing is `CODEX_REQUIRED`, freeze the PR exact head, use the canonical GitHub PR transport (`@codex review`), consume durable findings, repair only within existing authority, re-run applicable exact-head validation, and request a fresh review after every material head change. Do not return to the owner for covered per-run approval.
-- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
-- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.
-
 ## Completion
 
 Continue through repairs, exact-head validation, review, squash merge, post-merge verification, task archive and ownership release. Do not mark bootstrap complete while policy/tooling and real workspace shape disagree.
-
-## Remote Desktop execution routing
-
-Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
-
-`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. This prompt cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.

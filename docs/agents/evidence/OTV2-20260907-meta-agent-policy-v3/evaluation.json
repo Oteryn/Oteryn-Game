@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "task": "OTV2-20260907-meta-agent-policy-v3",
+  "issue": 367,
+  "baseline_game_commit": "a6f69427d663539c6a8e23f166e69147b66ec078",
+  "bound_meta_commit": "5ed3f14400af450b5875c091e443da70f2d67ab9",
+  "policy_version": "3.0.0",
+  "representative_cases": [
+    "domain core scope and item semantics",
+    "durability fencing and PostgreSQL acceptance",
+    "multichannel ChannelId semantics",
+    "native client protocol and GameSession boundary",
+    "stale META pin ancestry rejection",
+    "unprotected META main rejection"
+  ],
+  "evidence_levels": {
+    "contract_checks": {
+      "status": "PASS",
+      "evidence": "central binding/overlay/task validation; focused authentication and invariant regressions; Game governance and repository policy"
+    },
+    "adoption_delivery": {
+      "status": "PENDING_EXACT_HEAD_CI",
+      "evidence": "root bootstrap directs clients to the binding; the existing Agent governance workflow invokes the authenticated central consumer and lifecycle-derived prompt set"
+    },
+    "behavior": {
+      "status": "NOT_EVALUATED",
+      "evidence": "no controlled same-model before/after model trials have run; deterministic tests are not labeled as model behavior"
+    }
+  },
+  "source_volume": {
+    "surfaces": "47 lifecycle-reusable prompts plus root and docs/agents bootstrap and two local prompt extensions",
+    "before_bytes": 539335,
+    "after_bytes": 356094,
+    "bytes_removed": 183241,
+    "byte_reduction_percent": 34.0,
+    "before_lines": 9578,
+    "after_lines": 8314,
+    "lines_removed": 1264,
+    "line_reduction_percent": 13.2
+  },
+  "telemetry": {
+    "token_usage": "NOT_AVAILABLE",
+    "api_cost": "NOT_AVAILABLE",
+    "claim": "No token or API cost saving is claimed from source-volume reduction."
+  },
+  "disposition": "Candidate requires exact-head CI and independent review; behavior remains NOT_EVALUATED until real controlled model trials exist.",
+  "validator_source_volume": {
+    "before_files": 6,
+    "after_files": 2,
+    "before_bytes": 139778,
+    "after_bytes": 11971,
+    "bytes_removed": 127807,
+    "before_lines": 3373,
+    "after_lines": 263,
+    "lines_removed": 3110
+  }
+}

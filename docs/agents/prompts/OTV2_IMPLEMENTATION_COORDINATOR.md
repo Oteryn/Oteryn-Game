@@ -112,18 +112,6 @@ These may overlap only when exact allocations prove no path/registry ownership c
 - **Analytics** only after concrete producer event families exist.
 - **Content Format Spike** produces evidence/dossier only and cannot select the permanent format without later owner acceptance.
 
-## Lifecycle / continuous execution / durable handover
-
-Before the first programme write, create or resume a coordinator task record with exact base SHA, branch/PR, owned coordinator paths, dependencies and blockers. For every worker allocation require the same bounded task visibility and ownership scope.
-
-There is **no wall-clock execution budget** for productive authorized coordinator or worker implementation. Do not stop, rotate, discard remaining time or require a fresh grant merely because 60/120 minutes or any other elapsed-time threshold was reached. Continue useful work until the task/wave is complete or reaches a genuine evidence-backed blocker, owner stop or other real authority/safety boundary.
-
-Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical task/window counters remain provenance only and do not constrain continued productive execution.
-
-Keep one compact `## Context checkpoint` in every active task with exactly one `next_action`. Persist it before a genuine stop/rotation/blocker response and when it materially improves recovery; do not create hourly checkpoint churn.
-
-Terminal completion of each task requires task archive plus ownership release. Do not leave active-task locks behind after merge/closeout.
-
 ## Review and safety gates
 
 Apply root `AGENTS.md` independent-review policy exactly. In particular, protocol/session/admission/persistence/item/loot/value/multichannel/fencing changes require genuinely independent exact-head review.
@@ -174,19 +162,3 @@ Elapsed implementation time is not a stop condition. Do not stop for routine que
 Do not report a lane or wave complete from code compilation alone. Completion requires implementation + tests + required E2E + review + exact-head CI + merge + archive/ownership release.
 
 Do not report `Reference parity` or `production ready` unless those separate gates are actually proven.
-## Canonical Codex review routing
-
-Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
-
-- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
-- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
-- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
-- This coordinator/control-plane role is not the `ALLOCATED_LANE_LEAD` review-request owner for a lane candidate. Missing, stale or failed required Codex evidence becomes `REVIEW_RECONCILIATION_REQUIRED` routed to the owning lane lead; do not trigger Codex on that lane's behalf and do not ask the owner to relay the prompt.
-- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
-- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.
-
-## Remote Desktop execution routing
-
-Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
-
-`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. This prompt cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.

@@ -18,7 +18,7 @@ The Sol Supervising Architect is not a routine coding lane. It resolves `ARCHITE
 
 ## Owner execution/status guidance
 
-- `OTV2_OWNER_EXECUTION_STATUS_ADVISOR.md` — read-only owner-facing live execution guide. **Short invocation: `Oteryn: owner execution guide`.** Recommended: separate chat, GPT-5.6 Sol, Extra High / highest available.
+- `OTV2_OWNER_EXECUTION_STATUS_ADVISOR.md` — read-only owner-facing live execution guide. **Short invocation: `Oteryn: owner execution guide`.**
 
 This advisor does not coordinate or mutate. It freshly resolves protected `main`, the active control plane, active task/Issue/PR/head/check/review state and the scheduler, then tells the owner what to run in Work versus separate chats, which model/effort to use, what is terminally done, what is active/blocked/ready next, which roles must not launch yet, and exactly one next action. It does not trigger Codex or Work Auditor; it only recommends the canonical owning role when review/audit is required.
 
@@ -52,13 +52,13 @@ If exactly one active profile cannot be proven, all control-plane mutation fails
 
 Historical coordinator Issue numbers in these prompts are provenance only; always resolve the current coordinator lifecycle from live GitHub before acting.
 
-### Terra High deterministic control plane + Sol leads
+### Deterministic control plane + specialist leads
 
-- `OTV2_TERRA_GAME_CONTROL_PLANE.md` — ChatGPT Work / Terra High deterministic control plane with **zero technical or architecture discretion**. **Short invocation: `Oteryn: terra game coordinator`.**
+- `OTV2_TERRA_GAME_CONTROL_PLANE.md` — deterministic Game control plane with **zero technical or architecture discretion**. **Short invocation: `Oteryn: terra game coordinator`.**
 - `OTV2_SOL_DURABILITY_LEAD.md` — deep Durability lane reasoning/implementation and the **single mutating writer** for its canonical Durability branch/PR. **`Oteryn: sol durability lead`.**
-- `OTV2_SOL_DURABILITY_AUTHORITY_ANALYST.md` — strict read-only Foundation/current-authority analysis for the live Durability candidate. Recommended separate chat, GPT-5.6 Sol High. **`Oteryn: sol durability authority analyst`.**
-- `OTV2_SOL_DURABILITY_CONTINUITY_ANALYST.md` — strict read-only continuity/protection and replacement-transaction analysis for the live Durability candidate. Recommended separate chat, GPT-5.6 Sol High. **`Oteryn: sol durability continuity analyst`.**
-- `OTV2_SOL_DURABILITY_QUALIFICATION_ANALYST.md` — strict read-only whole-diff/regression/main-drift/qualification analysis for the live Durability candidate. Recommended separate chat, GPT-5.6 Sol High. **`Oteryn: sol durability qualification analyst`.**
+- `OTV2_SOL_DURABILITY_AUTHORITY_ANALYST.md` — strict read-only Foundation/current-authority analysis for the live Durability candidate. **`Oteryn: sol durability authority analyst`.**
+- `OTV2_SOL_DURABILITY_CONTINUITY_ANALYST.md` — strict read-only continuity/protection and replacement-transaction analysis for the live Durability candidate. **`Oteryn: sol durability continuity analyst`.**
+- `OTV2_SOL_DURABILITY_QUALIFICATION_ANALYST.md` — strict read-only whole-diff/regression/main-drift/qualification analysis for the live Durability candidate. **`Oteryn: sol durability qualification analyst`.**
 - `OTV2_SOL_SERVER_SEAM_LEAD.md` — production Server Seam lead; read-only until exact durable prerequisite/allocation is ready. **`Oteryn: sol server seam lead`.**
 - `OTV2_SOL_CLIENT_QA_LEAD.md` — native Client + truthful Tier 1/Tier 2 QA lead. **`Oteryn: sol client qa lead`.**
 - `OTV2_SOL_MOVEMENT_LEAD.md` — Movement lead gated by current Client/QA and the current resource/dependency closure. **`Oteryn: sol movement lead`.**
