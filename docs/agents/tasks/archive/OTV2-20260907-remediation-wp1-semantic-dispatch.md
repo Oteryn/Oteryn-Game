@@ -50,7 +50,7 @@ No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/produc
 ## Validation, review and closeout
 
 - Exact delivery head `c1d8639b503c1c519b7774e918ef2978dce0167c` (tree `5c9d3b124192cd5fbcd5c7be14391f998d8c2b90`) passed 37 focused semantic-audit tests, including the cfg-shadow and comment-brace scanner repairs.
-- Independent Codex deep review completed clean with no findings: PR #371 comment `5570057820`; root qualification `5570096888`.
+- Independent Codex deep review reported no major issues: PR #371 comment `5570057820`; root qualification `5570096888`.
 - Exact-head Merge gate `34116962490`, Architecture semantic audit `34116962613` and Agent governance `34116962923` passed.
 - Full Merge Queue run `34118019006` passed; PR #371 squash-merged as `160dff0eab12df4e0c61d42d3591460d171af44b`.
 - All four delivery blobs, including task blob `aa3299c06c5f1f93daae53ec423787f528653e3f`, were read back equal from protected `main@160dff0eab12df4e0c61d42d3591460d171af44b`. Durable proof: PR #371 comment `5570219653`.

@@ -45,7 +45,8 @@ PROVEN on admission main: policy `members` and `paths` are parsed into independe
 ## Validation
 
 - PROVEN by source inventory: the 21 checked-in policy package/path pairs match the package names in their declared Cargo manifests; neither policy array contains duplicates.
-- Local Rust execution is unavailable in this workspace because no `cargo`, `rustc` or `rustfmt` binary is installed. Exact test and formatting evidence must come from the canonical GitHub Actions jobs on the published head.
+- Historical implementation-host limitation: Rust execution was initially unavailable because that workspace had no `cargo`, `rustc` or `rustfmt`; no PASS was claimed from that environment.
+- Later local qualification on exact head `40c6443db2a69ebd48f9656e4a188717ef353cbe` passed Rust 1.94 formatting, strict Clippy, all 9 focused tests and the real workspace checker. Source evidence: PR #372 comment `5568395752` and lane evidence `5568359601`.
 - Exact delivery head `40c6443db2a69ebd48f9656e4a188717ef353cbe`: Merge gate `34105636826`, Architecture semantic audit `34105394810` and Agent governance `34105637224` passed.
 - Full Merge Queue run `34105424118` passed; PR #372 squash-merged as `6a83ab15d51be5b05adcd31baf48380172b97e7d`. The task blob `b205dcf6c72f45a69df10a31411426fee9fb6ed1` and checker blob `3e4284235bee11588b6f00afb582789f13bd6373` were read back from protected `main` (subsequently `15164c38a2775e45eaff4001fddddbabf4b63ab6`). Durable evidence: PR #372 comment `5568575851`.
 
