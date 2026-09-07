@@ -10,7 +10,7 @@ issue: 388
 base_branch: main
 branch: null
 pr: 389
-admission_base_sha: a793457cf3001df37109ac9958192b5d613ead67
+admission_base_sha: a793457cf3001df37109acb2c4b4a772b53db97a
 implementation_merge_sha: 6dd0a3a6a6df8df8c7e09843d66525057ebf1c55
 owner: null
 created_at: 2026-09-07T16:30:37Z
