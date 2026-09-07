@@ -388,23 +388,26 @@ impl Spawner {
         owner: Arc<dyn BlockingOwner>,
         config: BlockingOwnerConfig,
     ) -> Result<(), OwnedSpawnError> {
-        let queue = shared
-            .owned_queue
-            .as_mut()
-            .expect("owned queue initialized");
-        queue.queue.push_back(task);
-
         if !shared.owned_worker_running {
-            let bookkeeping = std::mem::size_of::<thread::JoinHandle<()>>()
+            let Some(bookkeeping) = std::mem::size_of::<thread::JoinHandle<()>>()
                 .checked_add(std::mem::size_of::<usize>())
                 .and_then(|value| value.checked_add(config.worker_stack_size))
-                .ok_or(OwnedSpawnError::AccountingOverflow)?;
-            let worker_charge = task::OterynCharge::reserve(owner.clone(), bookkeeping)?;
+            else {
+                task.task.shutdown();
+                return Err(OwnedSpawnError::AccountingOverflow);
+            };
+            let worker_charge = match task::OterynCharge::reserve(owner.clone(), bookkeeping) {
+                Ok(charge) => charge,
+                Err(error) => {
+                    task.task.shutdown();
+                    return Err(error);
+                }
+            };
             let id = shared.worker_thread_index;
-            let shutdown_tx = shared
-                .shutdown_tx
-                .clone()
-                .ok_or(OwnedSpawnError::RuntimeShuttingDown)?;
+            let Some(shutdown_tx) = shared.shutdown_tx.clone() else {
+                task.task.shutdown();
+                return Err(OwnedSpawnError::RuntimeShuttingDown);
+            };
             let builder = thread::Builder::new()
                 .name((self.inner.thread_name)())
                 .stack_size(config.worker_stack_size);
@@ -437,16 +440,17 @@ impl Spawner {
                     shared.owned_worker_running = true;
                 }
                 Err(error) => {
-                    let task = shared
-                        .owned_queue
-                        .as_mut()
-                        .and_then(|queue| queue.queue.pop_back())
-                        .expect("just-enqueued owned task");
                     task.task.shutdown();
                     return Err(OwnedSpawnError::ThreadSpawn(error));
                 }
             }
         }
+        shared
+            .owned_queue
+            .as_mut()
+            .expect("owned queue initialized")
+            .queue
+            .push_back(task);
         self.inner.owned_condvar.notify_one();
         Ok(())
     }
