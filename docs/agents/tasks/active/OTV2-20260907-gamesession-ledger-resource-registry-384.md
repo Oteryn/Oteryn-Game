@@ -7,6 +7,7 @@ mode: CONTRACT
 status: waiting
 repository: Oteryn/Oteryn-Game
 base_branch: main
+issue: 384
 branch: agent/gamesession-ledger-resource-registry-384
 pr: null
 base_sha: null
@@ -15,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: unassigned_until_protected_allocation
 created_at: 2026-09-07T14:00:52Z
-updated_at: 2026-09-07T14:00:52Z
+updated_at: 2026-09-07T14:06:32Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
