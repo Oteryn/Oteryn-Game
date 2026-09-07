@@ -333,3 +333,29 @@ one operation. Tokio's protected owner queue compares owner identity; recreating
 the adapter per load would incorrectly reject a funded second certificate/key
 load. Sequential owned-job and sequential loader controls now pass. The exact
 rustls deframer `SHARED_LEASE_REQUIRED` boundary above remains unchanged.
+
+## Window8 protected rustls deframer owner successor
+
+Protected #424 released the exact rustls 0.23.43 deframer amendment and Work
+activated it for this existing worker. The checksum-verified published package is
+vendored with only `buffers.rs`, `conn.rs`, `lib.rs` and provenance authored.
+The incoming deframer now reserves the complete prospective exact-capacity
+backing on the existing owner ledger before allocation and reader invocation,
+retains old/new charges through replacement overlap, releases old custody only
+after old backing destruction, and retains resized custody across read errors and
+WouldBlock until connection drop. Unhooked and no-std behavior remains unchanged.
+
+Focused SQLx tests exercise installation on a real rustls `ClientConnection`,
+funded WouldBlock retention/drop release, and denial before reader invocation.
+`TLS_BLOCKING_OWNER = PROVEN` remains narrow and the deframer-owner hook is
+`PROVEN`. This is not complete TLS or WP3 acceptance.
+
+```yaml
+last_progress: implemented and qualified the protected rustls deframer exact-capacity owner hook
+status: implementation_in_progress
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: compose remaining accepted TLS configuration, decoded structures, session/cache and handshake overlap on the same ledger, then obtain separate TLS-positive and configured PostgreSQL17.6 evidence
+remaining_acceptance_cells: complete TLS configuration/decoder/session-cache/handshake-overlap custody; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
+```

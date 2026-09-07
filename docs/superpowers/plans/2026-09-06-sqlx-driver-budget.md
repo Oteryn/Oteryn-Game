@@ -150,3 +150,12 @@ the same ledger before mutation and retain custody through actual free/transfer.
 Do not copy a private capacity schedule, reserve opaque magic bytes, weaken TLS,
 or activate the include-only PostgreSQL target.  Configuration/decoder/session
 cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
+
+## Window8 protected rustls deframer hook
+
+- [x] Import the checksum-verified complete rustls 0.23.43 published package and preserve all bytes outside the protected authored allowlist.
+- [x] Reserve exact prospective deframer capacity before allocation/reader invocation and retain old/new overlap until old backing destruction.
+- [x] Prove denial preservation, read-error/WouldBlock retention, drop release, same-ledger SQLx adaptation, unhooked behavior and no-std compilation.
+- [ ] Complete configuration, decoder, session/cache and handshake-overlap custody on the same ledger.
+- [ ] Run separate actual TLS-positive and configured PostgreSQL17.6 qualification only after complete TLS ownership is proven.
+- [ ] Obtain independent exact-head high-risk review, canonical CI/MQ and protected readback before any shared-target release or WP3 acceptance claim.

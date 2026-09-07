@@ -444,3 +444,26 @@ impl HandshakeInputBound {
             .ok_or(BudgetError::Overflow)
     }
 }
+
+/// Same-ledger adapter for rustls's private incoming deframer backing.
+pub(super) struct DeframerBudgetOwner(
+    pub(super) Arc<dyn crate::net::resource_budget::ResourceBudget>,
+);
+
+impl std::fmt::Debug for DeframerBudgetOwner {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("DeframerBudgetOwner")
+    }
+}
+
+impl rustls::DeframerBufferOwner for DeframerBudgetOwner {
+    fn try_reserve(&self, bytes: usize) -> Result<(), rustls::DeframerBufferError> {
+        self.0
+            .try_reserve(bytes)
+            .map_err(|_| rustls::DeframerBufferError)
+    }
+
+    fn release(&self, bytes: usize) {
+        self.0.release(bytes);
+    }
+}

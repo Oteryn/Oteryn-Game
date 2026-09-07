@@ -347,3 +347,51 @@ fn owned_certificate_loader_is_funded_or_denied_without_fallback() {
     drop(runtime);
     assert_eq!(funded.used.load(Ordering::Acquire), 0);
 }
+
+#[cfg(feature = "_tls-rustls")]
+#[test]
+fn rustls_deframer_owner_uses_the_operation_ledger() {
+    use super::tls_rustls::DeframerBudgetOwner;
+    use std::io::{self, Read};
+    use std::sync::Arc;
+
+    struct WouldBlock;
+    impl Read for WouldBlock {
+        fn read(&mut self, _buf: &mut [u8]) -> io::Result<usize> {
+            Err(io::ErrorKind::WouldBlock.into())
+        }
+    }
+
+    let budget = ledger(4096);
+    let owner: Arc<dyn rustls::DeframerBufferOwner> = Arc::new(DeframerBudgetOwner(budget.clone()));
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let config = rustls::ClientConfig::builder_with_provider(provider)
+        .with_safe_default_protocol_versions()
+        .unwrap()
+        .with_root_certificates(rustls::RootCertStore::empty())
+        .with_no_client_auth();
+    let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
+    let mut connection = rustls::ClientConnection::new(Arc::new(config), name).unwrap();
+    connection.set_deframer_buffer_owner(owner).unwrap();
+
+    let error = connection.read_tls(&mut WouldBlock).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::WouldBlock);
+    assert_eq!(budget.used.load(Ordering::Acquire), 4096);
+    drop(connection);
+    assert_eq!(budget.used.load(Ordering::Acquire), 0);
+
+    let denied = ledger(4095);
+    let owner: Arc<dyn rustls::DeframerBufferOwner> = Arc::new(DeframerBudgetOwner(denied.clone()));
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let config = rustls::ClientConfig::builder_with_provider(provider)
+        .with_safe_default_protocol_versions()
+        .unwrap()
+        .with_root_certificates(rustls::RootCertStore::empty())
+        .with_no_client_auth();
+    let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
+    let mut connection = rustls::ClientConnection::new(Arc::new(config), name).unwrap();
+    connection.set_deframer_buffer_owner(owner).unwrap();
+    let error = connection.read_tls(&mut WouldBlock).unwrap_err();
+    assert_eq!(error.kind(), io::ErrorKind::Other);
+    assert_eq!(denied.used.load(Ordering::Acquire), 0);
+}
