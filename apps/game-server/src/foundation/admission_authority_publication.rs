@@ -2207,3 +2207,221 @@ impl PostGraceClaimTransitionV1 {
         Ok(Self { evidence })
     }
 }
+
+pub(super) fn validate_complete_reconnect_claims(
+    account: &str,
+    session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    claims: &[AdmissionAuthorityPublicationChangeV1],
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    validate_post_grace_claim_resource_fields(claims)?;
+    if claims.len() != 2 {
+        return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+    }
+    for claim in claims {
+        validate_release_change(claim, now)?;
+    }
+    validate_session_claims(account, session, claims)?;
+    match (&claims[0].state, &claims[1].state) {
+        (
+            AdmissionAuthorityGuardStateV1::Account { security, .. },
+            AdmissionAuthorityGuardStateV1::Character { eligible: true, .. },
+        ) if security.account_id == account
+            && security.allowed
+            && security.minimum_generation > 0 =>
+        {
+            Ok(())
+        }
+        _ => Err(AdmissionAuthorityPublicationErrorV1::Stale),
+    }
+}
+
+/// Additive complete replacement binding; no variant is added to legacy enums.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompleteReconnectClaimEvidenceV1 {
+    pub operation: super::CompleteReconnectOperationV1,
+    pub transition: AdmissionClaimTransitionEvidenceV1,
+}
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompleteReconnectClaimResolutionV1 {
+    pub current: super::CompleteReconnectSnapshotV1,
+    pub transition: AdmissionClaimTransitionEvidenceV1,
+}
+pub trait CompleteReconnectClaimSourceV1:
+    super::fnd04_verifier::recovery_source_sealed::Sealed
+{
+    fn prepare_complete_reconnect_claim(
+        &self,
+        operation: &super::CompleteReconnectOperationV1,
+        now: i64,
+    ) -> Result<CompleteReconnectClaimResolutionV1, AdmissionAuthorityPublicationErrorV1>;
+}
+/// Owner-issued exact conditional effects. Public history cannot construct this.
+#[derive(Debug)]
+pub struct CompleteReconnectClaimTransitionV1 {
+    evidence: CompleteReconnectClaimEvidenceV1,
+}
+impl CompleteReconnectClaimTransitionV1 {
+    pub fn prepare(
+        owner: &dyn CompleteReconnectClaimSourceV1,
+        authorization: &super::CompleteReconnectAuthorizationV1,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        let operation = authorization.operation();
+        operation
+            .validate_historical()
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        if operation.mode != super::CompleteReconnectModeV1::EarlyTerminalReplacement
+            || now != operation.prepared_at
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Invalid);
+        }
+        let resolved = owner.prepare_complete_reconnect_claim(operation, now)?;
+        resolved
+            .current
+            .validate_resources()
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        validate_post_grace_claim_resource_fields(&resolved.transition.predecessors)?;
+        validate_post_grace_claim_resource_fields(&resolved.transition.successors)?;
+        if resolved.current != operation.original || resolved.transition.prepared_at != now {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        let evidence = CompleteReconnectClaimEvidenceV1 {
+            operation: operation.clone(),
+            transition: resolved.transition,
+        };
+        evidence.validate_historical(now)?;
+        Ok(Self { evidence })
+    }
+    #[must_use]
+    pub const fn evidence(&self) -> &CompleteReconnectClaimEvidenceV1 {
+        &self.evidence
+    }
+    pub(super) fn validate_current(
+        &self,
+        operation: &super::CompleteReconnectOperationV1,
+        current: &super::CompleteReconnectSnapshotV1,
+        credential: &super::CompleteReconnectCredentialV1,
+        now: i64,
+    ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        if operation != &self.evidence.operation
+            || current.claims != self.evidence.transition.predecessors
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+        }
+        self.evidence.validate_historical(now)?;
+        validate_complete_replacement_pair(&self.evidence, credential, now)
+    }
+    pub(super) fn resume(
+        evidence: CompleteReconnectClaimEvidenceV1,
+        authorization: &super::CompleteReconnectAuthorizationV1,
+        now: i64,
+    ) -> Result<Self, AdmissionAuthorityPublicationErrorV1> {
+        evidence.validate_historical(now)?;
+        if &evidence.operation != authorization.operation() {
+            return Err(AdmissionAuthorityPublicationErrorV1::Conflict);
+        }
+        Ok(Self { evidence })
+    }
+}
+impl CompleteReconnectClaimEvidenceV1 {
+    pub fn validate_historical(
+        &self,
+        now: i64,
+    ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+        validate_post_grace_claim_resource_fields(&self.transition.predecessors)?;
+        validate_post_grace_claim_resource_fields(&self.transition.successors)?;
+        self.operation
+            .validate_historical()
+            .map_err(|_| AdmissionAuthorityPublicationErrorV1::Invalid)?;
+        if self.operation.mode != super::CompleteReconnectModeV1::EarlyTerminalReplacement
+            || self.transition.prepared_at != self.operation.prepared_at
+            || now < self.transition.prepared_at
+            || now > self.operation.original.candidate.prepared_deadline()
+        {
+            return Err(AdmissionAuthorityPublicationErrorV1::Invalid);
+        }
+        validate_complete_replacement_pair(
+            self,
+            &self.operation.credential,
+            self.transition.prepared_at,
+        )
+    }
+}
+fn validate_complete_replacement_pair(
+    evidence: &CompleteReconnectClaimEvidenceV1,
+    credential: &super::CompleteReconnectCredentialV1,
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    let invalid = AdmissionAuthorityPublicationErrorV1::Invalid;
+    let operation = &evidence.operation;
+    let recovery = &credential
+        .recovery()
+        .ok_or(invalid)?
+        .v2
+        .as_ref()
+        .ok_or(invalid)?
+        .security;
+    validate_release_pair(&evidence.transition, now)?;
+    validate_complete_reconnect_claims(
+        operation.identity.account_id(),
+        operation.original.session,
+        &evidence.transition.predecessors,
+        now,
+    )?;
+    if evidence.transition.predecessors != operation.original.claims {
+        return Err(invalid);
+    }
+    let AdmissionAuthorityGuardStateV1::Account {
+        security: history, ..
+    } = &evidence.transition.predecessors[0].state
+    else {
+        return Err(invalid);
+    };
+    if recovery.provenance.scope != Fnd04EvidenceScope::ExistingActorRecovery
+        || recovery.provenance.purpose != FreshEvidencePurposeV1::PlatformSecurity
+        || recovery.account_id != history.account_id
+        || !recovery.allowed
+        || recovery.minimum_generation < history.minimum_generation
+        || recovery.provenance.source_authority != history.provenance.source_authority
+        || recovery.provenance.source_revision <= history.provenance.source_revision
+        || recovery.provenance.source_observed_at < history.provenance.source_observed_at
+    {
+        return Err(invalid);
+    }
+    match (
+        &evidence.transition.successors[0].state,
+        &evidence.transition.predecessors[1].state,
+        &evidence.transition.successors[1].state,
+    ) {
+        (
+            AdmissionAuthorityGuardStateV1::Account {
+                presence: Some((character, session)),
+                ..
+            },
+            AdmissionAuthorityGuardStateV1::Character {
+                lease_generation: old,
+                ..
+            },
+            AdmissionAuthorityGuardStateV1::Character {
+                holder: Some(holder),
+                lease_generation: new,
+                eligible: true,
+                ..
+            },
+        ) if *character == operation.identity.character_id()
+            && *session == operation.identity.game_session_id()
+            && *holder == *session
+            && old == new
+            && *new
+                == operation
+                    .original
+                    .session
+                    .current_character_lease()
+                    .generation() =>
+        {
+            Ok(())
+        }
+        _ => Err(invalid),
+    }
+}

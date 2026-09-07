@@ -1,9 +1,7 @@
 # Anti-stall and execution budget
 
 ```yaml
-anti_stall_policy_version: 2.4-oteryn-v2
-normal_foreground_runtime_minutes: 60
-large_foreground_runtime_minutes: 120
+anti_stall_policy_version: 2.5-oteryn-v2
 no_progress_minutes: 15
 max_ordinary_ci_observations_per_exact_head: 2
 ci_event_grace_minutes: 2
@@ -14,13 +12,17 @@ terminal_ci_minimum_interval_minutes: 3
 max_terminal_ci_observations_per_generation: 12
 max_repair_cycles_per_gate: 3
 max_identical_failure_retries_without_new_hypothesis: 1
-max_additional_tasks_after_entry_task: 1
-minimum_remaining_minutes_for_additional_task: 30
 ```
 
 ## Purpose
 
-Autonomous work is foreground, bounded and evidence driven. It must not become an endless polling, retry, context reconstruction, PR creation, task-selection or CI-regeneration loop.
+Autonomous work is progress-bounded and evidence driven. It must not become an endless polling, retry, context reconstruction, PR creation, task-selection or CI-regeneration loop.
+
+There is **no fixed wall-clock execution limit for productive authorized work**. Elapsed time alone is not a stop, rotation or handoff condition and does not require a fresh coordinator grant. Historical 60-minute/120-minute foreground budgets and numbered execution-window limits are non-binding legacy policy.
+
+A worker that is making material progress should continue in the same authorized lineage until the task reaches `DONE`, a genuine authority/safety/dependency blocker is reached, the owner explicitly stops it, or a real execution-surface/context boundary requires a truthful resumable handoff. A command/tool timeout is separate from task lifetime.
+
+Anti-stall bounds in this document apply to **no progress, repeated identical failure, CI observation/recovery and bounded waiting**, not to productive implementation time.
 
 ## Measurable progress
 
@@ -126,12 +128,14 @@ A foreground invocation may remain active through final exact-head CI and merge 
 
 During this exception:
 
-- total wait is capped at 45 minutes or remaining invocation budget;
+- total unchanged CI wait is capped at 45 minutes;
 - unchanged observations are at least three minutes apart;
 - at most 12 observations are allowed per materially new required-check generation;
 - new generations do not reset the total wait budget;
 - a failure exits waiting and enters the repair loop;
 - after success re-check head, checks, required review state, ownership and mergeability before merge.
+
+This CI waiting cap does not limit productive implementation or repair work.
 
 ## Failure loop
 
@@ -139,23 +143,25 @@ During this exception:
 - Make one targeted repair based on an explicit hypothesis.
 - An identical second failure requires a new hypothesis, instrumentation or narrower isolation.
 - Never repeat the same failure again without new evidence.
-- After three repair cycles for one gate, persist evidence and return `BLOCKED` or `ROTATE`.
+- After three repair cycles for one unchanged gate/failure class, persist evidence and return `BLOCKED` or `ROTATE` unless a materially new hypothesis or changed evidence reopens the loop.
 
 Infrastructure states must not be “repaired” by unrelated repository mutations.
 
 ## Stop handling
 
-On budget/no-progress/retry/repair exhaustion or unavailable dispatch/cancel authority:
+Stop or hand off only on a genuine terminal/blocking/anti-stall condition: no-progress exhaustion, retry/repair exhaustion for an unchanged failure class, unavailable required authority/capability, explicit owner stop, or a real execution/context boundary that prevents safe continuation.
 
-1. stop polling and starting new work;
-2. preserve the frozen coherent state;
+When that happens:
+
+1. stop polling and starting unrelated new work;
+2. preserve the coherent state;
 3. record exact last progress, unchanged state, counters, run/job IDs and attempted hypotheses;
 4. set task `ready`, `waiting` or `blocked` accurately;
 5. record an exact `owner_action_required` when applicable;
 6. leave exactly one `next_action`;
-7. return `WAITING`, `BLOCKED` or `ROTATE`.
+7. return `WAITING`, `BLOCKED` or `ROTATE` as appropriate.
 
-`ROTATE` is an invocation result, never a task status.
+`ROTATE` is an invocation result, never a task status. **Time elapsed by itself is never sufficient reason to return `ROTATE`.**
 
 ## Canonical terminal report
 
@@ -170,7 +176,6 @@ PR_HYGIENE:
 FINAL_HEAD:
 CI_CLASSIFICATION:
 LAST_PROGRESS:
-BUDGET:
 UNCHANGED_STATE:
 DURABLE_STATE:
 OWNER_ACTION_REQUIRED:

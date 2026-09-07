@@ -1,5 +1,28 @@
 # SQLx PostgreSQL driver budget351 implementation plan
 
+## Current prospective hosted-test qualification amendment
+
+Work162 comment5560691505, protected source `b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a`, adds only the serialized target inclusion below to351's existing admitted scope. Earlier NOT_ADMITTED wording is historical; actual admission53c6 and window2/native1363 are recorded in351 comment5560554622 and the current task override. Preserve original programme budget, immutable admission and all productive-window/repair evidence. This new lease remains NOT_ACTIVE until reviewed protected integration/readback and Work's explicit grant.
+
+### Exact prospective transfer
+
+After the activation gate, temporarily remove `apps/game-server/tests/durability_postgres.rs` from B329's active write scope and lease it exclusively to the sole351 writer **only** to add this module inclusion:
+
+```rust
+#[path = "../../../vendor/sqlx-postgres-0.9.0/tests/oteryn_resource_budget.rs"]
+mod oteryn_resource_budget;
+```
+
+The included `vendor/sqlx-postgres-0.9.0/tests/oteryn_resource_budget.rs` stays within351's existing vendor subtree. No other change to the shared target is authorized: preserve every existing B test, import, fixture, gate and assertion; no reformatting or test suppression. No workflow, Cargo feature/dependency, production B, Foundation or source scope is added. Driver retains its separately protected two-crate Cargo lease and exclusions.
+
+B keeps every other owned path and its canonical branch/worktree. Work verifies exact overlap before granting the lease and before integration. While active, B must not write the shared target or integrate overlapping target changes;351 may not use the lease for any additional edits. Work serializes ordinary merge-up and reviews the resulting exact delta, retaining prior B material. Return the target to B only after protected351 delivery/integration/readback and Work's explicit release/readmission for this file; no concurrent writer or automatic lease inheritance. Earlier14-path B lists remain historical during the active transfer.
+
+The existing canonical PostgreSQL17.6 target must actually execute the included tests on the pinned root dependency graph. Vendor-only test results and successful compilation do not establish hosted SQL execution. Keep all existing workflows and tests intact. If the service is plaintext, it supplies no TLS-positive evidence:351 must separately qualify actual TLS without security/feature downgrade or treating skipped/unconfigured tests as success. This amendment alone proves no TLS/driver/B acceptance and does not release Server Seam247.
+
+After activation, author the driver-owned vendor tests and add only the named inclusion. Run focused vendor tests and the unchanged canonical root PostgreSQL target on the exact root dependency graph, with independent positives/negatives and visible execution evidence. Keep TLS-positive qualification separate where required. Do not claim root CI automatically runs excluded vendor tests without this inclusion. At protected delivery/readback, Work releases the target back to B; driver/B activation remains its separate gate.
+
+Next action: independently qualify and protect the five-document lease amendment before any shared-target edit.
+
 ## Authority, exact scope and sequencing
 
 Issue351 under Work162 implements accepted DUR-FRESH-RESOURCE-ENVELOPE-V1 (#337/#341) and protected registry342. This is the single task plan; no duplicate design approval is required. Source main: d9d1b566acb57b537ff901d9765c32a95110c259. Worker NOT_ADMITTED until independently reviewed allocation is protected and Work binds readback, exclusive Cargo lease and immutable admission.
