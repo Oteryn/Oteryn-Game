@@ -9,10 +9,10 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: fix/remediation-wp6a-native-client-364
 issue: 364
-pr: null
+pr: 368
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
 base_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
-head_sha: null
+head_sha: 4e7b5284c410b3ca9e0f425755c66a1b97483a4d
 final_head_sha: null
 final_head_frozen_at: null
 owner: WP6A_NATIVE_CLIENT_REPAIR
@@ -49,10 +49,10 @@ NOT_APPLICABLE: this task changes no gameplay/session authority, PREPARE/COMMIT,
 
 ## Acceptance criteria
 
-- [ ] Window/renderer initialization, suspend, resize, render and close failures cannot exit the event loop and then return successful `run()`.
-- [ ] An existing Window+renderer resumes through the renderer lifecycle; suspended or zero-size state does not request/render a frame.
-- [ ] Normal smoke/close remains successful and no new retry loop is introduced.
-- [ ] PKCE rejects 31 and 97 entropy bytes, accepts 32 and 96, and produces verifier lengths 43 and 128 respectively without logging/exposing verifier material.
+- [x] Window/renderer initialization, suspend, resize, render and close failures are retained and returned by `run()` after event-loop exit.
+- [x] An existing Window+renderer resumes through the renderer lifecycle; suspended or zero-size state does not request/render a frame.
+- [x] Normal smoke/close remains successful and no new retry loop is introduced.
+- [x] PKCE rejects 31 and 97 entropy bytes, accepts 32 and 96, and produces verifier lengths 43 and 128 respectively without logging/exposing verifier material.
 - [ ] Focused tests, Rust 1.94 fmt/Clippy and applicable Windows exact-head CI pass.
 - [ ] Complete three-file diff is independently reviewed only if current policy/risk warrants it; no gameplay/G1 claim is made.
 
@@ -62,32 +62,40 @@ No `apps/client/src/lib.rs`, client-runtime, renderer, input, network/projection
 
 ## Implementation / findings
 
-Initial allocation only. The worker must keep one canonical branch/PR and may not expand paths. Preserve the existing DX12 renderer and fail-closed pre-native gameplay state. Fatal errors must remain observable to the process rather than being converted to a clean event-loop exit.
+Implemented within the three-path allocation. `Application` retains only its first fatal lifecycle classification, exits, and returns that classification after `run_app()` completes. Window creation, renderer initialization, resume, suspend, resize, render and close have distinct non-secret classifications. Ordinary close and `--smoke` remain clean exits. Resume uses the existing Window's current inner size. Redraw request and render are gated on `SurfacePhase::Configured`; there is no retry loop and the renderer/DX12 state machine is unchanged.
+
+PKCE now accepts only 32..=96 bytes and reports a non-material-bearing `EntropyLengthOutOfRange` classification. Existing `SecretString` Debug/Display redaction is unchanged. Four focused boundary tests cover 31/32/96/97 bytes and assert the exact accepted verifier lengths.
 
 ## Validation
 
 ### Focused
 
-- command/run: pending
-- result: pending
+- command/run: `cargo +1.94.0 test --locked -p oteryn-identity`
+- result: PASS — 6 unit tests, including all four PKCE boundaries, plus doc-tests
+- command/run: `cargo +1.94.0 clippy --locked -p oteryn-identity --all-targets -- -D warnings`
+- result: PASS
 
 ### Component/integration
 
-- command/run: pending
-- result: pending
+- command/run: `cargo +1.94.0 fmt --all --check`
+- result: PASS after applying rustfmt
+- command/run: `cargo +1.94.0 clippy --locked -p oteryn-client --all-targets -- -D warnings`
+- result: PASS on the Linux host; Windows-only shell code is excluded by target cfg
+- command/run: `cargo +1.94.0 test --locked -p oteryn-client`
+- result: PASS — 2 unit tests plus doc-tests; Windows-only shell helper tests are excluded by target cfg on this host
 
 ### E2E
 
 - scenario: NOT_APPLICABLE to gameplay E2E; this slice is local executable lifecycle/identity correctness
-- result: pending Windows lifecycle qualification
+- result: Windows OS callbacks and visible shell smoke cannot be deterministically exercised on this Linux host. Pure helper regressions cover first-fatal retention and configured-only redraw eligibility without allocating a renderer; hosted Windows build/Clippy/smoke remains open and no local E2E claim is made.
 
 ### Exact-head CI
 
-- final head: pending
+- final head: pending publication commit
 - trigger source: pull_request
-- workflow/run/job: pending
+- workflow/run/job: pending new exact-head pull-request generation for #368
 - classification: expected SHARED/client paths
-- result: pending
+- result: OPEN — the local cross-target attempt `cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings` could not qualify Windows because this Linux environment has no MSVC toolchain; after installing the Rust target, `aws-lc-sys` rejected the host GNU C compiler. The hosted Windows build/strict Clippy/visible `--smoke` cells remain required.
 
 ## Self-review
 
@@ -115,11 +123,11 @@ Initial allocation only. The worker must keep one canonical branch/PR and may no
 ## Context checkpoint
 
 ```yaml
-last_progress: exact WP6A three-path allocation created from protected main
+last_progress: WP6A implementation and local validation complete within exact three-path allocation
 status: implementing
 branch: fix/remediation-wp6a-native-client-364
-head_sha: null
-pr: null
+head_sha: 4e7b5284c410b3ca9e0f425755c66a1b97483a4d
+pr: 368
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -135,7 +143,7 @@ identical_failure_retries: 0
 repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
-owner_action_required: null
+owner_action_required: remediation lead exact-head inspection after publication
 blocker: null
-next_action: implement shell fatal-error/resume/redraw gating and PKCE 32..=96 bound within the three-path lease
+next_action: publish one coherent commit to PR #368 and verify its remote exact head
 ```
