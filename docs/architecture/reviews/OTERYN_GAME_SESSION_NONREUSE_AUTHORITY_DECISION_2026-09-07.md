@@ -24,9 +24,11 @@ facts:
     - current released PostgreSQL migration 0001 already retains replacement edges in game_durability_session_replacements
     - current WP4 candidate migration 0002 has immutable fresh-admission receipts but no complete durable used-GameSession membership authority
     - RESOURCE_LIMITS_REGISTRY.json requires an explicit absolute maximum for a retained count before implementation acceptance
+    - protected FND-04C currently defines ADMISSION_CAPACITY_EXCEEDED as RETRYABLE transient capacity and has no lifetime-ledger exhaustion code
   derived:
     - copying an ever-growing retired-ID history into GameSessionAuthoritySnapshot would couple Foundation authorization to unbounded retained history and duplicate Durability ownership
     - a candidate-specific sealed observation from one durable Game-owned membership authority is sufficient if the transaction revalidates membership revision, current predecessor and all applicable authority fences before commit
+    - permanent non-evicting ledger exhaustion cannot truthfully reuse a retryable transient-capacity public error
   unknown:
     - production lifetime distribution of new GameSession creation per CharacterId
     - final PostgreSQL table/index names and internal Rust helper layout
@@ -34,6 +36,7 @@ facts:
   conflict: []
 resource_values_changed_by_decision: true
 resource_registry_file_changed_by_this_candidate: false
+error_contract_amendment_file_changed_by_this_candidate: true
 protocol_changed: false
 stable_identity_format_changed: false
 production_authority_changed: false
@@ -43,13 +46,19 @@ independent_review:
   required: true
   reason: session/recovery/persistence authority and a new hard capacity consequence
 next_action: >-
-  Oteryn: work coordinator qualifies this architecture candidate, applies the separately
-  serialized registry/contract amendment defined in section 8, and integrates accepted
-  architecture through normal protected review/check/Merge Queue controls before issuing
-  any widened WP2/WP4 implementation allocation.
+  Oteryn: work coordinator independently reviews the exact repaired PR head, qualifies and
+  integrates both architecture documents through normal protected controls, then applies the
+  separately serialized registry amendment defined in section 8 before issuing any widened
+  WP2/WP4 implementation allocation.
 ```
 
 This decision resolves **Decision A only** from the current #162 escalation packet. It does not resolve Decision B/WP3, WP5 producer obligations, #308/WP1 holds, G0/G1, or the full #162 programme.
+
+The companion error-contract amendment in this candidate is:
+
+`docs/architecture/reviews/OTERYN_GAME_FND04C_GAMESESSION_LEDGER_CAPACITY_ERROR_AMENDMENT_2026-09-07.md`
+
+When accepted, that document supersedes the FND-04C Section 4 completeness claim only for permanent `GameSessionUseLedgerV1` lifetime exhaustion. All other FND-04C semantics remain unchanged.
 
 ## 2. Decision timing
 
@@ -132,9 +141,26 @@ The lack of current production lifetime-cardinality measurements is **UNKNOWN**,
 
 There is **no TTL, expiry, eviction, LRU, age-based deletion or 'make room' reuse** of membership.
 
-At 65,536 committed memberships for a `CharacterId`, any otherwise new-session-producing operation is rejected with the existing `CAPACITY_EXCEEDED` resource category before it commits membership, a new current session, claims, receipt or authority effect. Existing current authority and all prior membership remain unchanged. An exact replay of an already committed operation remains idempotently reconcilable even at the ceiling and consumes no new unit.
+At 65,536 committed memberships for a `CharacterId`, any otherwise new-session-producing operation is rejected with resource category `CAPACITY_EXCEEDED` before it commits membership, a new current session, claims, receipt or authority effect. Existing current authority and all prior membership remain unchanged. An exact replay of an already committed operation remains idempotently reconcilable even at the ceiling and consumes no new unit.
 
 This deliberately chooses nonreuse safety over future admission availability at exhaustion.
+
+### FND-04C public/progression consequence
+
+Permanent lifetime-ledger exhaustion is **not** the existing retryable `ADMISSION_CAPACITY_EXCEEDED` condition. Waiting, restart, a fresh credential, a new attempt reference, or a new candidate cannot create capacity while V1 membership is non-evicting.
+
+The companion FND-04C amendment therefore freezes these family-specific terminal codes:
+
+| New-GameSession family | Canonical FND-04C code | Progression | Public class | Mutation disposition |
+|---|---|---|---|---|
+| Fresh admission | `ADMISSION_GAMESESSION_LEDGER_EXHAUSTED` | `TERMINAL` | `SESSION_UNAVAILABLE` | `NO_AUTHORITY_MUTATION` |
+| Terminal replacement | `TERMINAL_REPLACEMENT_GAMESESSION_LEDGER_EXHAUSTED` | `TERMINAL` | `SESSION_UNAVAILABLE` | `CURRENT_AUTHORITY_PRESERVED` |
+| CompleteReconnect `EarlyTerminalReplacement` | `EARLY_TERMINAL_REPLACEMENT_GAMESESSION_LEDGER_EXHAUSTED` | `TERMINAL` | `SESSION_UNAVAILABLE` | `CURRENT_AUTHORITY_PRESERVED` |
+| PostGrace recovery/adoption | `POST_GRACE_RECOVERY_GAMESESSION_LEDGER_EXHAUSTED` | `TERMINAL` | `SESSION_UNAVAILABLE` | `CURRENT_AUTHORITY_PRESERVED` |
+
+For all four, category remains `CAPACITY_EXCEEDED`. There is no independent retry authority under the same ledger version and ceiling. Only exact reconciliation/replay of a binding that already committed remains valid; it returns its stable prior result and is never remapped to lifetime exhaustion. A later new operation can become admissible only after a separately accepted capacity/architecture supersession while every already-used `GameSessionId` remains used.
+
+The existing FND-04C `ADMISSION_CAPACITY_EXCEEDED` remains unchanged and retryable for its pre-existing **transient** capacity meaning. Implementations MUST NOT reuse it for this permanent ledger ceiling.
 
 Ancillary payload may be compacted only when exact membership, owner association, completeness and revision/floor semantics remain lossless. Probabilistic filters are not sufficient authority because false negatives would violate nonreuse and false positives would create unreviewed availability behavior.
 
@@ -161,6 +187,7 @@ WP2 owns only its already allocated Foundation source/test/task surfaces, amende
 - define the sealed candidate-specific `GameSessionUseObservationV1` semantics;
 - require it consistently in Terminal, CompleteReconnect `EarlyTerminalReplacement`, and PostGrace authorization/adoption paths that create a new GameSession;
 - reject missing/incomplete/stale/conflicting observations;
+- expose the exact accepted FND-04C family-specific lifetime-exhaustion result rather than reusing transient `ADMISSION_CAPACITY_EXCEEDED`;
 - preserve exact replay as reconciliation, not a new replacement;
 - avoid activating consumers until WP4 persistence/reload qualification is accepted.
 
@@ -188,7 +215,7 @@ Any additional production/source/migration/export path must be named in a fresh 
 ### Dependency order
 
 ```text
-accepted architecture
+accepted architecture + FND-04C ledger-capacity error amendment
   -> serialized RESOURCE_LIMITS_REGISTRY amendment
   -> exact WP2 semantic/API allocation and implementation, consumers inactive
   -> legitimate WP3 prerequisite where still required by #162
@@ -218,10 +245,12 @@ Before implementation acceptance, Work must serialize the following semantic ent
   "boundary_tests": [
     "65,535 committed memberships plus one unused candidate may commit as entry 65,536 when all authority predicates pass",
     "65,536 committed memberships plus a distinct unused candidate is rejected as CAPACITY_EXCEEDED before any new authority effect",
-    "exact replay at the ceiling reconciles without consuming an additional entry",
+    "each governed new-session family maps lifetime exhaustion to its accepted terminal FND-04C ledger-exhaustion code and SESSION_UNAVAILABLE public class, never retryable ADMISSION_CAPACITY_EXCEEDED",
+    "exact replay at the ceiling reconciles without consuming an additional entry and returns the stable committed result rather than a capacity error",
     "a GameSessionId already used by a different binding is rejected regardless of remaining per-character capacity",
-    "restart/reload preserves exact membership count, revision, completeness and rejection behavior"
-  ]
+    "restart/reload preserves exact membership count, revision, completeness, terminal progression and rejection behavior"
+  ],
+  "notes": "Permanent GameSessionUseLedgerV1 exhaustion uses ADMISSION_GAMESESSION_LEDGER_EXHAUSTED, TERMINAL_REPLACEMENT_GAMESESSION_LEDGER_EXHAUSTED, EARLY_TERMINAL_REPLACEMENT_GAMESESSION_LEDGER_EXHAUSTED, or POST_GRACE_RECOVERY_GAMESESSION_LEDGER_EXHAUSTED according to operation family. All are TERMINAL/SESSION_UNAVAILABLE under the current ledger version and preserve existing authority. The pre-existing retryable ADMISSION_CAPACITY_EXCEEDED code is reserved for transient admission capacity and must not represent this lifetime ceiling."
 }
 ```
 
@@ -241,7 +270,10 @@ The joint WP2/WP4 qualification must prove at minimum:
 - stale/missing/substituted membership source and stale revision negatives;
 - incomplete migration/reload keeps new-session creation closed;
 - 65,535 -> 65,536 success and 65,536 -> new candidate `CAPACITY_EXCEEDED` with no partial mutation;
-- exact replay at capacity remains idempotent;
+- exact lifetime-exhaustion FND-04C code, `TERMINAL` progression, `SESSION_UNAVAILABLE` public class and required mutation disposition for Fresh, Terminal replacement, CompleteReconnect `EarlyTerminalReplacement`, and PostGrace;
+- no retry/backoff path can turn the same permanent ceiling into success merely through a fresh credential, new attempt, process restart or elapsed time;
+- the pre-existing retryable `ADMISSION_CAPACITY_EXCEEDED` remains distinct and is not used for ledger exhaustion;
+- exact replay at capacity remains idempotent and returns the committed disposition rather than the exhaustion code;
 - full-u64 revision/fence edges and checked overflow rejection;
 - real configured PostgreSQL 17.6 process/reload recovery.
 
@@ -258,6 +290,7 @@ Each negative authority case must change one relevant invariant while keeping un
 - probabilistic membership as authoritative acceptance evidence;
 - guessing missing migration history from S0/current S2;
 - wrapping membership/source revision on overflow;
+- treating permanent ledger exhaustion as retryable `ADMISSION_CAPACITY_EXCEEDED`;
 - blocking the logical writer on SQL merely to obtain the sealed observation;
 - activating WP2 consumers before WP4 reload/persistence qualification.
 
@@ -265,7 +298,7 @@ Each negative authority case must change one relevant invariant while keeping un
 
 Player-visible benefit: a retired session can never regain control merely because it fell out of a local snapshot or process memory. Retry/lost-response behavior remains stable rather than creating a second session.
 
-Player-visible cost: after the explicit lifetime ceiling is exhausted for a character, operations that require a new `GameSessionId` fail closed until a later accepted architecture/operational remedy; an existing current session is not destroyed by the denial.
+Player-visible cost: after the explicit lifetime ceiling is exhausted for a character, operations that require a new `GameSessionId` fail closed as terminal `SESSION_UNAVAILABLE` under the current ledger version. The client must not be told that bounded backoff or a fresh login/recovery credential will create capacity. An existing current session/actor authority is not destroyed or rolled back by the denial, and exact replay of a previously committed operation remains reconcilable.
 
 Producer/operational cost: Durability retains permanent exact membership and one bounded per-character revision/count authority. Storage and lookup behavior must be measured before production launch. The selected candidate-specific API prevents Foundation memory/snapshot growth from tracking lifetime history size.
 
@@ -273,6 +306,6 @@ A future exact compact representation may replace physical rows only after provi
 
 ## 12. Architecture-author closeout boundary
 
-This candidate is complete when its exact head has been read back, its diff has been self-reviewed, repository architecture/governance checks for that head are green or their exact failures are reported, and the #162 escalation receives a candidate-return comment pointing to the PR/head.
+This repaired candidate is complete when its exact head has been read back, its two-file architecture diff has been self-reviewed, repository architecture/governance checks for that head are green or their exact failures are reported, and the #162 escalation receives a repaired-candidate return pointing to the PR/head.
 
-Acceptance requires a non-author independent review appropriate to the session/recovery/persistence risk, normal required CI, protected Merge Queue integration, and protected-main readback. The architecture author must not treat PR creation, green partial checks, or Issue closure alone as acceptance.
+Acceptance requires a fresh non-author independent exact-head review appropriate to the session/recovery/persistence risk, normal required CI, protected Merge Queue integration, and protected-main readback. The earlier review of `0a6778b1464ae95d1b9562f9e6459358ee6000bb` is superseded for acceptance purposes by this material repair. The architecture author must not treat PR creation, green partial checks, or Issue closure alone as acceptance.
