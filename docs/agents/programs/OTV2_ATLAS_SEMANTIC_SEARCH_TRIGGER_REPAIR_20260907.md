@@ -81,30 +81,50 @@ Shared Rust/CodeQL qualification is not equivalent to the affected Atlas oracles
 The material repair must preserve existing workflow permissions, pinned actions,
 concurrency, self-tests and real pinned-data oracles.
 
+The new protected regression path is itself part of the control surface. Both
+allocated Atlas workflows must include
+`tools/repository/test_validate_game_atlas_semantic_search_triggers.py` in their
+`pull_request.paths` so a test-only change cannot bypass CI, and each workflow's
+verify job must explicitly execute that regression. No assumption that generic
+repository CI discovers arbitrary `tools/repository/test_*.py` is permitted.
+
 ### Semantic-search workflow
 
 Add only the exact missing producer dependencies to both existing trigger
-families:
+families, plus the regression path to the PR trigger:
 
 ```text
 pull_request.paths:
   tools/game-atlas-fullworld-source/producer.py
   tools/game-atlas-thais-fixture/export.py
+  tools/repository/test_validate_game_atlas_semantic_search_triggers.py
 push.paths:
   tools/game-atlas-fullworld-source/producer.py
   tools/game-atlas-thais-fixture/export.py
 ```
 
-Do not widen to `tools/game-atlas-*/**` merely for convenience.
+The semantic-search verify job must run:
+
+```text
+python tools/repository/test_validate_game_atlas_semantic_search_triggers.py
+```
+
+before or alongside its existing producer self-tests/oracle. Do not widen to
+`tools/game-atlas-*/**` merely for convenience.
 
 ### Static-creatures workflow
 
-Add only:
+Add only the shared identity dependency and the regression path to the existing
+PR trigger:
 
 ```text
 pull_request.paths:
   tools/game-atlas-creatures/identity.py
+  tools/repository/test_validate_game_atlas_semantic_search_triggers.py
 ```
+
+The static-creatures verify job must also execute the same regression before or
+alongside its existing producer self-test/oracle.
 
 The existing static workflow event model is PR + `workflow_dispatch`; this repair
 does not invent a protected-main push event for it. The proven gap is that a PR
@@ -127,7 +147,8 @@ Before the workflow changes, RED must independently prove:
 1. semantic-search PR and push filters omit fullworld producer;
 2. semantic-search PR and push filters omit Thais fixture producer;
 3. static-creatures PR filter omits shared `identity.py`;
-4. the workflow bodies still prove the corresponding producer/import dependency
+4. neither workflow currently invokes the new regression or triggers on its path;
+5. the workflow bodies still prove the corresponding producer/import dependency
    and exact oracles, so the failures are semantic trigger failures rather than a
    missing unrelated string.
 
@@ -136,9 +157,12 @@ GREEN must prove:
 - each semantic producer path independently selects semantic-search for PR and
   protected-main push;
 - `identity.py` independently selects static-creatures for PR;
+- a change to the regression itself selects **both** workflows;
+- both workflow verify jobs explicitly execute the regression;
 - original self-owned tool/contract/workflow paths remain selected;
 - unrelated representative paths remain outside these specialized workflows;
-- deleting/renaming any of the three newly required entries fails the regression;
+- deleting/renaming any of the three dependency entries, either regression trigger,
+  or either regression invocation fails the regression;
 - semantic-search still contains deterministic/negative self-tests and exact
   digest/Sam/Thais/count qualification;
 - static-creatures still contains deterministic producer self-test, exact pinned
@@ -147,9 +171,10 @@ GREEN must prove:
   or test/oracle removal is introduced.
 
 The material PR's hosted evidence must show both changed workflows run on the
-workflow-changing candidate because each workflow self-triggers on its own file.
-The regression proves future producer/helper trigger semantics. No no-op producer
-mutation is authorized solely to manufacture a run.
+workflow-changing candidate and on a test-only change, because the regression
+path is part of both protected PR trigger sets. The regression then protects
+future producer/helper trigger semantics. No no-op producer mutation is
+authorized solely to manufacture a run.
 
 ## Activation / integration
 
@@ -161,7 +186,7 @@ this repaired allocation independently reviewed
 -> fresh workflow/path custody readback
 -> explicit Work application to one sole #418 writer
 -> test-only RED against protected baseline semantics
--> two minimal workflow trigger edits + one regression GREEN
+-> two minimal workflow trigger edits + one regression GREEN/invocation
 -> independent exact-head control-plane review
 -> canonical checks + both Atlas workflow hosted runs
 -> normal FULL Merge Queue
