@@ -8,6 +8,12 @@ use std::sync::Arc;
 pub trait BlockingOwner: Send + Sync + 'static {
     fn try_reserve(&self, bytes: usize) -> bool;
     fn release(&self, bytes: usize);
+
+    /// Deterministic control used by the owned-blocking conformance tests.
+    #[doc(hidden)]
+    fn force_thread_spawn_failure(&self) -> bool {
+        false
+    }
 }
 
 /// Finite owner-supplied configuration for an owned blocking pool.
@@ -20,7 +26,10 @@ pub struct BlockingOwnerConfig {
 
 impl BlockingOwnerConfig {
     pub const fn new(queue_capacity: usize, worker_stack_size: usize) -> Self {
-        Self { queue_capacity, worker_stack_size }
+        Self {
+            queue_capacity,
+            worker_stack_size,
+        }
     }
 }
 

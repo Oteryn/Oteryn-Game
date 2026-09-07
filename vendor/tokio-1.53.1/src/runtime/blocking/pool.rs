@@ -10,12 +10,12 @@ use crate::runtime::{Builder, Callback, Handle, BOX_FUTURE_THRESHOLD};
 use crate::util::metric_atomics::MetricAtomicUsize;
 use crate::util::trace::{blocking_task, SpawnMeta};
 
+use crate::task::{BlockingOwner, BlockingOwnerConfig, OwnedSpawnError};
 use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::io;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
-use crate::task::{BlockingOwner, BlockingOwnerConfig, OwnedSpawnError};
 
 pub(crate) struct BlockingPool {
     spawner: Spawner,
@@ -325,6 +325,37 @@ impl Spawner {
             return Err(OwnedSpawnError::InvalidConfiguration);
         }
 
+        let mut shared = self.inner.shared.lock();
+        if shared.shutdown {
+            return Err(OwnedSpawnError::RuntimeShuttingDown);
+        }
+
+        if shared.owned_queue.is_none() {
+            let bytes = config
+                .queue_capacity
+                .checked_mul(std::mem::size_of::<Task>())
+                .ok_or(OwnedSpawnError::AccountingOverflow)?;
+            let charge = task::OterynCharge::reserve(owner.clone(), bytes)?;
+            let queue = VecDeque::with_capacity(config.queue_capacity);
+            shared.owned_queue = Some(OwnedQueue {
+                queue,
+                limit: config.queue_capacity,
+                _charge: charge,
+            });
+        }
+        let queue = shared
+            .owned_queue
+            .as_ref()
+            .expect("owned queue initialized");
+        if !queue._charge.same_owner(&owner) || queue.limit != config.queue_capacity {
+            return Err(OwnedSpawnError::InvalidConfiguration);
+        }
+        // This check intentionally precedes construction of the task future and
+        // the generic task Cell reservation/allocation.
+        if queue.queue.len() == queue.limit {
+            return Err(OwnedSpawnError::QueueFull);
+        }
+
         let id = task::Id::next();
         let fn_size = std::mem::size_of::<F>();
         let fut = blocking_task::<F, BlockingTask<F>>(
@@ -339,42 +370,28 @@ impl Spawner {
             task::SpawnLocation::capture(),
             owner.clone(),
         )?;
-        self.spawn_owned_task(Task::new(task, Mandatory::NonMandatory), rt, owner, config)?;
+        self.spawn_owned_task_locked(
+            &mut shared,
+            Task::new(task, Mandatory::NonMandatory),
+            rt,
+            owner,
+            config,
+        )?;
         Ok(handle)
     }
 
-    fn spawn_owned_task(
+    fn spawn_owned_task_locked(
         &self,
+        shared: &mut Shared,
         task: Task,
         rt: &Handle,
         owner: Arc<dyn BlockingOwner>,
         config: BlockingOwnerConfig,
     ) -> Result<(), OwnedSpawnError> {
-        let mut shared = self.inner.shared.lock();
-        if shared.shutdown {
-            task.task.shutdown();
-            return Err(OwnedSpawnError::RuntimeShuttingDown);
-        }
-
-        if shared.owned_queue.is_none() {
-            let bytes = config.queue_capacity
-                .checked_mul(std::mem::size_of::<Task>())
-                .ok_or(OwnedSpawnError::AccountingOverflow)?;
-            let charge = task::OterynCharge::reserve(owner.clone(), bytes)?;
-            let queue = VecDeque::with_capacity(config.queue_capacity);
-            shared.owned_queue = Some(OwnedQueue {
-                queue,
-                limit: config.queue_capacity,
-                _charge: charge,
-            });
-        }
-        let queue = shared.owned_queue.as_mut().expect("owned queue initialized");
-        if !queue._charge.same_owner(&owner) || queue.limit != config.queue_capacity {
-            return Err(OwnedSpawnError::InvalidConfiguration);
-        }
-        if queue.queue.len() == queue.limit {
-            return Err(OwnedSpawnError::QueueFull);
-        }
+        let queue = shared
+            .owned_queue
+            .as_mut()
+            .expect("owned queue initialized");
         queue.queue.push_back(task);
 
         if !shared.owned_worker_running {
@@ -382,24 +399,34 @@ impl Spawner {
                 .checked_add(std::mem::size_of::<usize>())
                 .and_then(|value| value.checked_add(config.worker_stack_size))
                 .ok_or(OwnedSpawnError::AccountingOverflow)?;
-            let worker_charge = task::OterynCharge::reserve(owner, bookkeeping)?;
+            let worker_charge = task::OterynCharge::reserve(owner.clone(), bookkeeping)?;
             let id = shared.worker_thread_index;
-            let shutdown_tx = shared.shutdown_tx.clone().ok_or(OwnedSpawnError::RuntimeShuttingDown)?;
+            let shutdown_tx = shared
+                .shutdown_tx
+                .clone()
+                .ok_or(OwnedSpawnError::RuntimeShuttingDown)?;
             let builder = thread::Builder::new()
                 .name((self.inner.thread_name)())
                 .stack_size(config.worker_stack_size);
             let rt = rt.clone();
-            let result = builder.spawn(move || {
-                let charge = worker_charge;
-                let enter = rt.enter();
-                rt.inner.blocking_spawner().inner.run_owned(id);
-                // Release charged backing only once the worker has finished all
-                // pool work, then signal shutdown waiters.
-                drop(enter);
-                drop(rt);
-                drop(charge);
-                drop(shutdown_tx);
-            });
+            let result = if owner.force_thread_spawn_failure() {
+                Err(io::Error::new(
+                    io::ErrorKind::Other,
+                    "forced owned worker spawn failure",
+                ))
+            } else {
+                builder.spawn(move || {
+                    let charge = worker_charge;
+                    let enter = rt.enter();
+                    rt.inner.blocking_spawner().inner.run_owned(id);
+                    // Release charged backing only once the worker has finished all
+                    // pool work, then signal shutdown waiters.
+                    drop(enter);
+                    drop(rt);
+                    drop(charge);
+                    drop(shutdown_tx);
+                })
+            };
             match result {
                 Ok(handle) => {
                     // The native thread owns its bookkeeping charge. Detaching the
@@ -409,7 +436,15 @@ impl Spawner {
                     shared.worker_thread_index += 1;
                     shared.owned_worker_running = true;
                 }
-                Err(error) => return Err(OwnedSpawnError::ThreadSpawn(error)),
+                Err(error) => {
+                    let task = shared
+                        .owned_queue
+                        .as_mut()
+                        .and_then(|queue| queue.queue.pop_back())
+                        .expect("just-enqueued owned task");
+                    task.task.shutdown();
+                    return Err(OwnedSpawnError::ThreadSpawn(error));
+                }
             }
         }
         self.inner.owned_condvar.notify_one();

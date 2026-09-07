@@ -19,17 +19,26 @@ impl BlockingOwner for Deny {
 struct Witness {
     held: AtomicUsize,
     peak: AtomicUsize,
+    reservations: AtomicUsize,
+    releases: AtomicUsize,
+    force_spawn_failure: bool,
 }
 
 impl BlockingOwner for Witness {
     fn try_reserve(&self, bytes: usize) -> bool {
+        self.reservations.fetch_add(1, Ordering::SeqCst);
         let held = self.held.fetch_add(bytes, Ordering::SeqCst) + bytes;
         self.peak.fetch_max(held, Ordering::SeqCst);
         true
     }
 
     fn release(&self, bytes: usize) {
+        self.releases.fetch_add(1, Ordering::SeqCst);
         self.held.fetch_sub(bytes, Ordering::SeqCst);
+    }
+
+    fn force_thread_spawn_failure(&self) -> bool {
+        self.force_spawn_failure
     }
 }
 
@@ -121,4 +130,184 @@ fn overflow_fails_closed() {
         )
     });
     assert!(matches!(result, Err(OwnedSpawnError::AccountingOverflow)));
+}
+
+#[test]
+fn full_owner_queue_denies_before_task_reservation_and_never_spills() {
+    let owner = Arc::new(Witness::default());
+    let gate = Arc::new((Mutex::new((false, false)), Condvar::new()));
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+
+    let first_gate = gate.clone();
+    let first = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                owner.clone(),
+                BlockingOwnerConfig::new(1, 2 * 1024 * 1024),
+                move || {
+                    let (lock, ready) = &*first_gate;
+                    let mut state = lock.lock().unwrap();
+                    state.0 = true;
+                    ready.notify_one();
+                    while !state.1 {
+                        state = ready.wait(state).unwrap();
+                    }
+                },
+            )
+        })
+        .unwrap();
+    {
+        let (lock, ready) = &*gate;
+        let mut state = lock.lock().unwrap();
+        while !state.0 {
+            state = ready.wait(state).unwrap();
+        }
+    }
+    let queued = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                owner.clone(),
+                BlockingOwnerConfig::new(1, 2 * 1024 * 1024),
+                || (),
+            )
+        })
+        .unwrap();
+    let reservations = owner.reservations.load(Ordering::SeqCst);
+    let denied = runtime.block_on(async {
+        spawn_blocking_owned(
+            owner.clone(),
+            BlockingOwnerConfig::new(1, 2 * 1024 * 1024),
+            || panic!("full owned queue spilled into a backend queue"),
+        )
+    });
+    assert!(matches!(denied, Err(OwnedSpawnError::QueueFull)));
+    assert_eq!(owner.reservations.load(Ordering::SeqCst), reservations);
+
+    let (lock, ready) = &*gate;
+    lock.lock().unwrap().1 = true;
+    ready.notify_one();
+    runtime.block_on(first).unwrap();
+    runtime.block_on(queued).unwrap();
+    drop(runtime);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn queued_abort_releases_only_after_queue_removal_and_task_destruction() {
+    let owner = Arc::new(Witness::default());
+    let gate = Arc::new((Mutex::new((false, false)), Condvar::new()));
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let first_gate = gate.clone();
+    let first = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                owner.clone(),
+                BlockingOwnerConfig::new(1, 2 * 1024 * 1024),
+                move || {
+                    let (lock, ready) = &*first_gate;
+                    let mut state = lock.lock().unwrap();
+                    state.0 = true;
+                    ready.notify_one();
+                    while !state.1 {
+                        state = ready.wait(state).unwrap();
+                    }
+                },
+            )
+        })
+        .unwrap();
+    {
+        let (lock, ready) = &*gate;
+        let mut state = lock.lock().unwrap();
+        while !state.0 {
+            state = ready.wait(state).unwrap();
+        }
+    }
+    let queued = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                owner.clone(),
+                BlockingOwnerConfig::new(1, 2 * 1024 * 1024),
+                || (),
+            )
+        })
+        .unwrap();
+    let held_while_queued = owner.held.load(Ordering::SeqCst);
+    queued.abort();
+    assert_eq!(owner.held.load(Ordering::SeqCst), held_while_queued);
+
+    let (lock, ready) = &*gate;
+    lock.lock().unwrap().1 = true;
+    ready.notify_one();
+    runtime.block_on(first).unwrap();
+    assert!(runtime.block_on(queued).unwrap_err().is_cancelled());
+    assert!(owner.held.load(Ordering::SeqCst) < held_while_queued);
+    drop(runtime);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn forced_worker_spawn_failure_releases_never_created_backing_once() {
+    let owner = Arc::new(Witness {
+        force_spawn_failure: true,
+        ..Witness::default()
+    });
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+    let result = runtime.block_on(async {
+        spawn_blocking_owned(
+            owner.clone(),
+            BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+            || (),
+        )
+    });
+    assert!(matches!(result, Err(OwnedSpawnError::ThreadSpawn(_))));
+    assert_eq!(owner.reservations.load(Ordering::SeqCst), 3);
+    assert_eq!(owner.releases.load(Ordering::SeqCst), 2);
+    drop(runtime);
+    assert_eq!(owner.releases.load(Ordering::SeqCst), 3);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn concurrent_owned_admission_releases_every_reservation() {
+    let owner = Arc::new(Witness::default());
+    let runtime = Arc::new(
+        tokio::runtime::Builder::new_current_thread()
+            .build()
+            .unwrap(),
+    );
+    let mut submitters = Vec::new();
+    for value in 0..8 {
+        let owner = owner.clone();
+        let runtime = runtime.clone();
+        submitters.push(std::thread::spawn(move || {
+            runtime
+                .block_on(async {
+                    spawn_blocking_owned(
+                        owner,
+                        BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+                        move || value,
+                    )
+                })
+                .unwrap()
+        }));
+    }
+    let handles: Vec<_> = submitters
+        .into_iter()
+        .map(|thread| thread.join().unwrap())
+        .collect();
+    for (value, handle) in handles.into_iter().enumerate() {
+        assert_eq!(runtime.block_on(handle).unwrap(), value);
+    }
+    drop(runtime);
+    assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+    assert_eq!(
+        owner.reservations.load(Ordering::SeqCst),
+        owner.releases.load(Ordering::SeqCst)
+    );
 }

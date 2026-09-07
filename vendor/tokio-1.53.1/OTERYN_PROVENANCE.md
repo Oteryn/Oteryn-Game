@@ -74,3 +74,33 @@ source or shared test target was changed.
 
 `TLS_BLOCKING_OWNER = NOT_PROVEN` at this intermediate GREEN checkpoint; WP3 is
 not accepted or ready for integration.
+
+## Window6 owned-Tokio prerequisite completion
+
+Starting from intermediate-GREEN `6438a8c0a168b722672ab4e48bffc83687da28a3`,
+owner-queue admission now checks the configured queue while holding the pool lock
+before constructing `BlockingTask<F>`, reserving the generic task Cell, or calling
+`task::unowned_oteryn`. A full owner queue therefore returns `QueueFull` without a
+new owner reservation and cannot enqueue work on Tokio's ordinary blocking queue.
+
+Queued cancellation retains the task charge while the cancelled task remains in
+the owner queue. The worker removes it, runs the cancellation destruction path,
+and only final Cell deallocation releases the charge. A deterministic owner
+control forces the OS-worker spawn failure branch after worker reservation; that
+branch removes and destroys the just-enqueued task, releases the never-created
+worker backing exactly once, retains the still-real owner queue backing, and
+releases that queue backing only with runtime destruction.
+
+The pinned crate's existing Loom surface is `src/runtime/tests/loom_blocking.rs`.
+It does not expose the new private owned queue/task/worker path, and adding a new
+unit-test registration there or a new feature/source route is outside the focused
+test allowlist. No new route was invented merely to claim Loom coverage. The
+allocated `tests/oteryn_resource_owner.rs` surface instead supplies deterministic
+multi-threaded concurrent admission and exact reservation/release equality, in
+addition to queue-full and cancellation races. Ordinary upstream
+`spawn_blocking` remains a separate passing control.
+
+These controls close the remaining Tokio-only prerequisite. SQLx ledger
+adaptation, fail-closed non-Tokio dispatch, complete TLS phase composition, real
+TLS-positive evidence and PostgreSQL 17.6 qualification remain OPEN.
+`TLS_BLOCKING_OWNER = NOT_PROVEN` until those SQLx/TLS cells complete.

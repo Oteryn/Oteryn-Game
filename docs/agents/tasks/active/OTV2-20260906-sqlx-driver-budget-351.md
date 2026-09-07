@@ -250,3 +250,28 @@ status: implementation_in_progress
 tls_blocking_owner: NOT_PROVEN
 next_action: close the remaining Tokio pre-admission/lifetime matrix, then adapt the SQLx ledger and prove complete TLS before any PostgreSQL expansion
 ```
+
+## Window6 owned-Tokio prerequisite checkpoint
+
+The intermediate-GREEN continuation now proves queue-full denial under the pool
+lock before `BlockingTask` construction, Cell reservation/allocation, or owned
+task admission, with no ordinary-queue fallback. Queued abort retains custody
+until owner-queue removal and actual task destruction. A deterministic worker
+spawn-failure control proves the never-created worker reservation and rolled-back
+task reservation release exactly once while real owner-queue storage remains
+charged until runtime destruction. The focused multithreaded race test proves
+reservation/release equality across concurrent admissions.
+
+Loom cannot exercise this private path through the pinned crate's existing
+`src/runtime/tests/loom_blocking.rs` registration; adding that unlisted source or
+a new feature route is not authorized. Deterministic multithreaded evidence was
+therefore added in the already allocated focused test surface rather than
+inventing a new Loom path. Ordinary `spawn_blocking` controls remain unchanged.
+
+```yaml
+last_progress: completed the owned-Tokio queue/cancellation/spawn-failure/concurrency prerequisite matrix
+status: implementation_in_progress
+tls_blocking_owner: NOT_PROVEN
+next_action: adapt SQLx BlockingJobOwner and the certificate loader to the same ResourceBudget, fail closed on every non-Tokio backend, then complete TLS composition before PostgreSQL work
+remaining_acceptance_cells: SQLx adapter and funded/denied loader; non-Tokio fail-closed matrix; complete TLS phase/capacity/lifetime composition; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
+```
