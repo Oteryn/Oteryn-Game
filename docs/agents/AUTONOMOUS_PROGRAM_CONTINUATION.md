@@ -2,9 +2,9 @@
 
 ## Contract
 
-A resolvable instruction to start or continue an Oteryn v2 programme authorizes a bounded foreground coordinator loop. Do not stop at a plan, status report, worker completion, commit, PR creation, green partial CI or implementation merge while safe required lifecycle work remains.
+A resolvable instruction to start or continue an Oteryn v2 programme authorizes a progress-bounded foreground coordinator loop. Do not stop at a plan, status report, worker completion, commit, PR creation, green partial CI or implementation merge while safe required lifecycle work remains.
 
-No hidden/background work is implied. The invocation ends at a real terminal, waiting, blocked or rotation condition.
+No hidden/background work is implied. Productive authorized work has no wall-clock execution window. The invocation ends only at a real terminal, waiting, blocked, explicit owner-stop, safety/authority boundary or evidence-backed anti-stall condition.
 
 ## Resume source order
 
@@ -23,20 +23,21 @@ Do not ask the owner to repeat state that can be resolved from GitHub.
 2. Inspect ownership, dependencies, overlapping paths and related PRs.
 3. Recover or create one task record/branch/PR.
 4. Execute the next safe package, not a synthetic activity step.
-5. Validate focused behavior and persist checkpoint.
+5. Validate focused behavior and persist a checkpoint when it materially helps recovery or a genuine stop is approaching.
 6. Run audit/E2E/exact-head gates when the package is complete.
-7. Repair evidence-based failures within budget.
+7. Repair evidence-based failures while a materially new hypothesis or safe authorized repair path exists.
 8. Merge only when all gates pass.
 9. Archive task, release ownership and reconcile programme barriers.
-10. Start at most one additional safe ready task only when anti-stall budget permits.
+10. Start at most one additional safe ready task when current authority and anti-stall policy permit; elapsed implementation time does not decide this.
 
 ## Worker rules
 
 - Workers receive bounded paths, contracts, acceptance and exclusions.
 - One worker owns one public contract or exclusive path set.
-- Workers do not wait idly for another worker; they persist `integration_ready` state and stop.
+- Workers do not wait idly for another worker; they persist `integration_ready`/waiting state and stop the affected path when no useful authorized work remains.
 - Coordinator owns shared integration order and final composition.
 - A worker result is evidence, not automatic acceptance; inspect diff and validation.
+- An elapsed hour, two hours, `windowN`, remaining-minute counter or historical execution budget is never by itself a worker stop/rotation/re-admission condition.
 
 ## Oteryn v2 programme rules
 
@@ -52,10 +53,11 @@ Stop only for:
 
 - completion including closeout;
 - required owner decision/new authorization;
+- explicit owner stop;
 - safety, credential, production or ownership conflict;
-- unresolved atomic cross-repository ordering hold;
-- unavailable required operation/resource;
-- anti-stall budget, no-progress, retry or repair exhaustion;
-- controlled session rotation with durable next action.
+- unresolved atomic cross-repository ordering hold with no independent authorized work remaining;
+- unavailable required operation/resource with no safe authorized fallback;
+- no-progress exhaustion, repeated identical-failure exhaustion, repair exhaustion or bounded passive-CI-wait exhaustion under `ANTI_STALL_AND_EXECUTION_BUDGET.md`;
+- a real worker/session/tool interruption that requires durable handover.
 
-Pending ordinary CI alone is not a reason to narrate or remain active outside the bounded terminal-CI exception.
+Elapsed productive implementation time alone is not a stop condition. Pending ordinary CI alone is not a reason to narrate or remain active outside the bounded terminal-CI exception.

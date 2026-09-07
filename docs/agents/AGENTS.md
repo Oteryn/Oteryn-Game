@@ -19,15 +19,17 @@ Persistent continuation is subordinate to the META bounded-execution authority. 
 
 This adoption grants no Platform/Atlas, production, secret, deployment, protocol/content, protected-setting, review, or merge authority. Existing stronger Game safety, validation, exact-head review, `game-gate`, protection, and Merge Queue rules remain in force.
 
-## Execution runtime semantics
+## Continuous productive execution
 
-Productive authorized work has **no fixed 60-minute or 120-minute wall-clock stop**. Time elapsed alone must not stop, rotate, freeze, release ownership, discard remaining work time, or require a fresh coordinator grant.
+For Game work, bounded lifecycle means bounded authority, retry/no-progress handling, CI waiting and safe handover. It does **not** mean a wall-clock implementation limit.
 
-Historical prompt/task/plan language that specifies 60-minute/120-minute foreground budgets, numbered execution windows, remaining-minute accounting, or mandatory stop-at-window-boundary is superseded and non-binding. Preserve such historical counters only as provenance where already recorded; do not use them as current execution authority.
+- There is no 60-minute, 120-minute, per-window or per-invocation stop requirement for productive authorized implementation.
+- A worker that is making material progress continues until `DONE`, a genuine evidence-backed `BLOCKED`/`WAITING` condition, an explicit owner stop, or another real safety/authority boundary.
+- `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` controls no-progress, repeated-failure and CI-polling behavior only.
+- Older prompts, tasks, plans, programme overlays and checkpoints that refer to `window1`, `window2`, `60-minute window`, `120-minute budget`, `remaining productive minutes`, discarded minutes or a fresh window grant are superseded for execution timing. Preserve them only as historical evidence; they do not require a periodic stop, rotation, re-admission or new coordinator grant.
+- Do not reset retry, review, CI, ownership or provenance state merely because elapsed time crosses an hour boundary.
 
-Current anti-stall limits apply to no-progress, repeated identical failures, bounded CI observation/recovery and waiting. A worker making material progress continues in the same authorized lineage until `DONE`, a genuine dependency/authority/safety blocker, an explicit owner stop, or a real execution/context boundary that prevents safe continuation.
-
-Do not create a new task, worker, branch, PR, admission, counter reset or review cycle merely because a historical execution window elapsed.
+A real worker/session/tool interruption still requires durable handover according to the continuation contract. The removal of wall-clock windows does not weaken path ownership, task scope, validation, review, protected merge, Merge Queue, no-progress, retry or safety rules.
 
 ## Task records
 
@@ -41,7 +43,7 @@ Use `tasks/TASK_TEMPLATE.md`. Every substantial task must record:
 - focused/component/E2E/exact-head validation;
 - audit result and unresolved findings;
 - compact context checkpoint with exactly one next action;
-- anti-stall/retry counters when applicable.
+- anti-stall/retry/CI counters when applicable.
 
 Do not edit another active task except for an explicitly coordinated ownership correction. Archive only after terminal completion/merge and ownership release.
 
