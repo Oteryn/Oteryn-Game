@@ -54,7 +54,7 @@ No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/produc
 ## Context checkpoint
 
 ```yaml
-last_progress: repaired the second exact-head review findings with balanced-brace helper/method extraction, exact comparison checks and independent V1/V2 mutation regressions; reconciled protected main at 15164c38a2775e45eaff4001fddddbabf4b63ab6
+last_progress: repaired the exact-head comparison, cross-method and boolean-connector false-pass family with balanced-brace extraction, complete conjunctive guards, unique terminal actions and valid-Rust operator/RHS/order mutations; reconciled protected main at 15164c38a2775e45eaff4001fddddbabf4b63ab6
 status: review_pending
 branch: fix/remediation-wp1-semantic-dispatch-364
 pr: 371

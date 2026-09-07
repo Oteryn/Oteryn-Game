@@ -29,7 +29,7 @@ PROFILE_PATHS = (
     ("FOUNDATION_RECONNECT_DURABILITY_V1", R_PATHS),
 )
 
-CURRENT_AUTHORITY_COMPARISONS = (
+CURRENT_AUTHORITY_TERMS = (
     "authenticated_evidence_observed_by(record, current.observed_at)",
     "current.identity == *identity",
     "current.current_account_presence == Some(AccountPresenceClaimV1::expected_from_identity(identity)?)",
@@ -52,14 +52,33 @@ CURRENT_AUTHORITY_COMPARISONS = (
     "current.platform_security_evidence == *compatibility.platform_security_evidence()",
     "current.proof_trust_evidence == *compatibility.proof_trust_evidence()",
     "current.credential_expiration == compatibility.credential_expiration()",
-    "candidate.is_live_at(current.observed_at)",
+    "current.current_candidate.is_some_and(|candidate| candidate.is_live_at(current.observed_at))",
     "current.session_state == GameSessionState::Reconnectable",
     "!current.current_controller_present",
 )
 
+CURRENT_AUTHORITY_EXPRESSION = "Ok(" + "&&".join(CURRENT_AUTHORITY_TERMS) + ")"
+
 AUTHENTICATED_EVIDENCE_COMPARISONS = (
     "observed_at >= compatibility.platform_security_evidence().source_observed_at()",
     "observed_at >= compatibility.proof_trust_evidence().source_observed_at()",
+)
+
+AUTHENTICATED_EVIDENCE_EXPRESSION = "&&".join(
+    AUTHENTICATED_EVIDENCE_COMPARISONS
+)
+
+AUTHORIZE_AUTHORITY_GUARD = (
+    "if !current_authority_matches_record(&self.record, &current)? "
+    "|| !authenticated_evidence_observed_by(&self.record, now) "
+    "{ self.phase = ReconnectDurabilityPhaseV1::Terminal; "
+    "return Err(ReconnectDurabilityErrorV1::StaleAuthority); }"
+)
+
+AUTHORIZE_DEADLINE_GUARD = (
+    "if now > deadline || current.observed_at > deadline "
+    "{ self.phase = ReconnectDurabilityPhaseV1::Terminal; "
+    "return Err(ReconnectDurabilityErrorV1::DeadlineExpired); }"
 )
 
 AUTHORIZE_COMMIT_ORDERED_INVARIANTS = (
@@ -98,6 +117,22 @@ RECONCILIATION_V2_ORDERED_INVARIANTS = (
     "Ok(ReconnectProjectionDecisionV2::InstallController",
     "generation: current_generation",
     "transport_ref: current_transport_ref",
+)
+
+RECONCILIATION_V1_COMMITTED_GUARD = (
+    "if snapshot.current_generation != Some(self.record.connection().candidate()) "
+    "|| snapshot.current_transport_ref != Some(self.record.connection().transport_ref()) "
+    "|| current.observed_at > self.record.authorization_deadline()? "
+    "|| !current_authority_matches_record(&self.record, &current)? "
+    "{ return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }"
+)
+
+RECONCILIATION_V2_COMMITTED_GUARD = (
+    "if current_generation != self.record.connection().candidate() "
+    "|| current_transport_ref != self.record.connection().transport_ref() "
+    "|| current.observed_at > self.record.authorization_deadline()? "
+    "|| !current_authority_matches_record(&self.record, &current)? "
+    "{ return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }"
 )
 
 
@@ -194,6 +229,10 @@ def compact(doc: str) -> str:
     return " ".join(doc.split())
 
 
+def compact_rust(doc: str) -> str:
+    return re.sub(r"\s+", "", doc)
+
+
 def need_ordered(doc: str, fragments: tuple[str, ...], label: str) -> None:
     offset = 0
     for fragment in fragments:
@@ -201,6 +240,12 @@ def need_ordered(doc: str, fragments: tuple[str, ...], label: str) -> None:
         if found < 0:
             fail(f"{label}: missing or out of order: {fragment!r}")
         offset = found + len(fragment)
+
+
+def need_exactly_once(doc: str, fragment: str, label: str) -> None:
+    count = doc.count(fragment)
+    if count != 1:
+        fail(f"{label}: expected exactly one {fragment!r}, found {count}")
 
 
 def need(doc: str, fragment: str, label: str, *, ci: bool = False) -> None:
@@ -473,17 +518,26 @@ def foundation_reconnect_documents(
         "COMMIT committed/ambiguous requires reconciliation",
     )
 
-    authority_matcher = compact(
+    authority_matcher = compact_rust(
         rust_braced_block(
             implementation,
             "fn current_authority_matches_record(",
             "complete current authority matcher",
         )
     )
-    for comparison in CURRENT_AUTHORITY_COMPARISONS:
-        need(authority_matcher, comparison, "complete current authority matcher")
+    need(
+        authority_matcher,
+        compact_rust(CURRENT_AUTHORITY_EXPRESSION) + "}",
+        "complete conjunctive current authority matcher",
+    )
+    for term in CURRENT_AUTHORITY_TERMS:
+        need(
+            authority_matcher,
+            compact_rust(term),
+            "complete current authority matcher",
+        )
 
-    evidence_matcher = compact(
+    evidence_matcher = compact_rust(
         rust_braced_block(
             implementation,
             "fn authenticated_evidence_observed_by(",
@@ -493,9 +547,14 @@ def foundation_reconnect_documents(
     for comparison in AUTHENTICATED_EVIDENCE_COMPARISONS:
         need(
             evidence_matcher,
-            comparison,
+            compact_rust(comparison),
             "authenticated evidence observation matcher",
         )
+    need(
+        evidence_matcher,
+        compact_rust(AUTHENTICATED_EVIDENCE_EXPRESSION) + "}",
+        "conjunctive authenticated evidence observation matcher",
+    )
 
     authorize_commit_v1 = compact(
         rust_impl_method(
@@ -523,6 +582,18 @@ def foundation_reconnect_documents(
         AUTHORIZE_COMMIT_ORDERED_INVARIANTS,
         "ReconnectDurabilityFlowV2 authorize_commit",
     )
+    for label, authorize_commit in (
+        ("ReconnectDurabilityFlowV1 authorize_commit", authorize_commit_v1),
+        ("ReconnectDurabilityFlowV2 authorize_commit", authorize_commit_v2),
+    ):
+        normalized = compact_rust(authorize_commit)
+        need(normalized, compact_rust(AUTHORIZE_AUTHORITY_GUARD), label)
+        need(normalized, compact_rust(AUTHORIZE_DEADLINE_GUARD), label)
+        need_exactly_once(
+            normalized,
+            "ReconnectCommitRequestV1{",
+            f"{label} commit request construction",
+        )
     need_re(
         implementation,
         r"authorization_deadline.*?prepared_deadline.*?original_grace_deadline.*?platform_deadline.*?trust_deadline.*?credential_expiration",
@@ -554,6 +625,25 @@ def foundation_reconnect_documents(
         RECONCILIATION_V2_ORDERED_INVARIANTS,
         "ReconnectDurabilityFlowV2 accept_reconciliation",
     )
+    for label, reconciliation, guard in (
+        (
+            "ReconnectDurabilityFlowV1 accept_reconciliation",
+            accept_reconciliation_v1,
+            RECONCILIATION_V1_COMMITTED_GUARD,
+        ),
+        (
+            "ReconnectDurabilityFlowV2 accept_reconciliation",
+            accept_reconciliation_v2,
+            RECONCILIATION_V2_COMMITTED_GUARD,
+        ),
+    ):
+        normalized = compact_rust(reconciliation)
+        need(normalized, compact_rust(guard), label)
+        need_exactly_once(
+            normalized,
+            "InstallController{",
+            f"{label} controller installation",
+        )
 
     need(verifier, "pub struct VerifiedRecoveryDurabilityFactsV1", "rich recovery verifier result")
     need_re(

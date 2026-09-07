@@ -75,25 +75,282 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
         self.assertEqual([profile["verdict"] for profile in profiles], ["FAIL", "PASS"])
         self.assertEqual(failures, ["FIRST: first failed"])
 
-    def test_foundation_oracle_rejects_each_relaxed_authority_comparison(self) -> None:
+    def test_foundation_oracle_rejects_each_relaxed_authority_term(self) -> None:
         task, implementation, verifier = self._foundation_documents()
         authority_matcher = audit.rust_braced_block(
             implementation,
             "fn current_authority_matches_record(",
             "complete current authority matcher",
         )
-        for comparison in audit.CURRENT_AUTHORITY_COMPARISONS:
-            with self.subTest(comparison=comparison):
-                pattern = re.sub(r"\\ ", r"\\s+", re.escape(comparison))
-                mutated_matcher, replacements = re.subn(
-                    pattern, "true", authority_matcher, count=1
+        for term in audit.CURRENT_AUTHORITY_TERMS:
+            if term.startswith("authenticated_evidence_observed_by"):
+                relaxed = "!" + term
+            elif "==" in term:
+                relaxed = term.replace("==", "!=", 1)
+            elif "candidate.is_live_at" in term:
+                term = "candidate.is_live_at(current.observed_at)"
+                relaxed = "!candidate.is_live_at(current.observed_at)"
+            else:
+                self.assertEqual(term, "!current.current_controller_present")
+                relaxed = term.removeprefix("!")
+            with self.subTest(term=term):
+                mutated_matcher = self._replace_compact_fragment(
+                    authority_matcher, term, relaxed
                 )
-                self.assertEqual(replacements, 1)
-                mutated = implementation.replace(
-                    authority_matcher, mutated_matcher, 1
-                )
+                mutated = implementation.replace(authority_matcher, mutated_matcher, 1)
                 with self.assertRaisesRegex(
-                    SystemExit, "complete current authority matcher"
+                    SystemExit, "current authority matcher"
+                ):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_relaxed_authority_connectors(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        authority_matcher = audit.rust_braced_block(
+            implementation,
+            "fn current_authority_matches_record(",
+            "complete current authority matcher",
+        )
+        for occurrence in range(len(audit.CURRENT_AUTHORITY_TERMS) - 1):
+            with self.subTest(connector=occurrence):
+                mutated_matcher = self._replace_nth(
+                    authority_matcher, "&&", "||", occurrence
+                )
+                mutated = implementation.replace(authority_matcher, mutated_matcher, 1)
+                with self.assertRaisesRegex(SystemExit, "conjunctive current authority"):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_relaxed_evidence_logic(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        evidence = audit.rust_braced_block(
+            implementation,
+            "fn authenticated_evidence_observed_by(",
+            "authenticated evidence observation matcher",
+        )
+        for comparison in audit.AUTHENTICATED_EVIDENCE_COMPARISONS:
+            with self.subTest(comparison=comparison):
+                mutated_evidence = self._replace_compact_fragment(
+                    evidence, comparison, comparison.replace(">=", "<", 1)
+                )
+                mutated = implementation.replace(evidence, mutated_evidence, 1)
+                with self.assertRaisesRegex(
+                    SystemExit, "authenticated evidence observation matcher"
+                ):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+        mutated_evidence = self._replace_nth(evidence, "&&", "||", 0)
+        mutated = implementation.replace(evidence, mutated_evidence, 1)
+        with self.assertRaisesRegex(SystemExit, "conjunctive authenticated evidence"):
+            audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_relaxed_authorize_guards_per_version(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        mutations = (
+            (
+                "self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation",
+                "self.phase == ReconnectDurabilityPhaseV1::AwaitFinalRevalidation",
+            ),
+            (
+                "if !current_authority_matches_record",
+                "if current_authority_matches_record",
+            ),
+            (
+                ")? || !authenticated_evidence_observed_by",
+                ")? && !authenticated_evidence_observed_by",
+            ),
+            (
+                "|| !authenticated_evidence_observed_by",
+                "|| authenticated_evidence_observed_by",
+            ),
+            (
+                "ReconnectDurabilityErrorV1::StaleAuthority",
+                "ReconnectDurabilityErrorV1::InvalidPhase",
+            ),
+            (
+                "let deadline = self.record.authorization_deadline()?;",
+                "let deadline = self.record.authorization_deadline()? + 1;",
+            ),
+            ("if now > deadline", "if now <= deadline"),
+            ("deadline || current.observed_at", "deadline && current.observed_at"),
+            ("current.observed_at > deadline", "current.observed_at <= deadline"),
+            (
+                "ReconnectDurabilityErrorV1::DeadlineExpired",
+                "ReconnectDurabilityErrorV1::StaleAuthority",
+            ),
+        )
+        for version in ("V1", "V2"):
+            method = audit.rust_impl_method(
+                implementation,
+                f"impl ReconnectDurabilityFlow{version} {{",
+                "pub fn authorize_commit(",
+                f"{version} authorize_commit",
+            )
+            for original, relaxed in mutations:
+                with self.subTest(version=version, mutation=original):
+                    mutated_method = self._replace_compact_fragment(
+                        method, original, relaxed
+                    )
+                    mutated = implementation.replace(method, mutated_method, 1)
+                    with self.assertRaisesRegex(
+                        SystemExit, f"Flow{version} authorize_commit"
+                    ):
+                        audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_extra_early_commit_request_per_version(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        for version in ("V1", "V2"):
+            method = audit.rust_impl_method(
+                implementation,
+                f"impl ReconnectDurabilityFlow{version} {{",
+                "pub fn authorize_commit(",
+                f"{version} authorize_commit",
+            )
+            request = self._braced_expression(
+                method, "let request = ReconnectCommitRequestV1 {"
+            )
+            request += ";"
+            early_request = request.replace(
+                "let request =", "let _early_request =", 1
+            ).replace(
+                "authorization_deadline: deadline",
+                "authorization_deadline: self.record.authorization_deadline()?",
+                1,
+            )
+            opening = method.index("{") + 1
+            mutated_method = method[:opening] + early_request + method[opening:]
+            mutated = implementation.replace(method, mutated_method, 1)
+            with self.subTest(version=version):
+                with self.assertRaisesRegex(
+                    SystemExit, f"Flow{version} authorize_commit"
+                ):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_relaxed_reconciliation_guards_per_version(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        versions = (
+            (
+                "V1",
+                "snapshot.current_generation != Some(self.record.connection().candidate())",
+                "snapshot.current_transport_ref != Some(self.record.connection().transport_ref())",
+                "generation: self.record.connection().candidate()",
+                "generation: self.record.connection().predecessor()",
+                "transport_ref: self.record.connection().transport_ref()",
+                "transport_ref: snapshot.current_transport_ref.expect(\"committed transport\")",
+            ),
+            (
+                "V2",
+                "current_generation != self.record.connection().candidate()",
+                "current_transport_ref != self.record.connection().transport_ref()",
+                "generation: current_generation",
+                "generation: self.record.connection().predecessor()",
+                "transport_ref: current_transport_ref",
+                "transport_ref: self.record.connection().transport_ref()",
+            ),
+        )
+        for (
+            version,
+            generation,
+            transport,
+            output_generation,
+            relaxed_output_generation,
+            output_transport,
+            relaxed_output_transport,
+        ) in versions:
+            method = audit.rust_impl_method(
+                implementation,
+                f"impl ReconnectDurabilityFlow{version} {{",
+                "pub fn accept_reconciliation(",
+                f"{version} accept_reconciliation",
+            )
+            mutations = (
+                (
+                    "self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired",
+                    "self.phase == ReconnectDurabilityPhaseV1::ReconciliationRequired",
+                ),
+                (
+                    "snapshot.record != self.record",
+                    "snapshot.record == self.record",
+                ),
+                (generation, generation.replace("!=", "==", 1)),
+                (transport, transport.replace("!=", "==", 1)),
+                (
+                    "current.observed_at > self.record.authorization_deadline()?",
+                    "current.observed_at <= self.record.authorization_deadline()?",
+                ),
+                (
+                    "|| !current_authority_matches_record",
+                    "|| current_authority_matches_record",
+                ),
+                (
+                    "self.phase = ReconnectDurabilityPhaseV1::Completed;",
+                    "self.phase = ReconnectDurabilityPhaseV1::Terminal;",
+                ),
+                (output_generation, relaxed_output_generation),
+                (output_transport, relaxed_output_transport),
+            )
+            for original, relaxed in mutations:
+                with self.subTest(version=version, mutation=original):
+                    mutated_method = self._replace_compact_fragment(
+                        method, original, relaxed
+                    )
+                    mutated = implementation.replace(method, mutated_method, 1)
+                    with self.assertRaisesRegex(
+                        SystemExit, f"Flow{version} accept_reconciliation"
+                    ):
+                        audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_relaxed_reconciliation_connectors(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        versions = (
+            ("V1", "if snapshot.current_generation != Some("),
+            ("V2", "if current_generation"),
+        )
+        for version, guard_marker in versions:
+            method = audit.rust_impl_method(
+                implementation,
+                f"impl ReconnectDurabilityFlow{version} {{",
+                "pub fn accept_reconciliation(",
+                f"{version} accept_reconciliation",
+            )
+            guard = audit.rust_braced_block(
+                method, guard_marker, f"{version} committed guard"
+            )
+            for occurrence in range(3):
+                mutated_guard = self._replace_nth(guard, "||", "&&", occurrence)
+                mutated_method = method.replace(guard, mutated_guard, 1)
+                mutated = implementation.replace(method, mutated_method, 1)
+                with self.subTest(version=version, connector=occurrence):
+                    with self.assertRaisesRegex(
+                        SystemExit, f"Flow{version} accept_reconciliation"
+                    ):
+                        audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_extra_early_controller_install(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        for version in ("V1", "V2"):
+            method = audit.rust_impl_method(
+                implementation,
+                f"impl ReconnectDurabilityFlow{version} {{",
+                "pub fn accept_reconciliation(",
+                f"{version} accept_reconciliation",
+            )
+            controller = self._braced_expression(
+                method,
+                f"Ok(ReconnectProjectionDecision{version}::InstallController {{",
+            ) + ")"
+            guard_marker = (
+                "if snapshot.current_generation != Some("
+                if version == "V1"
+                else "if current_generation"
+            )
+            insertion = method.index(guard_marker)
+            early = (
+                "if current.observed_at == current.observed_at { "
+                f"return {controller}; }} "
+            )
+            mutated_method = method[:insertion] + early + method[insertion:]
+            mutated = implementation.replace(method, mutated_method, 1)
+            with self.subTest(version=version):
+                with self.assertRaisesRegex(
+                    SystemExit, f"Flow{version} accept_reconciliation"
                 ):
                     audit.foundation_reconnect_documents(task, mutated, verifier)
 
@@ -111,126 +368,15 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
             "pub fn accept_reconciliation(",
             "V2 reconciliation",
         )
-        mutated_v1 = self._replace_compact_fragment(v1, "if snapshot.record != self.record")
+        mutated_v1 = self._replace_compact_fragment(
+            v1,
+            "snapshot.record != self.record",
+            "snapshot.record == self.record",
+        )
         mutated = implementation.replace(v1, mutated_v1, 1)
         self.assertIn("if snapshot.record != self.record", audit.compact(v2))
         with self.assertRaisesRegex(SystemExit, "FlowV1 accept_reconciliation"):
             audit.foundation_reconnect_documents(task, mutated, verifier)
-
-    def test_foundation_oracle_rejects_each_relaxed_evidence_comparison(self) -> None:
-        task, implementation, verifier = self._foundation_documents()
-        evidence = audit.rust_braced_block(
-            implementation,
-            "fn authenticated_evidence_observed_by(",
-            "authenticated evidence observation matcher",
-        )
-        for comparison in audit.AUTHENTICATED_EVIDENCE_COMPARISONS:
-            with self.subTest(comparison=comparison):
-                mutated_evidence = self._replace_compact_fragment(evidence, comparison)
-                mutated = implementation.replace(evidence, mutated_evidence, 1)
-                with self.assertRaisesRegex(
-                    SystemExit, "authenticated evidence observation matcher"
-                ):
-                    audit.foundation_reconnect_documents(task, mutated, verifier)
-
-    def test_foundation_oracle_rejects_each_authorize_invariant_per_version(self) -> None:
-        task, implementation, verifier = self._foundation_documents()
-        for version in ("V1", "V2"):
-            method = audit.rust_impl_method(
-                implementation,
-                f"impl ReconnectDurabilityFlow{version} {{",
-                "pub fn authorize_commit(",
-                f"{version} authorize_commit",
-            )
-            for invariant in audit.AUTHORIZE_COMMIT_ORDERED_INVARIANTS:
-                with self.subTest(version=version, invariant=invariant):
-                    mutated_method = self._replace_compact_fragment(method, invariant)
-                    mutated = implementation.replace(method, mutated_method, 1)
-                    with self.assertRaisesRegex(
-                        SystemExit, f"Flow{version} authorize_commit"
-                    ):
-                        audit.foundation_reconnect_documents(task, mutated, verifier)
-
-    def test_foundation_oracle_rejects_early_commit_request_per_version(self) -> None:
-        task, implementation, verifier = self._foundation_documents()
-        request = audit.AUTHORIZE_COMMIT_ORDERED_INVARIANTS[-1]
-        for version in ("V1", "V2"):
-            method = audit.rust_impl_method(
-                implementation,
-                f"impl ReconnectDurabilityFlow{version} {{",
-                "pub fn authorize_commit(",
-                f"{version} authorize_commit",
-            )
-            compact_method = audit.compact(method)
-            without_request = compact_method.replace(request, "", 1)
-            opening = without_request.index("{") + 1
-            reordered = (
-                without_request[:opening]
-                + " "
-                + request
-                + " "
-                + without_request[opening:]
-            )
-            mutated = implementation.replace(method, reordered, 1)
-            with self.subTest(version=version):
-                with self.assertRaisesRegex(
-                    SystemExit, f"Flow{version} authorize_commit"
-                ):
-                    audit.foundation_reconnect_documents(task, mutated, verifier)
-
-    def test_foundation_oracle_rejects_each_reconciliation_invariant_per_version(self) -> None:
-        task, implementation, verifier = self._foundation_documents()
-        versions = (
-            ("V1", audit.RECONCILIATION_V1_ORDERED_INVARIANTS),
-            ("V2", audit.RECONCILIATION_V2_ORDERED_INVARIANTS),
-        )
-        for version, invariants in versions:
-            method = audit.rust_impl_method(
-                implementation,
-                f"impl ReconnectDurabilityFlow{version} {{",
-                "pub fn accept_reconciliation(",
-                f"{version} accept_reconciliation",
-            )
-            for invariant in invariants:
-                with self.subTest(version=version, invariant=invariant):
-                    mutated_method = self._replace_compact_fragment(method, invariant)
-                    mutated = implementation.replace(method, mutated_method, 1)
-                    with self.assertRaisesRegex(
-                        SystemExit, f"Flow{version} accept_reconciliation"
-                    ):
-                        audit.foundation_reconnect_documents(task, mutated, verifier)
-
-    def test_foundation_oracle_rejects_early_controller_install_per_version(self) -> None:
-        task, implementation, verifier = self._foundation_documents()
-        versions = (
-            ("V1", audit.RECONCILIATION_V1_ORDERED_INVARIANTS),
-            ("V2", audit.RECONCILIATION_V2_ORDERED_INVARIANTS),
-        )
-        for version, invariants in versions:
-            method = audit.rust_impl_method(
-                implementation,
-                f"impl ReconnectDurabilityFlow{version} {{",
-                "pub fn accept_reconciliation(",
-                f"{version} accept_reconciliation",
-            )
-            compact_method = audit.compact(method)
-            controller = invariants[-3]
-            committed = invariants[2]
-            without_controller = compact_method.replace(controller, "", 1)
-            insertion = without_controller.index(committed) + len(committed)
-            reordered = (
-                without_controller[:insertion]
-                + " "
-                + controller
-                + " "
-                + without_controller[insertion:]
-            )
-            mutated = implementation.replace(method, reordered, 1)
-            with self.subTest(version=version):
-                with self.assertRaisesRegex(
-                    SystemExit, f"Flow{version} accept_reconciliation"
-                ):
-                    audit.foundation_reconnect_documents(task, mutated, verifier)
 
     @staticmethod
     def _foundation_documents() -> tuple[str, str, str]:
@@ -243,12 +389,26 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
         )
 
     @staticmethod
-    def _replace_compact_fragment(block: str, fragment: str) -> str:
+    def _replace_compact_fragment(
+        block: str, fragment: str, replacement: str
+    ) -> str:
         pattern = re.sub(r"\\ ", r"\\s+", re.escape(fragment))
-        mutated, replacements = re.subn(pattern, "true", block, count=1)
+        mutated, replacements = re.subn(pattern, replacement, block, count=1)
         if replacements != 1:
             raise AssertionError(f"expected exactly one match for {fragment!r}")
         return mutated
+
+    @staticmethod
+    def _replace_nth(block: str, original: str, replacement: str, index: int) -> str:
+        starts = [match.start() for match in re.finditer(re.escape(original), block)]
+        if index >= len(starts):
+            raise AssertionError(f"missing occurrence {index} of {original!r}")
+        start = starts[index]
+        return block[:start] + replacement + block[start + len(original) :]
+
+    @staticmethod
+    def _braced_expression(block: str, marker: str) -> str:
+        return audit.rust_braced_block(block, marker, marker)
 
 
 if __name__ == "__main__":
