@@ -13,6 +13,7 @@ lease until a later explicit Work application.
 allocation_id: OTV2-WP5-CHARACTER-AUDIT-OUTBOX-20260907
 repository: Oteryn/Oteryn-Game
 allocation_state: NOT_ACTIVE
+canonical_pg_ci_prerequisite: "PR #416 / OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907"
 owner_contracts:
   - ANL-01_GAME_EVENT_AND_AUDIT_FOUNDATION_CONTRACT.md
   - DUR-02_PROFILE_NEUTRAL_CHARACTER_PERSISTENCE_OWNER_BASELINE.md
@@ -30,16 +31,19 @@ semantics, TransactionEventRef completeness, at-least-once publication and
 EventId deduplication.
 
 Protected `docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json` intentionally has
-an empty `event_types` list. Therefore Character Authority must not invent event
-IDs/payloads in runtime code or claim owner/bootstrap/transfer completion before
-an exact domain-event registration is separately protected.
+an empty `event_types` list. Therefore Character Authority must not invent numeric
+event **type IDs** or payload schemas in runtime code, or claim
+owner/bootstrap/transfer completion before exact domain-event-type registration is
+separately protected. Producer-owned UUIDv7 `EventId` values remain mandatory
+per-event identities allocated under ANL-01 before or inside the authoritative
+transaction; they are not registry-assigned type IDs.
 
 ## Prospective conditional surfaces
 
 After explicit Work application and fresh ownership readback:
 
 ```text
-docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json              # exact event registration
+docs/contracts/GAME_EVENT_FOUNDATION_REGISTRY.json              # exact event-type registration
 docs/contracts/game-events/v1/character_authority.proto         # new payload IDL
 apps/game-server/src/durability/character_authority_audit.rs     # new typed outbox/audit owner
 apps/game-server/src/durability/character_authority.rs           # integration inside same txn
@@ -50,9 +54,11 @@ apps/game-server/tests/character_authority_postgres.rs           # same dedicate
 ```
 
 Registry, existing Durability files and migration paths are conditional future
-leases. No current path is writable from this document. Exact event IDs and the
-next migration number are selected only after fresh protected registry/WP4
-readback under one serialized coordinator allocation.
+leases. No current path is writable from this document. Exact numeric event type
+IDs and the next migration number are selected only after fresh protected
+registry/WP4 readback under one serialized coordinator allocation. Per-event
+UUIDv7 EventIds are then allocated by the producer under ANL-01 and must remain
+stable across retry/reconciliation.
 
 No broker/warehouse/analytics detector is required for the first authoritative
 commit path. The Durability-owned transactional outbox is the publication source;
@@ -71,7 +77,7 @@ cover the exact enabled semantics among:
 - rename if the selected product slice enables it and its accepted owner requires
   durable audit.
 
-Disabled mutation families require no speculative event ID, but cannot be
+Disabled mutation families require no speculative event **type ID**, but cannot be
 silently enabled later without registration.
 
 Each registered type must define all fields required by
@@ -91,17 +97,20 @@ For one accepted Character mutation transaction:
 
 1. allocate stable OperationId/TransactionId/EventId values under their owning
    contracts before authoritative commit;
-2. validate current owner/world/lifecycle/revision/session fences;
-3. stage the Character mutation and exactly one CharacterRevision successor;
-4. stage immutable operation receipt;
-5. stage every mandatory registered `DURABLE_AUDIT` event with a complete
-   TransactionEventRef (`TransactionId`, contiguous ordinal, final count);
-6. stage durable outbox/publication state;
-7. COMMIT all of the above atomically.
+2. resolve the protected registered numeric event **type IDs**, schema revisions
+   and retention profiles for every mandatory event;
+3. validate current owner/world/lifecycle/revision/session fences;
+4. stage the Character mutation and exactly one CharacterRevision successor;
+5. stage immutable operation receipt;
+6. stage every mandatory registered `DURABLE_AUDIT` event with its producer-owned
+   immutable UUIDv7 EventId and a complete TransactionEventRef (`TransactionId`,
+   contiguous ordinal, final count);
+7. stage durable outbox/publication state;
+8. COMMIT all of the above atomically.
 
-If required event encoding/registration/outbox reservation cannot be established,
-the authoritative Character mutation does not commit. There is no mutation-first
-best-effort audit.
+If required event type registration/schema/retention, event encoding or outbox
+reservation cannot be established, the authoritative Character mutation does not
+commit. There is no mutation-first best-effort audit.
 
 Publication is at-least-once **after** commit. Publisher outage does not roll back
 the committed Character state; the durable outbox remains pending. Retry reuses
@@ -109,24 +118,24 @@ the same EventId and exact immutable payload bytes. Consumer deduplication uses
 EventId. Publication cannot replay authoritative gameplay/domain mutation.
 
 Ambiguous Character operation reconciliation returns the same committed receipt
-and corresponding immutable audit identities. A retry must not create duplicate
-semantic events or a second CharacterRevision.
+and corresponding immutable EventIds/audit identities. A retry must not create
+duplicate semantic events or a second CharacterRevision.
 
 ## RED/GREEN evidence
 
 RED before implementation:
 
 - a Character owner/world/lifecycle mutation can currently be described without
-  any registered domain audit event/outbox, proving the accepted atomic audit
+  any registered domain audit event type/outbox, proving the accepted atomic audit
   invariant is absent.
 
-GREEN requires actual PostgreSQL 17.6 tests (through the protected dedicated-PG
-CI routing prerequisite) proving:
+GREEN requires actual PostgreSQL 17.6 tests through protected live PR **#416**
+(`OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907`) proving:
 
 - valid owner bootstrap/transfer commits Character root + revision + receipt +
   mandatory outbox records atomically;
-- injected event-registration/encoding/outbox failure rolls back the Character
-  mutation and revision;
+- injected event-type registration/schema/retention/encoding/outbox failure rolls
+  back the Character mutation and revision;
 - DB rollback after staged event produces neither mutation nor durable event;
 - lost commit response reconciles one receipt and the same EventIds;
 - retry after committed result does not duplicate CharacterRevision/event;
@@ -146,8 +155,9 @@ before any ownership-sensitive Character mutation is activated. Material source
 acceptance additionally requires:
 
 - protected WP3/WP4 release and exact migration/path application;
-- protected `OTV2_WP5_DEDICATED_POSTGRES_CI_ROUTING_20260907` activation for
-  `character_authority_postgres`;
+- protected live PR **#416** allocation
+  `OTV2_WP5_DEDICATED_POSTGRES_CI_ROUTING_20260907` **and its later material
+  CONTROL implementation exercised** for `character_authority_postgres`;
 - exact event-type/retention registration through a separately reviewed registry
   mutation;
 - independent high-risk whole-diff review;
