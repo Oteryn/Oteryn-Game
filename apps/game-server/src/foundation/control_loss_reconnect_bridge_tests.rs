@@ -431,6 +431,161 @@ fn claims(
     };
     vec![account_row, character]
 }
+
+#[derive(Clone)]
+struct LifecycleOwner {
+    session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    claims: Vec<AdmissionAuthorityPublicationChangeV1>,
+}
+impl super::super::fnd04_verifier::fresh_source_sealed::Sealed for LifecycleOwner {}
+impl AdmissionClaimOwningSourceV1 for LifecycleOwner {
+    fn prepare_lifecycle_claim(
+        &self,
+        operation: &AdmissionClaimLifecycleOperationV1,
+        now: i64,
+    ) -> Result<AdmissionClaimLifecycleResolutionV1, AdmissionAuthorityPublicationErrorV1> {
+        let predecessors = self.claims.clone();
+        let mut successors = predecessors.clone();
+        let holder = match operation {
+            AdmissionClaimLifecycleOperationV1::TerminalRelease { .. } => None,
+            AdmissionClaimLifecycleOperationV1::TerminalReplacement { candidate, .. } => {
+                Some(candidate.identity().game_session_id())
+            }
+        };
+        for row in &mut successors {
+            row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+                expected_publication_revision: row.publication_revision,
+            };
+            row.publication_revision = row
+                .publication_revision
+                .checked_add(1)
+                .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+            row.source.source_revision = row
+                .source
+                .source_revision
+                .checked_add(1)
+                .ok_or(AdmissionAuthorityPublicationErrorV1::Invalid)?;
+            row.source.decision_identity = "next-terminal-replacement".into();
+            row.source.source_observed_at = now;
+            match &mut row.state {
+                AdmissionAuthorityGuardStateV1::Account { security, presence } => {
+                    security.provenance.publication_revision = row.publication_revision;
+                    *presence = holder.map(|session| (self.session.commit().character_id(), session));
+                }
+                AdmissionAuthorityGuardStateV1::Character { holder: current, .. } => {
+                    *current = holder;
+                }
+                _ => return Err(AdmissionAuthorityPublicationErrorV1::Invalid),
+            }
+        }
+        Ok(AdmissionClaimLifecycleResolutionV1 {
+            current_session: self.session,
+            evidence: AdmissionClaimTransitionEvidenceV1 {
+                predecessors,
+                successors,
+                prepared_at: now,
+            },
+        })
+    }
+
+    fn prepare_fresh_claim(
+        &self,
+        _: &super::super::fresh_admission_durability::FreshAdmissionAuditBindingV1,
+        _: i64,
+    ) -> Result<AdmissionClaimTransitionEvidenceV1, AdmissionAuthorityPublicationErrorV1> {
+        Err(AdmissionAuthorityPublicationErrorV1::Unavailable)
+    }
+}
+
+fn replacement_record(
+    snapshot: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    account_id: &str,
+    session: GameSessionId,
+    attempt: u64,
+    transport: u8,
+    now: i64,
+) -> ReconnectDurabilityRecordV1 {
+    let identity = ReconnectIdentityV1::new(
+        session,
+        ReconnectAttemptRef::new(attempt).require("replacement attempt"),
+        account_id,
+        snapshot.commit().character_id(),
+        snapshot.commit().world_id(),
+        snapshot.current_runtime_scope(),
+    )
+    .require("replacement identity");
+    let connection = ReconnectConnectionFenceV1::new(
+        snapshot.current_connection_generation(),
+        ConnectionGeneration::new(snapshot.current_connection_generation().get() + 1)
+            .require("replacement generation"),
+        AuthenticatedTransportRefV1::decode(&[transport; 16])
+            .require("replacement transport"),
+    )
+    .require("replacement connection");
+    let authority = ReconnectAuthorityFenceV1::new(
+        snapshot.current_character_lease().generation(),
+        snapshot.current_scope_generation(),
+    )
+    .require("replacement authority");
+    let continuity = ReconnectContinuityV1::new(
+        snapshot.current_control_loss_epoch().require("replacement epoch"),
+        snapshot
+            .current_original_grace_deadline()
+            .require("replacement grace"),
+        now + 2,
+        ProtectionEntitlementV1::unused(),
+    )
+    .require("replacement continuity");
+    let platform = AuthorityEvidenceFenceV1::new(
+        "platform-security",
+        "reconnect",
+        "account",
+        "sec:next",
+        "decision:sec:next",
+        now,
+    )
+    .require("replacement platform fence");
+    let trust = AuthorityEvidenceFenceV1::new(
+        "proof-trust",
+        "reconnect",
+        "key",
+        "trust:next",
+        "decision:trust:next",
+        now,
+    )
+    .require("replacement trust fence");
+    let compatibility = ReconnectCompatibilityEvidenceV1::new(
+        1,
+        1,
+        "rules-1",
+        "content-1",
+        "map-1",
+        "policy-1",
+        12,
+        platform,
+        trust,
+        Some(now + 2),
+    )
+    .require("replacement compatibility");
+    ReconnectDurabilityRecordV1::new(
+        identity,
+        connection,
+        authority,
+        continuity,
+        ReconnectProofV1::ReauthenticatedRecovery {
+            recovery_grant_nonce: [0x55; 32],
+        },
+        Fnd02ReconciliationFenceV1::new(
+            CommandId::new(attempt).require("replacement command"),
+            vec![],
+            41,
+            vec![],
+        )
+        .require("replacement reconciliation"),
+        compatibility,
+    )
+    .require("replacement record")
+}
 fn bridge_fixture(replacement: bool) -> (BridgeOwner, ReconnectIdentityV1, String) {
     let (token, security, recovery) = credential_fixture().require("credential fixture");
     let mut loss = loss_owner().require("loss fixture");
@@ -1981,6 +2136,54 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
         2 => CompleteReconnectProofV1::Fast,
         _ => unreachable!(),
     };
+    if proof_case == 1 {
+        let mut substituted = owner.clone();
+        substituted
+            .current
+            .snapshot
+            .session
+            .replacement_game_session_id = Some(wrong);
+        let original = substituted.current.snapshot.candidate;
+        let substituted_candidate = ReconnectCandidateBindingV1::new(
+            wrong,
+            original.reconnect_attempt_ref(),
+            original.connection_generation(),
+            original.transport_ref(),
+            original.prepared_deadline(),
+        )
+        .require("substituted candidate");
+        substituted.current.snapshot.candidate = substituted_candidate;
+        substituted.current.snapshot.proof_transition.predecessor_session = wrong;
+        substituted.current.snapshot.proof_transition.successor_session = wrong;
+        substituted.current.snapshot.proof_transition.candidate = substituted_candidate;
+        for row in &mut substituted.current.snapshot.claims {
+            match &mut row.state {
+                AdmissionAuthorityGuardStateV1::Account { presence, .. } => {
+                    *presence = Some((identity.character_id(), wrong));
+                }
+                AdmissionAuthorityGuardStateV1::Character { holder, .. } => {
+                    *holder = Some(wrong);
+                }
+                _ => {}
+            }
+        }
+        let substituted_identity = ReconnectIdentityV1::new(
+            wrong,
+            attempt,
+            &substituted.current.snapshot.recovery.account_id,
+            substituted.current.snapshot.recovery.character_id,
+            substituted.current.snapshot.recovery.world_id,
+            substituted.current.snapshot.session.current_runtime_scope(),
+        )
+        .require("substituted reconnect identity");
+        assert!(CompleteReconnectAuthorizationV1::authorize(
+            &substituted,
+            substituted_identity,
+            next_proof(&substituted, 102),
+            102,
+        )
+        .is_err());
+    }
     for rejected in [predecessor, wrong] {
         let rejected_identity = ReconnectIdentityV1::new(
             rejected,
@@ -2064,6 +2267,73 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
     assert_eq!(commit.session().commit().game_session_id(), predecessor);
     flow.adopt_current(&owner, 103)
         .require("following reconnect adoption");
+
+    if proof_case == 1 {
+        let mut terminal = commit.session();
+        terminal.session_state = GameSessionState::Terminal;
+        terminal.current_transport = None;
+        let mut next_id = [0; 16];
+        next_id[6] = 0x70;
+        next_id[8] = 0x80;
+        next_id[15] = 12;
+        let next_session = GameSessionId::decode(&next_id).require("second replacement session");
+        let candidate = replacement_record(
+            terminal,
+            &owner.current.snapshot.recovery.account_id,
+            next_session,
+            22,
+            12,
+            104,
+        );
+        let presence = AccountPresenceClaimV1::new(
+            &owner.current.snapshot.recovery.account_id,
+            terminal.commit().character_id(),
+        )
+        .require("second replacement presence");
+        let authorization = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+            &owner.current.snapshot.recovery.account_id,
+            Some(&presence),
+            replacement,
+            next_session,
+            terminal,
+            &candidate,
+        )
+        .require("second replacement authorization");
+        let mut lifecycle_claims = commit.claims().to_vec();
+        if let AdmissionAuthorityGuardStateV1::Account { security, .. } =
+            &mut lifecycle_claims[0].state
+        {
+            security.provenance.source_revision = 8;
+            security.provenance.accepted_source_revision = 8;
+            security.provenance.decision_identity = "second-replacement-security".into();
+            security.provenance.accepted_decision_identity =
+                "second-replacement-security".into();
+            security.provenance.source_observed_at = 104;
+        }
+        let lifecycle_owner = LifecycleOwner {
+            session: terminal,
+            claims: lifecycle_claims,
+        };
+        let transition = TerminalReplacementClaimTransitionV1::prepare(
+            &lifecycle_owner,
+            &authorization,
+            terminal,
+            &candidate,
+            104,
+        )
+        .require("second replacement transition");
+        let rows = lifecycle_owner
+            .claims
+            .iter()
+            .cloned()
+            .map(Some)
+            .collect::<Vec<_>>();
+        transition
+            .validate_locked(&rows, terminal, &candidate, 104)
+            .require("second replacement locked transition");
+        assert_eq!(terminal.current_game_session_id(), replacement);
+        assert_eq!(terminal.commit().game_session_id(), predecessor);
+    }
 }
 
 #[test]
@@ -2115,4 +2385,341 @@ fn replacement_session_is_current_at_the_post_grace_actor_boundary() {
     actor
         .validate(102)
         .require("replacement remains current after grace");
+}
+
+#[derive(Clone)]
+struct ReplacementPostGraceActor(PostGraceActorObservationV1);
+impl super::super::fnd04_verifier::recovery_source_sealed::Sealed
+    for ReplacementPostGraceActor
+{
+}
+impl PostGraceActorSourceV1 for ReplacementPostGraceActor {
+    fn resolve_current_actor(
+        &self,
+        _: &str,
+        _: CharacterId,
+        _: i64,
+    ) -> Result<PostGraceActorObservationV1, ReconnectDurabilityErrorV1> {
+        Ok(self.0.clone())
+    }
+}
+
+#[derive(Clone)]
+struct ReplacementPostGraceClaims {
+    actor: PostGraceActorObservationV1,
+    transition: AdmissionClaimTransitionEvidenceV1,
+}
+impl super::super::fnd04_verifier::recovery_source_sealed::Sealed
+    for ReplacementPostGraceClaims
+{
+}
+impl PostGraceClaimOwningSourceV1 for ReplacementPostGraceClaims {
+    fn prepare_post_grace_claim(
+        &self,
+        _: &PostGraceRecoveryOperationV1,
+        _: i64,
+    ) -> Result<PostGraceClaimResolutionV1, AdmissionAuthorityPublicationErrorV1> {
+        Ok(PostGraceClaimResolutionV1 {
+            current_actor: self.actor.clone(),
+            transition: self.transition.clone(),
+        })
+    }
+}
+
+#[derive(Default)]
+struct ReplacementPostGraceQueue(Vec<PostGraceDurabilityRequestV1>);
+impl PostGraceDurabilityPortV1 for ReplacementPostGraceQueue {
+    fn submit(&mut self, request: &PostGraceDurabilityRequestV1) -> PostGraceSubmissionV1 {
+        self.0.push(request.clone());
+        PostGraceSubmissionV1::Accepted
+    }
+}
+
+struct ReplacementPostGraceCompletion(Option<PostGraceDurableCompletionV1>);
+impl super::super::fnd04_verifier::recovery_source_sealed::Sealed
+    for ReplacementPostGraceCompletion
+{
+}
+impl PostGraceCompletionSourceV1 for ReplacementPostGraceCompletion {
+    fn take_completion(
+        &mut self,
+        _: &PostGraceClaimEvidenceV1,
+        _: PostGraceFlowPhaseV1,
+    ) -> Result<Option<PostGraceDurableCompletionV1>, ReconnectDurabilityErrorV1> {
+        Ok(self.0.take())
+    }
+}
+
+#[derive(Clone)]
+struct ReplacementPostGraceAdoption(PostGraceAdoptionCurrentV1);
+impl super::super::fnd04_verifier::recovery_source_sealed::Sealed
+    for ReplacementPostGraceAdoption
+{
+}
+impl PostGraceAdoptionSourceV1 for ReplacementPostGraceAdoption {
+    fn current_adoption(
+        &self,
+        _: &PostGraceClaimEvidenceV1,
+        _: i64,
+    ) -> Result<PostGraceAdoptionCurrentV1, ReconnectDurabilityErrorV1> {
+        Ok(self.0.clone())
+    }
+}
+
+#[test]
+fn replacement_session_completes_post_grace_prepare_commit_and_adoption() {
+    let (_, owner) = committed_bridge(true, true);
+    let immutable_commit = owner.current.snapshot.session.commit();
+    let replacement = owner.current.snapshot.session.current_game_session_id();
+    assert_ne!(replacement, immutable_commit.game_session_id());
+
+    let epoch = ControlLossEpochRefV1::new(2).require("post-grace epoch");
+    let mut predecessor = owner.current.snapshot.session;
+    predecessor.session_state = GameSessionState::Terminal;
+    predecessor.current_transport = None;
+    predecessor.current_character_lease =
+        CharacterLease::new(immutable_commit.character_id(), 3).require("advanced lease");
+    predecessor.current_scope_generation =
+        ScopeOwnershipGeneration::new(4).require("advanced scope");
+    predecessor = predecessor
+        .with_control_loss_continuity(epoch, 101)
+        .require("post-grace continuity");
+
+    let mut predecessors = owner.current.snapshot.claims.clone();
+    if let AdmissionAuthorityGuardStateV1::Character {
+        lease_generation, ..
+    } = &mut predecessors[1].state
+    {
+        *lease_generation = 3;
+    }
+    let actor = PostGraceActorObservationV1 {
+        source_authority: "game-owner".into(),
+        source_revision: 20,
+        accepted_source_revision: 20,
+        decision_identity: "replacement-post-grace-20".into(),
+        accepted_decision_identity: "replacement-post-grace-20".into(),
+        source_observed_at: 102,
+        current: owner.current.snapshot.recovery.clone(),
+        predecessor,
+        account_presence: Some(owner.current.snapshot.account_presence.clone()),
+        present_uncontrolled: true,
+        runtime_ready: true,
+        reconciliation: owner.current.snapshot.fnd02.clone(),
+        placement_identity: owner.current.snapshot.placement_identity,
+        placement_revision: owner.current.snapshot.placement_revision,
+        account_security_source_revision: 7,
+        budget: RetainedRecoveryBudgetV1::restore(
+            epoch,
+            RecoveryEpochStateV1::Open,
+            true,
+            vec![],
+        )
+        .require("post-grace budget"),
+        protection: Some(owner.current.snapshot.protection),
+    };
+    let actor_source = ReplacementPostGraceActor(actor.clone());
+    let (token, evidence_source, current) = credential_fixture().require("post-grace credential");
+    let trust = RecoveryDurabilityTrustContextV2::from_owning_source(&evidence_source);
+    let verified = verify_recovery_grant_durability_v2(&token, 102, &trust, &current)
+        .require("post-grace verified credential");
+    let mut candidate_bytes = [0; 16];
+    candidate_bytes[6] = 0x70;
+    candidate_bytes[8] = 0x80;
+    candidate_bytes[15] = 13;
+    let candidate = GameSessionId::decode(&candidate_bytes).require("post-grace candidate");
+    let attempt = ReconnectAttemptRef::new(23).require("post-grace attempt");
+    let transport =
+        AuthenticatedTransportRefV1::decode(&[13; 16]).require("post-grace transport");
+    let authorize = |source: &ReplacementPostGraceActor| {
+        PostGraceRecoveryAuthorizationV1::prepare(
+            &verified,
+            &trust,
+            &PostGraceActorAuthorityV1::from_owning_source(source),
+            candidate,
+            attempt,
+            transport,
+            102,
+        )
+    };
+    let mut rolled_back_lease = actor_source.clone();
+    rolled_back_lease.0.predecessor.current_character_lease =
+        CharacterLease::new(immutable_commit.character_id(), 1).require("rolled-back lease");
+    assert!(authorize(&rolled_back_lease).is_err());
+    let mut rolled_back_scope = actor_source.clone();
+    rolled_back_scope.0.predecessor.current_scope_generation =
+        ScopeOwnershipGeneration::new(2).require("rolled-back scope");
+    assert!(authorize(&rolled_back_scope).is_err());
+    let authorization = PostGraceRecoveryAuthorizationV1::prepare(
+        &verified,
+        &trust,
+        &PostGraceActorAuthorityV1::from_owning_source(&actor_source),
+        candidate,
+        attempt,
+        transport,
+        102,
+    )
+    .require("post-grace authorization");
+
+    let mut successors = predecessors.clone();
+    for row in &mut successors {
+        row.precondition = AdmissionPublicationPreconditionV1::CompareAndSet {
+            expected_publication_revision: row.publication_revision,
+        };
+        row.publication_revision += 1;
+        row.source.source_revision += 1;
+        row.source.decision_identity = "replacement-post-grace-claim".into();
+        row.source.source_observed_at = 102;
+        match &mut row.state {
+            AdmissionAuthorityGuardStateV1::Account { security, presence } => {
+                security.provenance.publication_revision = row.publication_revision;
+                *presence = Some((current.character_id, candidate));
+            }
+            AdmissionAuthorityGuardStateV1::Character { holder, .. } => {
+                *holder = Some(candidate);
+            }
+            _ => unreachable!("post-grace claim shape"),
+        }
+    }
+    let claim_owner = ReplacementPostGraceClaims {
+        actor: actor.clone(),
+        transition: AdmissionClaimTransitionEvidenceV1 {
+            predecessors: predecessors.clone(),
+            successors,
+            prepared_at: 102,
+        },
+    };
+    let mut mismatched_claim_owner = claim_owner.clone();
+    if let AdmissionAuthorityGuardStateV1::Character {
+        lease_generation, ..
+    } = &mut mismatched_claim_owner.transition.predecessors[1].state
+    {
+        *lease_generation = 2;
+    }
+    assert!(PostGraceClaimTransitionV1::prepare(
+        &mismatched_claim_owner,
+        &authorization,
+        102,
+    )
+    .is_err());
+    let claim = PostGraceClaimTransitionV1::prepare(&claim_owner, &authorization, 102)
+        .require("post-grace claim transition");
+    let mut flow = PostGraceDurabilityFlowV1::begin(authorization, &claim_owner, 102)
+        .require("post-grace flow");
+    assert_eq!(flow.operation(), claim.evidence());
+    let mut queue = ReplacementPostGraceQueue::default();
+    flow.submit_prepare(&mut queue).require("post-grace prepare");
+    flow.poll(&mut ReplacementPostGraceCompletion(Some(
+        PostGraceDurableCompletionV1 {
+            operation: flow.operation().clone(),
+            phase: PostGraceFlowPhaseV1::PendingPrepare,
+            outcome: PostGraceDurableOutcomeV1::Prepared,
+        },
+    )))
+    .require("post-grace prepared completion");
+    flow.submit_commit(
+        &mut queue,
+        &trust,
+        &PostGraceActorAuthorityV1::from_owning_source(&actor_source),
+        102,
+    )
+    .require("post-grace commit submission");
+    let rows = predecessors.into_iter().map(Some).collect::<Vec<_>>();
+    let decision = queue.0[1]
+        .validate_locked(
+            &trust,
+            &PostGraceActorAuthorityV1::from_owning_source(&actor_source),
+            &rows,
+            102,
+        )
+        .require("post-grace locked decision");
+    flow.poll(&mut ReplacementPostGraceCompletion(Some(
+        PostGraceDurableCompletionV1 {
+            operation: flow.operation().clone(),
+            phase: PostGraceFlowPhaseV1::PendingCommit,
+            outcome: PostGraceDurableOutcomeV1::Committed {
+                decided_at: 102,
+                decision: Box::new(decision),
+            },
+        },
+    )))
+    .require("post-grace committed completion");
+
+    let mut adopted_actor = actor;
+    adopted_actor.source_revision += 1;
+    adopted_actor.accepted_source_revision = adopted_actor.source_revision;
+    adopted_actor.decision_identity = "replacement-post-grace-restored".into();
+    adopted_actor.accepted_decision_identity = adopted_actor.decision_identity.clone();
+    adopted_actor.source_observed_at = 103;
+    adopted_actor.present_uncontrolled = false;
+    adopted_actor.budget = RetainedRecoveryBudgetV1::restore(
+        epoch,
+        RecoveryEpochStateV1::Restored,
+        true,
+        vec![RetainedRecoveryAttemptV1 {
+            attempt,
+            transport,
+            disposition: RetainedRecoveryAttemptDispositionV1::Committed,
+        }],
+    )
+    .require("post-grace restored budget");
+    let mut adopted_session = predecessor;
+    adopted_session.replacement_game_session_id = Some(candidate);
+    adopted_session.session_state = GameSessionState::Active;
+    adopted_session.current_connection_generation =
+        flow.operation().operation.candidate_generation;
+    adopted_session.current_transport = Some(transport);
+    let adoption = ReplacementPostGraceAdoption(PostGraceAdoptionCurrentV1 {
+        actor: adopted_actor,
+        session: adopted_session,
+        actor_present: true,
+        controller: Some((
+            candidate,
+            adopted_session.current_connection_generation(),
+            transport,
+        )),
+        live_transport: Some(transport),
+        security: evidence_source.security.clone(),
+        signing: evidence_source.signing.clone(),
+        claims: claim.evidence().transition.successors.clone(),
+    });
+
+    let mut tampered = adoption.clone();
+    tampered.0.session.commit = FreshAdmissionCommit::from_facts(
+        immutable_commit.game_session_id(),
+        FreshAdmissionFacts::new(
+            [3; 32],
+            immutable_commit.character_id(),
+            immutable_commit.world_id(),
+            immutable_commit.channel_id(),
+            immutable_commit.character_lease_generation(),
+            immutable_commit.scope_ownership_generation(),
+        )
+        .require("tampered historical facts"),
+        AuthenticatedTransportRefV1::decode(&[14; 16]).require("tampered historical transport"),
+    )
+    .require("tampered historical commit");
+    assert!(flow.adopt(&tampered, 103).is_err());
+    let mut forged_nonreplacement = adoption.clone();
+    forged_nonreplacement.0.session.replacement_game_session_id = None;
+    forged_nonreplacement.0.session.commit = FreshAdmissionCommit::from_facts(
+        candidate,
+        FreshAdmissionFacts::new(
+            [4; 32],
+            immutable_commit.character_id(),
+            immutable_commit.world_id(),
+            immutable_commit.channel_id(),
+            adopted_session.current_character_lease().generation(),
+            adopted_session.current_scope_generation().get(),
+        )
+        .require("forged nonreplacement facts"),
+        transport,
+    )
+    .require("forged nonreplacement commit");
+    assert!(flow.adopt(&forged_nonreplacement, 103).is_err());
+    flow.adopt(&adoption, 103)
+        .require("replacement post-grace adoption");
+    assert_eq!(adopted_session.current_game_session_id(), candidate);
+    assert_eq!(adopted_session.commit(), immutable_commit);
+    assert_eq!(adopted_session.current_character_lease().generation(), 3);
+    assert_eq!(adopted_session.current_scope_generation().get(), 4);
 }

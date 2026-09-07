@@ -268,7 +268,7 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
         let candidate_authority = candidate.authority();
         let candidate_continuity = candidate.continuity();
 
-        if committed.game_session_id() != predecessor_game_session_id
+        if snapshot.current_game_session_id() != predecessor_game_session_id
             || identity.game_session_id() != candidate_game_session_id
             || identity.account_id() != account_id
             || identity.character_id() != committed.character_id()
@@ -379,7 +379,10 @@ fn validate_current_authority<T: Copy + Eq>(
     if lease.character_id() != committed.character_id() {
         return Err(AdmissionError::StaleLease);
     }
-    if lease.generation() != committed.character_lease_generation() {
+    if lease.generation() < committed.character_lease_generation()
+        || (snapshot.replacement_game_session_id.is_none()
+            && lease.generation() != committed.character_lease_generation())
+    {
         return Err(AdmissionError::StaleLease);
     }
     if snapshot.current_scope_generation().get() < committed.scope_ownership_generation() {
@@ -2872,6 +2875,27 @@ fn validate_post_grace_adoption(receipt: &PostGraceCommitReceiptV1, current: &Po
     let prior = &receipt.decision.actor;
     let actor = &current.actor;
     let session = current.session;
+    // Legacy post-grace recovery admits a new fresh commit. A session already
+    // replaced inside the original admission lineage must instead retain that
+    // immutable commit and project the post-grace candidate as current. Select
+    // the shape only from the retained owner-authored predecessor in the
+    // committed decision, never from caller-filled adoption fields.
+    let replacement_lineage = prior.predecessor.current_game_session_id()
+        != prior.predecessor.commit().game_session_id();
+    let historical_commit_valid = if replacement_lineage {
+        session.commit == prior.predecessor.commit
+    } else {
+        session.commit.game_session_id() == operation.candidate
+            && session.commit.connection_generation() == operation.candidate_generation
+            && session.commit.initial_transport() == operation.transport
+            && session.commit.character_lease_generation()
+                == prior.predecessor.current_character_lease.generation()
+            && session.commit.scope_ownership_generation()
+                == prior.predecessor.current_scope_generation.get()
+            && session.commit.character_id() == prior.current.character_id
+            && session.commit.world_id() == prior.current.world_id
+            && session.commit.channel_id() == prior.predecessor.commit.channel_id()
+    };
     super::fnd04_verifier::validate_recovery_adoption_sources(&receipt.decision.credential, &current.signing, &current.security, now).map_err(|_|stale)?;
     if now < receipt.decided_at || !current.actor_present || actor.present_uncontrolled || !actor.runtime_ready
         || actor.source_authority != prior.source_authority || actor.source_revision <= prior.source_revision
@@ -2885,13 +2909,9 @@ fn validate_post_grace_adoption(receipt: &PostGraceCommitReceiptV1, current: &Po
         || actor.budget.epoch != prior.budget.epoch || actor.budget.state != RecoveryEpochStateV1::Restored
         || current.controller != Some((operation.candidate, operation.candidate_generation, operation.transport))
         || current.live_transport != Some(operation.transport)
-        || session.session_state != GameSessionState::Active || session.commit.game_session_id() != operation.candidate
+        || session.session_state != GameSessionState::Active || session.current_game_session_id() != operation.candidate
         || session.current_connection_generation != operation.candidate_generation || session.current_transport != Some(operation.transport)
-        || session.commit.connection_generation() != operation.candidate_generation || session.commit.initial_transport() != operation.transport
-        || session.commit.character_lease_generation() != prior.predecessor.current_character_lease.generation()
-        || session.commit.scope_ownership_generation() != prior.predecessor.current_scope_generation.get()
-        || session.commit.character_id() != prior.current.character_id || session.commit.world_id() != prior.current.world_id
-        || session.commit.channel_id() != prior.predecessor.commit.channel_id()
+        || !historical_commit_valid
         || session.current_character_lease != prior.predecessor.current_character_lease
         || session.current_character_world_eligibility != prior.predecessor.current_character_world_eligibility
         || session.current_runtime_scope != prior.predecessor.current_runtime_scope
@@ -3703,6 +3723,7 @@ impl CompleteReconnectSnapshotV1 {
                 GameSessionState::Reconnectable | GameSessionState::Terminal
             )
             || session.commit() != loss.session.commit()
+            || session.current_game_session_id() != loss.session.current_game_session_id()
             || session.current_connection_generation()
                 != loss.session.current_connection_generation()
             || self.account_presence != loss.account_presence
