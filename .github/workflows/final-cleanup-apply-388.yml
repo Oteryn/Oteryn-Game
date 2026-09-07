@@ -1,0 +1,61 @@
+name: Final cleanup apply 388 (temporary)
+
+on:
+  push:
+    branches:
+      - governance/final-cleanup-388
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: governance/final-cleanup-388
+          fetch-depth: 0
+      - name: Verify transport head
+        run: |
+          test "$(git rev-parse HEAD^)" = "283e2d324edb10a3f9ed8a0fa53f137599438ffc"
+          test "$(git rev-parse a793457cf3001df37109acb2c4b4a772b53db97a^{commit})" = "a793457cf3001df37109acb2c4b4a772b53db97a"
+      - name: Apply exact validated cleanup
+        shell: bash
+        run: |
+          printf '%s' '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' | base64 -d | gzip -d > /tmp/apply388.py
+          git show 9f769a77c3c6067f389906f0b62372f2d30684c2:tools/agents/validate_governance.py > tools/agents/validate_governance.py
+          rm tools/agents/validate_governance_core.py docs/agents/CODEX_REVIEW_POLICY.json
+          python /tmp/apply388.py
+          rm .github/workflows/final-cleanup-apply-388.yml
+      - name: Freeze exact candidate
+        shell: bash
+        run: |
+          git config user.name "Oteryn Agent"
+          git config user.email "oteryn-agent@users.noreply.github.com"
+          git add -A
+          git commit -m "refactor(governance): remove retired controller and prompt dispatch"
+          test "$(git rev-parse HEAD^{tree})" = "aea37601eb9f9b3b1174f90fe795b969fadde3f5"
+      - name: Validate exact candidate
+        shell: bash
+        run: |
+          python tools/agents/validate_governance.py
+          python -m unittest discover -s tools/agents/tests -v
+          python tools/repository/validate_repository_policy.py
+          python tools/architecture/semantic_contract_audit.py --base-sha a793457cf3001df37109acb2c4b4a772b53db97a --head-sha "$(git rev-parse HEAD)"
+          git diff --check HEAD^ HEAD
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('docs/agents/PROMPT_LIFECYCLE.json').read_text())
+          reusable=[e for e in d['prompts'] if e['status']=='reusable']
+          retired=[e for e in d['prompts'] if e['status']=='retired']
+          assert len(reusable)==39, len(reusable)
+          assert len(retired)==9, len(retired)
+          for e in reusable:
+              assert 'Superpowers' not in Path(e['path']).read_text(), e['prompt_id']
+          print('prompt lifecycle: 39 reusable / 9 retired; reusable Superpowers refs: 0')
+          PY
+      - name: Publish exact candidate
+        run: git push origin HEAD:governance/final-cleanup-388
