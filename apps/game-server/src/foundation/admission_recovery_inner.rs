@@ -2508,7 +2508,10 @@ impl PostGraceRecoveryAuthorizationV1 {
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         let actor = authority.resolve(verified.facts().account_id(), verified.facts().character_id(), now)?;
         let verified = verified.revalidate(now, trust, &actor.current).map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
-        if candidate == actor.predecessor.current_game_session_id() || actor.account_security_source_revision != verified.security().provenance.source_revision {
+        if candidate == actor.predecessor.current_game_session_id()
+            || candidate == actor.predecessor.commit().game_session_id()
+            || actor.account_security_source_revision != verified.security().provenance.source_revision
+        {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
         actor.budget.check_candidate(attempt, transport)?;
@@ -2581,7 +2584,9 @@ impl PostGraceRecoveryOperationV1 {
             attempt_deadline:self.credential.accepted_deadline,
         };
         if self.version!=1 || self.timing!=expected || self.prepared_at<self.credential.verified_at
-            || self.candidate==self.actor.predecessor.current_game_session_id() || self.candidate_generation.get()!=1
+            || self.candidate==self.actor.predecessor.current_game_session_id()
+            || self.candidate==self.actor.predecessor.commit().game_session_id()
+            || self.candidate_generation.get()!=1
             || self.credential.account_id!=self.actor.current.account_id || self.credential.character_id!=self.actor.current.character_id || self.credential.world_id!=self.actor.current.world_id
             || self.credential.ruleset_revision!=self.actor.current.ruleset_revision || self.credential.content_revision!=self.actor.current.content_revision
             || self.credential.map_revision!=self.actor.current.map_revision || self.credential.world_policy_revision!=self.actor.current.world_policy_revision
