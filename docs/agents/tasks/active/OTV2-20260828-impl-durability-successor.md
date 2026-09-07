@@ -4,8 +4,8 @@
 task_id: OTV2-20260828-impl-durability-successor
 title: Recover and complete journal-only Durability on clean history
 mode: IMPLEMENT
-status: WAITING_ALLOCATION_MERGE
-integration_state: BLOCKED_PROVENANCE_RECOVERY_ALLOCATION
+status: implementing
+integration_state: LIVE_CANDIDATE_ON_PR_243
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: impl/game-durability-journal-recovery-240
@@ -13,16 +13,16 @@ issue: 167
 recovery_issue: 240
 parent_coordinator_issue: 162
 historical_pr: 212
-pr: null
+pr: 243
 owner: Oteryn: sol durability lead
 allocation_branch: coord/durability-provenance-recovery-240
 allocation_pr: 241
-allocation_merge_sha: null
-admission_main_sha: 7c2da078596a7d2e27c3066ff74ac69b8b7f9af6
+allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
+admission_main_sha: a171410de07c2dab718f52f780d4314bdcc53604
 source_snapshot_pr: 212
 source_snapshot_head_at_allocation: fb30fba2a888835dfc7cbde27f940b79d7bfe05d
 source_snapshot_mode: read_only_file_content_only_no_commit_inheritance
-write_authority: none_until_recovery_allocation_merge
+write_authority: existing_recovery_allocation_241_only_no_grant_from_this_cache
 shared_paths: none
 external_repositories: []
 owned_paths:
@@ -38,11 +38,13 @@ owned_paths:
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
 ```
 
-## Start gate
+## Current allocation and candidate locator
 
-This task is deliberately non-mutating until recovery allocation PR #241 is merged and its merge SHA is read back from protected `main`.
+Recovery allocation PR #241 is merged as `a171410de07c2dab718f52f780d4314bdcc53604`; its allocation gate is satisfied. The existing successor is open Draft PR #243 on `impl/game-durability-journal-recovery-240`, observed at `eb28c42125c346e7f6f1c72e69d51af35af8fc1f` during this lifecycle reconciliation. Issues #167 and #240 remain open.
 
-After that merge, the Work coordinator records the exact successor base from current protected main and creates `impl/game-durability-journal-recovery-240` from that SHA. The worker must not branch from, merge from, cherry-pick from, rebase onto, reset to, or force-update the historical `impl/game-durability-journal` branch.
+This protected-main packet is a locator and historical recovery contract, not an exact-head qualification attestation or a new allocation. Resolve the current phase, task packet, checks and blockers from live PR #243 and its branch. Its existing owner must reconcile current protected main before integration, including this metadata-only packet correction. No runtime or test path is changed here.
+
+The RED/GREEN stages below preserve the admitted reconstruction procedure; do not restart completed stages from this stale cache. The existing successor must not inherit the historical #212 branch history or treat past validation as current qualification.
 
 ## Historical evidence boundary
 
@@ -114,11 +116,11 @@ Any need for an unowned path is `SHARED_LEASE_REQUIRED`; any need to change pers
 ## Context checkpoint
 
 ```yaml
-status: WAITING_ALLOCATION_MERGE
+status: implementing
 branch: impl/game-durability-journal-recovery-240
-head_sha: null
-final_head_sha: null
-pr: null
+observed_head_sha: eb28c42125c346e7f6f1c72e69d51af35af8fc1f
+qualification_state: read_from_live_pr_243_not_cached_here
+pr: 243
 allocation_pr: 241
 owned_paths:
   - apps/game-server/build.rs
@@ -131,7 +133,7 @@ owned_paths:
   - apps/game-server/tests/durability_postgres.rs
   - apps/game-server/tests/support/postgres.rs
   - docs/agents/tasks/active/OTV2-20260828-impl-durability-successor.md
-blocker: recovery_allocation_pr_241_not_merged
+allocation_gate: SATISFIED
 owner_action_required: null
-next_action: after PR #241 allocation merge, create the successor branch from the allocation-recorded protected-main SHA, publish the test-only RED generation, then restore implementation blobs only after RED evidence exists
+next_action: Existing PR #243 owner continues qualification and reconciles current protected main before integration; resolve current blockers and phase from that live candidate.
 ```
