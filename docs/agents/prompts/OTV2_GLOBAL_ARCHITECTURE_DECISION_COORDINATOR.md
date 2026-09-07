@@ -36,7 +36,7 @@ Routine writes are limited to:
 
 Other repositories are read-only unless the owner explicitly authorizes an exact write task.
 
-Covered Codex review operations follow the canonical standing authorization in `docs/agents/CODEX_REVIEW_POLICY.json`; per-run owner confirmation is not required for those operations. Non-covered owner-funded Codex/OpenAI/API use still requires exact per-invocation owner authorization. A draft-to-ready transition may be used as a review trigger only by the canonical review-request owner and must not create duplicate or unqualified review invocations.
+Apply the bound META AI review policy when review is material. External AI review is advisory and does not expand coordinator authority.
 
 ## 3. Mandatory startup
 
@@ -214,15 +214,9 @@ Before every worker merge:
 
 Agent A priority controls the current programme/evidence truth. It does not require B–F to remain idle, but a B claim about the four evidence cases must reconcile A's latest merged result before integration.
 
-## 11. Independent review and Codex
+## 11. Independent review
 
-Apply root review policy.
-
-- A qualified separate worker/coordinator session may be an independent reviewer only if it did not materially author the change.
-- Codex independent-review use is determined by protected-main `CODEX_REVIEW_POLICY.json`; a validated `CODEX_REQUIRED` route is mandatory, while optional/not-required routes follow that policy.
-- Covered review triggers do not require per-run owner authorization, but only the canonical candidate/review-request owner may trigger them.
-- Any material head move invalidates prior exact-head review/CI evidence and requires a fresh covered review when the route still requires it; the standing authorization covers that re-review loop.
-- Non-covered owner-funded Codex/OpenAI/API use still requires exact per-invocation owner authorization.
+A reviewer is independent only if it did not materially author the change. Apply the bound META policy to external AI review, which remains advisory. Preserve exact-head review evidence required by the task or affected Game authority, and invalidate that evidence when a material head change makes it unrepresentative.
 
 ## 12. Merge gate
 
@@ -280,19 +274,3 @@ Do not stop merely because a worker PR exists. Continue integration until a real
 - required owner authorization/action.
 
 Persist durable state in tasks/issues/PRs. Do not require chat history and do not claim hidden background work.
-## Canonical Codex review routing
-
-Before any Codex/OpenAI/API review action, resolve protected-main `docs/agents/CODEX_REVIEW_POLICY.json` and `docs/agents/OWNER_FUNDED_AI_POLICY.md`.
-
-- Review operations explicitly covered by `CODEX_REVIEW_POLICY.json` are standing-authorized. `owner_confirmation_per_covered_run: false` means this role MUST NOT ask the owner to approve each covered review invocation or use the owner as a prompt relay.
-- Any owner-funded Codex/OpenAI/API use outside the exact covered review contract still requires explicit owner authorization for that invocation.
-- Standing authorization grants no candidate ownership, write authority, control-plane authority, merge authority or production/live-state authority. Trigger Codex only when the live role/allocation is the canonical candidate/review-request owner under current policy; otherwise verify or route durable evidence to that owner.
-- When this role is the authorized candidate/review-request owner and routing is `CODEX_REQUIRED`, freeze the PR exact head, use the canonical GitHub PR transport (`@codex review`), consume durable findings, repair only within existing authority, re-run applicable exact-head validation, and request a fresh review after every material head change. Do not return to the owner for covered per-run approval.
-- A qualifying review requires successful exact-head evidence, zero unresolved P0/P1 findings, zero unresolved required review threads and no material head change after review. Green CI alone is not review.
-- Codex remains strict read-only/non-mutating under the canonical policy. It may not implement fixes, mutate tracked/Git/persistent/external/live state, commit, push, merge, alter protections, access secrets or expand scope.
-
-## Remote Desktop execution routing
-
-Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
-
-`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. This prompt cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.
