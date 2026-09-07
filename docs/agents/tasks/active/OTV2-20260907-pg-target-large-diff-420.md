@@ -8,14 +8,14 @@ status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: coord/wp3-pg-target-420
-pr: null
+pr: 422
 base_sha: 4bc27844ffde2a645b5df85c7268babae283d866
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: codex-worker
 created_at: 2026-09-07T22:36:36.324Z
-updated_at: 2026-09-07T22:36:36.324Z
+updated_at: 2026-09-07T23:30:00Z
 execution_policy: continuous_progress
 owned_paths:
   - .github/workflows/merge-gate.yml
@@ -90,14 +90,14 @@ finding_dispositions:
 
 ## Acceptance criteria
 
-- [ ] Preserve focused RED showing the protected classifier rejects a valid 803-file target-present candidate before qualification.
-- [ ] GREEN exact-target cases cover large-diff present, removed, renamed-away, introduced and genuine both-absent history.
-- [ ] Malformed/type/path payloads and auth/transport/rate-limit/server failures fail closed.
-- [ ] Head/base/repository/count/state movement, checkout mismatch and immutable A-to-B-to-A controls fail closed.
-- [ ] No mutable PR-file pagination and no raised enumeration cap are used for target authority.
-- [ ] Matching Linux evidence-job digest and mandatory PostgreSQL invocation validate; stale digest or removed invocation fails.
-- [ ] Target failure reaches the existing required aggregate; no success/skip masks failure.
-- [ ] Focused repository-policy and PG/SIM regressions pass.
+- [x] Preserve focused RED showing the protected classifier rejects a valid 803-file target-present candidate before qualification.
+- [x] GREEN exact-target cases cover large-diff present, removed, renamed-away, introduced and genuine both-absent history.
+- [x] Malformed/type/path payloads and auth/transport/rate-limit/server failures fail closed.
+- [x] Head/base/repository/count/state movement, checkout mismatch and immutable A-to-B-to-A controls fail closed.
+- [x] No mutable PR-file pagination and no raised enumeration cap are used for target authority.
+- [x] Matching Linux evidence-job digest and mandatory PostgreSQL invocation validate; stale digest or removed invocation fails.
+- [x] Target failure reaches the existing required aggregate; no success/skip masks failure.
+- [x] Focused repository-policy and PG/SIM regressions pass (the combined cross-platform runner additionally requires `pwsh`, unavailable locally).
 - [ ] Independent exact-head CONTROL review is clean, canonical CI passes, normal FULL MQ integrates, and protected readback succeeds.
 - [ ] The actual 803-file WP3 candidate executes the corrected hosted PostgreSQL 17.6 target before WP3 qualification is claimed.
 
@@ -107,24 +107,26 @@ No WP3 vendor/Cargo/source, Foundation/WP2, SQL/migration/shared PostgreSQL test
 
 ## Implementation / findings
 
-Begin with the actual inline classifier regression harness. Make the minimum sufficient change allowed by the protected allocation. Return `SHARED_LEASE_REQUIRED` before touching any unlisted path.
+Replaced the downstream PostgreSQL classifier's immutable compare enumeration with authenticated contents-API observations of the one canonical path at exact base and head SHAs. A strict file payload is presence; only a validated 404 `Not Found` payload is absence. Removal/rename-away and checkout/API disagreement fail closed. The pre/post PR identity, state and count fence remains unchanged, while valid large changed-file counts no longer block target qualification.
+
+The actual inline workflow harness preserves RED at protected `main@4bc27844ffde2a645b5df85c7268babae283d866` for the 803-file target-present case and is GREEN for the allocated state/error/race matrix. The Linux job digest and mandatory invocation mutations are both negative controls.
 
 ## Validation
 
 ### Focused
 
-- command/run: pending
-- result: pending
+- command/run: `python tools/repository/validate_pr_gate_pg_sim.py`; direct execution of all 17 inline PG/SIM regression functions in `tools/repository/test_validate_pr_gate_pg_sim.py`
+- result: PASS
 
 ### Component/integration
 
-- command/run: pending
-- result: pending
+- command/run: `python tools/repository/validate_repository_policy.py`; `python tools/agents/validate_governance.py`; `python tools/agents/tests/test_governance_lifecycle_discovery.py`
+- result: repository policy PASS; governance validation PASS after PR metadata update; lifecycle discovery PASS
 
 ### E2E
 
 - scenario: NOT_APPLICABLE — this task repairs CI target authority; actual hosted PostgreSQL qualification of #356 is a required downstream acceptance step.
-- result: pending
+- result: NOT_APPLICABLE locally; downstream hosted execution on #356 remains required and unclaimed
 
 ### Exact-head CI
 
@@ -138,9 +140,9 @@ Begin with the actual inline classifier regression harness. Make the minimum suf
 ## Self-review
 
 - exact head: pending
-- method/reviewer: implementing agent
-- material findings: pending
-- verdict: pending
+- method/reviewer: implementing agent, adversarial whole-diff inspection plus focused mutation regressions
+- material findings: corrected an initially misplaced `urllib.error` import before evidence capture; no unresolved material finding
+- verdict: locally coherent; independent review and exact-head canonical CI remain pending
 
 ## Independent review
 
@@ -152,7 +154,7 @@ Begin with the actual inline classifier regression harness. Make the minimum suf
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: exactly the four allocated paths; no source/Cargo/dependency/permission/status/MQ changes
 - unresolved review threads: pending
 - related/superseded PRs: #421 allocation protected; #257/#258 held
 - protected auto-merge: pending
@@ -162,11 +164,11 @@ Begin with the actual inline classifier regression harness. Make the minimum suf
 ## Context checkpoint
 
 ```yaml
-last_progress: protected allocation applied and sole branch created
+last_progress: exact-target classifier implementation and local RED/GREEN evidence complete
 status: implementing
 branch: coord/wp3-pg-target-420
 head_sha: null
-pr: null
+pr: 422
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
@@ -184,5 +186,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: implement focused RED to minimum GREEN in the exact three CONTROL paths
+next_action: publish the implementation commit on Draft PR #422, then await genuinely independent CONTROL review and exact-head canonical CI
 ```

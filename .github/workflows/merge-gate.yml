@@ -461,6 +461,7 @@ jobs:
           import os
           import re
           import sys
+          import urllib.error
           import urllib.request
 
           repository = os.environ['REPOSITORY']
@@ -491,6 +492,37 @@ jobs:
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
 
+          def target_present(commit: str) -> bool:
+              path = f'/contents/{target}?ref={commit}'
+              try:
+                  payload = api(path)
+              except urllib.error.HTTPError as error:
+                  if error.code != 404:
+                      raise SystemExit(
+                          f'exact target inspection failed with HTTP {error.code}; fail closed'
+                      ) from error
+                  try:
+                      missing = json.load(error)
+                  except (OSError, ValueError, TypeError) as malformed:
+                      raise SystemExit(
+                          'exact target inspection returned malformed not-found payload; fail closed'
+                      ) from malformed
+                  if not isinstance(missing, dict) or missing.get('message') != 'Not Found':
+                      raise SystemExit(
+                          'exact target inspection returned unexpected not-found payload; fail closed'
+                      )
+                  return False
+              except (OSError, ValueError, TypeError) as error:
+                  raise SystemExit('exact target inspection failed; fail closed') from error
+
+              if not isinstance(payload, dict):
+                  raise SystemExit('exact target inspection returned malformed file payload; fail closed')
+              if payload.get('path') != target:
+                  raise SystemExit('exact target inspection returned mismatched path; fail closed')
+              if payload.get('type') != 'file':
+                  raise SystemExit('exact target inspection returned unexpected object type; fail closed')
+              return True
+
           pull = api(f'/pulls/{number_text}')
           if pull.get('state') != 'open':
               raise SystemExit('PostgreSQL target classification requires an open pull request')
@@ -502,47 +534,34 @@ jobs:
               raise SystemExit('pull request base moved after exact target resolution')
 
           changed_files = pull.get('changed_files')
-          if not isinstance(changed_files, int) or changed_files < 0 or changed_files > 300:
-              raise SystemExit('invalid or over-cap changed-files count')
+          if isinstance(changed_files, bool) or not isinstance(changed_files, int) or changed_files < 0:
+              raise SystemExit('invalid changed-files count')
 
-          files: list[str] = []
-          removed = False
-          comparison = api(f'/compare/{expected_base}...{expected_head}?per_page=1')
-          batch = comparison.get('files')
-          if not isinstance(batch, list):
-              raise SystemExit('immutable comparison omitted its files; fail closed')
-          for item in batch:
-              filename = item.get('filename', '')
-              if filename:
-                  files.append(filename)
-              previous_filename = item.get('previous_filename')
-              status = item.get('status')
-              if (filename == target and status == 'removed') or (
-                  previous_filename == target and filename != target
-              ):
-                  removed = True
+          base_present = target_present(expected_base)
+          head_present = target_present(expected_head)
+          # The former diff-enumeration authority (`previous_filename = item.get('previous_filename')`)
+          # is deliberately replaced by immutable base/head exact-path observations above.
+          checkout_present = os.path.isfile(target)
+          if checkout_present != head_present:
+              raise SystemExit('exact-head checkout and API target state disagree; fail closed')
+          if base_present and not head_present:
+              raise SystemExit('Durability PostgreSQL target was removed or renamed; fail closed')
 
-          if len(files) != changed_files:
-              raise SystemExit(
-                  f'changed-files enumeration mismatch: API reports {changed_files}, '
-                  f'collected {len(files)}; fail closed'
-              )
-
-          pull_after_files = api(f'/pulls/{number_text}')
-          if pull_after_files.get('state') != 'open':
+          pull_after_target = api(f'/pulls/{number_text}')
+          if pull_after_target.get('state') != 'open':
               raise SystemExit('pull request closed during Durability PostgreSQL target classification')
-          if pull_after_files.get('head', {}).get('sha', '').lower() != expected_head:
+          if pull_after_target.get('head', {}).get('sha', '').lower() != expected_head:
               raise SystemExit('pull request head moved during Durability PostgreSQL target classification')
-          if pull_after_files.get('head', {}).get('repo', {}).get('full_name') != repository:
+          if pull_after_target.get('head', {}).get('repo', {}).get('full_name') != repository:
               raise SystemExit('pull request repository changed during Durability PostgreSQL target classification')
-          if pull_after_files.get('base', {}).get('sha', '').lower() != expected_base:
+          if pull_after_target.get('base', {}).get('sha', '').lower() != expected_base:
               raise SystemExit('pull request base moved during Durability PostgreSQL target classification')
-          if pull_after_files.get('changed_files') != changed_files:
+          if pull_after_target.get('changed_files') != changed_files:
               raise SystemExit('pull request changed-files count moved during Durability PostgreSQL target classification')
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              output.write(f"removed={'true' if removed else 'false'}\n")
-          print(f'Durability PostgreSQL target removal/rename in exact PR diff: {removed}.')
+              output.write(f"present={'true' if head_present else 'false'}\n")
+          print(f'Durability PostgreSQL target present at exact head: {head_present}.')
           PY
 
       - name: Install Rust toolchain
@@ -560,23 +579,23 @@ jobs:
       - name: Run Durability PostgreSQL E2E when allocated
         env:
           OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
-          TARGET_REMOVED: ${{ steps.pg_target.outputs.removed }}
+          TARGET_PRESENT: ${{ steps.pg_target.outputs.present }}
         run: |
           set -euo pipefail
-          case "$TARGET_REMOVED" in
+          case "$TARGET_PRESENT" in
             true|false) ;;
             *)
               echo "Durability PostgreSQL target classification produced an invalid result; failing closed." >&2
               exit 1
               ;;
           esac
-          if [[ -f apps/game-server/tests/durability_postgres.rs ]]; then
+          if [[ "$TARGET_PRESENT" == "true" ]] && [[ -f apps/game-server/tests/durability_postgres.rs ]]; then
             cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres
-          elif [[ "$TARGET_REMOVED" == "true" ]]; then
-            echo "Durability PostgreSQL test target was removed or renamed by this pull request; failing closed." >&2
-            exit 1
-          else
+          elif [[ "$TARGET_PRESENT" == "false" ]] && [[ ! -e apps/game-server/tests/durability_postgres.rs ]]; then
             echo "NOT_APPLICABLE: Durability PostgreSQL test target is not allocated on this revision."
+          else
+            echo "Durability PostgreSQL target state changed after classification; failing closed." >&2
+            exit 1
           fi
 
       - name: Run synthetic harness
