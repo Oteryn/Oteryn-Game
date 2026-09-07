@@ -1,10 +1,12 @@
 # OTV2-20260907-archive-terminal-task-packets
 
+> Lifecycle: HISTORICAL / COMPLETED. Delivery PR #376 merged through the normal Merge Queue as `b32ede1a8950463207e39d9b87a14654470c59ce`. Its qualified delivery head was `cd1c8b8ba437a72fd3ee2abef078448c17a15d4c`; [Merge Queue run 34117407066](https://github.com/Oteryn/Oteryn-Game/actions/runs/34117407066) succeeded. The record below preserves implementation history; any former pending fields are superseded by this verified closeout. It does not allocate further work.
+
 ```yaml
 task_id: OTV2-20260907-archive-terminal-task-packets
 title: Archive terminal task packets
 mode: REPAIR
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agents/r5-game-d4-374
@@ -72,7 +74,7 @@ NOT_APPLICABLE: this change only reconciles Markdown task lifecycle paths; it pe
 - [x] Confirm the twelve owning GitHub issues are terminal and Issue #364 is open.
 - [x] Move the twelve terminal packets from `active/` to `archive/` without changing their contents.
 - [x] Pass focused lifecycle tests, governance validation, repository-policy validation and `git diff --check`.
-- [ ] Publish a Draft PR and obtain exact-head `game-gate` evidence.
+- [x] Publish a Draft PR and obtain exact-head `game-gate` evidence.
 
 ## Excluded scope
 
@@ -136,7 +138,7 @@ Issue #374 records the exact twelve source paths and owning terminal issue numbe
 
 ```yaml
 last_progress: All required local validation passed for the exact bounded lifecycle diff.
-status: validating
+status: completed
 branch: agents/r5-game-d4-374
 head_sha: null
 pr: null
@@ -157,5 +159,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Review and commit the complete bounded diff.
+next_action: Preserve this terminal record; any further work requires its own live task allocation.
 ```
