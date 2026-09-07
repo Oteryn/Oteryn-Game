@@ -82,4 +82,4 @@ next_action: <exactly one concrete action>
 
 ## Safety
 
-No runtime/product writes, production/protected-environment mutation, secrets, live data, external-repository writes, Reference-parity claim, non-covered owner-funded AI use without exact per-invocation owner authorization, or weakening of review/test/provenance gates.
+No runtime/product writes, production/protected-environment mutation, secrets, live data, external-repository writes, Reference-parity claim, or weakening of review/test/provenance gates.

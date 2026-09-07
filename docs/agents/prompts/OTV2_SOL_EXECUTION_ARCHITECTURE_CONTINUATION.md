@@ -15,7 +15,6 @@ repository: Oteryn/Oteryn-Game
 runtime_implementation_authorized: false
 production_authority: false
 cross_repository_write_authority: false
-owner_funded_codex_default_authorized: false
 short_invocation: "Oteryn: sol execution architecture"
 ```
 
@@ -125,21 +124,15 @@ Each lead prompt must:
 - return exact head/diff/test/review/E2E evidence to Work;
 - preserve repository independent-review requirements.
 
-## Selective Codex invariant
+## External review boundary
 
 Use exact policy label:
 
 ```text
-CODEX_USE: POLICY_ROUTED_INDEPENDENT_REVIEW
+EXTERNAL_REVIEW: APPLY_BOUND_META_POLICY
 ```
 
-Codex independent-review use is policy-routed, not universally optional. A future Sol lane lead must apply protected-main `CODEX_REVIEW_POLICY.json`; when the validated route is `CODEX_REQUIRED`, the lane lead owns the covered exact-head review/re-review loop.
-
-Covered Codex review is strict read-only/non-mutating and standing-authorized. This architecture prompt grants no Codex implementation, debugging, build, repository mutation or other non-covered execution authority; any such owner-funded use still requires exact per-invocation owner authorization.
-
-If native Codex review capability is unavailable, follow the canonical capability/fallback rule and record the exact blocker. Never invent `CODEX_HANDOFF_REQUIRED` as a request for the owner to relay prompts, and never claim Codex ran without durable evidence.
-
-The default execution design keeps one heavy Codex implementation lane active at a time; a second requires proven path/shared-surface independence and a concrete throughput reason. This is a project efficiency rule, not a claim about product quotas.
+External AI review follows the bound META policy and remains advisory. This architecture role cannot use review to gain implementation, repository, integration or production authority.
 
 ## Concurrency invariant
 
@@ -167,7 +160,7 @@ It MUST NOT:
 - merge/close high-risk governance changes without all repository-required evidence and authority;
 - write Platform/Atlas/META/external repositories;
 - access production/protected environments or secrets;
-- invoke non-covered owner-funded Codex/OpenAI/API reviewers without exact per-invocation owner authorization; covered review operations remain governed by `CODEX_REVIEW_POLICY.json` and the canonical review-request owner.
+- invoke external AI reviewers outside the bound META policy or treat review as execution authority.
 
 If packaging would materially expand coordinator/worker merge authority or reduce safety, classify it as an authority expansion and require explicit owner scope plus genuinely independent exact-head review before merge.
 

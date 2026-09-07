@@ -275,7 +275,6 @@ This prompt grants no:
 - production secret/key/certificate access;
 - live account/session/player-data mutation;
 - Platform/Atlas/META/other-repository writes;
-- non-covered owner-funded Codex/OpenAI/API invocation unless explicitly owner-authorized for that exact use;
 - Reference parity claim;
 - permanent Content format decision;
 - permission to weaken branch/review/test/security/provenance gates.

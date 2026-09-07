@@ -76,8 +76,7 @@ You MUST NOT:
 - edit a sibling worker's owned path;
 - silently absorb another domain's semantics;
 - mark new whole-gate semantics `ACCEPTED` without existing upstream acceptance evidence;
-- trigger non-covered owner-funded Codex/OpenAI/API use without exact per-invocation owner authorization;
-- use a draft-to-ready transition to create a Codex review unless this role is the canonical review-request owner and the trigger is qualified under `CODEX_REVIEW_POLICY.json`;
+- use a draft-to-ready transition to dispatch external AI review;
 - infer runtime, implementation, production or parity from architecture/document presence.
 
 ## 6. Coordinator-only surfaces

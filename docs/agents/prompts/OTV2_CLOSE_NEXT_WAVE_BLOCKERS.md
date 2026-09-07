@@ -30,7 +30,7 @@ Use this source order: system/explicit owner instructions -> root and nearest re
 
 Before any mutation:
 
-1. Read root `AGENTS.md`, `docs/agents/AGENTS.md`, `AUTONOMOUS_PROGRAM_CONTINUATION.md`, `ARCHITECTURE_DECISION_DISCIPLINE.md`, `MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md`, `OWNER_FUNDED_AI_POLICY.md`, `PROMPTING_STANDARD.md`, `PROMPT_EVAL_STANDARD.md` and `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`.
+1. Read root `AGENTS.md`, `docs/agents/AGENTS.md`, `AUTONOMOUS_PROGRAM_CONTINUATION.md`, `ARCHITECTURE_DECISION_DISCIPLINE.md`, `MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md`, `PROMPTING_STANDARD.md`, `PROMPT_EVAL_STANDARD.md` and `DELIVERY_COMPLETENESS_AND_CLOSEOUT.md`.
 2. Resolve current `main` SHA and re-read Issues #93, #115, #116, #123 and #128.
 3. Read `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md` and the next-wave master plan.
 4. Inspect open PRs, active tasks, branches, owned paths/shared leases and overlapping work.
@@ -164,13 +164,13 @@ Stop and request owner input only when one of these is true:
 - the remaining choice materially changes player-visible gameplay/product semantics rather than only bounding work;
 - production secret/key/deployment ownership or live production configuration must be chosen;
 - new production, Platform or external-repository authority is required;
-- a mandatory independent review remains unavailable after applying the canonical `CODEX_REVIEW_POLICY.json` capability/fallback rules;
+- a task-specific mandatory independent review remains unavailable;
 - an ownership conflict or unrecoverable repository/tool failure prevents truthful progress;
 - anti-stall/repair budget is exhausted.
 
 Routine CI failures, review findings, rebases, evidence repairs, allocation/PR bookkeeping and technically equivalent conservative choices are not owner blockers.
 
-Do not invoke non-covered owner-funded Codex/OpenAI/API merely because a review would be convenient. For covered independent review, apply `CODEX_REVIEW_POLICY.json` risk routing and standing authorization exactly.
+Apply the bound META AI review policy. External AI review remains advisory and does not broaden this task's authority.
 
 ## Completion rule
 

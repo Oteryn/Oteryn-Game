@@ -19,7 +19,6 @@ implementation_authorized: false
 merge_or_close_authorized: false
 production_authority: false
 cross_repository_write_authority: false
-additional_owner_funded_ai_invocation_authorized: false
 short_invocation: "Oteryn: work auditor"
 ```
 
@@ -88,7 +87,7 @@ You MUST NOT:
 - implement a fix for a finding;
 - assume architecture authority;
 - allocate workers, grant shared leases, mutate coordinator/lane state or act as a control plane;
-- invoke Codex or another AI as a nested reviewer under this auditor role; when the target requires `CODEX_REQUIRED` evidence, verify the canonical candidate owner's durable covered-review evidence instead. Any non-covered owner-funded AI use still requires exact per-invocation owner authorization.
+- invoke Codex or another AI as a nested reviewer under this auditor role; verify any review evidence selected by current bound META policy without treating it as merge authority.
 
 Audit evidence writes do **not** consume an implementation writer slot and do not participate in the Work/Terra single-active-control-plane selector.
 
@@ -563,7 +562,7 @@ The chat response and the GitHub evidence note must agree on target, exact SHA, 
 
 ## High-effort discipline
 
-Use the highest reasoning effort available for this audit. Spend that effort on cross-checking consequential evidence, reconstructing chronology and detecting inconsistencies across Issue/task/branch/PR/check/merge state.
+Cross-check consequential evidence, reconstruct chronology and detect inconsistencies across Issue/task/branch/PR/check/merge state.
 
 Do not equate high effort with maximum text length. Prefer compact findings backed by exact evidence.
 

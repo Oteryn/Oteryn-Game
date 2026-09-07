@@ -127,7 +127,7 @@ pr:
 final_head_sha:
 changed_paths: []
 shared_lease_used: null
-state: READY_FOR_INTEGRATION | WAITING_DEPENDENCY | WAITING_ARCHITECTURE | WAITING_EXTERNAL | REVIEW_RECONCILIATION_REQUIRED
+state: READY_FOR_INTEGRATION | WAITING_DEPENDENCY | WAITING_ARCHITECTURE | WAITING_EXTERNAL | INDEPENDENT_REVIEW_PENDING
 focused_validation: []
 component_validation: []
 e2e:
@@ -147,40 +147,18 @@ authority_qualification:
     p0_p1_accepted_and_repaired: []
     p0_p1_rejected_with_exact_evidence: []
     p2_fixed_accepted_or_deferred: []
-codex_review:
-  route: CODEX_REQUIRED | CODEX_OPTIONAL | CODEX_NOT_REQUIRED_BY_THIS_POLICY
-  classification_source_role:
-  classification_source_ref:
-  reviewed_head_sha:
-  evidence_ref:
-  blocking_findings: []
-  required_review_threads_unresolved: 0
-  status: PASS | CHANGES_REQUIRED | NOT_REQUIRED | WAITING_CAPABILITY
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate
 next_action: <exactly one concrete action>
 ```
 
-The `codex_review` block is retained for compatibility with existing handoff consumers; current root `AGENTS.md` and the META-owned AI review policy determine whether any external AI review is selected and what evidence is advisory. Legacy local routing terminology never overrides current root policy.
-
 The uniquely active control-plane profile, resolved from the current coordinator Issue/task, independently verifies all facts before integration. If no unique active profile is `PROVEN`, return `POLICY_CONFLICT` and do not route integration to Terra or Work by alias, model selection or reusable status.
 
-## AI review routing — META-owned
+## Review boundary
 
-Resolve current protected-main root `AGENTS.md` before any external AI review action. The repository adopts the current organization AI review policy by reference; conflicting older `docs/agents/**` standing-authorization/review-tier/controller prose is historical/procedural only.
-
-- Default: no external AI review.
-- Ordinary code change with clear independent-review value: prefer Codex Spark when available.
-- Material high-risk/control-plane change: use one Codex deep review on a stable material candidate.
-- External AI review is advisory and never GitHub merge authority; repository gates/protection/Merge Queue remain enforcement.
-- Re-review only when an accepted material risk-bearing finding is repaired and makes the prior review no longer representative; a verified rejection preserves the candidate and review.
-- Do not recreate local R0/R1/R2 tiers, standing review controllers or equivalent merge authority.
-
-For Durability work involving session/reconnect/fencing/durable persistence or schema risk, treat the candidate as high-risk when current root policy still classifies those surfaces that way: stabilize the material candidate first, then use the selected deep independent review once, repair accepted actionable findings inside existing authority, and re-review only if that material repair invalidates the review.
-
-The owner is not a prompt relay merely because an older local file once described one. Any metered AI/API use outside the central policy still requires the task-specific authority applicable to that use.
+Apply the bound META policy when external review is material. Any review remains advisory; Durability authority and repository integration gates do not change.
 
 ## Safety
 
-No production database/config/secrets, live data, Platform/Atlas/META/external-repository writes or Reference-parity claims. No non-covered owner-funded Codex/OpenAI/API use without exact per-invocation owner authorization.
+No production database/config/secrets, live data, Platform/Atlas/META/external-repository writes or Reference-parity claims.

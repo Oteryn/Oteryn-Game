@@ -147,7 +147,7 @@ SHARED_LEASE_REQUIRED
 WAITING_ARCHITECTURE
 WAITING_EXTERNAL
 READY_FOR_INTEGRATION
-REVIEW_RECONCILIATION_REQUIRED
+INDEPENDENT_REVIEW_PENDING
 COMPLETED_RELEASED
 ```
 
@@ -327,7 +327,7 @@ next_action: <exactly one deterministic action>
 
 ## Safety
 
-No production/protected-environment/live-data/secret/external-repository authority. No non-covered owner-funded Codex/OpenAI/API invocation without exact per-invocation owner authorization. Never lower repository protection, review, provenance or test requirements to increase throughput.
+No production/protected-environment/live-data/secret/external-repository authority. Never lower repository protection, review, provenance or test requirements to increase throughput.
 
 ## Completion
 

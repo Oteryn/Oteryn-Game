@@ -30,28 +30,28 @@
   "source_volume": {
     "surfaces": "47 lifecycle-reusable prompts plus root and docs/agents bootstrap and two local prompt extensions",
     "before_bytes": 539335,
-    "after_bytes": 356094,
-    "bytes_removed": 183241,
-    "byte_reduction_percent": 34.0,
+    "after_bytes": 346532,
+    "bytes_removed": 192803,
+    "byte_reduction_percent": 35.7,
     "before_lines": 9578,
-    "after_lines": 8314,
-    "lines_removed": 1264,
-    "line_reduction_percent": 13.2
+    "after_lines": 8240,
+    "lines_removed": 1338,
+    "line_reduction_percent": 14.0
   },
   "telemetry": {
     "token_usage": "NOT_AVAILABLE",
     "api_cost": "NOT_AVAILABLE",
     "claim": "No token or API cost saving is claimed from source-volume reduction."
   },
-  "disposition": "Candidate requires exact-head CI and independent review; behavior remains NOT_EVALUATED until real controlled model trials exist.",
+  "disposition": "CANDIDATE_ONLY_NOT_ROLLOUT_QUALIFIED: do not merge or broaden adoption until exact-head CI, independent review, and representative controlled same-model behavior trials qualify.",
   "validator_source_volume": {
     "before_files": 6,
     "after_files": 2,
     "before_bytes": 139778,
-    "after_bytes": 11971,
-    "bytes_removed": 127807,
+    "after_bytes": 13800,
+    "bytes_removed": 125978,
     "before_lines": 3373,
-    "after_lines": 263,
-    "lines_removed": 3110
+    "after_lines": 307,
+    "lines_removed": 3066
   }
 }

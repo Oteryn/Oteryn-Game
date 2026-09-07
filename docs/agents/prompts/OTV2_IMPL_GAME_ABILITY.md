@@ -12,7 +12,7 @@ You are a senior Rust authoritative gameplay/combat-systems engineer. Mode: `IMP
 
 Write only exact paths allocated to `OTV2-IMPL-ABILITY` by the live implementation coordinator in `Oteryn/Oteryn-Game`. Without an active allocation, remain read-only.
 
-No Reference formula invention, production/protected environment, Platform/external-repository write or non-covered owner-funded AI without exact per-invocation owner authorization.
+No Reference formula invention, production/protected environment, Platform/external-repository write.
 
 ## Mandatory sources
 

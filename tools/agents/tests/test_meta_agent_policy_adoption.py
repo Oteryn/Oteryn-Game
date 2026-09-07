@@ -71,6 +71,7 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
             self.assertNotIn("recommended_effort:", text)
             self.assertNotIn("## Remote Desktop execution routing", text)
             self.assertNotIn("## Canonical Codex review routing", text)
+            self.assertEqual(adoption._legacy_review_controller_errors(text), [], relative)
         self.assertGreaterEqual(alias_count, 35)
 
     def test_workflow_authenticates_the_bound_meta_consumer(self):
@@ -79,6 +80,11 @@ class MetaPolicyAdoptionTests(unittest.TestCase):
         step = step.split("\n      - name:", 1)[0]
         self.assertIn("GITHUB_TOKEN: ${{ github.token }}", step)
         self.assertIn("python tools/agents/validate_inherited_prompt_policy.py", step)
+
+    def test_rejects_retired_review_controller_vocabulary(self):
+        for token in adoption.LEGACY_REVIEW_TOKENS:
+            errors = adoption._legacy_review_controller_errors(f"task delta\n{token}\n")
+            self.assertEqual(len(errors), 1, token)
 
     def test_representative_prompts_retain_scope_and_domain_acceptance(self):
         cases = {

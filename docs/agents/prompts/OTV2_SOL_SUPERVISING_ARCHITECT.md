@@ -122,4 +122,4 @@ The uniquely active control-plane profile, resolved from the current coordinator
 
 ## Safety
 
-No production/live-data/secret authority. No Platform/Atlas/META/external-repository writes without separate explicit authority. No non-covered owner-funded Codex/OpenAI/API invocation without exact per-invocation owner authorization. Material security/session/persistence/value decisions retain genuinely independent review requirements under repository policy.
+No production/live-data/secret authority. No Platform/Atlas/META/external-repository writes without separate explicit authority. Material security/session/persistence/value decisions retain genuinely independent review requirements under repository policy.

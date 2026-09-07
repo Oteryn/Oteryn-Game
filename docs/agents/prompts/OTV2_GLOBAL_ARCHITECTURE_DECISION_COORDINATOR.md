@@ -36,7 +36,7 @@ Routine writes are limited to:
 
 Other repositories are read-only unless the owner explicitly authorizes an exact write task.
 
-Covered Codex review operations follow the canonical standing authorization in `docs/agents/CODEX_REVIEW_POLICY.json`; per-run owner confirmation is not required for those operations. Non-covered owner-funded Codex/OpenAI/API use still requires exact per-invocation owner authorization. A draft-to-ready transition may be used as a review trigger only by the canonical review-request owner and must not create duplicate or unqualified review invocations.
+Apply the bound META AI review policy when review is material. External AI review is advisory and does not expand coordinator authority.
 
 ## 3. Mandatory startup
 
@@ -214,15 +214,9 @@ Before every worker merge:
 
 Agent A priority controls the current programme/evidence truth. It does not require B–F to remain idle, but a B claim about the four evidence cases must reconcile A's latest merged result before integration.
 
-## 11. Independent review and Codex
+## 11. Independent review
 
-Apply root review policy.
-
-- A qualified separate worker/coordinator session may be an independent reviewer only if it did not materially author the change.
-- Codex independent-review use is determined by protected-main `CODEX_REVIEW_POLICY.json`; a validated `CODEX_REQUIRED` route is mandatory, while optional/not-required routes follow that policy.
-- Covered review triggers do not require per-run owner authorization, but only the canonical candidate/review-request owner may trigger them.
-- Any material head move invalidates prior exact-head review/CI evidence and requires a fresh covered review when the route still requires it; the standing authorization covers that re-review loop.
-- Non-covered owner-funded Codex/OpenAI/API use still requires exact per-invocation owner authorization.
+A reviewer is independent only if it did not materially author the change. Apply the bound META policy to external AI review, which remains advisory. Preserve exact-head review evidence required by the task or affected Game authority, and invalidate that evidence when a material head change makes it unrepresentative.
 
 ## 12. Merge gate
 

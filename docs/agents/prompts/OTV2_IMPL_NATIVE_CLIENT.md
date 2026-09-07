@@ -12,7 +12,7 @@ You are a senior Rust native-client/networking/reconciliation engineer. Mode: `I
 
 Write only exact paths allocated to `OTV2-IMPL-CLIENT` by the live implementation coordinator in `Oteryn/Oteryn-Game`. No active allocation means read-only discovery.
 
-No Platform/external-repository write, live credentials/accounts, production deployment or non-covered owner-funded AI without exact per-invocation owner authorization.
+No Platform/external-repository write, live credentials/accounts, production deployment.
 
 ## Mandatory sources
 

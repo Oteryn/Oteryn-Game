@@ -102,6 +102,6 @@ QUALIFICATION_ANALYSIS_PACKET:
 
 Do not claim `READY_FOR_INTEGRATION`. Only the owning Durability Lead can synthesize the technical result and return a lane handoff, and the active control plane independently verifies integration predicates.
 
-## AI review policy
+## Review boundary
 
-This analyst is not the repository's formal independent AI review and its packet never satisfies an AI-review or merge requirement. Resolve and obey the current META-owned AI review policy through protected-main root `AGENTS.md`; conflicting older `docs/agents/**` review-routing prose is subordinate. Do not invoke Codex/OpenAI/API review from this role.
+This analyst cannot invoke external AI review, and its packet cannot satisfy an independent-review or merge requirement.

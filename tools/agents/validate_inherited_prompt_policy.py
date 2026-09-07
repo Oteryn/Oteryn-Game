@@ -20,6 +20,23 @@ LIFECYCLE_PATH = ROOT / "docs/agents/PROMPT_LIFECYCLE.json"
 PROVIDER = "Oteryn/Oteryn-Game"
 CENTRAL_VALIDATOR_PATH = "tools/governance/central_agent_policy.py"
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
+LEGACY_REVIEW_TOKENS = (
+    "CODEX_REVIEW_POLICY",
+    "CODEX_REQUIRED",
+    "CODEX_OPTIONAL",
+    "CODEX_NOT_REQUIRED",
+    "OWNER_FUNDED_AI_POLICY",
+    "REVIEW_RECONCILIATION_REQUIRED",
+    "owner_confirmation_per_covered_run",
+    "codex_review:",
+    "codex_reviews_required_now",
+    "highest reasoning effort",
+    "covered review",
+    "non-covered owner-funded",
+    "canonical review-request owner",
+    "owner_funded_codex",
+    "additional_owner_funded_ai",
+)
 
 
 def _request(url: str, *, timeout: float = 30.0) -> object:
@@ -97,6 +114,16 @@ def _reusable_prompt_paths(lifecycle: object) -> list[str]:
     return paths
 
 
+def _legacy_review_controller_errors(text: str) -> list[str]:
+    """Reject retired Game review-controller vocabulary left outside central lint."""
+    lowered = text.casefold()
+    return [
+        f"reusable prompt contains retired review controller token: {token}"
+        for token in LEGACY_REVIEW_TOKENS
+        if token.casefold() in lowered
+    ]
+
+
 def validate() -> list[str]:
     try:
         binding = json.loads(BINDING_PATH.read_text(encoding="utf-8"))
@@ -141,6 +168,10 @@ def validate() -> list[str]:
                 (ROOT / relative).read_text(encoding="utf-8"), policy=policy,
             )
             errors.extend(f"{relative}: {error}" for error in prompt_errors)
+            errors.extend(
+                f"{relative}: {error}"
+                for error in _legacy_review_controller_errors((ROOT / relative).read_text(encoding="utf-8"))
+            )
         for relative, expected in (
             ("docs/agents/PROMPTING_STANDARD.md", binding["prompting_standard_path"]),
             ("docs/agents/PROMPT_EVAL_STANDARD.md", binding["prompt_eval_standard_path"]),

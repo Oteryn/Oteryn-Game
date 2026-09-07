@@ -76,13 +76,9 @@ The Terra profile is additive and does **not** silently supersede `Oteryn: work 
 Canonical launch/promotion rules for this profile live in `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`. Alias existence grants no write authority. Every mutating Sol lead must resolve a current exact merged allocation and exact owned paths before writing.
 The four future-wave preparation aliases are deliberately non-mutating: after terminal VSL they may prepare exact allocation proposals, but they cannot create branches/commits, claim leases, integrate PRs or become implementation leads until a later merged exact allocation/prompt lifecycle grants that authority.
 
-### AI review policy
+### External review
 
-All reusable prompts resolve current protected-main root `AGENTS.md` before external AI review decisions. Game adopts the current organization AI review policy by reference; conflicting older `docs/agents/**` standing-authorization, review-tier or controller prose is subordinate historical/procedural evidence.
-
-The current repository policy is default no external AI review, Codex Spark when an ordinary code change has clear independent-review value, and one Codex deep review on a stable material high-risk/control-plane candidate. External AI review is advisory and never replaces `game-gate`, repository protection or Merge Queue. Re-review only when a material risk-bearing repair makes the prior review no longer representative.
-
-The three Durability analyst aliases are not formal external review and never satisfy this policy gate. Existing handoff fields named `codex_review` are compatibility metadata only and cannot override root `AGENTS.md`.
+Resolve external-review decisions from the META policy named by `../META_AGENT_POLICY_BINDING.json`. Prompt aliases and compatibility metadata never create review or merge authority.
 
 ### Independent Work delivery audit
 

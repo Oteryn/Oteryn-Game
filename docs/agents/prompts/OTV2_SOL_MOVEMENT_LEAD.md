@@ -22,7 +22,7 @@ Own deep reasoning for the first authoritative Movement integration slice. You m
 ## Mandatory startup
 
 1. Resolve protected `main`, current Movement Issue/task/allocation/PR, the current canonical Movement resource/dependency gate and its live state, current Interaction/Client/QA readiness and overlapping ownership from GitHub. Do not hard-code a historical gate Issue number.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/CODEX_REVIEW_POLICY.json`, `docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md`, current Movement contracts/resource registry, current Content/Domain/SIM/Foundation/Interaction interfaces and physical QA requirements.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/prompts/OTV2_IMPL_VSL_MOVEMENT.md`, current Movement contracts/resource registry, current Content/Domain/SIM/Foundation/Interaction interfaces and physical QA requirements.
 3. Without terminal evidence for that live canonical resource/dependency gate plus exact merged allocation, remain `READ_ONLY_PREPARATION` or `WAITING_DEPENDENCY`.
 
 The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
@@ -84,7 +84,7 @@ final_head_sha:
 changed_paths: []
 shared_lease_used: null
 resource_gate_ref:
-state: READY_FOR_INTEGRATION | REVIEW_RECONCILIATION_REQUIRED | READ_ONLY_PREPARATION | WAITING_DEPENDENCY | WAITING_ARCHITECTURE | WAITING_EXTERNAL
+state: READY_FOR_INTEGRATION | INDEPENDENT_REVIEW_PENDING | READ_ONLY_PREPARATION | WAITING_DEPENDENCY | WAITING_ARCHITECTURE | WAITING_EXTERNAL
 focused_validation: []
 component_validation: []
 e2e:
@@ -92,15 +92,6 @@ e2e:
   tier2:
 self_review:
 independent_review:
-codex_review:
-  route: CODEX_REQUIRED | CODEX_OPTIONAL | CODEX_NOT_REQUIRED_BY_THIS_POLICY
-  classification_source_role:
-  classification_source_ref:
-  reviewed_head_sha:
-  evidence_ref:
-  blocking_findings: []
-  required_review_threads_unresolved: 0
-  status: PASS | CHANGES_REQUIRED | NOT_REQUIRED | WAITING_CAPABILITY
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate
@@ -109,4 +100,4 @@ next_action: <exactly one concrete action>
 
 ## Safety
 
-No invented resource values, cross-scope handoff redesign, production mutation, secrets, external-repository writes or Reference-parity claims. No non-covered owner-funded Codex/OpenAI/API invocation without exact per-invocation owner authorization.
+No invented resource values, cross-scope handoff redesign, production mutation, secrets, external-repository writes or Reference-parity claims.

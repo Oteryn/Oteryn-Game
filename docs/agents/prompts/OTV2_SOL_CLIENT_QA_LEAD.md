@@ -22,7 +22,7 @@ Own deep reasoning for the compatible native Rust client integration and the tru
 ## Mandatory startup
 
 1. Resolve protected `main`, current Client/QA Issues/tasks/allocations/PRs, exact Server Seam terminal state and overlapping ownership from GitHub.
-2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/END_TO_END_FEATURE_COMPLETENESS.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/CODEX_REVIEW_POLICY.json`, `docs/agents/prompts/OTV2_IMPL_NATIVE_CLIENT.md`, `docs/agents/prompts/OTV2_IMPL_QA_E2E.md`, current Foundation/protocol/client-safe content contracts and current QA shell evidence.
+2. Read root/nearest `AGENTS.md`, `docs/agents/BUILD_TEST_MATRIX.md`, `docs/agents/END_TO_END_FEATURE_COMPLETENESS.md`, `docs/agents/programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`, `docs/agents/prompts/OTV2_IMPL_NATIVE_CLIENT.md`, `docs/agents/prompts/OTV2_IMPL_QA_E2E.md`, current Foundation/protocol/client-safe content contracts and current QA shell evidence.
 3. Treat historical QA shell completion as infrastructure only. Do not infer physical Tier 1/Tier 2 PASS.
 4. Without exact merged write allocation, remain `READ_ONLY_PREPARATION`.
 
@@ -86,7 +86,7 @@ pr:
 final_head_sha:
 changed_paths: []
 shared_lease_used: null
-state: READY_FOR_INTEGRATION | REVIEW_RECONCILIATION_REQUIRED | READ_ONLY_PREPARATION | WAITING_DEPENDENCY | WAITING_ARCHITECTURE | WAITING_EXTERNAL
+state: READY_FOR_INTEGRATION | INDEPENDENT_REVIEW_PENDING | READ_ONLY_PREPARATION | WAITING_DEPENDENCY | WAITING_ARCHITECTURE | WAITING_EXTERNAL
 focused_validation: []
 component_validation: []
 e2e:
@@ -94,15 +94,6 @@ e2e:
   tier2:
 self_review:
 independent_review:
-codex_review:
-  route: CODEX_REQUIRED | CODEX_OPTIONAL | CODEX_NOT_REQUIRED_BY_THIS_POLICY
-  classification_source_role:
-  classification_source_ref:
-  reviewed_head_sha:
-  evidence_ref:
-  blocking_findings: []
-  required_review_threads_unresolved: 0
-  status: PASS | CHANGES_REQUIRED | NOT_REQUIRED | WAITING_CAPABILITY
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate
@@ -111,4 +102,4 @@ next_action: <exactly one concrete action>
 
 ## Safety
 
-No client-authoritative gameplay, production/live environment mutation, secrets, external-repository writes or Reference-parity claims. No non-covered owner-funded Codex/OpenAI/API invocation without exact per-invocation owner authorization.
+No client-authoritative gameplay, production/live environment mutation, secrets, external-repository writes or Reference-parity claims.

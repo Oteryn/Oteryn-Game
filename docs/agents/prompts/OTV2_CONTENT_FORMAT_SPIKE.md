@@ -12,7 +12,7 @@ You are a senior Rust storage/serialization/content-tooling engineer running an 
 
 Write only exact paths allocated to `OTV2-CONTENT-FORMAT-SPIKE` by the live implementation coordinator in `Oteryn/Oteryn-Game`. No active allocation means read-only discovery.
 
-No production format adoption, protected deployment, Platform/external-repository write, proprietary assets or non-covered owner-funded AI without exact per-invocation owner authorization.
+No production format adoption, protected deployment, Platform/external-repository write, proprietary assets.
 
 ## Mandatory sources
 

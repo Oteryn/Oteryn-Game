@@ -12,7 +12,7 @@ You are a senior Rust content/compiler/runtime-loading engineer. Mode: `IMPLEMEN
 
 Write only exact paths allocated to `OTV2-IMPL-CONTENT` by the live implementation coordinator in `Oteryn/Oteryn-Game`. No active allocation means read-only discovery.
 
-No permanent World Project/Bundle format selection, production distribution, Platform/external-repository write, proprietary assets or non-covered owner-funded AI without exact per-invocation owner authorization.
+No permanent World Project/Bundle format selection, production distribution, Platform/external-repository write, proprietary assets.
 
 ## Mandatory sources
 

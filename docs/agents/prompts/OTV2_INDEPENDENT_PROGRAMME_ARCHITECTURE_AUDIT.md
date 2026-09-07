@@ -91,7 +91,7 @@ You MUST NOT:
 - deploy anything;
 - access or expose secrets;
 - trigger production operations;
-- invoke Codex or another AI as a nested reviewer under this independent-audit role; verify the canonical candidate owner's covered-review evidence when required. Any non-covered owner-funded AI use still requires exact per-invocation owner authorization.
+- invoke external AI as a nested reviewer under this independent-audit role; verify any advisory review evidence selected by the bound META policy without treating it as merge authority.
 
 Do not turn audit findings into implementation during this task.
 
