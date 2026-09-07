@@ -1,5 +1,37 @@
 # OTV2-20260906-control-loss-reconnect-bridge-353
 
+## WP2 nonreuse amendment implementation checkpoint — 2026-09-07
+
+Protected Work application `#353/5575100697` activates the accepted
+`FND-DUR-GAMESESSION-NONREUSE-V1` Foundation-only amendment on this canonical
+task. The implementation adds a sealed, candidate-specific
+`GameSessionUseObservationV1` semantic boundary and does not copy or retain the
+durable lifetime ledger. It binds character, candidate, current/no-current
+origin, registered source/version, complete membership revision and result,
+operation replay binding, lifetime count, and current session/connection/lease/
+scope fences.
+
+The three explicit family entry methods distinguish Terminal replacement,
+CompleteReconnect `EarlyTerminalReplacement`, and PostGrace new-session
+recovery. They reject missing/incomplete/stale/conflicting observations and
+intermediate retired candidates. Exact committed replay is classified before
+used-candidate rejection and returns its committed revision without consuming a
+new revision. Entry 65,536 remains admissible; the next unused candidate returns
+the family-specific permanent FND-04C lifetime-exhaustion result, never transient
+`ADMISSION_CAPACITY_EXCEEDED`.
+
+Fresh RED was captured by compiling the new regressions against the prior
+Foundation surface: the focused test target failed with missing
+`GameSessionUseObservationV1`, source, request, fence, decision, and error APIs
+(`RED_EXIT=101`). Subsequent GREEN commands and the exact final head are reported
+from the committed checkpoint without rewriting this preserved evidence.
+
+`CONSUMERS_ACTIVE = false`. The semantic API is intentionally not connected to
+SQL/B or runtime producers in this amendment. `WP4_REQUIRED = true` for durable
+membership, atomic revision/capacity effects, exact-result reload, and registered
+owner observation construction before consumer activation. PREPARE/COMMIT and
+the immutable original `FreshAdmissionCommit` remain unchanged.
+
 ## Current owner stop checkpoint — 2026-09-06T17:40:25Z
 
 The owner explicitly requested saving current work to the repository and stopping. All agents are stopped. This override supersedes older in-progress/qualification prose below. The partial repair is **UNVERIFIED WIP**, not a resolved P1 or permission to integrate. No further implementation, test execution, Merge Queue entry, consumer activation or lease release occurs in this run.

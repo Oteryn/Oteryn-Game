@@ -2818,3 +2818,222 @@ fn replacement_session_completes_post_grace_prepare_commit_and_adoption() {
     assert_eq!(adopted_session.current_character_lease().generation(), 3);
     assert_eq!(adopted_session.current_scope_generation().get(), 4);
 }
+
+#[derive(Clone)]
+struct SessionUseOwner(GameSessionUseObservationV1);
+impl super::super::fnd04_verifier::recovery_source_sealed::Sealed for SessionUseOwner {}
+impl GameSessionUseObservationSourceV1 for SessionUseOwner {
+    fn observe_candidate_use(
+        &self,
+        _: &GameSessionUseRequestV1,
+    ) -> Result<GameSessionUseObservationV1, GameSessionUseAuthorizationErrorV1> {
+        Ok(self.0.clone())
+    }
+}
+
+fn session_use_id(last: u8) -> GameSessionId {
+    let mut bytes = [0; 16];
+    bytes[6] = 0x70;
+    bytes[8] = 0x80;
+    bytes[15] = last;
+    GameSessionId::decode(&bytes).require("session-use id")
+}
+
+fn session_use_character(last: u8) -> CharacterId {
+    let mut bytes = [0; 16];
+    bytes[6] = 0x70;
+    bytes[8] = 0x80;
+    bytes[15] = last;
+    CharacterId::decode(&bytes).require("session-use character")
+}
+
+fn session_use_request(
+    current: GameSessionId,
+    candidate: GameSessionId,
+    operation: u8,
+    revision: u64,
+) -> GameSessionUseRequestV1 {
+    let mut binding = [0; 16];
+    binding[15] = operation;
+    GameSessionUseRequestV1::new_session(
+        session_use_character(1),
+        candidate,
+        Some(current),
+        binding,
+        revision,
+        Some(GameSessionUseCurrentFenceV1 {
+            current_session: current,
+            connection_generation: 3,
+            character_lease_generation: 4,
+            scope_ownership_generation: 5,
+        }),
+    )
+}
+
+fn session_use_observation(
+    request: GameSessionUseRequestV1,
+    membership: GameSessionCandidateMembershipV1,
+    count: u64,
+) -> GameSessionUseObservationV1 {
+    let committed = (membership == GameSessionCandidateMembershipV1::UsedByExactOperation)
+        .then_some(request.operation_binding);
+    let committed_revision = committed.map(|_| request.expected_membership_revision);
+    GameSessionUseObservationV1::owner_test_observation(
+        request,
+        "game-session-use-ledger",
+        1,
+        request.expected_membership_revision,
+        GameSessionUseCompletenessV1::Complete,
+        membership,
+        committed,
+        committed_revision,
+        count,
+    )
+}
+
+fn authorize_session_use(
+    authority: &GameSessionUseAuthorityV1<'_>,
+    family: GameSessionUseFamilyV1,
+    request: GameSessionUseRequestV1,
+) -> Result<GameSessionUseDecisionV1, GameSessionUseAuthorizationErrorV1> {
+    match family {
+        GameSessionUseFamilyV1::TerminalReplacement => {
+            authority.authorize_terminal_replacement(request)
+        }
+        GameSessionUseFamilyV1::EarlyTerminalReplacement => {
+            authority.authorize_early_terminal_replacement(request)
+        }
+        GameSessionUseFamilyV1::PostGraceRecovery => {
+            authority.authorize_post_grace_recovery(request)
+        }
+    }
+}
+
+#[test]
+fn complete_session_use_observation_rejects_intermediate_retired_id_for_every_family() {
+    let s1 = session_use_id(2);
+    let s2 = session_use_id(3);
+    for family in [
+        GameSessionUseFamilyV1::TerminalReplacement,
+        GameSessionUseFamilyV1::EarlyTerminalReplacement,
+        GameSessionUseFamilyV1::PostGraceRecovery,
+    ] {
+        // Durable history is S0 -> S1 -> S2. Only the candidate-specific owner
+        // observation, not Foundation's S0/current-S2 projection, knows S1.
+        let request = session_use_request(s2, s1, 9, 3);
+        let owner = SessionUseOwner(session_use_observation(
+            request,
+            GameSessionCandidateMembershipV1::UsedByDifferentOperation,
+            3,
+        ));
+        assert_eq!(
+            authorize_session_use(&GameSessionUseAuthorityV1::from_owning_source(&owner), family, request),
+            Err(GameSessionUseAuthorizationErrorV1::CandidateAlreadyUsed)
+        );
+
+        let fresh = session_use_request(s2, session_use_id(4), 10, 3);
+        let owner = SessionUseOwner(session_use_observation(
+            fresh,
+            GameSessionCandidateMembershipV1::Unused,
+            3,
+        ));
+        assert_eq!(
+            authorize_session_use(&GameSessionUseAuthorityV1::from_owning_source(&owner), family, fresh),
+            Ok(GameSessionUseDecisionV1::NewSession { committed_revision: 4 })
+        );
+    }
+}
+
+#[test]
+fn session_use_observation_fails_closed_and_replay_precedes_membership_rejection() {
+    let request = session_use_request(session_use_id(3), session_use_id(4), 11, 7);
+    let authorize = |observation| {
+        let owner = SessionUseOwner(observation);
+        GameSessionUseAuthorityV1::from_owning_source(&owner)
+            .authorize_terminal_replacement(request)
+    };
+    assert_eq!(
+        GameSessionUseAuthorityV1::unavailable().authorize_terminal_replacement(request),
+        Err(GameSessionUseAuthorizationErrorV1::StaleAuthority)
+    );
+
+    let mut bad = session_use_observation(request, GameSessionCandidateMembershipV1::Unused, 7);
+    bad.completeness = GameSessionUseCompletenessV1::Incomplete;
+    assert_eq!(authorize(bad), Err(GameSessionUseAuthorizationErrorV1::StaleAuthority));
+    for mutate in 0..8 {
+        let mut bad = session_use_observation(request, GameSessionCandidateMembershipV1::Unused, 7);
+        match mutate {
+            0 => bad.character_id = session_use_character(2),
+            1 => bad.candidate = session_use_id(5),
+            2 => bad.expected_current = Some(session_use_id(1)),
+            3 => bad.source_identity = "wrong-owner".into(),
+            4 => bad.source_version = 2,
+            5 => bad.membership_revision = 6,
+            6 => bad.operation_binding[0] = 1,
+            _ => bad.current_fence.as_mut().require("fence").scope_ownership_generation = 6,
+        }
+        assert_eq!(authorize(bad), Err(GameSessionUseAuthorizationErrorV1::StaleAuthority));
+    }
+
+    let replay_request = session_use_request(
+        session_use_id(3),
+        session_use_id(4),
+        11,
+        GAME_SESSION_USE_LEDGER_CAPACITY_V1,
+    );
+    let replay = session_use_observation(
+        replay_request,
+        GameSessionCandidateMembershipV1::UsedByExactOperation,
+        GAME_SESSION_USE_LEDGER_CAPACITY_V1,
+    );
+    assert_eq!(
+        {
+            let owner = SessionUseOwner(replay);
+            GameSessionUseAuthorityV1::from_owning_source(&owner)
+                .authorize_terminal_replacement(replay_request)
+        },
+        Ok(GameSessionUseDecisionV1::ExactCommittedReplay {
+            committed_revision: GAME_SESSION_USE_LEDGER_CAPACITY_V1
+        })
+    );
+    let different = session_use_request(session_use_id(3), session_use_id(4), 12, 7);
+    let owner = SessionUseOwner(session_use_observation(
+        different,
+        GameSessionCandidateMembershipV1::UsedByDifferentOperation,
+        7,
+    ));
+    assert_eq!(
+        GameSessionUseAuthorityV1::from_owning_source(&owner)
+            .authorize_terminal_replacement(different),
+        Err(GameSessionUseAuthorizationErrorV1::CandidateAlreadyUsed)
+    );
+}
+
+#[test]
+fn session_use_ledger_ceiling_has_permanent_family_specific_results() {
+    let request = session_use_request(session_use_id(3), session_use_id(4), 13, 65_535);
+    let owner = SessionUseOwner(session_use_observation(
+        request,
+        GameSessionCandidateMembershipV1::Unused,
+        65_535,
+    ));
+    assert_eq!(
+        GameSessionUseAuthorityV1::from_owning_source(&owner)
+            .authorize_terminal_replacement(request),
+        Ok(GameSessionUseDecisionV1::NewSession { committed_revision: 65_536 })
+    );
+
+    let request = session_use_request(session_use_id(3), session_use_id(5), 14, 65_536);
+    for (family, expected) in [
+        (GameSessionUseFamilyV1::TerminalReplacement, GameSessionUseAuthorizationErrorV1::TerminalReplacementGameSessionLedgerExhausted),
+        (GameSessionUseFamilyV1::EarlyTerminalReplacement, GameSessionUseAuthorizationErrorV1::EarlyTerminalReplacementGameSessionLedgerExhausted),
+        (GameSessionUseFamilyV1::PostGraceRecovery, GameSessionUseAuthorizationErrorV1::PostGraceRecoveryGameSessionLedgerExhausted),
+    ] {
+        let owner = SessionUseOwner(session_use_observation(
+            request,
+            GameSessionCandidateMembershipV1::Unused,
+            GAME_SESSION_USE_LEDGER_CAPACITY_V1,
+        ));
+        assert_eq!(authorize_session_use(&GameSessionUseAuthorityV1::from_owning_source(&owner), family, request), Err(expected));
+    }
+}
