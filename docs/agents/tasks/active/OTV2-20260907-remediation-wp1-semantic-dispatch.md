@@ -54,10 +54,10 @@ No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/produc
 ## Context checkpoint
 
 ```yaml
-last_progress: scope-aware deterministic dispatcher and exact-head workflow regression implemented after normal merge-up of main a6f69427d663539c6a8e23f166e69147b66ec078
-status: review_pending
+last_progress: independent exact-head review found stale archived task inputs and first-failure short-circuit; repair updates canonical inputs and aggregates all selected results
+status: repairing_review_findings
 branch: fix/remediation-wp1-semantic-dispatch-364
 pr: 371
 blocker: null
-next_action: publish the stable material head, obtain exact-head canonical CI and one independent deep review
+next_action: validate real current profile invocations and failure aggregation, then publish and obtain fresh exact-head deep review
 ```

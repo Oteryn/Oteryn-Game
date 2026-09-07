@@ -2,15 +2,16 @@
 from __future__ import annotations
 
 import argparse, json, os, re, subprocess
+from collections.abc import Callable
 from pathlib import Path
 
 E_PATHS = {
-    "docs/agents/tasks/active/OTV2-20260815-alpha-client-architecture.md",
+    "docs/agents/tasks/archive/OTV2-20260815-alpha-client-architecture.md",
     "docs/architecture/ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_ANALYSIS.md",
     "docs/architecture/ALPHA-CLIENT-01_NATIVE_CLIENT_ARCHITECTURE_CONTRACT_CANDIDATE.md",
 }
 F_PATHS = {
-    "docs/agents/tasks/active/OTV2-20260815-analytics-integrity-architecture.md",
+    "docs/agents/tasks/archive/OTV2-20260815-analytics-integrity-architecture.md",
     "docs/architecture/ANL-02_GAMEPLAY_BALANCE_WORLD_ANALYTICS_ANALYSIS.md",
     "docs/architecture/ANL-02_GAMEPLAY_BALANCE_WORLD_ANALYTICS_CONTRACT_CANDIDATE.md",
     "docs/architecture/ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_ANALYSIS.md",
@@ -19,7 +20,7 @@ F_PATHS = {
 R_PATHS = {
     "apps/game-server/src/foundation/admission_recovery_inner.rs",
     "apps/game-server/src/foundation/fnd04_verifier.rs",
-    "docs/agents/tasks/active/OTV2-20260826-impl-foundation-reconnect-durability.md",
+    "docs/agents/tasks/archive/OTV2-20260826-impl-foundation-reconnect-durability.md",
 }
 
 PROFILE_PATHS = (
@@ -31,6 +32,25 @@ PROFILE_PATHS = (
 
 def select_profiles(changed: set[str]) -> list[str]:
     return [name for name, paths in PROFILE_PATHS if changed & paths]
+
+
+def run_profiles(
+    selected_profiles: list[str],
+    profile_checks: dict[str, Callable[[], list[str]]],
+) -> tuple[list[dict[str, object]], list[str]]:
+    profiles: list[dict[str, object]] = []
+    failures: list[str] = []
+    for profile in selected_profiles:
+        try:
+            checks = profile_checks[profile]()
+            profiles.append({"profile": profile, "checks": checks, "verdict": "PASS"})
+        except SystemExit as error:
+            message = str(error)
+            failures.append(f"{profile}: {message}")
+            profiles.append(
+                {"profile": profile, "checks": [], "verdict": "FAIL", "error": message}
+            )
+    return profiles, failures
 
 
 def fail(msg: str) -> None:
@@ -68,6 +88,7 @@ def forbid_re(doc: str, pattern: str, label: str) -> None:
 
 
 def common(task: str) -> None:
+    need_re(task, r"(?m)^status:\s*completed\s*$", "terminal task lifecycle")
     declared = re.search(r"(?m)^repair_cycles_for_current_gate:\s*([0-9]+)\s*$", task)
     if declared is None:
         fail("repair history: missing repair_cycles_for_current_gate")
@@ -75,7 +96,13 @@ def common(task: str) -> None:
     if cycles < 4:
         fail(f"repair history: expected owner-overridden stable gate at cycle >= 4, got {cycles}")
     need(task, "repair_cycle_4_owner_override:", "owner repair override")
-    need(task, "no Codex for this continuation", "owner review constraint", ci=True)
+    need_re(
+        task,
+        r"owner_review_constraint:\s*no Codex for (?:this|final) continuation",
+        "owner review constraint",
+    )
+    need(task, "owned_paths: []", "terminal path ownership")
+    need(task, "implementation_authority: NONE", "terminal implementation authority", ci=True)
     need(task, "MERGE_AUTHORITY: ARCHITECTURE_COORDINATOR_ONLY", "merge authority")
 
 
@@ -139,7 +166,7 @@ def alpha() -> list[str]:
 
 
 def analytics() -> list[str]:
-    task = text("docs/agents/tasks/active/OTV2-20260815-analytics-integrity-architecture.md")
+    task = text("docs/agents/tasks/archive/OTV2-20260815-analytics-integrity-architecture.md")
     a2 = text("docs/architecture/ANL-02_GAMEPLAY_BALANCE_WORLD_ANALYTICS_ANALYSIS.md")
     c2 = text("docs/architecture/ANL-02_GAMEPLAY_BALANCE_WORLD_ANALYTICS_CONTRACT_CANDIDATE.md")
     a3 = text("docs/architecture/ANL-03_ECONOMY_INTEGRITY_SECURITY_ANALYTICS_ANALYSIS.md")
@@ -209,19 +236,26 @@ def analytics() -> list[str]:
 
 
 def foundation_reconnect() -> list[str]:
-    task = text("docs/agents/tasks/active/OTV2-20260826-impl-foundation-reconnect-durability.md")
+    task = text("docs/agents/tasks/archive/OTV2-20260826-impl-foundation-reconnect-durability.md")
     implementation = text("apps/game-server/src/foundation/admission_recovery_inner.rs")
     verifier = text("apps/game-server/src/foundation/fnd04_verifier.rs")
 
     for label, fragment in {
         "authority decision": "DUR-RECONNECT-AUTHORITY-V1",
         "transport uniqueness decision": "DUR-RECONNECT-TRANSPORT-REF-UNIQUENESS-V1",
-        "exact Foundation write authority": "write_authority: exact_allocated_foundation_and_task_paths",
+        "terminal Foundation write authority": "write_authority: none",
         "attempt bound provenance": "FND04-RECONNECT-ATTEMPTS-PER-LOSS-EPOCH = 8",
         "no SQLx scope": "No SQLx/query/migration/schema work",
         "Foundation authority retained": "Foundation retains admission/security/controller authority",
     }.items():
         need(task, fragment, label, ci=True)
+    need(task, "status: COMPLETED_ARCHIVED", "terminal Foundation lifecycle", ci=True)
+    need(task, "owned_paths: []", "terminal Foundation path ownership")
+    need(
+        task,
+        "This record is immutable historical evidence, owns no path, and grants no dispatch, review, validation, or runtime-write authority.",
+        "terminal Foundation non-authority",
+    )
 
     for label, fragment in {
         "stable transport ref": "pub struct AuthenticatedTransportRefV1([u8; 16]);",
@@ -302,7 +336,12 @@ def foundation_reconnect() -> list[str]:
 
     need_re(
         implementation,
-        r"authorize_commit.*?phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation.*?ReconnectCurrentAuthorityV1::from_record.*?current != expected.*?GameSessionState::Reconnectable.*?current_controller_present.*?StaleAuthority.*?now > deadline.*?DeadlineExpired.*?ReconnectCommitRequestV1",
+        r"fn current_authority_matches_record.*?current\.identity == \*identity.*?current_account_presence.*?current_character_world_eligibility.*?current_candidate.*?current_runtime_scope.*?current\.predecessor.*?current\.authority.*?current\.continuity_epoch.*?current\.original_grace_deadline.*?current\.proof.*?current\.fnd02.*?current\.protocol_major.*?current\.transport_profile.*?current\.ruleset_revision.*?current\.content_revision.*?current\.map_revision.*?current\.world_policy_revision.*?current\.account_security_generation.*?current\.platform_security_evidence.*?current\.proof_trust_evidence.*?current\.credential_expiration.*?candidate\.is_live_at.*?GameSessionState::Reconnectable.*?!current\.current_controller_present",
+        "complete current authority matcher",
+    )
+    need_re(
+        implementation,
+        r"authorize_commit.*?phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation.*?current_authority_matches_record.*?authenticated_evidence_observed_by.*?StaleAuthority.*?authorization_deadline.*?now > deadline.*?current\.observed_at > deadline.*?DeadlineExpired.*?ReconnectCommitRequestV1",
         "fresh complete revalidation precedes COMMIT request",
     )
     need_re(
@@ -312,8 +351,8 @@ def foundation_reconnect() -> list[str]:
     )
     need_re(
         implementation,
-        r"accept_reconciliation.*?snapshot\.record != self\.record.*?current_scope_generation != self\.record\.authority\(\)\.scope_ownership_generation\(\).*?ReconciliationMismatch",
-        "reconciliation rechecks exact record and scope fence",
+        r"accept_reconciliation.*?snapshot\.record != self\.record.*?ReconciliationMismatch.*?DurableReconnectStateV1::Committed.*?current_authority_matches_record.*?ReconciliationMismatch",
+        "reconciliation rechecks exact record and complete current authority",
     )
     need_re(
         implementation,
@@ -383,11 +422,8 @@ def main() -> None:
         "ANL_02_ANL_03": analytics,
         "FOUNDATION_RECONNECT_DURABILITY_V1": foundation_reconnect,
     }
-    profiles = [
-        {"profile": profile, "checks": profile_checks[profile](), "verdict": "PASS"}
-        for profile in selected_profiles
-    ]
-    verdict = "PASS" if profiles else "NOT_APPLICABLE"
+    profiles, failures = run_profiles(selected_profiles, profile_checks)
+    verdict = "FAIL" if failures else "PASS" if profiles else "NOT_APPLICABLE"
     profile_names = ",".join(selected_profiles) if selected_profiles else "NOT_APPLICABLE"
     checks = [check for profile in profiles for check in profile["checks"]]
 
@@ -407,18 +443,26 @@ def main() -> None:
     print(f"SEMANTIC_AUDIT_{verdict}: profile={profile_names} exact_head={args.head_sha}")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
+        profile_summary = []
+        for profile in profiles:
+            profile_summary.append(
+                f"- {profile['profile']} verdict: **{profile['verdict']}**"
+            )
+            profile_summary.extend(
+                f"  - PASS: {check}" for check in profile["checks"]
+            )
+            if "error" in profile:
+                profile_summary.append(f"  - error: `{profile['error']}`")
         Path(summary).write_text(
             "## Architecture semantic audit\n\n"
             "- method: dedicated deterministic independent semantic audit workflow\n"
             f"- profiles: `{profile_names}`\n- exact head: `{args.head_sha}`\n- verdict: **{verdict}**\n- owner-funded AI: `false`\n\n"
-            + "\n".join(
-                f"- {profile['profile']} PASS: {check}"
-                for profile in profiles
-                for check in profile["checks"]
-            )
+            + "\n".join(profile_summary)
             + "\n",
             encoding="utf-8",
         )
+    if failures:
+        raise SystemExit("\n".join(failures))
 
 
 if __name__ == "__main__":
