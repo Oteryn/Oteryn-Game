@@ -349,10 +349,11 @@ impl CompleteReconnectClaimSourceV1 for BridgeOwner {
             row.source.decision_identity.push_str("-next");
             row.source.source_observed_at = now;
         }
+        let account_publication_revision = successors[0].publication_revision;
         if let AdmissionAuthorityGuardStateV1::Account { presence, security } =
             &mut successors[0].state
         {
-            security.provenance.publication_revision = 2;
+            security.provenance.publication_revision = account_publication_revision;
             *presence = Some((
                 operation.identity.character_id(),
                 operation.identity.game_session_id(),
@@ -2137,6 +2138,83 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
         _ => unreachable!(),
     };
     if proof_case == 1 {
+        let configure_terminal_replacement = |candidate_session: GameSessionId| {
+            let mut candidate_owner = owner.clone();
+            candidate_owner.current.snapshot.session.session_state = GameSessionState::Terminal;
+            let candidate = ReconnectCandidateBindingV1::new(
+                candidate_session,
+                ReconnectAttemptRef::new(22).require("second complete attempt"),
+                ConnectionGeneration::new(3).require("second complete generation"),
+                AuthenticatedTransportRefV1::decode(&[12; 16])
+                    .require("second complete transport"),
+                103,
+            )
+            .require("second complete candidate");
+            candidate_owner.current.snapshot.candidate = candidate;
+            candidate_owner.current.snapshot.proof_transition =
+                CompleteReconnectProofTransitionV1 {
+                    owner: candidate_owner.current.snapshot.session.current_runtime_scope(),
+                    revision: 14,
+                    accepted_revision: 14,
+                    observed_at: 102,
+                    predecessor_session: replacement,
+                    predecessor_generation: 1,
+                    successor_session: candidate_session,
+                    successor_generation: 1,
+                    candidate,
+                };
+            let candidate_identity = ReconnectIdentityV1::new(
+                candidate_session,
+                candidate.reconnect_attempt_ref(),
+                &candidate_owner.current.snapshot.recovery.account_id,
+                candidate_owner.current.snapshot.recovery.character_id,
+                candidate_owner.current.snapshot.recovery.world_id,
+                candidate_owner.current.snapshot.session.current_runtime_scope(),
+            )
+            .require("second complete identity");
+            (candidate_owner, candidate_identity)
+        };
+        let mut fresh_bytes = [0; 16];
+        fresh_bytes[6] = 0x70;
+        fresh_bytes[8] = 0x80;
+        fresh_bytes[15] = 14;
+        let fresh_candidate =
+            GameSessionId::decode(&fresh_bytes).require("fresh second complete candidate");
+        let (fresh_owner, fresh_identity) = configure_terminal_replacement(fresh_candidate);
+        let fresh_authorization = CompleteReconnectAuthorizationV1::authorize(
+            &fresh_owner,
+            fresh_identity,
+            next_proof(&fresh_owner, 102),
+            102,
+        )
+        .require("fresh second complete authorization");
+        let fresh_claim = CompleteReconnectClaimTransitionV1::prepare(
+            &fresh_owner,
+            &fresh_authorization,
+            102,
+        )
+        .require("fresh second complete claim");
+        let mut fresh_flow = CompleteReconnectFlowV1::begin(
+            fresh_authorization,
+            Some(fresh_claim),
+        )
+        .require("fresh second complete flow");
+        fresh_flow
+            .take_request(CompleteReconnectRequestKindV1::Prepare)
+            .require("fresh second complete prepare request")
+            .validate_locked(&fresh_owner, 102)
+            .require("fresh second complete prepare effect");
+
+        let (historical_owner, historical_identity) =
+            configure_terminal_replacement(predecessor);
+        assert!(CompleteReconnectAuthorizationV1::authorize(
+            &historical_owner,
+            historical_identity,
+            next_proof(&historical_owner, 102),
+            102,
+        )
+        .is_err());
+
         let mut substituted = owner.clone();
         substituted
             .current
@@ -2290,6 +2368,23 @@ fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_ca
             terminal.commit().character_id(),
         )
         .require("second replacement presence");
+        let historical_candidate = replacement_record(
+            terminal,
+            &owner.current.snapshot.recovery.account_id,
+            predecessor,
+            23,
+            13,
+            104,
+        );
+        assert!(TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
+            &owner.current.snapshot.recovery.account_id,
+            Some(&presence),
+            replacement,
+            predecessor,
+            terminal,
+            &historical_candidate,
+        )
+        .is_err());
         let authorization = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             &owner.current.snapshot.recovery.account_id,
             Some(&presence),

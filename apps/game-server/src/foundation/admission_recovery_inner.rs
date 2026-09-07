@@ -246,6 +246,7 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
                     || presence.character_id() != candidate.identity().character_id()
             })
             || predecessor_game_session_id == candidate_game_session_id
+            || snapshot.commit().game_session_id() == candidate_game_session_id
             || snapshot.session_state() != GameSessionState::Terminal
             || snapshot.current_transport().is_some()
         {
@@ -3861,6 +3862,8 @@ impl CompleteReconnectOperationV1 {
             && (!same || self.original.session.session_state() != GameSessionState::Reconnectable))
             || (self.mode == CompleteReconnectModeV1::EarlyTerminalReplacement
                 && (same
+                    || self.identity.game_session_id()
+                        == self.original.session.commit().game_session_id()
                     || self.original.session.session_state() != GameSessionState::Terminal
                     || self
                         .credential
