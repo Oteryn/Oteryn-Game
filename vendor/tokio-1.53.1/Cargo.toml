@@ -993,3 +993,7 @@ check-cfg = [
     "cfg(tokio_unstable)",
     'cfg(target_os, values("cygwin"))',
 ]
+
+[[test]]
+name = "oteryn_resource_owner"
+path = "tests/oteryn_resource_owner.rs"
