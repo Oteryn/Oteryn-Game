@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "bed1966b918ef7548bcaa0ac5b1a4563d4c7cc7464a34e35128fdaf72d8b5160"
 )
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "7f101b51bfeff7c63495f8d9662a9369a1abd597485d852a5b4964d1fad221c5"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "e3291fe8fca8fcf70166d5652b43d5a26fa0d762"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "539a726b7d39cabe785892f70ea30d1944189d91"
 EXPECTED_POST_MERGE_RUST_SHA256 = "d34a8feeef8b37568217159e85cab54a0868abf9ab8045f5113b9bc8c3c6f0f7"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -436,6 +436,8 @@ def main() -> int:
                 "git diff --check \"$BASE_SHA\" \"$HEAD_SHA\"",
                 "python tools/agents/validate_governance.py",
                 "python tools/repository/validate_repository_policy.py",
+                "python tools/agents/tests/test_governance_lifecycle_discovery.py",
+                "python tools/repository/test_validate_merge_group_pg_sim.py",
             ),
             "dependency_review": (
                 "    name: Merge Queue / dependency review\n",
@@ -467,6 +469,8 @@ def main() -> int:
             "rust_windows": (
                 "    name: Merge Queue / Rust Windows client\n",
                 "EXPECTED_SHA: ${{ github.event.merge_group.head_sha }}",
+                "$ErrorActionPreference = 'Stop'",
+                "$PSNativeCommandUseErrorActionPreference = $true",
                 "cargo +1.94.0 test --locked -p oteryn-simulation-determinism --target x86_64-pc-windows-msvc",
                 "--target x86_64-pc-windows-msvc",
                 "cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke",
