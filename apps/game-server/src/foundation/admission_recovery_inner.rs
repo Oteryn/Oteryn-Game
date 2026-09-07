@@ -116,6 +116,47 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
         })
     }
 
+    /// Reconstructs the current authority projection from one fenced durable
+    /// read while retaining the immutable fresh-admission receipt.
+    ///
+    /// The current identity is explicit persisted authority: it is never
+    /// inferred from UUID ordering or replacement history. This crate-private
+    /// path lets the durability owner restore a replacement projection without
+    /// exposing a forgeable public constructor or setter.
+    #[allow(clippy::too_many_arguments, dead_code)]
+    pub(crate) fn from_persisted_current_facts(
+        current_game_session_id: GameSessionId,
+        commit: FreshAdmissionCommit<T>,
+        session_state: GameSessionState,
+        current_connection_generation: ConnectionGeneration,
+        current_transport: Option<T>,
+        current_character_lease: CharacterLease,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+        current_runtime_scope: RuntimeScopeRefV1,
+        current_scope_generation: ScopeOwnershipGeneration,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if current_runtime_scope.world_id() != commit.world_id() {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        let snapshot = Self {
+            commit,
+            replacement_game_session_id: (current_game_session_id != commit.game_session_id())
+                .then_some(current_game_session_id),
+            session_state,
+            current_connection_generation,
+            current_transport,
+            current_character_lease,
+            current_character_world_eligibility,
+            current_runtime_scope,
+            current_scope_generation,
+            current_control_loss_epoch: None,
+            current_original_grace_deadline: None,
+        };
+        validate_current_authority(current_game_session_id, snapshot)
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        Ok(snapshot)
+    }
+
     pub fn with_control_loss_continuity(
         mut self,
         control_loss_epoch: ControlLossEpochRefV1,

@@ -2035,12 +2035,101 @@ fn replacement_commit_projects_candidate_as_current_session_identity() {
     assert!(ControlLossAuthorizationV1::authorize(&next_loss, wrong, 101).is_err());
 }
 
+#[test]
+fn persisted_current_reload_preserves_nonreplacement_and_replacement_shapes() {
+    let (flow, owner) = committed_bridge(true, true);
+    let committed = owner.current.snapshot.session;
+    let commit = committed.commit();
+    let current = committed.current_game_session_id();
+
+    let replacement = GameSessionAuthoritySnapshot::from_persisted_current_facts(
+        current,
+        commit,
+        committed.session_state(),
+        committed.current_connection_generation(),
+        committed.current_transport(),
+        committed.current_character_lease(),
+        committed.current_character_world_eligibility(),
+        committed.current_runtime_scope(),
+        committed.current_scope_generation(),
+    )
+    .require("persisted replacement current authority");
+    assert_eq!(replacement.commit(), flow.operation().recovery.original.session.commit());
+    assert_eq!(replacement.current_game_session_id(), current);
+    validate_current_authority(current, replacement).require("replacement rehydrates");
+    assert!(validate_current_authority(commit.game_session_id(), replacement).is_err());
+
+    let original = flow.operation().recovery.original.session;
+    let nonreplacement = GameSessionAuthoritySnapshot::from_persisted_current_facts(
+        commit.game_session_id(),
+        commit,
+        original.session_state(),
+        original.current_connection_generation(),
+        original.current_transport(),
+        original.current_character_lease(),
+        original.current_character_world_eligibility(),
+        original.current_runtime_scope(),
+        original.current_scope_generation(),
+    )
+    .require("persisted original current authority");
+    assert_eq!(nonreplacement.current_game_session_id(), commit.game_session_id());
+    assert_eq!(nonreplacement.commit(), commit);
+
+    assert!(GameSessionAuthoritySnapshot::from_persisted_current_facts(
+        current,
+        commit,
+        GameSessionState::Active,
+        committed.current_connection_generation(),
+        None,
+        committed.current_character_lease(),
+        committed.current_character_world_eligibility(),
+        committed.current_runtime_scope(),
+        committed.current_scope_generation(),
+    )
+    .is_err());
+    assert!(GameSessionAuthoritySnapshot::from_persisted_current_facts(
+        current,
+        commit,
+        committed.session_state(),
+        committed.current_connection_generation(),
+        committed.current_transport(),
+        committed.current_character_lease(),
+        None,
+        committed.current_runtime_scope(),
+        committed.current_scope_generation(),
+    )
+    .is_err());
+}
+
 fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle_case(
     proof_case: u8,
 ) {
     let (first_flow, mut owner) = committed_bridge(true, true);
     let predecessor = owner.current.snapshot.session.commit().game_session_id();
     let replacement = owner.current.snapshot.session.current_game_session_id();
+    let persisted = owner.current.snapshot.session;
+    owner.current.snapshot.session =
+        GameSessionAuthoritySnapshot::from_persisted_current_facts(
+            replacement,
+            persisted.commit(),
+            persisted.session_state(),
+            persisted.current_connection_generation(),
+            persisted.current_transport(),
+            persisted.current_character_lease(),
+            persisted.current_character_world_eligibility(),
+            persisted.current_runtime_scope(),
+            persisted.current_scope_generation(),
+        )
+        .require("reload committed replacement before following loss")
+        .with_control_loss_continuity(
+            persisted
+                .current_control_loss_epoch()
+                .require("persisted control-loss epoch"),
+            persisted
+                .current_original_grace_deadline()
+                .require("persisted original grace deadline"),
+        )
+        .require("reload persisted loss continuity");
     let mut wrong_bytes = [0; 16];
     wrong_bytes[6] = 0x70;
     wrong_bytes[8] = 0x80;
