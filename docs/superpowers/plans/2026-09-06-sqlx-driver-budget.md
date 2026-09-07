@@ -95,3 +95,14 @@ idle/shutdown release. Do not implement a false GREEN in SQLx or use a fake as
 backend proof. Status is `BLOCKED_RUNTIME_BACKEND_OWNER`; request the exact Tokio
 hook or an already-funded registered runtime owner described in core provenance.
 TLS composition, PostgreSQL decoder work and shared-target inclusion remain OPEN.
+
+## 2026-09-07 protected Tokio amendment stop
+
+Application `5575674784` permitted the exact Tokio 1.53.1 package and listed
+owner implementation surfaces. The corrected amended RED at
+`45da01b13b848785ad7fe068c6e100b7cc3eebe5` reaches Tokio compilation and fails
+for the absent owned blocking API. Do not begin GREEN: `src/task/blocking.rs` is
+private and the required `src/task/mod.rs` public re-export list is outside the
+protected authored allowlist. Request only that exact re-export lease. Preserve
+ordinary spawn behavior and all remaining task/queue/worker, TLS and PostgreSQL
+work as OPEN; `TLS_BLOCKING_OWNER = NOT_PROVEN`.

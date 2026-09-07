@@ -194,3 +194,35 @@ status: blocked_pending_runtime_backend_owner
 blocker: tokio_1_53_1_has_no_public_preallocation_or_task_pool_custody_hook
 next_action: protect an exact Tokio task-plus-pool owner hook or bind an already-funded registered runtime owner; keep TLS/PG OPEN
 ```
+
+## Window4 Tokio amendment checkpoint
+
+Work application #351 comment `5575674784` activated protected Tokio amendment
+`main@e286291173dfadd963fd9fdd2cd71fe6211b40f2`, blob
+`1ddc2e7335890244caa1eae18e20494afd26b14a`. All earlier windows, counters, REDs
+and blocker checkpoints remain unchanged.
+
+The complete crates.io Tokio 1.53.1 package was vendored at checksum
+`202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed`, upstream
+commit `75fef53d0a8590c2d1dbb63672aa7b7d1ef51155`, and selected by the root path
+patch without version or feature downgrade. An initial automatic-test-discovery
+setup failure receives no RED credit. Distinct amended RED
+`45da01b13b848785ad7fe068c6e100b7cc3eebe5` reached Tokio compilation and failed
+only because the protected owned blocking API is absent (`E0432`).
+
+Source mutation stopped before GREEN at exact `SHARED_LEASE_REQUIRED` path
+`vendor/tokio-1.53.1/src/task/mod.rs`, symbol `cfg_rt!` re-export list. The
+allowed implementation file `src/task/blocking.rs` is private, while SQLx must
+name the new fallible owned-spawn API. The smallest amendment is one public
+re-export surface for that API; no alternative existing public hook exposes it.
+No Tokio semantic source was modified. `TLS_BLOCKING_OWNER = NOT_PROVEN`; owner
+task/queue/worker implementation and focused matrix, complete TLS composition,
+real TLS-positive evidence, PostgreSQL accounting/PG17.6, independent whole-diff
+review, canonical CI/MQ, protected readback and shared-target release remain OPEN.
+
+```yaml
+last_progress: vendored exact Tokio package and produced a compilation-valid amended RED
+status: blocked_pending_shared_lease
+blocker: tokio_task_mod_public_reexport_is_outside_protected_authored_allowlist
+next_action: protect vendor/tokio-1.53.1/src/task/mod.rs only for the owned-blocking API re-export, then resume GREEN without expanding any other path
+```
