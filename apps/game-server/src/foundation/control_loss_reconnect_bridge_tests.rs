@@ -599,7 +599,7 @@ fn prepare_bridge(
     owner.current.snapshot.budget = effect.budget().clone();
     owner.current.snapshot.claims = effect.claims().to_vec();
     owner.current.snapshot.replacement_anchor = effect.replacement_anchor().cloned();
-    owner.current.prepared = Some(Box::new(flow.operation().recovery.clone()));
+    owner.current.prepared = Some(Box::new(flow.operation().clone()));
     report(
         &mut flow,
         CompleteReconnectOutcomeV1::Prepared { decided_at: 100 },
@@ -1190,7 +1190,7 @@ fn complete_bridge_fast_roundtrip_rotates_only_at_commit_and_checks_proof_owner(
             .require("reserve");
         assert_eq!(prepare.fast_proof_rotation(), None);
         owner.current.snapshot.budget = prepare.budget().clone();
-        owner.current.prepared = Some(Box::new(flow.operation().recovery.clone()));
+        owner.current.prepared = Some(Box::new(flow.operation().clone()));
         report(
             &mut flow,
             CompleteReconnectOutcomeV1::Prepared { decided_at: 100 },
@@ -1781,4 +1781,100 @@ fn early_terminal_prepared_current_claims_fail_closed_on_fabricated_bindings() {
     assert!(
         validate_complete_replacement_current_claims(&stale_predecessor, &current, 100).is_err()
     );
+}
+
+#[test]
+fn early_terminal_prepared_rejects_structurally_valid_substituted_receipt() {
+    let (mut owner, identity, token) = bridge_fixture(true);
+    let mut flow = prepare_bridge(&mut owner, identity, &token, true);
+    let original_operation = flow.operation().clone();
+
+    let mut substituted = original_operation
+        .replacement
+        .as_ref()
+        .require("prepared replacement")
+        .transition
+        .clone();
+    for successor in &mut substituted.successors {
+        successor.source.decision_identity.push_str("-substitute");
+    }
+    let substituted_evidence = CompleteReconnectClaimEvidenceV1 {
+        operation: original_operation.recovery.clone(),
+        transition: substituted.clone(),
+    };
+    substituted_evidence
+        .validate_historical(101)
+        .require("substitute remains structurally valid");
+    owner.current.snapshot.replacement_anchor.as_mut().require("anchor").receipt = substituted.clone();
+    owner.current.snapshot.claims = substituted.successors;
+
+    assert!(CompleteReconnectAuthorizationV1::reauthorize_history(
+        original_operation.recovery.clone(),
+        proof(&owner, &token, true, 101),
+        &owner,
+        101,
+    ).is_err());
+
+    let auth = CompleteReconnectAuthorizationV1 {
+        operation: original_operation.recovery,
+        proof: proof(&owner, &token, true, 101),
+    };
+    assert!(flow.resume_prepared(auth, &owner, 101).is_err());
+}
+
+#[test]
+fn replacement_commit_projects_candidate_as_current_session_identity() {
+    let (flow, owner) = committed_bridge(true, true);
+    let snapshot = owner.current.snapshot.session;
+    let candidate = flow.operation().recovery.identity.game_session_id();
+    let predecessor = snapshot.commit().game_session_id();
+    let mut wrong_bytes = [0; 16];
+    wrong_bytes[6] = 0x70;
+    wrong_bytes[8] = 0x80;
+    wrong_bytes[15] = 77;
+    let wrong = GameSessionId::decode(&wrong_bytes).require("wrong session");
+
+    assert_ne!(candidate, predecessor);
+    assert_eq!(snapshot.current_game_session_id(), candidate);
+    validate_current_authority(candidate, snapshot).require("candidate is current");
+    assert!(validate_current_authority(predecessor, snapshot).is_err());
+    assert!(validate_current_authority(wrong, snapshot).is_err());
+    assert_eq!(snapshot.commit(), flow.operation().recovery.original.session.commit());
+
+    #[derive(Clone)]
+    struct NextLoss(ControlLossObservationV1);
+    impl super::super::fnd04_verifier::recovery_source_sealed::Sealed for NextLoss {}
+    impl ControlLossSourceV1 for NextLoss {
+        fn resolve_loss(
+            &self,
+            _: GameSessionId,
+            _: i64,
+        ) -> Result<ControlLossObservationV1, ReconnectDurabilityErrorV1> {
+            Ok(self.0.clone())
+        }
+    }
+    let mut observation = owner.current.snapshot.loss.observation.clone();
+    observation.session = snapshot;
+    observation.observed_at = 101;
+    observation.loss_origin = 101;
+    observation.original_grace_deadline = 121;
+    observation.loss_epoch = ControlLossEpochRefV1::new(2).require("next loss epoch");
+    observation.decision_identity = observation.loss_epoch;
+    observation.accepted_decision_identity = observation.loss_epoch;
+    observation.history = ControlLossHistoryV1::Resumed {
+        budget: owner.current.snapshot.budget.clone(),
+        original_grace_deadline: flow
+            .operation()
+            .recovery
+            .original
+            .loss
+            .observation
+            .original_grace_deadline,
+        protection: owner.current.snapshot.protection,
+    };
+    let next_loss = NextLoss(observation);
+    ControlLossAuthorizationV1::authorize(&next_loss, candidate, 101)
+        .require("candidate begins the next control-loss cycle");
+    assert!(ControlLossAuthorizationV1::authorize(&next_loss, predecessor, 101).is_err());
+    assert!(ControlLossAuthorizationV1::authorize(&next_loss, wrong, 101).is_err());
 }

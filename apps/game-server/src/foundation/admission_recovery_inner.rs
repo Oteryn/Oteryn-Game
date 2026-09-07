@@ -46,6 +46,7 @@ impl CharacterWorldEligibilityClaimV1 {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GameSessionAuthoritySnapshot<T: Copy + Eq> {
     commit: FreshAdmissionCommit<T>,
+    replacement_game_session_id: Option<GameSessionId>,
     session_state: GameSessionState,
     current_connection_generation: ConnectionGeneration,
     current_transport: Option<T>,
@@ -70,6 +71,7 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
     ) -> Self {
         Self {
             commit,
+            replacement_game_session_id: None,
             session_state,
             current_connection_generation,
             current_transport,
@@ -101,6 +103,7 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
         }
         Ok(Self {
             commit,
+            replacement_game_session_id: None,
             session_state,
             current_connection_generation,
             current_transport,
@@ -140,6 +143,16 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
     #[must_use]
     pub const fn commit(self) -> FreshAdmissionCommit<T> {
         self.commit
+    }
+
+    /// Current authority identity, which may differ from the immutable fresh
+    /// admission receipt after an early-terminal replacement commits.
+    #[must_use]
+    pub const fn current_game_session_id(self) -> GameSessionId {
+        match self.replacement_game_session_id {
+            Some(session) => session,
+            None => self.commit.game_session_id(),
+        }
     }
 
     #[must_use]
@@ -350,7 +363,7 @@ fn validate_current_authority<T: Copy + Eq>(
     snapshot: GameSessionAuthoritySnapshot<T>,
 ) -> Result<(), AdmissionError> {
     let committed = snapshot.commit();
-    if committed.game_session_id() != expected_game_session_id {
+    if snapshot.current_game_session_id() != expected_game_session_id {
         return Err(AdmissionError::ReconciliationUnavailable);
     }
     if snapshot.current_character_world_eligibility()
@@ -3003,7 +3016,7 @@ impl ControlLossObservationV1 {
         {
             return Err(stale);
         }
-        validate_current_authority(self.session.commit().game_session_id(), self.session)
+        validate_current_authority(self.session.current_game_session_id(), self.session)
             .map_err(|_| stale)?;
         self.protection.validate(self.loss_origin)?;
         match &self.history {
@@ -3099,7 +3112,7 @@ impl ControlLossAuthorizationV1 {
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         let observation = source.resolve_loss(session, now)?;
         observation.validate(now)?;
-        if observation.session.commit().game_session_id() != session {
+        if observation.session.current_game_session_id() != session {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
         Ok(Self {
@@ -3123,7 +3136,7 @@ impl ControlLossAuthorizationV1 {
         now: i64,
     ) -> Result<ControlLossEffectV1, ReconnectDurabilityErrorV1> {
         let original = &self.operation.observation;
-        let mut current = source.resolve_loss(original.session.commit().game_session_id(), now)?;
+        let mut current = source.resolve_loss(original.session.current_game_session_id(), now)?;
         current.validate(now)?;
         if now < self.operation.authorized_at
             || current.source_revision < original.source_revision
@@ -3856,8 +3869,9 @@ impl CompleteReconnectOperationV1 {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompleteReconnectCurrentV1 {
     pub snapshot: CompleteReconnectSnapshotV1,
-    /// Independently loaded canonical prepared operation, never caller supplied.
-    pub prepared: Option<Box<CompleteReconnectOperationV1>>,
+    /// Independently loaded canonical durability operation, including the
+    /// immutable replacement transition prepared with it; never caller supplied.
+    pub prepared: Option<Box<CompleteReconnectDurabilityOperationV1>>,
 }
 /// Registered runtime/adapter source. Each call resolves fresh current facts;
 /// trust methods provide authenticated source contexts, not cached verifier facts.
@@ -4105,10 +4119,21 @@ impl CompleteReconnectAuthorizationV1 {
             stored.validate_historical()?;
         }
         if prepared {
-            if current.prepared.as_deref() != Some(operation)
+            let stored = current.prepared.as_deref().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?;
+            if &stored.recovery != operation
                 || current.snapshot.budget != operation.prepared_budget()?
             {
                 return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+            }
+            if operation.mode == CompleteReconnectModeV1::EarlyTerminalReplacement {
+                let replacement = stored.replacement.as_ref().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?;
+                let anchor = current.snapshot.replacement_anchor.as_ref().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?;
+                if replacement.operation != *operation
+                    || anchor.receipt != replacement.transition
+                    || current.snapshot.claims != replacement.transition.successors
+                {
+                    return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+                }
             }
         } else if current.prepared.is_some() {
             return Err(ReconnectDurabilityErrorV1::ConcurrentPrepared);
@@ -4400,6 +4425,9 @@ fn complete_reconnect_effect(
         winner.disposition = RetainedRecoveryAttemptDispositionV1::Committed;
         protection = complete_reconnect_protection(protection, now)?;
         session.session_state = GameSessionState::Active;
+        if recovery.mode == CompleteReconnectModeV1::EarlyTerminalReplacement {
+            session.replacement_game_session_id = Some(recovery.identity.game_session_id());
+        }
         session.current_connection_generation =
             recovery.original.candidate.connection_generation();
         session.current_transport = Some(recovery.original.candidate.transport_ref());
