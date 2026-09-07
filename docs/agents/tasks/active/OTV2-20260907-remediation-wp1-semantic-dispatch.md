@@ -11,7 +11,7 @@ branch: fix/remediation-wp1-semantic-dispatch-364
 issue: 364
 pr: 371
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
-base_sha: 686cf85cac3e7f66a473527c198705466dc5c3bd
+base_sha: 15164c38a2775e45eaff4001fddddbabf4b63ab6
 head_sha: null
 final_head_sha: null
 owner: WP1_F03_SEMANTIC_DISPATCH
@@ -54,10 +54,10 @@ No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/produc
 ## Context checkpoint
 
 ```yaml
-last_progress: review findings repaired; all three profiles pass against real current inputs and failures aggregate without suppressing later profiles after merge-up of main 686cf85cac3e7f66a473527c198705466dc5c3bd
+last_progress: repaired the second exact-head review findings with balanced-brace helper/method extraction, exact comparison checks and independent V1/V2 mutation regressions; reconciled protected main at 15164c38a2775e45eaff4001fddddbabf4b63ab6
 status: review_pending
 branch: fix/remediation-wp1-semantic-dispatch-364
 pr: 371
 blocker: null
-next_action: publish the stable repaired head, obtain exact-head canonical CI and one fresh independent deep review
+next_action: publish the validated stable candidate, obtain one fresh independent exact-head deep review and require canonical exact-head CI before integration
 ```

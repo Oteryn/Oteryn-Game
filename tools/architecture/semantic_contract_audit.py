@@ -29,6 +29,77 @@ PROFILE_PATHS = (
     ("FOUNDATION_RECONNECT_DURABILITY_V1", R_PATHS),
 )
 
+CURRENT_AUTHORITY_COMPARISONS = (
+    "authenticated_evidence_observed_by(record, current.observed_at)",
+    "current.identity == *identity",
+    "current.current_account_presence == Some(AccountPresenceClaimV1::expected_from_identity(identity)?)",
+    "current.current_character_world_eligibility == Some(CharacterWorldEligibilityClaimV1::expected_from_identity(identity))",
+    "current.current_candidate == Some(ReconnectCandidateBindingV1::expected_binding_from_record(record)?)",
+    "current.current_runtime_scope == identity.runtime_scope()",
+    "current.predecessor == record.connection().predecessor()",
+    "current.authority == record.authority()",
+    "current.continuity_epoch == record.continuity().control_loss_epoch()",
+    "current.original_grace_deadline == record.continuity().original_grace_deadline()",
+    "current.proof == *record.proof()",
+    "current.fnd02 == *record.fnd02()",
+    "current.protocol_major == compatibility.protocol_major()",
+    "current.transport_profile == compatibility.transport_profile()",
+    "current.ruleset_revision == compatibility.ruleset_revision()",
+    "current.content_revision == compatibility.content_revision()",
+    "current.map_revision == compatibility.map_revision()",
+    "current.world_policy_revision == compatibility.world_policy_revision()",
+    "current.account_security_generation == compatibility.account_security_generation()",
+    "current.platform_security_evidence == *compatibility.platform_security_evidence()",
+    "current.proof_trust_evidence == *compatibility.proof_trust_evidence()",
+    "current.credential_expiration == compatibility.credential_expiration()",
+    "candidate.is_live_at(current.observed_at)",
+    "current.session_state == GameSessionState::Reconnectable",
+    "!current.current_controller_present",
+)
+
+AUTHENTICATED_EVIDENCE_COMPARISONS = (
+    "observed_at >= compatibility.platform_security_evidence().source_observed_at()",
+    "observed_at >= compatibility.proof_trust_evidence().source_observed_at()",
+)
+
+AUTHORIZE_COMMIT_ORDERED_INVARIANTS = (
+    "if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation",
+    "if !current_authority_matches_record(&self.record, &current)? || !authenticated_evidence_observed_by(&self.record, now)",
+    "return Err(ReconnectDurabilityErrorV1::StaleAuthority);",
+    "let deadline = self.record.authorization_deadline()?;",
+    "if now > deadline || current.observed_at > deadline",
+    "return Err(ReconnectDurabilityErrorV1::DeadlineExpired);",
+    "let request = ReconnectCommitRequestV1",
+)
+
+RECONCILIATION_V1_ORDERED_INVARIANTS = (
+    "if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired",
+    "if snapshot.record != self.record { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }",
+    "DurableReconnectStateV1::Committed",
+    "snapshot.current_generation != Some(self.record.connection().candidate())",
+    "snapshot.current_transport_ref != Some(self.record.connection().transport_ref())",
+    "current.observed_at > self.record.authorization_deadline()?",
+    "!current_authority_matches_record(&self.record, &current)? { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }",
+    "self.phase = ReconnectDurabilityPhaseV1::Completed;",
+    "Ok(ReconnectProjectionDecisionV1::InstallController",
+    "generation: self.record.connection().candidate()",
+    "transport_ref: self.record.connection().transport_ref()",
+)
+
+RECONCILIATION_V2_ORDERED_INVARIANTS = (
+    "if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired",
+    "if snapshot.record != self.record { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }",
+    "ReconnectDurableOutcomeV2::Committed",
+    "current_generation != self.record.connection().candidate()",
+    "current_transport_ref != self.record.connection().transport_ref()",
+    "current.observed_at > self.record.authorization_deadline()?",
+    "!current_authority_matches_record(&self.record, &current)? { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }",
+    "self.phase = ReconnectDurabilityPhaseV1::Completed;",
+    "Ok(ReconnectProjectionDecisionV2::InstallController",
+    "generation: current_generation",
+    "transport_ref: current_transport_ref",
+)
+
 
 def select_profiles(changed: set[str]) -> list[str]:
     return [name for name, paths in PROFILE_PATHS if changed & paths]
@@ -69,6 +140,67 @@ def text(path: str) -> str:
     if not p.is_file():
         fail(f"required file missing: {path}")
     return p.read_text(encoding="utf-8")
+
+
+def rust_braced_block(doc: str, marker: str, label: str) -> str:
+    start = doc.find(marker)
+    if start < 0:
+        fail(f"{label}: missing {marker!r}")
+    marker_opening = marker.find("{")
+    opening = (
+        start + marker_opening
+        if marker_opening >= 0
+        else doc.find("{", start + len(marker))
+    )
+    if opening < 0:
+        fail(f"{label}: missing opening brace")
+    depth = 0
+    for index in range(opening, len(doc)):
+        if doc[index] == "{":
+            depth += 1
+        elif doc[index] == "}":
+            depth -= 1
+            if depth == 0:
+                return doc[start : index + 1]
+    fail(f"{label}: missing closing brace")
+
+
+def rust_braced_blocks(doc: str, marker: str, label: str) -> list[str]:
+    blocks = []
+    search_from = 0
+    while (start := doc.find(marker, search_from)) >= 0:
+        block = rust_braced_block(doc[start:], marker, label)
+        blocks.append(block)
+        search_from = start + len(block)
+    if not blocks:
+        fail(f"{label}: missing {marker!r}")
+    return blocks
+
+
+def rust_impl_method(
+    doc: str, impl_marker: str, method_marker: str, label: str
+) -> str:
+    methods = [
+        rust_braced_block(block, method_marker, label)
+        for block in rust_braced_blocks(doc, impl_marker, label)
+        if method_marker in block
+    ]
+    if len(methods) != 1:
+        fail(f"{label}: expected exactly one method, found {len(methods)}")
+    return methods[0]
+
+
+def compact(doc: str) -> str:
+    return " ".join(doc.split())
+
+
+def need_ordered(doc: str, fragments: tuple[str, ...], label: str) -> None:
+    offset = 0
+    for fragment in fragments:
+        found = doc.find(fragment, offset)
+        if found < 0:
+            fail(f"{label}: missing or out of order: {fragment!r}")
+        offset = found + len(fragment)
 
 
 def need(doc: str, fragment: str, label: str, *, ci: bool = False) -> None:
@@ -236,9 +368,16 @@ def analytics() -> list[str]:
 
 
 def foundation_reconnect() -> list[str]:
-    task = text("docs/agents/tasks/archive/OTV2-20260826-impl-foundation-reconnect-durability.md")
-    implementation = text("apps/game-server/src/foundation/admission_recovery_inner.rs")
-    verifier = text("apps/game-server/src/foundation/fnd04_verifier.rs")
+    return foundation_reconnect_documents(
+        text("docs/agents/tasks/archive/OTV2-20260826-impl-foundation-reconnect-durability.md"),
+        text("apps/game-server/src/foundation/admission_recovery_inner.rs"),
+        text("apps/game-server/src/foundation/fnd04_verifier.rs"),
+    )
+
+
+def foundation_reconnect_documents(
+    task: str, implementation: str, verifier: str
+) -> list[str]:
 
     for label, fragment in {
         "authority decision": "DUR-RECONNECT-AUTHORITY-V1",
@@ -334,30 +473,86 @@ def foundation_reconnect() -> list[str]:
         "COMMIT committed/ambiguous requires reconciliation",
     )
 
-    need_re(
-        implementation,
-        r"fn current_authority_matches_record.*?current\.identity == \*identity.*?current_account_presence.*?current_character_world_eligibility.*?current_candidate.*?current_runtime_scope.*?current\.predecessor.*?current\.authority.*?current\.continuity_epoch.*?current\.original_grace_deadline.*?current\.proof.*?current\.fnd02.*?current\.protocol_major.*?current\.transport_profile.*?current\.ruleset_revision.*?current\.content_revision.*?current\.map_revision.*?current\.world_policy_revision.*?current\.account_security_generation.*?current\.platform_security_evidence.*?current\.proof_trust_evidence.*?current\.credential_expiration.*?candidate\.is_live_at.*?GameSessionState::Reconnectable.*?!current\.current_controller_present",
-        "complete current authority matcher",
+    authority_matcher = compact(
+        rust_braced_block(
+            implementation,
+            "fn current_authority_matches_record(",
+            "complete current authority matcher",
+        )
     )
-    need_re(
-        implementation,
-        r"authorize_commit.*?phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation.*?current_authority_matches_record.*?authenticated_evidence_observed_by.*?StaleAuthority.*?authorization_deadline.*?now > deadline.*?current\.observed_at > deadline.*?DeadlineExpired.*?ReconnectCommitRequestV1",
-        "fresh complete revalidation precedes COMMIT request",
+    for comparison in CURRENT_AUTHORITY_COMPARISONS:
+        need(authority_matcher, comparison, "complete current authority matcher")
+
+    evidence_matcher = compact(
+        rust_braced_block(
+            implementation,
+            "fn authenticated_evidence_observed_by(",
+            "authenticated evidence observation matcher",
+        )
+    )
+    for comparison in AUTHENTICATED_EVIDENCE_COMPARISONS:
+        need(
+            evidence_matcher,
+            comparison,
+            "authenticated evidence observation matcher",
+        )
+
+    authorize_commit_v1 = compact(
+        rust_impl_method(
+            implementation,
+            "impl ReconnectDurabilityFlowV1 {",
+            "pub fn authorize_commit(",
+            "ReconnectDurabilityFlowV1 authorize_commit",
+        )
+    )
+    authorize_commit_v2 = compact(
+        rust_impl_method(
+            implementation,
+            "impl ReconnectDurabilityFlowV2 {",
+            "pub fn authorize_commit(",
+            "ReconnectDurabilityFlowV2 authorize_commit",
+        )
+    )
+    need_ordered(
+        authorize_commit_v1,
+        AUTHORIZE_COMMIT_ORDERED_INVARIANTS,
+        "ReconnectDurabilityFlowV1 authorize_commit",
+    )
+    need_ordered(
+        authorize_commit_v2,
+        AUTHORIZE_COMMIT_ORDERED_INVARIANTS,
+        "ReconnectDurabilityFlowV2 authorize_commit",
     )
     need_re(
         implementation,
         r"authorization_deadline.*?prepared_deadline.*?original_grace_deadline.*?platform_deadline.*?trust_deadline.*?credential_expiration",
         "authorization deadline is bounded by grace, prepared, evidence and credential expiry",
     )
-    need_re(
-        implementation,
-        r"accept_reconciliation.*?snapshot\.record != self\.record.*?ReconciliationMismatch.*?DurableReconnectStateV1::Committed.*?current_authority_matches_record.*?ReconciliationMismatch",
-        "reconciliation rechecks exact record and complete current authority",
+    accept_reconciliation_v1 = compact(
+        rust_impl_method(
+            implementation,
+            "impl ReconnectDurabilityFlowV1 {",
+            "pub fn accept_reconciliation(",
+            "ReconnectDurabilityFlowV1 accept_reconciliation",
+        )
     )
-    need_re(
-        implementation,
-        r"DurableReconnectStateV1::Committed.*?current_generation != Some\(self\.record\.connection\(\)\.candidate\(\)\).*?current_transport_ref != Some\(self\.record\.connection\(\)\.transport_ref\(\)\).*?InstallController",
-        "controller installs only after exact committed generation/ref reconciliation",
+    accept_reconciliation_v2 = compact(
+        rust_impl_method(
+            implementation,
+            "impl ReconnectDurabilityFlowV2 {",
+            "pub fn accept_reconciliation(",
+            "ReconnectDurabilityFlowV2 accept_reconciliation",
+        )
+    )
+    need_ordered(
+        accept_reconciliation_v1,
+        RECONCILIATION_V1_ORDERED_INVARIANTS,
+        "ReconnectDurabilityFlowV1 accept_reconciliation",
+    )
+    need_ordered(
+        accept_reconciliation_v2,
+        RECONCILIATION_V2_ORDERED_INVARIANTS,
+        "ReconnectDurabilityFlowV2 accept_reconciliation",
     )
 
     need(verifier, "pub struct VerifiedRecoveryDurabilityFactsV1", "rich recovery verifier result")
