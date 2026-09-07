@@ -54,7 +54,7 @@
   "disposition": "BOUNDED_SCREENING_COMPLETE: final exact-head required checks and independent review must qualify this repaired candidate before owner-authorized integration. Read-only behavior evidence does not qualify production/runtime behavior or prove automatic loading.",
   "evidence_levels": {
     "adoption_delivery": {
-      "evidence": "Fresh candidate Work subagent explicitly read root, immutable binding, bound META organization policy, nearest docs/agents instructions and routed task/domain sources. Automatic loader behavior remains UNKNOWN_EXTERNAL. Final hosted consumer qualification is recorded against the exact PR head.",
+      "evidence": "Fresh candidate Work subagent explicitly read root, immutable binding, bound META organization policy, nearest docs/agents instructions and routed task/domain sources. Automatic loader behavior remains UNKNOWN_EXTERNAL. This observation applies to the recorded screening snapshot; later exact-head hosted qualification is separate evidence in the PR.",
       "status": "OBSERVED_EXPLICIT_WORK_DELIVERY"
     },
     "behavior": {

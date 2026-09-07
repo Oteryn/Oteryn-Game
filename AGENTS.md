@@ -6,6 +6,8 @@
 - Refresh the bound protected policy when its content is material to a decision. A refresh updates the applicable instruction set; it does not require discarding coherent task state or restarting unrelated work.
 - Prefer repository-native GitHub APIs and repository CI for remote evidence and execution. Use an isolated checkout or worktree for tracked-file mutation. Remote Desktop is denied unless the owner explicitly authorizes the exact invocation.
 
+- Before consuming owner-funded, personal-quota or metered AI/API resources, read `docs/agents/OWNER_FUNDED_AI_POLICY.md`; policy selection does not authorize spending, and existing session authorization remains effective.
+
 ## Durable Game invariants
 
 - `protocol-oteryn` is the target runtime protocol.
