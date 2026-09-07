@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 base_branch: main
 issue: 384
 branch: agent/gamesession-ledger-resource-registry-384
-pr: null
+pr: 386
 base_sha: 2dce2162ef62ee75a390b84c1a4d97fab704f97f
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: work-controlled-registry-writer
 created_at: 2026-09-07T14:00:52Z
-updated_at: 2026-09-07T14:51:01Z
+updated_at: 2026-09-07T15:01:48Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
@@ -58,13 +58,13 @@ The worker copies protected authority; it does not select resource values, error
 ## Acceptance criteria
 
 - [x] Work records one exact protected admission SHA and exclusive registry lease before the worker branch exists or registry bytes change.
-- [ ] Add exactly one new ID: `FND04-GAMESESSION-USED-IDS-PER-CHARACTER`.
-- [ ] Hard maximum and configurable minimum/maximum are exactly `65536`.
-- [ ] Row semantics and boundary tests match protected Decision A Section 8 and its FND-04C amendment; no retryable transient-capacity substitution.
-- [ ] Every pre-existing registry entry object is unchanged.
-- [ ] JSON parses; required fields are present; IDs remain unique; configured ranges satisfy registry rules.
-- [ ] Applicable governance/contract validation and changed-file/diff inspection pass.
-- [ ] Whole-diff self-review reports zero open material findings.
+- [x] Add exactly one new ID: `FND04-GAMESESSION-USED-IDS-PER-CHARACTER`.
+- [x] Hard maximum and configurable minimum/maximum are exactly `65536`.
+- [x] Row semantics and boundary tests match protected Decision A Section 8 and its FND-04C amendment; no retryable transient-capacity substitution.
+- [x] Every pre-existing registry entry object is unchanged.
+- [x] JSON parses; required fields are present; IDs remain unique; configured ranges satisfy registry rules.
+- [x] Applicable governance/contract validation and changed-file/diff inspection pass.
+- [x] Whole-diff self-review reports zero open material findings.
 - [ ] Genuinely independent exact-head review reports zero open P0/P1/P2 material findings.
 - [ ] Exact-head repository CI and protected Merge Queue succeed.
 - [ ] Protected-main readback matches the accepted row, task is archived, branch/lease are released, and #162 receives the exact next WP2 action.
@@ -75,19 +75,19 @@ No other registry row change; no Foundation/runtime Rust; no Durability/SQL/migr
 
 ## Implementation / findings
 
-Protected allocation #385 is terminally integrated and read back. The worker branch was created exactly from `main@2dce2162ef62ee75a390b84c1a4d97fab704f97f` only after the exclusive lease was recorded. The implementation is limited to copying Decision A Section 8 into the existing registry while preserving all admitted entry objects unchanged; no value selection remains open.
+Protected allocation #385 is terminally integrated and read back. The worker branch was created exactly from `main@2dce2162ef62ee75a390b84c1a4d97fab704f97f` only after the exclusive lease was recorded. PR #386 appends the exact Decision A Section 8 row and changes only the registry's top-level publication timestamp. Deterministic structural and raw-byte comparison proves all 154 admitted entry objects remain unchanged and the new row is the sole final entry.
 
 ## Validation
 
 ### Focused
 
-- command/run: pending registry mutation
-- result: pending
+- command/run: deterministic Python JSON/required-fields/unique-ID/protected-row/admitted-prefix/raw-byte proof
+- result: `PASS` — 155 entries parsed, the new ID occurs once, all required fields exist, IDs are unique, the protected row is exact, all 154 admitted entries are unchanged in order, and raw bytes differ only by `updated_at` plus the exact final insertion
 
 ### Component/integration
 
-- command/run: repository governance/contract validation after registry mutation
-- result: pending
+- command/run: `python tools/agents/validate_governance.py`; `python tools/repository/validate_repository_policy.py`; `git diff --check`; allocated-path inspection
+- result: `PASS` — governance validated 26 policy documents and 9 lanes; repository policy validated 22 files and 17 workflows; diff checks are clean; exactly the three allocated paths differ from admission
 
 ### E2E
 
@@ -105,10 +105,10 @@ Protected allocation #385 is terminally integrated and read back. The worker bra
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: implementing/coordinating agent
-- material findings: pending
-- verdict: pending
+- exact head: material candidate represented by this commit (the commit cannot embed its own SHA)
+- method/reviewer: implementing agent, complete admission-to-candidate diff and changed-file inspection
+- material findings: zero
+- verdict: `PASS` — no open material findings
 
 ## Independent review
 
@@ -120,7 +120,7 @@ Protected allocation #385 is terminally integrated and read back. The worker bra
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: `PASS` — exactly the three allocated paths; PR #386
 - unresolved review threads: pending
 - related/superseded PRs: #383 architecture prerequisite protected; #385 allocation protected
 - protected auto-merge: pending
@@ -130,11 +130,11 @@ Protected allocation #385 is terminally integrated and read back. The worker bra
 ## Context checkpoint
 
 ```yaml
-last_progress: protected allocation #385 read back and exclusive registry lease admitted
+last_progress: exact protected registry row appended and deterministic local validation passed for PR #386
 status: implementing
 branch: agent/gamesession-ledger-resource-registry-384
 head_sha: null
-pr: null
+pr: 386
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: null
@@ -152,5 +152,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: append the exact protected Decision A Section 8 row and preserve all admitted registry entry objects
+next_action: report the stable tested material head to Work for whole-diff and independent exact-head review
 ```

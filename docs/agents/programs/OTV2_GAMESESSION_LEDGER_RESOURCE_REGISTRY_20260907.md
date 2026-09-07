@@ -6,6 +6,7 @@ Protected prerequisite: `main@6b07f96d47de37971bb54fed5bb9c12decd1be17` / PR #38
 Protected allocation/admission: `main@2dce2162ef62ee75a390b84c1a4d97fab704f97f` / PR #385
 Worker branch: `agent/gamesession-ledger-resource-registry-384`
 Exclusive lease evidence: Issue #384 comment `5572398472`
+Implementation PR: #386
 
 ## Goal
 
@@ -44,6 +45,10 @@ Before final-head freeze:
 - perform mandatory whole-diff self-review.
 
 The frozen head requires one genuinely independent review because the resource controls future session/recovery capacity behavior, then normal exact-head repository CI and protected Merge Queue. Runtime/PostgreSQL E2E is `NOT_APPLICABLE` to this contract-only delivery; the protected Decision A implementation acceptance still requires real Foundation + PostgreSQL 17.6 evidence later.
+
+## Material candidate status
+
+PR #386 now contains the exact protected final registry row and only the permitted top-level `updated_at` publication change. Deterministic comparison against admitted `main@2dce2162ef62ee75a390b84c1a4d97fab704f97f` proves JSON validity, complete required fields, unique IDs, exact structural equality with Decision A Section 8, unchanged ordered admitted entries, exact permitted raw-byte mutation and exactly the three allocated changed paths. Both repository governance validators and diff checks pass. Runtime/PostgreSQL E2E remains `NOT_APPLICABLE` for this contract-only delivery. The stable commit SHA is reported externally because a commit cannot contain its own final SHA.
 
 ## Closeout
 
