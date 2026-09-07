@@ -22,23 +22,23 @@
       "prompt_id": "OTV2_CLOSE_NEXT_WAVE_BLOCKERS",
       "path": "docs/agents/prompts/OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md",
       "version": "1.1",
-      "status": "reusable",
-      "owner": "implementation-programme",
+      "status": "retired",
+      "owner": "historical-implementation-programme",
       "scope": "Owner-authorized coordinator for #93/#115/#116/#123 blocker closure, evidence-backed first-slice numeric acceptance, serialized registry canonicalization and bounded #115 verifier/consumer closure.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "supersession_rule": "Terminal blocker-closure delivery is complete through #131/#152; use the canonical implementation coordinator and live allocations for future work."
     },
     {
       "prompt_id": "OTV2_CONTENT_FORMAT_SPIKE",
       "path": "docs/agents/prompts/OTV2_CONTENT_FORMAT_SPIKE.md",
       "version": "1.1",
-      "status": "reusable",
-      "owner": "implementation-coordinator",
+      "status": "retired",
+      "owner": "historical-implementation-coordinator",
       "scope": "Evidence-only content-format spike; no permanent production-format selection authority.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "supersession_rule": "Issue #95 is completed; any future content-format work requires a fresh live allocation rather than redispatching the terminal spike."
     },
     {
       "prompt_id": "OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT",
@@ -110,12 +110,12 @@
       "prompt_id": "OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION",
       "path": "docs/agents/prompts/OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md",
       "version": "1.1",
-      "status": "reusable",
-      "owner": "architecture-programme",
+      "status": "retired",
+      "owner": "historical-architecture-programme",
       "scope": "Architecture/governance continuation for the owner-approved Work-control-plane + Sol-lane-lead + selective-Codex execution model; no runtime implementation authority.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "This prompt supersedes neither OTV2_WORK_DELIVERY_COORDINATOR nor OTV2_IMPLEMENTATION_COORDINATOR; only an explicit replacement registered in this lifecycle registry may supersede this continuation prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md",
+      "supersession_rule": "Issue #179 design delivery and its lifecycle closeout are complete; the adopted scheduler and current reusable role family supersede this one-shot architecture continuation."
     },
     {
       "prompt_id": "OTV2_IMPL_ANALYTICS",
@@ -308,12 +308,12 @@
       "prompt_id": "OTV2_NEXT_WAVE_PARALLEL_PREPARATION",
       "path": "docs/agents/prompts/OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md",
       "version": "1.1",
-      "status": "reusable",
-      "owner": "implementation-programme",
+      "status": "retired",
+      "owner": "historical-implementation-programme",
       "scope": "Orchestration-only launcher for bounded preparation lanes #93-#97; live task/allocation state is mandatory before any write.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "supersession_rule": "Preparation Issues #93-#97 are terminal; future work is allocated from the canonical coordinator and current DAG."
     },
     {
       "prompt_id": "OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH",
@@ -330,45 +330,45 @@
       "prompt_id": "OTV2_PREP_DURABILITY_TOPOLOGY",
       "path": "docs/agents/prompts/OTV2_PREP_DURABILITY_TOPOLOGY.md",
       "version": "1.1",
-      "status": "reusable",
-      "owner": "live-implementation-coordinator-allocation",
+      "status": "retired",
+      "owner": "historical-live-implementation-coordinator-allocation",
       "scope": "Issue #94 durability topology preparation executor; no runtime/DDL implementation authority.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "supersession_rule": "Issue #94 is completed; future durability work resolves current allocations and contracts."
     },
     {
       "prompt_id": "OTV2_PREP_PROGRAMME_STATUS",
       "path": "docs/agents/prompts/OTV2_PREP_PROGRAMME_STATUS.md",
       "version": "1.1",
-      "status": "reusable",
-      "owner": "live-implementation-coordinator-allocation",
+      "status": "retired",
+      "owner": "historical-live-implementation-coordinator-allocation",
       "scope": "Issue #97 programme-status reconciliation executor; docs/audit only under a current allocation.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "supersession_rule": "Issue #97 is completed; future status reconciliation resolves live GitHub through the current coordinator."
     },
     {
       "prompt_id": "OTV2_PREP_SERVER_SEAM",
       "path": "docs/agents/prompts/OTV2_PREP_SERVER_SEAM.md",
       "version": "1.1",
-      "status": "reusable",
-      "owner": "live-implementation-coordinator-allocation",
+      "status": "retired",
+      "owner": "historical-live-implementation-coordinator-allocation",
       "scope": "Issue #96 production gameplay server-seam preparation executor; no listener/runtime implementation authority.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "supersession_rule": "Issue #96 preparation is completed; current Server Seam delivery is governed by its live allocation and implementation prompt."
     },
     {
       "prompt_id": "OTV2_PREP_WAVE2_RESOURCE_LIMITS",
       "path": "docs/agents/prompts/OTV2_PREP_WAVE2_RESOURCE_LIMITS.md",
       "version": "1.1",
-      "status": "reusable",
-      "owner": "live-implementation-coordinator-allocation",
+      "status": "retired",
+      "owner": "historical-live-implementation-coordinator-allocation",
       "scope": "Issue #93 Wave-2 resource-limit decision preparation; missing numeric values must not be invented.",
-      "reusable": true,
-      "superseded_by": null,
-      "supersession_rule": "Only an explicit replacement registered in this lifecycle registry may supersede this prompt."
+      "reusable": false,
+      "superseded_by": "docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md",
+      "supersession_rule": "Issue #93 is completed; future resource-limit work requires a fresh current allocation."
     },
     {
       "prompt_id": "OTV2_TERRA_GAME_CONTROL_PLANE",

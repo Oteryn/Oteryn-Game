@@ -15,7 +15,6 @@ TESTS = Path("tools/agents/tests")
 LIFECYCLE_TEST = TESTS / "test_validate_governance_lifecycle.py"
 FIXTURE_FILES = (
     Path("tools/agents/validate_governance.py"),
-    Path("tools/agents/validate_governance_core.py"),
     LIFECYCLE_TEST,
 )
 EXPECTED_CASES = (
@@ -29,7 +28,7 @@ CANARY = "F02_DISCOVERY_NEGATIVE_CANARY"
 class GovernanceLifecycleDiscoveryTests(unittest.TestCase):
     def run_discovery(self, *, inject_failure: bool) -> subprocess.CompletedProcess[str]:
         # Never mutate the checkout. Run the same files and Python interpreter
-        # in a disposable tree, keeping the runtime wrapper/core boundary real.
+        # in a disposable tree, keeping the canonical validator entry point real.
         with tempfile.TemporaryDirectory() as directory:
             snapshot = Path(directory)
             for relative in FIXTURE_FILES:

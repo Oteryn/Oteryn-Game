@@ -86,7 +86,7 @@ If decomposition itself requires a new material architecture decision, produce `
 Create or update, under an exact architecture/governance allocation only:
 
 - one next-wave design/spec;
-- one Superpowers implementation plan per independently reviewable subsystem when needed;
+- one implementation plan per independently reviewable subsystem only when the live task actually requires it;
 - exact child Issues/task/allocation proposals;
 - new Sol lead prompts/aliases only for ready bounded lanes;
 - an updated Terra scheduler launch sheet.
