@@ -4,19 +4,19 @@
 task_id: OTV2-20260907-gamesession-ledger-resource-registry-384
 title: Register durable GameSession nonreuse lifetime bound
 mode: CONTRACT
-status: waiting
+status: implementing
 repository: Oteryn/Oteryn-Game
 base_branch: main
 issue: 384
 branch: agent/gamesession-ledger-resource-registry-384
 pr: null
-base_sha: null
+base_sha: 2dce2162ef62ee75a390b84c1a4d97fab704f97f
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
-owner: unassigned_until_protected_allocation
+owner: work-controlled-registry-writer
 created_at: 2026-09-07T14:00:52Z
-updated_at: 2026-09-07T14:06:32Z
+updated_at: 2026-09-07T14:51:01Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/contracts/RESOURCE_LIMITS_REGISTRY.json
@@ -27,7 +27,7 @@ public_contracts:
   - FND-04C GameSession Ledger Capacity Error Amendment
 depends_on:
   - Oteryn/Oteryn-Game#383 protected as main@6b07f96d47de37971bb54fed5bb9c12decd1be17
-  - Oteryn/Oteryn-Game#384 allocation protected and explicit Work admission
+  - Oteryn/Oteryn-Game#385 protected as main@2dce2162ef62ee75a390b84c1a4d97fab704f97f
 blocks:
   - WP2 Decision A implementation amendment
   - WP4 Decision A persistence/reload amendment
@@ -45,8 +45,9 @@ Protected `RESOURCE_LIMITS_REGISTRY.json` contains exactly one new architecture-
 - `PROVEN`: PR #383 is protected as `main@6b07f96d47de37971bb54fed5bb9c12decd1be17` after full Merge Queue success.
 - `PROVEN`: protected Decision A Section 8 owns the exact row content and hard maximum `65536`.
 - `PROVEN`: protected FND-04C amendment distinguishes permanent ledger exhaustion from retryable transient `ADMISSION_CAPACITY_EXCEEDED`.
-- `PROVEN`: open-PR changed-path preflight found no current writer for `docs/contracts/RESOURCE_LIMITS_REGISTRY.json`.
-- `UNKNOWN`: this task's immutable admission SHA until its allocation PR is protected/read back.
+- `PROVEN`: allocation PR #385 integrated through full Merge Queue run `34134404703` and protected `main` readback is exactly `2dce2162ef62ee75a390b84c1a4d97fab704f97f`.
+- `PROVEN`: Issue #384 comment `5572398472` grants the exclusive three-path registry lease from that immutable admission SHA.
+- `PROVEN`: fresh open-PR reconciliation after #385 found no competing writer for the allocated registry/task/plan paths.
 
 The worker copies protected authority; it does not select resource values, error codes or retry behavior.
 
@@ -56,7 +57,7 @@ The worker copies protected authority; it does not select resource values, error
 
 ## Acceptance criteria
 
-- [ ] Work records one exact protected admission SHA and exclusive registry lease before the worker branch exists or registry bytes change.
+- [x] Work records one exact protected admission SHA and exclusive registry lease before the worker branch exists or registry bytes change.
 - [ ] Add exactly one new ID: `FND04-GAMESESSION-USED-IDS-PER-CHARACTER`.
 - [ ] Hard maximum and configurable minimum/maximum are exactly `65536`.
 - [ ] Row semantics and boundary tests match protected Decision A Section 8 and its FND-04C amendment; no retryable transient-capacity substitution.
@@ -74,18 +75,18 @@ No other registry row change; no Foundation/runtime Rust; no Durability/SQL/migr
 
 ## Implementation / findings
 
-No registry implementation is admitted by this allocation candidate. The first legal implementation action after protected admission is to compare the protected registry object set against the protected Decision A row, then append only that exact row on the dedicated worker branch.
+Protected allocation #385 is terminally integrated and read back. The worker branch was created exactly from `main@2dce2162ef62ee75a390b84c1a4d97fab704f97f` only after the exclusive lease was recorded. The implementation is limited to copying Decision A Section 8 into the existing registry while preserving all admitted entry objects unchanged; no value selection remains open.
 
 ## Validation
 
 ### Focused
 
-- command/run: pending after protected admission
+- command/run: pending registry mutation
 - result: pending
 
 ### Component/integration
 
-- command/run: repository governance/contract validation after protected admission
+- command/run: repository governance/contract validation after registry mutation
 - result: pending
 
 ### E2E
@@ -121,7 +122,7 @@ No registry implementation is admitted by this allocation candidate. The first l
 
 - changed-file review: pending
 - unresolved review threads: pending
-- related/superseded PRs: #383 architecture prerequisite protected; no replacement registry PR exists at allocation time
+- related/superseded PRs: #383 architecture prerequisite protected; #385 allocation protected
 - protected auto-merge: pending
 - merge commit/result: pending
 - ownership release: pending
@@ -129,8 +130,8 @@ No registry implementation is admitted by this allocation candidate. The first l
 ## Context checkpoint
 
 ```yaml
-last_progress: prospective registry task recorded in coordinator allocation candidate
-status: waiting
+last_progress: protected allocation #385 read back and exclusive registry lease admitted
+status: implementing
 branch: agent/gamesession-ledger-resource-registry-384
 head_sha: null
 pr: null
@@ -150,6 +151,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: allocation_not_yet_protected
-next_action: protect and read back the coordinator allocation before creating the worker branch
+blocker: null
+next_action: append the exact protected Decision A Section 8 row and preserve all admitted registry entry objects
 ```
