@@ -6,6 +6,9 @@ use std::time::Duration;
 
 use cfg_if::cfg_if;
 
+#[cfg(test)]
+mod resource_owner_tests;
+
 #[cfg(feature = "_rt-async-io")]
 pub mod rt_async_io;
 
