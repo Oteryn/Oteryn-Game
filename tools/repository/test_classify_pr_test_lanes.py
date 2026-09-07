@@ -113,12 +113,18 @@ def test_reviewed_document_consumers(module):
     # classifier constants or current HEAD: later consumer edits must remain
     # legitimate FULL inputs, not make repository regression validation fail.
     reviewed_nonserver = "9f7aff4dc25c9c6561b77ea73342b675eeccb1d008ab9d1fbdbd504618ec5ab8"
-    reviewed_docs = "f8eed774249df64a5a64612b4a169a73bac093a7bcbfb21e59ea0e06dd2ddc26"
+    prior_reviewed_docs = "f8eed774249df64a5a64612b4a169a73bac093a7bcbfb21e59ea0e06dd2ddc26"
+    reviewed_docs = "742350c55587ab94d652e27a4196308f350afaf5140ed3633d33d5d165e807b6"
     for path in ("README.md", "docs/agents/tasks/archive/finished.md"):
         result = module.classify([dict(filename=path, status="modified")], 1,
                                  fixture(), reviewed_nonserver, docs_digest=reviewed_docs,
                                  candidate_modes_verified=True)
         assert result["rust"] is False and result["windows"] is False, result
+        stale = module.classify([dict(filename=path, status="modified")], 1,
+                                fixture(), reviewed_nonserver, docs_digest=prior_reviewed_docs,
+                                candidate_modes_verified=True)
+        assert stale["rust"] is True and stale["windows"] is True, stale
+        assert stale["reason"] == "unreviewed-document-consumer-inputs", stale
 
     # Exercise real tree hashing and classification together. A new or changed
     # consumer can add a document read without changing any Cargo edge.

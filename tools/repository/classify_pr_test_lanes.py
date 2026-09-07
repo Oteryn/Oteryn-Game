@@ -17,7 +17,7 @@ import subprocess
 import sys
 
 AUDITED_INPUT_SHA256 = "9f7aff4dc25c9c6561b77ea73342b675eeccb1d008ab9d1fbdbd504618ec5ab8"
-AUDITED_DOC_INPUT_SHA256 = "f8eed774249df64a5a64612b4a169a73bac093a7bcbfb21e59ea0e06dd2ddc26"
+AUDITED_DOC_INPUT_SHA256 = "742350c55587ab94d652e27a4196308f350afaf5140ed3633d33d5d165e807b6"
 SERVER = "oteryn-game-server"
 WINDOWS = {"oteryn-client", "oteryn-synthetic-client-harness", "oteryn-simulation-determinism"}
 REQUIRED = {
