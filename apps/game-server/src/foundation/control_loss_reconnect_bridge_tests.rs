@@ -471,6 +471,8 @@ fn bridge_fixture(replacement: bool) -> (BridgeOwner, ReconnectIdentityV1, Strin
     )
     .require("candidate");
     let snapshot = CompleteReconnectSnapshotV1 {
+        replacement_anchor: None,
+        predecessor_attempts: vec![],
         loss: effect.operation().clone(),
         loss_decided_at: 100,
         source_authority: session.current_runtime_scope(),
@@ -595,6 +597,8 @@ fn prepare_bridge(
     );
     assert_eq!(effect.protection(), owner.current.snapshot.protection);
     owner.current.snapshot.budget = effect.budget().clone();
+    owner.current.snapshot.claims = effect.claims().to_vec();
+    owner.current.snapshot.replacement_anchor = effect.replacement_anchor().cloned();
     owner.current.prepared = Some(Box::new(flow.operation().recovery.clone()));
     report(
         &mut flow,
@@ -1654,6 +1658,7 @@ fn complete_bridge_recovery_commit_requires_common_proof_transition() {
 }
 
 fn install_proof(owner: &mut BridgeOwner, effect: &CompleteReconnectEffectV1, now: i64) {
+    owner.current.snapshot.replacement_anchor = effect.replacement_anchor().cloned();
     let transition = effect
         .proof_transition()
         .require("committed proof transition");
@@ -1717,4 +1722,63 @@ fn early_terminal_prepare_transfers_claims_before_candidate_commit() {
         .validate_locked(&owner, 100).require("prepare");
     assert_eq!(effect.claims(), expected);
     assert_eq!(effect.session().commit(), owner.current.snapshot.session.commit());
+    assert_eq!(
+        effect.session().current_connection_generation(),
+        owner.current.snapshot.session.current_connection_generation()
+    );
+    assert_eq!(effect.session().current_transport(), None);
+    let anchor = effect.replacement_anchor().require("replacement anchor");
+    assert_eq!(anchor.state, GameSessionState::Reconnectable);
+    assert_eq!(anchor.connection_generation, owner.current.snapshot.session.current_connection_generation());
+    assert_eq!(anchor.transport, None);
+    assert_eq!(anchor.receipt.successors, expected);
+}
+
+#[test]
+fn early_terminal_prepared_current_claims_fail_closed_on_fabricated_bindings() {
+    let (owner, identity, token) = bridge_fixture(true);
+    let auth = CompleteReconnectAuthorizationV1::authorize(
+        &owner,
+        identity,
+        proof(&owner, &token, true, 100),
+        100,
+    )
+    .require("terminal authorization");
+    let transition = CompleteReconnectClaimTransitionV1::prepare(&owner, &auth, 100)
+        .require("claim transition");
+    let mut flow = CompleteReconnectFlowV1::begin(auth, Some(transition)).require("flow");
+    let effect = flow
+        .take_request(CompleteReconnectRequestKindV1::Prepare)
+        .require("request")
+        .validate_locked(&owner, 100)
+        .require("prepare");
+    let anchor = effect.replacement_anchor().require("anchor").clone();
+    let current = effect.claims().to_vec();
+    validate_complete_replacement_current_claims(&anchor, &current, 100)
+        .require("exact independently loaded prepared rows");
+
+    let mut fabricated = anchor.clone();
+    fabricated.receipt.successors[0].publication_revision += 1;
+    assert!(validate_complete_replacement_current_claims(&fabricated, &current, 100).is_err());
+
+    let mut wrong_candidate = anchor.clone();
+    wrong_candidate.candidate = ReconnectCandidateBindingV1::new(
+        wrong_candidate.candidate.game_session_id(),
+        ReconnectAttemptRef::new(21).require("attempt"),
+        wrong_candidate.candidate.connection_generation(),
+        wrong_candidate.candidate.transport_ref(),
+        wrong_candidate.candidate.prepared_deadline(),
+    )
+    .require("candidate");
+    assert!(validate_complete_replacement_current_claims(&wrong_candidate, &current, 100).is_err());
+
+    let mut stale_predecessor = anchor;
+    if let AdmissionAuthorityGuardStateV1::Character { holder, .. } =
+        &mut stale_predecessor.receipt.predecessors[1].state
+    {
+        *holder = Some(stale_predecessor.candidate.game_session_id());
+    }
+    assert!(
+        validate_complete_replacement_current_claims(&stale_predecessor, &current, 100).is_err()
+    );
 }

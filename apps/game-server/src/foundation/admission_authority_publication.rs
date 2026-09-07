@@ -2304,13 +2304,21 @@ impl CompleteReconnectClaimTransitionV1 {
         credential: &super::CompleteReconnectCredentialV1,
         now: i64,
     ) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
-        if operation != &self.evidence.operation
-            || current.claims != self.evidence.transition.predecessors
-        {
+        if operation != &self.evidence.operation {
             return Err(AdmissionAuthorityPublicationErrorV1::Stale);
         }
         self.evidence.validate_historical(now)?;
-        validate_complete_replacement_pair(&self.evidence, credential, now)
+        validate_complete_replacement_pair(&self.evidence, credential, now)?;
+        if let Some(anchor) = &current.replacement_anchor {
+            if anchor.receipt != self.evidence.transition {
+                return Err(AdmissionAuthorityPublicationErrorV1::Stale);
+            }
+            validate_complete_replacement_current_claims(anchor, &current.claims, now)
+        } else if current.claims == self.evidence.transition.predecessors {
+            Ok(())
+        } else {
+            Err(AdmissionAuthorityPublicationErrorV1::Stale)
+        }
     }
     pub(super) fn resume(
         evidence: CompleteReconnectClaimEvidenceV1,
@@ -2423,5 +2431,115 @@ fn validate_complete_replacement_pair(
             Ok(())
         }
         _ => Err(invalid),
+    }
+}
+
+/// Validates independently loaded current replacement rows against the
+/// immutable transition and actor anchor. The receipt describes what should
+/// have happened; only `current` supplies the rows that presently own the
+/// Account and Character claims.
+pub(super) fn validate_complete_replacement_current_claims(
+    anchor: &super::CompleteReplacementAnchorV1,
+    current: &[AdmissionAuthorityPublicationChangeV1],
+    now: i64,
+) -> Result<(), AdmissionAuthorityPublicationErrorV1> {
+    use AdmissionAuthorityPublicationErrorV1::{Invalid, Stale};
+
+    validate_post_grace_claim_resource_fields(&anchor.receipt.predecessors)?;
+    validate_post_grace_claim_resource_fields(&anchor.receipt.successors)?;
+    validate_post_grace_claim_resource_fields(current)?;
+    validate_release_pair(&anchor.receipt, anchor.prepared_at)?;
+    if anchor.receipt.prepared_at != anchor.prepared_at
+        || current != anchor.receipt.successors
+        || anchor.identity.game_session_id() != anchor.candidate.game_session_id()
+        || anchor.identity.reconnect_attempt_ref() != anchor.candidate.reconnect_attempt_ref()
+        || anchor.identity.character_id() != anchor.lease.character_id()
+        || anchor.identity.runtime_scope() != anchor.runtime_scope
+        || anchor.loss_decided_at > anchor.prepared_at
+        || anchor.prepared_at > now
+        || anchor.prepared_at > anchor.candidate.prepared_deadline()
+        || anchor.loss_decided_at > anchor.original_grace_deadline
+    {
+        return Err(Stale);
+    }
+    match (anchor.state, anchor.transport) {
+        (GameSessionState::Reconnectable, None)
+            if anchor.connection_generation.get().checked_add(1)
+                == Some(anchor.candidate.connection_generation().get()) => {}
+        (GameSessionState::Active, Some(transport))
+            if anchor.connection_generation == anchor.candidate.connection_generation()
+                && transport == anchor.candidate.transport_ref() => {}
+        _ => return Err(Stale),
+    }
+
+    let [predecessor_account, predecessor_character] = anchor.receipt.predecessors.as_slice()
+    else {
+        return Err(Invalid);
+    };
+    let [successor_account, successor_character] = current else {
+        return Err(Invalid);
+    };
+    match (
+        &predecessor_account.key,
+        &predecessor_account.state,
+        &predecessor_character.key,
+        &predecessor_character.state,
+        &successor_account.key,
+        &successor_account.state,
+        &successor_character.key,
+        &successor_character.state,
+    ) {
+        (
+            AdmissionAuthorityGuardKeyV1::Account {
+                account_id: before_key,
+            },
+            AdmissionAuthorityGuardStateV1::Account {
+                security: before_security,
+                presence: Some((before_character, before_session)),
+            },
+            AdmissionAuthorityGuardKeyV1::Character(before_character_key),
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id: before_account,
+                world_id: before_world,
+                eligible: true,
+                lease_generation: before_lease,
+                holder: Some(before_holder),
+            },
+            AdmissionAuthorityGuardKeyV1::Account {
+                account_id: after_key,
+            },
+            AdmissionAuthorityGuardStateV1::Account {
+                security: after_security,
+                presence: Some((after_character, after_session)),
+            },
+            AdmissionAuthorityGuardKeyV1::Character(after_character_key),
+            AdmissionAuthorityGuardStateV1::Character {
+                account_id: after_account,
+                world_id: after_world,
+                eligible: true,
+                lease_generation: after_lease,
+                holder: Some(after_holder),
+            },
+        ) if before_key == anchor.identity.account_id()
+            && before_account == before_key
+            && before_character == before_character_key
+            && *before_character == anchor.identity.character_id()
+            && *before_world == anchor.identity.world_id()
+            && *before_session == anchor.predecessor_session
+            && *before_holder == anchor.predecessor_session
+            && *before_lease == anchor.lease.generation()
+            && after_key == before_key
+            && after_account == before_account
+            && after_character_key == before_character_key
+            && after_character == before_character
+            && *after_world == *before_world
+            && *after_lease == *before_lease
+            && *after_session == anchor.candidate.game_session_id()
+            && *after_holder == anchor.candidate.game_session_id()
+            && same_security_observation(before_security, after_security) =>
+        {
+            Ok(())
+        }
+        _ => Err(Stale),
     }
 }

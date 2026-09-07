@@ -4356,7 +4356,7 @@ fn complete_replacement_anchor(
     CompleteReplacementAnchorV1 {
         identity: recovery.identity.clone(),
         predecessor_session: original.session.commit().game_session_id(),
-        candidate: original.candidate.clone(),
+        candidate: original.candidate,
         prepared_at: recovery.prepared_at,
         loss_epoch: original.loss.observation.loss_epoch,
         loss_decided_at: original.loss_decided_at,
@@ -4399,11 +4399,10 @@ fn complete_reconnect_effect(
             .ok_or(ReconnectDurabilityErrorV1::InvalidRecord)?;
         winner.disposition = RetainedRecoveryAttemptDispositionV1::Committed;
         protection = complete_reconnect_protection(protection, now)?;
-        if recovery.mode == CompleteReconnectModeV1::SameSession {
-            session.session_state = GameSessionState::Active;
-            session.current_connection_generation = recovery.original.candidate.connection_generation();
-            session.current_transport = Some(recovery.original.candidate.transport_ref());
-        }
+        session.session_state = GameSessionState::Active;
+        session.current_connection_generation =
+            recovery.original.candidate.connection_generation();
+        session.current_transport = Some(recovery.original.candidate.transport_ref());
     }
     Ok(CompleteReconnectEffectV1 {
         operation: operation.clone(),
