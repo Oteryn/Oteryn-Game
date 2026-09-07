@@ -1878,3 +1878,162 @@ fn replacement_commit_projects_candidate_as_current_session_identity() {
     assert!(ControlLossAuthorizationV1::authorize(&next_loss, predecessor, 101).is_err());
     assert!(ControlLossAuthorizationV1::authorize(&next_loss, wrong, 101).is_err());
 }
+
+#[test]
+fn replacement_session_completes_a_following_control_loss_and_reconnect_cycle() {
+    let (first_flow, mut owner) = committed_bridge(true, true);
+    let predecessor = owner.current.snapshot.session.commit().game_session_id();
+    let replacement = owner.current.snapshot.session.current_game_session_id();
+    let mut wrong_bytes = [0; 16];
+    wrong_bytes[6] = 0x70;
+    wrong_bytes[8] = 0x80;
+    wrong_bytes[15] = 77;
+    let wrong = GameSessionId::decode(&wrong_bytes).require("wrong session");
+
+    let mut observation = owner.current.snapshot.loss.observation.clone();
+    observation.source_revision += 1;
+    observation.accepted_source_revision = observation.source_revision;
+    observation.observed_at = 102;
+    observation.session = owner.current.snapshot.session;
+    observation.loss_epoch = ControlLossEpochRefV1::new(2).require("next loss epoch");
+    observation.decision_identity = observation.loss_epoch;
+    observation.accepted_decision_identity = observation.loss_epoch;
+    observation.loss_origin = 102;
+    observation.original_grace_deadline = 110;
+    observation.history = ControlLossHistoryV1::Resumed {
+        budget: owner.current.snapshot.budget.clone(),
+        original_grace_deadline: first_flow
+            .operation()
+            .recovery
+            .original
+            .loss
+            .observation
+            .original_grace_deadline,
+        protection: owner.current.snapshot.protection,
+    };
+    let loss_source = LossOwner(observation);
+    assert!(ControlLossAuthorizationV1::authorize(&loss_source, predecessor, 102).is_err());
+    assert!(ControlLossAuthorizationV1::authorize(&loss_source, wrong, 102).is_err());
+    let next_loss = ControlLossAuthorizationV1::authorize(&loss_source, replacement, 102)
+        .require("replacement owns the next loss");
+    let loss_effect = next_loss
+        .validate_final(&loss_source, 102)
+        .require("next loss effect");
+
+    let attempt = ReconnectAttemptRef::new(21).require("next reconnect attempt");
+    let identity = ReconnectIdentityV1::new(
+        replacement,
+        attempt,
+        &owner.current.snapshot.recovery.account_id,
+        owner.current.snapshot.recovery.character_id,
+        owner.current.snapshot.recovery.world_id,
+        owner.current.snapshot.session.current_runtime_scope(),
+    )
+    .require("next reconnect identity");
+    let candidate = ReconnectCandidateBindingV1::new(
+        replacement,
+        attempt,
+        ConnectionGeneration::new(3).require("next generation"),
+        AuthenticatedTransportRefV1::decode(&[10; 16]).require("next transport"),
+        104,
+    )
+    .require("next candidate");
+    owner.current.snapshot.replacement_anchor = None;
+    owner.current.snapshot.predecessor_attempts.clear();
+    owner.current.snapshot.loss = loss_effect.operation().clone();
+    owner.current.snapshot.loss_decided_at = 102;
+    owner.current.snapshot.source_revision += 1;
+    owner.current.snapshot.accepted_source_revision = owner.current.snapshot.source_revision;
+    owner.current.snapshot.observed_at = 102;
+    owner.current.snapshot.session = loss_effect.successor();
+    owner.current.snapshot.budget = RetainedRecoveryBudgetV1::restore(
+        ControlLossEpochRefV1::new(2).require("next recovery epoch"),
+        RecoveryEpochStateV1::Open,
+        true,
+        vec![],
+    )
+    .require("next recovery budget");
+    owner.current.snapshot.candidate = candidate;
+    owner.current.snapshot.proof_transition = CompleteReconnectProofTransitionV1 {
+        owner: owner.current.snapshot.session.current_runtime_scope(),
+        revision: 13,
+        accepted_revision: 13,
+        observed_at: 102,
+        predecessor_session: replacement,
+        predecessor_generation: 1,
+        successor_session: replacement,
+        successor_generation: 2,
+        candidate,
+    };
+    owner.current.prepared = None;
+
+    let (_, _, token) = bridge_fixture(false);
+    for rejected in [predecessor, wrong] {
+        let rejected_identity = ReconnectIdentityV1::new(
+            rejected,
+            attempt,
+            &owner.current.snapshot.recovery.account_id,
+            owner.current.snapshot.recovery.character_id,
+            owner.current.snapshot.recovery.world_id,
+            owner.current.snapshot.session.current_runtime_scope(),
+        )
+        .require("rejected reconnect identity");
+        assert!(CompleteReconnectAuthorizationV1::authorize(
+            &owner,
+            rejected_identity,
+            proof(&owner, &token, true, 102),
+            102,
+        )
+        .is_err());
+    }
+
+    let authorization = CompleteReconnectAuthorizationV1::authorize(
+        &owner,
+        identity,
+        proof(&owner, &token, true, 102),
+        102,
+    )
+    .require("following reconnect authorization");
+    assert_eq!(authorization.operation().mode, CompleteReconnectModeV1::SameSession);
+    let mut flow = CompleteReconnectFlowV1::begin(authorization, None)
+        .require("following reconnect flow");
+    let prepare = flow
+        .take_request(CompleteReconnectRequestKindV1::Prepare)
+        .require("following prepare request")
+        .validate_locked(&owner, 102)
+        .require("following prepare effect");
+    owner.current.snapshot.budget = prepare.budget().clone();
+    owner.current.prepared = Some(Box::new(flow.operation().clone()));
+    report(
+        &mut flow,
+        CompleteReconnectOutcomeV1::Prepared { decided_at: 102 },
+    );
+    let authorization = CompleteReconnectAuthorizationV1::reauthorize_history(
+        flow.operation().recovery.clone(),
+        proof(&owner, &token, true, 103),
+        &owner,
+        103,
+    )
+    .require("following reconnect reauthorization");
+    flow.resume_prepared(authorization, &owner, 103)
+        .require("following prepared resume");
+    let commit = flow
+        .take_request(CompleteReconnectRequestKindV1::Commit)
+        .require("following commit request")
+        .validate_locked(&owner, 103)
+        .require("following commit effect");
+    report(
+        &mut flow,
+        CompleteReconnectOutcomeV1::Committed { decided_at: 103 },
+    );
+    owner.current.snapshot.session = commit.session();
+    owner.current.snapshot.budget = commit.budget().clone();
+    owner.current.snapshot.protection = commit.protection();
+    owner.current.snapshot.observed_at = 103;
+    install_proof(&mut owner, &commit, 103);
+
+    assert_eq!(commit.session().current_game_session_id(), replacement);
+    assert_eq!(commit.session().commit().game_session_id(), predecessor);
+    flow.adopt_current(&owner, 103)
+        .require("following reconnect adoption");
+}

@@ -2427,7 +2427,8 @@ impl PostGraceActorObservationV1 {
             || snapshot.current_control_loss_epoch() != Some(self.budget.epoch()) || self.budget.state() != RecoveryEpochStateV1::Open
             || snapshot.current_original_grace_deadline().is_none_or(|grace| grace <= 0 || now <= grace)
         { return Err(invalid); }
-        validate_current_authority(commit.game_session_id(), snapshot).map_err(|_| invalid)?;
+        validate_current_authority(snapshot.current_game_session_id(), snapshot)
+            .map_err(|_| invalid)?;
         self.protection.ok_or(invalid)?.validate(now)?;
         Ok(())
     }
@@ -2507,7 +2508,7 @@ impl PostGraceRecoveryAuthorizationV1 {
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         let actor = authority.resolve(verified.facts().account_id(), verified.facts().character_id(), now)?;
         let verified = verified.revalidate(now, trust, &actor.current).map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
-        if candidate == actor.predecessor.commit().game_session_id() || actor.account_security_source_revision != verified.security().provenance.source_revision {
+        if candidate == actor.predecessor.current_game_session_id() || actor.account_security_source_revision != verified.security().provenance.source_revision {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
         actor.budget.check_candidate(attempt, transport)?;
@@ -2580,7 +2581,7 @@ impl PostGraceRecoveryOperationV1 {
             attempt_deadline:self.credential.accepted_deadline,
         };
         if self.version!=1 || self.timing!=expected || self.prepared_at<self.credential.verified_at
-            || self.candidate==self.actor.predecessor.commit().game_session_id() || self.candidate_generation.get()!=1
+            || self.candidate==self.actor.predecessor.current_game_session_id() || self.candidate_generation.get()!=1
             || self.credential.account_id!=self.actor.current.account_id || self.credential.character_id!=self.actor.current.character_id || self.credential.world_id!=self.actor.current.world_id
             || self.credential.ruleset_revision!=self.actor.current.ruleset_revision || self.credential.content_revision!=self.actor.current.content_revision
             || self.credential.map_revision!=self.actor.current.map_revision || self.credential.world_policy_revision!=self.actor.current.world_policy_revision
@@ -3476,7 +3477,7 @@ impl CompleteFastReconnectBindingV1 {
     ) -> Result<(), ReconnectDurabilityErrorV1> {
         let compatibility = &self.compatibility;
         if self.session != identity.game_session_id()
-            || self.session != current.session.commit().game_session_id()
+            || self.session != current.session.current_game_session_id()
             || self.predecessor != current.session.current_connection_generation()
             || self.attempt != identity.reconnect_attempt_ref()
             || self.transport != current.candidate.transport_ref()
@@ -3559,7 +3560,7 @@ impl CompleteReconnectProofTransitionV1 {
                 .observed_at
                 .checked_add(EVIDENCE_FRESHNESS_SECONDS_V1)
                 .is_none_or(|deadline| now > deadline)
-            || self.predecessor_session != current.session.commit().game_session_id()
+            || self.predecessor_session != current.session.current_game_session_id()
             || self.predecessor_generation == 0
             || self.successor_session != identity.game_session_id()
             || self.successor_generation == 0
@@ -3723,7 +3724,7 @@ impl CompleteReconnectSnapshotV1 {
         {
             return Err(stale);
         }
-        validate_current_authority(session.commit().game_session_id(), session)
+        validate_current_authority(session.current_game_session_id(), session)
             .map_err(|_| stale)?;
         self.protection.validate(now)?;
         self.proof_transition.validate(self, identity, now)?;
@@ -3758,7 +3759,7 @@ impl CompleteReconnectOperationV1 {
         self.original.validate(&self.identity, self.prepared_at)?;
         for binding in &self.original.predecessor_attempts {
             if self.mode != CompleteReconnectModeV1::EarlyTerminalReplacement
-                || binding.session != self.original.session.commit().game_session_id()
+                || binding.session != self.original.session.current_game_session_id()
                 || binding.attempt == self.identity.reconnect_attempt_ref()
                 || self.original.predecessor_attempts.iter().filter(|other| other.attempt == binding.attempt).count() != 1
                 || !self.original.budget.entries().iter().any(|entry| entry.attempt == binding.attempt && entry.transport == binding.transport && entry.disposition == RetainedRecoveryAttemptDispositionV1::Prepared)
@@ -3829,7 +3830,7 @@ impl CompleteReconnectOperationV1 {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
         let same =
-            self.identity.game_session_id() == self.original.session.commit().game_session_id();
+            self.identity.game_session_id() == self.original.session.current_game_session_id();
         if (self.mode == CompleteReconnectModeV1::SameSession
             && (!same || self.original.session.session_state() != GameSessionState::Reconnectable))
             || (self.mode == CompleteReconnectModeV1::EarlyTerminalReplacement
@@ -4380,7 +4381,7 @@ fn complete_replacement_anchor(
     let original = &recovery.original;
     CompleteReplacementAnchorV1 {
         identity: recovery.identity.clone(),
-        predecessor_session: original.session.commit().game_session_id(),
+        predecessor_session: original.session.current_game_session_id(),
         candidate: original.candidate,
         prepared_at: recovery.prepared_at,
         loss_epoch: original.loss.observation.loss_epoch,

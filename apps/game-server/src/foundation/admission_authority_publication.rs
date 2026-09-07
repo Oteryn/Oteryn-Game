@@ -651,7 +651,7 @@ impl TerminalReplacementClaimTransitionV1 {
         let expected = TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
             authorization.account_id(),
             Some(&presence),
-            current_session.commit().game_session_id(),
+            current_session.current_game_session_id(),
             candidate.identity().game_session_id(),
             current_session,
             candidate,
@@ -775,7 +775,7 @@ fn validate_session_claims(
             && b == account_id
             && *character == commit.character_id()
             && *c == *character
-            && *session == commit.game_session_id()
+            && *session == snapshot.current_game_session_id()
             && *holder == *session
             && *world_id == commit.world_id()
             && *lease_generation == lease.generation() =>
@@ -863,7 +863,7 @@ fn validate_lifecycle_effects(
             TerminalGameSessionReplacementAuthorizationV1::from_current_authority(
                 account_id,
                 Some(&presence),
-                current_session.commit().game_session_id(),
+                current_session.current_game_session_id(),
                 candidate.identity().game_session_id(),
                 *current_session,
                 candidate,
