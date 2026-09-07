@@ -1,5 +1,92 @@
 # OTV2-20260906-control-loss-reconnect-bridge-353
 
+```yaml
+task_id: OTV2-20260906-control-loss-reconnect-bridge-353
+title: Bridge complete owning-loss continuity into reconnect
+mode: IMPLEMENT
+status: completed
+admission_state: RELEASED
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: null
+issue: 353
+pr: 361
+coordinator: Oteryn Work Delivery Coordinator
+allocation_source_main_sha: 53c6bdf06a2282d893035a995c46052c88f935b4
+admission_main_sha: b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a
+base_sha: b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a
+final_head_sha: 444dddd6f5da6db934781b30615c23867b0381cf
+merge_sha: 3825e9c82ff388923f73548a807718807012f53f
+merge_group_candidate_sha: 3825e9c82ff388923f73548a807718807012f53f
+protected_tree_sha: 02b040a15512fe918558e4b5fe923b214e30d84a
+independent_review_comment: 5576207096
+pull_request_merge_gate_run: 34166189147
+pull_request_governance_run: 34166189193
+pull_request_architecture_run: 34166189247
+merge_queue_run: 34166992903
+owner: null
+owned_paths: []
+conditional_paths: []
+blocks: []
+external_repositories: []
+consumers_active: false
+wp4_required: true
+created_at: 2026-09-06
+updated_at: 2026-09-07
+```
+
+## Terminal outcome
+
+WP2 Foundation semantic/API delivery is protected on
+`main@3825e9c82ff388923f73548a807718807012f53f`. The accepted
+`FND-DUR-GAMESESSION-NONREUSE-V1` surface covers Terminal replacement,
+CompleteReconnect `EarlyTerminalReplacement`, and PostGrace new-session
+authorization using sealed candidate-specific owner observations. It preserves
+the immutable `FreshAdmissionCommit`, split PREPARE/COMMIT effects, exact
+committed replay, current-session reload, and the fixed 65,536 lifetime ceiling.
+
+The final implementation head
+`444dddd6f5da6db934781b30615c23867b0381cf` changed only four paths within the
+original five-path lease. Exact-head Merge gate `34166189147`, Agent governance
+`34166189193`, and Architecture semantic audit `34166189247` succeeded.
+Independent Codex review comment `5576207096` found no major issue and no
+review thread remained unresolved.
+
+Normal FULL Merge Queue run `34166992903` qualified candidate
+`3825e9c82ff388923f73548a807718807012f53f`. All nine jobs succeeded:
+candidate/governance, dependency review, CodeQL Python and Actions, Rust Linux
+workspace, PostgreSQL 17.6 harness, Rust Windows client, Rust supply chain, and
+final `game-gate`. Protected main readback matched that candidate, PR #361 was
+merged, and its canonical source branch was deleted by normal lifecycle handling.
+
+## Released custody and remaining programme
+
+This closeout releases the five-path WP2 Foundation worker lease. No WP2 source
+writer remains. `CONSUMERS_ACTIVE = false` and `WP4_REQUIRED = true` remain
+binding: Foundation stores no durable lifetime ledger, and this delivery does not
+activate SQL, migration, Durability, Server Seam, production, or external
+repository consumers.
+
+WP4 remains ordered behind terminal protected WP3 and fresh Work custody
+application. WP5, Server Seam, G0, and G1 retain their separate prerequisites.
+The historical plan remains provenance only.
+
+Runtime product E2E is NOT_APPLICABLE to this documentation-only closeout. This
+archive transition itself still requires canonical checks, normal FULL Merge
+Queue, and protected-main readback before the task is terminally absent from
+active discovery.
+
+## Historical task packet
+
+The remainder of this file is the verbatim task packet from protected active blob
+`3f16361b7be5c9d3bad81132b816f72db874d0d4`. Its earlier `in_progress`,
+`ADMITTED`, owner-stop, head, and next-action fields are historical evidence
+only and do not override the terminal record above.
+
+---
+
+# OTV2-20260906-control-loss-reconnect-bridge-353
+
 ## WP2 nonreuse amendment implementation checkpoint — 2026-09-07
 
 Protected Work application `#353/5575100697` activates the accepted
