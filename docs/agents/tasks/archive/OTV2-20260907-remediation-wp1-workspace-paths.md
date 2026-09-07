@@ -4,25 +4,23 @@
 task_id: OTV2-20260907-remediation-wp1-workspace-paths
 title: Bind workspace packages to declared manifest paths
 mode: REPAIR
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: fix/remediation-wp1-workspace-paths-364
+branch: null
 issue: 364
 pr: 372
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
 base_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
-head_sha: null
-final_head_sha: null
+head_sha: 40c6443db2a69ebd48f9656e4a188717ef353cbe
+final_head_sha: 40c6443db2a69ebd48f9656e4a188717ef353cbe
 owner: WP1_F11_WORKSPACE_PATHS
 created_at: 2026-09-07
 updated_at: 2026-09-07
-owned_paths:
-  - tools/architecture-check/src/lib.rs
-  - docs/agents/tasks/active/OTV2-20260907-remediation-wp1-workspace-paths.md
+owned_paths: []
 public_contracts: []
 depends_on: []
-blocks: [WP1_verification_credibility]
+blocks: []
 external_repositories: []
 ```
 
@@ -42,12 +40,22 @@ PROVEN on admission main: policy `members` and `paths` are parsed into independe
 - [x] Same path set paired to the wrong package fails.
 - [x] Current real workspace metadata is covered by a focused positive control.
 - [x] Existing member, edge, cycle, role, production-to-fixture and forbidden-fragment checks remain unchanged.
-- [ ] Focused unit tests, Rust 1.94 fmt/strict Clippy/workspace tests and exact-head canonical CI pass.
+- [x] Focused unit tests, Rust 1.94 fmt/strict Clippy/workspace tests and exact-head canonical CI pass.
 
 ## Validation
 
 - PROVEN by source inventory: the 21 checked-in policy package/path pairs match the package names in their declared Cargo manifests; neither policy array contains duplicates.
 - Local Rust execution is unavailable in this workspace because no `cargo`, `rustc` or `rustfmt` binary is installed. Exact test and formatting evidence must come from the canonical GitHub Actions jobs on the published head.
+- Exact delivery head `40c6443db2a69ebd48f9656e4a188717ef353cbe`: Merge gate `34105636826`, Architecture semantic audit `34105394810` and Agent governance `34105637224` passed.
+- Full Merge Queue run `34105424118` passed; PR #372 squash-merged as `6a83ab15d51be5b05adcd31baf48380172b97e7d`. The task blob `b205dcf6c72f45a69df10a31411426fee9fb6ed1` and checker blob `3e4284235bee11588b6f00afb582789f13bd6373` were read back from protected `main` (subsequently `15164c38a2775e45eaff4001fddddbabf4b63ab6`). Durable evidence: PR #372 comment `5568575851`.
+
+## Self-review and closeout
+
+- Exact delivery head: `40c6443db2a69ebd48f9656e4a188717ef353cbe`.
+- Full changed-file and effective-diff review: PASS; zero open material findings, no unresolved review threads and no scope outside the two allocated files.
+- Independent review: NOT_REQUIRED under the META-owned policy for this bounded checker repair; exact-head repository gates and Merge Queue passed.
+- Ownership: released after protected-main blob readback; the implementation branch has no continuing provenance role. This closes F11 only; broader WP1, G0 and G1 remain open.
+- Branch disposition: merged task branch deleted; live matching-ref readback returned no branch.
 
 ## Excluded scope
 
@@ -56,10 +64,12 @@ No `workspace-boundaries.toml`, Cargo manifests/lock, product/runtime/schema, wo
 ## Context checkpoint
 
 ```yaml
-last_progress: exact package-to-manifest-directory comparison and focused regressions implemented after normal main merge-up
-status: validating
-branch: fix/remediation-wp1-workspace-paths-364
+last_progress: PR 372 integrated through successful Merge Queue and read back from protected main; F11 task archived and ownership released
+status: completed
+branch: null
+head_sha: 40c6443db2a69ebd48f9656e4a188717ef353cbe
+final_head_sha: 40c6443db2a69ebd48f9656e4a188717ef353cbe
 pr: 372
 blocker: null
-next_action: publish the candidate and resolve exact-head canonical CI
+next_action: null
 ```

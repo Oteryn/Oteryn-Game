@@ -4,27 +4,23 @@
 task_id: OTV2-20260907-remediation-wp1-semantic-dispatch
 title: Repair semantic audit affected-scope dispatch
 mode: REPAIR
-status: review_pending
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
-branch: fix/remediation-wp1-semantic-dispatch-364
+branch: null
 issue: 364
 pr: 371
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
 base_sha: 10446c31b2508ccf6b65cc609a35246bf2666567
-head_sha: null
-final_head_sha: null
+head_sha: c1d8639b503c1c519b7774e918ef2978dce0167c
+final_head_sha: c1d8639b503c1c519b7774e918ef2978dce0167c
 owner: WP1_F03_SEMANTIC_DISPATCH
 created_at: 2026-09-07
 updated_at: 2026-09-07
-owned_paths:
-  - tools/architecture/semantic_contract_audit.py
-  - tools/architecture/tests/test_semantic_contract_audit_dispatch.py
-  - .github/workflows/architecture-semantic-audit.yml
-  - docs/agents/tasks/active/OTV2-20260907-remediation-wp1-semantic-dispatch.md
+owned_paths: []
 public_contracts: []
 depends_on: []
-blocks: [WP1_verification_credibility]
+blocks: []
 external_repositories: []
 ```
 
@@ -45,19 +41,32 @@ PROVEN on admission main: dispatcher uses exact equality against E_PATHS/F_PATHS
 - [x] Existing profile semantic bodies are unchanged unless a test proves a necessary compatibility repair.
 - [x] Deterministic dispatcher regressions run in the owning architecture semantic workflow.
 - [x] Workflow triggers, permissions, exact-head resolution and advisory-only authority remain unchanged.
-- [ ] Exact-head canonical CI and one independent deep review pass before integration.
+- [x] Exact-head canonical CI and one independent deep review pass before integration.
 
 ## Excluded scope
 
 No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/product/Cargo/schema, ruleset/MQ, production or external mutation.
 
+## Validation, review and closeout
+
+- Exact delivery head `c1d8639b503c1c519b7774e918ef2978dce0167c` (tree `5c9d3b124192cd5fbcd5c7be14391f998d8c2b90`) passed 37 focused semantic-audit tests, including the cfg-shadow and comment-brace scanner repairs.
+- Independent Codex deep review completed clean with no findings: PR #371 comment `5570057820`; root qualification `5570096888`.
+- Exact-head Merge gate `34116962490`, Architecture semantic audit `34116962613` and Agent governance `34116962923` passed.
+- Full Merge Queue run `34118019006` passed; PR #371 squash-merged as `160dff0eab12df4e0c61d42d3591460d171af44b`.
+- All four delivery blobs, including task blob `aa3299c06c5f1f93daae53ec423787f528653e3f`, were read back equal from protected `main@160dff0eab12df4e0c61d42d3591460d171af44b`. Durable proof: PR #371 comment `5570219653`.
+- Full changed-file and effective-diff review: PASS; zero open material findings, no unresolved review threads and no scope outside the four allocated files.
+- Ownership released after protected-main readback. The merged task branch was deleted; live matching-ref readback returned no branch.
+- This closes F03 only. Broader WP1, G0 and G1 remain open.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: fresh exact-head review plus independent reproduction found macro-token decoys, qualified impl paths and inner impl cfg attributes could evade item discovery; the coherent repair now requires full delimiter context, recognizes qualified/raw target paths and rejects outer or inner conditional impls while retaining lexical masking, exact bodies and prior raw-identifier closure on protected base 10b6be51551af5d70d45b4f56c2f6d3e8f6dc528
-status: review_pending
-branch: fix/remediation-wp1-semantic-dispatch-364
+last_progress: PR 371 integrated through successful Merge Queue and protected-main blob readback; F03 task archived and ownership released
+status: completed
+branch: null
+head_sha: c1d8639b503c1c519b7774e918ef2978dce0167c
+final_head_sha: c1d8639b503c1c519b7774e918ef2978dce0167c
 pr: 371
 blocker: null
-next_action: publish the validated stable candidate, obtain one fresh independent exact-head deep review and require canonical exact-head CI before integration
+next_action: null
 ```
