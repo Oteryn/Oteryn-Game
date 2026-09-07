@@ -156,7 +156,7 @@ acceptance additionally requires:
 
 - protected WP3/WP4 release and exact migration/path application;
 - protected live PR **#416** allocation
-  `OTV2_WP5_DEDICATED_POSTGRES_CI_ROUTING_20260907` **and its later material
+  `OTV2-WP5-DEDICATED-POSTGRES-CI-ROUTING-20260907` **and its later material
   CONTROL implementation exercised** for `character_authority_postgres`;
 - exact event-type/retention registration through a separately reviewed registry
   mutation;
