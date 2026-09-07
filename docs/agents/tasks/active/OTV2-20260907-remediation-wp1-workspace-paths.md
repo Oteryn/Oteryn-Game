@@ -4,12 +4,12 @@
 task_id: OTV2-20260907-remediation-wp1-workspace-paths
 title: Bind workspace packages to declared manifest paths
 mode: REPAIR
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: fix/remediation-wp1-workspace-paths-364
 issue: 364
-pr: null
+pr: 372
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
 base_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
 head_sha: null
@@ -36,13 +36,18 @@ PROVEN on admission main: policy `members` and `paths` are parsed into independe
 
 ## Acceptance criteria
 
-- [ ] Preserve declaration order/pairing for `members` and `paths` while still rejecting duplicates.
-- [ ] Resolve each workspace package's Cargo `manifest_path` parent relative to repository root and compare exact package→declared-path mapping.
-- [ ] Same-cardinality wrong path fails.
-- [ ] Same path set paired to the wrong package fails.
-- [ ] Current real workspace metadata passes.
-- [ ] Existing member, edge, cycle, role, production-to-fixture and forbidden-fragment checks remain unchanged.
+- [x] Preserve declaration order/pairing for `members` and `paths` while still rejecting duplicates.
+- [x] Resolve each workspace package's Cargo `manifest_path` parent relative to repository root and compare exact package→declared-path mapping.
+- [x] Same-cardinality wrong path fails.
+- [x] Same path set paired to the wrong package fails.
+- [x] Current real workspace metadata is covered by a focused positive control.
+- [x] Existing member, edge, cycle, role, production-to-fixture and forbidden-fragment checks remain unchanged.
 - [ ] Focused unit tests, Rust 1.94 fmt/strict Clippy/workspace tests and exact-head canonical CI pass.
+
+## Validation
+
+- PROVEN by source inventory: the 21 checked-in policy package/path pairs match the package names in their declared Cargo manifests; neither policy array contains duplicates.
+- Local Rust execution is unavailable in this workspace because no `cargo`, `rustc` or `rustfmt` binary is installed. Exact test and formatting evidence must come from the canonical GitHub Actions jobs on the published head.
 
 ## Excluded scope
 
@@ -51,10 +56,10 @@ No `workspace-boundaries.toml`, Cargo manifests/lock, product/runtime/schema, wo
 ## Context checkpoint
 
 ```yaml
-last_progress: two-path F11 allocation created from protected main
-status: implementing
+last_progress: exact package-to-manifest-directory comparison and focused regressions implemented after normal main merge-up
+status: validating
 branch: fix/remediation-wp1-workspace-paths-364
-pr: null
+pr: 372
 blocker: null
-next_action: implement exact package-to-manifest-directory validation with synthetic wrong-path/pairing regressions
+next_action: publish the candidate and resolve exact-head canonical CI
 ```
