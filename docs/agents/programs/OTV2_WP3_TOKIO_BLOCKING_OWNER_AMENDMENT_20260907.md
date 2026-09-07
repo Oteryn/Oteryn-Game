@@ -24,7 +24,7 @@ allocation_base_main_sha: 494723b0d271e675eb44e63661c8575936ed6144
 amendment_state: NOT_ACTIVE
 worker_launch: EXISTING_WORKER_ONLY
 tokio_version: 1.53.1
-tokio_crates_io_checksum: 202cae7e3bd8c284e1a94d64a2a7fe0833222ffc970666a15586686e1481e6ed
+tokio_crates_io_checksum: 202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed
 tokio_upstream_commit: 75fef53d0a8590c2d1dbb63672aa7b7d1ef51155
 existing_resource_contract: DUR-FRESH-RESOURCE-ENVELOPE-V1
 existing_queued_work_count: 8
