@@ -17,7 +17,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "e3291fe8fca8fcf70166d5652b43d5a26fa0d762"
+APPROVED = "539a726b7d39cabe785892f70ea30d1944189d91"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 NATIVE_POLICY = (
     "$ErrorActionPreference = 'Stop'",
@@ -79,11 +79,11 @@ def main() -> int:
 
     candidate = core.indented_yaml_mapping_block(original, "candidate", 2)
     assert candidate is not None
-    assert LIFECYCLE_COMMAND in candidate, "WP1 RED: required MQ candidate does not execute lifecycle discovery"
+    assert LIFECYCLE_COMMAND in candidate, "required MQ candidate does not execute lifecycle discovery"
     windows = core.indented_yaml_mapping_block(original, "rust_windows", 2)
     assert windows is not None
     for policy in NATIVE_POLICY:
-        assert policy in windows, f"WP1 RED: Merge Queue Windows block lacks fail-closed policy: {policy}"
+        assert policy in windows, f"Merge Queue Windows block lacks fail-closed policy: {policy}"
     for command in WINDOWS_NATIVE_COMMANDS:
         assert windows.count(command) == 1, f"required Windows command missing or duplicated: {command}"
 
