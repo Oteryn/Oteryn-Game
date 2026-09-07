@@ -54,11 +54,15 @@ A security/GM/product referral is routing after a substantive evidentiary dispos
 
 No ban/mute/kick/confiscation/rollback/account action. No automatic balance/content mutation. No direct DB write into game-owned authoritative tables. No generic “analytics event” schema if a typed producer owner is missing. No high-cardinality player IDs in ordinary metrics labels.
 
-## Lifecycle / budget / durable handover
+## Lifecycle / continuous execution / durable handover
 
-Before the first write, create or resume the coordinator-allocated task with exact base SHA, branch/PR, owned paths/public event consumers, exact producer event schema/revision prerequisites, dependencies/blockers and execution budget. Default foreground budget is **60 minutes**; **120 minutes** requires explicit declaration and justification.
+Before the first write, create or resume the coordinator-allocated task with exact base SHA, branch/PR, owned paths/public event consumers, exact producer event schema/revision prerequisites and dependencies/blockers.
 
-Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, consumed event revisions, data-quality/completeness/finality state, validation/review state, blocker and ownership state before any genuine stop/rotation. Do not persist restricted raw player data in task checkpoints. Terminal completion includes post-merge verification, task archive and ownership release.
+There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized analytics work is making material progress, continue until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not stop, rotate, freeze, discard productive minutes or require a fresh coordinator grant solely because an hour elapsed.
+
+Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical window/minute counters are provenance only and do not limit continued productive execution.
+
+Maintain exactly one compact `## Context checkpoint` with one `next_action`. Persist exact head, consumed event revisions, data-quality/completeness/finality state, validation/review state, blocker and ownership state before any genuine stop/rotation. Do not persist restricted raw player data in task checkpoints. Do not create hourly checkpoint churn. Terminal completion includes post-merge verification, task archive and ownership release.
 
 ## Validation
 
