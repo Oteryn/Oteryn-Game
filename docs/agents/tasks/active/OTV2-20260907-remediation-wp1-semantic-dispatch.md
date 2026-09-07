@@ -54,7 +54,7 @@ No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/produc
 ## Context checkpoint
 
 ```yaml
-last_progress: fresh exact-head review found an alternate early-success path in the retained authority helper; the family repair now requires exclusive helper result/control flow and valid early-return mutations for both authority and evidence helpers on protected base 10446c31b2508ccf6b65cc609a35246bf2666567
+last_progress: fresh exact-head review found cached-request and aliased-controller early-success paths plus ordinary profile exceptions; the coherent repair validates complete permitted V1/V2 authorize/reconciliation bodies and aggregates ordinary exceptions without catching cancellation on protected base 10446c31b2508ccf6b65cc609a35246bf2666567
 status: review_pending
 branch: fix/remediation-wp1-semantic-dispatch-364
 pr: 371

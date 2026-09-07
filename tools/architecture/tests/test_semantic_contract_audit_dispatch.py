@@ -75,6 +75,27 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
         self.assertEqual([profile["verdict"] for profile in profiles], ["FAIL", "PASS"])
         self.assertEqual(failures, ["FIRST: first failed"])
 
+    def test_decode_error_does_not_suppress_later_selected_profile(self) -> None:
+        calls = []
+
+        def decode_fails() -> list[str]:
+            calls.append("decode")
+            raise UnicodeDecodeError("utf-8", b"\xff", 0, 1, "invalid start byte")
+
+        def passes() -> list[str]:
+            calls.append("second")
+            return ["second check"]
+
+        profiles, failures = audit.run_profiles(
+            ["DECODE", "SECOND"], {"DECODE": decode_fails, "SECOND": passes}
+        )
+
+        self.assertEqual(calls, ["decode", "second"])
+        self.assertEqual([profile["verdict"] for profile in profiles], ["FAIL", "PASS"])
+        self.assertEqual(profiles[0]["error_type"], "UnicodeDecodeError")
+        self.assertEqual(len(failures), 1)
+        self.assertIn("invalid start byte", failures[0])
+
     def test_foundation_oracle_rejects_each_relaxed_authority_term(self) -> None:
         task, implementation, verifier = self._foundation_documents()
         authority_matcher = audit.rust_braced_block(
@@ -270,6 +291,24 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
                 ):
                     audit.foundation_reconnect_documents(task, mutated, verifier)
 
+    def test_foundation_oracle_rejects_cached_request_before_guards(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        method = audit.rust_impl_method(
+            implementation,
+            "impl ReconnectDurabilityFlowV1 {",
+            "pub fn authorize_commit(",
+            "V1 authorize_commit",
+        )
+        opening = method.index("{") + 1
+        early = (
+            " if self.commit_request.is_some() { "
+            "return Ok(self.commit_request.clone().unwrap()); } "
+        )
+        mutated_method = method[:opening] + early + method[opening:]
+        mutated = implementation.replace(method, mutated_method, 1)
+        with self.assertRaisesRegex(SystemExit, "FlowV1 authorize_commit"):
+            audit.foundation_reconnect_documents(task, mutated, verifier)
+
     def test_foundation_oracle_rejects_relaxed_reconciliation_guards_per_version(self) -> None:
         task, implementation, verifier = self._foundation_documents()
         versions = (
@@ -394,6 +433,31 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
                 f"return {controller}; }} "
             )
             mutated_method = method[:insertion] + early + method[insertion:]
+            mutated = implementation.replace(method, mutated_method, 1)
+            with self.subTest(version=version):
+                with self.assertRaisesRegex(
+                    SystemExit, f"Flow{version} accept_reconciliation"
+                ):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_aliased_controller_before_guards(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        for version in ("V1", "V2"):
+            method = audit.rust_impl_method(
+                implementation,
+                f"impl ReconnectDurabilityFlow{version} {{",
+                "pub fn accept_reconciliation(",
+                f"{version} accept_reconciliation",
+            )
+            opening = method.index("{") + 1
+            early = (
+                f" use ReconnectProjectionDecision{version}::InstallController as IC; "
+                "if current.current_controller_present { "
+                "return Ok(IC { "
+                "generation: self.record.connection().candidate(), "
+                "transport_ref: self.record.connection().transport_ref() }); } "
+            )
+            mutated_method = method[:opening] + early + method[opening:]
             mutated = implementation.replace(method, mutated_method, 1)
             with self.subTest(version=version):
                 with self.assertRaisesRegex(

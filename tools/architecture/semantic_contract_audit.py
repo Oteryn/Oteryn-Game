@@ -81,72 +81,142 @@ AUTHENTICATED_EVIDENCE_BODY = (
     + " }"
 )
 
-AUTHORIZE_AUTHORITY_GUARD = (
-    "if !current_authority_matches_record(&self.record, &current)? "
-    "|| !authenticated_evidence_observed_by(&self.record, now) "
-    "{ self.phase = ReconnectDurabilityPhaseV1::Terminal; "
-    "return Err(ReconnectDurabilityErrorV1::StaleAuthority); }"
-)
+AUTHORIZE_COMMIT_V1_BODY = """{
+    if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation {
+        return Err(ReconnectDurabilityErrorV1::InvalidPhase);
+    }
+    if !current_authority_matches_record(&self.record, &current)?
+        || !authenticated_evidence_observed_by(&self.record, now)
+    {
+        self.phase = ReconnectDurabilityPhaseV1::Terminal;
+        return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+    }
+    let deadline = self.record.authorization_deadline()?;
+    if now > deadline || current.observed_at > deadline {
+        self.phase = ReconnectDurabilityPhaseV1::Terminal;
+        return Err(ReconnectDurabilityErrorV1::DeadlineExpired);
+    }
+    let request = ReconnectCommitRequestV1 {
+        record: Box::new(self.record.clone()),
+        authorization: ReconnectCommitAuthorizationV1 {
+            authorization_deadline: deadline
+        }
+    };
+    self.commit_request = Some(request.clone());
+    self.phase = ReconnectDurabilityPhaseV1::PendingCommit;
+    Ok(request)
+}"""
 
-AUTHORIZE_DEADLINE_GUARD = (
-    "if now > deadline || current.observed_at > deadline "
-    "{ self.phase = ReconnectDurabilityPhaseV1::Terminal; "
-    "return Err(ReconnectDurabilityErrorV1::DeadlineExpired); }"
-)
+AUTHORIZE_COMMIT_V2_BODY = """{
+    if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation {
+        return Err(ReconnectDurabilityErrorV1::InvalidPhase);
+    }
+    if !current_authority_matches_record(&self.record, &current)?
+        || !authenticated_evidence_observed_by(&self.record, now)
+    {
+        self.phase = ReconnectDurabilityPhaseV1::Terminal;
+        return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+    }
+    let deadline = self.record.authorization_deadline()?;
+    if now > deadline || current.observed_at > deadline {
+        self.phase = ReconnectDurabilityPhaseV1::Terminal;
+        return Err(ReconnectDurabilityErrorV1::DeadlineExpired);
+    }
+    let request = ReconnectCommitRequestV1 {
+        record: Box::new(self.record.clone()),
+        authorization: ReconnectCommitAuthorizationV1 {
+            authorization_deadline: deadline,
+        },
+    };
+    self.phase = ReconnectDurabilityPhaseV1::PendingCommit;
+    Ok(request)
+}"""
 
-AUTHORIZE_COMMIT_ORDERED_INVARIANTS = (
-    "if self.phase != ReconnectDurabilityPhaseV1::AwaitFinalRevalidation",
-    "if !current_authority_matches_record(&self.record, &current)? || !authenticated_evidence_observed_by(&self.record, now)",
-    "return Err(ReconnectDurabilityErrorV1::StaleAuthority);",
-    "let deadline = self.record.authorization_deadline()?;",
-    "if now > deadline || current.observed_at > deadline",
-    "return Err(ReconnectDurabilityErrorV1::DeadlineExpired);",
-    "let request = ReconnectCommitRequestV1",
-)
+RECONCILIATION_V1_BODY = """{
+    if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired {
+        return Err(ReconnectDurabilityErrorV1::InvalidPhase);
+    }
+    if snapshot.record != self.record {
+        return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
+    }
+    match snapshot.durable_state {
+        DurableReconnectStateV1::Prepared => {
+            if snapshot.current_generation.is_some()
+                || snapshot.current_transport_ref.is_some()
+            {
+                return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
+            }
+            self.phase = ReconnectDurabilityPhaseV1::AwaitFinalRevalidation;
+            Ok(ReconnectProjectionDecisionV1::AwaitFinalRevalidation)
+        }
+        DurableReconnectStateV1::Committed => {
+            if snapshot.current_generation
+                != Some(self.record.connection().candidate())
+                || snapshot.current_transport_ref
+                    != Some(self.record.connection().transport_ref())
+                || current.observed_at > self.record.authorization_deadline()?
+                || !current_authority_matches_record(&self.record, &current)?
+            {
+                return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
+            }
+            self.phase = ReconnectDurabilityPhaseV1::Completed;
+            Ok(ReconnectProjectionDecisionV1::InstallController {
+                generation: self.record.connection().candidate(),
+                transport_ref: self.record.connection().transport_ref()
+            })
+        }
+        DurableReconnectStateV1::Terminal => {
+            self.phase = ReconnectDurabilityPhaseV1::Terminal;
+            Ok(ReconnectProjectionDecisionV1::Terminal)
+        }
+    }
+}"""
 
-RECONCILIATION_V1_ORDERED_INVARIANTS = (
-    "if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired",
-    "if snapshot.record != self.record { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }",
-    "DurableReconnectStateV1::Committed",
-    "snapshot.current_generation != Some(self.record.connection().candidate())",
-    "snapshot.current_transport_ref != Some(self.record.connection().transport_ref())",
-    "current.observed_at > self.record.authorization_deadline()?",
-    "!current_authority_matches_record(&self.record, &current)? { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }",
-    "self.phase = ReconnectDurabilityPhaseV1::Completed;",
-    "Ok(ReconnectProjectionDecisionV1::InstallController",
-    "generation: self.record.connection().candidate()",
-    "transport_ref: self.record.connection().transport_ref()",
-)
-
-RECONCILIATION_V2_ORDERED_INVARIANTS = (
-    "if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired",
-    "if snapshot.record != self.record { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }",
-    "ReconnectDurableOutcomeV2::Committed",
-    "current_generation != self.record.connection().candidate()",
-    "current_transport_ref != self.record.connection().transport_ref()",
-    "current.observed_at > self.record.authorization_deadline()?",
-    "!current_authority_matches_record(&self.record, &current)? { return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }",
-    "self.phase = ReconnectDurabilityPhaseV1::Completed;",
-    "Ok(ReconnectProjectionDecisionV2::InstallController",
-    "generation: current_generation",
-    "transport_ref: current_transport_ref",
-)
-
-RECONCILIATION_V1_COMMITTED_GUARD = (
-    "if snapshot.current_generation != Some(self.record.connection().candidate()) "
-    "|| snapshot.current_transport_ref != Some(self.record.connection().transport_ref()) "
-    "|| current.observed_at > self.record.authorization_deadline()? "
-    "|| !current_authority_matches_record(&self.record, &current)? "
-    "{ return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }"
-)
-
-RECONCILIATION_V2_COMMITTED_GUARD = (
-    "if current_generation != self.record.connection().candidate() "
-    "|| current_transport_ref != self.record.connection().transport_ref() "
-    "|| current.observed_at > self.record.authorization_deadline()? "
-    "|| !current_authority_matches_record(&self.record, &current)? "
-    "{ return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch); }"
-)
+RECONCILIATION_V2_BODY = """{
+    if self.phase != ReconnectDurabilityPhaseV1::ReconciliationRequired {
+        return Err(ReconnectDurabilityErrorV1::InvalidPhase);
+    }
+    if snapshot.record != self.record {
+        return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
+    }
+    match snapshot.outcome {
+        ReconnectDurableOutcomeV2::Prepared => {
+            budget.accept_prepare_completion(
+                self.record.identity().reconnect_attempt_ref(),
+                self.record.connection().transport_ref(),
+                ReconnectPrepareDispositionV1::ExistingPrepared,
+            )?;
+            self.phase = ReconnectDurabilityPhaseV1::AwaitFinalRevalidation;
+            Ok(ReconnectProjectionDecisionV2::AwaitFinalRevalidation)
+        }
+        ReconnectDurableOutcomeV2::Committed {
+            current_generation,
+            current_transport_ref,
+        } => {
+            if current_generation != self.record.connection().candidate()
+                || current_transport_ref != self.record.connection().transport_ref()
+                || current.observed_at > self.record.authorization_deadline()?
+                || !current_authority_matches_record(&self.record, &current)?
+            {
+                return Err(ReconnectDurabilityErrorV1::ReconciliationMismatch);
+            }
+            self.phase = ReconnectDurabilityPhaseV1::Completed;
+            Ok(ReconnectProjectionDecisionV2::InstallController {
+                generation: current_generation,
+                transport_ref: current_transport_ref,
+            })
+        }
+        ReconnectDurableOutcomeV2::Terminal { disposition } => {
+            budget.accept_prepare_completion(
+                self.record.identity().reconnect_attempt_ref(),
+                self.record.connection().transport_ref(),
+                v1_budget_disposition_for_terminal(disposition),
+            )?;
+            self.phase = ReconnectDurabilityPhaseV1::Terminal;
+            Ok(ReconnectProjectionDecisionV2::Terminal { disposition })
+        }
+    }
+}"""
 
 
 def select_profiles(changed: set[str]) -> list[str]:
@@ -163,11 +233,17 @@ def run_profiles(
         try:
             checks = profile_checks[profile]()
             profiles.append({"profile": profile, "checks": checks, "verdict": "PASS"})
-        except SystemExit as error:
+        except (Exception, SystemExit) as error:
             message = str(error)
             failures.append(f"{profile}: {message}")
             profiles.append(
-                {"profile": profile, "checks": [], "verdict": "FAIL", "error": message}
+                {
+                    "profile": profile,
+                    "checks": [],
+                    "verdict": "FAIL",
+                    "error": message,
+                    "error_type": type(error).__name__,
+                }
             )
     return profiles, failures
 
@@ -248,21 +324,6 @@ def compact_rust(doc: str) -> str:
 
 def rust_without_comments(doc: str) -> str:
     return re.sub(r"//[^\n]*|/\*.*?\*/", "", doc, flags=re.DOTALL)
-
-
-def need_ordered(doc: str, fragments: tuple[str, ...], label: str) -> None:
-    offset = 0
-    for fragment in fragments:
-        found = doc.find(fragment, offset)
-        if found < 0:
-            fail(f"{label}: missing or out of order: {fragment!r}")
-        offset = found + len(fragment)
-
-
-def need_exactly_once(doc: str, fragment: str, label: str) -> None:
-    count = doc.count(fragment)
-    if count != 1:
-        fail(f"{label}: expected exactly one {fragment!r}, found {count}")
 
 
 def need_exact(doc: str, expected: str, label: str) -> None:
@@ -588,94 +649,63 @@ def foundation_reconnect_documents(
         "conjunctive authenticated evidence observation matcher",
     )
 
-    authorize_commit_v1 = compact(
-        rust_impl_method(
-            implementation,
-            "impl ReconnectDurabilityFlowV1 {",
-            "pub fn authorize_commit(",
-            "ReconnectDurabilityFlowV1 authorize_commit",
-        )
-    )
-    authorize_commit_v2 = compact(
-        rust_impl_method(
-            implementation,
-            "impl ReconnectDurabilityFlowV2 {",
-            "pub fn authorize_commit(",
-            "ReconnectDurabilityFlowV2 authorize_commit",
-        )
-    )
-    need_ordered(
-        authorize_commit_v1,
-        AUTHORIZE_COMMIT_ORDERED_INVARIANTS,
+    authorize_commit_v1 = rust_impl_method(
+        implementation,
+        "impl ReconnectDurabilityFlowV1 {",
+        "pub fn authorize_commit(",
         "ReconnectDurabilityFlowV1 authorize_commit",
     )
-    need_ordered(
-        authorize_commit_v2,
-        AUTHORIZE_COMMIT_ORDERED_INVARIANTS,
+    authorize_commit_v2 = rust_impl_method(
+        implementation,
+        "impl ReconnectDurabilityFlowV2 {",
+        "pub fn authorize_commit(",
         "ReconnectDurabilityFlowV2 authorize_commit",
     )
-    for label, authorize_commit in (
-        ("ReconnectDurabilityFlowV1 authorize_commit", authorize_commit_v1),
-        ("ReconnectDurabilityFlowV2 authorize_commit", authorize_commit_v2),
+    for label, method, expected in (
+        (
+            "ReconnectDurabilityFlowV1 authorize_commit",
+            authorize_commit_v1,
+            AUTHORIZE_COMMIT_V1_BODY,
+        ),
+        (
+            "ReconnectDurabilityFlowV2 authorize_commit",
+            authorize_commit_v2,
+            AUTHORIZE_COMMIT_V2_BODY,
+        ),
     ):
-        normalized = compact_rust(authorize_commit)
-        need(normalized, compact_rust(AUTHORIZE_AUTHORITY_GUARD), label)
-        need(normalized, compact_rust(AUTHORIZE_DEADLINE_GUARD), label)
-        need_exactly_once(
-            normalized,
-            "ReconnectCommitRequestV1{",
-            f"{label} commit request construction",
-        )
+        normalized = compact_rust(rust_without_comments(method))
+        need_exact(normalized[normalized.index("{") :], compact_rust(expected), label)
     need_re(
         implementation,
         r"authorization_deadline.*?prepared_deadline.*?original_grace_deadline.*?platform_deadline.*?trust_deadline.*?credential_expiration",
         "authorization deadline is bounded by grace, prepared, evidence and credential expiry",
     )
-    accept_reconciliation_v1 = compact(
-        rust_impl_method(
-            implementation,
-            "impl ReconnectDurabilityFlowV1 {",
-            "pub fn accept_reconciliation(",
-            "ReconnectDurabilityFlowV1 accept_reconciliation",
-        )
-    )
-    accept_reconciliation_v2 = compact(
-        rust_impl_method(
-            implementation,
-            "impl ReconnectDurabilityFlowV2 {",
-            "pub fn accept_reconciliation(",
-            "ReconnectDurabilityFlowV2 accept_reconciliation",
-        )
-    )
-    need_ordered(
-        accept_reconciliation_v1,
-        RECONCILIATION_V1_ORDERED_INVARIANTS,
+    accept_reconciliation_v1 = rust_impl_method(
+        implementation,
+        "impl ReconnectDurabilityFlowV1 {",
+        "pub fn accept_reconciliation(",
         "ReconnectDurabilityFlowV1 accept_reconciliation",
     )
-    need_ordered(
-        accept_reconciliation_v2,
-        RECONCILIATION_V2_ORDERED_INVARIANTS,
+    accept_reconciliation_v2 = rust_impl_method(
+        implementation,
+        "impl ReconnectDurabilityFlowV2 {",
+        "pub fn accept_reconciliation(",
         "ReconnectDurabilityFlowV2 accept_reconciliation",
     )
-    for label, reconciliation, guard in (
+    for label, method, expected in (
         (
             "ReconnectDurabilityFlowV1 accept_reconciliation",
             accept_reconciliation_v1,
-            RECONCILIATION_V1_COMMITTED_GUARD,
+            RECONCILIATION_V1_BODY,
         ),
         (
             "ReconnectDurabilityFlowV2 accept_reconciliation",
             accept_reconciliation_v2,
-            RECONCILIATION_V2_COMMITTED_GUARD,
+            RECONCILIATION_V2_BODY,
         ),
     ):
-        normalized = compact_rust(reconciliation)
-        need(normalized, compact_rust(guard), label)
-        need_exactly_once(
-            normalized,
-            "InstallController{",
-            f"{label} controller installation",
-        )
+        normalized = compact_rust(rust_without_comments(method))
+        need_exact(normalized[normalized.index("{") :], compact_rust(expected), label)
 
     need(verifier, "pub struct VerifiedRecoveryDurabilityFactsV1", "rich recovery verifier result")
     need_re(
