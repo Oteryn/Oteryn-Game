@@ -4,26 +4,25 @@
 task_id: OTV2-20260907-doc-consumer-snapshot-refresh
 title: Refresh audited neutral-document consumer snapshot
 mode: REPAIR
-status: validating
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: ci/doc-consumer-snapshot-current-refresh-w6
 issue: 375
 pr: 378
 base_sha: a6f69427d663539c6a8e23f166e69147b66ec078
-integration_main_sha: 15164c38a2775e45eaff4001fddddbabf4b63ab6
+integration_main_sha: 65a204ea284c54188b13c4c41cf7411b1a003c61
 successor_base_sha: 15164c38a2775e45eaff4001fddddbabf4b63ab6
-head_sha: null
-final_head_sha: null
-final_head_frozen_at: null
-owner: Game-W6
+head_sha: b20dfb4e476b694a3f5bd08b2c7d6ee64a9daf6c
+final_head_sha: b20dfb4e476b694a3f5bd08b2c7d6ee64a9daf6c
+final_tree_sha: 2b83f7553fc9223aed4ca85da3531902a3e3b204
+merge_sha: 65a204ea284c54188b13c4c41cf7411b1a003c61
+final_head_frozen_at: 2026-09-07T09:44:23Z
+owner: null
 created_at: 2026-09-07T09:00:59Z
-updated_at: 2026-09-07T09:41:34Z
+updated_at: 2026-09-07T10:12:00Z
 execution_policy: continuous_progress
-owned_paths:
-  - tools/repository/classify_pr_test_lanes.py
-  - tools/repository/test_classify_pr_test_lanes.py
-  - docs/agents/tasks/active/OTV2-20260907-doc-consumer-snapshot-refresh.md
+owned_paths: []
 public_contracts: []
 depends_on:
   - issue: 308
@@ -68,8 +67,8 @@ PR #377 passed exact-head FULL CI and independent review, became ready at `2026-
 - [x] Historical/superseded all-consumer snapshots `f8eed774…`, `742350c5…`, `051473d3…` and `dc938161…` are explicitly rejected as stale after GREEN.
 - [x] Superseded non-server snapshots `9f7aff4d…` and `669052b1…` are explicitly rejected as stale after GREEN.
 - [x] Existing classifier, post-merge, governance and repository-policy regressions pass.
-- [x] Whole-diff self-review found no unresolved material issue; independent deep review remains pending.
-- [ ] Exact-head FULL CI, normal Merge Queue and protected-main readback pass.
+- [x] Whole-diff self-review and independent exact-head deep review found no unresolved material issue.
+- [x] Exact-head FULL CI, normal Merge Queue and protected-main readback pass.
 
 ## Excluded scope
 
@@ -98,12 +97,12 @@ Focused RED on the initial test-only change failed at the expected neutral-docum
 
 ### Exact-head CI
 
-- final head: pending
-- trigger source: pull request
-- workflow/run/job: pending
-- runner assignment: pending
+- final head: `b20dfb4e476b694a3f5bd08b2c7d6ee64a9daf6c`; tree `2b83f7553fc9223aed4ca85da3531902a3e3b204`
+- trigger source: pull request and merge group
+- workflow/run: Agent governance `34107712218` SUCCESS; Architecture semantic audit `34107671728` SUCCESS; FULL Merge gate `34107712276` SUCCESS; Merge Queue `34108577361` SUCCESS
+- runner assignment: hosted repository runners selected by the unchanged workflows
 - classification: FULL required because the candidate changes `tools/repository/`
-- result: pending
+- result: PASS
 
 ## Self-review
 
@@ -115,36 +114,41 @@ Focused RED on the initial test-only change failed at the expected neutral-docum
 ## Independent review
 
 - required: YES — material trusted CI selection snapshot
-- exact head: pending
+- exact head: `b20dfb4e476b694a3f5bd08b2c7d6ee64a9daf6c`; tree `2b83f7553fc9223aed4ca85da3531902a3e3b204`
 - method/auditor: one independent deep review after stable publication
 - material findings: accepted P1 — initial successor omitted #372 architecture-check from its selected-input audit; repaired with actual-base digests and expanded stale-value regression
-- verdict: pending
+- verdict: PASS — accepted P1 fully repaired; zero remaining P0/P1/P2 findings
 
 ## PR and closeout
 
 - changed-file review: PASS for the complete three-path candidate
-- unresolved review threads: pending
+- unresolved review threads: none
 - related/superseded PRs: #310 and #312 are integrated predecessors; #377 is the integrated stale-safe first refresh; none is resumed or rewritten
-- protected auto-merge: pending normal Merge Queue
-- merge commit/result: pending
-- ownership release: pending
+- protected auto-merge: normal Merge Queue PASS, run `34108577361`
+- merge commit/result: squash-merged at `2026-09-07T10:03:16Z` as `65a204ea284c54188b13c4c41cf7411b1a003c61`; protected `main` read back at that exact SHA and tree `d550b9b44ea31f3b654e757a693ad82d14c569da`
+- post-merge checks: Agent governance `34109380333` SUCCESS; CodeQL `34109380326` SUCCESS; Rust `34109380351` SUCCESS
+- ownership release: complete when this archive closeout merges
 
 ## Context checkpoint
 
 ```yaml
-last_progress: accepted reviewer P1 repaired with actual-base selected-tree digests and fourth focused RED/GREEN
-status: validating
+last_progress: PR #378 passed exact-head FULL CI and independent rereview, merged through Merge Queue as 65a204ea, and protected main read back exactly
+status: completed
 branch: ci/doc-consumer-snapshot-current-refresh-w6
-head_sha: null
+head_sha: b20dfb4e476b694a3f5bd08b2c7d6ee64a9daf6c
 pr: 378
-final_head_sha: null
-final_head_frozen_at: null
+final_head_sha: b20dfb4e476b694a3f5bd08b2c7d6ee64a9daf6c
+final_head_frozen_at: 2026-09-07T09:44:23Z
 ci_trigger_source: pull_request
-ci_check_generation: 0
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: unknown
+ci_check_generation: terminal_delivery_head
+ci_checks_for_current_head: pass
+ci_run_ids:
+  - 34107712218
+  - 34107671728
+  - 34107712276
+  - 34108577361
+ci_job_ids: recorded in immutable workflow runs
+runner_assignment_state: complete
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -154,5 +158,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: rerun full validation and publish the accepted P1 repair for exact-head rereview and FULL CI
+next_action: archive this terminal packet and release Issue #375 ownership
 ```
