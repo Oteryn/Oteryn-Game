@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Exercise the activated queue contract and each fan-in failure independently."""
+"""Exercise the required Merge Queue contract and its credibility controls."""
 from __future__ import annotations
 
 import contextlib
@@ -7,13 +7,63 @@ import importlib.util
 import io
 import os
 from pathlib import Path
+import shutil
 import subprocess
+import sys
+import tempfile
 import textwrap
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
+LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
 APPROVED = "e3291fe8fca8fcf70166d5652b43d5a26fa0d762"
+LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
+NATIVE_POLICY = (
+    "$ErrorActionPreference = 'Stop'",
+    "$PSNativeCommandUseErrorActionPreference = $true",
+)
+WINDOWS_NATIVE_COMMANDS = (
+    "cargo +1.94.0 build --locked --release -p oteryn-client --target x86_64-pc-windows-msvc",
+    "cargo +1.94.0 clippy --locked -p oteryn-client --all-targets --target x86_64-pc-windows-msvc -- -D warnings",
+    "cargo +1.94.0 run --locked -p oteryn-client --target x86_64-pc-windows-msvc -- --smoke",
+    "cargo +1.94.0 run --locked -p oteryn-synthetic-client-harness",
+)
+
+
+def _powershell_native_canaries() -> None:
+    """Prove Stop + native-error policy prevents later command masking."""
+    pwsh = shutil.which("pwsh")
+    assert pwsh is not None, "pwsh is required for WP1 native failure-propagation qualification"
+    executable = sys.executable.replace("'", "''")
+
+    def run_case(failure_position: int | None) -> tuple[int, list[bool]]:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            lines = [*NATIVE_POLICY]
+            for index in range(4):
+                marker = str(root / f"command-{index}.hit").replace("'", "''")
+                lines.append(f"Set-Content -LiteralPath '{marker}' -Value hit")
+                code = 7 if failure_position == index else 0
+                lines.append(f"& '{executable}' -c 'import sys; sys.exit({code})'")
+            result = subprocess.run(
+                [pwsh, "-NoProfile", "-NonInteractive", "-Command", "; ".join(lines)],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                timeout=30,
+                check=False,
+            )
+            markers = [(root / f"command-{index}.hit").exists() for index in range(4)]
+            return result.returncode, markers
+
+    result, markers = run_case(None)
+    assert result == 0 and markers == [True] * 4, (result, markers)
+    for position in range(4):
+        result, markers = run_case(position)
+        assert result != 0, (position, result)
+        assert markers[: position + 1] == [True] * (position + 1), (position, markers)
+        assert markers[position + 1 :] == [False] * (3 - position), (position, markers)
 
 
 def main() -> int:
@@ -24,8 +74,31 @@ def main() -> int:
     core = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(core)
     original = GATE.read_text(encoding="utf-8")
-    assert core.git_blob_sha(original.encode()) == APPROVED, "queue PG/SIM activation absent or altered"
+    assert core.git_blob_sha(original.encode()) == APPROVED, "queue protected blob pin drifted"
     assert core.main() == 0, "approved queue workflow must pass full policy"
+
+    candidate = core.indented_yaml_mapping_block(original, "candidate", 2)
+    assert candidate is not None
+    assert LIFECYCLE_COMMAND in candidate, "WP1 RED: required MQ candidate does not execute lifecycle discovery"
+    windows = core.indented_yaml_mapping_block(original, "rust_windows", 2)
+    assert windows is not None
+    for policy in NATIVE_POLICY:
+        assert policy in windows, f"WP1 RED: Merge Queue Windows block lacks fail-closed policy: {policy}"
+    for command in WINDOWS_NATIVE_COMMANDS:
+        assert windows.count(command) == 1, f"required Windows command missing or duplicated: {command}"
+
+    lifecycle = subprocess.run(
+        [sys.executable, str(LIFECYCLE)],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        timeout=60,
+        check=False,
+    )
+    assert lifecycle.returncode == 0, lifecycle.stdout + lifecycle.stderr
+    assert "Ran 2 tests" in lifecycle.stderr and "OK" in lifecycle.stderr, lifecycle.stderr
+    _powershell_native_canaries()
+
     read_text = Path.read_text
 
     def validate(text: str) -> int:
@@ -48,20 +121,37 @@ def main() -> int:
         for replacement in (command.replace("cargo", "echo cargo", 1), "        if: false\n" + command):
             assert validate(original.replace(command, replacement, 1)) != 0
             mutations += 1
-    early_exit = original.replace("          test -f apps/game-server/tests/durability_postgres.rs", "          exit 0\n          test -f apps/game-server/tests/durability_postgres.rs", 1)
+    early_exit = original.replace(
+        "          test -f apps/game-server/tests/durability_postgres.rs",
+        "          exit 0\n          test -f apps/game-server/tests/durability_postgres.rs",
+        1,
+    )
     assert validate(early_exit) != 0
     mutations += 1
+
+    for fragment in (LIFECYCLE_COMMAND, *NATIVE_POLICY):
+        assert original.count(fragment) == 1
+        assert validate(original.replace(fragment, "", 1)) != 0, fragment
+        mutations += 1
 
     block = core.indented_yaml_mapping_block(original, "game_gate", 2)
     assert block is not None
     script = textwrap.dedent(block.split("        run: |\n", 1)[1])
-    predicates = ("CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX", "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN")
+    predicates = (
+        "CANDIDATE", "DEPENDENCY_REVIEW", "CODEQL", "RUST_LINUX",
+        "DURABILITY_POSTGRES", "RUST_WINDOWS", "RUST_SUPPLY_CHAIN",
+    )
     env = dict(os.environ, **dict.fromkeys(predicates, "success"))
     assert subprocess.run(["bash", "-c", script], env=env, check=False).returncode == 0
     for predicate in predicates:
         for failure in ("failure", "skipped", "cancelled", ""):
-            assert subprocess.run(["bash", "-c", script], env=dict(env, **{predicate: failure}), check=False).returncode != 0, (predicate, failure)
-    print(f"Queue PG/SIM regressions PASS: approved blob, {mutations} mutations, 28 fan-in failures and success control")
+            assert subprocess.run(
+                ["bash", "-c", script], env=dict(env, **{predicate: failure}), check=False
+            ).returncode != 0, (predicate, failure)
+    print(
+        "Queue credibility regressions PASS: approved blob, lifecycle discovery, "
+        f"4 native failure positions, {mutations} workflow mutations, 28 fan-in failures and success controls"
+    )
     return 0
 
 
