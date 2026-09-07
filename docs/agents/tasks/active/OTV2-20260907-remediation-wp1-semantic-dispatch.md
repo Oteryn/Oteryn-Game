@@ -4,14 +4,14 @@
 task_id: OTV2-20260907-remediation-wp1-semantic-dispatch
 title: Repair semantic audit affected-scope dispatch
 mode: REPAIR
-status: implementing
+status: review_pending
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: fix/remediation-wp1-semantic-dispatch-364
 issue: 364
-pr: null
+pr: 371
 admission_main_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
-base_sha: b3e637dc43a0a31ff2caf24a6450f7df56b43777
+base_sha: a6f69427d663539c6a8e23f166e69147b66ec078
 head_sha: null
 final_head_sha: null
 owner: WP1_F03_SEMANTIC_DISPATCH
@@ -38,13 +38,13 @@ PROVEN on admission main: dispatcher uses exact equality against E_PATHS/F_PATHS
 
 ## Acceptance criteria
 
-- [ ] Any changed path intersecting one profile selects that profile, even with unrelated additive files.
-- [ ] A one-file relevant change selects its profile.
-- [ ] Multiple affected profiles all run; order/output is deterministic.
-- [ ] No affected paths returns explicit NOT_APPLICABLE.
-- [ ] Existing profile semantic bodies are unchanged unless a test proves a necessary compatibility repair.
-- [ ] Deterministic dispatcher regressions run in the owning architecture semantic workflow.
-- [ ] Workflow triggers, permissions, exact-head resolution and advisory-only authority remain unchanged.
+- [x] Any changed path intersecting one profile selects that profile, even with unrelated additive files.
+- [x] A one-file relevant change selects its profile.
+- [x] Multiple affected profiles all run; order/output is deterministic.
+- [x] No affected paths returns explicit NOT_APPLICABLE.
+- [x] Existing profile semantic bodies are unchanged unless a test proves a necessary compatibility repair.
+- [x] Deterministic dispatcher regressions run in the owning architecture semantic workflow.
+- [x] Workflow triggers, permissions, exact-head resolution and advisory-only authority remain unchanged.
 - [ ] Exact-head canonical CI and one independent deep review pass before integration.
 
 ## Excluded scope
@@ -54,10 +54,10 @@ No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/produc
 ## Context checkpoint
 
 ```yaml
-last_progress: four-path F03 allocation created from protected main
-status: implementing
+last_progress: scope-aware deterministic dispatcher and exact-head workflow regression implemented after normal merge-up of main a6f69427d663539c6a8e23f166e69147b66ec078
+status: review_pending
 branch: fix/remediation-wp1-semantic-dispatch-364
-pr: null
+pr: 371
 blocker: null
-next_action: implement affected-scope profile selection plus deterministic workflow regressions
+next_action: publish the stable material head, obtain exact-head canonical CI and one independent deep review
 ```

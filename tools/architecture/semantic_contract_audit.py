@@ -22,6 +22,16 @@ R_PATHS = {
     "docs/agents/tasks/active/OTV2-20260826-impl-foundation-reconnect-durability.md",
 }
 
+PROFILE_PATHS = (
+    ("ALPHA_CLIENT_01", E_PATHS),
+    ("ANL_02_ANL_03", F_PATHS),
+    ("FOUNDATION_RECONNECT_DURABILITY_V1", R_PATHS),
+)
+
+
+def select_profiles(changed: set[str]) -> list[str]:
+    return [name for name, paths in PROFILE_PATHS if changed & paths]
+
 
 def fail(msg: str) -> None:
     raise SystemExit(f"SEMANTIC_AUDIT_FAIL: {msg}")
@@ -367,18 +377,24 @@ def main() -> None:
         fail(f"checkout SHA mismatch: actual={actual} expected={args.head_sha}")
 
     changed = set(filter(None, git("diff", "--name-only", f"{args.base_sha}...{args.head_sha}").splitlines()))
-    if changed == E_PATHS:
-        profile, checks, verdict = "ALPHA_CLIENT_01", alpha(), "PASS"
-    elif changed == F_PATHS:
-        profile, checks, verdict = "ANL_02_ANL_03", analytics(), "PASS"
-    elif changed == R_PATHS:
-        profile, checks, verdict = "FOUNDATION_RECONNECT_DURABILITY_V1", foundation_reconnect(), "PASS"
-    else:
-        profile, checks, verdict = "NOT_APPLICABLE", [], "NOT_APPLICABLE"
+    selected_profiles = select_profiles(changed)
+    profile_checks = {
+        "ALPHA_CLIENT_01": alpha,
+        "ANL_02_ANL_03": analytics,
+        "FOUNDATION_RECONNECT_DURABILITY_V1": foundation_reconnect,
+    }
+    profiles = [
+        {"profile": profile, "checks": profile_checks[profile](), "verdict": "PASS"}
+        for profile in selected_profiles
+    ]
+    verdict = "PASS" if profiles else "NOT_APPLICABLE"
+    profile_names = ",".join(selected_profiles) if selected_profiles else "NOT_APPLICABLE"
+    checks = [check for profile in profiles for check in profile["checks"]]
 
     result = {
         "method": "dedicated deterministic independent semantic audit workflow",
-        "profile": profile,
+        "profile": profile_names,
+        "profiles": profiles,
         "base_sha": args.base_sha,
         "exact_head_sha": args.head_sha,
         "changed_files": sorted(changed),
@@ -388,14 +404,19 @@ def main() -> None:
         "owner_funded_ai_used": False,
     }
     print(json.dumps(result, indent=2, sort_keys=True))
-    print(f"SEMANTIC_AUDIT_{verdict}: profile={profile} exact_head={args.head_sha}")
+    print(f"SEMANTIC_AUDIT_{verdict}: profile={profile_names} exact_head={args.head_sha}")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         Path(summary).write_text(
             "## Architecture semantic audit\n\n"
             "- method: dedicated deterministic independent semantic audit workflow\n"
-            f"- profile: `{profile}`\n- exact head: `{args.head_sha}`\n- verdict: **{verdict}**\n- owner-funded AI: `false`\n\n"
-            + "\n".join(f"- PASS: {x}" for x in checks) + "\n",
+            f"- profiles: `{profile_names}`\n- exact head: `{args.head_sha}`\n- verdict: **{verdict}**\n- owner-funded AI: `false`\n\n"
+            + "\n".join(
+                f"- {profile['profile']} PASS: {check}"
+                for profile in profiles
+                for check in profile["checks"]
+            )
+            + "\n",
             encoding="utf-8",
         )
 
