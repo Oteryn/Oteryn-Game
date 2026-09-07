@@ -119,7 +119,9 @@ Before application, refresh #420, all open PRs, active tasks and current main.
 At preparation, #419 owns only its prospective Atlas semantic-trigger allocation;
 WP1 special gate custody has been released. #416 remains a separate NOT_ACTIVE
 WP5 routing allocation. Serialize any later overlap rather than transferring
-those lanes implicitly.
+those lanes implicitly. Open Dependabot #257/#258 also touch merge-gate.yml;
+hold their overlapping integration while this repair lease is active. Preserve
+their branches and changes; this allocation grants no dependency-bump work.
 
 WP2 and WP3 may continue their existing path-disjoint source work throughout this
 CONTROL repair. WP4 and Server Seam release conditions remain unchanged.
