@@ -2876,19 +2876,74 @@ fn session_use_observation(
     count: u64,
 ) -> GameSessionUseObservationV1 {
     let committed = (membership == GameSessionCandidateMembershipV1::UsedByExactOperation)
-        .then_some(request.operation_binding);
-    let committed_revision = committed.map(|_| request.expected_membership_revision);
-    GameSessionUseObservationV1::owner_test_observation(
-        request,
-        "game-session-use-ledger",
-        1,
-        request.expected_membership_revision,
+        .then_some(request.operation_binding());
+    let committed_revision = committed.map(|_| request.expected_membership_revision());
+    GameSessionUseObservationV1::from_owner_results(
+        &request,
+        request.expected_membership_revision(),
         GameSessionUseCompletenessV1::Complete,
         membership,
         committed,
         committed_revision,
         count,
     )
+}
+
+struct DurabilityOwnerHandoff {
+    membership_revision: u64,
+}
+
+impl super::super::fnd04_verifier::recovery_source_sealed::Sealed for DurabilityOwnerHandoff {}
+
+impl GameSessionUseObservationSourceV1 for DurabilityOwnerHandoff {
+    fn observe_candidate_use(
+        &self,
+        request: &GameSessionUseRequestV1,
+    ) -> Result<GameSessionUseObservationV1, GameSessionUseAuthorizationErrorV1> {
+        let fence = request.current_fence().require("current owner fence");
+        assert_eq!(request.character_id(), session_use_character(1));
+        assert_eq!(request.candidate(), session_use_id(4));
+        assert_eq!(request.expected_current(), Some(session_use_id(3)));
+        assert_eq!(request.operation_binding()[15], 15);
+        assert_eq!(request.expected_membership_revision(), 7);
+        assert_eq!(fence.current_session(), session_use_id(3));
+        assert_eq!(fence.connection_generation(), 3);
+        assert_eq!(fence.character_lease_generation(), 4);
+        assert_eq!(fence.scope_ownership_generation(), 5);
+        Ok(GameSessionUseObservationV1::from_owner_results(
+            request,
+            self.membership_revision,
+            GameSessionUseCompletenessV1::Complete,
+            GameSessionCandidateMembershipV1::Unused,
+            None,
+            None,
+            self.membership_revision,
+        ))
+    }
+}
+
+#[test]
+fn crate_owner_can_read_request_and_construct_sealed_observation() {
+    let request = session_use_request(session_use_id(3), session_use_id(4), 15, 7);
+    let valid_owner = DurabilityOwnerHandoff {
+        membership_revision: 7,
+    };
+    assert_eq!(
+        GameSessionUseAuthorityV1::from_owning_source(&valid_owner)
+            .authorize_terminal_replacement(request),
+        Ok(GameSessionUseDecisionV1::NewSession {
+            committed_revision: 8
+        })
+    );
+
+    let stale_owner = DurabilityOwnerHandoff {
+        membership_revision: 6,
+    };
+    assert_eq!(
+        GameSessionUseAuthorityV1::from_owning_source(&stale_owner)
+            .authorize_terminal_replacement(request),
+        Err(GameSessionUseAuthorizationErrorV1::StaleAuthority)
+    );
 }
 
 fn authorize_session_use(

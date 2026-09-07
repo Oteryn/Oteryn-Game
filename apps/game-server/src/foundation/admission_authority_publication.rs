@@ -59,6 +59,7 @@ pub struct GameSessionUseCurrentFenceV1 {
     pub(super) scope_ownership_generation: u64,
 }
 
+#[allow(dead_code)] // Reserved for the inactive crate::durability owner handoff.
 impl GameSessionUseCurrentFenceV1 {
     #[must_use]
     pub fn from_snapshot<T: Copy + Eq>(snapshot: GameSessionAuthoritySnapshot<T>) -> Self {
@@ -68,6 +69,26 @@ impl GameSessionUseCurrentFenceV1 {
             character_lease_generation: snapshot.current_character_lease().generation(),
             scope_ownership_generation: snapshot.current_scope_generation().get(),
         }
+    }
+
+    #[must_use]
+    pub(crate) const fn current_session(&self) -> GameSessionId {
+        self.current_session
+    }
+
+    #[must_use]
+    pub(crate) const fn connection_generation(&self) -> u64 {
+        self.connection_generation
+    }
+
+    #[must_use]
+    pub(crate) const fn character_lease_generation(&self) -> u64 {
+        self.character_lease_generation
+    }
+
+    #[must_use]
+    pub(crate) const fn scope_ownership_generation(&self) -> u64 {
+        self.scope_ownership_generation
     }
 }
 
@@ -83,6 +104,7 @@ pub struct GameSessionUseRequestV1 {
     pub(super) current_fence: Option<GameSessionUseCurrentFenceV1>,
 }
 
+#[allow(dead_code)] // Reserved for the inactive crate::durability owner handoff.
 impl GameSessionUseRequestV1 {
     #[allow(clippy::too_many_arguments)]
     #[must_use]
@@ -102,6 +124,36 @@ impl GameSessionUseRequestV1 {
             expected_membership_revision,
             current_fence,
         }
+    }
+
+    #[must_use]
+    pub(crate) const fn character_id(&self) -> CharacterId {
+        self.character_id
+    }
+
+    #[must_use]
+    pub(crate) const fn candidate(&self) -> GameSessionId {
+        self.candidate
+    }
+
+    #[must_use]
+    pub(crate) const fn expected_current(&self) -> Option<GameSessionId> {
+        self.expected_current
+    }
+
+    #[must_use]
+    pub(crate) const fn operation_binding(&self) -> [u8; 16] {
+        self.operation_binding
+    }
+
+    #[must_use]
+    pub(crate) const fn expected_membership_revision(&self) -> u64 {
+        self.expected_membership_revision
+    }
+
+    #[must_use]
+    pub(crate) const fn current_fence(&self) -> Option<GameSessionUseCurrentFenceV1> {
+        self.current_fence
     }
 }
 
@@ -125,13 +177,11 @@ pub struct GameSessionUseObservationV1 {
     pub(super) current_fence: Option<GameSessionUseCurrentFenceV1>,
 }
 
+#[allow(dead_code)] // Reserved for the inactive crate::durability owner handoff.
 impl GameSessionUseObservationV1 {
-    #[cfg(test)]
     #[allow(clippy::too_many_arguments)]
-    pub(super) fn owner_test_observation(
-        request: GameSessionUseRequestV1,
-        source_identity: &str,
-        source_version: u16,
+    pub(crate) fn from_owner_results(
+        request: &GameSessionUseRequestV1,
         membership_revision: u64,
         completeness: GameSessionUseCompletenessV1,
         membership: GameSessionCandidateMembershipV1,
@@ -140,19 +190,19 @@ impl GameSessionUseObservationV1 {
         membership_count: u64,
     ) -> Self {
         Self {
-            character_id: request.character_id,
-            candidate: request.candidate,
-            expected_current: request.expected_current,
-            source_identity: source_identity.into(),
-            source_version,
+            character_id: request.character_id(),
+            candidate: request.candidate(),
+            expected_current: request.expected_current(),
+            source_identity: GAME_SESSION_USE_SOURCE_V1.into(),
+            source_version: GAME_SESSION_USE_SOURCE_VERSION_V1,
             membership_revision,
             completeness,
             membership,
-            operation_binding: request.operation_binding,
+            operation_binding: request.operation_binding(),
             committed_operation_binding,
             committed_membership_revision,
             membership_count,
-            current_fence: request.current_fence,
+            current_fence: request.current_fence(),
         }
     }
 }
