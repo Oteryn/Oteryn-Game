@@ -21,7 +21,6 @@ Use this source order: system/explicit owner instructions -> root and nearest `A
 Before planning writes, read and verify from live `main`:
 
 - `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`;
-- `docs/superpowers/plans/2026-08-24-oteryn-game-next-wave-master-plan.md`;
 - Issue #96 and the accepted #96 decision/allocation packet;
 - FND-02, FND-03, FND-04, NET-TRANSPORT-01 and applicable Foundation failure/resource-limit contracts;
 - ADR-0007 QA E2E and `docs/agents/BUILD_TEST_MATRIX.md`;
@@ -61,7 +60,7 @@ Required before the first write:
 
 - #96 decision packet accepted;
 - exact coordinator implementation allocation merged;
-- lane-specific child Superpowers plan created from that exact allocation;
+- the live allocation/task names any required implementation plan; do not create an extra plan merely because this prompt exists;
 - required shared Cargo/workspace/composition lease assigned to one writer if needed;
 - all exercised peer-controlled counts/sizes/work have accepted finite limits.
 
@@ -92,7 +91,7 @@ Do not turn a test-only listener or direct-domain harness into terminal Tier 1 e
 
 ## TDD and validation ladder
 
-Before implementation, the child plan must name exact tests and commands. Required evidence includes, as applicable:
+Before implementation, the live allocation/task must name exact tests and commands. Required evidence includes, as applicable:
 
 1. failing tests first for malformed/truncated/oversized/unknown messages;
 2. stale connection/session generation and reconnect/fencing negatives;

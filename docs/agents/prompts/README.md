@@ -2,6 +2,8 @@
 
 These prompts are execution contracts for recurring Oteryn v2 programmes. They do not replace trusted-base governance, live task checkpoints, accepted ADRs/contracts or live PR/CI state.
 
+Dispatchability is defined by `../PROMPT_LIFECYCLE.json`: only entries whose current status is `reusable` may be invoked. Retired prompt files remain historical provenance and must not be dispatched.
+
 Owner-facing placement, Work-vs-chat launch guidance, AI review flow and live `DONE / ACTIVE / BLOCKED / READY_NEXT / DO_NOT_LAUNCH` reconciliation are standardized in `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md`. That runbook is operational guidance only; live GitHub and governing authority still decide whether any profile may mutate.
 
 ## Architecture / decision prompts
@@ -9,10 +11,7 @@ Owner-facing placement, Work-vs-chat launch guidance, AI review flow and live `D
 - `OTV2_ARCHITECTURE_CONTINUATION_AGENT.md` — iterative Oteryn-v2 architecture work in architecture/analysis-only mode by default. Short invocation: `Oteryn: architektura`.
 - `OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md` — staged global architecture decision coordinator.
 - `OTV2_DOMAIN_ARCHITECTURE_DESIGN_AGENT.md` — bounded domain architecture design worker allocated by the architecture coordinator.
-- `OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md` — continuation and packaging of the owner-approved Work-control-plane + Sol-lane-lead + selective-Codex execution model. **Short invocation: `Oteryn: sol execution architecture`.**
 - `OTV2_SOL_SUPERVISING_ARCHITECT.md` — material cross-lane Game architecture decision role for durable escalation packets. **Short invocation: `Oteryn: sol supervising architect`.**
-
-The Sol execution architecture prompt is governance/architecture only. It validates the written execution-model spec against live GitHub, requires owner confirmation of that written spec before authoring the adoption plan, and then packages the future Sol lane-lead prompt family. It grants no gameplay/runtime, production or cross-repository authority.
 
 The Sol Supervising Architect is not a routine coding lane. It resolves `ARCHITECTURE_ESCALATION_REQUIRED` within existing owner-approved architecture authority and returns `OWNER_DECISION_REQUIRED` when product/scope/authority decisions exceed that boundary. Architecture resolution grants neither implicit runtime write authority nor merge authority: the architect cannot merge, auto-merge, close out as canonical or otherwise integrate any PR/decision it authored or materially changed, and must hand the exact artifact to the uniquely active control plane or another separately authorized merge role.
 
@@ -88,23 +87,6 @@ The Work auditor independently reconstructs coordinator execution from live GitH
 
 The auditor still has no tracked-file, branch/commit, implementation/fix, control-plane, merge/close/approve, workflow-dispatch, production or cross-repository write authority. If it materially authored the target in another role, its result cannot count as genuinely independent. Head movement makes prior audit evidence historical; the new head requires a fresh audit for qualification. It does not supersede the broader `OTV2_INDEPENDENT_PROGRAMME_ARCHITECTURE_AUDIT`.
 
-### Next-wave parallel preparation
-
-- `OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md` — preparation-wave launcher/matrix. **Short invocation: `Oteryn: next-wave prep swarm`.**
-- `OTV2_PREP_WAVE2_RESOURCE_LIMITS.md` — Issue #93 resource-limit decision preparation. `Oteryn: prep resource limits`.
-- `OTV2_PREP_DURABILITY_TOPOLOGY.md` — Issue #94 Durability topology preparation. `Oteryn: prep durability topology`.
-- `OTV2_CONTENT_FORMAT_SPIKE.md` — Issue #95 evidence-only Content format spike. `Oteryn: content format spike`.
-- `OTV2_PREP_SERVER_SEAM.md` — Issue #96 production gameplay server-seam preparation. `Oteryn: prep server seam`.
-- `OTV2_PREP_PROGRAMME_STATUS.md` — Issue #97 maintained programme-status reconciliation. `Oteryn: prep programme status`.
-
-These preparation prompts are deliberately isolated by domain. They may run concurrently only after each agent verifies live Issue/task ownership and disjoint paths. They do not grant implementation authority. Release Durability/Ability/Interaction/AI/Server Seam independently when their own master-plan gates close; do not wait for unrelated preparation work merely for symmetry.
-
-### Next-wave blocker closure
-
-- `OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md` — owner-authorized blocker-closure coordinator for #93/#115/#116/#123. **Short invocation: `Oteryn: close next-wave blockers`.**
-
-This coordinator may accept conservative evidence-backed first-slice hard maxima only inside the bounded owner authorization recorded by Issue #128, serializes registry canonicalization, and may carry the #115 Foundation verifier/consumer blocker through its separately allocated implementation lifecycle. It grants no Server Seam/gameplay implementation or production/Platform/external-repository authority.
-
 ### Direct worker aliases
 
 Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A worker MUST verify a live coordinator allocation naming its lane and exact owned paths before any write. Without that allocation it remains read-only and does not create its own scope.
@@ -124,8 +106,16 @@ Direct aliases exist for recovery or an explicitly coordinator-allocated lane. A
 - `OTV2_IMPL_VSL_MOVEMENT.md` — `Oteryn: impl movement`.
 - `OTV2_IMPL_VSL_COMBAT.md` — `Oteryn: impl combat`.
 - `OTV2_IMPL_GAME_CHANNEL.md` — `Oteryn: impl channel` (later multichannel product lane; not a first bootstrap dependency).
-- `OTV2_CONTENT_FORMAT_SPIKE.md` — `Oteryn: content format spike` (evidence only; cannot select permanent format by itself).
 - `OTV2_IMPL_ANALYTICS.md` — `Oteryn: impl analytics` (later; requires concrete producer event families).
+
+## Historical one-shot prompts — do not dispatch
+
+The following files are retained only for provenance. Their lifecycle entries are `retired`; future work must resolve the current coordinator, DAG and live allocation instead of invoking these aliases:
+
+- `OTV2_CLOSE_NEXT_WAVE_BLOCKERS.md` — terminal blocker closure through #131/#152.
+- `OTV2_NEXT_WAVE_PARALLEL_PREPARATION.md`, `OTV2_PREP_WAVE2_RESOURCE_LIMITS.md`, `OTV2_PREP_DURABILITY_TOPOLOGY.md`, `OTV2_CONTENT_FORMAT_SPIKE.md`, `OTV2_PREP_SERVER_SEAM.md`, `OTV2_PREP_PROGRAMME_STATUS.md` — preparation Issues #93-#97 are completed.
+- `OTV2_SOL_EXECUTION_ARCHITECTURE_CONTINUATION.md` — #179 design delivery is complete; current scheduler/role contracts are the active execution surface.
+- `OTV2_POST_SIM_WAVE1_PARALLEL_LAUNCH.md` — previously retired post-SIM one-shot launch guidance.
 
 ## Safety / authority
 
