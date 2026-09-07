@@ -54,7 +54,7 @@ No merge-group/merge-gate/game-gate fan-in, protected audit/pins, runtime/produc
 ## Context checkpoint
 
 ```yaml
-last_progress: fresh exact-head review found cached-request and aliased-controller early-success paths plus ordinary profile exceptions; the coherent repair validates complete permitted V1/V2 authorize/reconciliation bodies and aggregates ordinary exceptions without catching cancellation on protected base 10446c31b2508ccf6b65cc609a35246bf2666567
+last_progress: fresh exact-head review found cfg-shadowed audited definitions and comment braces affecting structural scans; the coherent repair now uses offset-preserving Rust lexical masking, requires unique unconditional top-level helpers and impls with direct audited methods, and preserves complete method-body validation on protected base 10b6be51551af5d70d45b4f56c2f6d3e8f6dc528
 status: review_pending
 branch: fix/remediation-wp1-semantic-dispatch-364
 pr: 371

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse, json, os, re, subprocess
 from collections.abc import Callable
+from functools import lru_cache
 from pathlib import Path
 
 E_PATHS = {
@@ -266,33 +267,129 @@ def text(path: str) -> str:
     return p.read_text(encoding="utf-8")
 
 
-def rust_braced_block(doc: str, marker: str, label: str) -> str:
-    start = doc.find(marker)
-    if start < 0:
-        fail(f"{label}: missing {marker!r}")
-    marker_opening = marker.find("{")
-    opening = (
-        start + marker_opening
-        if marker_opening >= 0
-        else doc.find("{", start + len(marker))
-    )
-    if opening < 0:
-        fail(f"{label}: missing opening brace")
+@lru_cache(maxsize=16)
+def rust_lexical_mask(doc: str, *, mask_literals: bool) -> str:
+    """Mask Rust comments and, optionally, literals while preserving offsets."""
+    masked = list(doc)
+    lexeme = re.compile(r'//|/\*|(?:br|cr|r)#{0,255}"|"|\'')
+    block_delimiter = re.compile(r"/\*|\*/")
+
+    def blank(start: int, end: int) -> None:
+        for position in range(start, end):
+            if masked[position] not in "\r\n":
+                masked[position] = " "
+
+    index = 0
+    while index < len(doc):
+        found = lexeme.search(doc, index)
+        if found is None:
+            break
+        index = found.start()
+        token = found.group(0)
+        if token == "//":
+            end = doc.find("\n", index + 2)
+            end = len(doc) if end < 0 else end
+            blank(index, end)
+            index = end
+            continue
+        if token == "/*":
+            depth = 1
+            end = index + 2
+            while end < len(doc) and depth:
+                delimiter = block_delimiter.search(doc, end)
+                if delimiter is None:
+                    end = len(doc)
+                    break
+                end = delimiter.end()
+                if delimiter.group(0) == "/*":
+                    depth += 1
+                else:
+                    depth -= 1
+            blank(index, end)
+            index = end
+            continue
+
+        raw = re.fullmatch(r"(?:br|cr|r)(#{0,255})\"", token)
+        if raw is not None and (
+            index == 0 or not (doc[index - 1].isalnum() or doc[index - 1] == "_")
+        ):
+            terminator = '"' + raw.group(1)
+            end = doc.find(terminator, found.end())
+            end = len(doc) if end < 0 else end + len(terminator)
+            if mask_literals:
+                blank(index, end)
+            index = end
+            continue
+
+        quote = None
+        if token.endswith('"'):
+            index = found.end() - 1
+            quote = '"'
+        elif token == "'":
+            candidate = index + 1
+            if candidate < len(doc) and doc[candidate] == "\\":
+                if doc.startswith("\\u{", candidate):
+                    closing = doc.find("}", candidate + 3)
+                    candidate = len(doc) if closing < 0 else closing + 1
+                elif doc.startswith("\\x", candidate):
+                    candidate += 4
+                else:
+                    candidate += 2
+            else:
+                candidate += 1
+            if candidate < len(doc) and doc[candidate] == "'":
+                quote = "'"
+        if quote is not None:
+            end = index + 1
+            while end < len(doc):
+                if doc[end] == "\\":
+                    end += 2
+                    continue
+                if doc[end] == quote:
+                    end += 1
+                    break
+                end += 1
+            if mask_literals:
+                blank(index, end)
+            index = end
+            continue
+        index += 1
+    return "".join(masked)
+
+
+def rust_braced_end(code: str, opening: int, label: str) -> int:
     depth = 0
-    for index in range(opening, len(doc)):
-        if doc[index] == "{":
+    for index in range(opening, len(code)):
+        if code[index] == "{":
             depth += 1
-        elif doc[index] == "}":
+        elif code[index] == "}":
             depth -= 1
             if depth == 0:
-                return doc[start : index + 1]
+                return index + 1
     fail(f"{label}: missing closing brace")
+
+
+def rust_braced_block_at(doc: str, start: int, label: str) -> str:
+    code = rust_lexical_mask(doc, mask_literals=True)
+    opening = code.find("{", start)
+    if opening < 0:
+        fail(f"{label}: missing opening brace")
+    return doc[start : rust_braced_end(code, opening, label)]
+
+
+def rust_braced_block(doc: str, marker: str, label: str) -> str:
+    code = rust_lexical_mask(doc, mask_literals=True)
+    start = code.find(marker)
+    if start < 0:
+        fail(f"{label}: missing {marker!r}")
+    return rust_braced_block_at(doc, start, label)
 
 
 def rust_braced_blocks(doc: str, marker: str, label: str) -> list[str]:
     blocks = []
     search_from = 0
-    while (start := doc.find(marker, search_from)) >= 0:
+    code = rust_lexical_mask(doc, mask_literals=True)
+    while (start := code.find(marker, search_from)) >= 0:
         block = rust_braced_block(doc[start:], marker, label)
         blocks.append(block)
         search_from = start + len(block)
@@ -301,17 +398,81 @@ def rust_braced_blocks(doc: str, marker: str, label: str) -> list[str]:
     return blocks
 
 
+def rust_has_conditional_attribute(code: str, item_start: int) -> bool:
+    square_depth = 0
+    boundary = -1
+    for position in range(item_start - 1, -1, -1):
+        character = code[position]
+        if character == "]":
+            square_depth += 1
+        elif character == "[" and square_depth:
+            square_depth -= 1
+        elif square_depth == 0 and character in ";{}":
+            boundary = position
+            break
+    prefix = code[boundary + 1 : item_start]
+    return re.search(r"#\s*\[\s*cfg(?:_attr)?\b", prefix) is not None
+
+
+def rust_brace_depth(code: str, position: int) -> int:
+    return code.count("{", 0, position) - code.count("}", 0, position)
+
+
+def rust_named_function(doc: str, name: str, label: str) -> str:
+    code = rust_lexical_mask(doc, mask_literals=True)
+    matches = list(re.finditer(rf"\bfn\s+{re.escape(name)}\b", code))
+    if len(matches) != 1:
+        fail(f"{label}: expected exactly one function, found {len(matches)}")
+    start = matches[0].start()
+    if rust_brace_depth(code, start) != 0:
+        fail(f"{label}: audited function must be a top-level item")
+    if rust_has_conditional_attribute(code, start):
+        fail(f"{label}: conditional audited definition")
+    return rust_braced_block_at(doc, start, label)
+
+
 def rust_impl_method(
     doc: str, impl_marker: str, method_marker: str, label: str
 ) -> str:
-    methods = [
-        rust_braced_block(block, method_marker, label)
-        for block in rust_braced_blocks(doc, impl_marker, label)
-        if method_marker in block
-    ]
+    impl_type_match = re.search(r"\bimpl\s+([A-Za-z_][A-Za-z0-9_]*)", impl_marker)
+    method_name_match = re.search(r"\bfn\s+([A-Za-z_][A-Za-z0-9_]*)", method_marker)
+    if impl_type_match is None or method_name_match is None:
+        fail(f"{label}: invalid audited declaration marker")
+    impl_type = impl_type_match.group(1)
+    method_name = method_name_match.group(1)
+    code = rust_lexical_mask(doc, mask_literals=True)
+    methods: list[tuple[int, bool]] = []
+    impl_pattern = re.compile(
+        rf"\bimpl\s+(?:<[^{{}};]*>\s*)?"
+        rf"(?:{re.escape(impl_type)}\b|[^{{}};]*?\bfor\s+{re.escape(impl_type)}\b)"
+        rf"[^{{}};]*?\{{"
+    )
+    for impl_match in impl_pattern.finditer(code):
+        impl_start = impl_match.start()
+        opening = impl_match.end() - 1
+        if rust_brace_depth(code, impl_start) != 0:
+            fail(f"{label}: audited impl must be a top-level item")
+        block_end = rust_braced_end(code, opening, f"{impl_type} impl")
+        impl_conditional = rust_has_conditional_attribute(code, impl_start)
+        for method in re.finditer(
+            rf"\bfn\s+{re.escape(method_name)}\b", code[opening + 1 : block_end - 1]
+        ):
+            method_start = opening + 1 + method.start()
+            if rust_brace_depth(code, method_start) != 1:
+                fail(f"{label}: audited method must be a direct impl item")
+            methods.append(
+                (
+                    method_start,
+                    impl_conditional
+                    or rust_has_conditional_attribute(code, method_start),
+                )
+            )
     if len(methods) != 1:
         fail(f"{label}: expected exactly one method, found {len(methods)}")
-    return methods[0]
+    method_start, conditional = methods[0]
+    if conditional:
+        fail(f"{label}: conditional audited definition")
+    return rust_braced_block_at(doc, method_start, label)
 
 
 def compact(doc: str) -> str:
@@ -323,7 +484,7 @@ def compact_rust(doc: str) -> str:
 
 
 def rust_without_comments(doc: str) -> str:
-    return re.sub(r"//[^\n]*|/\*.*?\*/", "", doc, flags=re.DOTALL)
+    return rust_lexical_mask(doc, mask_literals=False)
 
 
 def need_exact(doc: str, expected: str, label: str) -> None:
@@ -601,9 +762,9 @@ def foundation_reconnect_documents(
         "COMMIT committed/ambiguous requires reconciliation",
     )
 
-    authority_matcher_source = rust_braced_block(
+    authority_matcher_source = rust_named_function(
         implementation,
-        "fn current_authority_matches_record(",
+        "current_authority_matches_record",
         "complete current authority matcher",
     )
     authority_matcher = compact_rust(rust_without_comments(authority_matcher_source))
@@ -625,9 +786,9 @@ def foundation_reconnect_documents(
             "complete current authority matcher",
         )
 
-    evidence_matcher_source = rust_braced_block(
+    evidence_matcher_source = rust_named_function(
         implementation,
-        "fn authenticated_evidence_observed_by(",
+        "authenticated_evidence_observed_by",
         "authenticated evidence observation matcher",
     )
     evidence_matcher = compact_rust(rust_without_comments(evidence_matcher_source))

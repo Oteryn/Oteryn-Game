@@ -209,6 +209,211 @@ class SemanticContractAuditDispatchTests(unittest.TestCase):
                     audit.foundation_reconnect_documents(task, mutated, verifier)
                 )
 
+    def test_rust_scanner_ignores_comment_and_literal_tokens(self) -> None:
+        source = r'''
+fn target() {
+    let normal = "} fn target() { // not a comment";
+    let raw = br###"{ /* fn target() {} */ }"###;
+    let byte = b'}';
+    let unicode = '\u{7d}';
+    // unmatched closing brace: } fn target() {
+    /* unmatched opening braces: { { /* nested } */
+       fn target() { */
+}
+'''
+        block = audit.rust_named_function(source, "target", "synthetic target")
+        self.assertTrue(block.rstrip().endswith("}"))
+        self.assertIn('"} fn target() { // not a comment"', block)
+        self.assertIn('br###"{ /* fn target() {} */ }"###', block)
+
+    def test_foundation_oracle_allows_unmatched_comment_braces(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        targets = (
+            audit.rust_named_function(
+                implementation,
+                "current_authority_matches_record",
+                "authority helper",
+            ),
+            audit.rust_impl_method(
+                implementation,
+                "impl ReconnectDurabilityFlowV1 {",
+                "pub fn authorize_commit(",
+                "V1 authorize_commit",
+            ),
+        )
+        comment = (
+            " // unmatched closing brace and fake declaration: } fn authorize_commit() {\n"
+            " /* unmatched opening braces: { { /* nested } */ */ "
+        )
+        for target in targets:
+            opening = target.index("{") + 1
+            commented = target[:opening] + comment + target[opening:]
+            mutated = implementation.replace(target, commented, 1)
+            with self.subTest(target=target.split("(", 1)[0]):
+                self.assertTrue(
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+                )
+
+    def test_foundation_oracle_finds_whitespace_and_comment_spaced_declarations(
+        self,
+    ) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        mutated = implementation.replace(
+            "impl ReconnectDurabilityFlowV1 {",
+            "impl /* scanner spacing */\n ReconnectDurabilityFlowV1\n {",
+            1,
+        ).replace(
+            "pub fn authorize_commit(",
+            "pub\n /* scanner spacing */ fn\n authorize_commit(",
+            1,
+        )
+        self.assertTrue(audit.foundation_reconnect_documents(task, mutated, verifier))
+
+    def test_foundation_oracle_rejects_cfg_shadowed_audited_methods(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        for version, method_name in (
+            ("V1", "authorize_commit"),
+            ("V1", "accept_reconciliation"),
+            ("V2", "authorize_commit"),
+            ("V2", "accept_reconciliation"),
+        ):
+            method = audit.rust_impl_method(
+                implementation,
+                f"impl ReconnectDurabilityFlow{version} {{",
+                f"pub fn {method_name}(",
+                f"{version} {method_name}",
+            )
+            declaration = "pub " + method
+            shadowed = "#[cfg(any())]\n" + declaration + "\npub\n" + method
+            mutated = implementation.replace(declaration, shadowed, 1)
+            with self.subTest(version=version, method=method_name):
+                with self.assertRaisesRegex(SystemExit, "exactly one method"):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_cfg_controlled_audited_declarations(
+        self,
+    ) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        method = audit.rust_impl_method(
+            implementation,
+            "impl ReconnectDurabilityFlowV1 {",
+            "pub fn authorize_commit(",
+            "V1 authorize_commit",
+        )
+        helper = audit.rust_named_function(
+            implementation,
+            "current_authority_matches_record",
+            "authority helper",
+        )
+        cfg_then_braced_doc = '#[cfg(any())]\n#[doc = concat! { "dormant" }]\n'
+        cfg_attr_then_braced_doc = (
+            '#[cfg_attr(any(), cfg(any()))]\n#[doc = concat! { "dormant" }]\n'
+        )
+        cases = (
+            implementation.replace(
+                "pub " + method, "#[cfg(any())]\npub " + method, 1
+            ),
+            implementation.replace(
+                "pub " + method, cfg_attr_then_braced_doc + "pub " + method, 1
+            ),
+            implementation.replace(
+                "impl ReconnectDurabilityFlowV1 {",
+                cfg_then_braced_doc + "impl ReconnectDurabilityFlowV1 {",
+                1,
+            ),
+            implementation.replace(
+                helper, cfg_then_braced_doc + helper, 1
+            ),
+        )
+        for mutated in cases:
+            with self.subTest(case=cases.index(mutated)):
+                with self.assertRaisesRegex(SystemExit, "conditional audited"):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_cfg_shadowed_helper(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        helper = audit.rust_named_function(
+            implementation,
+            "current_authority_matches_record",
+            "authority helper",
+        )
+        shadowed = "#[cfg(any())]\n" + helper + "\n" + helper
+        mutated = implementation.replace(helper, shadowed, 1)
+        with self.assertRaisesRegex(SystemExit, "exactly one function"):
+            audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_nested_audited_items(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        helper = audit.rust_named_function(
+            implementation,
+            "current_authority_matches_record",
+            "authority helper",
+        )
+        flow_impl = audit.rust_braced_block(
+            implementation,
+            "impl ReconnectDurabilityFlowV1 {",
+            "V1 impl",
+        )
+        cases = (
+            (
+                implementation.replace(
+                    helper,
+                    "#[cfg(any())]\nmod dormant_helper {\n" + helper + "\n}",
+                    1,
+                ),
+                "top-level item",
+            ),
+            (
+                implementation.replace(
+                    flow_impl,
+                    "#[cfg(any())]\nmod dormant_impl {\n" + flow_impl + "\n}",
+                    1,
+                ),
+                "top-level item",
+            ),
+        )
+        for mutated, expected in cases:
+            with self.subTest(expected=expected):
+                with self.assertRaisesRegex(SystemExit, expected):
+                    audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_rejects_method_in_nested_impl(self) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        method = audit.rust_impl_method(
+            implementation,
+            "impl ReconnectDurabilityFlowV1 {",
+            "pub fn authorize_commit(",
+            "V1 authorize_commit",
+        )
+        declaration = "pub " + method
+        mutated = implementation.replace(declaration, "", 1)
+        mutated += (
+            "\nfn scanner_container() {\n"
+            "impl ReconnectDurabilityFlowV1 {\npub "
+            + method
+            + "\n}\n}\n"
+        )
+        with self.assertRaisesRegex(SystemExit, "top-level item"):
+            audit.foundation_reconnect_documents(task, mutated, verifier)
+
+    def test_foundation_oracle_allows_unconditional_and_unrelated_attributes(
+        self,
+    ) -> None:
+        task, implementation, verifier = self._foundation_documents()
+        helper = audit.rust_named_function(
+            implementation,
+            "current_authority_matches_record",
+            "authority helper",
+        )
+        mutated = implementation.replace(helper, "#[inline]\n" + helper, 1)
+        mutated += r'''
+#[cfg(any())]
+impl UnrelatedScannerProbe {
+    pub fn authorize_commit(&self) { let marker = "fn authorize_commit() {"; }
+}
+'''
+        self.assertTrue(audit.foundation_reconnect_documents(task, mutated, verifier))
+
     def test_foundation_oracle_rejects_relaxed_authorize_guards_per_version(self) -> None:
         task, implementation, verifier = self._foundation_documents()
         mutations = (
