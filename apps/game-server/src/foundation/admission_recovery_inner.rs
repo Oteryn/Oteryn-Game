@@ -4356,7 +4356,7 @@ fn complete_replacement_anchor(
     CompleteReplacementAnchorV1 {
         identity: recovery.identity.clone(),
         predecessor_session: original.session.commit().game_session_id(),
-        candidate: original.candidate.clone(),
+        candidate: original.candidate,
         prepared_at: recovery.prepared_at,
         loss_epoch: original.loss.observation.loss_epoch,
         loss_decided_at: original.loss_decided_at,

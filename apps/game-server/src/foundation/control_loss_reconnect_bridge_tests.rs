@@ -471,6 +471,8 @@ fn bridge_fixture(replacement: bool) -> (BridgeOwner, ReconnectIdentityV1, Strin
     )
     .require("candidate");
     let snapshot = CompleteReconnectSnapshotV1 {
+        replacement_anchor: None,
+        predecessor_attempts: vec![],
         loss: effect.operation().clone(),
         loss_decided_at: 100,
         source_authority: session.current_runtime_scope(),
@@ -594,6 +596,8 @@ fn prepare_bridge(
         owner.current.snapshot.session.session_state()
     );
     assert_eq!(effect.protection(), owner.current.snapshot.protection);
+    owner.current.snapshot.replacement_anchor = effect.replacement_anchor().cloned();
+    owner.current.snapshot.claims = effect.claims().to_vec();
     owner.current.snapshot.budget = effect.budget().clone();
     owner.current.prepared = Some(Box::new(flow.operation().recovery.clone()));
     report(
@@ -624,7 +628,10 @@ fn complete_bridge_real_not_entitled_v1_v2_and_replacement_round_trip() {
             effect.protection().usage,
             RecoveryProtectionUseV1::NotEntitled
         );
-        assert_eq!(effect.session().current_connection_generation().get(), 2);
+        assert_eq!(
+            effect.session().current_connection_generation().get(),
+            if replacement { 1 } else { 2 }
+        );
         assert_eq!(effect.budget().state(), RecoveryEpochStateV1::Restored);
         report(
             &mut flow,
@@ -632,6 +639,7 @@ fn complete_bridge_real_not_entitled_v1_v2_and_replacement_round_trip() {
         );
         assert!(flow.adopt_current(&owner, 101).is_err());
         owner.current.snapshot.session = effect.session();
+        owner.current.snapshot.replacement_anchor = effect.replacement_anchor().cloned();
         owner.current.snapshot.budget = effect.budget().clone();
         owner.current.snapshot.protection = effect.protection();
         owner.current.snapshot.claims = effect.claims().to_vec();
@@ -642,7 +650,7 @@ fn complete_bridge_real_not_entitled_v1_v2_and_replacement_round_trip() {
             .require("independent current adoption");
         assert_eq!(
             controller.transport(),
-            effect.session().current_transport().require("transport")
+            effect.operation().recovery.original.candidate.transport_ref()
         );
     }
 }
@@ -982,7 +990,10 @@ fn complete_bridge_all_protection_histories_and_budgets() {
                     }
                 }
             );
-            assert_eq!(effect.session().current_connection_generation().get(), 2);
+            assert_eq!(
+                effect.session().current_connection_generation().get(),
+                if replacement { 1 } else { 2 }
+            );
             assert_eq!(effect.operation().recovery.original.loss_decided_at, 100);
         }
     }
@@ -1046,6 +1057,7 @@ fn committed_bridge(replacement: bool, v2: bool) -> (CompleteReconnectFlowV1, Br
         CompleteReconnectOutcomeV1::Committed { decided_at: 101 },
     );
     owner.current.snapshot.session = effect.session();
+    owner.current.snapshot.replacement_anchor = effect.replacement_anchor().cloned();
     owner.current.snapshot.budget = effect.budget().clone();
     owner.current.snapshot.protection = effect.protection();
     owner.current.snapshot.claims = effect.claims().to_vec();
@@ -1717,4 +1729,59 @@ fn early_terminal_prepare_transfers_claims_before_candidate_commit() {
         .validate_locked(&owner, 100).require("prepare");
     assert_eq!(effect.claims(), expected);
     assert_eq!(effect.session().commit(), owner.current.snapshot.session.commit());
+    let anchor = effect.replacement_anchor().require("replacement anchor");
+    assert_eq!(anchor.state, GameSessionState::Reconnectable);
+    assert_eq!(anchor.transport, None);
+    assert_eq!(
+        anchor.connection_generation,
+        owner.current.snapshot.session.current_connection_generation()
+    );
+    assert_eq!(anchor.receipt.successors, expected);
+    assert_eq!(
+        effect.session().commit(),
+        flow.operation().recovery.original.session.commit()
+    );
+}
+
+#[test]
+fn early_terminal_prepared_resume_rejects_fabricated_or_stale_anchor() {
+    let (mut owner, identity, token) = bridge_fixture(true);
+    let flow = prepare_bridge(&mut owner, identity, &token, true);
+    assert!(CompleteReconnectAuthorizationV1::reauthorize_history(
+        flow.operation().recovery.clone(),
+        proof(&owner, &token, true, 101),
+        &owner,
+        101,
+    )
+    .is_ok());
+
+    for case in 0..4 {
+        let mut changed = owner.clone();
+        let anchor = changed
+            .current
+            .snapshot
+            .replacement_anchor
+            .as_mut()
+            .require("prepared anchor");
+        match case {
+            0 => anchor.receipt.prepared_at -= 1,
+            1 => {
+                anchor.candidate.transport_ref =
+                    AuthenticatedTransportRefV1::decode(&[7; 16]).require("wrong transport")
+            }
+            2 => anchor.predecessor_session = anchor.identity.game_session_id(),
+            3 => {
+                anchor.connection_generation =
+                    ConnectionGeneration::new(2).require("stale predecessor generation")
+            }
+            _ => unreachable!(),
+        }
+        assert!(CompleteReconnectAuthorizationV1::reauthorize_history(
+            flow.operation().recovery.clone(),
+            proof(&changed, &token, true, 101),
+            &changed,
+            101,
+        )
+        .is_err(), "case {case}");
+    }
 }
