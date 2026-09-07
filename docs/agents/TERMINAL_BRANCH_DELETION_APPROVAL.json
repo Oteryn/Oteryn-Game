@@ -5,9 +5,9 @@
   "entries_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
   "issue": 1050,
   "policy_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
-  "review_summary": "Fail-closed placeholder used only to generate the first exact read-only Game branch inventory. Replace with a reviewed live digest before integration.",
-  "reviewed_at": "2026-09-07T18:58:00Z",
+  "review_summary": "Fail-closed refreshed Game inventory after terminalizing seven previously ambiguous non-recovery refs. Recovery refs remain intentionally preserved; replace with the exact reviewed live digest only after this new artifact is inspected.",
+  "reviewed_at": "2026-09-07T19:27:00Z",
   "reviewed_by": "Oteryn final cleanup #176/#399",
   "schema_version": 1,
-  "source_artifact": "pending terminal-branch-lifecycle read artifact"
+  "source_artifact": "pending refreshed terminal-branch-lifecycle read artifact"
 }
