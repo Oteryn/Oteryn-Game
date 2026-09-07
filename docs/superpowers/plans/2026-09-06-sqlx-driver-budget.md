@@ -134,3 +134,17 @@ fallback. Treat `TLS_BLOCKING_OWNER = PROVEN` narrowly: complete TLS phase,
 configuration/session/cache lifetime composition remains the next gate. Do not
 activate the shared PostgreSQL target or claim WP3 accepted until complete TLS
 and separate real TLS-positive evidence are proven.
+
+## Window7 complete-TLS stop
+
+The owned Tokio/certificate-loader prerequisite stays proven.  The next complete
+TLS step is blocked before PostgreSQL work: rustls 0.23.43 private
+`DeframerVecBuffer::prepare_read` resizes/shrinks its incoming backing before the
+SQLx reader is called, with no public actual-capacity or pre-growth custody hook.
+Request the exact prospective
+`vendor/rustls-0.23.43/src/msgs/deframer/buffers.rs` owner hook and necessary
+public wiring.  It must reserve actual requested backing and old/new overlap from
+the same ledger before mutation and retain custody through actual free/transfer.
+Do not copy a private capacity schedule, reserve opaque magic bytes, weaken TLS,
+or activate the include-only PostgreSQL target.  Configuration/decoder/session
+cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.

@@ -602,3 +602,38 @@ shutdown. This proves the blocking-loader component, not the complete TLS gate:
 activation in `CertificateInput`, retained rustls configuration/session/cache
 ownership, full handshake phase overlap, actual TLS-positive evidence and
 PostgreSQL 17.6 qualification remain OPEN.
+
+## Window7 complete-TLS stop: rustls deframer owns pre-observation growth
+
+The protected Tokio/certificate-loader prerequisite remains **PROVEN**, but it is
+not complete TLS proof.  Continuing the configured rustls 0.23.43 handshake
+reaches a different allocation owner outside every admitted SQLx/Tokio path.
+`ConnectionCommon::read_tls` calls the private
+`DeframerVecBuffer::read`; `read` calls private `prepare_read` *before* invoking
+the SQLx-supplied `Read`.  `prepare_read` grows or replaces its private `Vec<u8>`
+with `resize` and `shrink_to`, including old/new growth overlap.  Only after that
+allocation has succeeded can the SQLx `StdSocket` return the number of bytes read.
+The public rustls surface exposes neither deframer capacity nor a fallible
+pre-growth reservation/custody callback.  Calling `read_tls` in a more granular
+SQLx loop therefore remains post-allocation observation, while reserving a copied
+private capacity schedule or an opaque whole-handshake allowance would violate
+the accepted actual-capacity/no-magic-reservation invariant.
+
+`SHARED_LEASE_REQUIRED = rustls-0.23.43/src/msgs/deframer/buffers.rs ::
+DeframerVecBuffer::{prepare_read,read}` (prospective vendored path
+`vendor/rustls-0.23.43/src/msgs/deframer/buffers.rs`).  The required resource is
+the incoming TLS deframer `Vec<u8>` actual capacity and every temporary old/new
+backing during growth/shrink.  The accepted invariant is reservation from the
+same operation ledger before each backing allocation, followed by custody until
+that exact backing is freed or a proved charged transfer occurs across success,
+TLS error, cancellation, connection/session lifetime and drop.  The smallest
+next decision is a protected rustls owner hook (plus its necessary public wiring)
+that reports/accepts the concrete requested allocation before mutation and keeps
+the permit with the private backing.  It must preserve rustls' existing wire
+limits, versions, verification and I/O behavior; it cannot be a fixed private
+layout constant, plaintext substitution or unowned fallback.
+
+No rustls file was modified.  Configuration/decoder/session-cache and handshake
+overlap accounting, actual TLS-positive qualification and PostgreSQL17.6 remain
+OPEN behind this first newly proven owner boundary.  The include-only shared
+PostgreSQL target was not changed or executed, and no PostgreSQL credit follows.

@@ -296,3 +296,34 @@ status: implementation_in_progress
 tls_blocking_owner: PROVEN
 next_action: complete and test TLS capacity/lifetime composition before any broad PostgreSQL decoder work or shared-target inclusion
 ```
+
+## Window7 complete-TLS owner boundary
+
+The narrow `TLS_BLOCKING_OWNER` result remains **PROVEN** for the configured
+Tokio certificate-loader path.  Complete TLS is now stopped at the next actual
+allocation owner: rustls 0.23.43 private
+`src/msgs/deframer/buffers.rs::DeframerVecBuffer::{prepare_read,read}` grows and
+shrinks its incoming `Vec<u8>` before calling the SQLx-provided reader.  SQLx can
+observe returned byte count only after that allocation, and rustls exposes no
+public capacity/pre-growth custody hook.  An SQLx wrapper, copied private growth
+schedule or whole-handshake reservation cannot prove the required actual
+capacity and old/new-overlap custody.
+
+`SHARED_LEASE_REQUIRED = prospective vendor/rustls-0.23.43/src/msgs/deframer/buffers.rs`,
+with necessary public owner wiring, solely for a fallible same-ledger pre-growth
+reservation retained by the private deframer backing until real free or proved
+charged transfer.  Preserve all TLS limits, modes, versions, certificate and
+hostname verification, cache/security behavior and ordinary rustls behavior.
+No rustls, PostgreSQL or shared-target source was changed.  Complete
+configuration/decoder/session-cache/handshake overlap, real TLS-positive proof,
+configured PostgreSQL17.6 qualification, independent review, canonical CI/MQ,
+protected readback and shared-target release remain OPEN.
+
+```yaml
+last_progress: proved the first complete-TLS allocation-owner boundary after the narrow blocking-loader prerequisite
+status: blocked_pending_shared_lease
+tls_blocking_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+blocker: rustls_private_deframer_grows_backing_before_sqlx_can_reserve_or_observe_capacity
+next_action: protect a rustls deframer pre-growth same-ledger owner hook and necessary public wiring; do not start PostgreSQL qualification
+```
