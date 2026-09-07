@@ -1,5 +1,14 @@
 # SQLx PostgreSQL driver budget351 implementation plan
 
+> **2026-09-07 continuation checkpoint:** TLS activation is BLOCKED at the
+> excluded blocking-runtime task allocation owner. The admitted SQLx paths cannot
+> pre-charge Tokio's private generic `Cell<T, S>` allocation or keep that charge
+> through Cell deallocation/cancellation; alternate runtime branches compound the
+> gap. Exact evidence and the minimal amendment are in sqlx-core
+> `OTERYN_PROVENANCE.md`. Stop before PostgreSQL decoder work or test inclusion.
+> Issue351 comment5560895137 activated custody of the include-only test path, but
+> the inclusion remains unperformed because its TLS prerequisite did not close.
+
 ## Current prospective hosted-test qualification amendment
 
 Work162 comment5560691505, protected source `b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a`, adds only the serialized target inclusion below to351's existing admitted scope. Earlier NOT_ADMITTED wording is historical; actual admission53c6 and window2/native1363 are recorded in351 comment5560554622 and the current task override. Preserve original programme budget, immutable admission and all productive-window/repair evidence. This new lease remains NOT_ACTIVE until reviewed protected integration/readback and Work's explicit grant.

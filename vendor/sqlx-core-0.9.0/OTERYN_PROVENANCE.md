@@ -47,7 +47,56 @@ These terms are independently useful but are NOT a complete capacity proof or an
 
 Charged resident-work accounting covers requested capacities and owned metadata. It is not an RSS guarantee or an arbitrary allocator-overhead percentage. Inline reservation/enclosing Arc/Box metadata needs its containing owner's charge; an inner destructor cannot certify the enclosing allocation has already been freed.
 
-No excluded dependency mutation has been shown necessary yet. If the complete proof needs another path, report that exact boundary for protected amendment rather than implement an unproved allowance.
+### Window3 exact scope insufficiency — BLOCKED
+
+The blocking-loader/Cell acceptance property cannot be implemented in the admitted
+two-crate paths without guessing or releasing custody early. This is now a concrete
+excluded-dependency boundary, not a general claim that all TLS accounting is
+impossible:
+
+- `CertificateInput::data` delegates file reads to `crate::fs::read`, which calls
+  `crate::rt::spawn_blocking`. The latter selects Tokio when a current Tokio handle
+  exists and otherwise selects async-global-executor, smol, or async-std according
+  to enabled runtime features. Both `src/fs.rs` and `src/rt/mod.rs` are imported
+  upstream files outside the exact core accounting amendment.
+- In the configured root graph, Tokio1.53.1 `spawn_blocking_inner` first constructs
+  `BlockingTask<F>` and then calls private `task::unowned`. That call allocates a
+  private `Cell<T, S>` containing `Header`, `Core<T, S>` (scheduler, ID and the
+  future-or-output stage), and `Trailer`. The exact allocation layout is computed
+  from private generic types and private offsets in Tokio `runtime/task/raw.rs`.
+  SQLx receives only a `JoinHandle<R>`; there is no public preallocation callback,
+  allocation-layout query, or owner-custody attachment point for the Cell.
+- Capturing a `ResourceReservation` in the blocking closure is insufficient. The
+  reservation then lives *inside* the Cell's future/output stage and is destroyed
+  while Tokio tears down that stage, before the enclosing Cell allocation is
+  deallocated. Dropping the SQLx JoinHandle is also insufficient because Tokio
+  blocking work may continue after cancellation and the runtime/scheduler retains
+  the Cell. Thus either placement releases before backing dies or cannot survive
+  cancellation/idle runtime custody.
+- A numeric duplicate of Tokio's current private layout would be the forbidden
+  hidden magic reservation: it cannot be checked through SQLx's public API, differs
+  for the alternate supported runtime branches, and does not transfer/release with
+  the actual allocation. Replacing `spawn_blocking` with a synchronous read would
+  change scheduling/cancellation behavior and is not a semantics-preserving fix.
+
+Reproduction evidence on the configured root lock: Tokio1.53.1 checksum
+`202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed`;
+source SHA-256 `core.rs` `7c896dec6ef10054ed2b8049a2b35667eae348615c162a46d1ceb9181fc71b5c`,
+`raw.rs` `0e20384326d63f003a0340a80ea2e404d0af3eb3ff0f03a9e87a363531077efc`,
+and `blocking/pool.rs` `6e1f4f3c1e6f7974a8ccab4dab8b8784f447097990f763fc5703202e4d278a65`.
+The admitted SQLx runtime dispatcher SHA-256 is
+`436902d5a1d1a1b320fbc0b0a2f371db0b85b50bfce066a55d42db7febc1c449`.
+
+Smallest required amendment: an accounting-aware blocking execution primitive at
+the runtime/task allocation owner (or an equivalent allocator-backed custody hook)
+that (1) atomically reserves the actual Cell allocation layout before allocation,
+(2) binds the charge to the Cell itself rather than only its closure/result, and
+(3) releases after Cell deallocation across success, error, cancellation, runtime
+shutdown and idle retention for every enabled runtime branch. Merely leasing
+`sqlx-core/src/fs.rs` or `src/rt/mod.rs` without such a dependency/runtime hook is
+not sufficient. Rustls and other dependencies remain untouched. Per the task
+boundary, source mutation stops here; TLS gate, PostgreSQL expansion, and the
+include-only driver test activation remain OPEN.
 
 ## Original file digest manifest
 

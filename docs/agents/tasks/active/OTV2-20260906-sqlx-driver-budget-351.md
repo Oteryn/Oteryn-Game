@@ -116,6 +116,31 @@ Prospective test lease PR357 is NOT_ACTIVE until protected admission and explici
 
 ## PR and closeout
 
+### Owner continuation checkpoint (window3)
+
+Protected main `b3e637dc43a0a31ff2caf24a6450f7df56b43777` was merged normally into the
+preserved task history. The requested TLS gate is precisely **BLOCKED** at the
+blocking-loader scheduler allocation owner. Tokio1.53.1 allocates a private generic
+task `Cell` inside `spawn_blocking`; the admitted SQLx paths receive only its
+`JoinHandle` and cannot reserve the actual layout before allocation or retain a
+charge until the enclosing Cell is deallocated on success, error, cancellation,
+shutdown and idle retention. Capturing the charge in the closure/result releases it
+while the Cell backing still exists. SQLx's runtime dispatcher can also choose
+async-global-executor, smol or async-std, making a copied Tokio-only byte constant
+both incomplete and a forbidden hidden reservation. Exact source hashes, control
+flow and the smallest required amendment are recorded in core provenance.
+
+No rustls/runtime/dependency source was changed and no PostgreSQL decoder work began.
+Issue351 comment5560895137 activated the protected include-only durability-file
+custody lease, superseding the older prospective wording preserved above, but the
+module inclusion itself was not performed because the TLS gate is not proven.
+Remaining OPEN cells: accounting-aware scheduler/Cell
+allocation custody; complete TLS phase composition and retained config/cache/session
+ownership; real TLS-positive evidence; PostgreSQL accounting and hostile/positive
+qualification; final whole-diff review, exact-head CI/MQ and protected readback.
+This is an evidence-backed scope insufficiency checkpoint, not WP3 completion, B
+readiness, or permission to alter TLS behavior.
+
 One admitted branch/PR; Work retains publication/integration and lease-release control. Preserve immutable admission and all counters across normal merge-up and bounded windows. No force-push/rebase/reset, no-op retrigger or self-approval. Final head belongs in PR/check evidence, not a self-referential metadata commit. Work archives/releases only after terminal protected readback; technical scope insufficiency is not completion.
 
 Window1 stopped at 2026-09-06T16:20:49Z: 3314 productive seconds conservatively charged, 286 unused seconds, no deducted pauses or reset. A further implementation window requires explicit Work continuation.
@@ -125,8 +150,8 @@ Window2 stopped at 2026-09-06T17:16:20Z: 3050 productive seconds conservatively 
 ## Context checkpoint
 
 ```yaml
-last_progress: published tested primitive and independently reviewed source bounds; TLS proof remains open
-status: in_progress
+last_progress: proved exact blocking-loader scheduler/Cell scope insufficiency after normal main merge-up
+status: blocked_pending_scope_amendment
 admission_state: ADMITTED
 execution_window_number: 2
 execution_windows_completed: 2
@@ -134,6 +159,6 @@ worker_rotations: 0
 identical_failure_retries: 0
 repair_cycles_for_current_gate: 2
 owner_action_required: null
-blocker: complete_TLS_capacity_lifetime_proof
-next_action: independently review TLS proof checkpoint before substantial PostgreSQL decoder work
+blocker: excluded_runtime_task_Cell_has_no_preallocation_or_lifetime_custody_hook
+next_action: owner decides whether to protect the minimal runtime/task accounting amendment; no PostgreSQL work before TLS proof
 ```
