@@ -106,13 +106,15 @@ Before implementation, the child plan must name exact tests and commands. Requir
 
 The Server Seam delivery may establish a Tier-1-capable physical boundary, but ADR-0007 Tier 1 remains `NOT_EVALUATED` until the separately allocated QA lane records accepted physical journey evidence.
 
-## Lifecycle, budget and handover
+## Lifecycle, continuous execution and handover
 
 Create/resume the coordinator-named task record before writing. Record exact base SHA, branch/PR, owned paths, shared leases, dependencies, blockers and the lane child-plan path.
 
-Default foreground budget is 60 minutes; 120 minutes is allowed only when the task explicitly declares and justifies it under repository policy.
+There is no 60-minute, 120-minute or other wall-clock implementation window. While authorized work is making material progress, continue autonomously until completion or a genuine evidence-backed blocker, owner stop or real authority/safety boundary. Do not rotate, freeze, discard productive minutes or request a fresh Work grant solely because an hour elapsed.
 
-Maintain one compact `## Context checkpoint` with exactly one `next_action`. Before any genuine stop/rotation/blocker response, persist the exact head, PR, validation/review state, blocker, ownership state and next action.
+Apply `docs/agents/ANTI_STALL_AND_EXECUTION_BUDGET.md` only to no-progress, repeated-failure and CI-wait behavior. Historical `windowN`/minute counters are provenance only and do not limit current execution.
+
+Maintain one compact `## Context checkpoint` with exactly one `next_action`. Persist it before a genuine stop/rotation/blocker response and when it materially improves recovery; do not create hourly checkpoint churn.
 
 ## Stop conditions
 
@@ -123,9 +125,10 @@ Stop before writes or further scope expansion when:
 - a required numeric/resource/security decision remains unresolved;
 - production/protected/secret/external-repository authority would be required;
 - required independent exact-head review is unavailable after implementation;
-- a non-recoverable repository/CI failure prevents truthful completion.
+- a non-recoverable repository/CI failure prevents truthful completion;
+- the owner explicitly stops the work.
 
-Routine test failures, review findings and ordinary merge bookkeeping are repair work, not stop conditions.
+Elapsed implementation time is not a stop condition. Routine test failures, review findings and ordinary merge bookkeeping are repair work, not stop conditions.
 
 ## Canonical Codex review routing
 
