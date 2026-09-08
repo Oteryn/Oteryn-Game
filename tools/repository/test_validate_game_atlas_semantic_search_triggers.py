@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import hashlib
 import json
 import re
 import textwrap
@@ -23,6 +24,8 @@ REGRESSION = "tools/repository/test_validate_game_atlas_semantic_search_triggers
 SEMANTIC_WORKFLOW_PATH = ".github/workflows/game-atlas-semantic-search.yml"
 STATIC_WORKFLOW_PATH = ".github/workflows/game-atlas-static-creatures.yml"
 REGRESSION_COMMAND = f"python {REGRESSION}"
+EXPECTED_SEMANTIC_WORKFLOW_BLOB = "8ff643337108876bd709064014a7a146134d69b2"
+EXPECTED_STATIC_WORKFLOW_BLOB = "51758c91ebcad0140739f1c1ea9acba32032a238"
 
 SEMANTIC_PR_PATHS = (
     "tools/game-atlas-semantic-search/**",
@@ -83,6 +86,12 @@ STATIC_ASSERTIONS = (
 )
 
 
+def _git_blob_sha(text: str) -> str:
+    data = text.encode("utf-8")
+    header = f"blob {len(data)}\0".encode("ascii")
+    return hashlib.sha1(header + data).hexdigest()
+
+
 def _event_block(workflow: str, event: str) -> str:
     """Return one top-level event's YAML block without interpreting candidate YAML."""
     match = re.search(
@@ -97,33 +106,57 @@ def _event_keys(workflow: str, event: str) -> tuple[str, ...]:
     return tuple(re.findall(r"(?m)^    ([a-z_-]+):", _event_block(workflow, event)))
 
 
-def _decode_yaml_path_scalar(raw: str) -> str:
+def _decode_yaml_scalar(raw: str) -> str:
     raw = raw.strip()
-    assert raw, "empty YAML path scalar"
+    assert raw, "empty YAML scalar"
     if raw.startswith("'"):
-        assert raw.endswith("'") and len(raw) >= 2, f"malformed single-quoted path: {raw!r}"
+        assert raw.endswith("'") and len(raw) >= 2, f"malformed single-quoted scalar: {raw!r}"
         return raw[1:-1].replace("''", "'")
     if raw.startswith('"'):
-        assert raw.endswith('"') and len(raw) >= 2, f"malformed double-quoted path: {raw!r}"
+        assert raw.endswith('"') and len(raw) >= 2, f"malformed double-quoted scalar: {raw!r}"
         value = json.loads(raw)
         assert isinstance(value, str)
         return value
-    assert re.fullmatch(r"[A-Za-z0-9_./*?+-]+", raw), f"unsupported YAML path scalar: {raw!r}"
+    assert re.fullmatch(r"[A-Za-z0-9_./*?+-]+", raw), f"unsupported YAML scalar: {raw!r}"
     return raw
 
 
 def _paths(workflow: str, event: str) -> tuple[str, ...]:
-    """Parse every path-list item fail-closed, regardless of YAML quote style."""
-    block = _event_block(workflow, event)
-    match = re.search(r"(?m)^    paths:\n(?P<items>(?:^      - [^\n]+\n)+)", block)
-    assert match is not None, f"missing or non-canonical paths list for {event}"
+    """Parse the complete paths sequence, including entries after comments/blank lines."""
+    lines = _event_block(workflow, event).splitlines()
+    try:
+        start = lines.index("    paths:") + 1
+    except ValueError as exc:
+        raise AssertionError(f"missing canonical paths list for {event}") from exc
+
     entries: list[str] = []
-    for line in match.group("items").splitlines():
+    for line in lines[start:]:
+        if re.match(r"^    [A-Za-z_][A-Za-z0-9_-]*:\s*", line):
+            break
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
         item = re.fullmatch(r"      - (.+)", line)
-        assert item is not None, f"unparsed paths entry: {line!r}"
-        entries.append(_decode_yaml_path_scalar(item.group(1)))
+        assert item is not None, f"unexpected content in {event} paths sequence: {line!r}"
+        entries.append(_decode_yaml_scalar(item.group(1)))
     assert entries, f"empty paths list for {event}"
     return tuple(entries)
+
+
+def _decoded_indented_mapping_keys(workflow: str) -> tuple[str, ...]:
+    """Decode ordinary/single/double-quoted indented mapping keys fail-closed."""
+    keys: list[str] = []
+    key_pattern = re.compile(
+        r"^[ \t]+(?P<key>'(?:[^']|'')*'|\"(?:\\.|[^\"])*\"|[A-Za-z_][A-Za-z0-9_-]*)\s*:"
+    )
+    explicit_pattern = re.compile(
+        r"^[ \t]+\?\s*(?P<key>'(?:[^']|'')*'|\"(?:\\.|[^\"])*\"|[A-Za-z_][A-Za-z0-9_-]*)\s*$"
+    )
+    for line in workflow.splitlines():
+        match = key_pattern.match(line) or explicit_pattern.match(line)
+        if match is not None:
+            keys.append(_decode_yaml_scalar(match.group("key")))
+    return tuple(keys)
 
 
 def _step_block(workflow: str, name: str) -> str:
@@ -168,7 +201,7 @@ def _assert_read_only_permissions(workflow: str) -> None:
     assert top is not None, "missing top-level permissions"
     assert top.group("body") == "  contents: read\n", "top-level permissions must remain contents: read"
     assert len(re.findall(r"(?m)^permissions:", workflow)) == 1
-    assert not re.search(r"(?m)^[ \t]+permissions:", workflow), (
+    assert "permissions" not in _decoded_indented_mapping_keys(workflow), (
         "job/step-level permissions overrides are forbidden"
     )
     assert "write-all" not in workflow
@@ -183,6 +216,9 @@ def _assert_pinned_actions_and_no_bypass(workflow: str) -> None:
 
 
 def _assert_contract(semantic: str, static: str) -> None:
+    assert _git_blob_sha(semantic) == EXPECTED_SEMANTIC_WORKFLOW_BLOB
+    assert _git_blob_sha(static) == EXPECTED_STATIC_WORKFLOW_BLOB
+
     assert _event_keys(semantic, "pull_request") == ("paths",)
     assert _event_keys(semantic, "push") == ("branches", "paths")
     assert _event_keys(static, "pull_request") == ("branches", "paths")
@@ -283,8 +319,10 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (self.semantic, self.static.replace(REGRESSION_COMMAND, "python missing-regression.py", 1)),
             (
                 self.semantic.replace(
-                    "    paths:\n",
-                    '    paths:\n      - "tools/game-atlas-*/**"\n',
+                    "      - '.github/workflows/game-atlas-static-creatures.yml'\n",
+                    "      - '.github/workflows/game-atlas-static-creatures.yml'\n"
+                    "      # valid YAML comment inside the same paths sequence\n"
+                    '      - "tools/game-atlas-*/**"\n',
                     1,
                 ),
                 self.static,
@@ -292,7 +330,9 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (
                 self.semantic.replace(
                     "    runs-on: ubuntu-24.04\n",
-                    "    runs-on: ubuntu-24.04\n    permissions: write-all\n",
+                    "    runs-on: ubuntu-24.04\n"
+                    '    "permi\\u0073sions":\n'
+                    "      contents: write\n",
                     1,
                 ),
                 self.static,
