@@ -316,7 +316,7 @@ fn owned_certificate_loader_is_funded_or_denied_without_fallback() {
     let denied_owner = blocking_job_owner(denied.clone());
     assert!(runtime
         .block_on(read_certificate_file_owned(
-            cleanup.0.clone(),
+            &cleanup.0,
             &denied_owner
         ))
         .is_err());
@@ -326,7 +326,7 @@ fn owned_certificate_loader_is_funded_or_denied_without_fallback() {
     let funded_owner = blocking_job_owner(funded.clone());
     let loaded = runtime
         .block_on(read_certificate_file_owned(
-            cleanup.0.clone(),
+            &cleanup.0,
             &funded_owner,
         ))
         .unwrap();
@@ -334,7 +334,7 @@ fn owned_certificate_loader_is_funded_or_denied_without_fallback() {
     drop(loaded);
     let loaded_again = runtime
         .block_on(read_certificate_file_owned(
-            cleanup.0.clone(),
+            &cleanup.0,
             &funded_owner,
         ))
         .unwrap();
@@ -374,7 +374,7 @@ fn rustls_deframer_owner_uses_the_operation_ledger() {
     let mut connection =
         rustls::ClientConnection::new_with_resource_owner(Arc::new(config), name, owner.clone())
             .unwrap();
-    assert_eq!(Arc::strong_count(&owner), 2);
+    assert_eq!(Arc::strong_count(&owner), 3);
     drop(owner);
 
     let error = connection.read_tls(&mut WouldBlock).unwrap_err();
@@ -383,18 +383,19 @@ fn rustls_deframer_owner_uses_the_operation_ledger() {
     drop(connection);
     assert_eq!(budget.used.load(Ordering::Acquire), 0);
 
-    let denied = ledger(4095);
+    let denied = ledger(1);
     let owner: Arc<dyn rustls::DeframerBufferOwner> = Arc::new(DeframerBudgetOwner(denied.clone()));
     let provider = Arc::new(rustls::crypto::ring::default_provider());
-    let config = rustls::ClientConfig::builder_with_provider(provider)
+    let mut config = rustls::ClientConfig::builder_with_provider(provider)
         .with_safe_default_protocol_versions()
         .unwrap()
         .with_root_certificates(rustls::RootCertStore::empty())
         .with_no_client_auth();
+    config.alpn_protocols = vec![b"h2".to_vec()];
     let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
-    let mut connection =
-        rustls::ClientConnection::new_with_resource_owner(Arc::new(config), name, owner).unwrap();
-    let error = connection.read_tls(&mut WouldBlock).unwrap_err();
-    assert_eq!(error.kind(), io::ErrorKind::Other);
+    let error =
+        rustls::ClientConnection::new_with_resource_owner(Arc::new(config), name, owner)
+            .unwrap_err();
+    assert!(error.to_string().contains("resource budget unavailable"));
     assert_eq!(denied.used.load(Ordering::Acquire), 0);
 }

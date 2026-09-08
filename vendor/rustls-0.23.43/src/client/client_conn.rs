@@ -2,6 +2,8 @@ use alloc::vec::Vec;
 use core::marker::PhantomData;
 use core::ops::{Deref, DerefMut};
 use core::{fmt, mem};
+#[cfg(feature = "std")]
+use core::mem::size_of;
 
 use pki_types::{ServerName, UnixTime};
 
@@ -657,7 +659,7 @@ impl EarlyData {
 }
 
 #[cfg(feature = "std")]
-mod connection {
+pub(crate) mod connection {
     use alloc::vec::Vec;
     use core::fmt;
     use core::ops::{Deref, DerefMut};
@@ -721,6 +723,48 @@ mod connection {
     /// This represents a single TLS client connection.
     pub struct ClientConnection {
         inner: ConnectionCommon<ClientConnectionData>,
+        // Keeps preconstruction ALPN backing charged for at least as long as
+        // the connection state which owns that backing.
+        _resource_owner_custody: Option<ClientHelloResourceCustody>,
+    }
+
+    pub(crate) struct ClientHelloResourceCustody {
+        owner: Arc<dyn DeframerBufferOwner>,
+        bytes: usize,
+    }
+
+    impl ClientHelloResourceCustody {
+        pub(crate) fn new(owner: Arc<dyn DeframerBufferOwner>) -> Self {
+            Self { owner, bytes: 0 }
+        }
+
+        pub(crate) fn owner(&self) -> Arc<dyn DeframerBufferOwner> {
+            self.owner.clone()
+        }
+
+        pub(crate) fn bytes_mut(&mut self) -> &mut usize {
+            &mut self.bytes
+        }
+
+        pub(crate) fn reserve(&mut self, bytes: usize) -> Result<(), Error> {
+            if bytes == 0 {
+                return Ok(());
+            }
+            let next = self.bytes.checked_add(bytes).ok_or_else(|| {
+                Error::General("resource budget accounting overflow".into())
+            })?;
+            self.owner
+                .try_reserve(bytes)
+                .map_err(|_| Error::General("resource budget unavailable".into()))?;
+            self.bytes = next;
+            Ok(())
+        }
+    }
+
+    impl Drop for ClientHelloResourceCustody {
+        fn drop(&mut self) {
+            self.owner.release(self.bytes);
+        }
     }
 
     impl fmt::Debug for ClientConnection {
@@ -751,6 +795,7 @@ mod connection {
                     ClientExtensionsInput::from_alpn(alpn_protocols),
                     Protocol::Tcp,
                 )?),
+                _resource_owner_custody: None,
             })
         }
 
@@ -763,12 +808,28 @@ mod connection {
             name: ServerName<'static>,
             owner: Arc<dyn DeframerBufferOwner>,
         ) -> Result<Self, Error> {
-            let mut connection = Self::new(config, name)?;
-            connection
-                .inner
+            let mut custody = ClientHelloResourceCustody::new(owner.clone());
+            let alpn_protocols = super::clone_alpn_owned(&config.alpn_protocols, &mut custody)?;
+            let extra_exts = ClientExtensionsInput::from_alpn_with_resource_owner(
+                alpn_protocols,
+                custody.owner(),
+                custody.bytes_mut(),
+            )?;
+            let core = ConnectionCore::for_client_with_resource_owner(
+                config,
+                name,
+                extra_exts,
+                Protocol::Tcp,
+                &mut custody,
+            )?;
+            let mut inner = ConnectionCommon::from(core);
+            inner
                 .set_deframer_buffer_owner(owner)
                 .map_err(|_| Error::General("resource budget unavailable".into()))?;
-            Ok(connection)
+            Ok(Self {
+                inner,
+                _resource_owner_custody: Some(custody),
+            })
         }
         /// Returns an `io::Write` implementer you can write bytes to
         /// to send TLS1.3 early data (a.k.a. "0-RTT data") to the server.
@@ -911,10 +972,65 @@ impl ConnectionCore<ClientConnectionData> {
         Ok(Self::new(state, data, common_state))
     }
 
+    fn for_client_with_resource_owner(
+        config: Arc<ClientConfig>,
+        name: ServerName<'static>,
+        extra_exts: ClientExtensionsInput<'static>,
+        proto: Protocol,
+        custody: &mut connection::ClientHelloResourceCustody,
+    ) -> Result<Self, Error> {
+        let mut common_state = CommonState::new(Side::Client);
+        common_state.set_max_fragment_size(config.max_fragment_size)?;
+        common_state.protocol = proto;
+        common_state.enable_secret_extraction = config.enable_secret_extraction;
+        common_state.fips = config.fips();
+        let mut data = ClientConnectionData::new();
+        let mut cx = hs::ClientContext {
+            common: &mut common_state,
+            data: &mut data,
+            sendable_plaintext: None,
+        };
+        let input = ClientHelloInput::new_with_resource_owner(
+            name,
+            &extra_exts,
+            &mut cx,
+            config,
+            custody.owner(),
+            custody.bytes_mut(),
+        )?;
+        let state = input.start_handshake(extra_exts, &mut cx)?;
+        Ok(Self::new(state, data, common_state))
+    }
+
     #[cfg(feature = "std")]
     pub(crate) fn is_early_data_accepted(&self) -> bool {
         self.data.early_data.is_accepted()
     }
+}
+
+#[cfg(feature = "std")]
+fn clone_alpn_owned(
+    source: &[Vec<u8>],
+    custody: &mut connection::ClientHelloResourceCustody,
+) -> Result<Vec<Vec<u8>>, Error> {
+    let outer = source
+        .len()
+        .checked_mul(size_of::<Vec<u8>>())
+        .ok_or_else(|| Error::General("resource budget accounting overflow".into()))?;
+    let inner = source.iter().try_fold(0usize, |sum, protocol| {
+        sum.checked_add(protocol.len())
+            .ok_or_else(|| Error::General("resource budget accounting overflow".into()))
+    })?;
+    custody.reserve(outer.checked_add(inner).ok_or_else(|| {
+        Error::General("resource budget accounting overflow".into())
+    })?)?;
+    let mut cloned = Vec::with_capacity(source.len());
+    for protocol in source {
+        let mut bytes = Vec::with_capacity(protocol.len());
+        bytes.extend_from_slice(protocol);
+        cloned.push(bytes);
+    }
+    Ok(cloned)
 }
 
 /// Unbuffered version of `ClientConnection`

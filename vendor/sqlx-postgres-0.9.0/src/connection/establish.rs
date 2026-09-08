@@ -173,3 +173,107 @@ impl PgConnection {
         })
     }
 }
+
+#[cfg(test)]
+mod resource_owner_tests {
+    use std::io::{Read, Write};
+    use std::net::TcpListener;
+    use std::sync::{Arc, Weak};
+
+    use sqlx_core::net::resource_budget::{BudgetError, ResourceBudget};
+
+    use crate::{PgConnectOptions, PgConnection, PgSslMode};
+
+    #[derive(Debug)]
+    struct TestBudget {
+        funded: bool,
+    }
+
+    impl ResourceBudget for TestBudget {
+        fn try_reserve(&self, _bytes: usize) -> Result<(), BudgetError> {
+            self.funded.then_some(()).ok_or(BudgetError::Unavailable)
+        }
+
+        fn release(&self, _bytes: usize) {}
+    }
+
+    fn server(ssl_response: Option<u8>) -> (u16, std::thread::JoinHandle<()>) {
+        let listener = TcpListener::bind(("127.0.0.1", 0)).unwrap();
+        let port = listener.local_addr().unwrap().port();
+        let handle = std::thread::spawn(move || {
+            let (mut socket, _) = listener.accept().unwrap();
+            if let Some(response) = ssl_response {
+                let mut request = [0; 8];
+                socket.read_exact(&mut request).unwrap();
+                assert_eq!(&request, &[0, 0, 0, 8, 4, 210, 22, 47]);
+                socket.write_all(&[response]).unwrap();
+                if response == b'S' {
+                    return;
+                }
+            }
+            let mut length = [0; 4];
+            socket.read_exact(&mut length).unwrap();
+            let remaining = u32::from_be_bytes(length) as usize - 4;
+            let mut startup = vec![0; remaining];
+            socket.read_exact(&mut startup).unwrap();
+            socket
+                .write_all(&[
+                    b'R', 0, 0, 0, 8, 0, 0, 0, 0, // AuthenticationOk
+                    b'K', 0, 0, 0, 12, 0, 0, 0, 1, 0, 0, 0, 2, // BackendKeyData
+                    b'Z', 0, 0, 0, 5, b'I', // ReadyForQuery
+                ])
+                .unwrap();
+        });
+        (port, handle)
+    }
+
+    fn options(port: u16, ssl_mode: PgSslMode) -> PgConnectOptions {
+        PgConnectOptions::new()
+            .host("127.0.0.1")
+            .port(port)
+            .username("owner-test")
+            .ssl_mode(ssl_mode)
+    }
+
+    #[test]
+    fn owner_aware_establish_retains_exact_owner_and_preserves_ssl_refusal() {
+        let (port, server) = server(Some(b'N'));
+        let concrete = Arc::new(TestBudget { funded: true });
+        let weak: Weak<TestBudget> = Arc::downgrade(&concrete);
+        let owner: Arc<dyn ResourceBudget> = concrete;
+        let expected = owner.clone();
+        let connection = sqlx_core::rt::test_block_on(PgConnection::establish_with_resource_budget(
+                &options(port, PgSslMode::Prefer),
+                owner,
+            ))
+            .unwrap();
+        assert!(Arc::ptr_eq(
+            connection.inner.stream.resource_budget().unwrap(),
+            &expected
+        ));
+        drop(expected);
+        assert!(weak.upgrade().is_some());
+        drop(connection);
+        assert!(weak.upgrade().is_none());
+        server.join().unwrap();
+    }
+
+    #[test]
+    fn accepted_tls_budget_denial_is_terminal_and_ordinary_path_is_owner_free() {
+        let (port, tls_server) = server(Some(b'S'));
+        let denied: Arc<dyn ResourceBudget> = Arc::new(TestBudget { funded: false });
+        assert!(sqlx_core::rt::test_block_on(PgConnection::establish_with_resource_budget(
+                &options(port, PgSslMode::Require),
+                denied,
+            ))
+            .is_err());
+        tls_server.join().unwrap();
+
+        let (port, plain_server) = server(None);
+        let connection = sqlx_core::rt::test_block_on(PgConnection::establish(&options(port, PgSslMode::Disable)))
+            .unwrap();
+        assert!(connection.inner.stream.resource_budget().is_none());
+        drop(connection);
+        plain_server.join().unwrap();
+    }
+}

@@ -837,3 +837,11 @@ ClientHello custody remains the next phase. The implementation stops before the
 explicitly unallocated session-cache, key-share, ECH/configuration, and crypto
 symbols. Complete TLS, TLS-positive evidence, and PostgreSQL 17.6 qualification
 remain NOT_PROVEN.
+
+## Window15 exact-head propagation review repair
+
+All four P1 findings against `a03d6a2bf28c59d3292ffe1df739b7aa7c35d690` are accepted and fixed. `3956941303` is closed by the protected #429 separate rustls preconstruction path, which supplies the same owner before ALPN and the initial ClientHello rather than installing it after `ClientConnection::new`. `3956941320` is closed by using the already-owned Tokio certificate loader for inline/file trust roots, client chains and private keys while preserving the ordinary verification/client-auth decision tree. `3956941331` removes the unused public `PgConnection` accessor. `3956941337` adds focused driver tests through PostgreSQL establish, retained stream identity, SSLRequest `S`/`N`, terminal owned TLS denial and the ordinary owner-free path.
+
+`OPERATION_OWNER_PROPAGATION = PROVEN` and the protected #429 ALPN seam is `PROVEN` after these focused tests. Complete TLS is still `NOT_PROVEN` and work stops at the next expressly unallocated boundary:
+
+`SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/hs.rs :: ClientSessionValue::retrieve :: retained session-cache custody executes before the protected ClientHello emit/decode continuation`.

@@ -6,6 +6,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut};
 use core::{fmt, iter};
+use core::mem::size_of;
 
 use pki_types::{CertificateDer, DnsName};
 
@@ -795,6 +796,32 @@ impl ClientExtensionsInput<'_> {
             transport_parameters: None,
             protocols,
         }
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn from_alpn_with_resource_owner(
+        alpn_protocols: Vec<Vec<u8>>,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+        charged: &mut usize,
+    ) -> Result<ClientExtensionsInput<'static>, crate::Error> {
+        if alpn_protocols.is_empty() {
+            return Ok(ClientExtensionsInput::default());
+        }
+        let bytes = alpn_protocols
+            .len()
+            .checked_mul(size_of::<ProtocolName>())
+            .ok_or_else(|| crate::Error::General("resource budget accounting overflow".into()))?;
+        let next = charged.checked_add(bytes).ok_or_else(|| {
+            crate::Error::General("resource budget accounting overflow".into())
+        })?;
+        owner.try_reserve(bytes).map_err(|_| {
+            crate::Error::General("resource budget unavailable".into())
+        })?;
+        *charged = next;
+        Ok(ClientExtensionsInput {
+            transport_parameters: None,
+            protocols: Some(alpn_protocols.into_iter().map(ProtocolName::from).collect()),
+        })
     }
 
     pub(crate) fn into_owned(self) -> ClientExtensionsInput<'static> {

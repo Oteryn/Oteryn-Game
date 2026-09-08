@@ -78,8 +78,7 @@ impl PgStream {
         })
     }
 
-    #[doc(hidden)]
-    pub fn resource_budget(&self) -> Option<&Arc<dyn ResourceBudget>> {
+    pub(crate) fn resource_budget(&self) -> Option<&Arc<dyn ResourceBudget>> {
         self.resource_budget.as_ref()
     }
 

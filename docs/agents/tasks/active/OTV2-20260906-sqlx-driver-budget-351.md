@@ -499,3 +499,23 @@ owner_aware_alpn: NOT_PROVEN
 next_action: execute protected #429 ALPN/protocol allocation custody with this same propagated owner
 remaining_acceptance_cells: owner-aware ALPN RED/GREEN; protected ClientHello and decoded-owner matrix; session/cache and configuration/crypto ownership; complete TLS; TLS-positive proof; PostgreSQL17.6 qualification; independent review; canonical CI/MQ; protected readback and target release
 ```
+
+## Window15 propagation review repair and protected ALPN seam
+
+Independent review of `a03d6a2bf28c59d3292ffe1df739b7aa7c35d690` returned four P1s. All four are accepted and fixed in this checkpoint: the rustls owner-aware constructor now enters a separate preconstruction path; the owned SQLx handshake uses the protected blocking certificate loader for inline/file roots, client certificates and keys; the unused public `PgConnection::resource_budget` API is removed; and focused PostgreSQL driver tests exercise the real establish/stream/SSLRequest/TLS chain.
+
+```yaml
+status: blocked_pending_shared_lease
+review_p1_3956941303: PROVEN_FIXED
+review_p1_3956941320: PROVEN_FIXED
+review_p1_3956941331: PROVEN_FIXED
+review_p1_3956941337: PROVEN_FIXED
+operation_owner_propagation: PROVEN
+owner_aware_alpn: PROVEN
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: allocate session-cache retrieval custody before continuing ClientHello emission
+shared_lease_required: vendor/rustls-0.23.43/src/client/hs.rs :: ClientSessionValue::retrieve :: owner-aware construction reaches this unallocated retained-session boundary before the protected ClientHello emit path
+remaining_acceptance_cells: session-cache retrieval; protected ClientHello emit and decoded-owner cells; key-share/ECH/configuration/crypto ownership; complete TLS; TLS-positive proof; PostgreSQL17.6 final-candidate qualification; whole-diff review; canonical CI/FULL MQ; protected readback and target release
+```

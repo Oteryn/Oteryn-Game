@@ -207,33 +207,74 @@ where
         .with_safe_default_protocol_versions()
         .unwrap();
 
-    // Owner-aware client authentication and custom trust loading are composed
-    // by the already-accounted loader in the next TLS phase. Never silently use
-    // their ordinary unowned loader here.
-    if tls_config.client_cert_path.is_some()
-        || tls_config.client_key_path.is_some()
-        || tls_config.root_cert_path.is_some()
-    {
-        return Err(Error::tls(
-            "resource-owned certificate configuration is not yet composed",
-        ));
-    }
+    let blocking_owner = crate::rt::resource_owner::blocking_job_owner(resource_budget.clone());
+    let user_auth = match (tls_config.client_cert_path, tls_config.client_key_path) {
+        (Some(cert_path), Some(key_path)) => {
+            let cert_data = super::read_certificate_input_owned(cert_path, &blocking_owner)
+                .await
+                .map_err(|_| Error::tls("resource-owned certificate load failed"))?;
+            let key_data = super::read_certificate_input_owned(key_path, &blocking_owner)
+                .await
+                .map_err(|_| Error::tls("resource-owned private key load failed"))?;
+            let cert_chain = certs_from_pem(cert_data.get().clone())?;
+            let key_der = private_key_from_pem(key_data.get().clone())?;
+            Some((cert_chain, key_der))
+        }
+        (None, None) => None,
+        (_, _) => {
+            return Err(Error::Configuration(
+                "user auth key and certs must be given together".into(),
+            ))
+        }
+    };
 
     let config = if tls_config.accept_invalid_certs {
-        config
-            .dangerous()
-            .with_custom_certificate_verifier(Arc::new(DummyTlsVerifier { provider }))
-            .with_no_client_auth()
+        if let Some(user_auth) = user_auth {
+            config
+                .dangerous()
+                .with_custom_certificate_verifier(Arc::new(DummyTlsVerifier { provider }))
+                .with_client_auth_cert(user_auth.0, user_auth.1)
+                .map_err(Error::tls)?
+        } else {
+            config
+                .dangerous()
+                .with_custom_certificate_verifier(Arc::new(DummyTlsVerifier { provider }))
+                .with_no_client_auth()
+        }
     } else {
-        let cert_store = import_root_certs();
+        let mut cert_store = import_root_certs();
+        if let Some(ca) = tls_config.root_cert_path {
+            let data = super::read_certificate_input_owned(ca, &blocking_owner)
+                .await
+                .map_err(|_| Error::tls("resource-owned root certificate load failed"))?;
+            for result in CertificateDer::pem_slice_iter(data.get()) {
+                let Ok(cert) = result else {
+                    return Err(Error::Tls(format!("Invalid certificate {ca}").into()));
+                };
+                cert_store.add(cert).map_err(|err| Error::Tls(err.into()))?;
+            }
+        }
         if tls_config.accept_invalid_hostnames {
             let verifier = WebPkiServerVerifier::builder(Arc::new(cert_store))
                 .build()
                 .map_err(|err| Error::Tls(err.into()))?;
+            if let Some(user_auth) = user_auth {
+                config
+                    .dangerous()
+                    .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
+                    .with_client_auth_cert(user_auth.0, user_auth.1)
+                    .map_err(Error::tls)?
+            } else {
+                config
+                    .dangerous()
+                    .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
+                    .with_no_client_auth()
+            }
+        } else if let Some(user_auth) = user_auth {
             config
-                .dangerous()
-                .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
-                .with_no_client_auth()
+                .with_root_certificates(cert_store)
+                .with_client_auth_cert(user_auth.0, user_auth.1)
+                .map_err(Error::tls)?
         } else {
             config.with_root_certificates(cert_store).with_no_client_auth()
         }

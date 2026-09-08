@@ -3,6 +3,7 @@ use alloc::boxed::Box;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::ops::Deref;
+use core::mem::size_of;
 
 use pki_types::ServerName;
 
@@ -137,6 +138,37 @@ impl ClientHelloInput {
             prev_ech_ext: None,
             config,
         })
+    }
+
+    pub(super) fn new_with_resource_owner(
+        server_name: ServerName<'static>,
+        extra_exts: &ClientExtensionsInput<'_>,
+        cx: &mut ClientContext<'_>,
+        config: Arc<ClientConfig>,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+        charged: &mut usize,
+    ) -> Result<Self, Error> {
+        if let Some(protocols) = &extra_exts.protocols {
+            let outer = protocols
+                .len()
+                .checked_mul(size_of::<ProtocolName>())
+                .ok_or_else(|| Error::General("resource budget accounting overflow".into()))?;
+            let inner = protocols.iter().try_fold(0usize, |sum, protocol| {
+                sum.checked_add(protocol.len())
+                    .ok_or_else(|| Error::General("resource budget accounting overflow".into()))
+            })?;
+            let bytes = outer.checked_add(inner).ok_or_else(|| {
+                Error::General("resource budget accounting overflow".into())
+            })?;
+            let next = charged.checked_add(bytes).ok_or_else(|| {
+                Error::General("resource budget accounting overflow".into())
+            })?;
+            owner.try_reserve(bytes).map_err(|_| {
+                Error::General("resource budget unavailable".into())
+            })?;
+            *charged = next;
+        }
+        Self::new(server_name, extra_exts, cx, config)
     }
 
     pub(super) fn start_handshake(

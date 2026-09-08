@@ -235,7 +235,7 @@ fn read_certificate_file_accounted(
 /// with Tokio until its corresponding backing is actually released.
 #[cfg(all(target_os = "linux", feature = "_rt-tokio"))]
 async fn read_certificate_file_owned(
-    path: PathBuf,
+    path: &std::path::Path,
     owner: &crate::rt::resource_owner::BlockingJobOwner,
 ) -> Result<crate::net::resource_budget::Charged<Vec<u8>>, CertificateReadError> {
     use crate::net::resource_budget::{BudgetError, ResourceReservation};
@@ -243,7 +243,7 @@ async fn read_certificate_file_owned(
     let budget = owner.budget();
     let path_bytes = path.as_os_str().len();
     let path_charge = ResourceReservation::try_new(budget.clone(), path_bytes)?;
-    let path = path_charge.bind(path);
+    let path = path_charge.bind(path.to_path_buf());
     let worker_budget = budget.clone();
     let handle = crate::rt::resource_owner::spawn_blocking_owned(owner, move || {
         read_certificate_file_accounted(path.get(), worker_budget)
@@ -254,4 +254,22 @@ async fn read_certificate_file_owned(
             "owned certificate loader task failed",
         ))
     })?
+}
+
+#[cfg(all(target_os = "linux", feature = "_rt-tokio"))]
+pub(super) async fn read_certificate_input_owned(
+    input: &CertificateInput,
+    owner: &crate::rt::resource_owner::BlockingJobOwner,
+) -> Result<crate::net::resource_budget::Charged<Vec<u8>>, CertificateReadError> {
+    use crate::net::resource_budget::ResourceReservation;
+
+    match input {
+        CertificateInput::File(path) => read_certificate_file_owned(path, owner).await,
+        CertificateInput::Inline(bytes) => {
+            let reservation = ResourceReservation::try_new(owner.budget(), bytes.len())?;
+            let mut copy = Vec::with_capacity(bytes.len());
+            copy.extend_from_slice(bytes);
+            Ok(reservation.bind(copy))
+        }
+    }
 }

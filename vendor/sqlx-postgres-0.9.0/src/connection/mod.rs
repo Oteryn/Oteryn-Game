@@ -85,13 +85,6 @@ pub(crate) struct TableData {
 }
 
 impl PgConnection {
-    /// Returns the resource owner retained by an explicitly owner-aware
-    /// connection, if any. Ordinary and pooled connections return `None`.
-    #[doc(hidden)]
-    pub fn resource_budget(&self) -> Option<&Arc<dyn sqlx_core::net::resource_budget::ResourceBudget>> {
-        self.inner.stream.resource_budget()
-    }
-
     /// the version number of the server in `libpq` format
     pub fn server_version_num(&self) -> Option<u32> {
         self.inner.stream.server_version_num

@@ -260,3 +260,12 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Retain the caller's exact budget Arc for the connection lifetime without changing options or pools.
 - [ ] Apply protected #429 ALPN/protocol reservation and custody using that propagated owner.
 - [ ] Continue #427/#425 only after ALPN is GREEN; stop before unallocated session/key-share/ECH/config/crypto paths.
+
+## Propagation review repair / protected ALPN checkpoint
+
+- [x] Fix review P1 `3956941303` with an owner-aware rustls preconstruction path; no post-construction owner installation remains.
+- [x] Fix P1 `3956941320` by composing the same-budget blocking loader for ordinary-equivalent inline/file root, client-certificate and key inputs.
+- [x] Fix P1 `3956941331` by removing the unauthorized public connection owner accessor while retaining private stream identity.
+- [x] Fix P1 `3956941337` with driver-level establish/stream/SSLRequest tests covering exact Arc identity, caller-drop retention, S/N policy, terminal TLS denial, and the ordinary owner-free control.
+- [x] Complete the protected #429 ALPN preconstruction custody seam.
+- [ ] Stop at `vendor/rustls-0.23.43/src/client/hs.rs::ClientSessionValue::retrieve`; session-cache custody is explicitly unallocated and precedes continuation through the protected ClientHello emit/decode paths.
