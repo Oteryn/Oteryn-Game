@@ -845,3 +845,18 @@ All four P1 findings against `a03d6a2bf28c59d3292ffe1df739b7aa7c35d690` are acce
 `OPERATION_OWNER_PROPAGATION = PROVEN` and the protected #429 ALPN seam is `PROVEN` after these focused tests. Complete TLS is still `NOT_PROVEN` and work stops at the next expressly unallocated boundary:
 
 `SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/hs.rs :: ClientSessionValue::retrieve :: retained session-cache custody executes before the protected ClientHello emit/decode continuation`.
+## Client PEM clone review repair (P1 3957222192)
+
+The owner-aware client-auth path previously kept both charged loader results
+alive while `get().clone()` created full, unreserved PEM vectors. The repair
+removes those duplicate allocations: certificate and key parsing now borrow the
+charged `Vec<u8>` backings directly. The loader reservations therefore remain
+the sole PEM-backing custody throughout parsing and are released only after the
+original charged vectors are destroyed. The ordinary owner-free path uses the
+same slice parser and preserves its configured client-certificate/key behavior.
+
+Focused controls cover a funded matching certificate/key pair without a second
+PEM backing or ledger debit, insufficient balance before a second charged input
+can be constructed, parse-error retention and unwind, and exact final release.
+This closes only P1 `3957222192`; it does not allocate or enter the still-open
+rustls key-exchange boundary.

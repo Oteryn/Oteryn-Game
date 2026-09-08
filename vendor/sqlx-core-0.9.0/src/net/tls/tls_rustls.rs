@@ -111,8 +111,9 @@ where
     // authentication using user's key and its associated certificate
     let user_auth = match (tls_config.client_cert_path, tls_config.client_key_path) {
         (Some(cert_path), Some(key_path)) => {
-            let cert_chain = certs_from_pem(cert_path.data().await?)?;
-            let key_der = private_key_from_pem(key_path.data().await?)?;
+            let cert_data = cert_path.data().await?;
+            let key_data = key_path.data().await?;
+            let (cert_chain, key_der) = client_auth_from_pem(&cert_data, &key_data)?;
             Some((cert_chain, key_der))
         }
         (None, None) => None,
@@ -216,9 +217,7 @@ where
             let key_data = super::read_certificate_input_owned(key_path, &blocking_owner)
                 .await
                 .map_err(|_| Error::tls("resource-owned private key load failed"))?;
-            let cert_chain = certs_from_pem(cert_data.get().clone())?;
-            let key_der = private_key_from_pem(key_data.get().clone())?;
-            Some((cert_chain, key_der))
+            Some(client_auth_from_pem(cert_data.get(), key_data.get())?)
         }
         (None, None) => None,
         (_, _) => {
@@ -294,14 +293,21 @@ where
     Ok(socket)
 }
 
-fn certs_from_pem(pem: Vec<u8>) -> Result<Vec<CertificateDer<'static>>, Error> {
-    CertificateDer::pem_slice_iter(&pem)
+pub(super) fn client_auth_from_pem(
+    cert_pem: &[u8],
+    key_pem: &[u8],
+) -> Result<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>), Error> {
+    Ok((certs_from_pem(cert_pem)?, private_key_from_pem(key_pem)?))
+}
+
+fn certs_from_pem(pem: &[u8]) -> Result<Vec<CertificateDer<'static>>, Error> {
+    CertificateDer::pem_slice_iter(pem)
         .map(|result| result.map_err(|err| Error::Tls(err.into())))
         .collect()
 }
 
-fn private_key_from_pem(pem: Vec<u8>) -> Result<PrivateKeyDer<'static>, Error> {
-    match PrivateKeyDer::from_pem_slice(&pem) {
+fn private_key_from_pem(pem: &[u8]) -> Result<PrivateKeyDer<'static>, Error> {
+    match PrivateKeyDer::from_pem_slice(pem) {
         Ok(key) => Ok(key),
         Err(pem::Error::NoItemsFound) => Err(Error::Configuration("no keys found pem file".into())),
         Err(e) => Err(Error::Configuration(e.to_string().into())),

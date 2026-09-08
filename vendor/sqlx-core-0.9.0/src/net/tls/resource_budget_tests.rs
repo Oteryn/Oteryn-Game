@@ -399,3 +399,55 @@ fn rustls_deframer_owner_uses_the_operation_ledger() {
     assert!(error.to_string().contains("resource budget unavailable"));
     assert_eq!(denied.used.load(Ordering::Acquire), 0);
 }
+
+#[cfg(feature = "_tls-rustls")]
+#[test]
+fn client_pem_parsing_borrows_charged_backing_without_a_second_copy() {
+    const CERT: &[u8] = b"-----BEGIN CERTIFICATE-----\nMIIBfTCCASOgAwIBAgIUDZBk0JEdbOds6TsGRPkwvhxFUSMwCgYIKoZIzj0EAwIw\nFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwODEyNTMxMFoXDTI2MDkwOTEy\nNTMxMFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAEy2WKazyI8TXUnJTbx1vSKqaJx8w+RW8JXa+v/pP7FzXgzntfmqjK9yh8\nm970RDgI5shoO5vx4GbStl1EgzFY1KNTMFEwHQYDVR0OBBYEFEOj0jJhWWip3SDz\n7NKpJwCjWRqhMB8GA1UdIwQYMBaAFEOj0jJhWWip3SDz7NKpJwCjWRqhMA8GA1Ud\nEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIhAPyz4a/hpM3FdPkGujIcZQp1\nw2Jgh0bjZ//2tCW0AMl4AiARhMbhcwqLnNlemlE2HQcfkezW3Zpjt75Zi8tXaGUM\nEQ==\n-----END CERTIFICATE-----\n";
+    const KEY: &[u8] = b"-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg/YnH3AP6GLGXmx4q\nIqRsG/wjKmRE+eY/UJuBHsRM4y6hRANCAATLZYprPIjxNdSclNvHW9IqponHzD5F\nbwldr6/+k/sXNeDOe1+aqMr3KHyb3vREOAjmyGg7m/HgZtK2XUSDMVjU\n-----END PRIVATE KEY-----\n";
+
+    let budget = ledger(CERT.len() + KEY.len());
+    let cert = ResourceReservation::try_new(budget.clone(), CERT.len())
+        .unwrap()
+        .bind(CERT.to_vec());
+    let key = ResourceReservation::try_new(budget.clone(), KEY.len())
+        .unwrap()
+        .bind(KEY.to_vec());
+    let used_before = budget.used.load(Ordering::Acquire);
+    let cert_ptr = cert.get().as_ptr();
+    let key_ptr = key.get().as_ptr();
+
+    let (chain, private_key) =
+        super::tls_rustls::client_auth_from_pem(cert.get(), key.get()).unwrap();
+
+    assert_eq!(budget.used.load(Ordering::Acquire), used_before);
+    assert_eq!(cert.get().as_ptr(), cert_ptr);
+    assert_eq!(key.get().as_ptr(), key_ptr);
+    assert_eq!(chain.len(), 1);
+    assert!(matches!(private_key, rustls::pki_types::PrivateKeyDer::Pkcs8(_)));
+    drop((chain, private_key));
+    assert_eq!(budget.used.load(Ordering::Acquire), used_before);
+    drop((cert, key));
+    assert_eq!(budget.used.load(Ordering::Acquire), 0);
+
+    let denied = ledger(CERT.len() + KEY.len() - 1);
+    let held = ResourceReservation::try_new(denied.clone(), CERT.len())
+        .unwrap()
+        .bind(CERT.to_vec());
+    assert!(matches!(
+        ResourceReservation::try_new(denied.clone(), KEY.len()),
+        Err(BudgetError::Unavailable)
+    ));
+    assert_eq!(denied.used.load(Ordering::Acquire), CERT.len());
+    drop(held);
+    assert_eq!(denied.used.load(Ordering::Acquire), 0);
+
+    let malformed_budget = ledger(3);
+    let malformed = ResourceReservation::try_new(malformed_budget.clone(), 3)
+        .unwrap()
+        .bind(b"bad".to_vec());
+    assert!(super::tls_rustls::client_auth_from_pem(CERT, malformed.get()).is_err());
+    assert_eq!(malformed_budget.used.load(Ordering::Acquire), 3);
+    drop(malformed);
+    assert_eq!(malformed_budget.used.load(Ordering::Acquire), 0);
+}

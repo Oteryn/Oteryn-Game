@@ -279,3 +279,14 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Keep the SQLx owner-aware construction path explicitly TCP-only; do not claim QUIC parameter accounting.
 - [ ] Stop before `client::tls13::initial_key_share` / `SupportedKxGroup::start`; key-exchange and crypto allocation remain separately unallocated.
 - [ ] Retain complete TLS, TLS-positive, PostgreSQL 17.6, independent review and protected integration as OPEN.
+
+## Client-PEM clone review repair
+
+- [x] Fix review P1 `3957222192` without entering key-exchange scope: parse the
+  configured client certificate and key directly from their charged loader
+  backings instead of cloning either PEM vector.
+- [x] Prove funded certificate/key parsing, zero duplicate PEM backing, denial
+  before a second charged input can be created, parse-error custody, final
+  release, and ordinary owner-free configured-client behavior.
+- [ ] Stop at the already-published `client::tls13::initial_key_share` /
+  `SupportedKxGroup::start` shared-lease boundary.

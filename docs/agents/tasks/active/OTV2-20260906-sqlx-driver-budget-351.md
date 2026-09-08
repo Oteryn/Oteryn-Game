@@ -534,3 +534,19 @@ next_action: obtain exact key-exchange allocation authority before continuing Cl
 shared_lease_required: vendor/rustls-0.23.43/src/client/tls13.rs :: initial_key_share / SupportedKxGroup::start :: owner-aware ClientHello construction reaches active key-exchange allocation before protected emit/decode continuation
 remaining_acceptance_cells: unresolved client-PEM clone review P1; key-share/ECH/configuration/crypto ownership; protected ClientHello emit and decoded-owner cells; complete TLS composition; TLS-positive proof; PostgreSQL17.6 final-candidate qualification; whole-diff review; canonical CI/FULL MQ; protected readback and target release
 ```
+
+## Window17 client-PEM clone review repair
+
+```yaml
+status: blocked_pending_shared_lease
+review_p1_3957222192: PROVEN_FIXED
+session_retrieval_owner: PROVEN
+operation_owner_propagation: PROVEN
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+last_progress: eliminated the unreserved client-certificate and private-key PEM clones by parsing the charged loader backings by reference; both charged sources remain alive through parsing and release only after their backing is destroyed
+next_action: obtain exact key-exchange allocation authority before continuing ClientHello emission and the protected decoded-owner continuation
+shared_lease_required: vendor/rustls-0.23.43/src/client/tls13.rs :: initial_key_share / SupportedKxGroup::start :: owner-aware ClientHello construction reaches active key-exchange allocation before protected emit/decode continuation
+remaining_acceptance_cells: key-share/ECH/configuration/crypto ownership; protected ClientHello emit and decoded-owner cells; complete TLS composition; TLS-positive proof; PostgreSQL17.6 final-candidate qualification; whole-diff review; canonical CI/FULL MQ; protected readback and target release
+```
