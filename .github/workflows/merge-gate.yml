@@ -461,7 +461,9 @@ jobs:
           import os
           import re
           import sys
+          import urllib.error
           import urllib.request
+          import subprocess
 
           repository = os.environ['REPOSITORY']
           number_text = os.environ['PULL_NUMBER'].strip()
@@ -491,6 +493,65 @@ jobs:
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
 
+          def target_blob(commit: str) -> str | None:
+              try:
+                  commit_payload = api(f'/git/commits/{commit}')
+              except (urllib.error.HTTPError, OSError, ValueError, TypeError) as error:
+                  raise SystemExit('exact commit inspection failed; fail closed') from error
+              if (
+                  not isinstance(commit_payload, dict)
+                  or commit_payload.get('sha', '').lower() != commit
+              ):
+                  raise SystemExit('exact commit inspection returned mismatched identity; fail closed')
+              tree_sha = commit_payload.get('tree', {}).get('sha')
+              if not isinstance(tree_sha, str) or re.fullmatch(r'[0-9a-f]{40}', tree_sha) is None:
+                  raise SystemExit('exact commit inspection returned invalid tree identity; fail closed')
+              try:
+                  tree_payload = api(f'/git/trees/{tree_sha}?recursive=1')
+              except (OSError, ValueError, TypeError) as error:
+                  raise SystemExit('exact tree inspection failed; fail closed') from error
+              if (
+                  not isinstance(tree_payload, dict)
+                  or tree_payload.get('sha', '').lower() != tree_sha
+                  or tree_payload.get('truncated') is not False
+                  or not isinstance(tree_payload.get('tree'), list)
+              ):
+                  raise SystemExit('exact tree inspection returned incomplete or mismatched evidence; fail closed')
+              for entry in tree_payload['tree']:
+                  path = entry.get('path') if isinstance(entry, dict) else None
+                  entry_type = entry.get('type') if isinstance(entry, dict) else None
+                  mode = entry.get('mode') if isinstance(entry, dict) else None
+                  legal_modes = {
+                      'blob': ('100644', '100755', '120000'),
+                      'tree': ('040000',),
+                      'commit': ('160000',),
+                  }
+                  if (
+                      not isinstance(entry, dict)
+                      or not isinstance(path, str)
+                      or not path
+                      or '\x00' in path
+                      or path.startswith('/')
+                      or any(component in ('', '.', '..') for component in path.split('/'))
+                      or entry_type not in legal_modes
+                      or mode not in legal_modes[entry_type]
+                      or not isinstance(entry.get('sha'), str)
+                      or re.fullmatch(r'[0-9a-f]{40}', entry['sha']) is None
+                  ):
+                      raise SystemExit('exact tree inspection returned malformed entry; fail closed')
+              matches = [entry for entry in tree_payload['tree'] if entry['path'] == target]
+              if len(matches) > 1:
+                  raise SystemExit('exact tree inspection returned duplicate target entries; fail closed')
+              if not matches:
+                  return None
+              entry = matches[0]
+              if entry.get('type') != 'blob' or entry.get('mode') not in ('100644', '100755'):
+                  raise SystemExit('exact tree inspection returned unexpected target object; fail closed')
+              blob_sha = entry.get('sha')
+              if not isinstance(blob_sha, str) or re.fullmatch(r'[0-9a-f]{40}', blob_sha) is None:
+                  raise SystemExit('exact tree inspection returned invalid blob SHA; fail closed')
+              return blob_sha
+
           pull = api(f'/pulls/{number_text}')
           if pull.get('state') != 'open':
               raise SystemExit('PostgreSQL target classification requires an open pull request')
@@ -502,47 +563,52 @@ jobs:
               raise SystemExit('pull request base moved after exact target resolution')
 
           changed_files = pull.get('changed_files')
-          if not isinstance(changed_files, int) or changed_files < 0 or changed_files > 300:
-              raise SystemExit('invalid or over-cap changed-files count')
+          if isinstance(changed_files, bool) or not isinstance(changed_files, int) or changed_files < 0:
+              raise SystemExit('invalid changed-files count')
 
-          files: list[str] = []
-          removed = False
-          comparison = api(f'/compare/{expected_base}...{expected_head}?per_page=1')
-          batch = comparison.get('files')
-          if not isinstance(batch, list):
-              raise SystemExit('immutable comparison omitted its files; fail closed')
-          for item in batch:
-              filename = item.get('filename', '')
-              if filename:
-                  files.append(filename)
-              previous_filename = item.get('previous_filename')
-              status = item.get('status')
-              if (filename == target and status == 'removed') or (
-                  previous_filename == target and filename != target
-              ):
-                  removed = True
+          base_blob = target_blob(expected_base)
+          head_blob = target_blob(expected_head)
+          base_present = base_blob is not None
+          head_present = head_blob is not None
+          # The former diff-enumeration authority (`previous_filename = item.get('previous_filename')`)
+          # is deliberately replaced by immutable base/head exact-path observations above.
+          checkout_present = os.path.isfile(target)
+          if checkout_present != head_present:
+              raise SystemExit('exact-head checkout and API target state disagree; fail closed')
+          if checkout_present:
+              checkout_blob = subprocess.run(
+                  ['git', 'hash-object', '--', target],
+                  check=True,
+                  capture_output=True,
+                  text=True,
+              ).stdout.strip().lower()
+              if checkout_blob != head_blob:
+                  raise SystemExit('exact-head checkout and API target blob disagree; fail closed')
+          if base_present and not head_present:
+              raise SystemExit('Durability PostgreSQL target was removed or renamed; fail closed')
 
-          if len(files) != changed_files:
-              raise SystemExit(
-                  f'changed-files enumeration mismatch: API reports {changed_files}, '
-                  f'collected {len(files)}; fail closed'
-              )
-
-          pull_after_files = api(f'/pulls/{number_text}')
-          if pull_after_files.get('state') != 'open':
+          pull_after_target = api(f'/pulls/{number_text}')
+          if pull_after_target.get('state') != 'open':
               raise SystemExit('pull request closed during Durability PostgreSQL target classification')
-          if pull_after_files.get('head', {}).get('sha', '').lower() != expected_head:
+          if pull_after_target.get('head', {}).get('sha', '').lower() != expected_head:
               raise SystemExit('pull request head moved during Durability PostgreSQL target classification')
-          if pull_after_files.get('head', {}).get('repo', {}).get('full_name') != repository:
+          if pull_after_target.get('head', {}).get('repo', {}).get('full_name') != repository:
               raise SystemExit('pull request repository changed during Durability PostgreSQL target classification')
-          if pull_after_files.get('base', {}).get('sha', '').lower() != expected_base:
+          if pull_after_target.get('base', {}).get('sha', '').lower() != expected_base:
               raise SystemExit('pull request base moved during Durability PostgreSQL target classification')
-          if pull_after_files.get('changed_files') != changed_files:
+          changed_files_after = pull_after_target.get('changed_files')
+          if (
+              isinstance(changed_files_after, bool)
+              or not isinstance(changed_files_after, int)
+              or changed_files_after < 0
+          ):
+              raise SystemExit('invalid post-inspection changed-files count')
+          if changed_files_after != changed_files:
               raise SystemExit('pull request changed-files count moved during Durability PostgreSQL target classification')
 
           with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
-              output.write(f"removed={'true' if removed else 'false'}\n")
-          print(f'Durability PostgreSQL target removal/rename in exact PR diff: {removed}.')
+              output.write(f"present={'true' if head_present else 'false'}\n")
+          print(f'Durability PostgreSQL target present at exact head: {head_present}.')
           PY
 
       - name: Install Rust toolchain
@@ -560,23 +626,23 @@ jobs:
       - name: Run Durability PostgreSQL E2E when allocated
         env:
           OTERYN_TEST_POSTGRES_ADMIN_URL: postgresql://oteryn_test_admin:ci-${{ github.run_id }}-${{ github.run_attempt }}@127.0.0.1:5432/postgres
-          TARGET_REMOVED: ${{ steps.pg_target.outputs.removed }}
+          TARGET_PRESENT: ${{ steps.pg_target.outputs.present }}
         run: |
           set -euo pipefail
-          case "$TARGET_REMOVED" in
+          case "$TARGET_PRESENT" in
             true|false) ;;
             *)
               echo "Durability PostgreSQL target classification produced an invalid result; failing closed." >&2
               exit 1
               ;;
           esac
-          if [[ -f apps/game-server/tests/durability_postgres.rs ]]; then
+          if [[ "$TARGET_PRESENT" == "true" ]] && [[ -f apps/game-server/tests/durability_postgres.rs ]]; then
             cargo +1.94.0 test --locked -p oteryn-game-server --test durability_postgres
-          elif [[ "$TARGET_REMOVED" == "true" ]]; then
-            echo "Durability PostgreSQL test target was removed or renamed by this pull request; failing closed." >&2
-            exit 1
-          else
+          elif [[ "$TARGET_PRESENT" == "false" ]] && [[ ! -e apps/game-server/tests/durability_postgres.rs ]]; then
             echo "NOT_APPLICABLE: Durability PostgreSQL test target is not allocated on this revision."
+          else
+            echo "Durability PostgreSQL target state changed after classification; failing closed." >&2
+            exit 1
           fi
 
       - name: Run synthetic harness
