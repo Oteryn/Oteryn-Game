@@ -570,6 +570,8 @@ For first-generation housing:
 
 A guest or manager placing an unbound transferable item from their own Character inventory therefore records that **placing CharacterId** as the housing reclaim subject. The house owner does not become fallback claimant merely because they own the address or granted storage permission.
 
+A placement-time Character reclaim subject is only the ordinary forced-exit fallback while that Character remains the intended reclaim subject. A workflow that will transfer control of that Character to another Account cannot use the unchanged `CharacterId` reference to satisfy an explicit seller-retained `HOUSE_ONLY` outcome; section 14.5 must establish a legal pre-transfer seller-retained disposition before Character rebinding.
+
 This is a housing transfer-surface policy layered on DUR-03 conservation. It does not redefine global ItemInstance ownership semantics.
 
 ### 14.4 BazaarHousingReclaimCustody
@@ -596,7 +598,9 @@ Required semantics:
 - legal exit must choose a destination permitted for the recorded reclaim subject under item/depot/mail/reclaim rules and is itself value-conserving, fenced and idempotent;
 - if provenance is missing, stale, conflicting or cannot be authoritatively resolved, risky housing release fails closed and the property/item workflow remains pending rather than guessing a claimant.
 
-### 14.5 HOUSE_ONLY
+For a Character Bazaar `HOUSE_ONLY` transition, a specialized seller-retained custody/disposition may be required by section 14.5. That specialized transition is created under verified **pre-transfer** authority; it is not derived after rebinding from the sold Character's identity.
+
+### 14.5 HOUSE_ONLY requires seller-retained disposition before selling the reclaim Character
 
 For `INCLUDE_HOUSE_WITH_CHARACTER`, seller additionally chooses:
 
@@ -606,14 +610,42 @@ or
 INCLUDE_FURNISHINGS
 ```
 
-With `HOUSE_ONLY`, Character + address may transfer, but ordinary movable contents do not silently become buyer property and are not placed into the sold Character's depot/inventory as a shortcut.
+With `HOUSE_ONLY`, Character + address may transfer, but ordinary movable housing contents excluded by that choice must not follow control of the sold Character to the buyer merely because their ordinary `HousingReclaimProvenance` names that Character.
 
-Each item is evacuated according to its current valid HousingReclaimProvenance:
+Each excluded item is classified before Character Authority may commit Account rebinding:
 
-- a seller Character's own placed item may return to that legal reclaim subject/destination or claimant-keyed typed custody;
-- a guest/manager/other Character's placed item remains associated with that item's recorded reclaim subject and cannot be absorbed by the house seller;
-- an alternate Character on the same Account does not gain access merely from Account equality;
-- abort/ambiguity reconciles the same item/provenance/operation result and never duplicates or reassigns value.
+1. validate current HousingReclaimProvenance, item binding/restrictions and current pre-transfer authority;
+2. if the reclaim subject is a guest/manager/other Character or typed domain not being sold, preserve that subject and route to an already-legal destination or subject-keyed typed custody;
+3. if the reclaim subject is the **Character being sold**, revalidate that the pre-transfer seller Account currently controls that Character and whether owning item policy permits the item to be detached into a seller-retained disposition;
+4. when such seller retention is legal, move/stage the item before rebinding into a typed non-gameplay seller-retained custody/disposition equivalent in semantics to:
+
+```text
+BazaarSellerRetainedHousingCustody {
+    world_id: WorldId,
+    bazaar_operation_id: OperationId,
+    item_instance_id: ItemInstanceId,
+    pre_transfer_seller_account_id: AccountId,
+    source_character_id: CharacterId,
+    source_provenance_revision: Revision,
+}
+```
+
+This is not a generic Account warehouse and does not redefine item ownership. The pre-transfer seller Account is recorded only because the same authoritative Bazaar prepare step has proven that Account controls the sold Character **before rebinding** and that the item's current binding/transfer policy permits seller-retained exclusion from the house sale. Legal exit still requires a separately authorized legal destination; an alternate Character receives no access merely from Account equality.
+
+If item binding/restrictions do **not** permit a seller-retained disposition independent of the sold Character, `HOUSE_ONLY` cannot commit while that item remains an excluded housing content. The seller must first move/settle it through an already-legal destination under its owning item policy, or the Bazaar housing prepare remains rejected/pending. Housing may not invent seller Account ownership after the fact.
+
+Terminal behavior:
+
+- **Character transfer committed:** seller-retained custody remains seller-side under the pre-transfer operation fact; the sold Character and buyer Account cannot withdraw or reclaim those excluded items by virtue of the new `AccountId -> CharacterId` binding;
+- **Character transfer rejected/aborted before rebinding commit:** seller-retained staging/direct-return state reconciles back to the legal pre-transfer housing/item result under the same operation, without duplication or reassignment;
+- **ambiguous Character-transfer outcome:** item disposition remains non-spendable/pending and reconciles the same operation; it is never released to both seller and sold Character/buyer.
+
+Consequences:
+
+- `HOUSE_ONLY` never uses the sold Character's post-transfer identity as the final reclaim key for an excluded seller-retained item;
+- a guest/manager/other Character's item cannot be converted to seller-retained custody merely because the house seller selected `HOUSE_ONLY`;
+- an alternate Character on the seller Account does not gain direct access merely from Account equality;
+- if a legal seller-retained or other existing-subject disposition cannot be established before rebinding, the listing fails closed rather than silently transferring house contents.
 
 ### 14.6 INCLUDE_FURNISHINGS is conditional on retaining the incoming house
 
@@ -642,7 +674,7 @@ If buyer chooses `KEEP_EXISTING_HOUSE` or `KEEP_RESIDENCE`, the incoming physica
 
 If Character transfer, buyer keep-choice, item disposition, provenance or custody outcome is ambiguous, the house remains pending/non-allocatable and the same operation reconciles both item and property outcome.
 
-Exact physical tables/containers, reclaim UI, retention/capacity limits, manifest schema, valuation and final withdrawal UX remain deferred. The placement-time provenance source, fail-closed missing-provenance rule and value-conservation semantics are binding.
+Exact physical tables/containers, reclaim UI, retention/capacity limits, manifest schema, valuation and final withdrawal UX remain deferred. The placement-time provenance source, seller-retained pre-transfer conversion rule, fail-closed missing/illegal-disposition rule and value-conservation semantics are binding.
 
 ## 15. Character deletion and World transfer
 
@@ -775,11 +807,13 @@ Remains authority for Platform Account identity, entitlement/commercial source d
 
 Funds and durable value mutations remain with accepted/future economy and DUR-03 owners. Housing declares required effects without inventing distributed ACID or duplicate value authority.
 
-`HousingReclaimProvenance` is a housing-surface fallback disposition policy attached to the authoritative housing placement transaction. It is not generic ItemInstance ownership. Claimant-aware typed custody remains a DUR-03 custody family and does not move item mutation authority to Platform, Account identity, house owner identity or housing UI.
+`HousingReclaimProvenance` is a housing-surface fallback disposition policy attached to the authoritative housing placement transaction. It is not generic ItemInstance ownership. Claimant-aware typed custody and Bazaar seller-retained custody remain DUR-03 custody families and do not move item mutation authority to Platform, Account identity, house owner identity or housing UI.
+
+A Bazaar seller-retained Account reference is valid only as an operation-scoped disposition fact established while that Account still authoritatively controls the sold Character and only for an item whose owning policy permits seller-retained exclusion. It creates no general Account inventory/storage authority.
 
 ### 22.5 Client
 
-Client is untrusted presentation/input. It cannot establish ownership, nominated auction owner, auction winner, ACL authority, reclaim provenance, item manifest or settlement success.
+Client is untrusted presentation/input. It cannot establish ownership, nominated auction owner, auction winner, ACL authority, reclaim provenance, seller-retained item disposition, item manifest or settlement success.
 
 ## 23. Anti-speculation posture
 
@@ -815,7 +849,8 @@ Later implementation must retain enough evidence to diagnose:
 - Bazaar housing disposition/keep-choice;
 - `BAZAAR_DISPOSITION_PENDING` and `BAZAAR_RESIDENCE_DISPOSITION_PENDING` lifecycle plus terminal Character-transfer outcome;
 - HousingReclaimProvenance creation/update/retirement source per affected `ItemInstanceId`;
-- typed housing reclaim-custody key/reclaim-subject/item transitions;
+- pre-transfer `HOUSE_ONLY` seller-retained conversion decision, source Character/provenance revision and resulting custody/direct destination;
+- typed housing reclaim-custody and seller-retained-custody transitions;
 - furnished-transfer manifest, buyer keep-choice and transfer-versus-reclaim result;
 - runtime generations/stale-writer rejection;
 - ambiguous-operation reconciliation.
@@ -863,6 +898,8 @@ A future implementation must prove at least:
 35. Winning auction retry cannot silently substitute a different CharacterId from the same Account.
 36. Bazaar buyer with Residence chooses `KEEP_INCOMING_HOUSE`, then Character transfer rejects: Residence and its value are preserved/restored and no second final personal housing slot commits.
 37. Bazaar buyer with Residence has ambiguous Character-transfer outcome: Residence replacement and incoming house remain pending/reconcilable without terminal dual ownership or Residence loss.
+38. `HOUSE_ONLY` where the sold Character is the placement-time reclaim subject for an otherwise seller-retainable item: before Account rebinding, the item moves/stages to a legal seller-retained disposition; after transfer the buyer/sold Character cannot reclaim it merely through the new Character ownership binding.
+39. `HOUSE_ONLY` where an excluded item cannot legally be detached from the sold Character under binding/restriction policy: Bazaar prepare fails closed or requires a legal pre-transfer item disposition; it never invents seller Account ownership after Character rebinding.
 
 ## 26. Deliberately deferred
 
@@ -918,7 +955,7 @@ Detailed lifecycle/admin/economy/Rested rules remain downstream of future guild/
 - service/process/crate decomposition;
 - RPC/HTTP/internal IDL;
 - exact OperationId/revision/runtime-generation representation;
-- exact physical representation/names for HousingReclaimProvenance and typed housing reclaim custody;
+- exact physical representation/names for HousingReclaimProvenance, typed housing reclaim custody and seller-retained Bazaar custody;
 - reclaim screen/workflow and legal final destination UX consistent with binding provenance/authorization rules;
 - exact auction bid UI/wire representation;
 - runtime placement algorithm;
@@ -947,10 +984,12 @@ The accepted architecture rejects:
 14. exposing a Bazaar-relinquished house to public allocation before the Character-transfer outcome authorizing final release is authoritative;
 15. terminally releasing buyer Residence before a dependent Character Bazaar transfer is authoritative;
 16. treating `HOUSE_ONLY` contents as the sold Character's depot contents or generic Account-wide storage;
-17. deriving forced-reclaim subject later from house owner, Account, ACL role or physical placement when no placement-time provenance exists;
-18. assigning the house seller as reclaim subject merely because an item was placed inside the house by an ACL-authorized guest/manager;
-19. accepting new housing item placement when no authoritative reclaim subject/disposition can be established;
-20. leaving `INCLUDE_FURNISHINGS` items in an incoming house the buyer chose not to retain, thereby gifting them to a future occupant.
+17. leaving a `HOUSE_ONLY` excluded item keyed only to the sold Character after Account rebinding, allowing the buyer to reclaim it;
+18. converting guest/manager/other reclaim subjects into seller-retained Account custody merely because the seller chose `HOUSE_ONLY`;
+19. deriving forced-reclaim subject later from house owner, Account, ACL role or physical placement when no placement-time provenance exists;
+20. assigning the house seller as reclaim subject merely because an item was placed inside the house by an ACL-authorized guest/manager;
+21. accepting new housing item placement when no authoritative reclaim subject/disposition can be established;
+22. leaving `INCLUDE_FURNISHINGS` items in an incoming house the buyer chose not to retain, thereby gifting them to a future occupant.
 
 ## 28. Explicit supersession
 
@@ -1002,6 +1041,7 @@ Any supersession must explicitly preserve or replace:
 - one authoritative owner/personal-slot result;
 - explicit auction winning Character identity;
 - placement-time forced-reclaim provenance or an equally authoritative replacement;
+- seller-retained `HOUSE_ONLY` disposition independent of a sold Character's post-transfer control;
 - stale-writer fencing;
 - idempotent/reconcilable settlement;
 - server-authoritative ownership/auction/ACL;
@@ -1056,6 +1096,8 @@ Checkpoint PRs remain provenance while this delivery is in review and do not aut
 `BAZAAR CONTENTS: HOUSE_ONLY OR EXPLICIT INCLUDE_FURNISHINGS`
 
 `HOUSING ITEM RECLAIM: PLACEMENT-TIME TYPED RECLAIM PROVENANCE; NO SALE-TIME OWNER/ACL INFERENCE`
+
+`HOUSE_ONLY SOLD-CHARACTER ITEMS: PRE-TRANSFER SELLER-RETAINED LEGAL DISPOSITION OR FAIL CLOSED BEFORE REBINDING`
 
 `INCLUDE_FURNISHINGS: TRANSFER ONLY WHEN INCOMING HOUSE IS RETAINED; OTHERWISE PROVENANCE-AWARE RECLAIM BEFORE PUBLIC RELEASE`
 
