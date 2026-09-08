@@ -782,3 +782,29 @@ the initial ClientHello would violate the accepted ownership or behavior
 requirements.  No rustls semantic source was changed.  The ClientHello RED/GREEN,
 decoded-owner matrix, complete TLS, TLS-positive case and PostgreSQL 17.6
 qualification remain OPEN.
+
+## Window12 protected ClientHello constructor-owner application preflight
+
+Protected allocation `OTV2-WP3-RUSTLS-CLIENTHELLO-PRECONSTRUCTION-OWNER-20260908`
+was integrated at `main@7508a72705ab6cba95a33dd59571eca3e94b91cb`,
+explicitly applied to this worker, and normally merged into this lineage. Before
+adding the owner-aware rustls constructor, fresh call-chain inspection found
+that the production SQLx TLS path has no accepted owner value to pass to it.
+
+`tls_rustls::handshake` receives only `TlsConfig`; that structure contains TLS
+policy and certificate inputs but no `ResourceBudget`. Its sole PostgreSQL
+constructor in `sqlx-postgres/src/connection/tls.rs::maybe_upgrade` likewise has
+no operation-owner argument or field. The only current `ResourceBudget` values
+are focused-test ledgers and the certificate-loader helper inputs. Constructing
+a fresh ledger, using a global/thread-local registry, or invoking the new rustls
+path without an owner would violate the same-ledger and no-fallback invariants.
+
+`SHARED_LEASE_REQUIRED = vendor/sqlx-core-0.9.0/src/net/tls/mod.rs :: TlsConfig /
+vendor/sqlx-postgres-0.9.0/src/connection/tls.rs :: maybe_upgrade :: carry the
+already-accepted operation ResourceBudget identity into tls_rustls::handshake`.
+This requires an exact upstream operation-owner source and lifecycle decision;
+#429 authorizes only switching the existing `tls_rustls.rs` constructor call
+once that identity is available and grants no new SQLx path or owner model. No
+rustls or SQLx semantic source was mutated. The focused ALPN RED/GREEN, decoded
+owner matrix, complete TLS, TLS-positive case, and PostgreSQL 17.6 qualification
+remain OPEN.

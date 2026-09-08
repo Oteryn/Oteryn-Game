@@ -451,3 +451,16 @@ next_action: authorize an owner-aware ClientConnection constructor / ConnectionC
 shared_lease_required: vendor/rustls-0.23.43/src/client/client_conn.rs :: ClientConnection::{new,new_with_alpn} / ConnectionCore::for_client :: pre-ClientHello same-owner installation
 remaining_acceptance_cells: ClientHello and all decoded-owner RED/GREEN boundaries; complete TLS configuration/crypto composition; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
 ```
+
+## Window12 ClientHello constructor-owner application
+
+```yaml
+last_progress: normally merged protected #429 and proved the production SQLx call has no accepted owner value to pass to the new constructor
+status: blocked_pending_shared_lease
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+shared_lease_required: vendor/sqlx-core-0.9.0/src/net/tls/mod.rs :: TlsConfig / vendor/sqlx-postgres-0.9.0/src/connection/tls.rs :: maybe_upgrade :: propagate the already-accepted operation ResourceBudget identity
+next_action: allocate the exact operation-owner propagation source and lifecycle, then implement the protected owner-aware ALPN constructor seam
+remaining_acceptance_cells: owner-aware ALPN RED/GREEN; protected ClientHello and decoded-owner matrix; session/cache and configuration/crypto ownership; complete TLS; TLS-positive proof; PostgreSQL17.6 qualification; independent review; canonical CI/MQ; protected readback and target release
+```

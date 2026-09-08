@@ -226,3 +226,16 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Resume the ClientHello and decoded-owner RED/GREEN matrix only after that
   exact protected constructor-wiring amendment; TLS-positive and PostgreSQL17.6
   remain stopped until complete TLS ownership is proven.
+
+## Window12 protected constructor-owner application
+
+- [x] Normally merge protected `main@7508a72705ab6cba95a33dd59571eca3e94b91cb`
+  containing #429 and read the exact protected amendment.
+- [x] Preflight the production SQLx call chain before introducing the rustls API:
+  `TlsConfig` and `sqlx-postgres::connection::tls::maybe_upgrade` currently
+  carry no accepted `ResourceBudget`, so `tls_rustls::handshake` cannot pass the
+  required same owner identity.
+- [x] Stop before source mutation at the exact SQLx owner-propagation lease;
+  do not create a ledger, global/thread-local registry, or unowned fallback.
+- [ ] After exact owner propagation is allocated, prove the #429 ALPN seam RED/GREEN,
+  then resume only the already-protected ClientHello/decoded boundaries.
