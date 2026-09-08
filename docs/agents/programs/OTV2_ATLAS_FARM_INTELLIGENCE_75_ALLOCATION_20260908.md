@@ -106,7 +106,6 @@ The material worker may inspect current protected sources, including at minimum:
 docs/contracts/OTERYN_GAME_ATLAS_CREATURE_GAMEPLAY_PROFILES_V1.md
 tools/game-atlas-creature-gameplay/**
 tools/game-atlas-creatures/**
-tools/game-atlas-static-creatures/**
 tools/game-platform-catalog/**
 apps/game-server/src/content/**
 docs/architecture/**
