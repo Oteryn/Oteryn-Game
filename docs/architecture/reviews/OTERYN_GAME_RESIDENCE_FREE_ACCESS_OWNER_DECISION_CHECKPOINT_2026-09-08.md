@@ -52,13 +52,13 @@ non-scarce Residence
         +-- baseline housing utility
 ```
 
-This residence class is not a physical `HouseId` copied into multiple Channels. It is a separate housing product/identity whose exact final name and persistence representation remain deferred.
+This Residence class is not a physical `HouseId` copied into multiple Channels. It is a separate housing product/identity whose exact final name and persistence representation remain deferred.
 
 ## Residence ownership scope
 
 `OWNER_SELECTED`.
 
-The first-generation residence entitlement is scoped to the account on a World, not to every Character independently.
+The first-generation Residence entitlement is scoped to the Account on a World, not to every Character independently.
 
 Semantic rule:
 
@@ -66,7 +66,7 @@ Semantic rule:
 maximum residences(AccountId A, WorldId W) = 1
 ```
 
-Therefore multiple Characters owned by the same Account on the same World do not each create an additional residence entitlement.
+Therefore multiple Characters owned by the same Account on the same World do not each create an additional Residence entitlement.
 
 The intended model is conceptually:
 
@@ -78,11 +78,11 @@ AccountId A / WorldId W
   +-- at most one Residence R
 ```
 
-This deliberately reduces free-alt amplification, durable-object multiplication and the risk that residences become a cheap way to manufacture many storage surfaces.
+This deliberately reduces free-alt amplification, durable-object multiplication and the risk that Residences become a cheap way to manufacture many storage surfaces.
 
 The exact `ResidenceId` schema remains deferred. Selecting `AccountId + WorldId` as the entitlement/ownership scope does not require a final database shape now.
 
-## One housing slot per Account and World
+## One personal housing slot per Account and World
 
 `OWNER_SELECTED`.
 
@@ -122,7 +122,7 @@ The exact auction UI may be decided later, but authoritative settlement must nev
 
 Before physical-house acquisition becomes authoritative:
 
-1. current account/World housing state is revalidated;
+1. current Account/World housing state is revalidated;
 2. physical-house Premium + `PhysicalHouseEligibility` requirements are revalidated;
 3. Residence durable contents/value are safely settled under later accepted item/storage rules;
 4. stale Residence runtime writers are fenced;
@@ -171,11 +171,11 @@ The settlement must be idempotent/reconcilable and must never commit a state whe
 
 If the buyer already has an ordinary physical house, the separate accepted Bazaar rule for choosing which physical house is kept still applies.
 
-A Character Bazaar transaction that contains no physical house does not by itself transfer or remove the buyer Account's Residence because the Residence entitlement is account/World-scoped rather than Character-owned.
+A Character Bazaar transaction that contains no physical house does not by itself transfer or remove the buyer Account's Residence because the Residence entitlement is Account/World-scoped rather than Character-owned.
 
 ## Scarcity boundary
 
-A residence/apartment is intentionally non-scarce.
+A Residence/apartment is intentionally non-scarce.
 
 Creating a Residence for an eligible Account must not:
 
@@ -212,7 +212,7 @@ Premium + PhysicalHouseEligibility
 
 A player does not stack both benefits on the same Account/World.
 
-Premium may later add residence convenience, cosmetic catalog, layout/preset or presentation features, but the baseline Residence itself remains a genuine usable housing space rather than a crippled advertisement for Premium.
+Premium may later add Residence convenience, cosmetic catalog, layout/preset or presentation features, but the baseline Residence itself remains a genuine usable housing space rather than a crippled advertisement for Premium.
 
 No Premium Residence upgrade is allowed by this checkpoint to create combat power or duplicate scarce physical `HouseId` supply.
 
@@ -227,7 +227,7 @@ It does not require:
 - private house nomination/transfer;
 - a market price derived from limited address supply.
 
-A later owner decision may introduce additional residence lifecycle/economy mechanics if evidence justifies them. They are not inferred here.
+A later owner decision may introduce additional Residence lifecycle/economy mechanics if evidence justifies them. They are not inferred here.
 
 ## Basic utility direction
 
@@ -253,7 +253,7 @@ Exact capacity numbers and whether Residence storage is distinct from normal acc
 
 ## ACL and account Characters
 
-The Residence ownership/entitlement is account/World-scoped, but player-facing access remains governed through the selected graphical housing ACL model.
+The Residence ownership/entitlement is Account/World-scoped, but player-facing access remains governed through the selected graphical housing ACL model.
 
 The later implementation may provide convenient default access for Characters owned by the Residence Account, but this checkpoint does not convert Residence access into an unrestricted cross-Character item-sharing authority.
 
