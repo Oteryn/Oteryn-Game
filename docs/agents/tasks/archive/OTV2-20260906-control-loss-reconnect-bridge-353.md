@@ -4,6 +4,135 @@
 task_id: OTV2-20260906-control-loss-reconnect-bridge-353
 title: Bridge complete owning-loss continuity into reconnect
 mode: IMPLEMENT
+status: completed
+admission_state: RELEASED
+repository: Oteryn/Oteryn-Game
+base_branch: main
+branch: null
+issue: 353
+pr: 361
+coordinator: Oteryn Work Delivery Coordinator
+allocation_source_main_sha: 53c6bdf06a2282d893035a995c46052c88f935b4
+admission_main_sha: b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a
+base_sha: b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a
+final_head_sha: 444dddd6f5da6db934781b30615c23867b0381cf
+merge_sha: 3825e9c82ff388923f73548a807718807012f53f
+merge_group_candidate_sha: 3825e9c82ff388923f73548a807718807012f53f
+protected_tree_sha: 02b040a15512fe918558e4b5fe923b214e30d84a
+independent_review_comment: 5576207096
+pull_request_merge_gate_run: 34166189147
+pull_request_governance_run: 34166189193
+pull_request_architecture_run: 34166189247
+merge_queue_run: 34166992903
+owner: null
+owned_paths: []
+conditional_paths: []
+blocks: []
+external_repositories: []
+consumers_active: false
+wp4_required: true
+created_at: 2026-09-06
+updated_at: 2026-09-07
+```
+
+## Terminal outcome
+
+WP2 Foundation semantic/API delivery is protected on
+`main@3825e9c82ff388923f73548a807718807012f53f`. The accepted
+`FND-DUR-GAMESESSION-NONREUSE-V1` surface covers Terminal replacement,
+CompleteReconnect `EarlyTerminalReplacement`, and PostGrace new-session
+authorization using sealed candidate-specific owner observations. It preserves
+the immutable `FreshAdmissionCommit`, split PREPARE/COMMIT effects, exact
+committed replay, current-session reload, and the fixed 65,536 lifetime ceiling.
+
+The final implementation head
+`444dddd6f5da6db934781b30615c23867b0381cf` changed only four paths within the
+original five-path lease. Exact-head Merge gate `34166189147`, Agent governance
+`34166189193`, and Architecture semantic audit `34166189247` succeeded.
+Independent Codex review comment `5576207096` found no major issue and no
+review thread remained unresolved.
+
+Normal FULL Merge Queue run `34166992903` qualified candidate
+`3825e9c82ff388923f73548a807718807012f53f`. All nine jobs succeeded:
+candidate/governance, dependency review, CodeQL Python and Actions, Rust Linux
+workspace, PostgreSQL 17.6 harness, Rust Windows client, Rust supply chain, and
+final `game-gate`. Protected main readback matched that candidate, PR #361 was
+merged, and its canonical source branch was deleted by normal lifecycle handling.
+
+## Released custody and remaining programme
+
+This closeout releases the five-path WP2 Foundation worker lease. No WP2 source
+writer remains. `CONSUMERS_ACTIVE = false` and `WP4_REQUIRED = true` remain
+binding: Foundation stores no durable lifetime ledger, and this delivery does not
+activate SQL, migration, Durability, Server Seam, production, or external
+repository consumers.
+
+WP4 remains ordered behind terminal protected WP3 and fresh Work custody
+application. WP5, Server Seam, G0, and G1 retain their separate prerequisites.
+The historical plan remains provenance only.
+
+Runtime product E2E is NOT_APPLICABLE to this documentation-only closeout. This
+archive transition itself still requires canonical checks, normal FULL Merge
+Queue, and protected-main readback before the task is terminally absent from
+active discovery.
+
+## Historical task packet
+
+The remainder of this file is the verbatim task packet from protected active blob
+`3f16361b7be5c9d3bad81132b816f72db874d0d4`. Its earlier `in_progress`,
+`ADMITTED`, owner-stop, head, and next-action fields are historical evidence
+only and do not override the terminal record above.
+
+---
+
+# OTV2-20260906-control-loss-reconnect-bridge-353
+
+## WP2 nonreuse amendment implementation checkpoint — 2026-09-07
+
+Protected Work application `#353/5575100697` activates the accepted
+`FND-DUR-GAMESESSION-NONREUSE-V1` Foundation-only amendment on this canonical
+task. The implementation adds a sealed, candidate-specific
+`GameSessionUseObservationV1` semantic boundary and does not copy or retain the
+durable lifetime ledger. It binds character, candidate, current/no-current
+origin, registered source/version, complete membership revision and result,
+operation replay binding, lifetime count, and current session/connection/lease/
+scope fences.
+
+The three explicit family entry methods distinguish Terminal replacement,
+CompleteReconnect `EarlyTerminalReplacement`, and PostGrace new-session
+recovery. They reject missing/incomplete/stale/conflicting observations and
+intermediate retired candidates. Exact committed replay is classified before
+used-candidate rejection and returns its committed revision without consuming a
+new revision. Entry 65,536 remains admissible; the next unused candidate returns
+the family-specific permanent FND-04C lifetime-exhaustion result, never transient
+`ADMISSION_CAPACITY_EXCEEDED`.
+
+Fresh RED was captured by compiling the new regressions against the prior
+Foundation surface: the focused test target failed with missing
+`GameSessionUseObservationV1`, source, request, fence, decision, and error APIs
+(`RED_EXIT=101`). Subsequent GREEN commands and the exact final head are reported
+from the committed checkpoint without rewriting this preserved evidence.
+
+`CONSUMERS_ACTIVE = false`. The semantic API is intentionally not connected to
+SQL/B or runtime producers in this amendment. `WP4_REQUIRED = true` for durable
+membership, atomic revision/capacity effects, exact-result reload, and registered
+owner observation construction before consumer activation. PREPARE/COMMIT and
+the immutable original `FreshAdmissionCommit` remain unchanged.
+
+## Current owner stop checkpoint — 2026-09-06T17:40:25Z
+
+The owner explicitly requested saving current work to the repository and stopping. All agents are stopped. This override supersedes older in-progress/qualification prose below. The partial repair is **UNVERIFIED WIP**, not a resolved P1 or permission to integrate. No further implementation, test execution, Merge Queue entry, consumer activation or lease release occurs in this run.
+
+PR358 merged as protected `7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3` at17:31:29 despite conversion to draft at17:28:25; that operation did not remove the existing queue entry. Its earlier clean review is superseded by the P1 recorded in353 comment5560950482. Early-terminal replacement must establish the successor RECONNECTABLE anchor and claims at PREPARE, retaining predecessor connection generation and no controller. COMMIT alone activates the successor generation/transport/proof/protection. The original `FreshAdmissionCommit` must remain immutable; a distinct complete anchor/current projection must carry replacement state. Exact predecessor PREPARED-attempt fencing must preserve slots and require independently sourced session/attempt/transport binding. The currently saved implementation/test edits are incomplete and must be reviewed and qualified before use.
+
+Same canonical branch and admission are preserved. Local repair HEAD is native `4b0f55db36a3bfdb35cbe1af78f3ac1482b8bc8d` with normal merge parent `7ce1d88ba7eb83033c4f0c11a5ccd1cb5030fac3`; baseline357 documentation changes are merge-up, not additional authored scope. Window1 closed with50m51s charged/9m09s discarded. Window2 was granted in353 comment5560958184, started17:36:22 and paused17:40:25: conservatively4m03s charged,55m57s remaining, completed windows1/repair cycles3/rotations0. No counter, history or admission reset. A future explicit resume must first read canonical refs, this draft checkpoint, current allocations and these preserved budgets.
+
+B329 remains frozen at `834db1d7118d751e31287715d3eaac7780a0c7b9` (PR335, actual PostgreSQL17.6 366/0, full acceptance open). Driver351 remains frozen at `2aecb63f03e01c5e2c3eb8933dbb51d6f8b8c59c` (draft PR356, full checkpoint CI passed, full TLS/PG gate open). Its include-only test lease was activated by353-independent351 comment5560895137 without a new worker window. Child C319 still lacks separately authorized Platform native UUID/security/signing producers. Server Seam247 stays held at `9370b254c6ac4f6529e069c1968ae6bfa1e1750e`; no production readiness is claimed.
+
+```yaml
+task_id: OTV2-20260906-control-loss-reconnect-bridge-353
+title: Bridge complete owning-loss continuity into reconnect
+mode: IMPLEMENT
 status: in_progress
 admission_state: ADMITTED
 repository: Oteryn/Oteryn-Game

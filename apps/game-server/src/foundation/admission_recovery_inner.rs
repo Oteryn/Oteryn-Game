@@ -46,6 +46,7 @@ impl CharacterWorldEligibilityClaimV1 {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GameSessionAuthoritySnapshot<T: Copy + Eq> {
     commit: FreshAdmissionCommit<T>,
+    replacement_game_session_id: Option<GameSessionId>,
     session_state: GameSessionState,
     current_connection_generation: ConnectionGeneration,
     current_transport: Option<T>,
@@ -70,6 +71,7 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
     ) -> Self {
         Self {
             commit,
+            replacement_game_session_id: None,
             session_state,
             current_connection_generation,
             current_transport,
@@ -101,6 +103,7 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
         }
         Ok(Self {
             commit,
+            replacement_game_session_id: None,
             session_state,
             current_connection_generation,
             current_transport,
@@ -111,6 +114,47 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
             current_control_loss_epoch: None,
             current_original_grace_deadline: None,
         })
+    }
+
+    /// Reconstructs the current authority projection from one fenced durable
+    /// read while retaining the immutable fresh-admission receipt.
+    ///
+    /// The current identity is explicit persisted authority: it is never
+    /// inferred from UUID ordering or replacement history. This crate-private
+    /// path lets the durability owner restore a replacement projection without
+    /// exposing a forgeable public constructor or setter.
+    #[allow(clippy::too_many_arguments, dead_code)]
+    pub(crate) fn from_persisted_current_facts(
+        current_game_session_id: GameSessionId,
+        commit: FreshAdmissionCommit<T>,
+        session_state: GameSessionState,
+        current_connection_generation: ConnectionGeneration,
+        current_transport: Option<T>,
+        current_character_lease: CharacterLease,
+        current_character_world_eligibility: Option<CharacterWorldEligibilityClaimV1>,
+        current_runtime_scope: RuntimeScopeRefV1,
+        current_scope_generation: ScopeOwnershipGeneration,
+    ) -> Result<Self, ReconnectDurabilityErrorV1> {
+        if current_runtime_scope.world_id() != commit.world_id() {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        let snapshot = Self {
+            commit,
+            replacement_game_session_id: (current_game_session_id != commit.game_session_id())
+                .then_some(current_game_session_id),
+            session_state,
+            current_connection_generation,
+            current_transport,
+            current_character_lease,
+            current_character_world_eligibility,
+            current_runtime_scope,
+            current_scope_generation,
+            current_control_loss_epoch: None,
+            current_original_grace_deadline: None,
+        };
+        validate_current_authority(current_game_session_id, snapshot)
+            .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        Ok(snapshot)
     }
 
     pub fn with_control_loss_continuity(
@@ -140,6 +184,16 @@ impl<T: Copy + Eq> GameSessionAuthoritySnapshot<T> {
     #[must_use]
     pub const fn commit(self) -> FreshAdmissionCommit<T> {
         self.commit
+    }
+
+    /// Current authority identity, which may differ from the immutable fresh
+    /// admission receipt after an early-terminal replacement commits.
+    #[must_use]
+    pub const fn current_game_session_id(self) -> GameSessionId {
+        match self.replacement_game_session_id {
+            Some(session) => session,
+            None => self.commit.game_session_id(),
+        }
     }
 
     #[must_use]
@@ -233,6 +287,7 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
                     || presence.character_id() != candidate.identity().character_id()
             })
             || predecessor_game_session_id == candidate_game_session_id
+            || snapshot.commit().game_session_id() == candidate_game_session_id
             || snapshot.session_state() != GameSessionState::Terminal
             || snapshot.current_transport().is_some()
         {
@@ -255,7 +310,7 @@ impl TerminalGameSessionReplacementAuthorizationV1 {
         let candidate_authority = candidate.authority();
         let candidate_continuity = candidate.continuity();
 
-        if committed.game_session_id() != predecessor_game_session_id
+        if snapshot.current_game_session_id() != predecessor_game_session_id
             || identity.game_session_id() != candidate_game_session_id
             || identity.account_id() != account_id
             || identity.character_id() != committed.character_id()
@@ -350,7 +405,7 @@ fn validate_current_authority<T: Copy + Eq>(
     snapshot: GameSessionAuthoritySnapshot<T>,
 ) -> Result<(), AdmissionError> {
     let committed = snapshot.commit();
-    if committed.game_session_id() != expected_game_session_id {
+    if snapshot.current_game_session_id() != expected_game_session_id {
         return Err(AdmissionError::ReconciliationUnavailable);
     }
     if snapshot.current_character_world_eligibility()
@@ -366,7 +421,10 @@ fn validate_current_authority<T: Copy + Eq>(
     if lease.character_id() != committed.character_id() {
         return Err(AdmissionError::StaleLease);
     }
-    if lease.generation() != committed.character_lease_generation() {
+    if lease.generation() < committed.character_lease_generation()
+        || (snapshot.replacement_game_session_id.is_none()
+            && lease.generation() != committed.character_lease_generation())
+    {
         return Err(AdmissionError::StaleLease);
     }
     if snapshot.current_scope_generation().get() < committed.scope_ownership_generation() {
@@ -2414,7 +2472,8 @@ impl PostGraceActorObservationV1 {
             || snapshot.current_control_loss_epoch() != Some(self.budget.epoch()) || self.budget.state() != RecoveryEpochStateV1::Open
             || snapshot.current_original_grace_deadline().is_none_or(|grace| grace <= 0 || now <= grace)
         { return Err(invalid); }
-        validate_current_authority(commit.game_session_id(), snapshot).map_err(|_| invalid)?;
+        validate_current_authority(snapshot.current_game_session_id(), snapshot)
+            .map_err(|_| invalid)?;
         self.protection.ok_or(invalid)?.validate(now)?;
         Ok(())
     }
@@ -2494,7 +2553,10 @@ impl PostGraceRecoveryAuthorizationV1 {
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         let actor = authority.resolve(verified.facts().account_id(), verified.facts().character_id(), now)?;
         let verified = verified.revalidate(now, trust, &actor.current).map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
-        if candidate == actor.predecessor.commit().game_session_id() || actor.account_security_source_revision != verified.security().provenance.source_revision {
+        if candidate == actor.predecessor.current_game_session_id()
+            || candidate == actor.predecessor.commit().game_session_id()
+            || actor.account_security_source_revision != verified.security().provenance.source_revision
+        {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
         actor.budget.check_candidate(attempt, transport)?;
@@ -2567,7 +2629,9 @@ impl PostGraceRecoveryOperationV1 {
             attempt_deadline:self.credential.accepted_deadline,
         };
         if self.version!=1 || self.timing!=expected || self.prepared_at<self.credential.verified_at
-            || self.candidate==self.actor.predecessor.commit().game_session_id() || self.candidate_generation.get()!=1
+            || self.candidate==self.actor.predecessor.current_game_session_id()
+            || self.candidate==self.actor.predecessor.commit().game_session_id()
+            || self.candidate_generation.get()!=1
             || self.credential.account_id!=self.actor.current.account_id || self.credential.character_id!=self.actor.current.character_id || self.credential.world_id!=self.actor.current.world_id
             || self.credential.ruleset_revision!=self.actor.current.ruleset_revision || self.credential.content_revision!=self.actor.current.content_revision
             || self.credential.map_revision!=self.actor.current.map_revision || self.credential.world_policy_revision!=self.actor.current.world_policy_revision
@@ -2853,6 +2917,27 @@ fn validate_post_grace_adoption(receipt: &PostGraceCommitReceiptV1, current: &Po
     let prior = &receipt.decision.actor;
     let actor = &current.actor;
     let session = current.session;
+    // Legacy post-grace recovery admits a new fresh commit. A session already
+    // replaced inside the original admission lineage must instead retain that
+    // immutable commit and project the post-grace candidate as current. Select
+    // the shape only from the retained owner-authored predecessor in the
+    // committed decision, never from caller-filled adoption fields.
+    let replacement_lineage = prior.predecessor.current_game_session_id()
+        != prior.predecessor.commit().game_session_id();
+    let historical_commit_valid = if replacement_lineage {
+        session.commit == prior.predecessor.commit
+    } else {
+        session.commit.game_session_id() == operation.candidate
+            && session.commit.connection_generation() == operation.candidate_generation
+            && session.commit.initial_transport() == operation.transport
+            && session.commit.character_lease_generation()
+                == prior.predecessor.current_character_lease.generation()
+            && session.commit.scope_ownership_generation()
+                == prior.predecessor.current_scope_generation.get()
+            && session.commit.character_id() == prior.current.character_id
+            && session.commit.world_id() == prior.current.world_id
+            && session.commit.channel_id() == prior.predecessor.commit.channel_id()
+    };
     super::fnd04_verifier::validate_recovery_adoption_sources(&receipt.decision.credential, &current.signing, &current.security, now).map_err(|_|stale)?;
     if now < receipt.decided_at || !current.actor_present || actor.present_uncontrolled || !actor.runtime_ready
         || actor.source_authority != prior.source_authority || actor.source_revision <= prior.source_revision
@@ -2866,13 +2951,9 @@ fn validate_post_grace_adoption(receipt: &PostGraceCommitReceiptV1, current: &Po
         || actor.budget.epoch != prior.budget.epoch || actor.budget.state != RecoveryEpochStateV1::Restored
         || current.controller != Some((operation.candidate, operation.candidate_generation, operation.transport))
         || current.live_transport != Some(operation.transport)
-        || session.session_state != GameSessionState::Active || session.commit.game_session_id() != operation.candidate
+        || session.session_state != GameSessionState::Active || session.current_game_session_id() != operation.candidate
         || session.current_connection_generation != operation.candidate_generation || session.current_transport != Some(operation.transport)
-        || session.commit.connection_generation() != operation.candidate_generation || session.commit.initial_transport() != operation.transport
-        || session.commit.character_lease_generation() != prior.predecessor.current_character_lease.generation()
-        || session.commit.scope_ownership_generation() != prior.predecessor.current_scope_generation.get()
-        || session.commit.character_id() != prior.current.character_id || session.commit.world_id() != prior.current.world_id
-        || session.commit.channel_id() != prior.predecessor.commit.channel_id()
+        || !historical_commit_valid
         || session.current_character_lease != prior.predecessor.current_character_lease
         || session.current_character_world_eligibility != prior.predecessor.current_character_world_eligibility
         || session.current_runtime_scope != prior.predecessor.current_runtime_scope
@@ -3003,7 +3084,7 @@ impl ControlLossObservationV1 {
         {
             return Err(stale);
         }
-        validate_current_authority(self.session.commit().game_session_id(), self.session)
+        validate_current_authority(self.session.current_game_session_id(), self.session)
             .map_err(|_| stale)?;
         self.protection.validate(self.loss_origin)?;
         match &self.history {
@@ -3099,7 +3180,7 @@ impl ControlLossAuthorizationV1 {
     ) -> Result<Self, ReconnectDurabilityErrorV1> {
         let observation = source.resolve_loss(session, now)?;
         observation.validate(now)?;
-        if observation.session.commit().game_session_id() != session {
+        if observation.session.current_game_session_id() != session {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
         Ok(Self {
@@ -3123,7 +3204,7 @@ impl ControlLossAuthorizationV1 {
         now: i64,
     ) -> Result<ControlLossEffectV1, ReconnectDurabilityErrorV1> {
         let original = &self.operation.observation;
-        let mut current = source.resolve_loss(original.session.commit().game_session_id(), now)?;
+        let mut current = source.resolve_loss(original.session.current_game_session_id(), now)?;
         current.validate(now)?;
         if now < self.operation.authorized_at
             || current.source_revision < original.source_revision
@@ -3463,7 +3544,7 @@ impl CompleteFastReconnectBindingV1 {
     ) -> Result<(), ReconnectDurabilityErrorV1> {
         let compatibility = &self.compatibility;
         if self.session != identity.game_session_id()
-            || self.session != current.session.commit().game_session_id()
+            || self.session != current.session.current_game_session_id()
             || self.predecessor != current.session.current_connection_generation()
             || self.attempt != identity.reconnect_attempt_ref()
             || self.transport != current.candidate.transport_ref()
@@ -3546,7 +3627,7 @@ impl CompleteReconnectProofTransitionV1 {
                 .observed_at
                 .checked_add(EVIDENCE_FRESHNESS_SECONDS_V1)
                 .is_none_or(|deadline| now > deadline)
-            || self.predecessor_session != current.session.commit().game_session_id()
+            || self.predecessor_session != current.session.current_game_session_id()
             || self.predecessor_generation == 0
             || self.successor_session != identity.game_session_id()
             || self.successor_generation == 0
@@ -3572,10 +3653,41 @@ pub struct CompleteReconnectProofCurrentV1 {
     pub proof_generation: u64,
 }
 
+/// Canonical replacement anchor, separate from the immutable predecessor
+/// fresh-admission receipt. The exact receipt and anchor are established in
+/// PREPARE; only COMMIT may activate the candidate connection.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct CompleteReplacementAnchorV1 {
+    pub identity: ReconnectIdentityV1,
+    pub predecessor_session: GameSessionId,
+    pub candidate: ReconnectCandidateBindingV1,
+    pub prepared_at: i64,
+    pub loss_epoch: ControlLossEpochRefV1,
+    pub loss_decided_at: i64,
+    pub original_grace_deadline: i64,
+    pub lease: CharacterLease,
+    pub runtime_scope: RuntimeScopeRefV1,
+    pub scope_generation: ScopeOwnershipGeneration,
+    pub state: GameSessionState,
+    pub connection_generation: ConnectionGeneration,
+    pub transport: Option<AuthenticatedTransportRefV1>,
+    pub receipt: super::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
+}
+/// Owning-source attribution for an existing retained predecessor attempt.
+/// This does not grant a new slot or attribute an unbound competing attempt.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct CompletePredecessorAttemptV1 {
+    pub session: GameSessionId,
+    pub attempt: ReconnectAttemptRef,
+    pub transport: AuthenticatedTransportRefV1,
+}
+
 /// Independently loaded complete actor/session/claim facts. The original loss
 /// is durable history; only the sealed source can attest its current continuity.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompleteReconnectSnapshotV1 {
+    pub replacement_anchor: Option<CompleteReplacementAnchorV1>,
+    pub predecessor_attempts: Vec<CompletePredecessorAttemptV1>,
     pub loss: ControlLossOperationV1,
     pub loss_decided_at: i64,
     pub source_authority: RuntimeScopeRefV1,
@@ -3598,6 +3710,15 @@ pub struct CompleteReconnectSnapshotV1 {
 }
 impl CompleteReconnectSnapshotV1 {
     pub(super) fn validate_resources(&self) -> Result<(), ReconnectDurabilityErrorV1> {
+        if self.predecessor_attempts.len() > 8 {
+            return Err(ReconnectDurabilityErrorV1::InvalidRecord);
+        }
+        if let Some(anchor) = &self.replacement_anchor {
+            super::admission_authority_publication::validate_post_grace_claim_resource_fields(&anchor.receipt.predecessors)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+            super::admission_authority_publication::validate_post_grace_claim_resource_fields(&anchor.receipt.successors)
+                .map_err(|_| ReconnectDurabilityErrorV1::InvalidRecord)?;
+        }
         if !super::fnd04_verifier::recovery_lifecycle_fields_bounded(&[
             &self.recovery.account_id,
             &self.recovery.ruleset_revision,
@@ -3618,6 +3739,7 @@ impl CompleteReconnectSnapshotV1 {
         now: i64,
     ) -> Result<(), ReconnectDurabilityErrorV1> {
         self.validate_resources()?;
+        if self.replacement_anchor.is_some() { return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
         self.loss.validate_historical()?;
         let loss = &self.loss.observation;
         let session = self.session;
@@ -3643,6 +3765,7 @@ impl CompleteReconnectSnapshotV1 {
                 GameSessionState::Reconnectable | GameSessionState::Terminal
             )
             || session.commit() != loss.session.commit()
+            || session.current_game_session_id() != loss.session.current_game_session_id()
             || session.current_connection_generation()
                 != loss.session.current_connection_generation()
             || self.account_presence != loss.account_presence
@@ -3669,7 +3792,7 @@ impl CompleteReconnectSnapshotV1 {
         {
             return Err(stale);
         }
-        validate_current_authority(session.commit().game_session_id(), session)
+        validate_current_authority(session.current_game_session_id(), session)
             .map_err(|_| stale)?;
         self.protection.validate(now)?;
         self.proof_transition.validate(self, identity, now)?;
@@ -3702,14 +3825,18 @@ impl CompleteReconnectOperationV1 {
             return Err(ReconnectDurabilityErrorV1::InvalidRecord);
         }
         self.original.validate(&self.identity, self.prepared_at)?;
-        if self
-            .original
-            .budget
-            .entries()
-            .iter()
-            .any(|entry| entry.disposition == RetainedRecoveryAttemptDispositionV1::Prepared)
-        {
-            return Err(ReconnectDurabilityErrorV1::ConcurrentPrepared);
+        for binding in &self.original.predecessor_attempts {
+            if self.mode != CompleteReconnectModeV1::EarlyTerminalReplacement
+                || binding.session != self.original.session.current_game_session_id()
+                || binding.attempt == self.identity.reconnect_attempt_ref()
+                || self.original.predecessor_attempts.iter().filter(|other| other.attempt == binding.attempt).count() != 1
+                || !self.original.budget.entries().iter().any(|entry| entry.attempt == binding.attempt && entry.transport == binding.transport && entry.disposition == RetainedRecoveryAttemptDispositionV1::Prepared)
+            { return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
+        }
+        for entry in self.original.budget.entries() {
+            if entry.disposition == RetainedRecoveryAttemptDispositionV1::Prepared
+                && !self.original.predecessor_attempts.iter().any(|binding| binding.attempt == entry.attempt && binding.transport == entry.transport)
+            { return Err(ReconnectDurabilityErrorV1::ConcurrentPrepared); }
         }
         match &self.credential {
             CompleteReconnectCredentialV1::Fast(binding) => {
@@ -3771,11 +3898,13 @@ impl CompleteReconnectOperationV1 {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
         let same =
-            self.identity.game_session_id() == self.original.session.commit().game_session_id();
+            self.identity.game_session_id() == self.original.session.current_game_session_id();
         if (self.mode == CompleteReconnectModeV1::SameSession
             && (!same || self.original.session.session_state() != GameSessionState::Reconnectable))
             || (self.mode == CompleteReconnectModeV1::EarlyTerminalReplacement
                 && (same
+                    || self.identity.game_session_id()
+                        == self.original.session.commit().game_session_id()
                     || self.original.session.session_state() != GameSessionState::Terminal
                     || self
                         .credential
@@ -3788,6 +3917,11 @@ impl CompleteReconnectOperationV1 {
     }
     fn prepared_budget(&self) -> Result<RetainedRecoveryBudgetV1, ReconnectDurabilityErrorV1> {
         let mut budget = self.original.budget.clone();
+        for entry in &mut budget.entries {
+            if self.original.predecessor_attempts.iter().any(|binding| binding.attempt == entry.attempt && binding.transport == entry.transport) {
+                entry.disposition = RetainedRecoveryAttemptDispositionV1::Terminal;
+            }
+        }
         if budget.check_candidate(
             self.identity.reconnect_attempt_ref(),
             self.original.candidate.transport_ref(),
@@ -3806,8 +3940,9 @@ impl CompleteReconnectOperationV1 {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CompleteReconnectCurrentV1 {
     pub snapshot: CompleteReconnectSnapshotV1,
-    /// Independently loaded canonical prepared operation, never caller supplied.
-    pub prepared: Option<Box<CompleteReconnectOperationV1>>,
+    /// Independently loaded canonical durability operation, including the
+    /// immutable replacement transition prepared with it; never caller supplied.
+    pub prepared: Option<Box<CompleteReconnectDurabilityOperationV1>>,
 }
 /// Registered runtime/adapter source. Each call resolves fresh current facts;
 /// trust methods provide authenticated source contexts, not cached verifier facts.
@@ -4032,7 +4167,22 @@ impl CompleteReconnectAuthorizationV1 {
         let operation = &self.operation;
         operation.validate_historical()?;
         let current = source.resolve_reconnect(&operation.identity, now)?;
-        current.snapshot.validate(&operation.identity, now)?;
+        current.snapshot.validate_resources()?;
+        let mut validation = current.snapshot.clone();
+        if prepared && operation.mode == CompleteReconnectModeV1::EarlyTerminalReplacement {
+            let anchor = validation.replacement_anchor.as_ref().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?;
+            let evidence = super::admission_authority_publication::CompleteReconnectClaimEvidenceV1 {
+                operation: operation.clone(), transition: anchor.receipt.clone(),
+            };
+            evidence.validate_historical(now).map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
+            if anchor != &complete_replacement_anchor(operation, &evidence.transition, false)
+                || validation.claims != evidence.transition.successors
+            { return Err(ReconnectDurabilityErrorV1::StaleAuthority); }
+            validation.replacement_anchor = None;
+            validation.claims = operation.original.claims.clone();
+            validation.budget = operation.original.budget.clone();
+        }
+        validation.validate(&operation.identity, now)?;
         if now < operation.prepared_at {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
@@ -4040,17 +4190,28 @@ impl CompleteReconnectAuthorizationV1 {
             stored.validate_historical()?;
         }
         if prepared {
-            if current.prepared.as_deref() != Some(operation)
+            let stored = current.prepared.as_deref().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?;
+            if &stored.recovery != operation
                 || current.snapshot.budget != operation.prepared_budget()?
             {
                 return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+            }
+            if operation.mode == CompleteReconnectModeV1::EarlyTerminalReplacement {
+                let replacement = stored.replacement.as_ref().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?;
+                let anchor = current.snapshot.replacement_anchor.as_ref().ok_or(ReconnectDurabilityErrorV1::StaleAuthority)?;
+                if replacement.operation != *operation
+                    || anchor.receipt != replacement.transition
+                    || current.snapshot.claims != replacement.transition.successors
+                {
+                    return Err(ReconnectDurabilityErrorV1::StaleAuthority);
+                }
             }
         } else if current.prepared.is_some() {
             return Err(ReconnectDurabilityErrorV1::ConcurrentPrepared);
         }
         let fresh = self
             .proof
-            .verify(source, &current.snapshot, &operation.identity, now)?;
+            .verify(source, &validation, &operation.identity, now)?;
         let mut expected = operation.credential.clone();
         let mut actual = fresh.clone();
         match (&mut expected, &mut actual) {
@@ -4098,7 +4259,7 @@ impl CompleteReconnectAuthorizationV1 {
         if actual != expected {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
-        let mut normalized = current.snapshot.clone();
+        let mut normalized = validation;
         if normalized.source_revision < operation.original.source_revision
             || normalized.observed_at < operation.original.observed_at
         {
@@ -4217,12 +4378,16 @@ pub struct CompleteReconnectEffectV1 {
     operation: CompleteReconnectDurabilityOperationV1,
     kind: CompleteReconnectRequestKindV1,
     decided_at: i64,
+    replacement_anchor: Option<CompleteReplacementAnchorV1>,
     session: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
     budget: RetainedRecoveryBudgetV1,
     protection: RecoveryProtectionContinuityV1,
     claims: Vec<super::admission_authority_publication::AdmissionAuthorityPublicationChangeV1>,
 }
 impl CompleteReconnectEffectV1 {
+    #[must_use]
+    pub fn replacement_anchor(&self) -> Option<&CompleteReplacementAnchorV1> { self.replacement_anchor.as_ref() }
+
     /// Applies to fast and reauthenticated recovery alike. The actual proof owner
     /// activates/delivers the reserved successor only with this exact COMMIT.
     #[must_use]
@@ -4278,6 +4443,30 @@ impl CompleteReconnectEffectV1 {
         &self.claims
     }
 }
+fn complete_replacement_anchor(
+    recovery: &CompleteReconnectOperationV1,
+    receipt: &super::admission_authority_publication::AdmissionClaimTransitionEvidenceV1,
+    commit: bool,
+) -> CompleteReplacementAnchorV1 {
+    let original = &recovery.original;
+    CompleteReplacementAnchorV1 {
+        identity: recovery.identity.clone(),
+        predecessor_session: original.session.current_game_session_id(),
+        candidate: original.candidate,
+        prepared_at: recovery.prepared_at,
+        loss_epoch: original.loss.observation.loss_epoch,
+        loss_decided_at: original.loss_decided_at,
+        original_grace_deadline: original.loss.observation.original_grace_deadline,
+        lease: original.session.current_character_lease(),
+        runtime_scope: original.session.current_runtime_scope(),
+        scope_generation: original.session.current_scope_generation(),
+        state: if commit { GameSessionState::Active } else { GameSessionState::Reconnectable },
+        connection_generation: if commit { original.candidate.connection_generation() } else { original.session.current_connection_generation() },
+        transport: commit.then_some(original.candidate.transport_ref()),
+        receipt: receipt.clone(),
+    }
+}
+
 fn complete_reconnect_effect(
     operation: &CompleteReconnectDurabilityOperationV1,
     commit: bool,
@@ -4292,6 +4481,11 @@ fn complete_reconnect_effect(
     let mut session = recovery.original.session;
     let mut protection = recovery.original.protection;
     let mut claims = recovery.original.claims.clone();
+    let replacement_anchor = if recovery.mode == CompleteReconnectModeV1::EarlyTerminalReplacement {
+        let receipt = &operation.replacement.as_ref().ok_or(ReconnectDurabilityErrorV1::InvalidRecord)?.transition;
+        claims = receipt.successors.clone();
+        Some(complete_replacement_anchor(recovery, receipt, commit))
+    } else { None };
     if commit {
         budget.state = RecoveryEpochStateV1::Restored;
         let winner = budget
@@ -4302,21 +4496,12 @@ fn complete_reconnect_effect(
         winner.disposition = RetainedRecoveryAttemptDispositionV1::Committed;
         protection = complete_reconnect_protection(protection, now)?;
         session.session_state = GameSessionState::Active;
-        session.current_connection_generation = recovery.original.candidate.connection_generation();
-        session.current_transport = Some(recovery.original.candidate.transport_ref());
         if recovery.mode == CompleteReconnectModeV1::EarlyTerminalReplacement {
-            session.commit.game_session_id = recovery.identity.game_session_id();
-            session.commit.connection_generation = session.current_connection_generation;
-            session.commit.initial_transport = recovery.original.candidate.transport_ref();
-            session.commit.scope_ownership_generation = session.current_scope_generation.get();
-            claims = operation
-                .replacement
-                .as_ref()
-                .ok_or(ReconnectDurabilityErrorV1::InvalidRecord)?
-                .transition
-                .successors
-                .clone();
+            session.replacement_game_session_id = Some(recovery.identity.game_session_id());
         }
+        session.current_connection_generation =
+            recovery.original.candidate.connection_generation();
+        session.current_transport = Some(recovery.original.candidate.transport_ref());
     }
     Ok(CompleteReconnectEffectV1 {
         operation: operation.clone(),
@@ -4326,6 +4511,7 @@ fn complete_reconnect_effect(
             CompleteReconnectRequestKindV1::Prepare
         },
         decided_at: now,
+        replacement_anchor,
         session,
         budget,
         protection,
@@ -4689,6 +4875,8 @@ impl CompleteReconnectFlowV1 {
             || current.accepted_source_revision != current.source_revision
             || !current.actor_present
             || !current.runtime_ready
+            || current.replacement_anchor != expected.replacement_anchor
+            || current.predecessor_attempts != original.predecessor_attempts
             || current.session != expected.session
             || current.protection != expected.protection
             || current.budget != expected.budget
@@ -4705,18 +4893,17 @@ impl CompleteReconnectFlowV1 {
         {
             return Err(ReconnectDurabilityErrorV1::StaleAuthority);
         }
-        super::admission_authority_publication::validate_complete_reconnect_claims(
-            self.operation.recovery.identity.account_id(),
-            current.session,
-            &current.claims,
-            now,
-        )
-        .map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
-        validate_current_authority(
-            self.operation.recovery.identity.game_session_id(),
-            current.session,
-        )
-        .map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
+        if let Some(anchor) = &current.replacement_anchor {
+            super::admission_authority_publication::validate_complete_replacement_current_claims(
+                anchor, &current.claims, now,
+            ).map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
+        } else {
+            super::admission_authority_publication::validate_complete_reconnect_claims(
+                self.operation.recovery.identity.account_id(), current.session, &current.claims, now,
+            ).map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
+            validate_current_authority(self.operation.recovery.identity.game_session_id(), current.session)
+                .map_err(|_| ReconnectDurabilityErrorV1::StaleAuthority)?;
+        }
         self.phase = CompleteReconnectPhaseV1::Adopted;
         Ok(CompleteReconnectControllerV1 {
             session: self.operation.recovery.identity.game_session_id(),
