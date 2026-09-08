@@ -646,3 +646,43 @@ Arc across all loads in that operation. Focused tests execute two sequential
 owned jobs and two sequential certificate loads on one runtime/ledger, proving
 owner continuity without weakening the identity check or falling back to
 unowned work. The deframer stop boundary above is unchanged.
+
+## Window9 complete-TLS decoded-structure boundary
+
+The protected deframer amendment closes only the incoming byte-buffer owner.  A
+fresh composition audit reaches the next allocation before SQLx regains control:
+`rustls-0.23.43/src/conn.rs::ConnectionCore::deframe` maps the decrypted
+`PlainMessage` through `Message::try_from(pm).map(|m| m.into_owned())`.  Private
+handshake decoding performed by that call allocates the decoded AST, peer
+certificate chain and related owned payloads before `process_new_packets`
+returns.  SQLx can neither identify the decoded branch nor attach a reservation
+to that backing before allocation.  The #424 authority for `conn.rs` is narrow
+public wiring for the deframer-buffer owner; it does not authorize a second
+decoded-message owner or changes to this call site.
+
+The already-reviewed conservative pre-call bounds cannot substitute for custody:
+the correlated ECH decoder bound (3,276,650), retained handshake-span backing
+(327,680), accepted active request (524,288), and deframer backing (65,536)
+total 4,194,154 bytes, leaving 150 bytes in the accepted 4 MiB owner slot before
+configuration, provider/crypto, peer-chain, session/cache, send, transcript and
+error backing.  Those remaining owners are nonzero.  This proves that the
+current conservative composition cannot fund the accepted positive case; it
+does not justify a smaller TLS limit, a whole-slot reservation, or releasing
+custody early.
+
+`SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/conn.rs ::
+ConnectionCore::deframe (before Message::try_from / into_owned)`, with only the
+necessary public owner wiring.  The required resource is the actual private
+decoded-message/handshake backing, including allocation-growth overlap and
+transfer into retained peer-chain/session state.  The accepted invariant is
+same-ledger reservation before allocation and custody until actual destruction
+or a proved charged transfer across success, TLS failure, cancellation, drop,
+cache/session retention and handshake overlap.  The current #424 allowlist
+cannot satisfy it because its `conn.rs` grant is solely the deframer owner
+installation surface and its protected scope expressly excludes decoded-state,
+client/config/session/crypto/error ownership.  No plaintext/unowned fallback,
+private-layout constant, semantic cap or TLS-policy change is acceptable.
+
+Complete TLS therefore remains **NOT_PROVEN**.  TLS-positive execution and the
+configured PostgreSQL 17.6 qualification remain correctly stopped; plaintext
+PostgreSQL and CONTROL classifier results supply neither credit.

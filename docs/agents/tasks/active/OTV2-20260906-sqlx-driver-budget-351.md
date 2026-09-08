@@ -359,3 +359,30 @@ complete_tls_accounting: NOT_PROVEN
 next_action: compose remaining accepted TLS configuration, decoded structures, session/cache and handshake overlap on the same ledger, then obtain separate TLS-positive and configured PostgreSQL17.6 evidence
 remaining_acceptance_cells: complete TLS configuration/decoder/session-cache/handshake-overlap custody; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
 ```
+
+## Window9 decoded-message owner stop
+
+The deframer byte-buffer hook and narrow `TLS_BLOCKING_OWNER` remain **PROVEN**.
+Complete TLS composition next reaches rustls
+`ConnectionCore::deframe` before `Message::try_from` / `into_owned`, where the
+private decoded AST and retained handshake backing allocate before SQLx can
+observe the branch or reserve its actual capacity.  The protected #424
+`conn.rs` authority is limited to deframer-owner wiring and does not grant this
+decoded-state owner hook.
+
+The established conservative phase values consume 4,194,154 of the accepted
+4,194,304-byte slot before nonzero configuration, crypto, chain, session/cache,
+send, transcript and error owners.  Therefore pre-reserving existing bounds
+cannot prove a feasible accepted positive case and must not be converted into a
+whole-slot magic allowance or semantic shrink.
+
+```yaml
+last_progress: proved the next private decoded-message allocation boundary after the protected deframer hook
+status: blocked_pending_shared_lease
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+blocker: rustls_private_decoded_message_allocates_before_sqlx_can_reserve_or_transfer_custody
+next_action: protect a same-ledger decoded-message owner hook at ConnectionCore::deframe before Message::try_from / into_owned, plus necessary public wiring
+remaining_acceptance_cells: decoded AST and retained-chain owner; configuration/crypto/session-cache/send/transcript/error and handshake-overlap custody; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
+```

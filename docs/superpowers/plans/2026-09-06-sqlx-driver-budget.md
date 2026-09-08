@@ -159,3 +159,19 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Complete configuration, decoder, session/cache and handshake-overlap custody on the same ledger.
 - [ ] Run separate actual TLS-positive and configured PostgreSQL17.6 qualification only after complete TLS ownership is proven.
 - [ ] Obtain independent exact-head high-risk review, canonical CI/MQ and protected readback before any shared-target release or WP3 acceptance claim.
+
+## Window9 decoded-state stop
+
+- [x] Re-audit phase composition after the deframer owner hook and preserve the
+  narrow blocking/deframer proofs.
+- [x] Identify the next pre-observation allocation at rustls
+  `ConnectionCore::deframe` before `Message::try_from` / `into_owned`.
+- [x] Prove existing conservative values leave only 150 bytes in the accepted
+  4 MiB slot before nonzero configuration/crypto/session/send/error owners, so
+  an opaque pre-call reservation cannot establish the required positive case.
+- [ ] Obtain a protected same-ledger decoded-message owner amendment at that
+  exact call site, including charged transfer into retained peer-chain/session
+  backing.  The current #424 `conn.rs` grant is deframer-wiring-only.
+- [ ] Keep TLS-positive and configured PostgreSQL17.6 execution stopped until
+  complete TLS ownership is proven; plaintext and CONTROL classifier results
+  are not qualification.
