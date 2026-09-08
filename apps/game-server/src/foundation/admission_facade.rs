@@ -1,3 +1,8 @@
+/// Production fresh-admission entry: bounded submission and normalized completion,
+/// independent of `ReconnectAttemptJournal`. SQLx adapters implement only its
+/// separate durability port, never the synchronous compatibility journal.
+pub use super::fresh_admission_durability::FreshAdmissionDurabilityFlowV1 as DurableFreshAdmissionAuthorityV1;
+
 use super::admission as core;
 use super::{
     ConnectionGeneration, GameSessionAuthoritySnapshot, GameSessionId, ScopeOwnershipGeneration,
@@ -142,6 +147,8 @@ fn validate_atomic_attempt_authority<T: Copy + Eq>(
 /// snapshot's RuntimeScope generation must come from the current externally
 /// established FND-03 recovery ownership grant; implementations must never
 /// locally increment, reuse or reconstruct a stale ownership generation.
+/// Synchronous in-memory/test compatibility only for fresh admission. Production
+/// durability must use `DurableFreshAdmissionAuthorityV1` and its split-phase port.
 pub trait ReconnectAttemptJournal<T: Copy + Eq> {
     fn commit_fresh<F>(
         &self,

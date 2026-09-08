@@ -1,291 +1,215 @@
 # Oteryn Durability Multiagent Launch Runbook
 
+This runbook is operator guidance for the reusable Durability multiagent pattern. It is subordinate to root/nearest `AGENTS.md`, the immutable META policy binding, live GitHub Issue/task/allocation/PR/head/check/review state, accepted architecture/contracts and the uniquely active Game control plane.
+
+It does not grant write, merge, production, external-repository or owner-funded AI authority.
+
 ## Purpose
 
-Provide one operator-facing procedure for running the canonical Durability multiagent pattern already registered in this repository:
+Use one technical Durability writer plus optional read-only analyst fanout without creating duplicate mutation, stale-head qualification or a second control plane.
 
-- one mutating `Oteryn: sol durability lead`;
-- three strict read-only Durability analyst roles;
-- one uniquely active programme control plane in ChatGPT Work.
-
-This runbook is subordinate to protected-main root/nearest `AGENTS.md`, live GitHub Issue/task/allocation/PR/head/check/review state, the current Terra/Sol scheduler, accepted architecture/contracts and the current META-owned AI review policy. Historical PR/Issue numbers in examples are provenance only.
-
-## Source of truth before every launch
-
-Before launching or resuming any role, resolve from live GitHub:
-
-1. protected `main` SHA;
-2. the current coordinator Issue/task and uniquely active mutating control-plane profile;
-3. the current Durability Issue/task/allocation, branch, PR and exact head SHA;
-4. current unresolved review findings/threads and exact-head checks;
-5. current root and nearest `AGENTS.md`;
-6. `docs/agents/PROMPT_LIFECYCLE.json` and the current prompt bodies;
-7. this runbook and `OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`.
-
-Never launch against a cached SHA, stale chat summary or historical task body when live GitHub has moved.
-
-## Canonical topology
+The canonical topology is:
 
 ```text
 ChatGPT Work
-  Oteryn: work coordinator OR Oteryn: terra game coordinator
-  -> exactly one mutating control plane selected by live lifecycle
+  exactly one live-selected mutating control plane
 
-Separate Chat #1
+separate chat
   Oteryn: sol durability lead
-  -> GPT-5.6 Sol
-  -> Extra High / highest available
-  -> SINGLE MUTATING WRITER
+  -> SINGLE MUTATING WRITER only when an exact current allocation grants it
 
-Separate Chat #2
+separate chat
   Oteryn: sol durability authority analyst
-  -> GPT-5.6 Sol
-  -> High
   -> READ_ONLY
 
-Separate Chat #3
+separate chat
   Oteryn: sol durability continuity analyst
-  -> GPT-5.6 Sol
-  -> High
   -> READ_ONLY
 
-Separate Chat #4
+separate chat
   Oteryn: sol durability qualification analyst
-  -> GPT-5.6 Sol
-  -> High
   -> READ_ONLY
 ```
 
-Do not run a second mutating Durability Lead for the same canonical task branch/PR. Do not upgrade an analyst into a writer by chat instruction, model choice or tool availability.
+The three analysts are optional acceleration roles. They consume no writer slot and must never become repository writers by chat instruction, model choice or tool availability.
 
-## Launch procedure
+## Resolve live authority first
 
-### Step 1 — prove the active control plane
+Before launching or resuming any role, refresh only the live facts material to the current Durability lifecycle:
 
-In the already-selected ChatGPT Work control-plane session, refresh live GitHub and prove which profile is active. `Oteryn: work coordinator` and `Oteryn: terra game coordinator` are mutually exclusive for mutating control-plane work.
+1. protected `main` SHA;
+2. current root and nearest `AGENTS.md`;
+3. `docs/agents/META_AGENT_POLICY_BINDING.json` and the bound policy when material;
+4. current coordinator Issue/task and `active_control_plane_profile`;
+5. current Durability Issue/task/allocation, branch, PR and exact head SHA;
+6. current overlapping path/shared-lease ownership;
+7. exact-head checks, reviews and unresolved review threads for the candidate;
+8. `docs/agents/PROMPT_LIFECYCLE.json`, the selected role prompts and the current scheduler/DAG when lifecycle routing is material.
 
-The control plane owns deterministic lifecycle/allocation/integration actions. It does not become the technical Durability writer.
+Live GitHub lifecycle state overrides stale task prose, cached SHAs, prior chat summaries and historical PR descriptions.
 
-### Step 2 — launch the single writer
+A reusable alias, open Issue, old branch, tool connection or previously green check is not current mutation authority.
 
-Open a separate normal Chat session.
+## Execution configuration
 
-Recommended model/effort:
+Do not pin a model, effort tier or maximum reasoning setting in this runbook. Use the execution configuration currently exposed and authorized for the task.
 
-```text
-GPT-5.6 Sol
-Extra High / highest available
-```
+Model/effort selection never changes repository authority, path ownership, review requirements or single-writer rules.
 
-Invoke exactly:
+Before consuming owner-funded, personal-quota or metered AI/API resources, apply `docs/agents/OWNER_FUNDED_AI_POLICY.md` and any authorization already established for the current session.
+
+## Launch sequence
+
+### 1. Prove the single control plane
+
+In ChatGPT Work, refresh the current coordinator lifecycle and prove exactly one mutating control-plane profile.
+
+If control-plane identity is ambiguous, all control-plane mutation fails closed until the conflict is resolved. Do not use a Durability chat to choose or replace the control plane.
+
+### 2. Prove the canonical Durability lineage
+
+Resolve the current Durability allocation and determine whether a canonical implementation branch/PR already exists.
+
+If it exists, preserve that lineage. Do not create a replacement branch, duplicate PR or second writer merely because the previous worker is inactive, `WAITING_EXTERNAL`, `STALLED`, rotated or no longer present in chat.
+
+A replacement lineage is allowed only when current protected authority explicitly retires the previous one and allocates a successor.
+
+### 3. Start or resume the single writer
+
+Invoke:
 
 ```text
 Oteryn: sol durability lead
 ```
 
-The lead must independently refresh live GitHub, prove the current merged allocation and exact owned paths, preserve the valid existing task branch/PR and remain the only writer for that lane.
+The lead must independently refresh GitHub before mutation, verify the exact current allocation and owned paths, and remain the only mutating writer for the canonical Durability branch/PR.
 
-### Step 3 — launch the three analysts in parallel
+The lead must preserve unrelated work and stop at `SHARED_LEASE_REQUIRED`, architecture, permission or dependency boundaries rather than silently widening scope.
 
-Open three additional separate normal Chat sessions. Use GPT-5.6 Sol with High effort for each.
+### 4. Optionally launch the three analysts
 
-Chat #2:
+Invoke in separate chats when their domains are useful for the current exact candidate:
 
 ```text
 Oteryn: sol durability authority analyst
-```
-
-Chat #3:
-
-```text
 Oteryn: sol durability continuity analyst
-```
-
-Chat #4:
-
-```text
 Oteryn: sol durability qualification analyst
 ```
 
-These chats may run concurrently because all three are strict read-only roles. They must independently resolve the current live Durability PR head and return only their defined advisory packets.
+Each analyst freezes the exact target it inspected and stays read-only. Analysts must not:
 
-They MUST NOT edit files, create commits/branches, push, mutate PR/Issue/comment/review state, trigger workflows or external AI review, claim a lease, merge, close or change architecture authority.
+- edit tracked files;
+- create or move branches;
+- commit or push;
+- mutate Issues, PR metadata, comments, reviews or review threads;
+- dispatch or rerun workflows;
+- request or consume a write lease;
+- merge, close or approve lifecycle state;
+- change architecture or production authority.
 
-## Analyst domains
+### 5. Return explicit analyst packets
 
-### Authority analyst
+Each packet should identify at minimum:
 
-Primary concern: Foundation/current-authority correctness, especially actual current runtime scope and final-COMMIT revalidation facts.
-
-Expected output:
-
-```text
-AUTHORITY_ANALYSIS_PACKET
+```yaml
+target_repository:
+target_issue:
+target_pr:
+exact_pr_head_sha:
+observed_main_sha:
+analysis_domain:
+findings:
+evidence:
+unknowns:
 ```
 
-### Continuity analyst
+Separate chats do not imply hidden cross-chat state sharing. Only an explicit returned packet may be relayed to the writer.
 
-Primary concern: continuity/protection shape, replacement transaction ordering, rollback and PREPARE/COMMIT invariant coherence.
+### 6. Writer consumes packets only after revalidation
 
-Expected output:
+Relay packets to the Durability Lead with this directive:
 
 ```text
-CONTINUITY_ANALYSIS_PACKET
+Consume these analyst packets. Refresh live GitHub first. Reject exact-head conclusions whose exact_pr_head_sha no longer matches the candidate they analyzed. Reconcile overlapping findings, verify every accepted finding yourself, reject suggestions outside the current allocation or accepted architecture, and continue as the single mutating Durability writer. Do not delegate repository mutation to analyst roles.
 ```
 
-### Qualification analyst
+The lead owns synthesis and must not mechanically implement analyst suggestions.
 
-Primary concern: whole-diff consistency, regression gaps, protected-main drift, validation invalidation and final qualification plan.
+## Stale-head and rerun rules
 
-Expected output:
+Every analyst packet is exact-head evidence.
 
-```text
-QUALIFICATION_ANALYSIS_PACKET
-```
+If the candidate head changes:
 
-## Handoff from analysts to the writer
+- the old packet remains historical evidence;
+- conceptual observations may be reused only after the lead verifies they still apply;
+- rerun only analyst domains materially invalidated by the change;
+- do not fan out all analysts again for metadata-only or non-risk-bearing movement;
+- never treat an old green review/check as qualification of a new material head.
 
-Separate Chat sessions do not imply hidden cross-chat state sharing. The operator/requester must relay each analyst's explicit returned packet to the Durability Lead when using separate chats.
+Useful rerun examples:
 
-Copy the complete packet bodies into the Durability Lead chat and use this handoff directive:
+- Foundation/current-authority repair -> authority analyst when independent re-analysis materially reduces risk;
+- continuity/transaction/recovery repair -> continuity analyst when the prior packet is no longer representative;
+- whole-diff shape, protected-main reconciliation or validation invalidation -> qualification analyst when useful.
 
-```text
-Consume these analyst packets. Refresh live GitHub first. Reject any packet whose exact_pr_head_sha no longer matches the head it analyzed. Reconcile overlapping findings, verify every accepted finding yourself, reject suggestions outside the current allocation or accepted architecture, and continue as the single mutating Durability writer. Do not delegate repository mutation to analyst roles.
-```
+Analyst availability is not a dependency gate. Authorized writer work continues when it can legally progress without a new packet.
 
-The Lead must not mechanically implement analyst recommendations. It owns technical synthesis, implementation, TDD evidence, commits/pushes, protected-main reconciliation, whole-diff self-review and final lane handoff.
+## Writer completion discipline
 
-## Stale-head rule
-
-Every packet is exact-head evidence.
-
-If the live Durability PR head changes after an analyst froze its target:
-
-- the old packet remains historical evidence only;
-- the Lead may use still-valid conceptual observations, but must not treat stale exact-head conclusions as current qualification;
-- rerun only the analyst domains whose evidence was materially invalidated by the head change;
-- do not rerun analysts merely because metadata or a non-risk-bearing docs line changed if their analyzed technical candidate remains representative.
-
-The Lead must always perform its own fresh live-head verification before mutation.
-
-## Rerun guidance after writer changes
-
-Use analyst reruns selectively:
-
-- material Foundation/current-authority repair -> rerun authority analyst when independent re-analysis would materially reduce risk;
-- material continuity/transaction/persistence repair -> rerun continuity analyst when its previous packet is no longer representative;
-- material whole-diff shape, protected-main merge-up or qualification invalidation -> rerun qualification analyst when useful;
-- trivial metadata/formatting-only head movement -> do not automatically rerun all three.
-
-Analyst fanout is acceleration, not a dependency gate. Authorized Durability work must not stall solely because an analyst session is unavailable.
-
-## Writer completion sequence
-
-After consuming current analyst packets, the Durability Lead proceeds autonomously inside the exact live allocation:
+The lead proceeds autonomously inside the exact allocation:
 
 ```text
-verify live head + authority
-  -> establish/retain required TDD RED evidence
-  -> implement minimal semantically complete GREEN
+refresh live authority/head
+  -> retain or establish required RED evidence
+  -> implement the smallest semantically complete GREEN
   -> focused validation
-  -> real PostgreSQL/component validation when applicable
+  -> real PostgreSQL/component qualification when applicable
   -> whole-diff self-review
-  -> reconcile current protected main using normal non-force history-preserving integration when required
-  -> rerun every validation layer invalidated by the resulting exact head
-  -> apply current META-owned AI review policy to the stable material candidate
-  -> repair actionable findings inside existing authority if any
+  -> reconcile current protected main without force/reset/replacement history
+  -> rerun validation invalidated by the resulting head
+  -> apply current risk-based review policy when selected
+  -> repair actionable findings inside existing authority
   -> revalidate only what the repair invalidated
-  -> return READY_FOR_INTEGRATION when all current predicates are proven
+  -> return READY_FOR_INTEGRATION only when every current predicate is proven
 ```
 
-The Lead never merges its own lane under this profile.
+Do not use no-op/retrigger commits, unchanged heavy reruns or test suppression as progress.
 
-## AI review boundary
+## Waiting, stalled and blocked states
 
-The three analyst chats are internal read-only reasoning aids. They do not satisfy formal external AI review requirements.
+`WAITING_EXTERNAL` and `STALLED` do not make a branch free for a replacement writer. Preserve the canonical lineage and follow its current resume rule.
 
-Current root `AGENTS.md` and the organization AI review policy adopted by reference determine whether external review is selected. External AI review is advisory and never merge authority. Do not recreate obsolete local review tiers/controllers.
+When a dependency clears, resume the same worker lineage if current authority says so. When it does not clear, continue other authorized path-disjoint work rather than seizing the blocked paths.
 
-For material high-risk Durability candidates involving session/reconnect/fencing/durable persistence/schema risk, use the review route selected by current protected-main policy on a stable material candidate. Re-review only when a material risk-bearing repair makes the previous review no longer representative.
+Material architecture conflicts return `ARCHITECTURE_ESCALATION_REQUIRED`. Owner-only product/scope/authority choices return `OWNER_DECISION_REQUIRED`.
 
-## Integration handoff
+## Review and integration boundary
 
-When the Durability Lead returns `READY_FOR_INTEGRATION`, the uniquely active control plane independently verifies:
+The three analyst chats are internal reasoning aids. They are not formal independent AI review and do not create a required GitHub status.
+
+Resolve external-review selection from the current META-bound policy. External AI review is advisory and never merge authority.
+
+When the lead returns `READY_FOR_INTEGRATION`, the uniquely active control plane independently verifies:
 
 - exact final PR head;
-- current `main` relation;
-- exact changed paths/leases;
-- applicable checks;
-- required review evidence under current policy;
+- current protected-main relation;
+- exact changed paths and leases;
+- applicable exact-head checks;
+- selected review evidence;
 - unresolved actionable findings/threads;
-- no unauthorized scope expansion.
+- no scope or authority expansion.
 
-Only the control-plane/integration path may perform the terminal merge according to current repository rules. After merge, read back protected `main` before releasing a dependent lane.
+Only the authorized integration path may perform terminal Merge Queue/merge actions. Read back protected `main` before releasing dependent ownership.
 
-## Operator copy/paste sheet
+## Execution routing safety
 
-### Writer
+Prefer repository-native GitHub and CI paths. Remote Desktop is exception-only and requires the exact explicit authorization required by current policy; availability alone is not permission.
 
-```text
-Oteryn: sol durability lead
-```
-
-Run in: separate Chat
-
-Model: GPT-5.6 Sol
-
-Effort: Extra High / highest available
-
-Mode: single mutating writer
-
-### Authority analyst
-
-```text
-Oteryn: sol durability authority analyst
-```
-
-Run in: separate Chat
-
-Model: GPT-5.6 Sol
-
-Effort: High
-
-Mode: read-only
-
-### Continuity analyst
-
-```text
-Oteryn: sol durability continuity analyst
-```
-
-Run in: separate Chat
-
-Model: GPT-5.6 Sol
-
-Effort: High
-
-Mode: read-only
-
-### Qualification analyst
-
-```text
-Oteryn: sol durability qualification analyst
-```
-
-Run in: separate Chat
-
-Model: GPT-5.6 Sol
-
-Effort: High
-
-Mode: read-only
-
-### Packet relay to writer
-
-```text
-Consume these analyst packets. Refresh live GitHub first. Reject any packet whose exact_pr_head_sha no longer matches the head it analyzed. Reconcile overlapping findings, verify every accepted finding yourself, reject suggestions outside the current allocation or accepted architecture, and continue as the single mutating Durability writer. Do not delegate repository mutation to analyst roles.
-```
+Do not weaken tests, provenance, compatibility, authorization, branch protection or Merge Queue to unblock a Durability candidate.
 
 ## Historical note
 
-PR #270 introduced the canonical analyst aliases and single-writer fanout model. PR #252 is historical evidence of the motivating terminal-session replacement lane and must not be assumed to be the current target for future invocations. Every launch resolves the current live Durability lifecycle instead.
+PR #270 introduced the reusable one-writer plus three-read-only-analyst Durability pattern. PR #252 and older Durability branches are historical provenance only unless current live GitHub explicitly identifies one as the canonical active lineage.
+
+Every launch or resume resolves the current lifecycle again from live GitHub.

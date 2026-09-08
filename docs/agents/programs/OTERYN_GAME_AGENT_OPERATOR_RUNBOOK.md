@@ -2,46 +2,48 @@
 
 This runbook is the owner-facing operational map for launching and supervising the reusable Oteryn Game agent architecture. It is a coordination aid subordinate to root/nearest `AGENTS.md`, current protected `main`, live Issues/tasks/PRs, accepted contracts and the canonical scheduler.
 
-## Non-negotiable source order
+## Material source resolution
 
-Before telling the owner what to launch or before any agent acts on this runbook, resolve from live GitHub:
+Before telling the owner what to launch, resolve only the live facts needed for the affected lane or programme decision:
 
 1. repository identity and protected `main` SHA;
 2. current coordinator Issue/task and uniquely active control-plane profile;
-3. all active task packets and their Issue/branch/PR/head bindings;
+3. the affected active task packet and its Issue/branch/PR/head binding, plus overlapping ownership;
 4. open PRs and recently merged PRs needed to prove dependency completion;
-5. exact-head checks, reviews and unresolved review threads for active candidates;
+5. exact-head checks, reviews and unresolved review threads for affected candidates;
 6. `docs/agents/programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md`;
 7. current root `AGENTS.md` and the META-owned AI review policy it adopts by reference;
-8. current prompt bodies/registry and accepted architecture/contracts material to the lane.
+8. the selected prompt/registry entry and accepted architecture/contracts material to the lane.
+
+Skip task, PR, candidate and CI reads that are not applicable to the requested owner decision. Do not traverse linked documents merely because they are listed by an index.
 
 Never treat this runbook, an alias, an old Issue number, a prior chat summary or a cached worktree as proof of current status. If live GitHub conflicts with prose here, live canonical governance wins.
 
-## Product surface, model and effort map
+## Product surface and mutation map
 
-| Alias / function | Where to run | Recommended model | Effort | Default mutation mode |
-| --- | --- | --- | --- | --- |
-| `Oteryn: work coordinator` | ChatGPT Work | Terra High when using Work's deterministic control-plane profile | High / deterministic | CONTROL_PLANE only when live lifecycle selects it |
-| `Oteryn: terra game coordinator` | ChatGPT Work | Terra High | High / deterministic | CONTROL_PLANE only when live lifecycle selects it; otherwise recovery read-only |
-| `Oteryn: sol supervising architect` | separate chat | GPT-5.6 Sol | Extra High / highest available | ON_DEMAND architecture decision only; no merge authority |
-| `Oteryn: sol durability lead` | separate chat | GPT-5.6 Sol | Extra High / highest available | MUTATING only with exact current allocation; single writer for its Durability branch/PR |
-| `Oteryn: sol durability authority analyst` | separate chat | GPT-5.6 Sol | High | READ_ONLY analyst; no GitHub/tracked-file mutation |
-| `Oteryn: sol durability continuity analyst` | separate chat | GPT-5.6 Sol | High | READ_ONLY analyst; no GitHub/tracked-file mutation |
-| `Oteryn: sol durability qualification analyst` | separate chat | GPT-5.6 Sol | High | READ_ONLY analyst; no GitHub/tracked-file mutation |
-| `Oteryn: sol server seam lead` | separate chat | GPT-5.6 Sol | Extra High / highest available | MUTATING only after exact prerequisite/allocation; otherwise read-only prep |
-| `Oteryn: sol client qa lead` | separate chat | GPT-5.6 Sol | Extra High / highest available | MUTATING only after exact prerequisite/allocation; otherwise read-only prep |
-| `Oteryn: sol movement lead` | separate chat | GPT-5.6 Sol | Extra High / highest available | MUTATING only after exact resource/dependency gate and allocation |
-| `Oteryn: sol combat lead` | separate chat | GPT-5.6 Sol | Extra High / highest available | MUTATING only after exact Movement/dependency gate and allocation |
-| `Oteryn: work auditor` | separate independent chat | GPT-5.6 Sol | highest available | AUDIT_READ + bounded GitHub evidence-write only |
-| `Oteryn: owner execution guide` | separate chat | GPT-5.6 Sol | Extra High / highest available | READ_ONLY owner guidance only |
-| `Oteryn: sol post-vsl expansion` | separate chat | GPT-5.6 Sol | Extra High / highest available | read-only-by-default decomposition |
-| `Oteryn: sol world content prep` | separate chat | GPT-5.6 Sol | High; Extra High for cross-contract complexity | READ_ONLY until later exact allocation |
-| `Oteryn: sol npc ai prep` | separate chat | GPT-5.6 Sol | High; Extra High for cross-contract complexity | READ_ONLY until later exact allocation |
-| `Oteryn: sol systems economy prep` | separate chat | GPT-5.6 Sol | High; Extra High for durable-value/custody complexity | READ_ONLY until later exact allocation |
-| `Oteryn: sol tooling ops prep` | separate chat | GPT-5.6 Sol | High; Extra High for cross-surface complexity | READ_ONLY until later exact allocation |
-| native GitHub Codex review | canonical GitHub PR | repository-native Codex review capability | not owner-selected here | advisory independent review only when current META policy selects it |
+| Alias / function | Where to run | Default mutation mode |
+| --- | --- | --- |
+| `Oteryn: work coordinator` | ChatGPT Work | CONTROL_PLANE only when live lifecycle selects it |
+| `Oteryn: terra game coordinator` | ChatGPT Work | CONTROL_PLANE only when live lifecycle selects it; otherwise recovery read-only |
+| `Oteryn: sol supervising architect` | separate chat | ON_DEMAND architecture decision only; no merge authority |
+| `Oteryn: sol durability lead` | separate chat | MUTATING only with exact current allocation; single writer for its Durability branch/PR |
+| `Oteryn: sol durability authority analyst` | separate chat | READ_ONLY analyst; no GitHub/tracked-file mutation |
+| `Oteryn: sol durability continuity analyst` | separate chat | READ_ONLY analyst; no GitHub/tracked-file mutation |
+| `Oteryn: sol durability qualification analyst` | separate chat | READ_ONLY analyst; no GitHub/tracked-file mutation |
+| `Oteryn: sol server seam lead` | separate chat | MUTATING only after exact prerequisite/allocation; otherwise read-only prep |
+| `Oteryn: sol client qa lead` | separate chat | MUTATING only after exact prerequisite/allocation; otherwise read-only prep |
+| `Oteryn: sol movement lead` | separate chat | MUTATING only after exact resource/dependency gate and allocation |
+| `Oteryn: sol combat lead` | separate chat | MUTATING only after exact Movement/dependency gate and allocation |
+| `Oteryn: work auditor` | separate independent chat | AUDIT_READ + bounded GitHub evidence-write only |
+| `Oteryn: owner execution guide` | separate chat | READ_ONLY owner guidance only |
+| `Oteryn: sol post-vsl expansion` | separate chat | read-only-by-default decomposition |
+| `Oteryn: sol world content prep` | separate chat | READ_ONLY until later exact allocation |
+| `Oteryn: sol npc ai prep` | separate chat | READ_ONLY until later exact allocation |
+| `Oteryn: sol systems economy prep` | separate chat | READ_ONLY until later exact allocation |
+| `Oteryn: sol tooling ops prep` | separate chat | READ_ONLY until later exact allocation |
+| native GitHub Codex review | canonical GitHub PR | advisory independent review only when current META policy selects it |
 
-Model choice never grants authority. A profile can mutate only when live canonical allocation/control-plane selection grants it.
+Use the execution configuration actually exposed and authorized for the task. This runbook does not pin a model or effort setting, and an execution configuration never grants authority. A profile can mutate only when live canonical allocation/control-plane selection grants it.
 
 ## Work versus separate chats
 
@@ -52,15 +54,13 @@ Run technical Sol roles in separate chats so each lane has an independent contex
 For an active Durability lane, the canonical concurrency pattern is:
 
 ```text
-separate chat: Oteryn: sol durability lead                  -> SINGLE MUTATING WRITER, Sol Extra High
-separate chat: Oteryn: sol durability authority analyst     -> READ_ONLY, Sol High
-separate chat: Oteryn: sol durability continuity analyst    -> READ_ONLY, Sol High
-separate chat: Oteryn: sol durability qualification analyst -> READ_ONLY, Sol High
+separate chat: Oteryn: sol durability lead                  -> SINGLE MUTATING WRITER
+separate chat: Oteryn: sol durability authority analyst     -> READ_ONLY
+separate chat: Oteryn: sol durability continuity analyst    -> READ_ONLY
+separate chat: Oteryn: sol durability qualification analyst -> READ_ONLY
 ```
 
 The three analysts may run concurrently because they have no tracked-file or GitHub mutation authority. They return exact-head packets only. The Durability Lead refreshes live GitHub, rejects stale packets, verifies findings and performs every edit/commit/push/reconciliation/qualification step itself. If separate chats are used, do not assume hidden cross-chat state: only an explicitly returned packet may be handed to the lead.
-
-For the exact launch order, copy/paste aliases, packet-relay directive, stale-head rules and selective analyst rerun guidance, use `docs/agents/programs/OTERYN_DURABILITY_MULTIAGENT_LAUNCH_RUNBOOK.md`.
 
 Analyst fanout is optional acceleration, not a dependency. Do not stall authorized Durability work merely because one analyst chat is unavailable.
 
@@ -135,13 +135,9 @@ OTERYN_GAME_OWNER_EXECUTION_REPORT:
   active_control_plane:
     alias:
     where: WORK
-    model:
-    effort:
   run_now:
     - alias:
       where: WORK | SEPARATE_CHAT
-      model:
-      effort:
       mode: MUTATING | READ_ONLY | AUDIT | ON_DEMAND
       target:
       reason:
@@ -167,4 +163,4 @@ When separate-chat Durability analysts are used, the owner/requester may relay t
 
 ## Reuse
 
-The reusable short aliases are catalogued in `docs/agents/prompts/README.md`. The machine-readable prompt registry is `docs/agents/PROMPT_LIFECYCLE.json`. Always resolve both from protected `main` before relying on an alias or recommended model/effort.
+The reusable short aliases are catalogued in `docs/agents/prompts/README.md`. The machine-readable prompt registry is `docs/agents/PROMPT_LIFECYCLE.json`. Resolve the selected alias and lifecycle entry from protected `main` before relying on it.

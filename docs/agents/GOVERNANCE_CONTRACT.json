@@ -18,6 +18,7 @@
   "required_documents": [
     "AGENTS.md",
     "docs/agents/README.md",
+    "docs/agents/META_AGENT_POLICY_BINDING.json",
     "docs/agents/AGENTS.md",
     "docs/agents/REPOSITORY_MAP.md",
     "docs/agents/CONTEXT_ROUTING.md",
@@ -38,7 +39,6 @@
     "docs/agents/PROMPT_EVAL_STANDARD.md",
     "docs/agents/CROSS_REPO_CONTRACTS.md",
     "docs/agents/KNOWN_RISKS.md",
-    "docs/agents/CODEX_REVIEW_POLICY.json",
     "docs/agents/PROJECT_LANES.json",
     "docs/agents/tasks/TASK_TEMPLATE.md",
     "docs/agents/prompts/OTV2_GLOBAL_ARCHITECTURE_DECISION_COORDINATOR.md"
@@ -76,9 +76,9 @@
   ],
   "terminal_invocation_results": [
     "DONE",
-    "WAITING",
+    "WAITING_EXTERNAL",
     "BLOCKED",
-    "ROTATE"
+    "STALLED"
   ],
   "task_paths": {
     "template": "docs/agents/tasks/TASK_TEMPLATE.md",

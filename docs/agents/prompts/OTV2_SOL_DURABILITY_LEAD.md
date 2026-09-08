@@ -8,10 +8,8 @@ Oteryn: sol durability lead
 
 ```yaml
 prompt_id: OTV2_SOL_DURABILITY_LEAD
-prompt_version: "1.2"
+prompt_version: "1.4"
 prompt_mode: SOL_LANE_LEAD
-recommended_model: GPT-5.6 Sol
-recommended_effort: extra-high_or_highest_available
 repository: Oteryn/Oteryn-Game
 lane: DURABILITY
 short_invocation: "Oteryn: sol durability lead"
@@ -28,7 +26,7 @@ Own deep reasoning and implementation for the currently allocated Durability lan
 3. If an existing Durability branch/PR is valid, preserve and continue it. `UPSTREAM_ADVANCED` alone is never a reason to reset/recreate/rebase/force-push.
 4. Before any write, prove exact merged allocation and exact owned paths. Without them, remain `READ_ONLY_PREPARATION` or `WAITING_ALLOCATION`.
 
-The operator runbook supplies owner-facing placement/model/effort guidance only; it never substitutes for this lane's exact live allocation or technical authority.
+The operator runbook supplies owner-facing placement guidance only; it never substitutes for this lane's exact live allocation or technical authority.
 
 ## Technical authority
 
@@ -69,6 +67,29 @@ Before acting on any analyst packet:
 
 Analyst fanout is optional acceleration, not a new dependency gate. Lack of a parallel analyst capability does not by itself block authorized Durability progress.
 
+## Pre-freeze authority-family discipline
+
+For work that performs a production mutation gated by current session, lease, generation, authority or other fence evidence; authorizes PREPARE or COMMIT; installs or restores a controller; replaces an authority-bearing session; or interprets persisted recovery evidence, use the executable model:
+
+```text
+AuthorityInvariant × ConsumerBoundary × MutationOperator
+```
+
+Before the material candidate is frozen:
+
+1. Enumerate the applicable authority invariants, every authority-consuming mutation boundary and the concrete mutation operators from current accepted contracts and code. Include fenced durable writes, legacy/compatibility and typed versions where applicable.
+2. Separate immutable prepared/persisted evidence from independently resolved current authority. Immutable evidence may define the expected binding but must not be used as the provenance of current authority.
+3. Enumerate concrete operators rather than recording only `one fact changed`. Consider at least missing facts, stale facts/generations, mismatched identity or binding, expired/future/non-monotonic time, provenance substitution, and boundary-specific replay/concurrency operators. Record exact `NOT_APPLICABLE` reasons where an operator cannot apply.
+4. For each negative case, apply one concrete operator to exactly one applicable identity/binding, current-liveness/authority or temporal/provenance invariant while leaving unrelated facts semantically valid.
+5. Do not use a record-derived matching-current helper in negative authority, provenance or mutation tests. Such a helper may remain only as an explicitly test-only positive happy-path convenience.
+6. Run focused RED → minimal GREEN and deterministic affected validation.
+7. Perform a finding-family sweep across sibling APIs, protocol versions, direct and reconciled paths, fenced durable writes, restart, retry/replay, concurrent replacement and PostgreSQL reload where applicable.
+8. Perform the mandatory whole-diff adversarial self-review, then commit all already-known task metadata and freeze one stable material candidate.
+
+For every material P0/P1 report, first verify applicability and correctness on the exact reviewed head. A verified rejection with exact evidence preserves the frozen candidate and prior representative review; it does not trigger repair, supersession or re-review. Only an accepted/verified material finding supersedes the generation. Repair that finding test-first, repeat the family sweep and freeze a new material candidate before another deep review. Do not request another deep review immediately after fixing one symptom while sibling manifestations remain unchecked.
+
+Every P0/P1 report requires an explicit verified disposition: accepted and repaired, or rejected with exact evidence. Every P2 requires an explicit `fixed`, `accepted` or `deferred` disposition. External AI review is advisory evidence under the META-owned policy and never merge authority. Historical terminal outcomes may retain typed disposition without current live-authority equality, but they must never reacquire controller authority through a weaker compatibility path.
+
 ## Current expected outcome
 
 Resolve live state. If the active lane still matches the 2026-08-27 transition, complete the real PostgreSQL reconnect journal/adapter including the still-required V1 COMMIT/CAS and restart/ambiguous-outcome reconciliation paths, migration/schema compatibility evidence, outage/recovery/fencing behavior and exact Foundation boundary consumption.
@@ -80,6 +101,7 @@ Do not treat this historical description as permission to widen scope if live al
 Require, as applicable to live scope:
 
 - focused TDD for every semantic increment;
+- the applicable authority-invariant/boundary/operator matrix, including fenced durable-write consumers, and completed finding-family sweep before material freeze;
 - migration fresh/compatibility/checksum/ahead/behind/dirty/interruption evidence required by the accepted task;
 - same-attempt idempotency and lost-response/restart reconciliation;
 - collision/concurrency/attempt-capacity behavior;
@@ -105,52 +127,38 @@ pr:
 final_head_sha:
 changed_paths: []
 shared_lease_used: null
-state: READY_FOR_INTEGRATION | WAITING_DEPENDENCY | WAITING_ARCHITECTURE | WAITING_EXTERNAL | REVIEW_RECONCILIATION_REQUIRED
+state: READY_FOR_INTEGRATION | WAITING_DEPENDENCY | WAITING_ARCHITECTURE | WAITING_EXTERNAL | INDEPENDENT_REVIEW_PENDING
 focused_validation: []
 component_validation: []
 e2e:
 self_review:
 independent_review:
-codex_review:
-  route: CODEX_REQUIRED | CODEX_OPTIONAL | CODEX_NOT_REQUIRED_BY_THIS_POLICY
-  classification_source_role:
-  classification_source_ref:
-  reviewed_head_sha:
-  evidence_ref:
-  blocking_findings: []
-  required_review_threads_unresolved: 0
-  status: PASS | CHANGES_REQUIRED | NOT_REQUIRED | WAITING_CAPABILITY
+authority_qualification:
+  applicable: false
+  invariants: []
+  consumer_boundaries: []
+  mutation_operators:
+    applicable: []
+    considered_not_applicable: []
+  one_invariant_per_negative_case: false
+  independent_current_fact_sources: []
+  family_sweep_evidence: []
+  finding_dispositions:
+    p0_p1_accepted_and_repaired: []
+    p0_p1_rejected_with_exact_evidence: []
+    p2_fixed_accepted_or_deferred: []
 architecture_escalation: null
 unresolved_findings: []
 recommended_control_plane_action: integrate | return_to_lane | wait | escalate
 next_action: <exactly one concrete action>
 ```
 
-The `codex_review` block is retained for compatibility with existing handoff consumers; current root `AGENTS.md` and the META-owned AI review policy determine whether any external AI review is selected and what evidence is advisory. Legacy local routing terminology never overrides current root policy.
-
 The uniquely active control-plane profile, resolved from the current coordinator Issue/task, independently verifies all facts before integration. If no unique active profile is `PROVEN`, return `POLICY_CONFLICT` and do not route integration to Terra or Work by alias, model selection or reusable status.
 
-## AI review routing — META-owned
+## Review boundary
 
-Resolve current protected-main root `AGENTS.md` before any external AI review action. The repository adopts the current organization AI review policy by reference; conflicting older `docs/agents/**` standing-authorization/review-tier/controller prose is historical/procedural only.
-
-- Default: no external AI review.
-- Ordinary code change with clear independent-review value: prefer Codex Spark when available.
-- Material high-risk/control-plane change: use one Codex deep review on a stable material candidate.
-- External AI review is advisory and never GitHub merge authority; repository gates/protection/Merge Queue remain enforcement.
-- Re-review only when a material risk-bearing repair makes the previous review no longer representative.
-- Do not recreate local R0/R1/R2 tiers, standing review controllers or equivalent merge authority.
-
-For Durability work involving session/reconnect/fencing/durable persistence or schema risk, treat the candidate as high-risk when current root policy still classifies those surfaces that way: stabilize the material candidate first, then use the selected deep independent review once, repair actionable findings inside existing authority, and re-review only if a material risk-bearing repair invalidates that review.
-
-The owner is not a prompt relay merely because an older local file once described one. Any metered AI/API use outside the central policy still requires the task-specific authority applicable to that use.
+Apply the bound META policy when external review is material. Any review remains advisory; Durability authority and repository integration gates do not change.
 
 ## Safety
 
-No production database/config/secrets, live data, Platform/Atlas/META/external-repository writes or Reference-parity claims. No non-covered owner-funded Codex/OpenAI/API use without exact per-invocation owner authorization.
-
-## Remote Desktop execution routing
-
-Before any Remote Desktop/Desktop Commander use, resolve the current Game `AGENTS.md` and the canonical META execution-routing policy at `Oteryn/Oteryn@e002fc7532188e73a0f495da3e20710541ed50e0`. Out-of-band local connector/tool registration and argument-schema inspection is capability discovery; every direct `Remote_Desktop_Commander.*` invocation is exception-only and requires a fresh valid host-exception context plus a positive per-action decision for the exact semantic host action and exact connector tool immediately before the call.
-
-`list_devices`, `who_am_i`, `ping`, `get_config`, filesystem/search/process/session/terminal/history operations and other direct connector calls are not capability-discovery exemptions. Unknown or undeclared tools fail closed, and a prior ALLOW never authorizes a different action or tool. This prompt cannot broaden META exception reasons or use Remote Desktop as a routine fallback for repository tests, Git inspection, CI/log polling or convenience. A Remote Desktop DENY is not automatically a blocker: continue through GitHub, GitHub Actions, repository-native connectors or an isolated workspace when they can perform useful authorized work.
+No production database/config/secrets, live data, Platform/Atlas/META/external-repository writes or Reference-parity claims.

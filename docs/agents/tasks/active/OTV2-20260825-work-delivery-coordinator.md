@@ -1,279 +1,343 @@
 # OTV2-20260825-work-delivery-coordinator
 
-\`\`\`yaml
+## Current prospective351 hosted-test lease — Work162
+
+Work162 [comment5560691505](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5560691505) authorizes this five-document allocation package on `coord/sqlx-351-test-lease`, based on protected main `b61f9d8cc1c0a7289ffdaf1bf4e42b851d2c0f9a`. The new test-target lease is **NOT_ACTIVE** until independent qualification, protected integration/readback and an explicit Work grant. Existing351 implementation admission continues; this is not a new worker admission or budget reset.
+
+Current custody overrides older prospective/NOT_ADMITTED prose below. B329 retains immutable admission `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd`, branch `agent/durable-fresh-admission-child-b-329`/PR335, window6/completed5/rotation1 under [329 comment5560373810](https://github.com/Oteryn/Oteryn-Game/issues/329#issuecomment-5560373810). Native `6a2cccb5f448fc9f3b8ca07e1e4a66dc7aadec29` is the actual restart qualification checkpoint recorded in [329 comment5560643661](https://github.com/Oteryn/Oteryn-Game/issues/329#issuecomment-5560643661), not full B acceptance. Newer canonical B head `834db1d7118d751e31287715d3eaac7780a0c7b9`, tree `b11f20a35e4c205c7e3320469616ccd4aaa96bc5`, is the independently reviewed sealed-completion checkpoint in [329 comment5560718303](https://github.com/Oteryn/Oteryn-Game/issues/329#issuecomment-5560718303); its hosted CI is pending, not covered by the earlier366/0 result. At this checkpoint B reports50 productive minutes used in window6, approximately10 remaining, with waiting paused; this amendment adds no minutes. Driver351 retains immutable admission `53c6bdf06a2282d893035a995c46052c88f935b4`, branch `agent/sqlx-driver-budget-351`/draft PR356 and window2 under [351 comment5560554622](https://github.com/Oteryn/Oteryn-Game/issues/351#issuecomment-5560554622), following native `1363c9b5b238f4922615eda9b502866c305e83bf`. Window1 remains55m14s productive/4m46s unused, completed1/repair1/rotation0. These immutable checkpoints do not replace later canonical branch heads or cumulative findings. Preserve all branch/task history and subsequent windows/repairs through normal merge-up; old zero counters below are historical allocation evidence.
+
+### Exact prospective transfer
+
+After the activation gate, temporarily remove `apps/game-server/tests/durability_postgres.rs` from B329's active write scope and lease it exclusively to the sole351 writer **only** to add this module inclusion:
+
+```rust
+#[path = "../../../vendor/sqlx-postgres-0.9.0/tests/oteryn_resource_budget.rs"]
+mod oteryn_resource_budget;
+```
+
+The included `vendor/sqlx-postgres-0.9.0/tests/oteryn_resource_budget.rs` stays within351's existing vendor subtree. No other change to the shared target is authorized: preserve every existing B test, import, fixture, gate and assertion; no reformatting or test suppression. No workflow, Cargo feature/dependency, production B, Foundation or source scope is added. Driver retains its separately protected two-crate Cargo lease and exclusions.
+
+B keeps every other owned path and its canonical branch/worktree. Work verifies exact overlap before granting the lease and before integration. While active, B must not write the shared target or integrate overlapping target changes;351 may not use the lease for any additional edits. Work serializes ordinary merge-up and reviews the resulting exact delta, retaining prior B material. Return the target to B only after protected351 delivery/integration/readback and Work's explicit release/readmission for this file; no concurrent writer or automatic lease inheritance. Earlier14-path B lists remain historical during the active transfer.
+
+The existing canonical PostgreSQL17.6 target must actually execute the included tests on the pinned root dependency graph. Vendor-only test results and successful compilation do not establish hosted SQL execution. Keep all existing workflows and tests intact. If the service is plaintext, it supplies no TLS-positive evidence:351 must separately qualify actual TLS without security/feature downgrade or treating skipped/unconfigured tests as success. This amendment alone proves no TLS/driver/B acceptance and does not release Server Seam247.
+
+### Coordinator package ownership
+
+Work owns exactly LIVE_ALLOCATIONS, this Work task, the B329 task, the351 task and the351 plan. B and351 pause edits to these two task records while this coordinator package is prepared;351 runtime work continues in its existing scope. Worker task-record custody resumes only after Work's serialized handoff. This delegated documentation preparation grants Work no runtime write authority.
+
+Next action: independently qualify and protect this exact five-document amendment, then Work reads it back and grants the bounded shared-target lease.
+
+## Current prospective complete-continuity bridge353 amendment
+
+Work162 comment5560287018 extends this coordinator closeout to exactly six documentation paths: the four338 archive/LIVE/Work paths plus the353 task and plan. The earlier four-path description remains historical scope provenance. Protected348 explicitly requires separate allocation for this concrete caller bridge; this package supplies it without reopening/replacing338 or granting runtime authority to Work.
+
+Issue353 is NOT_ADMITTED until this exact package and338 release are protected/read back. Prospective branch `agent/control-loss-reconnect-bridge-353`, one60-minute worker window. Sole owned implementation paths: `apps/game-server/src/foundation/admission_recovery_inner.rs`, `apps/game-server/src/foundation/admission_authority_publication.rs`, new `apps/game-server/src/foundation/control_loss_reconnect_bridge_tests.rs`, `docs/agents/tasks/active/OTV2-20260906-control-loss-reconnect-bridge-353.md`, and `docs/superpowers/plans/2026-09-06-control-loss-reconnect-bridge.md`. Preserve existing V1/V2 signatures/enums/wire; full protection/rearm and original loss identity require an additive complete durability envelope, not an invented legacy fence. The publication path supplies additive owner-sealed V2 early-terminal replacement claim binding for complete continuity; existing replacement APIs require a legacy record and cannot represent every protection history. These five prospective paths preserve existing APIs/enums and activate only after protected allocation and explicit Work admission. Detailed acceptance/exclusions are in that task/plan.
+
+No second Foundation writer:338 releases first,353 admits later. Explicit bounded parallel exception permits semantic353 beside disjoint B SQL and351 vendor/Cargo because full B requires both; no shared path or control plane. Existing admissions/counters and held247/Cargo policies remain unchanged. B's interim loss persistence must refuse legacy consumption where full continuity is not representable; receipt retention alone is not an authority bridge. Next action: independently qualify and protect this exact six-path allocation/closeout, then Work binds actual353 admission.
+
+
+## Current Work checkpoint — protected Foundation338 closeout
+
+This is the current override; older checkpoint sections below preserve history, not conflicting active leases. Protected main `53c6bdf06a2282d893035a995c46052c88f935b4` contains Foundation343 (`edef416745f92b79371f98739272c840b0a9b357`) and allocation/closeout352, both merged2026-09-06T15:22:29Z after successful MQ34041639320/34041640323.
+
+- Foundation338 is completed and its seven paths released by this Work closeout. Archived task: `docs/agents/tasks/archive/OTV2-20260906-post-grace-foundation-successor-338.md`. Original admission, branch/history and cumulative repair/window evidence remain preserved.
+- Wire346 is already completed/archived/released by protected352. Its single247 lib.rs export transfer is ended; no worker inherits another composition lease.
+- B329 remains solely on `agent/durable-fresh-admission-child-b-329`, PR335. Native8f73 has actual PostgreSQL17.6 checkpoint314/0 evidence; new distinct owning-loss persistence runs after normal53c6 merge under329 comment5560220922. Full lifecycle/executor/resource acceptance remains open.
+- Driver351 is ADMITTED on `agent/sqlx-driver-budget-351` at immutable53c6 under351 comment5560220858: sole driver_allocation writer, first60-minute productive window, exact protected vendor/core accounting paths and exclusive two-crate Cargo patch lease. Dependabot259/260/261 Cargo integrations remain held; no B activation before protected driver delivery.
+- Server Seam247 remains WAITING_DEPENDENCY at preserved `9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. Actual ChildC319 native Platform producers and Game owning-source/bootstrap work remain separate; current Game authority grants no Platform writes.
+- Historical handoff350 is closed as superseded after352; its exact0131 branch/files are retained as provenance, not a competing pause/current overlay.
+
+Work162 comment5560227773 allocates only four documentation paths to this package: LIVE_ALLOCATIONS, the Work162 task, and Foundation338 active-to-archive pair. B/351 task and implementation paths remain exclusively worker-owned. No runtime, registry, workflow or external change. Next action: independently qualify and protect this bounded archive/release while the two disjoint admitted workers continue within preserved budgets.
+
+
+## Current Work checkpoint — prospective SQLx driver351 allocation
+
+This checkpoint supersedes earlier current-status prose without resetting historical admissions. Work162 remains the unique control plane. GitHub preflight: [issue162 comment5559883406](https://github.com/Oteryn/Oteryn-Game/issues/162#issuecomment-5559883406), protected main `d9d1b566acb57b537ff901d9765c32a95110c259`.
+
+- Pre-admission accounting-scope correction: [issue351 comment5559999529](https://github.com/Oteryn/Oteryn-Game/issues/351#issuecomment-5559999529) amends existing allocation PR352. Prior `7140f869060a1dd1f9ac37f5c80c62e9582e23e7` green CI is historical after this material repair; fresh exact-head review/CI is required. No driver admission follows.
+- Issue351 is a prospective implementation prerequisite under accepted337/341 and protected registry342. Driver work is **NOT_ADMITTED** until independent allocation qualification, protected integration/readback and a Work admission grant.
+- B329/PR335, Foundation338/PR343 and Wire346/PR349 retain their existing writer custody, branches, admissions and cumulative counters. Their current GitHub checkpoints govern repairs/qualification; this package makes no delivery claim or change to their paths.
+- Server Seam247 remains WAITING_DEPENDENCY. Its Cargo lease is amended only by the exact prospective transfer below; its other held paths, original history and source/bootstrap obligations remain intact.
+- Handoff350 at `0131d990eab956462b389374b2e725427c6de251` is frozen historical evidence. Its LIVE/Work overlap is the same coordinator's custody, serialized to this package; it must not overwrite this current allocation during later integration.
+- This package edits exactly LIVE, the Work task and the new351 task/plan. No vendor/Cargo/runtime write, new numeric architecture policy or Server Seam release occurs here.
+
+## Current Work checkpoint — owning loss Foundation338 amendment
+
+This checkpoint supersedes earlier status prose without resetting historical admissions. Work162 remains the unique control plane.
+
+- Registry342/PR345 is completed/released at protected `c9890968ce4c71165bdd9cd1d6938f9af75eaa00`, tree `82b4bd5ff700b37705e63bf730c3fb4409877df3`, full Merge Queue34034188236 SUCCESS. Its terminal task is archived here; all154 registry entries remain unchanged by this package.
+- B329/PR335 published `fd7293427e76fbb334d80b1b5d6e6cf58dcb4c5a` rejects initial NULL-continuity PREPARE before retained effects. Independent/root review P0/P1/P2=0; actual PostgreSQL17.6 canonical34035642462/Linux101493135940 passed306/306 at13:21:41Z. Full lifecycle, bounded executor/resources and locking remain open.
+- Foundation338/PR343 remains on its original branch/admission, published `8a72a305330011edb9021abc1f8449d65a377909` with canonical34034048424 SUCCESS. Current claim/full-flow qualification continues under its sole writer. The exact amendment below adds the missing owning-loss semantic boundary only after protected readback.
+- Wire346 allocation PR347 is protected atad7273e3e91a4e4254abb9aa2710c7e0c9754afe after full Merge Queue34035534050 SUCCESS. Work admission5559516855 binds the sole codec writer on its five paths, window1 13:27–14:27UTC. Its explicit247 export lease remains intact; no actual-source readiness follows.
+- Server Seam247 remains WAITING_DEPENDENCY at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. Actual source/PKI/bootstrap, SQL loss integration and full B/338 qualification remain separate obligations.
+
+
+## Current Work checkpoint — bounded native evidence wire346
+
+This checkpoint supersedes earlier current-status prose while preserving all historical admissions. Work162 remains the unique control plane.
+
+- Protected allocation344 is `9ceeb231e2bb92c70eae83369c84f0f3fa6fccb2`, actual Merge Queue34032269848 SUCCESS. Registry342 delivery PR345 is independently reviewed at `ddf718a89851f4da3641872d2447b04958a23bd1`; exact CI/integration remains pending. No registry lease transfers to this package.
+- B329/PR335 initial fresh checkpoint `4139f552a952c392e5f47139aed60e64f32b8cf4` passes actual PostgreSQL17.6:304/304 in canonical34033443274/Linux101487176414 at12:37:45Z. Full lifecycle, shared bounded executor/resources and locking qualification remain open. Same branch, immutable admission and counters persist.
+- Foundation338/PR343 actor checkpoint `ddee1ef6f2038c5b8bfa1588828aca4c7b1a297d` has independent intermediate review; full operation/flow/claims remain open on its same six paths and original admission.
+- Issue346 is a separately mergeable pure wire codec prerequisite. It produces no live source capability, authenticated provenance, floor, publication or actual-source readiness. Its five paths activate only after this exact allocation is protected and Work performs fresh readback/admission.
+- Server Seam247 remains WAITING_DEPENDENCY at `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`. The explicit one-export lib.rs amendment below is not Task3 release. Actual Platform native producers/PKI/bootstrap and Game owning-source composition remain unqualified.
+
+
+## Current Work checkpoint — resource registry342 continuation
+
+This checkpoint supersedes earlier current-status prose below without rewriting historical admissions. Work162 remains the unique mutating control plane.
+
+- A318/321 and Foundation326/331 remain completed/released.
+- Source336/339 is accepted at `c4099a5a626c5fb17cfe40c11cf8dd813b4550e7`, full Merge Queue34023487584 PASS. Resource337/341 is accepted at `0d354091dfc3a144a9c83c31434dec2aff4fe0c4`, exact tree `df6e87098ce5b3641d3de2854680726f81da8d59`, full Merge Queue34030885168 PASS. Both architecture tasks are archived/released in this package.
+- B329 remains active on its same branch/PR335, immutable admission `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd`. Material priority repair `df0472e88ce4809d124011f0bae24e6007946257` follows actual35d PostgreSQL298PASS/4FAIL. Repair CI and full adapter remain open. Work continuation5558970279 preserves prior windows/counters. Only the exact migration-binary amendment below adds a path after protected readback.
+- Foundation338 has its original admission `4f35ec5a56f5e8b0c32db4503d2bd3503b8828ee`; successor custody5558970336 continues the existing branch after loss of unpublished local work, with no completion credit or provenance reset. Its six paths remain separate from B.
+- The explicit #342 source configuration addendum records the separate architect resolution5559004684. The prospective registry allocation below activates only after this addendum and allocation are protected. No numeric registry/runtime edit occurs here.
+- Actual C source/owner/bootstrap evidence remains unqualified. Preserved Server Seam247 branch `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e` remains WAITING_DEPENDENCY; no A+B/docs-only release.
+
+
+```yaml
 task_id: OTV2-20260825-work-delivery-coordinator
-title: Coordinate the post-blocker gameplay vertical slice and release the clean Durability successor
+title: Coordinate the post-blocker gameplay vertical slice
 mode: COORDINATE
-status: coordinating_durability_successor_release
+status: COORDINATING
+programme_state: WAITING_DEPENDENCY
+active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: null
 issue: 162
 pr: null
-delivery_pr: 188
-prior_merged_pr: 186
-architecture_hold_main_sha: 007183ac7ef09dd4ae8d8f476d7ac943541d7d48
-protected_main_sha: a171410de07c2dab718f52f780d4314bdcc53604
-architecture_decision_pr: 190
-architecture_decision_merge_sha: 2394f6f4633b8c6662d8d79a84110cc2ae13dcb7
-foundation_successor_issue: 192
-foundation_successor_allocation_pr: 194
-foundation_successor_allocation_merge_sha: 1063caf409af6cd4b25fa844e17a483b87e76ad6
-registry_successor_issue: 193
-registry_successor_merge_pr: 195
-registry_successor_merge_sha: 9878d42a21815027ef88067bfc59f8b40e78b473
-recovery_allocation_issue: 240
-recovery_allocation_pr: 241
-recovery_allocation_final_head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
-recovery_allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
-ownership_correction_authority: Oteryn/Oteryn-Game#187 comment 5424765487
-ownership_correction_scope: active Durability task status/provenance/blocker/no-write/next-action only; no worker or runtime change
-initial_published_pr_head_sha: e205b0620d433733e306777ab8e491d471b62677
-candidate_validation: PR #188 final head 0e26fa0c216cadf34ff5c83fa3be508f81106c41 passed exact-head governance, architecture, authority and merge-gate checks plus independent review
-candidate_pr_state: PR #188 squash-merged as 29576afa621bbe6a46c51fa1117c94efb6c7a644; temporary delivery branch deleted
-base_sha: 2e3b05e7e1e916bd3210ce2184ad7e23482f324d
-head_sha: null
-final_head_sha: 0e26fa0c216cadf34ff5c83fa3be508f81106c41
-final_head_frozen_at: null
+protected_main_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
+server_seam_issue: 247
+server_seam_allocation_pr: 294
+server_seam_allocation_merge_sha: bc9f5dac5642b56135cce31f91b9ed23e5258a70
+server_seam_branch: agent/otv2-gameplay-server-seam-01
+server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
+server_seam_state: WAITING_DEPENDENCY
+architecture_escalation_issue: null
+nonblocking_governance_reconciliation_issue: 316
 owner: ChatGPT Work Delivery Coordinator
 created_at: 2026-08-25T23:13:10+02:00
-updated_at: 2026-08-28T13:45:24Z
+updated_at: 2026-09-06
 execution_budget_minutes: 720
-large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration, and closeout; no single worker owns the programme
+large_budget_reason: coordinator lifecycle spanning independently reviewable lane allocations, integration and closeout; no single worker owns the programme
 owned_paths:
   - docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
-  - docs/superpowers/plans/2026-08-25-oteryn-game-interaction-lifecycle.md
-  - docs/superpowers/plans/2026-08-25-oteryn-game-ability-engine.md
-  - docs/superpowers/plans/2026-08-25-oteryn-game-durability-journal.md
-  - docs/superpowers/plans/2026-08-26-oteryn-game-ai-bootstrap.md
-  - docs/agents/evidence/OTV2-20260826-wave-a-post-merge-review-reconciliation.md
   - docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
+  - docs/superpowers/plans/2026-09-06-control-loss-foundation-amendment.md
+  - docs/agents/tasks/active/OTV2-20260906-native-admission-resource-registry-342.md
+  - docs/agents/tasks/archive/OTV2-20260906-native-admission-resource-registry-342.md
 public_contracts: []
 depends_on:
-  - Oteryn/Oteryn-Game#154
+  - Verified 326 closeout, then freshly allocated Child B329 persistence and Child C actual producer readiness; separately qualify architecture332 before relying on accepted-recovery semantics
 blocks:
-  - P0: historical PR #212 branch ancestry contains destructive cross-scope commit cd808d396018832b632be26911105a36f0cb7a20 and unallocated restoration 73e17f418c63ec038f5aa7ef8f0888ac74b75aa2; it remains immutable evidence only
-  - #167 and Server Seam remain fail-closed until the separately allocated clean successor completes its independent TDD, review and merge lifecycle
+  - compatible native Client release
+  - real applicable Tier 1/Tier 2 gameplay QA
+  - Movement allocation
+  - Combat allocation
 cross_repository_coordination_id: OTV2-WORK-DELIVERY-POST-BLOCKER
 external_repositories: []
-\`\`\`
+```
 
-The coordinator owns creation of each child task packet only through the
-allocation-PR merge. Immediately after the protected-main allocation merge,
-exclusive write ownership of each child task packet transfers to its named
-worker for that worker's one branch/PR and returns/releases only at that
-worker's closeout. The coordinator retains only the live allocation record,
-the child plans and this coordinator packet; no concurrent write authority is
-permitted.
+The coordinator owns creation and integration control for bounded child allocations, but never inherits a lane worker's runtime authority. Immediately after an allocation is protected-main integrated, the named worker exclusively owns its allocated task/branch paths until terminal return/release. Shared composition, Cargo, registry and governance surfaces remain serialized.
 
 ## Outcome
 
-Create the durable execution lifecycle for the post-blocker gameplay vertical slice. This coordinator records live readiness, allocates only path-disjoint lanes through separate merged allocations, integrates only exact-head verified deliveries, and emits \`ARCHITECTURE_ESCALATION_REQUIRED\` instead of inventing material architecture decisions.
+Drive the accepted Oteryn Game post-blocker programme to the first real authoritative Movement + Combat vertical slice. Recompute from protected GitHub state, integrate only exact-head qualified deliveries, and emit `ARCHITECTURE_ESCALATION_REQUIRED` rather than inventing material architecture or persistence semantics.
 
-## Current recovery authority — 2026-08-28
+This packet records the **current** coordinator state. The previous Durability-recovery-era version remains immutable Git history and Issue #162 provenance; its old dispatch/status prose is historical and grants no current worker, merge or architecture authority.
 
-- PROVEN: recovery allocation PR #241 final head ca012ff2b42eefe4f27075455f097199aea63f8f passed exact-head governance, architecture, authority and merge-gate workflows plus native Codex review, then merged as protected main a171410de07c2dab718f52f780d4314bdcc53604.
-- PROVEN: PR #212 remains Draft immutable evidence. Its only admitted reconstruction source is fb30fba2a888835dfc7cbde27f940b79d7bfe05d under the canonical #241 packet; no historical mutation is ratified.
-- PROVEN: `OTV2-20260828-impl-durability-successor` is the separate successor task on `impl/game-durability-journal-recovery-240`; it receives the clean implementation lifecycle from the protected allocation merge, not from PR #212 ancestry.
-- DERIVED: the sole current coordinator action is to dispatch that one successor from main a171410de07c2dab718f52f780d4314bdcc53604, retain #212, and wait for fresh successor-owned evidence before reconsidering Server Seam.
+## Current protected state — post-grace allocation
+
+This checkpoint supersedes earlier current-status prose below while preserving historical evidence. Work remains the unique mutating #162 control plane.
+
+- A318/321 and Foundation326/331 are completed/released; no reopen or history reset.
+- B329 is admitted at allocation333 merge `b8ae4c965cc7f686b89b4d5c0ba2bc04af6e07fd`, branch `agent/durable-fresh-admission-child-b-329`, PR335. Its schema checkpoint `d371e0a61e8a39c8c3f6875bf2343da60984ae2b` passes the new actual PostgreSQL17.6 schema case but has eight fixture/account-exclusion regressions in run34022664262. Full adapter/qualification remains open. This package additionally allocates only two named fixture paths below after protected readback; no worker history/window/counter reset.
+- Architecture332/334 is accepted at `1bcdc951e90a56310d24dfb5f3953ec0f86e1695`, Merge Queue34022052840 PASS; task archived here and custody released. Its semantic implementation is separate338, prospectively allocated below.
+- Source336/339 resource/recovery transport is still an independently reviewed candidate awaiting CI/protected integration. B resource envelope337 is a genuine separate architecture gap; neither unmerged candidate authorizes runtime/registry values.
+- C actual authenticated producers/bootstrap remain unqualified; preserve Server Seam247 branch/head `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`, WAITING_DEPENDENCY. A+B or docs alone cannot release it.
+
+## Prior protected state — 2026-09-06
+
+Current correction: Child A #318 / PR #321 is completed/released after exact-head CI, independent review (P0/P1/P2=0), full Merge Queue `33992173480` and protected readback of `f77a160a480cb1bb08bbbd83e0061b2a8a424734` / tree `6c1e6eaa73adb06eaf27dc8526b78ebeb1d8f1bf`. The worker's final head is `a94cd13fa3741780bd108220bb893c3d9be8a1ac` and immutable admission remains `8fd0a40928c4089b453556edbf0a5abebe46986d`. The archived task retains its original allocation and counters.
+
+Architecture #313 / PR #317 remains accepted. #247 remains `WAITING_DEPENDENCY` on separately allocated B and C plus actual C producer readiness. Preserve Server Seam branch/head/partial evidence. Work remains the sole control plane; no lane or shared lease is granted by this closeout.
+
+Current continuation: #324/#325 remains accepted/released at `93f31ba05972d3b96afb0d9ea08e2c6753507d8c`, full Merge Queue `34016129389` PASS. Foundation #326/#331 final candidate is native `14389fe41e8d3053e5143bdeee2acc7dd97eff00`, tree `b1348af0baecc10e2f54eba5766d45b3060e3208`; completed/released disposition is verified at protected merge `f69e9c12c8b69b625a7ce9d911bf3132c141ada6` and Merge Queue `34019841021` readback. Its immutable admission `3ab7a72d41dae10933785ce846b8e3f186a1feac` and counters remain in the terminal archive. Protected readback confirms completion, issue closure and branch deletion.
+
+Source-contract architecture #328 / PR #330 is accepted at `5412215718d66c743fb78eadc561e6a23b5e2b5f`, Merge Queue `34018062415` PASS; this package prepares its terminal archive. Separate #332 is a docs-only accepted-recovery architecture candidate with no runtime lease. Work qualifies it independently before relying on those semantics; production sources and actual C readiness remain UNKNOWN. No external write authority is added.
+
+After verified #331 closeout this package prospectively allocates B #329's exact nine SQL/harness paths plus task and plan. Lease activation requires its actual protected allocation merge/readback, which Work binds before dispatch. Original A evidence above and the sole Work control plane remain unchanged.
+
+Historical pre-architecture checkpoint:
+
+- `PROVEN` — protected `main` is `730c8bd12cc8c8c2588a97ddcd28f595c0018bca` after coordinator correction PR #314 passed the required GitHub Merge Queue and terminal `game-gate`.
+- `PROVEN` — the current #162 lifecycle still names `OTV2_WORK_DELIVERY_COORDINATOR`; no merged selector/transfer changes the active mutating control-plane profile.
+- `PROVEN` — Interaction Issue #165 is closed `completed`.
+- `PROVEN` — Ability Issue #166 is closed `completed`.
+- `PROVEN` — pure-local AI Issue #174 is closed `completed`.
+- `PROVEN` — Durability terminal repair Issue #250 is closed `completed`; implementation PR #252 merged through Merge Queue as `b67f4425e9e9c5bbf9f7bc94c422cd7478edcdd3`, and archival PR #290 merged as `47faa84152ffdcac00d8e2173d582aa54be2cbcf`; the worker and serialized composition lease are released.
+- `PROVEN` — Server Seam allocation PR #294 merged as `bc9f5dac5642b56135cce31f91b9ed23e5258a70` and lawfully released the Server Seam worker.
+- `PROVEN` — Server Seam Issue #247 and protected task `OTV2-20260904-gameplay-server-seam` are `WAITING_ARCHITECTURE` on Issue #313.
+- `PROVEN` — preserved Server Seam worker branch remains `agent/otv2-gameplay-server-seam-01@9370b254c6ac4f6529e069c1968ae6bfa1e1750e`, tree `3681b01f8a08fc5c9b210b06957834477502b16f`, with no implementation PR.
+- `PROVEN` — the preserved worker checkpoint contains only partial Task 1 / initial Task 2 work; it is not integration-eligible and has no production gameplay listener/admission.
+- `PROVEN` — Issue #313 is the canonical bounded `ARCHITECTURE_ESCALATION_REQUIRED` for the missing ownership-correct durable fresh-admission / initial `GameSession` boundary.
+- `DERIVED` — compatible Client, physical gameplay QA, Movement and Combat cannot be truthfully released while #313 prevents completion/integration of Server Seam.
+
+## Current critical-path blocker
+
+B329 full durability implementation/qualification, Foundation338 semantics, later post-grace SQL and actual C owning-source readiness remain open. Resource341 is accepted; registry342 still needs its exact protected allocation/addendum and implementation. Actual Platform counterpart and bootstrap remain absent/unproven under read-only external authority. Server Seam247 stays preserved and waiting.
+
+## Next authorized sequence
+
+1. Qualify and integrate this exact source configuration addendum, registry342 allocation, terminal336/337 archives and B migration-binary amendment. Bind protected readback before registry dispatch or B binary edit.
+2. Continue same B329 branch and338 branch under current bounded custody/counters; publish material checkpoints and complete their full acceptance, independent reviews and canonical CI/Merge Queue.
+3. Register all accepted resource dimensions through342; B executable acceptance requires protected registration and actual enforcement evidence.
+4. Allocate post-grace SQL only after B actual schema integration; no migration number is preselected.
+5. Separately allocate actual Game sources/owning composition and qualify current producers/bootstrap. External counterpart writes require separate authority; no fixture or configuration becomes actual availability.
+6. Resume preserved Server Seam only after all required implementation/source readiness, normal reconcile then production-path/review/CI gates. Client/QA/Movement/Combat remain downstream.
+
+## Open-state disposition
+
+A repository search may still find historical, template, draft, Dependabot or separately owned PR/task prose containing `READY_FOR_INTEGRATION` or old Durability/Server Seam states. Those strings are not current authority. A Work integration action requires a fresh lane return tied to the exact current allocation, exact head, changed-path allowlist, required review and CI generation.
+
+The current #162 critical path has no integration-ready Server Seam return: #247 is `WAITING_DEPENDENCY` on A+B+C implementation/readiness; Client/QA/Movement/Combat remain blocked.
+
+Issue #316's narrow coordinator cleanup qualifies the DAG historical release as `blakinio/Oteryn-v2#314` / `88f4fb754b5ae11243afd38a9e0b6a8e3b0a5815`, retaining source-retirement provenance. Only the release header/paragraph changes; DAG dependencies, lane semantics and existing implementation authority remain unchanged. The active Work control plane owns this bounded shared-programme correction; #316 itself grants no independent worker lease.
 
 ## Architecture and source of truth
 
-- \`PROVEN\`: protected \`main\` is \`2e3b05e7e1e916bd3210ce2184ad7e23482f324d\` when this task was admitted.
-- \`PROVEN\`: Issue #154 is closed completed; its packaged authority is canonical on this admission main.
-- \`PROVEN\`: Issues #91, #93, #115, #116, #123 and #131 are closed completed. Their terminal state does not grant downstream runtime write authority.
-- \`PROVEN\`: PR #98 merged as \`dc22e0da8efcc6f4458416191261063b295af5b4\`; its QA shell exists, while real gameplay Tier 1 and Tier 2 remain \`NOT_EVALUATED\`.
-- \`PROVEN\`: PR #144 (\`c1020b2db62ecfa18c411bee56fa004430b28923\`) and PR #151 (\`2d0e951ce37c2e28773c22966bb816c00bebaa0a\`) are merged; the prior registry/Foundation-Cargo lease is released.
-- \`PROVEN\`: Issue #139 is deliberately non-current until its exact Movement plan, Interaction, compatible Client, and real QA prerequisites are integration-ready.
-- \`PROVEN\`: open PR #150 is a draft root-\`AGENTS.md\` governance change on a separate path; it owns no coordinator or Wave A implementation path.
-- \`PROVEN\`: no open Wave A implementation PR or active Wave A path allocation exists on the admission main.
-- \`PROVEN\`: Task 1 coordinator lifecycle merged as \`c57ddb5253cdfec126a768232d53f8a9bb292e3f\`; protected main readback confirmed it.
-- \`PROVEN\`: Issue #164 is terminally resolved by owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\`, which accepts only a pure-local AI bootstrap; Issue #174 needs this fresh exact allocation before implementation.
-- \`PROVEN\`: PR #186 is merged. Its recorded review claims remain historical; this coordinator hold does not revise them.
-- \`PROVEN\`: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` passed exact-head governance, architecture, authority and merge-gate checks plus independent review, then squash-merged as protected \`main\` \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`; its temporary delivery branch was deleted. Its initial published head \`e205b0620d433733e306777ab8e491d471b62677\` remains exact original admission provenance.
-- \`PROVEN\`: the architecture-hold protected-main checkpoint \`007183ac7ef09dd4ae8d8f476d7ac943541d7d48\` had PR #182's shared prerequisite but no Durability worker PR or durable adapter delivery; the prior reconciliation readback at \`29576afa621bbe6a46c51fa1117c94efb6c7a644\` retained that no-delivery state.
-- `HISTORICAL`: `impl/game-durability-journal@7ac06bd84a1a31fc9a3ea2560de8ae20cea96741` and its local documentation checkpoint are pre-incident provenance only; neither is a dispatch target.
-- `HISTORICAL`: PRs #190, #194, #195, #199 and #210 completed the Foundation/registry predecessors. #192 and #193 are terminal and have no active worker/dispatch path.
-- `PROVEN`: PR #241 replaced the invalid legacy Durability continuation with one clean successor allocation. The legacy branch is immutable evidence; the successor is the only Durability execution target.
-- `PROVEN`: Server Seam remains `WAITING_DEPENDENCY` on the clean successor's independent merge, not on Foundation #192.
-- `DERIVED`: Interaction, Ability and journal-only Durability have disjoint primary semantic paths. Their shared composition/Cargo surfaces remain serialized coordinator paths.
+Governing order:
 
-Governing authority:
+1. protected-main repository governance and active selector;
+2. current Issue/PR/CI/Merge Queue state;
+3. merged exact allocation and lane-specific accepted contracts;
+4. current worker branch/task evidence;
+5. historical task prose and chat state only as locators/evidence.
 
-- \`AGENTS.md\`
-- \`docs/agents/AGENTS.md\`
-- \`docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md\`
-- \`docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md\`
-- \`docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md\`
-- \`docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md\`
-- \`docs/architecture/reviews/OTERYN_GAME_POST_BLOCKER_WORK_ORCHESTRATION_2026-08-25.md\`
-- \`docs/superpowers/plans/2026-08-25-oteryn-game-work-delivery-orchestration.md\`
+Relevant protected authority:
 
-## Historical readiness matrix — non-actionable
-
-This retained matrix records the pre-recovery state only. Every row below is historical and non-actionable: it grants no dispatch, merge-up, TDD or worker authority. Current delivery state is exclusively the recovery authority above, the archived allocation record and the separately owned successor packet.
-
-| Lane | Historical readiness | Historical evidence | Historical original record |
-|---|---|---|---|
-| Interaction | \`COMPLETED_RELEASED\` | PR #172 merged as \`73f82e4864aa15ece50625bda8bac7868f779ba3\`; post-merge reconciliation is recorded | Issue #165 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
-| Ability | \`COMPLETED_RELEASED\` | PR #171 merged as \`2faa280b406a313d02ee1330c65651bc36e215a9\`; post-merge reconciliation is recorded | Issue #166 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
-| AI | \`COMPLETED_RELEASED\` | PR #178 merged as \`cb9c5f4f53dd880c9d338dafd21b6184a4419993\`; post-merge reconciliation is recorded | Issue #174 may close after this coordinator closeout merges and protected-main readback confirms the evidence. |
-| Foundation successor | \`CONFLICT\` | #187 is resolved by PR #190 and #194 is merged, but the worker-owned #192 packet/live allocation still say \`waiting_allocation_merge\` / \`allocation_pending_merge\` | worker #192 must reconcile its own active packet from current `main`, then execute TDD; this coordinator packet grants no execution authority |
-| Durability | \`WAITING_DEPENDENCY\` | #167 remains fail-closed while #192's worker-owned allocation-state conflict is reconciled and its Foundation boundary later integrates | no write authority until #192 integrates and #167 receives fresh resume authority |
-| Server Seam | \`WAITING_DEPENDENCY\` | #167 cannot release the durable adapter until the #192 conflict is reconciled, Foundation integrates, and #167 is freshly resumed | not released by #167 |
-| Client | \`WAITING_DEPENDENCY\` | Server Seam remains blocked by #167 \`WAITING_DEPENDENCY\` | no compatible production Server Seam is merged |
-| Movement | \`WAITING_DEPENDENCY\` | #139 remains non-current and its Client/Server Seam dependency chain is blocked by #167 \`WAITING_DEPENDENCY\`; real QA is also not integration-ready | no dispatch authority |
-| Combat | \`WAITING_DEPENDENCY\` | Movement and its Client/Server Seam/Durability dependency chain is blocked by #167 \`WAITING_DEPENDENCY\` | no dispatch authority |
+- `AGENTS.md`
+- `docs/agents/AGENTS.md`
+- `docs/agents/prompts/OTV2_WORK_DELIVERY_COORDINATOR.md`
+- `docs/agents/prompts/OTV2_IMPLEMENTATION_COORDINATOR.md`
+- `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`
+- `docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md`
+- `docs/architecture/reviews/OTERYN_GAME_POST_BLOCKER_WORK_ORCHESTRATION_2026-08-25.md`
+- `docs/superpowers/plans/2026-08-25-oteryn-game-work-delivery-orchestration.md`
 
 ## Acceptance criteria
 
-- [x] GitHub-backed protected-main, Issue, PR and active-task preflight completed.
-- [x] Completed blocker work is reconciled without reopening #93, #115, #116, #123 or #131.
-- [x] Current Wave A candidate readiness is classified with no implicit worker authority.
-- [x] Task 1 coordinator lifecycle passed exact-head governance lifecycle and merged as \`c57ddb5253cdfec126a768232d53f8a9bb292e3f\`.
-- [x] Task 2 allocation PR #168 merged exact, path-disjoint authority before any mutating lane worker was dispatched.
+- [x] Exactly one active mutating #162 control-plane profile is resolved: `OTV2_WORK_DELIVERY_COORDINATOR`.
+- [x] Interaction, Ability and AI child Issues are terminal completed.
+- [x] Durability terminal repair is protected-main integrated and its worker/shared lease is released.
+- [x] Server Seam received a lawful merged exact allocation and its worker checkpoint is preserved.
+- [x] Material fresh-admission persistence/authority gap was escalated as #313 instead of being guessed through.
+- [x] Server Seam task/Issue/parent control-plane state was reconciled through PR #314 and protected-main readback.
+- [x] Ambiguous historical executor-DAG PR-number provenance was isolated as non-blocking governance Issue #316 rather than silently reinterpreted.
+- [x] #313 architecture decision is reviewed, qualified and integrated to protected `main` through PR #317.
+- [ ] Any architecture-required Foundation/Durability prerequisite is freshly allocated, implemented, qualified, merged and read back.
+- [ ] Server Seam is completed, independently reviewed, exact-head qualified and merged through protected controls.
+- [ ] Compatible native Client is allocated/merged from the post-Server-Seam main.
+- [ ] Applicable real Tier 1/Tier 2 gameplay QA is truthfully proven.
+- [ ] Movement readiness checkpoint, resource/registry conditions and exact child allocation are completed; Movement merges through all gates.
+- [ ] Combat readiness checkpoint is proven from merged Movement plus Ability/Interaction/Durability/Client/QA; Combat merges through all gates.
+- [ ] Programme terminal reconciliation proves all used tasks/PRs/leases are terminal and protected-main readback matches the claim.
 
 ## Excluded scope
 
-No gameplay/runtime, Cargo/workspace, registry, stable-ID, public-contract, workflow, production, protected-environment, secret, live account/session/data, Platform, Atlas or META mutation is authorized by this coordinator. Task 2 is authorized to create and maintain only the exact coordinator documentation that allocates path-isolated workers; it does not itself implement runtime behavior, and worker mutation remains deferred until this allocation authority merges.
+No gameplay/runtime implementation, Cargo/workspace mutation, registry/stable-ID mutation, public contract or schema decision, workflow/ruleset/protection weakening, production deployment, protected-environment/secret/live-data mutation, Platform/Atlas/META/external-repository write, Reference-parity claim or permanent Content-format decision is authorized merely because Work owns this coordinator packet.
+
+The coordinator may create bounded allocations and integrate qualified worker returns only under current accepted authority. Material architecture remains the Supervising Architect's domain.
 
 ## Implementation / findings
 
-Task 1 established Issue #162 and merged the coordinator-only packet from fresh protected \`main\`. The previous next-wave blocker coordinator is terminal historical evidence and is not resumed. Task 2 created readiness-backed Issues #165, #166 and #167, three child plans/task packets, and Issue #164 as the required AI architecture escalation. Owner decision merge \`a1a868dc3a7cbe5d3f6c2d3732038ae6cd5d4a3d\` closed #164 and authorized only the separately allocated pure-local AI bootstrap through Issue #174.
+This reconciliation removes obsolete active-state claims from the coordinator packet. It does not reopen or reinterpret completed Wave A work, does not ratify historical invalid Durability branches, and does not modify any worker branch or runtime path.
 
-PRs #171, #172 and #178 are merged and their packets released. PRs #190, #194, #195, #199 and #210 are terminal historical predecessor evidence; none creates a current #192/registry dispatch path. PR #241 is the current Durability recovery decision: legacy #212 remains immutable evidence, the separate clean successor is the sole Durability execution target, and Server Seam remains fail-closed until that successor independently merges.
+Child A #318 remains completed/released. After verified #331 closeout the current delivery path is freshly allocated B329 -> separately allocated C/actual readiness -> preserved Server Seam. #330 architecture is accepted; #332 qualification remains separate and creates no runtime lease. #313 remains completed and #316 documentation-only. No other lane is promoted or implicitly allocated.
 
 ## Validation
 
 ### Focused
 
-- command/run: \`python tools/agents/validate_governance.py\`
-- result: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` passed exact-head governance, architecture, authority and merge-gate checks plus independent review before squash merge.
+- validation target: coordinator task/control-plane consistency against protected `main`, Issues #162/#165/#166/#174/#247/#250/#313/#316, merged allocation #294 and protected correction #314
+- result: live GitHub readback performed before mutation
 
 ### Component/integration
 
-- command/run: \`python tools/repository/validate_repository_policy.py\`
-- result: baseline-only LICENSE canonical-text mismatch was outside PR #186; no repository-policy change is made by this architecture hold. PR #188 is merged; its historical protected-main merge result is \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`.
+- scenario: documentation/control-plane reconciliation only
+- result: runtime/component/E2E execution is `NOT_APPLICABLE`; this package prepares verified #326/#328 terminal archives and exact prospective B329 allocation; it performs no runtime, contract, schema, Cargo or workflow mutation
 
 ### E2E
 
-- scenario: \`NOT_APPLICABLE\` — coordinator-only governance/task lifecycle creates no runtime behavior or user journey.
-- result: \`NOT_APPLICABLE\`
+- scenario: `NOT_APPLICABLE` — no executable gameplay behavior changes
+- result: `NOT_APPLICABLE`
 
 ### Exact-head CI
 
-- initial published head: \`e205b0620d433733e306777ab8e491d471b62677\`
-- final exact-head: \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\`
-- authoritative source: PR #188 final-head checks and merge record
-- trigger source: pull_request
-- workflow/run/job: exact-head governance, architecture, authority and merge-gate checks for PR #188 final head
-- runner assignment: GitHub-hosted workflow policy
-- classification: coordinator lifecycle reconciliation
-- result: PASS; final head was accepted and squash-merged to protected main
+- exact head: recorded in PR/CI evidence rather than self-referential task content
+- required result: repository PR governance/checks green, then normal protected Merge Queue qualification and `game-gate`
 
 ## Self-review
 
-- initial reviewed head: \`e205b0620d433733e306777ab8e491d471b62677\`
-- final reviewed head: \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\`
-- authoritative source: PR #188 final-head review evidence
-- method/reviewer: coordinator full-diff review
-- material findings: none on the final PR #188 head
-- verdict: PASS; final head accepted for merge
+- exact head: recorded in immutable PR evidence after the final material content change
+- method: whole-diff review against the exact eight-path coordinator package
+- verdict: PASS whole-candidate review against verified331/330 terminal evidence, accepted317/325 contracts and the exact eleven-path B lease. Governance and whitespace passed. Prospective B329 activates only on its own protected allocation integration/readback; independent final-head review and protected qualification remain required. No runtime/Cargo/schema/workflow mutation.
 
 ## Independent review
 
-- required: exact-head non-authoring review before merge
-- initial reviewed head: \`e205b0620d433733e306777ab8e491d471b62677\`
-- authoritative source: PR #188 final-head review evidence
-- method/auditor: independent task review
-- material findings: none on final head; bounded lifecycle scope remained authorized by Issue #187 comment \`5424765487\`
-- verdict: PASS; final head independently reviewed and merged
+- required: `YES` for this exact allocation package under current protected root `AGENTS.md` AI review policy
+- reason: the package prospectively allocates a high-risk admission/security authority boundary; independent non-author exact-head review must verify scope, accepted contracts, lease activation and preserved Server Seam ownership before integration
+- enforcement remains: exact-head repository checks, `game-gate`, protection and Merge Queue
 
 ## PR and closeout
 
-- changed-file review: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` passed independent review
-- unresolved review threads: none reported at merge
-- related/superseded PRs: #168 allocation; #171, #172 and #178 deliveries; #181/#185 leases; #182 shared integration
-- protected auto-merge: not used
-- merge commit/result: PR #188 final head \`0e26fa0c216cadf34ff5c83fa3be508f81106c41\` squash-merged as \`29576afa621bbe6a46c51fa1117c94efb6c7a644\`; that protected-main readback is historical
-- ownership release: Ability, Interaction and AI are released; legacy Durability has no write authority, while the separate clean successor owns its post-allocation lifecycle; coordinator remains active and the vertical-slice programme is not complete
+- current proposed allocation Issue: #329; #326 verified completion and #328 accepted architecture archival are the handoff prerequisites
+- changed-file allowlist: exactly eight repository paths: #326 active task deletion and archive addition (two), #328 active task deletion and archive addition (two), B329 task and plan additions (two), LIVE_ALLOCATIONS and this Work task updates (two). No architecture decision/runtime edits belong to this package.
+- exact archive paths: `docs/agents/tasks/{active,archive}/OTV2-20260906-foundation-claim-transition-326.md` and `docs/agents/tasks/{active,archive}/OTV2-20260906-native-source-contracts-328.md`.
+- allocation runtime scope is B329's exact nine SQL/harness paths plus its task/plan (eleven), as enumerated in LIVE_ALLOCATIONS and B's packet; the coordinator package itself changes only the eight documentation paths above.
+- terminal merge authority: normal protected repository control plane only; no direct/self/bypass merge
+- coordinator programme remains active after this checkpoint; this is not Movement/Combat programme closeout
 
 ## Context checkpoint
 
-\`\`\`yaml
-last_progress: PR #241 merged the canonical clean Durability recovery allocation as main a171410de07c2dab718f52f780d4314bdcc53604; legacy PR #212 remains immutable evidence and the separate successor is ready for coordinator dispatch
-status: coordinating_durability_successor_release
-branch: null
-head_sha: null
-pr: null
-recovery_allocation_issue: 240
-recovery_allocation_pr: 241
-recovery_allocation_final_head_sha: ca012ff2b42eefe4f27075455f097199aea63f8f
-recovery_allocation_merge_sha: a171410de07c2dab718f52f780d4314bdcc53604
-delivery_pr: 188
-prior_merged_pr: 186
-final_head_sha: 0e26fa0c216cadf34ff5c83fa3be508f81106c41
-final_head_frozen_at: null
-historical_pr188_ci_trigger_source: pull_request
-historical_pr188_ci_check_generation: final_0e26fa0c216cadf34ff5c83fa3be508f81106c41
-historical_pr188_ci_checks_for_final_head: passed_exact_head_governance_architecture_authority_merge_gate
-historical_pr188_ci_run_ids: recorded_on_pr188_final_head
-historical_pr188_ci_job_ids: recorded_on_pr188_final_head
-historical_pr188_runner_assignment_state: GitHub-hosted workflow policy
-historical_pr188_terminal_ci_wait_started_at: null
-historical_pr188_terminal_ci_checks_for_final_generation: passed
-unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
-stall_warnings: 0
-owner_action_required: create the one separately allocated successor branch from main a171410de07c2dab718f52f780d4314bdcc53604; do not dispatch legacy PR #212
-blocker: clean successor has not yet produced its mandatory test-only RED generation, implementation GREEN generation, fresh exact-head CI or fresh independent review
-next_action: dispatch OTV2-20260828-impl-durability-successor on impl/game-durability-journal-recovery-240 from the recorded merge SHA; retain PR #212 and recompute downstream readiness only after the successor merges
-\`\`\`
-
-## Current live control-plane checkpoint — 2026-08-29
-
-This section supersedes the older operational checkpoint above for current execution. Historical fields remain preserved for provenance only.
-
 ```yaml
-protected_main_sha: 0135deb100109b910dada366d7a1b05484357e51
-parent_issue: 162
-status: REVIEW_RECONCILIATION_REQUIRED
-current_durability_issue: 250
-current_durability_pr: 252
-current_durability_allocation_pr: 251
-current_durability_head_sha: 99b1c13ebfe4edef120e5c89b3c3bf9dfe15114d
-current_durability_base_sha: 0135deb100109b910dada366d7a1b05484357e51
-current_durability_behind_by: 0
-current_durability_pr_state: draft_unmerged
-current_changed_path_count: 12
-historical_source_pr: 243
-historical_source_authority: read_only_evidence_only
+last_progress: resource341 protected acceptance verified; exact342registry allocation, source configuration addendum and B binary amendment prepared
+status: COORDINATING
+programme_state: WAITING_DEPENDENCY
+active_control_plane_profile: OTV2_WORK_DELIVERY_COORDINATOR
+protected_main_sha: ad7273e3e91a4e4254abb9aa2710c7e0c9754afe
 server_seam_issue: 247
-server_seam_state: WAITING_DURABILITY_MERGE
-work_owned_integration_guard: PRRT_kwDOT8SzxM6dX3eH
-owner_action_required: none
-blocker_owner: "Oteryn: sol durability lead"
-blockers:
-  - P1: retained reconnect-attempt budget is not preserved across terminal GameSession replacement under the same ControlLossEpoch
-  - P1: Foundation final revalidation cannot represent genuinely fresh current authority before V2 COMMIT
-qualification_evidence:
-  rust_workspace_run: 33240209169
-  merge_gate_run: 33240263818
-  agent_governance_run: 33240263805
-  architecture_semantic_audit_run: 33240209246
-  merge_authority_audit_run: 33240209170
-  whole_diff_self_review: PASS_on_99b1c13ebfe4edef120e5c89b3c3bf9dfe15114d
-  codex_review: CHANGES_REQUIRED_2xP1
-work_mutation_authority_now: control_plane_docs_only
-worker_branch_mutation_by_work: forbidden
-server_seam_release: forbidden_until_durability_merge_readback
-next_action: "Wait for Oteryn: sol durability lead to repair both P1s within merged #251 authority, preserve fresh RED -> GREEN evidence, freeze a new exact head, regenerate exact-head CI/self-review and fresh lane-owned Codex with zero blocking findings/required lane threads, then return READY_FOR_INTEGRATION to Work. Work then performs independent exact-head preflight, resolves only its own integration guard, expected-head squash-merges #252, reads back protected main, reconciles #250/#167/#243, and only then creates the fresh Server Seam #247 allocation."
+server_seam_branch: agent/otv2-gameplay-server-seam-01
+server_seam_head_sha: 9370b254c6ac4f6529e069c1968ae6bfa1e1750e
+server_seam_pr: null
+server_seam_state: WAITING_DEPENDENCY
+architecture_escalation_issue: null
+nonblocking_governance_reconciliation_issue: 316
+owner_action_required: null
+blocker: B329_full_delivery_resource337_and_C_actual_readiness_then_Server_Seam
+next_action: qualify and integrate this owning-loss allocation after347 then bind protected338 amendment readback
 ```
 
-Durable GitHub control-plane mirrors for this checkpoint:
+This package changes only allocation/task/archive coordination documents. It grants no second control plane and no runtime mutation to Work. Prospective338 and Bfixture amendment activate only after protected integration/readback; existing B runtime custody remains with its writer.
 
-- Issue #162 comment `5462518299` records the current Work classification and the two blocking P1s.
-- Issue #167 comment `5462519470` supersedes stale `READY_TO_RESUME` / historical #243 execution wording and points current execution to #250/#252.
-- Issue #247 body now names Issue #250 / PR #252 as the current prerequisite and keeps Server Seam fail-closed at `WAITING_DURABILITY_MERGE`.
+## SQLx351 coordinator package custody
+
+Under issue162 comment5559883406, this documentation package on `coord/sqlx-driver-allocation-351` owns exactly:
+
+- docs/agents/programs/OTERYN_V2_IMPLEMENTATION_LIVE_ALLOCATIONS.md
+- docs/agents/tasks/active/OTV2-20260825-work-delivery-coordinator.md
+- docs/agents/tasks/active/OTV2-20260906-sqlx-driver-budget-351.md
+- docs/superpowers/plans/2026-09-06-sqlx-driver-budget.md
+
+This current scope supersedes earlier coordinator package path lists only; it preserves their historical evidence. The351 task/plan pass to the sole driver writer only at protected readback/admission. Work grants no runtime ownership to itself. Original programme budget/history and existing workers' paused/resumed windows remain unchanged. The shared Cargo transfer and admission requirements are specified in LIVE's prospective351 amendment. Driver implementation, B activation and Server Seam readiness remain distinct gates.
+
+Next action: Work independently qualifies and protects this exact four-path allocation package before considering driver admission.
+
+## Current continuation and six-path package override
+
+Work162 comment5560037097 extends this same coordinator PR352 by only the346 active-to-archive pair. Current package therefore owns the four351 allocation documents above plus `docs/agents/tasks/{active,archive}/OTV2-20260906-native-evidence-wire-346.md` (six paths). It terminally archives/releases protected349 at9be69b4e0a06f3978d5c5c5603ca3e5670a9f18a and amends prospective351 for the exact sqlx-core accounting paths. Issue351 comment5559999529 records why untouched TLS reservation is NOT_PROVEN and the smallest scoped correction. No driver worker is yet admitted. Earlier package lists/checkpoints are historical, not current conflicting custody.
+
+Foundation338/PR343 and B329/PR335 retain their canonical branches, original admissions and counters. B native8f73d12c105e230817524fa91287d82586a65b8a is partial queue/custody work awaiting hosted qualification, not full acceptance. Foundation repaired owning-loss candidate is in final integration qualification. ChildC319 remains separate: protected Platform3b2ea1c7392187d5d22488673073dc8f8305a374 lacks the inspected native UUID/account-security/signing-trust producers; read-only evidence and exact external boundary are recorded in319 comment5559932791. Platform mutation is outside current Game authority. Preserve Server Seam247 branch9370b254c6ac4f6529e069c1968ae6bfa1e1750e WAITING_DEPENDENCY.
+
+Next action: qualify and protect this six-path allocation/closeout package, read back, then consider sole driver351 admission under preserved programme budget and overlap checks.

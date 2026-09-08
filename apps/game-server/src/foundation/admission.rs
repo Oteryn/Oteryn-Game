@@ -2823,3 +2823,49 @@ mod tests {
         Ok(())
     }
 }
+
+/// Process projection for the durable fresh port, independent of the synchronous
+/// compatibility journal. A durable receipt alone cannot populate it.
+#[derive(Debug, Default)]
+pub(crate) struct FreshAdmissionProjectionV1 {
+    controller: Option<FreshAdmissionCommit<AuthenticatedTransportRefV1>>,
+}
+impl FreshAdmissionProjectionV1 {
+    pub(super) const fn controller(
+        &self,
+    ) -> Option<FreshAdmissionCommit<AuthenticatedTransportRefV1>> {
+        self.controller
+    }
+    pub(super) fn clear(&mut self) {
+        self.controller = None;
+    }
+    pub(super) fn install_current(
+        &mut self,
+        expected: FreshAdmissionCommit<AuthenticatedTransportRefV1>,
+        current: GameSessionAuthoritySnapshot<AuthenticatedTransportRefV1>,
+    ) -> Result<(), AdmissionError> {
+        self.clear();
+        if current.commit() != expected
+            || current.session_state() != GameSessionState::Active
+            || current.current_connection_generation().get() != 1
+            || current.current_transport() != Some(expected.initial_transport())
+            || current.current_character_lease().character_id() != expected.character_id()
+            || current.current_character_lease().generation()
+                != expected.character_lease_generation()
+            || current.current_character_world_eligibility()
+                != Some(CharacterWorldEligibilityClaimV1::new(
+                    expected.character_id(),
+                    expected.world_id(),
+                ))
+            || current.current_runtime_scope()
+                != RuntimeScopeRefV1::channel(expected.world_id(), expected.channel_id())
+            || current.current_scope_generation().get() != expected.scope_ownership_generation()
+            || current.current_control_loss_epoch().is_some()
+            || current.current_original_grace_deadline().is_some()
+        {
+            return Err(AdmissionError::StaleConnection);
+        }
+        self.controller = Some(expected);
+        Ok(())
+    }
+}

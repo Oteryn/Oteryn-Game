@@ -1,9 +1,7 @@
-# Anti-stall and execution budget
+# Game CI anti-stall extension
 
 ```yaml
-anti_stall_policy_version: 2.4-oteryn-v2
-normal_foreground_runtime_minutes: 60
-large_foreground_runtime_minutes: 120
+extension_version: 1
 no_progress_minutes: 15
 max_ordinary_ci_observations_per_exact_head: 2
 ci_event_grace_minutes: 2
@@ -12,15 +10,17 @@ max_ci_recovery_actions_per_exact_head: 1
 terminal_ci_wait_budget_minutes: 45
 terminal_ci_minimum_interval_minutes: 3
 max_terminal_ci_observations_per_generation: 12
-max_repair_cycles_per_gate: 3
-max_identical_failure_retries_without_new_hypothesis: 1
-max_additional_tasks_after_entry_task: 1
-minimum_remaining_minutes_for_additional_task: 30
 ```
 
 ## Purpose
 
-Autonomous work is foreground, bounded and evidence driven. It must not become an endless polling, retry, context reconstruction, PR creation, task-selection or CI-regeneration loop.
+Resolve lifecycle states, retry budgets, candidate freeze and continuation dispositions from the META policy pinned by `META_AGENT_POLICY_BINDING.json`. This Game extension supplies only repository-specific GitHub Actions observation and recovery bounds.
+
+Autonomous work is progress-bounded and evidence driven. Productive implementation is **not** limited by a generic wall-clock budget. A worker that is making material progress continues until the allocated task is complete, reaches a state defined by the bound lifecycle authority, is explicitly stopped by the owner, or hits one of the Game CI anti-stall conditions below.
+
+The anti-stall controls exist to prevent endless polling, repeated identical failures, context reconstruction loops, PR/event regeneration and unproductive waiting. They MUST NOT be converted into periodic implementation stops, worker rotations, fresh execution-window grants or discarded productive minutes.
+
+Any older prompt, task, plan, checkpoint or programme document that says `60-minute window`, `120-minute budget`, `foreground budget`, `remaining productive minutes`, `windowN`, or equivalent is historical execution bookkeeping only. It does not require a stop, rotation, new grant, budget reset or re-admission while the same authorized task can continue safely and productively.
 
 ## Measurable progress
 
@@ -35,12 +35,13 @@ Progress means at least one material event:
 
 Repeated reads, unchanged checks, duplicate summaries, waiting, activity-only commits, branch rewinds, close/reopen cycles and replacement PRs created only to regenerate CI are not progress.
 
+There is no periodic checkpoint requirement based only on elapsed implementation time. Persist a durable checkpoint when it materially helps handover/recovery, before a genuine stop/rotation, or when the task becomes waiting/blocked.
+
 ## Required checkpoint fields
 
 For autonomous or failure-prone work record when applicable:
 
 ```yaml
-invocation_started_at:
 last_progress_at:
 final_head_sha:
 final_head_frozen_at:
@@ -59,7 +60,7 @@ stall_warnings: 0
 owner_action_required:
 ```
 
-Reset counters only after the exact head, failure signature, hypothesis, external state or required-check generation materially changes.
+Reset counters only after the exact head, failure signature, hypothesis, external state or required-check generation materially changes. Elapsed productive time does not reset or exhaust task authority.
 
 ## Final-head freeze
 
@@ -100,10 +101,10 @@ Classify the observed condition before taking a recovery action:
 
 For one frozen exact head:
 
-1. inspect the exact SHA, PR state, required context, check suites, workflow runs, job assignment and repository Actions permissions;
+1. inspect the exact SHA, PR state, required context, check suites, workflow runs, job assignment and repository Actions;
 2. if a terminal failed/cancelled run exists and a new hypothesis justifies it, rerun it once;
 3. otherwise use one trusted `workflow_dispatch` recovery run that validates the open PR number and exact frozen head;
-4. if the active connector cannot dispatch or cancel Actions, configure protected auto-merge when eligible, record the exact owner action and return `BLOCKED` or `WAITING`;
+4. if the active connector cannot dispatch or cancel Actions, configure protected auto-merge when eligible, then use `BLOCKED` only for a proven permission/policy/owner dependency and `WAITING_EXTERNAL` for an external GitHub/runner dependency;
 5. never create a no-op commit, activity-only task edit, branch rewind, close/reopen cycle, duplicate branch or replacement PR solely to obtain a check.
 
 At most one CI recovery action is allowed per exact head. A second action requires a materially new failure signature or owner instruction.
@@ -116,22 +117,24 @@ Outside final terminal CI:
 2. allow at most one later unchanged observation;
 3. configure protected auto-merge once when eligible;
 4. persist exact head, run IDs, assignment state and one next action;
-5. stop/rotate or execute genuinely independent work already inside the same task.
+5. release external waiting or execute genuinely independent work already inside the same task.
 
-Do not keep a worker active only to wait.
+Do not keep a worker active only to wait. This waiting rule does not limit productive implementation work.
 
 ## Bounded terminal CI
 
-A foreground invocation may remain active through final exact-head CI and merge only when implementation, mandatory self-review, any required independent review, E2E, review hygiene and all non-CI gates are complete and the final head is frozen.
+A worker may remain active through final exact-head CI and merge only when implementation, mandatory self-review, any required independent review, E2E, review hygiene and all non-CI gates are complete and the final head is frozen.
 
-During this exception:
+During this CI-wait exception:
 
-- total wait is capped at 45 minutes or remaining invocation budget;
+- total unchanged waiting is capped at 45 minutes;
 - unchanged observations are at least three minutes apart;
 - at most 12 observations are allowed per materially new required-check generation;
 - new generations do not reset the total wait budget;
 - a failure exits waiting and enters the repair loop;
 - after success re-check head, checks, required review state, ownership and mergeability before merge.
+
+The 45-minute cap applies only to passive terminal CI waiting. It is not an implementation execution window.
 
 ## Failure loop
 
@@ -139,28 +142,31 @@ During this exception:
 - Make one targeted repair based on an explicit hypothesis.
 - An identical second failure requires a new hypothesis, instrumentation or narrower isolation.
 - Never repeat the same failure again without new evidence.
-- After three repair cycles for one gate, persist evidence and return `BLOCKED` or `ROTATE`.
+- Apply the retry budgets from the bound META lifecycle authority. Exhaustion with no changed material fingerprint is `STALLED`, releases active ownership and does not become a permission `BLOCKED`. A materially different failure class uses its own bound fingerprint; narration or a new timestamp does not reset an exhausted counter.
 
 Infrastructure states must not be “repaired” by unrelated repository mutations.
 
 ## Stop handling
 
-On budget/no-progress/retry/repair exhaustion or unavailable dispatch/cancel authority:
+Stop or release ownership when the whole programme/task lineage is terminal, the owner stops it, the bound lifecycle reports `WAITING_EXTERNAL`, `BLOCKED` or `STALLED`, or required authority/capability is unavailable. Successful completion of an entry task is not a stop when the bounded programme lifecycle explicitly authorizes the one follow-on task.
+
+For a stop condition:
 
 1. stop polling and starting new work;
-2. preserve the frozen coherent state;
+2. preserve the coherent state;
 3. record exact last progress, unchanged state, counters, run/job IDs and attempted hypotheses;
-4. set task `ready`, `waiting` or `blocked` accurately;
+4. set the bound lifecycle state accurately: `WAITING_EXTERNAL` for an external dependency, `BLOCKED` for an owner/permission/policy dependency, or `STALLED` for unchanged retry exhaustion;
 5. record an exact `owner_action_required` when applicable;
 6. leave exactly one `next_action`;
-7. return `WAITING`, `BLOCKED` or `ROTATE`.
+7. return `DONE`, `WAITING_EXTERNAL`, `BLOCKED` or `STALLED` truthfully and record any separate continuation disposition selected by the bound continuation policy.
 
-`ROTATE` is an invocation result, never a task status.
+Elapsed wall-clock implementation time alone is never a stop condition. Context rotation is a continuation disposition, not a lifecycle state or a substitute for `STALLED`, and must not be emitted solely because an hour elapsed.
 
 ## Canonical terminal report
 
 ```text
-STATUS: DONE | WAITING | BLOCKED | ROTATE
+STATUS: DONE | WAITING_EXTERNAL | BLOCKED | STALLED
+CONTINUATION_DISPOSITION:
 RESULT:
 CHANGED_PATHS:
 VALIDATION:
@@ -170,7 +176,7 @@ PR_HYGIENE:
 FINAL_HEAD:
 CI_CLASSIFICATION:
 LAST_PROGRESS:
-BUDGET:
+ANTI_STALL_STATE:
 UNCHANGED_STATE:
 DURABLE_STATE:
 OWNER_ACTION_REQUIRED:
