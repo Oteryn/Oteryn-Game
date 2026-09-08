@@ -20,44 +20,73 @@ This is an allocation-only follow-up for the same #351/#356 worker. It grants no
 
 ## Why one combined amendment is required
 
-The protected #427 amendment authorized `vendor/rustls-0.23.43/src/client/hs.rs::emit_client_hello_for_retry`, but the canonical worker stopped before semantic mutation after proving two earlier ownership boundaries.
+The protected #427 amendment authorized `vendor/rustls-0.23.43/src/client/hs.rs::emit_client_hello_for_retry`, but the canonical worker stopped before semantic mutation after proving that first-ClientHello ownership begins earlier. A further read-only closure check found the complete allocation-bearing call chain:
 
-1. `ClientHelloInput::new` clones `extra_exts.protocols` into `ClientHelloDetails` before `start_handshake` reaches `emit_client_hello_for_retry`. The clone is allocation-bearing and the source backing can coexist with the destination. A reservation made only inside `emit_client_hello_for_retry` is therefore too late to satisfy reservation-before-allocation and overlap custody.
-2. SQLx currently receives a constructed `ClientConnection` from `ClientConnection::new`. In pinned rustls, `new` delegates to `new_with_alpn`, which calls `ConnectionCore::for_client`; `for_client` executes `ClientHelloInput::new` and `start_handshake` before construction returns. The existing post-construction `ConnectionCommon::set_deframer_buffer_owner` cannot install the accepted owner early enough for the initial ClientHello.
+```text
+ClientConnection::new
+-> owner-aware equivalent of new/new_with_alpn
+-> ClientExtensionsInput::from_alpn
+-> ConnectionCore::for_client
+-> ClientHelloInput::new
+-> ClientHelloInput::start_handshake
+-> emit_client_hello_for_retry
+```
+
+Three coupled allocation boundaries must therefore share one owner before the already-protected emit function can be correct:
+
+1. Existing `ClientConnection::new` clones `config.alpn_protocols`; any owner-aware equivalent preserving that behavior must reserve before every outer/inner protocol clone it performs and retain source/destination overlap.
+2. `ClientExtensionsInput::from_alpn` consumes the owned protocol byte vectors but performs a new `.collect::<Vec<_>>()`, allocating the outer `Vec<ProtocolName>` before `ClientHelloInput::new`. Mapping `ProtocolName::from` moves each inner `Vec<u8>` backing into its wrapper; the outer collection is nevertheless a distinct allocation whose custody must survive the conversion.
+3. `ClientHelloInput::new` then clones `extra_exts.protocols` into `ClientHelloDetails` before `start_handshake` reaches `emit_client_hello_for_retry`. The source and destination protocol backings can coexist, so reservation inside the already-authorized emit symbol is too late.
+
+Separately, SQLx receives a constructed `ClientConnection` only after this entire initial ClientHello path has run. The existing post-construction `ConnectionCommon::set_deframer_buffer_owner` therefore cannot install the accepted owner early enough.
 
 Exact unchanged source evidence at the worker checkpoint:
 
 - `vendor/rustls-0.23.43/src/client/hs.rs` blob `34fc1ae1687e5978b735f0237d1de5e66b2eb609`;
 - `vendor/rustls-0.23.43/src/client/client_conn.rs` blob `77b2dc5ea149ab8c72f40fc31a425ca4b6cc720e`;
+- `vendor/rustls-0.23.43/src/msgs/handshake.rs` blob `0139953fbedd5c53442694de15bd83b524b03c5a`;
 - existing public owner interface is the already-protected `DeframerBufferOwner` / `DeframerBufferError` seam and `ConnectionCommon::set_deframer_buffer_owner`; no new parallel ledger or ownership trait is authorized.
 
-A second one-off lease for only `ClientHelloInput::new` would still leave owner installation after first-ClientHello construction. A lease for only `client_conn.rs` would still leave the protocol clone outside the reservation boundary. The smallest structurally complete fix therefore covers the exact preconstruction owner path below in one amendment.
+One-off leases for any single call site would leave another earlier allocation outside the reservation boundary. The smallest structurally complete fix therefore covers the exact preconstruction owner path below in one amendment.
 
 ## Exact additional authored lease after protected application
 
-### 1. Existing allocated file: `vendor/rustls-0.23.43/src/client/hs.rs`
-
-New authority is limited to:
-
-- `ClientHelloInput` private owner/custody field(s) strictly required to carry the same #424/#425 owner through initial ClientHello construction and later move into the already-authorized successor chain;
-- `ClientHelloInput::new`, only to accept that existing owner, reserve before the configured protocol/ALPN clone, account the actual destination backing/capacity with checked arithmetic, retain source/destination overlap while both backings exist, unwind on constructor/random/session failure, and attach surviving custody to the returned `ClientHelloInput`;
-- ordinary owner-free construction must remain semantically identical;
-- `ClientHelloInput::start_handshake` is not granted new semantic behavior; ordinary movement of an already-owned `ClientHelloInput` into the already-authorized `emit_client_hello_for_retry` path may be wired only as mechanically required by the new private owner field.
-
-No new authority is granted for unrelated `hs.rs` functions, retry semantics, key exchange, ECH, resumption, verifier logic or other state handlers beyond prior protected allocations.
-
-### 2. New file-level lease: `vendor/rustls-0.23.43/src/client/client_conn.rs`
+### 1. New exact surface: `vendor/rustls-0.23.43/src/client/client_conn.rs`
 
 Authority is limited to these symbols and only for pre-first-ClientHello owner installation:
 
 - `ClientConnection::{new,new_with_alpn}` only as necessary to preserve their existing behavior while introducing a separate fallible owner-aware construction entry point/helper; ordinary public constructors must retain current API/behavior and remain owner-free;
 - the minimum new owner-aware `ClientConnection` constructor/helper needed by the already-owned SQLx rustls adapter;
-- `ConnectionCore::for_client` only to accept/forward the optional existing owner before `ClientHelloInput::new` / `start_handshake` and to preserve it into the resulting connection state;
-- initial ALPN/protocol cloning performed by the owner-aware construction path must itself be reserved before allocation and charged by actual backing/capacity, with source/destination overlap retained until the source clone boundary is genuinely released.
+- `ConnectionCore::for_client` only through a separate owner-aware helper/path that accepts and forwards the optional existing owner before `ClientExtensionsInput` / `ClientHelloInput` construction and preserves it into the resulting connection state; ordinary callers, including the unbuffered path, must remain owner-free and need no semantic change;
+- any `config.alpn_protocols` or equivalent protocol-vector clone performed by the owner-aware path must reserve before allocation, account actual outer and nested backing/capacity with checked arithmetic, retain source/destination overlap, and unwind only after failed-construction backing is actually destroyed.
 
-Do not add a global/thread-local owner, hidden static registry, process-global ledger, semantic delay of ClientHello, post-construction catch-up charge, or opaque whole-handshake/whole-ClientHello reservation. Do not modify unbuffered/server constructors or unrelated client APIs.
+Do not add a global/thread-local owner, hidden static registry, process-global ledger, semantic delay of ClientHello, post-construction catch-up charge, or opaque whole-handshake/whole-ClientHello reservation. Do not modify server constructors, unbuffered semantics or unrelated client APIs.
 
-### 3. Existing SQLx custody remains unchanged
+### 2. Existing rustls file: `vendor/rustls-0.23.43/src/msgs/handshake.rs`
+
+New authority is limited to the `ClientExtensionsInput` ALPN construction seam:
+
+- `ClientExtensionsInput::from_alpn` must remain ordinary owner-free behavior for existing callers;
+- a minimum adjacent private/crate-private fallible owner-aware sibling helper may be added solely for the same semantics under the accepted owner;
+- the owner-aware path must reserve before the `.collect::<Vec<ProtocolName>>()` outer-vector allocation, charge actual resulting capacity/backing, and preserve custody after the input `Vec<Vec<u8>>` is consumed;
+- inner `Vec<u8>` backings moved through `ProtocolName::from` must transfer existing custody rather than be charged as new deep copies;
+- the minimum private/crate-private RAII custody helper needed to carry this exact allocation from `from_alpn` into `ClientHelloInput` may be added on this surface. It must release only after the charged backing is destroyed and must not create a second owner interface or ledger;
+- existing `ClientExtensionsInput` transport/QUIC semantics, ordinary `Clone`, `into_owned` and unrelated handshake encoding/decoding behavior are not granted semantic redesign. If owner custody cannot be propagated without materially changing one of those unlisted operations, stop with a fresh exact shared-lease request rather than silently widening.
+
+No other `msgs/handshake.rs` symbols are newly authorized by this amendment beyond prior protected allocations.
+
+### 3. Existing allocated file: `vendor/rustls-0.23.43/src/client/hs.rs`
+
+New authority is limited to:
+
+- `ClientHelloInput` private owner/custody field(s) and the minimum private RAII helper(s) strictly required to receive the same #424/#425 owner plus already-reserved preconstruction custody, carry it through initial ClientHello construction and later move it into the already-authorized successor chain;
+- `ClientHelloInput::new`, or a separate owner-aware sibling constructor preserving ordinary `new`, only to accept that existing owner/custody, reserve before the configured protocol/ALPN clone into `ClientHelloDetails`, account actual destination backing/capacity with checked arithmetic, retain source/destination overlap while both backings exist, unwind on constructor/random/session failure, and attach surviving custody to the returned `ClientHelloInput`;
+- ordinary owner-free construction must remain semantically identical;
+- `ClientHelloInput::start_handshake` is not granted new TLS semantics; ordinary movement of already-owned custody into the protected `emit_client_hello_for_retry` path may be wired only as mechanically required.
+
+No new authority is granted for unrelated `hs.rs` functions, retry semantics, key exchange, ECH, resumption, verifier logic or other state handlers beyond prior protected allocations.
+
+### 4. Existing SQLx custody remains unchanged
 
 `vendor/sqlx-core-0.9.0/src/net/tls/tls_rustls.rs` is already owned by #351. After protected application, that worker may replace its existing `ClientConnection::new(...)` use with the new owner-aware construction path using the same accepted B `ResourceBudget` adapter/owner identity. No new SQLx path is granted by this amendment.
 
@@ -71,6 +100,7 @@ The implementation must:
 - charge actual capacity/backing, not requested length or logical length;
 - use checked arithmetic and fail closed before allocation on overflow or insufficient balance;
 - preserve old/new or source/destination charges while allocations coexist;
+- distinguish moves of already-owned backing from actual new allocations so backing is neither double-charged nor released early;
 - move custody with backing rather than with logical control flow;
 - roll back only after failed-construction backing is actually destroyed;
 - preserve ordinary owner-free/no-owner behavior and all upstream TLS/wire/security semantics;
@@ -81,12 +111,13 @@ The implementation must:
 
 At minimum prove RED then GREEN for:
 
-- owner-aware construction denies before the first configured ALPN/protocol clone when unfunded;
-- configured protocol clone charges actual destination capacity and retains source/destination overlap correctly;
-- `ClientHelloInput::new` failure paths release exactly once and leave no retained charge;
+- owner-aware construction denies before the first `config.alpn_protocols` clone/allocation when unfunded;
+- `ClientExtensionsInput` owner-aware ALPN conversion reserves before the outer `Vec<ProtocolName>` collect and transfers, rather than duplicates, custody for moved inner protocol byte vectors;
+- configured protocol clone into `ClientHelloDetails` charges actual destination capacity and retains source/destination overlap correctly;
+- every preconstruction failure path releases exactly once after its charged backing is destroyed and leaves no retained charge;
 - owner identity reaches `emit_client_hello_for_retry` before its first allocation and is the same identity later reused by #425 decoded-state custody;
 - successful construction transfers retained ClientHello custody into the returned connection/successor state without early release or double release;
-- ordinary `ClientConnection::new` and `new_with_alpn` remain behaviorally unchanged and owner-free;
+- ordinary `ClientConnection::new`, `new_with_alpn` and `ClientExtensionsInput::from_alpn` remain behaviorally unchanged and owner-free;
 - SQLx owner-aware construction has no fallback to ordinary unowned construction on denial.
 
 Then resume all previously protected #425/#427 ClientHello and decoded-owner RED/GREEN boundaries. Real TLS-positive evidence and configured PostgreSQL 17.6 qualification remain separate mandatory acceptance cells on the actual final #356 candidate under protected #422 control.
@@ -95,10 +126,10 @@ Then resume all previously protected #425/#427 ClientHello and decoded-owner RED
 
 No new authority is granted for:
 
-- any rustls path other than the exact `hs.rs` and `client_conn.rs` surfaces above;
+- any rustls path other than the exact `client/client_conn.rs`, `msgs/handshake.rs`, and `client/hs.rs` surfaces above;
 - `client/common.rs` / `ClientHelloDetails` — pass already-owned backing into its existing constructor without changing it unless a future exact proof requires a separate lease;
 - `conn.rs`, `lib.rs` or deframer buffer APIs beyond reusing the already-protected owner interface;
-- server handshake paths, verifier/crypto provider internals, cache policy, SQLx/PostgreSQL decoder expansion, Game/Foundation, workflows, migrations, registry, Platform or production;
+- server/unbuffered handshake semantics, verifier/crypto-provider internals, cache policy, SQLx/PostgreSQL decoder expansion, Game/Foundation, workflows, migrations, registry, Platform or production;
 - direct merge, protection/ruleset changes, WP4/WP5/G0/Server Seam release.
 
 If implementation proves another unlisted path/symbol is materially required, stop before mutation with exact `SHARED_LEASE_REQUIRED = path :: symbol :: reason`. Do not silently widen this amendment.
@@ -113,7 +144,7 @@ this allocation-only amendment
 -> protected-main readback
 -> fresh Work custody/overlap readback
 -> apply to SAME #351/#356 worker
--> preconstruction owner RED/GREEN
+-> complete preconstruction owner RED/GREEN
 -> previously protected ClientHello + decoded-state RED/GREEN
 -> complete TLS composition + actual TLS-positive evidence
 -> actual #356 configured PostgreSQL 17.6 qualification under protected #422 classifier
