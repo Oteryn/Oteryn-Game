@@ -20,6 +20,8 @@ use crate::{
     crypto, server, sign,
 };
 use crate::{Error, NamedGroup, ProtocolVersion, SupportedProtocolVersion, suites};
+#[cfg(feature = "std")]
+use crate::DeframerBufferOwner;
 
 /// *ring* based CryptoProvider.
 #[cfg(feature = "ring")]
@@ -376,6 +378,18 @@ pub trait SupportedKxGroup: Send + Sync + Debug {
     /// This can fail if the random source fails during ephemeral key generation.
     fn start(&self) -> Result<Box<dyn ActiveKeyExchange>, Error>;
 
+    /// Start a key exchange whose complete provider lifetime is pre-reserved.
+    ///
+    /// The default is deliberately fail-closed: custom providers must prove an
+    /// equivalent finite bound rather than falling back to [`Self::start`].
+    #[cfg(feature = "std")]
+    fn start_with_resource_owner(
+        &self,
+        _owner: Arc<dyn DeframerBufferOwner>,
+    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+        Err(Error::FailedToGetRandomBytes)
+    }
+
     /// Start and complete a key exchange, in one operation.
     ///
     /// The default implementation for this calls `start()` and then calls
@@ -427,6 +441,130 @@ pub trait SupportedKxGroup: Send + Sync + Debug {
     fn usable_for_version(&self, _version: ProtocolVersion) -> bool {
         true
     }
+}
+
+#[cfg(all(feature = "std", feature = "aws_lc_rs", target_os = "linux", target_arch = "x86_64"))]
+static AWS_LC_PROCESS_OWNER: std::sync::Mutex<Option<Arc<dyn DeframerBufferOwner>>> =
+    std::sync::Mutex::new(None);
+
+#[cfg(all(feature = "std", feature = "aws_lc_rs", target_os = "linux", target_arch = "x86_64"))]
+std::thread_local! {
+    static AWS_LC_THREAD_OWNER_REGISTERED: core::cell::Cell<bool> = const { core::cell::Cell::new(false) };
+}
+
+/// Fund the exact-target AWS-LC process and current-thread resident backing.
+///
+/// This must be called before any owner-aware AWS-LC provider use. Successful
+/// debits intentionally have process lifetime; thread churn therefore cannot
+/// return capacity while provider TLS destructors may still be pending.
+#[cfg(all(feature = "std", feature = "aws_lc_rs", target_os = "linux", target_arch = "x86_64"))]
+pub fn ensure_aws_lc_provider_residency(
+    owner: Arc<dyn DeframerBufferOwner>,
+) -> Result<(), Error> {
+    // Linux exposes AT_PAGESZ in auxv. Reading it into a stack buffer avoids
+    // allocating registration bookkeeping before the shared-root debit.
+    use std::io::Read;
+    let mut auxv = std::fs::File::open("/proc/self/auxv")
+        .map_err(|_| Error::FailedToGetRandomBytes)?;
+    let mut pair = [0u8; 16];
+    let mut page_size = None;
+    while auxv.read_exact(&mut pair).is_ok() {
+        let tag = usize::from_ne_bytes(pair[..8].try_into().expect("auxv tag width"));
+        let value = usize::from_ne_bytes(pair[8..].try_into().expect("auxv value width"));
+        if tag == 6 {
+            page_size = Some(value);
+            break;
+        }
+        if tag == 0 { break; }
+    }
+    let process_bytes = page_size
+        .filter(|page| page.is_power_of_two() && *page >= 4096)
+        .and_then(|page| page.checked_mul(2))
+        .and_then(|pages| pages.checked_add(140_208))
+        .ok_or(Error::FailedToGetRandomBytes)?;
+
+    let mut process_owner = AWS_LC_PROCESS_OWNER
+        .lock()
+        .map_err(|_| Error::FailedToGetRandomBytes)?;
+    if process_owner.is_none() {
+        owner
+            .try_reserve_provider_shared(process_bytes)
+            .map_err(|_| Error::FailedToGetRandomBytes)?;
+        *process_owner = Some(owner.clone());
+    }
+    drop(process_owner);
+
+    AWS_LC_THREAD_OWNER_REGISTERED.with(|registered| {
+        if registered.get() {
+            return Ok(());
+        }
+        owner
+            .try_reserve_provider_shared(1_360)
+            .map_err(|_| Error::FailedToGetRandomBytes)?;
+        registered.set(true);
+        Ok(())
+    })
+}
+
+#[cfg(all(
+    feature = "std",
+    feature = "aws_lc_rs",
+    not(all(target_os = "linux", target_arch = "x86_64"))
+))]
+pub fn ensure_aws_lc_provider_residency(
+    _owner: Arc<dyn DeframerBufferOwner>,
+) -> Result<(), Error> {
+    Err(Error::FailedToGetRandomBytes)
+}
+
+#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+pub(crate) struct ResourceOwnedKx {
+    inner: Option<Box<dyn ActiveKeyExchange>>,
+    owner: Arc<dyn DeframerBufferOwner>,
+    bytes: usize,
+}
+
+#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+impl ResourceOwnedKx {
+    pub(crate) fn start(
+        owner: Arc<dyn DeframerBufferOwner>,
+        bytes: usize,
+        start: impl FnOnce() -> Result<Box<dyn ActiveKeyExchange>, Error>,
+    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+        owner.try_reserve(bytes).map_err(|_| Error::FailedToGetRandomBytes)?;
+        match start() {
+            Ok(inner) => Ok(Box::new(Self { inner: Some(inner), owner, bytes })),
+            Err(error) => {
+                owner.release(bytes);
+                Err(error)
+            }
+        }
+    }
+}
+
+#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+impl Drop for ResourceOwnedKx {
+    fn drop(&mut self) {
+        // Destroy all provider backing before returning its full-lifetime debit.
+        drop(self.inner.take());
+        self.owner.release(self.bytes);
+    }
+}
+
+#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+impl ActiveKeyExchange for ResourceOwnedKx {
+    fn complete(mut self: Box<Self>, peer: &[u8]) -> Result<SharedSecret, Error> {
+        self.inner.take().expect("owned KX missing backing").complete(peer)
+    }
+    fn complete_hybrid_component(
+        mut self: Box<Self>, peer: &[u8]
+    ) -> Result<SharedSecret, Error> {
+        self.inner.take().expect("owned KX missing backing").complete_hybrid_component(peer)
+    }
+    fn pub_key(&self) -> &[u8] { self.inner.as_ref().expect("owned KX missing backing").pub_key() }
+    fn group(&self) -> NamedGroup { self.inner.as_ref().expect("owned KX missing backing").group() }
+    fn ffdhe_group(&self) -> Option<FfdheGroup<'static>> { self.inner.as_ref().expect("owned KX missing backing").ffdhe_group() }
+    fn hybrid_component(&self) -> Option<(NamedGroup, &[u8])> { self.inner.as_ref().expect("owned KX missing backing").hybrid_component() }
 }
 
 /// An in-progress key exchange originating from a [`SupportedKxGroup`].

@@ -330,6 +330,25 @@ pub(super) fn initial_key_share(
     group.start()
 }
 
+#[cfg(feature = "std")]
+pub(super) fn initial_key_share_with_resource_owner(
+    config: &ClientConfig,
+    server_name: &ServerName<'_>,
+    kx_state: &mut KxState,
+    owner: Arc<dyn crate::DeframerBufferOwner>,
+) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+    let group = config
+        .resumption
+        .store
+        .kx_hint(server_name)
+        .and_then(|group_name| config.find_kx_group(group_name, ProtocolVersion::TLSv1_3))
+        .unwrap_or_else(|| {
+            config.provider.kx_groups.iter().copied().next().expect("No kx groups configured")
+        });
+    *kx_state = KxState::Start(group);
+    group.start_with_resource_owner(owner)
+}
+
 /// This implements the horrifying TLS1.3 hack where PSK binders have a
 /// data dependency on the message they are contained within.
 pub(super) fn fill_in_psk_binder(

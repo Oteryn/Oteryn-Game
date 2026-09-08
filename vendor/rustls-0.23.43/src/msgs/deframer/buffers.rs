@@ -23,6 +23,15 @@ pub trait DeframerBufferOwner: fmt::Debug + Send + Sync {
 
     /// Release a successful reservation after its backing is destroyed.
     fn release(&self, bytes: usize);
+
+    /// Reserve provider-resident bytes against the same executor root.
+    ///
+    /// Successful reservations are intentionally retained until process
+    /// teardown. Owners which do not implement shared-root accounting are
+    /// unsupported and fail closed.
+    fn try_reserve_provider_shared(&self, _bytes: usize) -> Result<(), DeframerBufferError> {
+        Err(DeframerBufferError)
+    }
 }
 
 /// Bounded failure from a deframer allocation owner.

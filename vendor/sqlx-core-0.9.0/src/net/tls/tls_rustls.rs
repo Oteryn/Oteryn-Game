@@ -203,7 +203,19 @@ pub async fn handshake_with_resource_budget<S>(
 where
     S: Socket,
 {
+    let owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(DeframerBudgetOwner(resource_budget.clone()));
+    #[cfg(feature = "_tls-rustls-aws-lc-rs")]
+    rustls::crypto::ensure_aws_lc_provider_residency(owner.clone()).map_err(Error::tls)?;
+    #[cfg(feature = "_tls-rustls-aws-lc-rs")]
+    let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
+    #[cfg(not(feature = "_tls-rustls-aws-lc-rs"))]
     let provider = Arc::new(rustls::crypto::ring::default_provider());
+    if cfg!(not(feature = "_tls-rustls-aws-lc-rs")) {
+        return Err(Error::tls(
+            "resource-owned TLS requires the qualified AWS-LC provider",
+        ));
+    }
     let config = ClientConfig::builder_with_provider(provider.clone())
         .with_safe_default_protocol_versions()
         .unwrap();
@@ -280,8 +292,6 @@ where
     };
 
     let host = ServerName::try_from(tls_config.hostname.to_owned()).map_err(Error::tls)?;
-    let owner: Arc<dyn rustls::DeframerBufferOwner> =
-        Arc::new(DeframerBudgetOwner(resource_budget));
     let state = ClientConnection::new_with_resource_owner(Arc::new(config), host, owner)
         .map_err(Error::tls)?;
     let mut socket = RustlsSocket {
@@ -571,5 +581,14 @@ impl rustls::DeframerBufferOwner for DeframerBudgetOwner {
 
     fn release(&self, bytes: usize) {
         self.0.release(bytes);
+    }
+
+    fn try_reserve_provider_shared(
+        &self,
+        bytes: usize,
+    ) -> Result<(), rustls::DeframerBufferError> {
+        self.0
+            .try_reserve_provider_shared(bytes)
+            .map_err(|_| rustls::DeframerBufferError)
     }
 }

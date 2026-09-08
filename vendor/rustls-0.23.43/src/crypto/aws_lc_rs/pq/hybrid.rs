@@ -1,8 +1,14 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+#[cfg(feature = "std")]
+use core::mem::size_of;
 
 use super::INVALID_KEY_SHARE;
 use crate::crypto::{ActiveKeyExchange, CompletedKeyExchange, SharedSecret, SupportedKxGroup};
+#[cfg(feature = "std")]
+use crate::crypto::{ResourceOwnedKx, ensure_aws_lc_provider_residency};
+#[cfg(feature = "std")]
+use crate::{DeframerBufferOwner, sync::Arc};
 use crate::ffdhe_groups::FfdheGroup;
 use crate::{Error, NamedGroup, ProtocolVersion};
 
@@ -31,6 +37,18 @@ impl SupportedKxGroup for Hybrid {
             layout: self.layout,
             combined_pub_key,
         }))
+    }
+
+    #[cfg(feature = "std")]
+    fn start_with_resource_owner(
+        &self,
+        owner: Arc<dyn DeframerBufferOwner>,
+    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+        ensure_aws_lc_provider_residency(owner.clone())?;
+        if self.name != NamedGroup::X25519MLKEM768 || size_of::<ActiveHybrid>() != 96 {
+            return Err(Error::FailedToGetRandomBytes);
+        }
+        ResourceOwnedKx::start(owner, 7_881, || self.start())
     }
 
     fn start_and_complete(&self, client_share: &[u8]) -> Result<CompletedKeyExchange, Error> {

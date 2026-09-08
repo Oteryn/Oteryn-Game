@@ -46,6 +46,15 @@ pub trait ResourceBudget: Send + Sync {
 
     /// Return previously reserved bytes after their owning allocation is gone.
     fn release(&self, bytes: usize);
+
+    /// Debit provider-resident backing from this budget's executor root.
+    ///
+    /// This is deliberately distinct from an operation reservation: successful
+    /// debits are retained by the provider until process teardown. Implementors
+    /// without root-shared accounting fail closed.
+    fn try_reserve_provider_shared(&self, _bytes: usize) -> Result<(), BudgetError> {
+        Err(BudgetError::Unavailable)
+    }
 }
 
 /// Exclusive custody of charged bytes in the supplied owner ledger.

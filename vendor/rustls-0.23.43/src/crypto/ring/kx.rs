@@ -2,10 +2,18 @@
 
 use alloc::boxed::Box;
 use core::fmt;
+#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+use core::mem::size_of;
 
 use super::ring_like::agreement;
 use super::ring_like::rand::SystemRandom;
 use crate::crypto::{ActiveKeyExchange, FfdheGroup, SharedSecret, SupportedKxGroup};
+#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+use crate::crypto::{ResourceOwnedKx, ensure_aws_lc_provider_residency};
+#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+use crate::DeframerBufferOwner;
+#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+use crate::sync::Arc;
 use crate::error::{Error, PeerMisbehaved};
 use crate::msgs::enums::NamedGroup;
 use crate::rand::GetRandomFailed;
@@ -56,6 +64,24 @@ impl SupportedKxGroup for KxGroup {
             pub_key,
             pub_key_validator: self.pub_key_validator,
         }))
+    }
+
+    #[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+    fn start_with_resource_owner(
+        &self,
+        owner: Arc<dyn DeframerBufferOwner>,
+    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+        ensure_aws_lc_provider_residency(owner.clone())?;
+        if size_of::<KeyExchange>() != 200 {
+            return Err(Error::FailedToGetRandomBytes);
+        }
+        let bytes = match self.name {
+            NamedGroup::X25519 => 554,
+            NamedGroup::secp256r1 => 1_625,
+            NamedGroup::secp384r1 => 1_705,
+            _ => return Err(Error::FailedToGetRandomBytes),
+        };
+        ResourceOwnedKx::start(owner, bytes, || self.start())
     }
 
     fn ffdhe_group(&self) -> Option<FfdheGroup<'static>> {

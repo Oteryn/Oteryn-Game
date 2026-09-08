@@ -20,12 +20,95 @@ impl ResourceBudget for Ledger {
         let prior = self.used.fetch_sub(bytes, Ordering::AcqRel);
         assert!(prior >= bytes, "reservation released twice");
     }
+    fn try_reserve_provider_shared(&self, bytes: usize) -> Result<(), BudgetError> {
+        self.try_reserve(bytes)
+    }
 }
 fn ledger(limit: usize) -> Arc<Ledger> {
     Arc::new(Ledger {
         limit,
         used: AtomicUsize::new(0),
     })
+}
+
+#[test]
+fn provider_shared_default_denies_and_adapter_delegates_to_same_root() {
+    #[derive(Debug)]
+    struct Unsupported;
+    impl ResourceBudget for Unsupported {
+        fn try_reserve(&self, _bytes: usize) -> Result<(), BudgetError> { Ok(()) }
+        fn release(&self, _bytes: usize) {}
+    }
+    assert_eq!(
+        Unsupported.try_reserve_provider_shared(1),
+        Err(BudgetError::Unavailable)
+    );
+
+    let budget = ledger(10);
+    let owner = super::tls_rustls::DeframerBudgetOwner(budget.clone());
+    rustls::DeframerBufferOwner::try_reserve_provider_shared(&owner, 10).unwrap();
+    assert_eq!(budget.used.load(Ordering::Acquire), 10);
+    assert!(rustls::DeframerBufferOwner::try_reserve_provider_shared(&owner, 1).is_err());
+}
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+#[test]
+fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
+    use super::tls_rustls::DeframerBudgetOwner;
+    use rustls::crypto::SupportedKxGroup;
+
+    let process = ledger(1_000_000);
+    let process_owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(DeframerBudgetOwner(process.clone()));
+    rustls::crypto::ensure_aws_lc_provider_residency(process_owner).unwrap();
+    let shared = process.used.load(Ordering::Acquire);
+    assert!(shared >= 140_208 + 2 * 4096 + 1360);
+
+    let groups: [(&dyn SupportedKxGroup, usize); 5] = [
+        (rustls::crypto::aws_lc_rs::kx_group::X25519, 554),
+        (rustls::crypto::aws_lc_rs::kx_group::SECP256R1, 1_625),
+        (rustls::crypto::aws_lc_rs::kx_group::SECP384R1, 1_705),
+        (rustls::crypto::aws_lc_rs::kx_group::MLKEM768, 6_264),
+        (rustls::crypto::aws_lc_rs::kx_group::X25519MLKEM768, 7_881),
+    ];
+
+    for (group, bound) in groups {
+        let denied = ledger(bound - 1);
+        let owner: Arc<dyn rustls::DeframerBufferOwner> =
+            Arc::new(DeframerBudgetOwner(denied.clone()));
+        assert!(group.start_with_resource_owner(owner).is_err());
+        assert_eq!(denied.used.load(Ordering::Acquire), 0);
+
+        let funded = ledger(bound);
+        let owner: Arc<dyn rustls::DeframerBufferOwner> =
+            Arc::new(DeframerBudgetOwner(funded.clone()));
+        let active = group.start_with_resource_owner(owner).unwrap();
+        assert_eq!(funded.used.load(Ordering::Acquire), bound);
+        let completed = group.start_and_complete(active.pub_key()).unwrap();
+        let secret = active.complete(&completed.pub_key).unwrap();
+        assert_eq!(secret.secret_bytes(), completed.secret.secret_bytes());
+        assert_eq!(funded.used.load(Ordering::Acquire), 0);
+    }
+}
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+#[test]
+fn unsupported_custom_kx_fails_before_ordinary_start() {
+    use rustls::crypto::{ActiveKeyExchange, SupportedKxGroup};
+    #[derive(Debug)]
+    struct Unsupported(AtomicUsize);
+    impl SupportedKxGroup for Unsupported {
+        fn start(&self) -> Result<Box<dyn ActiveKeyExchange>, rustls::Error> {
+            self.0.fetch_add(1, Ordering::Relaxed);
+            Err(rustls::Error::FailedToGetRandomBytes)
+        }
+        fn name(&self) -> rustls::NamedGroup { rustls::NamedGroup::Unknown(0xff01) }
+    }
+    let group = Unsupported(AtomicUsize::new(0));
+    let owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(super::tls_rustls::DeframerBudgetOwner(ledger(usize::MAX)));
+    assert!(group.start_with_resource_owner(owner).is_err());
+    assert_eq!(group.0.load(Ordering::Relaxed), 0);
 }
 
 #[test]
@@ -348,7 +431,10 @@ fn owned_certificate_loader_is_funded_or_denied_without_fallback() {
     assert_eq!(funded.used.load(Ordering::Acquire), 0);
 }
 
-#[cfg(feature = "_tls-rustls")]
+#[cfg(any(
+    feature = "_tls-rustls-ring-webpki",
+    feature = "_tls-rustls-ring-native-roots"
+))]
 #[test]
 fn rustls_deframer_owner_uses_the_operation_ledger() {
     use super::tls_rustls::DeframerBudgetOwner;

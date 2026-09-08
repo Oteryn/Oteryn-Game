@@ -77,6 +77,8 @@ pub(super) struct ClientHelloInput {
     pub(super) session_id: SessionId,
     pub(super) server_name: ServerName<'static>,
     pub(super) prev_ech_ext: Option<EncryptedClientHello>,
+    #[cfg(feature = "std")]
+    pub(super) resource_owner: Option<Arc<dyn crate::DeframerBufferOwner>>,
 }
 
 enum SessionRetrievalOwner {
@@ -108,6 +110,11 @@ impl ClientHelloInput {
         config: Arc<ClientConfig>,
         resource_owner: SessionRetrievalOwner,
     ) -> Result<Self, Error> {
+        #[cfg(feature = "std")]
+        let retained_resource_owner = match &resource_owner {
+            SessionRetrievalOwner::Owned(owner) => Some(owner.clone()),
+            SessionRetrievalOwner::Unowned => None,
+        };
         let mut resuming = match resource_owner {
             #[cfg(feature = "std")]
             SessionRetrievalOwner::Owned(owner) => {
@@ -168,6 +175,8 @@ impl ClientHelloInput {
             server_name,
             prev_ech_ext: None,
             config,
+            #[cfg(feature = "std")]
+            resource_owner: retained_resource_owner,
         })
     }
 
@@ -224,11 +233,20 @@ impl ClientHelloInput {
         }
 
         let key_share = if self.config.needs_key_share() {
-            Some(tls13::initial_key_share(
-                &self.config,
-                &self.server_name,
-                &mut cx.common.kx_state,
-            )?)
+            #[cfg(feature = "std")]
+            let key_share = match &self.resource_owner {
+                Some(owner) => tls13::initial_key_share_with_resource_owner(
+                    &self.config, &self.server_name, &mut cx.common.kx_state, owner.clone(),
+                )?,
+                None => tls13::initial_key_share(
+                    &self.config, &self.server_name, &mut cx.common.kx_state,
+                )?,
+            };
+            #[cfg(not(feature = "std"))]
+            let key_share = tls13::initial_key_share(
+                &self.config, &self.server_name, &mut cx.common.kx_state,
+            )?;
+            Some(key_share)
         } else {
             None
         };
@@ -1091,6 +1109,14 @@ impl ExpectServerHelloOrHelloRetryRequest {
                 };
 
                 cx.common.kx_state = KxState::Start(skxg);
+                #[cfg(feature = "std")]
+                {
+                    match &self.next.input.resource_owner {
+                        Some(owner) => skxg.start_with_resource_owner(owner.clone())?,
+                        None => skxg.start()?,
+                    }
+                }
+                #[cfg(not(feature = "std"))]
                 skxg.start()?
             }
             _ => offered_key_share,

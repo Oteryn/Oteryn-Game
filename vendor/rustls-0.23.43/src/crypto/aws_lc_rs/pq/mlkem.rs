@@ -1,10 +1,16 @@
 use alloc::boxed::Box;
 use alloc::vec::Vec;
+#[cfg(feature = "std")]
+use core::mem::size_of;
 
 use aws_lc_rs::kem;
 
 use super::INVALID_KEY_SHARE;
 use crate::crypto::{ActiveKeyExchange, CompletedKeyExchange, SharedSecret, SupportedKxGroup};
+#[cfg(feature = "std")]
+use crate::crypto::{ResourceOwnedKx, ensure_aws_lc_provider_residency};
+#[cfg(feature = "std")]
+use crate::{DeframerBufferOwner, sync::Arc};
 use crate::ffdhe_groups::FfdheGroup;
 use crate::{Error, NamedGroup, ProtocolVersion};
 
@@ -29,6 +35,21 @@ impl SupportedKxGroup for MlKem {
             encaps_key_bytes: Vec::from(pub_key_bytes.as_ref()),
             group: self.group,
         }))
+    }
+
+    #[cfg(feature = "std")]
+    fn start_with_resource_owner(
+        &self,
+        owner: Arc<dyn DeframerBufferOwner>,
+    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+        ensure_aws_lc_provider_residency(owner.clone())?;
+        if self.group != NamedGroup::MLKEM768
+            || size_of::<Active>() != 40
+            || size_of::<kem::DecapsulationKey<kem::AlgorithmId>>() != 16
+        {
+            return Err(Error::FailedToGetRandomBytes);
+        }
+        ResourceOwnedKx::start(owner, 6_264, || self.start())
     }
 
     fn start_and_complete(&self, client_share: &[u8]) -> Result<CompletedKeyExchange, Error> {
