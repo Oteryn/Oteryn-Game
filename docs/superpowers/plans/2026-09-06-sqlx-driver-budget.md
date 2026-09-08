@@ -191,3 +191,21 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   custody RED/GREEN without weakening TLS or substituting an aggregate reserve.
 - [ ] Keep real TLS-positive and PostgreSQL17.6 qualification stopped until the
   complete TLS ownership matrix is proven.
+
+## Window11 protected ClientHello symbol preflight
+
+- [x] Normally merge protected `main@a2ba218f94e83b36443afcdbd6ec8b748a677efe`
+  and read the protected ClientHello symbol amendment.
+- [x] Trace construction order before mutating `emit_client_hello_for_retry`:
+  SQLx receives the `ClientConnection` only after `new`/`new_with_alpn` and
+  `ConnectionCore::for_client` have already emitted the initial ClientHello.
+- [x] Stop at exact `SHARED_LEASE_REQUIRED` for
+  `vendor/rustls-0.23.43/src/client/client_conn.rs::ClientConnection::{new,new_with_alpn}`
+  and `ConnectionCore::for_client`, limited to installing the existing owner
+  before `ClientHelloInput::new`/`start_handshake` while preserving ordinary
+  constructors.
+- [ ] Do not use global/thread-local custody, post-allocation charging, semantic
+  deferral, or an opaque aggregate reservation to bypass the missing owner.
+- [ ] Resume the ClientHello and decoded-owner RED/GREEN matrix only after that
+  exact protected constructor-wiring amendment; TLS-positive and PostgreSQL17.6
+  remain stopped until complete TLS ownership is proven.

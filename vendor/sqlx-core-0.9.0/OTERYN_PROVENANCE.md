@@ -718,3 +718,37 @@ and transfer into the successor state until actual destruction.  It must not
 alter TLS versions, extensions, ECH/QUIC, certificate/hostname semantics or
 ordinary no-owner behavior.  No decoded-owner source was mutated after this
 preflight, and complete TLS, TLS-positive and PostgreSQL 17.6 remain OPEN.
+
+## Window11 protected ClientHello symbol amendment preflight
+
+Protected allocation
+`OTV2-WP3-RUSTLS-CLIENTHELLO-OWNER-SYMBOL-20260908` was integrated through
+protected `main@a2ba218f94e83b36443afcdbd6ec8b748a677efe` and explicitly applied to
+this existing worker.  A normal merge-up preserved the prior lineage.  Before
+mutating the newly authorized function, a construction-order preflight found
+that the same accepted owner is not available at that function.
+
+SQLx calls `ClientConnection::new` and can install the existing public deframer
+owner only after that constructor returns.  In pinned rustls, `ClientConnection::new`
+immediately delegates through `ClientConnection::new_with_alpn` to
+`ConnectionCore::for_client`; `for_client` calls `ClientHelloInput::new` and
+`start_handshake`, which reaches `emit_client_hello_for_retry` and performs the
+newly authorized allocations before construction returns.  The unchanged
+`client/client_conn.rs` source blob is
+`77b2dc5ea149ab8c72f40fc31a425ca4b6cc720e`.  Neither the #424 post-construction
+setter nor the #425 decoded-message installation symbols can pass an owner into
+this earlier outbound construction boundary.
+
+`SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/client_conn.rs ::
+ClientConnection::{new,new_with_alpn} / ConnectionCore::for_client :: accept and
+install the existing owner before ClientHelloInput::new/start_handshake`.
+The smallest amendment must provide a fallible owner-aware constructor (while
+preserving the ordinary constructors unchanged) or equivalent pre-construction
+wiring that passes the same #424/#425 owner identity into the common/client
+context before `emit_client_hello_for_retry`.  Without it, reservations inside
+that function cannot debit the accepted B ledger; a global/thread-local owner,
+post-construction charge, magic aggregate reservation, or semantic deferral of
+the initial ClientHello would violate the accepted ownership or behavior
+requirements.  No rustls semantic source was changed.  The ClientHello RED/GREEN,
+decoded-owner matrix, complete TLS, TLS-positive case and PostgreSQL 17.6
+qualification remain OPEN.

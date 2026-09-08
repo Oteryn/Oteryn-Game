@@ -409,3 +409,25 @@ blocker: client_hello_allocations_are_outside_the_exact_client_hs_symbol_lease
 next_action: authorize client/hs.rs::emit_client_hello_for_retry for same-ledger actual-backing custody, then resume the 13-path decoded-owner RED/GREEN matrix
 remaining_acceptance_cells: all protected decoded-owner RED/GREEN boundaries; complete TLS configuration/crypto composition; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
 ```
+
+## Window11 ClientHello owner installation boundary
+
+The protected ClientHello symbol amendment was integrated at
+`main@a2ba218f94e83b36443afcdbd6ec8b748a677efe`, explicitly applied to this
+worker, and normally merged into the canonical lineage.  Preflight before
+semantic mutation proved that `emit_client_hello_for_retry` executes during
+`ClientConnection::new`/`new_with_alpn` via `ConnectionCore::for_client`, before
+SQLx receives the connection and can call the existing owner setter.  The #425
+lease does not include these `client/client_conn.rs` constructor symbols.
+
+```yaml
+last_progress: merged protected ClientHello authority and proved the earlier owner-installation boundary before source mutation
+status: blocked_pending_shared_lease
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+blocker: ClientHello construction runs before SQLx can install the accepted owner
+next_action: authorize an owner-aware ClientConnection constructor / ConnectionCore::for_client wiring that installs the existing owner before ClientHelloInput::new and start_handshake
+shared_lease_required: vendor/rustls-0.23.43/src/client/client_conn.rs :: ClientConnection::{new,new_with_alpn} / ConnectionCore::for_client :: pre-ClientHello same-owner installation
+remaining_acceptance_cells: ClientHello and all decoded-owner RED/GREEN boundaries; complete TLS configuration/crypto composition; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
+```
