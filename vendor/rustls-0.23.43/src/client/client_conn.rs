@@ -70,6 +70,18 @@ pub trait ClientSessionStore: fmt::Debug + Send + Sync {
         server_name: &ServerName<'_>,
     ) -> Option<persist::Tls12ClientSessionValue>;
 
+    /// Get a TLS1.2 session while charging any cloned backing to `owner`.
+    ///
+    /// Stores which cannot perform the clone before returning must fail closed.
+    #[cfg(feature = "std")]
+    fn tls12_session_with_resource_owner(
+        &self,
+        _server_name: &ServerName<'_>,
+        _owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<Option<persist::Tls12ClientSessionValue>, crate::DeframerBufferError> {
+        Err(crate::DeframerBufferError)
+    }
+
     /// Remove and forget any saved TLS1.2 session for `server_name`.
     fn remove_tls12_session(&self, server_name: &ServerName<'static>);
 
@@ -972,6 +984,7 @@ impl ConnectionCore<ClientConnectionData> {
         Ok(Self::new(state, data, common_state))
     }
 
+    #[cfg(feature = "std")]
     fn for_client_with_resource_owner(
         config: Arc<ClientConfig>,
         name: ServerName<'static>,

@@ -3,6 +3,7 @@ use alloc::boxed::Box;
 use alloc::vec;
 use alloc::vec::Vec;
 use core::ops::Deref;
+#[cfg(feature = "std")]
 use core::mem::size_of;
 
 use pki_types::ServerName;
@@ -78,6 +79,12 @@ pub(super) struct ClientHelloInput {
     pub(super) prev_ech_ext: Option<EncryptedClientHello>,
 }
 
+enum SessionRetrievalOwner {
+    Unowned,
+    #[cfg(feature = "std")]
+    Owned(Arc<dyn crate::DeframerBufferOwner>),
+}
+
 impl ClientHelloInput {
     pub(super) fn new(
         server_name: ServerName<'static>,
@@ -85,7 +92,31 @@ impl ClientHelloInput {
         cx: &mut ClientContext<'_>,
         config: Arc<ClientConfig>,
     ) -> Result<Self, Error> {
-        let mut resuming = ClientSessionValue::retrieve(&server_name, &config, cx);
+        Self::new_inner(
+            server_name,
+            extra_exts,
+            cx,
+            config,
+            SessionRetrievalOwner::Unowned,
+        )
+    }
+
+    fn new_inner(
+        server_name: ServerName<'static>,
+        extra_exts: &ClientExtensionsInput<'_>,
+        cx: &mut ClientContext<'_>,
+        config: Arc<ClientConfig>,
+        resource_owner: SessionRetrievalOwner,
+    ) -> Result<Self, Error> {
+        let mut resuming = match resource_owner {
+            #[cfg(feature = "std")]
+            SessionRetrievalOwner::Owned(owner) => {
+                ClientSessionValue::retrieve_with_resource_owner(&server_name, &config, cx, owner)?
+            }
+            SessionRetrievalOwner::Unowned => {
+                ClientSessionValue::retrieve(&server_name, &config, cx)
+            }
+        };
         let session_id = match &mut resuming {
             Some(_resuming) => {
                 debug!("Resuming session");
@@ -140,6 +171,7 @@ impl ClientHelloInput {
         })
     }
 
+    #[cfg(feature = "std")]
     pub(super) fn new_with_resource_owner(
         server_name: ServerName<'static>,
         extra_exts: &ClientExtensionsInput<'_>,
@@ -168,7 +200,13 @@ impl ClientHelloInput {
             })?;
             *charged = next;
         }
-        Self::new(server_name, extra_exts, cx, config)
+        Self::new_inner(
+            server_name,
+            extra_exts,
+            cx,
+            config,
+            SessionRetrievalOwner::Owned(owner),
+        )
     }
 
     pub(super) fn start_handshake(
@@ -1184,6 +1222,58 @@ impl ClientSessionValue {
         }
 
         found
+    }
+
+    #[cfg(feature = "std")]
+    fn retrieve_with_resource_owner(
+        server_name: &ServerName<'static>,
+        config: &ClientConfig,
+        cx: &mut ClientContext<'_>,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<Option<persist::Retrieved<Self>>, Error> {
+        if cx.common.is_quic() {
+            return Err(Error::General(
+                "owner-aware session retrieval is not available for QUIC".into(),
+            ));
+        }
+
+        let found = match config
+            .resumption
+            .store
+            .take_tls13_ticket(server_name)
+            .map(ClientSessionValue::Tls13)
+        {
+            Some(value) => Some(value),
+            None => {
+                #[cfg(feature = "tls12")]
+                {
+                    config
+                        .resumption
+                        .store
+                        .tls12_session_with_resource_owner(server_name, owner)
+                        .map_err(|_| Error::General("resource budget unavailable".into()))?
+                        .map(ClientSessionValue::Tls12)
+                }
+                #[cfg(not(feature = "tls12"))]
+                None
+            }
+        }
+        .and_then(|resuming| {
+            resuming.compatible_config(&config.verifier, &config.client_auth_cert_resolver)
+        })
+        .and_then(|resuming| {
+            let now = config
+                .current_time()
+                .map_err(|_err| debug!("Could not get current time: {_err}"))
+                .ok()?;
+            let retrieved = persist::Retrieved::new(resuming, now);
+            (!retrieved.has_expired()).then_some(retrieved)
+        });
+
+        if found.is_none() {
+            debug!("No cached session for {server_name:?}");
+        }
+        Ok(found)
     }
 
     fn common(&self) -> &persist::ClientSessionCommon {

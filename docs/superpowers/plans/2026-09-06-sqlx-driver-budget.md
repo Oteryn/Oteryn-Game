@@ -269,3 +269,13 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Fix P1 `3956941337` with driver-level establish/stream/SSLRequest tests covering exact Arc identity, caller-drop retention, S/N policy, terminal TLS denial, and the ordinary owner-free control.
 - [x] Complete the protected #429 ALPN preconstruction custody seam.
 - [ ] Stop at `vendor/rustls-0.23.43/src/client/hs.rs::ClientSessionValue::retrieve`; session-cache custody is explicitly unallocated and precedes continuation through the protected ClientHello emit/decode paths.
+
+## Protected session-retrieval checkpoint
+
+- [x] Preserve TLS1.3 destructive ticket retrieval as a move of opaque custody.
+- [x] Add a fail-closed owner-aware TLS1.2 store dispatch and enter the memory cache before its destination clone.
+- [x] Reuse the #425 retained-session owner-aware clone so source and destination charges overlap and destination custody releases after backing destruction.
+- [x] Prove funded/denied cache retrieval and unsupported custom-store behavior while preserving ordinary retrieval.
+- [x] Keep the SQLx owner-aware construction path explicitly TCP-only; do not claim QUIC parameter accounting.
+- [ ] Stop before `client::tls13::initial_key_share` / `SupportedKxGroup::start`; key-exchange and crypto allocation remain separately unallocated.
+- [ ] Retain complete TLS, TLS-positive, PostgreSQL 17.6, independent review and protected integration as OPEN.

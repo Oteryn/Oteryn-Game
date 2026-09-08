@@ -40,6 +40,8 @@ mod cache {
 
     use crate::lock::Mutex;
     use crate::msgs::persist;
+    #[cfg(feature = "std")]
+    use crate::sync::Arc;
     use crate::{NamedGroup, limited_cache};
 
     const MAX_TLS13_TICKETS_PER_SERVER: usize = 8;
@@ -141,6 +143,25 @@ mod cache {
                 .unwrap()
                 .get(_server_name)
                 .and_then(|sd| sd.tls12.as_ref().cloned())
+        }
+
+        #[cfg(feature = "std")]
+        fn tls12_session_with_resource_owner(
+            &self,
+            _server_name: &ServerName<'_>,
+            owner: Arc<dyn crate::DeframerBufferOwner>,
+        ) -> Result<Option<persist::Tls12ClientSessionValue>, crate::DeframerBufferError> {
+            #[cfg(not(feature = "tls12"))]
+            return Ok(None);
+
+            #[cfg(feature = "tls12")]
+            self.servers
+                .lock()
+                .unwrap()
+                .get(_server_name)
+                .and_then(|sd| sd.tls12.as_ref())
+                .map(|value| value.clone_with_resource_owner(owner))
+                .transpose()
         }
 
         fn remove_tls12_session(&self, _server_name: &ServerName<'static>) {
@@ -248,10 +269,11 @@ impl client::ResolvesClientCert for AlwaysResolvesClientRawPublicKeys {
 #[macro_rules_attribute::apply(test_for_each_provider)]
 mod tests {
     use std::prelude::v1::*;
+    use std::sync::atomic::{AtomicUsize, Ordering};
 
     use pki_types::{ServerName, UnixTime};
 
-    use super::NoClientSessionStorage;
+    use super::{ClientSessionMemoryCache, NoClientSessionStorage};
     use super::provider::cipher_suite;
     use crate::client::danger::{HandshakeSignatureValid, ServerCertVerified, ServerCertVerifier};
     use crate::client::{ClientSessionStore, ResolvesClientCert};
@@ -265,6 +287,27 @@ mod tests {
     use crate::suites::SupportedCipherSuite;
     use crate::sync::Arc;
     use crate::{DigitallySignedStruct, Error, SignatureScheme, sign};
+
+    #[derive(Debug)]
+    struct SessionOwner {
+        available: usize,
+        charged: AtomicUsize,
+    }
+
+    impl crate::DeframerBufferOwner for SessionOwner {
+        fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+            self.charged
+                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |charged| {
+                    charged.checked_add(bytes).filter(|next| *next <= self.available)
+                })
+                .map(|_| ())
+                .map_err(|_| crate::DeframerBufferError)
+        }
+
+        fn release(&self, bytes: usize) {
+            self.charged.fetch_sub(bytes, Ordering::SeqCst);
+        }
+    }
 
     #[test]
     fn test_noclientsessionstorage_does_nothing() {
@@ -325,6 +368,83 @@ mod tests {
             ),
         );
         assert!(c.take_tls13_ticket(&name).is_none());
+    }
+
+    #[cfg(feature = "tls12")]
+    #[test]
+    fn tls12_owner_retrieval_reserves_before_clone_and_releases_on_drop() {
+        use crate::msgs::persist::Tls12ClientSessionValue;
+
+        let SupportedCipherSuite::Tls12(suite) =
+            cipher_suite::TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+        else {
+            unreachable!()
+        };
+        let name = ServerName::try_from("example.com").unwrap();
+        let verifier: Arc<dyn ServerCertVerifier> = Arc::new(DummyServerCertVerifier);
+        let resolver: Arc<dyn ResolvesClientCert> = Arc::new(DummyResolvesClientCert);
+        let session = Tls12ClientSessionValue::new(
+            suite,
+            SessionId::empty(),
+            Arc::new(PayloadU16::empty()),
+            &[7; 48],
+            CertificateChain::default(),
+            &verifier,
+            &resolver,
+            UnixTime::now(),
+            60,
+            true,
+        );
+        let owner = Arc::new(SessionOwner {
+            available: 96,
+            charged: AtomicUsize::new(0),
+        });
+        let cache = ClientSessionMemoryCache::new(16);
+        cache.set_tls12_session(
+            name.clone(),
+            session.clone_with_resource_owner(owner.clone()).unwrap(),
+        );
+        assert_eq!(owner.charged.load(Ordering::SeqCst), 48);
+
+        let retrieved = cache
+            .tls12_session_with_resource_owner(&name, owner.clone())
+            .unwrap()
+            .unwrap();
+        assert_eq!(owner.charged.load(Ordering::SeqCst), 96);
+        drop(retrieved);
+        assert_eq!(owner.charged.load(Ordering::SeqCst), 48);
+
+        let denied = Arc::new(SessionOwner {
+            available: 95,
+            charged: AtomicUsize::new(0),
+        });
+        let denied_cache = ClientSessionMemoryCache::new(16);
+        denied_cache.set_tls12_session(
+            name.clone(),
+            session.clone_with_resource_owner(denied.clone()).unwrap(),
+        );
+        assert!(denied_cache
+            .tls12_session_with_resource_owner(&name, denied.clone())
+            .is_err());
+        assert_eq!(denied.charged.load(Ordering::SeqCst), 48);
+        assert!(denied_cache.tls12_session(&name).is_some());
+        drop(denied_cache);
+        assert_eq!(denied.charged.load(Ordering::SeqCst), 0);
+    }
+
+    #[cfg(feature = "tls12")]
+    #[test]
+    fn unsupported_store_fails_closed_on_owner_retrieval() {
+        let store = NoClientSessionStorage;
+        let name = ServerName::try_from("example.com").unwrap();
+        let owner = Arc::new(SessionOwner {
+            available: usize::MAX,
+            charged: AtomicUsize::new(0),
+        });
+        assert!(store
+            .tls12_session_with_resource_owner(&name, owner)
+            .is_err());
+        assert!(store.tls12_session(&name).is_none());
     }
 
     #[derive(Debug)]

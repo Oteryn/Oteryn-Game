@@ -519,3 +519,18 @@ next_action: allocate session-cache retrieval custody before continuing ClientHe
 shared_lease_required: vendor/rustls-0.23.43/src/client/hs.rs :: ClientSessionValue::retrieve :: owner-aware construction reaches this unallocated retained-session boundary before the protected ClientHello emit path
 remaining_acceptance_cells: session-cache retrieval; protected ClientHello emit and decoded-owner cells; key-share/ECH/configuration/crypto ownership; complete TLS; TLS-positive proof; PostgreSQL17.6 final-candidate qualification; whole-diff review; canonical CI/FULL MQ; protected readback and target release
 ```
+
+## Window16 protected session-retrieval owner
+
+```yaml
+status: blocked_pending_shared_lease
+session_retrieval_owner: PROVEN
+operation_owner_propagation: PROVEN
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+last_progress: added fail-closed owner-aware TLS1.2 store dispatch, pre-clone memory-cache reservation, retained-session RAII clone custody, TCP-only retrieval wiring, and focused overlap/denial/custom-store controls
+next_action: obtain exact key-exchange allocation authority before continuing ClientHello emission and the protected decoded-owner continuation
+shared_lease_required: vendor/rustls-0.23.43/src/client/tls13.rs :: initial_key_share / SupportedKxGroup::start :: owner-aware ClientHello construction reaches active key-exchange allocation before protected emit/decode continuation
+remaining_acceptance_cells: unresolved client-PEM clone review P1; key-share/ECH/configuration/crypto ownership; protected ClientHello emit and decoded-owner cells; complete TLS composition; TLS-positive proof; PostgreSQL17.6 final-candidate qualification; whole-diff review; canonical CI/FULL MQ; protected readback and target release
+```

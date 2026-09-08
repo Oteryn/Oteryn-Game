@@ -6,6 +6,7 @@ use alloc::vec;
 use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut};
 use core::{fmt, iter};
+#[cfg(feature = "std")]
 use core::mem::size_of;
 
 use pki_types::{CertificateDer, DnsName};

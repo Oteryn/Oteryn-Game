@@ -148,7 +148,7 @@ impl core::ops::Deref for Tls13ClientSessionValue {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Tls12ClientSessionValue {
     #[cfg(feature = "tls12")]
     suite: &'static Tls12CipherSuite,
@@ -203,10 +203,35 @@ impl Tls12ClientSessionValue {
         self.suite
     }
 
+    #[cfg(feature = "std")]
+    pub(crate) fn clone_with_resource_owner(
+        &self,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<Self, crate::DeframerBufferError> {
+        Ok(Self {
+            suite: self.suite,
+            session_id: self.session_id,
+            extended_ms: self.extended_ms,
+            common: self.common.clone_with_resource_owner(owner)?,
+        })
+    }
+
     #[doc(hidden)]
     /// Test only: rewind epoch by `delta` seconds.
     pub fn rewind_epoch(&mut self, delta: u32) {
         self.common.epoch -= delta as u64;
+    }
+}
+
+#[cfg(feature = "tls12")]
+impl Clone for Tls12ClientSessionValue {
+    fn clone(&self) -> Self {
+        Self {
+            suite: self.suite,
+            session_id: self.session_id,
+            extended_ms: self.extended_ms,
+            common: self.common.clone(),
+        }
     }
 }
 
@@ -219,7 +244,7 @@ impl core::ops::Deref for Tls12ClientSessionValue {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct ClientSessionCommon {
     ticket: Arc<PayloadU16>,
     secret: Zeroizing<PayloadU8>,
@@ -228,6 +253,22 @@ pub struct ClientSessionCommon {
     server_cert_chain: Arc<CertificateChain<'static>>,
     server_cert_verifier: Weak<dyn ServerCertVerifier>,
     client_creds: Weak<dyn ResolvesClientCert>,
+    #[cfg(feature = "std")]
+    _resource_custody: Option<RetainedSessionCustody>,
+}
+
+#[cfg(feature = "std")]
+#[derive(Debug)]
+struct RetainedSessionCustody {
+    owner: Arc<dyn crate::DeframerBufferOwner>,
+    bytes: usize,
+}
+
+#[cfg(feature = "std")]
+impl Drop for RetainedSessionCustody {
+    fn drop(&mut self) {
+        self.owner.release(self.bytes);
+    }
 }
 
 impl ClientSessionCommon {
@@ -248,7 +289,31 @@ impl ClientSessionCommon {
             server_cert_chain: Arc::new(server_cert_chain),
             server_cert_verifier: Arc::downgrade(server_cert_verifier),
             client_creds: Arc::downgrade(client_creds),
+            #[cfg(feature = "std")]
+            _resource_custody: None,
         }
+    }
+
+    #[cfg(feature = "std")]
+    fn clone_with_resource_owner(
+        &self,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<Self, crate::DeframerBufferError> {
+        let bytes = self.secret.0.len();
+        owner.try_reserve(bytes)?;
+        let mut secret = alloc::vec![0; bytes];
+        secret.copy_from_slice(self.secret.0.as_ref());
+        debug_assert_eq!(secret.capacity(), bytes);
+        Ok(Self {
+            ticket: self.ticket.clone(),
+            secret: Zeroizing::new(PayloadU8::new(secret)),
+            epoch: self.epoch,
+            lifetime_secs: self.lifetime_secs,
+            server_cert_chain: self.server_cert_chain.clone(),
+            server_cert_verifier: self.server_cert_verifier.clone(),
+            client_creds: self.client_creds.clone(),
+            _resource_custody: Some(RetainedSessionCustody { owner, bytes }),
+        })
     }
 
     pub(crate) fn compatible_config(
@@ -287,6 +352,22 @@ impl ClientSessionCommon {
 
     pub(crate) fn ticket(&self) -> &[u8] {
         self.ticket.0.as_ref()
+    }
+}
+
+impl Clone for ClientSessionCommon {
+    fn clone(&self) -> Self {
+        Self {
+            ticket: self.ticket.clone(),
+            secret: self.secret.clone(),
+            epoch: self.epoch,
+            lifetime_secs: self.lifetime_secs,
+            server_cert_chain: self.server_cert_chain.clone(),
+            server_cert_verifier: self.server_cert_verifier.clone(),
+            client_creds: self.client_creds.clone(),
+            #[cfg(feature = "std")]
+            _resource_custody: None,
+        }
     }
 }
 

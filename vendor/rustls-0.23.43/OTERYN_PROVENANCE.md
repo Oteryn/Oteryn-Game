@@ -32,3 +32,30 @@ The four authored inline owner tests passed after overlaying the three authored 
 ## Protected #429 ClientHello preconstruction delta
 
 The later protected #429 amendment authorizes the narrow additional changes in `src/client/client_conn.rs`, `src/client/hs.rs`, and `src/msgs/handshake.rs`. The owner-aware constructor now reserves configured ALPN inner/outer backing before cloning, reserves the outer protocol-name collection before construction, and reserves the `ClientHelloDetails` clone while its source remains live. A single RAII custody record retains the same owner through connection drop; ordinary constructors and ordinary ALPN conversion remain owner-free. Denial unwinds custody only after constructed backing is destroyed. This closes the protected ALPN seam only; session-cache, key-share, ECH/configuration and crypto custody remain separate open cells.
+
+## Protected #432 session-retrieval owner delta
+
+Protected allocation `OTV2-WP3-RUSTLS-SESSION-RETRIEVE-OWNER-20260908` is
+implemented only at the three repaired retrieval surfaces. The ordinary
+`ClientSessionStore::tls12_session` contract is unchanged. Its additive
+owner-aware sibling fails closed by default, while `ClientSessionMemoryCache`
+invokes the #425 retained-value owner-aware clone before destination secret
+backing is allocated. That clone uses an exact-capacity byte vector, keeps the
+stored source alive and charged throughout construction, and embeds RAII custody
+whose field ordering destroys secret backing before releasing its charge.
+
+The dedicated owner-aware `ClientHelloInput` route now reaches that dispatch
+before TLS1.2 cloning. TLS1.3 still uses the existing destructive ticket take and
+moves its opaque custody without another session allocation or charge. The
+owner-aware route is explicitly TCP-only; QUIC parameter copying remains outside
+this amendment. Rejected compatibility, clock and expiry paths drop the returned
+opaque value normally, so its backing is destroyed before embedded custody
+releases. Custom stores without pre-clone support cannot call through to the
+ordinary allocating method.
+
+Focused exact-upstream-overlay tests prove funded TLS1.2 source/destination
+charge overlap, denial before destination allocation, exact release, retained
+source validity, and unsupported-store fail-closed behavior. Ordinary retrieval
+remains available and unchanged. The next executable allocation boundary is the
+still-unallocated `client::tls13::initial_key_share` call to
+`SupportedKxGroup::start`; no key-exchange or crypto source was changed.
