@@ -143,19 +143,81 @@ def _paths(workflow: str, event: str) -> tuple[str, ...]:
     return tuple(entries)
 
 
+def _quoted_scalar_end(text: str) -> int | None:
+    """Return the closing quote index for a leading YAML quoted scalar in linear time."""
+    if not text or text[0] not in ("'", '"'):
+        return None
+    quote = text[0]
+    index = 1
+    while index < len(text):
+        char = text[index]
+        if quote == "'":
+            if char == "'":
+                if index + 1 < len(text) and text[index + 1] == "'":
+                    index += 2
+                    continue
+                return index
+            index += 1
+            continue
+        if char == "\\":
+            index += 2
+            continue
+        if char == '"':
+            return index
+        index += 1
+    return None
+
+
+def _mapping_key_from_indented_line(line: str) -> str | None:
+    """Decode a simple indented YAML mapping key without backtracking regexes."""
+    if not line or line[0] not in " \t":
+        return None
+    text = line.lstrip(" \t")
+    if not text or text.startswith("#") or text.startswith("-"):
+        return None
+
+    explicit = False
+    if text.startswith("?"):
+        explicit = True
+        text = text[1:].lstrip()
+        if not text or text.startswith("#"):
+            return None
+
+    if text.startswith(("'", '"')):
+        end = _quoted_scalar_end(text)
+        if end is None:
+            return None
+        raw_key = text[: end + 1]
+        remainder = text[end + 1 :].lstrip()
+        if not explicit and not remainder.startswith(":"):
+            return None
+        if explicit and remainder and not remainder.startswith("#"):
+            return None
+        return _decode_yaml_scalar(raw_key)
+
+    if explicit:
+        raw_key = text.split("#", 1)[0].rstrip()
+        try:
+            return _decode_yaml_scalar(raw_key)
+        except (AssertionError, json.JSONDecodeError):
+            return None
+
+    colon = text.find(":")
+    if colon <= 0:
+        return None
+    raw_key = text[:colon].rstrip()
+    try:
+        return _decode_yaml_scalar(raw_key)
+    except (AssertionError, json.JSONDecodeError):
+        return None
+
+
 def _decoded_indented_mapping_keys(workflow: str) -> tuple[str, ...]:
-    """Decode ordinary/single/double-quoted indented mapping keys fail-closed."""
     keys: list[str] = []
-    key_pattern = re.compile(
-        r"^[ \t]+(?P<key>'(?:[^']|'')*'|\"(?:\\.|[^\"])*\"|[A-Za-z_][A-Za-z0-9_-]*)\s*:"
-    )
-    explicit_pattern = re.compile(
-        r"^[ \t]+\?\s*(?P<key>'(?:[^']|'')*'|\"(?:\\.|[^\"])*\"|[A-Za-z_][A-Za-z0-9_-]*)\s*$"
-    )
     for line in workflow.splitlines():
-        match = key_pattern.match(line) or explicit_pattern.match(line)
-        if match is not None:
-            keys.append(_decode_yaml_scalar(match.group("key")))
+        key = _mapping_key_from_indented_line(line)
+        if key is not None:
+            keys.append(key)
     return tuple(keys)
 
 
@@ -216,9 +278,6 @@ def _assert_pinned_actions_and_no_bypass(workflow: str) -> None:
 
 
 def _assert_contract(semantic: str, static: str) -> None:
-    assert _git_blob_sha(semantic) == EXPECTED_SEMANTIC_WORKFLOW_BLOB
-    assert _git_blob_sha(static) == EXPECTED_STATIC_WORKFLOW_BLOB
-
     assert _event_keys(semantic, "pull_request") == ("paths",)
     assert _event_keys(semantic, "push") == ("branches", "paths")
     assert _event_keys(static, "pull_request") == ("branches", "paths")
@@ -250,6 +309,9 @@ def _assert_contract(semantic: str, static: str) -> None:
         r"(?m)^          cmp /tmp/creatures-a\.json /tmp/creatures-b\.json\s*$",
         static_double_export,
     ), "static deterministic double-export comparison must remain executable"
+
+    assert _git_blob_sha(semantic) == EXPECTED_SEMANTIC_WORKFLOW_BLOB
+    assert _git_blob_sha(static) == EXPECTED_STATIC_WORKFLOW_BLOB
 
 
 class AtlasTriggerClosureTest(unittest.TestCase):
@@ -293,6 +355,25 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         self.assertEqual(_event_keys(self.static, "pull_request"), ("branches", "paths"))
         self.assertIn("branches: [main]", _event_block(self.semantic, "push"))
         self.assertNotRegex(self.static, r"(?m)^  push:")
+
+    def test_lexical_guards_cover_review_bypasses(self) -> None:
+        mutated_paths = self.semantic.replace(
+            "      - '.github/workflows/game-atlas-static-creatures.yml'\n",
+            "      - '.github/workflows/game-atlas-static-creatures.yml'\n"
+            "      # valid YAML comment inside the same paths sequence\n"
+            '      - "tools/game-atlas-*/**"\n',
+            1,
+        )
+        self.assertIn("tools/game-atlas-*/**", _paths(mutated_paths, "pull_request"))
+
+        escaped_permissions = (
+            "jobs:\n"
+            "  build:\n"
+            '    "permi\\u0073sions":\n'
+            "      contents: write\n"
+        )
+        self.assertIn("permissions", _decoded_indented_mapping_keys(escaped_permissions))
+        self.assertIn("permissions", _decoded_indented_mapping_keys("jobs:\n  build:\n    'permissions':\n      contents: write\n"))
 
     def test_exact_oracles_and_workflow_safety_remain(self) -> None:
         _assert_contract(self.semantic, self.static)
