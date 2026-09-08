@@ -14,11 +14,43 @@ STATIC_WORKFLOW = ROOT / ".github/workflows/game-atlas-static-creatures.yml"
 
 FULLWORLD_PRODUCER = "tools/game-atlas-fullworld-source/producer.py"
 THAIS_PRODUCER = "tools/game-atlas-thais-fixture/export.py"
+CREATURE_EXPORT = "tools/game-atlas-creatures/export.py"
 CREATURE_IDENTITY = "tools/game-atlas-creatures/identity.py"
 REGRESSION = "tools/repository/test_validate_game_atlas_semantic_search_triggers.py"
 SEMANTIC_WORKFLOW_PATH = ".github/workflows/game-atlas-semantic-search.yml"
 STATIC_WORKFLOW_PATH = ".github/workflows/game-atlas-static-creatures.yml"
 REGRESSION_COMMAND = f"python {REGRESSION}"
+
+SEMANTIC_PR_PATHS = {
+    "tools/game-atlas-semantic-search/**",
+    CREATURE_EXPORT,
+    CREATURE_IDENTITY,
+    FULLWORLD_PRODUCER,
+    THAIS_PRODUCER,
+    REGRESSION,
+    "docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md",
+    SEMANTIC_WORKFLOW_PATH,
+    STATIC_WORKFLOW_PATH,
+}
+SEMANTIC_PUSH_PATHS = {
+    "tools/game-atlas-semantic-search/**",
+    CREATURE_EXPORT,
+    CREATURE_IDENTITY,
+    FULLWORLD_PRODUCER,
+    THAIS_PRODUCER,
+    "docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md",
+    SEMANTIC_WORKFLOW_PATH,
+}
+STATIC_PR_PATHS = {
+    CREATURE_EXPORT,
+    CREATURE_IDENTITY,
+    "tools/game-atlas-creatures/self_test.py",
+    "tools/game-atlas-creatures/README.md",
+    REGRESSION,
+    "docs/contracts/OTERYN_GAME_ATLAS_NPC_ROLES_V1.md",
+    STATIC_WORKFLOW_PATH,
+    SEMANTIC_WORKFLOW_PATH,
+}
 
 
 def _event_block(workflow: str, event: str) -> str:
@@ -39,10 +71,9 @@ def _assert_contract(semantic: str, static: str) -> None:
     semantic_push = _paths(semantic, "push")
     static_pr = _paths(static, "pull_request")
 
-    assert {FULLWORLD_PRODUCER, THAIS_PRODUCER} <= semantic_pr
-    assert {FULLWORLD_PRODUCER, THAIS_PRODUCER} <= semantic_push
-    assert {REGRESSION, SEMANTIC_WORKFLOW_PATH, STATIC_WORKFLOW_PATH} <= semantic_pr
-    assert {CREATURE_IDENTITY, REGRESSION, STATIC_WORKFLOW_PATH, SEMANTIC_WORKFLOW_PATH} <= static_pr
+    assert semantic_pr == SEMANTIC_PR_PATHS
+    assert semantic_push == SEMANTIC_PUSH_PATHS
+    assert static_pr == STATIC_PR_PATHS
     assert REGRESSION_COMMAND in semantic
     assert REGRESSION_COMMAND in static
 
@@ -65,7 +96,7 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         semantic_pr = _paths(self.semantic, "pull_request")
         semantic_push = _paths(self.semantic, "push")
         static_pr = _paths(self.static, "pull_request")
-        for dependency in (FULLWORLD_PRODUCER, THAIS_PRODUCER):
+        for dependency in (CREATURE_EXPORT, CREATURE_IDENTITY, FULLWORLD_PRODUCER, THAIS_PRODUCER):
             self.assertIn(dependency, semantic_pr)
             self.assertIn(dependency, semantic_push)
         self.assertIn(CREATURE_IDENTITY, static_pr)
@@ -83,23 +114,9 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         semantic_pr = _paths(self.semantic, "pull_request")
         semantic_push = _paths(self.semantic, "push")
         static_pr = _paths(self.static, "pull_request")
-        self.assertTrue({
-            "tools/game-atlas-semantic-search/**",
-            "docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md",
-            SEMANTIC_WORKFLOW_PATH,
-        } <= semantic_pr)
-        self.assertTrue({
-            "tools/game-atlas-semantic-search/**",
-            "docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md",
-            SEMANTIC_WORKFLOW_PATH,
-        } <= semantic_push)
-        self.assertTrue({
-            "tools/game-atlas-creatures/export.py",
-            "tools/game-atlas-creatures/self_test.py",
-            "tools/game-atlas-creatures/README.md",
-            "docs/contracts/OTERYN_GAME_ATLAS_NPC_ROLES_V1.md",
-            STATIC_WORKFLOW_PATH,
-        } <= static_pr)
+        self.assertEqual(semantic_pr, SEMANTIC_PR_PATHS)
+        self.assertEqual(semantic_push, SEMANTIC_PUSH_PATHS)
+        self.assertEqual(static_pr, STATIC_PR_PATHS)
         self.assertIn("branches: [main]", _event_block(self.semantic, "push"))
         self.assertNotRegex(self.static, r"(?m)^  push:")
         for unrelated in ("README.md", "src/main.rs", "tools/game-atlas-creatures/monster.py"):
@@ -116,11 +133,18 @@ class AtlasTriggerClosureTest(unittest.TestCase):
 
         for required in (
             "python tools/game-atlas-semantic-search/self_test.py",
-            "sha256:0cc0546aff0e9a8f85716dcbe5babc6043e148e946a448b1d87f083410cb1005",
-            "'records': 88684",
-            "npc:726487438c8308abf291622a52d91b24",
-            "semantic-record:23716a35099a04179f7b9e3e6c9198ee",
-            "'capabilities'",
+            "sha256:035c911b11e588a969e8fb642965772eee598c30ad80d5d04f9ceda32461e530",
+            "assert data['counts'] == {'records': 88684, 'kinds': {'monster': 87565, 'npc': 1068, 'town': 33, 'waypoint': 18}}",
+            "assert len(sam) == 1, len(sam)",
+            "assert sam[0]['id'] == 'npc:726487438c8308abf291622a52d91b24', sam[0]",
+            "assert sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}, sam[0]",
+            "assert 'shop' in sam[0]['capabilities'], sam[0]",
+            "assert sam[0]['provenance']['service_resolution_state'] == 'RESOLVED', sam[0]",
+            "assert len(thais) == 1, len(thais)",
+            "assert thais[0]['id'] == 'semantic-record:23716a35099a04179f7b9e3e6c9198ee', thais[0]",
+            "assert thais[0]['position'] == {'x': 32369, 'y': 32241, 'floor': -7}, thais[0]",
+            "assert thais[0]['bounds'] is None, thais[0]",
+            "assert data['input_floor_aliases']['7'] == -7",
         ):
             self.assertIn(required, self.semantic)
         for required in (
@@ -128,17 +152,23 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             "/tmp/creatures-a.json",
             "/tmp/creatures-b.json",
             "cmp /tmp/creatures-a.json /tmp/creatures-b.json",
-            "'npcs':1068",
-            "'monster_spawns':87565",
-            "'bank':25",
+            "assert data['contract_id']=='oteryn-game-atlas-export-v1'",
+            "assert data['capability']=='static-creatures-v1'",
+            "assert data['semantic_revision']==1",
+            "assert data['npc_role_schema_version']==1",
+            "assert data['statistics']=={'npcs':1068,'monster_spawns':87565,'unresolved':461,'ambiguous':5}",
             "sha256:81505e91d7089f91e71813ec43f97118932db9cc7fd76d291fa399447ee2dfa4",
+            "assert dict(counts)=={'bank':25,'travel':51,'shop':313,'quest':432,'blessing':26,'trainer':54}",
+            "assert sum(bool(npc.get('roles')) for npc in data['npcs'])==705",
+            "assert sum(npc.get('role_resolution_state')=='AMBIGUOUS' for npc in data['npcs'])==10",
+            "assert all('roles' not in record and 'role_resolution_state' not in record for record in data['monster_spawns'])",
         ):
             self.assertIn(required, self.static)
 
     def test_every_new_control_is_mutation_protected(self) -> None:
         _assert_contract(self.semantic, self.static)
         mutations = []
-        for path in (FULLWORLD_PRODUCER, THAIS_PRODUCER):
+        for path in (CREATURE_EXPORT, CREATURE_IDENTITY, FULLWORLD_PRODUCER, THAIS_PRODUCER):
             mutations.append((self.semantic.replace(f"      - '{path}'\n", "", 1), self.static))
             push_pos = self.semantic.index("  push:")
             mutations.append((
@@ -146,6 +176,8 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                 + self.semantic[push_pos:].replace(f"      - '{path}'\n", "", 1),
                 self.static,
             ))
+        for path in (CREATURE_EXPORT, CREATURE_IDENTITY):
+            mutations.append((self.semantic.replace(path, f"{path}.renamed"), self.static))
         for path in (REGRESSION, STATIC_WORKFLOW_PATH):
             mutations.append((self.semantic.replace(f"      - '{path}'\n", "", 1), self.static))
         for path in (CREATURE_IDENTITY, REGRESSION, SEMANTIC_WORKFLOW_PATH):
