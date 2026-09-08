@@ -115,7 +115,7 @@ def _decode_yaml_path_scalar(raw: str) -> str:
 def _paths(workflow: str, event: str) -> tuple[str, ...]:
     """Parse every path-list item fail-closed, regardless of YAML quote style."""
     block = _event_block(workflow, event)
-    match = re.search(r"(?ms)^    paths:\n(?P<items>(?:^      - .+\n)+)", block)
+    match = re.search(r"(?m)^    paths:\n(?P<items>(?:^      - [^\n]+\n)+)", block)
     assert match is not None, f"missing or non-canonical paths list for {event}"
     entries: list[str] = []
     for line in match.group("items").splitlines():
