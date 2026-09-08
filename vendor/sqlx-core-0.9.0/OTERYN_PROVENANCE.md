@@ -686,3 +686,35 @@ private-layout constant, semantic cap or TLS-policy change is acceptable.
 Complete TLS therefore remains **NOT_PROVEN**.  TLS-positive execution and the
 configured PostgreSQL 17.6 qualification remain correctly stopped; plaintext
 PostgreSQL and CONTROL classifier results supply neither credit.
+
+## Window10 protected decoded-owner amendment preflight
+
+Protected allocation `OTV2-WP3-RUSTLS-DECODED-OWNER-20260908` was applied to
+this existing worker after normal merge-up to protected
+`main@dfc0fd3a9148cb85b7c75e7cad3b15a1fe70d2eb`.  Before changing decoded-state
+source, the required ClientHello qualification exposed one narrower missing
+symbol boundary inside an otherwise listed path.  The amendment grants authored
+`client/hs.rs` custody only for
+`ExpectServerHelloOrHelloRetryRequest::{handle,handle_hello_retry_request,into_expect_server_hello}`
+and successor-state construction.  Initial and retry ClientHello input-derived
+allocations instead occur in `emit_client_hello_for_retry`: the function creates
+`Box<ClientExtensions>`, collects the named-groups vector, clones protocol and
+QUIC transport-parameter vectors, and deep-owns certificate-authority names.
+Its unchanged source blob is `34fc1ae1687e5978b735f0237d1de5e66b2eb609`.
+
+Those allocations are explicitly part of the amendment's minimum focused
+ClientHello extension/payload proof, but the function is not one of its granted
+symbol boundaries.  Neither `conn.rs` wiring nor an owner-aware decoded
+`Reader` reaches outbound ClientHello construction, and post-construction
+inspection cannot deny before allocation or retain source/destination overlap.
+
+`SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/hs.rs ::
+emit_client_hello_for_retry` for same-ledger reservation and custody of the
+actual `Box<ClientExtensions>`, collected vector capacities, cloned protocol /
+transport payload capacities and owned certificate-authority-name backing.
+Authority must cover reservation before each allocation or growth, checked
+capacity arithmetic, clone overlap, rollback on ClientHello construction error,
+and transfer into the successor state until actual destruction.  It must not
+alter TLS versions, extensions, ECH/QUIC, certificate/hostname semantics or
+ordinary no-owner behavior.  No decoded-owner source was mutated after this
+preflight, and complete TLS, TLS-positive and PostgreSQL 17.6 remain OPEN.

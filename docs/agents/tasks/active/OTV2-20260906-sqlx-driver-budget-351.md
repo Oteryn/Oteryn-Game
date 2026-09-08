@@ -386,3 +386,26 @@ blocker: rustls_private_decoded_message_allocates_before_sqlx_can_reserve_or_tra
 next_action: protect a same-ledger decoded-message owner hook at ConnectionCore::deframe before Message::try_from / into_owned, plus necessary public wiring
 remaining_acceptance_cells: decoded AST and retained-chain owner; configuration/crypto/session-cache/send/transcript/error and handshake-overlap custody; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
 ```
+
+## Window10 decoded-owner amendment preflight
+
+The protected decoded-owner amendment is integrated and explicitly applied to
+this same worker.  A boundary-by-boundary preflight stopped before source
+mutation because its mandatory ClientHello extension/payload qualification
+requires authored changes in `client/hs.rs::emit_client_hello_for_retry`, while
+the exact `client/hs.rs` lease names only the
+`ExpectServerHelloOrHelloRetryRequest` methods and successor-state construction.
+The unchanged function allocates the extensions box, collected named-groups
+vector, cloned protocol/transport payloads and owned certificate-authority names
+before any granted decoded-reader or connection hook can reserve them.
+
+```yaml
+last_progress: normally merged protected main and preflighted the protected decoded-owner symbol boundaries
+status: blocked_pending_shared_lease
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+blocker: client_hello_allocations_are_outside_the_exact_client_hs_symbol_lease
+next_action: authorize client/hs.rs::emit_client_hello_for_retry for same-ledger actual-backing custody, then resume the 13-path decoded-owner RED/GREEN matrix
+remaining_acceptance_cells: all protected decoded-owner RED/GREEN boundaries; complete TLS configuration/crypto composition; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
+```

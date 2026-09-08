@@ -175,3 +175,19 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Keep TLS-positive and configured PostgreSQL17.6 execution stopped until
   complete TLS ownership is proven; plaintext and CONTROL classifier results
   are not qualification.
+
+## Window10 protected decoded-owner preflight
+
+- [x] Normally merge protected `main@dfc0fd3a9148cb85b7c75e7cad3b15a1fe70d2eb`
+  and preserve every prior RED/GREEN checkpoint.
+- [x] Read the protected decoded-owner amendment and preflight its exact thirteen
+  path/symbol boundaries before decoded-state mutation.
+- [x] Stop at exact `SHARED_LEASE_REQUIRED` for
+  `vendor/rustls-0.23.43/src/client/hs.rs::emit_client_hello_for_retry`: the
+  required ClientHello proof includes its extension box, collected vectors,
+  payload clones and owned CA names, but the amendment grants other symbols in
+  that file only.
+- [ ] After a protected symbol amendment, resume boundary-by-boundary decoded
+  custody RED/GREEN without weakening TLS or substituting an aggregate reserve.
+- [ ] Keep real TLS-positive and PostgreSQL17.6 qualification stopped until the
+  complete TLS ownership matrix is proven.
