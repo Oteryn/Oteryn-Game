@@ -1,5 +1,5 @@
 {
-  "checkpoint": "owned-Tokio prerequisite matrix complete; SQLx/TLS_BLOCKING_OWNER NOT PROVEN",
+  "checkpoint": "owned-Tokio prerequisite matrix plus distinct operation-owner isolation complete",
   "crates_io_archive_sha256": "202caea871b69668250d242070849eb495be178ed697a3e98aebce5bc81a0bed",
   "oteryn_authored_paths": [
     "Cargo.toml",

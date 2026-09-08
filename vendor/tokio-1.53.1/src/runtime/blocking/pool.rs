@@ -108,8 +108,7 @@ struct Inner {
 
 struct Shared {
     queue: VecDeque<Task>,
-    owned_queue: Option<OwnedQueue>,
-    owned_worker_running: bool,
+    owned_queues: Option<Box<OwnedQueue>>,
     num_notify: u32,
     shutdown: bool,
     shutdown_tx: Option<shutdown::Sender>,
@@ -130,7 +129,20 @@ struct Shared {
 struct OwnedQueue {
     queue: VecDeque<Task>,
     limit: usize,
-    _charge: task::OterynCharge,
+    queue_charge: task::OterynCharge,
+    _node_charge: task::OterynCharge,
+    worker_running: bool,
+    next: Option<Box<OwnedQueue>>,
+}
+
+impl OwnedQueue {
+    fn find_mut(&mut self, owner: &Arc<dyn BlockingOwner>) -> Option<&mut Self> {
+        if self.queue_charge.same_owner(owner) {
+            Some(self)
+        } else {
+            self.next.as_deref_mut()?.find_mut(owner)
+        }
+    }
 }
 
 pub(crate) struct Task {
@@ -228,8 +240,7 @@ impl BlockingPool {
                 inner: Arc::new(Inner {
                     shared: Mutex::new(Shared {
                         queue: VecDeque::new(),
-                        owned_queue: None,
-                        owned_worker_running: false,
+                        owned_queues: None,
                         num_notify: 0,
                         shutdown: false,
                         shutdown_tx: Some(shutdown_tx),
@@ -330,24 +341,38 @@ impl Spawner {
             return Err(OwnedSpawnError::RuntimeShuttingDown);
         }
 
-        if shared.owned_queue.is_none() {
+        if shared
+            .owned_queues
+            .as_deref_mut()
+            .and_then(|queue| queue.find_mut(&owner))
+            .is_none()
+        {
             let bytes = config
                 .queue_capacity
                 .checked_mul(std::mem::size_of::<Task>())
                 .ok_or(OwnedSpawnError::AccountingOverflow)?;
-            let charge = task::OterynCharge::reserve(owner.clone(), bytes)?;
+            let queue_charge = task::OterynCharge::reserve(owner.clone(), bytes)?;
+            let node_charge = task::OterynCharge::reserve(
+                owner.clone(),
+                std::mem::size_of::<OwnedQueue>(),
+            )?;
             let queue = VecDeque::with_capacity(config.queue_capacity);
-            shared.owned_queue = Some(OwnedQueue {
+            let next = shared.owned_queues.take();
+            shared.owned_queues = Some(Box::new(OwnedQueue {
                 queue,
                 limit: config.queue_capacity,
-                _charge: charge,
-            });
+                queue_charge,
+                _node_charge: node_charge,
+                worker_running: false,
+                next,
+            }));
         }
         let queue = shared
-            .owned_queue
-            .as_ref()
+            .owned_queues
+            .as_deref_mut()
+            .and_then(|queue| queue.find_mut(&owner))
             .expect("owned queue initialized");
-        if !queue._charge.same_owner(&owner) || queue.limit != config.queue_capacity {
+        if queue.limit != config.queue_capacity {
             return Err(OwnedSpawnError::InvalidConfiguration);
         }
         // This check intentionally precedes construction of the task future and
@@ -388,7 +413,13 @@ impl Spawner {
         owner: Arc<dyn BlockingOwner>,
         config: BlockingOwnerConfig,
     ) -> Result<(), OwnedSpawnError> {
-        if !shared.owned_worker_running {
+        let worker_running = shared
+            .owned_queues
+            .as_deref_mut()
+            .and_then(|queue| queue.find_mut(&owner))
+            .expect("owned queue initialized")
+            .worker_running;
+        if !worker_running {
             let Some(bookkeeping) = std::mem::size_of::<thread::JoinHandle<()>>()
                 .checked_add(std::mem::size_of::<usize>())
                 .and_then(|value| value.checked_add(config.worker_stack_size))
@@ -412,6 +443,7 @@ impl Spawner {
                 .name((self.inner.thread_name)())
                 .stack_size(config.worker_stack_size);
             let rt = rt.clone();
+            let worker_owner = owner.clone();
             let result = if owner.force_thread_spawn_failure() {
                 Err(io::Error::new(
                     io::ErrorKind::Other,
@@ -421,7 +453,10 @@ impl Spawner {
                 builder.spawn(move || {
                     let charge = worker_charge;
                     let enter = rt.enter();
-                    rt.inner.blocking_spawner().inner.run_owned(id);
+                    rt.inner
+                        .blocking_spawner()
+                        .inner
+                        .run_owned(id, worker_owner);
                     // Release charged backing only once the worker has finished all
                     // pool work, then signal shutdown waiters.
                     drop(enter);
@@ -437,7 +472,12 @@ impl Spawner {
                     // the existing sender held by the worker.
                     drop(handle);
                     shared.worker_thread_index += 1;
-                    shared.owned_worker_running = true;
+                    shared
+                        .owned_queues
+                        .as_deref_mut()
+                        .and_then(|queue| queue.find_mut(&owner))
+                        .expect("owned queue initialized")
+                        .worker_running = true;
                 }
                 Err(error) => {
                     task.task.shutdown();
@@ -446,12 +486,13 @@ impl Spawner {
             }
         }
         shared
-            .owned_queue
-            .as_mut()
+            .owned_queues
+            .as_deref_mut()
+            .and_then(|queue| queue.find_mut(&owner))
             .expect("owned queue initialized")
             .queue
             .push_back(task);
-        self.inner.owned_condvar.notify_one();
+        self.inner.owned_condvar.notify_all();
         Ok(())
     }
     #[track_caller]
@@ -660,7 +701,7 @@ fn is_temporary_os_thread_error(error: &io::Error) -> bool {
 }
 
 impl Inner {
-    fn run_owned(&self, _worker_thread_id: usize) {
+    fn run_owned(&self, _worker_thread_id: usize, owner: Arc<dyn BlockingOwner>) {
         if let Some(f) = &self.after_start {
             f();
         }
@@ -668,8 +709,9 @@ impl Inner {
         let mut shared = self.shared.lock();
         loop {
             while let Some(task) = shared
-                .owned_queue
-                .as_mut()
+                .owned_queues
+                .as_deref_mut()
+                .and_then(|queue| queue.find_mut(&owner))
                 .and_then(|queue| queue.queue.pop_front())
             {
                 drop(shared);
@@ -680,8 +722,9 @@ impl Inner {
             if shared.shutdown {
                 loop {
                     let task = shared
-                        .owned_queue
-                        .as_mut()
+                        .owned_queues
+                        .as_deref_mut()
+                        .and_then(|queue| queue.find_mut(&owner))
                         .and_then(|queue| queue.queue.pop_front());
                     let Some(task) = task else { break };
                     drop(shared);
@@ -698,14 +741,21 @@ impl Inner {
             shared = next;
             if timeout.timed_out()
                 && shared
-                    .owned_queue
-                    .as_ref()
+                    .owned_queues
+                    .as_deref_mut()
+                    .and_then(|queue| queue.find_mut(&owner))
                     .map_or(true, |queue| queue.queue.is_empty())
             {
                 break;
             }
         }
-        shared.owned_worker_running = false;
+        if let Some(queue) = shared
+            .owned_queues
+            .as_deref_mut()
+            .and_then(|queue| queue.find_mut(&owner))
+        {
+            queue.worker_running = false;
+        }
         if shared.shutdown {
             self.owned_condvar.notify_one();
         }

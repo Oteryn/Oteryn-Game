@@ -239,3 +239,15 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   do not create a ledger, global/thread-local registry, or unowned fallback.
 - [ ] After exact owner propagation is allocated, prove the #429 ALPN seam RED/GREEN,
   then resume only the already-protected ClientHello/decoded boundaries.
+
+## Window13 #430 prerequisite repair
+
+- [x] Normally merge protected `main@ae103eb6538f3044659aba3e3af8efbe8014707c`
+  containing the applied #430 operation-owner amendment.
+- [x] Fix accepted P1 `3947483202`: isolate and charge owner queue nodes per
+  operation identity so distinct operations can share one Tokio runtime without
+  cross-charge, first-owner lock-in, or ordinary-queue fallback.
+- [x] Preserve queue-full ordering, cancellation, worker failure, idle/shutdown
+  custody, overflow and ordinary unowned controls; prove a distinct-owner case.
+- [ ] Implement and prove the #430 caller-supplied Arc propagation. Do not start
+  #429 ALPN work until that propagation is GREEN.

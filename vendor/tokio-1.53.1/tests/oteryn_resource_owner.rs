@@ -266,11 +266,48 @@ fn forced_worker_spawn_failure_releases_never_created_backing_once() {
         )
     });
     assert!(matches!(result, Err(OwnedSpawnError::ThreadSpawn(_))));
-    assert_eq!(owner.reservations.load(Ordering::SeqCst), 3);
+    assert_eq!(owner.reservations.load(Ordering::SeqCst), 4);
     assert_eq!(owner.releases.load(Ordering::SeqCst), 2);
     drop(runtime);
-    assert_eq!(owner.releases.load(Ordering::SeqCst), 3);
+    assert_eq!(owner.releases.load(Ordering::SeqCst), 4);
     assert_eq!(owner.held.load(Ordering::SeqCst), 0);
+}
+
+#[test]
+fn distinct_operation_owners_share_runtime_without_cross_charging() {
+    let first = Arc::new(Witness::default());
+    let second = Arc::new(Witness::default());
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
+
+    let first_job = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                first.clone(),
+                BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+                || 1,
+            )
+        })
+        .unwrap();
+    assert_eq!(runtime.block_on(first_job).unwrap(), 1);
+
+    let second_job = runtime
+        .block_on(async {
+            spawn_blocking_owned(
+                second.clone(),
+                BlockingOwnerConfig::new(8, 2 * 1024 * 1024),
+                || 2,
+            )
+        })
+        .unwrap();
+    assert_eq!(runtime.block_on(second_job).unwrap(), 2);
+    assert!(first.held.load(Ordering::SeqCst) > 0);
+    assert!(second.held.load(Ordering::SeqCst) > 0);
+
+    drop(runtime);
+    assert_eq!(first.held.load(Ordering::SeqCst), 0);
+    assert_eq!(second.held.load(Ordering::SeqCst), 0);
 }
 
 #[test]

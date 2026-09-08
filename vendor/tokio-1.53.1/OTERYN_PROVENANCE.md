@@ -104,3 +104,26 @@ These controls close the remaining Tokio-only prerequisite. SQLx ledger
 adaptation, fail-closed non-Tokio dispatch, complete TLS phase composition, real
 TLS-positive evidence and PostgreSQL 17.6 qualification remain OPEN.
 `TLS_BLOCKING_OWNER = NOT_PROVEN` until those SQLx/TLS cells complete.
+
+## Window13 distinct operation-owner repair
+
+Review P1 `3947483202` correctly identified that the original single retained
+`OwnedQueue` made a Tokio runtime permanently reject every later operation owner.
+The owner path now maintains one separately allocated and charged linked queue
+node per owner identity. Each node owns its finite task backing and worker-lifetime
+state; neither the node nor its task storage is charged to another operation, and
+the ordinary blocking queue remains untouched. Worker wakeups search only the
+matching identity and custody for every owner remains live through its worker's
+idle lifetime and runtime shutdown.
+
+The focused distinct-owner control submits completed jobs from two independently
+created owners on one current-thread runtime, proves both retain nonzero custody
+simultaneously, and proves each returns independently to zero at shutdown. The
+existing queue-full, cancellation, forced-spawn-failure, overflow and ordinary
+path controls remain green. The additional queue-node reservation is included in
+the forced-spawn-failure exact-once count.
+
+This dispositions P1 as **PROVEN/FIXED** for the Tokio prerequisite only. The
+caller-supplied SQLx operation-owner propagation required by protected #430 has
+not yet been implemented, so #429 ALPN work and all later TLS/PG cells remain
+OPEN and no WP3 completion is claimed.

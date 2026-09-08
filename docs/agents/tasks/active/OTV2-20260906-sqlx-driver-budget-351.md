@@ -464,3 +464,22 @@ shared_lease_required: vendor/sqlx-core-0.9.0/src/net/tls/mod.rs :: TlsConfig / 
 next_action: allocate the exact operation-owner propagation source and lifecycle, then implement the protected owner-aware ALPN constructor seam
 remaining_acceptance_cells: owner-aware ALPN RED/GREEN; protected ClientHello and decoded-owner matrix; session/cache and configuration/crypto ownership; complete TLS; TLS-positive proof; PostgreSQL17.6 qualification; independent review; canonical CI/MQ; protected readback and target release
 ```
+
+## Window13 operation-owner prerequisite repair
+
+Protected #430 is merged and applied. Before adding the caller propagation path,
+the accepted review P1 was reproduced in the existing Tokio owner surface: a
+runtime retained one first-owner queue and rejected a later independent owner.
+The queue is now isolated and charged per owner through linked nodes, with no
+ordinary-queue spill and custody retained through idle worker/runtime shutdown.
+
+```yaml
+last_progress: fixed and proved distinct operation owners on one Tokio runtime before SQLx propagation
+status: active_owner_propagation
+review_p1_3947483202: PROVEN_FIXED
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+operation_owner_propagation: NOT_PROVEN
+next_action: implement #430 caller-supplied Arc propagation RED/GREEN, then and only then resume #429 ALPN ownership
+remaining_acceptance_cells: operation-owner propagation; owner-aware ALPN RED/GREEN; protected ClientHello and decoded-owner matrix; session/cache and configuration/crypto ownership; complete TLS; TLS-positive proof; PostgreSQL17.6 qualification; independent review; canonical CI/MQ; protected readback and target release
+```
