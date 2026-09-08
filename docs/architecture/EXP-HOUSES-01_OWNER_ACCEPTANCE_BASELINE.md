@@ -378,17 +378,25 @@ Collection is automatic from a later-defined authoritative economy source and id
 
 Insufficient funds enter explicit delinquent/grace state, not immediate silent eviction. Exact grace/notification values remain deferred.
 
-### 12.3 Value-safe eviction
+### 12.3 Value-safe eviction uses a content fence before evacuation
 
-Before ownership release after unresolved grace:
+Before ownership release after unresolved grace, eviction must enter one stable operation-scoped pending state equivalent in semantics to:
 
-1. revalidate owner/revision/rent state;
-2. classify and move durable contents using the placement-time HousingReclaimProvenance rules in section 14, never by inferring claimant from house owner or ACL;
-3. move affected value to an already-legal destination or typed non-gameplay custody;
-4. fence stale HouseRuntime/Channel mutation rights;
-5. release ownership and ACL;
-6. mark property vacant;
-7. return it to public allocation.
+```text
+EVICTION_DISPOSITION_PENDING
+```
+
+Required ordering:
+
+1. revalidate owner/revision/rent state and acquire an authoritative housing-content mutation fence tied to the eviction operation and expected content/property revision;
+2. while that fence is active, reject new housing item placement, removal, container mutation and stale HouseRuntime/Channel item writes, then enumerate/snapshot the authoritative contents at the fenced revision;
+3. classify and move every affected durable item using the placement-time `HousingReclaimProvenance` rules in section 14, never by inferring claimant from house owner or ACL;
+4. move affected value to an already-legal destination or typed non-gameplay custody and prove that no item authoritative at or admitted after the fenced boundary remains unclassified in the property;
+5. retain the content/runtime mutation fence through ownership/ACL release, vacancy and public-allocation publication so no stale writer can place value back into a released house;
+6. release ownership and ACL only after the fenced content disposition is terminal or durably pending in accepted custody;
+7. mark property vacant and return it to public allocation only after the same eviction operation proves the house contains no unresolved movable value outside explicit custody.
+
+A failed or ambiguous evacuation keeps the property in `EVICTION_DISPOSITION_PENDING` (or equivalent), non-allocatable and mutation-fenced while the same operation reconciles. It does not release ownership/public allocation and then attempt to discover late item writes.
 
 Forgotten items are not destroyed and do not silently become property of the next owner.
 
@@ -517,6 +525,8 @@ One semantic outcome is preserved through stable operation identity, current-sta
 
 Public allocation and destructive Residence release are terminal housing effects, not PREPARE steps. A property/Residence disposition whose outcome still depends on an unresolved Character transfer remains recoverable and non-terminal.
 
+For any Bazaar housing prepare that depends on a fenced housing-content set/revision, Character Authority must consume current proof of the same operation/fence/revision before committing Account rebinding. Missing, stale or released content-fence proof is not successful prepare and requires revalidation/reconciliation rather than rebinding against an old snapshot.
+
 Cached listing state never proves current housing eligibility or terminal Character-transfer outcome.
 
 ## 14. Housing item placement and reclaim provenance
@@ -600,7 +610,7 @@ Required semantics:
 
 For a Character Bazaar `HOUSE_ONLY` transition, a specialized seller-retained custody/disposition may be required by section 14.5. That specialized transition is created under verified **pre-transfer** authority; it is not derived after rebinding from the sold Character's identity.
 
-### 14.5 HOUSE_ONLY requires seller-retained disposition before selling the reclaim Character
+### 14.5 HOUSE_ONLY uses a fenced content snapshot through Character rebinding
 
 For `INCLUDE_HOUSE_WITH_CHARACTER`, seller additionally chooses:
 
@@ -612,9 +622,22 @@ INCLUDE_FURNISHINGS
 
 With `HOUSE_ONLY`, Character + address may transfer, but ordinary movable housing contents excluded by that choice must not follow control of the sold Character to the buyer merely because their ordinary `HousingReclaimProvenance` names that Character.
 
-Each excluded item is classified before Character Authority may commit Account rebinding:
+Before any excluded-item classification begins, housing must enter a Bazaar-operation-scoped pending state equivalent in semantics to:
 
-1. validate current HousingReclaimProvenance, item binding/restrictions and current pre-transfer authority;
+```text
+BAZAAR_HOUSE_CONTENTS_PENDING
+```
+
+That pending state/fence must bind at least the stable Bazaar operation, expected `HouseId -> CharacterId`, expected property/content revision and seller-side authority. While it is active:
+
+- new housing item placement, removal, container mutation and conflicting durable content writes are rejected/fenced across HouseRuntime/Channel paths;
+- the authoritative excluded-content set is enumerated from the fenced content revision, not a live mutable room snapshot;
+- Character Authority may commit Account rebinding only while it can validate current proof for the same pending operation/fence/revision;
+- a stale, missing, released or mismatched fence/revision makes Bazaar prepare non-authoritative and rebinding must fail closed/reconcile instead of consuming the old set.
+
+With that content fence held, each excluded item is classified before Character Authority may commit Account rebinding:
+
+1. validate current `HousingReclaimProvenance`, item binding/restrictions and current pre-transfer authority against the fenced content revision;
 2. if the reclaim subject is a guest/manager/other Character or typed domain not being sold, preserve that subject and route to an already-legal destination or subject-keyed typed custody;
 3. if the reclaim subject is the **Character being sold**, revalidate that the pre-transfer seller Account currently controls that Character and whether owning item policy permits the item to be detached into a seller-retained disposition;
 4. when such seller retention is legal, move/stage the item before rebinding into a typed non-gameplay seller-retained custody/disposition equivalent in semantics to:
@@ -634,17 +657,20 @@ This is not a generic Account warehouse and does not redefine item ownership. Th
 
 If item binding/restrictions do **not** permit a seller-retained disposition independent of the sold Character, `HOUSE_ONLY` cannot commit while that item remains an excluded housing content. The seller must first move/settle it through an already-legal destination under its owning item policy, or the Bazaar housing prepare remains rejected/pending. Housing may not invent seller Account ownership after the fact.
 
+Before Character Authority commit, the owning housing operation must prove that every item in the fenced excluded-content set has a terminal or accepted pending disposition and that no unfenced/late content write entered the house. The content fence remains held across the Character rebinding decision.
+
 Terminal behavior:
 
-- **Character transfer committed:** seller-retained custody remains seller-side under the pre-transfer operation fact; the sold Character and buyer Account cannot withdraw or reclaim those excluded items by virtue of the new `AccountId -> CharacterId` binding;
-- **Character transfer rejected/aborted before rebinding commit:** seller-retained staging/direct-return state reconciles back to the legal pre-transfer housing/item result under the same operation, without duplication or reassignment;
-- **ambiguous Character-transfer outcome:** item disposition remains non-spendable/pending and reconciles the same operation; it is never released to both seller and sold Character/buyer.
+- **Character transfer committed:** seller-retained custody remains seller-side under the pre-transfer operation fact; the sold Character and buyer Account cannot withdraw or reclaim those excluded items by virtue of the new `AccountId -> CharacterId` binding. The content fence is released only after the operation proves all excluded contents are no longer authoritative in the transferred house (or are represented by an explicitly accepted included-furnishing result where applicable).
+- **Character transfer rejected/aborted before rebinding commit:** seller-retained staging/direct-return state reconciles back to the legal pre-transfer housing/item result under the same operation, without duplication or reassignment; only after that restoration is authoritative may the content fence be released for normal seller-side use.
+- **ambiguous Character-transfer outcome:** item disposition and content fence remain non-spendable/pending under the same operation. Housing does not reopen mutations or release an item to either side until Character Authority outcome is reconciled.
 
 Consequences:
 
 - `HOUSE_ONLY` never uses the sold Character's post-transfer identity as the final reclaim key for an excluded seller-retained item;
 - a guest/manager/other Character's item cannot be converted to seller-retained custody merely because the house seller selected `HOUSE_ONLY`;
 - an alternate Character on the seller Account does not gain direct access merely from Account equality;
+- no item can be added to or removed from the authoritative `HOUSE_ONLY` excluded set after it is fenced without invalidating/restarting the same prepare under a new accepted revision;
 - if a legal seller-retained or other existing-subject disposition cannot be established before rebinding, the listing fails closed rather than silently transferring house contents.
 
 ### 14.6 INCLUDE_FURNISHINGS is conditional on retaining the incoming house
@@ -674,7 +700,7 @@ If buyer chooses `KEEP_EXISTING_HOUSE` or `KEEP_RESIDENCE`, the incoming physica
 
 If Character transfer, buyer keep-choice, item disposition, provenance or custody outcome is ambiguous, the house remains pending/non-allocatable and the same operation reconciles both item and property outcome.
 
-Exact physical tables/containers, reclaim UI, retention/capacity limits, manifest schema, valuation and final withdrawal UX remain deferred. The placement-time provenance source, seller-retained pre-transfer conversion rule, fail-closed missing/illegal-disposition rule and value-conservation semantics are binding.
+Exact physical tables/containers, reclaim UI, retention/capacity limits, manifest schema, valuation and final withdrawal UX remain deferred. Exact physical names/representations for eviction/Bazaar content fences and content revisions are also deferred. The fence-before-enumeration rule, placement-time provenance source, seller-retained pre-transfer conversion rule, fail-closed missing/illegal-disposition rule and value-conservation semantics are binding.
 
 ## 15. Character deletion and World transfer
 
@@ -757,6 +783,8 @@ Account-scoped Residence ownership does not automatically make placed/storage it
 
 Every durable movable item entering housing must satisfy section 14 placement-time reclaim-provenance rules. Housing ownership, ACL role and storage access do not supersede item binding, location, authorization or reclaim provenance.
 
+When an eviction, Bazaar disposition or other accepted lifecycle operation holds a housing-content mutation fence, ordinary player/ACL/runtime item placement, removal and container mutation are rejected until that fence is authoritatively released. A stale runtime cannot make a post-snapshot write authoritative merely because its prior ACL/session was valid.
+
 Eviction, relinquishment, Residence replacement and Bazaar disposition resolve affected durable items item-by-item and move value through explicit authoritative custody/location transitions before prior property/runtime authority is released.
 
 Destroying, duplicating, abandoning, misassigning or silently gifting forgotten items is not an acceptable simplification.
@@ -811,9 +839,11 @@ Funds and durable value mutations remain with accepted/future economy and DUR-03
 
 A Bazaar seller-retained Account reference is valid only as an operation-scoped disposition fact established while that Account still authoritatively controls the sold Character and only for an item whose owning policy permits seller-retained exclusion. It creates no general Account inventory/storage authority.
 
+Housing-content pending/fence state is housing lifecycle coordination authority only. It may reject conflicting housing-surface item mutations and provide a stable content revision to an owning cross-domain saga; it does not become generic item mutation authority or permit housing to override DUR-03 binding/custody rules.
+
 ### 22.5 Client
 
-Client is untrusted presentation/input. It cannot establish ownership, nominated auction owner, auction winner, ACL authority, reclaim provenance, seller-retained item disposition, item manifest or settlement success.
+Client is untrusted presentation/input. It cannot establish ownership, nominated auction owner, auction winner, ACL authority, reclaim provenance, seller-retained item disposition, item manifest, content-fence state/revision or settlement success.
 
 ## 23. Anti-speculation posture
 
@@ -845,11 +875,13 @@ Later implementation must retain enough evidence to diagnose:
 - personal-slot conflicts/transitions;
 - Premium/eligibility decision version/input class;
 - rent/delinquency/eviction;
+- eviction content-fence acquisition/revision, authoritative evacuation set and fence release;
 - ACL revisions/privileged changes;
 - Bazaar housing disposition/keep-choice;
-- `BAZAAR_DISPOSITION_PENDING` and `BAZAAR_RESIDENCE_DISPOSITION_PENDING` lifecycle plus terminal Character-transfer outcome;
+- `BAZAAR_DISPOSITION_PENDING`, `BAZAAR_RESIDENCE_DISPOSITION_PENDING` and `BAZAAR_HOUSE_CONTENTS_PENDING` lifecycle plus terminal Character-transfer outcome;
 - HousingReclaimProvenance creation/update/retirement source per affected `ItemInstanceId`;
 - pre-transfer `HOUSE_ONLY` seller-retained conversion decision, source Character/provenance revision and resulting custody/direct destination;
+- Bazaar content-fence/revision proof consumed by Character Authority before rebinding;
 - typed housing reclaim-custody and seller-retained-custody transitions;
 - furnished-transfer manifest, buyer keep-choice and transfer-versus-reclaim result;
 - runtime generations/stale-writer rejection;
@@ -900,6 +932,8 @@ A future implementation must prove at least:
 37. Bazaar buyer with Residence has ambiguous Character-transfer outcome: Residence replacement and incoming house remain pending/reconcilable without terminal dual ownership or Residence loss.
 38. `HOUSE_ONLY` where the sold Character is the placement-time reclaim subject for an otherwise seller-retainable item: before Account rebinding, the item moves/stages to a legal seller-retained disposition; after transfer the buyer/sold Character cannot reclaim it merely through the new Character ownership binding.
 39. `HOUSE_ONLY` where an excluded item cannot legally be detached from the sold Character under binding/restriction policy: Bazaar prepare fails closed or requires a legal pre-transfer item disposition; it never invents seller Account ownership after Character rebinding.
+40. Eviction acquires a housing-content mutation fence before enumerating contents; an authorized Character racing item placement/removal after the fence cannot create value that is omitted from evacuation, and the fence remains through vacancy/public allocation.
+41. `HOUSE_ONLY` prepare fences the authoritative house-content revision before classification; an owner/guest cannot add or remove an excluded item between classification and Character rebinding, and Character Authority rejects stale/missing fence proof.
 
 ## 26. Deliberately deferred
 
@@ -955,7 +989,7 @@ Detailed lifecycle/admin/economy/Rested rules remain downstream of future guild/
 - service/process/crate decomposition;
 - RPC/HTTP/internal IDL;
 - exact OperationId/revision/runtime-generation representation;
-- exact physical representation/names for HousingReclaimProvenance, typed housing reclaim custody and seller-retained Bazaar custody;
+- exact physical representation/names for HousingReclaimProvenance, typed housing reclaim custody, seller-retained Bazaar custody, housing-content fences and content revisions;
 - reclaim screen/workflow and legal final destination UX consistent with binding provenance/authorization rules;
 - exact auction bid UI/wire representation;
 - runtime placement algorithm;
@@ -989,7 +1023,9 @@ The accepted architecture rejects:
 19. deriving forced-reclaim subject later from house owner, Account, ACL role or physical placement when no placement-time provenance exists;
 20. assigning the house seller as reclaim subject merely because an item was placed inside the house by an ACL-authorized guest/manager;
 21. accepting new housing item placement when no authoritative reclaim subject/disposition can be established;
-22. leaving `INCLUDE_FURNISHINGS` items in an incoming house the buyer chose not to retain, thereby gifting them to a future occupant.
+22. leaving `INCLUDE_FURNISHINGS` items in an incoming house the buyer chose not to retain, thereby gifting them to a future occupant;
+23. enumerating/moving eviction contents before fencing housing item mutations, allowing a late authoritative item write to survive ownership release;
+24. allowing `HOUSE_ONLY` content mutation after its authoritative snapshot without invalidating/reconciling the Bazaar prepare before Character rebinding.
 
 ## 28. Explicit supersession
 
@@ -1042,6 +1078,7 @@ Any supersession must explicitly preserve or replace:
 - explicit auction winning Character identity;
 - placement-time forced-reclaim provenance or an equally authoritative replacement;
 - seller-retained `HOUSE_ONLY` disposition independent of a sold Character's post-transfer control;
+- fence-before-enumeration/fence-through-terminal-outcome semantics for destructive housing content disposition;
 - stale-writer fencing;
 - idempotent/reconcilable settlement;
 - server-authoritative ownership/auction/ACL;
@@ -1097,7 +1134,11 @@ Checkpoint PRs remain provenance while this delivery is in review and do not aut
 
 `HOUSING ITEM RECLAIM: PLACEMENT-TIME TYPED RECLAIM PROVENANCE; NO SALE-TIME OWNER/ACL INFERENCE`
 
+`EVICTION CONTENTS: MUTATION FENCE BEFORE ENUMERATION, HELD THROUGH OWNERSHIP RELEASE/PUBLIC ALLOCATION`
+
 `HOUSE_ONLY SOLD-CHARACTER ITEMS: PRE-TRANSFER SELLER-RETAINED LEGAL DISPOSITION OR FAIL CLOSED BEFORE REBINDING`
+
+`HOUSE_ONLY CONTENT SET: FENCED REVISION HELD THROUGH CHARACTER REBINDING; STALE/MISSING FENCE PROOF FAILS CLOSED`
 
 `INCLUDE_FURNISHINGS: TRANSFER ONLY WHEN INCOMING HOUSE IS RETAINED; OTHERWISE PROVENANCE-AWARE RECLAIM BEFORE PUBLIC RELEASE`
 
