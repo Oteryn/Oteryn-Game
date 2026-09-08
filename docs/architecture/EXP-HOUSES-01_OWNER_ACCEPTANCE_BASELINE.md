@@ -15,9 +15,7 @@
 
 This baseline composes the owner-approved Oteryn housing decisions into one normative `EXP-HOUSES-01` architecture package.
 
-It closes the first-generation housing **semantic architecture** sufficiently for later implementation planning while deliberately leaving numeric balance, physical schema, service decomposition, exact protocol/UI representation and rollout details tunable or downstream-owned.
-
-The status axes are intentionally separate:
+It closes first-generation housing **semantic architecture** sufficiently for implementation planning while deliberately leaving numeric balance, physical schema, service decomposition, exact protocol/UI representation and rollout details tunable or downstream-owned.
 
 ```text
 DecisionStatus       = ACCEPTED
@@ -25,7 +23,7 @@ DeliveryStatus       = IN_REVIEW
 ImplementationStatus = NOT_STARTED
 ```
 
-Owner acceptance of this architecture does not authorize executable implementation.
+Architecture acceptance does not authorize executable implementation.
 
 ## 2. Composition sources and precedence
 
@@ -42,7 +40,7 @@ This package consumes:
 
 The checkpoint PRs remain owner-decision provenance. Once this composition is canonically integrated, this baseline supersedes their housing semantics as the single whole-gate authority; they should not be independently merged as competing long-lived housing baselines.
 
-Where older architecture says housing topology or `EXP-HOUSES-01` is still unresolved, this later owner-accepted baseline wins for the exact semantic scope accepted here.
+Where older architecture says housing topology or `EXP-HOUSES-01` remains unresolved, this later owner-accepted baseline wins for the exact semantic scope accepted here.
 
 ## 3. Accepted product model
 
@@ -78,17 +76,15 @@ PersonalHousingSlot(AccountId, WorldId) =
 
 A player cannot hold both a Residence and an ordinary physical house on the same `AccountId + WorldId`.
 
-Guildhouses are a separate guild-owned class under `GuildId`; detailed guild lifecycle remains deferred to the guild/social architecture.
+Guildhouses are a separate guild-owned class under `GuildId`; detailed guild lifecycle remains deferred to guild/social architecture.
 
-## 4. Binding World / Channel invariants
+## 4. Binding World / Channel / value invariants
 
 ### 4.1 World-global physical property
 
-Every physical `HouseId` belongs to exactly one `WorldId`.
+Every physical `HouseId` belongs to exactly one `WorldId` and is not scoped by `ChannelId`.
 
-`HouseId` does not contain and is not semantically scoped by `ChannelId`.
-
-The following state exists once for the property across all Channels of the World:
+The following exists once across all Channels of the World:
 
 - ownership;
 - auction/allocation lifecycle;
@@ -96,83 +92,74 @@ The following state exists once for the property across all Channels of the Worl
 - ACL/access revisions;
 - durable house item/container state.
 
-Adding or removing a Channel must not create houses, copy houses, reset rent, duplicate auctions or change physical-house scarcity.
+Adding/removing a Channel must not create houses, copy houses, reset rent, duplicate auctions or change physical-house scarcity.
 
 ### 4.2 Rejected Channel models
 
-First generation explicitly rejects:
+First generation rejects:
 
-- one independent physical-house copy per Channel;
+- independent physical-house copies per Channel;
 - Channel-local `HouseId`;
 - Channel-local ownership/rent/ACL;
-- separately writable regional mirrors of one physical-house interior;
-- using infrastructure/channel scaling to manufacture more copies of scarce addresses.
+- separately writable regional mirrors of one house interior;
+- using infrastructure scaling to manufacture scarce addresses.
 
-### 4.3 Item/value invariants
+### 4.3 Durable items and stale writers
 
-Housing does not create a parallel item identity or conservation system.
+Housing does not create a parallel item/value authority.
 
 Accepted `GAME-ITEM-01` / `DUR-03` semantics remain binding:
 
-- every durable item has one authoritative semantic location/custody state;
-- item moves are ordered, revisioned and retry-safe where required;
-- duplicate retries do not create duplicate item/value mutations;
-- ambiguous commit requires reconciliation rather than a blind new operation;
-- stale writers cannot overwrite a newer authoritative state.
+- every durable item has one authoritative semantic location/custody;
+- ordered/revisioned/retry-safe mutations where required;
+- duplicate retries do not duplicate value;
+- ambiguous commit reconciles instead of starting a blind replacement operation;
+- stale writers cannot overwrite newer authoritative state.
 
 ## 5. Physical-house runtime topology
 
 ### 5.1 One authoritative active interior
 
-When a physical house is active, it has one logical authoritative world-scoped interior runtime owner.
+When active, one physical house has one logical authoritative world-scoped interior runtime owner.
 
-Characters entering the same `HouseId` from different Channels converge on the same authoritative interior/presence/item state rather than entering independent copies.
+Characters entering the same `HouseId` from different Channels converge on the same authoritative presence/item state, not independent copies.
 
-### 5.2 Reuse of instance mechanics
+### 5.2 Instance primitive reuse
 
-Implementation may reuse accepted instance-style transfer/runtime primitives, but canonical property identity remains `HouseId`.
+Implementation may reuse instance-style runtime/transfer primitives, but canonical property identity remains `HouseId`.
 
-Any internal `InstanceId`, runtime ID or generation is runtime-lifecycle identity only and may not replace `HouseId` in:
+Any internal `InstanceId`, runtime ID or generation is runtime-lifecycle identity only and does not replace `HouseId` in ownership, auction, rent, ACL, property history or durable item semantics.
 
-- ownership;
-- auction;
-- rent;
-- ACL;
-- property history;
-- durable item semantics.
+### 5.3 Entry, exit and origin Channel
 
-### 5.3 Entry and origin Channel
+House entry is an explicit authoritative context/ownership handoff, not a hidden Channel switch.
 
-Entering a physical house is an explicit authoritative context/ownership handoff, not a hidden Channel switch.
+The Character retains validated origin-Channel routing metadata. Normal exit returns through validated origin routing unless a separately accepted same-World fallback is required because origin is unavailable/draining/incompatible.
 
-The Character retains validated origin-Channel routing metadata.
-
-Normal exit returns through validated origin routing unless a separately accepted same-World fallback is necessary because the origin Channel is unavailable, draining or incompatible.
-
-House entry/exit may not bypass:
+Entry/exit cannot bypass:
 
 - combat/PvP Channel-switch restrictions;
-- admission/capacity rules;
+- admission/capacity;
 - session/lease fencing;
 - protected transactions;
 - revision compatibility;
 - duplicate-session prevention.
 
-### 5.4 Recovery and one writer
+### 5.4 Recovery
 
-One active house interior has one logical authoritative mutation owner at a time.
+One active interior has one logical mutation owner at a time.
 
-Crash recovery, replacement or placement change requires generation/revision fencing so an old runtime cannot resume mutation after a newer owner becomes authoritative.
+Crash recovery/replacement/relocation requires generation/revision fencing so an old runtime cannot resume mutation after a newer owner becomes authoritative.
 
-Durable ownership/item truth remains in the World durable domain. Rebuildable runtime presence may be restored only from accepted authoritative durable/content state.
+Durable owner/item truth remains in the World durable domain; rebuildable runtime state is reconstructed only from accepted authoritative state.
 
 ## 6. Residence / Apartment model
 
 ### 6.1 Product role
 
-A Residence is a separate, non-scarce personal housing capability intended to give Free/non-Premium players a genuine home without creating new copies of scarce physical World addresses.
+Residence is a separate non-scarce housing capability for genuine personal housing, including Free/non-Premium players.
 
-Baseline Residence utility direction includes:
+Baseline direction includes:
 
 - persistent personal interior;
 - decoration/personalization;
@@ -182,114 +169,82 @@ Baseline Residence utility direction includes:
 
 It is not a crippled Premium preview.
 
-### 6.2 Account / World scope
+### 6.2 Scope
 
-Residence entitlement is bounded to at most one Residence per `AccountId + WorldId`.
+At most one Residence may belong to one `AccountId + WorldId`.
 
-Account scope does **not** by itself authorize unrestricted item transfer or a shared warehouse between alternate Characters. Exact access to placed items/storage across Characters remains item/storage policy and must preserve `DUR-03` conservation/authority.
+Account scope does **not** automatically authorize unrestricted item transfer or a shared warehouse between alternate Characters. Exact cross-Character access to placed/storage items remains item/storage policy and must preserve `DUR-03` authority/conservation.
 
-### 6.3 No scarcity market
+### 6.3 Market/scarcity boundary
 
-First-generation Residence does not require:
+First-generation Residence requires no:
 
-- a public scarcity auction;
+- public scarcity auction;
 - player-to-player resale;
-- nomination/transfer of a scarce address;
-- a market price driven by finite property supply.
+- scarce-address nomination/transfer;
+- market price driven by finite address supply.
 
 ### 6.4 Runtime boundary
 
-A Residence may later use an instance-style runtime primitive, but:
+Residence may later use instance-style runtime primitives, but active simulation has one authoritative owner, Channel scaling cannot duplicate contents, durable value remains under World durable authority, and origin/runtime ownership transitions are explicit/fenced.
 
-- active Residence simulation has one authoritative runtime owner;
-- Channel scaling cannot duplicate Residence contents;
-- durable value remains under accepted World durable authority;
-- origin routing and simulation-owner transitions are explicit/fenced.
-
-Exact `ResidenceId`, runtime ID, hosting placement, templates and persistence representation remain deferred.
+Exact `ResidenceId`, hosting, templates and persistence representation remain deferred.
 
 ## 7. Personal housing-slot invariant
 
-### 7.1 Capacity rule
-
 For each `AccountId + WorldId`:
 
-- at most one Residence;
-- at most one ordinary physical house;
+- max one Residence;
+- max one ordinary physical house;
 - never both simultaneously;
 - alternate Characters cannot bypass the aggregate slot;
 - another World has an independent slot.
 
-This aggregate guard does not replace the canonical physical-house owner relation `HouseId -> CharacterId`.
+This aggregate guard does not replace canonical physical ownership `HouseId -> CharacterId`.
 
-### 7.2 Residence -> physical house
+### 7.1 Residence -> physical house
 
-An Account with a Residence may acquire/retain a physical house only through a value-safe authoritative replacement settlement.
+Before physical-house acquisition/retention commits:
 
-Before the physical-house slot commit:
+1. revalidate current slot;
+2. move Residence item/value state to accepted authoritative custody where required;
+3. fence stale Residence runtime authority;
+4. release Residence lifecycle/entitlement state;
+5. commit physical house as the one personal housing class.
 
-1. current slot state is revalidated;
-2. Residence item/value state is moved to accepted authoritative custody/location where required;
-3. stale Residence runtime authority is fenced;
-4. Residence lifecycle/entitlement state is released;
-5. physical-house ownership consumes the slot.
+### 7.2 Physical house -> Residence
 
-The durable final state must never contain both personal housing classes.
+Residence cannot become authoritative while same Account/World still consumes a physical-house slot. Physical property/content state must first be safely relinquished/evicted/disposed.
 
-### 7.3 Physical house -> Residence
+### 7.3 Failure/retry
 
-A Residence cannot become authoritative while the same Account/World still consumes the physical-house slot.
-
-Physical-house ownership and durable contents must first be safely relinquished/evicted/disposed under accepted housing/item semantics.
-
-### 7.4 Failure/retry
-
-A failed or ambiguous housing-class transition is not success.
-
-Recovery rereads authoritative slot/property/item/operation state and reconciles using the same logical operation identity. It must not invent a new blind attempt that can duplicate ownership or value movement.
+Ambiguous transition is not success. Recovery rereads authoritative slot/property/item/operation state and reconciles using the same logical operation identity.
 
 ## 8. Ordinary physical-house owner identity
 
-The canonical public/semantic owner of an ordinary physical `HouseId` is one `CharacterId` in the owning World.
+Canonical public/semantic owner of an ordinary physical `HouseId` is one `CharacterId` in the owning World.
 
-`AccountId` is used privately/aggregately for:
-
-- personal housing-slot enforcement;
-- acquisition eligibility;
-- anti-concentration;
-- anti-abuse controls.
-
-It is not substituted for the canonical `HouseId -> CharacterId` relation.
+`AccountId` is used for personal-slot enforcement, acquisition eligibility, anti-concentration and anti-abuse; it does not replace `HouseId -> CharacterId` ownership.
 
 Consequences:
 
-- Character rename preserves ownership;
+- rename preserves ownership;
 - multiple Characters of one Account cannot each own a same-World ordinary physical house;
 - Character Bazaar requires explicit housing disposition;
-- terminal Character deletion/finalization requires housing settlement first;
+- terminal Character deletion requires housing settlement first;
 - World transfer cannot move a physical `HouseId` to another World.
 
 ## 9. Guildhouse boundary
 
-Canonical guildhouse owner identity is `GuildId`.
+Guildhouse canonical owner is `GuildId` and it does not consume the personal Account/World slot.
 
-A guildhouse does not consume the personal `AccountId + WorldId` slot.
+Selling a guild leader Character does not transfer the guildhouse merely because Account ownership of the Character changes.
 
-Selling a guild leader Character does not transfer guildhouse ownership merely because that Character changes Account owner.
-
-Detailed guildhouse rules are deliberately deferred until the guild system exists, including:
-
-- bid/acquisition authority;
-- leadership succession;
-- guild-rank ACL inheritance;
-- rent funding;
-- guild dissolution/merge behavior;
-- Rested semantics;
-- world-transfer/Bazaar consequences.
+Detailed guildhouse acquisition, leadership succession, rank ACL, rent funding, dissolution/merge, Rested and lifecycle interactions remain deferred until the guild system exists.
 
 ## 10. PhysicalHouseEligibility and Premium
 
-Acquiring an ordinary scarce physical house requires BOTH:
+Acquiring or retaining a **new** ordinary scarce physical-house slot requires BOTH:
 
 ```text
 active Premium
@@ -299,153 +254,98 @@ PhysicalHouseEligibility
 
 Neither gold alone nor Premium alone is sufficient.
 
-`PhysicalHouseEligibility` must represent meaningful real participation/progression on the relevant World so a trivial fresh account cannot immediately become a cheap property-holding shell.
+`PhysicalHouseEligibility` must represent meaningful real participation/progression on the relevant World so trivial fresh accounts cannot immediately become cheap property-holding shells.
 
-Exact thresholds remain versioned/tunable. Possible input classes may include:
+Exact thresholds remain tunable. Candidate input classes may include account maturity, Character progression, real activity/play history, conduct/security state or another explicit game-owned qualification rule.
 
-- account maturity;
-- Character progression;
-- real activity/play history;
-- conduct/security state;
-- another explicit game-owned qualification rule.
-
-The rule applies when the Account will actually **acquire or retain a new physical-house slot**, including:
+The rule applies when the Account actually acquires/retains the incoming physical house, including:
 
 - public auction settlement;
-- Character Bazaar when the buyer elects `KEEP_INCOMING_HOUSE`.
+- Bazaar choice `KEEP_INCOMING_HOUSE`.
 
-### 10.1 Premium lapse after acquisition
+### 10.1 Premium lapse
 
-Expiration of Premium after a legitimate physical-house acquisition does **not** by itself evict the owner or release the property.
+Premium expiration after legitimate acquisition does **not** itself evict the owner or release property.
 
-Property retention is governed by explicit in-game rent/grace/eviction/lifecycle rules.
-
-A later change making Premium lapse an ownership-loss trigger requires explicit owner supersession.
+Retention is governed by in-game rent/grace/eviction/lifecycle rules. Reversing this requires explicit owner supersession.
 
 ## 11. Public physical-house auction
 
-Vacant ordinary physical houses enter one World-scoped public auction/allocation lifecycle.
-
-Vacancy may result from:
-
-- newly available property;
-- voluntary relinquishment;
-- Bazaar disposition;
-- value-safe eviction;
-- another later explicit lifecycle cause.
+Vacant physical houses use one World-scoped public allocation lifecycle, including newly available, voluntarily relinquished, Bazaar-released and evicted properties.
 
 ### 11.1 Proxy bidding
 
-First-generation physical-house auction uses proxy semantics:
-
 - bidder submits a private maximum;
-- automatic bidding advances only when actual competition requires it;
-- automatic bidding never exceeds that bidder's maximum;
-- winner pays the minimum valid amount required to beat the next-best competing maximum under the later-defined increment rule, not automatically the full maximum.
+- automatic bidding advances only when actual competition requires;
+- automated bid never exceeds maximum;
+- winner pays minimum valid amount required to beat the next-best maximum under a later-defined increment, not automatically full maximum.
 
 ### 11.2 Funds backing
 
-A winning-capable bid must be backed by authoritative funds reservation/escrow semantics before final value consumption.
-
-Housing does not invent a parallel money authority; future economy/bank contracts and accepted value conservation remain binding.
+A winning-capable bid must be backed by authoritative funds reservation/escrow semantics before final value consumption. Housing does not invent a parallel money authority.
 
 ### 11.3 Anti-sniping
 
-Auction close uses extension-based anti-sniping semantics.
+A valid bid near close extends auction under an extension rule so last-millisecond network timing is not the dominant winner mechanic.
 
-A valid bid near the close can extend the auction rather than making last-millisecond network timing the dominant winner-selection mechanic.
+Exact duration, extension window and increment remain deferred balance values.
 
-Exact auction duration, extension window and bid increment remain balance constants.
+### 11.4 Settlement
 
-### 11.4 Settlement properties
+Settlement is authoritative, idempotent, revision/fence aware, reconciliation-safe, compatible with personal-slot + final Premium/eligibility checks, and value-conserving.
 
-Auction settlement must be:
+Timeout/unavailability is not proof of property/funds transfer.
 
-- authoritative;
-- idempotent;
-- revision/fence aware;
-- retry/reconciliation safe;
-- compatible with the personal slot;
-- compatible with final Premium + eligibility revalidation;
-- value-conserving.
+### 11.5 No generic direct house market at launch
 
-Timeout/unavailability is not proof that property or funds changed owner.
+First generation does not expose a generic player-to-player standalone `HouseId` sale at arbitrary price.
 
-### 11.5 No generic direct property market at launch
-
-First-generation Oteryn does not expose a generic player command/API equivalent to:
-
-```text
-SellPhysicalHouseDirectlyTo(CharacterId buyer, arbitrary_price)
-```
-
-Vacant physical houses return to public allocation.
-
-A future direct property market may be added only by explicit supersession if real player/economy evidence justifies the extra speculation/abuse surface.
+Vacant physical houses return to public allocation. A future direct property market requires explicit owner supersession supported by player/economy evidence.
 
 ## 12. Rent, delinquency and eviction
 
-Physical-house rent is recurring and World-scoped.
+Physical-house rent is recurring and World-scoped. Exact formula, cadence and funding-source representation remain deferred.
 
-Exact rent amount/formula, cadence and funding-source representation remain deferred.
+### 12.1 Collection
 
-### 12.1 Automatic collection
-
-Collection is automatic from a later-defined authoritative economy funding source and must be idempotent/reconcilable.
-
-Channel count/current Channel/runtime placement cannot duplicate a rent charge or reset the rent lifecycle.
+Collection is automatic from a later-defined authoritative economy source and idempotent/reconcilable. Channel count/current Channel/runtime placement cannot duplicate rent or reset lifecycle.
 
 ### 12.2 Grace
 
-Insufficient funds enter an explicit delinquent/grace state rather than causing immediate silent eviction.
-
-Exact grace duration, warnings and notification cadence remain deferred.
+Insufficient funds enter explicit delinquent/grace state, not immediate silent eviction. Exact grace/notification values remain deferred.
 
 ### 12.3 Value-safe eviction
 
-If grace expires unresolved, eviction is an authoritative revision-fenced settlement.
+Before ownership release after unresolved grace:
 
-Before ownership release:
+1. revalidate owner/revision/rent state;
+2. move durable contents/value to safe authoritative reclaim/depot/custody;
+3. fence stale HouseRuntime/Channel mutation rights;
+4. release ownership and ACL;
+5. mark property vacant;
+6. return it to public allocation.
 
-1. current owner/revision/rent state is revalidated;
-2. outgoing durable items/value are moved to safe authoritative reclaim/depot/custody;
-3. stale HouseRuntime/Channel mutation rights are fenced;
-4. ownership and ACL are released;
-5. `HouseId` becomes vacant;
-6. property returns to the public World auction/allocation lifecycle.
-
-Forgotten ordinary items are not destroyed and do not silently become property of the next owner.
+Forgotten items are not destroyed and do not silently become property of the next owner.
 
 ## 13. Character Bazaar housing disposition
 
-Character Bazaar commercial workflow remains Platform-owned; Character ownership rebinding remains Game Character Authority-owned. Housing owns the housing disposition/slot/property effects required by the sale.
+Platform retains Bazaar commercial workflow authority; Character ownership rebinding remains Game Character Authority-owned; housing owns housing disposition/slot/property effects.
 
-A physical house never follows a Character sale silently.
+House never follows Character sale silently.
 
-Seller explicitly chooses:
+Seller chooses:
 
 ```text
-BazaarHousingDisposition =
-    RELINQUISH_HOUSE
-  | INCLUDE_HOUSE_WITH_CHARACTER
+RELINQUISH_HOUSE
+or
+INCLUDE_HOUSE_WITH_CHARACTER
 ```
 
 ### 13.1 RELINQUISH_HOUSE
 
-Before Character ownership transfer can safely complete:
-
-- current house owner/revision is revalidated;
-- durable house value is safely settled;
-- stale runtime writers are fenced;
-- `HouseId` is released;
-- property becomes vacant and enters public allocation;
-- Bazaar reconciles from authoritative Character/housing operation state.
-
-Failure cannot leave a sold Character with ambiguous property ownership.
+Before Character transfer completes, current house ownership is revalidated, durable value is safely settled, stale writers are fenced, property is released/vacated, and it returns to public allocation. Failure cannot leave a sold Character with ambiguous house ownership.
 
 ### 13.2 INCLUDE_HOUSE_WITH_CHARACTER
-
-If seller includes the house:
 
 ```text
 CharacterId C owns HouseId H
@@ -455,14 +355,14 @@ Bazaar transfers CharacterId C to AccountId B
 
 => CharacterId C remains canonical owner of HouseId H
 => Character ownership binding changes A -> B
-=> AccountId B must resolve its same-World personal housing slot
+=> AccountId B resolves its same-World personal housing slot
 ```
 
-This is an explicit Character+house Bazaar case, not a standalone sale of `HouseId`.
+This is an explicit Character+house sale case, not standalone `HouseId` trading.
 
-### 13.3 Buyer choice: existing physical house
+### 13.3 Buyer already has physical house
 
-If buyer Account already holds another ordinary physical house on the same World, buyer must explicitly choose:
+Buyer chooses:
 
 ```text
 KEEP_EXISTING_HOUSE
@@ -470,19 +370,17 @@ or
 KEEP_INCOMING_HOUSE
 ```
 
-Only one may remain authoritative after settlement.
+Only one remains. Non-kept house is value-safely relinquished to public allocation.
 
-The non-kept house is value-safely relinquished and returns to public allocation.
+`KEEP_INCOMING_HOUSE` requires final active Premium + `PhysicalHouseEligibility` because a new incoming physical-house slot is retained.
 
-If buyer chooses `KEEP_INCOMING_HOUSE`, final Premium + `PhysicalHouseEligibility` revalidation applies because a new incoming physical-house slot is being retained.
+`KEEP_EXISTING_HOUSE` relinquishes incoming house. The Character purchase itself does **not** require physical-house Premium/eligibility merely because the listing contained a house; existing-house retention remains governed by its existing rent/lifecycle and Premium lapse rule.
 
-If buyer chooses `KEEP_EXISTING_HOUSE`, the incoming house is relinquished; the Character purchase itself does **not** require Premium/eligibility merely because the listing originally contained a house. Existing-house retention remains governed by its existing ownership/rent lifecycle, including the accepted rule that Premium lapse alone does not evict.
+A house on another World does not conflict with this per-World slot.
 
-A physical house on another World does not conflict with this per-World slot.
+### 13.4 Buyer has Residence
 
-### 13.4 Buyer choice: Residence
-
-If buyer Account holds a Residence on the same World, buyer must explicitly choose:
+Buyer chooses:
 
 ```text
 KEEP_RESIDENCE
@@ -490,35 +388,19 @@ or
 KEEP_INCOMING_HOUSE
 ```
 
-If `KEEP_INCOMING_HOUSE`:
+`KEEP_INCOMING_HOUSE` revalidates active Premium + eligibility and value-safely settles/releases Residence first.
 
-- active Premium + `PhysicalHouseEligibility` are revalidated;
-- Residence value is safely settled/released;
-- incoming physical house becomes the single personal housing class.
+`KEEP_RESIDENCE` relinquishes incoming physical house to public allocation and does not require physical-house acquisition eligibility merely to buy the Character.
 
-If `KEEP_RESIDENCE`:
+### 13.5 Reconciliation boundary
 
-- Residence remains the personal housing class;
-- incoming physical house is value-safely relinquished to public allocation;
-- Premium/physical-house eligibility is not required merely to purchase the Character because the buyer is not retaining a physical house.
+No distributed ACID between Platform/Character/housing/economy/item domains is assumed.
 
-### 13.5 Bazaar reconciliation
+One semantic outcome is preserved through stable operation identity, current-state revalidation, fencing, idempotent steps, explicit custody, durable operation evidence and reconciliation after timeout/ambiguity.
 
-No distributed ACID between Platform, Character, housing and economy/item domains is assumed.
+Cached listing state never proves current housing eligibility.
 
-The saga must nevertheless preserve one semantic outcome through:
-
-- stable operation identity;
-- authoritative current-state revalidation;
-- fencing;
-- idempotent steps;
-- explicit intermediate custody;
-- durable receipts/state where required;
-- reconciliation after timeout/ambiguity.
-
-Platform listing/cache state is never proof that current physical-house acquisition is still eligible.
-
-## 14. Bazaar contents: seller decides
+## 14. Bazaar house contents: seller decides
 
 For `INCLUDE_HOUSE_WITH_CHARACTER`, seller additionally chooses:
 
@@ -530,46 +412,34 @@ INCLUDE_FURNISHINGS
 
 ### 14.1 HOUSE_ONLY
 
-The Character and physical address may transfer, but ordinary movable seller-owned house contents do not silently become buyer property.
-
-Affected items are safely moved to seller/reclaim/depot/custody before the ownership settlement requires them to leave the house.
+Character + address may transfer, but ordinary movable seller-owned contents do not silently become buyer property. They are moved to safe seller/reclaim/depot/custody as required before ownership settlement.
 
 ### 14.2 INCLUDE_FURNISHINGS
 
-Eligible furnishings/items may transfer only through an explicit authoritative manifest/bundle.
+Eligible items transfer only through an explicit authoritative manifest/bundle.
 
-Required properties:
+Required invariants:
 
-- opt-in inclusion;
-- server-authoritative exact included set;
-- `DUR-03` item identity/location/conservation;
-- stale client state cannot alter the committed set;
-- committed transfer items cease being available in old seller custody;
-- ambiguous settlement is reconciled, not duplicated.
+- opt-in;
+- exact set server-authoritative;
+- `DUR-03` identity/location/conservation;
+- stale client cannot alter committed set;
+- committed item cannot remain usable in old seller custody;
+- ambiguous settlement reconciles, never duplicates.
 
-Exact manifest schema, eligible item classes, capacity, valuation and UI remain deferred.
+Exact manifest schema, item eligibility, capacity, valuation and UI remain deferred.
 
 ## 15. Character deletion and World transfer
 
-### 15.1 Terminal Character lifecycle
+Terminal Character deletion/finalization cannot leave a physical house bound to nonexistent owner state; housing settlement must complete or remain explicitly recoverable first.
 
-Terminal deletion/finalization cannot leave a physical house bound to a nonexistent owner state.
+A physical `HouseId` is a World address and cannot migrate across Worlds. Character World transfer must settle/relinquish incompatible physical property first.
 
-Required housing settlement/relinquishment must complete or remain in an explicit recoverable state before terminal Character lifecycle completion.
+Residence is also World-scoped under `AccountId + WorldId`; exact transfer UX is future World-lifecycle work, but no workflow may duplicate Residence contents or personal slots.
 
-### 15.2 World transfer
-
-A physical `HouseId` is a World address and cannot migrate with a Character to another World.
-
-World transfer must settle/relinquish incompatible physical-house ownership before Character World membership changes authoritatively.
-
-Residence entitlement is also scoped by `AccountId + WorldId`; exact transfer UX remains future World-lifecycle work, but no workflow may duplicate Residence contents or create two authoritative personal housing slots.
-
-## 16. ACL hierarchy
+## 16. ACL hierarchy and authority
 
 Housing ACL is server-authoritative, revisioned World-scoped state.
-
-First-generation role hierarchy begins:
 
 ```text
 OWNER
@@ -579,59 +449,38 @@ OWNER
 
 ### 16.1 OWNER
 
-Owner has ultimate personal-house administration authority, subject to property/rent/lifecycle rules.
-
-Only owner-authorized workflows may change ownership/disposition-related state.
+Owner has ultimate personal-property administration subject to lifecycle/economy rules. Only owner-authorized workflows may change ownership/disposition state.
 
 ### 16.2 MANAGER / SUBOWNER
 
-Manager/Subowner is delegated administration, never property ownership.
-
-It may manage bounded guest/access capabilities but cannot independently:
-
-- sell/transfer/relinquish the property;
-- bypass rent/eligibility/personal-slot rules;
-- rebind canonical owner;
-- override owner lifecycle settlement.
+Delegated administration only, never ownership. It may manage bounded access but cannot independently sell/relinquish property, bypass rent/eligibility/slot rules, rebind owner or override owner settlement.
 
 ### 16.3 GUEST
 
-Guest receives only explicitly granted capabilities.
-
-Entry permission does not automatically imply all housing capabilities.
+Guest gets only explicitly granted capabilities. Entry permission does not automatically grant every function.
 
 ### 16.4 Fine-grained direction
 
-ACL may distinguish:
-
-- property entry;
-- specific door;
-- room/zone;
-- bed use;
-- storage use;
-- workstation/interactive feature;
-- other later accepted housing capability.
-
-Exact final capability vocabulary remains implementation/product detail provided least-authority semantics are preserved.
+ACL may distinguish property entry, specific doors, room/zone, bed use, storage use, workstation/interactive feature and later accepted capabilities. Exact vocabulary remains downstream detail if least-authority semantics are preserved.
 
 ### 16.5 Revocation
 
-At meaningful entry/mutation boundaries, server revalidates current ACL revision/authority.
+At meaningful entry/mutation boundaries the server revalidates current ACL revision/authority. Stale client/cache/runtime cannot retain revoked authority.
 
-Stale clients/caches/runtimes cannot retain revoked authority.
+## 17. House Management GUI is the only player-facing ACL administration path
 
-## 17. GUI-only player administration
+Player-facing creation, editing and removal of housing access permissions MUST be performed through a graphical House Management UI/panel.
 
-Player-facing housing access administration MUST be available through a graphical House Management UI/panel.
+First-generation Oteryn MUST NOT expose player-facing Tibia-style text commands/spells (for example `Aleta Sio`, `Aleta Som`, `Aleta Grav`) as an alternative ACL-administration path.
 
-Tibia-style text command/spell administration such as `Aleta Sio`, `Aleta Som` or `Aleta Grav` is not the canonical Oteryn UX and is not required for first generation.
+This is a product/authority requirement, not merely a preference for one presentation over another. Internal operator/admin tooling, if later required, is separately governed and is not a player-facing bypass.
 
 The GUI remains presentation/intent only:
 
-- server state is authoritative;
+- server housing state is authoritative;
 - local UI edits grant no authority by themselves;
 - mutations carry expected revision/fence context where required;
-- stale/invalid requests fail explicitly rather than silently applying partial outdated state.
+- stale/invalid mutations fail explicitly and do not partially apply old state.
 
 Exact screen layout, widgets, search/filter UX and protocol representation remain deferred.
 
@@ -639,289 +488,225 @@ Exact screen layout, widgets, search/filter UX and protocol representation remai
 
 Residence and ordinary physical-house eligible rest use the same baseline Rested recovery semantics.
 
-Scarcity, purchase price or Premium-gated acquisition of a physical house does not by itself grant a stronger per-Character Rested multiplier.
+Scarcity, price or Premium-gated physical-house acquisition does not itself grant a stronger per-Character Rested multiplier.
 
-Physical houses may still differ by non-power/social/space characteristics, for example:
+Physical houses may differ by non-power/social/space traits such as number of beds, layout, guest capacity, location/prestige, decoration surface and convenience.
 
-- number of beds;
-- layout/size;
-- guest capacity;
-- location/prestige;
-- decoration surface;
-- convenience.
+Rested pool size/rate/timing, bed counts, bed ACL, Residence-bed requirement, offline-training interaction and general Premium Rested behavior not tied specifically to scarce-house ownership remain tunable/deferred.
 
-The following remain deliberately tunable:
-
-- Rested pool size;
-- recovery rate;
-- recovery thresholds/duration;
-- bed counts;
-- Guest/Manager bed permissions;
-- whether Residence Rested always requires a bed;
-- offline-training interaction;
-- general Premium Rested behavior not specifically tied to scarce-house ownership.
-
-A numeric balance adjustment preserving equivalent Residence/physical-house baseline parity does not reopen topology/ownership.
-
-A material progression multiplier granted specifically because the player owns a scarce physical house requires explicit owner supersession.
+Numeric tuning that preserves equivalent baseline parity does not reopen topology/ownership. Material progression advantage specifically for physical-house ownership requires explicit owner supersession.
 
 ## 19. Storage and item placement
 
-### 19.1 Physical house
+Physical-house and Residence items use one authoritative semantic location/custody and cannot be copied per Channel.
 
-Placed physical-house items/containers have one authoritative semantic location/custody and one authoritative mutable property state across Channels.
+Free Residence is not authorization for unlimited free durable storage. Exact placement/storage budgets and representation remain future item/storage/economy decisions.
 
-### 19.2 Residence
+Account-scoped Residence ownership does not automatically make placed/storage items account-wide transferable between alternate Characters.
 
-Residence item placement follows the same conservation rules and cannot become per-Channel copied durable storage.
-
-### 19.3 Free-storage abuse boundary
-
-Free Residence is not authorization for effectively unlimited free storage accounts.
-
-Exact placement/storage budgets remain future item/storage/economy decisions.
-
-Account-scoped Residence ownership does not automatically make all placed/storage items account-wide transferable between alternate Characters.
-
-### 19.4 Lifecycle custody
-
-Eviction, relinquishment, Residence replacement and Bazaar disposition move affected durable value through explicit authoritative custody/location transitions before prior property/runtime authority is released.
+Eviction, relinquishment, Residence replacement and Bazaar disposition move value through explicit authoritative custody/location transitions before prior property/runtime authority is released.
 
 Destroying, duplicating or silently gifting forgotten items is not an acceptable simplification.
 
 ## 20. Failure and recovery semantics
 
-Housing operations distinguish at least:
-
-- deterministic policy/eligibility rejection;
-- stale owner/revision/personal-slot state;
-- stale runtime/session authority;
-- funds/escrow conflict;
-- item/custody conflict;
-- dependency unavailable;
-- ambiguous durable result requiring reconciliation.
+Housing distinguishes deterministic policy rejection, stale owner/revision/slot, stale runtime/session authority, funds/escrow conflict, item/custody conflict, dependency unavailable and ambiguous durable result.
 
 For ambiguity:
 
 1. do not fabricate success/failure;
 2. reread authoritative operation/property/slot/item/value state;
-3. reconcile using the same logical operation identity;
+3. reconcile using same logical operation identity;
 4. do not create a blind replacement mutation;
 5. fail closed for risky new mutation while required authority is unavailable.
 
-Safe read-only/presentation degradation may be separately proven later; it is not implied here.
+Safe read-only/presentation degradation may be separately proven later; it is not implied.
 
 ## 21. Cross-region behavior
 
-One World may have Channels in multiple geographic regions.
-
-Housing must not solve latency by creating independently writable house copies.
+One World may host Channels in multiple regions. Housing cannot solve latency by creating independently writable house copies.
 
 Accepted trade-off:
 
 - ordinary regional Channel combat/movement/tick stays free of added synchronous WAN persistence round trips;
-- explicit shared durable house/item/ownership operations may pay latency to their authoritative World durable boundary;
-- runtime placement/migration may later be optimized without changing semantic property identity or creating a second durable writer.
+- explicit shared durable house/item/ownership operations may pay latency to authoritative World durable boundary;
+- runtime placement/migration may later optimize latency without changing property identity or creating second durable writer.
 
-Exact placement and migration policy remains PERF/OPS work.
+Exact placement/migration is PERF/OPS work.
 
 ## 22. Authority boundaries
 
 ### 22.1 Game housing domain
 
-Semantic authority for:
+Semantic authority for `HouseId` lifecycle/availability, physical owner binding, personal housing slot, Residence entitlement/lifecycle, ACL revisions, rent/delinquency/eviction, final housing disposition and active housing-runtime ownership.
 
-- `HouseId` lifecycle/availability;
-- canonical physical-house owner binding;
-- personal housing-slot state;
-- Residence entitlement/lifecycle semantics;
-- ACL/revisions;
-- rent/delinquency/eviction state;
-- final house/Residence disposition authorization;
-- active housing-runtime ownership state.
-
-This semantic domain need not map to one process/service/table.
+This semantic domain need not map to one service/process/table.
 
 ### 22.2 Character Authority
 
-Remains authority for Character lifecycle, current Account owner, current World and Character ownership rebinding.
-
-Housing may gate a Character lifecycle workflow but does not seize Character ownership authority.
+Remains authority for Character lifecycle/current Account owner/current World and Character ownership rebinding. Housing may gate lifecycle but does not seize Character authority.
 
 ### 22.3 Platform
 
-Remains authority for Platform Account identity, entitlement/commercial source data under accepted contracts, portal/commercial UX and Character Bazaar commercial saga state.
-
-Platform listing/cache state is not authoritative housing ownership/eligibility proof.
+Remains authority for Platform Account identity, entitlement/commercial source data under accepted contracts, portal/commercial UX and Bazaar commercial saga. Platform cache/listing is not authoritative housing proof.
 
 ### 22.4 Economy / item domains
 
-Funds reservation/charges/refunds and item/value movement remain with their accepted/future economy and `DUR-03` owners.
-
-Housing declares required effects but does not invent distributed ACID or duplicate foreign-domain value authority.
+Funds and durable value mutations remain with accepted/future economy and `DUR-03` owners. Housing declares required effects without inventing distributed ACID or duplicate value authority.
 
 ### 22.5 Client
 
-Client is untrusted presentation/input software.
-
-It sends intents and renders authoritative outcomes; it cannot establish ownership, auction winner, ACL authority, transfer manifest or settlement success.
+Client is untrusted presentation/input. It cannot establish ownership, auction winner, ACL authority, item manifest or settlement success.
 
 ## 23. Anti-speculation posture
 
-First-generation design reduces easy property speculation by combining:
+First-generation controls combine:
 
-- active Premium at scarce physical-house acquisition/retention of an incoming house;
+- active Premium when a new scarce physical house is acquired/retained;
 - independent `PhysicalHouseEligibility`;
-- one personal housing slot per Account/World;
-- no generic standalone private `HouseId` resale market;
+- one personal slot per Account/World;
+- no standalone private `HouseId` resale;
 - public allocation of vacant properties;
-- Character Bazaar requiring transfer of the owning Character rather than just the address;
-- Bazaar revalidation of incoming-house eligibility when it is retained;
-- recurring in-game rent as ongoing holding cost;
-- auditable authoritative settlement state.
+- Bazaar requiring transfer of owning Character rather than address alone;
+- incoming-house eligibility revalidation when retained;
+- recurring in-game rent as holding cost;
+- auditable authoritative settlement.
 
 This does not claim multi-account speculation is impossible.
 
-Exact anti-abuse account-linking/risk scoring, cooldowns, taxes, holding periods, Bazaar surcharges or sanctions remain evidence-driven future decisions.
-
-Weak signals such as shared IP/device must not automatically become punitive ownership decisions without a separately accepted abuse/security policy.
+Exact account-linking/risk scoring, cooldowns, taxes, holding periods, Bazaar surcharges and sanctions remain evidence-driven. Weak signals such as shared IP/device do not automatically become punitive ownership decisions without separately accepted abuse/security policy.
 
 ## 24. Observability requirements
 
-Later implementation must retain sufficient structured/durable evidence to diagnose at least:
+Later implementation must retain enough evidence to diagnose:
 
-- auction bid/close/settlement disputes;
-- property ownership history;
+- auction disputes;
+- ownership history;
 - personal-slot conflicts/transitions;
 - Premium/eligibility decision version/input class;
-- rent/delinquency/eviction lifecycle;
-- ACL revisions and privileged changes;
-- Bazaar housing disposition and buyer keep-choice;
+- rent/delinquency/eviction;
+- ACL revisions/privileged changes;
+- Bazaar housing disposition/keep-choice;
 - furnished-transfer manifest/result;
-- item reclaim/custody transitions;
-- runtime ownership generations/stale-writer rejection;
+- reclaim/custody transitions;
+- runtime generations/stale-writer rejection;
 - ambiguous-operation reconciliation.
 
-Analytics/audit projections observe owning-domain evidence; they do not become mutation authority.
+Analytics/audit projections observe owning-domain evidence and do not become mutation authority.
 
 ## 25. Required conformance scenarios before activation
 
 A future implementation must prove at least:
 
-1. **Channel scaling:** adding/removing Channel does not change physical-property supply/state.
-2. **Cross-Channel house convergence:** Characters from different Channels enter one `HouseId` and see one authoritative interior/item state.
-3. **No hidden Channel switch:** entry/exit preserves validated origin routing and cannot bypass switching restrictions.
-4. **Stale runtime:** old runtime generation cannot mutate after replacement/recovery.
-5. **Auction retry:** ambiguous settlement retry yields one owner/payment result.
-6. **Auction eligibility:** stale eligibility at final acquisition fails without inconsistent property/value mutation.
-7. **Premium lapse:** existing property remains owned; rent/lifecycle governs retention.
-8. **Personal slot race:** concurrent workflows cannot commit Residence + physical house or two ordinary physical houses.
-9. **Residence -> house:** value-safe replacement yields exactly one final personal housing class.
-10. **Rent recovery:** delinquency + valid late payment within grace does not double-charge/evict.
-11. **Eviction:** contents reach safe custody before ownership release/public re-auction.
-12. **Bazaar relinquish:** Character transfer cannot finalize with ambiguous prior house ownership.
-13. **Bazaar include/no conflict:** same CharacterId remains house owner after Account owner rebinding.
-14. **Bazaar existing-house conflict:** explicit keep-choice produces one same-World physical house.
-15. **Bazaar Residence conflict:** explicit keep-choice produces Residence or incoming house, never both.
-16. **Bazaar no-retention Premium rule:** buyer choosing existing house/Residence may buy the Character without satisfying incoming physical-house acquisition eligibility because incoming house is relinquished.
-17. **HOUSE_ONLY:** forgotten furnishings do not silently become buyer property.
-18. **INCLUDE_FURNISHINGS:** exact authoritative manifest transfers once without duplication.
-19. **ACL revocation:** stale access attempt after revision change is rejected.
-20. **GUI non-authority:** local UI manipulation alone cannot change effective ACL.
-21. **Rested parity:** equivalent Residence/physical-house baseline rest does not gain a physical-house-only multiplier.
-22. **Character deletion:** terminal finalization cannot leave orphan physical-house owner state.
-23. **World transfer:** `HouseId` cannot move/duplicate across Worlds.
-24. **Authority outage:** risky housing mutation fails closed when authority is unavailable.
-25. **Restore integrity:** owner, personal slot, item custody graph and runtime fences are validated before mutations resume.
-26. **Residence account scope:** account-scoped Residence does not silently create unauthorized cross-Character item transfer.
+1. Channel scaling does not change physical-property supply/state.
+2. Characters from different Channels entering same `HouseId` converge on one authoritative interior/item state.
+3. House entry/exit preserves validated origin routing and cannot bypass Channel-switch rules.
+4. Old runtime generation cannot mutate after replacement/recovery.
+5. Ambiguous auction retry yields one owner/payment result.
+6. Stale acquisition eligibility at final settlement fails without inconsistent property/value mutation.
+7. Premium lapse after ownership does not evict by itself.
+8. Concurrent workflows cannot commit Residence + physical house or two ordinary physical houses for same Account/World.
+9. Residence -> house replacement settles value and produces one final class.
+10. Rent delinquency + valid payment within grace does not double-charge/evict.
+11. Eviction moves contents to safe custody before ownership release/public allocation.
+12. Bazaar `RELINQUISH_HOUSE` cannot finalize with ambiguous old ownership.
+13. Bazaar include/no conflict preserves same `CharacterId` house owner through Account rebinding.
+14. Bazaar existing-house conflict requires keep-choice and produces one physical house.
+15. Bazaar Residence conflict requires keep-choice and produces one personal housing class.
+16. Buyer keeping existing house/Residence may buy Character without incoming-house acquisition eligibility because incoming house is relinquished.
+17. `HOUSE_ONLY` prevents accidental furnishings transfer.
+18. `INCLUDE_FURNISHINGS` transfers exact authoritative manifest once without duplication.
+19. ACL revocation rejects stale access.
+20. Local GUI manipulation alone cannot change effective ACL.
+21. Player-facing text-command ACL mutation is unavailable/rejected; GUI/panel is the supported player path.
+22. Equivalent Residence/physical-house baseline rest has no physical-house-only multiplier.
+23. Character finalization cannot leave orphan physical-house owner state.
+24. World transfer cannot move/duplicate `HouseId` across Worlds.
+25. Risky housing mutation fails closed during authority outage.
+26. Restore validates owner, slot, item custody graph and runtime fences before mutation resumes.
+27. Account-scoped Residence does not silently authorize cross-Character item transfer.
 
 ## 26. Deliberately deferred
 
-Whole-gate acceptance deliberately does **not** freeze the following.
+Whole-gate acceptance does **not** freeze:
 
-### 26.1 Auction / rent / economy numbers
+### Auction / rent / economy numbers
 
-- rent amount/formula;
-- rent cadence;
+- rent amount/formula/cadence;
 - grace duration;
-- auction duration;
-- increment;
-- anti-sniping window;
-- start/reserve price;
-- tie rule;
-- bid cancellation/lowering;
+- auction duration/increment/anti-sniping window;
+- reserve/start price/tie/cancellation rules;
 - fees/taxes/surcharges;
 - reclaim fees/capacity;
-- anti-flipping cooldown/holding-period rules if later evidence requires them.
+- anti-flipping cooldown/holding periods if later needed.
 
-### 26.2 Eligibility / anti-abuse numbers
+### Eligibility / anti-abuse numbers
 
-- account age threshold;
-- level/progression threshold;
-- playtime/activity threshold;
-- conduct/security policy details;
-- anti-abuse signals/scoring/sanctions;
-- which thresholds are public.
+- account age;
+- level/progression;
+- playtime/activity;
+- conduct/security policy;
+- risk signals/scoring/sanctions;
+- threshold visibility.
 
-### 26.3 Residence details
+### Residence details
 
-- final public name (`Residence`, `Apartment`, etc.);
+- final public name;
 - exact ID representation;
-- acquisition quest/progression rule;
-- templates/layout/size catalogue;
-- decoration/item-placement budget;
+- acquisition quest/progression;
+- templates/layout/size;
+- decoration/item-placement budgets;
 - storage representation;
-- maintenance/rent fee if any;
+- maintenance/rent if any;
 - Premium cosmetic/convenience upgrades;
 - monetization prices.
 
-### 26.4 Beds / Rested
+### Beds / Rested
 
 - numeric pool/rate/timing;
-- exact bed counts;
-- exact bed capability rules;
+- bed counts/capabilities;
 - offline-training integration;
-- general Premium Rested semantics not tied specifically to scarce physical-house ownership.
+- general Premium Rested policy not tied specifically to scarce-house ownership.
 
-### 26.5 Guildhouse
+### Guildhouse
 
-All detailed guildhouse lifecycle/admin/economy/Rested rules remain downstream of the future guild/social architecture.
+Detailed lifecycle/admin/economy/Rested rules remain downstream of future guild/social architecture.
 
-### 26.6 Physical implementation
+### Physical implementation
 
 - PostgreSQL tables/indexes/constraints;
 - isolation/locking implementation;
 - service/process/crate decomposition;
-- HTTP/RPC/internal IDL;
-- exact OperationId/revision/runtime-generation representation;
+- RPC/HTTP/internal IDL;
+- exact operation/revision/runtime-generation representation;
 - runtime placement algorithm;
 - client screen layout;
-- protocol fields/messages;
-- rollout/migration/feature flags;
-- SLOs/capacity targets.
+- protocol messages;
+- rollout/migration/flags;
+- SLO/capacity values.
 
 ## 27. Rejected first-generation defaults
 
 The accepted architecture rejects:
 
-1. per-Channel copies of physical houses;
+1. per-Channel physical-house copies;
 2. Channel-local physical-house ownership;
 3. independently writable regional interior mirrors;
-4. scarce physical houses as the only route to baseline housing utility;
+4. scarce physical house as the only baseline housing path;
 5. generic private `HouseId` resale at launch;
-6. Premium lapse as automatic property-loss trigger;
-7. stronger Rested multiplier solely because a player owns scarce/Premium-gated property;
-8. text-command-only housing ACL administration;
+6. Premium lapse as automatic property loss;
+7. stronger Rested multiplier solely because property is scarce/Premium-gated;
+8. player-facing text-command ACL administration, including as an alternative bypass to GUI;
 9. client-authoritative ownership/auction/ACL/item settlement;
-10. Residence as a second concurrent same-World personal property alongside a physical house.
+10. Residence plus physical house simultaneously on same Account/World.
 
 ## 28. Explicit supersession
 
 ### 28.1 ADR-0001 section 11
 
-`ADR-0001-native-rust-multichannel-platform.md` remains authoritative history and preserves the invariant that a house exists once per logical World.
+`ADR-0001-native-rust-multichannel-platform.md` remains authoritative history and preserves one-house-per-logical-World state invariants.
 
-Its statement that final physical-house presence/topology remains unresolved is superseded by this later owner-accepted baseline:
+Its statement that final physical-house presence/topology remains unresolved is superseded by:
 
 ```text
 physical HouseId
@@ -931,55 +716,31 @@ physical HouseId
 -> preserved origin Channel routing
 ```
 
-The historical ADR need not be rewritten.
+Historical ADR need not be rewritten.
 
 ### 28.2 Multichannel scope matrix
 
-Its fixed safety invariants remain binding.
-
-Its `provisional/deferred` wording for physical-house runtime topology/presence is superseded for `DecisionStatus` by this baseline.
+Its safety invariants remain binding. Its provisional/deferred physical-house topology/presence wording is superseded for `DecisionStatus` by this baseline.
 
 ### 28.3 Gap/horizon/global register
 
-Older `REGISTERED_UNRESOLVED`, `DEFERRED` or future-gate wording for `EXP-HOUSES-01` is superseded for the semantic scope accepted here.
-
-Those coordinator/status surfaces may be updated later in a bounded status-only reconciliation. Until then, this baseline has precedence for `EXP-HOUSES-01 DecisionStatus`.
+Older `REGISTERED_UNRESOLVED`, `DEFERRED` or future-gate wording for `EXP-HOUSES-01` is superseded for this accepted semantic scope. Coordinator/status surfaces may be reconciled later in a bounded status-only update; until then this baseline has DecisionStatus precedence.
 
 ### 28.4 Checkpoint PRs
 
 PRs `#435`, `#436`, `#437`, `#438`, `#440`, `#442`, `#443`, `#444`, `#445`, `#446` remain decision provenance.
 
-After canonical integration of this composition, their housing semantic content is superseded by this file; they should be closed/superseded rather than independently merged as competing architecture authorities.
+After canonical integration of this composition their housing semantic content is superseded and they should be closed/superseded rather than independently merged as competing authorities.
 
-## 29. What this acceptance enables
+## 29. What acceptance enables
 
-After canonical integration **and separate implementation authorization**, downstream work can design:
+After canonical integration **and separate implementation authorization**, downstream work may design persistence/schema/transactions, HouseRuntime/ResidenceRuntime, protocol/client GUI, auction, rent/eviction/reclaim, Bazaar housing integration, item placement/custody, observability/conformance and balance registries.
 
-- persistence/schema/transactions;
-- HouseRuntime/ResidenceRuntime boundaries;
-- housing protocol and client GUI;
-- public auction implementation;
-- rent/eviction/reclaim workflows;
-- Character Bazaar housing integration;
-- item placement/custody integration;
-- observability/conformance fixtures;
-- balance/telemetry-driven numeric registries.
-
-Implementation may not invent deferred guild/product/balance values merely because the semantic gate is accepted.
+Implementation cannot invent deferred guild/product/balance values merely because semantic architecture is accepted.
 
 ## 30. Supersession criteria
 
-Reopen this architecture only with concrete evidence, for example:
-
-- measured player/economy data shows the scarce + Residence split materially harms usability/liquidity;
-- runtime evidence proves one-authority physical interior cannot meet requirements despite semantics-preserving optimization;
-- observed abuse requires material change to property identity/market rules;
-- sustained demand/evidence justifies a dedicated direct property market;
-- future guild architecture requires a different guildhouse boundary;
-- Rested/progression evidence justifies a deliberate physical-house progression distinction;
-- accepted World merge/lifecycle architecture requires different reconciliation semantics;
-- security/duping evidence disproves current custody/fencing assumptions;
-- a later accepted FND/DUR/GAME/Platform contract changes a consumed authority boundary.
+Reopen this architecture only with concrete evidence such as measured player/economy harm, runtime infeasibility of one-authority interiors, observed abuse requiring material property-model change, strong demand/evidence for direct property market, future guild architecture conflict, progression evidence for deliberate physical-house distinction, World-lifecycle reconciliation needs, security/duping findings, or later accepted upstream authority changes.
 
 Any supersession must explicitly preserve or replace:
 
@@ -990,12 +751,12 @@ Any supersession must explicitly preserve or replace:
 - stale-writer fencing;
 - idempotent/reconcilable settlement;
 - server-authoritative ownership/auction/ACL;
-- explicit Character lifecycle/Bazaar/World-transfer handling;
+- explicit Character/Bazaar/World-transfer lifecycle handling;
 - safe failure behavior.
 
 ## 31. Current-status precedence
 
-Until coordinator-owned global status surfaces are reconciled, this file is authoritative for `EXP-HOUSES-01 DecisionStatus`.
+Until coordinator-owned status surfaces are reconciled, this file is authoritative for `EXP-HOUSES-01 DecisionStatus`:
 
 ```yaml
 EXP-HOUSES-01:
@@ -1004,7 +765,7 @@ EXP-HOUSES-01:
   ImplementationStatus: NOT_STARTED
 ```
 
-Checkpoint PRs remain provenance while this delivery is in review. They do not authorize runtime or broaden repository authority.
+Checkpoint PRs remain provenance while this delivery is in review and do not authorize runtime.
 
 ## 32. Decision
 
@@ -1020,7 +781,7 @@ Checkpoint PRs remain provenance while this delivery is in review. They do not a
 
 `GUILDHOUSE OWNER: GUILDID / DETAILED GUILD LIFECYCLE DEFERRED`
 
-`PHYSICAL HOUSE ACQUISITION: ACTIVE PREMIUM + PHYSICALHOUSEELIGIBILITY WHEN THE NEW HOUSE IS RETAINED`
+`PHYSICAL HOUSE ACQUISITION: ACTIVE PREMIUM + PHYSICALHOUSEELIGIBILITY WHEN NEW HOUSE IS RETAINED`
 
 `PREMIUM EXPIRY: NOT AN EVICTION TRIGGER`
 
@@ -1036,7 +797,7 @@ Checkpoint PRs remain provenance while this delivery is in review. They do not a
 
 `ACL: OWNER -> MANAGER/SUBOWNER -> GUEST + FINE-GRAINED CAPABILITIES`
 
-`ACL PLAYER UX: GUI/PANEL, NOT TEXT-COMMAND-ONLY`
+`ACL PLAYER UX: GUI/PANEL ONLY; PLAYER-FACING TEXT-COMMAND ACL ADMINISTRATION FORBIDDEN`
 
 `RESTED: BASELINE PARITY BETWEEN RESIDENCE AND ORDINARY PHYSICAL HOUSE`
 
