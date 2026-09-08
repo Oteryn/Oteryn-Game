@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'tools/game-atlas-semantic-search/**'
+      - 'tools/game-atlas-creatures/export.py'
+      - 'tools/game-atlas-creatures/identity.py'
       - 'tools/game-atlas-fullworld-source/producer.py'
       - 'tools/game-atlas-thais-fixture/export.py'
       - 'tools/repository/test_validate_game_atlas_semantic_search_triggers.py'
@@ -14,6 +16,8 @@ on:
     branches: [main]
     paths:
       - 'tools/game-atlas-semantic-search/**'
+      - 'tools/game-atlas-creatures/export.py'
+      - 'tools/game-atlas-creatures/identity.py'
       - 'tools/game-atlas-fullworld-source/producer.py'
       - 'tools/game-atlas-thais-fixture/export.py'
       - 'docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md'
@@ -92,7 +96,7 @@ jobs:
           data = json.load(open('/tmp/semantic-search-source.json', encoding='utf-8'))
           sam = [record for record in data['records'] if record['kind'] == 'npc' and record['label'].casefold() == 'sam']
           thais = [record for record in data['records'] if record['kind'] == 'town' and record['label'].casefold() == 'thais']
-          assert data['semantic_digest'] == 'sha256:0cc0546aff0e9a8f85716dcbe5babc6043e148e946a448b1d87f083410cb1005'
+          assert data['semantic_digest'] == 'sha256:035c911b11e588a969e8fb642965772eee598c30ad80d5d04f9ceda32461e530'
           assert data['counts'] == {'records': 88684, 'kinds': {'monster': 87565, 'npc': 1068, 'town': 33, 'waypoint': 18}}
           assert len(sam) == 1, len(sam)
           assert sam[0]['id'] == 'npc:726487438c8308abf291622a52d91b24', sam[0]
