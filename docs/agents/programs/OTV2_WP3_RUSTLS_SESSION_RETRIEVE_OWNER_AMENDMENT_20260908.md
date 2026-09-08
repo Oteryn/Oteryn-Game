@@ -14,10 +14,10 @@ worker_branch: agent/sqlx-driver-budget-351
 source_wp3_head: 125923901883e8de90e5b9898a533b56704f72c4
 source_wp3_tree: eea23a7068b1b8cc0ba5ce3b91127f159ade21d8
 risk: HIGH
-prospective_scope_result: SYMBOL_ONLY_CANDIDATE_PENDING_INDEPENDENT_REVIEW
+scope_result: MULTI_PATH_REQUIRED_REPAIRED_PENDING_REREVIEW
 ```
 
-This is an allocation-only amendment. It grants no present rustls, SQLx, PostgreSQL, Game, runtime or production mutation authority and creates no replacement worker. The canonical #351/#356 worker remains stopped at its published `SHARED_LEASE_REQUIRED` boundary until this amendment is independently reviewed, canonical exact-head checks pass, it integrates through the normal FULL Merge Queue, protected `main` is read back, Work refreshes custody/overlap, and Work explicitly applies the protected amendment to that SAME worker.
+This is an allocation-only amendment. It grants no present rustls, SQLx, PostgreSQL, Game, runtime or production mutation authority and creates no replacement worker. The canonical #351/#356 worker remains stopped at its published `SHARED_LEASE_REQUIRED` boundary until this amendment is independently reviewed on its repaired exact head, canonical exact-head checks pass, it integrates through the normal FULL Merge Queue, protected `main` is read back, Work refreshes custody/overlap, and Work explicitly applies the protected amendment to that SAME worker.
 
 ## Current canonical blocker
 
@@ -31,6 +31,20 @@ SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/hs.rs :: ClientSessionV
 
 The four preceding review findings on operation-owner propagation are recorded fixed at that head. Complete TLS, TLS-positive evidence, configured PostgreSQL 17.6 qualification, final whole-diff review and WP3 integration remain open.
 
+## Independent review correction
+
+The first prospective candidate `b540647281773e41df5e128aa3fa78a366592817` deliberately asked independent high-risk review to decide whether a symbol-only lease was sufficient. Review returned:
+
+```text
+CHANGES_REQUIRED
+P0=0 / P1=1 / P2=0
+SCOPE_RESULT = MULTI_PATH_REQUIRED
+```
+
+The finding is correct. The public `ClientSessionStore::tls12_session` dispatch reaches `ClientSessionMemoryCache::tls12_session`, whose `.cloned()` executes inside `client/handy.rs`. Therefore the destination `Tls12ClientSessionValue` backing is allocated before `ClientSessionValue::retrieve` receives the returned value. A helper confined to `client/hs.rs` cannot pass the caller-supplied operation owner to that clone or deny before allocation.
+
+This repaired amendment adds only the two exact pre-clone dispatch surfaces required by that finding. It does not convert the session store or cache into a general resource-accounting owner.
+
 ## Protected authority already available
 
 This amendment is intentionally additive to, not a replacement for, the existing protected rustls/SQLx allocations.
@@ -43,9 +57,9 @@ Protected #425 already grants retained-session construction/clone/final-drop cus
 vendor/rustls-0.23.43/src/msgs/persist.rs
 ```
 
-including `ClientSessionCommon::new`, `Tls12ClientSessionValue::{new,clone}` and `Tls13ClientSessionValue::{new,clone}`. It also explicitly records that `client/handy.rs` and `limited_cache.rs` may retain an already charged opaque session value without learning its internals.
+including `ClientSessionCommon::new`, `Tls12ClientSessionValue::{new,clone}` and `Tls13ClientSessionValue::{new,clone}`. It also records that session stores may retain an already charged opaque session value without learning its private allocation internals.
 
-This amendment therefore grants no new `msgs/persist.rs`, `client/handy.rs` or `limited_cache.rs` authority.
+This amendment grants no new `msgs/persist.rs` semantic surface beyond that already-protected #425 lease. The repaired TLS1.2 retrieval path must call/reuse the #425 owner-aware retained-session clone/custody primitive; it must not copy private retained-allocation formulas or constants into the cache or dispatch layer.
 
 ### #429 ClientHello preconstruction owner
 
@@ -78,20 +92,22 @@ blob 1e0b544661b4a5aaf3bdaae509b06757dbd8f38b
 
 The current `ClientHelloInput::new_with_resource_owner` reaches ordinary `Self::new(...)` after its ALPN reservation. It therefore does not make the accepted owner available to this earlier retrieval boundary.
 
-### `msgs/persist.rs`
+### `client/client_conn.rs`
 
 Exact blob:
 
 ```text
-vendor/rustls-0.23.43/src/msgs/persist.rs
-blob 9b8f19e6a1947bf24db827b856c3a2da472e2889
+vendor/rustls-0.23.43/src/client/client_conn.rs
+blob 207efd69d457a2105509417295f5f4a3920a1b7b
 ```
 
-PROVEN current-source facts:
+The public `ClientSessionStore` trait dispatches TLS1.2 retrieval through:
 
-- `Tls12ClientSessionValue` is cloned through its session-value clone path; the deep retained-session clone semantics are already an authored surface of protected #425.
-- `Retrieved::new`, `Retrieved::has_expired`, `compatible_config` and age calculations do not themselves create a new retained content backing.
-- `Tls13ClientSessionValue::quic_params()` does clone its `Vec<u8>` backing. That QUIC-only branch is explicitly excluded from this SQLx/TCP amendment.
+```text
+ClientSessionStore::tls12_session(&ServerName) -> Option<Tls12ClientSessionValue>
+```
+
+The existing method has no operation-owner argument and must remain source/API/semantic compatible for ordinary callers. The owner-aware SQLx path needs a distinct additive dispatch surface, with a fail-closed default for stores that cannot perform an owner-aware pre-clone operation. The repaired amendment does not authorize changing ordinary `tls12_session` semantics or making operation ownership ambient/global.
 
 ### `client/handy.rs`
 
@@ -105,48 +121,76 @@ blob 3ad3073bbd7d93623755080a5792d85dc7b0e3cd
 PROVEN current-source facts for `ClientSessionMemoryCache`:
 
 - TLS 1.3 `take_tls13_ticket` uses `VecDeque::pop_back()`: it removes/moves an existing session value; it does not deep-copy the session value at retrieval.
-- TLS 1.2 `tls12_session` uses `sd.tls12.as_ref().cloned()`: the new session-value backing is created by the `Tls12ClientSessionValue` clone operation whose ownership semantics are already allocated by #425.
-- the store remains an opaque holder of already-charged values; making it learn the operation owner is not justified by this source evidence.
+- TLS 1.2 `tls12_session` uses `sd.tls12.as_ref().cloned()`: the destination session value is allocated before control returns to `ClientSessionValue::retrieve`.
+- therefore an owner-aware TLS1.2 dispatch must enter this exact cache method neighborhood before `.cloned()` and invoke the already-protected #425 owner-aware clone/custody primitive.
+- no evidence justifies general `LimitedCache`, insertion, eviction, TLS1.3 ticket insertion/removal, kx-hint or server-cache mutation authority.
+
+### `msgs/persist.rs`
+
+Exact blob:
+
+```text
+vendor/rustls-0.23.43/src/msgs/persist.rs
+blob 9b8f19e6a1947bf24db827b856c3a2da472e2889
+```
+
+PROVEN current-source facts:
+
+- the TLS1.2 destination backing is created by the retained-session clone operation whose allocation/overlap/final-drop mechanics are already an authored surface of protected #425;
+- `Retrieved::new`, `Retrieved::has_expired`, `compatible_config` and age calculations do not themselves create a new retained content backing;
+- `Tls13ClientSessionValue::quic_params()` clones its `Vec<u8>` backing. That QUIC-only branch remains explicitly excluded from this SQLx/TCP amendment.
 
 ## Scope
 
-After later protected Work application, the SAME #351/#356 writer receives exactly one new semantic surface:
+After later protected Work application, the SAME #351/#356 worker receives only these exact semantic surfaces:
 
 ```text
-vendor/rustls-0.23.43/src/client/hs.rs :: ClientSessionValue::retrieve
+vendor/rustls-0.23.43/src/client/hs.rs
+  :: ClientSessionValue::retrieve
+  :: minimum inseparable owner-aware retrieval sibling/wiring
+
+vendor/rustls-0.23.43/src/client/client_conn.rs
+  :: ClientSessionStore TLS1.2 retrieval dispatch only
+  :: minimum additive owner-aware dispatch sibling/default needed before clone
+
+vendor/rustls-0.23.43/src/client/handy.rs
+  :: ClientSessionMemoryCache TLS1.2 retrieval only
+  :: minimum owner-aware pre-clone sibling/dispatch needed before `.cloned()`
 ```
 
-Authority is limited to the minimum private owner-aware retrieval sibling/helper or signature/wiring change inside this same symbol neighborhood necessary to:
+Authority is limited to the minimum implementation necessary to:
 
-- accept the same owner identity already propagated by #430/#429 before session retrieval;
-- preserve ordinary `ClientSessionValue::retrieve` behavior for existing owner-free callers;
-- treat TLS 1.3 store removal as transfer/move of already-charged opaque session custody, not a newly allocated session;
-- route TLS 1.2 retrieval through the already-protected #425 owner-aware session clone/custody semantics, denying before the deep clone when the accepted owner cannot fund it;
-- carry the returned charged session custody into `ClientHelloInput` and the already-protected ClientHello/decoded-state continuation;
-- release rejected/incompatible/expired retrieved custody only after the corresponding backing is actually destroyed;
-- preserve the exact TLS 1.2/TLS 1.3 resumption decision, expiry, verifier/client-credential compatibility and session-store behavior;
+- pass the same accepted operation owner already propagated by #430/#429 from owner-aware `ClientHelloInput` construction into session retrieval before any TLS1.2 destination clone;
+- preserve the existing public/ordinary `ClientSessionStore::tls12_session` method and all owner-free callers unchanged;
+- add only a source-compatible owner-aware TLS1.2 dispatch surface as required for the dedicated SQLx path; any default implementation for stores that cannot honor pre-clone ownership must fail closed rather than silently call the ordinary allocating method;
+- make `ClientSessionMemoryCache` perform the owner-aware TLS1.2 clone through the existing #425 retained-session clone/custody mechanism before `.cloned()`-equivalent destination backing appears;
+- treat TLS1.3 `take_tls13_ticket` store removal as transfer/move of already-charged opaque session custody, not a newly allocated session; no `handy.rs` TLS1.3 method change is granted unless inseparable dispatch typing requires a non-semantic companion and independent review accepts it;
+- carry returned charged session custody into `ClientHelloInput` and the already-protected ClientHello/decoded-state continuation;
+- release rejected/incompatible/expired retrieved custody only after corresponding backing is actually destroyed;
+- preserve exact TLS1.2/TLS1.3 resumption decisions, expiry, verifier/client-credential compatibility and session-store behavior;
 - keep the SQLx owner-aware path terminal on owner denial, with no fallback to ordinary unowned retrieval.
 
-A minimum adjacent private helper in `client/hs.rs` may be added only when inseparable from `ClientSessionValue::retrieve` and only for the semantics above. This is not blanket authority for `client/hs.rs`.
+This is not blanket authority for `client/hs.rs`, `client/client_conn.rs` or `client/handy.rs`.
 
 ## Explicitly excluded
 
 No new authority is granted for:
 
-- `vendor/rustls-0.23.43/src/client/handy.rs`;
 - `vendor/rustls-0.23.43/src/limited_cache.rs`;
-- any new `vendor/rustls-0.23.43/src/msgs/persist.rs` symbol beyond the already-protected #425 lease;
+- `ClientSessionMemoryCache::{set_tls12_session,remove_tls12_session,insert_tls13_ticket,take_tls13_ticket,set_kx_hint,kx_hint}` semantic changes;
+- general `ClientSessionStore` insertion/removal/kx/TLS1.3 semantics;
+- any new `vendor/rustls-0.23.43/src/msgs/persist.rs` surface beyond the already-protected #425 retained-session construction/clone/final-drop lease;
 - QUIC session-parameter cloning or QUIC cache semantics;
 - `tls13::initial_key_share`, `SupportedKxGroup::start`, key-exchange provider allocation or any crypto-provider path;
 - ECH state/configuration or ECH provider allocation;
 - client/server certificate verifier internals or configuration builders;
 - server handshake paths;
-- ordinary rustls cache semantics or public cache APIs;
+- breaking ordinary public cache/store API changes;
 - any new SQLx/PostgreSQL path, PostgreSQL decoder work, Game/Foundation/Durability runtime, migration, registry, workflow, Cargo/workspace or external repository path;
 - numeric-resource policy changes, TLS downgrade, cache disabling, session-resumption disabling, semantic shrink or a new magic whole-handshake reservation;
 - production/live data, deployment, credentials, ruleset/protection or Merge Queue changes.
 
-If implementation proves that correct reservation/custody requires `client/handy.rs`, `limited_cache.rs`, QUIC `quic_params`, another store implementation, another rustls file/symbol or any other unlisted path, STOP before mutation and return:
+If implementation proves that correct reservation/custody requires `limited_cache.rs`, a different cache/store implementation path, QUIC `quic_params`, another rustls file/symbol or any other unlisted path, STOP before mutation and return:
 
 ```text
 SHARED_LEASE_REQUIRED = <exact path> :: <exact symbol> :: <reason>
@@ -158,25 +202,28 @@ Do not infer that this amendment grants it.
 
 The sole worker must use the SAME accepted operation owner/ledger throughout. For this exact boundary it must prove:
 
-1. TLS 1.3 retrieval removes/moves an already-charged session without double charge, early release or a second session allocation.
-2. TLS 1.2 retrieval reserves before the deep session clone through the already-authorized #425 clone path; source and destination charges coexist while both backings exist.
-3. An unfunded owner denies before any TLS 1.2 deep-copy allocation and cannot fall back to the ordinary unowned path.
-4. Incompatible or expired retrieved sessions unwind custody exactly once after backing destruction.
-5. Successful retrieval transfers custody into `ClientHelloInput` and later protected state without a logical-handoff release while backing survives.
-6. Owner-free ordinary constructors/retrieval/cache behavior remain source/API/semantic compatible.
-7. The PostgreSQL/SQLx owner-aware path is TCP; this amendment must not claim or exercise the QUIC `quic_params()` allocation. If the owner-aware test reaches QUIC, stop for a separate exact lease.
-8. No new public API, global/thread-local owner, hidden registry, copied private allocation constant, post-allocation catch-up charge, TLS downgrade or cache disablement.
+1. TLS1.3 retrieval removes/moves an already-charged session without double charge, early release or a second session allocation.
+2. TLS1.2 owner-aware retrieval reaches the cache before destination clone allocation and reserves/charges through the already-authorized #425 clone path before that allocation.
+3. Source and destination retained-session charges overlap truthfully while both backings exist; no logical handoff releases source custody early.
+4. An unfunded owner denies before any TLS1.2 deep-copy allocation and cannot fall back to ordinary unowned `tls12_session`.
+5. A custom/external store that lacks owner-aware pre-clone support fails closed for the dedicated owner-aware route without changing ordinary store behavior.
+6. Incompatible or expired retrieved sessions unwind custody exactly once after backing destruction.
+7. Successful retrieval transfers custody into `ClientHelloInput` and later protected state without a logical-handoff release while backing survives.
+8. Owner-free ordinary constructors/retrieval/cache behavior and existing public `tls12_session` semantics remain source/API compatible.
+9. The PostgreSQL/SQLx owner-aware path is TCP; this amendment must not claim or exercise the QUIC `quic_params()` allocation. If the owner-aware test reaches QUIC, stop for a separate exact lease.
+10. No global/thread-local owner, hidden registry, copied private allocation constant, post-allocation catch-up charge, TLS downgrade, cache disablement or session-resumption disablement.
 
 ## Focused RED/GREEN qualification
 
-Before claiming this session/cache cell closed, the SAME worker must add focused proof only within already-authorized rustls test surfaces:
+Before claiming this session/cache cell closed, the SAME worker must add focused proof only within already-authorized or newly exact-scoped rustls test surfaces:
 
-- RED then GREEN: owner-aware TLS 1.3 cached ticket retrieval preserves the same charged custody across store removal and `ClientHelloInput` transfer, then releases exactly once on final drop;
-- RED then GREEN: owner-aware TLS 1.2 cached session retrieval denies before the #425 deep clone when unfunded;
-- successful TLS 1.2 clone retains source/destination overlap and releases correctly on later destruction;
+- RED then GREEN: owner-aware TLS1.3 cached ticket retrieval preserves the same charged custody across store removal and `ClientHelloInput` transfer, then releases exactly once on final drop;
+- RED then GREEN: owner-aware TLS1.2 cached session retrieval reaches the owner-aware dispatch and denies before the #425 destination clone when unfunded;
+- successful TLS1.2 clone retains source/destination overlap and releases correctly on later destruction;
+- an owner-aware request through a store without owner-aware clone support fails closed before ordinary allocating retrieval;
 - incompatible verifier/client-credential configuration does not leak or double-release retrieved custody;
 - expired session does not leak or double-release custody;
-- ordinary owner-free TLS 1.2/TLS 1.3 cache retrieval tests remain unchanged and pass;
+- ordinary owner-free TLS1.2/TLS1.3 cache retrieval tests remain unchanged and pass;
 - SQLx owner-aware TCP construction has no ordinary unowned fallback on session-owner denial;
 - exact owner identity continues into the #429 ClientHello/ALPN and #425 decoded-state paths;
 - explicit control proves this WP3 path is non-QUIC and this amendment does not claim QUIC resource accounting.
@@ -203,14 +250,15 @@ This allocation PR itself changes one documentation path only. Runtime gameplay/
 
 Required before material application:
 
-1. whole-file/diff coordinator self-review on the exact candidate;
-2. independent exact-head high-risk allocation review, including explicit review of whether symbol-only scope is sufficient and whether `handy.rs`/`limited_cache.rs` can remain read-only;
+1. whole-file/diff coordinator self-review on the repaired exact candidate;
+2. fresh independent exact-head high-risk re-review proving the repaired three-surface lease is sufficient and no broader cache/store/QUIC authority is required;
 3. canonical exact-head repository checks selected for agent/governance documentation;
-4. normal FULL Merge Queue integration;
-5. protected-main readback;
-6. fresh Work branch/PR/path custody check;
-7. explicit application to the SAME #351/#356 worker.
+4. zero unresolved review threads on the final head;
+5. normal FULL Merge Queue integration;
+6. protected-main readback;
+7. fresh Work branch/PR/path custody check;
+8. explicit application to the SAME #351/#356 worker.
 
-If independent review finds `MULTI_PATH_REQUIRED`, repair or replace this prospective allocation before integration. Do not apply a known-insufficient lease merely because the PR checks are green.
+The superseded symbol-only review finding is historical evidence and must not be treated as PASS for this repaired head.
 
 `MERGE_AUTHORITY: REPOSITORY_CONTROL_PLANE_ONLY`.
