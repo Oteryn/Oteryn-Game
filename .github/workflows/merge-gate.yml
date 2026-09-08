@@ -493,46 +493,51 @@ jobs:
               with urllib.request.urlopen(request, timeout=30) as response:
                   return json.load(response)
 
-          def validate_commit(commit: str) -> None:
+          def target_blob(commit: str) -> str | None:
               try:
-                  payload = api(f'/commits/{commit}')
+                  commit_payload = api(f'/git/commits/{commit}')
               except (urllib.error.HTTPError, OSError, ValueError, TypeError) as error:
                   raise SystemExit('exact commit inspection failed; fail closed') from error
-              if not isinstance(payload, dict) or payload.get('sha', '').lower() != commit:
+              if (
+                  not isinstance(commit_payload, dict)
+                  or commit_payload.get('sha', '').lower() != commit
+              ):
                   raise SystemExit('exact commit inspection returned mismatched identity; fail closed')
-
-          def target_blob(commit: str) -> str | None:
-              path = f'/contents/{target}?ref={commit}'
+              tree_sha = commit_payload.get('tree', {}).get('sha')
+              if not isinstance(tree_sha, str) or re.fullmatch(r'[0-9a-f]{40}', tree_sha) is None:
+                  raise SystemExit('exact commit inspection returned invalid tree identity; fail closed')
               try:
-                  payload = api(path)
-              except urllib.error.HTTPError as error:
-                  if error.code != 404:
-                      raise SystemExit(
-                          f'exact target inspection failed with HTTP {error.code}; fail closed'
-                      ) from error
-                  try:
-                      missing = json.load(error)
-                  except (OSError, ValueError, TypeError) as malformed:
-                      raise SystemExit(
-                          'exact target inspection returned malformed not-found payload; fail closed'
-                      ) from malformed
-                  if not isinstance(missing, dict) or missing.get('message') != 'Not Found':
-                      raise SystemExit(
-                          'exact target inspection returned unexpected not-found payload; fail closed'
-                      )
-                  return None
+                  tree_payload = api(f'/git/trees/{tree_sha}?recursive=1')
               except (OSError, ValueError, TypeError) as error:
-                  raise SystemExit('exact target inspection failed; fail closed') from error
-
-              if not isinstance(payload, dict):
-                  raise SystemExit('exact target inspection returned malformed file payload; fail closed')
-              if payload.get('path') != target:
-                  raise SystemExit('exact target inspection returned mismatched path; fail closed')
-              if payload.get('type') != 'file':
-                  raise SystemExit('exact target inspection returned unexpected object type; fail closed')
-              blob_sha = payload.get('sha')
+                  raise SystemExit('exact tree inspection failed; fail closed') from error
+              if (
+                  not isinstance(tree_payload, dict)
+                  or tree_payload.get('sha', '').lower() != tree_sha
+                  or tree_payload.get('truncated') is not False
+                  or not isinstance(tree_payload.get('tree'), list)
+              ):
+                  raise SystemExit('exact tree inspection returned incomplete or mismatched evidence; fail closed')
+              for entry in tree_payload['tree']:
+                  if (
+                      not isinstance(entry, dict)
+                      or not isinstance(entry.get('path'), str)
+                      or entry.get('type') not in ('blob', 'tree', 'commit')
+                      or not isinstance(entry.get('mode'), str)
+                      or not isinstance(entry.get('sha'), str)
+                      or re.fullmatch(r'[0-9a-f]{40}', entry['sha']) is None
+                  ):
+                      raise SystemExit('exact tree inspection returned malformed entry; fail closed')
+              matches = [entry for entry in tree_payload['tree'] if entry['path'] == target]
+              if len(matches) > 1:
+                  raise SystemExit('exact tree inspection returned duplicate target entries; fail closed')
+              if not matches:
+                  return None
+              entry = matches[0]
+              if entry.get('type') != 'blob' or entry.get('mode') not in ('100644', '100755'):
+                  raise SystemExit('exact tree inspection returned unexpected target object; fail closed')
+              blob_sha = entry.get('sha')
               if not isinstance(blob_sha, str) or re.fullmatch(r'[0-9a-f]{40}', blob_sha) is None:
-                  raise SystemExit('exact target inspection returned invalid blob SHA; fail closed')
+                  raise SystemExit('exact tree inspection returned invalid blob SHA; fail closed')
               return blob_sha
 
           pull = api(f'/pulls/{number_text}')
@@ -549,8 +554,6 @@ jobs:
           if isinstance(changed_files, bool) or not isinstance(changed_files, int) or changed_files < 0:
               raise SystemExit('invalid changed-files count')
 
-          validate_commit(expected_base)
-          validate_commit(expected_head)
           base_blob = target_blob(expected_base)
           head_blob = target_blob(expected_head)
           base_present = base_blob is not None

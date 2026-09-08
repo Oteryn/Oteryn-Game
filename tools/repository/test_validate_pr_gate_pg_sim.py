@@ -120,7 +120,7 @@ def run_classifier(
     expected_base="b" * 40,
     scope=False,
     immutable_files=None,
-    target_payloads=None,
+    tree_payloads=None,
     checkout_present=True,
     checkout_blob=BLOB_SHA,
     commit_payloads=None,
@@ -149,13 +149,16 @@ def run_classifier(
     if final_change:
         final_change(final)
     pulls = iter((initial, final))
-    target_payloads = target_payloads or {
-        "b" * 40: {"path": TARGET, "type": "file", "sha": BLOB_SHA},
-        "a" * 40: {"path": TARGET, "type": "file", "sha": BLOB_SHA},
-    }
+    base_tree_sha = "2" * 40
+    head_tree_sha = "3" * 40
     commit_payloads = commit_payloads or {
-        "b" * 40: {"sha": "b" * 40},
-        "a" * 40: {"sha": "a" * 40},
+        "b" * 40: {"sha": "b" * 40, "tree": {"sha": base_tree_sha}},
+        "a" * 40: {"sha": "a" * 40, "tree": {"sha": head_tree_sha}},
+    }
+    present_entry = {"path": TARGET, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
+    tree_payloads = tree_payloads or {
+        base_tree_sha: {"sha": base_tree_sha, "truncated": False, "tree": [present_entry]},
+        head_tree_sha: {"sha": head_tree_sha, "truncated": False, "tree": [present_entry]},
     }
 
     def response(payload):
@@ -168,12 +171,13 @@ def run_classifier(
         prefix = "https://api.github.com/repos/Oteryn/Oteryn-Game/pulls/287"
         if request.full_url == prefix:
             return response(next(pulls))
-        contents = "https://api.github.com/repos/Oteryn/Oteryn-Game/contents/apps/game-server/tests/durability_postgres.rs?ref="
-        if request.full_url.startswith(contents):
-            return response(target_payloads[request.full_url.removeprefix(contents)])
-        commits = "https://api.github.com/repos/Oteryn/Oteryn-Game/commits/"
+        commits = "https://api.github.com/repos/Oteryn/Oteryn-Game/git/commits/"
         if request.full_url.startswith(commits):
             return response(commit_payloads[request.full_url.removeprefix(commits)])
+        trees = "https://api.github.com/repos/Oteryn/Oteryn-Game/git/trees/"
+        if request.full_url.startswith(trees):
+            tree_sha = request.full_url.removeprefix(trees).removesuffix("?recursive=1")
+            return response(tree_payloads[tree_sha])
         comparison = f"https://api.github.com/repos/Oteryn/Oteryn-Game/compare/{'b' * 40}...{'a' * 40}?per_page=1"
         if request.full_url == comparison:
             return io.StringIO(json.dumps({"files": files if immutable_files is None else immutable_files}))
@@ -308,19 +312,22 @@ def test_classifier_rejects_unbound_base() -> None:
 
 
 def test_classifier_exact_target_state_matrix() -> None:
-    target = "apps/game-server/tests/durability_postgres.rs"
-    present = {"path": target, "type": "file", "sha": BLOB_SHA}
+    present = {"path": TARGET, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
+    absent = {"path": "docs/readme.md", "mode": "100644", "type": "blob", "sha": "4" * 40}
     cases = (
         ("large-present", present, present, True, None, "present=true\n"),
-        ("introduced", missing_target(), present, True, None, "present=true\n"),
-        ("both-absent", missing_target(), missing_target(), False, None, "present=false\n"),
-        ("removed", present, missing_target(), False, "removed or renamed", ""),
-        ("renamed-away", present, missing_target(), False, "removed or renamed", ""),
+        ("introduced", absent, present, True, None, "present=true\n"),
+        ("both-absent", absent, absent, False, None, "present=false\n"),
+        ("removed", present, absent, False, "removed or renamed", ""),
+        ("renamed-away", present, absent, False, "removed or renamed", ""),
     )
     for name, base, head, checkout, expected_failure, expected_output in cases:
         failure, output = run_classifier(
-            [{"filename": target if name != "renamed-away" else "tests/renamed.rs"}] * 803,
-            target_payloads={"b" * 40: base, "a" * 40: head},
+            [{"filename": TARGET if name != "renamed-away" else "tests/renamed.rs"}] * 803,
+            tree_payloads={
+                "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": [base]},
+                "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": [head]},
+            },
             checkout_present=checkout,
         )
         assert (expected_failure is None and failure is None) or expected_failure in failure, (name, failure)
@@ -328,16 +335,17 @@ def test_classifier_exact_target_state_matrix() -> None:
 
 
 def test_classifier_rejects_bad_target_evidence_and_checkout_mismatch() -> None:
-    target = "apps/game-server/tests/durability_postgres.rs"
-    present = {"path": target, "type": "file", "sha": BLOB_SHA}
+    present = {"path": TARGET, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
     bad = (
         [],
-        {"path": "other.rs", "type": "file"},
-        {"path": target, "type": "dir"},
-        {"path": target, "type": "file"},
-        {"path": target, "type": "file", "sha": True},
-        {"path": target, "type": "file", "sha": "not-a-sha"},
+        {"sha": "3" * 40, "truncated": True, "tree": []},
+        {"sha": "4" * 40, "truncated": False, "tree": []},
+        {"sha": "3" * 40, "truncated": False, "tree": "invalid"},
+        {"sha": "3" * 40, "truncated": False, "tree": [{"path": TARGET, "type": "tree", "mode": "040000", "sha": BLOB_SHA}]},
+        {"sha": "3" * 40, "truncated": False, "tree": [{"path": TARGET, "type": "blob", "mode": "100644"}]},
+        {"sha": "3" * 40, "truncated": False, "tree": [{"path": TARGET, "type": "blob", "mode": "100644", "sha": "bad"}]},
         missing_target("forbidden"),
+        missing_target(),
         missing_target(code=401),
         missing_target(code=403),
         missing_target(code=429),
@@ -347,14 +355,20 @@ def test_classifier_rejects_bad_target_evidence_and_checkout_mismatch() -> None:
     )
     for payload in bad:
         failure, output = run_classifier(
-            [], target_payloads={"b" * 40: present, "a" * 40: payload}
+            [], tree_payloads={
+                "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": [present]},
+                "3" * 40: payload,
+            }
         )
         assert failure is not None and not output, payload
     for api_present, checkout_present in ((True, False), (False, True)):
-        payload = present if api_present else missing_target()
+        payload = [present] if api_present else []
         failure, output = run_classifier(
             [],
-            target_payloads={"b" * 40: missing_target(), "a" * 40: payload},
+            tree_payloads={
+                "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": []},
+                "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": payload},
+            },
             checkout_present=checkout_present,
         )
         assert "checkout and API target state disagree" in failure and not output
@@ -366,10 +380,26 @@ def test_classifier_rejects_unavailable_exact_commits() -> None:
     failures = (missing_target(), missing_target(code=403), {"sha": "c" * 40}, [])
     for commit in ("b" * 40, "a" * 40):
         for payload in failures:
-            commits = {"b" * 40: {"sha": "b" * 40}, "a" * 40: {"sha": "a" * 40}}
+            commits = {
+                "b" * 40: {"sha": "b" * 40, "tree": {"sha": "2" * 40}},
+                "a" * 40: {"sha": "a" * 40, "tree": {"sha": "3" * 40}},
+            }
             commits[commit] = payload
             failure, output = run_classifier([], commit_payloads=commits)
             assert "exact commit inspection" in failure and not output, (commit, payload)
+
+
+def test_classifier_requires_successful_tree_evidence_for_absence() -> None:
+    for unavailable in (missing_target(), missing_target(code=403), urllib.error.URLError("transport")):
+        failure, output = run_classifier(
+            [],
+            tree_payloads={
+                "2" * 40: unavailable,
+                "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": []},
+            },
+            checkout_present=False,
+        )
+        assert "exact tree inspection failed" in failure and not output
 
 
 def test_classifier_rejects_invalid_changed_file_counts() -> None:
@@ -439,6 +469,7 @@ def main() -> int:
         test_classifier_exact_target_state_matrix,
         test_classifier_rejects_bad_target_evidence_and_checkout_mismatch,
         test_classifier_rejects_unavailable_exact_commits,
+        test_classifier_requires_successful_tree_evidence_for_absence,
         test_classifier_rejects_invalid_changed_file_counts,
         test_evidence_step_condition_family,
         test_scope_rejects_identity_races,
