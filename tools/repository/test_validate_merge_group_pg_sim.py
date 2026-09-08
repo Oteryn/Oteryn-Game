@@ -17,7 +17,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parents[2]
 GATE = ROOT / ".github/workflows/merge-group-gate.yml"
 LIFECYCLE = ROOT / "tools/agents/tests/test_governance_lifecycle_discovery.py"
-APPROVED = "539a726b7d39cabe785892f70ea30d1944189d91"
+APPROVED = "e347ceff04e976fe35a010cac930af5aaa22112e"
 LIFECYCLE_COMMAND = "python tools/agents/tests/test_governance_lifecycle_discovery.py"
 NATIVE_POLICY = (
     "$ErrorActionPreference = 'Stop'",
