@@ -8,108 +8,115 @@
 
 ## 1. Authority and scope
 
-This contract is a deterministic, immutable, public-safe Game read model for
-facts that Atlas may use downstream. Game owns identity, loot/task semantics,
-capability states, provenance, bounds, and publication. Atlas may join and
-derive presentation or estimates, but is not Game truth authority. Game does
-not publish farm time, KPH, route/spatial clustering, or a target hitting-time
-answer in this product.
+This contract is a deterministic, immutable, public-safe Game availability read
+model for facts Atlas may use downstream. Game owns identity, loot/task
+semantics, capability states, provenance, bounds, and publication. Atlas may
+join and derive presentation or estimates, but is not Game truth authority.
+Game does not publish farm time, KPH, route/spatial clustering, or target
+hitting-time answers.
 
-The producer consumes only an admitted normalized Game read model. It neither
-executes nor parses legacy scripts, XML, OTBM, websites, browser state, live
-servers, or private player data. Reference repositories are migration evidence,
-not current runtime authority. Default publication is deny.
+The producer may consume only an admitted, provenance-qualified Game-owned
+publication whose authenticity is established outside caller-authored fields.
+It never executes or parses legacy scripts, XML, OTBM, websites, browser state,
+live servers, or private player data. Reference repositories are migration
+evidence, not current runtime authority. Default publication is deny.
+
+No authenticated admitted publication is available in this checkout. V1
+therefore exposes no production input adapter and emits only the exact canonical
+`BLOCKED_NO_ADMITTED_SOURCE` product. A repository label, syntactically valid
+revision/digest/generation, or caller-declared capability is not source proof.
 
 ## 2. Source qualification at v1 admission
 
 | Family | Classification | Capability | Proven boundary / blocker |
 |---|---|---|---|
-| Item identity | PROVEN + UNKNOWN per row | `PARTIAL` | A resolved `oteryn:item.*` is stable; existing gameplay rows without such a mapping remain unresolved and names never create identity. |
-| Creature identity | PROVEN | `PARTIAL` | `monster-entity:<32 hex>` is the existing static-creature/gameplay join seam; the complete authoritative corpus is not available in this checkout. |
-| Loot probability/context | PROVEN + UNKNOWN | `PARTIAL` | Existing gameplay rows provide integer `chance_ppm`; exact live ruleset/profile/modifier applicability and per-kill roll process are not proven. v1 represents a reduced rational plus an explicit static/non-live context. |
-| Loot quantity | PROVEN bounds; UNKNOWN distribution | `PARTIAL` | `min_count`/`max_count` are authoritative bounds. Unequal bounds are `BOUNDED_UNKNOWN`, never a uniform distribution or exact PMF. Equal bounds are not automatically fixed without roll proof. |
-| Placement/farm supply | UNKNOWN | `UNSUPPORTED` | Current publications do not prove stable spawn groups, alternative/conditional activation, and complete capacity semantics together. Equal geometry is not group identity. |
-| Tasks/grouping/credit | UNKNOWN | `UNSUPPORTED` | No accepted Game-owned authoritative task catalogue proving stable tasks, grouped requirements, or credit semantics was found. Empty tasks do not prove absence. |
-| Weekly classification | UNKNOWN | `UNSUPPORTED` | No accepted explicit weekly authority was found; ordinary/custom kill targets are not reclassified. |
+| Item identity | PROVEN schema; source UNKNOWN | `UNSUPPORTED` | Stable `oteryn:item.*` semantics exist, but no authenticated admitted publication is present. Unresolved labels stay unresolved and names never create identity. |
+| Creature identity | PROVEN schema; source UNKNOWN | `UNSUPPORTED` | `monster-entity:<32 hex>` is the existing join seam, but no authenticated admitted corpus is present. |
+| Loot probability/context | PROVEN representation; source UNKNOWN | `UNSUPPORTED` | Existing contract documentation describes integer `chance_ppm`; the authoritative product and exact live ruleset/profile/modifier and per-kill roll proof are unavailable. |
+| Loot quantity | PROVEN bounds representation; source UNKNOWN | `UNSUPPORTED` | Unequal `min_count`/`max_count` would remain `BOUNDED_UNKNOWN`; equality cannot become `FIXED` without roll proof. No rows are admitted. |
+| Placement/farm supply | UNKNOWN | `UNSUPPORTED` | Current evidence does not prove stable spawn groups, alternative/conditional activation, and complete capacity together. |
+| Tasks/grouping/credit | UNKNOWN | `UNSUPPORTED` | No accepted authoritative task catalogue proving stable tasks, grouped requirements, or credit semantics is available. |
+| Weekly classification | UNKNOWN | `UNSUPPORTED` | No accepted explicit weekly authority is available. |
 | Respawn | UNKNOWN | `UNSUPPORTED` | Existing static `spawn_time_seconds` provenance does not prove live/current cadence or modifiers. |
-| Provenance/completeness | PROVEN | per-family | A source repository, exact 40-hex revision, semantic digest, and one generation bind every emitted record. Mixed generations fail closed. |
-| Resource bounds | DERIVED | enforced | The normalized static product is capped conservatively; limits are not production corpus-size claims. |
+| Provenance/completeness | UNKNOWN | all `UNSUPPORTED` | Caller-authored repository/revision/digest/generation/capability fields are never accepted as proof. |
+| Resource bounds | UNKNOWN | publication blocked | The exact admitted corpus is unavailable to census, so v1 freezes no numeric public/production ceiling. Synthetic fixture limits are separate and test-only. |
 
-Switching a family to `COMPLETE` or supplying `EXACT_PMF` requires reviewed,
-revisioned Game source proof. Missing proof is `PARTIAL`, `UNSUPPORTED`, or
-`UNKNOWN`, never empty success.
+Switching a family to `PARTIAL` or `COMPLETE`, or supplying any fact row,
+requires a reviewed revision and an authenticated admitted Game publication.
+Missing proof is `UNSUPPORTED`/`UNKNOWN`, never empty success.
 
-## 3. Canonical product
+## 3. Canonical blocked product
 
-The product is one UTF-8 JSON file with sorted keys, compact separators, a
-single trailing LF, deterministic record order, and no floats. It contains:
+The product is one UTF-8 JSON file with sorted keys, compact separators, one
+trailing LF, no floats, and these semantics:
 
 - exact contract/schema/producer revisions;
-- source repository, 40-hex revision, `sha256:` semantic digest, and generation;
-- independent capabilities for item identity, creature identity, loot
-  probability, loot quantity, placement supply, tasks, weekly, and respawn;
-- creature and resolved-item identity tables;
-- loot relations, and an explicitly empty `tasks` array while tasks are
-  unsupported;
-- the exact limit profile and semantic digest.
+- source state `UNAVAILABLE` and closed blocker reason
+  `AUTHORITATIVE_NORMALIZED_GAME_PUBLICATION_UNAVAILABLE`;
+- independent `UNSUPPORTED` capabilities for every family with that reason;
+- empty creature, item, loot, and task arrays which are not absence claims;
+- publication state `BLOCKED_NO_ADMITTED_SOURCE` and a semantic digest.
 
 `semantic_digest` is SHA-256 over canonical product semantics with that field
-omitted. A validator regenerates canonical semantics and rejects any byte-level
-semantic disagreement.
+omitted. The validator regenerates the internally defined product and rejects
+any byte-level semantic disagreement; it does not validate or bless caller
+facts.
 
-## 4. Identity and relation rules
+## 4. Reserved identity and relation semantics
 
-Creature IDs are `monster-entity:<32 lowercase hex>`. Item IDs are stable
-`oteryn:item.<key>` values. Display names are bounded display facts only.
-Unresolved item rows retain `item_id: null`, their display name, and a
-non-`RESOLVED` resolution state. Relations must reference a declared creature
-and, when non-null, a declared item. Duplicate identities/relations, dangling
-references, conflicting resolution, or mixed source generation are invalid.
+A future reviewed source-bearing revision must use creature IDs
+`monster-entity:<32 lowercase hex>` and stable `oteryn:item.<key>` item IDs.
+Display names remain display facts only. Unresolved item rows retain
+`item_id: null` and a non-`RESOLVED` state. Duplicate identities/relations,
+dangling references, conflicting resolution, and mixed source generations must
+fail closed. None of these prospective shapes authorizes a v1 fact row.
 
-## 5. Probability and quantity
+## 5. Reserved probability and quantity semantics
 
-Probability is an integer rational `{numerator, denominator, context}` with
-`0 <= numerator <= denominator`, positive bounded denominator, and an explicit
-ruleset/profile scope string. Floating-point probability authority is forbidden.
-A static migration profile must not be presented as live/current probability.
-V1 admits only `STATIC_MIGRATION_PROFILE_NOT_LIVE_CURRENT` and
-`EXACT_RULESET_PROFILE_BASE`; adding a live/current context requires a reviewed
-schema/producer revision and corresponding Game source proof.
+A future probability is an integer rational with `0 <= numerator <=
+denominator`, a positive denominator, and exact source-proven context. The
+blocked production product admits no probability context or relation. Synthetic
+semantic tests use only `TEST_ONLY_STATIC_NOT_AUTHORITY`; adding production
+`EXACT_RULESET_PROFILE_BASE`, live/current, or other context requires a reviewed
+revision and authenticated source proof.
 
-Quantity is exactly one of:
+Future quantity classification remains one of `FIXED`, `EXACT_PMF`,
+`BOUNDED_UNKNOWN`, or `UNSUPPORTED`. Fixed and exact-PMF classifications require
+proof of the underlying roll process; bounds do not authorize a distribution or
+expected-kill calculation. A zero-yield PMF point must be preserved if an exact
+PMF is ever proven. Game publishes no Atlas calculation.
 
-- `FIXED` with one non-negative count, only with proven roll semantics;
-- `EXACT_PMF` with unique counts and integer rational masses using one
-  denominator and summing exactly to one (zero-yield mass is preserved);
-- `BOUNDED_UNKNOWN` with ordered min/max and no inferred internal distribution;
-- `UNSUPPORTED` with no quantity fields.
+## 6. Capability semantics
 
-Atlas may perform bounded estimates only where the exact process needed by its
-algorithm is proven. Bounds alone do not authorize expected-kill/hitting-time
-semantics, and Game publishes no such calculation.
+Capability states are `COMPLETE`, `PARTIAL`, `UNSUPPORTED`, or `UNKNOWN` with
+closed reason codes; every non-complete state requires a reason. An empty array
+means absence only under `COMPLETE`. V1's blocked arrays are all
+`UNSUPPORTED`, and a sibling family never upgrades another family implicitly.
 
-## 6. Capability/completeness semantics
+## 7. Resource-bound gate and rejection
 
-Each family is `COMPLETE`, `PARTIAL`, `UNSUPPORTED`, or `UNKNOWN` with sorted,
-deduplicated reason codes; every non-complete state requires a reason. An empty
-array means absence only under `COMPLETE`. A supported sibling family never
-upgrades another family implicitly.
+V1 publishes no numeric production ceiling: an exact admitted-source census is
+not available, and conservative guesses are not contract authority. Production
+generation takes no input. The validator reads only a file whose byte length
+exactly equals the internally generated blocked product before comparing its
+exact bytes. It rejects every enriched or caller-authored product, unsafe output
+paths, corrupt digests, and non-canonical bytes.
 
-## 7. Limits and rejection
+Generated unit-test fixtures have small, explicitly named test-only limits and
+use contract ID `oteryn-game-atlas-farm-intelligence-test-fixture-v1`, fixed
+marker `SYNTHETIC_TEST_FIXTURE_NOT_SOURCE_AUTHORITY`, and publication state
+`TEST_ONLY_NON_PUBLISHABLE`. The production validator always rejects them.
+Their probability and quantity cases test prospective validation only; they
+make no source, corpus, or production capability claim.
 
-The v1 producer caps input/product bytes at 4 MiB, combined records at 16,384,
-strings at 512 UTF-8 bytes, PMFs at 128 points, counts at 1,000,000, and rational
-denominators at 1,000,000,000. It rejects malformed/non-UTF-8/oversized JSON,
-unknown keys or revisions, booleans masquerading as integers, unsafe output
-paths, corrupt digests, invalid ranges/PMFs, duplicates, dangling references,
-and provenance/generation mismatches. Canonical output excludes timestamps,
-machine paths, runner IDs, secrets, source code, and live/private state.
+Canonical output excludes timestamps, machine paths, runner IDs, secrets,
+source code, and live/private state.
 
 ## 8. Compatibility and activation
 
-Schema changes require a reviewed compatible revision. Consumers reject unknown
-versions and retain their previous known-good product. A product is not a live
-source and does not activate Atlas functionality by itself. Runtime gameplay E2E
-is not applicable because this delivery is a static export/read-model and does
-not change gameplay behavior; real producer and validator execution remains
-required for every admitted normalized source generation.
+Schema changes require reviewed compatibility. Consumers reject unknown versions
+and retain their previous known-good product. The blocked product must keep
+Atlas farm-intelligence facts unavailable. Runtime gameplay E2E is not
+applicable because this static availability export changes no gameplay behavior.
+Real producer/validator execution against every future admitted authenticated
+source generation remains required before any family becomes source-bearing.

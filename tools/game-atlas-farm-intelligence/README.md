@@ -1,20 +1,23 @@
 # Game → Atlas farm intelligence v1
 
-This directory contains the deterministic producer/validator for
-`oteryn-game-atlas-farm-intelligence-v1`. It accepts only a normalized,
-public-safe Game read model. It does not parse Lua/XML/OTBM, execute scripts,
-scrape the web, inspect a running server, or calculate farm time/KPH.
+This directory contains the fail-closed producer/validator for
+`oteryn-game-atlas-farm-intelligence-v1`. The authoritative normalized Game
+publication needed to populate farm facts is not available in this checkout,
+so production has **no caller-authored JSON input** and emits only a canonical
+`BLOCKED_NO_ADMITTED_SOURCE` product:
 
 ```bash
-python3 tools/game-atlas-farm-intelligence/export.py export source.json product.json
+python3 tools/game-atlas-farm-intelligence/export.py export product.json
 python3 tools/game-atlas-farm-intelligence/export.py verify product.json
 python3 -m unittest discover -s tools/game-atlas-farm-intelligence -p 'test_*.py'
 ```
 
-No production snapshot is committed in v1. The admitted creature-gameplay
-contract proves static integer chance and count bounds, but the authoritative
-corpus/product is not present in this checkout and its source does not prove
-per-kill quantity distribution, live modifier context, tasks, weekly credit,
-placement capacity, or live respawn semantics. Those families therefore stay
-explicitly partial/unsupported until a revisioned normalized input is supplied.
+The module's richer semantic fixtures use a different test-only contract ID,
+fixed non-authority marker, and explicitly test-only limits. They cannot pass
+the production validator or authorize `COMPLETE`, exact context, `FIXED`, or
+`EXACT_PMF` production facts.
 
+No numeric public/production hard limits are frozen in v1 because the exact
+admitted corpus has not been censused. The producer does not parse Lua/XML/OTBM,
+execute scripts, scrape the web, inspect a running server, or calculate Atlas
+farm time/KPH.

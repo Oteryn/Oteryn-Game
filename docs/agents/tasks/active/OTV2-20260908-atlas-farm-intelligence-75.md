@@ -35,10 +35,10 @@ external_repositories:
 
 ## Outcome
 
-A deterministic bounded producer/validator exposes only provenance-qualified
-farm-intelligence facts and independently labels missing semantics. Atlas can
-consume stable identities/static loot evidence without interpreting bounds as a
-PMF or treating unsupported tasks/weekly/respawn/supply as empty success.
+A deterministic fail-closed producer/validator refuses caller-authored farm
+facts and emits only capability blockers until an authenticated admitted Game
+publication exists. Atlas cannot mistake synthetic fixtures, count bounds, or
+unsupported task/weekly/respawn/supply families for authority.
 
 ## Architecture and source of truth
 
@@ -48,7 +48,8 @@ PMF or treating unsupported tasks/weekly/respawn/supply as empty success.
   creature identity and integer static chance/count bounds.
 - **UNKNOWN:** exact per-kill quantity process, live modifier context, complete
   task/grouped-credit/weekly catalogue, complete placement supply, live respawn.
-- **DERIVED:** canonical serialization/integrity and conservative adapter bounds.
+- **UNKNOWN:** public producer bounds because the admitted corpus is unavailable
+  to census. Synthetic validation limits are explicitly test-only.
 
 High-risk authority/recovery qualification: **NOT_APPLICABLE**. This is a static
 public read model with no production mutation, controller, persistence, session,
@@ -58,7 +59,8 @@ or authority-bearing recovery operation.
 
 - [x] Per-family source qualification precedes supported capability claims.
 - [x] Missing proof is partial/unsupported/unknown, never guessed or empty success.
-- [x] Canonical deterministic producer and fail-closed validator are bounded.
+- [x] Canonical deterministic producer has no input surface; validator accepts
+      only the exact blocked product, without invented public bounds.
 - [x] TDD covers identity, rational probability, quantity models, provenance,
       relation integrity, capability states, malformed/corrupt/oversized input.
 - [x] No dynamic parsing/scraping and no Atlas farm calculations.
@@ -74,29 +76,33 @@ Reference parity; guessed PMF/task/weekly/respawn; Atlas computations.
 ## Implementation / findings
 
 The accepted gameplay contract is useful but insufficient for an exact farm
-model. The implementation consequently accepts only a normalized Game read
-model, requires exact provenance/generation on every relation, and makes tasks
-empty only alongside an explicit unsupported capability. No authoritative
-current-source snapshot is committed because the admitted complete corpus is not
-present in this checkout; test fixtures are not promoted to production facts.
+model, and its product/corpus is not present here. A syntactically valid SHA,
+digest, generation, repository name, or caller capability flag cannot establish
+authority. Production consequently accepts no caller input and emits only an
+exact blocked product. Rich relation cases use a distinct non-publishable test
+contract and fixed synthetic marker; their limits and capability exercises are
+test-only.
 
-RED evidence: the first focused run rejected the exact-PMF test with
-`ProductError: invalid keys: loot[0].quantity`, exposing that PMF `count` had
-incorrectly been passed into the rational-probability validator. Minimal GREEN
-separated count validation from probability validation; the unchanged eight-test
-suite then passed, including the zero-yield PMF case.
+Remediation RED evidence: coordinator review demonstrated that arbitrary
+syntactically valid provenance plus a caller `COMPLETE` flag could promote
+synthetic `FIXED`/`EXACT_PMF` facts, and that numeric production limits lacked
+the required admitted-corpus census. GREEN removes the production input surface,
+accepts only exact blocked bytes, and moves rich semantics and their numeric
+limits behind a distinct test-only contract and non-authority marker.
 
 ## Validation
 
 ### Focused
 
 - command/run: `python3 -m unittest discover -s tools/game-atlas-farm-intelligence -p 'test_*.py'`
-- result: PASS, 8 tests including negative/adversarial cases
+- result: PASS, 8 tests include caller-authority rejection,
+  exact blocked bytes, test-only isolation, and negative/adversarial cases
 
 ### Component/integration
 
-- command/run: deterministic double export plus validator over a normalized test source
-- result: PASS, identical SHA-256 `1b7eca4441270d4b3fa30484d30bedc9fb793e22ae897b761f9c94de17f509b0`
+- command/run: deterministic double export plus exact validator of the blocked product
+- result: PASS, byte-identical outputs; SHA-256
+  `b37bcf5f259d1c9a5c1a4887b0e367ea4dd5f847b5fd77e3b54890c813784fb8`
 
 ### E2E
 
@@ -113,8 +119,9 @@ suite then passed, including the zero-yield PMF case.
 - exact head: final commit will be reported in PR evidence
 - method/reviewer: implementing agent, adversarial whole-diff inspection
 - material findings/verdict: P0=0, P1=0, P2=0; PASS. Confirmed exact lease,
-  no guessed PMF/live/task semantics, fail-closed identity/provenance/capability
-  validation, bounded input/output, and no dynamic source access.
+  no production caller-fact input, no public numeric ceiling without census,
+  exact blocked-product verification, conspicuous non-publishable synthetic
+  fixtures, unsupported source families, and no dynamic source access.
 
 ## Independent review
 
