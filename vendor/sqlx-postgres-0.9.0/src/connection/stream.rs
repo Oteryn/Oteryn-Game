@@ -6,8 +6,10 @@ use futures_channel::mpsc::UnboundedSender;
 use futures_util::SinkExt;
 use log::Level;
 use sqlx_core::bytes::Buf;
+use sqlx_core::net::resource_budget::ResourceBudget;
+use std::sync::Arc;
 
-use crate::connection::tls::MaybeUpgradeTls;
+use crate::connection::tls::{MaybeUpgradeTls, MaybeUpgradeTlsOwned};
 use crate::error::Error;
 use crate::message::{
     BackendMessage, BackendMessageFormat, EncodeMessage, FrontendMessage, Notice, Notification,
@@ -38,6 +40,7 @@ pub struct PgStream {
     pub(crate) parameter_statuses: BTreeMap<String, String>,
 
     pub(crate) server_version_num: Option<u32>,
+    resource_budget: Option<Arc<dyn ResourceBudget>>,
 }
 
 impl PgStream {
@@ -54,7 +57,30 @@ impl PgStream {
             notifications: None,
             parameter_statuses: BTreeMap::default(),
             server_version_num: None,
+            resource_budget: None,
         })
+    }
+
+    pub(super) async fn connect_with_resource_budget(
+        options: &PgConnectOptions,
+        resource_budget: Arc<dyn ResourceBudget>,
+    ) -> Result<Self, Error> {
+        let socket_result = match options.fetch_socket() {
+            Some(ref path) => net::connect_uds(path, MaybeUpgradeTlsOwned(options, resource_budget.clone())).await?,
+            None => net::connect_tcp(&options.host, options.port, MaybeUpgradeTlsOwned(options, resource_budget.clone())).await?,
+        };
+        Ok(Self {
+            inner: BufferedSocket::new(socket_result?),
+            notifications: None,
+            parameter_statuses: BTreeMap::default(),
+            server_version_num: None,
+            resource_budget: Some(resource_budget),
+        })
+    }
+
+    #[doc(hidden)]
+    pub fn resource_budget(&self) -> Option<&Arc<dyn ResourceBudget>> {
+        self.resource_budget.as_ref()
     }
 
     #[inline(always)]

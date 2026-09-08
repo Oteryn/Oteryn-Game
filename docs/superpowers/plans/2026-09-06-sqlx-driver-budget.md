@@ -251,3 +251,12 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   custody, overflow and ordinary unowned controls; prove a distinct-owner case.
 - [ ] Implement and prove the #430 caller-supplied Arc propagation. Do not start
   #429 ALPN work until that propagation is GREEN.
+
+## Operation-owner propagation checkpoint
+
+- [x] Preserve the prior missing-call-chain checkpoint as RED evidence.
+- [x] Add an explicit owner-aware PostgreSQL establish/stream/SSL selection path.
+- [x] Dispatch owner-aware TLS only to rustls and fail closed without fallback.
+- [x] Retain the caller's exact budget Arc for the connection lifetime without changing options or pools.
+- [ ] Apply protected #429 ALPN/protocol reservation and custody using that propagated owner.
+- [ ] Continue #427/#425 only after ALPN is GREEN; stop before unallocated session/key-share/ECH/config/crypto paths.

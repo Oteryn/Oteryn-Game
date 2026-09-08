@@ -671,6 +671,7 @@ mod connection {
     use crate::common_state::Protocol;
     use crate::conn::{ConnectionCommon, ConnectionCore};
     use crate::error::Error;
+    use crate::DeframerBufferOwner;
     use crate::suites::ExtractedSecrets;
     use crate::sync::Arc;
 
@@ -751,6 +752,23 @@ mod connection {
                     Protocol::Tcp,
                 )?),
             })
+        }
+
+        /// Constructs a client connection and installs its resource owner.
+        ///
+        /// The ordinary constructors remain owner-free. This fallible sibling is
+        /// the explicit operation-owned entry point used by SQLx.
+        pub fn new_with_resource_owner(
+            config: Arc<ClientConfig>,
+            name: ServerName<'static>,
+            owner: Arc<dyn DeframerBufferOwner>,
+        ) -> Result<Self, Error> {
+            let mut connection = Self::new(config, name)?;
+            connection
+                .inner
+                .set_deframer_buffer_owner(owner)
+                .map_err(|_| Error::General("resource budget unavailable".into()))?;
+            Ok(connection)
         }
         /// Returns an `io::Write` implementer you can write bytes to
         /// to send TLS1.3 early data (a.k.a. "0-RTT data") to the server.

@@ -4,8 +4,20 @@ use crate::net::{Socket, SocketIntoBox, WithSocket};
 
 use crate::message::SslRequest;
 use crate::{PgConnectOptions, PgSslMode};
+use std::sync::Arc;
+use sqlx_core::net::resource_budget::ResourceBudget;
 
 pub struct MaybeUpgradeTls<'a>(pub &'a PgConnectOptions);
+
+pub struct MaybeUpgradeTlsOwned<'a>(pub &'a PgConnectOptions, pub Arc<dyn ResourceBudget>);
+
+impl WithSocket for MaybeUpgradeTlsOwned<'_> {
+    type Output = crate::Result<Box<dyn Socket>>;
+
+    async fn with_socket<S: Socket>(self, socket: S) -> Self::Output {
+        maybe_upgrade_owned(socket, self.0, self.1).await
+    }
+}
 
 impl WithSocket for MaybeUpgradeTls<'_> {
     type Output = crate::Result<Box<dyn Socket>>;
@@ -61,6 +73,36 @@ async fn maybe_upgrade<S: Socket>(
     };
 
     tls::handshake(socket, config, SocketIntoBox).await
+}
+
+async fn maybe_upgrade_owned<S: Socket>(
+    mut socket: S,
+    options: &PgConnectOptions,
+    owner: Arc<dyn ResourceBudget>,
+) -> Result<Box<dyn Socket>, Error> {
+    match options.ssl_mode {
+        PgSslMode::Allow | PgSslMode::Disable => return Ok(Box::new(socket)),
+        PgSslMode::Prefer => {
+            if !tls::available() || !request_upgrade(&mut socket, options).await? {
+                return Ok(Box::new(socket));
+            }
+        }
+        PgSslMode::Require | PgSslMode::VerifyFull | PgSslMode::VerifyCa => {
+            tls::error_if_unavailable()?;
+            if !request_upgrade(&mut socket, options).await? {
+                return Err(Error::Tls("server does not support TLS".into()));
+            }
+        }
+    }
+    let config = TlsConfig {
+        accept_invalid_certs: !matches!(options.ssl_mode, PgSslMode::VerifyCa | PgSslMode::VerifyFull),
+        accept_invalid_hostnames: !matches!(options.ssl_mode, PgSslMode::VerifyFull),
+        hostname: &options.host,
+        root_cert_path: options.ssl_root_cert.as_ref(),
+        client_cert_path: options.ssl_client_cert.as_ref(),
+        client_key_path: options.ssl_client_key.as_ref(),
+    };
+    tls::handshake_with_resource_budget(socket, config, SocketIntoBox, owner).await
 }
 
 async fn request_upgrade(

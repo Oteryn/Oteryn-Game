@@ -808,3 +808,32 @@ once that identity is available and grants no new SQLx path or owner model. No
 rustls or SQLx semantic source was mutated. The focused ALPN RED/GREEN, decoded
 owner matrix, complete TLS, TLS-positive case, and PostgreSQL 17.6 qualification
 remain OPEN.
+
+## Window14 caller-supplied PostgreSQL TLS owner propagation
+
+Protected #430 was applied to the canonical worker at `093f9c001828050898888f779e1a8a6c2ade9e66`.
+The preceding checkpoint is the RED evidence: no owner-aware PostgreSQL establish,
+stream, TLS selection, SQLx-core dispatch, or rustls client-construction call existed.
+
+The GREEN propagation surface is separate throughout. A caller supplies one
+`Arc<dyn ResourceBudget>` to `PgConnection::establish_with_resource_budget`; the
+same Arc is cloned only for capability retention through `PgStream`, PostgreSQL's
+unchanged SSLRequest selection, SQLx-core's fail-closed rustls-only dispatch, and
+the rustls deframer-owner adapter. The ordinary `TlsConfig`, `ConnectOptions`,
+`PgConnectOptions`, `PgPool`, PostgreSQL establish/stream/TLS functions, and rustls
+constructors remain owner-free. An owner-aware TLS error is returned directly and
+never retries through the ordinary handshake.
+
+The owner Arc retained by `PgStream` survives destruction of the caller's clone
+and is released with the connection. No reservation is invented merely for this
+identity field. `Prefer` retains its upstream plaintext outcome only for an
+unavailable TLS build or a legitimate server `N`; after server `S`, owner-aware
+handshake denial/error is terminal.
+
+`OPERATION_OWNER_PROPAGATION = PROVEN` for the exact explicit entry-to-rustls path.
+The next protected #429 ALPN allocation itself is not yet GREEN: the current
+owner-aware rustls constructor installs #424 deframer custody, but ALPN clone/
+ClientHello custody remains the next phase. The implementation stops before the
+explicitly unallocated session-cache, key-share, ECH/configuration, and crypto
+symbols. Complete TLS, TLS-positive evidence, and PostgreSQL 17.6 qualification
+remain NOT_PROVEN.

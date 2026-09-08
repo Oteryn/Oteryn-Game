@@ -371,8 +371,11 @@ fn rustls_deframer_owner_uses_the_operation_ledger() {
         .with_root_certificates(rustls::RootCertStore::empty())
         .with_no_client_auth();
     let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
-    let mut connection = rustls::ClientConnection::new(Arc::new(config), name).unwrap();
-    connection.set_deframer_buffer_owner(owner).unwrap();
+    let mut connection =
+        rustls::ClientConnection::new_with_resource_owner(Arc::new(config), name, owner.clone())
+            .unwrap();
+    assert_eq!(Arc::strong_count(&owner), 2);
+    drop(owner);
 
     let error = connection.read_tls(&mut WouldBlock).unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::WouldBlock);
@@ -389,8 +392,8 @@ fn rustls_deframer_owner_uses_the_operation_ledger() {
         .with_root_certificates(rustls::RootCertStore::empty())
         .with_no_client_auth();
     let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
-    let mut connection = rustls::ClientConnection::new(Arc::new(config), name).unwrap();
-    connection.set_deframer_buffer_owner(owner).unwrap();
+    let mut connection =
+        rustls::ClientConnection::new_with_resource_owner(Arc::new(config), name, owner).unwrap();
     let error = connection.read_tls(&mut WouldBlock).unwrap_err();
     assert_eq!(error.kind(), io::ErrorKind::Other);
     assert_eq!(denied.used.load(Ordering::Acquire), 0);

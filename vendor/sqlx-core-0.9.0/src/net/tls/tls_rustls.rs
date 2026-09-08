@@ -194,6 +194,65 @@ where
     Ok(socket)
 }
 
+pub async fn handshake_with_resource_budget<S>(
+    socket: S,
+    tls_config: TlsConfig<'_>,
+    resource_budget: Arc<dyn crate::net::resource_budget::ResourceBudget>,
+) -> Result<RustlsSocket<S>, Error>
+where
+    S: Socket,
+{
+    let provider = Arc::new(rustls::crypto::ring::default_provider());
+    let config = ClientConfig::builder_with_provider(provider.clone())
+        .with_safe_default_protocol_versions()
+        .unwrap();
+
+    // Owner-aware client authentication and custom trust loading are composed
+    // by the already-accounted loader in the next TLS phase. Never silently use
+    // their ordinary unowned loader here.
+    if tls_config.client_cert_path.is_some()
+        || tls_config.client_key_path.is_some()
+        || tls_config.root_cert_path.is_some()
+    {
+        return Err(Error::tls(
+            "resource-owned certificate configuration is not yet composed",
+        ));
+    }
+
+    let config = if tls_config.accept_invalid_certs {
+        config
+            .dangerous()
+            .with_custom_certificate_verifier(Arc::new(DummyTlsVerifier { provider }))
+            .with_no_client_auth()
+    } else {
+        let cert_store = import_root_certs();
+        if tls_config.accept_invalid_hostnames {
+            let verifier = WebPkiServerVerifier::builder(Arc::new(cert_store))
+                .build()
+                .map_err(|err| Error::Tls(err.into()))?;
+            config
+                .dangerous()
+                .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
+                .with_no_client_auth()
+        } else {
+            config.with_root_certificates(cert_store).with_no_client_auth()
+        }
+    };
+
+    let host = ServerName::try_from(tls_config.hostname.to_owned()).map_err(Error::tls)?;
+    let owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(DeframerBudgetOwner(resource_budget));
+    let state = ClientConnection::new_with_resource_owner(Arc::new(config), host, owner)
+        .map_err(Error::tls)?;
+    let mut socket = RustlsSocket {
+        inner: StdSocket::new(socket),
+        state,
+        close_notify_sent: false,
+    };
+    socket.complete_io().await?;
+    Ok(socket)
+}
+
 fn certs_from_pem(pem: Vec<u8>) -> Result<Vec<CertificateDer<'static>>, Error> {
     CertificateDer::pem_slice_iter(&pem)
         .map(|result| result.map_err(|err| Error::Tls(err.into())))

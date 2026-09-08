@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::HashMap;
 
 use crate::common::StatementCache;
@@ -10,15 +12,32 @@ use crate::message::{
 use crate::{PgConnectOptions, PgConnection};
 
 use super::PgConnectionInner;
+use sqlx_core::net::resource_budget::ResourceBudget;
 
 // https://www.postgresql.org/docs/current/protocol-flow.html#id-1.10.5.7.3
 // https://www.postgresql.org/docs/current/protocol-flow.html#id-1.10.5.7.11
 
 impl PgConnection {
     pub(crate) async fn establish(options: &PgConnectOptions) -> Result<Self, Error> {
-        // Upgrade to TLS if we were asked to and the server supports it
-        let mut stream = PgStream::connect(options).await?;
+        let stream = PgStream::connect(options).await?;
+        Self::finish_establish(options, stream).await
+    }
 
+    /// Establishes an operation-owned connection without changing ordinary
+    /// `ConnectOptions` or pool behavior.
+    #[doc(hidden)]
+    pub async fn establish_with_resource_budget(
+        options: &PgConnectOptions,
+        resource_budget: Arc<dyn ResourceBudget>,
+    ) -> Result<Self, Error> {
+        let stream = PgStream::connect_with_resource_budget(options, resource_budget).await?;
+        Self::finish_establish(options, stream).await
+    }
+
+    async fn finish_establish(
+        options: &PgConnectOptions,
+        mut stream: PgStream,
+    ) -> Result<Self, Error> {
         // To begin a session, a frontend opens a connection to the server
         // and sends a startup message.
 

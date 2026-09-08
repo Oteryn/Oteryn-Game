@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use crate::error::Error;
 use crate::net::socket::WithSocket;
@@ -89,6 +90,36 @@ where
     {
         drop((socket, config, with_socket));
         panic!("one of the `runtime-*-native-tls` or `runtime-*-rustls` features must be enabled")
+    }
+}
+
+/// Performs a TLS handshake whose allocations are charged to `resource_budget`.
+///
+/// This is deliberately separate from [`handshake`]: callers that do not opt in
+/// retain SQLx's upstream, owner-free behavior.
+pub async fn handshake_with_resource_budget<S, Ws>(
+    socket: S,
+    config: TlsConfig<'_>,
+    with_socket: Ws,
+    resource_budget: Arc<dyn crate::net::resource_budget::ResourceBudget>,
+) -> crate::Result<Ws::Output>
+where
+    S: Socket,
+    Ws: WithSocket,
+{
+    #[cfg(all(feature = "_tls-rustls", not(feature = "_tls-native-tls")))]
+    return Ok(with_socket
+        .with_socket(
+            tls_rustls::handshake_with_resource_budget(socket, config, resource_budget).await?,
+        )
+        .await);
+
+    #[cfg(not(all(feature = "_tls-rustls", not(feature = "_tls-native-tls"))))]
+    {
+        drop((socket, config, with_socket, resource_budget));
+        Err(Error::tls(
+            "resource-owned TLS requires the qualified rustls backend",
+        ))
     }
 }
 

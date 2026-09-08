@@ -483,3 +483,19 @@ operation_owner_propagation: NOT_PROVEN
 next_action: implement #430 caller-supplied Arc propagation RED/GREEN, then and only then resume #429 ALPN ownership
 remaining_acceptance_cells: operation-owner propagation; owner-aware ALPN RED/GREEN; protected ClientHello and decoded-owner matrix; session/cache and configuration/crypto ownership; complete TLS; TLS-positive proof; PostgreSQL17.6 qualification; independent review; canonical CI/MQ; protected readback and target release
 ```
+
+## Window14 operation-owner propagation
+
+```yaml
+last_progress: implemented the separate caller-supplied owner path from PgConnection through rustls construction
+status: active_alpn_owner
+review_p1_3947483202: PROVEN_FIXED
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+operation_owner_propagation: PROVEN
+ordinary_connect_and_pool_owner_free: PROVEN
+owner_aware_tls_no_fallback: PROVEN
+owner_aware_alpn: NOT_PROVEN
+next_action: execute protected #429 ALPN/protocol allocation custody with this same propagated owner
+remaining_acceptance_cells: owner-aware ALPN RED/GREEN; protected ClientHello and decoded-owner matrix; session/cache and configuration/crypto ownership; complete TLS; TLS-positive proof; PostgreSQL17.6 qualification; independent review; canonical CI/MQ; protected readback and target release
+```
