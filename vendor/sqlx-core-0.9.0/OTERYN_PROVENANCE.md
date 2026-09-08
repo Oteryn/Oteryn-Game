@@ -718,3 +718,34 @@ and transfer into the successor state until actual destruction.  It must not
 alter TLS versions, extensions, ECH/QUIC, certificate/hostname semantics or
 ordinary no-owner behavior.  No decoded-owner source was mutated after this
 preflight, and complete TLS, TLS-positive and PostgreSQL 17.6 remain OPEN.
+
+## Window 11 ClientHello symbol amendment preflight
+
+Protected main `e3d8a46871a98a309c73b3febaa41a7e6d2ec408`, including the
+ClientHello symbol amendment and the immutable-tree PostgreSQL classifier
+control repair, was normally merged into the canonical branch. The newly
+authorized `emit_client_hello_for_retry` boundary does not reach the first
+configured ClientHello allocation that its mandatory proof must cover.
+
+`ClientHelloInput::new` clones `extra_exts.protocols` into
+`ClientHelloDetails` before `ClientHelloInput::start_handshake` calls
+`emit_client_hello_for_retry`. The source clone can retain its backing while
+the destination allocation is made. Consequently, plumbing an owner only
+inside the newly authorized function cannot reserve before this allocation,
+measure its actual vector capacity, retain source/destination overlap, or bind
+the destination custody to the successor chain. Post-call inspection would
+again be too late, and moving or duplicating the clone inside the authorized
+function would change an unallocated symbol rather than solve the authority
+boundary.
+
+`SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/hs.rs ::
+ClientHelloInput::new (the ClientHelloDetails protocol-vector construction)`.
+The smallest follow-up must permit same-ledger owner propagation into this
+constructor and reservation/custody around the configured protocol clone,
+including actual capacity, checked arithmetic, source/destination overlap,
+construction-error rollback, and transfer with `ClientHelloInput::hello` into
+the already-authorized successor chain. It must preserve ordinary no-owner,
+ALPN, ECH, QUIC, resumption, wire, and security semantics. No rustls semantic
+source was modified in this checkpoint. The decoded-owner matrix, complete
+TLS proof, real TLS-positive proof, and PostgreSQL 17.6 qualification remain
+OPEN; #422's merge-queue harness supplies no #356 qualification credit.

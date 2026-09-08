@@ -191,3 +191,21 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   custody RED/GREEN without weakening TLS or substituting an aggregate reserve.
 - [ ] Keep real TLS-positive and PostgreSQL17.6 qualification stopped until the
   complete TLS ownership matrix is proven.
+
+## Window11 ClientHello symbol-amendment preflight
+
+- [x] Normally merge protected
+  `main@e3d8a46871a98a309c73b3febaa41a7e6d2ec408`, retaining the separate
+  CONTROL classifier changes without authoring their paths.
+- [x] Preflight the protected `emit_client_hello_for_retry` amendment before
+  semantic source mutation.
+- [x] Stop at exact `SHARED_LEASE_REQUIRED` for
+  `vendor/rustls-0.23.43/src/client/hs.rs::ClientHelloInput::new`: it clones
+  configured protocol/ALPN backing into `ClientHelloDetails` before the newly
+  authorized function is entered, so that function cannot reserve before the
+  allocation or retain source/destination overlap.
+- [ ] Obtain the narrow constructor-symbol lease and then resume the protected
+  decoded-owner RED/GREEN matrix without moving the allocation merely to evade
+  its custody boundary.
+- [ ] Keep complete TLS, real TLS-positive and exact-candidate PostgreSQL 17.6
+  qualification OPEN; #422's control harness supplies no #356 credit.

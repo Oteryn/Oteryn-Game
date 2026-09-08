@@ -409,3 +409,24 @@ blocker: client_hello_allocations_are_outside_the_exact_client_hs_symbol_lease
 next_action: authorize client/hs.rs::emit_client_hello_for_retry for same-ledger actual-backing custody, then resume the 13-path decoded-owner RED/GREEN matrix
 remaining_acceptance_cells: all protected decoded-owner RED/GREEN boundaries; complete TLS configuration/crypto composition; actual TLS-positive proof; PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
 ```
+
+## Window11 ClientHello symbol-amendment preflight
+
+The ClientHello symbol amendment is protected and applied, and current
+protected `main@e3d8a46871a98a309c73b3febaa41a7e6d2ec408` was normally merged.
+Preflight found that configured ALPN/protocol backing is cloned in
+`ClientHelloInput::new` before control reaches the newly authorized
+`emit_client_hello_for_retry`. The mandatory clone-overlap and
+denial-before-allocation proof therefore cannot be implemented solely within
+the new symbol. No rustls semantic source was changed.
+
+```yaml
+last_progress: merged current protected main and preflighted the ClientHello symbol amendment
+status: blocked_pending_shared_lease
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+complete_tls_accounting: NOT_PROVEN
+blocker: configured_protocol_clone_allocates_in_unlisted_ClientHelloInput_new_before_emit_client_hello_for_retry
+next_action: authorize client/hs.rs::ClientHelloInput::new only for same-ledger protocol-vector clone custody, then resume the protected decoded-owner RED/GREEN matrix
+remaining_acceptance_cells: all protected decoded-owner RED/GREEN boundaries; complete TLS configuration/crypto composition; actual TLS-positive proof; exact-head PostgreSQL17.6 owned driver test; independent whole-diff review; canonical CI/MQ; protected readback and target release
+```
