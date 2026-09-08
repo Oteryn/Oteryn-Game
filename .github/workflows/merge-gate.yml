@@ -518,11 +518,23 @@ jobs:
               ):
                   raise SystemExit('exact tree inspection returned incomplete or mismatched evidence; fail closed')
               for entry in tree_payload['tree']:
+                  path = entry.get('path') if isinstance(entry, dict) else None
+                  entry_type = entry.get('type') if isinstance(entry, dict) else None
+                  mode = entry.get('mode') if isinstance(entry, dict) else None
+                  legal_modes = {
+                      'blob': ('100644', '100755', '120000'),
+                      'tree': ('040000',),
+                      'commit': ('160000',),
+                  }
                   if (
                       not isinstance(entry, dict)
-                      or not isinstance(entry.get('path'), str)
-                      or entry.get('type') not in ('blob', 'tree', 'commit')
-                      or not isinstance(entry.get('mode'), str)
+                      or not isinstance(path, str)
+                      or not path
+                      or '\x00' in path
+                      or path.startswith('/')
+                      or any(component in ('', '.', '..') for component in path.split('/'))
+                      or entry_type not in legal_modes
+                      or mode not in legal_modes[entry_type]
                       or not isinstance(entry.get('sha'), str)
                       or re.fullmatch(r'[0-9a-f]{40}', entry['sha']) is None
                   ):

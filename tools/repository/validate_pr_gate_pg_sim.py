@@ -15,7 +15,7 @@ POSTGRES_IMAGE = (
 )
 # Like the canonical scope/aggregate pins, these bind execution semantics, not just text fragments.
 EXPECTED_EVIDENCE_JOB_SHA256 = {
-    "rust_linux": "4961ad5c4c19636dca09b0a24ff6fc6dfd6e40f7886ed4312ea5f5358c72c059",
+    "rust_linux": "5f11db3a3126371d8138b579b0abc908eb9a93c72fa8ec4302a29c866b5e035e",
     "rust_windows": "de7eca96c0dd87d6a7c6d119a619f3ab67211bbb0982b5a1f1125d8ea7a5ca08",
 }
 
@@ -142,7 +142,16 @@ def validate() -> list[str]:
             "                  or tree_payload.get('sha', '').lower() != tree_sha\n",
             "                  or tree_payload.get('truncated') is not False\n",
             "              for entry in tree_payload['tree']:\n",
-            "                      or entry.get('type') not in ('blob', 'tree', 'commit')\n",
+            "                  legal_modes = {\n",
+            "                      'blob': ('100644', '100755', '120000'),\n",
+            "                      'tree': ('040000',),\n",
+            "                      'commit': ('160000',),\n",
+            "                      or not path\n",
+            "                      or '\\x00' in path\n",
+            "                      or path.startswith('/')\n",
+            "                      or any(component in ('', '.', '..') for component in path.split('/'))\n",
+            "                      or entry_type not in legal_modes\n",
+            "                      or mode not in legal_modes[entry_type]\n",
             "              matches = [entry for entry in tree_payload['tree'] if entry['path'] == target]\n",
             "              if len(matches) > 1:\n",
             "              if not matches:\n",

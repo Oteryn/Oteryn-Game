@@ -91,6 +91,7 @@ finding_dispositions:
     - require valid API blob SHA and exact-head checkout blob parity
     - strictly validate post-inspection changed-files count before comparison
     - require successful complete immutable tree evidence before classifying target absence
+    - PRRT_kwDOT8SzxM6gITQh: reject malformed paths and illegal type/mode pairs in every returned tree entry
 ```
 
 ## Acceptance criteria
@@ -112,15 +113,15 @@ No WP3 vendor/Cargo/source, Foundation/WP2, SQL/migration/shared PostgreSQL test
 
 ## Implementation / findings
 
-Replaced the downstream PostgreSQL classifier's immutable compare enumeration with authenticated Git commit/tree observations of the one canonical path at exact base and head SHAs. Absence requires a successful identity-matched, complete, non-truncated tree response; ambiguous contents 404s are not target evidence. A present file must expose a valid blob SHA matching the exact-head checkout. Removal/rename-away, unavailable or malformed tree evidence, malformed post-inspection counts and checkout/API blob disagreement fail closed. The pre/post PR identity, state and count fence remains unchanged, while valid large changed-file counts no longer block target qualification.
+Replaced the downstream PostgreSQL classifier's immutable compare enumeration with authenticated Git commit/tree observations of the one canonical path at exact base and head SHAs. Absence requires a successful identity-matched, complete, non-truncated tree response whose every entry has a valid relative path, object SHA and legal Git type/mode pair; ambiguous contents 404s are not target evidence. A present target must be a regular or executable blob with a valid SHA matching the exact-head checkout. Removal/rename-away, unavailable or malformed tree evidence, malformed post-inspection counts and checkout/API blob disagreement fail closed. The pre/post PR identity, state and count fence remains unchanged, while valid large changed-file counts no longer block target qualification.
 
-The actual inline workflow harness preserves the protected 803-file target-present RED as a self-contained fixture that does not require historical Git objects in a depth-1 checkout. It is GREEN for the allocated state/error/race matrix, including ambiguous/auth-masked 404s, successful both-absent immutable trees, deletion/rename, missing commits, malformed/mismatched/truncated trees, checkout mismatch and strict post-count controls. The Linux job digest and mandatory invocation mutations are both negative controls.
+The actual inline workflow harness preserves the protected 803-file target-present RED as a self-contained fixture that does not require historical Git objects in a depth-1 checkout. It is GREEN for the allocated state/error/race matrix, including ambiguous/auth-masked 404s, successful both-absent immutable trees, deletion/rename, missing commits, malformed/mismatched/truncated trees, malformed paths and type/mode pairs, legitimate non-target trees/symlinks/submodules, stricter target object modes, checkout mismatch and strict post-count controls. The Linux job digest and mandatory invocation mutations are both negative controls.
 
 ## Validation
 
 ### Focused
 
-- command/run: `python tools/repository/validate_pr_gate_pg_sim.py`; direct execution of all 19 inline PG/SIM regression functions in `tools/repository/test_validate_pr_gate_pg_sim.py`
+- command/run: `python tools/repository/validate_pr_gate_pg_sim.py`; direct execution of all 20 inline PG/SIM regression functions in `tools/repository/test_validate_pr_gate_pg_sim.py`
 - result: PASS
 
 ### Component/integration

@@ -313,9 +313,11 @@ def test_classifier_rejects_unbound_base() -> None:
 
 def test_classifier_exact_target_state_matrix() -> None:
     present = {"path": TARGET, "mode": "100644", "type": "blob", "sha": BLOB_SHA}
+    executable = {"path": TARGET, "mode": "100755", "type": "blob", "sha": BLOB_SHA}
     absent = {"path": "docs/readme.md", "mode": "100644", "type": "blob", "sha": "4" * 40}
     cases = (
         ("large-present", present, present, True, None, "present=true\n"),
+        ("executable-present", executable, executable, True, None, "present=true\n"),
         ("introduced", absent, present, True, None, "present=true\n"),
         ("both-absent", absent, absent, False, None, "present=false\n"),
         ("removed", present, absent, False, "removed or renamed", ""),
@@ -402,6 +404,56 @@ def test_classifier_requires_successful_tree_evidence_for_absence() -> None:
         assert "exact tree inspection failed" in failure and not output
 
 
+def test_classifier_validates_every_tree_entry_before_proving_absence() -> None:
+    valid_elsewhere = (
+        {"path": "docs", "mode": "040000", "type": "tree", "sha": "4" * 40},
+        {"path": "link", "mode": "120000", "type": "blob", "sha": "5" * 40},
+        {"path": "vendor/submodule", "mode": "160000", "type": "commit", "sha": "6" * 40},
+    )
+    valid_trees = {
+        "2" * 40: {"sha": "2" * 40, "truncated": False, "tree": list(valid_elsewhere)},
+        "3" * 40: {"sha": "3" * 40, "truncated": False, "tree": list(valid_elsewhere)},
+    }
+    failure, output = run_classifier([], tree_payloads=valid_trees, checkout_present=False)
+    assert failure is None and output == "present=false\n", (failure, output)
+
+    malformed_paths = (None, "", "/absolute", "bad\x00path", "a//b", "./a", "a/../b")
+    invalid_entries = [
+        {"path": path, "mode": "100644", "type": "blob", "sha": "4" * 40}
+        for path in malformed_paths
+    ]
+    invalid_entries.append(
+        {"path": "docs/readme.md", "mode": "bogus", "type": "blob", "sha": "4" * 40}
+    )
+    legal_modes = {
+        "blob": ("100644", "100755", "120000"),
+        "tree": ("040000",),
+        "commit": ("160000",),
+    }
+    for entry_type in legal_modes:
+        for other_type, modes in legal_modes.items():
+            if entry_type != other_type:
+                invalid_entries.extend(
+                    {"path": "elsewhere", "mode": mode, "type": entry_type, "sha": "4" * 40}
+                    for mode in modes
+                )
+    for entry in invalid_entries:
+        trees = copy.deepcopy(valid_trees)
+        trees["3" * 40]["tree"] = [entry]
+        failure, output = run_classifier([], tree_payloads=trees, checkout_present=False)
+        assert "malformed entry" in failure and not output, entry
+
+    for target_entry in (
+        {"path": TARGET, "mode": "120000", "type": "blob", "sha": "4" * 40},
+        {"path": TARGET, "mode": "040000", "type": "tree", "sha": "4" * 40},
+        {"path": TARGET, "mode": "160000", "type": "commit", "sha": "4" * 40},
+    ):
+        trees = copy.deepcopy(valid_trees)
+        trees["3" * 40]["tree"] = [target_entry]
+        failure, output = run_classifier([], tree_payloads=trees)
+        assert "unexpected target object" in failure and not output, target_entry
+
+
 def test_classifier_rejects_invalid_changed_file_counts() -> None:
     for value in (-1, True, "803", None):
         failure, output = run_classifier([], initial_change=lambda pull, value=value: pull.update(changed_files=value))
@@ -470,6 +522,7 @@ def main() -> int:
         test_classifier_rejects_bad_target_evidence_and_checkout_mismatch,
         test_classifier_rejects_unavailable_exact_commits,
         test_classifier_requires_successful_tree_evidence_for_absence,
+        test_classifier_validates_every_tree_entry_before_proving_absence,
         test_classifier_rejects_invalid_changed_file_counts,
         test_evidence_step_condition_family,
         test_scope_rejects_identity_races,
