@@ -105,5 +105,32 @@ class ExportTests(unittest.TestCase):
         for forbidden in ("exec(", "eval(", "requests", "urllib", "selenium", "playwright", ".lua", ".xml", ".otbm"):
             self.assertNotIn(forbidden, text)
 
+    def test_export_rejects_symlink_to_existing_outside_target(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            output_directory = directory / "output"
+            output_directory.mkdir()
+            outside = directory / "outside.json"
+            outside.write_bytes(b"must remain unchanged")
+            output = output_directory / "product.json"
+            output.symlink_to(outside)
+
+            with self.assertRaises(farm.ProductError):
+                farm.write_blocked_product(output)
+            self.assertEqual(outside.read_bytes(), b"must remain unchanged")
+
+    def test_export_rejects_dangling_symlink_without_creating_target(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            directory = Path(tmp)
+            output_directory = directory / "output"
+            output_directory.mkdir()
+            outside = directory / "missing-outside.json"
+            output = output_directory / "product.json"
+            output.symlink_to(outside)
+
+            with self.assertRaises(farm.ProductError):
+                farm.write_blocked_product(output)
+            self.assertFalse(outside.exists())
+
 
 if __name__ == "__main__": unittest.main()

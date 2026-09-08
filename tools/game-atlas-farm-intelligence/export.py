@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path, PurePosixPath
 import re
 from typing import Any
@@ -96,6 +97,27 @@ def safe_output(path: str) -> Path:
     if posix.is_absolute() or ".." in posix.parts or "\\" in path or len(posix.parts) != 1:
         raise ProductError("output must be a safe file name")
     return Path(path)
+
+
+def write_blocked_product(path: Path) -> None:
+    """Write the canonical product without following the final path component."""
+    nofollow = getattr(os, "O_NOFOLLOW", None)
+    if not isinstance(nofollow, int) or nofollow == 0:
+        raise ProductError("safe no-follow output writes are unavailable")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | nofollow
+    try:
+        descriptor = os.open(path, flags, 0o666)
+    except OSError as exc:
+        raise ProductError("output cannot be opened without following links") from exc
+    try:
+        with os.fdopen(descriptor, "wb") as output:
+            descriptor = -1
+            output.write(canonical_bytes(blocked_product()))
+    except OSError as exc:
+        raise ProductError("canonical product write failed") from exc
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
 
 
 # The helpers below exercise prospective semantics without accepting a source or
@@ -225,7 +247,7 @@ def main() -> int:
     args = parser.parse_args()
     if args.command == "export":
         output = safe_output(args.path)
-        output.write_bytes(canonical_bytes(blocked_product()))
+        write_blocked_product(output)
         load_blocked_product(output)
     else:
         load_blocked_product(Path(args.path))
