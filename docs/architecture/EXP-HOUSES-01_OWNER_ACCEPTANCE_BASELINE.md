@@ -8,7 +8,7 @@
 - Gate: `EXP-HOUSES-01`
 - Owner disposition: `ACCEPT`
 - Coordination issue: `#220`
-- Protected composition base: `main@c9cec0f746e549ff96151bcf1e3582522dfea0ee`
+- Protected composition base: `main@b6411e9bd280a1b48a8c356492a332d084ac7672`
 - Runtime/client/server/protocol/DDL/migration/Platform/production authority: **NONE**
 
 ## 1. Purpose and status axes
@@ -420,6 +420,8 @@ Only one remains. Non-kept house is value-safely relinquished to public allocati
 
 `KEEP_EXISTING_HOUSE` relinquishes incoming house. The Character purchase itself does **not** require physical-house Premium/eligibility merely because the listing contained a house; existing-house retention remains governed by its existing rent/lifecycle and Premium lapse rule.
 
+If the listing selected `INCLUDE_FURNISHINGS` but the buyer chooses `KEEP_EXISTING_HOUSE`, the furnishings transfer does not commit. Section 14.2 claimant-aware non-retention disposition must complete or remain explicitly recoverable before the incoming house may become publicly allocatable.
+
 A house on another World does not conflict with this per-World slot.
 
 ### 13.4 Buyer has Residence
@@ -435,6 +437,8 @@ KEEP_INCOMING_HOUSE
 `KEEP_INCOMING_HOUSE` revalidates active Premium + eligibility and value-safely settles/releases Residence first.
 
 `KEEP_RESIDENCE` relinquishes incoming physical house to public allocation and does not require physical-house acquisition eligibility merely to buy the Character.
+
+If the listing selected `INCLUDE_FURNISHINGS` but the buyer chooses `KEEP_RESIDENCE`, the furnishings transfer does not commit. Section 14.2 claimant-aware non-retention disposition must complete or remain explicitly recoverable before the incoming house may become publicly allocatable.
 
 Any physical house that must be relinquished because of the buyer's keep-choice follows the same safety principle as seller `RELINQUISH_HOUSE`: public vacancy/allocation is exposed only after the Character transfer outcome that makes that disposition applicable is authoritative; ambiguity leaves the disposition pending/non-allocatable and reconcilable.
 
@@ -458,52 +462,73 @@ or
 INCLUDE_FURNISHINGS
 ```
 
-### 14.1 HOUSE_ONLY uses typed pre-transfer-seller reclaim custody
+House location, ACL role and storage permission do not by themselves prove who may dispose of a durable item. Every movable item affected by Bazaar housing settlement is classified item-by-item under existing GAME-ITEM/DUR-03 binding, custody and authorization semantics before a transfer or reclaim outcome is allowed.
+
+### 14.1 HOUSE_ONLY uses claimant-aware typed reclaim custody
 
 Character + address may transfer, but ordinary movable contents excluded by `HOUSE_ONLY` do not silently become buyer property and are not placed into the sold Character's ordinary depot/inventory as a shortcut.
 
-The architecture requires a distinct DUR-03 typed custody family equivalent in semantics to:
+For each affected `ItemInstanceId`, the settlement resolves its authoritative legal claimant/disposition independently. An item placed by a guest, manager or other actor cannot be reclassified as seller property merely because it is physically inside the seller's house or because the actor had storage access.
+
+When a direct legal destination for the current claimant is unavailable or the multi-step Bazaar operation needs a non-gameplay holding state, the architecture requires a distinct DUR-03 typed custody family equivalent in semantics to:
 
 ```text
-BazaarSellerReclaimCustody {
+BazaarHousingReclaimCustody {
     world_id: WorldId,
     bazaar_operation_id: OperationId,
-    pre_transfer_seller_account_id: AccountId,
+    item_instance_id: ItemInstanceId,
+    claimant_ref: TypedItemClaimantRef,
 }
 ```
 
+`TypedItemClaimantRef` is not a generic `owner_id` and does not invent a new ownership authority. It is a typed reference to the already-lawful claimant subject resolved from the owning item/binding/custody rules at the Bazaar prepare boundary. It may identify the pre-transfer seller Account only for an item for which that Account is actually the lawful reclaim claimant; another Character/account/domain claimant remains distinct.
+
 The exact Rust/DDL identifier is deliberately not frozen, but the custody semantics are:
 
-- **stable key/scope:** `WorldId + BazaarOperationId + pre-transfer seller AccountId`, with each included `ItemInstanceId` retaining one authoritative immediate custody location;
-- **semantic claimant:** the authoritative seller `AccountId A` captured and revalidated before Character ownership rebinding;
+- **stable key/scope:** `WorldId + BazaarOperationId + ItemInstanceId + typed claimant`, with each item retaining exactly one authoritative immediate custody location;
+- **claimant preservation:** settlement records and preserves the authoritative per-item claimant/disposition basis; house ownership/ACL never rewrites it;
 - **mutation owner:** the game-owned item/value custody boundary under `DUR-03`, coordinated by the Bazaar housing settlement; Platform/client state is never custody authority;
-- **lifecycle:** items enter this non-gameplay custody before/while the Character+house transfer is settled, remain non-spendable/non-usable there, and leave only through a later authorized reclaim/materialization transaction;
+- **lifecycle:** an item may return directly to an existing legal claimant destination, or enter typed non-gameplay custody before/while Character+house transfer settles; custody items remain non-spendable/non-usable until legal exit;
 - **authorization boundary:** claimant identity is not general gameplay mutation authority and does not create Account-wide or cross-Character warehouse semantics;
-- **legal exit:** withdrawal/materialization must choose a separately legal item destination under the owning item/depot/mail/reclaim rules and must itself be value-conserving, fenced and idempotent.
+- **legal exit:** withdrawal/materialization must choose a separately legal destination under the owning item/depot/mail/reclaim rules and must itself be value-conserving, fenced and idempotent.
 
 Consequences:
 
 - the sold Character and buyer Account B cannot claim `HOUSE_ONLY` contents merely because `CharacterId`/house ownership moved;
-- an alternate Character of seller Account A does not gain direct access merely from matching `AccountId`;
+- the pre-transfer seller Account A may reclaim only items for which it is the resolved lawful claimant; it cannot absorb a guest/manager/other claimant's item;
+- an alternate Character of a claimant Account does not gain direct access merely from matching `AccountId`;
 - no generic `owner_id`, free-form JSON/string location or sold-Character depot is accepted as the custody representation;
-- if the Bazaar transfer aborts before becoming authoritative, the same operation reconciles the pending custody back to the legal pre-transfer item/property result rather than duplicating or abandoning value.
+- if Bazaar transfer aborts before becoming authoritative, the same operation reconciles pending custody/direct-return state back to each item's legal pre-transfer result rather than duplicating, abandoning or reassigning value.
 
-The exact physical container/table, reclaim UI, retention/capacity policy and legal final withdrawal destinations remain downstream implementation/item-storage decisions; the claimant/type/scope/authority/lifecycle semantics above are binding.
+The exact physical container/table, reclaim UI, retention/capacity policy and legal final withdrawal destinations remain downstream implementation/item-storage decisions; per-item claimant preservation, typed scope, authority and lifecycle semantics above are binding.
 
-### 14.2 INCLUDE_FURNISHINGS
+### 14.2 INCLUDE_FURNISHINGS is conditional on retaining the incoming house
 
-Eligible items transfer only through an explicit authoritative manifest/bundle.
+Eligible items transfer to the buyer only through an explicit authoritative manifest/bundle **and only if the buyer's final keep-choice is `KEEP_INCOMING_HOUSE`**.
 
-Required invariants:
+An item is eligible for the furnishings manifest only when its authoritative current claimant/binding/custody policy permits the seller-authorized transfer. House placement or seller ownership of the `HouseId` alone does not authorize transfer of an item whose legal claimant is another Character/account/domain subject.
 
-- opt-in;
+Required invariants when `KEEP_INCOMING_HOUSE` commits:
+
+- seller opt-in;
 - exact set server-authoritative;
+- every manifest item is individually transfer-authorized under its owning item policy;
 - `DUR-03` identity/location/conservation;
 - stale client cannot alter committed set;
-- committed item cannot remain usable in old seller custody;
+- transferred item cannot remain usable in old claimant/custody;
 - ambiguous settlement reconciles, never duplicates.
 
-Exact manifest schema, item eligibility, capacity, valuation and UI remain deferred.
+If buyer chooses `KEEP_EXISTING_HOUSE` or `KEEP_RESIDENCE`, the incoming physical house is not retained and the furnishings transfer **must not commit**. Before that house becomes vacant/publicly allocatable:
+
+1. freeze the manifest candidate set under the same Bazaar operation identity;
+2. classify each candidate item by its authoritative pre-transfer legal claimant/disposition;
+3. return it to an already-legal claimant destination where possible, otherwise move it to the claimant-aware typed `BazaarHousingReclaimCustody` semantics from section 14.1;
+4. prove that no manifest item remains in the relinquished house as a gift to a future occupant and no item becomes buyer or seller property without independent legal authority;
+5. only then allow the non-kept house to complete public release.
+
+If Character transfer, buyer keep-choice, item disposition or custody outcome is ambiguous, the house remains pending/non-allocatable and the same operation reconciles both the manifest and property outcome; a timeout cannot silently commit furnishings transfer or public release.
+
+Exact manifest schema, item eligibility detail, capacity, valuation, claimant destination UI and physical custody representation remain deferred.
 
 ## 15. Character deletion and World transfer
 
@@ -537,7 +562,7 @@ Guest gets only explicitly granted capabilities. Entry permission does not autom
 
 ### 16.4 Fine-grained direction
 
-ACL may distinguish property entry, specific doors, room/zone, bed use, storage use, workstation/interactive feature and later accepted capabilities. Exact vocabulary remains downstream detail if least-authority semantics are preserved.
+ACL may distinguish property entry, specific doors, room/zone, bed use, storage use, workstation/interactive feature and later accepted capabilities. Storage permission never implies transfer ownership or claimant authority over items placed by that actor or by somebody else. Exact vocabulary remains downstream detail if least-authority semantics are preserved.
 
 ### 16.5 Revocation
 
@@ -580,11 +605,11 @@ Free Residence is not authorization for unlimited free durable storage. Exact pl
 
 Account-scoped Residence ownership does not automatically make placed/storage items account-wide transferable between alternate Characters.
 
-Eviction, relinquishment, Residence replacement and Bazaar disposition move value through explicit authoritative custody/location transitions before prior property/runtime authority is released.
+Housing ownership, ACL role and storage access do not supersede item binding/claimant semantics. Eviction, relinquishment, Residence replacement and Bazaar disposition resolve affected durable items item-by-item and move value through explicit authoritative custody/location transitions before prior property/runtime authority is released.
 
-For Bazaar `HOUSE_ONLY`, the required intermediate/reclaim location is the typed pre-transfer-seller custody defined in section 14.1; it is not a generic Account warehouse and not the sold Character's depot.
+For Bazaar `HOUSE_ONLY`, and for `INCLUDE_FURNISHINGS` when the buyer does not retain the incoming house, required reclaim/holding state uses the claimant-aware typed custody semantics defined in section 14; it is not a generic Account warehouse and not automatically the sold Character's depot.
 
-Destroying, duplicating, abandoning or silently gifting forgotten items is not an acceptable simplification.
+Destroying, duplicating, abandoning, misassigning or silently gifting forgotten items is not an acceptable simplification.
 
 ## 20. Failure and recovery semantics
 
@@ -632,7 +657,7 @@ Remains authority for Platform Account identity, entitlement/commercial source d
 
 Funds and durable value mutations remain with accepted/future economy and `DUR-03` owners. Housing declares required effects without inventing distributed ACID or duplicate value authority.
 
-The typed `BazaarSellerReclaimCustody` semantics in section 14.1 define a required housing/Bazaar use of a DUR-03 custody family; they do not move item mutation authority to Platform, Account identity or the housing UI.
+The claimant-aware typed `BazaarHousingReclaimCustody` semantics in section 14 define a required housing/Bazaar use of a DUR-03 custody family; they preserve each item's already-lawful claimant and do not move item mutation authority to Platform, Account identity, house owner identity or the housing UI.
 
 ### 22.5 Client
 
@@ -669,8 +694,9 @@ Later implementation must retain enough evidence to diagnose:
 - ACL revisions/privileged changes;
 - Bazaar housing disposition/keep-choice;
 - `BAZAAR_DISPOSITION_PENDING` lifecycle and terminal Character-transfer outcome used to finalize/cancel it;
-- typed pre-transfer-seller reclaim-custody claimant/key and item transitions;
-- furnished-transfer manifest/result;
+- claimant resolution/disposition basis per affected `ItemInstanceId`;
+- typed Bazaar housing reclaim-custody key/claimant/item transitions;
+- furnished-transfer manifest, buyer keep-choice and transfer-versus-reclaim result;
 - reclaim/custody transitions;
 - runtime generations/stale-writer rejection;
 - ambiguous-operation reconciliation.
@@ -698,7 +724,7 @@ A future implementation must prove at least:
 15. Bazaar Residence conflict requires keep-choice and produces one personal housing class.
 16. Buyer keeping existing house/Residence may buy Character without incoming-house acquisition eligibility because incoming house is relinquished.
 17. `HOUSE_ONLY` prevents accidental furnishings transfer.
-18. `INCLUDE_FURNISHINGS` transfers exact authoritative manifest once without duplication.
+18. `INCLUDE_FURNISHINGS` with `KEEP_INCOMING_HOUSE` transfers the exact authoritative, individually transfer-authorized manifest once without duplication.
 19. ACL revocation rejects stale access.
 20. Local GUI manipulation alone cannot change effective ACL.
 21. Player-facing text-command ACL mutation is unavailable/rejected; GUI/panel is the supported player path.
@@ -710,7 +736,8 @@ A future implementation must prove at least:
 27. Account-scoped Residence does not silently authorize cross-Character item transfer.
 28. Highest proxy bidder becomes ineligible before close: its bid/max is excluded from both winner selection and price formation; the winner/price are recomputed from remaining valid bids, or no transfer occurs if none remain.
 29. `RELINQUISH_HOUSE` enters pending non-allocatable disposition; Character rebinding rejection preserves/restores the seller-side house result and never exposes the property to public auction.
-30. `HOUSE_ONLY` contents enter typed pre-transfer-seller reclaim custody keyed to the seller Account/World/Bazaar operation; buyer/sold Character/alternate seller Character cannot access them without a separately legal reclaim transaction.
+30. `HOUSE_ONLY` with mixed item claimants preserves claimant per item: a seller-claimable item may enter seller-claimant custody, while a guest/manager/other claimant's item returns to its legal claimant destination or claimant-keyed typed custody and cannot be reclaimed by the house seller merely because of location/ACL.
+31. `INCLUDE_FURNISHINGS` + buyer `KEEP_EXISTING_HOUSE` or `KEEP_RESIDENCE`: furnishings transfer does not commit; every manifest candidate is returned/routed by authoritative claimant before the incoming house becomes publicly allocatable.
 
 ## 26. Deliberately deferred
 
@@ -766,8 +793,8 @@ Detailed lifecycle/admin/economy/Rested rules remain downstream of future guild/
 - service/process/crate decomposition;
 - RPC/HTTP/internal IDL;
 - exact operation/revision/runtime-generation representation;
-- exact storage representation for pending Bazaar disposition and seller reclaim custody;
-- reclaim screen/workflow and legal final destination choices consistent with the binding custody authorization boundary;
+- exact storage representation for pending Bazaar disposition and claimant-aware housing reclaim custody;
+- claimant-resolution/reclaim screen/workflow and legal final destination choices consistent with the binding custody authorization boundary;
 - runtime placement algorithm;
 - client screen layout;
 - protocol messages;
@@ -790,7 +817,9 @@ The accepted architecture rejects:
 10. Residence plus physical house simultaneously on same Account/World;
 11. using an ineligible/invalid auction maximum to determine a valid bidder's payable price;
 12. exposing a Bazaar-relinquished house to public allocation before the Character transfer outcome that authorizes final release is authoritative;
-13. treating `HOUSE_ONLY` contents as the sold Character's depot contents or as generic Account-wide storage.
+13. treating `HOUSE_ONLY` contents as the sold Character's depot contents or as generic Account-wide storage;
+14. assigning the house seller as claimant of an item merely because that item was placed inside the house or by an ACL-authorized guest/manager;
+15. leaving `INCLUDE_FURNISHINGS` items in an incoming house that the buyer chose not to retain, thereby gifting them to a future occupant.
 
 ## 28. Explicit supersession
 
@@ -889,7 +918,9 @@ Checkpoint PRs remain provenance while this delivery is in review and do not aut
 
 `BAZAAR CONTENTS: HOUSE_ONLY OR EXPLICIT INCLUDE_FURNISHINGS`
 
-`HOUSE_ONLY CLAIMANT: PRE-TRANSFER SELLER ACCOUNT VIA TYPED NON-GAMEPLAY DUR-03 RECLAIM CUSTODY`
+`BAZAAR CONTENT RECLAIM: ITEM-BY-ITEM AUTHORITATIVE CLAIMANT VIA TYPED NON-GAMEPLAY DUR-03 CUSTODY`
+
+`INCLUDE_FURNISHINGS: TRANSFER ONLY WHEN INCOMING HOUSE IS RETAINED; OTHERWISE CLAIMANT-AWARE RECLAIM BEFORE PUBLIC RELEASE`
 
 `RENT: RECURRING -> GRACE -> VALUE-SAFE FENCED EVICTION -> PUBLIC AUCTION`
 
