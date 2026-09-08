@@ -27,7 +27,8 @@ Canonical implementation order and dependencies are defined by:
 
 - `../programs/OTERYN_V2_IMPLEMENTATION_EXECUTOR_DAG.md`;
 - `../programs/OTERYN_V2_TERRA_SOL_EXECUTION_SCHEDULER.md` for the Terra + Sol execution profile;
-- `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for owner-facing launch/status guidance.
+- `../programs/OTERYN_GAME_AGENT_OPERATOR_RUNBOOK.md` for owner-facing launch/status guidance;
+- `../programs/OTERYN_DURABILITY_MULTIAGENT_LAUNCH_RUNBOOK.md` for the exact Durability one-writer + read-only analyst launch/resume procedure and packet/stale-head rules.
 
 ### Normal entry point
 
