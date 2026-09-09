@@ -5,7 +5,8 @@ param(
     [int]$WarmupFrames = 180,
     [ValidateRange(1, 100000)]
     [int]$SampleFrames = 900,
-    [string]$HardwareAlias = "Molehill-PC"
+    [string]$HardwareAlias = "Molehill-PC",
+    [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
@@ -100,15 +101,22 @@ function Invoke-BenchmarkCell {
         $peakWorkingSet = $null
     }
 
-    if ($process.ExitCode -ne 0) {
+    $exitCode = $null
+    try {
+        $exitCode = $process.ExitCode
+    } catch {
+        $exitCode = $null
+    }
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
         $errorText = if (Test-Path $stderr) { Get-Content -Raw $stderr } else { "" }
-        throw "$Backend/$Scenario/$SpritePx repetition $Repetition failed with exit $($process.ExitCode): $errorText"
+        throw "$Backend/$Scenario/$SpritePx repetition $Repetition failed with exit ${exitCode}: $errorText"
     }
 
     $stdoutLines = @(Get-Content $stdout)
     $jsonLine = $stdoutLines | Where-Object { $_ -match '^\{.*\}$' } | Select-Object -Last 1
     if (-not $jsonLine) {
-        throw "$Backend/$Scenario/$SpritePx repetition $Repetition produced no result JSON"
+        $errorText = if (Test-Path $stderr) { Get-Content -Raw $stderr } else { "" }
+        throw "$Backend/$Scenario/$SpritePx repetition $Repetition produced no result JSON; exit=${exitCode}; stderr=$errorText"
     }
 
     $adapterLog = $stdoutLines | Where-Object { $_ -match 'AdapterInfo.*name:' } | Select-Object -Last 1
@@ -134,13 +142,17 @@ $LockSha256 = if (Test-Path $LockPath) {
 
 $WgpuTarget = Join-Path $Root "target-physical-wgpu"
 $BevyTarget = Join-Path $Root "target-physical-bevy"
-$WgpuBuildSeconds = Invoke-CargoBuild -Package "oteryn-graphics-bakeoff-wgpu" -TargetDir $WgpuTarget
-$BevyBuildSeconds = Invoke-CargoBuild -Package "oteryn-graphics-bakeoff-bevy" -TargetDir $BevyTarget
+$WgpuBuildSeconds = $null
+$BevyBuildSeconds = $null
+if (-not $SkipBuild) {
+    $WgpuBuildSeconds = Invoke-CargoBuild -Package "oteryn-graphics-bakeoff-wgpu" -TargetDir $WgpuTarget
+    $BevyBuildSeconds = Invoke-CargoBuild -Package "oteryn-graphics-bakeoff-bevy" -TargetDir $BevyTarget
+}
 
 $WgpuExe = Join-Path $WgpuTarget "release\oteryn-graphics-bakeoff-wgpu.exe"
 $BevyExe = Join-Path $BevyTarget "release\oteryn-graphics-bakeoff-bevy.exe"
 if (-not (Test-Path $WgpuExe) -or -not (Test-Path $BevyExe)) {
-    throw "expected release benchmark executables were not produced"
+    throw "expected release benchmark executables were not produced; omit -SkipBuild for a clean build"
 }
 
 $buildEvidence = [ordered]@{
@@ -149,6 +161,7 @@ $buildEvidence = [ordered]@{
     cargo_lock_sha256 = $LockSha256
     hardware = $Machine
     rust = (& rustc +1.95.0 --version | Out-String).Trim()
+    build_skipped = [bool]$SkipBuild
     wgpu_clean_build_seconds = $WgpuBuildSeconds
     bevy_clean_build_seconds = $BevyBuildSeconds
     wgpu_binary_bytes = (Get-Item $WgpuExe).Length
