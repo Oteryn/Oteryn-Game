@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "status": "ACTIVE",
-  "updated_at": "2026-09-07T15:00:27+00:00",
+  "updated_at": "2026-09-09T11:29:31+00:00",
   "unit_policy": "Every limit declares an unambiguous unit and absolute hard maximum.",
   "required_entry_fields": [
     "id",
@@ -2604,6 +2604,854 @@
         "restart/reload preserves exact membership count, revision, completeness, terminal progression and rejection behavior"
       ],
       "notes": "Permanent GameSessionUseLedgerV1 exhaustion uses ADMISSION_GAMESESSION_LEDGER_EXHAUSTED, TERMINAL_REPLACEMENT_GAMESESSION_LEDGER_EXHAUSTED, EARLY_TERMINAL_REPLACEMENT_GAMESESSION_LEDGER_EXHAUSTED, or POST_GRACE_RECOVERY_GAMESESSION_LEDGER_EXHAUSTED according to operation family. All are TERMINAL/SESSION_UNAVAILABLE under the current ledger version and preserve existing authority. The pre-existing retryable ADMISSION_CAPACITY_EXCEEDED code is reserved for transient admission capacity and must not represent this lifetime ceiling."
+    },
+    {
+      "id": "DUR04-FIRST-PROD-PACKAGES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Packages in FIRST_PRODUCTION_CONTENT_PROFILE/v1 typed graph",
+      "unit": "packages",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject a second package before dependency/key merge or canonicalization.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 package accepted",
+        "2 packages rejected before merge/canonicalization"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-SEMANTIC-SCHEMA-VERSION-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+      "resource": "Semantic schema version in one first-production package binding",
+      "unit": "ASCII bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject length/emptiness before retaining or copying package schema identity.",
+      "client_visible": false,
+      "boundary_tests": [
+        "512-byte valid schema atom accepted",
+        "513-byte schema atom rejected before retention",
+        "empty schema version rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-LICENSING-METADATA-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+      "resource": "Licensing metadata atom in one first-production package binding",
+      "unit": "ASCII bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject length/emptiness before retaining or copying licensing metadata identity; no raw legal document is loaded by the runtime profile.",
+      "client_visible": false,
+      "boundary_tests": [
+        "512-byte valid licensing metadata atom accepted",
+        "513-byte atom rejected before retention",
+        "empty licensing metadata rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-SOURCE-MANIFEST-DIGEST-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+      "resource": "Source-manifest digest token in one first-production package binding",
+      "unit": "lowercase hex ASCII bytes",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Require exact 64-byte lowercase hex syntax before retaining/copying and before provenance hashing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "64-byte lowercase hex SHA-256 token accepted",
+        "63/65-byte token rejected",
+        "non-hex or uppercase token rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-PACKAGE-PROVENANCE-DIGEST-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+      "resource": "Derived package-provenance digest token",
+      "unit": "lowercase hex ASCII bytes",
+      "hard_maximum": 64,
+      "configurable_range": {
+        "minimum": 64,
+        "maximum": 64
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Recompute from the canonical five-field package binding and reject malformed or mismatching digest before staging.",
+      "client_visible": false,
+      "boundary_tests": [
+        "exact recomputed 64-byte digest accepted",
+        "wrong digest rejected before staging",
+        "63/65/non-hex digest rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-CONTENT-LOCK-ENTRIES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+      "resource": "Resolved package entries in the first-production Content Lock",
+      "unit": "entries",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Accept exactly the single package key/revision/provenance binding; reject extra/floating/dependency entries before lowering/staging.",
+      "client_visible": false,
+      "boundary_tests": [
+        "one exact package/provenance lock entry accepted",
+        "zero or two entries rejected",
+        "floating/dependency lock entry rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-WORLDS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "World contexts in one first-production generation",
+      "unit": "worlds",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject a second WorldId before graph lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 WorldId accepted",
+        "second WorldId rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-CONTENT-KEYS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Unique canonical ContentKey definitions",
+      "unit": "definitions",
+      "hard_maximum": 1042,
+      "configurable_range": {
+        "minimum": 21,
+        "maximum": 1042
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Count with checked arithmetic before sort/set construction and lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1,042 accepted when all family limits pass",
+        "1,043 rejected before canonicalization growth",
+        "checked-sum overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-REFERENCES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Semantic references in one first-production graph/artifact",
+      "unit": "references",
+      "hard_maximum": 3087,
+      "configurable_range": {
+        "minimum": 24,
+        "maximum": 3087
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Count with checked arithmetic before reference-vector/set materialization.",
+      "client_visible": false,
+      "boundary_tests": [
+        "3,087 accepted when semantically valid",
+        "3,088 rejected before resolution growth",
+        "reference-count overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-X-SPAN",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Inclusive x-axis span of explicit first-profile cells",
+      "unit": "cell positions",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate min/max coordinates using checked span arithmetic; do not allocate a dense grid from coordinates.",
+      "client_visible": false,
+      "boundary_tests": [
+        "span 32 accepted",
+        "span 33 rejected",
+        "coordinate span arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-Y-SPAN",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Inclusive y-axis span of explicit first-profile cells",
+      "unit": "cell positions",
+      "hard_maximum": 32,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 32
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate min/max coordinates using checked span arithmetic; do not allocate a dense grid from coordinates.",
+      "client_visible": false,
+      "boundary_tests": [
+        "span 32 accepted",
+        "span 33 rejected",
+        "coordinate span arithmetic overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-FLOORS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Distinct z/floor planes in one first-production generation",
+      "unit": "floors",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject a second distinct floor before spatial lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "one floor accepted",
+        "second distinct floor rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-CELLS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Explicit cells in one first-production generation",
+      "unit": "cells",
+      "hard_maximum": 1024,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 1024
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check cell count before clone/sort/lowering or staged record allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1,024 cells accepted when spans and semantics pass",
+        "1,025 rejected before canonicalization/lowering"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-REGIONS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Region definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Enforce exact first-profile cardinality before lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 Region accepted",
+        "2 Regions rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-AREAS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Area definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Enforce exact first-profile cardinality before lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 Area accepted",
+        "2 Areas rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-TERRAINS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Terrain definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Enforce exact first-profile cardinality before lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 Terrain accepted",
+        "2 Terrains rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-RELOCATIONS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Relocation definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess relocation definitions before reference collection.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 relocation accepted",
+        "2 relocations rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-BEHAVIORS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Behavior definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess behavior definitions before canonicalization.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 behavior accepted",
+        "2 behaviors rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-PRESENTATIONS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Presentation metadata definitions",
+      "unit": "definitions",
+      "hard_maximum": 3,
+      "configurable_range": {
+        "minimum": 3,
+        "maximum": 3
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Allow exactly creature/item/ability presentation metadata; no raw asset payload allocation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "3 allowlisted presentation definitions accepted",
+        "4th presentation rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-CREATURES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Creature definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess creature definitions before lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 creature accepted",
+        "2 creatures rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-SPAWNS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Spawn definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess spawns before source/reference validation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 classified spawn accepted",
+        "2 spawns rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-SPAWN-POPULATION-PER-SPAWN",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_01",
+      "resource": "Concurrent content-spawned population for one FIRST_PRODUCTION_CONTENT_PROFILE/v1 spawn",
+      "unit": "content-spawned actors per spawn",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate the production spawn population before artifact lowering or any runtime actor/container/task allocation; never clamp/default a value outside the profile.",
+      "client_visible": false,
+      "boundary_tests": [
+        "population 1 accepted for the single semantically valid production spawn",
+        "population 0 rejected as semantically incomplete",
+        "population 2 rejected before artifact lowering/runtime actor allocation"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-SPAWN-POPULATION-PER-SCOPE",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_01",
+      "resource": "Aggregate concurrent content-spawned population in one authoritative scope",
+      "unit": "content-spawned actors per authoritative scope",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked aggregate arithmetic across all accepted spawn records before staging/runtime actor allocation; the first profile has exactly one spawn and aggregate population 1.",
+      "client_visible": false,
+      "boundary_tests": [
+        "aggregate population 1 accepted",
+        "aggregate population 2 rejected before staging/runtime actor allocation",
+        "aggregate population checked-add overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-FORMULA-PROFILES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Product formula profile definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess profiles; fixture/evidence/test-only profile markers remain invalid independently of count.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 product-release formula profile accepted",
+        "2 profiles rejected",
+        "fixture-only profile rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-EFFECTS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Effect definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess effects before lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 effect accepted",
+        "2 effects rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-ABILITIES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Ability definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess abilities before lowering/client projection.",
+      "client_visible": true,
+      "boundary_tests": [
+        "1 ability accepted",
+        "2 abilities rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-ITEMS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Item definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess item definitions before lowering/client projection.",
+      "client_visible": true,
+      "boundary_tests": [
+        "1 item accepted",
+        "2 items rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-LOOT-TABLES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Loot table definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess loot tables before lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 loot table accepted",
+        "2 loot tables rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-LOOT-ENTRIES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Loot entries",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject a second loot entry before reference/RNG validation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 loot entry accepted",
+        "2 loot entries rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-XP-DEFINITIONS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "XP definitions",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess XP definitions before lowering.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 XP definition accepted",
+        "2 XP definitions rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-RNG-PURPOSES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Content-declared deterministic RNG purpose keys",
+      "unit": "definitions",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject excess purpose keys before canonicalization; content carries no seed/entropy state.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1 RNG purpose accepted",
+        "2 purposes rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-SECTIONS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Critical sections per bootstrap projection artifact",
+      "unit": "sections",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate section count before section-table allocation; profile requires exactly manifest and body.",
+      "client_visible": false,
+      "boundary_tests": [
+        "2 known critical sections accepted",
+        "0/1/3 sections rejected",
+        "unknown critical section rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-MANIFEST-FIELDS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+      "resource": "Manifest fields per first-production artifact",
+      "unit": "fields",
+      "hard_maximum": 20,
+      "configurable_range": {
+        "minimum": 20,
+        "maximum": 20
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Require exactly the versioned 20-field manifest before retaining metadata.",
+      "client_visible": false,
+      "boundary_tests": [
+        "20 profile-defined fields accepted",
+        "19 or 21 rejected as incompatible profile"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-SERVER-RECORDS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Server-authoritative body records",
+      "unit": "records",
+      "hard_maximum": 1043,
+      "configurable_range": {
+        "minimum": 22,
+        "maximum": 1043
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before record-vector allocation and parsing.",
+      "client_visible": false,
+      "boundary_tests": [
+        "1,043 records accepted when semantic-family limits pass",
+        "1,044 rejected before vector allocation"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-CLIENT-RECORDS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Client-safe body records",
+      "unit": "records",
+      "hard_maximum": 6,
+      "configurable_range": {
+        "minimum": 6,
+        "maximum": 6
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check count before record-vector allocation; only allowlisted client record kinds are valid.",
+      "client_visible": true,
+      "boundary_tests": [
+        "6 allowlisted records accepted",
+        "7 rejected before allocation",
+        "server-only record kind rejected independently"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-RECORD-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "One encoded bootstrap body record",
+      "unit": "bytes",
+      "hard_maximum": 4114,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4114
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject declared record length before slicing/copying/field decode.",
+      "client_visible": false,
+      "boundary_tests": [
+        "4,114-byte record accepted when semantically valid",
+        "4,115 rejected before record allocation"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-SECTION-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "One bootstrap artifact section",
+      "unit": "bytes",
+      "hard_maximum": 4295078,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4295078
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Validate section length and checked range before retaining or parsing section bytes.",
+      "client_visible": false,
+      "boundary_tests": [
+        "4,295,078-byte section accepted only when total artifact also passes",
+        "4,295,079 rejected",
+        "offset+length overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-KEY-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "One namespaced semantic key",
+      "unit": "ASCII bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject length before retaining/copying key; syntax validation follows.",
+      "client_visible": false,
+      "boundary_tests": [
+        "512-byte valid key accepted",
+        "513 bytes rejected before retention"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-STRING-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "One revision/profile/presentation metadata atom",
+      "unit": "ASCII bytes",
+      "hard_maximum": 512,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 512
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Reject length before retaining/copying; raw blobs and prose source are outside this profile.",
+      "client_visible": true,
+      "boundary_tests": [
+        "512-byte valid metadata atom accepted",
+        "513 bytes rejected before retention",
+        "invalid/non-profile text syntax rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-SERVER-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03",
+      "resource": "One server-authoritative bootstrap artifact",
+      "unit": "bytes",
+      "hard_maximum": 4304614,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 4304614
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check server slice length before header parse or input-sized allocation.",
+      "client_visible": false,
+      "boundary_tests": [
+        "4,304,614 bytes accepted only when nested limits pass",
+        "4,304,615 rejected before parse/allocation"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-CLIENT-ARTIFACT-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03",
+      "resource": "One client-safe bootstrap artifact",
+      "unit": "bytes",
+      "hard_maximum": 34248,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 34248
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Check client slice length before header parse or input-sized allocation.",
+      "client_visible": true,
+      "boundary_tests": [
+        "34,248 bytes accepted only when nested/client-allowlist limits pass",
+        "34,249 rejected before parse/allocation"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-GENERATION-PAIR-BYTES",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_03",
+      "resource": "Combined server and client-safe artifact bytes in one staging request",
+      "unit": "bytes",
+      "hard_maximum": 4338862,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 4338862
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Use checked addition of the two projection-bounded inputs before staging either as a generation pair.",
+      "client_visible": false,
+      "boundary_tests": [
+        "4,338,862 cumulative bytes accepted only when both projection maxima pass",
+        "4,338,863 rejected",
+        "pair-byte checked-add overflow rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-ARTIFACTS-PER-GENERATION",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Artifacts in one first-production generation",
+      "unit": "artifacts",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 2,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Require exactly one server and one client-safe artifact; no third projection/blob artifact can be retained.",
+      "client_visible": false,
+      "boundary_tests": [
+        "exact server+client pair accepted",
+        "missing projection rejected",
+        "third artifact rejected"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-CONCURRENT-STAGED-GENERATIONS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Concurrent non-authoritative staged candidate generations",
+      "unit": "generations",
+      "hard_maximum": 1,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 1
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Serialize staging; reject a second candidate before retaining its pair/runtime indexes.",
+      "client_visible": false,
+      "boundary_tests": [
+        "one staged candidate accepted",
+        "second concurrent candidate rejected without replacing current active generation"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-RESIDENT-GENERATIONS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md",
+      "resource": "Resident content generations in the content catalog, active plus staged",
+      "unit": "generations",
+      "hard_maximum": 2,
+      "configurable_range": {
+        "minimum": 0,
+        "maximum": 2
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "At most one active and one staged generation may retain artifact/runtime state; no third generation is cached.",
+      "client_visible": false,
+      "boundary_tests": [
+        "active+staged=2 accepted",
+        "third resident generation rejected",
+        "failed candidate is discarded without changing active"
+      ]
+    },
+    {
+      "id": "DUR04-FIRST-PROD-DECODED-FIELDS",
+      "owner_contract": "OTERYN_GAME_FIRST_PRODUCTION_CONTENT_PROFILE_DECISION_2026-09-09.md+AMENDMENT_02",
+      "resource": "Decoded manifest/body field instances processed for one staged server+client pair",
+      "unit": "fields",
+      "hard_maximum": 8432,
+      "configurable_range": {
+        "minimum": 1,
+        "maximum": 8432
+      },
+      "failure_category": "CAPACITY_EXCEEDED",
+      "allocation_impact": "Track cumulative decoded fields with checked arithmetic; nested record/profile checks occur before each retained field.",
+      "client_visible": false,
+      "boundary_tests": [
+        "8,432 fields accepted only when all nested limits pass",
+        "8,433rd field cannot be materialized",
+        "cumulative counter overflow rejected"
+      ]
     }
   ]
 }
