@@ -1218,12 +1218,13 @@ impl ExpectFinished {
         #[cfg(feature = "std")]
         let chain = cx.common.peer_certificates.as_ref();
         #[cfg(feature = "std")]
-        let session_owner = cx
+        let peer_owner: Option<Arc<dyn crate::DeframerBufferOwner>> = cx
             .common
             .peer_certificate_custody
             .as_ref()
-            .map(|custody| custody.owner())
-            .or_else(|| ticket.decoded_owner());
+            .map(|custody| -> Arc<dyn crate::DeframerBufferOwner> { custody.owner() });
+        #[cfg(feature = "std")]
+        let session_owner = peer_owner.or_else(|| ticket.resource_owner());
         #[cfg(feature = "std")]
         let session_value = if let Some(owner) = session_owner {
             let Some(chain) = chain else { return; };

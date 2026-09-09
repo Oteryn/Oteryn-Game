@@ -130,7 +130,7 @@ impl Tls13ClientSessionValue {
         age_add: u32,
         max_early_data_size: u32,
     ) -> Result<Self, crate::DeframerBufferError> {
-        let owner = ticket.decoded_owner().ok_or(crate::DeframerBufferError)?;
+        let owner = ticket.resource_owner().ok_or(crate::DeframerBufferError)?;
         Ok(Self {
             suite,
             age_add,
@@ -235,7 +235,7 @@ impl Tls12ClientSessionValue {
         time_now: UnixTime,
         lifetime_secs: u32,
         extended_ms: bool,
-        owner: Arc<crate::msgs::codec::DecodedOwner>,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
     ) -> Result<Self, crate::DeframerBufferError> {
         Ok(Self {
             suite,

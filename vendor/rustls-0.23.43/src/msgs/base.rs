@@ -171,6 +171,12 @@ impl<C: Cardinality> PayloadU16<C> {
     pub(crate) fn decoded_owner(&self) -> Option<crate::sync::Arc<codec::DecodedOwner>> {
         self.2.as_ref().map(|custody| custody.owner_ref().clone())
     }
+
+
+    #[cfg(feature = "std")]
+    pub(crate) fn take_direct_custody(&mut self) -> Option<codec::DirectDecodedCustody> {
+        self.2.take().map(DecodedCustody::into_direct)
+    }
 }
 
 impl PayloadU16<MaybeEmpty> {

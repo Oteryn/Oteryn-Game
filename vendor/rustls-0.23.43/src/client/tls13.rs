@@ -1557,7 +1557,7 @@ impl ExpectTraffic {
 
         #[cfg(feature = "std")]
         #[allow(unused_mut)]
-        let mut value = if nst.ticket.decoded_owner().is_some() {
+        let mut value = if nst.ticket.resource_owner().is_some() {
             persist::Tls13ClientSessionValue::new_with_resource_owner(
             self.suite,
             nst.ticket.clone(),

@@ -616,3 +616,14 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   of relying solely on ticket custody.
 - [ ] Precharge resumed TLS 1.2 retained-chain copying into CommonState and continue compressed
   certificate and transcript/hash ownership.
+
+## Window47 retained decoded-owner control lifetime
+
+- [x] Remove retained raw `Arc<DecodedOwner>` escape from ticket/session custody.
+- [x] Transfer already-reserved ticket payload custody to the same underlying operation owner
+  without reserve-again or release/reacquire.
+- [x] Keep ticket payload and Arc-control debits through final retained backing destruction
+  after connection-local decoded-owner/control-charge destruction.
+- [x] Preserve TLS 1.2 session-ID-only same-ledger owner selection without ticket dependence.
+- [ ] Continue resumed TLS 1.2 chain copying, compressed certificate decoding, transcript/hash
+  ownership, and complete simultaneous-live TLS proof.

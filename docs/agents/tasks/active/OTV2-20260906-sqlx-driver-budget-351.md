@@ -1325,6 +1325,30 @@ complete_tls_accounting: NOT_PROVEN
 next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
 
+## Window47 retained decoded-owner lifetime repair
+
+Fresh review found that retained ticket/session values kept raw `Arc<DecodedOwner>` handles
+after `ConnectionCore` destruction, while the connection-local Arc-control charge was
+released unconditionally. Ticket construction now transfers its already-reserved payload
+custody allocation-free to the underlying operation owner and reserves ticket Arc control
+directly on that same ledger. Retained tickets and sessions no longer carry
+`Arc<DecodedOwner>`; the connection's decoded-owner control debit can therefore end with the
+actual connection-local Arc lifetime, while retained payload/control/secret/chain debits
+remain independently custodied until their backing is destroyed.
+
+Focused evidence drops the reader, decoded-owner handle, and external Arc charge while a
+ticket clone remains live. The ledger retains exactly ticket payload plus ticket Arc-control
+bytes, then reaches zero exactly once on the retained ticket's final drop. TLS 1.2
+session-ID-only construction passes the peer chain's underlying operation owner rather than
+allowing the retained session to escape a raw decoded-owner Arc.
+
+```yaml
+status: active
+decoded_owner_arc_escape: PROVEN_FIXED_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
+```
+
 ## Window46 certificate component lifetime and TLS1.2 session owner selection
 
 The prior Window45 aggregate chain-plus-OCSP token over-retained the OCSP debit after its

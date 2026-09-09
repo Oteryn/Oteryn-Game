@@ -2502,7 +2502,7 @@ impl Codec<'_> for CertificateRequestPayloadTls13 {
 pub(crate) struct TicketPayload {
     payload: Option<Arc<PayloadU16>>,
     #[cfg(feature = "std")]
-    control_owner: Option<Arc<DecodedOwner>>,
+    control_owner: Option<Arc<dyn crate::DeframerBufferOwner>>,
     #[cfg(feature = "std")]
     control_bytes: usize,
 }
@@ -2516,13 +2516,24 @@ impl TicketPayload {
             .map_err(|_| InvalidMessage::MessageTooLarge)
     }
 
-    fn new(payload: PayloadU16) -> Result<Self, InvalidMessage> {
+    #[allow(unused_mut)]
+    fn new(mut payload: PayloadU16) -> Result<Self, InvalidMessage> {
         #[cfg(feature = "std")]
         let (control_owner, control_bytes) = if let Some(owner) = payload.decoded_owner() {
             let bytes = Self::arc_layout()?;
-            owner.reserve(bytes)?;
-            owner.retain_backing(bytes);
-            (Some(owner), bytes)
+            let control = codec::DirectDecodedCustody::reserve(owner.owner(), bytes)?;
+            let custody = payload.take_direct_custody().expect("decoded owner has custody");
+            debug_assert!(Arc::ptr_eq(&custody.owner(), &control.owner()));
+            let Some(total) = control.bytes().checked_add(custody.bytes()) else {
+                drop(payload);
+                drop(custody);
+                drop(control);
+                return Err(InvalidMessage::MessageTooLarge);
+            };
+            let (control_owner, control_bytes) = control.into_parts();
+            let (_, payload_bytes) = custody.into_parts();
+            debug_assert_eq!(total, control_bytes + payload_bytes);
+            (Some(control_owner), total)
         } else {
             (None, 0)
         };
@@ -2546,7 +2557,7 @@ impl TicketPayload {
     }
 
     #[cfg(feature = "std")]
-    pub(crate) fn decoded_owner(&self) -> Option<Arc<DecodedOwner>> {
+    pub(crate) fn resource_owner(&self) -> Option<Arc<dyn crate::DeframerBufferOwner>> {
         self.control_owner.clone()
     }
 }
@@ -2577,7 +2588,7 @@ impl Drop for TicketPayload {
         #[cfg(feature = "std")]
         if final_control {
             if let Some(owner) = self.control_owner.take() {
-                owner.release_backing(self.control_bytes);
+                owner.release(self.control_bytes);
             }
         }
     }
@@ -3483,16 +3494,19 @@ mod tests {
         let encoded = [0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 3, 1, 2, 3, 0, 0];
         let mut reader = Reader::init_with_owner(&encoded, decoded.clone());
         let ticket = NewSessionTicketPayloadTls13::read(&mut reader).unwrap().ticket;
+        assert_eq!(Arc::strong_count(&decoded), 2);
         assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), decoded_arc + ticket_arc + 3);
 
         let retained = ticket.clone();
         drop(ticket);
         assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), decoded_arc + ticket_arc + 3);
-        drop(retained);
-        assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), decoded_arc);
         drop(reader);
         drop(decoded);
         drop(decoded_charge);
+        // Retained ticket backing and its Arc control block remain charged,
+        // but no retained Arc keeps the connection-scoped DecodedOwner alive.
+        assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), ticket_arc + 3);
+        drop(retained);
         assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), 0);
     }
 

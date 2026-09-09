@@ -40,6 +40,53 @@ pub(crate) struct DecodedOwnerArcCharge {
     bytes: usize,
 }
 
+/// Custody transferred out of the connection-scoped decoded owner.
+///
+/// This token uses the same underlying ledger reservation, but deliberately
+/// does not retain `Arc<DecodedOwner>`.  It is used by backing which may
+/// outlive the connection and therefore the connection-local Arc charge.
+#[cfg(feature = "std")]
+#[derive(Debug)]
+pub(crate) struct DirectDecodedCustody {
+    owner: Arc<dyn DeframerBufferOwner>,
+    bytes: usize,
+}
+
+#[cfg(feature = "std")]
+impl DirectDecodedCustody {
+    pub(crate) fn reserve(
+        owner: Arc<dyn DeframerBufferOwner>,
+        bytes: usize,
+    ) -> Result<Self, InvalidMessage> {
+        owner
+            .try_reserve(bytes)
+            .map_err(|_| InvalidMessage::MessageTooLarge)?;
+        Ok(Self { owner, bytes })
+    }
+
+    pub(crate) fn owner(&self) -> Arc<dyn DeframerBufferOwner> {
+        self.owner.clone()
+    }
+
+    pub(crate) fn bytes(&self) -> usize {
+        self.bytes
+    }
+
+    pub(crate) fn into_parts(mut self) -> (Arc<dyn DeframerBufferOwner>, usize) {
+        let owner = self.owner.clone();
+        let bytes = self.bytes;
+        self.bytes = 0;
+        (owner, bytes)
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for DirectDecodedCustody {
+    fn drop(&mut self) {
+        self.owner.release(self.bytes);
+    }
+}
+
 #[cfg(feature = "std")]
 impl Drop for DecodedOwnerArcCharge {
     fn drop(&mut self) {
@@ -49,6 +96,10 @@ impl Drop for DecodedOwnerArcCharge {
 
 #[cfg(feature = "std")]
 impl DecodedOwner {
+    pub(crate) fn owner(&self) -> Arc<dyn DeframerBufferOwner> {
+        self.owner.clone()
+    }
+
     pub(crate) fn arc_layout() -> Result<usize, InvalidMessage> {
         // Rust 1.94 alloc::sync::Arc requests the padded ArcInner<T> layout.
         Layout::new::<[AtomicUsize; 2]>()
@@ -95,13 +146,12 @@ impl DecodedOwner {
         self.owner.release(bytes);
     }
 
-    pub(crate) fn retain_backing(&self, bytes: usize) {
-        self.custodied.fetch_add(bytes, Ordering::Relaxed);
-    }
-
-    pub(crate) fn release_backing(&self, bytes: usize) {
-        self.custodied.fetch_sub(bytes, Ordering::Relaxed);
-        self.release(bytes);
+    fn transfer_backing(&self, bytes: usize) -> Arc<dyn DeframerBufferOwner> {
+        let custodied = self.custodied.fetch_sub(bytes, Ordering::Relaxed);
+        debug_assert!(custodied >= bytes);
+        let charged = self.charged.fetch_sub(bytes, Ordering::Relaxed);
+        debug_assert!(charged >= bytes);
+        self.owner.clone()
     }
 
     pub(crate) fn checkpoint(&self) -> DecodedCheckpoint {
@@ -170,6 +220,20 @@ impl DecodedCustody {
 
     pub(crate) fn owner_ref(&self) -> &Arc<DecodedOwner> {
         &self.owner
+    }
+
+
+    /// Transfer an existing reservation to the underlying operation owner.
+    ///
+    /// This is allocation-free and does not reserve or release ledger bytes.
+    /// It removes the bytes from decoded-owner observability so the returned
+    /// token becomes their sole lifetime authority.
+    pub(crate) fn into_direct(mut self) -> DirectDecodedCustody {
+        let owner = self.owner.transfer_backing(self.bytes);
+        let bytes = self.bytes;
+        self.bytes = 0;
+        self.tracked_backing = false;
+        DirectDecodedCustody { owner, bytes }
     }
 
     /// Partition already-committed backing custody without reserving again.

@@ -322,3 +322,16 @@ custody, with ticket custody only as a fallback. This closes the owner-selection
 non-empty session ID with an empty ticket. The resumed-session chain copy into CommonState,
 compressed certificate decoding, transcript contexts, and complete TLS accounting remain
 open.
+
+## Retained decoded-owner Arc lifetime
+
+Retained ticket/session custody no longer stores `Arc<DecodedOwner>`. Ticket decoding moves
+the already-reserved payload debit from decoded-owner observability to a direct private token
+on the same underlying `DeframerBufferOwner`, without releasing or reserving those bytes
+again. Ticket Arc-control backing is reserved directly before allocation and shares one
+control debit across allocation-free ticket clones. The final ticket drop destroys payload
+and Arc backing before releasing the combined direct debit. Consequently dropping
+`ConnectionCore` may release its decoded-owner Arc-control charge without leaving retained
+ticket/session backing uncharged or extending the connection proxy artificially. Focused
+tests cover connection-equivalent owner/control destruction while retained ticket backing
+survives and exact final release. Complete TLS accounting remains open.
