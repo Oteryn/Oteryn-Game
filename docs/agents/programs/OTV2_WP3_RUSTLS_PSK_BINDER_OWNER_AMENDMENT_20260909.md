@@ -40,7 +40,7 @@ The exact current resumption path inside that authorized caller invokes:
 
 `tls13::fill_in_psk_binder(&tls13_session, &transcript_buffer, &mut chp)`.
 
-The callee currently performs three distinct destination allocations relevant to the accepted owner accounting:
+The callee currently exposes four allocation points relevant to the accepted owner accounting:
 
 1. `HandshakeMessagePayload::encoding_for_binder_signing()` calls generic `Codec::get_encoding()`;
 2. generic `Codec::get_encoding()` creates `Vec::new()` and calls `encode(&mut Vec<u8>)`, so the allocation/growth occurs inside an unallocated generic helper with no owner or caller-provided preallocation seam;
