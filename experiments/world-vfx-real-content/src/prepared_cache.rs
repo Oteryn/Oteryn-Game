@@ -256,10 +256,7 @@ impl PreparedCache {
                     ));
                 }
                 let [width, height] = member.source_geometry;
-                if !matches!(
-                    (width, height),
-                    (32, 32) | (32, 64) | (64, 32) | (64, 64)
-                ) {
+                if !matches!((width, height), (32, 32) | (32, 64) | (64, 32) | (64, 64)) {
                     return Err(format!(
                         "sprite {} has unsupported source geometry {width}x{height}",
                         member.sprite_source_id
@@ -283,12 +280,16 @@ impl PreparedCache {
 
         let actual: BTreeSet<u32> = sprites.keys().copied().collect();
         if actual != required {
-            return Err("prepared page members do not exactly match required_sprite_ids".to_owned());
+            return Err(
+                "prepared page members do not exactly match required_sprite_ids".to_owned(),
+            );
         }
         if manifest.sprite_page.page_count != pages.len()
             || manifest.sprite_page.required_sprite_count != sprites.len()
         {
-            return Err("prepared manifest count summary does not match page/member content".to_owned());
+            return Err(
+                "prepared manifest count summary does not match page/member content".to_owned(),
+            );
         }
         if manifest.sprite_page.decoded_sheet_count == 0 && !sprites.is_empty() {
             return Err(
@@ -418,7 +419,9 @@ fn validate_manifest_identity(manifest: &Manifest) -> Result<(), String> {
         || manifest.source.catalog_sha256 != SOURCE_CATALOG_SHA256
         || manifest.source.appearance_sha256 != SOURCE_APPEARANCE_SHA256
     {
-        return Err("prepared cache source identity is not the pinned Tibia 15.32 source".to_owned());
+        return Err(
+            "prepared cache source identity is not the pinned Tibia 15.32 source".to_owned(),
+        );
     }
     if manifest.semantic_authority.path != SEMANTIC_AUTHORITY_PATH {
         return Err(format!(
