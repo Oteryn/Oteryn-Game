@@ -1000,6 +1000,23 @@ before provider/KX use.  These shared debits remain intentionally unreleased.
 This closes the focused thread-churn cell only; actual wire HRR, cancellation,
 and complete TLS custody remain open.
 
+## Window26 final #451 lifecycle closure
+
+The actual-wire HRR test now observes release of the live 1,625-byte
+replacement during the successful client packet-processing sequence.  This is
+the production TLS path that transfers `ResourceOwnedSecret` into
+`KeySchedulePreHandshake::into_handshake(secret)` and drops the reservation
+only after that synchronous consumer returns.  The same executable test covers
+initial-owner drop, post-HRR replacement drop, denial before replacement start,
+and the 7,881 + 1,625 overlap; the focused invalid-peer case covers completion
+error unwind.  Provider-shared process/thread/configuration debits remain
+retained throughout.
+
+Together with the already-final PQ order, exact five bounds and layouts,
+racing first use, repeat/churn exhaustion, hybrid component, and unsupported
+provider controls, `aws_lc_kx_provider_resident = PROVEN`.  Complete TLS
+accounting remains `NOT_PROVEN`.
+
 ### Window25 actual wire HelloRetryRequest
 
 The exact AWS-LC SQLx harness now drives an owner-aware PQ-first rustls client

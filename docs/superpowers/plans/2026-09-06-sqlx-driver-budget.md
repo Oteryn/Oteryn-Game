@@ -382,6 +382,19 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Complete decoded/config/session/cache/send/transcript/error TLS custody.
 - [ ] Execute funded AWS-LC TLS-positive and configured PostgreSQL 17.6 positive/hostile qualification.
 
+## Window26 final #451 lifecycle closure
+
+- [x] Exercise initial and post-HRR connection cancellation/drop on the actual
+  rustls state path.
+- [x] Deny the actual HRR replacement before provider start and unwind the
+  initial operation backing without altering retained shared residency.
+- [x] Observe replacement release during the successful packet-processing path
+  that consumes the owned secret through the TLS key schedule.
+- [x] Combine actual lifecycle evidence with invalid-peer error unwind and the
+  final-graph provider/KX matrix; mark #451 provider/KX residency `PROVEN`.
+- [ ] Continue complete decoded/config/session/cache/send/transcript/error TLS
+  accounting before TLS-positive and PostgreSQL qualification.
+
 ## Window25 actual wire HRR
 
 - [x] Drive a real PQ-first AWS-LC TLS 1.3 client into a P-256-only server and

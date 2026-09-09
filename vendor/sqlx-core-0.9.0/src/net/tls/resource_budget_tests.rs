@@ -375,6 +375,7 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
     assert!(replacement_reserve < initial_release);
     drop(events);
 
+    let completion_event_start = budget.events.lock().unwrap().len();
     for _ in 0..8 {
         transfer!(&mut client, &mut server);
         server.process_new_packets().unwrap();
@@ -390,6 +391,9 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
         client.handshake_kind(),
         Some(HandshakeKind::FullWithHelloRetryRequest)
     );
+    assert!(budget.events.lock().unwrap()[completion_event_start..]
+        .iter()
+        .any(|(reserve, bytes, _)| !*reserve && *bytes == 1_625));
 
     // Cancellation before receiving HRR retains the initial reservation until
     // the connection-owned active exchange is actually destroyed.
