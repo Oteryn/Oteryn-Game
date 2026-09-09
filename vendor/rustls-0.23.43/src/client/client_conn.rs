@@ -1012,7 +1012,9 @@ impl ConnectionCore<ClientConnectionData> {
             custody.bytes_mut(),
         )?;
         let state = input.start_handshake(extra_exts, &mut cx)?;
-        Ok(Self::new(state, data, common_state))
+        let mut core = Self::new(state, data, common_state);
+        core.set_decoded_owner(custody.owner());
+        Ok(core)
     }
 
     #[cfg(feature = "std")]

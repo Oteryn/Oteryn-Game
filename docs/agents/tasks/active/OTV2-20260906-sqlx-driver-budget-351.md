@@ -787,3 +787,28 @@ kx_secret_key_schedule_custody: PROVEN_ACTUAL_TLS
 remaining_acceptance_cells: complete decoded/config/session/cache/send/transcript/error custody and handshake overlap; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
 next_action: continue complete TLS accounting on the already-protected paths
 ```
+
+## Window27 decoded-owner foundation checkpoint
+
+The protected #425 implementation has started on the canonical lineage. The
+same #424 owner identity is now installed in `ConnectionCore` before inbound
+server messages are decoded and is propagated through root and nested
+`Reader`s. Generic TLS lists reserve checked prospective element backing
+before each exact-capacity growth, retain old and prospective backing during
+reallocation, and release the old debit only after replacement. Ordinary
+owner-free and no-std decoding remain unchanged.
+
+This is a material foundation checkpoint, not completion of #425. Payload,
+span, transcript, certificate/OCSP, successor-state, compressed-certificate,
+peer-chain and retained-session custody still require their protected
+boundary implementations and composition tests.
+
+```yaml
+status: active
+aws_lc_kx_provider_resident: PROVEN
+decoded_owner_reader_propagation: PROVEN_FOCUSED
+decoded_owner_generic_list_growth: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: payload and nested rollback; Message ownership overlap; span/transcript; ClientHello/ServerHello; certificate/OCSP; TLS12/TLS13 successor and compressed-certificate; retained session; complete composition; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: continue #425 boundary-by-boundary from payload ownership through retained session custody
+```

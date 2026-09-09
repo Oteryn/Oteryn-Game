@@ -59,3 +59,23 @@ source validity, and unsupported-store fail-closed behavior. Ordinary retrieval
 remains available and unchanged. The next executable allocation boundary is the
 still-unallocated `client::tls13::initial_key_share` call to
 `SupportedKxGroup::start`; no key-exchange or crypto source was changed.
+
+## Protected #425 decoded-owner foundation
+
+The canonical #425 implementation reuses the existing `DeframerBufferOwner`
+identity. `ConnectionCore` retains a decoded-allocation tracker and supplies it
+to both ordinary inbound message parsing and the first-handshake shortcut.
+`Reader::sub` propagates that identity without allocating another owner model.
+
+The first completed boundary is generic TLS-list growth. Before every capacity
+transition, rustls checks `capacity * size_of::<T>()`, reserves the complete
+prospective exact capacity, performs `reserve_exact`, verifies the qualified
+actual capacity, and releases the old capacity only after the allocator has
+replaced its backing. A max-minus-one owner denies before the growth call.
+Decoded capacity remains charged with the connection decode scope so later
+private moves cannot release it at a logical parser handoff. Owner-free and
+no-std paths retain their original representation and behavior.
+
+This checkpoint does not claim complete decoded/TLS accounting. The remaining
+#425 payload, span, transcript, state, certificate/OCSP, compressed-certificate,
+peer-chain and retained-session boundaries remain open.
