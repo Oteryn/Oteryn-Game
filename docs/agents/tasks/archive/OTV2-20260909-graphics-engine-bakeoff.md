@@ -4,18 +4,18 @@
 task_id: OTV2-20260909-graphics-engine-bakeoff
 title: Qualify Oteryn graphics engine backend
 mode: IMPLEMENT
-status: ready_for_review
+status: completed
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/graphics-engine-bakeoff-465
 pr: 468
 base_sha: 0ca0f6d257d6eb982c4ff9d05bc9a84e44ba48da
-head_sha: beaa169095ad3f1ed781c4a60354ef4f7b152b14
-final_head_sha: null
+head_sha: d16e83c170e059bcdd7ebdba8b5b4171e72f5d94
+final_head_sha: d16e83c170e059bcdd7ebdba8b5b4171e72f5d94
 final_head_frozen_at: null
 owner: chatgpt-gpt5.6-sol
 created_at: 2026-09-09T10:02:53Z
-updated_at: 2026-09-09T11:03:00Z
+updated_at: 2026-09-09T14:23:50Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/tasks/active/OTV2-20260909-graphics-engine-bakeoff.md
@@ -28,6 +28,8 @@ cross_repository_coordination_id: null
 external_repositories: []
 ```
 
+`final_head_frozen_at` remains `null` rather than inventing a retrospective timestamp. The exact final source head is established by immutable PR/review/check evidence and is recorded above post-merge under the repository closeout rule.
+
 ## Outcome
 
 Produce reproducible evidence for Issue #465 comparing a custom Rust/wgpu presentation backend with a Bevy challenger using the same benchmark-only Oteryn render workload. The task does not select or activate a production engine by itself.
@@ -36,10 +38,11 @@ Produce reproducible evidence for Issue #465 comparing a custom Rust/wgpu presen
 
 ## Architecture and source of truth
 
-- `PROVEN`: branch was reconciled by ordinary merge with protected `main@0ca0f6d257d6eb982c4ff9d05bc9a84e44ba48da`; after reconciliation it was zero commits behind that protected base.
-- `PROVEN`: production workspace remains Rust 1.94.0 with direct `wgpu = 30.0.0`; the production `apps/client`, root Cargo dependency graph and `crates/renderer` were not mutated by the experiment.
-- `PROVEN`: `GRAPHICS_APPEARANCE_ANIMATION_AND_SEASONALITY_HORIZON_NOTE.md` explicitly defers permanent renderer texture/container choices until representative evidence exists.
+- `PROVEN`: production workspace remained Rust 1.94.0 with direct `wgpu = 30.0.0`; the production `apps/client`, root Cargo dependency graph and `crates/renderer` were not mutated by the experiment.
+- `PROVEN`: `GRAPHICS_APPEARANCE_ANIMATION_AND_SEASONALITY_HORIZON_NOTE.md` defers permanent renderer texture/container choices until representative evidence exists.
 - `PROVEN`: the isolated workspace pins Rust 1.95.0 only for the Bevy comparison and resolves custom `wgpu 30.0.0` plus Bevy 0.19.1's separate `wgpu 29.0.4` graph.
+- `PROVEN`: exact final source head is `d16e83c170e059bcdd7ebdba8b5b4171e72f5d94` and changes exactly 23 dedicated task/workflow/experiment paths.
+- `PROVEN`: PR #468 integrated through native FULL Merge Queue as `4d06bad1c0d21f2237df290865be55d8f7ed4f02`; protected `main` readback matched that commit exactly.
 - `DERIVED`: the physical results are sufficient to choose the renderer foundation while preserving later presentation/asset technology gates.
 
 ## High-risk authority/recovery qualification
@@ -118,53 +121,57 @@ Full results and caveats: `experiments/graphics-engine-bakeoff/RESULTS.md`.
 
 ### Exact-head CI
 
-- final head: pending after this task checkpoint commit
-- trigger source: branch push; workflow explicitly covers experiment, workflow and this task-record path
-- workflow: `Graphics engine bake-off compile`
-- classification: compile/format/shared-tests/strict-Clippy qualification only; not physical GPU performance evidence
-- result: pending exact-head completion
+- final source head: `d16e83c170e059bcdd7ebdba8b5b4171e72f5d94`
+- Agent Governance run `34345091288`: **SUCCESS**.
+- Architecture Semantic Audit run `34345021473`: **SUCCESS**.
+- Merge Gate run `34345091270` / #1933: **SUCCESS**.
+- FULL Merge Queue run `34362373199` / #138 on integrated candidate `4d06bad1c0d21f2237df290865be55d8f7ed4f02`: **SUCCESS**, including supply chain, dependency review, CodeQL actions/python, Linux workspace, Windows client, governance and real Durability PostgreSQL harness.
 
 ## Self-review
 
-- exact head: pending after this task checkpoint commit
-- method/reviewer: whole-diff self-review by implementing/coordinating agent
-- material findings: pending final changed-file review
-- verdict: pending
+- exact head: `d16e83c170e059bcdd7ebdba8b5b4171e72f5d94`
+- method/reviewer: whole-diff implementing/coordinating-agent review, persisted as PR COMMENT review `5155516366`
+- material findings: **0**
+- verdict: **PASS**
+
+The earlier self-review on `4cf789b...` remained applicable to experiment bytes because the two later commits imported only unrelated Atlas workflow/test paths; the final `d16e83c...` review revalidated the exact 23-path candidate and current-main drift.
 
 ## Independent review
 
-- required: yes before protected integration unless repository policy classifies this non-production evidence path otherwise
-- exact head: pending
-- method/auditor: not self-claimed
-- material findings: pending
-- verdict: pending
+- required: **NO** under the protected risk policy for this isolated non-production benchmark/evidence delivery; it changes no authentication/session/protocol/persistence/value/production authority and weakens no safety gate.
+- automated architecture/governance checks are supporting evidence and are not relabeled as an independent human/agent review.
 
 ## PR and closeout
 
 - PR: #468 `test(graphics): record wgpu vs Bevy engine bake-off`
-- changed-file review: pending final exact-head review
-- unresolved review threads: pending
-- related/superseded PRs: none found at allocation
-- protected auto-merge: not enabled by this task
-- merge commit/result: pending repository control plane
-- ownership release: pending protected-main integration/readback
+- changed-file review: **PASS**, exactly 23 dedicated paths
+- unresolved review threads: **0**
+- related/superseded PRs: none
+- integration: native FULL Merge Queue #138 / Actions `34362373199`
+- merge commit/result: `4d06bad1c0d21f2237df290865be55d8f7ed4f02`
+- protected-main readback: `main == 4d06bad1c0d21f2237df290865be55d8f7ed4f02`
+- ownership release: this archive move removes the active task lock when the bounded closeout PR becomes protected
 
 ## Context checkpoint
 
 ```yaml
-last_progress: physical matrix completed 90/90; evidence committed; branch reconciled with fresh main; PR #468 open
-status: ready_for_review
+last_progress: PR #468 integrated through FULL Merge Queue #138 and protected-main readback matched 4d06bad1c0d21f2237df290865be55d8f7ed4f02
+status: completed
 branch: agent/graphics-engine-bakeoff-465
-head_sha: beaa169095ad3f1ed781c4a60354ef4f7b152b14
+head_sha: d16e83c170e059bcdd7ebdba8b5b4171e72f5d94
 pr: 468
-final_head_sha: null
+final_head_sha: d16e83c170e059bcdd7ebdba8b5b4171e72f5d94
 final_head_frozen_at: null
-ci_trigger_source: branch_push
-ci_check_generation: task-checkpoint-final
-ci_checks_for_current_head: 0
-ci_run_ids: []
+ci_trigger_source: pull_request_and_merge_group
+ci_check_generation: terminal
+ci_checks_for_current_head: 3
+ci_run_ids:
+  - 34345091288
+  - 34345021473
+  - 34345091270
+  - 34362373199
 ci_job_ids: []
-runner_assignment_state: expected_windows_2025
+runner_assignment_state: terminal_success
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -173,6 +180,6 @@ repair_cycles_for_current_gate: 0
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: exact_head_ci_and_independent_review
-next_action: whole-diff self-review, exact-head CI readback, independent review and normal protected integration path
+blocker: null
+next_action: protect this bounded archive move, then close Issue #465 as completed
 ```
