@@ -1,0 +1,116 @@
+{
+  "active_page_maxima": {
+    "basic/array": 30.0,
+    "basic/atlas": 30.0,
+    "basic/hybrid": 50.0,
+    "normal/array": 55.0,
+    "normal/atlas": 55.0,
+    "normal/hybrid": 83.0,
+    "stress/array": 96.0,
+    "stress/atlas": 96.0,
+    "stress/hybrid": 164.0
+  },
+  "animation_evaluation": {
+    "checksum_equal_all": true,
+    "independent_state_bytes": 5200000,
+    "independent_timer_cpu_ms_median": 7.4364,
+    "instance_count": 50000,
+    "shared_program_cpu_ms_median": 6.7876,
+    "shared_state_bytes": 800416,
+    "shared_state_reduction_percent": 84.60738461538462
+  },
+  "cache_capacities": {
+    "basic/array": [
+      32
+    ],
+    "basic/atlas": [
+      32
+    ],
+    "basic/hybrid": [
+      64
+    ],
+    "normal/array": [
+      64
+    ],
+    "normal/atlas": [
+      64
+    ],
+    "normal/hybrid": [
+      96
+    ],
+    "stress/array": [
+      112
+    ],
+    "stress/atlas": [
+      112
+    ],
+    "stress/hybrid": [
+      176
+    ]
+  },
+  "cells": 27,
+  "checks": {
+    "animation_checksum_equal_all": true,
+    "asset_digest_match": true,
+    "cache_churn_present": true,
+    "cells_27_each_3": true,
+    "critical_vfx_all_present": true,
+    "device_loss_all_zero": true,
+    "family_axis_complete": true,
+    "family_gameplay_signature_equal": true,
+    "family_smoke_records_3": true,
+    "gpu_timestamps_reliable": true,
+    "host_all_molehill": true,
+    "measurement_commit_exact": true,
+    "multi_page_all_present": true,
+    "overflow_all_zero": true,
+    "primary_family_fixed_enhanced": true,
+    "primary_records_81": true,
+    "repetitions_27_each": true,
+    "summary_acceptance_flags_true": true,
+    "surface_failures_all_zero": true,
+    "vram_not_claimed": true
+  },
+  "content_sha256": {
+    "SUMMARY.md": "5d2707276b58290f25260a77f85bb1376a2d7b17b85b134135a4c55f300c7d17",
+    "asset-proof.json": "1f92549e7694ac297c083fd8acf98364777e601d728c61d606195a221a78f64b",
+    "family-smoke.jsonl": "25cc39126d8d507f7ac044912c1f5d9d5264eb22641cee8aab5e4212a09ed78c",
+    "hardware.json": "3d99baf43c4ea38611ad0cc5100f7d549cead53b328f1726a386ec1c33de58f2",
+    "raw.jsonl": "75d730ed5644114af2dba14a799906e1363b997aac4f8b98eb3b0a9f1b0d4cf7",
+    "stderr.log": "0dd087fcc34a7f0563b3f5f5fcd18a101bbc78ac2866488b720207937573524d",
+    "summary.json": "8b89c51d6f285b288542cba24c98bcca1477772de6755648be25835859156b05"
+  },
+  "device_loss_count": 0,
+  "family_signatures": [
+    "a9503cf44e21c9b2"
+  ],
+  "family_smoke_records": 3,
+  "max_overflow_fallbacks": 0,
+  "measurement_commit_sha": "280afa3355d4ab7a69ce4c8ebcc6f8f5b3fc1de8",
+  "primary_records": 81,
+  "repetitions": {
+    "1": 27,
+    "2": 27,
+    "3": 27
+  },
+  "schema": "oteryn-world-vfx-prototype-verification-v2",
+  "surface_failure_totals": {
+    "surface_lost": 0,
+    "surface_occluded": 0,
+    "surface_outdated": 0,
+    "surface_timeout": 0
+  },
+  "verdicts": {
+    "atlas_vs_texture_arrays": "INSUFFICIENT_EVIDENCE",
+    "filtering_mipmap_direction": "INSUFFICIENT_EVIDENCE",
+    "ktx2_vs_dds_or_other_runtime_container": "INSUFFICIENT_EVIDENCE",
+    "light_vfx_budgets": "INSUFFICIENT_EVIDENCE",
+    "particle_implementation_direction": "INSUFFICIENT_EVIDENCE",
+    "ram_budget": "INSUFFICIENT_EVIDENCE",
+    "renderer_batching_thresholds": "INSUFFICIENT_EVIDENCE",
+    "simple_hybrid": "REJECT",
+    "streaming_cache_choice": "bounded_visible_working_set_with_eviction",
+    "streaming_cache_model": "ADOPT",
+    "vram_budget": "INSUFFICIENT_EVIDENCE"
+  }
+}
