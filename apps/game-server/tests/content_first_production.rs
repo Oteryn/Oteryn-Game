@@ -1,4 +1,15 @@
 use oteryn_game_server::content::*;
+use oteryn_game_server::domain::WorldId;
+
+fn world_id() -> Result<WorldId, ContentError> {
+    let mut bytes = [0_u8; 16];
+    bytes[0] = 1;
+    bytes[6] = 0x70;
+    bytes[8] = 0x80;
+    bytes[15] = 1;
+    WorldId::from_bytes(bytes)
+        .map_err(|_| ContentError::InvalidArtifact("integration WorldId invalid"))
+}
 
 fn source(cell_count: usize) -> Result<FirstProductionContentSource, ContentError> {
     let package_key = ProductionKey::new("oteryn:content.first-production")?;
@@ -61,7 +72,7 @@ fn source(cell_count: usize) -> Result<FirstProductionContentSource, ContentErro
     Ok(FirstProductionContentSource {
         package_manifest,
         content_lock,
-        world_id: ProductionAtom::new("world id", "world-prod-v1")?,
+        world_id: world_id()?,
         revisions: FirstProductionRevisionSet {
             content: ProductionAtom::new("content revision", "content-r1")?,
             map: ProductionAtom::new("map revision", "map-r1")?,
@@ -190,6 +201,7 @@ fn public_production_compile_and_restart_staging_use_immutable_bytes() -> Result
         &reconstructed,
     )?;
     assert_eq!(restaged.identity(), staged.identity());
+    assert_eq!(staged.identity().world_id(), source.world_id);
 
     let mut corrupt = compiled.server_artifact.clone();
     let index = corrupt.len() - 33;

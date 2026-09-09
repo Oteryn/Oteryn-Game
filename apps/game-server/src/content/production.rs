@@ -3,6 +3,7 @@ use super::model::{
     CollisionClass, ContentError, EffectFamily, EligibilityScope, MultiplicityClass,
     SpawnRecoveryClass,
 };
+use crate::domain::WorldId;
 use std::collections::BTreeSet;
 
 pub const FIRST_PRODUCTION_PROFILE_ID: &str = "FIRST_PRODUCTION_CONTENT_PROFILE/v1";
@@ -227,6 +228,44 @@ fn hex_lower(bytes: &[u8; 32]) -> String {
         encoded.push(char::from(HEX[usize::from(byte & 0x0f)]));
     }
     encoded
+}
+
+fn encode_world_id(world_id: WorldId) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut encoded = String::with_capacity(32);
+    for byte in world_id.as_bytes() {
+        encoded.push(char::from(HEX[usize::from(byte >> 4)]));
+        encoded.push(char::from(HEX[usize::from(byte & 0x0f)]));
+    }
+    encoded
+}
+
+fn parse_world_id(value: &str) -> Result<WorldId, ContentError> {
+    if value.len() != 32 {
+        return Err(ContentError::InvalidArtifact(
+            "first-production WorldId must be 32 lowercase hexadecimal UUIDv7 bytes",
+        ));
+    }
+    let mut bytes = [0_u8; 16];
+    for (index, pair) in value.as_bytes().chunks_exact(2).enumerate() {
+        let high = decode_lower_hex(pair[0]).ok_or(ContentError::InvalidArtifact(
+            "first-production WorldId must be lowercase hexadecimal",
+        ))?;
+        let low = decode_lower_hex(pair[1]).ok_or(ContentError::InvalidArtifact(
+            "first-production WorldId must be lowercase hexadecimal",
+        ))?;
+        bytes[index] = (high << 4) | low;
+    }
+    WorldId::from_bytes(bytes)
+        .map_err(|_| ContentError::InvalidArtifact("first-production WorldId must be UUIDv7"))
+}
+
+fn decode_lower_hex(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        _ => None,
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -506,7 +545,7 @@ pub struct FirstProductionRngContext {
 pub struct FirstProductionContentSource {
     pub package_manifest: PackageManifestBinding,
     pub content_lock: ContentLockBinding,
-    pub world_id: ProductionAtom,
+    pub world_id: WorldId,
     pub revisions: FirstProductionRevisionSet,
     pub capability_profile: ProductionAtom,
     pub migration_class: DurableMigrationClass,
@@ -623,7 +662,7 @@ struct ProductionArtifactMetadata {
     semantic_schema_version: ProductionAtom,
     licensing_metadata: ProductionAtom,
     source_manifest_digest: Sha256HexDigest,
-    world_id: ProductionAtom,
+    world_id: WorldId,
     revisions: FirstProductionRevisionSet,
     content_lock_token: ProductionAtom,
     package_provenance_digest: Sha256HexDigest,
@@ -643,7 +682,7 @@ impl ProductionArtifactMetadata {
             semantic_schema_version: source.package_manifest.semantic_schema_version.clone(),
             licensing_metadata: source.package_manifest.licensing_metadata.clone(),
             source_manifest_digest: source.package_manifest.source_manifest_digest.clone(),
-            world_id: source.world_id.clone(),
+            world_id: source.world_id,
             revisions: source.revisions.clone(),
             content_lock_token: source.content_lock.revision_digest_token.clone(),
             package_provenance_digest: source.package_manifest.package_provenance_digest()?,
@@ -699,7 +738,7 @@ impl FirstProductionExpectation {
                 semantic_schema_version: identity.semantic_schema_version.clone(),
                 licensing_metadata: identity.licensing_metadata.clone(),
                 source_manifest_digest: identity.source_manifest_digest.clone(),
-                world_id: identity.world_id.clone(),
+                world_id: identity.world_id,
                 revisions: identity.revisions.clone(),
                 content_lock_token: identity.content_lock_token.clone(),
                 package_provenance_digest: identity.package_provenance_digest.clone(),
@@ -1172,6 +1211,40 @@ fn validate_source_semantics(source: &FirstProductionContentSource) -> Result<()
     for xp in &source.xp_definitions {
         require(&xp.key, &xp.formula_profile_key, &formula_keys)?;
     }
+
+    let referenced_presentations: BTreeSet<&str> = [
+        source
+            .creatures
+            .first()
+            .ok_or(ContentError::InvalidArtifact(
+                "first-production creature missing",
+            ))?
+            .presentation_key
+            .as_str(),
+        source
+            .abilities
+            .first()
+            .ok_or(ContentError::InvalidArtifact(
+                "first-production ability missing",
+            ))?
+            .presentation_key
+            .as_str(),
+        source
+            .items
+            .first()
+            .ok_or(ContentError::InvalidArtifact(
+                "first-production item missing",
+            ))?
+            .presentation_key
+            .as_str(),
+    ]
+    .into_iter()
+    .collect();
+    if referenced_presentations.len() != 3 || referenced_presentations != presentation_keys {
+        return Err(ContentError::InvalidArtifact(
+            "first-production presentation references must be distinct and cover all presentations",
+        ));
+    }
     Ok(())
 }
 
@@ -1482,6 +1555,7 @@ fn projection_artifact_resource(projection: ProductionProjection) -> &'static st
 }
 
 fn encode_manifest(metadata: &ProductionArtifactMetadata) -> Result<Vec<u8>, ContentError> {
+    let world_id = encode_world_id(metadata.world_id);
     let fields = [
         FIRST_PRODUCTION_ARTIFACT_PROFILE_ID,
         metadata.package_key.as_str(),
@@ -1489,7 +1563,7 @@ fn encode_manifest(metadata: &ProductionArtifactMetadata) -> Result<Vec<u8>, Con
         metadata.semantic_schema_version.as_str(),
         metadata.licensing_metadata.as_str(),
         metadata.source_manifest_digest.as_str(),
-        metadata.world_id.as_str(),
+        world_id.as_str(),
         metadata.revisions.content.as_str(),
         metadata.revisions.map.as_str(),
         metadata.revisions.ruleset.as_str(),
@@ -1707,7 +1781,7 @@ pub struct GenerationIdentity {
     licensing_metadata: ProductionAtom,
     source_manifest_digest: Sha256HexDigest,
     package_provenance_digest: Sha256HexDigest,
-    world_id: ProductionAtom,
+    world_id: WorldId,
     revisions: FirstProductionRevisionSet,
     content_lock_token: ProductionAtom,
     migration_class: DurableMigrationClass,
@@ -1729,6 +1803,10 @@ impl GenerationIdentity {
 
     pub fn package_provenance_digest(&self) -> &str {
         self.package_provenance_digest.as_str()
+    }
+
+    pub const fn world_id(&self) -> WorldId {
+        self.world_id
     }
 
     pub fn migration_class(&self) -> DurableMigrationClass {
@@ -1786,7 +1864,7 @@ impl StagedGeneration {
             licensing_metadata: server.metadata.licensing_metadata.clone(),
             source_manifest_digest: server.metadata.source_manifest_digest.clone(),
             package_provenance_digest: server.metadata.package_provenance_digest.clone(),
-            world_id: server.metadata.world_id.clone(),
+            world_id: server.metadata.world_id,
             revisions: server.metadata.revisions.clone(),
             content_lock_token: server.metadata.content_lock_token.clone(),
             migration_class: server.metadata.migration_class,
@@ -2102,10 +2180,7 @@ fn parse_manifest(
         reader.read_string(FIRST_PRODUCTION_MAX_ATOM_BYTES)?,
     )?;
     let source_manifest_digest = Sha256HexDigest::new(&reader.read_string(64)?)?;
-    let world_id = ProductionAtom::from_artifact(
-        "first-production world id",
-        reader.read_string(FIRST_PRODUCTION_MAX_ATOM_BYTES)?,
-    )?;
+    let world_id = parse_world_id(&reader.read_string(32)?)?;
     let content = ProductionAtom::from_artifact(
         "first-production content revision",
         reader.read_string(FIRST_PRODUCTION_MAX_ATOM_BYTES)?,
@@ -2595,6 +2670,36 @@ fn validate_parsed_semantics(
         }
     }
 
+    let presentation_ref = |kind: u8, field: usize| -> Result<&str, ContentError> {
+        records
+            .iter()
+            .find(|record| record.kind == kind)
+            .and_then(|record| record.fields.get(field))
+            .map(String::as_str)
+            .ok_or(ContentError::InvalidArtifact(
+                "first-production presentation reference missing",
+            ))
+    };
+    let referenced_presentations: BTreeSet<&str> = match projection {
+        ProductionProjection::ServerAuthoritative => [
+            presentation_ref(RECORD_CREATURE, 2)?,
+            presentation_ref(RECORD_ABILITY, 2)?,
+            presentation_ref(RECORD_ITEM, 1)?,
+        ],
+        ProductionProjection::ClientSafe => [
+            presentation_ref(RECORD_CLIENT_CREATURE, 1)?,
+            presentation_ref(RECORD_CLIENT_ABILITY, 1)?,
+            presentation_ref(RECORD_CLIENT_ITEM, 1)?,
+        ],
+    }
+    .into_iter()
+    .collect();
+    if referenced_presentations.len() != 3 || referenced_presentations != presentation_keys {
+        return Err(ContentError::InvalidArtifact(
+            "first-production presentation references must be distinct and cover all presentations",
+        ));
+    }
+
     for target in references {
         let key = ProductionKey::new(&target)?;
         if !definitions.contains(key.as_str()) {
@@ -2752,6 +2857,17 @@ fn array32(bytes: &[u8]) -> Result<[u8; 32], ContentError> {
 }
 
 #[cfg(test)]
+fn test_world_id(seed: u8) -> Result<WorldId, ContentError> {
+    let mut bytes = [0_u8; 16];
+    bytes[0] = 1;
+    bytes[6] = 0x70;
+    bytes[8] = 0x80;
+    bytes[15] = seed;
+    WorldId::from_bytes(bytes)
+        .map_err(|_| ContentError::InvalidArtifact("test first-production WorldId invalid"))
+}
+
+#[cfg(test)]
 pub(crate) fn test_source(cell_count: usize) -> Result<FirstProductionContentSource, ContentError> {
     let package_key = ProductionKey::new("oteryn:content.first-production")?;
     let package_revision = ProductionAtom::new("first-production package revision", "package-r1")?;
@@ -2813,7 +2929,7 @@ pub(crate) fn test_source(cell_count: usize) -> Result<FirstProductionContentSou
     Ok(FirstProductionContentSource {
         package_manifest,
         content_lock,
-        world_id: ProductionAtom::new("world id", "world-prod-v1")?,
+        world_id: test_world_id(1)?,
         revisions: FirstProductionRevisionSet {
             content: ProductionAtom::new("content revision", "content-r1")?,
             map: ProductionAtom::new("map revision", "map-r1")?,
@@ -3171,6 +3287,53 @@ mod tests {
             ),
             Err(ContentError::RevisionMismatch(
                 "first-production expected artifact digest pair"
+            ))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn world_id_is_typed_uuidv7_and_round_trips_through_artifacts() -> Result<(), ContentError> {
+        let source = test_source(3)?;
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let staged = StagedGeneration::stage(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            compiled.expectation(),
+        )?;
+        assert_eq!(staged.identity().world_id(), source.world_id);
+        assert!(parse_world_id("world-prod-v1").is_err());
+        assert!(parse_world_id("00000000000000000000000000000000").is_err());
+        Ok(())
+    }
+
+    #[test]
+    fn presentation_references_are_one_to_one_and_cover_all_presentations()
+    -> Result<(), ContentError> {
+        let mut source = test_source(3)?;
+        source.abilities[0].presentation_key = source.creatures[0].presentation_key.clone();
+        assert!(matches!(
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease),
+            Err(ContentError::InvalidArtifact(
+                "first-production presentation references must be distinct and cover all presentations"
+            ))
+        ));
+
+        let server_metadata = ProductionArtifactMetadata::from_source(
+            &source,
+            ProductionProjection::ServerAuthoritative,
+        )?;
+        let client_metadata =
+            ProductionArtifactMetadata::from_source(&source, ProductionProjection::ClientSafe)?;
+        let server = encode_artifact(&server_metadata, &server_records(&source)?)?;
+        let client = encode_artifact(&client_metadata, &client_records(&source))?;
+        let expected =
+            FirstProductionExpectation::from_source(&source, server.digest, client.digest)?;
+        assert!(matches!(
+            StagedGeneration::stage(&server.bytes, &client.bytes, &expected),
+            Err(ContentError::InvalidArtifact(
+                "first-production presentation references must be distinct and cover all presentations"
             ))
         ));
         Ok(())
