@@ -102,6 +102,12 @@ struct Active {
     group: NamedGroup,
 }
 
+// Keep reservation control outside this protected provider heap allocation.
+// A layout change must fail compilation rather than silently invalidating the
+// reviewed ML-KEM-768 full-lifetime bound.
+#[cfg(all(feature = "std", target_os = "linux", target_arch = "x86_64"))]
+const _: [(); 40] = [(); size_of::<Active>()];
+
 impl ActiveKeyExchange for Active {
     // The received 'peer_pub_key' is actually the ML-KEM ciphertext,
     // which when decapsulated with our `decaps_key` produces the shared

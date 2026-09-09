@@ -894,3 +894,24 @@ PostgreSQL 17.6 qualification also remain not proven.
 
 The earliest remaining unleased allocation is unchanged:
 `SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: same-ledger actual Vec capacity preallocation/custody`.
+
+## KX publication and protected-layout verification
+
+Fresh exact-target compilation independently verifies that the inline custody
+repair does not enlarge a provider heap allocation covered by the protected KX
+bounds.  Compile-time assertions pin the private allocation layouts at
+`KeyExchange = 200`, ML-KEM `Active = 40`, and `ActiveHybrid = 96` bytes.  The
+reservation remains in the caller's non-boxed `ResourceOwnedKx` control value,
+whose 40-byte layout is checked by the focused bound/lifetime test.  Thus the
+repair adds neither a second active-KX heap object nor reservation fields to any
+of the three covered provider allocations, and the protected
+554/1625/1705/6264/7881 bounds are unchanged.
+
+The focused exact-bound test continues to prove max-minus-one denial before
+provider start, exact admission for all five groups, full debit retention while
+the returned whole/component secret remains live, release after secret drop,
+failure cleanup, and simultaneous initial/replacement custody.  Aggregate KX
+remains `NOT_PROVEN` pending the previously recorded actual HRR wire,
+cancellation, provider-first-use/thread-churn matrix.  Work still stops at the
+unleased `crypto/aws_lc_rs/mod.rs::{default_provider,default_kx_groups}` owner
+boundary above.

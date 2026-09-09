@@ -120,6 +120,11 @@ struct ActiveHybrid {
     combined_pub_key: Vec<u8>,
 }
 
+// Reservation custody is held by the enclosing inline control state.  Do not
+// enlarge this covered provider allocation without a new protected bound.
+#[cfg(all(feature = "std", target_os = "linux", target_arch = "x86_64"))]
+const _: [(); 96] = [(); size_of::<ActiveHybrid>()];
+
 impl ActiveKeyExchange for ActiveHybrid {
     fn complete(self: Box<Self>, peer_pub_key: &[u8]) -> Result<SharedSecret, Error> {
         let (post_quantum_share, classical_share) = self

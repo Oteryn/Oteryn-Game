@@ -603,3 +603,25 @@ complete_tls_accounting: NOT_PROVEN
 shared_lease_required: vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: same-ledger preallocation and lifetime custody for actual cipher-suite and KX-group Vec capacities
 next_action: obtain the provider-configuration owner amendment, then finish the repaired #451 matrix before any aggregate KX GREEN claim
 ```
+
+## Window20 KX publication/layout readback repair
+
+The canonical remote already contained the inline-custody repair when this
+publication recovery began.  Fresh exact-target compilation now independently
+locks the three provider allocation layouts used by the protected bounds:
+classical `KeyExchange = 200`, ML-KEM `Active = 40`, and hybrid
+`ActiveHybrid = 96`.  `KxReservation` remains outside those provider structs in
+the caller-owned, inline `ResourceOwnedKx`; the focused test also locks that
+control value to 40 bytes and therefore detects reintroduction of a boxed owner
+wrapper without changing any protected bound.
+
+```yaml
+status: blocked_pending_shared_lease
+kx_wrapper_heap_p1: PROVEN_FIXED
+kx_returned_secret_lifetime_p1: PROVEN_FIXED
+kx_protected_provider_layouts: PROVEN
+aws_lc_kx_provider_resident: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+shared_lease_required: vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: same-ledger preallocation and lifetime custody for actual cipher-suite and KX-group Vec capacities
+next_action: obtain the provider-configuration owner amendment, then finish actual HRR/cancellation and the remaining #451 matrix before any aggregate KX GREEN claim
+```

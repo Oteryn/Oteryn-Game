@@ -151,6 +151,12 @@ struct KeyExchange {
     pub_key_validator: fn(&[u8]) -> bool,
 }
 
+// The protected AWS-LC full-lifetime bounds include this provider-owned heap
+// allocation at exactly this layout.  KX reservation custody deliberately
+// lives in the caller's inline `ResourceOwnedKx`, not in this allocation.
+#[cfg(all(feature = "std", feature = "aws_lc_rs", target_os = "linux", target_arch = "x86_64"))]
+const _: [(); 200] = [(); size_of::<KeyExchange>()];
+
 impl ActiveKeyExchange for KeyExchange {
     /// Completes the key exchange, given the peer's public key.
     fn complete(self: Box<Self>, peer: &[u8]) -> Result<SharedSecret, Error> {

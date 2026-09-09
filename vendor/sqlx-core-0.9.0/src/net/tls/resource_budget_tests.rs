@@ -55,7 +55,12 @@ fn provider_shared_default_denies_and_adapter_delegates_to_same_root() {
 #[test]
 fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
     use super::tls_rustls::DeframerBudgetOwner;
-    use rustls::crypto::SupportedKxGroup;
+    use rustls::crypto::{ResourceOwnedKx, SupportedKxGroup};
+
+    // This is inline caller/control state, not another provider heap object.
+    // The provider allocation layouts are separately compile-time asserted in
+    // their private modules at 200 (classical), 40 (ML-KEM), and 96 (hybrid).
+    assert_eq!(core::mem::size_of::<ResourceOwnedKx>(), 40);
 
     let process = ledger(1_000_000);
     let process_owner: Arc<dyn rustls::DeframerBufferOwner> =
