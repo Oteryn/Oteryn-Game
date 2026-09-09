@@ -70,7 +70,7 @@ impl SupportedKxGroup for KxGroup {
     fn start_with_resource_owner(
         &self,
         owner: Arc<dyn DeframerBufferOwner>,
-    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+    ) -> Result<ResourceOwnedKx, Error> {
         ensure_aws_lc_provider_residency(owner.clone())?;
         if size_of::<KeyExchange>() != 200 {
             return Err(Error::FailedToGetRandomBytes);

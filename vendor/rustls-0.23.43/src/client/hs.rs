@@ -21,7 +21,7 @@ use crate::client::ech::EchState;
 use crate::client::{ClientConfig, EchMode, EchStatus, tls13};
 use crate::common_state::{CommonState, HandshakeKind, KxState, State};
 use crate::conn::ConnectionRandoms;
-use crate::crypto::{ActiveKeyExchange, KeyExchangeAlgorithm};
+use crate::crypto::{ActiveKeyExchangeState, KeyExchangeAlgorithm};
 use crate::enums::{
     AlertDescription, CertificateType, CipherSuite, ContentType, HandshakeType, ProtocolVersion,
 };
@@ -58,7 +58,7 @@ struct ExpectServerHello {
     //
     // If this is `None` then we do not support early data.
     early_data_key_schedule: Option<KeyScheduleEarly>,
-    offered_key_share: Option<Box<dyn ActiveKeyExchange>>,
+    offered_key_share: Option<ActiveKeyExchangeState>,
     suite: Option<SupportedCipherSuite>,
     ech_state: Option<EchState>,
 }
@@ -279,7 +279,7 @@ impl ClientHelloInput {
 fn emit_client_hello_for_retry(
     mut transcript_buffer: HandshakeHashBuffer,
     retryreq: Option<&HelloRetryRequest>,
-    key_share: Option<Box<dyn ActiveKeyExchange>>,
+    key_share: Option<ActiveKeyExchangeState>,
     extra_exts: ClientExtensionsInput<'static>,
     suite: Option<SupportedCipherSuite>,
     mut input: ClientHelloInput,
@@ -1112,12 +1112,14 @@ impl ExpectServerHelloOrHelloRetryRequest {
                 #[cfg(feature = "std")]
                 {
                     match &self.next.input.resource_owner {
-                        Some(owner) => skxg.start_with_resource_owner(owner.clone())?,
-                        None => skxg.start()?,
+                        Some(owner) => ActiveKeyExchangeState::Owned(
+                            skxg.start_with_resource_owner(owner.clone())?,
+                        ),
+                        None => ActiveKeyExchangeState::Unowned(skxg.start()?),
                     }
                 }
                 #[cfg(not(feature = "std"))]
-                skxg.start()?
+                ActiveKeyExchangeState::Unowned(skxg.start()?)
             }
             _ => offered_key_share,
         };

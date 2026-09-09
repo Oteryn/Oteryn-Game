@@ -883,6 +883,14 @@ allocator capacity.
 `SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: reserve and retain the same-ledger actual cipher-suite and KX-group Vec capacities before allocation through final provider/config destruction`
 
 No decoded, ClientHello, PostgreSQL, workflow, registry, or production source
-was changed at this boundary.  The #451 KX/provider-resident result remains
-completed, but complete TLS configuration/composition, a funded TLS-positive
-handshake, and PostgreSQL 17.6 qualification remain not proven.
+was changed at this boundary.  Later coordinator evidence `5597261954`
+invalidated the aggregate #451 KX `PROVEN` label: its extra wrapper allocation
+was uncharged and its reservation ended before returned-secret consumption.
+Those two defects are repaired by inline handshake custody and a non-allocating
+reservation token retained across synchronous `into_handshake`; the broader
+#451 matrix still requires requalification, so KX remains `NOT_PROVEN`.
+Complete TLS configuration/composition, a funded TLS-positive handshake, and
+PostgreSQL 17.6 qualification also remain not proven.
+
+The earliest remaining unleased allocation is unchanged:
+`SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: same-ledger actual Vec capacity preallocation/custody`.

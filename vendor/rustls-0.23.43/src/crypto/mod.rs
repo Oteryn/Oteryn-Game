@@ -386,7 +386,7 @@ pub trait SupportedKxGroup: Send + Sync + Debug {
     fn start_with_resource_owner(
         &self,
         _owner: Arc<dyn DeframerBufferOwner>,
-    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+    ) -> Result<ResourceOwnedKx, Error> {
         Err(Error::FailedToGetRandomBytes)
     }
 
@@ -517,54 +517,123 @@ pub fn ensure_aws_lc_provider_residency(
     Err(Error::FailedToGetRandomBytes)
 }
 
-#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
-pub(crate) struct ResourceOwnedKx {
+#[cfg(feature = "std")]
+/// An active key exchange whose reviewed full-lifetime backing is reserved.
+pub struct ResourceOwnedKx {
     inner: Option<Box<dyn ActiveKeyExchange>>,
-    owner: Arc<dyn DeframerBufferOwner>,
-    bytes: usize,
+    reservation: KxReservation,
 }
 
-#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
+#[cfg(feature = "std")]
 impl ResourceOwnedKx {
+    #[cfg(feature = "aws_lc_rs")]
     pub(crate) fn start(
         owner: Arc<dyn DeframerBufferOwner>,
         bytes: usize,
         start: impl FnOnce() -> Result<Box<dyn ActiveKeyExchange>, Error>,
-    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+    ) -> Result<Self, Error> {
         owner.try_reserve(bytes).map_err(|_| Error::FailedToGetRandomBytes)?;
+        let reservation = KxReservation { owner, bytes };
         match start() {
-            Ok(inner) => Ok(Box::new(Self { inner: Some(inner), owner, bytes })),
-            Err(error) => {
-                owner.release(bytes);
-                Err(error)
-            }
+            Ok(inner) => Ok(Self { inner: Some(inner), reservation }),
+            Err(error) => Err(error),
         }
+    }
+
+    /// Complete the whole exchange while transferring its reservation to the secret.
+    pub fn complete(mut self, peer: &[u8]) -> Result<ResourceOwnedSecret, Error> {
+        let inner = self.inner.take().expect("owned KX missing backing");
+        let secret = inner.complete(peer)?;
+        Ok(ResourceOwnedSecret {
+            secret,
+            reservation: self.reservation,
+        })
+    }
+
+    /// Complete the classical hybrid component while transferring the full reservation.
+    pub fn complete_hybrid_component(mut self, peer: &[u8]) -> Result<ResourceOwnedSecret, Error> {
+        let inner = self.inner.take().expect("owned KX missing backing");
+        let secret = inner.complete_hybrid_component(peer)?;
+        Ok(ResourceOwnedSecret {
+            secret,
+            reservation: self.reservation,
+        })
+    }
+
+    /// Return the public key bytes.
+    pub fn pub_key(&self) -> &[u8] {
+        self.inner.as_ref().expect("owned KX missing backing").pub_key()
+    }
+    /// Return the negotiated group.
+    pub fn group(&self) -> NamedGroup {
+        self.inner.as_ref().expect("owned KX missing backing").group()
+    }
+    /// Return the independently offerable classical hybrid component, if any.
+    pub fn hybrid_component(&self) -> Option<(NamedGroup, &[u8])> {
+        self.inner.as_ref().expect("owned KX missing backing").hybrid_component()
     }
 }
 
-#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
-impl Drop for ResourceOwnedKx {
+#[cfg(feature = "std")]
+pub(crate) struct KxReservation {
+    owner: Arc<dyn DeframerBufferOwner>,
+    bytes: usize,
+}
+
+#[cfg(feature = "std")]
+impl Drop for KxReservation {
     fn drop(&mut self) {
-        // Destroy all provider backing before returning its full-lifetime debit.
-        drop(self.inner.take());
         self.owner.release(self.bytes);
     }
 }
 
-#[cfg(all(feature = "std", feature = "aws_lc_rs"))]
-impl ActiveKeyExchange for ResourceOwnedKx {
-    fn complete(mut self: Box<Self>, peer: &[u8]) -> Result<SharedSecret, Error> {
-        self.inner.take().expect("owned KX missing backing").complete(peer)
+/// A shared secret retaining the full active-KX reservation until consumption.
+#[cfg(feature = "std")]
+pub struct ResourceOwnedSecret {
+    // Field order ensures the secret backing dies before reservation release.
+    secret: SharedSecret,
+    reservation: KxReservation,
+}
+
+#[cfg(feature = "std")]
+impl ResourceOwnedSecret {
+    /// Return the shared-secret bytes while retaining the active-KX reservation.
+    pub fn secret_bytes(&self) -> &[u8] {
+        self.secret.secret_bytes()
     }
-    fn complete_hybrid_component(
-        mut self: Box<Self>, peer: &[u8]
-    ) -> Result<SharedSecret, Error> {
-        self.inner.take().expect("owned KX missing backing").complete_hybrid_component(peer)
+    pub(crate) fn into_parts(self) -> (SharedSecret, KxReservation) {
+        (self.secret, self.reservation)
     }
-    fn pub_key(&self) -> &[u8] { self.inner.as_ref().expect("owned KX missing backing").pub_key() }
-    fn group(&self) -> NamedGroup { self.inner.as_ref().expect("owned KX missing backing").group() }
-    fn ffdhe_group(&self) -> Option<FfdheGroup<'static>> { self.inner.as_ref().expect("owned KX missing backing").ffdhe_group() }
-    fn hybrid_component(&self) -> Option<(NamedGroup, &[u8])> { self.inner.as_ref().expect("owned KX missing backing").hybrid_component() }
+}
+
+pub(crate) enum ActiveKeyExchangeState {
+    Unowned(Box<dyn ActiveKeyExchange>),
+    #[cfg(feature = "std")]
+    Owned(ResourceOwnedKx),
+}
+
+impl ActiveKeyExchangeState {
+    pub(crate) fn pub_key(&self) -> &[u8] {
+        match self {
+            Self::Unowned(kx) => kx.pub_key(),
+            #[cfg(feature = "std")]
+            Self::Owned(kx) => kx.pub_key(),
+        }
+    }
+    pub(crate) fn group(&self) -> NamedGroup {
+        match self {
+            Self::Unowned(kx) => kx.group(),
+            #[cfg(feature = "std")]
+            Self::Owned(kx) => kx.group(),
+        }
+    }
+    pub(crate) fn hybrid_component(&self) -> Option<(NamedGroup, &[u8])> {
+        match self {
+            Self::Unowned(kx) => kx.hybrid_component(),
+            #[cfg(feature = "std")]
+            Self::Owned(kx) => kx.hybrid_component(),
+        }
+    }
 }
 
 /// An in-progress key exchange originating from a [`SupportedKxGroup`].

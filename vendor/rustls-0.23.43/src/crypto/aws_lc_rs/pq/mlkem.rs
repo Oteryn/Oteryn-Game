@@ -41,7 +41,7 @@ impl SupportedKxGroup for MlKem {
     fn start_with_resource_owner(
         &self,
         owner: Arc<dyn DeframerBufferOwner>,
-    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+    ) -> Result<ResourceOwnedKx, Error> {
         ensure_aws_lc_provider_residency(owner.clone())?;
         if self.group != NamedGroup::MLKEM768
             || size_of::<Active>() != 40

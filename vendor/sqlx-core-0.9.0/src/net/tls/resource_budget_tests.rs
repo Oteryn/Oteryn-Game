@@ -87,8 +87,48 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
         let completed = group.start_and_complete(active.pub_key()).unwrap();
         let secret = active.complete(&completed.pub_key).unwrap();
         assert_eq!(secret.secret_bytes(), completed.secret.secret_bytes());
+        assert_eq!(funded.used.load(Ordering::Acquire), bound);
+        drop(secret);
         assert_eq!(funded.used.load(Ordering::Acquire), 0);
     }
+
+    let funded = ledger(7_881);
+    let owner: Arc<dyn rustls::DeframerBufferOwner> = Arc::new(DeframerBudgetOwner(funded.clone()));
+    let hybrid = rustls::crypto::aws_lc_rs::kx_group::X25519MLKEM768
+        .start_with_resource_owner(owner)
+        .unwrap();
+    let (_, component_public) = hybrid.hybrid_component().unwrap();
+    let peer = rustls::crypto::aws_lc_rs::kx_group::X25519.start().unwrap();
+    let peer_public = peer.pub_key().to_vec();
+    let expected = peer.complete(component_public).unwrap();
+    let secret = hybrid.complete_hybrid_component(&peer_public).unwrap();
+    assert_eq!(secret.secret_bytes(), expected.secret_bytes());
+    assert_eq!(funded.used.load(Ordering::Acquire), 7_881);
+    drop(expected);
+    drop(secret);
+    assert_eq!(funded.used.load(Ordering::Acquire), 0);
+
+    let hrr = ledger(7_881 + 1_625);
+    let owner: Arc<dyn rustls::DeframerBufferOwner> = Arc::new(DeframerBudgetOwner(hrr.clone()));
+    let initial = rustls::crypto::aws_lc_rs::kx_group::X25519MLKEM768
+        .start_with_resource_owner(owner.clone())
+        .unwrap();
+    let replacement = rustls::crypto::aws_lc_rs::kx_group::SECP256R1
+        .start_with_resource_owner(owner)
+        .unwrap();
+    assert_eq!(hrr.used.load(Ordering::Acquire), 7_881 + 1_625);
+    drop(initial);
+    assert_eq!(hrr.used.load(Ordering::Acquire), 1_625);
+    drop(replacement);
+    assert_eq!(hrr.used.load(Ordering::Acquire), 0);
+
+    let failed = ledger(554);
+    let owner: Arc<dyn rustls::DeframerBufferOwner> = Arc::new(DeframerBudgetOwner(failed.clone()));
+    let active = rustls::crypto::aws_lc_rs::kx_group::X25519
+        .start_with_resource_owner(owner)
+        .unwrap();
+    assert!(active.complete(&[]).is_err());
+    assert_eq!(failed.used.load(Ordering::Acquire), 0);
 }
 
 #[cfg(feature = "_tls-rustls-aws-lc-rs")]

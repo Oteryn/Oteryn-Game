@@ -17,7 +17,9 @@ use crate::common_state::{
 use crate::conn::ConnectionRandoms;
 use crate::conn::kernel::{Direction, KernelContext, KernelState};
 use crate::crypto::hash::Hash;
-use crate::crypto::{ActiveKeyExchange, SharedSecret};
+use crate::crypto::{ActiveKeyExchangeState, SharedSecret};
+#[cfg(feature = "std")]
+use crate::crypto::KxReservation;
 use crate::enums::{
     AlertDescription, ContentType, HandshakeType, ProtocolVersion, SignatureScheme,
 };
@@ -74,7 +76,7 @@ pub(super) fn handle_server_hello(
     suite: &'static Tls13CipherSuite,
     mut transcript: HandshakeHash,
     early_data_key_schedule: Option<KeyScheduleEarly>,
-    our_key_share: Box<dyn ActiveKeyExchange>,
+    our_key_share: ActiveKeyExchangeState,
     server_hello_msg: &Message<'_>,
     ech_state: Option<EchState>,
     input: ClientHelloInput,
@@ -169,14 +171,20 @@ pub(super) fn handle_server_hello(
     };
 
     cx.common.kx_state.complete();
-    let shared_secret = our_key_share
+    let completed_secret = our_key_share
         .complete(&their_key_share.payload.0)
         .map_err(|err| {
             cx.common
                 .send_fatal_alert(AlertDescription::IllegalParameter, err)
         })?;
 
-    let mut key_schedule = key_schedule_pre_handshake.into_handshake(shared_secret);
+    #[cfg(feature = "std")]
+    let CompletedSecret { secret, reservation } = completed_secret;
+    #[cfg(not(feature = "std"))]
+    let CompletedSecret { secret } = completed_secret;
+    let mut key_schedule = key_schedule_pre_handshake.into_handshake(secret);
+    #[cfg(feature = "std")]
+    drop(reservation);
 
     // If we have ECH state, check that the server accepted our offer.
     if let Some(ech_state) = ech_state {
@@ -249,8 +257,8 @@ pub(super) fn handle_server_hello(
 }
 
 enum KeyExchangeChoice {
-    Whole(Box<dyn ActiveKeyExchange>),
-    Component(Box<dyn ActiveKeyExchange>),
+    Whole(ActiveKeyExchangeState),
+    Component(ActiveKeyExchangeState),
 }
 
 impl KeyExchangeChoice {
@@ -259,7 +267,7 @@ impl KeyExchangeChoice {
     fn new(
         config: &Arc<ClientConfig>,
         cx: &mut ClientContext<'_>,
-        our_key_share: Box<dyn ActiveKeyExchange>,
+        our_key_share: ActiveKeyExchangeState,
         their_key_share: &KeyShareEntry,
     ) -> Result<Self, ()> {
         if our_key_share.group() == their_key_share.group {
@@ -284,12 +292,36 @@ impl KeyExchangeChoice {
         Ok(Self::Component(our_key_share))
     }
 
-    fn complete(self, peer_pub_key: &[u8]) -> Result<SharedSecret, Error> {
+    fn complete(self, peer_pub_key: &[u8]) -> Result<CompletedSecret, Error> {
         match self {
-            Self::Whole(akx) => akx.complete(peer_pub_key),
-            Self::Component(akx) => akx.complete_hybrid_component(peer_pub_key),
+            Self::Whole(ActiveKeyExchangeState::Unowned(akx)) => Ok(CompletedSecret {
+                secret: akx.complete(peer_pub_key)?,
+                #[cfg(feature = "std")]
+                reservation: None,
+            }),
+            Self::Component(ActiveKeyExchangeState::Unowned(akx)) => Ok(CompletedSecret {
+                secret: akx.complete_hybrid_component(peer_pub_key)?,
+                #[cfg(feature = "std")]
+                reservation: None,
+            }),
+            #[cfg(feature = "std")]
+            Self::Whole(ActiveKeyExchangeState::Owned(akx)) => {
+                let (secret, reservation) = akx.complete(peer_pub_key)?.into_parts();
+                Ok(CompletedSecret { secret, reservation: Some(reservation) })
+            }
+            #[cfg(feature = "std")]
+            Self::Component(ActiveKeyExchangeState::Owned(akx)) => {
+                let (secret, reservation) = akx.complete_hybrid_component(peer_pub_key)?.into_parts();
+                Ok(CompletedSecret { secret, reservation: Some(reservation) })
+            }
         }
     }
+}
+
+struct CompletedSecret {
+    secret: SharedSecret,
+    #[cfg(feature = "std")]
+    reservation: Option<KxReservation>,
 }
 
 fn validate_server_hello(
@@ -310,7 +342,7 @@ pub(super) fn initial_key_share(
     config: &ClientConfig,
     server_name: &ServerName<'_>,
     kx_state: &mut KxState,
-) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+) -> Result<ActiveKeyExchangeState, Error> {
     let group = config
         .resumption
         .store
@@ -327,7 +359,7 @@ pub(super) fn initial_key_share(
         });
 
     *kx_state = KxState::Start(group);
-    group.start()
+    group.start().map(ActiveKeyExchangeState::Unowned)
 }
 
 #[cfg(feature = "std")]
@@ -336,7 +368,7 @@ pub(super) fn initial_key_share_with_resource_owner(
     server_name: &ServerName<'_>,
     kx_state: &mut KxState,
     owner: Arc<dyn crate::DeframerBufferOwner>,
-) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+) -> Result<ActiveKeyExchangeState, Error> {
     let group = config
         .resumption
         .store
@@ -346,7 +378,7 @@ pub(super) fn initial_key_share_with_resource_owner(
             config.provider.kx_groups.iter().copied().next().expect("No kx groups configured")
         });
     *kx_state = KxState::Start(group);
-    group.start_with_resource_owner(owner)
+    group.start_with_resource_owner(owner).map(ActiveKeyExchangeState::Owned)
 }
 
 /// This implements the horrifying TLS1.3 hack where PSK binders have a

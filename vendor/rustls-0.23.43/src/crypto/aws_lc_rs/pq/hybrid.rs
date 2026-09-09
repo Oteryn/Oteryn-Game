@@ -43,7 +43,7 @@ impl SupportedKxGroup for Hybrid {
     fn start_with_resource_owner(
         &self,
         owner: Arc<dyn DeframerBufferOwner>,
-    ) -> Result<Box<dyn ActiveKeyExchange>, Error> {
+    ) -> Result<ResourceOwnedKx, Error> {
         ensure_aws_lc_provider_residency(owner.clone())?;
         if self.name != NamedGroup::X25519MLKEM768 || size_of::<ActiveHybrid>() != 96 {
             return Err(Error::FailedToGetRandomBytes);

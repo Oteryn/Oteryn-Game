@@ -553,7 +553,7 @@ remaining_acceptance_cells: key-share/ECH/configuration/crypto ownership; protec
 
 ## Window18 post-KX configuration-owner preflight
 
-Protected #451 KX/provider-resident work is retained as completed.  After the
+Protected #451 KX/provider-resident work was initially retained as completed.  After the
 normal merge of protected `main@b26395edff3dde1ebcc155ab70758520d780884c`,
 the next resource-owned handshake allocation was preflighted before further
 semantic mutation.  `aws_lc_rs::default_provider()` allocates the cipher-suite
@@ -567,10 +567,39 @@ tls_blocking_owner: PROVEN
 rustls_deframer_owner: PROVEN
 session_retrieval_owner: PROVEN
 operation_owner_propagation: PROVEN
-aws_lc_kx_provider_resident: PROVEN
+aws_lc_kx_provider_resident: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
 last_progress: normally merged current protected main and proved the earliest post-KX provider-configuration allocation boundary
 shared_lease_required: vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: same-ledger preallocation and lifetime custody for actual cipher-suite and KX-group Vec capacities
 next_action: obtain the exact provider-configuration owner amendment, then resume decoded, ClientHello, session/cache and complete TLS composition on the same ledger
 remaining_acceptance_cells: provider configuration vectors; all protected decoded/ClientHello composition; remaining session/cache/error/handshake overlap; funded AWS-LC TLS-positive handshake; PostgreSQL17.6 qualification; independent whole-diff review; canonical CI/FULL MQ; protected readback and target release
+```
+
+## Window19 KX full-lifetime custody repair
+
+Coordinator evidence `5597261954` invalidated the earlier KX `PROVEN` label.
+The owner-aware start path had allocated a second wrapper `Box`, outside the
+protected 554/1625/1705/6264/7881 bounds, and released the full KX debit as
+soon as provider completion returned while the returned secret still lived.
+
+The repair returns the owner-aware wrapper inline, stores it directly in the
+existing handshake state, and transfers the non-allocating reservation token
+to the returned secret.  The TLS 1.3 handler releases that token only after
+the synchronous `into_handshake(secret)` call has consumed and destroyed the
+secret.  Focused coverage now proves all five exact/max-minus-one starts,
+whole and hybrid-component returned-secret retention, simulated HRR
+initial/replacement overlap, failure cleanup, and ordinary owner-free control.
+The broader #451 matrix has not yet re-established concurrent provider-first
+use, thread churn, actual HRR wire handling, and cancellation on this repaired
+shape, so the aggregate KX verdict remains `NOT_PROVEN` rather than inheriting
+the predecessor claim.
+
+```yaml
+status: blocked_pending_shared_lease
+kx_wrapper_heap_p1: PROVEN_FIXED
+kx_returned_secret_lifetime_p1: PROVEN_FIXED
+aws_lc_kx_provider_resident: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+shared_lease_required: vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: same-ledger preallocation and lifetime custody for actual cipher-suite and KX-group Vec capacities
+next_action: obtain the provider-configuration owner amendment, then finish the repaired #451 matrix before any aggregate KX GREEN claim
 ```

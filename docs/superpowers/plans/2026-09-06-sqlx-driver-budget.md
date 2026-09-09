@@ -296,7 +296,7 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Normally merge protected
   `main@b26395edff3dde1ebcc155ab70758520d780884c` without rebase, reset, or
   force-push.
-- [x] Preserve the completed #451 KX/provider-resident checkpoint and inspect
+- [x] Preserve the #451 KX/provider-resident checkpoint history and inspect
   the next allocation before claiming complete TLS composition.
 - [x] Stop before mutation at
   `vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs::{default_provider,default_kx_groups}`:
@@ -308,3 +308,15 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   post-allocation catch-up or duplicate rustls's private slice/layout semantics.
 - [ ] Keep decoded/ClientHello/session/cache composition, actual funded TLS,
   PostgreSQL 17.6, review, CI/MQ, and protected readback open.
+
+## Window19 KX lifecycle repair
+
+- [x] Remove the uncharged second owner-wrapper heap allocation without changing
+  any protected KX bound.
+- [x] Retain the full KX debit through whole and hybrid-component returned-secret
+  consumption, releasing only after synchronous key-schedule consumption.
+- [x] Cover exact/max-minus-one admission, returned-secret custody, failure/drop,
+  simulated HRR overlap, hybrid component, and ordinary owner-free behavior.
+- [ ] Re-run the remaining #451 concurrent provider/thread-churn, actual HRR wire,
+  and cancellation matrix before restoring an aggregate KX `PROVEN` verdict.
+- [ ] Stop at the unchanged unleased provider-configuration `Vec` owner boundary.
