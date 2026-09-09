@@ -32,14 +32,6 @@ impl Scenario {
         }
     }
 
-    pub const fn cache_slots(self) -> usize {
-        match self {
-            Self::Basic => 32,
-            Self::Normal => 64,
-            Self::Stress => 112,
-        }
-    }
-
     pub const fn creature_count(self) -> usize {
         match self {
             Self::Basic => 12,
@@ -244,12 +236,13 @@ impl BenchConfig {
     }
 
     pub const fn cache_slots(&self) -> usize {
-        let base = self.scenario.cache_slots();
         match (self.resource_mode, self.scenario) {
+            (ResourceMode::Atlas | ResourceMode::Array, Scenario::Basic) => 32,
+            (ResourceMode::Atlas | ResourceMode::Array, Scenario::Normal) => 80,
+            (ResourceMode::Atlas | ResourceMode::Array, Scenario::Stress) => 160,
             (ResourceMode::Hybrid, Scenario::Basic) => 64,
-            (ResourceMode::Hybrid, Scenario::Normal) => 96,
-            (ResourceMode::Hybrid, Scenario::Stress) => 176,
-            (ResourceMode::Atlas | ResourceMode::Array, _) => base,
+            (ResourceMode::Hybrid, Scenario::Normal) => 100,
+            (ResourceMode::Hybrid, Scenario::Stress) => 224,
         }
     }
 
@@ -392,8 +385,8 @@ mod tests {
         let mut config = BenchConfig::default();
         for (scenario, atlas_array, hybrid) in [
             (Scenario::Basic, 32, 64),
-            (Scenario::Normal, 64, 96),
-            (Scenario::Stress, 112, 176),
+            (Scenario::Normal, 80, 100),
+            (Scenario::Stress, 160, 224),
         ] {
             config.scenario = scenario;
             config.resource_mode = ResourceMode::Atlas;

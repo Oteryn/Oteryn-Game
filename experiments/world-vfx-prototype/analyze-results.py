@@ -153,6 +153,7 @@ def main() -> None:
         1 for cell_rows in groups.values()
         if any((nested(row, "cache", "evictions") or 0) > 0 and (nested(row, "cache", "uploads") or 0) > 0 for row in cell_rows)
     )
+    overflow_free = all((nested(row, "cache", "overflow_fallbacks") or 0) == 0 for row in rows + family_rows)
     readability = all((nested(row, "max_semantics", "critical_vfx") or 0) > 0 for row in rows)
     multi_page = all((nested(row, "active_resource_pages", "max") or 0) > 1 for row in rows)
     cells = [cell_summary(key, groups[key]) for key in sorted(groups)]
@@ -164,9 +165,9 @@ def main() -> None:
             "reason": "decoded GPU page layout was measured; container IO/decode/transcode challengers were not",
         },
         "streaming_cache_model": {
-            "verdict": "ADOPT" if real_atlas_workload and churn and reliability and multi_page else "INSUFFICIENT_EVIDENCE",
-            "choice": "bounded_visible_working_set_with_eviction" if real_atlas_workload and churn and reliability and multi_page else None,
-            "reason": "real Atlas FullWorld viewport semantics drove multi-page upload/eviction churn without renderer failure" if real_atlas_workload and churn and reliability and multi_page else "real-world churn/reliability evidence incomplete",
+            "verdict": "ADOPT" if real_atlas_workload and churn and reliability and multi_page and overflow_free else "INSUFFICIENT_EVIDENCE",
+            "choice": "bounded_visible_working_set_with_eviction" if real_atlas_workload and churn and reliability and multi_page and overflow_free else None,
+            "reason": "real Atlas FullWorld viewport semantics drove multi-page upload/eviction churn without renderer failure or resource overflow" if real_atlas_workload and churn and reliability and multi_page and overflow_free else "real-world churn/reliability/overflow evidence incomplete",
         },
         "particle_implementation_direction": {
             "verdict": "INSUFFICIENT_EVIDENCE",
@@ -210,6 +211,7 @@ def main() -> None:
         "multi_page_pass": multi_page,
         "cache_churn_exercised": churn,
         "cache_churn_cells": churn_cells,
+        "overflow_fallback_free": overflow_free,
         "family_axis_complete": family_axis_complete,
         "family_gameplay_semantics_equal": family_semantics_equal,
         "family_signatures": sorted(family_signatures),
@@ -218,11 +220,11 @@ def main() -> None:
     }
     output_path.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     markdown = [
-        "# Oteryn World + VFX Prototype — physical summary",
+        "# Oteryn World + VFX Prototype â€” physical summary",
         "",
         f"Primary matrix: **{len(rows)} runs**, complete={matrix_complete}, fixed Enhanced={fixed_family}.",
         f"Workload={','.join(sorted(workloads))}; real Atlas={real_atlas_workload}; exact-head consistent={exact_head_consistent}.",
-        f"GPU timestamps reliable={gpu_reliable}; reliability pass={reliability}; cache churn={churn} across {churn_cells}/27 cells.",
+        f"GPU timestamps reliable={gpu_reliable}; reliability pass={reliability}; cache churn={churn} across {churn_cells}/27 cells; overflow-free={overflow_free}.",
         f"Classic/Enhanced/HD independent family smoke: complete={family_axis_complete}, gameplay signatures equal={family_semantics_equal}.",
         "",
         "| Scenario | Density | Mode | CPU p95 ms | GPU p95 ms | FPS | RAM MiB | Batches mean | Evictions | Overflow |",
@@ -235,7 +237,7 @@ def main() -> None:
     markdown += ["", "## Verdicts", ""]
     for topic, verdict in verdicts.items():
         choice = verdict.get("choice")
-        suffix = f" — {choice}" if choice else ""
+        suffix = f" â€” {choice}" if choice else ""
         markdown.append(f"- **{topic}**: `{verdict['verdict']}`{suffix}")
         if verdict.get("reason"):
             markdown.append(f"  - {verdict['reason']}")
