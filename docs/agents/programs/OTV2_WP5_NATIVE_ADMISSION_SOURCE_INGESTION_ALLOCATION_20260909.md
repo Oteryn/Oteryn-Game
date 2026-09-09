@@ -185,12 +185,21 @@ S2 activation prerequisites:
 2. WP4/#335 is terminal/protected and Work has read back the then-current schema;
 3. Work selects `<NEXT>` from that protected schema and proves no migration/path
    overlap with #415 or any other durability writer;
-4. #416's dedicated PostgreSQL routing prerequisite is protected and materially
-   activated for this exact target before hosted PG evidence counts;
+4. a separately reviewed and protected amendment to #416 has registered the exact
+   dedicated target `native_admission_source_postgres`, preserving #416 trusted-
+   base/fail-closed routing, PostgreSQL 17.6 execution, policy-core/pin custody and
+   FULL Merge Queue requirements; that amended routing is then materially
+   activated/exercised for this exact target before hosted PG evidence counts;
 5. S1 exact descriptor/wire semantics are protected or a serialized predecessor;
 6. every conditional durability hook actually selected for S2 has an explicit
    serialized sole-writer Work lease and no active-owner overlap at activation;
    WP4 protection/release alone never transfers custody of those shared paths.
+
+The protected #416 baseline currently registers only
+`character_authority_postgres` and `runtime_scope_assignment_postgres`; its own
+contract forbids activation with a different target without a reviewed amendment.
+This packet allocates the required future target identity but does not edit any
+workflow, policy-core/pin or #416 control-plane source.
 
 S2 semantics:
 
@@ -271,8 +280,10 @@ production change is authorized here.
 - **#415 Channel assignment** owns Game runtime Channel assignment/fencing. A
   directory, grant or receiving node cannot self-assign.
 - **#416 PostgreSQL routing** is the control prerequisite for dedicated WP5 PG
-  targets; its workflow/policy paths remain separately serialized and are not
-  edited here.
+  targets. Its protected baseline registers only the #414/#415 targets; S2
+  therefore requires a reviewed/protected target-registration amendment before
+  `native_admission_source_postgres` may count. Workflow/policy paths remain
+  separately serialized and are not edited here.
 - this allocation owns only authenticated Platform security/trust ingestion,
   nonrollback source bootstrap and later sealed consumer composition.
 
@@ -286,7 +297,8 @@ this allocation protected
 -> keep S1/S2/S3 NOT_ACTIVE while their exact gates remain false
 -> WP3 protected/released
 -> WP4 protected/released
--> #416 prerequisite protected/materially exercised
+-> reviewed #416 amendment registers native_admission_source_postgres
+-> amended #416 routing protected/materially exercised for that exact target
 -> activate S1 only with exact shared-path/Cargo leases and either a compatible
    separately authorized producer or controlled independent test producer
 -> exact-head review + canonical CI/MQ + protected readback
@@ -313,7 +325,8 @@ by real dependencies/authority, principally:
   authenticated source composition;
 - unreleased WP3/WP4 shared Cargo/PostgreSQL/durability custody;
 - shared `lib.rs`/Foundation composition custody;
-- #416 material routing activation for future dedicated PG targets.
+- required reviewed #416 amendment registering `native_admission_source_postgres`
+  and subsequent material routing activation for that exact target.
 
 Those are activation blockers, not reasons to weaken source authentication or
 reuse fixtures as authority.
