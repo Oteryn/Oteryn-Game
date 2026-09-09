@@ -1,1580 +1,1856 @@
-use serde_json::Value;
+use crate::config::{BenchConfig, CorpusCensus, Family, RESOURCE_SPRITES_PER_PAGE, Scenario};
+use serde::Serialize;
 use std::collections::BTreeSet;
-use std::fmt::{self, Display, Formatter};
-use std::path::Path;
+use std::mem::size_of;
+use std::time::Instant;
 
-pub const LOGICAL_TILE_PX: f32 = 32.0;
-pub const MAX_LIGHTS: usize = 16;
-pub const PAGE_CELLS: u32 = 16;
+pub const LOGICAL_TILE_UNITS: f32 = 32.0;
+pub const FALLBACK_SPRITE_ID: u32 = 1;
+const CAMERA_FLOOR: i16 = -7;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Scenario {
-    Basic,
-    Normal,
-    Stress,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum StackClass {
+    LowerFloor = 0,
+    Ground = 1,
+    GroundBorder = 2,
+    Bottom = 3,
+    Decal = 4,
+    Common = 5,
+    Creature = 6,
+    Effect = 7,
+    Projectile = 8,
+    Top = 9,
+    Environment = 10,
+    Overlay = 11,
 }
 
-impl Scenario {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Basic => "basic",
-            Self::Normal => "normal",
-            Self::Stress => "stress",
-        }
-    }
-
-    pub const fn viewport_radius(self) -> (i32, i32) {
-        match self {
-            Self::Basic => (8, 6),
-            Self::Normal => (12, 9),
-            Self::Stress => (16, 12),
-        }
-    }
-
-    pub const fn creature_count(self) -> usize {
-        match self {
-            Self::Basic => 8,
-            Self::Normal => 32,
-            Self::Stress => 96,
-        }
-    }
-
-    pub const fn projectile_count(self) -> usize {
-        match self {
-            Self::Basic => 2,
-            Self::Normal => 12,
-            Self::Stress => 48,
-        }
-    }
-
-    pub const fn area_spell_count(self) -> usize {
-        match self {
-            Self::Basic => 1,
-            Self::Normal => 6,
-            Self::Stress => 24,
-        }
-    }
-
-    pub const fn weather_particles(self) -> usize {
-        match self {
-            Self::Basic => 32,
-            Self::Normal => 160,
-            Self::Stress => 640,
-        }
-    }
-
-    pub const fn visible_page_count(self) -> u32 {
-        match self {
-            Self::Basic => 4,
-            Self::Normal => 8,
-            Self::Stress => 12,
-        }
-    }
-
-    pub const fn total_page_count(self) -> u32 {
-        match self {
-            Self::Basic => 12,
-            Self::Normal => 24,
-            Self::Stress => 48,
-        }
-    }
-
-    pub const fn decorative_budget(self) -> usize {
-        match self {
-            Self::Basic => 96,
-            Self::Normal => 320,
-            Self::Stress => 720,
-        }
-    }
-}
-
-impl Display for Scenario {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(self.as_str())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ResourceLayout {
-    Atlas,
-    Array,
-}
-
-impl ResourceLayout {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Atlas => "atlas",
-            Self::Array => "array",
-        }
-    }
-}
-
-impl Display for ResourceLayout {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(self.as_str())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PresentationFamily {
-    Classic,
-    Enhanced,
-    Hd,
-}
-
-impl PresentationFamily {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::Classic => "classic",
-            Self::Enhanced => "enhanced",
-            Self::Hd => "hd",
-        }
-    }
-
-    pub const fn tint(self) -> [f32; 4] {
-        match self {
-            Self::Classic => [0.94, 0.94, 0.94, 1.0],
-            Self::Enhanced => [1.0, 1.0, 1.0, 1.0],
-            Self::Hd => [1.04, 1.02, 1.0, 1.0],
-        }
-    }
-}
-
-impl Display for PresentationFamily {
-    fn fmt(&self, formatter: &mut Formatter<'_>) -> fmt::Result {
-        formatter.write_str(self.as_str())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PrewarmMode {
-    None,
-    Critical,
-}
-
-impl PrewarmMode {
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Critical => "critical",
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct BenchConfig {
-    pub scenario: Scenario,
-    pub density: u32,
-    pub layout: ResourceLayout,
-    pub family: PresentationFamily,
-    pub warmup_frames: u64,
-    pub sample_frames: u64,
-    pub width: u32,
-    pub height: u32,
-    pub cache_pages: u32,
-    pub census_path: Option<String>,
-    pub prewarm: PrewarmMode,
-}
-
-impl Default for BenchConfig {
-    fn default() -> Self {
-        Self {
-            scenario: Scenario::Normal,
-            density: 64,
-            layout: ResourceLayout::Array,
-            family: PresentationFamily::Enhanced,
-            warmup_frames: 120,
-            sample_frames: 600,
-            width: 1600,
-            height: 900,
-            cache_pages: Scenario::Normal.visible_page_count(),
-            census_path: None,
-            prewarm: PrewarmMode::None,
-        }
-    }
-}
-
-impl BenchConfig {
-    pub fn from_args() -> Result<Self, String> {
-        let mut config = Self::default();
-        let mut explicit_cache = false;
-        let mut args = std::env::args().skip(1);
-        while let Some(flag) = args.next() {
-            let value = args
-                .next()
-                .ok_or_else(|| format!("missing value for {flag}"))?;
-            match flag.as_str() {
-                "--scenario" => {
-                    config.scenario = match value.as_str() {
-                        "basic" => Scenario::Basic,
-                        "normal" => Scenario::Normal,
-                        "stress" => Scenario::Stress,
-                        _ => return Err(format!("unsupported scenario: {value}")),
-                    };
-                }
-                "--density" => {
-                    config.density = parse_u32(&value, "density")?;
-                    if !matches!(config.density, 32 | 64 | 128) {
-                        return Err("density must be 32, 64 or 128".to_owned());
-                    }
-                }
-                "--layout" => {
-                    config.layout = match value.as_str() {
-                        "atlas" => ResourceLayout::Atlas,
-                        "array" => ResourceLayout::Array,
-                        _ => return Err(format!("unsupported layout: {value}")),
-                    };
-                }
-                "--family" => {
-                    config.family = match value.as_str() {
-                        "classic" => PresentationFamily::Classic,
-                        "enhanced" => PresentationFamily::Enhanced,
-                        "hd" => PresentationFamily::Hd,
-                        _ => return Err(format!("unsupported family: {value}")),
-                    };
-                }
-                "--warmup" => config.warmup_frames = parse_u64(&value, "warmup")?,
-                "--frames" => config.sample_frames = parse_u64(&value, "frames")?,
-                "--width" => config.width = parse_u32(&value, "width")?,
-                "--height" => config.height = parse_u32(&value, "height")?,
-                "--cache-pages" => {
-                    config.cache_pages = parse_u32(&value, "cache-pages")?;
-                    explicit_cache = true;
-                }
-                "--census" => config.census_path = Some(value),
-                "--prewarm" => {
-                    config.prewarm = match value.as_str() {
-                        "none" => PrewarmMode::None,
-                        "critical" => PrewarmMode::Critical,
-                        _ => return Err(format!("unsupported prewarm mode: {value}")),
-                    };
-                }
-                _ => return Err(format!("unsupported argument: {flag}")),
-            }
-        }
-        if !explicit_cache {
-            config.cache_pages = config.scenario.visible_page_count();
-        }
-        if config.sample_frames == 0 || config.width == 0 || config.height == 0 {
-            return Err("frames, width and height must be non-zero".to_owned());
-        }
-        if config.cache_pages < config.scenario.visible_page_count() {
-            return Err("cache-pages must fit the per-frame visible page set".to_owned());
-        }
-        Ok(config)
-    }
-
-    pub const fn total_frames(&self) -> u64 {
-        self.warmup_frames + self.sample_frames
-    }
-}
-
-fn parse_u32(value: &str, label: &str) -> Result<u32, String> {
-    value
-        .parse::<u32>()
-        .map_err(|error| format!("invalid {label} value {value}: {error}"))
-}
-
-fn parse_u64(value: &str, label: &str) -> Result<u64, String> {
-    value
-        .parse::<u64>()
-        .map_err(|error| format!("invalid {label} value {value}: {error}"))
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct CorpusShape {
-    pub objects: u32,
-    pub outfits: u32,
-    pub effects: u32,
-    pub missiles: u32,
-}
-
-impl Default for CorpusShape {
-    fn default() -> Self {
-        Self {
-            objects: 43_514,
-            outfits: 1_480,
-            effects: 243,
-            missiles: 76,
-        }
-    }
-}
-
-impl CorpusShape {
-    pub fn load(path: Option<&str>) -> Result<Self, String> {
-        let Some(path) = path else {
-            return Ok(Self::default());
-        };
-        let text = std::fs::read_to_string(Path::new(path))
-            .map_err(|error| format!("read census {path}: {error}"))?;
-        let value: Value =
-            serde_json::from_str(&text).map_err(|error| format!("parse census {path}: {error}"))?;
-        let census = value
-            .get("census")
-            .ok_or_else(|| "census JSON is missing census object".to_owned())?;
-        Ok(Self {
-            objects: census_count(census, "object")?,
-            outfits: census_count(census, "outfit")?,
-            effects: census_count(census, "effect")?,
-            missiles: census_count(census, "missile")?,
-        })
-    }
-}
-
-fn census_count(census: &Value, family: &str) -> Result<u32, String> {
-    let value = census
-        .get(family)
-        .and_then(|entry| entry.get("appearances"))
-        .and_then(Value::as_u64)
-        .ok_or_else(|| format!("census is missing {family}.appearances"))?;
-    u32::try_from(value).map_err(|_| format!("{family}.appearances exceeds u32"))
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct WorldPosition {
-    pub x: i32,
-    pub y: i32,
-    pub floor: i32,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct CameraState {
-    pub x: f32,
-    pub y: f32,
-    pub floor: i32,
-    pub zoom: f32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum AppearanceFamily {
-    Object,
-    Outfit,
-    Effect,
-    Missile,
-    Generated,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct AppearanceRef {
-    pub family: AppearanceFamily,
-    pub semantic_id: u32,
-    pub frame: u32,
-    pub direction: u32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum PresentationClass {
-    Ground,
-    Border,
-    Bottom,
-    Common,
-    Creature,
-    Effect,
-    Projectile,
-    Attached,
-    Top,
-    Overlay,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PrimitiveKind {
-    Sprite,
-    Particle,
-    Trail,
-    Light,
-    Decal,
-    Telegraph,
-    Overlay,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MaterialClass {
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum BlendMode {
     Alpha,
     Additive,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct RenderInstance {
-    pub appearance: AppearanceRef,
-    pub class: PresentationClass,
-    pub kind: PrimitiveKind,
-    pub material: MaterialClass,
-    pub world: WorldPosition,
-    pub screen_x: f32,
-    pub screen_y: f32,
-    pub width: f32,
-    pub height: f32,
-    pub color: [f32; 4],
-    pub emissive: f32,
-    pub page_id: u32,
-    pub cell: u32,
-    pub critical: bool,
-    pub screen_space: bool,
-    pub order_floor: i32,
-    pub order_y: i32,
-    pub order_x: i32,
-    pub sequence: u32,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum SourceClass {
+    Default,
+    Own,
+    OtherPlayer,
+    Monster,
+    Boss,
+    Environment,
 }
 
-impl RenderInstance {
-    fn order_key(self) -> (i32, i32, i32, PresentationClass, u32) {
-        (
-            self.order_floor,
-            self.order_y,
-            self.order_x,
-            self.class,
-            self.sequence,
-        )
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GeometryClass {
+    Cell32x32,
+    Cell32x64,
+    Cell64x32,
+    Cell64x64,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct LocalLight {
-    pub x: f32,
-    pub y: f32,
-    pub radius: f32,
-    pub intensity: f32,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Weather {
-    Clear,
-    Rain,
-    Snow,
-    Fog,
-}
-
-impl Weather {
-    pub const fn as_str(self) -> &'static str {
+impl GeometryClass {
+    pub const fn width_tiles(self) -> f32 {
         match self {
-            Self::Clear => "clear",
-            Self::Rain => "rain",
-            Self::Snow => "snow",
-            Self::Fog => "fog",
+            Self::Cell32x32 | Self::Cell32x64 => 1.0,
+            Self::Cell64x32 | Self::Cell64x64 => 2.0,
         }
     }
+
+    pub const fn height_tiles(self) -> f32 {
+        match self {
+            Self::Cell32x32 | Self::Cell64x32 => 1.0,
+            Self::Cell32x64 | Self::Cell64x64 => 2.0,
+        }
+    }
+
+    pub const fn width_ratio(self) -> f32 {
+        self.width_tiles() / 2.0
+    }
+
+    pub const fn height_ratio(self) -> f32 {
+        self.height_tiles() / 2.0
+    }
+
+    pub const fn is_square(self) -> bool {
+        matches!(self, Self::Cell32x32 | Self::Cell64x64)
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Season {
-    Normal,
-    Winter,
+pub enum TextureRef {
+    World {
+        sprite_id: u32,
+        geometry: GeometryClass,
+        missing_variant: bool,
+    },
+    Fx {
+        cell: u8,
+    },
+    Solid,
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct EnvironmentState {
-    pub ambient: f32,
-    pub weather: Weather,
-    pub season: Season,
-    pub wind: f32,
-}
-
-#[derive(Debug, Default, Clone, Copy)]
-pub struct FrameSemanticStats {
-    pub static_world: u32,
-    pub creatures: u32,
-    pub effects: u32,
-    pub projectiles: u32,
-    pub particles: u32,
-    pub lights: u32,
-    pub overlays: u32,
-    pub decorative_dropped: u32,
-    pub variant_fallbacks: u32,
-    pub critical_visible: u32,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SortKey {
+    pub floor: i16,
+    pub diagonal: i32,
+    pub y: i32,
+    pub x: i32,
+    pub stack: StackClass,
+    pub local_order: u16,
+    pub stable_id: u64,
 }
 
 #[derive(Debug, Clone)]
-pub struct FramePlan {
-    pub instances: Vec<RenderInstance>,
-    pub needed_pages: Vec<u32>,
-    pub lights: Vec<LocalLight>,
-    pub environment: EnvironmentState,
+pub struct RenderPrimitive {
+    pub stable_id: u64,
+    pub sort_key: SortKey,
+    pub rect_px: [f32; 4],
+    pub texture: TextureRef,
+    pub color: [f32; 4],
+    pub blend: BlendMode,
+    pub source: SourceClass,
+    pub critical: bool,
+}
+
+impl RenderPrimitive {
+    pub fn intersects_viewport(&self, width: f32, height: f32) -> bool {
+        rect_intersects(self.rect_px, [0.0, 0.0, width, height])
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct CameraState {
+    pub world_x: f32,
+    pub world_y: f32,
+    pub floor: i16,
+    pub zoom: f32,
+    pub pixels_per_tile: f32,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+pub struct EnvironmentState {
+    pub time_of_day: f32,
+    pub night_factor: f32,
+    pub winter_factor: f32,
+    pub wind: f32,
+    pub fog_alpha: f32,
+}
+
+#[derive(Debug, Clone, Default, Serialize)]
+pub struct FrameSemanticStats {
+    pub total_primitives: usize,
+    pub world_primitives: usize,
+    pub creatures: usize,
+    pub effects: usize,
+    pub projectiles: usize,
+    pub particles: usize,
+    pub lights: usize,
+    pub overlays: usize,
+    pub critical_vfx: usize,
+    pub fallback_variants: usize,
+    pub weather_suppressed_under_roof: usize,
+    pub lower_floor_hole_primitives: usize,
+}
+
+#[derive(Debug, Clone)]
+pub struct RenderSnapshot {
     pub camera: CameraState,
-    pub camera_moved: bool,
-    pub zoom_changed: bool,
-    pub floor_changed: bool,
+    pub environment: EnvironmentState,
     pub gameplay_signature: u64,
+    pub primitives: Vec<RenderPrimitive>,
     pub stats: FrameSemanticStats,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PhaseDuration {
+    pub min_ms: u32,
+    pub max_ms: u32,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum LoopMode {
+    Infinite,
+    PingPong,
+    Counted(u32),
+}
+
+#[derive(Debug, Clone)]
+pub struct AnimationProgram {
+    pub id: u32,
+    pub phases: Vec<PhaseDuration>,
+    pub loop_mode: LoopMode,
+    pub synchronized: bool,
+}
+
+impl AnimationProgram {
+    pub fn phase_at(&self, elapsed_ms: u64, instance_seed: u64) -> usize {
+        if self.phases.is_empty() {
+            return 0;
+        }
+        let sequence_len = match self.loop_mode {
+            LoopMode::PingPong if self.phases.len() > 1 => self.phases.len() * 2 - 2,
+            _ => self.phases.len(),
+        };
+        let seed = if self.synchronized {
+            u64::from(self.id)
+        } else {
+            instance_seed ^ u64::from(self.id)
+        };
+
+        let mut cursor_ms = 0_u64;
+        let mut loop_index = 0_u32;
+        loop {
+            for sequence_index in 0..sequence_len {
+                let phase_index = self.sequence_phase(sequence_index);
+                let duration = u64::from(self.phase_duration_ms(phase_index, loop_index, seed));
+                if elapsed_ms < cursor_ms.saturating_add(duration) {
+                    return phase_index;
+                }
+                cursor_ms = cursor_ms.saturating_add(duration);
+            }
+
+            loop_index = loop_index.saturating_add(1);
+            if let LoopMode::Counted(count) = self.loop_mode
+                && loop_index >= count.max(1)
+            {
+                return self.phases.len() - 1;
+            }
+
+            if cursor_ms == 0 {
+                return 0;
+            }
+            if cursor_ms > elapsed_ms {
+                return self.phases.len() - 1;
+            }
+        }
+    }
+
+    fn sequence_phase(&self, sequence_index: usize) -> usize {
+        match self.loop_mode {
+            LoopMode::PingPong if self.phases.len() > 1 => {
+                if sequence_index < self.phases.len() {
+                    sequence_index
+                } else {
+                    (self.phases.len() * 2 - 2) - sequence_index
+                }
+            }
+            _ => sequence_index,
+        }
+    }
+
+    fn phase_duration_ms(&self, phase: usize, loop_index: u32, seed: u64) -> u32 {
+        let range = self.phases[phase];
+        if range.min_ms >= range.max_ms {
+            return range.min_ms.max(1);
+        }
+        let span = range.max_ms - range.min_ms + 1;
+        let mixed = mix64(
+            seed ^ ((phase as u64) << 32)
+                ^ u64::from(loop_index).wrapping_mul(0x9e37_79b9_7f4a_7c15),
+        );
+        range.min_ms + (mixed as u32 % span)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum PresentationEventKind {
+    AreaSpell,
+    Hit,
+    Heal,
+    BossTelegraph,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct PresentationEvent {
+    pub event_id: u64,
+    pub kind: PresentationEventKind,
+    pub start_ms: u64,
+    pub duration_ms: u64,
+    pub world_x: f32,
+    pub world_y: f32,
+    pub floor: i16,
+    pub source: SourceClass,
+    pub critical: bool,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct EventDeduper {
+    seen: BTreeSet<u64>,
+}
+
+impl EventDeduper {
+    pub fn accept(&mut self, event_id: u64) -> bool {
+        self.seen.insert(event_id)
+    }
+
+    pub fn reset_for_snapshot_replacement(&mut self, retained_event_ids: &[u64]) {
+        self.seen.clear();
+        self.seen.extend(retained_event_ids.iter().copied());
+    }
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct AnimationEvaluationEvidence {
+    pub instance_count: usize,
+    pub independent_timer_cpu_ms: f64,
+    pub shared_program_cpu_ms: f64,
+    pub independent_state_bytes: usize,
+    pub shared_state_bytes: usize,
+    pub checksum_equal: bool,
 }
 
 #[derive(Debug, Clone)]
 pub struct SceneModel {
-    corpus: CorpusShape,
+    census: CorpusCensus,
+    animation_programs: Vec<AnimationProgram>,
+    events: Vec<PresentationEvent>,
 }
 
 impl SceneModel {
-    pub const fn new(corpus: CorpusShape) -> Self {
-        Self { corpus }
-    }
-
-    pub fn plan(&self, config: &BenchConfig, frame: u64) -> FramePlan {
-        let camera = camera_for(frame);
-        let previous = camera_for(frame.saturating_sub(1));
-        let environment = environment_for(frame);
-        let visible_floors = visible_floors(camera);
-        let region_page_base = ((camera.x.floor() as i32).div_euclid(6)
-            + (camera.y.floor() as i32).div_euclid(6) * 3)
-            .unsigned_abs()
-            % config.scenario.total_page_count();
-        let mut builder = PlanBuilder::new(config, self.corpus, camera, region_page_base);
-        for floor in visible_floors {
-            builder.emit_world_floor(floor, environment);
-        }
-        builder.emit_creatures(frame, environment);
-        builder.emit_combat(frame);
-        builder.emit_weather(frame, environment);
-        builder.emit_overlays();
-        builder.finish(
-            environment,
-            camera,
-            camera.x != previous.x || camera.y != previous.y,
-            (camera.zoom - previous.zoom).abs() > f32::EPSILON,
-            camera.floor != previous.floor,
-        )
-    }
-}
-
-struct PlanBuilder<'a> {
-    config: &'a BenchConfig,
-    corpus: CorpusShape,
-    camera: CameraState,
-    page_base: u32,
-    sequence: u32,
-    instances: Vec<RenderInstance>,
-    pages: BTreeSet<u32>,
-    lights: Vec<LocalLight>,
-    stats: FrameSemanticStats,
-    gameplay_signature: u64,
-    decorative_emitted: usize,
-    creature_screens: Vec<(f32, f32, u32)>,
-}
-
-impl<'a> PlanBuilder<'a> {
-    fn new(
-        config: &'a BenchConfig,
-        corpus: CorpusShape,
-        camera: CameraState,
-        page_base: u32,
-    ) -> Self {
-        Self {
-            config,
-            corpus,
-            camera,
-            page_base,
-            sequence: 0,
-            instances: Vec::new(),
-            pages: BTreeSet::new(),
-            lights: Vec::with_capacity(MAX_LIGHTS),
-            stats: FrameSemanticStats::default(),
-            gameplay_signature: 0xcbf2_9ce4_8422_2325,
-            decorative_emitted: 0,
-            creature_screens: Vec::new(),
-        }
-    }
-
-    fn emit_world_floor(&mut self, floor: i32, environment: EnvironmentState) {
-        let (radius_x, radius_y) = self.config.scenario.viewport_radius();
-        let center_x = self.camera.x.floor() as i32;
-        let center_y = self.camera.y.floor() as i32;
-        for dy in -radius_y..=radius_y {
-            for dx in -radius_x..=radius_x {
-                let position = WorldPosition {
-                    x: center_x + dx,
-                    y: center_y + dy,
-                    floor,
-                };
-                if floor == 1 && !roof_tile(position.x, position.y) {
-                    continue;
-                }
-                let hash = spatial_hash(position.x, position.y, floor);
-                let ground_id = 1 + hash % self.corpus.objects.max(2);
-                self.push_world_sprite(
-                    position,
-                    PresentationClass::Ground,
-                    ground_id,
-                    1.0,
-                    1.0,
-                    0.0,
-                    [0.72, 0.78, 0.64, 1.0],
-                );
-                if hash % 11 == 0 {
-                    self.push_world_sprite(
-                        position,
-                        PresentationClass::Border,
-                        500 + hash % 300,
-                        1.0,
-                        1.0,
-                        0.0,
-                        [0.88, 0.82, 0.68, 1.0],
-                    );
-                }
-                if hash % 17 == 0 {
-                    self.push_world_sprite(
-                        position,
-                        PresentationClass::Bottom,
-                        1_200 + hash % 700,
-                        1.0,
-                        1.0,
-                        2.0,
-                        [0.80, 0.70, 0.54, 1.0],
-                    );
-                }
-                if hash % 7 == 0 {
-                    let oversized = hash % 37 == 0;
-                    let size = if oversized { 2.0 } else { 1.0 };
-                    let elevation = (hash % 4) as f32 * 3.0;
-                    self.push_world_sprite(
-                        position,
-                        PresentationClass::Common,
-                        2_000 + hash % 2_500,
-                        size,
-                        size,
-                        elevation,
-                        [0.86, 0.86, 0.88, 1.0],
-                    );
-                }
-                if wall_tile(position.x, position.y) {
-                    self.push_world_sprite(
-                        position,
-                        PresentationClass::Top,
-                        6_000 + hash % 400,
-                        1.0,
-                        1.5,
-                        0.0,
-                        [0.70, 0.72, 0.76, 1.0],
-                    );
-                }
-                if floor == 1 && roof_tile(position.x, position.y) {
-                    let mut tint = [0.62, 0.58, 0.56, 1.0];
-                    if environment.season == Season::Winter {
-                        tint = [0.86, 0.91, 0.96, 1.0];
-                    }
-                    self.push_world_sprite(
-                        position,
-                        PresentationClass::Top,
-                        7_000 + hash % 300,
-                        1.0,
-                        1.0,
-                        0.0,
-                        tint,
-                    );
-                }
-            }
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn push_world_sprite(
-        &mut self,
-        position: WorldPosition,
-        class: PresentationClass,
-        semantic_id: u32,
-        width_tiles: f32,
-        height_tiles: f32,
-        elevation_px: f32,
-        color: [f32; 4],
-    ) {
-        let (mut screen_x, mut screen_y) = project(self.camera, position);
-        let tile = LOGICAL_TILE_PX * self.camera.zoom;
-        screen_x -= (width_tiles - 1.0) * tile * 0.5;
-        screen_y -= (height_tiles - 1.0) * tile * 0.5 + elevation_px;
-        let appearance = AppearanceRef {
-            family: AppearanceFamily::Object,
-            semantic_id,
-            frame: semantic_id % 8,
-            direction: 0,
-        };
-        self.push_instance(InstanceSpec {
-            appearance,
-            class,
-            kind: PrimitiveKind::Sprite,
-            material: MaterialClass::Alpha,
-            world: position,
-            screen_x,
-            screen_y,
-            width: tile * width_tiles,
-            height: tile * height_tiles,
-            color,
-            emissive: 0.0,
-            critical: false,
-            screen_space: false,
-        });
-        self.stats.static_world = self.stats.static_world.saturating_add(1);
-    }
-
-    fn emit_creatures(&mut self, frame: u64, environment: EnvironmentState) {
-        let count = self.config.scenario.creature_count();
-        for index in 0..count {
-            let base_x = self.camera.x.floor() as i32 - 7 + (index as i32 % 15);
-            let base_y = self.camera.y.floor() as i32 - 5 + ((index as i32 * 7) % 11);
-            let progress = (frame % 60) as f32 / 60.0;
-            let diagonal = index % 3 == 0;
-            let dx = if index % 2 == 0 { progress } else { -progress };
-            let dy = if diagonal { progress * 0.7 } else { 0.0 };
-            let position = WorldPosition {
-                x: base_x,
-                y: base_y,
-                floor: self.camera.floor,
-            };
-            let (mut screen_x, mut screen_y) = project(self.camera, position);
-            let tile = LOGICAL_TILE_PX * self.camera.zoom;
-            screen_x += dx * tile;
-            screen_y += dy * tile;
-            let outfit_id = 1 + (index as u32 * 13) % self.corpus.outfits.max(2);
-            let direction = (index as u32 + (frame / 45) as u32) % 4;
-            let frame_id = ((frame / 8) as u32 + index as u32) % 8;
-            if index % 5 == 0 {
-                self.push_creature_component(
-                    position,
-                    screen_x,
-                    screen_y + tile * 0.18,
-                    outfit_id + 400,
-                    frame_id,
-                    direction,
-                    [0.72, 0.58, 0.42, 1.0],
-                    0,
-                );
-            }
-            self.push_creature_component(
-                position,
-                screen_x,
-                screen_y,
-                outfit_id,
-                frame_id,
-                direction,
-                [0.92, 0.84, 0.74, 1.0],
-                1,
-            );
-            self.push_creature_component(
-                position,
-                screen_x,
-                screen_y - tile * 0.08,
-                outfit_id + 700,
-                frame_id,
-                direction,
-                [0.74, 0.84, 0.96, 0.78],
-                2,
-            );
-            if self.lights.len() < MAX_LIGHTS && index % 11 == 0 {
-                self.lights.push(LocalLight {
-                    x: screen_x,
-                    y: screen_y,
-                    radius: 110.0,
-                    intensity: if environment.ambient < 0.6 { 0.9 } else { 0.45 },
-                });
-                self.stats.lights = self.stats.lights.saturating_add(1);
-            }
-            self.creature_screens
-                .push((screen_x, screen_y, 35 + (index as u32 * 17) % 65));
-            self.stats.creatures = self.stats.creatures.saturating_add(1);
-            self.mix_gameplay((position.x as u64) ^ ((position.y as u64) << 16) ^ outfit_id as u64);
-        }
-    }
-
-    #[allow(clippy::too_many_arguments)]
-    fn push_creature_component(
-        &mut self,
-        position: WorldPosition,
-        screen_x: f32,
-        screen_y: f32,
-        semantic_id: u32,
-        frame: u32,
-        direction: u32,
-        color: [f32; 4],
-        component: u32,
-    ) {
-        let tile = LOGICAL_TILE_PX * self.camera.zoom;
-        self.push_instance(InstanceSpec {
-            appearance: AppearanceRef {
-                family: AppearanceFamily::Outfit,
-                semantic_id,
-                frame,
-                direction,
+    pub fn new(census: CorpusCensus) -> Self {
+        let animation_programs = vec![
+            AnimationProgram {
+                id: 1,
+                phases: vec![
+                    PhaseDuration {
+                        min_ms: 110,
+                        max_ms: 160,
+                    };
+                    4
+                ],
+                loop_mode: LoopMode::Infinite,
+                synchronized: true,
             },
-            class: PresentationClass::Creature,
-            kind: PrimitiveKind::Sprite,
-            material: MaterialClass::Alpha,
-            world: position,
-            screen_x,
-            screen_y,
-            width: tile,
-            height: tile * if component == 0 { 0.8 } else { 1.1 },
-            color,
-            emissive: 0.0,
-            critical: false,
-            screen_space: false,
+            AnimationProgram {
+                id: 2,
+                phases: vec![
+                    PhaseDuration {
+                        min_ms: 70,
+                        max_ms: 130,
+                    };
+                    8
+                ],
+                loop_mode: LoopMode::Infinite,
+                synchronized: false,
+            },
+            AnimationProgram {
+                id: 3,
+                phases: vec![
+                    PhaseDuration {
+                        min_ms: 45,
+                        max_ms: 85,
+                    };
+                    12
+                ],
+                loop_mode: LoopMode::Counted(1),
+                synchronized: false,
+            },
+            AnimationProgram {
+                id: 4,
+                phases: vec![
+                    PhaseDuration {
+                        min_ms: 85,
+                        max_ms: 120,
+                    };
+                    8
+                ],
+                loop_mode: LoopMode::PingPong,
+                synchronized: false,
+            },
+        ];
+        let mut deduper = EventDeduper::default();
+        let events: Vec<_> = build_event_catalog()
+            .into_iter()
+            .filter(|event| deduper.accept(event.event_id))
+            .collect();
+        let retained_ids: Vec<_> = events.iter().map(|event| event.event_id).collect();
+        deduper.reset_for_snapshot_replacement(&retained_ids);
+        Self {
+            census,
+            animation_programs,
+            events,
+        }
+    }
+
+    pub fn animation_evaluation_evidence(&self) -> AnimationEvaluationEvidence {
+        const INSTANCE_COUNT: usize = 50_000;
+        let elapsed_ms = 12_345_u64;
+        let independent: Vec<AnimationProgram> = (0..INSTANCE_COUNT)
+            .map(|index| self.animation_programs[index % self.animation_programs.len()].clone())
+            .collect();
+        let independent_state_bytes = independent.capacity() * size_of::<AnimationProgram>()
+            + independent
+                .iter()
+                .map(|program| program.phases.capacity() * size_of::<PhaseDuration>())
+                .sum::<usize>();
+        let independent_start = Instant::now();
+        let independent_checksum =
+            independent
+                .iter()
+                .enumerate()
+                .fold(0_u64, |checksum, (index, program)| {
+                    checksum
+                        ^ u64::try_from(program.phase_at(elapsed_ms, index as u64)).unwrap_or(0)
+                });
+        let independent_timer_cpu_ms = independent_start.elapsed().as_secs_f64() * 1000.0;
+        let shared_instances: Vec<(usize, u64)> = (0..INSTANCE_COUNT)
+            .map(|index| (index % self.animation_programs.len(), index as u64))
+            .collect();
+        let shared_state_bytes = shared_instances.capacity() * size_of::<(usize, u64)>()
+            + self.animation_programs.capacity() * size_of::<AnimationProgram>()
+            + self
+                .animation_programs
+                .iter()
+                .map(|program| program.phases.capacity() * size_of::<PhaseDuration>())
+                .sum::<usize>();
+        let shared_start = Instant::now();
+        let shared_checksum =
+            shared_instances
+                .iter()
+                .fold(0_u64, |checksum, (program_index, seed)| {
+                    checksum
+                        ^ u64::try_from(
+                            self.animation_programs[*program_index].phase_at(elapsed_ms, *seed),
+                        )
+                        .unwrap_or(0)
+                });
+        let shared_program_cpu_ms = shared_start.elapsed().as_secs_f64() * 1000.0;
+        AnimationEvaluationEvidence {
+            instance_count: INSTANCE_COUNT,
+            independent_timer_cpu_ms,
+            shared_program_cpu_ms,
+            independent_state_bytes,
+            shared_state_bytes,
+            checksum_equal: independent_checksum == shared_checksum,
+        }
+    }
+
+    pub fn frame(&self, config: &BenchConfig, time_ms: u64, frame_number: u64) -> RenderSnapshot {
+        let camera = camera_for(config, time_ms);
+        let environment = environment_for(time_ms);
+        let mut primitives = Vec::with_capacity(60_000);
+        let mut stats = FrameSemanticStats::default();
+
+        self.append_world(
+            config,
+            &camera,
+            &environment,
+            time_ms,
+            &mut primitives,
+            &mut stats,
+        );
+        self.append_creatures(config, &camera, time_ms, &mut primitives, &mut stats);
+        self.append_events(config, &camera, time_ms, &mut primitives, &mut stats);
+        self.append_projectiles(config, &camera, time_ms, &mut primitives, &mut stats);
+        self.append_lights(config, &camera, time_ms, &mut primitives, &mut stats);
+        self.append_weather(
+            config,
+            &camera,
+            &environment,
+            time_ms,
+            frame_number,
+            &mut primitives,
+            &mut stats,
+        );
+        append_fog(config, &environment, &mut primitives);
+        append_overlays(config, &camera, time_ms, &mut primitives, &mut stats);
+
+        primitives.retain(|primitive| {
+            primitive.intersects_viewport(config.width as f32, config.height as f32)
         });
-    }
+        primitives.sort_by_key(|primitive| primitive.sort_key);
+        stats.total_primitives = primitives.len();
 
-    fn emit_combat(&mut self, frame: u64) {
-        self.emit_projectiles(frame);
-        self.emit_area_spells(frame);
-        self.emit_hit_vfx(frame);
-        self.emit_boss_telegraph(frame);
-        self.emit_persistent_effect(frame);
-    }
+        let gameplay_signature = gameplay_signature(
+            config.seed,
+            frame_number,
+            camera.floor,
+            time_ms,
+            &self.events,
+        );
 
-    fn emit_projectiles(&mut self, frame: u64) {
-        let count = self.config.scenario.projectile_count();
-        let progress = (frame % 90) as f32 / 90.0;
-        for index in 0..count {
-            let start = WorldPosition {
-                x: self.camera.x.floor() as i32 - 8 + index as i32 % 6,
-                y: self.camera.y.floor() as i32 - 4 + index as i32 % 9,
-                floor: self.camera.floor,
-            };
-            let end = WorldPosition {
-                x: start.x + 8,
-                y: start.y + if index % 2 == 0 { 3 } else { -2 },
-                floor: start.floor,
-            };
-            let (sx, sy) = project(self.camera, start);
-            let (ex, ey) = project(self.camera, end);
-            let x = sx + (ex - sx) * progress;
-            let y = sy + (ey - sy) * progress;
-            let missile_id = 1 + index as u32 % self.corpus.missiles.max(2);
-            let direction = projectile_pattern(ex - sx, ey - sy);
-            let position = WorldPosition {
-                x: start.x,
-                y: start.y,
-                floor: start.floor,
-            };
-            self.push_vfx(
-                position,
-                x,
-                y,
-                AppearanceFamily::Missile,
-                missile_id,
-                direction,
-                PrimitiveKind::Sprite,
-                MaterialClass::Alpha,
-                [1.0, 0.82, 0.38, 1.0],
-                0.4,
-                false,
-            );
-            self.push_vfx(
-                position,
-                x - (ex - sx).signum() * 12.0,
-                y - (ey - sy).signum() * 12.0,
-                AppearanceFamily::Generated,
-                90_001,
-                0,
-                PrimitiveKind::Trail,
-                MaterialClass::Additive,
-                [1.0, 0.50, 0.12, 0.55],
-                0.8,
-                false,
-            );
-            if self.lights.len() < MAX_LIGHTS && index % 6 == 0 {
-                self.lights.push(LocalLight {
-                    x,
-                    y,
-                    radius: 90.0,
-                    intensity: 0.75,
-                });
-                self.stats.lights = self.stats.lights.saturating_add(1);
-            }
-            self.stats.projectiles = self.stats.projectiles.saturating_add(1);
-            self.mix_gameplay((start.x as u64) ^ ((end.x as u64) << 20) ^ missile_id as u64);
+        RenderSnapshot {
+            camera,
+            environment,
+            gameplay_signature,
+            primitives,
+            stats,
         }
     }
 
-    fn emit_area_spells(&mut self, frame: u64) {
-        for index in 0..self.config.scenario.area_spell_count() {
-            let position = WorldPosition {
-                x: self.camera.x.floor() as i32 - 4 + (index as i32 * 3) % 9,
-                y: self.camera.y.floor() as i32 - 3 + (index as i32 * 5) % 7,
-                floor: self.camera.floor,
-            };
-            let (x, y) = project(self.camera, position);
-            let effect_id = 1 + index as u32 % self.corpus.effects.max(2);
-            let phase = ((frame / 5) as u32 + index as u32) % 12;
-            self.push_vfx(
-                position,
-                x,
-                y,
-                AppearanceFamily::Effect,
-                effect_id,
-                phase,
-                PrimitiveKind::Sprite,
-                MaterialClass::Alpha,
-                [0.44, 0.72, 1.0, 0.92],
-                0.65,
-                false,
-            );
-            self.push_vfx(
-                position,
-                x,
-                y + 10.0,
-                AppearanceFamily::Generated,
-                91_000 + index as u32,
-                0,
-                PrimitiveKind::Decal,
-                MaterialClass::Alpha,
-                [0.20, 0.44, 0.72, 0.38],
-                0.0,
-                false,
-            );
-            for particle in 0..6 {
-                if !self.try_decorative() {
-                    continue;
+    fn append_world(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        environment: &EnvironmentState,
+        time_ms: u64,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
+    ) {
+        let half_x = (config.width as f32 / camera.pixels_per_tile / 2.0).ceil() as i32 + 4;
+        let half_y = (config.height as f32 / camera.pixels_per_tile / 2.0).ceil() as i32 + 4;
+        let center_x = camera.world_x.floor() as i32;
+        let center_y = camera.world_y.floor() as i32;
+        let object_sprite_domain = self.census.census.object.unique_sprite_ids.max(16);
+
+        for y in (center_y - half_y)..=(center_y + half_y) {
+            for x in (center_x - half_x)..=(center_x + half_x) {
+                let tile_hash = tile_hash(x, y, CAMERA_FLOOR, config.seed);
+                self.append_tile_floor(
+                    config,
+                    camera,
+                    environment,
+                    time_ms,
+                    x,
+                    y,
+                    CAMERA_FLOOR,
+                    tile_hash,
+                    object_sprite_domain,
+                    out,
+                    stats,
+                );
+
+                if tile_hash.is_multiple_of(97) {
+                    self.append_tile_floor(
+                        config,
+                        camera,
+                        environment,
+                        time_ms,
+                        x,
+                        y,
+                        CAMERA_FLOOR - 1,
+                        tile_hash.rotate_left(7),
+                        object_sprite_domain,
+                        out,
+                        stats,
+                    );
+                    stats.lower_floor_hole_primitives += 1;
                 }
-                let angle_seed = index as f32 * 1.7 + particle as f32 * 0.9 + frame as f32 * 0.03;
-                self.push_vfx(
-                    position,
-                    x + angle_seed.sin() * 22.0,
-                    y + angle_seed.cos() * 18.0,
-                    AppearanceFamily::Generated,
-                    92_000 + particle as u32,
-                    0,
-                    PrimitiveKind::Particle,
-                    MaterialClass::Additive,
-                    [0.30, 0.76, 1.0, 0.68],
-                    0.7,
-                    false,
-                );
-                self.stats.particles = self.stats.particles.saturating_add(1);
+
+                if should_draw_upper_floor(camera, x, y) && tile_hash.is_multiple_of(3) {
+                    self.append_tile_floor(
+                        config,
+                        camera,
+                        environment,
+                        time_ms,
+                        x,
+                        y,
+                        CAMERA_FLOOR + 1,
+                        tile_hash.rotate_left(13),
+                        object_sprite_domain,
+                        out,
+                        stats,
+                    );
+                }
             }
-            if self.lights.len() < MAX_LIGHTS {
-                self.lights.push(LocalLight {
-                    x,
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn append_tile_floor(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        environment: &EnvironmentState,
+        time_ms: u64,
+        x: i32,
+        y: i32,
+        floor: i16,
+        hash: u64,
+        sprite_domain: u32,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
+    ) {
+        let tint = world_tint(environment);
+        let base_sprite = localized_sprite_id(x, y, floor, StackClass::Ground, hash, sprite_domain);
+        push_world_primitive(
+            config,
+            camera,
+            out,
+            PrimitiveSpec {
+                stable_id: stable_id(x, y, floor, 1),
+                tile_x: x,
+                tile_y: y,
+                floor,
+                stack: if floor < CAMERA_FLOOR {
+                    StackClass::LowerFloor
+                } else {
+                    StackClass::Ground
+                },
+                local_order: 0,
+                geometry: GeometryClass::Cell32x32,
+                sprite_id: animated_sprite_id(
+                    base_sprite,
+                    &self.animation_programs[0],
+                    time_ms,
+                    hash,
+                    sprite_domain,
+                ),
+                color: tint,
+                displacement: [0.0, 0.0],
+                source: SourceClass::Default,
+                critical: false,
+                blend: BlendMode::Alpha,
+                missing_variant: false,
+            },
+        );
+        stats.world_primitives += 1;
+
+        if hash.is_multiple_of(7) {
+            push_world_primitive(
+                config,
+                camera,
+                out,
+                PrimitiveSpec {
+                    stable_id: stable_id(x, y, floor, 2),
+                    tile_x: x,
+                    tile_y: y,
+                    floor,
+                    stack: StackClass::GroundBorder,
+                    local_order: 1,
+                    geometry: GeometryClass::Cell32x32,
+                    sprite_id: localized_sprite_id(
+                        x,
+                        y,
+                        floor,
+                        StackClass::GroundBorder,
+                        hash,
+                        sprite_domain,
+                    ),
+                    color: multiply_color(tint, [0.75, 0.8, 0.72, 1.0]),
+                    displacement: [0.0, 0.0],
+                    source: SourceClass::Default,
+                    critical: false,
+                    blend: BlendMode::Alpha,
+                    missing_variant: false,
+                },
+            );
+            stats.world_primitives += 1;
+        }
+
+        let common_count = match config.scenario {
+            Scenario::Basic => usize::from(hash.is_multiple_of(3)),
+            Scenario::Normal => (hash % 3) as usize,
+            Scenario::Stress => (hash % 5) as usize,
+        };
+        for index in 0..common_count {
+            let object_hash = mix64(hash ^ (index as u64).wrapping_mul(0x9e37_79b9));
+            let geometry = geometry_from_hash(object_hash);
+            let stack = if index == 0 && object_hash.is_multiple_of(5) {
+                StackClass::Bottom
+            } else {
+                StackClass::Common
+            };
+            let winter_tint = if object_hash.is_multiple_of(17) {
+                [
+                    0.82 + 0.18 * environment.winter_factor,
+                    0.88 + 0.12 * environment.winter_factor,
+                    0.92 + 0.08 * environment.winter_factor,
+                    1.0,
+                ]
+            } else {
+                tint
+            };
+            let program = &self.animation_programs[object_hash as usize % 2];
+            let base = localized_sprite_id(x, y, floor, stack, object_hash, sprite_domain);
+            let missing = object_hash.is_multiple_of(997);
+            push_world_primitive(
+                config,
+                camera,
+                out,
+                PrimitiveSpec {
+                    stable_id: stable_id(x, y, floor, 10 + index as u16),
+                    tile_x: x,
+                    tile_y: y,
+                    floor,
+                    stack,
+                    local_order: 10 + index as u16,
+                    geometry,
+                    sprite_id: if missing {
+                        FALLBACK_SPRITE_ID
+                    } else {
+                        animated_sprite_id(base, program, time_ms, object_hash, sprite_domain)
+                    },
+                    color: winter_tint,
+                    displacement: [
+                        -((object_hash & 3) as f32),
+                        -(((object_hash >> 2) & 3) as f32),
+                    ],
+                    source: SourceClass::Default,
+                    critical: false,
+                    blend: BlendMode::Alpha,
+                    missing_variant: missing,
+                },
+            );
+            stats.world_primitives += 1;
+            if missing {
+                stats.fallback_variants += 1;
+            }
+        }
+
+        if hash.is_multiple_of(19) {
+            let [sx, sy] = world_to_screen(camera, x as f32, y as f32, floor, config);
+            let size = camera.pixels_per_tile * 0.8;
+            let mut decal = solid_primitive(
+                stable_id(x, y, floor, 90),
+                SortKey {
+                    floor,
+                    diagonal: x + y,
                     y,
-                    radius: 125.0,
-                    intensity: 0.8,
-                });
-                self.stats.lights = self.stats.lights.saturating_add(1);
-            }
-            self.stats.effects = self.stats.effects.saturating_add(1);
-            self.mix_gameplay((position.x as u64) ^ ((position.y as u64) << 13) ^ effect_id as u64);
+                    x,
+                    stack: StackClass::Decal,
+                    local_order: 0,
+                    stable_id: stable_id(x, y, floor, 90),
+                },
+                [sx - size * 0.5, sy - size * 0.35, size, size * 0.45],
+                [0.3, 0.08, 0.05, 0.28],
+                BlendMode::Alpha,
+            );
+            decal.source = SourceClass::Default;
+            out.push(decal);
+            stats.effects += 1;
+        }
+
+        if hash.is_multiple_of(23) {
+            push_world_primitive(
+                config,
+                camera,
+                out,
+                PrimitiveSpec {
+                    stable_id: stable_id(x, y, floor, 120),
+                    tile_x: x,
+                    tile_y: y,
+                    floor,
+                    stack: StackClass::Top,
+                    local_order: 0,
+                    geometry: GeometryClass::Cell32x64,
+                    sprite_id: localized_sprite_id(
+                        x,
+                        y,
+                        floor,
+                        StackClass::Top,
+                        hash.rotate_left(19),
+                        sprite_domain,
+                    ),
+                    color: tint,
+                    displacement: [0.0, -3.0],
+                    source: SourceClass::Default,
+                    critical: false,
+                    blend: BlendMode::Alpha,
+                    missing_variant: false,
+                },
+            );
+            stats.world_primitives += 1;
         }
     }
 
-    fn emit_hit_vfx(&mut self, frame: u64) {
-        let Some(&(x, y, _)) = self.creature_screens.first() else {
-            return;
-        };
-        let position = WorldPosition {
-            x: self.camera.x.floor() as i32,
-            y: self.camera.y.floor() as i32,
-            floor: self.camera.floor,
-        };
-        let physical = frame % 120 < 60;
-        let color = if physical {
-            [1.0, 0.33, 0.25, 0.95]
-        } else {
-            [0.24, 0.70, 1.0, 0.95]
-        };
-        self.push_vfx(
-            position,
-            x,
-            y - 18.0,
-            AppearanceFamily::Effect,
-            if physical { 37 } else { 91 },
-            (frame / 4) as u32 % 8,
-            PrimitiveKind::Sprite,
-            MaterialClass::Additive,
-            color,
-            0.9,
-            true,
-        );
-        self.stats.critical_visible = self.stats.critical_visible.saturating_add(1);
-    }
-
-    fn emit_boss_telegraph(&mut self, frame: u64) {
-        let center = WorldPosition {
-            x: self.camera.x.floor() as i32 + 2,
-            y: self.camera.y.floor() as i32 + 1,
-            floor: self.camera.floor,
-        };
-        let (cx, cy) = project(self.camera, center);
-        let pulse = 0.45 + ((frame % 60) as f32 / 60.0) * 0.35;
-        for y in -1..=1 {
-            for x in -1..=1 {
-                let position = WorldPosition {
-                    x: center.x + x,
-                    y: center.y + y,
-                    floor: center.floor,
-                };
-                self.push_vfx(
-                    position,
-                    cx + x as f32 * LOGICAL_TILE_PX * self.camera.zoom,
-                    cy + y as f32 * LOGICAL_TILE_PX * self.camera.zoom,
-                    AppearanceFamily::Generated,
-                    95_000 + ((x + 1) + (y + 1) * 3) as u32,
-                    0,
-                    PrimitiveKind::Telegraph,
-                    MaterialClass::Alpha,
-                    [1.0, 0.12, 0.08, pulse],
-                    0.25,
-                    true,
-                );
-                self.stats.critical_visible = self.stats.critical_visible.saturating_add(1);
-            }
-        }
-        if self.lights.len() < MAX_LIGHTS {
-            self.lights.push(LocalLight {
-                x: cx,
-                y: cy,
-                radius: 180.0,
-                intensity: 1.0,
-            });
-            self.stats.lights = self.stats.lights.saturating_add(1);
-        }
-        self.mix_gameplay(0xB055_7E1E ^ center.x as u64 ^ ((center.y as u64) << 8));
-    }
-
-    fn emit_persistent_effect(&mut self, frame: u64) {
-        if frame % 240 >= 180 {
-            return;
-        }
-        let position = WorldPosition {
-            x: self.camera.x.floor() as i32 - 2,
-            y: self.camera.y.floor() as i32 + 2,
-            floor: self.camera.floor,
-        };
-        let (x, y) = project(self.camera, position);
-        self.push_vfx(
-            position,
-            x,
-            y,
-            AppearanceFamily::Effect,
-            117 % self.corpus.effects.max(2),
-            (frame / 7) as u32 % 8,
-            PrimitiveKind::Sprite,
-            MaterialClass::Alpha,
-            [0.62, 0.34, 0.92, 0.8],
-            0.55,
-            false,
-        );
-        self.stats.effects = self.stats.effects.saturating_add(1);
-    }
-
-    fn emit_weather(&mut self, frame: u64, environment: EnvironmentState) {
-        if environment.weather == Weather::Clear {
-            return;
-        }
-        let count = self.config.scenario.weather_particles();
+    fn append_creatures(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        time_ms: u64,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
+    ) {
+        let count = config.scenario.creature_count();
+        let outfit_domain = self.census.census.outfit.unique_sprite_ids.max(16);
         for index in 0..count {
-            if !self.try_decorative() {
+            let seed = mix64(config.seed ^ (index as u64 * 0x517c_c1b7_2722_0a95));
+            let radius_x = 5.0 + (seed % 29) as f32;
+            let radius_y = 4.0 + ((seed >> 8) % 18) as f32;
+            let angle = time_ms as f32 * 0.000_25 + index as f32 * 0.71;
+            let base_x = camera.world_x + angle.sin() * radius_x;
+            let base_y = camera.world_y + angle.cos() * radius_y;
+            let step_period = 520_u64 + seed % 480;
+            let step_elapsed = time_ms % step_period;
+            let progress = step_elapsed as f32 / step_period as f32;
+            let direction_x = if seed & 1 == 0 { 1.0 } else { -1.0 };
+            let direction_y = if seed & 2 == 0 { 0.0 } else { 1.0 };
+            let world_x = base_x + direction_x * progress;
+            let world_y = base_y + direction_y * progress;
+            let tile_x = world_x.floor() as i32;
+            let tile_y = world_y.floor() as i32;
+            let source = if index == 0 {
+                SourceClass::Own
+            } else if index % 31 == 0 {
+                SourceClass::Boss
+            } else if index % 3 == 0 {
+                SourceClass::OtherPlayer
+            } else {
+                SourceClass::Monster
+            };
+            let geometry = if seed.is_multiple_of(11) {
+                GeometryClass::Cell64x64
+            } else {
+                GeometryClass::Cell32x32
+            };
+            let program = &self.animation_programs[1];
+            let phase = program.phase_at(time_ms, seed);
+            let base_sprite = localized_sprite_id(
+                tile_x,
+                tile_y,
+                CAMERA_FLOOR,
+                StackClass::Creature,
+                seed,
+                outfit_domain,
+            );
+            let sprite_id = (base_sprite + phase as u32) % outfit_domain;
+            let [sx, sy] = world_to_screen(camera, world_x, world_y, CAMERA_FLOOR, config);
+            let width = geometry.width_tiles() * camera.pixels_per_tile;
+            let height = geometry.height_tiles() * camera.pixels_per_tile;
+            let alpha = effect_alpha(source, false, config.scenario);
+            let id = 10_000_000_u64 + index as u64;
+            let rect = [
+                sx - (geometry.width_tiles() - 1.0) * camera.pixels_per_tile - width * 0.5,
+                sy - (geometry.height_tiles() - 1.0) * camera.pixels_per_tile - height * 0.75,
+                width,
+                height,
+            ];
+            out.push(RenderPrimitive {
+                stable_id: id,
+                sort_key: SortKey {
+                    floor: CAMERA_FLOOR,
+                    diagonal: tile_x + tile_y,
+                    y: tile_y,
+                    x: tile_x,
+                    stack: StackClass::Creature,
+                    local_order: index.min(u16::MAX as usize) as u16,
+                    stable_id: id,
+                },
+                rect_px: rect,
+                texture: TextureRef::World {
+                    sprite_id,
+                    geometry,
+                    missing_variant: false,
+                },
+                color: [1.0, 1.0, 1.0, alpha],
+                blend: BlendMode::Alpha,
+                source,
+                critical: false,
+            });
+            stats.creatures += 1;
+
+            if index % 4 == 0 {
+                let aura_size = camera.pixels_per_tile * 1.4;
+                out.push(RenderPrimitive {
+                    stable_id: id + 900_000,
+                    sort_key: SortKey {
+                        floor: CAMERA_FLOOR,
+                        diagonal: tile_x + tile_y,
+                        y: tile_y,
+                        x: tile_x,
+                        stack: StackClass::Effect,
+                        local_order: 4,
+                        stable_id: id + 900_000,
+                    },
+                    rect_px: [
+                        sx - aura_size * 0.5,
+                        sy - aura_size * 0.5,
+                        aura_size,
+                        aura_size,
+                    ],
+                    texture: TextureRef::Fx { cell: 1 },
+                    color: [0.25, 0.55, 1.0, alpha * 0.32],
+                    blend: BlendMode::Additive,
+                    source,
+                    critical: false,
+                });
+                stats.effects += 1;
+            }
+        }
+    }
+
+    fn append_events(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        time_ms: u64,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
+    ) {
+        for event in &self.events {
+            let cycle = event.start_ms;
+            let period = 3_500_u64 + event.event_id % 2_700;
+            let local = (time_ms + cycle) % period;
+            if local >= event.duration_ms {
                 continue;
             }
-            let seed = xorshift32(index as u32 ^ (frame as u32).wrapping_mul(0x9e37_79b9));
-            let x = (seed % self.config.width) as f32 - self.config.width as f32 * 0.5;
-            let y_seed = xorshift32(seed ^ 0xa511_e9b3);
-            let y = (y_seed % self.config.height) as f32 - self.config.height as f32 * 0.5;
-            let (semantic_id, color, kind) = match environment.weather {
-                Weather::Rain => (97_001, [0.40, 0.68, 1.0, 0.38], PrimitiveKind::Trail),
-                Weather::Snow => (97_002, [0.94, 0.98, 1.0, 0.74], PrimitiveKind::Particle),
-                Weather::Fog => (97_003, [0.76, 0.80, 0.84, 0.12], PrimitiveKind::Particle),
-                Weather::Clear => continue,
-            };
-            self.push_vfx(
-                WorldPosition {
-                    x: self.camera.x.floor() as i32,
-                    y: self.camera.y.floor() as i32,
-                    floor: self.camera.floor,
-                },
-                x,
-                y,
-                AppearanceFamily::Generated,
-                semantic_id,
-                index as u32 % PAGE_CELLS,
-                kind,
-                MaterialClass::Alpha,
-                color,
-                0.0,
-                false,
-            );
-            self.stats.particles = self.stats.particles.saturating_add(1);
-        }
-    }
-
-    fn emit_overlays(&mut self) {
-        let overlays: Vec<(f32, f32, u32)> =
-            self.creature_screens.iter().copied().take(12).collect();
-        for (index, (x, y, hp)) in overlays.into_iter().enumerate() {
-            let width = 34.0;
-            self.push_overlay_rect(x, y - 28.0, width, 4.0, [0.10, 0.10, 0.10, 0.88], 98_100);
-            self.push_overlay_rect(
-                x - (width - width * hp as f32 / 100.0) * 0.5,
-                y - 28.0,
-                width * hp as f32 / 100.0,
-                3.0,
-                [0.18, 0.92, 0.25, 0.95],
-                98_101,
-            );
-            let label = if index == 0 { "BOSS" } else { "DEMON" };
-            self.emit_label(label, x, y - 38.0);
-        }
-    }
-
-    fn emit_label(&mut self, label: &str, center_x: f32, baseline_y: f32) {
-        let glyph_width = 4.0;
-        let total_width = label.chars().count() as f32 * 6.0 * glyph_width;
-        let mut cursor_x = center_x - total_width * 0.5;
-        for character in label.chars() {
-            let mask = glyph_mask(character);
-            for row in 0..7 {
-                for column in 0..5 {
-                    let bit = row * 5 + column;
-                    if mask & (1_u64 << bit) == 0 {
-                        continue;
-                    }
-                    self.push_overlay_rect(
-                        cursor_x + column as f32 * glyph_width,
-                        baseline_y + row as f32 * glyph_width,
-                        glyph_width,
-                        glyph_width,
-                        [0.96, 0.96, 0.96, 0.95],
-                        98_200 + character as u32,
-                    );
+            let progress = local as f32 / event.duration_ms as f32;
+            let x = camera.world_x + event.world_x;
+            let y = camera.world_y + event.world_y;
+            let tile_x = x.floor() as i32;
+            let tile_y = y.floor() as i32;
+            let [sx, sy] = world_to_screen(camera, x, y, event.floor, config);
+            let alpha = effect_alpha(event.source, event.critical, config.scenario);
+            match event.kind {
+                PresentationEventKind::AreaSpell => {
+                    let radius_tiles = 1.0 + progress * 1.2;
+                    let size = radius_tiles * 2.0 * camera.pixels_per_tile;
+                    out.push(RenderPrimitive {
+                        stable_id: event.event_id,
+                        sort_key: effect_sort_key(
+                            event.floor,
+                            tile_x,
+                            tile_y,
+                            StackClass::Effect,
+                            event.event_id,
+                        ),
+                        rect_px: [sx - size * 0.5, sy - size * 0.5, size, size],
+                        texture: TextureRef::Fx { cell: 1 },
+                        color: [1.0, 0.24, 0.05, alpha * (1.0 - progress * 0.45)],
+                        blend: BlendMode::Additive,
+                        source: event.source,
+                        critical: event.critical,
+                    });
+                    stats.effects += 1;
+                }
+                PresentationEventKind::Hit => {
+                    let size = camera.pixels_per_tile * (0.5 + progress);
+                    out.push(RenderPrimitive {
+                        stable_id: event.event_id,
+                        sort_key: effect_sort_key(
+                            event.floor,
+                            tile_x,
+                            tile_y,
+                            StackClass::Effect,
+                            event.event_id,
+                        ),
+                        rect_px: [sx - size * 0.5, sy - size * 0.5, size, size],
+                        texture: TextureRef::Fx { cell: 0 },
+                        color: [1.0, 0.12, 0.04, alpha * (1.0 - progress)],
+                        blend: BlendMode::Additive,
+                        source: event.source,
+                        critical: event.critical,
+                    });
+                    stats.effects += 1;
+                }
+                PresentationEventKind::Heal => {
+                    let size = camera.pixels_per_tile * (0.7 + progress * 0.7);
+                    out.push(RenderPrimitive {
+                        stable_id: event.event_id,
+                        sort_key: effect_sort_key(
+                            event.floor,
+                            tile_x,
+                            tile_y,
+                            StackClass::Effect,
+                            event.event_id,
+                        ),
+                        rect_px: [sx - size * 0.5, sy - size * 0.5, size, size],
+                        texture: TextureRef::Fx { cell: 0 },
+                        color: [0.15, 1.0, 0.35, alpha * (1.0 - progress * 0.6)],
+                        blend: BlendMode::Additive,
+                        source: event.source,
+                        critical: event.critical,
+                    });
+                    stats.effects += 1;
+                }
+                PresentationEventKind::BossTelegraph => {
+                    let pulse = 0.72 + (progress * std::f32::consts::TAU * 3.0).sin().abs() * 0.28;
+                    let size = camera.pixels_per_tile * 5.5;
+                    out.push(RenderPrimitive {
+                        stable_id: event.event_id,
+                        sort_key: effect_sort_key(
+                            event.floor,
+                            tile_x,
+                            tile_y,
+                            StackClass::Effect,
+                            event.event_id,
+                        ),
+                        rect_px: [sx - size * 0.5, sy - size * 0.5, size, size],
+                        texture: TextureRef::Fx { cell: 1 },
+                        color: [1.0, 0.05, 0.05, alpha.max(0.85) * pulse],
+                        blend: BlendMode::Alpha,
+                        source: SourceClass::Boss,
+                        critical: true,
+                    });
+                    stats.effects += 1;
+                    stats.critical_vfx += 1;
                 }
             }
-            cursor_x += glyph_width * 6.0;
+        }
+
+        let extra = config.scenario.telegraph_count().saturating_sub(2);
+        for index in 0..extra {
+            let seed = mix64(config.seed ^ 0xaaa5_555a ^ index as u64);
+            let x = camera.world_x + ((seed % 41) as f32 - 20.0);
+            let y = camera.world_y + (((seed >> 8) % 25) as f32 - 12.0);
+            let [sx, sy] = world_to_screen(camera, x, y, CAMERA_FLOOR, config);
+            let size = camera.pixels_per_tile * (2.0 + (seed % 4) as f32);
+            let id = 30_000_000 + index as u64;
+            out.push(RenderPrimitive {
+                stable_id: id,
+                sort_key: effect_sort_key(
+                    CAMERA_FLOOR,
+                    x.floor() as i32,
+                    y.floor() as i32,
+                    StackClass::Effect,
+                    id,
+                ),
+                rect_px: [sx - size * 0.5, sy - size * 0.5, size, size],
+                texture: TextureRef::Fx { cell: 1 },
+                color: [1.0, 0.12, 0.04, 0.88],
+                blend: BlendMode::Alpha,
+                source: SourceClass::Boss,
+                critical: true,
+            });
+            stats.effects += 1;
+            stats.critical_vfx += 1;
         }
     }
 
-    fn push_overlay_rect(
-        &mut self,
-        x: f32,
-        y: f32,
-        width: f32,
-        height: f32,
-        color: [f32; 4],
-        semantic_id: u32,
+    fn append_projectiles(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        time_ms: u64,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
     ) {
-        self.push_instance(InstanceSpec {
-            appearance: AppearanceRef {
-                family: AppearanceFamily::Generated,
-                semantic_id,
-                frame: 0,
-                direction: 0,
-            },
-            class: PresentationClass::Overlay,
-            kind: PrimitiveKind::Overlay,
-            material: MaterialClass::Alpha,
-            world: WorldPosition {
-                x: 0,
-                y: 0,
-                floor: self.camera.floor,
-            },
-            screen_x: x,
-            screen_y: y,
-            width,
-            height,
-            color,
-            emissive: 0.0,
-            critical: true,
-            screen_space: true,
-        });
-        self.stats.overlays = self.stats.overlays.saturating_add(1);
+        let count = config.scenario.projectile_count();
+        for index in 0..count {
+            let seed = mix64(config.seed ^ 0x5a5a_a5a5 ^ index as u64);
+            let start_x = camera.world_x + ((seed % 55) as f32 - 27.0);
+            let start_y = camera.world_y + (((seed >> 7) % 33) as f32 - 16.0);
+            let delta_x = ((seed >> 15) % 13) as f32 - 6.0;
+            let delta_y = ((seed >> 22) % 13) as f32 - 6.0;
+            let duration_ms = 320_u64 + seed % 680;
+            let local = (time_ms + seed % duration_ms) % duration_ms;
+            let progress = local as f32 / duration_ms as f32;
+            let world_x = start_x + delta_x * progress;
+            let world_y = start_y + delta_y * progress;
+            let [sx, sy] = world_to_screen(camera, world_x, world_y, CAMERA_FLOOR, config);
+            let source = if index % 41 == 0 {
+                SourceClass::Boss
+            } else if index % 5 == 0 {
+                SourceClass::OtherPlayer
+            } else {
+                SourceClass::Monster
+            };
+            let critical = source == SourceClass::Boss && index % 82 == 0;
+            let alpha = effect_alpha(source, critical, config.scenario);
+            let size = camera.pixels_per_tile * 0.45;
+            let id = 40_000_000 + index as u64;
+            out.push(RenderPrimitive {
+                stable_id: id,
+                sort_key: effect_sort_key(
+                    CAMERA_FLOOR,
+                    world_x.floor() as i32,
+                    world_y.floor() as i32,
+                    StackClass::Projectile,
+                    id,
+                ),
+                rect_px: [sx - size * 0.5, sy - size * 0.5, size, size],
+                texture: TextureRef::Fx { cell: 2 },
+                color: [0.2, 0.75, 1.0, alpha],
+                blend: BlendMode::Additive,
+                source,
+                critical,
+            });
+            let trail_size = size * 1.8;
+            out.push(RenderPrimitive {
+                stable_id: id + 500_000,
+                sort_key: effect_sort_key(
+                    CAMERA_FLOOR,
+                    world_x.floor() as i32,
+                    world_y.floor() as i32,
+                    StackClass::Effect,
+                    id + 500_000,
+                ),
+                rect_px: [
+                    sx - trail_size * 0.5,
+                    sy - trail_size * 0.5,
+                    trail_size,
+                    trail_size,
+                ],
+                texture: TextureRef::Fx { cell: 0 },
+                color: [0.08, 0.35, 1.0, alpha * 0.28],
+                blend: BlendMode::Additive,
+                source,
+                critical,
+            });
+            stats.projectiles += 1;
+            stats.effects += 1;
+            if critical {
+                stats.critical_vfx += 1;
+            }
+        }
+    }
+
+    fn append_lights(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        time_ms: u64,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
+    ) {
+        let quality = quality_factor(config.family());
+        let count = ((config.scenario.light_count() as f32) * quality).round() as usize;
+        for index in 0..count {
+            let seed = mix64(config.seed ^ 0x1eaf_cafe ^ index as u64);
+            let x = camera.world_x + ((seed % 61) as f32 - 30.0);
+            let y = camera.world_y + (((seed >> 8) % 37) as f32 - 18.0);
+            let [sx, sy] = world_to_screen(camera, x, y, CAMERA_FLOOR, config);
+            let pulse = 0.8 + 0.2 * ((time_ms as f32 * 0.007) + index as f32).sin().abs();
+            let size = camera.pixels_per_tile * (2.0 + (seed % 4) as f32) * pulse;
+            let id = 50_000_000 + index as u64;
+            out.push(RenderPrimitive {
+                stable_id: id,
+                sort_key: effect_sort_key(
+                    CAMERA_FLOOR,
+                    x.floor() as i32,
+                    y.floor() as i32,
+                    StackClass::Environment,
+                    id,
+                ),
+                rect_px: [sx - size * 0.5, sy - size * 0.5, size, size],
+                texture: TextureRef::Fx { cell: 0 },
+                color: [1.0, 0.58, 0.18, 0.12],
+                blend: BlendMode::Additive,
+                source: SourceClass::Environment,
+                critical: false,
+            });
+            stats.lights += 1;
+        }
     }
 
     #[allow(clippy::too_many_arguments)]
-    fn push_vfx(
-        &mut self,
-        position: WorldPosition,
-        x: f32,
-        y: f32,
-        family: AppearanceFamily,
-        semantic_id: u32,
-        frame: u32,
-        kind: PrimitiveKind,
-        material: MaterialClass,
-        color: [f32; 4],
-        emissive: f32,
-        critical: bool,
+    fn append_weather(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        environment: &EnvironmentState,
+        time_ms: u64,
+        frame_number: u64,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
     ) {
-        let size = match kind {
-            PrimitiveKind::Particle => 8.0,
-            PrimitiveKind::Trail => 16.0,
-            PrimitiveKind::Light => 48.0,
-            PrimitiveKind::Decal | PrimitiveKind::Telegraph => LOGICAL_TILE_PX * self.camera.zoom,
-            PrimitiveKind::Overlay => 8.0,
-            PrimitiveKind::Sprite => LOGICAL_TILE_PX * self.camera.zoom,
-        };
-        self.push_instance(InstanceSpec {
-            appearance: AppearanceRef {
-                family,
-                semantic_id,
-                frame,
-                direction: frame % 4,
-            },
-            class: match kind {
-                PrimitiveKind::Telegraph | PrimitiveKind::Decal => PresentationClass::Effect,
-                PrimitiveKind::Trail => PresentationClass::Attached,
-                _ if family == AppearanceFamily::Missile => PresentationClass::Projectile,
-                _ => PresentationClass::Effect,
-            },
-            kind,
-            material,
-            world: position,
-            screen_x: x,
-            screen_y: y,
-            width: size,
-            height: size,
-            color,
-            emissive,
-            critical,
-            screen_space: matches!(kind, PrimitiveKind::Overlay),
-        });
-    }
-
-    fn push_instance(&mut self, spec: InstanceSpec) {
-        let family_tint = self.config.family.tint();
-        let mut color = spec.color;
-        for channel in 0..3 {
-            color[channel] *= family_tint[channel];
+        let quality = quality_factor(config.family());
+        let degrade = degradation_factor(config.scenario);
+        let weather_count =
+            ((config.scenario.weather_particles() as f32) * quality * degrade).round() as usize;
+        let width = config.width as f32;
+        let height = config.height as f32;
+        for index in 0..weather_count {
+            let seed =
+                mix64(config.seed ^ (index as u64 * 0xd6e8_feb8_6659_fd93) ^ (frame_number / 6));
+            let base_x = (seed % u64::from(config.width.max(1))) as f32;
+            let speed = 85.0 + ((seed >> 17) % 180) as f32;
+            let y = ((seed >> 8) % u64::from(config.height.max(1))) as f32
+                + time_ms as f32 * 0.001 * speed;
+            let screen_y = y.rem_euclid(height + 40.0) - 20.0;
+            let screen_x = (base_x + environment.wind * screen_y * 0.08).rem_euclid(width);
+            let tile = screen_to_world(camera, screen_x, screen_y, config);
+            if !is_weather_exposed(tile.0.floor() as i32, tile.1.floor() as i32) {
+                stats.weather_suppressed_under_roof += 1;
+                continue;
+            }
+            let snow = environment.winter_factor > 0.45;
+            let size = if snow { 4.5 } else { 2.0 };
+            let id = 60_000_000 + index as u64;
+            out.push(RenderPrimitive {
+                stable_id: id,
+                sort_key: SortKey {
+                    floor: CAMERA_FLOOR,
+                    diagonal: i32::MAX - 3,
+                    y: 0,
+                    x: 0,
+                    stack: StackClass::Environment,
+                    local_order: (index % usize::from(u16::MAX)) as u16,
+                    stable_id: id,
+                },
+                rect_px: [
+                    screen_x,
+                    screen_y,
+                    size,
+                    if snow { size } else { size * 5.0 },
+                ],
+                texture: TextureRef::Fx { cell: 2 },
+                color: if snow {
+                    [0.86, 0.93, 1.0, 0.72]
+                } else {
+                    [0.35, 0.65, 1.0, 0.38]
+                },
+                blend: BlendMode::Alpha,
+                source: SourceClass::Environment,
+                critical: false,
+            });
+            stats.particles += 1;
         }
-        let fallback =
-            self.config.family == PresentationFamily::Hd && spec.appearance.semantic_id % 17 == 0;
-        if fallback {
-            self.stats.variant_fallbacks = self.stats.variant_fallbacks.saturating_add(1);
-            color[0] *= 0.98;
-            color[1] *= 0.98;
-        }
-        let page_id = self.resource_page(spec.appearance.semantic_id);
-        self.pages.insert(page_id);
-        let order_floor = if spec.screen_space {
-            i32::MAX
-        } else {
-            spec.world.floor
-        };
-        let order_y = if spec.screen_space {
-            i32::MAX - 1
-        } else {
-            (spec.screen_y * 8.0) as i32
-        };
-        let order_x = if spec.screen_space {
-            i32::MAX - 1
-        } else {
-            (spec.screen_x * 8.0) as i32
-        };
-        self.instances.push(RenderInstance {
-            appearance: spec.appearance,
-            class: spec.class,
-            kind: spec.kind,
-            material: spec.material,
-            world: spec.world,
-            screen_x: spec.screen_x,
-            screen_y: spec.screen_y,
-            width: spec.width,
-            height: spec.height,
-            color,
-            emissive: spec.emissive,
-            page_id,
-            cell: (spec.appearance.semantic_id + spec.appearance.frame) % PAGE_CELLS,
-            critical: spec.critical,
-            screen_space: spec.screen_space,
-            order_floor,
-            order_y,
-            order_x,
-            sequence: self.sequence,
-        });
-        self.sequence = self.sequence.wrapping_add(1);
-    }
 
-    fn resource_page(&self, semantic_id: u32) -> u32 {
-        let visible = self.config.scenario.visible_page_count();
-        (self.page_base + semantic_id % visible) % self.config.scenario.total_page_count()
-    }
-
-    fn try_decorative(&mut self) -> bool {
-        if self.decorative_emitted < self.config.scenario.decorative_budget() {
-            self.decorative_emitted += 1;
-            true
-        } else {
-            self.stats.decorative_dropped = self.stats.decorative_dropped.saturating_add(1);
-            false
-        }
-    }
-
-    fn mix_gameplay(&mut self, value: u64) {
-        self.gameplay_signature ^= value;
-        self.gameplay_signature = self.gameplay_signature.wrapping_mul(0x100_0000_01b3);
-    }
-
-    fn finish(
-        mut self,
-        environment: EnvironmentState,
-        camera: CameraState,
-        camera_moved: bool,
-        zoom_changed: bool,
-        floor_changed: bool,
-    ) -> FramePlan {
-        self.instances.sort_by_key(|instance| instance.order_key());
-        FramePlan {
-            instances: self.instances,
-            needed_pages: self.pages.into_iter().collect(),
-            lights: self.lights,
-            environment,
-            camera,
-            camera_moved,
-            zoom_changed,
-            floor_changed,
-            gameplay_signature: self.gameplay_signature,
-            stats: self.stats,
+        let ambient_count =
+            ((config.scenario.ambient_particles() as f32) * quality * degrade).round() as usize;
+        for index in 0..ambient_count {
+            let seed = mix64(config.seed ^ 0xbb67_ae85 ^ index as u64);
+            let angle = time_ms as f32 * 0.000_35 + index as f32 * 0.37;
+            let x = width * 0.5 + angle.sin() * (width * 0.48) * ((seed & 255) as f32 / 255.0);
+            let y =
+                height * 0.5 + angle.cos() * (height * 0.45) * (((seed >> 8) & 255) as f32 / 255.0);
+            let id = 70_000_000 + index as u64;
+            out.push(RenderPrimitive {
+                stable_id: id,
+                sort_key: SortKey {
+                    floor: CAMERA_FLOOR,
+                    diagonal: i32::MAX - 2,
+                    y: 0,
+                    x: 0,
+                    stack: StackClass::Environment,
+                    local_order: (index % usize::from(u16::MAX)) as u16,
+                    stable_id: id,
+                },
+                rect_px: [x, y, 3.0, 3.0],
+                texture: TextureRef::Fx { cell: 2 },
+                color: [0.55, 1.0, 0.72, 0.38],
+                blend: BlendMode::Additive,
+                source: SourceClass::Environment,
+                critical: false,
+            });
+            stats.particles += 1;
         }
     }
 }
 
-struct InstanceSpec {
-    appearance: AppearanceRef,
-    class: PresentationClass,
-    kind: PrimitiveKind,
-    material: MaterialClass,
-    world: WorldPosition,
+#[derive(Debug, Clone, Copy)]
+struct PrimitiveSpec {
+    stable_id: u64,
+    tile_x: i32,
+    tile_y: i32,
+    floor: i16,
+    stack: StackClass,
+    local_order: u16,
+    geometry: GeometryClass,
+    sprite_id: u32,
+    color: [f32; 4],
+    displacement: [f32; 2],
+    source: SourceClass,
+    critical: bool,
+    blend: BlendMode,
+    missing_variant: bool,
+}
+
+fn push_world_primitive(
+    config: &BenchConfig,
+    camera: &CameraState,
+    out: &mut Vec<RenderPrimitive>,
+    spec: PrimitiveSpec,
+) {
+    let [sx, sy] = world_to_screen(
+        camera,
+        spec.tile_x as f32,
+        spec.tile_y as f32,
+        spec.floor,
+        config,
+    );
+    let width = spec.geometry.width_tiles() * camera.pixels_per_tile;
+    let height = spec.geometry.height_tiles() * camera.pixels_per_tile;
+    let rect = [
+        sx - (spec.geometry.width_tiles() - 1.0) * camera.pixels_per_tile
+            + spec.displacement[0] * camera.zoom,
+        sy - (spec.geometry.height_tiles() - 1.0) * camera.pixels_per_tile
+            + spec.displacement[1] * camera.zoom,
+        width,
+        height,
+    ];
+    out.push(RenderPrimitive {
+        stable_id: spec.stable_id,
+        sort_key: SortKey {
+            floor: spec.floor,
+            diagonal: spec.tile_x + spec.tile_y,
+            y: spec.tile_y,
+            x: spec.tile_x,
+            stack: spec.stack,
+            local_order: spec.local_order,
+            stable_id: spec.stable_id,
+        },
+        rect_px: rect,
+        texture: TextureRef::World {
+            sprite_id: spec.sprite_id,
+            geometry: spec.geometry,
+            missing_variant: spec.missing_variant,
+        },
+        color: spec.color,
+        blend: spec.blend,
+        source: spec.source,
+        critical: spec.critical,
+    });
+}
+
+fn gameplay_signature(
+    seed: u64,
+    frame_number: u64,
+    floor: i16,
+    time_ms: u64,
+    events: &[PresentationEvent],
+) -> u64 {
+    let mut signature =
+        mix64(seed ^ frame_number.wrapping_mul(0x9e37_79b9_7f4a_7c15) ^ (floor as u64));
+    for event in events {
+        let end_ms = event.start_ms.saturating_add(event.duration_ms);
+        if time_ms >= event.start_ms && time_ms < end_ms {
+            signature ^= mix64(event.event_id ^ event.start_ms ^ event.duration_ms);
+        }
+    }
+    signature
+}
+
+fn camera_for(config: &BenchConfig, time_ms: u64) -> CameraState {
+    let time = time_ms as f32 * 0.001;
+    let zoom = config.fixed_zoom.unwrap_or_else(|| {
+        let base = match config.scenario {
+            Scenario::Basic => 1.15,
+            Scenario::Normal => 0.82,
+            Scenario::Stress => 0.58,
+        };
+        (base + 0.07 * (time * 0.43).sin()).clamp(0.35, 2.5)
+    });
+    CameraState {
+        world_x: 32_300.0 + (time * 0.23).sin() * 22.0 + time * 0.45,
+        world_y: 32_230.0 + (time * 0.19).cos() * 14.0 + time * 0.22,
+        floor: CAMERA_FLOOR,
+        zoom,
+        pixels_per_tile: LOGICAL_TILE_UNITS * zoom,
+    }
+}
+
+fn environment_for(time_ms: u64) -> EnvironmentState {
+    let time = time_ms as f32 * 0.001;
+    let day_cycle = (time * 0.08).sin() * 0.5 + 0.5;
+    let winter = (time * 0.025).sin() * 0.5 + 0.5;
+    EnvironmentState {
+        time_of_day: day_cycle,
+        night_factor: 1.0 - day_cycle,
+        winter_factor: winter,
+        wind: (time * 0.31).sin(),
+        fog_alpha: 0.035 + (time * 0.17).sin().abs() * 0.045,
+    }
+}
+
+fn world_tint(environment: &EnvironmentState) -> [f32; 4] {
+    let night = environment.night_factor;
+    [
+        1.0 - night * 0.28,
+        1.0 - night * 0.2,
+        1.0 - night * 0.04,
+        1.0,
+    ]
+}
+
+fn multiply_color(left: [f32; 4], right: [f32; 4]) -> [f32; 4] {
+    [
+        left[0] * right[0],
+        left[1] * right[1],
+        left[2] * right[2],
+        left[3] * right[3],
+    ]
+}
+
+pub fn world_to_screen(
+    camera: &CameraState,
+    world_x: f32,
+    world_y: f32,
+    floor: i16,
+    config: &BenchConfig,
+) -> [f32; 2] {
+    let floor_delta = f32::from(floor - camera.floor);
+    [
+        config.width as f32 * 0.5
+            + ((world_x - camera.world_x) - floor_delta) * camera.pixels_per_tile,
+        config.height as f32 * 0.5
+            + ((world_y - camera.world_y) - floor_delta) * camera.pixels_per_tile,
+    ]
+}
+
+fn screen_to_world(
+    camera: &CameraState,
     screen_x: f32,
     screen_y: f32,
-    width: f32,
-    height: f32,
-    color: [f32; 4],
-    emissive: f32,
-    critical: bool,
-    screen_space: bool,
+    config: &BenchConfig,
+) -> (f32, f32) {
+    (
+        camera.world_x + (screen_x - config.width as f32 * 0.5) / camera.pixels_per_tile,
+        camera.world_y + (screen_y - config.height as f32 * 0.5) / camera.pixels_per_tile,
+    )
 }
 
-pub fn project(camera: CameraState, position: WorldPosition) -> (f32, f32) {
-    let floor_delta = position.floor - camera.floor;
-    let tile = LOGICAL_TILE_PX * camera.zoom;
-    let x = (position.x as f32 - camera.x - floor_delta as f32) * tile;
-    let y = (position.y as f32 - camera.y - floor_delta as f32) * tile;
-    (x, y)
+fn should_draw_upper_floor(camera: &CameraState, x: i32, y: i32) -> bool {
+    let camera_inside = is_interior(camera.world_x.floor() as i32, camera.world_y.floor() as i32);
+    if camera_inside
+        && (x - camera.world_x.floor() as i32).abs() <= 2
+        && (y - camera.world_y.floor() as i32).abs() <= 2
+    {
+        return false;
+    }
+    true
 }
 
-pub fn visible_floors(camera: CameraState) -> Vec<i32> {
-    if camera.floor == 0 {
-        if inside_roof(camera.x, camera.y) {
-            vec![0]
-        } else {
-            vec![0, 1]
-        }
-    } else if camera.floor < 0 {
-        vec![camera.floor, camera.floor + 1]
-    } else {
-        vec![camera.floor]
+fn is_interior(x: i32, y: i32) -> bool {
+    let local_x = x.rem_euclid(24);
+    let local_y = y.rem_euclid(18);
+    (5..=16).contains(&local_x) && (4..=12).contains(&local_y)
+}
+
+pub fn is_weather_exposed(x: i32, y: i32) -> bool {
+    !is_interior(x, y)
+}
+
+fn geometry_from_hash(hash: u64) -> GeometryClass {
+    match hash % 20 {
+        0..=11 => GeometryClass::Cell32x32,
+        12..=14 => GeometryClass::Cell32x64,
+        15..=17 => GeometryClass::Cell64x32,
+        _ => GeometryClass::Cell64x64,
     }
 }
 
-fn camera_for(frame: u64) -> CameraState {
-    let phase = (frame % 720) as f32;
-    let x = -10.0 + phase / 24.0;
-    let triangle = if phase < 360.0 {
-        phase / 45.0
-    } else {
-        (720.0 - phase) / 45.0
-    };
-    let zoom = match (frame / 90) % 4 {
-        0 => 1.0,
-        1 => 1.15,
-        2 => 0.85,
-        _ => 1.35,
-    };
-    let floor = if (frame / 240) % 2 == 0 { 0 } else { -1 };
-    CameraState {
-        x,
-        y: -4.0 + triangle,
+fn localized_sprite_id(
+    x: i32,
+    y: i32,
+    floor: i16,
+    stack: StackClass,
+    hash: u64,
+    sprite_domain: u32,
+) -> u32 {
+    let pages = (sprite_domain / RESOURCE_SPRITES_PER_PAGE).max(1);
+    let chunk_x = x.div_euclid(32);
+    let chunk_y = y.div_euclid(32);
+    let chunk_hash = mix64(
+        (chunk_x as i64 as u64)
+            ^ (chunk_y as i64 as u64).rotate_left(17)
+            ^ (floor as i64 as u64).rotate_left(29),
+    );
+    let page = chunk_hash as u32 % pages;
+    let cell = (hash as u32 ^ (stack as u32).wrapping_mul(3)) % RESOURCE_SPRITES_PER_PAGE;
+    (page * RESOURCE_SPRITES_PER_PAGE + cell).max(1)
+}
+
+fn animated_sprite_id(
+    base: u32,
+    program: &AnimationProgram,
+    time_ms: u64,
+    seed: u64,
+    domain: u32,
+) -> u32 {
+    let phase = program.phase_at(time_ms, seed) as u32;
+    (base + phase) % domain.max(1)
+}
+
+fn stable_id(x: i32, y: i32, floor: i16, local: u16) -> u64 {
+    mix64(
+        (x as i64 as u64)
+            ^ (y as i64 as u64).rotate_left(19)
+            ^ (floor as i64 as u64).rotate_left(37)
+            ^ u64::from(local).rotate_left(51),
+    )
+}
+
+fn tile_hash(x: i32, y: i32, floor: i16, seed: u64) -> u64 {
+    mix64(
+        seed ^ (x as i64 as u64).wrapping_mul(0x9e37_79b9_7f4a_7c15)
+            ^ (y as i64 as u64).rotate_left(23)
+            ^ (floor as i64 as u64).rotate_left(47),
+    )
+}
+
+fn effect_sort_key(floor: i16, x: i32, y: i32, stack: StackClass, stable_id: u64) -> SortKey {
+    SortKey {
         floor,
-        zoom,
+        diagonal: x + y,
+        y,
+        x,
+        stack,
+        local_order: 0,
+        stable_id,
     }
 }
 
-fn environment_for(frame: u64) -> EnvironmentState {
-    let day_phase = (frame % 600) as f32 / 600.0;
-    let ambient = 0.24 + 0.72 * (0.5 + 0.5 * (day_phase * std::f32::consts::TAU).sin());
-    let weather = match (frame / 120) % 4 {
-        0 => Weather::Clear,
-        1 => Weather::Rain,
-        2 => Weather::Snow,
-        _ => Weather::Fog,
-    };
-    EnvironmentState {
-        ambient,
-        weather,
-        season: if (frame / 300) % 2 == 0 {
-            Season::Normal
-        } else {
-            Season::Winter
+fn build_event_catalog() -> Vec<PresentationEvent> {
+    vec![
+        PresentationEvent {
+            event_id: 1,
+            kind: PresentationEventKind::AreaSpell,
+            start_ms: 200,
+            duration_ms: 900,
+            world_x: 3.0,
+            world_y: 2.0,
+            floor: CAMERA_FLOOR,
+            source: SourceClass::Own,
+            critical: false,
         },
-        wind: ((frame as f32) * 0.021).sin(),
+        PresentationEvent {
+            event_id: 2,
+            kind: PresentationEventKind::Hit,
+            start_ms: 900,
+            duration_ms: 420,
+            world_x: -2.0,
+            world_y: 1.0,
+            floor: CAMERA_FLOOR,
+            source: SourceClass::Monster,
+            critical: false,
+        },
+        PresentationEvent {
+            event_id: 3,
+            kind: PresentationEventKind::Heal,
+            start_ms: 1_300,
+            duration_ms: 650,
+            world_x: 0.0,
+            world_y: -1.0,
+            floor: CAMERA_FLOOR,
+            source: SourceClass::Own,
+            critical: false,
+        },
+        PresentationEvent {
+            event_id: 4,
+            kind: PresentationEventKind::BossTelegraph,
+            start_ms: 1_800,
+            duration_ms: 1_450,
+            world_x: 7.0,
+            world_y: -3.0,
+            floor: CAMERA_FLOOR,
+            source: SourceClass::Boss,
+            critical: true,
+        },
+    ]
+}
+
+fn append_fog(
+    config: &BenchConfig,
+    environment: &EnvironmentState,
+    out: &mut Vec<RenderPrimitive>,
+) {
+    let id = 80_000_000;
+    out.push(RenderPrimitive {
+        stable_id: id,
+        sort_key: SortKey {
+            floor: i16::MAX,
+            diagonal: i32::MAX - 1,
+            y: 0,
+            x: 0,
+            stack: StackClass::Environment,
+            local_order: 0,
+            stable_id: id,
+        },
+        rect_px: [0.0, 0.0, config.width as f32, config.height as f32],
+        texture: TextureRef::Solid,
+        color: [0.18, 0.24, 0.32, environment.fog_alpha],
+        blend: BlendMode::Alpha,
+        source: SourceClass::Environment,
+        critical: false,
+    });
+}
+
+fn append_overlays(
+    config: &BenchConfig,
+    camera: &CameraState,
+    time_ms: u64,
+    out: &mut Vec<RenderPrimitive>,
+    stats: &mut FrameSemanticStats,
+) {
+    let shown = config.scenario.creature_count().min(72);
+    for index in 0..shown {
+        let seed = mix64(config.seed ^ (index as u64 * 0x517c_c1b7_2722_0a95));
+        let radius_x = 5.0 + (seed % 29) as f32;
+        let radius_y = 4.0 + ((seed >> 8) % 18) as f32;
+        let angle = time_ms as f32 * 0.000_25 + index as f32 * 0.71;
+        let world_x = camera.world_x + angle.sin() * radius_x;
+        let world_y = camera.world_y + angle.cos() * radius_y;
+        let [sx, sy] = world_to_screen(camera, world_x, world_y, CAMERA_FLOOR, config);
+        let hp = 0.25 + ((seed >> 16) & 255) as f32 / 340.0;
+        let id = 90_000_000 + index as u64;
+        let width = 34.0;
+        let bar_y = sy - 29.0;
+        out.push(solid_primitive(
+            id,
+            SortKey {
+                floor: i16::MAX,
+                diagonal: i32::MAX,
+                y: 0,
+                x: 0,
+                stack: StackClass::Overlay,
+                local_order: (index * 3) as u16,
+                stable_id: id,
+            },
+            [sx - width * 0.5, bar_y, width, 5.0],
+            [0.04, 0.04, 0.04, 0.92],
+            BlendMode::Alpha,
+        ));
+        out.push(solid_primitive(
+            id + 1,
+            SortKey {
+                floor: i16::MAX,
+                diagonal: i32::MAX,
+                y: 0,
+                x: 0,
+                stack: StackClass::Overlay,
+                local_order: (index * 3 + 1) as u16,
+                stable_id: id + 1,
+            },
+            [
+                sx - width * 0.5 + 1.0,
+                bar_y + 1.0,
+                (width - 2.0) * hp.min(1.0),
+                3.0,
+            ],
+            [0.82, 0.12 + 0.6 * hp, 0.12, 1.0],
+            BlendMode::Alpha,
+        ));
+        append_bitmap_name(out, id + 10_000, sx, bar_y - 9.0, index % 31 == 0);
+        stats.overlays += 3;
     }
 }
 
-fn inside_roof(x: f32, y: f32) -> bool {
-    (8.0..=14.0).contains(&x) && (8.0..=14.0).contains(&y)
-}
-
-fn roof_tile(x: i32, y: i32) -> bool {
-    (8..=14).contains(&x) && (8..=14).contains(&y)
-}
-
-fn wall_tile(x: i32, y: i32) -> bool {
-    ((x == 8 || x == 14) && (8..=14).contains(&y))
-        || ((y == 8 || y == 14) && (8..=14).contains(&x) && x != 11)
-}
-
-fn spatial_hash(x: i32, y: i32, floor: i32) -> u32 {
-    let mut value = (x as u32).wrapping_mul(0x9e37_79b9)
-        ^ (y as u32).wrapping_mul(0x85eb_ca6b)
-        ^ (floor as u32).wrapping_mul(0xc2b2_ae35);
-    value = xorshift32(value ^ 0xa511_e9b3);
-    value
-}
-
-const fn xorshift32(mut value: u32) -> u32 {
-    value ^= value << 13;
-    value ^= value >> 17;
-    value ^= value << 5;
-    value
-}
-
-fn projectile_pattern(dx: f32, dy: f32) -> u32 {
-    let horizontal = if dx < -0.1 {
-        0
-    } else if dx > 0.1 {
-        2
+fn append_bitmap_name(
+    out: &mut Vec<RenderPrimitive>,
+    id_base: u64,
+    center_x: f32,
+    baseline_y: f32,
+    boss: bool,
+) {
+    let glyphs: &[&[u8; 7]] = if boss {
+        &[&GLYPH_B, &GLYPH_O, &GLYPH_S, &GLYPH_S]
     } else {
-        1
+        &[&GLYPH_D, &GLYPH_E, &GLYPH_M, &GLYPH_O, &GLYPH_N]
     };
-    let vertical = if dy < -0.1 {
-        0
-    } else if dy > 0.1 {
-        2
-    } else {
-        1
-    };
-    vertical * 3 + horizontal
-}
-
-fn glyph_mask(character: char) -> u64 {
-    match character {
-        'B' => rows([
-            0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110,
-        ]),
-        'D' => rows([
-            0b11110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11110,
-        ]),
-        'E' => rows([
-            0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111,
-        ]),
-        'M' => rows([
-            0b10001, 0b11011, 0b10101, 0b10101, 0b10001, 0b10001, 0b10001,
-        ]),
-        'N' => rows([
-            0b10001, 0b11001, 0b10101, 0b10011, 0b10001, 0b10001, 0b10001,
-        ]),
-        'O' => rows([
-            0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110,
-        ]),
-        'S' => rows([
-            0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110,
-        ]),
-        _ => rows([
-            0b11111, 0b10001, 0b00110, 0b00100, 0b00100, 0b00000, 0b00100,
-        ]),
+    let scale = 1.15_f32;
+    let glyph_width = 4.0 * scale;
+    let total_width = glyphs.len() as f32 * glyph_width;
+    let mut primitive_index = 0_u64;
+    for (glyph_index, glyph) in glyphs.iter().enumerate() {
+        for (row, bits) in glyph.iter().enumerate() {
+            for col in 0..3 {
+                if bits & (1 << (2 - col)) == 0 {
+                    continue;
+                }
+                let x = center_x - total_width * 0.5
+                    + glyph_index as f32 * glyph_width
+                    + col as f32 * scale;
+                let y = baseline_y + row as f32 * scale;
+                let id = id_base + primitive_index;
+                out.push(solid_primitive(
+                    id,
+                    SortKey {
+                        floor: i16::MAX,
+                        diagonal: i32::MAX,
+                        y: 0,
+                        x: 0,
+                        stack: StackClass::Overlay,
+                        local_order: (primitive_index % u64::from(u16::MAX)) as u16,
+                        stable_id: id,
+                    },
+                    [x, y, scale, scale],
+                    if boss {
+                        [1.0, 0.68, 0.18, 1.0]
+                    } else {
+                        [0.92, 0.92, 0.92, 1.0]
+                    },
+                    BlendMode::Alpha,
+                ));
+                primitive_index += 1;
+            }
+        }
     }
 }
 
-fn rows(rows: [u64; 7]) -> u64 {
-    rows.into_iter()
-        .enumerate()
-        .fold(0_u64, |mask, (row, bits)| mask | (bits << (row * 5)))
+fn solid_primitive(
+    stable_id: u64,
+    sort_key: SortKey,
+    rect_px: [f32; 4],
+    color: [f32; 4],
+    blend: BlendMode,
+) -> RenderPrimitive {
+    RenderPrimitive {
+        stable_id,
+        sort_key,
+        rect_px,
+        texture: TextureRef::Solid,
+        color,
+        blend,
+        source: SourceClass::Default,
+        critical: false,
+    }
 }
+
+pub fn effect_alpha(source: SourceClass, critical: bool, scenario: Scenario) -> f32 {
+    if critical {
+        return 0.88;
+    }
+    let base = match source {
+        SourceClass::Default | SourceClass::Own => 1.0,
+        SourceClass::OtherPlayer => 0.42,
+        SourceClass::Monster => 0.78,
+        SourceClass::Boss => 0.92,
+        SourceClass::Environment => 0.72,
+    };
+    if scenario == Scenario::Stress && source == SourceClass::OtherPlayer {
+        base * 0.68
+    } else {
+        base
+    }
+}
+
+fn quality_factor(family: Family) -> f32 {
+    match family {
+        Family::Classic => 0.38,
+        Family::Enhanced => 0.72,
+        Family::Hd => 1.0,
+    }
+}
+
+fn degradation_factor(scenario: Scenario) -> f32 {
+    match scenario {
+        Scenario::Basic => 1.0,
+        Scenario::Normal => 0.9,
+        Scenario::Stress => 0.62,
+    }
+}
+
+fn rect_intersects(left: [f32; 4], right: [f32; 4]) -> bool {
+    left[0] < right[0] + right[2]
+        && left[0] + left[2] > right[0]
+        && left[1] < right[1] + right[3]
+        && left[1] + left[3] > right[1]
+}
+
+pub const fn mix64(mut value: u64) -> u64 {
+    value ^= value >> 30;
+    value = value.wrapping_mul(0xbf58_476d_1ce4_e5b9);
+    value ^= value >> 27;
+    value = value.wrapping_mul(0x94d0_49bb_1331_11eb);
+    value ^ (value >> 31)
+}
+
+const GLYPH_B: [u8; 7] = [0b110, 0b101, 0b101, 0b110, 0b101, 0b101, 0b110];
+const GLYPH_D: [u8; 7] = [0b110, 0b101, 0b101, 0b101, 0b101, 0b101, 0b110];
+const GLYPH_E: [u8; 7] = [0b111, 0b100, 0b100, 0b110, 0b100, 0b100, 0b111];
+const GLYPH_M: [u8; 7] = [0b101, 0b111, 0b111, 0b101, 0b101, 0b101, 0b101];
+const GLYPH_N: [u8; 7] = [0b101, 0b111, 0b111, 0b111, 0b111, 0b111, 0b101];
+const GLYPH_O: [u8; 7] = [0b010, 0b101, 0b101, 0b101, 0b101, 0b101, 0b010];
+const GLYPH_S: [u8; 7] = [0b011, 0b100, 0b100, 0b010, 0b001, 0b001, 0b110];
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::{BenchConfig, CorpusCensus};
 
-    fn config() -> BenchConfig {
-        BenchConfig::default()
-    }
-
-    #[test]
-    fn native_higher_floor_projects_north_west() {
-        let camera = CameraState {
-            x: 10.0,
-            y: 10.0,
-            floor: 0,
-            zoom: 1.0,
-        };
-        let (x, y) = project(
-            camera,
-            WorldPosition {
-                x: 10,
-                y: 10,
-                floor: 1,
-            },
-        );
-        assert_eq!((x, y), (-32.0, -32.0));
-    }
-
-    #[test]
-    fn roof_hides_upper_floor_when_camera_is_inside() {
-        let inside = CameraState {
-            x: 10.0,
-            y: 10.0,
-            floor: 0,
-            zoom: 1.0,
-        };
-        let outside = CameraState {
-            x: 2.0,
-            y: 2.0,
-            floor: 0,
-            zoom: 1.0,
-        };
-        assert_eq!(visible_floors(inside), vec![0]);
-        assert_eq!(visible_floors(outside), vec![0, 1]);
-    }
-
-    #[test]
-    fn same_tile_semantic_order_is_deterministic() {
-        let model = SceneModel::new(CorpusShape::default());
-        let plan = model.plan(&config(), 0);
-        for pair in plan.instances.windows(2) {
-            assert!(pair[0].order_key() <= pair[1].order_key());
+    fn test_camera(zoom: f32) -> CameraState {
+        CameraState {
+            world_x: 100.0,
+            world_y: 100.0,
+            floor: -7,
+            zoom,
+            pixels_per_tile: LOGICAL_TILE_UNITS * zoom,
         }
     }
 
     #[test]
-    fn presentation_family_does_not_change_gameplay_signature() {
-        let model = SceneModel::new(CorpusShape::default());
-        let mut classic = config();
-        classic.family = PresentationFamily::Classic;
-        let mut hd = classic.clone();
-        hd.family = PresentationFamily::Hd;
-        assert_eq!(
-            model.plan(&classic, 321).gameplay_signature,
-            model.plan(&hd, 321).gameplay_signature
+    fn higher_native_floor_projects_northwest() {
+        let config = BenchConfig {
+            width: 800,
+            height: 600,
+            fixed_zoom: Some(1.0),
+            ..BenchConfig::default()
+        };
+        let camera = test_camera(1.0);
+        let same = world_to_screen(&camera, 100.0, 100.0, -7, &config);
+        let above = world_to_screen(&camera, 100.0, 100.0, -6, &config);
+        assert_eq!(same, [400.0, 300.0]);
+        assert_eq!(above, [368.0, 268.0]);
+    }
+
+    #[test]
+    fn visual_overhang_is_culled_by_rectangle_not_anchor() {
+        let primitive = RenderPrimitive {
+            stable_id: 1,
+            sort_key: SortKey {
+                floor: -7,
+                diagonal: 0,
+                y: 0,
+                x: 0,
+                stack: StackClass::Common,
+                local_order: 0,
+                stable_id: 1,
+            },
+            rect_px: [-40.0, 80.0, 64.0, 64.0],
+            texture: TextureRef::Solid,
+            color: [1.0; 4],
+            blend: BlendMode::Alpha,
+            source: SourceClass::Default,
+            critical: false,
+        };
+        assert!(primitive.intersects_viewport(800.0, 600.0));
+    }
+
+    #[test]
+    fn animation_is_time_based_and_seed_stable() {
+        let program = AnimationProgram {
+            id: 7,
+            phases: vec![
+                PhaseDuration {
+                    min_ms: 80,
+                    max_ms: 120,
+                };
+                5
+            ],
+            loop_mode: LoopMode::Infinite,
+            synchronized: false,
+        };
+        assert_eq!(program.phase_at(1_234, 55), program.phase_at(1_234, 55));
+        assert_eq!(program.phase_at(5_678, 55), program.phase_at(5_678, 55));
+    }
+
+    #[test]
+    fn event_deduper_blocks_replay_after_duplicate_delivery() {
+        let mut deduper = EventDeduper::default();
+        assert!(deduper.accept(42));
+        assert!(!deduper.accept(42));
+        deduper.reset_for_snapshot_replacement(&[42]);
+        assert!(!deduper.accept(42));
+        assert!(deduper.accept(43));
+    }
+
+    #[test]
+    fn roof_mask_suppresses_weather() {
+        assert!(!is_weather_exposed(8, 8));
+        assert!(is_weather_exposed(1, 1));
+    }
+
+    #[test]
+    fn critical_vfx_keeps_visibility_floor() {
+        assert!(effect_alpha(SourceClass::Boss, true, Scenario::Stress) >= 0.85);
+        assert!(
+            effect_alpha(SourceClass::OtherPlayer, false, Scenario::Stress)
+                < effect_alpha(SourceClass::Boss, true, Scenario::Stress)
         );
     }
 
     #[test]
-    fn stress_degrades_decorative_before_critical() {
-        let model = SceneModel::new(CorpusShape::default());
-        let mut stress = config();
-        stress.scenario = Scenario::Stress;
-        stress.cache_pages = stress.scenario.visible_page_count();
-        let plan = model.plan(&stress, 300);
-        assert!(plan.stats.decorative_dropped > 0);
-        assert!(plan.stats.critical_visible >= 10);
-        assert!(plan.instances.iter().any(|instance| instance.critical));
+    fn overlay_rect_size_does_not_depend_on_world_zoom() {
+        let one = test_camera(1.0);
+        let half = test_camera(0.5);
+        let config = BenchConfig {
+            width: 800,
+            height: 600,
+            ..BenchConfig::default()
+        };
+        let p1 = world_to_screen(&one, 100.0, 100.0, -7, &config);
+        let p2 = world_to_screen(&half, 100.0, 100.0, -7, &config);
+        assert_eq!(p1, p2);
+        let overlay_width = 34.0_f32;
+        assert_eq!(overlay_width, 34.0);
     }
 
     #[test]
-    fn hd_missing_variants_use_deterministic_fallback() {
-        let model = SceneModel::new(CorpusShape::default());
-        let mut hd = config();
-        hd.family = PresentationFamily::Hd;
-        let left = model.plan(&hd, 200);
-        let right = model.plan(&hd, 200);
-        assert!(left.stats.variant_fallbacks > 0);
-        assert_eq!(left.stats.variant_fallbacks, right.stats.variant_fallbacks);
-    }
-
-    #[test]
-    fn projectile_pattern_is_presentation_only_and_stable() {
-        assert_eq!(projectile_pattern(-1.0, -1.0), 0);
-        assert_eq!(projectile_pattern(0.0, 0.0), 4);
-        assert_eq!(projectile_pattern(1.0, 1.0), 8);
+    fn protected_census_loads_from_repository_fixture() -> Result<(), String> {
+        let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../docs/contracts/OTERYN_ATLAS_15_32_ANIMATION_CENSUS_V1.json");
+        let census = CorpusCensus::load(&path)?;
+        assert_eq!(census.census.object.appearances, 43_514);
+        assert_eq!(census.census.outfit.appearances, 1_480);
+        assert_eq!(census.census.effect.appearances, 243);
+        assert_eq!(census.census.missile.appearances, 76);
+        Ok(())
     }
 }

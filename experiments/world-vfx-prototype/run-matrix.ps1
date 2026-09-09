@@ -1,142 +1,126 @@
 param(
     [int]$Repetitions = 3,
-    [int]$WarmupFrames = 120,
-    [int]$SampleFrames = 600
+    [int]$Warmup = 120,
+    [int]$Frames = 600,
+    [string]$EvidenceDir = "evidence/molehill-final-20260909",
+    [string]$ScenarioFilter = "",
+    [string]$ModeFilter = "",
+    [string]$DensityFilter = "",
+    [string]$Family = "enhanced"
 )
 
-$ErrorActionPreference = 'Stop'
-$root = $PSScriptRoot
-$repo = (Resolve-Path (Join-Path $root '..\..')).Path
-$evidence = Join-Path $root 'evidence\molehill-20260909-world-vfx'
+$ErrorActionPreference = "Stop"
+Set-Location $PSScriptRoot
+cargo test --locked
+if ($LASTEXITCODE -ne 0) { throw "unit tests failed" }
+cargo fmt --all --check
+if ($LASTEXITCODE -ne 0) { throw "format check failed" }
+cargo clippy --locked --all-targets -- -D warnings
+if ($LASTEXITCODE -ne 0) { throw "strict clippy failed" }
+cargo build --locked --release
+if ($LASTEXITCODE -ne 0) { throw "release build failed" }
+
+$exe = Join-Path $PSScriptRoot "target/release/oteryn-world-vfx-prototype.exe"
+$evidence = Join-Path $PSScriptRoot $EvidenceDir
 New-Item -ItemType Directory -Force -Path $evidence | Out-Null
-$rawPath = Join-Path $evidence 'raw.jsonl'
-$familyPath = Join-Path $evidence 'family-smoke.jsonl'
-$prewarmPath = Join-Path $evidence 'cold-prewarm.jsonl'
-$summaryPath = Join-Path $evidence 'summary.json'
-$hardwarePath = Join-Path $evidence 'hardware.json'
-Remove-Item $rawPath,$familyPath,$prewarmPath,$summaryPath -Force -ErrorAction SilentlyContinue
+$raw = Join-Path $evidence "raw.jsonl"
+$familyRaw = Join-Path $evidence "family-smoke.jsonl"
+$stderrLog = Join-Path $evidence "stderr.log"
+Set-Content -Path $raw -Value "" -NoNewline
+Set-Content -Path $familyRaw -Value "" -NoNewline
+Set-Content -Path $stderrLog -Value "" -NoNewline$commit = (git -C (Resolve-Path (Join-Path $PSScriptRoot '..\..')) rev-parse HEAD).Trim()
+$scenarios = if ($ScenarioFilter) { @($ScenarioFilter.Split(',')) } else { @('basic','normal','stress') }
+$modes = if ($ModeFilter) { @($ModeFilter.Split(',')) } else { @('atlas','array','hybrid') }
+$densities = if ($DensityFilter) { @($DensityFilter.Split(',') | ForEach-Object { [int]$_ }) } else { @(32,64,128) }
 
-Push-Location $root
-try {
-    cargo +1.95.0 test --locked
-    cargo +1.95.0 fmt --all --check
-    cargo +1.95.0 clippy --locked --all-targets -- -D warnings
-    cargo +1.95.0 build --locked --release
-} finally {
-    Pop-Location
-}
-
-$exe = Join-Path $root 'target\release\oteryn-world-vfx-prototype.exe'
-if (-not (Test-Path $exe)) { throw "prototype executable missing: $exe" }
-$census = Join-Path $repo 'docs\contracts\OTERYN_ATLAS_15_32_ANIMATION_CENSUS_V1.json'
-$commit = (git -C $repo rev-parse HEAD).Trim()
-
-function Invoke-Prototype {
+function Invoke-PrototypeRun {
     param(
         [string]$Scenario,
+        [string]$Mode,
         [int]$Density,
-        [string]$Layout,
-        [string]$Family,
-        [string]$Prewarm,
-        [int]$Warmup,
-        [int]$Frames,
-        [int]$Repeat
+        [string]$PresentationFamily,
+        [int]$WarmupFrames,
+        [int]$MeasuredFrames,
+        [int]$Repeat,
+        [string]$Destination
     )
-    $stdout = Join-Path $env:TEMP ("oteryn-world-vfx-{0}.out" -f ([guid]::NewGuid()))
-    $stderr = Join-Path $env:TEMP ("oteryn-world-vfx-{0}.err" -f ([guid]::NewGuid()))
+    $stdoutPath = Join-Path $evidence ("run-{0}.out" -f ([guid]::NewGuid()))
+    $stderrPath = Join-Path $evidence ("run-{0}.err" -f ([guid]::NewGuid()))
     $arguments = @(
         '--scenario', $Scenario,
-        '--density', "$Density",
-        '--layout', $Layout,
-        '--family', $Family,
-        '--prewarm', $Prewarm,
-        '--warmup', "$Warmup",
-        '--frames', "$Frames",
-        '--width', '1600',
-        '--height', '900',
-        '--census', $census
+        '--resource-mode', $Mode,
+        '--family', $PresentationFamily,
+        '--density', $Density,
+        '--warmup', $WarmupFrames,
+        '--frames', $MeasuredFrames
     )
-    $process = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru -NoNewWindow `
-        -RedirectStandardOutput $stdout -RedirectStandardError $stderr
-    [int64]$peak = 0
+    $process = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru `
+        -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath    [int64]$peakWorkingSet = 0
     while (-not $process.HasExited) {
-        $process.Refresh()
-        if ($process.PeakWorkingSet64 -gt $peak) { $peak = $process.PeakWorkingSet64 }
+        try {
+            $sample = Get-Process -Id $process.Id -ErrorAction Stop
+            if ($sample.PeakWorkingSet64 -gt $peakWorkingSet) {
+                $peakWorkingSet = $sample.PeakWorkingSet64
+            }
+        } catch {}
         Start-Sleep -Milliseconds 10
+        $process.Refresh()
     }
     $process.WaitForExit()
-    $process.Refresh()
-    $exitCode = $process.ExitCode
-    $errorText = Get-Content $stderr -Raw -ErrorAction SilentlyContinue
-    if ($null -ne $exitCode -and $exitCode -ne 0) {
-        throw "prototype failed with exit $exitCode ($Scenario/$Density/$Layout/$Family/$Prewarm): $errorText"
+    $jsonLine = Get-Content $stdoutPath | Where-Object { $_.TrimStart().StartsWith('{') } | Select-Object -Last 1
+    if (-not $jsonLine) {
+        Get-Content $stderrPath | Add-Content $stderrLog
+        throw "missing terminal JSON: $Scenario/$Mode/$Density/$PresentationFamily"
     }
-    $line = Get-Content $stdout | Where-Object { $_.Trim() } | Select-Object -Last 1
-    if (-not $line) {
-        throw "prototype emitted no JSON result ($Scenario/$Density/$Layout/$Family/$Prewarm): $errorText"
+    $result = $jsonLine | ConvertFrom-Json
+    if ($result.schema -ne 'oteryn-world-vfx-prototype-result-v1') {
+        throw "unexpected result schema: $Scenario/$Mode/$Density/$PresentationFamily"
     }
-    try {
-        $record = $line | ConvertFrom-Json
-    } catch {
-        throw "prototype emitted invalid JSON ($Scenario/$Density/$Layout/$Family/$Prewarm): $line"
-    }
-    $record | Add-Member -NotePropertyName host -NotePropertyValue ([pscustomobject]@{
-        machine = 'Molehill-PC'
-        repeat = $Repeat
-        peak_working_set_bytes = $peak
-        commit_sha = $commit
-        process_exit_code = $exitCode
-        process_exit_code_status = if ($null -eq $exitCode) { 'UNAVAILABLE_BY_START_PROCESS_WRAPPER' } else { 'MEASURED' }
-        stderr_bytes = (Get-Item $stderr).Length
-    })
-    Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
-    return ($record | ConvertTo-Json -Depth 12 -Compress)
-}
-
-foreach ($scenario in @('basic','normal','stress')) {
-    foreach ($density in @(32,64,128)) {
-        foreach ($layout in @('atlas','array')) {
-            for ($repeat = 1; $repeat -le $Repetitions; $repeat++) {
-                $json = Invoke-Prototype -Scenario $scenario -Density $density -Layout $layout `
-                    -Family 'enhanced' -Prewarm 'none' -Warmup $WarmupFrames `
-                    -Frames $SampleFrames -Repeat $repeat
-                Add-Content -Path $rawPath -Value $json -Encoding utf8
+    $result | Add-Member -NotePropertyName matrix_rep -NotePropertyValue $Repeat
+    $result | Add-Member -NotePropertyName peak_working_set_bytes -NotePropertyValue $peakWorkingSet
+    $result | Add-Member -NotePropertyName commit_sha -NotePropertyValue $commit
+    $result | Add-Member -NotePropertyName host_machine -NotePropertyValue 'Molehill-PC'
+    ($result | ConvertTo-Json -Depth 20 -Compress) | Add-Content $Destination
+    if (Test-Path $stderrPath) { Get-Content $stderrPath | Add-Content $stderrLog }
+    Remove-Item $stdoutPath,$stderrPath -ErrorAction SilentlyContinue
+}$total = $Repetitions * $scenarios.Count * $modes.Count * $densities.Count
+$index = 0
+foreach ($rep in 1..$Repetitions) {
+    foreach ($scenario in $scenarios) {
+        foreach ($density in $densities) {
+            foreach ($mode in $modes) {
+                $index++
+                Write-Host ("[{0}/{1}] rep={2} scenario={3} density={4} mode={5} family={6}" -f `
+                    $index,$total,$rep,$scenario,$density,$mode,$Family)
+                Invoke-PrototypeRun -Scenario $scenario -Mode $mode -Density $density `
+                    -PresentationFamily $Family -WarmupFrames $Warmup -MeasuredFrames $Frames `
+                    -Repeat $rep -Destination $raw
+                Start-Sleep -Milliseconds 200
             }
         }
     }
 }
 
-foreach ($family in @('classic','enhanced','hd')) {
-    $json = Invoke-Prototype -Scenario 'normal' -Density 64 -Layout 'array' -Family $family `
-        -Prewarm 'none' -Warmup 60 -Frames 360 -Repeat 1
-    Add-Content -Path $familyPath -Value $json -Encoding utf8
+foreach ($presentationFamily in @('classic','enhanced','hd')) {
+    Write-Host ("[family-smoke] family={0}" -f $presentationFamily)
+    Invoke-PrototypeRun -Scenario 'normal' -Mode 'array' -Density 64 `
+        -PresentationFamily $presentationFamily -WarmupFrames 60 -MeasuredFrames 360 `
+        -Repeat 1 -Destination $familyRaw
 }
-
-foreach ($prewarm in @('none','critical')) {
-    $json = Invoke-Prototype -Scenario 'normal' -Density 64 -Layout 'array' -Family 'enhanced' `
-        -Prewarm $prewarm -Warmup 60 -Frames 360 -Repeat 1
-    Add-Content -Path $prewarmPath -Value $json -Encoding utf8
-}
-
-$cpu = Get-CimInstance Win32_Processor | Select-Object -First 1 Name,Manufacturer,NumberOfCores,NumberOfLogicalProcessors
-$gpus = Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,AdapterRAM
-$os = Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber
-$power = (powercfg /getactivescheme | Out-String).Trim()
-$hardware = [pscustomobject]@{
+Write-Host "matrix-complete=$total raw=$raw family=$familyRaw"$hardware = [ordered]@{
     report = 'oteryn-world-vfx-prototype-hardware-v1'
     machine = 'Molehill-PC'
     commit_sha = $commit
-    cpu = $cpu
-    gpus = $gpus
-    os = $os
-    active_power_scheme = $power
-    vram_counter = [pscustomobject]@{
+    cpu = Get-CimInstance Win32_Processor | Select-Object -First 1 Name,Manufacturer,NumberOfCores,NumberOfLogicalProcessors
+    gpus = @(Get-CimInstance Win32_VideoController | Select-Object Name,DriverVersion,AdapterRAM)
+    os = Get-CimInstance Win32_OperatingSystem | Select-Object Caption,Version,BuildNumber
+    active_power_scheme = (powercfg /getactivescheme | Out-String).Trim()
+    vram_counter = [ordered]@{
         status = 'UNAVAILABLE_TRUSTWORTHY'
-        reason = 'Win32_VideoController.AdapterRAM is retained only as a raw host field and is not accepted as per-process VRAM evidence'
+        reason = 'No accepted per-process VRAM counter was available to this harness.'
     }
 }
-$hardware | ConvertTo-Json -Depth 8 | Set-Content -Path $hardwarePath -Encoding utf8
-
-python (Join-Path $root 'analyze-results.py') $rawPath $familyPath $prewarmPath $summaryPath
-Write-Output "WORLD_VFX_EVIDENCE=$evidence"
-Write-Output "WORLD_VFX_SUMMARY=$summaryPath"
+$hardware | ConvertTo-Json -Depth 8 | Set-Content (Join-Path $evidence 'hardware.json') -Encoding utf8
+python (Join-Path $PSScriptRoot 'analyze-results.py') $raw $familyRaw (Join-Path $evidence 'summary.json')
+if ($LASTEXITCODE -ne 0) { throw 'analysis failed' }
+Write-Host ("summary={0}" -f (Join-Path $evidence 'summary.json'))

@@ -1,76 +1,41 @@
 # Oteryn World + VFX Prototype
 
-Issue: #480
+Issue: #480. This directory is an isolated non-production Rust + `wgpu` evidence harness. It does not link or mutate the production client, renderer crate, server, protocol, persistence, content authority, Platform, Atlas, deployment, or root Cargo workspace.
 
-This is an isolated, non-production Rust + `wgpu` evidence harness. It does not mutate or link the production client, renderer, server, protocol, persistence, content authority, Platform, Atlas, or root Cargo workspace.
+## Authority boundary
 
-## What it proves
+The prototype consumes semantic world/presentation inputs and keeps physical GPU identity downstream of those semantics. Visual projectile position, VFX lifetime, floor visibility, cache state, texture coordinates, resource pages, bind groups, pipelines and quality degradation never authorize gameplay.
 
-The executable builds a deterministic Tibia-like presentation slice from semantic world/appearance state rather than physical asset paths or GPU identifiers. It exercises:
+The model exposes a semantic `RenderSnapshot`, `PresentationEvent` stream and `EnvironmentState`. It exercises native multi-floor projection, deterministic Tibia-like stack classes, roof/weather exposure, elevation and visual overhang, layered creatures, event dedup/resync, movement interpolation, projectile A→B, area/hit/heal VFX, a critical boss telegraph, particles, decals, trails, local lights, day/night, rain, snow, fog/wind, winter appearance and screen-space overlays.
 
-- native multi-floor projection and a bounded roof/occlusion resolver;
-- semantic ground/border/bottom/common/creature/effect/projectile/attached/top/overlay ordering;
-- visual coverage/elevation independent from gameplay footprint;
-- layered outfit/mount/addon-style creature composition and sub-tile movement interpolation;
-- projectile A→B, area spell, physical/elemental hit, persistent VFX and a critical boss telegraph;
-- composite VFX using sprite frames, particles, trails, decals and dynamic local lights;
-- day/night ambient state, rain, snow, fog/wind and a winter presentation variant;
-- source-aware critical/decorative degradation policy with critical presentation retained;
-- screen-space name glyphs and HP bars independent from world zoom;
-- camera movement, fractional zoom, floor transitions and visibility-set churn;
-- multiple GPU resource pages with real upload/cache/eviction churn;
-- atlas-page and geometry-compatible texture-array challengers;
-- GPU timestamp queries when the physical adapter exposes trustworthy support;
-- BASIC/NORMAL/STRESS and 32/64/128 presentation-density classes.
+## Independent presentation axes
 
-## Semantic boundary
+`PresentationFamily` (`classic`, `enhanced`, `hd`) is independent from source/presentation density (`32`, `64`, `128`) and from resource organization (`atlas`, `array`, `hybrid`). The final primary matrix fixes the family to Enhanced while changing density and resource organization; a separate fixed-density family smoke proves equivalent gameplay signatures for Classic/Enhanced/HD.
 
-The model owns semantic `AppearanceRef`, `WorldPosition`, presentation class, event identity/timing inputs, environment state and presentation-family selection. The GPU layer owns page IDs, UV/layer resolution, cache residency, bind groups, pipelines, batching, texture uploads and sampling. Visual missile position, VFX lifetime, floor culling and degradation never authorize gameplay state.
+Classic uses pixel-stable nearest sampling in this evidence harness; Enhanced/HD use linear sampling. That does not freeze final filtering or mip policy.
 
-Classic / Enhanced / HD use the same gameplay signature. They may change procedural presentation resolution/tint/sampling only. Missing HD variants use a deterministic fallback and are counted.
+## Asset and corpus discipline
 
-## Real 15.32 workload shape
+The protected Game-owned 15.32 census supplies workload shape and provenance. No proprietary Tibia pixels are committed. A locally authorized asset ZIP may be verified by SHA-256 and exercised without entering Git; result records only evidence metadata.
+## Evidence and metrics
 
-The harness can read the protected Game-owned `OTERYN_ATLAS_15_32_ANIMATION_CENSUS_V1.json` at runtime. Only counts/provenance shape workload identity; no proprietary Tibia sprite bytes are committed by this prototype.
+The final Molehill matrix measures BASIC/NORMAL/STRESS × 32/64/128 × atlas/array/hybrid with repeated runs on the named RX 9070 XT. It records CPU p50/p95/p99, reliable GPU timestamp p50/p95/p99 when supported, mean throughput/FPS, host peak working set, visible primitives, order-preserving batches, upload/cache/eviction activity, scroll/zoom/floor-transition frame tails, first-frame and pipeline-prewarm cost, environment/readability counters and explicit surface-failure counters.
 
-Protected corpus anchors currently include 43,514 objects, 1,480 outfits, 243 effects and 76 missiles. Full-world counts remain evidence for working-set scale, not a request to put the whole world in GPU memory.
+VRAM remains `INSUFFICIENT_EVIDENCE` unless a trustworthy per-process counter is available. Estimated cache GPU bytes are not promoted to measured VRAM.
 
-## Local validation
+The harness also compares 50,000 animation instances using independent cloned timer/program state versus shared animation programs with minimal per-instance references. CPU evaluation time and actual allocated state bytes are reported; both paths must produce the same phase checksum.
 
-From this directory:
+`analyze-results.py` emits only `ADOPT`, `REJECT`, or `INSUFFICIENT_EVIDENCE` verdicts. Missing or unreliable evidence is never replaced with an estimate.
+
+## Validation
 
 ```powershell
-cargo +1.95.0 generate-lockfile
-cargo +1.95.0 test --locked
-cargo +1.95.0 fmt --all --check
-cargo +1.95.0 clippy --locked --all-targets -- -D warnings
-cargo +1.95.0 build --locked --release
+cargo test --locked
+cargo fmt --all --check
+cargo clippy --locked --all-targets -- -D warnings
+cargo build --locked --release
+.\run-matrix.ps1 -Repetitions 3 -Warmup 120 -Frames 600
 ```
-
-A representative single run:
-
-```powershell
-.\target\release\oteryn-world-vfx-prototype.exe `
-  --scenario normal --density 64 --layout array --family enhanced `
-  --prewarm none --warmup 120 --frames 600 `
-  --census ..\..\docs\contracts\OTERYN_ATLAS_15_32_ANIMATION_CENSUS_V1.json
-```
-
-The executable emits one JSON record. Physical RAM is added by the host harness; VRAM remains unavailable unless a trustworthy per-process counter is proven.
-
-## Physical matrix
-
-`run-matrix.ps1` runs:
-
-- 3 scenarios × 3 densities × 2 resource layouts × configurable repetitions;
-- Classic/Enhanced/HD semantic-equivalence smoke;
-- cold vs critical-page-prewarm evidence;
-- hardware/power metadata;
-- raw JSONL plus an aggregated `summary.json` and technology verdicts.
-
-The analyzer uses only `ADOPT`, `REJECT` or `INSUFFICIENT_EVIDENCE`. It deliberately returns insufficient evidence for questions not actually compared (for example KTX2 vs DDS and CPU particles vs compute particles).
-
-## Authority
 
 `IMPLEMENTATION_AUTHORITY: NON_PRODUCTION_EXPERIMENT_ONLY`
 
