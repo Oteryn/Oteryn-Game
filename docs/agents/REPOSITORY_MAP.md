@@ -5,7 +5,7 @@ Status: bootstrap map; inspect the exact tree before use.
 ## Current durable content
 
 - `README.md` — project entry point.
-- `docs/architecture/` — accepted native Rust, multichannel, persistence and world/content architecture.
+- `docs/architecture/` — accepted native Rust, multichannel, persistence and world/content architecture plus clearly labeled future/proposed architecture candidates.
 - `docs/agents/` — agent governance, tasks, evidence and programmes.
 
 ## Planned top-level layout
@@ -15,13 +15,14 @@ The following layout is a target, not proof of current existence:
 ```text
 apps/
   client/                 native Rust desktop client composition
+  web-client/             future browser/WASM composition; create only under an accepted implementation task
   oteryn-studio/          integrated map, asset and content authoring application
 services/
   game-server/            authoritative Rust server composition
 crates/
   domain-*/               protocol-neutral gameplay/domain crates
   protocol-core/          framing/version/capability primitives
-  protocol-oteryn/        native gameplay wire adapter
+  protocol-oteryn/        native gameplay application-protocol adapter/codec
   world-schema/           canonical native world and spatial types
   world-project/          editable source-project model and migrations
   world-bundle/           compiled read-only runtime bundle
@@ -35,7 +36,7 @@ crates/
   legacy-*/               OTBM/OTB/appearance conversion adapters and reports
   world-*/                world/channel/instance runtime components
   persistence-*/          durable state, leases and transaction adapters
-  client-*/               renderer, UI, input and client state components
+  client-*/               shared/client-edge renderer, UI, input, runtime and platform components
 content/                   versioned native projects, catalogues, rulesets and scripts
 tools/                     migration, fixtures, validation and operations
 docs/architecture/        ADRs and architecture baselines
@@ -43,13 +44,28 @@ docs/contracts/           public and cross-component contracts
 docs/agents/              governance and task state
 ```
 
-Create paths only when an accepted implementation task owns them. Candidate crate names in ADR-0005 remain provisional until the Workspace and Dependency Contract is accepted. Do not generate empty architecture merely to match this map.
+Create paths only when an accepted implementation task owns them. Candidate crate names remain provisional until an owning implementation decision proves the physical split. Do not generate empty architecture merely to match this map.
+
+### Future browser-client boundary
+
+Issue #519 and proposed `docs/architecture/ADR-0017-browser-client-web-ready-boundaries.md` reserve a future browser client as a second composition of the same Rust client semantics. This is **not** current implementation authority.
+
+Current/native work should preserve only the necessary anti-coupling properties:
+
+- shared gameplay/client semantics do not expose Win32, DX12, native socket or DOM types without necessity;
+- input semantics use normalized actions rather than only physical platform key codes;
+- asset identity is logical/revision-based rather than an absolute local path;
+- gameplay/session code stays transport-neutral;
+- `protocol-oteryn` remains one application protocol and browser transports require their own accepted transport-profile semantics when they differ from TCP profile `1`;
+- Server Seam is not blocked on browser implementation.
+
+If later evidence requires physical browser-specific components, candidate names such as `client-platform-web`, `transport-web` or `renderer-web` are illustrative only. Do not create them until a live task owns the paths and a real consumer exists.
 
 ## External repositories and authority
 
 | Repository | Oteryn Game relationship | Default access |
 |---|---|---|
-| `Oteryn/Oteryn-Game` | canonical native Rust gameplay stack and Oteryn Studio | read/write within task scope |
+| `Oteryn/Oteryn-Game` | canonical native Rust gameplay stack, client surfaces and Oteryn Studio | read/write within task scope |
 | `blakinio/Oteryn-v2` | preserved legacy/migration source for pre-organization history and provenance | read-only |
 | `Oteryn/Oteryn-Platform` | web/Identity/Game Gateway/World Registry producer | read-only unless separately authorized |
 | `blakinio/Otheryn` | C++ behavioral/content reference and migration oracle | read-only unless separately authorized |
@@ -69,6 +85,8 @@ External editor code, UI and assets require pinned revisions, license/provenance
 - Platform/Game Gateway boundary: `docs/architecture/ADR-0003-platform-identity-game-gateway-and-admission-boundary.md`.
 - PostgreSQL and data ownership: `docs/architecture/ADR-0004-postgresql-and-data-ownership.md`.
 - Native world format, Oteryn Studio and legacy conversion: `docs/architecture/ADR-0005-native-world-format-and-oteryn-studio.md`.
+- Proposed browser/WASM/WebGPU client boundary: `docs/architecture/ADR-0017-browser-client-web-ready-boundaries.md` (Issue #519; no implementation authority until accepted/allocated).
+- Proposed browser-client staged implementation sequence: `docs/architecture/WEB_CLIENT_IMPLEMENTATION_PLAN.md`.
 - Current decision order: `docs/architecture/FOUNDATION_DECISION_BACKLOG.md`.
 - Scope/consistency matrix: `docs/architecture/MULTICHANNEL_SYSTEM_SCOPE_MATRIX.md`.
 - Otheryn migration strategy: `docs/architecture/OTHERYN_REFERENCE_MIGRATION_PLAN.md`.
