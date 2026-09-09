@@ -1,4 +1,6 @@
-use crate::prepared_cache::{PreparedCacheStats, PreparedPage, SpriteLocator, PAGE_BYTES, SLOT_SIZE};
+use crate::prepared_cache::{
+    PAGE_BYTES, PreparedCacheStats, PreparedPage, SLOT_SIZE, SpriteLocator,
+};
 use crate::scene::QualificationBundle;
 use std::collections::BTreeSet;
 
@@ -37,22 +39,8 @@ impl VisibleSpriteSet {
     pub fn build(bundle: &mut QualificationBundle) -> Result<Self, String> {
         let mut required = BTreeSet::new();
         required.extend(bundle.scene().unique_sprite_source_ids().iter().copied());
-        required.extend(
-            bundle
-                .programs()
-                .outfit()
-                .sprite_source_ids
-                .iter()
-                .copied(),
-        );
-        required.extend(
-            bundle
-                .programs()
-                .effect()
-                .sprite_source_ids
-                .iter()
-                .copied(),
-        );
+        required.extend(bundle.programs().outfit().sprite_source_ids.iter().copied());
+        required.extend(bundle.programs().effect().sprite_source_ids.iter().copied());
         required.extend(
             bundle
                 .programs()
@@ -137,7 +125,9 @@ impl VisibleSpriteSet {
 
     pub fn cell_rgba(&self, sprite_source_id: u32) -> Option<&[u8]> {
         let entry = self.entry(sprite_source_id)?;
-        let start = usize::try_from(entry.dense_index).ok()?.checked_mul(CELL_BYTES)?;
+        let start = usize::try_from(entry.dense_index)
+            .ok()?
+            .checked_mul(CELL_BYTES)?;
         let end = start.checked_add(CELL_BYTES)?;
         self.rgba_cells.get(start..end)
     }
