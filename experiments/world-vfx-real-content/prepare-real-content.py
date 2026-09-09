@@ -193,10 +193,22 @@ def decode_sheet_bytes(data: bytes) -> tuple[int, int, bytes]:
     compression = int.from_bytes(bmp[30:34], "little")
     if width != SHEET_SIZE or abs(height) != SHEET_SIZE:
         raise PrepareError(f"unexpected sprite sheet dimensions {width}x{height}")
-    if bits_per_pixel != 32 or compression != 0:
+    if bits_per_pixel != 32 or compression not in (0, 3):
         raise PrepareError(
             f"unsupported BMP format: bpp={bits_per_pixel}, compression={compression}"
         )
+    if compression == 3:
+        if pixel_offset < 70 or len(bmp) < 70:
+            raise PrepareError("truncated BI_BITFIELDS channel masks")
+        masks = tuple(
+            int.from_bytes(bmp[offset : offset + 4], "little")
+            for offset in (54, 58, 62, 66)
+        )
+        expected_masks = (0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000)
+        if masks != expected_masks:
+            raise PrepareError(
+                f"unsupported BI_BITFIELDS channel masks: {masks!r}"
+            )
     pixel_size = width * abs(height) * 4
     if pixel_offset < 0 or pixel_offset + pixel_size > len(bmp):
         raise PrepareError("truncated sprite pixels")
