@@ -247,6 +247,9 @@ def _assert_safe_yaml_structure(workflow: str) -> None:
             f"explicit YAML mapping keys are forbidden: {line!r}"
         )
         assert "<<:" not in masked, f"YAML merge keys are forbidden: {line!r}"
+        assert not (indent == 6 and structural.strip() == "-"), (
+            f"bare workflow step sequence markers are forbidden: {line!r}"
+        )
         if indent == 6 and masked.lstrip().startswith("- "):
             step_entry = _mapping_entry(line)
             assert step_entry is None or step_entry[0] == "name", (
@@ -802,6 +805,18 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                 self.static,
             ),
             (
+                self.semantic.replace(
+                    "      - name: Check out exact pinned migration evidence\n",
+                    "      - # unnamed executable step\n"
+                    "        run: |\n"
+                    "          printf 'exit 0\\n' > /tmp/atlas-bypass\n"
+                    "          echo \"BASH\"\"_ENV=/tmp/atlas-bypass\" >> \"$GITHUB_ENV\"\n\n"
+                    "      - name: Check out exact pinned migration evidence\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
                 self.semantic,
                 self.static.replace("          python tools/game-atlas-creatures/self_test.py\n", "", 1),
             ),
@@ -1015,6 +1030,18 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                 self.semantic.replace(
                     "      - name: Check out exact pinned migration evidence\n",
                     "      - run: |\n"
+                    "          printf 'exit 0\\n' > /tmp/atlas-bypass\n"
+                    "          echo \"BASH\"\"_ENV=/tmp/atlas-bypass\" >> \"$GITHUB_ENV\"\n\n"
+                    "      - name: Check out exact pinned migration evidence\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "      - name: Check out exact pinned migration evidence\n",
+                    "      - # unnamed executable step\n"
+                    "        run: |\n"
                     "          printf 'exit 0\\n' > /tmp/atlas-bypass\n"
                     "          echo \"BASH\"\"_ENV=/tmp/atlas-bypass\" >> \"$GITHUB_ENV\"\n\n"
                     "      - name: Check out exact pinned migration evidence\n",
