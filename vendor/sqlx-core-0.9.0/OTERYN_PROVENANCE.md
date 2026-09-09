@@ -1000,30 +1000,18 @@ before provider/KX use.  These shared debits remain intentionally unreleased.
 This closes the focused thread-churn cell only; actual wire HRR, cancellation,
 and complete TLS custody remain open.
 
-## Window25 final-graph KX lifecycle qualification
+### Window25 actual wire HelloRetryRequest
 
-The real TLS 1.3 HRR harness now also exercises the remaining operation-owned
-KX lifecycle paths.  Dropping an owner-aware client before ServerHello returns
-the initial 7,881-byte KX debit while leaving process/thread/provider shared
-debits intact.  Dropping after the real HRR transition similarly returns the
-1,625-byte replacement debit only after the connection state is destroyed;
-the already-observed 7,881 + 1,625 peak proves there was no early logical
-handoff.  A separately funded client admits its initial hybrid share, receives
-the real P-256 HRR, and then denies the replacement with the ledger limit fixed
-after wire-buffer admission; the initial operation backing unwinds without a
-replacement provider start or shared-residency mint/release.
-
-The focused provider error case continues to prove that invalid-peer KX
-completion destroys the active backing before returning its reservation.  A
-fresh successful real-HRR connection exercises the production
-`ResourceOwnedSecret` transfer into
-`KeySchedulePreHandshake::into_handshake(secret)`; the reservation remains
-separate until that synchronous consumer returns, exactly as enforced by the
-destructuring and explicit post-call drop in rustls client TLS 1.3 state.
-
-Together with the final-graph PQ order, exact five bounds, racing provider
-first use, retained thread repeat/churn/exhaustion, actual HRR overlap, hybrid
-component, unsupported-provider and layout controls, this closes the protected
-#451 matrix: `aws_lc_kx_provider_resident = PROVEN`.  This does not close
-decoded/configuration/session/cache/send/transcript/error custody or complete
-TLS accounting.
+The exact AWS-LC SQLx harness now drives an owner-aware PQ-first rustls client
+against an ordinary P-256-only rustls server using an embedded test-only
+certificate.  The server and client both report
+`FullWithHelloRetryRequest`.  Ledger event ordering proves the P-256
+replacement's 1,625-byte reservation succeeds before the initial hybrid's
+7,881-byte reservation releases, and peak usage includes both.  A second real
+wire exchange funded with only 1,624 bytes beyond its live initial state fails
+without a successful replacement reservation and unwinds the initial exchange
+with the fatal connection state.  Separate connection drops before HRR and
+after replacement selection exercise destruction-time release of the initial
+and replacement reservations.  This replaces the earlier synthetic direct
+two-group overlap as the focused HRR evidence; complete TLS accounting and the
+remaining key-schedule/cancellation matrix are still open.

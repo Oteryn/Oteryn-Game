@@ -382,16 +382,14 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Complete decoded/config/session/cache/send/transcript/error TLS custody.
 - [ ] Execute funded AWS-LC TLS-positive and configured PostgreSQL 17.6 positive/hostile qualification.
 
-## Window25 final-graph KX lifecycle closure
+## Window25 actual wire HRR
 
-- [x] Prove initial-client drop and post-real-HRR drop return operation KX
-  custody while provider-shared residency remains retained.
-- [x] Deny a real HRR replacement after funding the initial KX and received
-  wire backing, before replacement provider start, then unwind exactly.
-- [x] Preserve invalid-peer completion error cleanup and exercise the successful
-  `ResourceOwnedSecret` transfer through the actual TLS key-schedule consumer.
-- [x] Mark the complete protected #451 provider/KX matrix `PROVEN` only after
-  combining these controls with final-graph PQ, bounds, race, thread-churn,
-  HRR-overlap, hybrid-component, unsupported-provider and layout evidence.
-- [ ] Continue decoded/config/session/cache/send/transcript/error and complete
-  TLS accounting before TLS-positive or PostgreSQL qualification.
+- [x] Drive a real PQ-first AWS-LC TLS 1.3 client into a P-256-only server and
+  assert `FullWithHelloRetryRequest` on the actual rustls state path.
+- [x] Prove replacement reservation precedes initial release, exact
+  initial-only capacity denies replacement, and pre/post-HRR connection drops
+  release the corresponding active exchange with state destruction.
+- [ ] Prove the remaining actual key-schedule consumer and cancellation/error
+  controls before aggregate KX/provider residency becomes GREEN.
+- [ ] Continue decoded/config/session/cache/send/transcript/error custody,
+  funded TLS-positive, and PostgreSQL 17.6 qualification.

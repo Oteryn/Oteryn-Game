@@ -738,27 +738,27 @@ remaining_acceptance_cells: actual wire HRR; cancellation/error/drop matrix; dec
 next_action: execute actual HRR and cancellation lifecycle proof, then continue the protected complete-TLS matrix
 ```
 
-## Window25 final-graph KX lifecycle closure
+## Window25 actual wire HRR lifecycle
 
-The actual-wire HRR harness now covers initial-owner cancellation, post-HRR
-replacement cancellation, replacement admission denial after the wire buffer
-is funded, and a fresh successful handshake through the real TLS key-schedule
-consumer.  Initial and replacement operation reservations return only with
-their connection-owned backing; provider-shared process, thread and
-configuration debits remain retained.  Invalid-peer completion continues to
-exercise the KX error unwind, while the rustls TLS 1.3 state keeps the
-`ResourceOwnedSecret` reservation through synchronous
-`KeySchedulePreHandshake::into_handshake(secret)` consumption.
+The executable exact-graph AWS-LC harness now performs a real TLS 1.3
+client/server exchange.  The PQ-first owner-aware client offers
+X25519MLKEM768 and the P-256-only ordinary server emits a real
+HelloRetryRequest.  Event and peak accounting prove that the 1,625-byte P-256
+replacement is reserved while the 7,881-byte initial exchange is still held,
+and that replacement admission precedes initial release.  Funding the live
+initial state plus only 1,624 bytes fails before replacement start, then
+releases the initial reservation during actual fatal-state destruction.  The
+funded exchange completes with `FullWithHelloRetryRequest`; separate pre-HRR
+and post-HRR connection drops prove release of the live initial and replacement
+reservations only with their owning connection state destruction.
 
 ```yaml
 status: active
-aws_lc_kx_provider_resident: PROVEN
+wire_hrr_initial_replacement_overlap: PROVEN_FOCUSED
+wire_hrr_replacement_denial_before_start: PROVEN_FOCUSED
+kx_connection_drop_before_and_after_hrr: PROVEN_FOCUSED
+aws_lc_kx_provider_resident: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
-kx_initial_cancellation: PROVEN_ACTUAL_STATE
-kx_post_hrr_cancellation: PROVEN_ACTUAL_STATE
-kx_hrr_replacement_denial: PROVEN_BEFORE_START
-kx_completion_error: PROVEN
-kx_secret_consumer_transfer: PROVEN_ACTUAL_TLS
-remaining_acceptance_cells: decoded/config/session/cache/send/transcript/error custody; complete handshake overlap; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
-next_action: continue the already-protected complete TLS accounting matrix on the same ledger
+remaining_acceptance_cells: actual TLS key-schedule custody assertion; complete decoded/config/session/cache/send/transcript/error accounting; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: prove the remaining returned-secret key-schedule and cancellation/error controls, then continue complete TLS custody on the protected paths
 ```
