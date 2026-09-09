@@ -311,6 +311,31 @@ def deterministic_program(programs: Iterable[dict[str, Any]], *, animated: bool)
     return candidates[0]
 
 
+def deterministic_vfx_program(programs: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    safe: list[dict[str, Any]] = []
+    animated_safe: list[dict[str, Any]] = []
+    for program in programs:
+        if not isinstance(program, dict):
+            continue
+        phase_count = int(program.get("phase_count", 1))
+        sprite_ids = program.get("sprite_source_ids")
+        if not isinstance(sprite_ids, list) or not sprite_ids:
+            continue
+        if phase_count <= 1:
+            safe.append(program)
+            continue
+        animation = program.get("animation")
+        if not isinstance(animation, dict):
+            continue
+        if animation.get("loop_type") != "infinite" or bool(animation.get("random_start_phase")):
+            continue
+        safe.append(program)
+        animated_safe.append(program)
+    if animated_safe:
+        return deterministic_program(animated_safe, animated=True)
+    return deterministic_program(safe, animated=False)
+
+
 def make_effect_or_missile_program(
     game_exporter: Any,
     category: str,
@@ -323,7 +348,7 @@ def make_effect_or_missile_program(
         for appearance in decoded
         for frame in appearance.frame_groups
     ]
-    return deterministic_program(programs, animated=False)
+    return deterministic_vfx_program(programs)
 
 
 def build_required_set(

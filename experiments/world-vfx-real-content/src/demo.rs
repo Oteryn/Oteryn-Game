@@ -375,6 +375,12 @@ fn presentation_phase(program: &NormalizedProgram, elapsed_ms: u64) -> Result<us
             program.category
         )
     })?;
+    if animation.loop_type != "infinite" {
+        return Err(format!(
+            "{} demo program uses unsupported loop_type {}; qualification fixture only advances normalized infinite loops",
+            program.category, animation.loop_type
+        ));
+    }
     if animation.random_start_phase {
         return Err(format!(
             "{} demo program requests random_start_phase; qualification fixture requires an explicit deterministic seed policy",
@@ -507,7 +513,7 @@ fn lerp2(start: (f32, f32), end: (f32, f32), progress: f32) -> (f32, f32) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::presentation::{FrameGroupIdentity, PatternShape};
+    use crate::presentation::{FrameGroupIdentity, NormalizedAnimation, PatternShape};
 
     fn direction_program(width: usize) -> NormalizedProgram {
         NormalizedProgram {
@@ -537,6 +543,26 @@ mod tests {
             animation: None,
             program_id: "test".to_owned(),
         }
+    }
+
+    #[test]
+    fn rejects_counted_animation_in_demo_projection() {
+        let mut program = direction_program(4);
+        program.phase_count = 2;
+        program.sprite_source_ids = vec![1; 8];
+        program.animation = Some(NormalizedAnimation {
+            default_start_phase: 0,
+            duration_ranges_ms: vec![[100, 100], [100, 100]],
+            effective_duration_ranges_ms: vec![[100, 100], [100, 100]],
+            loop_count: 1,
+            loop_type: "counted".to_owned(),
+            presentation_durations_ms: vec![100, 100],
+            random_start_phase: false,
+            synchronized: true,
+            timing_policy: "source-range-first-nonzero-fallback+deterministic-midpoint-v1"
+                .to_owned(),
+        });
+        assert!(presentation_phase(&program, 0).is_err());
     }
 
     #[test]

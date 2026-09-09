@@ -123,6 +123,49 @@ class PrepareRealContentTests(unittest.TestCase):
         _width, _height, rgba = M.decode_sheet_bytes(wrapper)
         self.assertEqual(rgba[:4], b"\x00\x00\x00\x00")
 
+    def test_vfx_selection_prefers_deterministic_infinite_animation(self) -> None:
+        counted = {
+            "appearance_source_id": 1,
+            "frame_group": {"type": 0, "id": 0},
+            "phase_count": 6,
+            "sprite_source_ids": [101],
+            "animation": {"loop_type": "counted", "random_start_phase": False},
+        }
+        static = {
+            "appearance_source_id": 2,
+            "frame_group": {"type": 0, "id": 0},
+            "phase_count": 1,
+            "sprite_source_ids": [102],
+            "animation": None,
+        }
+        infinite = {
+            "appearance_source_id": 78,
+            "frame_group": {"type": 0, "id": 0},
+            "phase_count": 8,
+            "sprite_source_ids": [103],
+            "animation": {"loop_type": "infinite", "random_start_phase": False},
+        }
+        selected = M.deterministic_vfx_program([counted, static, infinite])
+        self.assertEqual(selected["appearance_source_id"], 78)
+
+    def test_vfx_selection_falls_back_to_static_when_needed(self) -> None:
+        counted = {
+            "appearance_source_id": 1,
+            "frame_group": {"type": 0, "id": 0},
+            "phase_count": 6,
+            "sprite_source_ids": [101],
+            "animation": {"loop_type": "counted", "random_start_phase": False},
+        }
+        static = {
+            "appearance_source_id": 9,
+            "frame_group": {"type": 0, "id": 0},
+            "phase_count": 1,
+            "sprite_source_ids": [102],
+            "animation": None,
+        }
+        selected = M.deterministic_vfx_program([counted, static])
+        self.assertEqual(selected["appearance_source_id"], 9)
+
     def test_decode_sheet_accepts_exact_bitfield_masks(self) -> None:
         bmp = synthetic_bitfields_bmp()
         wrapper = synthetic_wrapper(bmp)
