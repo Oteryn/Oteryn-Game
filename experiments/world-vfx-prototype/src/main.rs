@@ -1,4 +1,8 @@
 #![recursion_limit = "256"]
+#![allow(
+    dead_code,
+    reason = "the evidence model intentionally retains semantic fields not consumed by every GPU path"
+)]
 
 mod gpu;
 mod model;
