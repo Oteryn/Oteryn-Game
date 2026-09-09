@@ -35,8 +35,8 @@ impl Scenario {
     pub const fn cache_slots(self) -> usize {
         match self {
             Self::Basic => 32,
-            Self::Normal => 48,
-            Self::Stress => 88,
+            Self::Normal => 64,
+            Self::Stress => 112,
         }
     }
 
@@ -380,5 +380,23 @@ mod tests {
         assert_eq!(config.family(), Family::Hd);
         config.density = 128;
         assert_eq!(config.family(), Family::Hd);
+    }
+
+    #[test]
+    fn calibrated_cache_capacity_is_mode_aware() {
+        let mut config = BenchConfig::default();
+        for (scenario, atlas_array, hybrid) in [
+            (Scenario::Basic, 32, 64),
+            (Scenario::Normal, 64, 96),
+            (Scenario::Stress, 112, 176),
+        ] {
+            config.scenario = scenario;
+            config.resource_mode = ResourceMode::Atlas;
+            assert_eq!(config.cache_slots(), atlas_array);
+            config.resource_mode = ResourceMode::Array;
+            assert_eq!(config.cache_slots(), atlas_array);
+            config.resource_mode = ResourceMode::Hybrid;
+            assert_eq!(config.cache_slots(), hybrid);
+        }
     }
 }
