@@ -98,6 +98,31 @@ class PrepareRealContentTests(unittest.TestCase):
         self.assertEqual((sw, sh), (32, 32))
         self.assertEqual(sprite[:4], b"\x03\x02\x01\x04")
 
+    def test_decode_sheet_keys_magenta_transparent(self) -> None:
+        bmp = bytearray(synthetic_bmp())
+        bmp[54:58] = bytes((255, 0, 255, 255))
+        filters = [
+            {
+                "id": lzma.FILTER_LZMA1,
+                "dict_size": 1 << 20,
+                "lc": 3,
+                "lp": 0,
+                "pb": 2,
+            }
+        ]
+        compressed = lzma.compress(bytes(bmp), format=lzma.FORMAT_RAW, filters=filters)
+        properties = 3 + 9 * (0 + 5 * 2)
+        wrapper = (
+            b"\x70\x0a\xfa\x80\x24"
+            + b"\x00"
+            + bytes((properties,))
+            + (1 << 20).to_bytes(4, "little")
+            + len(bmp).to_bytes(8, "little")
+            + compressed
+        )
+        _width, _height, rgba = M.decode_sheet_bytes(wrapper)
+        self.assertEqual(rgba[:4], b"\x00\x00\x00\x00")
+
 
 def synthetic_bmp() -> bytes:
     width = height = 384
