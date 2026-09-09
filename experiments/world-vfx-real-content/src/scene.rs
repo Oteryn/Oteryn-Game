@@ -311,15 +311,15 @@ fn validate_document(document: &SceneDocument) -> Result<(), String> {
         tiles.insert((primitive.tile.scene_x, primitive.tile.scene_y));
         let key = primitive_sort_key(primitive);
         if previous_key.is_some_and(|previous| previous > key) {
-            return Err("dense scene primitives are not in deterministic presentation order".to_owned());
+            return Err(
+                "dense scene primitives are not in deterministic presentation order".to_owned(),
+            );
         }
         previous_key = Some(key);
     }
 
     if actual_sprites != declared_sprites {
-        return Err(
-            "dense scene primitive sprite set does not match sprite_source_ids".to_owned(),
-        );
+        return Err("dense scene primitive sprite set does not match sprite_source_ids".to_owned());
     }
     if tiles.len() != EXPECTED_TILE_RECORDS {
         return Err(format!(
@@ -371,9 +371,7 @@ fn validate_primitive(primitive: &ScenePrimitiveRecord) -> Result<(), String> {
     Ok(())
 }
 
-fn primitive_sort_key(
-    primitive: &ScenePrimitiveRecord,
-) -> (i32, i32, i64, i64, usize, usize) {
+fn primitive_sort_key(primitive: &ScenePrimitiveRecord) -> (i32, i32, i64, i64, usize, usize) {
     (
         primitive.tile.scene_y,
         primitive.tile.scene_x,
