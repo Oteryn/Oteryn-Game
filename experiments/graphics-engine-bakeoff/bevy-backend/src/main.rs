@@ -107,36 +107,50 @@ fn setup(
 
     commands.spawn(Camera2d);
 
-    commands.spawn_batch(runtime.snapshot.static_quads.iter().map(|quad| {
-        (
-            Sprite {
-                image: image_handle.clone(),
-                texture_atlas: Some(TextureAtlas {
-                    layout: layout_handle.clone(),
-                    index: quad.frame as usize,
-                }),
-                custom_size: Some(Vec2::splat(quad.logical_size)),
-                ..default()
-            },
-            Transform::from_xyz(quad.x, quad.y, quad.z),
-        )
-    }));
+    let static_batch: Vec<_> = runtime
+        .snapshot
+        .static_quads
+        .iter()
+        .copied()
+        .map(|quad| {
+            (
+                Sprite {
+                    image: image_handle.clone(),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: layout_handle.clone(),
+                        index: quad.frame as usize,
+                    }),
+                    custom_size: Some(Vec2::splat(quad.logical_size)),
+                    ..default()
+                },
+                Transform::from_xyz(quad.x, quad.y, quad.z),
+            )
+        })
+        .collect();
+    commands.spawn_batch(static_batch);
 
-    commands.spawn_batch(runtime.snapshot.animated_quads.iter().map(|quad| {
-        (
-            Sprite {
-                image: image_handle.clone(),
-                texture_atlas: Some(TextureAtlas {
-                    layout: layout_handle.clone(),
-                    index: quad.frame as usize,
-                }),
-                custom_size: Some(Vec2::splat(quad.logical_size)),
-                ..default()
-            },
-            Transform::from_xyz(quad.x, quad.y, quad.z),
-            AnimatedSprite { phase: quad.phase },
-        )
-    }));
+    let animated_batch: Vec<_> = runtime
+        .snapshot
+        .animated_quads
+        .iter()
+        .copied()
+        .map(|quad| {
+            (
+                Sprite {
+                    image: image_handle.clone(),
+                    texture_atlas: Some(TextureAtlas {
+                        layout: layout_handle.clone(),
+                        index: quad.frame as usize,
+                    }),
+                    custom_size: Some(Vec2::splat(quad.logical_size)),
+                    ..default()
+                },
+                Transform::from_xyz(quad.x, quad.y, quad.z),
+                AnimatedSprite { phase: quad.phase },
+            )
+        })
+        .collect();
+    commands.spawn_batch(animated_batch);
 }
 
 fn benchmark_tick(
