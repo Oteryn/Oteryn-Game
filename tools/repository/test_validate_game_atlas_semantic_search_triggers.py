@@ -322,6 +322,14 @@ def _decode_mapping_scalar(raw: str) -> str:
     return raw
 
 
+def _decode_inline_sequence(raw: str) -> tuple[str, ...]:
+    raw = _strip_yaml_inline_comment(raw).strip()
+    assert raw.startswith("[") and raw.endswith("]"), f"expected inline YAML sequence: {raw!r}"
+    inner = raw[1:-1].strip()
+    assert inner, "empty inline YAML sequence"
+    return tuple(_decode_yaml_scalar(part) for part in inner.split(","))
+
+
 def _top_level_event_keys(workflow: str) -> tuple[str, ...]:
     match = re.search(r"(?ms)^on:\n(?P<body>.*?)(?=^[A-Za-z_][A-Za-z0-9_-]*:|\Z)", workflow)
     assert match is not None, "missing canonical on block"
@@ -353,6 +361,22 @@ def _event_keys(workflow: str, event: str) -> tuple[str, ...]:
         if entry is not None:
             keys.append(entry[0])
     return tuple(keys)
+
+
+def _event_mapping_value(workflow: str, event: str, wanted_key: str) -> str:
+    values: list[str] = []
+    for line in _event_block(workflow, event).splitlines():
+        if len(line) - len(line.lstrip(" ")) != 4:
+            continue
+        entry = _mapping_entry(line)
+        if entry is not None and entry[0] == wanted_key:
+            values.append(entry[1])
+    assert len(values) == 1, f"expected exactly one {wanted_key!r} mapping for event {event!r}"
+    return values[0]
+
+
+def _branches(workflow: str, event: str) -> tuple[str, ...]:
+    return _decode_inline_sequence(_event_mapping_value(workflow, event, "branches"))
 
 
 def _paths(workflow: str, event: str) -> tuple[str, ...]:
@@ -407,9 +431,10 @@ def _assert_exact_oracle_code(code: str, expected: str) -> None:
     )
 
 
-def _assert_active_run_command(workflow: str, command: str) -> None:
-    assert re.search(rf"(?m)^        run: {re.escape(command)}\s*$", workflow), (
-        f"missing active run command: {command}"
+def _assert_exact_run_step(workflow: str, step_name: str, command: str) -> None:
+    lines = _step_block(workflow, step_name).rstrip().splitlines()
+    assert lines == [f"        run: {command}"], (
+        f"protected single-line command step changed or became bypassable: {step_name!r}"
     )
 
 
@@ -455,14 +480,19 @@ def _assert_contract(semantic: str, static: str, *, verify_blobs: bool = True) -
     assert _event_keys(semantic, "pull_request") == ("paths",)
     assert _event_keys(semantic, "push") == ("branches", "paths")
     assert _event_keys(static, "pull_request") == ("branches", "paths")
+    assert _branches(semantic, "push") == ("main",)
+    assert _branches(static, "pull_request") == ("main",)
     assert _paths(semantic, "pull_request") == SEMANTIC_PR_PATHS
     assert _paths(semantic, "push") == SEMANTIC_PUSH_PATHS
     assert _paths(static, "pull_request") == STATIC_PR_PATHS
-    assert "branches: [main]" in _event_block(semantic, "push")
 
-    _assert_active_run_command(semantic, REGRESSION_COMMAND)
-    _assert_active_run_command(static, REGRESSION_COMMAND)
-    _assert_active_run_command(semantic, "python tools/game-atlas-semantic-search/self_test.py")
+    _assert_exact_run_step(semantic, "Verify Atlas trigger closure", REGRESSION_COMMAND)
+    _assert_exact_run_step(static, "Verify Atlas trigger closure", REGRESSION_COMMAND)
+    _assert_exact_run_step(
+        semantic,
+        "Run deterministic and negative tests",
+        "python tools/game-atlas-semantic-search/self_test.py",
+    )
     _assert_exact_bash_step(
         static,
         "Compile and run producer self-test",
@@ -524,19 +554,20 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         for changed_path in (REGRESSION, SEMANTIC_WORKFLOW_PATH, STATIC_WORKFLOW_PATH):
             self.assertIn(changed_path, semantic_pr)
             self.assertIn(changed_path, static_pr)
-        _assert_active_run_command(self.semantic, REGRESSION_COMMAND)
-        _assert_active_run_command(self.static, REGRESSION_COMMAND)
+        _assert_exact_run_step(self.semantic, "Verify Atlas trigger closure", REGRESSION_COMMAND)
+        _assert_exact_run_step(self.static, "Verify Atlas trigger closure", REGRESSION_COMMAND)
 
     def test_event_models_original_paths_and_exclusions(self) -> None:
         self.assertEqual(_top_level_event_keys(self.semantic), ("pull_request", "push"))
         self.assertEqual(_top_level_event_keys(self.static), ("pull_request", "workflow_dispatch"))
+        self.assertEqual(_branches(self.semantic, "push"), ("main",))
+        self.assertEqual(_branches(self.static, "pull_request"), ("main",))
         self.assertEqual(_paths(self.semantic, "pull_request"), SEMANTIC_PR_PATHS)
         self.assertEqual(_paths(self.semantic, "push"), SEMANTIC_PUSH_PATHS)
         self.assertEqual(_paths(self.static, "pull_request"), STATIC_PR_PATHS)
         self.assertEqual(_event_keys(self.semantic, "pull_request"), ("paths",))
         self.assertEqual(_event_keys(self.semantic, "push"), ("branches", "paths"))
         self.assertEqual(_event_keys(self.static, "pull_request"), ("branches", "paths"))
-        self.assertIn("branches: [main]", _event_block(self.semantic, "push"))
 
     def test_review_bypasses_fail_closed_without_blob_binding(self) -> None:
         attacks = [
@@ -585,6 +616,39 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                 ),
             ),
             (self.semantic, self.static.replace("  workflow_dispatch:\n", "", 1)),
+            (
+                self.semantic.replace(
+                    "    branches: [main]\n",
+                    "    # branches: [main]\n    branches:\n      - develop\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (self.semantic, self.static.replace("    branches: [main]\n", "    branches: [develop]\n", 1)),
+            (
+                self.semantic.replace(
+                    "      - name: Verify Atlas trigger closure\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic,
+                self.static.replace(
+                    "      - name: Verify Atlas trigger closure\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    1,
+                ),
+            ),
+            (
+                self.semantic.replace(
+                    "      - name: Run deterministic and negative tests\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
+                    "      - name: Run deterministic and negative tests\n        shell: \"true {0}\"\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
+                    1,
+                ),
+                self.static,
+            ),
             (
                 self.semantic,
                 self.static.replace("          python tools/game-atlas-creatures/self_test.py\n", "", 1),
@@ -734,6 +798,39 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             ),
             (self.semantic.replace("  push:\n", "  workflow_dispatch:\n  push:\n", 1), self.static),
             (self.semantic, self.static.replace("  workflow_dispatch:\n", "", 1)),
+            (
+                self.semantic.replace(
+                    "    branches: [main]\n",
+                    "    # branches: [main]\n    branches:\n      - develop\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (self.semantic, self.static.replace("    branches: [main]\n", "    branches: [develop]\n", 1)),
+            (
+                self.semantic.replace(
+                    "      - name: Verify Atlas trigger closure\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic,
+                self.static.replace(
+                    "      - name: Verify Atlas trigger closure\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    1,
+                ),
+            ),
+            (
+                self.semantic.replace(
+                    "      - name: Run deterministic and negative tests\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
+                    "      - name: Run deterministic and negative tests\n        shell: \"true {0}\"\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
+                    1,
+                ),
+                self.static,
+            ),
             (
                 self.semantic,
                 self.static.replace("          python tools/game-atlas-creatures/self_test.py\n", "", 1),
