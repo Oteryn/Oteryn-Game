@@ -459,7 +459,9 @@ fn validate_manifest_identity(manifest: &Manifest) -> Result<(), String> {
         .semantic_authority
         .product_root
         .strip_prefix("sha256:")
-        .ok_or_else(|| "prepared semantic authority product_root must use sha256: prefix".to_owned())?;
+        .ok_or_else(|| {
+            "prepared semantic authority product_root must use sha256: prefix".to_owned()
+        })?;
     validate_lower_sha256(product_digest, "semantic product_root")?;
     validate_lower_sha256(&manifest.atlas_slice_sha256, "atlas_slice_sha256")?;
     if manifest.sprite_page.sprites_per_page != SPRITES_PER_PAGE
@@ -603,10 +605,7 @@ mod tests {
         assert_eq!(locator.layer, 1);
         assert_eq!(page.rgba.len(), PAGE_BYTES);
         assert_eq!(cache.stats().page_loads, 1);
-        assert_eq!(
-            cache.semantic_identity().0,
-            SEMANTIC_CONTRACT_ID
-        );
+        assert_eq!(cache.semantic_identity().0, SEMANTIC_CONTRACT_ID);
         assert_eq!(cache.semantic_identity().1, SEMANTIC_REVISION);
         let second = cache.page(3)?;
         assert_eq!(second.rgba.len(), PAGE_BYTES);
