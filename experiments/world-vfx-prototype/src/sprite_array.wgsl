@@ -2,7 +2,7 @@ struct Instance {
     pos_size: vec4<f32>,
     uv_rect: vec4<f32>,
     color: vec4<f32>,
-    meta: vec4<f32>,
+    presentation_data: vec4<f32>,
 };
 
 struct Globals {
@@ -24,7 +24,7 @@ struct VertexOutput {
     @location(0) uv: vec2<f32>,
     @location(1) color: vec4<f32>,
     @location(2) screen_px: vec2<f32>,
-    @location(3) meta: vec4<f32>,
+    @location(3) presentation_data: vec4<f32>,
     @location(4) @interpolate(flat) layer: u32,
 };
 
@@ -55,7 +55,7 @@ fn vertex_main(
     output.uv = corner + vec2<f32>(0.5, 0.5);
     output.color = instance.color;
     output.screen_px = screen;
-    output.meta = instance.meta;
+    output.presentation_data = instance.presentation_data;
     output.layer = u32(instance.uv_rect.x);
     return output;
 }
@@ -77,11 +77,11 @@ fn local_light(screen_px: vec2<f32>) -> f32 {
 
 @fragment
 fn fragment_main(input: VertexOutput) -> @location(0) vec4<f32> {
-    if (input.meta.y > 0.5) {
+    if (input.presentation_data.y > 0.5) {
         return input.color;
     }
     var color = textureSample(page_texture, page_sampler, input.uv, i32(input.layer)) * input.color;
     let illumination = clamp(globals.viewport_ambient.z + local_light(input.screen_px), 0.12, 1.45);
-    color.rgb = color.rgb * illumination + color.rgb * input.meta.x;
+    color.rgb = color.rgb * illumination + color.rgb * input.presentation_data.x;
     return color;
 }
