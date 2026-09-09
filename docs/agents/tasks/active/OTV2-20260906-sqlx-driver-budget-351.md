@@ -1325,6 +1325,35 @@ complete_tls_accounting: NOT_PROVEN
 next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
 
+## Window51 actual-capacity family repair and exact-construction boundary
+
+Pinned Rust 1.94 `RawVec` may retain allocator excess, so request-sized
+`Vec::with_capacity(requested)` followed by a capacity equality check is not
+reservation-before-allocation proof.  The charged byte-copy family now allocates
+an exact-layout `Box<[u8]>` directly from the source and converts it to `Vec`
+allocation-free.  This repairs decoded byte copies, retained-session secrets,
+retained/current certificate DER copies, certificate OCSP destinations, and
+borrowed payload deep copies while preserving source/destination overlap.
+
+The family sweep also confirmed that dynamic transformed outer certificate/list
+vectors and the zero-filled compressed-certificate destination cannot use the
+same safe slice-copy construction: their elements do not exist before the
+allocation.  Rust 1.94's exact uninitialized boxed-slice construction requires
+`unsafe` initialization/conversion, while this rustls crate has a crate-wide
+`#![forbid(unsafe_code)]`.  Reintroducing `Vec::with_capacity`, guessing allocator
+excess, or weakening that safety policy would all violate the accepted contract.
+Consequently the byte-copy members are repaired but the complete actual-capacity
+family and compressed qualification remain not proven.
+
+```yaml
+status: blocked_exact_capacity_construction
+actual_capacity_byte_copy_family: PROVEN_SOURCE_AND_BUILD
+actual_capacity_outer_list_family: NOT_PROVEN
+compressed_tls13_actual_capacity: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: obtain a reviewed safe exact-length initialization seam or allocator-authoritative bound, then finish the protected family and compressed qualification
+```
+
 ## Window48 TLS1.2 retained-session underlying-owner repair
 
 Independent reread found that Window47 still coerced

@@ -649,3 +649,14 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Remove ordinary certificate deep ownership and unnecessary synthetic handshake encoding from the owner-aware path.
 - [ ] Add complete compressed-certificate wire/error/cancellation overlap qualification.
 - [ ] Finish remaining legal TLS1.2 and ClientHello cells, then record exact excluded-symbol blockers.
+
+## Window51 actual-capacity family
+
+- [x] Replace charged byte-copy `Vec::with_capacity(requested)` construction with
+  source-proven exact boxed-slice backing and allocation-free `into_vec`.
+- [x] Sweep decoded payload, retained secret, certificate DER/current-peer and
+  OCSP byte-copy variants.
+- [ ] Supply a reviewed safe exact-length initialization seam (or an
+  allocator-authoritative preallocation bound) for transformed outer vectors
+  and zero-filled decompression backing; do not weaken rustls's unsafe-code ban.
+- [ ] Re-run compressed wire/error/cancellation and full capacity-family proof.

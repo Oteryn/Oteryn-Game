@@ -1748,8 +1748,7 @@ impl CertificateChain<'_> {
         }
         for cert in self.0 {
             let source = cert.as_ref();
-            let mut destination = Vec::with_capacity(source.len());
-            destination.extend_from_slice(source);
+            let destination = codec::exact_vec_copy(source);
             if destination.capacity() != source.len() {
                 drop(destination);
                 drop(chain);
@@ -1944,8 +1943,7 @@ impl<'a> CertificatePayloadTls13<'a> {
         }
         for entry in &self.entries {
             let bytes = entry.cert.as_ref();
-            let mut der = Vec::with_capacity(bytes.len());
-            der.extend_from_slice(bytes);
+            let der = codec::exact_vec_copy(bytes);
             if der.capacity() != bytes.len() {
                 drop(der);
                 return Err(InvalidMessage::MessageTooLarge);
@@ -1960,8 +1958,7 @@ impl<'a> CertificatePayloadTls13<'a> {
         let ocsp = if ocsp_source.is_empty() {
             Vec::new()
         } else {
-            let mut destination = Vec::with_capacity(ocsp_source.len());
-            destination.extend_from_slice(ocsp_source);
+            let destination = codec::exact_vec_copy(ocsp_source);
             if destination.capacity() != ocsp_source.len() {
                 drop(destination);
                 return Err(InvalidMessage::MessageTooLarge);

@@ -381,8 +381,7 @@ impl RetainedCertificateChain {
                     return Err(crate::DeframerBufferError);
                 }
             };
-            let mut owned = Vec::with_capacity(bytes);
-            owned.extend_from_slice(certificate.as_ref());
+            let owned = crate::msgs::codec::exact_vec_copy(certificate.as_ref());
             if owned.capacity() != bytes {
                 drop(owned);
                 drop(certificates);
@@ -479,8 +478,7 @@ fn copy_certificate_chain_for_peer(
     }
     for certificate in &source.0 {
         let expected = certificate.as_ref().len();
-        let mut copied = Vec::with_capacity(expected);
-        copied.extend_from_slice(certificate.as_ref());
+        let copied = crate::msgs::codec::exact_vec_copy(certificate.as_ref());
         if copied.capacity() != expected {
             drop(copied);
             drop(certificates);
@@ -537,8 +535,7 @@ impl ClientSessionCommon {
     ) -> Result<Self, crate::DeframerBufferError> {
         let secret_bytes = secret.len();
         owner.try_reserve(secret_bytes)?;
-        let mut secret_copy = Vec::with_capacity(secret_bytes);
-        secret_copy.extend_from_slice(secret);
+        let secret_copy = crate::msgs::codec::exact_vec_copy(secret);
         if secret_copy.capacity() != secret_bytes {
             drop(secret_copy);
             owner.release(secret_bytes);

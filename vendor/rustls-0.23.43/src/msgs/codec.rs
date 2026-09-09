@@ -1,3 +1,5 @@
+#[cfg(feature = "std")]
+use alloc::boxed::Box;
 use alloc::vec::Vec;
 use core::fmt::Debug;
 #[cfg(feature = "std")]
@@ -15,6 +17,15 @@ use crate::error::InvalidMessage;
 use crate::sync::Arc;
 #[cfg(feature = "std")]
 use crate::DeframerBufferOwner;
+
+/// Copy into exact-capacity vector backing without an intermediate `Vec`.
+///
+/// Rust 1.94 allocates `Box<[T]>` for the slice's exact layout, and
+/// `Box<[T]>::into_vec` is allocation-free with `capacity == len`.
+#[cfg(feature = "std")]
+pub(crate) fn exact_vec_copy<T: Clone>(source: &[T]) -> Vec<T> {
+    Box::<[T]>::from(source).into_vec()
+}
 
 /// Connection-scoped custody for allocations made while decoding peer input.
 ///
@@ -313,8 +324,7 @@ impl DecodedCustody {
         let capacity = source.len();
         self.owner.reserve(capacity)?;
 
-        let mut destination = Vec::with_capacity(capacity);
-        destination.extend_from_slice(source);
+        let destination = exact_vec_copy(source);
         if destination.capacity() != capacity {
             drop(destination);
             self.owner.release(capacity);
@@ -657,8 +667,7 @@ impl<'a> Reader<'a> {
             return Ok((Vec::new(), None));
         }
         owner.reserve(bytes.len())?;
-        let mut copied = Vec::with_capacity(bytes.len());
-        copied.extend_from_slice(bytes);
+        let copied = exact_vec_copy(bytes);
         if copied.capacity() != bytes.len() {
             let reserved = bytes.len();
             drop(copied);
@@ -1416,6 +1425,15 @@ mod tests {
         assert_eq!(funded.used.load(Ordering::SeqCst), bytes);
         drop(charge);
         assert_eq!(funded.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn exact_boxed_slice_copy_has_source_length_capacity() {
+        for source in [&[][..], &[7][..], &[1, 2, 3, 4, 5][..]] {
+            let copied = exact_vec_copy(source);
+            assert_eq!(copied, source);
+            assert_eq!(copied.capacity(), source.len());
+        }
     }
 
     #[test]

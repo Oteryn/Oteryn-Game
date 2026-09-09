@@ -373,3 +373,19 @@ destination while compressed input and decompression backing remain live. The fo
 are absent from this path. Parser-local second-decode reservations are reconciled after source
 destruction without releasing independently transferred payload or final-certificate custody.
 Complete compressed wire/error/cancellation evidence and whole-handshake composition remain open.
+
+## Actual-capacity family sweep
+
+Rust 1.94 `RawVec` permits allocator excess, so post-allocation equality checks
+do not prove that request-sized precharge covered the allocation.  Charged byte
+copies now construct an exact-layout `Box<[u8]>` from the source and use the
+allocation-free `Box<[u8]>::into_vec` conversion.  This covers decoded payload
+copies, retained secret copies, certificate DER copies and OCSP destinations.
+
+Dynamic transformed outer certificate/list vectors and the zero-initialized
+compressed-certificate destination remain open.  Unlike byte copies, no fully
+initialized source slice exists before those allocations.  The pinned standard
+library's uninitialized boxed-slice route needs unsafe initialization/conversion,
+but rustls has crate-wide `#![forbid(unsafe_code)]`.  This checkpoint neither
+guesses allocator excess nor weakens that policy, and therefore does not claim
+the complete capacity family or complete TLS accounting.
