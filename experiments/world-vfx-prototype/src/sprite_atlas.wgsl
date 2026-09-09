@@ -78,8 +78,8 @@ fn fragment_main(input: VertexOutput) -> @location(0) vec4<f32> {
     if (input.presentation_data.y > 0.5) {
         return input.color;
     }
-    var color = textureSample(page_texture, page_sampler, input.uv) * input.color;
+    let sampled = textureSample(page_texture, page_sampler, input.uv) * input.color;
     let illumination = clamp(globals.viewport_ambient.z + local_light(input.screen_px), 0.12, 1.45);
-    color.rgb = color.rgb * illumination + color.rgb * input.presentation_data.x;
-    return color;
+    let lit_rgb = sampled.rgb * illumination + sampled.rgb * input.presentation_data.x;
+    return vec4<f32>(lit_rgb, sampled.a);
 }
