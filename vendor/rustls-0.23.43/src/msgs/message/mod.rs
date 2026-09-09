@@ -4,6 +4,10 @@ use crate::msgs::alert::AlertMessagePayload;
 use crate::msgs::base::Payload;
 use crate::msgs::ccs::ChangeCipherSpecPayload;
 use crate::msgs::codec::{Codec, Reader};
+#[cfg(feature = "std")]
+use crate::msgs::codec::DecodedOwner;
+#[cfg(feature = "std")]
+use crate::sync::Arc;
 use crate::msgs::enums::{AlertLevel, KeyUpdateRequest};
 use crate::msgs::handshake::{HandshakeMessagePayload, HandshakePayload};
 
@@ -54,6 +58,30 @@ impl<'a> MessagePayload<'a> {
         payload: &'a [u8],
     ) -> Result<Self, InvalidMessage> {
         let mut r = Reader::init(payload);
+        match typ {
+            ContentType::ApplicationData => Ok(Self::ApplicationData(Payload::Borrowed(payload))),
+            ContentType::Alert => AlertMessagePayload::read(&mut r).map(MessagePayload::Alert),
+            ContentType::Handshake => {
+                HandshakeMessagePayload::read_version(&mut r, vers).map(|parsed| Self::Handshake {
+                    parsed,
+                    encoded: Payload::Borrowed(payload),
+                })
+            }
+            ContentType::ChangeCipherSpec => {
+                ChangeCipherSpecPayload::read(&mut r).map(MessagePayload::ChangeCipherSpec)
+            }
+            _ => Err(InvalidMessage::InvalidContentType),
+        }
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn new_with_resource_owner(
+        typ: ContentType,
+        vers: ProtocolVersion,
+        payload: &'a [u8],
+        owner: Arc<DecodedOwner>,
+    ) -> Result<Self, InvalidMessage> {
+        let mut r = Reader::init_with_owner(payload, owner);
         match typ {
             ContentType::ApplicationData => Ok(Self::ApplicationData(Payload::Borrowed(payload))),
             ContentType::Alert => AlertMessagePayload::read(&mut r).map(MessagePayload::Alert),
@@ -236,6 +264,24 @@ impl<'a> TryFrom<InboundPlainMessage<'a>> for Message<'a> {
         Ok(Self {
             version: plain.version,
             payload: MessagePayload::new(plain.typ, plain.version, plain.payload)?,
+        })
+    }
+}
+
+#[cfg(feature = "std")]
+impl<'a> Message<'a> {
+    pub(crate) fn try_from_with_resource_owner(
+        value: InboundPlainMessage<'a>,
+        owner: Arc<DecodedOwner>,
+    ) -> Result<Self, InvalidMessage> {
+        Ok(Self {
+            version: value.version,
+            payload: MessagePayload::new_with_resource_owner(
+                value.typ,
+                value.version,
+                value.payload,
+                owner,
+            )?,
         })
     }
 }

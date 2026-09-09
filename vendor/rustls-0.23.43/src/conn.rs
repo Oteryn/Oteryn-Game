@@ -16,6 +16,8 @@ use crate::msgs::deframer::buffers::{BufferProgress, DeframerVecBuffer, Delocato
 use crate::msgs::deframer::handshake::HandshakeDeframer;
 use crate::msgs::handshake::Random;
 use crate::msgs::message::{InboundPlainMessage, Message, MessagePayload};
+#[cfg(feature = "std")]
+use crate::msgs::codec::DecodedOwner;
 use crate::record_layer::Decrypted;
 use crate::suites::ExtractedSecrets;
 use crate::vecbuf::ChunkVecBuffer;
@@ -725,7 +727,18 @@ impl<Data> ConnectionCommon<Data> {
                 self.deframer_buffer.filled_mut(),
                 &mut buffer_progress,
             )
-            .map(|opt| opt.map(|pm| Message::try_from(pm).map(|m| m.into_owned())));
+            .map(|opt| {
+                opt.map(|pm| {
+                    #[cfg(feature = "std")]
+                    let parsed = match &self.core.decoded_owner {
+                        Some(owner) => Message::try_from_with_resource_owner(pm, owner.clone()),
+                        None => Message::try_from(pm),
+                    };
+                    #[cfg(not(feature = "std"))]
+                    let parsed = Message::try_from(pm);
+                    parsed.map(|m| m.into_owned())
+                })
+            });
 
         match res? {
             Some(Ok(msg)) => {
@@ -868,6 +881,8 @@ pub(crate) struct ConnectionCore<Data> {
     pub(crate) data: Data,
     pub(crate) common_state: CommonState,
     pub(crate) hs_deframer: HandshakeDeframer,
+    #[cfg(feature = "std")]
+    decoded_owner: Option<crate::sync::Arc<DecodedOwner>>,
 
     /// We limit consecutive empty fragments to avoid a route for the peer to send
     /// us significant but fruitless traffic.
@@ -881,6 +896,8 @@ impl<Data> ConnectionCore<Data> {
             data,
             common_state,
             hs_deframer: HandshakeDeframer::default(),
+            #[cfg(feature = "std")]
+            decoded_owner: None,
             seen_consecutive_empty_fragments: 0,
         }
     }
@@ -892,11 +909,13 @@ impl<Data> ConnectionCore<Data> {
         common_state: CommonState,
         owner: crate::sync::Arc<dyn DeframerBufferOwner>,
     ) -> Result<Self, Error> {
+        let decoded_owner = DecodedOwner::new(owner.clone());
         Ok(Self {
             state: Ok(state),
             data,
             common_state,
             hs_deframer: HandshakeDeframer::new_with_resource_owner(owner)?,
+            decoded_owner: Some(decoded_owner),
             seen_consecutive_empty_fragments: 0,
         })
     }
@@ -1174,7 +1193,14 @@ impl<Data> ConnectionCore<Data> {
         }
 
         // Now we can fully parse the message payload.
-        let msg = match Message::try_from(msg) {
+        #[cfg(feature = "std")]
+        let decoded = match &self.decoded_owner {
+            Some(owner) => Message::try_from_with_resource_owner(msg, owner.clone()),
+            None => Message::try_from(msg),
+        };
+        #[cfg(not(feature = "std"))]
+        let decoded = Message::try_from(msg);
+        let msg = match decoded {
             Ok(msg) => msg,
             Err(err) => {
                 return Err(self

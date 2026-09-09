@@ -1,8 +1,55 @@
 use alloc::vec::Vec;
 use core::fmt::Debug;
 use core::marker::PhantomData;
+#[cfg(feature = "std")]
+use core::mem::size_of;
+#[cfg(feature = "std")]
+use core::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::error::InvalidMessage;
+#[cfg(feature = "std")]
+use crate::sync::Arc;
+#[cfg(feature = "std")]
+use crate::DeframerBufferOwner;
+
+/// Connection-scoped custody for allocations made while decoding peer input.
+///
+/// Individual decoded values can move through several private handshake states.
+/// Keeping the debit here makes those moves allocation-free and ensures fatal
+/// parse paths cannot accidentally release backing that a successor retained.
+#[cfg(feature = "std")]
+#[derive(Debug)]
+pub(crate) struct DecodedOwner {
+    owner: Arc<dyn DeframerBufferOwner>,
+    charged: AtomicUsize,
+}
+
+#[cfg(feature = "std")]
+impl DecodedOwner {
+    pub(crate) fn new(owner: Arc<dyn DeframerBufferOwner>) -> Arc<Self> {
+        Arc::new(Self { owner, charged: AtomicUsize::new(0) })
+    }
+
+    pub(crate) fn reserve(&self, bytes: usize) -> Result<(), InvalidMessage> {
+        if bytes == 0 { return Ok(()); }
+        self.owner.try_reserve(bytes).map_err(|_| InvalidMessage::MessageTooLarge)?;
+        self.charged.fetch_add(bytes, Ordering::Relaxed);
+        Ok(())
+    }
+
+    pub(crate) fn release(&self, bytes: usize) {
+        if bytes == 0 { return; }
+        self.charged.fetch_sub(bytes, Ordering::Relaxed);
+        self.owner.release(bytes);
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for DecodedOwner {
+    fn drop(&mut self) {
+        self.owner.release(self.charged.load(Ordering::Relaxed));
+    }
+}
 
 /// Wrapper over a slice of bytes that allows reading chunks from
 /// with the current position state held using a cursor.
@@ -15,6 +62,8 @@ pub struct Reader<'a> {
     buffer: &'a [u8],
     /// Stores the current reading position for the buffer
     cursor: usize,
+    #[cfg(feature = "std")]
+    decoded_owner: Option<Arc<DecodedOwner>>,
 }
 
 impl<'a> Reader<'a> {
@@ -24,7 +73,14 @@ impl<'a> Reader<'a> {
         Reader {
             buffer: bytes,
             cursor: 0,
+            #[cfg(feature = "std")]
+            decoded_owner: None,
         }
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn init_with_owner(bytes: &'a [u8], owner: Arc<DecodedOwner>) -> Self {
+        Self { buffer: bytes, cursor: 0, decoded_owner: Some(owner) }
     }
 
     /// Attempts to create a new Reader on a sub section of this
@@ -32,7 +88,12 @@ impl<'a> Reader<'a> {
     /// will return None if there is not enough bytes
     pub fn sub(&mut self, length: usize) -> Result<Self, InvalidMessage> {
         match self.take(length) {
-            Some(bytes) => Ok(Reader::init(bytes)),
+            Some(bytes) => Ok(Self {
+                buffer: bytes,
+                cursor: 0,
+                #[cfg(feature = "std")]
+                decoded_owner: self.decoded_owner.clone(),
+            }),
             None => Err(InvalidMessage::MessageTooShort),
         }
     }
@@ -83,6 +144,21 @@ impl<'a> Reader<'a> {
     /// read (The number of remaining takes)
     pub fn left(&self) -> usize {
         self.buffer.len() - self.cursor
+    }
+
+    #[cfg(feature = "std")]
+    fn reserve_vec_capacity<T>(&self, capacity: usize) -> Result<(), InvalidMessage> {
+        let Some(owner) = &self.decoded_owner else { return Ok(()); };
+        let bytes = capacity.checked_mul(size_of::<T>())
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+        owner.reserve(bytes)
+    }
+
+
+    #[cfg(feature = "std")]
+    fn release_vec_capacity<T>(&self, capacity: usize) {
+        let Some(owner) = &self.decoded_owner else { return; };
+        owner.release(capacity * size_of::<T>());
     }
 }
 
@@ -228,7 +304,25 @@ impl<'a, T: Codec<'a> + TlsListElement + Debug> Codec<'a> for Vec<T> {
     fn read(r: &mut Reader<'a>) -> Result<Self, InvalidMessage> {
         let mut ret = Self::new();
         for item in TlsListIter::<T>::new(r)? {
-            ret.push(item?);
+            let item = item?;
+            if ret.len() == ret.capacity() {
+                #[cfg(feature = "std")]
+                let old_capacity = ret.capacity();
+                #[cfg(feature = "std")]
+                let prospective = {
+                    let prospective = ret.len().checked_add(1).ok_or(InvalidMessage::MessageTooLarge)?;
+                    r.reserve_vec_capacity::<T>(prospective)?;
+                    prospective
+                };
+                ret.reserve_exact(1);
+                #[cfg(feature = "std")]
+                if r.decoded_owner.is_some() && ret.capacity() != prospective {
+                    return Err(InvalidMessage::MessageTooLarge);
+                }
+                #[cfg(feature = "std")]
+                r.release_vec_capacity::<T>(old_capacity);
+            }
+            ret.push(item);
         }
 
         Ok(ret)
@@ -383,10 +477,56 @@ impl Drop for LengthPrefixedBuffer<'_> {
 
 #[cfg(test)]
 mod tests {
+    use core::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
     use std::prelude::v1::*;
     use std::vec;
 
     use super::*;
+
+    #[derive(Debug)]
+    struct TestOwner { limit: usize, used: AtomicUsize }
+
+    impl DeframerBufferOwner for TestOwner {
+        fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+            self.used.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |used| {
+                used.checked_add(bytes).filter(|next| *next <= self.limit)
+            }).map(|_| ()).map_err(|_| crate::DeframerBufferError)
+        }
+        fn release(&self, bytes: usize) { self.used.fetch_sub(bytes, Ordering::SeqCst); }
+    }
+
+    #[derive(Debug, PartialEq)]
+    struct Tiny(u8);
+    impl Codec<'_> for Tiny {
+        fn encode(&self, out: &mut Vec<u8>) { out.push(self.0); }
+        fn read(r: &mut Reader<'_>) -> Result<Self, InvalidMessage> { Ok(Self(u8::read(r)?)) }
+    }
+    impl TlsListElement for Tiny { const SIZE_LEN: ListLength = ListLength::U16; }
+
+    #[test]
+    fn decoded_list_reserves_before_each_exact_capacity() {
+        let owner = Arc::new(TestOwner { limit: 3, used: AtomicUsize::new(0) });
+        let decoded = DecodedOwner::new(owner.clone());
+        let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
+        let values = Vec::<Tiny>::read(&mut reader).unwrap();
+        assert_eq!(values.iter().map(|v| v.0).collect::<Vec<_>>(), [1, 2, 3]);
+        assert_eq!(owner.used.load(Ordering::SeqCst), values.capacity());
+        drop(values);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 3, "custody follows decode scope");
+        drop(decoded);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn decoded_list_max_minus_one_denies_before_growth() {
+        let owner = Arc::new(TestOwner { limit: 2, used: AtomicUsize::new(0) });
+        let decoded = DecodedOwner::new(owner.clone());
+        let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
+        assert_eq!(Vec::<Tiny>::read(&mut reader), Err(InvalidMessage::MessageTooLarge));
+        drop(decoded);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
 
     #[test]
     fn interrupted_length_prefixed_buffer_leaves_maximum_length() {

@@ -395,6 +395,18 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Continue complete decoded/config/session/cache/send/transcript/error TLS
   accounting before TLS-positive and PostgreSQL qualification.
 
+## Window27 decoded-owner implementation
+
+- [x] Install the existing owner identity in `ConnectionCore` and route normal
+  and first-handshake parsing through owner-aware `Reader` construction.
+- [x] Propagate the owner through nested readers and reserve exact generic-list
+  element capacity before growth, including old/new overlap.
+- [ ] Implement the remaining protected payload, message, span, transcript,
+  certificate/OCSP, successor, compressed-certificate and retained-session
+  ownership boundaries and their complete composition witness.
+- [ ] Run funded AWS-LC SQLx TLS-positive and PostgreSQL 17.6 qualification only
+  after the complete TLS matrix is proven.
+
 ## Window25 actual wire HRR
 
 - [x] Drive a real PQ-first AWS-LC TLS 1.3 client into a P-256-only server and
