@@ -66,4 +66,4 @@ Reject stale generation/revision/duplicate/replayed/illegal movement determinist
 
 ## Completion
 
-Continue through E2E, review, exact-head CI, squash merge, post-merge verification, task archive and ownership release. Do not claim cross-scope movement or Reference parity from this local structural slice.
+Continue through E2E, review and exact-head CI, then hand off integration only through the authenticated bound META 3.1 native exact-head Merge Queue contract. If its selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head rather than substituting direct/immediate merge or generic `enablePullRequestAutoMerge`. After real `merge_group` `game-gate` success and protected-main readback, complete post-integration verification, task archive and ownership release. Do not claim cross-scope movement or Reference parity from this local structural slice.

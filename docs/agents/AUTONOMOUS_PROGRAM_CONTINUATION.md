@@ -26,8 +26,8 @@ Do not ask the owner to repeat state that can be resolved from GitHub.
 5. Validate focused behavior and persist a checkpoint when it materially helps recovery or a genuine stop is approaching.
 6. Run audit/E2E/exact-head gates when the package is complete.
 7. Repair evidence-based failures while a materially new hypothesis or safe authorized repair path exists.
-8. Merge only when all gates pass.
-9. Archive task, release ownership and reconcile programme barriers.
+8. When all gates pass, route integration only through the authenticated bound META 3.1 native exact-head Merge Queue contract. If its selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE`, preserve the qualified head and continue safe path-disjoint work; do not substitute direct merge or generic auto-merge.
+9. Only after successful Merge Queue integration and protected-main readback confirm the accepted candidate is integrated, archive the task, release ownership and reconcile programme barriers.
 10. Start at most one additional safe ready task when current authority and anti-stall policy permit; elapsed implementation time does not decide this.
 
 ## Worker rules

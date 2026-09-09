@@ -104,7 +104,7 @@ For one frozen exact head:
 1. inspect the exact SHA, PR state, required context, check suites, workflow runs, job assignment and repository Actions;
 2. if a terminal failed/cancelled run exists and a new hypothesis justifies it, rerun it once;
 3. otherwise use one trusted `workflow_dispatch` recovery run that validates the open PR number and exact frozen head;
-4. if the active connector cannot dispatch or cancel Actions, configure protected auto-merge when eligible, then use `BLOCKED` only for a proven permission/policy/owner dependency and `WAITING_EXTERNAL` for an external GitHub/runner dependency;
+4. if the active connector cannot dispatch or cancel Actions, do not mutate merge state to recover CI and do not arm generic auto-merge. Use `WAITING_EXTERNAL` for an external GitHub/runner dependency; if integration itself is ready but the authenticated bound META 3.1 native exact-head Merge Queue operation is unavailable, record `BLOCKED` with blocker code `BLOCKED_CAPABILITY_UNAVAILABLE`, preserve the qualified candidate and continue any safe path-disjoint work;
 5. never create a no-op commit, activity-only task edit, branch rewind, close/reopen cycle, duplicate branch or replacement PR solely to obtain a check.
 
 At most one CI recovery action is allowed per exact head. A second action requires a materially new failure signature or owner instruction.
@@ -115,7 +115,7 @@ Outside final terminal CI:
 
 1. observe required CI/external state once when expected;
 2. allow at most one later unchanged observation;
-3. configure protected auto-merge once when eligible;
+3. do not arm generic auto-merge as a waiting shortcut; when integration becomes eligible, use only a governed route allowed by the bound META policy, otherwise record the exact blocker and release external waiting;
 4. persist exact head, run IDs, assignment state and one next action;
 5. release external waiting or execute genuinely independent work already inside the same task.
 
