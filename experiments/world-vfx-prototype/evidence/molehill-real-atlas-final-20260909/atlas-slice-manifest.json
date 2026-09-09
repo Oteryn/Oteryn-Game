@@ -1,0 +1,33 @@
+{
+  "bounds": {
+    "floors": [
+      -8,
+      -7,
+      -6
+    ],
+    "x_max_exclusive": 32384,
+    "x_min": 32288,
+    "y_max_exclusive": 32224,
+    "y_min": 32128
+  },
+  "counts": {
+    "creatures": 112,
+    "resolved_primitives": 30974,
+    "tiles": 20797,
+    "unique_sprite_ids": 1209
+  },
+  "pixels_committed": false,
+  "schema": "oteryn-world-vfx-atlas-slice-evidence-v1",
+  "slice_bytes": 6351878,
+  "slice_sha256": "a72448fd04481a24fe1d34e284d7e9504738d5c6c169f43fef19077fe2b3186f",
+  "source": {
+    "creatureSemanticDigest": "sha256:7dc951874c95424279737eaaf51cf2d50940162ef4799daea39a187a581ef0e8",
+    "gameSha": "f79fd3b5c239fa13810338f1380539c4eac67d7d",
+    "pixelRoot": "sha256:8b8228fcc4574903e547cb7d65b96f3d45e5a9e67045091c1bceb6e54d3690ad",
+    "publicationRoot": "sha256:9d0d2f3bb16a5a90f9b51a21366e4ed42963f5cb12366c404a20d9502ec4857f",
+    "runtimeIndexRoot": "sha256:fa30ae5fc47f0ca8a6d482ed87b5db2cd74f32f7f523df16187ca719b8e04f08",
+    "semanticRoot": "sha256:27d7a83a7d9f498ea614b440ab4216cae5e6d11ea0527482410e40948cade5a9",
+    "sourceFingerprint": "sha256:52613c4b755bee1ca32608b1b860413c3a9184870ca61114fad5a7670e80aee9"
+  },
+  "workload_policy": "real-fullworld-static+real-creature-templates+synthetic-dynamic-vfx"
+}
