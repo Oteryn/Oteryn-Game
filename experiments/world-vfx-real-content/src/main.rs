@@ -57,9 +57,9 @@ impl Args {
                     let value = iter
                         .next()
                         .ok_or_else(|| "--cache-sheets requires an integer".to_owned())?;
-                    cache_sheets = value
-                        .parse::<usize>()
-                        .map_err(|error| format!("invalid --cache-sheets value {value:?}: {error}"))?;
+                    cache_sheets = value.parse::<usize>().map_err(|error| {
+                        format!("invalid --cache-sheets value {value:?}: {error}")
+                    })?;
                     if cache_sheets == 0 {
                         return Err("--cache-sheets must be at least one".to_owned());
                     }
@@ -73,7 +73,8 @@ impl Args {
         Ok(Self {
             asset_zip: asset_zip.ok_or_else(|| format!("missing --asset-zip\n{}", usage()))?,
             assets_dir: assets_dir.ok_or_else(|| format!("missing --assets-dir\n{}", usage()))?,
-            fixture_dir: fixture_dir.ok_or_else(|| format!("missing --fixture-dir\n{}", usage()))?,
+            fixture_dir: fixture_dir
+                .ok_or_else(|| format!("missing --fixture-dir\n{}", usage()))?,
             cache_sheets,
             full_fixture,
         })
