@@ -17,7 +17,7 @@ use crate::msgs::deframer::handshake::HandshakeDeframer;
 use crate::msgs::handshake::Random;
 use crate::msgs::message::{InboundPlainMessage, Message, MessagePayload};
 #[cfg(feature = "std")]
-use crate::msgs::codec::DecodedOwner;
+use crate::msgs::codec::{DecodedOwner, DecodedOwnerArcCustody};
 use crate::record_layer::Decrypted;
 use crate::suites::ExtractedSecrets;
 use crate::vecbuf::ChunkVecBuffer;
@@ -883,6 +883,8 @@ pub(crate) struct ConnectionCore<Data> {
     pub(crate) hs_deframer: HandshakeDeframer,
     #[cfg(feature = "std")]
     decoded_owner: Option<crate::sync::Arc<DecodedOwner>>,
+    #[cfg(feature = "std")]
+    _decoded_owner_arc_custody: Option<DecodedOwnerArcCustody>,
 
     /// We limit consecutive empty fragments to avoid a route for the peer to send
     /// us significant but fruitless traffic.
@@ -898,6 +900,8 @@ impl<Data> ConnectionCore<Data> {
             hs_deframer: HandshakeDeframer::default(),
             #[cfg(feature = "std")]
             decoded_owner: None,
+            #[cfg(feature = "std")]
+            _decoded_owner_arc_custody: None,
             seen_consecutive_empty_fragments: 0,
         }
     }
@@ -909,13 +913,23 @@ impl<Data> ConnectionCore<Data> {
         common_state: CommonState,
         owner: crate::sync::Arc<dyn DeframerBufferOwner>,
     ) -> Result<Self, Error> {
-        let decoded_owner = DecodedOwner::new(owner.clone());
+        let (decoded_owner, decoded_owner_arc_custody) =
+            DecodedOwner::new(owner.clone()).map_err(Error::InvalidMessage)?;
+        let hs_deframer = match HandshakeDeframer::new_with_resource_owner(owner) {
+            Ok(value) => value,
+            Err(err) => {
+                drop(decoded_owner);
+                drop(decoded_owner_arc_custody);
+                return Err(err);
+            }
+        };
         Ok(Self {
             state: Ok(state),
             data,
             common_state,
-            hs_deframer: HandshakeDeframer::new_with_resource_owner(owner)?,
+            hs_deframer,
             decoded_owner: Some(decoded_owner),
+            _decoded_owner_arc_custody: Some(decoded_owner_arc_custody),
             seen_consecutive_empty_fragments: 0,
         })
     }

@@ -833,3 +833,31 @@ The span-owner test matrix funds a full 16-element vector with one byte less
 than the old-plus-32-element replacement overlap. Denial leaves the original
 pointer, capacity, contents, and charge unchanged and releases only after the
 original backing is dropped. Complete TLS accounting remains `NOT_PROVEN`.
+
+## Window28 decoded-owner allocation repair
+
+Review of the first decoded-owner checkpoint found two allocation-order defects.
+The connection now reserves the exact Rust 1.94 `ArcInner<DecodedOwner>` layout
+before `Arc::new`; separate connection custody is declared after the final
+decoded-owner Arc and therefore releases only after the control block is
+deallocated. Constructor failure explicitly destroys the Arc before releasing
+that prospective debit. Generic decoded lists now preserve amortized geometric
+growth for both owned and ordinary readers. The owned path reserves the full
+prospective replacement capacity before allocation, verifies actual capacity,
+keeps old and new charges live through the move, and rolls back the prospective
+debit after destroying a mismatched replacement.
+
+The remaining review finding is not closed: list backing still uses the
+connection-scoped aggregate charge and therefore lacks per-backing
+destruction-time release/transfer. Payload/message and all later #425 custody
+remain open, so complete TLS accounting is not proven.
+
+```yaml
+status: active
+decoded_owner_arc_preallocation: PROVEN_FOCUSED
+decoded_owner_geometric_list_growth: PROVEN_FOCUSED
+decoded_close_on_backing_drop: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: per-backing list custody; payload/message rollback; transcript; certificate/OCSP; successor and peer-chain transfer; compressed certificate; retained sessions; complete handshake; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: replace aggregate-only list custody with backing-bound ownership, then continue payload/message ownership
+```

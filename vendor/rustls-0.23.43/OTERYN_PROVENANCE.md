@@ -91,3 +91,13 @@ The final-graph span regression funds the live 16-element backing with one byte
 less than the prospective 32-element replacement overlap. It proves denial
 before replacement allocation or mutation: pointer, capacity, contents, and
 old charge remain unchanged until deframer drop.
+
+## Decoded-owner Arc and list-growth repair
+
+The connection reserves the exact Rust 1.94 `ArcInner<DecodedOwner>` requested
+layout before allocation and holds that debit in external custody until after
+the final Arc is destroyed. Generic decoded lists use checked geometric growth,
+reserve the prospective full capacity before allocation, retain old/new overlap,
+verify actual capacity, and destroy a mismatched replacement before rollback.
+Ordinary readers retain amortized growth. Per-list backing-bound final custody is
+still open; the aggregate decoded owner is not claimed as complete TLS proof.
