@@ -182,3 +182,14 @@ charged-payload Clone assertion while avoiding fake zero-byte lifetime ownership
 The client still rejects non-empty handshake contexts before client-auth resolution.
 A focused decode of a complete CertificateRequest proves no clone debit, no panic,
 and exact final release. Generic-list custody and complete TLS accounting remain open.
+
+## Generic decoded backing primitive
+
+The protected #425 codec surface now contains a private `DecodedVec<T>` that binds the
+actual list-capacity debit to the vector backing with backing-before-token field drop
+order. Its owner-aware decoder reserves checked geometric prospective capacity before
+allocation, holds old/new charges across replacement, validates actual capacity, and
+unwinds later-element failures after backing destruction. Plain `Vec<T>` decoding uses
+the same allocation logic but transfers the charge to the existing Message aggregate
+as a compatibility bridge; therefore the complete field migration and retained-state
+matrix remain open and `complete_tls_accounting` is not proven.

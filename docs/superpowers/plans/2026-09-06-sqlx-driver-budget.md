@@ -527,3 +527,13 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   payload semantics.
 - [ ] Continue generic list backing custody and the remaining retained
   handshake/transcript/certificate/session composition.
+
+## Window37 generic decoded backing primitive
+
+- [x] Add a private backing-bound `DecodedVec<T>` with destruction-before-release,
+  geometric preallocation, actual-capacity validation and partial-error unwind.
+- [x] Prove local list drop returns its charge before reader/connection teardown.
+- [ ] Migrate protected handshake list fields from the compatibility aggregate bridge
+  and implement explicit owner-aware deep copies/transfers.
+- [ ] Complete retained descendants, transcript/hash contexts, whole TLS composition,
+  TLS-positive and PostgreSQL 17.6 qualification.

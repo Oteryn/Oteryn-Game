@@ -1075,3 +1075,28 @@ next_action: continue generic list backing custody and every retained descendant
 ```
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open.
+
+## Window37 generic decoded backing primitive
+
+Introduced a crate-private `DecodedVec<T>` whose backing is declared before its exact
+capacity custody token, so dropping an owner-aware decoded list destroys the allocation
+before returning its debit. Its decoder preserves checked geometric preallocation,
+old/new overlap, actual-capacity verification, max-minus-one denial and partial-error
+unwind. Moves transfer the token allocation-free; infallible clone rejects charged
+values so later protected deep-copy sites must reserve explicitly. The existing plain
+`Vec<T>` codec now shares this implementation but deliberately transfers custody back
+to the enclosing Message aggregate until each private handshake field is migrated.
+
+Focused tests prove a `DecodedVec` releases before the reader/connection and that a
+later-element error returns its local capacity. This is material backing-lifetime
+implementation, but it is not complete production migration: P1 `3966866700` and
+umbrella `3954831069` remain open until all decoded list fields and retained descendants
+carry the wrapper/precise sidecar and the complete TLS matrix is executable.
+
+```yaml
+status: active
+charged_decoded_vec_primitive: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: migrate decoded handshake lists; borrowed Payload ownership; retained descendants; transcript/hash context; complete-handshake composition; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: migrate protected handshake list fields to backing-bound custody and repair explicit fallible deep-copy/retained transfers
+```
