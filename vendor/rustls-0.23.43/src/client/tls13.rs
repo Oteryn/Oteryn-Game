@@ -1117,6 +1117,18 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
             match CertificatePayloadTls13::read(&mut second_reader) {
                 Ok(cm) => cm,
                 Err(err) => {
+                    // `read` has returned, so every partial AST value and its
+                    // backing-bound guard has already been destroyed.  Return
+                    // parser-local aggregate reservations committed by an
+                    // earlier successful nested read before reporting the
+                    // fatal decode error.  Independently custodied backing is
+                    // excluded by `rollback`.
+                    #[cfg(feature = "std")]
+                    if let (Some(owner), Some(checkpoint)) =
+                        (decoded_owner.as_ref(), second_checkpoint)
+                    {
+                        owner.rollback(checkpoint);
+                    }
                     return Err(cx
                         .common
                         .send_fatal_alert(AlertDescription::BadCertificate, err));

@@ -650,13 +650,16 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Add complete compressed-certificate wire/error/cancellation overlap qualification.
 - [ ] Finish remaining legal TLS1.2 and ClientHello cells, then record exact excluded-symbol blockers.
 
-## Window51 actual-capacity family
+## Window51 exact byte-copy and pinned-capacity disposition
 
 - [x] Replace charged byte-copy `Vec::with_capacity(requested)` construction with
   source-proven exact boxed-slice backing and allocation-free `into_vec`.
 - [x] Sweep decoded payload, retained secret, certificate DER/current-peer and
   OCSP byte-copy variants.
-- [ ] Supply a reviewed safe exact-length initialization seam (or an
-  allocator-authoritative preallocation bound) for transformed outer vectors
-  and zero-filled decompression backing; do not weaken rustls's unsafe-code ban.
-- [ ] Re-run compressed wire/error/cancellation and full capacity-family proof.
+- [x] Record the corrected Rust 1.94 Global initial-allocation result:
+  `with_capacity(n)`/`vec![0;n]` store capacity `n` on the pinned path, so the
+  prior allocator-excess blocker and mandatory unsafe initialization seam are
+  withdrawn.
+- [x] Roll back failed compressed second-decode parser-local reservations only
+  after partial AST/list destruction, preserving decompression custody.
+- [ ] Re-run complete compressed wire/error/cancellation qualification.

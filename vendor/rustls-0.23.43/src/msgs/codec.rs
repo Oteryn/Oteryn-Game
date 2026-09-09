@@ -1067,7 +1067,7 @@ mod tests {
 
     use super::*;
     use crate::msgs::base::{MaybeEmpty, NonEmpty, PayloadU8, PayloadU16};
-    use crate::msgs::handshake::CertificateRequestPayloadTls13;
+    use crate::msgs::handshake::{CertificatePayloadTls13, CertificateRequestPayloadTls13};
 
     #[derive(Debug)]
     struct TestOwner { limit: usize, used: AtomicUsize }
@@ -1351,6 +1351,47 @@ mod tests {
         );
         assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
         drop(reader);
+        drop(decoded);
+        drop(arc_charge);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn malformed_compressed_second_decode_rolls_back_after_partial_list_drop() {
+        let arc_bytes = DecodedOwner::arc_layout().unwrap();
+        let owner = Arc::new(TestOwner { limit: usize::MAX, used: AtomicUsize::new(0) });
+        let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+
+        // Model the independently custodied decompression buffer.  Its debit
+        // predates the second-decode checkpoint and must survive parse
+        // rollback.  The body contains one complete certificate entry, which
+        // grows and initializes the entries list, followed by a truncated
+        // second entry that makes the top-level read fail.
+        let decompression = ProspectiveDecodedCustody::reserve(decoded.clone(), 12)
+            .unwrap()
+            .commit();
+        let before_second_decode = owner.used.load(Ordering::SeqCst);
+        let checkpoint = decoded.checkpoint();
+        let malformed = [
+            0, // empty certificate_request_context
+            0, 0, 7, // certificate_list length
+            0, 0, 1, 0xaa, // first certificate
+            0, 0, // first certificate extensions
+            0, // truncated second certificate length
+        ];
+        let result = {
+            let mut reader = Reader::init_with_owner(&malformed, decoded.clone());
+            CertificatePayloadTls13::read(&mut reader)
+        };
+        assert!(result.is_err());
+
+        // This mirrors the compressed-certificate call-site ordering: the
+        // failed read and all partial list/AST guards are gone before rollback.
+        decoded.rollback(checkpoint);
+        assert_eq!(owner.used.load(Ordering::SeqCst), before_second_decode);
+
+        drop(decompression);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
         drop(decoded);
         drop(arc_charge);
         assert_eq!(owner.used.load(Ordering::SeqCst), 0);
