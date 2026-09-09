@@ -221,6 +221,96 @@ def _decoded_indented_mapping_keys(workflow: str) -> tuple[str, ...]:
     return tuple(keys)
 
 
+def _mapping_entry_from_indented_line(line: str) -> tuple[str, str] | None:
+    """Decode a simple indented YAML mapping entry, including a step-list prefix."""
+    if not line or line[0] not in " \t":
+        return None
+    text = line.lstrip(" \t")
+    if not text or text.startswith("#"):
+        return None
+    if text.startswith("- "):
+        text = text[2:].lstrip()
+    elif text.startswith("-"):
+        return None
+    if not text or text.startswith(("#", "?")):
+        return None
+
+    if text.startswith(("'", '"')):
+        end = _quoted_scalar_end(text)
+        if end is None:
+            return None
+        raw_key = text[: end + 1]
+        remainder = text[end + 1 :].lstrip()
+        if not remainder.startswith(":"):
+            return None
+        raw_value = remainder[1:].strip()
+    else:
+        colon = text.find(":")
+        if colon <= 0:
+            return None
+        raw_key = text[:colon].rstrip()
+        raw_value = text[colon + 1 :].strip()
+
+    try:
+        key = _decode_yaml_scalar(raw_key)
+    except (AssertionError, json.JSONDecodeError):
+        return None
+    return key, raw_value
+
+
+def _strip_yaml_inline_comment(raw: str) -> str:
+    """Strip a YAML inline comment without treating hashes inside quotes as comments."""
+    quote: str | None = None
+    index = 0
+    while index < len(raw):
+        char = raw[index]
+        if quote == "'":
+            if char == "'":
+                if index + 1 < len(raw) and raw[index + 1] == "'":
+                    index += 2
+                    continue
+                quote = None
+            index += 1
+            continue
+        if quote == '"':
+            if char == "\\":
+                index += 2
+                continue
+            if char == '"':
+                quote = None
+            index += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+            index += 1
+            continue
+        if char == "#" and (index == 0 or raw[index - 1].isspace()):
+            return raw[:index].rstrip()
+        index += 1
+    return raw.rstrip()
+
+
+def _decoded_mapping_values(workflow: str, wanted_key: str) -> tuple[str, ...]:
+    values: list[str] = []
+    for line in workflow.splitlines():
+        simple_key = _mapping_key_from_indented_line(line)
+        entry = _mapping_entry_from_indented_line(line)
+        if simple_key == wanted_key and entry is None:
+            raise AssertionError(f"unsupported YAML mapping syntax for {wanted_key!r}")
+        if entry is not None and entry[0] == wanted_key:
+            values.append(_strip_yaml_inline_comment(entry[1]))
+    return tuple(values)
+
+
+def _decode_mapping_scalar(raw: str) -> str:
+    raw = _strip_yaml_inline_comment(raw).strip()
+    assert raw, "empty YAML mapping value"
+    if raw.startswith(("'", '"')):
+        return _decode_yaml_scalar(raw)
+    assert not any(char.isspace() for char in raw), f"unsupported YAML mapping value: {raw!r}"
+    return raw
+
+
 def _step_block(workflow: str, name: str) -> str:
     match = re.search(
         rf"(?ms)^      - name: {re.escape(name)}\n(?P<body>.*?)(?=^      - name:|\Z)",
@@ -242,14 +332,31 @@ def _python_heredoc(workflow: str, step_name: str) -> str:
 
 def _assert_executable_assertions(code: str, expected: tuple[str, ...]) -> None:
     tree = ast.parse(code)
+    forbidden_control_flow = (
+        ast.If,
+        ast.For,
+        ast.AsyncFor,
+        ast.While,
+        ast.Try,
+        ast.With,
+        ast.AsyncWith,
+        ast.Match,
+        ast.FunctionDef,
+        ast.AsyncFunctionDef,
+        ast.ClassDef,
+        ast.Raise,
+    )
+    assert not any(isinstance(node, forbidden_control_flow) for node in tree.body), (
+        "oracle heredoc must remain straight-line top-level code"
+    )
     actual = {
-        ast.dump(node.test, include_attributes=False)
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Assert)
+        ast.dump(statement.test, include_attributes=False)
+        for statement in tree.body
+        if isinstance(statement, ast.Assert)
     }
     for expression in expected:
         wanted = ast.dump(ast.parse(expression, mode="eval").body, include_attributes=False)
-        assert wanted in actual, f"missing executable assertion: {expression}"
+        assert wanted in actual, f"missing executable top-level assertion: {expression}"
 
 
 def _assert_active_run_command(workflow: str, command: str) -> None:
@@ -269,12 +376,33 @@ def _assert_read_only_permissions(workflow: str) -> None:
     assert "write-all" not in workflow
 
 
+def _normalize_static_condition(raw: str) -> str:
+    raw = _strip_yaml_inline_comment(raw).strip()
+    assert raw, "empty if condition"
+    if raw.startswith(("'", '"')):
+        raw = _decode_yaml_scalar(raw).strip()
+    if raw.startswith("${{") and raw.endswith("}}"):
+        raw = raw[3:-2].strip()
+    normalized = re.sub(r"\s+", "", raw).lower()
+    while len(normalized) >= 2 and normalized.startswith("(") and normalized.endswith(")"):
+        normalized = normalized[1:-1]
+    return normalized
+
+
 def _assert_pinned_actions_and_no_bypass(workflow: str) -> None:
-    actions = re.findall(r"(?m)^\s+uses: ([^\s#]+)", workflow)
+    actions = tuple(_decode_mapping_scalar(raw) for raw in _decoded_mapping_values(workflow, "uses"))
     assert actions
-    assert all(re.search(r"@[0-9a-f]{40}$", action) for action in actions)
+    assert all(re.fullmatch(r"[^@\s#]+@[0-9a-f]{40}", action) for action in actions), (
+        "every uses action must be pinned to a 40-character commit SHA"
+    )
+    keys = _decoded_indented_mapping_keys(workflow)
+    assert "continue-on-error" not in keys
     assert "continue-on-error" not in workflow
-    assert "if: false" not in workflow
+    static_false = {"false", "no", "off", "0", "-0", "null", "~", "!true"}
+    for raw_condition in _decoded_mapping_values(workflow, "if"):
+        assert _normalize_static_condition(raw_condition) not in static_false, (
+            f"statically false workflow condition is forbidden: {raw_condition!r}"
+        )
 
 
 def _assert_contract(semantic: str, static: str) -> None:
@@ -375,6 +503,31 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         self.assertIn("permissions", _decoded_indented_mapping_keys(escaped_permissions))
         self.assertIn("permissions", _decoded_indented_mapping_keys("jobs:\n  build:\n    'permissions':\n      contents: write\n"))
 
+        quoted_uses = (
+            "jobs:\n"
+            "  verify:\n"
+            "    steps:\n"
+            "      - name: checkout\n"
+            "        'uses': actions/checkout@main\n"
+        )
+        self.assertEqual(_decoded_mapping_values(quoted_uses, "uses"), ("actions/checkout@main",))
+        with self.assertRaises(AssertionError):
+            _assert_pinned_actions_and_no_bypass(quoted_uses)
+
+        false_condition = (
+            "jobs:\n"
+            "  verify:\n"
+            "    steps:\n"
+            "      - name: disabled\n"
+            "        if: ${{ false }}\n"
+            "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n"
+        )
+        with self.assertRaises(AssertionError):
+            _assert_pinned_actions_and_no_bypass(false_condition)
+
+        with self.assertRaises(AssertionError):
+            _assert_executable_assertions("if False:\n    assert value == 1\n", ("value == 1",))
+
     def test_exact_oracles_and_workflow_safety_remain(self) -> None:
         _assert_contract(self.semantic, self.static)
 
@@ -433,6 +586,32 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                     "          # assert data['semantic_digest']=='sha256:81505e91d7089f91e71813ec43f97118932db9cc7fd76d291fa399447ee2dfa4'\n",
                     1,
                 ),
+            ),
+            (
+                self.semantic.replace(
+                    "          assert sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}, sam[0]\n",
+                    "          if False:\n"
+                    "              assert sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}, sam[0]\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n",
+                    "        'uses': actions/checkout@main\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "        if: ${{ false }}\n"
+                    "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    1,
+                ),
+                self.static,
             ),
         ))
 
