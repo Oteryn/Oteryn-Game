@@ -1,0 +1,57 @@
+name: Graphics engine bake-off compile
+
+on:
+  push:
+    branches:
+      - agent/graphics-engine-bakeoff-465
+    paths:
+      - experiments/graphics-engine-bakeoff/**
+      - .github/workflows/graphics-engine-bakeoff.yml
+
+permissions:
+  contents: read
+
+jobs:
+  windows-compile:
+    name: Graphics bake-off / Windows compile
+    runs-on: windows-2025
+    timeout-minutes: 60
+    steps:
+      - name: Check out exact revision
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact revision
+        shell: pwsh
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: |
+          if ((git rev-parse HEAD).Trim() -ne "$env:EXPECTED_SHA") {
+            throw "checked-out revision does not match expected exact SHA"
+          }
+
+      - name: Install isolated Rust toolchain
+        shell: pwsh
+        run: rustup toolchain install 1.95.0 --profile minimal --component clippy,rustfmt
+
+      - name: Resolve isolated metadata
+        shell: pwsh
+        run: cargo +1.95.0 metadata --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --format-version 1 | Out-Null
+
+      - name: Verify formatting
+        shell: pwsh
+        run: cargo +1.95.0 fmt --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --all --check
+
+      - name: Test shared deterministic workload
+        shell: pwsh
+        run: cargo +1.95.0 test --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml -p oteryn-graphics-bakeoff-shared
+
+      - name: Build both renderer candidates
+        shell: pwsh
+        run: cargo +1.95.0 build --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --workspace --release
+
+      - name: Strict Clippy
+        shell: pwsh
+        run: cargo +1.95.0 clippy --manifest-path experiments/graphics-engine-bakeoff/Cargo.toml --workspace --all-targets -- -D warnings
