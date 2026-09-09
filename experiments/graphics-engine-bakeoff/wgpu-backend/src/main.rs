@@ -151,6 +151,7 @@ struct Renderer {
     static_instance_bytes: usize,
     instance_count: u32,
     frame_number: u64,
+    last_tick: Instant,
     samples: BenchSamples,
     startup: Duration,
 }
@@ -162,6 +163,7 @@ impl Renderer {
         snapshot: &RenderSnapshot,
         startup_before_gpu: Duration,
     ) -> Result<Self, String> {
+        let gpu_init_start = Instant::now();
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
             backends: wgpu::Backends::DX12,
             ..wgpu::InstanceDescriptor::new_without_display_handle()
@@ -294,7 +296,7 @@ impl Renderer {
         });
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("oteryn-bakeoff-pipeline-layout"),
-            bind_group_layouts: &[&bind_group_layout],
+            bind_group_layouts: &[Some(&bind_group_layout)],
             immediate_size: 0,
         });
         let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -324,8 +326,9 @@ impl Renderer {
         });
 
         let total_instances = snapshot.static_quads.len() + snapshot.animated_quads.len();
-        let instance_count = u32::try_from(total_instances)
-            .map_err(|_| "instance count exceeds u32".to_owned())?;
+        let instance_count =
+            u32::try_from(total_instances).map_err(|_| "instance count exceeds u32".to_owned())?;
+        let startup = startup_before_gpu + gpu_init_start.elapsed();
         Ok(Self {
             surface,
             adapter,
@@ -338,8 +341,9 @@ impl Renderer {
             static_instance_bytes: snapshot.static_quads.len() * INSTANCE_BYTES,
             instance_count,
             frame_number: 0,
+            last_tick: Instant::now(),
             samples: BenchSamples::default(),
-            startup: startup_before_gpu.elapsed() + startup_before_gpu,
+            startup,
         })
     }
 
@@ -358,6 +362,8 @@ impl Renderer {
         snapshot: &RenderSnapshot,
     ) -> Result<RenderOutcome, String> {
         let frame_start = Instant::now();
+        let frame_interval = frame_start.duration_since(self.last_tick);
+        self.last_tick = frame_start;
         let prep_start = Instant::now();
         let animated_bytes = encode_animated_instances(snapshot, config, self.frame_number);
         let prep = prep_start.elapsed();
@@ -411,9 +417,8 @@ impl Renderer {
         let _submission = self.queue.submit([encoder.finish()]);
         self.queue.present(frame);
 
-        let elapsed = frame_start.elapsed();
         if self.frame_number >= config.warmup_frames {
-            self.samples.record(elapsed, prep);
+            self.samples.record(frame_interval, prep);
         }
         self.frame_number += 1;
         if self.samples.len() >= config.sample_frames as usize {
