@@ -2274,9 +2274,9 @@ fn validate_parsed_semantics(
                 3,
             )?;
             let cell_count = count_kind(RECORD_CELL);
-            if cell_count == 0 {
+            if cell_count < 3 {
                 return Err(ContentError::InvalidArtifact(
-                    "first-production server projection has no cells",
+                    "first-production cells must contain at least 3 entries",
                 ));
             }
             FirstProductionLimits::v1().check(
@@ -3049,6 +3049,28 @@ mod tests {
                 ProductionProjection::ServerAuthoritative
             ),
             Err(ContentError::PairMismatch(_))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn staging_rejects_self_consistent_artifact_below_cell_minimum() -> Result<(), ContentError> {
+        let source = test_source(2)?;
+        let server_metadata = ProductionArtifactMetadata::from_source(
+            &source,
+            ProductionProjection::ServerAuthoritative,
+        )?;
+        let client_metadata =
+            ProductionArtifactMetadata::from_source(&source, ProductionProjection::ClientSafe)?;
+        let server = encode_artifact(&server_metadata, &server_records(&source)?)?;
+        let client = encode_artifact(&client_metadata, &client_records(&source))?;
+        let expected = FirstProductionExpectation::from_source(&source)?;
+
+        assert!(matches!(
+            StagedGeneration::stage(&server.bytes, &client.bytes, &expected),
+            Err(ContentError::InvalidArtifact(
+                "first-production cells must contain at least 3 entries"
+            ))
         ));
         Ok(())
     }
