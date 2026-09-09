@@ -11,6 +11,10 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+# Keep both wgpu generations on the same Windows backend and prefer the discrete GPU.
+$env:WGPU_BACKEND = "dx12"
+$env:WGPU_POWER_PREF = "high"
+
 $Root = $PSScriptRoot
 $Manifest = Join-Path $Root "Cargo.toml"
 $Results = Join-Path $Root "results"
@@ -46,7 +50,6 @@ function Get-MachineEvidence {
         [ordered]@{
             name = $_.Name
             driver_version = $_.DriverVersion
-            adapter_ram_bytes = $_.AdapterRAM
         }
     })
     $power = (& powercfg /GETACTIVESCHEME 2>&1 | Out-String).Trim()
@@ -59,6 +62,8 @@ function Get-MachineEvidence {
         logical_processors = $cpu.NumberOfLogicalProcessors
         gpu = $gpus
         power_scheme = $power
+        wgpu_backend = $env:WGPU_BACKEND
+        wgpu_power_preference = $env:WGPU_POWER_PREF
     }
 }
 
@@ -100,14 +105,17 @@ function Invoke-BenchmarkCell {
         throw "$Backend/$Scenario/$SpritePx repetition $Repetition failed with exit $($process.ExitCode): $errorText"
     }
 
-    $jsonLine = Get-Content $stdout | Where-Object { $_ -match '^\{.*\}$' } | Select-Object -Last 1
+    $stdoutLines = @(Get-Content $stdout)
+    $jsonLine = $stdoutLines | Where-Object { $_ -match '^\{.*\}$' } | Select-Object -Last 1
     if (-not $jsonLine) {
         throw "$Backend/$Scenario/$SpritePx repetition $Repetition produced no result JSON"
     }
 
+    $adapterLog = $stdoutLines | Where-Object { $_ -match 'AdapterInfo.*name:' } | Select-Object -Last 1
     $record = $jsonLine | ConvertFrom-Json
     $record | Add-Member -NotePropertyName repetition -NotePropertyValue $Repetition
     $record | Add-Member -NotePropertyName peak_working_set_bytes -NotePropertyValue $peakWorkingSet
+    $record | Add-Member -NotePropertyName adapter_log -NotePropertyValue $adapterLog
     $record | Add-Member -NotePropertyName hardware -NotePropertyValue $Machine
     $record | Add-Member -NotePropertyName captured_at_utc -NotePropertyValue ((Get-Date).ToUniversalTime().ToString("o"))
     ($record | ConvertTo-Json -Depth 8 -Compress) | Add-Content -Encoding utf8 $RawPath
@@ -116,6 +124,13 @@ function Invoke-BenchmarkCell {
 }
 
 $Machine = Get-MachineEvidence
+$GitHead = (& git -C $Root rev-parse HEAD | Out-String).Trim()
+$LockPath = Join-Path $Root "Cargo.lock"
+$LockSha256 = if (Test-Path $LockPath) {
+    (Get-FileHash -Algorithm SHA256 $LockPath).Hash.ToLowerInvariant()
+} else {
+    $null
+}
 
 $WgpuTarget = Join-Path $Root "target-physical-wgpu"
 $BevyTarget = Join-Path $Root "target-physical-bevy"
@@ -130,6 +145,8 @@ if (-not (Test-Path $WgpuExe) -or -not (Test-Path $BevyExe)) {
 
 $buildEvidence = [ordered]@{
     captured_at_utc = (Get-Date).ToUniversalTime().ToString("o")
+    git_head = $GitHead
+    cargo_lock_sha256 = $LockSha256
     hardware = $Machine
     rust = (& rustc +1.95.0 --version | Out-String).Trim()
     wgpu_clean_build_seconds = $WgpuBuildSeconds
