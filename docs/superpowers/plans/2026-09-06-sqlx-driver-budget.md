@@ -361,3 +361,11 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Prove the direct feature edge and explicitly assert the ordinary and owner-aware four-group PQ-first sequence.
 - [x] Re-run allocation-free validation and the executable racing-first-use accounting proof on the final feature graph.
 - [ ] Complete actual HRR, thread-churn, cancellation, complete TLS composition, funded TLS-positive, and PostgreSQL 17.6 qualification before any aggregate WP3 acceptance claim.
+
+## Window24 continuation
+
+- [x] Normally merge protected `main@e1750ede386c0ee1001894ab9d91129de5d03fce`.
+- [x] Prove retained 1,360-byte per-thread residency, repeat-use idempotence, and same-root churn exhaustion before AWS-LC use.
+- [ ] Prove actual wire HRR initial/replacement overlap and cancellation/error/drop ordering.
+- [ ] Complete decoded/config/session/cache/send/transcript/error TLS custody.
+- [ ] Execute funded AWS-LC TLS-positive and configured PostgreSQL 17.6 positive/hostile qualification.

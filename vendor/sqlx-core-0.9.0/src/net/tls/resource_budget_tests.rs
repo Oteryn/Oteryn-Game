@@ -4,7 +4,7 @@ use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 struct Ledger {
-    limit: usize,
+    limit: AtomicUsize,
     used: AtomicUsize,
     provider_shared_debits: Mutex<Vec<usize>>,
 }
@@ -12,7 +12,8 @@ impl ResourceBudget for Ledger {
     fn try_reserve(&self, bytes: usize) -> Result<(), BudgetError> {
         self.used
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |used| {
-                used.checked_add(bytes).filter(|next| *next <= self.limit)
+                used.checked_add(bytes)
+                    .filter(|next| *next <= self.limit.load(Ordering::Acquire))
             })
             .map(|_| ())
             .map_err(|_| BudgetError::Unavailable)
@@ -29,7 +30,7 @@ impl ResourceBudget for Ledger {
 }
 fn ledger(limit: usize) -> Arc<Ledger> {
     Arc::new(Ledger {
-        limit,
+        limit: AtomicUsize::new(limit),
         used: AtomicUsize::new(0),
         provider_shared_debits: Mutex::new(Vec::new()),
     })
@@ -147,6 +148,43 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
         "one process, five thread, one config debit"
     );
     drop(debits);
+
+    // Thread registrations are retained by the provider slice even after the
+    // registering threads exit.  Fund exactly three more registrations, prove
+    // repeat use on each thread is free, then prove the next thread is denied
+    // before it can enter AWS-LC provider construction.
+    let used_before_churn = process.used.load(Ordering::Acquire);
+    process
+        .limit
+        .store(used_before_churn + 3 * 1_360, Ordering::Release);
+    for _ in 0..3 {
+        let owner = Arc::new(DeframerBudgetOwner(process.clone()));
+        let thread_ledger = process.clone();
+        std::thread::spawn(move || {
+            rustls::crypto::ensure_aws_lc_provider_residency(owner.clone()).unwrap();
+            let after_first = thread_ledger.used.load(Ordering::Acquire);
+            rustls::crypto::ensure_aws_lc_provider_residency(owner.clone()).unwrap();
+            assert_eq!(
+                thread_ledger.used.load(Ordering::Acquire),
+                after_first,
+                "repeat use duplicated thread debit"
+            );
+        })
+        .join()
+        .unwrap();
+    }
+    assert_eq!(
+        process.used.load(Ordering::Acquire),
+        used_before_churn + 3 * 1_360
+    );
+    let denied_owner = Arc::new(DeframerBudgetOwner(process.clone()));
+    assert!(std::thread::spawn(move || {
+        rustls::crypto::ensure_aws_lc_provider_residency(denied_owner)
+    })
+    .join()
+    .unwrap()
+    .is_err());
+    process.limit.store(1_000_000, Ordering::Release);
 
     let groups: [(&dyn SupportedKxGroup, usize); 5] = [
         (rustls::crypto::aws_lc_rs::kx_group::X25519, 554),

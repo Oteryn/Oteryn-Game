@@ -971,3 +971,14 @@ rustls source change is part of this feature closure.
 Aggregate KX/provider residency and complete WP3 remain open pending the full
 actual-HRR, thread-churn, cancellation/drop, TLS custody, TLS-positive, and
 PostgreSQL 17.6 matrices on the final graph.
+
+### Window24 retained thread-residency qualification
+
+After the normal protected-main merge, the executable exact-graph AWS-LC proof
+now exercises thread churn on the same root.  Three new threads each acquire
+one 1,360-byte provider residency debit, repeated use on each thread adds no
+second debit, and the next thread is rejected when the retained registrations
+exhaust the root.  The denial occurs in `ensure_aws_lc_provider_residency`
+before provider/KX use.  These shared debits remain intentionally unreleased.
+This closes the focused thread-churn cell only; actual wire HRR, cancellation,
+and complete TLS custody remain open.

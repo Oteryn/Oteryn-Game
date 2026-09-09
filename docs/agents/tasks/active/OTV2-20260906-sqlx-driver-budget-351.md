@@ -695,3 +695,22 @@ complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: actual HRR; thread churn; cancellation/error/drop; decoded/config/session/cache/send/transcript custody; TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
 next_action: finish the full #451 final-graph matrix, then continue every already-protected TLS and PostgreSQL custody cell
 ```
+
+## Window24 retained provider-thread churn
+
+Protected `main@e1750ede386c0ee1001894ab9d91129de5d03fce` was merged normally.
+The exact AWS-LC SQLx harness now funds three additional new-thread 1,360-byte
+registrations on the same root, proves repeated use on each thread is
+allocation/debit-free, retains every registration after thread exit, and
+rejects the next thread at the residency preflight before AWS-LC use.
+
+```yaml
+status: active
+provider_thread_churn: PROVEN_FOCUSED
+provider_thread_repeat: PROVEN_FOCUSED
+provider_thread_exhaustion_pre_use_denial: PROVEN_FOCUSED
+aws_lc_kx_provider_resident: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: actual wire HRR; cancellation/error/drop matrix; decoded/config/session/cache/send/transcript/error custody; funded TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: execute actual HRR and cancellation lifecycle proof, then continue the protected complete-TLS matrix
+```
