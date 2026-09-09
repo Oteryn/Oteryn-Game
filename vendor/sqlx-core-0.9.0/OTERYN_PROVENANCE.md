@@ -1015,3 +1015,18 @@ after replacement selection exercise destruction-time release of the initial
 and replacement reservations.  This replaces the earlier synthetic direct
 two-group overlap as the focused HRR evidence; complete TLS accounting and the
 remaining key-schedule/cancellation matrix are still open.
+
+## Window26 returned-secret key-schedule custody
+
+The executable real-wire HRR test now observes the actual TLS 1.3 consumer
+ordering without changing `tls13/key_schedule.rs`: the full replacement KX
+reservation transfers with `ResourceOwnedSecret`, remains held while
+`KeySchedulePreHandshake::into_handshake(secret)` consumes the shared secret,
+and is released only after that synchronous call returns.  The observation is
+evidence-only and cannot release custody.  Together with the retained final-
+graph first-use, thread-churn, max-minus-one, completion-error, real-HRR overlap,
+and connection-drop controls, `aws_lc_kx_provider_resident = PROVEN`.
+
+Complete decoded/configuration/session/cache/send/transcript/error accounting,
+TLS-positive SQLx execution, and PostgreSQL 17.6 qualification remain open;
+`complete_tls_accounting = NOT_PROVEN`.

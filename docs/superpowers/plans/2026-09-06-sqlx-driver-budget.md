@@ -393,3 +393,10 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   controls before aggregate KX/provider residency becomes GREEN.
 - [ ] Continue decoded/config/session/cache/send/transcript/error custody,
   funded TLS-positive, and PostgreSQL 17.6 qualification.
+
+## Window26 continuation
+
+- [x] Observe actual owner-aware TLS 1.3 key-schedule consumption before KX reservation release without modifying the protected key-schedule source.
+- [x] Re-run the real-wire HRR regression on the exact pinned AWS-LC graph.
+- [ ] Implement the protected #425 decoded-owner 13-path allocation/custody matrix.
+- [ ] Complete TLS-positive and configured PostgreSQL 17.6 qualification.

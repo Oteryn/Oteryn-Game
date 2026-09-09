@@ -32,6 +32,13 @@ pub trait DeframerBufferOwner: fmt::Debug + Send + Sync {
     fn try_reserve_provider_shared(&self, _bytes: usize) -> Result<(), DeframerBufferError> {
         Err(DeframerBufferError)
     }
+
+    /// Observe completed synchronous consumption of an owned KX secret.
+    ///
+    /// This evidence hook must not release custody. Rustls drops the reservation
+    /// only after the consuming key-schedule call has returned.
+    #[doc(hidden)]
+    fn kx_secret_consumed(&self) {}
 }
 
 /// Bounded failure from a deframer allocation owner.

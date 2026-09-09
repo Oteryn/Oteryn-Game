@@ -762,3 +762,23 @@ complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: actual TLS key-schedule custody assertion; complete decoded/config/session/cache/send/transcript/error accounting; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
 next_action: prove the remaining returned-secret key-schedule and cancellation/error controls, then continue complete TLS custody on the protected paths
 ```
+
+## Window26 actual key-schedule custody
+
+The final-graph wire-HRR harness now observes the production owner-aware TLS
+1.3 consumer boundary. `ResourceOwnedSecret` transfers the live replacement
+KX reservation into `CompletedSecret`; `KeySchedulePreHandshake::into_handshake`
+consumes the `SharedSecret`; an owner evidence callback runs only after that
+synchronous call returns; and only then is the reservation dropped. The test
+requires that observation to precede the 1,625-byte replacement release. The
+previous max-minus-one, completion-error, connection-drop, real-HRR overlap,
+provider first-use, and retained thread-churn controls remain green.
+
+```yaml
+status: active
+returned_secret_key_schedule_custody: PROVEN
+aws_lc_kx_provider_resident: PROVEN
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: protected decoded-owner 13-path matrix; complete configuration/session/cache/send/transcript/error custody; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: implement and qualify the protected #425 decoded-owner matrix, then continue complete TLS composition
+```

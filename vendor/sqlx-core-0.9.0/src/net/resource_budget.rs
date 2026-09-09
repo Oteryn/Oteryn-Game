@@ -55,6 +55,10 @@ pub trait ResourceBudget: Send + Sync {
     fn try_reserve_provider_shared(&self, _bytes: usize) -> Result<(), BudgetError> {
         Err(BudgetError::Unavailable)
     }
+
+    /// Evidence hook invoked after synchronous KX-secret consumption.
+    #[doc(hidden)]
+    fn kx_secret_consumed(&self) {}
 }
 
 /// Exclusive custody of charged bytes in the supplied owner ledger.

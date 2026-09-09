@@ -184,6 +184,10 @@ pub(super) fn handle_server_hello(
     let CompletedSecret { secret } = completed_secret;
     let mut key_schedule = key_schedule_pre_handshake.into_handshake(secret);
     #[cfg(feature = "std")]
+    if let Some(reservation) = reservation.as_ref() {
+        reservation.secret_consumed();
+    }
+    #[cfg(feature = "std")]
     drop(reservation);
 
     // If we have ECH state, check that the server accepted our offer.
