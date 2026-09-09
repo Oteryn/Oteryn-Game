@@ -913,15 +913,22 @@ impl<Data> ConnectionCore<Data> {
         common_state: CommonState,
         owner: crate::sync::Arc<dyn DeframerBufferOwner>,
     ) -> Result<Self, Error> {
-        let (decoded_owner, decoded_owner_arc_custody) = DecodedOwner::new(owner.clone())?;
+        let (decoded_owner, decoded_owner_arc_custody) =
+            DecodedOwner::new(owner.clone()).map_err(Error::InvalidMessage)?;
+        let hs_deframer = match HandshakeDeframer::new_with_resource_owner(owner) {
+            Ok(value) => value,
+            Err(err) => {
+                drop(decoded_owner);
+                drop(decoded_owner_arc_custody);
+                return Err(err);
+            }
+        };
         Ok(Self {
             state: Ok(state),
             data,
             common_state,
-            hs_deframer: HandshakeDeframer::new_with_resource_owner(owner)?,
+            hs_deframer,
             decoded_owner: Some(decoded_owner),
-            // Declared after `decoded_owner`, so field drop order destroys the
-            // last Arc/control block before releasing its allocation charge.
             _decoded_owner_arc_custody: Some(decoded_owner_arc_custody),
             seen_consecutive_empty_fragments: 0,
         })

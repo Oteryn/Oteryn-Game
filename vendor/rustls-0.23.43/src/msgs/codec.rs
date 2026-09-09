@@ -1,8 +1,8 @@
 use alloc::vec::Vec;
 use core::fmt::Debug;
+use core::marker::PhantomData;
 #[cfg(feature = "std")]
 use core::alloc::Layout;
-use core::marker::PhantomData;
 #[cfg(feature = "std")]
 use core::mem::size_of;
 #[cfg(feature = "std")]
@@ -26,37 +26,25 @@ pub(crate) struct DecodedOwner {
     charged: AtomicUsize,
 }
 
-/// Custody for the allocation containing an `Arc<DecodedOwner>`.
-///
-/// This is deliberately external to `DecodedOwner`: dropping the value stored
-/// in an Arc happens before Arc deallocates its control block.
-#[cfg(feature = "std")]
-#[derive(Debug)]
-pub(crate) struct DecodedOwnerArcCustody {
-    owner: Arc<dyn DeframerBufferOwner>,
-    bytes: usize,
-}
-
-#[cfg(feature = "std")]
-impl Drop for DecodedOwnerArcCustody {
-    fn drop(&mut self) {
-        self.owner.release(self.bytes);
-    }
-}
-
 #[cfg(feature = "std")]
 impl DecodedOwner {
     pub(crate) fn new(
         owner: Arc<dyn DeframerBufferOwner>,
     ) -> Result<(Arc<Self>, DecodedOwnerArcCustody), InvalidMessage> {
-        // Rust 1.94 alloc::sync::Arc requests the padded ArcInner<T> layout.
+        // Rust 1.94's Arc allocation is ArcInner<T>: two atomic counters followed
+        // by T, with the resulting layout padded to its alignment.
         let (layout, _) = Layout::new::<[AtomicUsize; 2]>()
             .extend(Layout::new::<Self>())
             .map_err(|_| InvalidMessage::MessageTooLarge)?;
         let bytes = layout.pad_to_align().size();
-        owner.try_reserve(bytes).map_err(|_| InvalidMessage::MessageTooLarge)?;
-        let decoded = Arc::new(Self { owner: owner.clone(), charged: AtomicUsize::new(0) });
-        Ok((decoded, DecodedOwnerArcCustody { owner, bytes }))
+        owner
+            .try_reserve(bytes)
+            .map_err(|_| InvalidMessage::MessageTooLarge)?;
+        let value = Arc::new(Self {
+            owner: owner.clone(),
+            charged: AtomicUsize::new(0),
+        });
+        Ok((value, DecodedOwnerArcCustody { owner, bytes }))
     }
 
     pub(crate) fn reserve(&self, bytes: usize) -> Result<(), InvalidMessage> {
@@ -83,6 +71,24 @@ impl DecodedOwner {
         let charged = self.charged.load(Ordering::Relaxed);
         debug_assert!(charged >= checkpoint);
         self.release(charged - checkpoint);
+    }
+}
+
+/// External custody for the `ArcInner<DecodedOwner>` allocation.
+///
+/// This must be dropped after the last `Arc<DecodedOwner>`: releasing from
+/// `DecodedOwner::drop` would happen before `ArcInner` itself is deallocated.
+#[cfg(feature = "std")]
+#[derive(Debug)]
+pub(crate) struct DecodedOwnerArcCustody {
+    owner: Arc<dyn DeframerBufferOwner>,
+    bytes: usize,
+}
+
+#[cfg(feature = "std")]
+impl Drop for DecodedOwnerArcCustody {
+    fn drop(&mut self) {
+        self.owner.release(self.bytes);
     }
 }
 
@@ -203,11 +209,12 @@ impl<'a> Reader<'a> {
         owner.release(capacity * size_of::<T>());
     }
 
-
     /// Copy `bytes` into exactly-sized decoded backing, reserving before allocation.
     #[cfg(feature = "std")]
     pub(crate) fn copy_decoded(&self, bytes: &[u8]) -> Result<Vec<u8>, InvalidMessage> {
-        let Some(owner) = &self.decoded_owner else { return Ok(bytes.to_vec()); };
+        let Some(owner) = &self.decoded_owner else {
+            return Ok(bytes.to_vec());
+        };
         owner.reserve(bytes.len())?;
         let mut copied = Vec::with_capacity(bytes.len());
         copied.extend_from_slice(bytes);
@@ -369,34 +376,33 @@ impl<'a, T: Codec<'a> + TlsListElement + Debug> Codec<'a> for Vec<T> {
                 let old_capacity = ret.capacity();
                 #[cfg(feature = "std")]
                 let prospective = {
-                    // Match the pinned Vec amortized-growth shape rather than
-                    // forcing an input-controlled allocation per element.
                     let required = ret.len().checked_add(1).ok_or(InvalidMessage::MessageTooLarge)?;
-                    let prospective = ret.capacity().saturating_mul(2)
-                        .max(required)
-                        .max(4);
+                    let prospective = old_capacity
+                        .checked_mul(2)
+                        .ok_or(InvalidMessage::MessageTooLarge)?
+                        .max(required);
                     r.reserve_vec_capacity::<T>(prospective)?;
                     prospective
                 };
                 #[cfg(feature = "std")]
                 if r.decoded_owner.is_some() {
-                    ret.reserve_exact(prospective - ret.len());
+                    let mut replacement = Self::with_capacity(prospective);
+                    if replacement.capacity() != prospective {
+                        drop(replacement);
+                        r.release_vec_capacity::<T>(prospective);
+                        return Err(InvalidMessage::MessageTooLarge);
+                    }
+                    replacement.append(&mut ret);
+                    drop(ret);
+                    r.release_vec_capacity::<T>(old_capacity);
+                    ret = replacement;
                 }
-                #[cfg(not(feature = "std"))]
-                ret.reserve(1);
                 #[cfg(feature = "std")]
                 if r.decoded_owner.is_none() {
                     ret.reserve(1);
                 }
-                #[cfg(feature = "std")]
-                if r.decoded_owner.is_some() && ret.capacity() != prospective {
-                    drop(ret);
-                    r.release_vec_capacity::<T>(old_capacity);
-                    r.release_vec_capacity::<T>(prospective);
-                    return Err(InvalidMessage::MessageTooLarge);
-                }
-                #[cfg(feature = "std")]
-                r.release_vec_capacity::<T>(old_capacity);
+                #[cfg(not(feature = "std"))]
+                ret.reserve(1);
             }
             ret.push(item);
         }
@@ -553,7 +559,6 @@ impl Drop for LengthPrefixedBuffer<'_> {
 
 #[cfg(test)]
 mod tests {
-    use core::alloc::Layout;
     use core::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
     use std::prelude::v1::*;
@@ -563,12 +568,13 @@ mod tests {
     use crate::msgs::base::{MaybeEmpty, PayloadU8};
 
     #[derive(Debug)]
-    struct TestOwner { limit: usize, used: AtomicUsize }
+    struct TestOwner { limit: AtomicUsize, used: AtomicUsize }
 
     impl DeframerBufferOwner for TestOwner {
         fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
             self.used.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |used| {
-                used.checked_add(bytes).filter(|next| *next <= self.limit)
+                used.checked_add(bytes)
+                    .filter(|next| *next <= self.limit.load(Ordering::SeqCst))
             }).map(|_| ()).map_err(|_| crate::DeframerBufferError)
         }
         fn release(&self, bytes: usize) { self.used.fetch_sub(bytes, Ordering::SeqCst); }
@@ -582,75 +588,100 @@ mod tests {
     }
     impl TlsListElement for Tiny { const SIZE_LEN: ListLength = ListLength::U16; }
 
-    fn decoded_arc_bytes() -> usize {
-        Layout::new::<[AtomicUsize; 2]>()
-            .extend(Layout::new::<DecodedOwner>())
-            .unwrap().0.pad_to_align().size()
+    #[test]
+    fn decoded_owner_denies_before_arc_allocation() {
+        let owner = Arc::new(TestOwner {
+            limit: AtomicUsize::new(0),
+            used: AtomicUsize::new(0),
+        });
+        assert!(matches!(
+            DecodedOwner::new(owner.clone()),
+            Err(InvalidMessage::MessageTooLarge)
+        ));
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
     }
 
     #[test]
     fn decoded_list_reserves_before_each_exact_capacity() {
-        let owner = Arc::new(TestOwner { limit: decoded_arc_bytes() + 4, used: AtomicUsize::new(0) });
-        let (decoded, _arc_custody) = DecodedOwner::new(owner.clone()).unwrap();
+        let owner = Arc::new(TestOwner {
+            limit: AtomicUsize::new(usize::MAX),
+            used: AtomicUsize::new(0),
+        });
+        let (decoded, arc_custody) = DecodedOwner::new(owner.clone()).unwrap();
+        let arc_bytes = owner.used.load(Ordering::SeqCst);
+        owner.limit.store(arc_bytes + 6, Ordering::SeqCst);
         let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
         let values = Vec::<Tiny>::read(&mut reader).unwrap();
         assert_eq!(values.iter().map(|v| v.0).collect::<Vec<_>>(), [1, 2, 3]);
-        assert_eq!(owner.used.load(Ordering::SeqCst), decoded_arc_bytes() + values.capacity());
-        assert_eq!(values.capacity(), 4, "decoded lists retain geometric growth");
+        assert_eq!(values.capacity(), 4);
         drop(values);
-        assert_eq!(owner.used.load(Ordering::SeqCst), decoded_arc_bytes() + 4, "custody follows decode scope");
-        drop(_arc_custody);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 4, "list custody currently follows decode scope");
+        drop(reader);
         drop(decoded);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
+        drop(arc_custody);
         assert_eq!(owner.used.load(Ordering::SeqCst), 0);
     }
 
     #[test]
     fn decoded_payload_reserves_actual_capacity_before_copy() {
-        let owner = Arc::new(TestOwner { limit: decoded_arc_bytes() + 3, used: AtomicUsize::new(0) });
-        let (decoded, _arc_custody) = DecodedOwner::new(owner.clone()).unwrap();
+        let owner = Arc::new(TestOwner {
+            limit: AtomicUsize::new(usize::MAX),
+            used: AtomicUsize::new(0),
+        });
+        let (decoded, arc_custody) = DecodedOwner::new(owner.clone()).unwrap();
+        let arc_bytes = owner.used.load(Ordering::SeqCst);
+        owner.limit.store(arc_bytes + 3, Ordering::SeqCst);
         let mut reader = Reader::init_with_owner(&[3, 1, 2, 3], decoded.clone());
 
         let payload = PayloadU8::<MaybeEmpty>::read(&mut reader).unwrap();
         assert_eq!(payload.0, [1, 2, 3]);
-        assert_eq!(owner.used.load(Ordering::SeqCst), decoded_arc_bytes() + payload.0.capacity());
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + payload.0.capacity());
 
         drop(payload);
         drop(reader);
         drop(decoded);
-        drop(_arc_custody);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
+        drop(arc_custody);
         assert_eq!(owner.used.load(Ordering::SeqCst), 0);
     }
 
     #[test]
     fn decoded_payload_denies_before_copy() {
-        let owner = Arc::new(TestOwner { limit: decoded_arc_bytes() + 2, used: AtomicUsize::new(0) });
-        let (decoded, _arc_custody) = DecodedOwner::new(owner.clone()).unwrap();
+        let owner = Arc::new(TestOwner {
+            limit: AtomicUsize::new(usize::MAX),
+            used: AtomicUsize::new(0),
+        });
+        let (decoded, arc_custody) = DecodedOwner::new(owner.clone()).unwrap();
+        let arc_bytes = owner.used.load(Ordering::SeqCst);
+        owner.limit.store(arc_bytes + 2, Ordering::SeqCst);
         let mut reader = Reader::init_with_owner(&[3, 1, 2, 3], decoded.clone());
 
         assert_eq!(
             PayloadU8::<MaybeEmpty>::read(&mut reader),
             Err(InvalidMessage::MessageTooLarge)
         );
-        assert_eq!(owner.used.load(Ordering::SeqCst), decoded_arc_bytes());
-        drop(_arc_custody);
-    }
-
-    #[test]
-    fn decoded_list_max_minus_one_denies_before_growth() {
-        let owner = Arc::new(TestOwner { limit: decoded_arc_bytes() + 3, used: AtomicUsize::new(0) });
-        let (decoded, _arc_custody) = DecodedOwner::new(owner.clone()).unwrap();
-        let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
-        assert_eq!(Vec::<Tiny>::read(&mut reader), Err(InvalidMessage::MessageTooLarge));
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
+        drop(reader);
         drop(decoded);
-        drop(_arc_custody);
+        drop(arc_custody);
         assert_eq!(owner.used.load(Ordering::SeqCst), 0);
     }
 
     #[test]
-    fn decoded_owner_denies_before_arc_allocation() {
-        let bytes = decoded_arc_bytes();
-        let owner = Arc::new(TestOwner { limit: bytes - 1, used: AtomicUsize::new(0) });
-        assert!(DecodedOwner::new(owner.clone()).is_err());
+    fn decoded_list_max_minus_one_denies_before_growth() {
+        let owner = Arc::new(TestOwner {
+            limit: AtomicUsize::new(usize::MAX),
+            used: AtomicUsize::new(0),
+        });
+        let (decoded, arc_custody) = DecodedOwner::new(owner.clone()).unwrap();
+        let arc_bytes = owner.used.load(Ordering::SeqCst);
+        owner.limit.store(arc_bytes + 2, Ordering::SeqCst);
+        let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
+        assert_eq!(Vec::<Tiny>::read(&mut reader), Err(InvalidMessage::MessageTooLarge));
+        drop(reader);
+        drop(decoded);
+        drop(arc_custody);
         assert_eq!(owner.used.load(Ordering::SeqCst), 0);
     }
 

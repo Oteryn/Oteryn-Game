@@ -107,18 +107,14 @@ This is not complete decoded/TLS accounting. Borrowed payload `into_owned`,
 parsed/encoded message overlap, handshake AST, transcript, certificate/OCSP,
 successor, compressed-certificate, peer-chain and retained-session ownership
 remain open.
+old charge remain unchanged until deframer drop.
 
-## Decoded foundation P1 repair
+## Decoded-owner Arc and list-growth repair
 
-Generic decoded lists now retain the pinned allocator's amortized behavior: the
-owner-free path uses ordinary `Vec::reserve`, while the owner-aware path derives
-a checked geometric prospective capacity, debits that complete backing before
-allocation, verifies actual capacity, and retains old/new overlap until
-replacement succeeds.  Owner-aware connection construction also derives and
-precharges the exact padded Rust 1.94 `ArcInner<DecodedOwner>` layout before
-`Arc::new`; external connection custody releases that debit only after the last
-Arc control block is destroyed.
-
-Per-list backing-coupled custody remains open: aggregate connection custody is
-not claimed as proof that transient list charges release at their actual
-backing lifetime.  Consequently complete decoded/TLS accounting remains open.
+The connection reserves the exact Rust 1.94 `ArcInner<DecodedOwner>` requested
+layout before allocation and holds that debit in external custody until after
+the final Arc is destroyed. Generic decoded lists use checked geometric growth,
+reserve the prospective full capacity before allocation, retain old/new overlap,
+verify actual capacity, and destroy a mismatched replacement before rollback.
+Ordinary readers retain amortized growth. Per-list backing-bound final custody is
+still open; the aggregate decoded owner is not claimed as complete TLS proof.
