@@ -59,7 +59,8 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
 
     // This is inline caller/control state, not another provider heap object.
     // The provider allocation layouts are separately compile-time asserted in
-    // their private modules at 200 (classical), 40 (ML-KEM), and 96 (hybrid).
+    // their private modules at 200 (AWS-LC classical), 40 (ML-KEM), and 96
+    // (hybrid). The same classical source also pins ring's 208-byte layout.
     assert_eq!(core::mem::size_of::<ResourceOwnedKx>(), 40);
 
     let process = ledger(1_000_000);

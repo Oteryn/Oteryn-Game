@@ -897,15 +897,19 @@ The earliest remaining unleased allocation is unchanged:
 
 ## KX publication and protected-layout verification
 
-Fresh exact-target compilation independently verifies that the inline custody
-repair does not enlarge a provider heap allocation covered by the protected KX
-bounds.  Compile-time assertions pin the private allocation layouts at
-`KeyExchange = 200`, ML-KEM `Active = 40`, and `ActiveHybrid = 96` bytes.  The
+Canonical Linux workspace run `34323039456`, job `102373930802`, disproved the
+earlier claim that the shared classical source has one layout: the canonical
+graph compiles that source for ring with `KeyExchange = 208` and for AWS-LC
+with `KeyExchange = 200`.  ML-KEM `Active = 40` and `ActiveHybrid = 96` remain
+unchanged.  The compile-time drift assertion now pins both exact classical
+provider layouts, and the owner-aware entry point separately rejects any shape
+other than the reviewed 200-byte AWS-LC allocation before provider start.  The
 reservation remains in the caller's non-boxed `ResourceOwnedKx` control value,
 whose 40-byte layout is checked by the focused bound/lifetime test.  Thus the
 repair adds neither a second active-KX heap object nor reservation fields to any
-of the three covered provider allocations, and the protected
-554/1625/1705/6264/7881 bounds are unchanged.
+of the three covered provider allocations.  The protected
+`554/1625/1705/6264/7881` bounds continue to apply only to the exact AWS-LC
+provider layouts; no ring KX is admitted through the owner-aware path.
 
 The focused exact-bound test continues to prove max-minus-one denial before
 provider start, exact admission for all five groups, full debit retention while

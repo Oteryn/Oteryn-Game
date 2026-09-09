@@ -607,19 +607,25 @@ next_action: obtain the provider-configuration owner amendment, then finish the 
 ## Window20 KX publication/layout readback repair
 
 The canonical remote already contained the inline-custody repair when this
-publication recovery began.  Fresh exact-target compilation now independently
-locks the three provider allocation layouts used by the protected bounds:
-classical `KeyExchange = 200`, ML-KEM `Active = 40`, and hybrid
-`ActiveHybrid = 96`.  `KxReservation` remains outside those provider structs in
+publication recovery began.  Canonical Linux workspace run `34323039456`, job
+`102373930802`, then invalidated its claim that the shared classical source has
+one layout.  The canonical graph compiles a ring `KeyExchange = 208` and an
+AWS-LC `KeyExchange = 200`; ML-KEM `Active = 40` and hybrid
+`ActiveHybrid = 96` remain unchanged.  The drift assertion now locks both exact
+classical provider shapes, while the owner-aware entry point admits only the
+reviewed 200-byte AWS-LC allocation before provider start.
+`KxReservation` remains outside those provider structs in
 the caller-owned, inline `ResourceOwnedKx`; the focused test also locks that
 control value to 40 bytes and therefore detects reintroduction of a boxed owner
-wrapper without changing any protected bound.
+wrapper.  The protected `554/1625/1705/6264/7881` AWS-LC bounds therefore remain
+valid; the 208-byte ring shape is not admitted by owner-aware KX.
 
 ```yaml
 status: blocked_pending_shared_lease
 kx_wrapper_heap_p1: PROVEN_FIXED
 kx_returned_secret_lifetime_p1: PROVEN_FIXED
 kx_protected_provider_layouts: PROVEN
+kx_exact_target_full_lifetime_bounds: PROVEN_AWS_LC_554_1625_1705_6264_7881
 aws_lc_kx_provider_resident: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
 shared_lease_required: vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: same-ledger preallocation and lifetime custody for actual cipher-suite and KX-group Vec capacities

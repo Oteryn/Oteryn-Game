@@ -320,3 +320,14 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Re-run the remaining #451 concurrent provider/thread-churn, actual HRR wire,
   and cancellation matrix before restoring an aggregate KX `PROVEN` verdict.
 - [ ] Stop at the unchanged unleased provider-configuration `Vec` owner boundary.
+
+## Window20 canonical Linux layout reconciliation
+
+- [x] Preserve the private layout drift assertion and reconcile the canonical
+  graph's distinct ring (208-byte) and AWS-LC (200-byte) `KeyExchange` shapes.
+- [x] Keep owner-aware admission restricted to the reviewed AWS-LC shape and
+  retain exact/max-minus-one coverage for `554/1625/1705/6264/7881`.
+- [x] Keep aggregate KX `NOT_PROVEN`; the remaining #451 lifecycle matrix and
+  provider-configuration owner boundary are unaffected by this correction.
+- [ ] Stop at the unchanged unleased
+  `crypto/aws_lc_rs/mod.rs::{default_provider,default_kx_groups}` boundary.

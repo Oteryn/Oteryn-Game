@@ -72,6 +72,9 @@ impl SupportedKxGroup for KxGroup {
         owner: Arc<dyn DeframerBufferOwner>,
     ) -> Result<ResourceOwnedKx, Error> {
         ensure_aws_lc_provider_residency(owner.clone())?;
+        // This shared source is compiled once for aws-lc-rs and, when the ring
+        // feature is also enabled, once for ring. Only the 200-byte AWS-LC
+        // layout is covered by the owner-aware provider bounds below.
         if size_of::<KeyExchange>() != 200 {
             return Err(Error::FailedToGetRandomBytes);
         }
@@ -151,11 +154,14 @@ struct KeyExchange {
     pub_key_validator: fn(&[u8]) -> bool,
 }
 
-// The protected AWS-LC full-lifetime bounds include this provider-owned heap
-// allocation at exactly this layout.  KX reservation custody deliberately
-// lives in the caller's inline `ResourceOwnedKx`, not in this allocation.
+// This source is compiled for both ring and AWS-LC in the canonical graph.
+// Their concrete KeyExchange layouts are respectively 208 and 200 bytes. Keep
+// both exact values pinned so either provider's ABI drift fails compilation;
+// the owner-aware path above separately admits only the 200-byte AWS-LC shape.
+// KX reservation custody deliberately lives in the caller's inline
+// `ResourceOwnedKx`, not in either allocation.
 #[cfg(all(feature = "std", feature = "aws_lc_rs", target_os = "linux", target_arch = "x86_64"))]
-const _: [(); 200] = [(); size_of::<KeyExchange>()];
+const _: () = assert!(matches!(size_of::<KeyExchange>(), 200 | 208));
 
 impl ActiveKeyExchange for KeyExchange {
     /// Completes the key exchange, given the peer's public key.
