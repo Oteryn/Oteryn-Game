@@ -14,7 +14,7 @@ pr: 481
 allocation_id: CONTENT54-FIRST-PRODUCTION-v1-20260909
 allocation_comment: 5601519485
 allocation_admission_sha: 9afb7cbb538674408bc7d2eaaaaa1e8917b04640
-current_reconciled_base_sha: ece300c384aa1e53f208975f25e94635c2fcc7ce
+current_reconciled_base_sha: fce21fda538e4a9cd6e8c1c1386b6b9f6a3edc89
 registry_pr: 472
 registry_merge_sha: 9afb7cbb538674408bc7d2eaaaaa1e8917b04640
 evidence_delivery_pr: 58
@@ -24,7 +24,7 @@ repair_pr: 87
 repair_merge_sha: db95bc720529b643531c79f708086f69dd612d22
 owner: content-first-production-coordinator
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-09-09T20:35:56+02:00
+updated_at: 2026-09-09T20:39:00+02:00
 owned_paths:
   - apps/game-server/src/content/mod.rs
   - apps/game-server/src/content/model.rs
@@ -155,11 +155,11 @@ The pre-Codex self-review after F1/F2 repair was `P0=0/P1=0/P2=0`, but independe
 ## Context checkpoint
 
 ```yaml
-last_progress: post-merge independent review P1 reproduced RED and fixed locally on the same canonical #54 branch after reconciliation with protected main@ece300c
+last_progress: post-merge independent review P1 reproduced RED and fixed on the same canonical #54 branch, then reconciled path-disjoint with protected META 3.1 main@fce21fda
 status: first_production_post_merge_p1_repair_local_qualified
 branch: agent/content-first-production-54-20260909
 head_sha: null
-current_reconciled_base_sha: ece300c384aa1e53f208975f25e94635c2fcc7ce
+current_reconciled_base_sha: fce21fda538e4a9cd6e8c1c1386b6b9f6a3edc89
 pr: 481
 allocation_id: CONTENT54-FIRST-PRODUCTION-v1-20260909
 registry_merge_sha: 9afb7cbb538674408bc7d2eaaaaa1e8917b04640
