@@ -81,8 +81,9 @@ impl<'a> MessagePayload<'a> {
         payload: &'a [u8],
         owner: Arc<DecodedOwner>,
     ) -> Result<Self, InvalidMessage> {
-        let mut r = Reader::init_with_owner(payload, owner);
-        match typ {
+        let checkpoint = owner.checkpoint();
+        let mut r = Reader::init_with_owner(payload, owner.clone());
+        let decoded = match typ {
             ContentType::ApplicationData => Ok(Self::ApplicationData(Payload::Borrowed(payload))),
             ContentType::Alert => AlertMessagePayload::read(&mut r).map(MessagePayload::Alert),
             ContentType::Handshake => {
@@ -95,6 +96,15 @@ impl<'a> MessagePayload<'a> {
                 ChangeCipherSpecPayload::read(&mut r).map(MessagePayload::ChangeCipherSpec)
             }
             _ => Err(InvalidMessage::InvalidContentType),
+        };
+        match decoded {
+            Ok(decoded) => Ok(decoded),
+            Err(error) => {
+                // The failed parser has already destroyed every partially built
+                // value before the corresponding debit is returned.
+                owner.rollback(checkpoint);
+                Err(error)
+            }
         }
     }
 
