@@ -130,18 +130,19 @@ This amendment grants no authority for:
 
 All existing grants #425/#427/#429/#430/#432/#451/#453/#458/#466 remain unchanged and authoritative within their exact scopes.
 
-## Activation gates
+## Integration and activation gates
 
-This allocation remains `NOT_ACTIVE_CONDITIONAL` until all of the following are true:
+This is a material HIGH-risk control-plane allocation. Under the adopted organization AI-review policy, a candidate-controlled mechanism cannot be the sole authority for integrating its own control-plane authority change. Therefore this allocation remains `NOT_ACTIVE_CONDITIONAL` until all of the following are true:
 
-1. this exact allocation candidate receives genuinely independent exact-head HIGH-risk review with no unresolved actionable finding;
-2. exact-head canonical repository checks are terminal GREEN;
-3. it integrates only through the governed normal FULL Merge Queue;
-4. protected-main readback proves this exact allocation is present;
-5. Work freshly re-reads the canonical #356 branch, then-current protected main and all overlapping rustls custody;
-6. no replacement/competing rustls material worker exists;
-7. the recovered SAME #351/#356 worker provides exact source/build evidence that #427 caller-only implementation is insufficient;
-8. Work explicitly activates this amendment for that SAME worker.
+1. this exact allocation candidate receives genuinely independent exact-head HIGH-risk/deep review with no unresolved actionable finding;
+2. exact-head deterministic/canonical repository checks are terminal GREEN;
+3. a human owner explicitly authorizes repository integration of the then-current exact #493 candidate; a general instruction to continue useful work MUST NOT be reinterpreted as specific merge approval;
+4. it integrates only through the governed normal FULL Merge Queue; no direct merge, generic auto-merge, bypass, protection change or no-op retrigger substitute;
+5. protected-main readback proves this exact allocation is present;
+6. Work freshly re-reads the canonical #356 branch, then-current protected main and all overlapping rustls custody;
+7. no replacement/competing rustls material worker exists;
+8. the recovered SAME #351/#356 worker provides exact source/build evidence that #427 caller-only implementation is insufficient;
+9. Work explicitly activates this amendment for that SAME worker.
 
 No activation is implied merely by merging this document.
 
@@ -149,9 +150,10 @@ No activation is implied merely by merging this document.
 
 ```text
 conditional allocation-only amendment
--> independent exact-head HIGH-risk review
--> exact-head canonical CI
--> normal FULL Merge Queue
+-> deterministic exact-head validation
+-> one independent exact-head HIGH-risk/deep review
+-> explicit human-owner authorization for the exact candidate
+-> governed normal FULL Merge Queue
 -> protected-main readback
 -> WAIT for recovered SAME #351/#356 worker
 -> prove caller-only #427 insufficient on then-current exact source/build
