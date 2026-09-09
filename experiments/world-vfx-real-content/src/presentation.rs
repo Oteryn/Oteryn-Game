@@ -402,10 +402,7 @@ fn validate_animation(
         ));
     }
     if animation.presentation_durations_ms.len() != phase_count
-        || animation
-            .presentation_durations_ms
-            .iter()
-            .any(|duration| *duration == 0)
+        || animation.presentation_durations_ms.contains(&0)
     {
         return Err(format!(
             "{category} presentation_durations_ms must contain {phase_count} non-zero values"
