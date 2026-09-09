@@ -6,6 +6,7 @@ on:
       - agent/graphics-engine-bakeoff-465
     paths:
       - experiments/graphics-engine-bakeoff/**
+      - docs/agents/tasks/active/OTV2-20260909-graphics-engine-bakeoff.md
       - .github/workflows/graphics-engine-bakeoff.yml
 
 permissions:
