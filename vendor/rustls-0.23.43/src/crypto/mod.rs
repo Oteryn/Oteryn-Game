@@ -583,13 +583,6 @@ pub(crate) struct KxReservation {
 }
 
 #[cfg(feature = "std")]
-impl KxReservation {
-    pub(crate) fn secret_consumed(&self) {
-        self.owner.kx_secret_consumed();
-    }
-}
-
-#[cfg(feature = "std")]
 impl Drop for KxReservation {
     fn drop(&mut self) {
         self.owner.release(self.bytes);

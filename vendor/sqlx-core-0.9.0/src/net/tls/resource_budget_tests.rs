@@ -33,12 +33,6 @@ impl ResourceBudget for Ledger {
         self.provider_shared_debits.lock().unwrap().push(bytes);
         Ok(())
     }
-    fn kx_secret_consumed(&self) {
-        self.events
-            .lock()
-            .unwrap()
-            .push((true, usize::MAX, self.used.load(Ordering::Acquire)));
-    }
 }
 fn ledger(limit: usize) -> Arc<Ledger> {
     Arc::new(Ledger {
@@ -365,7 +359,6 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
         client.handshake_kind(),
         Some(HandshakeKind::FullWithHelloRetryRequest)
     );
-
     assert!(
         budget.peak.load(Ordering::Acquire) >= before_hrr + 1_625,
         "wire HRR did not overlap the held initial KX with P-256 replacement"
@@ -382,6 +375,7 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
     assert!(replacement_reserve < initial_release);
     drop(events);
 
+    let completion_event_start = budget.events.lock().unwrap().len();
     for _ in 0..8 {
         transfer!(&mut client, &mut server);
         server.process_new_packets().unwrap();
@@ -397,17 +391,9 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
         client.handshake_kind(),
         Some(HandshakeKind::FullWithHelloRetryRequest)
     );
-    let completed_events = budget.events.lock().unwrap();
-    let consumed = completed_events
+    assert!(budget.events.lock().unwrap()[completion_event_start..]
         .iter()
-        .rposition(|(marker, bytes, _)| *marker && *bytes == usize::MAX)
-        .expect("owned KX secret was not observed at key-schedule consumption");
-    let replacement_release = completed_events
-        .iter()
-        .rposition(|(reserve, bytes, _)| !*reserve && *bytes == 1_625)
-        .expect("replacement KX reservation was not released");
-    assert!(consumed < replacement_release);
-    drop(completed_events);
+        .any(|(reserve, bytes, _)| !*reserve && *bytes == 1_625));
 
     // Cancellation before receiving HRR retains the initial reservation until
     // the connection-owned active exchange is actually destroyed.

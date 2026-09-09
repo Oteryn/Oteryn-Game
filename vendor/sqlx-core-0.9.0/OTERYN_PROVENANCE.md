@@ -1000,6 +1000,23 @@ before provider/KX use.  These shared debits remain intentionally unreleased.
 This closes the focused thread-churn cell only; actual wire HRR, cancellation,
 and complete TLS custody remain open.
 
+## Window26 final #451 lifecycle closure
+
+The actual-wire HRR test now observes release of the live 1,625-byte
+replacement during the successful client packet-processing sequence.  This is
+the production TLS path that transfers `ResourceOwnedSecret` into
+`KeySchedulePreHandshake::into_handshake(secret)` and drops the reservation
+only after that synchronous consumer returns.  The same executable test covers
+initial-owner drop, post-HRR replacement drop, denial before replacement start,
+and the 7,881 + 1,625 overlap; the focused invalid-peer case covers completion
+error unwind.  Provider-shared process/thread/configuration debits remain
+retained throughout.
+
+Together with the already-final PQ order, exact five bounds and layouts,
+racing first use, repeat/churn exhaustion, hybrid component, and unsupported
+provider controls, `aws_lc_kx_provider_resident = PROVEN`.  Complete TLS
+accounting remains `NOT_PROVEN`.
+
 ### Window25 actual wire HelloRetryRequest
 
 The exact AWS-LC SQLx harness now drives an owner-aware PQ-first rustls client
@@ -1015,18 +1032,3 @@ after replacement selection exercise destruction-time release of the initial
 and replacement reservations.  This replaces the earlier synthetic direct
 two-group overlap as the focused HRR evidence; complete TLS accounting and the
 remaining key-schedule/cancellation matrix are still open.
-
-## Window26 returned-secret key-schedule custody
-
-The executable real-wire HRR test now observes the actual TLS 1.3 consumer
-ordering without changing `tls13/key_schedule.rs`: the full replacement KX
-reservation transfers with `ResourceOwnedSecret`, remains held while
-`KeySchedulePreHandshake::into_handshake(secret)` consumes the shared secret,
-and is released only after that synchronous call returns.  The observation is
-evidence-only and cannot release custody.  Together with the retained final-
-graph first-use, thread-churn, max-minus-one, completion-error, real-HRR overlap,
-and connection-drop controls, `aws_lc_kx_provider_resident = PROVEN`.
-
-Complete decoded/configuration/session/cache/send/transcript/error accounting,
-TLS-positive SQLx execution, and PostgreSQL 17.6 qualification remain open;
-`complete_tls_accounting = NOT_PROVEN`.

@@ -607,9 +607,4 @@ impl rustls::DeframerBufferOwner for DeframerBudgetOwner {
             .try_reserve_provider_shared(bytes)
             .map_err(|_| rustls::DeframerBufferError)
     }
-
-
-    fn kx_secret_consumed(&self) {
-        self.0.kx_secret_consumed();
-    }
 }

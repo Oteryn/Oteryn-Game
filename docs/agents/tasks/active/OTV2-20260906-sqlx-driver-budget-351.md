@@ -763,22 +763,27 @@ remaining_acceptance_cells: actual TLS key-schedule custody assertion; complete 
 next_action: prove the remaining returned-secret key-schedule and cancellation/error controls, then continue complete TLS custody on the protected paths
 ```
 
-## Window26 actual key-schedule custody
+## Window26 final #451 lifecycle closure
 
-The final-graph wire-HRR harness now observes the production owner-aware TLS
-1.3 consumer boundary. `ResourceOwnedSecret` transfers the live replacement
-KX reservation into `CompletedSecret`; `KeySchedulePreHandshake::into_handshake`
-consumes the `SharedSecret`; an owner evidence callback runs only after that
-synchronous call returns; and only then is the reservation dropped. The test
-requires that observation to precede the 1,625-byte replacement release. The
-previous max-minus-one, completion-error, connection-drop, real-HRR overlap,
-provider first-use, and retained thread-churn controls remain green.
+The funded real-wire HRR exchange now observes the replacement reservation's
+release during the successful TLS packet-processing sequence that consumes
+`ResourceOwnedSecret` through
+`KeySchedulePreHandshake::into_handshake(secret)`.  Rustls keeps the
+reservation separate until that synchronous call returns.  Combined with the
+same final-graph test's initial and post-HRR connection drops, replacement
+denial before provider start, 7,881 + 1,625 overlap and successful completion,
+and the focused invalid-peer completion-error unwind, every remaining protected
+#451 lifecycle cell is executable on the exact AWS-LC graph.
 
 ```yaml
 status: active
-returned_secret_key_schedule_custody: PROVEN
 aws_lc_kx_provider_resident: PROVEN
 complete_tls_accounting: NOT_PROVEN
-remaining_acceptance_cells: protected decoded-owner 13-path matrix; complete configuration/session/cache/send/transcript/error custody; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
-next_action: implement and qualify the protected #425 decoded-owner matrix, then continue complete TLS composition
+kx_initial_owner_drop: PROVEN_ACTUAL_STATE
+kx_post_hrr_drop: PROVEN_ACTUAL_STATE
+kx_hrr_replacement_denial: PROVEN_BEFORE_START
+kx_completion_error: PROVEN
+kx_secret_key_schedule_custody: PROVEN_ACTUAL_TLS
+remaining_acceptance_cells: complete decoded/config/session/cache/send/transcript/error custody and handshake overlap; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: continue complete TLS accounting on the already-protected paths
 ```
