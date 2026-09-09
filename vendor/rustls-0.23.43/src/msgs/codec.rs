@@ -69,7 +69,18 @@ impl DecodedOwner {
 
     pub(crate) fn release(&self, bytes: usize) {
         if bytes == 0 { return; }
-        self.charged.fetch_sub(bytes, Ordering::Relaxed);
+        // `charged` is observability, not an independent source of custody.
+        // Refuse to turn an accidental second release into both an integer
+        // underflow and a release of live backing in the underlying owner.
+        let released = self.charged.fetch_update(
+            Ordering::Relaxed,
+            Ordering::Relaxed,
+            |charged| charged.checked_sub(bytes),
+        );
+        debug_assert!(released.is_ok(), "decoded custody released twice");
+        if released.is_err() {
+            return;
+        }
         self.owner.release(bytes);
     }
 

@@ -486,3 +486,11 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   and production drop path without promoting complete TLS.
 - [ ] Continue per-backing list/payload custody and remove connection-wide aggregate
   rollback as a lifetime authority before retained-state composition.
+
+## Window33 custody safety fence
+
+- [x] Make aggregate decoded release checked so a second release cannot underflow
+  accounting or be forwarded to the accepted owner ledger.
+- [ ] Replace aggregate checkpoint rollback with explicit local/prospective guards
+  as per-backing list and payload custody lands; aggregate accounting remains
+  debug state only.

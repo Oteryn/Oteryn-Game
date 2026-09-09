@@ -980,3 +980,23 @@ next_action: replace aggregate list/payload retention with per-backing custody w
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open. This production witness
 validates the Message custody foundation only and does not promote complete TLS.
+
+## Window33 decoded-custody underflow fence
+
+The aggregate `DecodedOwner::charged` counter is retained only as accounting and
+debug state while per-backing custody is introduced. Its release path now uses a
+checked atomic subtraction and refuses to forward an invalid second release to
+the accepted owner ledger. This prevents an intermediate mixed aggregate/backing
+implementation from underflowing the counter and, more importantly, from
+releasing live custody in the underlying owner. It does not make aggregate
+checkpoint rollback a final lifetime authority.
+
+```yaml
+status: active
+decoded_release_underflow_fence: PROVEN_COMPILE
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: per-backing list/payload custody and every retained-descendant/complete-handshake cell from Window32
+next_action: replace aggregate list/payload retention and checkpoint rollback with explicit backing/scope custody
+```
+
+P1 `3966866700` and umbrella P1 `3954831069` remain open.
