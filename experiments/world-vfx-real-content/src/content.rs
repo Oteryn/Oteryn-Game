@@ -411,6 +411,20 @@ fn parse_bmp_rgba(data: &[u8]) -> Result<Vec<u8>, String> {
             "unsupported sprite-sheet BMP compression {compression}"
         ));
     }
+    if compression == 3 {
+        let masks = [
+            read_u32_le(data, 54)?,
+            read_u32_le(data, 58)?,
+            read_u32_le(data, 62)?,
+            read_u32_le(data, 66)?,
+        ];
+        let expected_masks = [0x00FF_0000, 0x0000_FF00, 0x0000_00FF, 0xFF00_0000];
+        if masks != expected_masks {
+            return Err(format!(
+                "unsupported sprite-sheet BI_BITFIELDS channel masks {masks:?}"
+            ));
+        }
+    }
 
     let row_bytes = SHEET_SIZE as usize * 4;
     let required = pixel_offset
@@ -933,6 +947,38 @@ mod tests {
         let rgba = parse_bmp_rgba(&bmp)?;
         assert_eq!(&rgba[0..4], &[0, 0, 0, 0]);
         assert_eq!(&rgba[4..8], &[10, 20, 30, 255]);
+        Ok(())
+    }
+
+    #[test]
+    fn bmp_parser_validates_bitfield_channel_masks() -> Result<(), String> {
+        let row_bytes = SHEET_SIZE as usize * 4;
+        let pixel_offset = 122_usize;
+        let mut bmp = vec![0_u8; pixel_offset + row_bytes * SHEET_SIZE as usize];
+        bmp[0..2].copy_from_slice(b"BM");
+        bmp[10..14].copy_from_slice(&(pixel_offset as u32).to_le_bytes());
+        bmp[14..18].copy_from_slice(&108_u32.to_le_bytes());
+        bmp[18..22].copy_from_slice(&(SHEET_SIZE as i32).to_le_bytes());
+        bmp[22..26].copy_from_slice(&(-(SHEET_SIZE as i32)).to_le_bytes());
+        bmp[26..28].copy_from_slice(&1_u16.to_le_bytes());
+        bmp[28..30].copy_from_slice(&32_u16.to_le_bytes());
+        bmp[30..34].copy_from_slice(&3_u32.to_le_bytes());
+        for (offset, mask) in [
+            (54_usize, 0x00FF_0000_u32),
+            (58, 0x0000_FF00),
+            (62, 0x0000_00FF),
+            (66, 0xFF00_0000),
+        ] {
+            bmp[offset..offset + 4].copy_from_slice(&mask.to_le_bytes());
+        }
+        for pixel in bmp[pixel_offset..].chunks_exact_mut(4) {
+            pixel.copy_from_slice(&[30, 20, 10, 255]);
+        }
+        let rgba = parse_bmp_rgba(&bmp)?;
+        assert_eq!(&rgba[0..4], &[10, 20, 30, 255]);
+
+        bmp[54..58].copy_from_slice(&0x0000_00FF_u32.to_le_bytes());
+        assert!(parse_bmp_rgba(&bmp).is_err());
         Ok(())
     }
 
