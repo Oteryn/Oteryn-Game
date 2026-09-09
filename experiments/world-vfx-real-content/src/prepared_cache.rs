@@ -13,6 +13,9 @@ pub const SOURCE_CATALOG_SHA256: &str =
 pub const SOURCE_APPEARANCE_SHA256: &str =
     "dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075";
 pub const SEMANTIC_AUTHORITY_PATH: &str = "tools/game-atlas-appearances/export.py";
+pub const SEMANTIC_CONTRACT_ID: &str = "oteryn-game-atlas-animated-appearances-v1";
+pub const SEMANTIC_REVISION: &str = "1";
+pub const SOURCE_PROFILE_ID: &str = "oteryn-atlas-15-32-appearance-spatial-v1";
 pub const SPRITES_PER_PAGE: usize = 64;
 pub const SLOT_SIZE: usize = 64;
 pub const PAGE_BYTES: usize = SPRITES_PER_PAGE * SLOT_SIZE * SLOT_SIZE * 4;
@@ -46,6 +49,7 @@ struct ManifestSource {
 struct SemanticAuthority {
     path: String,
     contract_id: String,
+    #[serde(deserialize_with = "deserialize_semantic_revision")]
     semantic_revision: String,
     product_root: String,
 }
@@ -407,6 +411,20 @@ impl PreparedCache {
     }
 }
 
+fn deserialize_semantic_revision<'de, D>(deserializer: D) -> Result<String, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let value = serde_json::Value::deserialize(deserializer)?;
+    match value {
+        serde_json::Value::Number(number) if number.is_u64() => Ok(number.to_string()),
+        serde_json::Value::String(text) => Ok(text),
+        other => Err(serde::de::Error::custom(format!(
+            "semantic_revision must be an integer or decimal string, got {other}"
+        ))),
+    }
+}
+
 fn validate_manifest_identity(manifest: &Manifest) -> Result<(), String> {
     if manifest.schema != PREPARED_CACHE_SCHEMA {
         return Err(format!(
@@ -429,24 +447,20 @@ fn validate_manifest_identity(manifest: &Manifest) -> Result<(), String> {
             manifest.semantic_authority.path
         ));
     }
-    for (label, value) in [
-        (
-            "contract_id",
-            manifest.semantic_authority.contract_id.as_str(),
-        ),
-        (
-            "semantic_revision",
-            manifest.semantic_authority.semantic_revision.as_str(),
-        ),
-        (
-            "product_root",
-            manifest.semantic_authority.product_root.as_str(),
-        ),
-    ] {
-        if value.trim().is_empty() {
-            return Err(format!("prepared semantic authority {label} is empty"));
-        }
+    if manifest.semantic_authority.contract_id != SEMANTIC_CONTRACT_ID
+        || manifest.semantic_authority.semantic_revision != SEMANTIC_REVISION
+    {
+        return Err(format!(
+            "prepared semantic authority mismatch: expected {SEMANTIC_CONTRACT_ID} revision {SEMANTIC_REVISION}, got {} revision {}",
+            manifest.semantic_authority.contract_id, manifest.semantic_authority.semantic_revision
+        ));
     }
+    let product_digest = manifest
+        .semantic_authority
+        .product_root
+        .strip_prefix("sha256:")
+        .ok_or_else(|| "prepared semantic authority product_root must use sha256: prefix".to_owned())?;
+    validate_lower_sha256(product_digest, "semantic product_root")?;
     validate_lower_sha256(&manifest.atlas_slice_sha256, "atlas_slice_sha256")?;
     if manifest.sprite_page.sprites_per_page != SPRITES_PER_PAGE
         || manifest.sprite_page.slot_size != SLOT_SIZE
@@ -554,9 +568,9 @@ mod tests {
             },
             "semantic_authority": {
                 "path": SEMANTIC_AUTHORITY_PATH,
-                "contract_id": "test-contract",
-                "semantic_revision": "test-revision",
-                "product_root": "test-root"
+                "contract_id": SEMANTIC_CONTRACT_ID,
+                "semantic_revision": 1,
+                "product_root": format!("sha256:{}", "0".repeat(64))
             },
             "atlas_slice_sha256": "0".repeat(64),
             "sprite_page": {
@@ -589,6 +603,11 @@ mod tests {
         assert_eq!(locator.layer, 1);
         assert_eq!(page.rgba.len(), PAGE_BYTES);
         assert_eq!(cache.stats().page_loads, 1);
+        assert_eq!(
+            cache.semantic_identity().0,
+            SEMANTIC_CONTRACT_ID
+        );
+        assert_eq!(cache.semantic_identity().1, SEMANTIC_REVISION);
         let second = cache.page(3)?;
         assert_eq!(second.rgba.len(), PAGE_BYTES);
         assert_eq!(cache.stats().page_hits, 1);
