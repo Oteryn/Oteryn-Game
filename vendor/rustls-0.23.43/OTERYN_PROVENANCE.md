@@ -92,6 +92,23 @@ less than the prospective 32-element replacement overlap. It proves denial
 before replacement allocation or mutation: pointer, capacity, contents, and
 old charge remain unchanged until deframer drop.
 
+## Protected #425 decoded byte-payload checkpoint
+
+Owner-aware nested readers now reserve the full qualified byte-vector capacity
+before `PayloadU8` and `PayloadU16` copy their input. The returned allocator
+capacity is checked; on mismatch the vector is destroyed before the prospective
+debit is released. Focused controls cover exact-capacity admission and
+max-minus-one denial. Owner-aware message parsing checkpoints aggregate decoded
+custody and rolls back partial nested allocations only after parser unwind.
+Generic-list mismatch cleanup likewise destroys the replacement before
+releasing old and prospective charges.
+
+This is not complete decoded/TLS accounting. Borrowed payload `into_owned`,
+parsed/encoded message overlap, handshake AST, transcript, certificate/OCSP,
+successor, compressed-certificate, peer-chain and retained-session ownership
+remain open.
+old charge remain unchanged until deframer drop.
+
 ## Decoded-owner Arc and list-growth repair
 
 The connection reserves the exact Rust 1.94 `ArcInner<DecodedOwner>` requested

@@ -834,6 +834,33 @@ than the old-plus-32-element replacement overlap. Denial leaves the original
 pointer, capacity, contents, and charge unchanged and releases only after the
 original backing is dropped. Complete TLS accounting remains `NOT_PROVEN`.
 
+## Window29 decoded byte-payload checkpoint
+
+Length-prefixed `PayloadU8` and `PayloadU16` decoding now inherits the same
+connection decoded owner through nested readers. The complete byte-vector
+capacity is reserved before copying; the qualified allocation must return that
+actual capacity or its backing is destroyed before the prospective debit is
+rolled back. Owner-aware message parsing also checkpoints the aggregate before
+decode and returns nested parse-error charges only after partial values have
+unwound. Generic-list allocation-mismatch cleanup was repaired to destroy the
+replacement before releasing both old and prospective capacity charges.
+
+```yaml
+status: active
+decoded_owner_payload_u8_u16: PROVEN_FOCUSED
+decoded_owner_nested_message_rollback: PROVEN_IMPLEMENTED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: Payload borrowed-to-owned custody; Message into_owned parsed+encoded overlap; handshake AST/DNS/Box ownership; transcript; certificate/OCSP and successor-state custody; compressed-certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: continue #425 at Payload into_owned and Message parsed/encoded transfer, then handshake AST ownership
+```
+
+## Window28b decoded span growth-denial regression
+
+The span-owner test matrix funds a full 16-element vector with one byte less
+than the old-plus-32-element replacement overlap. Denial leaves the original
+pointer, capacity, contents, and charge unchanged and releases only after the
+original backing is dropped. Complete TLS accounting remains `NOT_PROVEN`.
+
 ## Window28 decoded-owner allocation repair
 
 Review of the first decoded-owner checkpoint found two allocation-order defects.

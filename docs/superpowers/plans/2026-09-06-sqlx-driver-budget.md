@@ -428,6 +428,20 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   successor-state, compressed-certificate, and retained-session custody before
   claiming complete TLS or running TLS-positive/PostgreSQL qualification.
 
+## Window29 decoded payload continuation
+
+- [x] Reserve exact byte-vector capacity before `PayloadU8`/`PayloadU16`
+  decoded copies, with denial before allocation and mismatch destruction before
+  rollback.
+- [x] Roll back charges from partial nested owner-aware message parsing after
+  the partial decoded backing has unwound.
+- [x] Repair generic-list actual-capacity mismatch cleanup ordering.
+- [ ] Attach custody through borrowed payload/message `into_owned` conversion
+  and prove parsed plus encoded/source plus destination overlap.
+- [ ] Continue handshake AST, transcript, certificate/OCSP, successor-state,
+  compressed-certificate, retained-session and complete-handshake composition.
+  claiming complete TLS or running TLS-positive/PostgreSQL qualification.
+
 ## Decoded-owner review repair checkpoint
 
 - [x] Precharge and externally retain exact `ArcInner<DecodedOwner>` custody.
