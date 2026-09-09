@@ -27,6 +27,13 @@ The harness also compares 50,000 animation instances using independent cloned ti
 
 `analyze-results.py` emits only `ADOPT`, `REJECT`, or `INSUFFICIENT_EVIDENCE` verdicts. Missing or unreliable evidence is never replaced with an estimate.
 
+
+## Final physical qualification
+
+Final accepted physical evidence for Issue #480 is under `evidence/mollehill-final-20260909/` and was measured on `280afa3355d4ab7a69ce4c8ebcc6f8f5b3fc1de8`. The set contains 81 primary runs plus 3 independent-family smoke runs with reliable RX 9070 XT GPU timestamps, zero primary cache-overflow fallbacks, zero surface/device failures and equivalent Classic/Enhanced/HD gameplay signatures.
+
+Bounded decisions from this gate are: keep atlas vs texture arrays open (`INSUFFICIENT_EVIDENCE`), reject the exact simple hybrid tested here (`REJECT`), and adopt bounded visible-working-set residency with eviction as the streaming/cache direction (`ADOPT`). KTX2/DDS, final filtering/mips, particle backend, hard VFX/light limits and production RAM/VRAM budgets remain evidence-gated.
+
 ## Validation
 
 ```powershell
