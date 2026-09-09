@@ -1,0 +1,12 @@
+HEAD=11c568639484d6ecc0284239b6f1dfbb1755f5e8
+WGPU_BACKEND=dx12
+WGPU_POWER_PREF=high
+
+custom-wgpu adapter=AMD Radeon RX 9070 XT
+custom-wgpu driver=32.0.31035.1003
+custom-wgpu backend=Dx12
+
+bevy-0.19.1 AdapterInfo.name=AMD Radeon RX 9070 XT
+bevy-0.19.1 AdapterInfo.device_type=DiscreteGpu
+bevy-0.19.1 AdapterInfo.driver=32.0.31035.1003
+bevy-0.19.1 AdapterInfo.backend=Dx12
