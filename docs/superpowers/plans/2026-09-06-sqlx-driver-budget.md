@@ -662,3 +662,13 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Roll back parser-local second-decode aggregate charges after a top-level
   compressed-certificate read error, excluding independent backing custody.
 - [ ] Re-run complete compressed wire/error/cancellation qualification.
+
+## Window53 TLS1.2 source KX boundary
+
+- [x] Make `ServerKeyExchangePayload` lifetime-bearing and keep unknown client input borrowed
+  until the explicit `HandshakePayload::into_owned` boundary.
+- [x] Preserve server `Known` construction and add a focused no-copy decode control.
+- [ ] Obtain exact custody for omitted `ExpectServerKx::handle` retained signed-parameter backing
+  and omitted `emit_client_kx` outbound backing before their allocations.
+- [ ] Keep #493 binder and #501 transcript/hash conditional surfaces inactive; complete TLS,
+  TLS-positive SQLx, and PostgreSQL qualification remain blocked.

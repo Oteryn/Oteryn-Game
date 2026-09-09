@@ -391,3 +391,16 @@ back to the pre-read checkpoint after partial AST and local guards have been
 destroyed.  Backing-bound decompression/payload custody is excluded and remains
 live until its own backing drops.  Focused malformed-body coverage commits a
 nested list before a later truncated field and proves exact rollback.
+
+## TLS 1.2 source ServerKeyExchange no-copy decode
+
+`ServerKeyExchangePayload` is now lifetime-bearing. Unknown client input remains a borrowed
+`Payload` through algorithm selection and parsing instead of eagerly allocating an owned copy;
+only the existing explicit handshake `into_owned` transition performs ownership conversion.
+The server's `Known(ServerKeyExchange)` path and wire encoding are unchanged. A focused pointer
+identity test proves decode retains the original input slice.
+
+This exhausts the legal source-payload repair but does not cover two later allocations whose
+owning symbols are outside the active #425 lease: `ExpectServerKx::handle` creates retained
+signed-parameter encoding and `emit_client_kx` creates outbound public-key and encoded-message
+vectors. Complete TLS accounting remains unproven; #493 and #501 remain inactive.

@@ -1488,3 +1488,27 @@ tls12_resumed_certificate_custody: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
 next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
+
+## Window53 TLS1.2 source ServerKeyExchange custody
+
+The client-side `ServerKeyExchangePayload` representation now carries the handshake input
+lifetime and keeps an unknown peer payload borrowed during decode. This removes the former eager
+`Payload::into_owned()` allocation before the TLS1.2 client knows the selected key-exchange
+algorithm. `HandshakePayload::into_owned` remains the explicit ownership boundary, and the
+server's `Known(ServerKeyExchange)` construction is unchanged. Focused source/build evidence
+confirms that decode returns the original input slice without copying.
+
+The remaining TLS1.2 destinations cannot be admitted inside current custody: retained signed
+parameters are first encoded in omitted `ExpectServerKx::handle`, and outbound public-key plus
+encoded ClientKeyExchange backing is first allocated in omitted `emit_client_kx`. Separately,
+the #427 caller cannot precharge arbitrary custom-verifier `supported_verify_schemes()` backing
+because that allocation occurs behind the trait call without a caller-visible bound. Conditional
+#493 and #501 remain inactive. Complete TLS accounting, TLS-positive SQLx, and PostgreSQL 17.6
+qualification therefore remain unproven.
+
+```yaml
+status: blocked_pending_shared_lease
+tls12_server_kx_source_copy: PROVEN_REMOVED_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+next_action: "SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/tls12.rs :: ExpectServerKx::handle + emit_client_kx :: retained signed-parameter and outbound ClientKeyExchange backing are first allocated inside omitted symbols, so downstream charging would be post-allocation"
+```

@@ -975,7 +975,7 @@ fn sample_compressed_certificate() -> CompressedCertificatePayload<'static> {
     }
 }
 
-fn sample_ecdhe_server_key_exchange_payload() -> ServerKeyExchangePayload {
+fn sample_ecdhe_server_key_exchange_payload() -> ServerKeyExchangePayload<'static> {
     ServerKeyExchangePayload::Known(ServerKeyExchange {
         params: ServerKeyExchangeParams::Ecdh(ServerEcdhParams {
             curve_params: EcParameters {
@@ -988,7 +988,7 @@ fn sample_ecdhe_server_key_exchange_payload() -> ServerKeyExchangePayload {
     })
 }
 
-fn sample_dhe_server_key_exchange_payload() -> ServerKeyExchangePayload {
+fn sample_dhe_server_key_exchange_payload() -> ServerKeyExchangePayload<'static> {
     ServerKeyExchangePayload::Known(ServerKeyExchange {
         params: ServerKeyExchangeParams::Dh(ServerDhParams {
             dh_p: PayloadU16::new(vec![1, 2, 3]),
@@ -999,8 +999,22 @@ fn sample_dhe_server_key_exchange_payload() -> ServerKeyExchangePayload {
     })
 }
 
-fn sample_unknown_server_key_exchange_payload() -> ServerKeyExchangePayload {
+fn sample_unknown_server_key_exchange_payload() -> ServerKeyExchangePayload<'static> {
     ServerKeyExchangePayload::Unknown(Payload::Borrowed(&[1, 2, 3]))
+}
+
+#[test]
+fn server_key_exchange_decode_borrows_input_payload() {
+    let bytes = [1, 2, 3];
+    let mut reader = Reader::init(&bytes);
+    let payload = ServerKeyExchangePayload::read(&mut reader).unwrap();
+
+    if let ServerKeyExchangePayload::Unknown(Payload::Borrowed(decoded)) = payload {
+        assert_eq!(decoded, bytes);
+        assert_eq!(decoded.as_ptr(), bytes.as_ptr());
+    } else {
+        assert!(false, "server key exchange input was copied during decode");
+    }
 }
 
 fn sample_certificate_request_payload() -> CertificateRequestPayload {

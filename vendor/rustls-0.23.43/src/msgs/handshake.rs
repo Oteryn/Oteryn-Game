@@ -2300,18 +2300,18 @@ impl ServerKeyExchange {
 }
 
 #[derive(Debug)]
-pub(crate) enum ServerKeyExchangePayload {
+pub(crate) enum ServerKeyExchangePayload<'a> {
     Known(ServerKeyExchange),
-    Unknown(Payload<'static>),
+    Unknown(Payload<'a>),
 }
 
-impl From<ServerKeyExchange> for ServerKeyExchangePayload {
+impl From<ServerKeyExchange> for ServerKeyExchangePayload<'_> {
     fn from(value: ServerKeyExchange) -> Self {
         Self::Known(value)
     }
 }
 
-impl Codec<'_> for ServerKeyExchangePayload {
+impl<'a> Codec<'a> for ServerKeyExchangePayload<'a> {
     fn encode(&self, bytes: &mut Vec<u8>) {
         match self {
             Self::Known(x) => x.encode(bytes),
@@ -2319,14 +2319,14 @@ impl Codec<'_> for ServerKeyExchangePayload {
         }
     }
 
-    fn read(r: &mut Reader<'_>) -> Result<Self, InvalidMessage> {
+    fn read(r: &mut Reader<'a>) -> Result<Self, InvalidMessage> {
         // read as Unknown, fully parse when we know the
         // KeyExchangeAlgorithm
-        Ok(Self::Unknown(Payload::read(r).into_owned()))
+        Ok(Self::Unknown(Payload::read(r)))
     }
 }
 
-impl ServerKeyExchangePayload {
+impl ServerKeyExchangePayload<'_> {
     #[cfg(feature = "tls12")]
     pub(crate) fn unwrap_given_kxa(&self, kxa: KeyExchangeAlgorithm) -> Option<ServerKeyExchange> {
         if let Self::Unknown(unk) = self {
@@ -2808,7 +2808,7 @@ pub(crate) enum HandshakePayload<'a> {
     Certificate(CertificateChain<'a>),
     CertificateTls13(CertificatePayloadTls13<'a>),
     CompressedCertificate(CompressedCertificatePayload<'a>),
-    ServerKeyExchange(ServerKeyExchangePayload),
+    ServerKeyExchange(ServerKeyExchangePayload<'a>),
     CertificateRequest(CertificateRequestPayload),
     CertificateRequestTls13(CertificateRequestPayloadTls13),
     CertificateVerify(DigitallySignedStruct),
@@ -2896,7 +2896,12 @@ impl HandshakePayload<'_> {
             Certificate(x) => Certificate(x.into_owned()),
             CertificateTls13(x) => CertificateTls13(x.into_owned()),
             CompressedCertificate(x) => CompressedCertificate(x.into_owned()),
-            ServerKeyExchange(x) => ServerKeyExchange(x),
+            ServerKeyExchange(x) => ServerKeyExchange(match x {
+                ServerKeyExchangePayload::Known(x) => ServerKeyExchangePayload::Known(x),
+                ServerKeyExchangePayload::Unknown(x) => {
+                    ServerKeyExchangePayload::Unknown(x.into_owned())
+                }
+            }),
             CertificateRequest(x) => CertificateRequest(x),
             CertificateRequestTls13(x) => CertificateRequestTls13(x),
             CertificateVerify(x) => CertificateVerify(x),
