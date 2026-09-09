@@ -428,6 +428,15 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   successor-state, compressed-certificate, and retained-session custody before
   claiming complete TLS or running TLS-positive/PostgreSQL qualification.
 
+## Window29 decoded bookkeeping repair
+
+- [x] Precharge the exact pinned `ArcInner<DecodedOwner>` allocation and retain
+  external custody until the final Arc control block is deallocated.
+- [x] Restore checked geometric list growth and destroy partial/mismatched
+  prospective backing before debit rollback.
+- [ ] Replace successful-list connection aggregation with backing-coupled
+  custody that releases on local drop or transfers with retained descendants.
+
 ## Window29 decoded payload continuation
 
 - [x] Reserve exact byte-vector capacity before `PayloadU8`/`PayloadU16`

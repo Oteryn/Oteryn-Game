@@ -92,6 +92,16 @@ less than the prospective 32-element replacement overlap. It proves denial
 before replacement allocation or mutation: pointer, capacity, contents, and
 old charge remain unchanged until deframer drop.
 
+The decoded-owner bookkeeping control block is now independently charged: the
+pinned Rust 1.94 `ArcInner<DecodedOwner>` requested layout is reserved before
+`Arc::new`, with an external connection field ordered after the Arc so the
+control block is deallocated before release. Generic decoded-list growth uses
+the pinned geometric capacity target, preserving amortized behavior. Local
+partial-parse and actual-capacity mismatch paths destroy prospective backing
+before rolling back its debit. Successful decoded-list custody is still
+connection-aggregate and therefore remains explicitly not proven; it must be
+replaced by backing-coupled custody/transfer before complete TLS accounting.
+
 ## Protected #425 decoded byte-payload checkpoint
 
 Owner-aware nested readers now reserve the full qualified byte-vector capacity

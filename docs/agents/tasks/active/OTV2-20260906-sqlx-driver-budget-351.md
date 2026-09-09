@@ -834,6 +834,28 @@ than the old-plus-32-element replacement overlap. Denial leaves the original
 pointer, capacity, contents, and charge unchanged and releases only after the
 original backing is dropped. Complete TLS accounting remains `NOT_PROVEN`.
 
+## Window29 decoded bookkeeping and rollback repair
+
+Review P1 `DecodedOwner` bookkeeping is repaired at the construction boundary:
+the exact pinned Rust 1.94 `ArcInner<DecodedOwner>` layout is reserved before
+`Arc::new`, and external connection custody releases that debit only after the
+last decoded-owner Arc/control block has been destroyed. Generic list growth
+again follows checked geometric amortization rather than peer-controlled
+one-element reallocations. A local rollback guard now destroys partially
+decoded list backing before releasing its current capacity debit on a later
+element error, and capacity-qualification mismatch explicitly destroys the
+prospective backing before rolling back both prospective and replaced debits.
+
+```yaml
+status: active
+decoded_owner_arc_control_block: PROVEN_FOCUSED
+decoded_list_geometric_growth: PROVEN_FOCUSED
+decoded_list_later_error_rollback: PROVEN_FOCUSED
+decoded_list_success_backing_custody: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: backing-coupled successful-list custody and transfer; payload/message ownership; transcript; decoded ClientHello/ServerHello; certificate/OCSP and successor-state custody; compressed certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: replace successful-list aggregate custody with backing-coupled transfer before continuing dependent payload/message cells
+
 ## Window29 decoded byte-payload checkpoint
 
 Length-prefixed `PayloadU8` and `PayloadU16` decoding now inherits the same
