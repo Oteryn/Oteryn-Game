@@ -134,7 +134,7 @@ For every implementation PR:
 6. exact-head repository CI including Rust Linux/Windows/supply-chain where applicable;
 7. mandatory self-review and required independent review;
 8. zero unresolved threads / no `REQUEST_CHANGES` / no ownership conflict / `behind_by=0`;
-9. squash merge with expected-head SHA;
+9. repository-control-plane handoff for governed atomic Merge Queue submission that binds the exact qualified head and intended protected base/queue state; if no callable governed route is available, record `BLOCKED_CAPABILITY_UNAVAILABLE` rather than direct-merge or arm generic auto-merge;
 10. post-merge verification, task archive and ownership release.
 
 ## Reference and fixture rule
