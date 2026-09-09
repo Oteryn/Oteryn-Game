@@ -1001,6 +1001,8 @@ next_action: replace aggregate list/payload retention and checkpoint rollback wi
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open.
 
+field migration and full retained-descendant matrix are independently verified.
+
 ## Window34 payload backing custody
 
 `PayloadU8` and `PayloadU16` now retain an exact, non-allocating custody token after
@@ -1076,27 +1078,29 @@ next_action: continue generic list backing custody and every retained descendant
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open.
 
-## Window37 generic decoded backing primitive
+## Window37 generic backing-bound list representation
 
-Introduced a crate-private `DecodedVec<T>` whose backing is declared before its exact
-capacity custody token, so dropping an owner-aware decoded list destroys the allocation
-before returning its debit. Its decoder preserves checked geometric preallocation,
-old/new overlap, actual-capacity verification, max-minus-one denial and partial-error
-unwind. Moves transfer the token allocation-free; infallible clone rejects charged
-values so later protected deep-copy sites must reserve explicitly. The existing plain
-`Vec<T>` codec now shares this implementation but deliberately transfers custody back
-to the enclosing Message aggregate until each private handshake field is migrated.
+Added the private `DecodedVec<T>` representation required to move generic decoded-list
+capacity out of connection-aggregate lifetime authority. Owner-aware decoding reserves a
+checked geometric prospective capacity before allocation, verifies actual capacity, and
+keeps old and replacement custody live until the old vector is destroyed. The resulting
+token is declared after its vector, so local destruction returns the exact capacity debit
+before the reader or connection owner drops. Moves are allocation-free; the explicit
+fallible deep-copy operation reserves the destination while source custody remains live;
+later-element failure drops the partial vector and returns its debit.
 
-Focused tests prove a `DecodedVec` releases before the reader/connection and that a
-later-element error returns its local capacity. This is material backing-lifetime
-implementation, but it is not complete production migration: P1 `3966866700` and
-umbrella `3954831069` remain open until all decoded list fields and retained descendants
-carry the wrapper/precise sidecar and the complete TLS matrix is executable.
+Focused tests prove local drop, move, separately charged clone overlap, and later-element
+rollback. This checkpoint intentionally does not migrate the remaining private handshake
+fields yet, so aggregate `Codec for Vec<T>` and the retained-descendant/complete-handshake
+matrix remain open.
 
 ```yaml
 status: active
-charged_decoded_vec_primitive: PROVEN_FOCUSED
+generic_backing_bound_representation: PROVEN_FOCUSED
+generic_handshake_field_migration: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
-remaining_acceptance_cells: migrate decoded handshake lists; borrowed Payload ownership; retained descendants; transcript/hash context; complete-handshake composition; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
-next_action: migrate protected handshake list fields to backing-bound custody and repair explicit fallible deep-copy/retained transfers
+next_action: migrate private decoded handshake list fields to DecodedVec and continue payload/message/retained ownership
 ```
+
+P1 `3966866700` and umbrella P1 `3954831069` remain open until the private handshake
+field migration and full retained-descendant matrix are independently verified.

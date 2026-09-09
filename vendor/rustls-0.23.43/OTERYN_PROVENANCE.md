@@ -183,13 +183,14 @@ The client still rejects non-empty handshake contexts before client-auth resolut
 A focused decode of a complete CertificateRequest proves no clone debit, no panic,
 and exact final release. Generic-list custody and complete TLS accounting remain open.
 
-## Generic decoded backing primitive
+## Generic decoded backing representation
 
-The protected #425 codec surface now contains a private `DecodedVec<T>` that binds the
-actual list-capacity debit to the vector backing with backing-before-token field drop
-order. Its owner-aware decoder reserves checked geometric prospective capacity before
-allocation, holds old/new charges across replacement, validates actual capacity, and
-unwinds later-element failures after backing destruction. Plain `Vec<T>` decoding uses
-the same allocation logic but transfers the charge to the existing Message aggregate
-as a compatibility bridge; therefore the complete field migration and retained-state
-matrix remain open and `complete_tls_accounting` is not proven.
+`msgs/codec.rs` now contains the crate-private `DecodedVec<T>` building block for the
+protected decoded-owner migration. It binds checked actual-capacity custody directly to
+the vector, preserves geometric growth and old/new overlap, moves without recharging,
+and exposes only an explicit fallible charged deep copy. Partial decoding errors destroy
+the vector before its custody releases. Focused tests execute those lifetime rules.
+
+The ordinary `Vec<T>` codec and remaining private handshake fields have not yet been
+migrated, so this is a material Gate-1 implementation checkpoint rather than complete
+TLS proof. The decoded-owner P1s remain open.
