@@ -1324,3 +1324,26 @@ tls12_resumed_certificate_custody: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
 next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
+
+## Window46 certificate component lifetime and TLS1.2 session owner selection
+
+The prior Window45 aggregate chain-plus-OCSP token over-retained the OCSP debit after its
+backing was destroyed at peer-certificate handoff. That classification is superseded here.
+Committed destination custody is now partitioned allocation-free into exact chain and OCSP
+tokens without reserving again. TLS 1.2 and TLS 1.3 both destroy the OCSP vector before
+releasing only its token, while only chain custody transfers into `CommonState`.
+
+TLS 1.2 session storage now selects the concrete decoded owner from charged peer-certificate
+custody before falling back to ticket custody. A valid session-ID-only handshake therefore
+uses owner-aware retained secret and chain construction even when its ticket is empty and
+unowned. Resumed TLS 1.2 still performs an ordinary retained-chain copy into `CommonState`;
+that separate destination and its concrete-owner transfer remain open.
+
+```yaml
+status: active
+certificate_chain_ocsp_component_lifetimes: PROVEN_FOCUSED
+tls12_session_id_owner_selection: PROVEN_FOCUSED
+tls12_resumed_certificate_custody: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
+```

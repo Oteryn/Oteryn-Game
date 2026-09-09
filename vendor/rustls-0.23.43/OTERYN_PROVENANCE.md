@@ -307,3 +307,18 @@ non-allocating custody token. The final CommonState transfer moves the existing 
 custody together; field ordering destroys chain and OCSP backing before release. The
 ordinary/no-std path is unchanged. Resumed TLS 1.2 chain copying, compressed certificates,
 transcript contexts, and complete TLS accounting remain open.
+
+## Certificate component lifetime and TLS 1.2 session-ID ownership
+
+The earlier combined certificate-chain/OCSP custody token over-retained OCSP bytes after the
+OCSP vector died. The committed token is now split by the verified OCSP capacity without a
+new reservation or aggregate-balance change. Both TLS versions explicitly destroy OCSP
+backing and release its component token at peer-certificate handoff; only chain custody
+continues into CommonState. Focused tests cover the TLS 1.3 constructor split and the TLS 1.2
+separately copied OCSP path, including exact balance change and final release ordering.
+
+TLS 1.2 session saving now derives its concrete decoded owner from charged peer-certificate
+custody, with ticket custody only as a fallback. This closes the owner-selection hole for a
+non-empty session ID with an empty ticket. The resumed-session chain copy into CommonState,
+compressed certificate decoding, transcript contexts, and complete TLS accounting remain
+open.

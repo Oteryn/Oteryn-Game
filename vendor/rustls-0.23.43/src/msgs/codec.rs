@@ -172,18 +172,25 @@ impl DecodedCustody {
         &self.owner
     }
 
-    /// Combine custody for independently allocated backing owned by the same
-    /// decoded-message ledger without allocating another custody container.
-    pub(crate) fn absorb(&mut self, mut other: Self) -> Result<(), InvalidMessage> {
-        if !Arc::ptr_eq(&self.owner, &other.owner) || self.tracked_backing != other.tracked_backing {
+    /// Partition already-committed backing custody without reserving again.
+    ///
+    /// The returned token accounts for a disjoint portion of the same
+    /// reservation.  Consequently this does not change either the underlying
+    /// owner balance or the aggregate custodied byte count.
+    pub(crate) fn split_off(&mut self, bytes: usize) -> Result<Option<Self>, InvalidMessage> {
+        if !self.tracked_backing || bytes > self.bytes {
             return Err(InvalidMessage::MessageTooLarge);
         }
-        self.bytes = self
-            .bytes
-            .checked_add(other.bytes)
-            .ok_or(InvalidMessage::MessageTooLarge)?;
-        other.bytes = 0;
-        Ok(())
+        if bytes == 0 {
+            return Ok(None);
+        }
+
+        self.bytes -= bytes;
+        Ok(Some(Self {
+            owner: self.owner.clone(),
+            bytes,
+            tracked_backing: true,
+        }))
     }
     pub(crate) fn exact(owner: Arc<DecodedOwner>, bytes: usize) -> Self {
         owner.custodied.fetch_add(bytes, Ordering::Relaxed);

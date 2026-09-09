@@ -14,7 +14,9 @@ pub(super) struct ServerCertDetails<'a> {
     pub(super) cert_chain: ServerCertChain<'a>,
     pub(super) ocsp_response: Vec<u8>,
     #[cfg(feature = "std")]
-    pub(super) resource_custody: Option<crate::msgs::codec::DecodedCustody>,
+    pub(super) chain_custody: Option<crate::msgs::codec::DecodedCustody>,
+    #[cfg(feature = "std")]
+    pub(super) ocsp_custody: Option<crate::msgs::codec::DecodedCustody>,
 }
 
 /// Distinguishes ordinary borrowed certificate input from the already-owned,
@@ -66,7 +68,9 @@ impl<'a> ServerCertDetails<'a> {
             cert_chain: ServerCertChain::Ordinary(cert_chain),
             ocsp_response,
             #[cfg(feature = "std")]
-            resource_custody: None,
+            chain_custody: None,
+            #[cfg(feature = "std")]
+            ocsp_custody: None,
         }
     }
 
@@ -78,11 +82,11 @@ impl<'a> ServerCertDetails<'a> {
         if source.is_empty() {
             return Ok(());
         }
-        let custody = self.resource_custody.as_ref()
+        let custody = self.chain_custody.as_ref()
             .ok_or(crate::Error::InvalidMessage(crate::error::InvalidMessage::MessageTooLarge))?;
         let (destination, destination_custody) = custody.copy_bytes(source)?;
         self.ocsp_response = destination;
-        self.resource_custody.as_mut().unwrap().absorb(destination_custody)?;
+        self.ocsp_custody = Some(destination_custody);
         Ok(())
     }
 
@@ -91,13 +95,17 @@ impl<'a> ServerCertDetails<'a> {
             cert_chain,
             ocsp_response,
             #[cfg(feature = "std")]
-            resource_custody,
+            chain_custody,
+            #[cfg(feature = "std")]
+            ocsp_custody,
         } = self;
         ServerCertDetails {
             cert_chain: cert_chain.into_owned(),
             ocsp_response,
             #[cfg(feature = "std")]
-            resource_custody,
+            chain_custody,
+            #[cfg(feature = "std")]
+            ocsp_custody,
         }
     }
 
@@ -108,10 +116,13 @@ impl<'a> ServerCertDetails<'a> {
     ) -> (CertificateChain<'static>, Option<crate::msgs::codec::DecodedCustody>) {
         let Self {
             cert_chain,
-            ocsp_response: _,
-            resource_custody,
+            ocsp_response,
+            chain_custody,
+            ocsp_custody,
         } = self;
-        (cert_chain.into_peer_certificates(), resource_custody)
+        drop(ocsp_response);
+        drop(ocsp_custody);
+        (cert_chain.into_peer_certificates(), chain_custody)
     }
 
     #[cfg(not(feature = "std"))]
@@ -128,7 +139,10 @@ impl<'a> ServerCertDetails<'a> {
             ServerCertChain::Ordinary(CertificateChain::default()),
         )
         .into_peer_certificates();
-        (chain, self.resource_custody.take())
+        let ocsp = core::mem::take(&mut self.ocsp_response);
+        drop(ocsp);
+        drop(self.ocsp_custody.take());
+        (chain, self.chain_custody.take())
     }
 }
 
@@ -184,10 +198,37 @@ mod resource_owner_tests {
         let (peer, peer_custody) = details.into_peer_certificates();
         assert_eq!(peer.0.as_ptr(), chain_ptr);
         assert_eq!(peer.0.capacity(), chain_capacity);
-        assert_eq!(owner.used.load(Ordering::SeqCst), used);
+        assert_eq!(owner.used.load(Ordering::SeqCst), used - 2);
 
         drop(peer);
-        assert_eq!(owner.used.load(Ordering::SeqCst), used);
+        assert_eq!(owner.used.load(Ordering::SeqCst), used - 2);
+        drop(peer_custody);
+        assert_eq!(owner.used.load(Ordering::SeqCst), DecodedOwner::arc_layout().unwrap());
+        drop(arc_charge);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn tls12_ocsp_custody_releases_at_peer_chain_handoff() {
+        let owner = Arc::new(Owner {
+            used: AtomicUsize::new(0),
+        });
+        let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+        let chain_bytes = size_of::<CertificateDer<'static>>() + 3;
+        decoded.reserve(chain_bytes).unwrap();
+        let custody = DecodedCustody::exact(decoded, chain_bytes);
+
+        let mut outer = Vec::with_capacity(1);
+        outer.push(CertificateDer::from(vec![1, 2, 3]));
+        let mut details =
+            ServerCertDetails::new_with_resource_custody(CertificateChain(outer), vec![], custody);
+        details.set_ocsp_with_resource_owner(&[4, 5]).unwrap();
+        let with_ocsp = owner.used.load(Ordering::SeqCst);
+
+        let (peer, peer_custody) = details.take_peer_certificates();
+        assert_eq!(owner.used.load(Ordering::SeqCst), with_ocsp - 2);
+        drop(peer);
+        assert_eq!(owner.used.load(Ordering::SeqCst), with_ocsp - 2);
         drop(peer_custody);
         assert_eq!(owner.used.load(Ordering::SeqCst), DecodedOwner::arc_layout().unwrap());
         drop(arc_charge);
@@ -200,12 +241,16 @@ impl ServerCertDetails<'static> {
     pub(super) fn new_with_resource_custody(
         cert_chain: CertificateChain<'static>,
         ocsp_response: Vec<u8>,
-        resource_custody: crate::msgs::codec::DecodedCustody,
+        mut resource_custody: crate::msgs::codec::DecodedCustody,
     ) -> Self {
+        let ocsp_custody = resource_custody
+            .split_off(ocsp_response.capacity())
+            .expect("certificate destination custody matches its backing");
         Self {
             cert_chain: ServerCertChain::Charged(cert_chain),
             ocsp_response,
-            resource_custody: Some(resource_custody),
+            chain_custody: Some(resource_custody),
+            ocsp_custody,
         }
     }
 }

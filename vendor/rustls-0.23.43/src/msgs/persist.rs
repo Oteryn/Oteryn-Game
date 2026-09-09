@@ -235,8 +235,8 @@ impl Tls12ClientSessionValue {
         time_now: UnixTime,
         lifetime_secs: u32,
         extended_ms: bool,
+        owner: Arc<crate::msgs::codec::DecodedOwner>,
     ) -> Result<Self, crate::DeframerBufferError> {
-        let owner = ticket.decoded_owner().ok_or(crate::DeframerBufferError)?;
         Ok(Self {
             suite,
             session_id,

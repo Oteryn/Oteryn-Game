@@ -606,3 +606,13 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   and into CommonState without reserve-again.
 - [ ] Complete resumed TLS 1.2 peer-chain destination custody and compressed-certificate
   same-owner second decoding before transcript/hash-context work.
+
+## Window46 component lifetime repair
+
+- [x] Split already-committed certificate-chain and OCSP custody without reserve-again.
+- [x] Release OCSP custody at TLS 1.2/TLS 1.3 peer-certificate handoff while retaining only
+  chain custody in CommonState.
+- [x] Select the concrete peer-certificate owner for TLS 1.2 session-ID-only storage instead
+  of relying solely on ticket custody.
+- [ ] Precharge resumed TLS 1.2 retained-chain copying into CommonState and continue compressed
+  certificate and transcript/hash ownership.

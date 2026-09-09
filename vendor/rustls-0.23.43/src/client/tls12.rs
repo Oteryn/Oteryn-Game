@@ -1218,12 +1218,19 @@ impl ExpectFinished {
         #[cfg(feature = "std")]
         let chain = cx.common.peer_certificates.as_ref();
         #[cfg(feature = "std")]
-        let session_value = if ticket.decoded_owner().is_some() {
+        let session_owner = cx
+            .common
+            .peer_certificate_custody
+            .as_ref()
+            .map(|custody| custody.owner())
+            .or_else(|| ticket.decoded_owner());
+        #[cfg(feature = "std")]
+        let session_value = if let Some(owner) = session_owner {
             let Some(chain) = chain else { return; };
             let Ok(value) = persist::Tls12ClientSessionValue::new_with_resource_owner(
                 self.secrets.suite(), self.session_id, ticket,
                 self.secrets.master_secret(), chain, &self.config.verifier,
-                &self.config.client_auth_cert_resolver, now, lifetime, self.using_ems,
+                &self.config.client_auth_cert_resolver, now, lifetime, self.using_ems, owner,
             ) else { return; };
             value
         } else { persist::Tls12ClientSessionValue::new(
