@@ -134,8 +134,8 @@ For every implementation PR:
 6. exact-head repository CI including Rust Linux/Windows/supply-chain where applicable;
 7. mandatory self-review and required independent review;
 8. zero unresolved threads / no `REQUEST_CHANGES` / no ownership conflict / `behind_by=0`;
-9. repository-control-plane handoff for governed atomic Merge Queue submission that binds the exact qualified head and intended protected base/queue state; if no callable governed route is available, record `BLOCKED_CAPABILITY_UNAVAILABLE` rather than direct-merge or arm generic auto-merge;
-10. after successful governed Merge Queue integration, verify protected-main readback confirms the accepted candidate is integrated, then archive the task and release ownership.
+9. repository-control-plane handoff only through the authenticated bound META 3.1 native exact-head Merge Queue contract: REST `merge-async` with the exact qualified `sha` and explicit `merge_action="merge_queue"` after fresh repository/PR/`base=main`/head/auth/eligibility preflight. Treat HTTP `202` as acceptance only, bind its exact returned async UUID to an executor-owned receipt sequence, and require immediate same-target live readback carrying that UUID at a strictly greater executor sequence; wall-clock timestamps are freshness-only. Reconcile HTTP `200`/`409`. Direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, a default merge action, no-op/retrigger commits and ambiguous automated dequeue are forbidden substitutes. If the selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified candidate;
+10. queue admission is not terminal proof: require real `merge_group` `game-gate` SUCCESS and protected-main readback confirming the accepted candidate is integrated, then archive the task and release ownership.
 
 ## Reference and fixture rule
 
