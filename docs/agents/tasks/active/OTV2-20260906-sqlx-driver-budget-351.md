@@ -807,3 +807,22 @@ complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: generic reader/list/payload/message ownership; transcript; decoded ClientHello/ServerHello; certificate/OCSP and successor-state custody; compressed certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
 next_action: continue the remaining protected #425 boundaries on this same lineage
 ```
+
+## Window27b decoded reader/list checkpoint
+
+The span checkpoint was normally reconciled with the path-disjoint decoded
+reader work. The same owner is now retained by `ConnectionCore`, supplied to
+ordinary and first-message decode entry points, and propagated through nested
+`Reader::sub` calls. Generic TLS lists reserve checked prospective element
+capacity before each exact-capacity growth and hold old plus new capacity until
+the allocator has destroyed the old backing. Focused funded and max-minus-one
+controls cover this boundary.
+
+```yaml
+status: active
+decoded_owner_reader_propagation: PROVEN_FOCUSED
+decoded_owner_generic_list_growth: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: payload/message rollback and ownership; transcript; decoded ClientHello/ServerHello; certificate/OCSP and successor-state custody; compressed certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: continue #425 at payload/message ownership and nested failure rollback
+```
