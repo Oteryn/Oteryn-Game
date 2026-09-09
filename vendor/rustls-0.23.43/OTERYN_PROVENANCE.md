@@ -1,5 +1,15 @@
 # Oteryn provenance: rustls 0.23.43
 
+### TLS 1.3 certificate destination custody checkpoint
+
+The owner-aware client certificate path reserves the combined actual outer certificate
+vector, every owned DER destination, and OCSP destination before allocating any of them.
+Prospective RAII unwinds partial construction after backing destruction.  On success the
+single destination custody token follows `ServerCertDetails` into `CommonState`, where
+field order destroys certificate/OCSP backing before debit release.  Source Message
+custody remains independent during conversion.  TLS 1.2, compressed-certificate second
+decode, transcript contexts, and complete TLS composition remain unproven.
+
 ## Published package identity
 
 - Source: `https://static.crates.io/crates/rustls/rustls-0.23.43.crate`

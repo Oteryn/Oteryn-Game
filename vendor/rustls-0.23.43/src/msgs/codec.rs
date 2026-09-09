@@ -212,7 +212,7 @@ impl DecodedCustody {
 /// declared before the destination value: Rust then destroys the destination
 /// before this guard returns the reservation during unwinding.
 #[cfg(feature = "std")]
-struct ProspectiveDecodedCustody {
+pub(crate) struct ProspectiveDecodedCustody {
     owner: Arc<DecodedOwner>,
     bytes: usize,
     armed: bool,
@@ -220,12 +220,12 @@ struct ProspectiveDecodedCustody {
 
 #[cfg(feature = "std")]
 impl ProspectiveDecodedCustody {
-    fn reserve(owner: Arc<DecodedOwner>, bytes: usize) -> Result<Self, InvalidMessage> {
+    pub(crate) fn reserve(owner: Arc<DecodedOwner>, bytes: usize) -> Result<Self, InvalidMessage> {
         owner.reserve(bytes)?;
         Ok(Self { owner, bytes, armed: true })
     }
 
-    fn commit(mut self) -> DecodedCustody {
+    pub(crate) fn commit(mut self) -> DecodedCustody {
         self.armed = false;
         DecodedCustody::exact(self.owner.clone(), self.bytes)
     }

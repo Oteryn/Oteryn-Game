@@ -1143,6 +1143,8 @@ impl State<ClientConnectionData> for ExpectCertificate {
         if !self.message_already_in_transcript {
             self.transcript.add_message(&m);
         }
+        #[cfg(feature = "std")]
+        let decoded_owner = m.decoded_owner();
         let cert_chain = require_handshake_msg_move!(
             m,
             HandshakeType::Certificate,
@@ -1157,13 +1159,20 @@ impl State<ClientConnectionData> for ExpectCertificate {
             ));
         }
 
-        let end_entity_ocsp = cert_chain.end_entity_ocsp().to_vec();
-        let server_cert = ServerCertDetails::new(
-            cert_chain
-                .into_certificate_chain()
-                .into_owned(),
-            end_entity_ocsp,
-        );
+        #[cfg(feature = "std")]
+        let server_cert = if let Some(owner) = decoded_owner {
+            let (chain, ocsp, custody) = cert_chain
+                .into_owned_chain_and_ocsp_with_resource_owner(owner)?;
+            ServerCertDetails::new_with_resource_custody(chain, ocsp, custody)
+        } else {
+            let end_entity_ocsp = cert_chain.end_entity_ocsp().to_vec();
+            ServerCertDetails::new(cert_chain.into_certificate_chain().into_owned(), end_entity_ocsp)
+        };
+        #[cfg(not(feature = "std"))]
+        let server_cert = {
+            let end_entity_ocsp = cert_chain.end_entity_ocsp().to_vec();
+            ServerCertDetails::new(cert_chain.into_certificate_chain().into_owned(), end_entity_ocsp)
+        };
 
         Ok(Box::new(ExpectCertificateVerify {
             config: self.config,
@@ -1253,6 +1262,10 @@ impl State<ClientConnectionData> for ExpectCertificateVerify<'_> {
             })?;
 
         cx.common.peer_certificates = Some(self.server_cert.cert_chain.into_owned());
+        #[cfg(feature = "std")]
+        {
+            cx.common.peer_certificate_custody = self.server_cert.resource_custody;
+        }
         self.transcript.add_message(&m);
 
         Ok(Box::new(ExpectFinished {

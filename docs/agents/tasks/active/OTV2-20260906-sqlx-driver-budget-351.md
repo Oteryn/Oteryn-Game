@@ -1239,3 +1239,24 @@ retained_session_secret_and_peer_chain: PROVEN_FOCUSED
 complete_tls_accounting: NOT_PROVEN
 next_action: continue certificate/OCSP ownership and transcript context custody, then compose complete TLS
 ```
+
+## Window42 TLS 1.3 certificate destination custody
+
+The normal TLS 1.3 certificate path now obtains the decoded owner before moving the
+Message payload.  It computes and reserves the complete destination outer-chain, DER and
+OCSP backing before the first destination allocation, then builds the owned chain under
+armed prospective custody.  The source Message remains independently charged throughout
+the conversion.  Successful custody moves through `ServerCertDetails` into
+`CommonState::peer_certificates` without a second reservation; field ordering destroys
+the chain and OCSP backing before releasing their combined destination debit.
+
+This is focused production-path progress only.  TLS 1.2 certificate ownership, compressed
+certificate decompression/second decode, transcript/hash contexts, and the complete
+simultaneous-live handshake composition remain open.
+
+```yaml
+status: active
+tls13_certificate_destination_custody: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+next_action: complete equivalent TLS1.2 and compressed-certificate custody, then transcript/hash contexts
+```

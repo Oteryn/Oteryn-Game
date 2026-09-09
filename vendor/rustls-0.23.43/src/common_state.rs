@@ -48,6 +48,8 @@ pub struct CommonState {
     #[cfg(feature = "std")]
     pub(crate) has_seen_eof: bool,
     pub(crate) peer_certificates: Option<CertificateChain<'static>>,
+    #[cfg(feature = "std")]
+    pub(crate) peer_certificate_custody: Option<crate::msgs::codec::DecodedCustody>,
     message_fragmenter: MessageFragmenter,
     pub(crate) received_plaintext: ChunkVecBuffer,
     pub(crate) sendable_tls: ChunkVecBuffer,
@@ -83,6 +85,8 @@ impl CommonState {
             #[cfg(feature = "std")]
             has_seen_eof: false,
             peer_certificates: None,
+            #[cfg(feature = "std")]
+            peer_certificate_custody: None,
             message_fragmenter: MessageFragmenter::default(),
             received_plaintext: ChunkVecBuffer::new(Some(DEFAULT_RECEIVED_PLAINTEXT_LIMIT)),
             sendable_tls: ChunkVecBuffer::new(Some(DEFAULT_BUFFER_LIMIT)),

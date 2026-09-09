@@ -12,6 +12,8 @@ use crate::{CipherSuite, SignatureScheme, compress, sign};
 pub(super) struct ServerCertDetails<'a> {
     pub(super) cert_chain: CertificateChain<'a>,
     pub(super) ocsp_response: Vec<u8>,
+    #[cfg(feature = "std")]
+    pub(super) resource_custody: Option<crate::msgs::codec::DecodedCustody>,
 }
 
 impl<'a> ServerCertDetails<'a> {
@@ -19,6 +21,21 @@ impl<'a> ServerCertDetails<'a> {
         Self {
             cert_chain,
             ocsp_response,
+            #[cfg(feature = "std")]
+            resource_custody: None,
+        }
+    }
+
+    #[cfg(feature = "std")]
+    pub(super) fn new_with_resource_custody(
+        cert_chain: CertificateChain<'a>,
+        ocsp_response: Vec<u8>,
+        resource_custody: crate::msgs::codec::DecodedCustody,
+    ) -> Self {
+        Self {
+            cert_chain,
+            ocsp_response,
+            resource_custody: Some(resource_custody),
         }
     }
 
@@ -26,10 +43,14 @@ impl<'a> ServerCertDetails<'a> {
         let Self {
             cert_chain,
             ocsp_response,
+            #[cfg(feature = "std")]
+            resource_custody,
         } = self;
         ServerCertDetails {
             cert_chain: cert_chain.into_owned(),
             ocsp_response,
+            #[cfg(feature = "std")]
+            resource_custody,
         }
     }
 }

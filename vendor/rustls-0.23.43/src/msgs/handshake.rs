@@ -1863,6 +1863,66 @@ impl<'a> Codec<'a> for CertificatePayloadTls13<'a> {
 }
 
 impl<'a> CertificatePayloadTls13<'a> {
+    #[cfg(feature = "std")]
+    pub(crate) fn into_owned_chain_and_ocsp_with_resource_owner(
+        self,
+        owner: Arc<DecodedOwner>,
+    ) -> Result<(
+        CertificateChain<'static>,
+        Vec<u8>,
+        codec::DecodedCustody,
+    ), InvalidMessage> {
+        use core::mem::size_of;
+        use crate::msgs::codec::ProspectiveDecodedCustody;
+
+        let count = self.entries.len();
+        let outer_bytes = count
+            .checked_mul(size_of::<CertificateDer<'static>>())
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+        let total_bytes = self.entries.iter().try_fold(outer_bytes, |total, entry| {
+            total.checked_add(entry.cert.as_ref().len())
+        }).and_then(|total| {
+            total.checked_add(self.entries.first()
+                .and_then(|entry| entry.extensions.status.as_ref())
+                .map(|status| status.ocsp_response.0.bytes().len())
+                .unwrap_or_default())
+        }).ok_or(InvalidMessage::MessageTooLarge)?;
+        let prospective = ProspectiveDecodedCustody::reserve(owner, total_bytes)?;
+        let mut chain = Vec::with_capacity(count);
+        if chain.capacity() != count {
+            drop(chain);
+            return Err(InvalidMessage::MessageTooLarge);
+        }
+        for entry in &self.entries {
+            let bytes = entry.cert.as_ref();
+            let mut der = Vec::with_capacity(bytes.len());
+            der.extend_from_slice(bytes);
+            if der.capacity() != bytes.len() {
+                drop(der);
+                return Err(InvalidMessage::MessageTooLarge);
+            }
+            chain.push(CertificateDer::from(der));
+        }
+
+        let ocsp_source = self.entries.first()
+            .and_then(|entry| entry.extensions.status.as_ref())
+            .map(|status| status.ocsp_response.0.bytes())
+            .unwrap_or_default();
+        let ocsp = if ocsp_source.is_empty() {
+            Vec::new()
+        } else {
+            let mut destination = Vec::with_capacity(ocsp_source.len());
+            destination.extend_from_slice(ocsp_source);
+            if destination.capacity() != ocsp_source.len() {
+                drop(destination);
+                return Err(InvalidMessage::MessageTooLarge);
+            }
+            destination
+        };
+
+        Ok((CertificateChain(chain), ocsp, prospective.commit()))
+    }
+
     pub(crate) fn new(
         certs: impl Iterator<Item = &'a CertificateDer<'a>>,
         ocsp_response: Option<&'a [u8]>,

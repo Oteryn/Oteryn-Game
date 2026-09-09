@@ -1,5 +1,14 @@
 # SQLx PostgreSQL driver budget351 implementation plan
 
+## TLS certificate destination checkpoint
+
+- [x] Reserve the TLS 1.3 owned certificate-chain outer backing, DER copies, and OCSP copy
+  before the first destination allocation and transfer custody into `CommonState`.
+- [ ] Apply equivalent reachable TLS 1.2 custody and compressed-certificate second-decode
+  accounting.
+- [ ] Account transcript vectors and qualified AWS-LC hash contexts, then produce the
+  complete-handshake composition witness.
+
 > **2026-09-07 continuation checkpoint:** TLS activation is BLOCKED at the
 > excluded blocking-runtime task allocation owner. The admitted SQLx paths cannot
 > pre-charge Tokio's private generic `Cell<T, S>` allocation or keep that charge

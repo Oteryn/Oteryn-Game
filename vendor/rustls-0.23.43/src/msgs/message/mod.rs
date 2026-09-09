@@ -211,6 +211,18 @@ impl<'a> Message<'a> {
             decoded_custody: None,
         }
     }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn decoded_owner(&self) -> Option<Arc<DecodedOwner>> {
+        #[cfg(not(test))]
+        {
+            self.decoded_custody.as_ref().map(DecodedCustody::owner)
+        }
+        #[cfg(test)]
+        {
+            None
+        }
+    }
     pub fn is_handshake_type(&self, hstyp: HandshakeType) -> bool {
         // Bit of a layering violation, but OK.
         if let MessagePayload::Handshake { parsed, .. } = &self.payload {
