@@ -910,3 +910,27 @@ complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: per-backing list custody; payload/message rollback; transcript; certificate/OCSP; successor and peer-chain transfer; compressed certificate; retained sessions; complete handshake; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
 next_action: replace aggregate-only list custody with backing-bound ownership, then continue payload/message ownership
 ```
+
+## Window30 backing-bound custody preflight
+
+A concrete backing-bound implementation attempt established that the current
+`Message<'a>` representation cannot carry decoded custody without updating all
+of its construction sites. Adding a final custody field (after `payload`, so
+payload backing is destroyed first) compiled through the decoded client path
+but failed at existing constructors in excluded server handshake and client ECH
+surfaces. Keeping the existing bare `Vec<T>` return from `Codec::read` has no
+Drop hook, allocator hook, or destination field in which custody can travel;
+the prohibited alternatives are an address registry or aggregate connection
+retention.
+
+```yaml
+status: blocked_pending_shared_lease
+decoded_close_on_backing_drop: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: "SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/ech.rs + src/server/tls12.rs + src/server/tls13.rs + src/common_state.rs :: Message construction sites / minimum custody-preserving constructor factoring :: adding backing-bound Message custody while retaining source compatibility requires initializing the new non-allocating custody field at every existing Message literal; current #425 excludes server handshake and ECH paths"
+```
+
+No semantic source from the failed preflight is retained. The earlier
+ArcInner precharge, geometric growth, payload denial, and rollback repairs remain
+unchanged and regression-only. P1 `3966866700` and umbrella P1 `3954831069`
+remain open.
