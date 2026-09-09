@@ -2,33 +2,27 @@ use crate::net::resource_budget::{BudgetError, ResourceBudget, ResourceReservati
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
-const TEST_CERT_PEM: &[u8] = b"-----BEGIN CERTIFICATE-----\nMIIBfTCCASOgAwIBAgIUDZBk0JEdbOds6TsGRPkwvhxFUSMwCgYIKoZIzj0EAwIw\nFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwODEyNTMxMFoXDTI2MDkwOTEy\nNTMxMFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAEy2WKazyI8TXUnJTbx1vSKqaJx8w+RW8JXa+v/pP7FzXgzntfmqjK9yh8\nm970RDgI5shoO5vx4GbStl1EgzFY1KNTMFEwHQYDVR0OBBYEFEOj0jJhWWip3SDz\n7NKpJwCjWRqhMB8GA1UdIwQYMBaAFEOj0jJhWWip3SDz7NKpJwCjWRqhMA8GA1Ud\nEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIhAPyz4a/hpM3FdPkGujIcZQp1\nw2Jgh0bjZ//2tCW0AMl4AiARhMbhcwqLnNlemlE2HQcfkezW3Zpjt75Zi8tXaGUM\nEQ==\n-----END CERTIFICATE-----\n";
-const TEST_KEY_PEM: &[u8] = b"-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg/YnH3AP6GLGXmx4q\nIqRsG/wjKmRE+eY/UJuBHsRM4y6hRANCAATLZYprPIjxNdSclNvHW9IqponHzD5F\nbwldr6/+k/sXNeDOe1+aqMr3KHyb3vREOAjmyGg7m/HgZtK2XUSDMVjU\n-----END PRIVATE KEY-----\n";
-
 #[derive(Debug)]
 struct Ledger {
-    limit: usize,
+    limit: AtomicUsize,
     used: AtomicUsize,
+    peak: AtomicUsize,
     provider_shared_debits: Mutex<Vec<usize>>,
-    events: Mutex<Vec<(bool, usize)>>,
 }
 impl ResourceBudget for Ledger {
     fn try_reserve(&self, bytes: usize) -> Result<(), BudgetError> {
-        let result = self.used
+        let previous = self.used
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |used| {
-                used.checked_add(bytes).filter(|next| *next <= self.limit)
+                used.checked_add(bytes)
+                    .filter(|next| *next <= self.limit.load(Ordering::Acquire))
             })
-            .map(|_| ())
-            .map_err(|_| BudgetError::Unavailable);
-        if result.is_ok() {
-            self.events.lock().unwrap().push((true, bytes));
-        }
-        result
+            .map_err(|_| BudgetError::Unavailable)?;
+        self.peak.fetch_max(previous + bytes, Ordering::AcqRel);
+        Ok(())
     }
     fn release(&self, bytes: usize) {
         let prior = self.used.fetch_sub(bytes, Ordering::AcqRel);
         assert!(prior >= bytes, "reservation released twice");
-        self.events.lock().unwrap().push((false, bytes));
     }
     fn try_reserve_provider_shared(&self, bytes: usize) -> Result<(), BudgetError> {
         self.try_reserve(bytes)?;
@@ -38,114 +32,11 @@ impl ResourceBudget for Ledger {
 }
 fn ledger(limit: usize) -> Arc<Ledger> {
     Arc::new(Ledger {
-        limit,
+        limit: AtomicUsize::new(limit),
         used: AtomicUsize::new(0),
+        peak: AtomicUsize::new(0),
         provider_shared_debits: Mutex::new(Vec::new()),
-        events: Mutex::new(Vec::new()),
     })
-}
-
-#[cfg(feature = "_tls-rustls-aws-lc-rs")]
-#[test]
-#[ignore = "run by exact name in a fresh process; AWS-LC residency is process-global"]
-fn aws_lc_thread_churn_exhausts_before_provider_use() {
-    use super::tls_rustls::DeframerBudgetOwner;
-
-    use std::io::Read;
-    let mut auxv = std::fs::File::open("/proc/self/auxv").unwrap();
-    let mut pair = [0u8; 16];
-    let mut page_size = None;
-    while auxv.read_exact(&mut pair).is_ok() {
-        let tag = usize::from_ne_bytes(pair[..8].try_into().unwrap());
-        let value = usize::from_ne_bytes(pair[8..].try_into().unwrap());
-        if tag == 6 {
-            page_size = Some(value);
-            break;
-        }
-    }
-    let page_size = page_size.unwrap();
-    let ordinary = rustls::crypto::aws_lc_rs::default_provider();
-    let (arc_inner, _) = core::alloc::Layout::new::<[AtomicUsize; 2]>()
-        .extend(core::alloc::Layout::new::<rustls::crypto::CryptoProvider>())
-        .unwrap();
-    let provider_config = ordinary.cipher_suites.len()
-        * core::mem::size_of::<rustls::SupportedCipherSuite>()
-        + ordinary.kx_groups.len()
-            * core::mem::size_of::<&'static dyn rustls::crypto::SupportedKxGroup>()
-        + arc_inner.pad_to_align().size();
-    let process = 140_208 + 2 * page_size;
-    // Main-thread registration plus exactly one churned thread registration.
-    let budget = ledger(process + provider_config + 2 * 1_360);
-    let owner: Arc<dyn rustls::DeframerBufferOwner> =
-        Arc::new(DeframerBudgetOwner(budget.clone()));
-    rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner.clone()).unwrap();
-
-    let first = std::thread::spawn({
-        let owner = owner.clone();
-        move || rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner).is_ok()
-    });
-    assert!(first.join().unwrap());
-    let second = std::thread::spawn(move || {
-        rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner).is_err()
-    });
-    assert!(second.join().unwrap(), "next thread must fail before AWS-LC use");
-    let debits = budget.provider_shared_debits.lock().unwrap();
-    assert_eq!(debits.iter().filter(|bytes| **bytes == 1_360).count(), 2);
-    assert_eq!(budget.used.load(Ordering::Acquire), budget.limit);
-}
-
-#[cfg(feature = "_tls-rustls-aws-lc-rs")]
-#[test]
-#[ignore = "run by exact name in a fresh process; AWS-LC residency is process-global"]
-fn aws_lc_actual_hrr_holds_initial_until_replacement_exists() {
-    use super::tls_rustls::DeframerBudgetOwner;
-    use std::io::Cursor;
-
-    let budget = ledger(4 * 1024 * 1024);
-    let owner: Arc<dyn rustls::DeframerBufferOwner> =
-        Arc::new(DeframerBudgetOwner(budget.clone()));
-    let client_provider =
-        rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner.clone()).unwrap();
-    let client_config = rustls::ClientConfig::builder_with_provider(client_provider)
-        .with_safe_default_protocol_versions()
-        .unwrap()
-        .with_root_certificates(rustls::RootCertStore::empty())
-        .with_no_client_auth();
-    let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
-    let mut client = rustls::ClientConnection::new_with_resource_owner(
-        Arc::new(client_config),
-        name,
-        owner,
-    )
-    .unwrap();
-
-    let mut server_provider = rustls::crypto::aws_lc_rs::default_provider();
-    server_provider.kx_groups = vec![rustls::crypto::aws_lc_rs::kx_group::SECP256R1];
-    let (certs, key) = super::tls_rustls::client_auth_from_pem(TEST_CERT_PEM, TEST_KEY_PEM).unwrap();
-    let server_config = rustls::ServerConfig::builder_with_provider(Arc::new(server_provider))
-        .with_safe_default_protocol_versions()
-        .unwrap()
-        .with_no_client_auth()
-        .with_single_cert(certs, key)
-        .unwrap();
-    let mut server = rustls::ServerConnection::new(Arc::new(server_config)).unwrap();
-
-    let mut client_hello = Vec::new();
-    client.write_tls(&mut client_hello).unwrap();
-    server.read_tls(&mut Cursor::new(client_hello)).unwrap();
-    server.process_new_packets().unwrap();
-    let mut hrr = Vec::new();
-    server.write_tls(&mut hrr).unwrap();
-    assert!(!hrr.is_empty(), "server must emit an actual HRR record");
-    client.read_tls(&mut Cursor::new(hrr)).unwrap();
-    client.process_new_packets().unwrap();
-
-    let events = budget.events.lock().unwrap();
-    let initial = events.iter().position(|event| *event == (true, 7_881)).unwrap();
-    let replacement = events.iter().position(|event| *event == (true, 1_625)).unwrap();
-    let old_release = events.iter().position(|event| *event == (false, 7_881)).unwrap();
-    assert!(initial < replacement && replacement < old_release);
-    assert!(budget.used.load(Ordering::Acquire) >= 1_625);
 }
 
 #[test]
@@ -261,6 +152,43 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
     );
     drop(debits);
 
+    // Thread registrations are retained by the provider slice even after the
+    // registering threads exit.  Fund exactly three more registrations, prove
+    // repeat use on each thread is free, then prove the next thread is denied
+    // before it can enter AWS-LC provider construction.
+    let used_before_churn = process.used.load(Ordering::Acquire);
+    process
+        .limit
+        .store(used_before_churn + 3 * 1_360, Ordering::Release);
+    for _ in 0..3 {
+        let owner = Arc::new(DeframerBudgetOwner(process.clone()));
+        let thread_ledger = process.clone();
+        std::thread::spawn(move || {
+            rustls::crypto::ensure_aws_lc_provider_residency(owner.clone()).unwrap();
+            let after_first = thread_ledger.used.load(Ordering::Acquire);
+            rustls::crypto::ensure_aws_lc_provider_residency(owner.clone()).unwrap();
+            assert_eq!(
+                thread_ledger.used.load(Ordering::Acquire),
+                after_first,
+                "repeat use duplicated thread debit"
+            );
+        })
+        .join()
+        .unwrap();
+    }
+    assert_eq!(
+        process.used.load(Ordering::Acquire),
+        used_before_churn + 3 * 1_360
+    );
+    let denied_owner = Arc::new(DeframerBudgetOwner(process.clone()));
+    assert!(std::thread::spawn(move || {
+        rustls::crypto::ensure_aws_lc_provider_residency(denied_owner)
+    })
+    .join()
+    .unwrap()
+    .is_err());
+    process.limit.store(1_000_000, Ordering::Release);
+
     let groups: [(&dyn SupportedKxGroup, usize); 5] = [
         (rustls::crypto::aws_lc_rs::kx_group::X25519, 554),
         (rustls::crypto::aws_lc_rs::kx_group::SECP256R1, 1_625),
@@ -326,6 +254,91 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
         .unwrap();
     assert!(active.complete(&[]).is_err());
     assert_eq!(failed.used.load(Ordering::Acquire), 0);
+}
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+#[test]
+fn aws_lc_real_hrr_wire_retains_initial_until_replacement_is_started() {
+    use super::tls_rustls::{client_auth_from_pem, DeframerBudgetOwner, DummyTlsVerifier};
+    use std::io::Cursor;
+
+    const CERT: &[u8] = b"-----BEGIN CERTIFICATE-----\nMIIBfTCCASOgAwIBAgIUDZBk0JEdbOds6TsGRPkwvhxFUSMwCgYIKoZIzj0EAwIw\nFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwODEyNTMxMFoXDTI2MDkwOTEy\nNTMxMFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAEy2WKazyI8TXUnJTbx1vSKqaJx8w+RW8JXa+v/pP7FzXgzntfmqjK9yh8\nm970RDgI5shoO5vx4GbStl1EgzFY1KNTMFEwHQYDVR0OBBYEFEOj0jJhWWip3SDz\n7NKpJwCjWRqhMB8GA1UdIwQYMBaAFEOj0jJhWWip3SDz7NKpJwCjWRqhMA8GA1Ud\nEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIhAPyz4a/hpM3FdPkGujIcZQp1\nw2Jgh0bjZ//2tCW0AMl4AiARhMbhcwqLnNlemlE2HQcfkezW3Zpjt75Zi8tXaGUM\nEQ==\n-----END CERTIFICATE-----\n";
+    const KEY: &[u8] = b"-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg/YnH3AP6GLGXmx4q\nIqRsG/wjKmRE+eY/UJuBHsRM4y6hRANCAATLZYprPIjxNdSclNvHW9IqponHzD5F\nbwldr6/+k/sXNeDOe1+aqMr3KHyb3vREOAjmyGg7m/HgZtK2XUSDMVjU\n-----END PRIVATE KEY-----\n";
+
+    let budget = ledger(2_000_000);
+    let owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(DeframerBudgetOwner(budget.clone()));
+    let provider = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner.clone())
+        .unwrap();
+    let client_config = rustls::ClientConfig::builder_with_provider(provider.clone())
+        .with_protocol_versions(&[&rustls::version::TLS13])
+        .unwrap()
+        .dangerous()
+        .with_custom_certificate_verifier(Arc::new(DummyTlsVerifier {
+            provider: provider.clone(),
+        }))
+        .with_no_client_auth();
+    let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
+    let mut client = rustls::ClientConnection::new_with_resource_owner(
+        Arc::new(client_config),
+        name,
+        owner,
+    )
+    .unwrap();
+
+    let (chain, key) = client_auth_from_pem(CERT, KEY).unwrap();
+    let mut server_provider = rustls::crypto::aws_lc_rs::default_provider();
+    server_provider.kx_groups = vec![rustls::crypto::aws_lc_rs::kx_group::SECP256R1];
+    let server_config = rustls::ServerConfig::builder_with_provider(Arc::new(server_provider))
+        .with_protocol_versions(&[&rustls::version::TLS13])
+        .unwrap()
+        .with_no_client_auth()
+        .with_single_cert(chain, key)
+        .unwrap();
+    let mut server = rustls::ServerConnection::new(Arc::new(server_config)).unwrap();
+
+    let initial_used = budget.used.load(Ordering::Acquire);
+    assert!(initial_used >= 7_881, "initial PQ KX must already be charged");
+    let mut wire = Vec::new();
+    client.write_tls(&mut wire).unwrap();
+    server.read_tls(&mut Cursor::new(&wire)).unwrap();
+    server.process_new_packets().unwrap();
+    wire.clear();
+    server.write_tls(&mut wire).unwrap();
+    client.read_tls(&mut Cursor::new(&wire)).unwrap();
+    client.process_new_packets().unwrap();
+
+    assert_eq!(
+        client.handshake_kind(),
+        Some(rustls::HandshakeKind::FullWithHelloRetryRequest)
+    );
+    assert!(
+        budget.peak.load(Ordering::Acquire) >= initial_used + 1_625,
+        "replacement P-256 must be reserved while the initial PQ KX remains charged"
+    );
+    assert!(
+        budget.used.load(Ordering::Acquire) < initial_used,
+        "the initial KX must be destroyed after the replacement is installed"
+    );
+
+    for _ in 0..8 {
+        wire.clear();
+        client.write_tls(&mut wire).unwrap();
+        server.read_tls(&mut Cursor::new(&wire)).unwrap();
+        server.process_new_packets().unwrap();
+        wire.clear();
+        server.write_tls(&mut wire).unwrap();
+        client.read_tls(&mut Cursor::new(&wire)).unwrap();
+        client.process_new_packets().unwrap();
+        if !client.is_handshaking() && !server.is_handshaking() {
+            break;
+        }
+    }
+    assert!(!client.is_handshaking());
+    assert_eq!(
+        client.handshake_kind(),
+        Some(rustls::HandshakeKind::FullWithHelloRetryRequest)
+    );
 }
 
 #[cfg(feature = "_tls-rustls-aws-lc-rs")]
@@ -726,13 +739,16 @@ fn rustls_deframer_owner_uses_the_operation_ledger() {
 #[cfg(feature = "_tls-rustls")]
 #[test]
 fn client_pem_parsing_borrows_charged_backing_without_a_second_copy() {
-    let budget = ledger(TEST_CERT_PEM.len() + TEST_KEY_PEM.len());
-    let cert = ResourceReservation::try_new(budget.clone(), TEST_CERT_PEM.len())
+    const CERT: &[u8] = b"-----BEGIN CERTIFICATE-----\nMIIBfTCCASOgAwIBAgIUDZBk0JEdbOds6TsGRPkwvhxFUSMwCgYIKoZIzj0EAwIw\nFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwODEyNTMxMFoXDTI2MDkwOTEy\nNTMxMFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAEy2WKazyI8TXUnJTbx1vSKqaJx8w+RW8JXa+v/pP7FzXgzntfmqjK9yh8\nm970RDgI5shoO5vx4GbStl1EgzFY1KNTMFEwHQYDVR0OBBYEFEOj0jJhWWip3SDz\n7NKpJwCjWRqhMB8GA1UdIwQYMBaAFEOj0jJhWWip3SDz7NKpJwCjWRqhMA8GA1Ud\nEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIhAPyz4a/hpM3FdPkGujIcZQp1\nw2Jgh0bjZ//2tCW0AMl4AiARhMbhcwqLnNlemlE2HQcfkezW3Zpjt75Zi8tXaGUM\nEQ==\n-----END CERTIFICATE-----\n";
+    const KEY: &[u8] = b"-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg/YnH3AP6GLGXmx4q\nIqRsG/wjKmRE+eY/UJuBHsRM4y6hRANCAATLZYprPIjxNdSclNvHW9IqponHzD5F\nbwldr6/+k/sXNeDOe1+aqMr3KHyb3vREOAjmyGg7m/HgZtK2XUSDMVjU\n-----END PRIVATE KEY-----\n";
+
+    let budget = ledger(CERT.len() + KEY.len());
+    let cert = ResourceReservation::try_new(budget.clone(), CERT.len())
         .unwrap()
-        .bind(TEST_CERT_PEM.to_vec());
-    let key = ResourceReservation::try_new(budget.clone(), TEST_KEY_PEM.len())
+        .bind(CERT.to_vec());
+    let key = ResourceReservation::try_new(budget.clone(), KEY.len())
         .unwrap()
-        .bind(TEST_KEY_PEM.to_vec());
+        .bind(KEY.to_vec());
     let used_before = budget.used.load(Ordering::Acquire);
     let cert_ptr = cert.get().as_ptr();
     let key_ptr = key.get().as_ptr();
@@ -750,15 +766,15 @@ fn client_pem_parsing_borrows_charged_backing_without_a_second_copy() {
     drop((cert, key));
     assert_eq!(budget.used.load(Ordering::Acquire), 0);
 
-    let denied = ledger(TEST_CERT_PEM.len() + TEST_KEY_PEM.len() - 1);
-    let held = ResourceReservation::try_new(denied.clone(), TEST_CERT_PEM.len())
+    let denied = ledger(CERT.len() + KEY.len() - 1);
+    let held = ResourceReservation::try_new(denied.clone(), CERT.len())
         .unwrap()
-        .bind(TEST_CERT_PEM.to_vec());
+        .bind(CERT.to_vec());
     assert!(matches!(
-        ResourceReservation::try_new(denied.clone(), TEST_KEY_PEM.len()),
+        ResourceReservation::try_new(denied.clone(), KEY.len()),
         Err(BudgetError::Unavailable)
     ));
-    assert_eq!(denied.used.load(Ordering::Acquire), TEST_CERT_PEM.len());
+    assert_eq!(denied.used.load(Ordering::Acquire), CERT.len());
     drop(held);
     assert_eq!(denied.used.load(Ordering::Acquire), 0);
 
@@ -766,7 +782,7 @@ fn client_pem_parsing_borrows_charged_backing_without_a_second_copy() {
     let malformed = ResourceReservation::try_new(malformed_budget.clone(), 3)
         .unwrap()
         .bind(b"bad".to_vec());
-    assert!(super::tls_rustls::client_auth_from_pem(TEST_CERT_PEM, malformed.get()).is_err());
+    assert!(super::tls_rustls::client_auth_from_pem(CERT, malformed.get()).is_err());
     assert_eq!(malformed_budget.used.load(Ordering::Acquire), 3);
     drop(malformed);
     assert_eq!(malformed_budget.used.load(Ordering::Acquire), 0);

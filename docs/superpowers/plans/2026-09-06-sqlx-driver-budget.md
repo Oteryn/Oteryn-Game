@@ -362,8 +362,22 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Re-run allocation-free validation and the executable racing-first-use accounting proof on the final feature graph.
 - [ ] Complete actual HRR, thread-churn, cancellation, complete TLS composition, funded TLS-positive, and PostgreSQL 17.6 qualification before any aggregate WP3 acceptance claim.
 
-## Window24 final-graph KX lifecycle
+## Window24a actual HRR wire proof
 
-- [x] Process an actual TLS 1.3 HRR selecting P-256 and prove initial/replacement KX reservation overlap and old-backing destruction ordering.
-- [x] Prove exact current-thread first-use, repeat-use, churn, permanent debit, and exhaustion behavior in a fresh process.
-- [ ] Complete replacement-denial and cancellation/error/drop coverage before aggregate provider/KX GREEN; then continue complete TLS composition.
+- [x] Drive a real owner-aware PQ-first client against an ordinary P-256-only
+  TLS 1.3 server and require `FullWithHelloRetryRequest`.
+- [x] Observe the same-ledger peak containing the initial 7,881-byte hybrid KX
+  plus the 1,625-byte replacement before old-backing release.
+- [x] Complete the negotiated handshake and preserve ordinary server,
+  certificate, provider, and protocol semantics.
+- [ ] Finish initial/post-HRR cancellation and thread-churn controls before
+  aggregate KX/provider GREEN.
+- [ ] Continue complete TLS custody, funded SQLx TLS-positive, and PostgreSQL
+  17.6 qualification.
+## Window24b retained provider-thread churn
+
+- [x] Normally merge protected `main@e1750ede386c0ee1001894ab9d91129de5d03fce`.
+- [x] Prove retained 1,360-byte per-thread residency, repeat-use idempotence, and same-root churn exhaustion before AWS-LC use.
+- [ ] Prove actual wire HRR initial/replacement overlap and cancellation/error/drop ordering.
+- [ ] Complete decoded/config/session/cache/send/transcript/error TLS custody.
+- [ ] Execute funded AWS-LC TLS-positive and configured PostgreSQL 17.6 positive/hostile qualification.

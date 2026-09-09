@@ -696,23 +696,44 @@ remaining_acceptance_cells: actual HRR; thread churn; cancellation/error/drop; d
 next_action: finish the full #451 final-graph matrix, then continue every already-protected TLS and PostgreSQL custody cell
 ```
 
-## Window24 final-graph HRR and thread-churn checkpoint
+## Window24a actual TLS 1.3 HelloRetryRequest proof
 
-After normally merging protected `main@e1750ede386c0ee1001894ab9d91129de5d03fce`,
-the executable SQLx AWS-LC harness drives a real client/server TLS 1.3
-HelloRetryRequest selecting P-256. Its event ledger proves the 7,881-byte
-initial hybrid debit remains live when the 1,625-byte replacement is acquired,
-and the old debit releases only after replacement construction. A separate
-fresh-process control funds exactly the process/provider configuration charges
-and two 1,360-byte thread debits: same-thread reuse is free, one churned thread
-succeeds, and the next is denied before owner-aware provider use.
+The executable SQLx AWS-LC harness now drives a real client/server TLS 1.3
+exchange.  The owner-aware PQ-first client initially holds the protected 7,881
+byte X25519MLKEM768 reservation; an ordinary P-256-only server emits a real
+HelloRetryRequest.  Peak-ledger observation proves the 1,625-byte replacement
+is reserved while the initial charge is still held, and the post-transition
+ledger proves the initial backing is destroyed before its charge is released.
+The handshake completes and reports `FullWithHelloRetryRequest` without
+weakening certificate, protocol, provider, group-order, or ordinary server
+semantics.
 
 ```yaml
 status: active
-actual_hrr_wire: PROVEN_FOCUSED
-thread_residency_churn: PROVEN_FOCUSED
+actual_hrr_wire: PROVEN
+actual_hrr_kind: FullWithHelloRetryRequest
+actual_hrr_overlap: PROVEN_7881_PLUS_1625
 aws_lc_kx_provider_resident: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
-remaining_acceptance_cells: HRR replacement denial; cancellation/error/drop; decoded/config/session/cache/send/transcript custody; TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
-next_action: finish the remaining #451 cancellation and denial matrix, then continue complete TLS custody
+remaining_acceptance_cells: initial/post-HRR cancellation ordering; sequential thread churn; complete decoded/config/session/cache/send/transcript/error custody; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: finish cancellation and thread-churn controls, then continue the complete TLS ownership matrix
+```
+
+## Window24b retained provider-thread churn
+
+Protected `main@e1750ede386c0ee1001894ab9d91129de5d03fce` was merged normally.
+The exact AWS-LC SQLx harness now funds three additional new-thread 1,360-byte
+registrations on the same root, proves repeated use on each thread is
+allocation/debit-free, retains every registration after thread exit, and
+rejects the next thread at the residency preflight before AWS-LC use.
+
+```yaml
+status: active
+provider_thread_churn: PROVEN_FOCUSED
+provider_thread_repeat: PROVEN_FOCUSED
+provider_thread_exhaustion_pre_use_denial: PROVEN_FOCUSED
+aws_lc_kx_provider_resident: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: actual wire HRR; cancellation/error/drop matrix; decoded/config/session/cache/send/transcript/error custody; funded TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: execute actual HRR and cancellation lifecycle proof, then continue the protected complete-TLS matrix
 ```
