@@ -194,3 +194,22 @@ the vector before its custody releases. Focused tests execute those lifetime rul
 The ordinary `Vec<T>` codec and remaining private handshake fields have not yet been
 migrated, so this is a material Gate-1 implementation checkpoint rather than complete
 TLS proof. The decoded-owner P1s remain open.
+
+## Generic charged-copy safety repair
+
+The first `DecodedVec<T>` checkpoint exposed a generic charged copy for arbitrary
+`T: Clone`. That surface was not recursively owner-aware: an element clone could allocate
+nested backing after only the outer destination vector was reserved. It also left the
+prospective outer reservation without an armed guard until all elements had cloned.
+
+The generic operation is now restricted to `T: Copy` and copies the slice without invoking
+an allocating element clone. An armed prospective-custody guard is acquired before the
+destination vector and is declared first, so safe-Rust unwinding destroys destination
+backing before returning the debit. Successful construction commits that debit into the
+final backing-bound token. Allocating element types must use field-specific recursive
+fallible copies during the protected migration; ordinary owner-free `Clone` is unchanged.
+
+Focused coverage includes exact max-minus-one denial before destination allocation,
+unchanged live source pointer/content/custody, no leaked reservation, funded overlap, and
+independent source/destination final release. The handshake-field census and migration,
+retained descendants, and complete TLS accounting remain open.

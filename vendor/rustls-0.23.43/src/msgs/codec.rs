@@ -172,6 +172,39 @@ impl DecodedCustody {
     }
 }
 
+/// A reservation for backing that has not yet been committed to its final
+/// owner.  This guard must be created before the prospective allocation and
+/// declared before the destination value: Rust then destroys the destination
+/// before this guard returns the reservation during unwinding.
+#[cfg(feature = "std")]
+struct ProspectiveDecodedCustody {
+    owner: Arc<DecodedOwner>,
+    bytes: usize,
+    armed: bool,
+}
+
+#[cfg(feature = "std")]
+impl ProspectiveDecodedCustody {
+    fn reserve(owner: Arc<DecodedOwner>, bytes: usize) -> Result<Self, InvalidMessage> {
+        owner.reserve(bytes)?;
+        Ok(Self { owner, bytes, armed: true })
+    }
+
+    fn commit(mut self) -> DecodedCustody {
+        self.armed = false;
+        DecodedCustody::exact(self.owner.clone(), self.bytes)
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for ProspectiveDecodedCustody {
+    fn drop(&mut self) {
+        if self.armed {
+            self.owner.release(self.bytes);
+        }
+    }
+}
+
 #[cfg(feature = "std")]
 impl Drop for DecodedCustody {
     fn drop(&mut self) {
@@ -198,10 +231,15 @@ pub(crate) struct DecodedVec<T> {
 
 #[cfg(feature = "std")]
 impl<T> DecodedVec<T> {
+    /// Copy an owner-aware vector whose elements are known not to allocate.
+    ///
+    /// Allocating element copies require a field-specific fallible operation
+    /// that reserves their nested backing; this outer-vector helper is
+    /// deliberately unavailable for arbitrary `T: Clone`.
     #[allow(dead_code)] // Used by the next private handshake-field migration.
-    pub(crate) fn try_clone_with_resource_owner(&self) -> Result<Self, InvalidMessage>
+    pub(crate) fn try_copy_with_resource_owner(&self) -> Result<Self, InvalidMessage>
     where
-        T: Clone,
+        T: Copy,
     {
         let Some(custody) = &self.custody else {
             return Ok(Self { values: self.values.clone(), custody: None });
@@ -209,17 +247,17 @@ impl<T> DecodedVec<T> {
         let capacity = self.values.capacity();
         let bytes = capacity.checked_mul(size_of::<T>())
             .ok_or(InvalidMessage::MessageTooLarge)?;
-        custody.owner.reserve(bytes)?;
+        let prospective =
+            ProspectiveDecodedCustody::reserve(custody.owner.clone(), bytes)?;
         let mut values = Vec::with_capacity(capacity);
-        values.extend(self.values.iter().cloned());
+        values.extend_from_slice(&self.values);
         if values.capacity() != capacity {
             drop(values);
-            custody.owner.release(bytes);
             return Err(InvalidMessage::MessageTooLarge);
         }
         Ok(Self {
             values,
-            custody: Some(DecodedCustody::exact(custody.owner.clone(), bytes)),
+            custody: Some(prospective.commit()),
         })
     }
 }
@@ -832,7 +870,7 @@ mod tests {
         fn release(&self, bytes: usize) { self.used.fetch_sub(bytes, Ordering::SeqCst); }
     }
 
-    #[derive(Clone, Debug, PartialEq)]
+    #[derive(Clone, Copy, Debug, PartialEq)]
     struct Tiny(u8);
     impl Codec<'_> for Tiny {
         fn encode(&self, out: &mut Vec<u8>) { out.push(self.0); }
@@ -967,6 +1005,31 @@ mod tests {
     }
 
     #[test]
+    fn decoded_vec_copy_max_minus_one_denies_before_destination_allocation() {
+        let arc_bytes = DecodedOwner::arc_layout().unwrap();
+        let owner = Arc::new(TestOwner { limit: arc_bytes + 15, used: AtomicUsize::new(0) });
+        let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+        let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
+        let source = DecodedVec::<Tiny>::read(&mut reader).unwrap();
+        let source_backing = source.values.as_ptr();
+
+        assert_eq!(
+            source.try_copy_with_resource_owner(),
+            Err(InvalidMessage::MessageTooLarge)
+        );
+        assert_eq!(source.values.as_ptr(), source_backing);
+        assert_eq!(source.iter().map(|value| value.0).collect::<Vec<_>>(), [1, 2, 3]);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 8);
+
+        drop(source);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
+        drop(reader);
+        drop(decoded);
+        drop(arc_charge);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
     fn decoded_payload_owner_aware_clone_denies_before_destination_allocation() {
         let arc_bytes = DecodedOwner::arc_layout().unwrap();
         let owner = Arc::new(TestOwner { limit: arc_bytes + 5, used: AtomicUsize::new(0) });
@@ -1060,13 +1123,13 @@ mod tests {
     }
 
     #[test]
-    fn decoded_vec_clone_is_separately_charged() {
+    fn decoded_vec_copy_is_separately_charged() {
         let arc_bytes = DecodedOwner::arc_layout().unwrap();
         let owner = Arc::new(TestOwner { limit: arc_bytes + 16, used: AtomicUsize::new(0) });
         let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
         let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
         let source = DecodedVec::<Tiny>::read(&mut reader).unwrap();
-        let destination = source.try_clone_with_resource_owner().unwrap();
+        let destination = source.try_copy_with_resource_owner().unwrap();
         assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 16);
         drop(source);
         assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 8);

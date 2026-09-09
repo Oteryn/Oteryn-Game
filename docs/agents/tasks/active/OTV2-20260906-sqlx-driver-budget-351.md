@@ -1104,3 +1104,35 @@ next_action: migrate private decoded handshake list fields to DecodedVec and con
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open until the private handshake
 field migration and full retained-descendant matrix are independently verified.
+
+## Window38 generic charged-copy safety repair
+
+Coordinator evidence `5602859284` found that the initial generic
+`DecodedVec<T>::try_clone_with_resource_owner<T: Clone>` charged only the outer vector
+while arbitrary element `Clone` implementations could allocate nested destination
+backing. It also held the prospective outer debit as an unguarded counter until cloning
+finished, which could leak the reservation during safe-Rust unwinding.
+
+The arbitrary charged deep-copy API has been removed. Its replacement is deliberately
+limited to `T: Copy`, whose element copy cannot allocate nested backing, and uses an
+armed prospective RAII reservation declared before the destination vector. Thus denial
+precedes destination allocation, destination backing is destroyed before unwind releases
+the prospective debit, and successful construction commits the same debit into the final
+backing-bound custody. Allocating element types require field-specific recursive fallible
+copies during migration; ordinary owner-free `Clone` remains unchanged.
+
+Focused tests preserve funded source+destination overlap and independent final release,
+and add exact max-minus-one denial with source pointer/content/custody unchanged and no
+reservation leak.
+
+```yaml
+status: active
+generic_charged_copy_for_arbitrary_clone: REMOVED_UNSAFE_SURFACE
+nonallocating_element_copy: PROVEN_FOCUSED
+generic_handshake_field_migration: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: perform the SQLx client generic-list lifetime census and migrate or split only divergent-lifetime fields, using field-specific recursive copies for allocating elements
+```
+
+P1 `3966866700` and umbrella P1 `3954831069` remain open pending the field census,
+retained-descendant composition, and final independent exact-head review.

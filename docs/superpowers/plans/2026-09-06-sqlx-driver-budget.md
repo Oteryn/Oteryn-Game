@@ -537,3 +537,15 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   to the backing-bound representation; do not restore infallible charged cloning.
 - [ ] Continue payload/message/transcript/certificate/session composition and complete
   TLS/TLS-positive/PostgreSQL qualification.
+
+## Window38 generic charged-copy safety repair
+
+- [x] Remove the arbitrary `T: Clone` charged-copy surface; restrict the generic helper
+  to non-allocating `T: Copy` elements.
+- [x] Hold prospective destination-vector custody in an armed RAII guard until backing
+  construction and final custody commit; unwind drops destination backing first.
+- [x] Prove exact max-minus-one denial leaves the source live/charged and leaks no debit,
+  while retaining funded overlap and independent final-drop coverage.
+- [ ] Census SQLx-client generic lists by MESSAGE_LOCAL/EARLY_DROP/MOVE/DEEP_COPY and
+  use field-specific recursive fallible copies for any allocating destination elements.
+- [ ] Continue the complete decoded/TLS and PostgreSQL qualification matrix.
