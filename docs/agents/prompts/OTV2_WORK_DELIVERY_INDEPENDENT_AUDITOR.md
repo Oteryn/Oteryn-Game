@@ -344,7 +344,7 @@ For each candidate/merged PR verify:
 - skipped jobs are justified by path scope, not mistaken for success;
 - independent exact-head review exists where policy requires it;
 - zero unresolved review threads before merge;
-- governed atomic Merge Queue submission/integration identity is bound to the exact qualified head and intended protected base/queue state, and protected-main readback confirms the accepted candidate before lifecycle closeout;
+- authenticated bound META 3.1 native exact-head Merge Queue submission uses REST `merge-async` with exact qualified `sha` and explicit `merge_action="merge_queue"` after fresh repository/PR/`base=main`/head/auth/eligibility preflight; HTTP `202` evidence includes the exact returned async UUID and executor receipt sequence followed by immediate same-target readback bound to that UUID at a strictly greater executor sequence, with wall-clock timestamps used for freshness only; HTTP `200`/`409` are reconciled; queue admission is not terminal proof; real `merge_group` `game-gate` success and protected-main readback confirm the accepted candidate before lifecycle closeout; direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, a default merge action, no-op/retrigger commits and ambiguous automated dequeue are not accepted substitutes, and unavailable native capability remains `BLOCKED_CAPABILITY_UNAVAILABLE`;
 - no final-head mutation occurred after qualification without requalification.
 
 A green aggregate cannot substitute for a missing risk-required check.
