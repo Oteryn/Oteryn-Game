@@ -3,7 +3,7 @@ use super::model::{
     CollisionClass, ContentError, EffectFamily, EligibilityScope, MultiplicityClass,
     SpawnRecoveryClass,
 };
-use crate::domain::WorldId;
+use crate::foundation::WorldId;
 use std::collections::BTreeSet;
 
 pub const FIRST_PRODUCTION_PROFILE_ID: &str = "FIRST_PRODUCTION_CONTENT_PROFILE/v1";
@@ -256,7 +256,7 @@ fn parse_world_id(value: &str) -> Result<WorldId, ContentError> {
         ))?;
         bytes[index] = (high << 4) | low;
     }
-    WorldId::from_bytes(bytes)
+    WorldId::decode(&bytes)
         .map_err(|_| ContentError::InvalidArtifact("first-production WorldId must be UUIDv7"))
 }
 
@@ -2872,7 +2872,7 @@ fn test_world_id(seed: u8) -> Result<WorldId, ContentError> {
     bytes[6] = 0x70;
     bytes[8] = 0x80;
     bytes[15] = seed;
-    WorldId::from_bytes(bytes)
+    WorldId::decode(&bytes)
         .map_err(|_| ContentError::InvalidArtifact("test first-production WorldId invalid"))
 }
 

@@ -1,13 +1,25 @@
 use oteryn_game_server::content::*;
-use oteryn_game_server::domain::WorldId;
+use oteryn_game_server::foundation::WorldId;
 
 fn world_id() -> Result<WorldId, ContentError> {
     let mut bytes = [0_u8; 16];
-    bytes[0] = 1;
+    bytes[0] = 0x01;
+    bytes[1] = 0x23;
+    bytes[2] = 0x45;
+    bytes[3] = 0x67;
+    bytes[4] = 0x89;
+    bytes[5] = 0xab;
     bytes[6] = 0x70;
-    bytes[8] = 0x80;
-    bytes[15] = 1;
-    WorldId::from_bytes(bytes)
+    bytes[7] = 0xcd;
+    bytes[8] = 0x8e;
+    bytes[9] = 0xf0;
+    bytes[10] = 0x12;
+    bytes[11] = 0x34;
+    bytes[12] = 0x56;
+    bytes[13] = 0x78;
+    bytes[14] = 0x9a;
+    bytes[15] = 0xbc;
+    WorldId::decode(&bytes)
         .map_err(|_| ContentError::InvalidArtifact("integration WorldId invalid"))
 }
 
@@ -218,6 +230,10 @@ fn public_production_compile_and_restart_staging_use_immutable_bytes() -> Result
         .clone();
     assert_eq!(restaged_identity, staged_identity);
     assert_eq!(staged_identity.world_id(), source.world_id);
+    assert_eq!(
+        staged_identity.world_id().as_bytes(),
+        source.world_id.as_bytes()
+    );
 
     let mut corrupt = compiled.server_artifact.clone();
     let index = corrupt.len() - 33;

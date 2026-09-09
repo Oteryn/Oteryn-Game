@@ -13,6 +13,18 @@
 //! ```compile_fail
 //! use oteryn_game_server::content::StagedGeneration;
 //! ```
+//!
+//! First-production CONTENT uses Foundation's canonical cross-boundary `WorldId`; the
+//! domain-local nominal type cannot be substituted implicitly.
+//!
+//! ```compile_fail
+//! use oteryn_game_server::{domain, foundation};
+//! let domain_world = domain::WorldId::from_bytes([
+//!     0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0x70, 0xcd,
+//!     0x8e, 0xf0, 0x12, 0x34, 0x56, 0x78, 0x9a, 0xbc,
+//! ]).unwrap();
+//! let _: foundation::WorldId = domain_world;
+//! ```
 
 #![forbid(unsafe_code)]
 
