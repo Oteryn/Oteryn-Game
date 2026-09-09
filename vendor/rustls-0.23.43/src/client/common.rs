@@ -70,6 +70,22 @@ impl<'a> ServerCertDetails<'a> {
         }
     }
 
+    #[cfg(feature = "std")]
+    pub(super) fn set_ocsp_with_resource_owner(
+        &mut self,
+        source: &[u8],
+    ) -> Result<(), crate::Error> {
+        if source.is_empty() {
+            return Ok(());
+        }
+        let custody = self.resource_custody.as_ref()
+            .ok_or(crate::Error::InvalidMessage(crate::error::InvalidMessage::MessageTooLarge))?;
+        let (destination, destination_custody) = custody.copy_bytes(source)?;
+        self.ocsp_response = destination;
+        self.resource_custody.as_mut().unwrap().absorb(destination_custody)?;
+        Ok(())
+    }
+
     pub(super) fn into_owned(self) -> ServerCertDetails<'static> {
         let Self {
             cert_chain,
@@ -104,12 +120,15 @@ impl<'a> ServerCertDetails<'a> {
     }
 
     #[cfg(feature = "std")]
-    pub(super) fn take_peer_certificates(&mut self) -> CertificateChain<'static> {
-        core::mem::replace(
+    pub(super) fn take_peer_certificates(
+        &mut self,
+    ) -> (CertificateChain<'static>, Option<crate::msgs::codec::DecodedCustody>) {
+        let chain = core::mem::replace(
             &mut self.cert_chain,
             ServerCertChain::Ordinary(CertificateChain::default()),
         )
-        .into_peer_certificates()
+        .into_peer_certificates();
+        (chain, self.resource_custody.take())
     }
 }
 

@@ -598,3 +598,11 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Keep TLS 1.3 owner-aware stapled OCSP borrowed until the precharged final certificate conversion.
 - [x] Preserve owner-free eager ownership behavior.
 - [ ] Complete compressed-certificate same-owner second decoding and TLS 1.2 chain/OCSP custody.
+
+## Window45 TLS 1.2 certificate custody
+
+- [x] Precharge the TLS 1.2 full-handshake certificate outer vector, every DER destination,
+  and stapled OCSP destination; carry the charged-static backing through successor states
+  and into CommonState without reserve-again.
+- [ ] Complete resumed TLS 1.2 peer-chain destination custody and compressed-certificate
+  same-owner second decoding before transcript/hash-context work.

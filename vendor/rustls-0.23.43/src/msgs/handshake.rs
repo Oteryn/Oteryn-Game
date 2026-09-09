@@ -1725,6 +1725,40 @@ impl CertificateChain<'_> {
                 .collect(),
         )
     }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn into_owned_with_resource_owner(
+        self,
+        owner: Arc<DecodedOwner>,
+    ) -> Result<(CertificateChain<'static>, codec::DecodedCustody), InvalidMessage> {
+        use core::mem::size_of;
+        use crate::msgs::codec::ProspectiveDecodedCustody;
+
+        let count = self.0.len();
+        let total = self.0.iter().try_fold(
+            count.checked_mul(size_of::<CertificateDer<'static>>())
+                .ok_or(InvalidMessage::MessageTooLarge)?,
+            |total, cert| total.checked_add(cert.as_ref().len()),
+        ).ok_or(InvalidMessage::MessageTooLarge)?;
+        let prospective = ProspectiveDecodedCustody::reserve(owner, total)?;
+        let mut chain = Vec::with_capacity(count);
+        if chain.capacity() != count {
+            drop(chain);
+            return Err(InvalidMessage::MessageTooLarge);
+        }
+        for cert in self.0 {
+            let source = cert.as_ref();
+            let mut destination = Vec::with_capacity(source.len());
+            destination.extend_from_slice(source);
+            if destination.capacity() != source.len() {
+                drop(destination);
+                drop(chain);
+                return Err(InvalidMessage::MessageTooLarge);
+            }
+            chain.push(CertificateDer::from(destination));
+        }
+        Ok((CertificateChain(chain), prospective.commit()))
+    }
 }
 
 impl<'a> Codec<'a> for CertificateChain<'a> {
@@ -2703,7 +2737,7 @@ impl<'a> CertificateStatus<'a> {
         }
     }
 
-    #[cfg(feature = "tls12")]
+    #[cfg(all(feature = "tls12", not(feature = "std")))]
     pub(crate) fn into_inner(self) -> Vec<u8> {
         self.ocsp_response.0.into_vec()
     }

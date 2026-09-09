@@ -171,6 +171,20 @@ impl DecodedCustody {
     pub(crate) fn owner_ref(&self) -> &Arc<DecodedOwner> {
         &self.owner
     }
+
+    /// Combine custody for independently allocated backing owned by the same
+    /// decoded-message ledger without allocating another custody container.
+    pub(crate) fn absorb(&mut self, mut other: Self) -> Result<(), InvalidMessage> {
+        if !Arc::ptr_eq(&self.owner, &other.owner) || self.tracked_backing != other.tracked_backing {
+            return Err(InvalidMessage::MessageTooLarge);
+        }
+        self.bytes = self
+            .bytes
+            .checked_add(other.bytes)
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+        other.bytes = 0;
+        Ok(())
+    }
     pub(crate) fn exact(owner: Arc<DecodedOwner>, bytes: usize) -> Self {
         owner.custodied.fetch_add(bytes, Ordering::Relaxed);
         Self { owner, bytes, tracked_backing: true }

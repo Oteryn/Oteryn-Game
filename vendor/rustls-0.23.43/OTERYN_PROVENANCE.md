@@ -295,3 +295,15 @@ existing owner-aware certificate destination conversion reserves its final OCSP 
 before copying while the decoded message source remains live. Owner-free decoding preserves
 the upstream eager `into_owned` behavior. Compressed second decode and TLS 1.2 certificate
 custody remain unproven.
+
+## TLS 1.2 full-handshake certificate custody
+
+The owner-aware TLS 1.2 Certificate handler captures the decoded owner before moving the
+payload and reserves the complete owned destination (actual outer vector plus every DER
+byte vector) before allocating while the source Message remains live. The resulting
+charged-static chain is carried allocation-free through intermediate states. A stapled
+OCSP response is separately reserved before copying and its debit is folded into the same
+non-allocating custody token. The final CommonState transfer moves the existing chain and
+custody together; field ordering destroys chain and OCSP backing before release. The
+ordinary/no-std path is unchanged. Resumed TLS 1.2 chain copying, compressed certificates,
+transcript contexts, and complete TLS accounting remain open.

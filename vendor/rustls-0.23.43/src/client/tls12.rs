@@ -244,11 +244,23 @@ impl State<ClientConnectionData> for ExpectCertificate {
         Self: 'm,
     {
         self.transcript.add_message(&m);
+        #[cfg(feature = "std")]
+        let decoded_owner = m.decoded_owner();
         let server_cert_chain = require_handshake_msg_move!(
             m,
             HandshakeType::Certificate,
             HandshakePayload::Certificate
         )?;
+
+        #[cfg(feature = "std")]
+        let server_cert = if let Some(owner) = decoded_owner {
+            let (chain, custody) = server_cert_chain.into_owned_with_resource_owner(owner)?;
+            ServerCertDetails::new_with_resource_custody(chain, vec![], custody)
+        } else {
+            ServerCertDetails::new(server_cert_chain, vec![])
+        };
+        #[cfg(not(feature = "std"))]
+        let server_cert = ServerCertDetails::new(server_cert_chain, vec![]);
 
         if self.may_send_cert_status {
             Ok(Box::new(ExpectCertificateStatusOrServerKx {
@@ -260,12 +272,10 @@ impl State<ClientConnectionData> for ExpectCertificate {
                 using_ems: self.using_ems,
                 transcript: self.transcript,
                 suite: self.suite,
-                server_cert_chain,
+                server_cert,
                 must_issue_new_ticket: self.must_issue_new_ticket,
             }))
         } else {
-            let server_cert = ServerCertDetails::new(server_cert_chain, vec![]);
-
             Ok(Box::new(ExpectServerKx {
                 config: self.config,
                 resuming_session: self.resuming_session,
@@ -295,7 +305,7 @@ struct ExpectCertificateStatusOrServerKx<'m> {
     using_ems: bool,
     transcript: HandshakeHash,
     suite: &'static Tls12CipherSuite,
-    server_cert_chain: CertificateChain<'m>,
+    server_cert: ServerCertDetails<'m>,
     must_issue_new_ticket: bool,
 }
 
@@ -321,7 +331,7 @@ impl State<ClientConnectionData> for ExpectCertificateStatusOrServerKx<'_> {
                 using_ems: self.using_ems,
                 transcript: self.transcript,
                 suite: self.suite,
-                server_cert: ServerCertDetails::new(self.server_cert_chain, vec![]),
+                server_cert: self.server_cert,
                 must_issue_new_ticket: self.must_issue_new_ticket,
             })
             .handle(cx, m),
@@ -337,7 +347,7 @@ impl State<ClientConnectionData> for ExpectCertificateStatusOrServerKx<'_> {
                 using_ems: self.using_ems,
                 transcript: self.transcript,
                 suite: self.suite,
-                server_cert_chain: self.server_cert_chain,
+                server_cert: self.server_cert,
                 must_issue_new_ticket: self.must_issue_new_ticket,
             })
             .handle(cx, m),
@@ -362,7 +372,7 @@ impl State<ClientConnectionData> for ExpectCertificateStatusOrServerKx<'_> {
             using_ems: self.using_ems,
             transcript: self.transcript,
             suite: self.suite,
-            server_cert_chain: self.server_cert_chain.into_owned(),
+            server_cert: self.server_cert.into_owned(),
             must_issue_new_ticket: self.must_issue_new_ticket,
         })
     }
@@ -377,7 +387,7 @@ struct ExpectCertificateStatus<'a> {
     using_ems: bool,
     transcript: HandshakeHash,
     suite: &'static Tls12CipherSuite,
-    server_cert_chain: CertificateChain<'a>,
+    server_cert: ServerCertDetails<'a>,
     must_issue_new_ticket: bool,
 }
 
@@ -391,19 +401,27 @@ impl State<ClientConnectionData> for ExpectCertificateStatus<'_> {
         Self: 'm,
     {
         self.transcript.add_message(&m);
-        let server_cert_ocsp_response = require_handshake_msg_move!(
+        let server_cert_status = require_handshake_msg_move!(
             m,
             HandshakeType::CertificateStatus,
             HandshakePayload::CertificateStatus
         )?
-        .into_inner();
+        ;
+
+        #[cfg(feature = "std")]
+        let mut server_cert = self.server_cert;
+        #[cfg(feature = "std")]
+        server_cert.set_ocsp_with_resource_owner(server_cert_status.ocsp_response.0.bytes())?;
+        #[cfg(not(feature = "std"))]
+        let server_cert = {
+            let chain = self.server_cert.into_peer_certificates();
+            ServerCertDetails::new(chain, server_cert_status.into_inner())
+        };
 
         trace!(
             "Server stapled OCSP response is {:?}",
-            server_cert_ocsp_response
+            server_cert.ocsp_response
         );
-
-        let server_cert = ServerCertDetails::new(self.server_cert_chain, server_cert_ocsp_response);
 
         Ok(Box::new(ExpectServerKx {
             config: self.config,
@@ -429,7 +447,7 @@ impl State<ClientConnectionData> for ExpectCertificateStatus<'_> {
             using_ems: self.using_ems,
             transcript: self.transcript,
             suite: self.suite,
-            server_cert_chain: self.server_cert_chain.into_owned(),
+            server_cert: self.server_cert.into_owned(),
             must_issue_new_ticket: self.must_issue_new_ticket,
         })
     }
@@ -900,7 +918,16 @@ impl State<ClientConnectionData> for ExpectServerDone<'_> {
                         .send_cert_verify_error_alert(err)
                 })?
         };
-        cx.common.peer_certificates = Some(st.server_cert.take_peer_certificates());
+        #[cfg(feature = "std")]
+        {
+            let (peer_certificates, custody) = st.server_cert.take_peer_certificates();
+            cx.common.peer_certificates = Some(peer_certificates);
+            cx.common.peer_certificate_custody = custody;
+        }
+        #[cfg(not(feature = "std"))]
+        {
+            cx.common.peer_certificates = Some(st.server_cert.into_peer_certificates());
+        }
 
         // 3.
         if let Some(client_auth) = &st.client_auth {

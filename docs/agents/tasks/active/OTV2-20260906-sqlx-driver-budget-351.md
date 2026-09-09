@@ -1300,3 +1300,27 @@ owner_aware_ocsp_source_copy: ELIMINATED_FOCUSED
 complete_tls_accounting: NOT_PROVEN
 next_action: complete TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
+
+## Window45 TLS 1.2 certificate and stapled-OCSP custody
+
+The TLS 1.2 Certificate handler now captures the decoded owner before moving the
+certificate payload. While the source Message is still live it reserves one owned
+destination covering the actual outer certificate vector and every DER byte vector,
+then carries that already-static charged chain through all intermediate TLS 1.2 states
+without repeating `CertificateChain::into_owned()` allocations. Stapled OCSP is copied
+only after its destination capacity is reserved and its custody is combined with the
+chain custody without allocating another guard container. The final CommonState handoff
+moves chain and custody together, so chain/OCSP backing is destroyed before release.
+
+This closes the full-handshake TLS 1.2 certificate/status path as focused source work.
+The resumed TLS 1.2 chain copy, compressed TLS 1.3 certificates, transcript/hash contexts,
+complete simultaneous-live composition, TLS-positive SQLx, and PostgreSQL qualification
+remain open.
+
+```yaml
+status: active
+tls12_full_certificate_and_ocsp_custody: PROVEN_FOCUSED
+tls12_resumed_certificate_custody: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
+```
