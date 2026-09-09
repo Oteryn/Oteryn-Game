@@ -4,17 +4,17 @@
 task_id: OTV2-20260822-impl-vsl-content
 title: Implement minimal native VSL content compiler loader seam
 mode: IMPLEMENT
-status: first_production_candidate_local_qualified
+status: first_production_review_findings_fixed_pending_requalification
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-first-production-54-20260909
 issue: 54
 issue_state: open_active
-pr: null
+pr: 481
 allocation_id: CONTENT54-FIRST-PRODUCTION-v1-20260909
 allocation_comment: 5601519485
 allocation_admission_sha: 9afb7cbb538674408bc7d2eaaaaa1e8917b04640
-current_reconciled_base_sha: 0e8a358f134693871d5140309cf778a28da97277
+current_reconciled_base_sha: 4d06bad1c0d21f2237df290865be55d8f7ed4f02
 registry_pr: 472
 registry_merge_sha: 9afb7cbb538674408bc7d2eaaaaa1e8917b04640
 evidence_delivery_pr: 58
@@ -24,7 +24,7 @@ repair_pr: 87
 repair_merge_sha: db95bc720529b643531c79f708086f69dd612d22
 owner: content-first-production-coordinator
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-09-09T15:57:05+02:00
+updated_at: 2026-09-09T16:50:44+02:00
 owned_paths:
   - apps/game-server/src/content/mod.rs
   - apps/game-server/src/content/model.rs
@@ -93,13 +93,28 @@ The candidate does not select a permanent World Project/Bundle format, compressi
 - **F1 ACCEPTED/FIXED:** the initial production draft inherited raw evidence-era `max_hp`, loot `weight` and XP `amount` fields. Those would have introduced unallocated production value semantics. They were removed before candidate freeze and replaced by bounded policy/product-release references only.
 - **F2 ACCEPTED/FIXED:** a stronger local activation revision added `AdmissionGuard`, current activation-sequence fencing and immutable runtime state but temporarily dropped exact expected-generation matching from staging. Exact `FirstProductionExpectation` matching was restored for server and client before `staged`, while retaining the stronger guard and sequence protections.
 
+## Independent review findings and dispositions
+
+Codex review of PR #481 exact head `23eeac5add144bfe255b74a1bcaa409d1c5779d2` completed with `P0=0`, `P1=5`, `P2=1`. All six findings were accepted and fixed on the same canonical branch before requalification:
+
+- **F3 P1 FIXED:** source compilation and artifact staging now validate every semantic reference against its required definition family, not merely global key membership.
+- **F4 P1 FIXED:** staged server/client pairs now prove semantic equivalence for every client-safe presentation/creature/ability/item projection against the authoritative server records.
+- **F5 P1 FIXED:** artifact sections must cover the payload contiguously from section-table end through `payload_end`; unclassified gap bytes fail closed.
+- **F6 P1 FIXED:** staging revalidates behavior policy revisions with production-atom rules, independently rejecting evidence/fixture/synthetic markers in self-consistent artifacts.
+- **F7 P1 FIXED:** activated runtime lookup indexes loot entries by the production entry key in field 0.
+- **F8 P2 FIXED:** exact-cardinality values above their hard maximum return `LimitExceeded` / capacity classification; below-minimum cardinality remains a semantic `InvalidArtifact` failure.
+
+Focused post-fix regression evidence is `37/37` CONTENT unit tests, `4/4` public integration tests and strict game-server Clippy PASS after reconciliation with protected `main@4d06bad1c0d21f2237df290865be55d8f7ed4f02`. Fresh exact-head independent re-review and canonical CI remain mandatory.
+
+Fresh post-fix whole-diff self-review: **PASS** with P0=0, P1=0, P2=0 open after reproducing and closing F3-F8. This remains self-review and does not replace fresh independent exact-head re-review.
+
 ## Whole-diff self-review
 
-Frozen candidate review after F1/F2 repair: **PASS** with `P0=0`, `P1=0`, `P2=0` open. The review covered the complete five-path candidate, exact protected limit serialization, provenance grammar, typed-source cardinality, closed artifact grammar, client projection leakage, sealed authorization, admission-guard lifetime, expected-current identity/sequence, restart/fallback/rollback and absence of live/network/deployment authority.
+The pre-Codex self-review after F1/F2 repair was `P0=0/P1=0/P2=0`, but independent review later found F3-F8 above. After accepting and fixing all six independent findings, the candidate requires a fresh whole-diff self-review plus fresh independent exact-head re-review before integration.
 
 ## Current local validation
 
-- production + evidence CONTENT unit tests: `33/33 PASS`;
+- production + evidence CONTENT unit tests after Codex fixes: `37/37 PASS`;
 - public first-production integration tests: `4/4 PASS`;
 - strict `cargo +1.94.0 clippy -p oteryn-game-server --all-targets -- -D warnings`: `PASS`;
 - `python tools/agents/validate_governance.py`: `PASS`;
@@ -121,27 +136,27 @@ Frozen candidate review after F1/F2 repair: **PASS** with `P0=0`, `P1=0`, `P2=0`
 - [x] exact-head focused/component/workspace validation and whole-diff review;
 - [x] genuinely independent exact-head review for parser/item/loot/value semantics;
 - [x] evidence-only composition through the production game-server crate;
-- [ ] production acceptance/activation — blocked by missing accepted DUR-04/VSL hard maxima and production authority.
+- [ ] first-production repository integration — pending fresh exact-head independent re-review, canonical CI, FULL Merge Queue and protected-main readback; live deployment authority remains NONE.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: first-production CONTENT candidate implemented and locally focused-qualified after fresh allocation and protected-main reconciliation
-status: first_production_candidate_local_qualified
+last_progress: PR #481 independent Codex findings F3-F8 accepted and fixed on the same branch after path-disjoint reconciliation with protected main
+status: first_production_review_findings_fixed_pending_requalification
 branch: agent/content-first-production-54-20260909
 head_sha: null
-current_reconciled_base_sha: 0e8a358f134693871d5140309cf778a28da97277
-pr: null
+current_reconciled_base_sha: 4d06bad1c0d21f2237df290865be55d8f7ed4f02
+pr: 481
 allocation_id: CONTENT54-FIRST-PRODUCTION-v1-20260909
 registry_merge_sha: 9afb7cbb538674408bc7d2eaaaaa1e8917b04640
-focused_content_tests: 33/33 PASS
+focused_content_tests: 37/37 PASS
 public_integration_tests: 4/4 PASS
 strict_clippy: PASS
-governance_validation: PASS
-architecture_semantic: PASS
-pre_freeze_findings: F1 fixed; F2 fixed
-whole_diff_self_review: PASS_P0_0_P1_0_P2_0
-blocker: null
+governance_validation: pending_fresh_exact_head
+architecture_semantic: pending_fresh_exact_head
+review_findings: F1-F8 fixed; Codex pre-fix verdict P0=0/P1=5/P2=1
+whole_diff_self_review: PASS_POST_FIX_P0_0_P1_0_P2_0
+blocker: fresh exact-head re-review, canonical CI, FULL Merge Queue and protected-main readback
 owner_action_required: null
-next_action: commit/push frozen candidate, open PR and complete exact-head review/CI/FULL Merge Queue/readback
+next_action: freeze and commit fixes, push same branch, resolve review threads with evidence, repeat independent review/CI, FULL Merge Queue and protected-main readback
 ```

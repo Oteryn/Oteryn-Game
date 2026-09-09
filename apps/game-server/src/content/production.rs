@@ -92,7 +92,14 @@ impl FirstProductionLimits {
         actual: usize,
         expected: usize,
     ) -> Result<(), ContentError> {
-        if actual != expected {
+        if actual > expected {
+            return Err(ContentError::LimitExceeded {
+                resource,
+                actual,
+                limit: expected,
+            });
+        }
+        if actual < expected {
             return Err(ContentError::InvalidArtifact(resource));
         }
         Ok(())
@@ -1055,8 +1062,38 @@ fn validate_source_semantics(source: &FirstProductionContentSource) -> Result<()
         add_key(value)?;
     }
 
-    let require = |owner: &ProductionKey, target: &ProductionKey| -> Result<(), ContentError> {
-        if !definitions.contains(target.as_str()) {
+    let region_keys: BTreeSet<&str> = source.regions.iter().map(|v| v.key.as_str()).collect();
+    let area_keys: BTreeSet<&str> = source.areas.iter().map(|v| v.key.as_str()).collect();
+    let terrain_keys: BTreeSet<&str> = source.terrains.iter().map(|v| v.key.as_str()).collect();
+    let cell_keys: BTreeSet<&str> = source.cells.iter().map(|v| v.key.as_str()).collect();
+    let behavior_keys: BTreeSet<&str> = source.behaviors.iter().map(|v| v.key.as_str()).collect();
+    let presentation_keys: BTreeSet<&str> = source
+        .presentations
+        .iter()
+        .map(|v| v.key.as_str())
+        .collect();
+    let creature_keys: BTreeSet<&str> = source.creatures.iter().map(|v| v.key.as_str()).collect();
+    let formula_keys: BTreeSet<&str> = source
+        .formula_profiles
+        .iter()
+        .map(|v| v.key.as_str())
+        .collect();
+    let effect_keys: BTreeSet<&str> = source.effects.iter().map(|v| v.key.as_str()).collect();
+    let item_keys: BTreeSet<&str> = source.items.iter().map(|v| v.key.as_str()).collect();
+    let loot_table_keys: BTreeSet<&str> =
+        source.loot_tables.iter().map(|v| v.key.as_str()).collect();
+    let rng_purpose_keys: BTreeSet<&str> = source
+        .rng
+        .purpose_keys
+        .iter()
+        .map(ProductionKey::as_str)
+        .collect();
+
+    let require = |owner: &ProductionKey,
+                   target: &ProductionKey,
+                   family: &BTreeSet<&str>|
+     -> Result<(), ContentError> {
+        if !family.contains(target.as_str()) {
             return Err(ContentError::MissingReference {
                 owner: owner.as_str().to_owned(),
                 target: target.as_str().to_owned(),
@@ -1066,42 +1103,46 @@ fn validate_source_semantics(source: &FirstProductionContentSource) -> Result<()
     };
 
     for cell in &source.cells {
-        require(&cell.key, &cell.region_key)?;
-        require(&cell.key, &cell.area_key)?;
-        require(&cell.key, &cell.terrain_key)?;
+        require(&cell.key, &cell.region_key, &region_keys)?;
+        require(&cell.key, &cell.area_key, &area_keys)?;
+        require(&cell.key, &cell.terrain_key, &terrain_keys)?;
     }
     for relocation in &source.relocations {
-        require(&relocation.key, &relocation.from_cell)?;
-        require(&relocation.key, &relocation.to_cell)?;
+        require(&relocation.key, &relocation.from_cell, &cell_keys)?;
+        require(&relocation.key, &relocation.to_cell, &cell_keys)?;
     }
     for creature in &source.creatures {
-        require(&creature.key, &creature.behavior_key)?;
-        require(&creature.key, &creature.presentation_key)?;
+        require(&creature.key, &creature.behavior_key, &behavior_keys)?;
+        require(
+            &creature.key,
+            &creature.presentation_key,
+            &presentation_keys,
+        )?;
     }
     for spawn in &source.spawns {
-        require(&spawn.key, &spawn.creature_key)?;
-        require(&spawn.key, &spawn.behavior_key)?;
-        require(&spawn.key, &spawn.cell_key)?;
+        require(&spawn.key, &spawn.creature_key, &creature_keys)?;
+        require(&spawn.key, &spawn.behavior_key, &behavior_keys)?;
+        require(&spawn.key, &spawn.cell_key, &cell_keys)?;
     }
     for effect in &source.effects {
-        require(&effect.key, &effect.formula_profile_key)?;
+        require(&effect.key, &effect.formula_profile_key, &formula_keys)?;
     }
     for ability in &source.abilities {
-        require(&ability.key, &ability.effect_key)?;
-        require(&ability.key, &ability.presentation_key)?;
+        require(&ability.key, &ability.effect_key, &effect_keys)?;
+        require(&ability.key, &ability.presentation_key, &presentation_keys)?;
     }
     for item in &source.items {
-        require(&item.key, &item.presentation_key)?;
+        require(&item.key, &item.presentation_key, &presentation_keys)?;
     }
     for table in &source.loot_tables {
         for entry in &table.entries {
-            require(&entry.key, &table.key)?;
-            require(&entry.key, &entry.item_key)?;
-            require(&entry.key, &entry.rng_purpose_key)?;
+            require(&entry.key, &table.key, &loot_table_keys)?;
+            require(&entry.key, &entry.item_key, &item_keys)?;
+            require(&entry.key, &entry.rng_purpose_key, &rng_purpose_keys)?;
         }
     }
     for xp in &source.xp_definitions {
-        require(&xp.key, &xp.formula_profile_key)?;
+        require(&xp.key, &xp.formula_profile_key, &formula_keys)?;
     }
     Ok(())
 }
@@ -1581,12 +1622,44 @@ fn parsed_record_definition_key(record: &ParsedRecord) -> Option<&str> {
     if record.kind == RECORD_RNG_CONTEXT {
         return None;
     }
-    let index = if record.kind == RECORD_LOOT_ENTRY {
-        1
-    } else {
-        0
-    };
-    record.fields.get(index).map(String::as_str)
+    record.fields.first().map(String::as_str)
+}
+
+fn verify_projection_pair_semantics(
+    server: &[ParsedRecord],
+    client: &[ParsedRecord],
+) -> Result<(), ContentError> {
+    for client_record in client {
+        let server_record = server
+            .iter()
+            .find(|record| {
+                let matching_kind = match client_record.kind {
+                    RECORD_PRESENTATION => record.kind == RECORD_PRESENTATION,
+                    RECORD_CLIENT_CREATURE => record.kind == RECORD_CREATURE,
+                    RECORD_CLIENT_ABILITY => record.kind == RECORD_ABILITY,
+                    RECORD_CLIENT_ITEM => record.kind == RECORD_ITEM,
+                    _ => false,
+                };
+                matching_kind && record.fields.first() == client_record.fields.first()
+            })
+            .ok_or(ContentError::PairMismatch(
+                "client-safe record has no authoritative counterpart",
+            ))?;
+
+        let matches = match client_record.kind {
+            RECORD_PRESENTATION => server_record.fields == client_record.fields,
+            RECORD_CLIENT_CREATURE => server_record.fields.get(2) == client_record.fields.get(1),
+            RECORD_CLIENT_ABILITY => server_record.fields.get(2) == client_record.fields.get(1),
+            RECORD_CLIENT_ITEM => server_record.fields.get(1) == client_record.fields.get(1),
+            _ => false,
+        };
+        if !matches {
+            return Err(ContentError::PairMismatch(
+                "client-safe projection semantics differ from authoritative generation",
+            ));
+        }
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1663,6 +1736,7 @@ impl StagedGeneration {
                 "first-production server/client generation identity differs",
             ));
         }
+        verify_projection_pair_semantics(&server.records, &client.records)?;
         verify_expected(&server.metadata, expected)?;
         verify_expected(&client.metadata, expected)?;
         let decoded_fields = server
@@ -1915,8 +1989,13 @@ fn validate_section_ranges(
         ranges.push((entry.offset, end));
     }
     ranges.sort_unstable_by_key(|range| range.0);
+    if ranges.first().map(|range| range.0) != Some(table_end)
+        || ranges.last().map(|range| range.1) != Some(payload_end)
+    {
+        return Err(ContentError::InvalidSectionBounds);
+    }
     for pair in ranges.windows(2) {
-        if pair[0].1 > pair[1].0 {
+        if pair[0].1 != pair[1].0 {
             return Err(ContentError::InvalidSectionBounds);
         }
     }
@@ -2257,6 +2336,46 @@ fn validate_parsed_semantics(
     let mut cell_points = Vec::new();
     let mut decoded_fields = 0usize;
 
+    let family_keys = |kind: u8| -> BTreeSet<&str> {
+        records
+            .iter()
+            .filter(|record| record.kind == kind)
+            .filter_map(|record| record.fields.first().map(String::as_str))
+            .collect()
+    };
+    let region_keys = family_keys(RECORD_REGION);
+    let area_keys = family_keys(RECORD_AREA);
+    let terrain_keys = family_keys(RECORD_TERRAIN);
+    let cell_keys = family_keys(RECORD_CELL);
+    let behavior_keys = family_keys(RECORD_BEHAVIOR);
+    let presentation_keys = family_keys(RECORD_PRESENTATION);
+    let creature_keys = family_keys(if projection == ProductionProjection::ServerAuthoritative {
+        RECORD_CREATURE
+    } else {
+        RECORD_CLIENT_CREATURE
+    });
+    let formula_keys = family_keys(RECORD_FORMULA);
+    let effect_keys = family_keys(RECORD_EFFECT);
+    let item_keys = family_keys(if projection == ProductionProjection::ServerAuthoritative {
+        RECORD_ITEM
+    } else {
+        RECORD_CLIENT_ITEM
+    });
+    let loot_table_keys = family_keys(RECORD_LOOT_TABLE);
+    let rng_purpose_keys = family_keys(RECORD_RNG_PURPOSE);
+
+    let require_family =
+        |owner: &str, target: &str, family: &BTreeSet<&str>| -> Result<(), ContentError> {
+            ProductionKey::new(target)?;
+            if !family.contains(target) {
+                return Err(ContentError::MissingReference {
+                    owner: owner.to_owned(),
+                    target: target.to_owned(),
+                });
+            }
+            Ok(())
+        };
+
     for record in records {
         decoded_fields = decoded_fields
             .checked_add(record.fields.len())
@@ -2275,6 +2394,9 @@ fn validate_parsed_semantics(
 
         match record.kind {
             RECORD_CELL => {
+                require_family(&record.fields[0], &record.fields[1], &region_keys)?;
+                require_family(&record.fields[0], &record.fields[2], &area_keys)?;
+                require_family(&record.fields[0], &record.fields[3], &terrain_keys)?;
                 references.extend([
                     record.fields[1].clone(),
                     record.fields[2].clone(),
@@ -2291,6 +2413,8 @@ fn validate_parsed_semantics(
                 cell_points.push((x, y, z));
             }
             RECORD_RELOCATION => {
+                require_family(&record.fields[0], &record.fields[1], &cell_keys)?;
+                require_family(&record.fields[0], &record.fields[2], &cell_keys)?;
                 references.extend([record.fields[1].clone(), record.fields[2].clone()]);
             }
             RECORD_PRESENTATION => {
@@ -2301,7 +2425,15 @@ fn validate_parsed_semantics(
                     true,
                 )?;
             }
+            RECORD_BEHAVIOR => {
+                ProductionAtom::new(
+                    "first-production behavior policy revision",
+                    &record.fields[1],
+                )?;
+            }
             RECORD_CREATURE => {
+                require_family(&record.fields[0], &record.fields[1], &behavior_keys)?;
+                require_family(&record.fields[0], &record.fields[2], &presentation_keys)?;
                 references.extend([record.fields[1].clone(), record.fields[2].clone()]);
                 ProductionAtom::new(
                     "first-production creature policy revision",
@@ -2309,6 +2441,9 @@ fn validate_parsed_semantics(
                 )?;
             }
             RECORD_SPAWN => {
+                require_family(&record.fields[0], &record.fields[1], &creature_keys)?;
+                require_family(&record.fields[0], &record.fields[2], &behavior_keys)?;
+                require_family(&record.fields[0], &record.fields[3], &cell_keys)?;
                 references.extend([
                     record.fields[1].clone(),
                     record.fields[2].clone(),
@@ -2355,6 +2490,7 @@ fn validate_parsed_semantics(
                 }
             }
             RECORD_EFFECT => {
+                require_family(&record.fields[0], &record.fields[2], &formula_keys)?;
                 if record.fields[1] != "damage" {
                     return Err(ContentError::InvalidArtifact(
                         "unsupported first-production effect family",
@@ -2363,9 +2499,12 @@ fn validate_parsed_semantics(
                 references.push(record.fields[2].clone());
             }
             RECORD_ABILITY => {
+                require_family(&record.fields[0], &record.fields[1], &effect_keys)?;
+                require_family(&record.fields[0], &record.fields[2], &presentation_keys)?;
                 references.extend([record.fields[1].clone(), record.fields[2].clone()]);
             }
             RECORD_ITEM => {
+                require_family(&record.fields[0], &record.fields[1], &presentation_keys)?;
                 references.push(record.fields[1].clone());
                 if record.fields[2] != "true" {
                     return Err(ContentError::InvalidArtifact(
@@ -2374,6 +2513,9 @@ fn validate_parsed_semantics(
                 }
             }
             RECORD_LOOT_ENTRY => {
+                require_family(&record.fields[0], &record.fields[1], &loot_table_keys)?;
+                require_family(&record.fields[0], &record.fields[2], &item_keys)?;
+                require_family(&record.fields[0], &record.fields[3], &rng_purpose_keys)?;
                 references.extend([
                     record.fields[1].clone(),
                     record.fields[2].clone(),
@@ -2384,6 +2526,7 @@ fn validate_parsed_semantics(
                 }
             }
             RECORD_XP => {
+                require_family(&record.fields[0], &record.fields[1], &formula_keys)?;
                 references.push(record.fields[1].clone());
                 if record.fields[2] != "product-release" {
                     return Err(ContentError::FixtureOnlyReleaseRejected);
@@ -2398,9 +2541,10 @@ fn validate_parsed_semantics(
                 }
             }
             RECORD_CLIENT_CREATURE | RECORD_CLIENT_ABILITY | RECORD_CLIENT_ITEM => {
+                require_family(&record.fields[0], &record.fields[1], &presentation_keys)?;
                 references.push(record.fields[1].clone());
             }
-            RECORD_REGION | RECORD_AREA | RECORD_TERRAIN | RECORD_BEHAVIOR | RECORD_LOOT_TABLE
+            RECORD_REGION | RECORD_AREA | RECORD_TERRAIN | RECORD_LOOT_TABLE
             | RECORD_RNG_PURPOSE => {}
             _ => {
                 return Err(ContentError::InvalidArtifact(
@@ -2819,9 +2963,10 @@ mod tests {
         second_floor.cells[1].z = 8;
         assert!(matches!(
             compile_first_production(&second_floor, FirstProductionCompileTarget::OrdinaryRelease),
-            Err(ContentError::InvalidArtifact(
-                "first-production floors must equal 1"
-            ))
+            Err(ContentError::LimitExceeded {
+                resource: "first-production floors must equal 1",
+                ..
+            })
         ));
         Ok(())
     }
@@ -2958,12 +3103,14 @@ mod tests {
                 let extra = source.$field[0].clone();
                 source.$field.push(extra);
                 assert!(
-                    compile_first_production(
-                        &source,
-                        FirstProductionCompileTarget::OrdinaryRelease
-                    )
-                    .is_err(),
-                    "{} accepted max+1",
+                    matches!(
+                        compile_first_production(
+                            &source,
+                            FirstProductionCompileTarget::OrdinaryRelease
+                        ),
+                        Err(ContentError::LimitExceeded { .. })
+                    ),
+                    "{} did not classify max+1 as capacity exceeded",
                     stringify!($field)
                 );
             }};
@@ -2987,30 +3134,30 @@ mod tests {
         let mut loot_entry = test_source(3)?;
         let extra = loot_entry.loot_tables[0].entries[0].clone();
         loot_entry.loot_tables[0].entries.push(extra);
-        assert!(
-            compile_first_production(&loot_entry, FirstProductionCompileTarget::OrdinaryRelease)
-                .is_err()
-        );
+        assert!(matches!(
+            compile_first_production(&loot_entry, FirstProductionCompileTarget::OrdinaryRelease),
+            Err(ContentError::LimitExceeded { .. })
+        ));
 
         let mut rng_purpose = test_source(3)?;
         rng_purpose
             .rng
             .purpose_keys
             .push(rng_purpose.rng.purpose_keys[0].clone());
-        assert!(
-            compile_first_production(&rng_purpose, FirstProductionCompileTarget::OrdinaryRelease)
-                .is_err()
-        );
+        assert!(matches!(
+            compile_first_production(&rng_purpose, FirstProductionCompileTarget::OrdinaryRelease),
+            Err(ContentError::LimitExceeded { .. })
+        ));
 
         let mut second_lock = test_source(3)?;
         second_lock
             .content_lock
             .entries
             .push(second_lock.content_lock.entries[0].clone());
-        assert!(
-            compile_first_production(&second_lock, FirstProductionCompileTarget::OrdinaryRelease)
-                .is_err()
-        );
+        assert!(matches!(
+            compile_first_production(&second_lock, FirstProductionCompileTarget::OrdinaryRelease),
+            Err(ContentError::LimitExceeded { .. })
+        ));
         Ok(())
     }
 
@@ -3044,6 +3191,150 @@ mod tests {
         assert!(
             compile_first_production(&migration, FirstProductionCompileTarget::OrdinaryRelease)
                 .is_err()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn cross_family_references_fail_in_compiler_and_staging() -> Result<(), ContentError> {
+        let mut invalid_source = test_source(3)?;
+        invalid_source.spawns[0].creature_key = invalid_source.cells[0].key.clone();
+        assert!(matches!(
+            compile_first_production(
+                &invalid_source,
+                FirstProductionCompileTarget::OrdinaryRelease
+            ),
+            Err(ContentError::MissingReference { .. })
+        ));
+
+        let source = test_source(3)?;
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let mut records = server_records(&source)?;
+        let spawn = records
+            .iter_mut()
+            .find(|record| record.kind == RECORD_SPAWN)
+            .ok_or(ContentError::InvalidArtifact(
+                "spawn record missing in test",
+            ))?;
+        spawn.fields[1] = source.cells[0].key.as_str().to_owned();
+
+        let metadata = ProductionArtifactMetadata::from_source(
+            &source,
+            ProductionProjection::ServerAuthoritative,
+        )?;
+        let crafted = encode_artifact(&metadata, &records)?;
+        assert!(matches!(
+            StagedGeneration::stage(
+                &crafted.bytes,
+                &compiled.client_artifact,
+                compiled.expectation(),
+            ),
+            Err(ContentError::MissingReference { .. })
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn projection_pair_requires_shared_semantic_equivalence() -> Result<(), ContentError> {
+        let source = test_source(3)?;
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let mut records = client_records(&source);
+
+        let presentation = records
+            .iter_mut()
+            .find(|record| record.kind == RECORD_PRESENTATION)
+            .ok_or(ContentError::InvalidArtifact(
+                "presentation record missing in test",
+            ))?;
+        presentation.fields[1] = "appearance:tampered-v2".to_owned();
+        let metadata =
+            ProductionArtifactMetadata::from_source(&source, ProductionProjection::ClientSafe)?;
+        let crafted = encode_artifact(&metadata, &records)?;
+        assert!(matches!(
+            StagedGeneration::stage(
+                &compiled.server_artifact,
+                &crafted.bytes,
+                compiled.expectation(),
+            ),
+            Err(ContentError::PairMismatch(_))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn staging_revalidates_behavior_policy_and_rejects_payload_gaps() -> Result<(), ContentError> {
+        let source = test_source(3)?;
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+
+        let mut records = server_records(&source)?;
+        let behavior = records
+            .iter_mut()
+            .find(|record| record.kind == RECORD_BEHAVIOR)
+            .ok_or(ContentError::InvalidArtifact(
+                "behavior record missing in test",
+            ))?;
+        behavior.fields[1] = "evidence:behavior-policy-r1".to_owned();
+        let metadata = ProductionArtifactMetadata::from_source(
+            &source,
+            ProductionProjection::ServerAuthoritative,
+        )?;
+        let crafted = encode_artifact(&metadata, &records)?;
+        assert!(matches!(
+            StagedGeneration::stage(
+                &crafted.bytes,
+                &compiled.client_artifact,
+                compiled.expectation(),
+            ),
+            Err(ContentError::InvalidString(
+                "first-production behavior policy revision"
+            ))
+        ));
+
+        let mut gap = compiled.server_artifact.clone();
+        let old_payload_end = usize::try_from(read_u32_at(&gap, 20)?)
+            .map_err(|_| ContentError::InvalidSectionBounds)?;
+        gap.insert(old_payload_end, b'X');
+
+        let new_payload_end = old_payload_end
+            .checked_add(1)
+            .ok_or(ContentError::InvalidSectionBounds)?;
+        gap[20..24].copy_from_slice(&to_u32(new_payload_end)?.to_be_bytes());
+        let digest = sha256(&gap[..new_payload_end]);
+        gap[new_payload_end..new_payload_end + TRAILER_LEN].copy_from_slice(&digest);
+        assert!(matches!(
+            StagedGeneration::stage(&gap, &compiled.client_artifact, compiled.expectation(),),
+            Err(ContentError::InvalidSectionBounds)
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn activated_runtime_indexes_loot_entry_by_entry_key() -> Result<(), ContentError> {
+        let source = test_source(3)?;
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let staged = StagedGeneration::stage(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            compiled.expectation(),
+        )?;
+
+        let fields = staged
+            .runtime_state()
+            .server_definition_fields("oteryn:prod.loot.entry")
+            .ok_or(ContentError::InvalidArtifact(
+                "loot entry not indexed by entry key",
+            ))?;
+        assert_eq!(
+            fields.first().map(String::as_str),
+            Some("oteryn:prod.loot.entry")
+        );
+        assert_eq!(
+            fields.get(1).map(String::as_str),
+            Some("oteryn:prod.loot.table")
         );
         Ok(())
     }
