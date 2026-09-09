@@ -7,6 +7,10 @@ use alloc::vec::Vec;
 use core::ops::{Deref, DerefMut};
 use core::{fmt, iter};
 #[cfg(feature = "std")]
+use core::alloc::Layout;
+#[cfg(feature = "std")]
+use core::sync::atomic::AtomicUsize;
+#[cfg(feature = "std")]
 use core::mem::size_of;
 
 use pki_types::{CertificateDer, DnsName};
@@ -26,6 +30,8 @@ use crate::msgs::base::{MaybeEmpty, NonEmpty, Payload, PayloadU8, PayloadU16, Pa
 use crate::msgs::codec::{
     self, Codec, LengthPrefixedBuffer, ListLength, Reader, TlsListElement, TlsListIter,
 };
+#[cfg(feature = "std")]
+use crate::msgs::codec::DecodedOwner;
 use crate::msgs::enums::{
     CertificateStatusType, ClientCertificateType, Compression, ECCurveType, ECPointFormat,
     EchVersion, ExtensionType, HpkeAead, HpkeKdf, HpkeKem, KeyUpdateRequest, NamedGroup,
@@ -2384,12 +2390,92 @@ impl Codec<'_> for CertificateRequestPayloadTls13 {
 
 // -- NewSessionTicket --
 #[derive(Debug)]
+pub(crate) struct TicketPayload {
+    payload: Option<Arc<PayloadU16>>,
+    #[cfg(feature = "std")]
+    control_owner: Option<Arc<DecodedOwner>>,
+    #[cfg(feature = "std")]
+    control_bytes: usize,
+}
+
+impl TicketPayload {
+    #[cfg(feature = "std")]
+    fn arc_layout() -> Result<usize, InvalidMessage> {
+        Layout::new::<[AtomicUsize; 2]>()
+            .extend(Layout::new::<PayloadU16>())
+            .map(|(layout, _)| layout.pad_to_align().size())
+            .map_err(|_| InvalidMessage::MessageTooLarge)
+    }
+
+    fn new(payload: PayloadU16) -> Result<Self, InvalidMessage> {
+        #[cfg(feature = "std")]
+        let (control_owner, control_bytes) = if let Some(owner) = payload.decoded_owner() {
+            let bytes = Self::arc_layout()?;
+            owner.reserve(bytes)?;
+            owner.retain_backing(bytes);
+            (Some(owner), bytes)
+        } else {
+            (None, 0)
+        };
+        Ok(Self {
+            payload: Some(Arc::new(payload)),
+            #[cfg(feature = "std")]
+            control_owner,
+            #[cfg(feature = "std")]
+            control_bytes,
+        })
+    }
+
+    pub(crate) fn from_unowned(payload: PayloadU16) -> Self {
+        Self {
+            payload: Some(Arc::new(payload)),
+            #[cfg(feature = "std")]
+            control_owner: None,
+            #[cfg(feature = "std")]
+            control_bytes: 0,
+        }
+    }
+}
+
+impl Clone for TicketPayload {
+    fn clone(&self) -> Self {
+        Self {
+            payload: self.payload.clone(),
+            #[cfg(feature = "std")]
+            control_owner: self.control_owner.clone(),
+            #[cfg(feature = "std")]
+            control_bytes: self.control_bytes,
+        }
+    }
+}
+
+impl Deref for TicketPayload {
+    type Target = PayloadU16;
+    fn deref(&self) -> &Self::Target { self.payload.as_deref().unwrap() }
+}
+
+impl Drop for TicketPayload {
+    fn drop(&mut self) {
+        #[cfg(feature = "std")]
+        let final_control = self.control_owner.is_some()
+            && self.payload.as_ref().is_some_and(|payload| Arc::strong_count(payload) == 1);
+        drop(self.payload.take());
+        #[cfg(feature = "std")]
+        if final_control {
+            if let Some(owner) = self.control_owner.take() {
+                owner.release_backing(self.control_bytes);
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
 pub(crate) struct NewSessionTicketPayload {
     pub(crate) lifetime_hint: u32,
     // Tickets can be large (KB), so we deserialise this straight
     // into an Arc, so it can be passed directly into the client's
     // session object without copying.
-    pub(crate) ticket: Arc<PayloadU16>,
+    pub(crate) ticket: TicketPayload,
 }
 
 impl NewSessionTicketPayload {
@@ -2397,7 +2483,7 @@ impl NewSessionTicketPayload {
     pub(crate) fn new(lifetime_hint: u32, ticket: Vec<u8>) -> Self {
         Self {
             lifetime_hint,
-            ticket: Arc::new(PayloadU16::new(ticket)),
+            ticket: TicketPayload::from_unowned(PayloadU16::new(ticket)),
         }
     }
 }
@@ -2410,7 +2496,7 @@ impl Codec<'_> for NewSessionTicketPayload {
 
     fn read(r: &mut Reader<'_>) -> Result<Self, InvalidMessage> {
         let lifetime = u32::read(r)?;
-        let ticket = Arc::new(PayloadU16::read(r)?);
+        let ticket = TicketPayload::new(PayloadU16::read(r)?)?;
 
         Ok(Self {
             lifetime_hint: lifetime,
@@ -2457,7 +2543,7 @@ pub(crate) struct NewSessionTicketPayloadTls13 {
     pub(crate) lifetime: u32,
     pub(crate) age_add: u32,
     pub(crate) nonce: PayloadU8,
-    pub(crate) ticket: Arc<PayloadU16>,
+    pub(crate) ticket: TicketPayload,
     pub(crate) extensions: NewSessionTicketExtensions,
 }
 
@@ -2467,7 +2553,7 @@ impl NewSessionTicketPayloadTls13 {
             lifetime,
             age_add,
             nonce: PayloadU8::new(nonce),
-            ticket: Arc::new(PayloadU16::new(ticket)),
+            ticket: TicketPayload::from_unowned(PayloadU16::new(ticket)),
             extensions: NewSessionTicketExtensions::default(),
         }
     }
@@ -2487,11 +2573,11 @@ impl Codec<'_> for NewSessionTicketPayloadTls13 {
         let age_add = u32::read(r)?;
         let nonce = PayloadU8::read(r)?;
         // nb. RFC8446: `opaque ticket<1..2^16-1>;`
-        let ticket = Arc::new(match PayloadU16::<NonEmpty>::read(r) {
+        let ticket = TicketPayload::new(match PayloadU16::<NonEmpty>::read(r) {
             Err(InvalidMessage::IllegalEmptyValue) => Err(InvalidMessage::EmptyTicketValue),
             Err(err) => Err(err),
-            Ok(pl) => Ok(PayloadU16::new(pl.0)),
-        }?);
+            Ok(pl) => Ok(pl.into_maybe_empty()),
+        }?)?;
         let extensions = NewSessionTicketExtensions::read(r)?;
 
         Ok(Self {
@@ -3242,6 +3328,59 @@ fn low_quality_integer_hash(mut x: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[cfg(feature = "std")]
+    #[derive(Debug)]
+    struct TicketOwner {
+        limit: usize,
+        used: AtomicUsize,
+    }
+
+    #[cfg(feature = "std")]
+    impl crate::DeframerBufferOwner for TicketOwner {
+        fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+            self.used
+                .fetch_update(
+                    core::sync::atomic::Ordering::SeqCst,
+                    core::sync::atomic::Ordering::SeqCst,
+                    |used| used.checked_add(bytes).filter(|next| *next <= self.limit),
+                )
+                .map(|_| ())
+                .map_err(|_| crate::DeframerBufferError)
+        }
+
+        fn release(&self, bytes: usize) {
+            self.used.fetch_sub(bytes, core::sync::atomic::Ordering::SeqCst);
+        }
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn tls13_ticket_moves_payload_custody_and_releases_arc_on_final_drop() {
+        use crate::msgs::codec::DecodedOwner;
+
+        let decoded_arc = DecodedOwner::arc_layout().unwrap();
+        let ticket_arc = TicketPayload::arc_layout().unwrap();
+        let owner = Arc::new(TicketOwner {
+            limit: decoded_arc + ticket_arc + 3,
+            used: AtomicUsize::new(0),
+        });
+        let (decoded, decoded_charge) = DecodedOwner::new(owner.clone()).unwrap();
+        let encoded = [0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 3, 1, 2, 3, 0, 0];
+        let mut reader = Reader::init_with_owner(&encoded, decoded.clone());
+        let ticket = NewSessionTicketPayloadTls13::read(&mut reader).unwrap().ticket;
+        assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), decoded_arc + ticket_arc + 3);
+
+        let retained = ticket.clone();
+        drop(ticket);
+        assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), decoded_arc + ticket_arc + 3);
+        drop(retained);
+        assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), decoded_arc);
+        drop(reader);
+        drop(decoded);
+        drop(decoded_charge);
+        assert_eq!(owner.used.load(core::sync::atomic::Ordering::SeqCst), 0);
+    }
 
     #[test]
     fn test_ech_config_dupe_exts() {

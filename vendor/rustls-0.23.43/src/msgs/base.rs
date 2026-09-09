@@ -162,6 +162,15 @@ impl<C: Cardinality> PayloadU16<C> {
 
         Ok(Self::new(self.0.clone()))
     }
+
+    pub(crate) fn into_maybe_empty(self) -> PayloadU16<MaybeEmpty> {
+        PayloadU16(self.0, PhantomData, #[cfg(feature = "std")] self.2)
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn decoded_owner(&self) -> Option<crate::sync::Arc<codec::DecodedOwner>> {
+        self.2.as_ref().map(|custody| custody.owner_ref().clone())
+    }
 }
 
 impl PayloadU16<MaybeEmpty> {

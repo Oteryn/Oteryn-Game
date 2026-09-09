@@ -11,7 +11,7 @@ use crate::msgs::base::{MaybeEmpty, PayloadU8, PayloadU16};
 use crate::msgs::codec::{Codec, Reader};
 #[cfg(feature = "tls12")]
 use crate::msgs::handshake::SessionId;
-use crate::msgs::handshake::{CertificateChain, ProtocolName};
+use crate::msgs::handshake::{CertificateChain, ProtocolName, TicketPayload};
 use crate::sync::{Arc, Weak};
 #[cfg(feature = "tls12")]
 use crate::tls12::Tls12CipherSuite;
@@ -84,7 +84,7 @@ pub struct Tls13ClientSessionValue {
 impl Tls13ClientSessionValue {
     pub(crate) fn new(
         suite: &'static Tls13CipherSuite,
-        ticket: Arc<PayloadU16>,
+        ticket: TicketPayload,
         secret: &[u8],
         server_cert_chain: CertificateChain<'static>,
         server_cert_verifier: &Arc<dyn ServerCertVerifier>,
@@ -166,7 +166,7 @@ impl Tls12ClientSessionValue {
     pub(crate) fn new(
         suite: &'static Tls12CipherSuite,
         session_id: SessionId,
-        ticket: Arc<PayloadU16>,
+        ticket: TicketPayload,
         master_secret: &[u8],
         server_cert_chain: CertificateChain<'static>,
         server_cert_verifier: &Arc<dyn ServerCertVerifier>,
@@ -191,7 +191,7 @@ impl Tls12ClientSessionValue {
         }
     }
 
-    pub(crate) fn ticket(&mut self) -> Arc<PayloadU16> {
+    pub(crate) fn ticket(&mut self) -> TicketPayload {
         self.common.ticket.clone()
     }
 
@@ -246,7 +246,7 @@ impl core::ops::Deref for Tls12ClientSessionValue {
 
 #[derive(Debug)]
 pub struct ClientSessionCommon {
-    ticket: Arc<PayloadU16>,
+    ticket: TicketPayload,
     secret: Zeroizing<PayloadU8>,
     epoch: u64,
     lifetime_secs: u32,
@@ -273,7 +273,7 @@ impl Drop for RetainedSessionCustody {
 
 impl ClientSessionCommon {
     fn new(
-        ticket: Arc<PayloadU16>,
+        ticket: TicketPayload,
         secret: &[u8],
         time_now: UnixTime,
         lifetime_secs: u32,

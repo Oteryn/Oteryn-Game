@@ -1184,3 +1184,27 @@ generic_handshake_field_migration: IN_PROGRESS
 complete_tls_accounting: NOT_PROVEN
 next_action: continue certificate/peer/session destination custody and owner-aware Message/Payload ownership conversion
 ```
+
+## Window40 retained ticket custody
+
+The first concrete `MOVE_TO_PEER_CHAIN_SESSION` case is now implemented for TLS session
+tickets. `PayloadU16<NonEmpty>` cardinality retyping moves both its vector and existing
+decoded custody without allocating or reserving again. TLS 1.2 and TLS 1.3 ticket decode
+reserve the exact padded Rust 1.94 `ArcInner<PayloadU16>` layout before `Arc::new`.
+A private `TicketPayload` carries that control-block custody through allocation-free Arc
+clones and releases it only after the final Arc has deallocated its payload/control block.
+The normal TLS 1.3 session path therefore retains both ticket bytes and Arc-control custody
+after the source Message is destroyed, without a second debit.
+
+Focused evidence covers funded decode, allocation-free clone/retention, source wrapper drop,
+and exact final release. Ordinary owner-free TLS 1.2/TLS 1.3 constructors remain unchanged.
+Secret-vector, peer-chain Arc, transcript, certificate/OCSP, compressed-certificate, and
+complete-handshake composition remain open.
+
+```yaml
+status: active
+retained_ticket_backing_and_arc_control: PROVEN_FOCUSED
+retained_session_secret_and_peer_chain: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: extend the same retained-session model to secret and peer-chain backing, then continue certificate/transcript ownership
+```

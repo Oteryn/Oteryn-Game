@@ -240,3 +240,13 @@ Owner-free and `no_std` paths preserve the upstream filtered collection behavior
 
 Focused tests cover exact funded capacity, early release, and max-minus-one denial with no
 leaked debit. Complete retained certificate/session custody and TLS composition remain open.
+
+## Retained ticket backing and Arc control custody
+
+Owner-aware TLS 1.3 ticket cardinality conversion now moves the decoded vector and custody
+together. Both TLS 1.2 and TLS 1.3 decode precharge the exact Rust 1.94 padded
+`ArcInner<PayloadU16>` layout before allocation. The private ticket wrapper shares this
+single control-block debit across allocation-free Arc clones and releases it only after the
+last Arc backing is destroyed. This closes the focused retained-ticket boundary; session
+secret and peer-chain construction, transcript/certificate ownership, and complete TLS
+composition remain unproven.

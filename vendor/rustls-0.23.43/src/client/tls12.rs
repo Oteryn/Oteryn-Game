@@ -1169,7 +1169,7 @@ impl ExpectFinished {
         // original ticket again.
         let (mut ticket, lifetime) = match self.ticket.take() {
             Some(nst) => (nst.ticket, nst.lifetime_hint),
-            None => (Arc::new(PayloadU16::empty()), 0),
+            None => (crate::msgs::handshake::TicketPayload::from_unowned(PayloadU16::empty()), 0),
         };
 
         if ticket.0.is_empty() {

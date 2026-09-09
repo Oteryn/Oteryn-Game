@@ -49,7 +49,7 @@ impl Drop for DecodedOwnerArcCharge {
 
 #[cfg(feature = "std")]
 impl DecodedOwner {
-    fn arc_layout() -> Result<usize, InvalidMessage> {
+    pub(crate) fn arc_layout() -> Result<usize, InvalidMessage> {
         // Rust 1.94 alloc::sync::Arc requests the padded ArcInner<T> layout.
         Layout::new::<[AtomicUsize; 2]>()
             .extend(Layout::new::<Self>())
@@ -93,6 +93,15 @@ impl DecodedOwner {
             return;
         }
         self.owner.release(bytes);
+    }
+
+    pub(crate) fn retain_backing(&self, bytes: usize) {
+        self.custodied.fetch_add(bytes, Ordering::Relaxed);
+    }
+
+    pub(crate) fn release_backing(&self, bytes: usize) {
+        self.custodied.fetch_sub(bytes, Ordering::Relaxed);
+        self.release(bytes);
     }
 
     pub(crate) fn checkpoint(&self) -> DecodedCheckpoint {
@@ -139,6 +148,10 @@ pub(crate) struct DecodedCustody {
 impl DecodedCustody {
     pub(crate) fn owner(&self) -> Arc<DecodedOwner> {
         self.owner.clone()
+    }
+
+    pub(crate) fn owner_ref(&self) -> &Arc<DecodedOwner> {
+        &self.owner
     }
     pub(crate) fn exact(owner: Arc<DecodedOwner>, bytes: usize) -> Self {
         owner.custodied.fetch_add(bytes, Ordering::Relaxed);
