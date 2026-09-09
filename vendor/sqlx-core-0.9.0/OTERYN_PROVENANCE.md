@@ -982,3 +982,19 @@ exhaust the root.  The denial occurs in `ensure_aws_lc_provider_residency`
 before provider/KX use.  These shared debits remain intentionally unreleased.
 This closes the focused thread-churn cell only; actual wire HRR, cancellation,
 and complete TLS custody remain open.
+
+### Window25 actual wire HelloRetryRequest
+
+The exact AWS-LC SQLx harness now drives an owner-aware PQ-first rustls client
+against an ordinary P-256-only rustls server using an embedded test-only
+certificate.  The server and client both report
+`FullWithHelloRetryRequest`.  Ledger event ordering proves the P-256
+replacement's 1,625-byte reservation succeeds before the initial hybrid's
+7,881-byte reservation releases, and peak usage includes both.  A second real
+wire exchange funded with only 1,624 bytes beyond its live initial state fails
+without a successful replacement reservation and unwinds the initial exchange
+with the fatal connection state.  Separate connection drops before HRR and
+after replacement selection exercise destruction-time release of the initial
+and replacement reservations.  This replaces the earlier synthetic direct
+two-group overlap as the focused HRR evidence; complete TLS accounting and the
+remaining key-schedule/cancellation matrix are still open.

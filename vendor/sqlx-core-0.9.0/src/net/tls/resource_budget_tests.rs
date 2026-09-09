@@ -6,21 +6,27 @@ use std::sync::{Arc, Mutex};
 struct Ledger {
     limit: AtomicUsize,
     used: AtomicUsize,
+    peak: AtomicUsize,
+    events: Mutex<Vec<(bool, usize, usize)>>,
     provider_shared_debits: Mutex<Vec<usize>>,
 }
 impl ResourceBudget for Ledger {
     fn try_reserve(&self, bytes: usize) -> Result<(), BudgetError> {
-        self.used
+        let previous = self.used
             .fetch_update(Ordering::AcqRel, Ordering::Acquire, |used| {
                 used.checked_add(bytes)
                     .filter(|next| *next <= self.limit.load(Ordering::Acquire))
             })
-            .map(|_| ())
-            .map_err(|_| BudgetError::Unavailable)
+            .map_err(|_| BudgetError::Unavailable)?;
+        let current = previous + bytes;
+        self.peak.fetch_max(current, Ordering::AcqRel);
+        self.events.lock().unwrap().push((true, bytes, current));
+        Ok(())
     }
     fn release(&self, bytes: usize) {
         let prior = self.used.fetch_sub(bytes, Ordering::AcqRel);
         assert!(prior >= bytes, "reservation released twice");
+        self.events.lock().unwrap().push((false, bytes, prior - bytes));
     }
     fn try_reserve_provider_shared(&self, bytes: usize) -> Result<(), BudgetError> {
         self.try_reserve(bytes)?;
@@ -32,6 +38,8 @@ fn ledger(limit: usize) -> Arc<Ledger> {
     Arc::new(Ledger {
         limit: AtomicUsize::new(limit),
         used: AtomicUsize::new(0),
+        peak: AtomicUsize::new(0),
+        events: Mutex::new(Vec::new()),
         provider_shared_debits: Mutex::new(Vec::new()),
     })
 }
@@ -251,6 +259,159 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
         .unwrap();
     assert!(active.complete(&[]).is_err());
     assert_eq!(failed.used.load(Ordering::Acquire), 0);
+}
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+#[test]
+fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
+    use super::tls_rustls::DeframerBudgetOwner;
+    use rustls::pki_types::pem::PemObject;
+    use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName};
+    use rustls::{ClientConfig, ClientConnection, HandshakeKind, RootCertStore};
+    use rustls::{ServerConfig, ServerConnection};
+
+    const CERT: &[u8] = b"-----BEGIN CERTIFICATE-----\nMIIBkDCCATagAwIBAgIUcGVDNuauJPdP9/Kikc9XwtlxTMEwCgYIKoZIzj0EAwIw\nFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwOTA5MDc0NVoXDTM2MDkwNjA5\nMDc0NVowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAERjgFLdEI1QGDKuptoQrjpeoCSNBcfsFX22m6ZxT6NNd8/zjWp+HyODMw\n9HS6fSXvE1mpxQ2pTDbm5i7nN84NsqNmMGQwHQYDVR0OBBYEFHPGZ5Y0mJ4Si+oF\nIw1/DL2dyjkmMB8GA1UdIwQYMBaAFHPGZ5Y0mJ4Si+oFIw1/DL2dyjkmMBQGA1Ud\nEQQNMAuCCWxvY2FsaG9zdDAMBgNVHRMBAf8EAjAAMAoGCCqGSM49BAMCA0gAMEUC\nIQChvqb+HoAFuU+W+NwyQ5yRSj2qNSBh+dLailXU6lpHpgIgQSUodgHa2IFa7ddb\nVXM8G9lmQkY0zh3a6XUNTKlv8Wo=\n-----END CERTIFICATE-----\n";
+    const KEY: &[u8] = b"-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgt8v9SfLXRFGyCGAO\nCS8jxRd0ybaaymthM6pwv83njnehRANCAARGOAUt0QjVAYMq6m2hCuOl6gJI0Fx+\nwVfbabpnFPo013z/ONan4fI4MzD0dLp9Je8TWanFDalMNubmLuc3zg2y\n-----END PRIVATE KEY-----\n";
+
+    fn pair(
+        budget: Arc<Ledger>,
+        provider: Arc<rustls::crypto::CryptoProvider>,
+    ) -> (ClientConnection, ServerConnection) {
+        let cert = CertificateDer::from_pem_slice(CERT).unwrap();
+        let key = PrivateKeyDer::from_pem_slice(KEY).unwrap();
+        let mut roots = RootCertStore::empty();
+        roots.add(cert.clone()).unwrap();
+        let client = ClientConfig::builder_with_provider(provider)
+            .with_protocol_versions(&[&rustls::version::TLS13])
+            .unwrap()
+            .with_root_certificates(roots)
+            .with_no_client_auth();
+
+        let mut server_provider = rustls::crypto::aws_lc_rs::default_provider();
+        server_provider.kx_groups = vec![rustls::crypto::aws_lc_rs::kx_group::SECP256R1];
+        let server = ServerConfig::builder_with_provider(Arc::new(server_provider))
+            .with_protocol_versions(&[&rustls::version::TLS13])
+            .unwrap()
+            .with_no_client_auth()
+            .with_single_cert(vec![cert], key)
+            .unwrap();
+        let owner: Arc<dyn rustls::DeframerBufferOwner> =
+            Arc::new(DeframerBudgetOwner(budget));
+        (
+            ClientConnection::new_with_resource_owner(
+                Arc::new(client),
+                ServerName::try_from("localhost").unwrap(),
+                owner,
+            )
+            .unwrap(),
+            ServerConnection::new(Arc::new(server)).unwrap(),
+        )
+    }
+
+    macro_rules! transfer {
+        ($from:expr, $to:expr) => {{
+            let mut wire = Vec::new();
+            $from.write_tls(&mut wire).unwrap();
+            $to.read_tls(&mut wire.as_slice()).unwrap();
+        }};
+    }
+
+    let budget = ledger(2_000_000);
+    let owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(DeframerBudgetOwner(budget.clone()));
+    let provider =
+        rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner).unwrap();
+
+    // Drive a real ClientHello into a P-256-only server.  The server emits an
+    // HRR because the PQ-first client did not initially offer a P-256 share.
+    let (mut denied_client, mut denied_server) = pair(budget.clone(), provider.clone());
+    transfer!(&mut denied_client, &mut denied_server);
+    denied_server.process_new_packets().unwrap();
+    assert_eq!(
+        denied_server.handshake_kind(),
+        Some(HandshakeKind::FullWithHelloRetryRequest)
+    );
+    transfer!(&mut denied_server, &mut denied_client);
+    let held_initial = budget.used.load(Ordering::Acquire);
+    let denied_event_start = budget.events.lock().unwrap().len();
+    budget.limit.store(held_initial + 1_624, Ordering::Release);
+    assert!(denied_client.process_new_packets().is_err());
+    let denied_events = budget.events.lock().unwrap();
+    assert!(!denied_events[denied_event_start..]
+        .iter()
+        .any(|(reserve, bytes, _)| *reserve && *bytes == 1_625));
+    assert!(denied_events[denied_event_start..]
+        .iter()
+        .any(|(reserve, bytes, _)| !*reserve && *bytes == 7_881));
+    drop(denied_events);
+    drop((denied_client, denied_server));
+
+    budget.limit.store(2_000_000, Ordering::Release);
+    let (mut client, mut server) = pair(budget.clone(), provider.clone());
+    let before_hrr = budget.used.load(Ordering::Acquire);
+    budget.peak.store(before_hrr, Ordering::Release);
+    transfer!(&mut client, &mut server);
+    server.process_new_packets().unwrap();
+    transfer!(&mut server, &mut client);
+    let hrr_event_start = budget.events.lock().unwrap().len();
+    client.process_new_packets().unwrap();
+    assert_eq!(
+        client.handshake_kind(),
+        Some(HandshakeKind::FullWithHelloRetryRequest)
+    );
+    assert!(
+        budget.peak.load(Ordering::Acquire) >= before_hrr + 1_625,
+        "wire HRR did not overlap the held initial KX with P-256 replacement"
+    );
+    let events = budget.events.lock().unwrap();
+    let replacement_reserve = events[hrr_event_start..]
+        .iter()
+        .position(|(reserve, bytes, _)| *reserve && *bytes == 1_625)
+        .unwrap();
+    let initial_release = events[hrr_event_start..]
+        .iter()
+        .position(|(reserve, bytes, _)| !*reserve && *bytes == 7_881)
+        .unwrap();
+    assert!(replacement_reserve < initial_release);
+    drop(events);
+
+    for _ in 0..8 {
+        transfer!(&mut client, &mut server);
+        server.process_new_packets().unwrap();
+        transfer!(&mut server, &mut client);
+        client.process_new_packets().unwrap();
+        if !client.is_handshaking() && !server.is_handshaking() {
+            break;
+        }
+    }
+    assert!(!client.is_handshaking());
+    assert!(!server.is_handshaking());
+    assert_eq!(
+        client.handshake_kind(),
+        Some(HandshakeKind::FullWithHelloRetryRequest)
+    );
+
+    // Cancellation before receiving HRR retains the initial reservation until
+    // the connection-owned active exchange is actually destroyed.
+    let (cancel_initial, cancel_initial_server) = pair(budget.clone(), provider.clone());
+    let cancel_initial_event = budget.events.lock().unwrap().len();
+    drop((cancel_initial, cancel_initial_server));
+    assert!(budget.events.lock().unwrap()[cancel_initial_event..]
+        .iter()
+        .any(|(reserve, bytes, _)| !*reserve && *bytes == 7_881));
+
+    // Cancellation after processing HRR likewise retains the replacement
+    // reservation until its connection state is destroyed.
+    let (mut cancel_retry, mut cancel_retry_server) = pair(budget.clone(), provider);
+    transfer!(&mut cancel_retry, &mut cancel_retry_server);
+    cancel_retry_server.process_new_packets().unwrap();
+    transfer!(&mut cancel_retry_server, &mut cancel_retry);
+    cancel_retry.process_new_packets().unwrap();
+    let cancel_retry_event = budget.events.lock().unwrap().len();
+    drop((cancel_retry, cancel_retry_server));
+    assert!(budget.events.lock().unwrap()[cancel_retry_event..]
+        .iter()
+        .any(|(reserve, bytes, _)| !*reserve && *bytes == 1_625));
 }
 
 #[cfg(feature = "_tls-rustls-aws-lc-rs")]
