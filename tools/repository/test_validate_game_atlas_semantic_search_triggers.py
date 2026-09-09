@@ -11,7 +11,6 @@ import textwrap
 import unittest
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2]
 SEMANTIC_WORKFLOW = ROOT / ".github/workflows/game-atlas-semantic-search.yml"
 STATIC_WORKFLOW = ROOT / ".github/workflows/game-atlas-static-creatures.yml"
@@ -58,62 +57,63 @@ STATIC_PR_PATHS = (
     SEMANTIC_WORKFLOW_PATH,
 )
 
-SEMANTIC_ASSERTIONS = (
-    "data['semantic_digest'] == 'sha256:035c911b11e588a969e8fb642965772eee598c30ad80d5d04f9ceda32461e530'",
-    "data['counts'] == {'records': 88684, 'kinds': {'monster': 87565, 'npc': 1068, 'town': 33, 'waypoint': 18}}",
-    "len(sam) == 1",
-    "sam[0]['id'] == 'npc:726487438c8308abf291622a52d91b24'",
-    "sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}",
-    "'shop' in sam[0]['capabilities']",
-    "sam[0]['provenance']['service_resolution_state'] == 'RESOLVED'",
-    "len(thais) == 1",
-    "thais[0]['id'] == 'semantic-record:23716a35099a04179f7b9e3e6c9198ee'",
-    "thais[0]['position'] == {'x': 32369, 'y': 32241, 'floor': -7}",
-    "thais[0]['bounds'] is None",
-    "data['input_floor_aliases']['7'] == -7",
-)
-STATIC_ASSERTIONS = (
-    "data['contract_id'] == 'oteryn-game-atlas-export-v1'",
-    "data['capability'] == 'static-creatures-v1'",
-    "data['semantic_revision'] == 1",
-    "data['npc_role_schema_version'] == 1",
-    "data['statistics'] == {'npcs': 1068, 'monster_spawns': 87565, 'unresolved': 461, 'ambiguous': 5}",
-    "data['semantic_digest'] == 'sha256:81505e91d7089f91e71813ec43f97118932db9cc7fd76d291fa399447ee2dfa4'",
-    "dict(counts) == {'bank': 25, 'travel': 51, 'shop': 313, 'quest': 432, 'blessing': 26, 'trainer': 54}",
-    "sum(bool(npc.get('roles')) for npc in data['npcs']) == 705",
-    "sum(npc.get('role_resolution_state') == 'AMBIGUOUS' for npc in data['npcs']) == 10",
-    "all('roles' not in record and 'role_resolution_state' not in record for record in data['monster_spawns'])",
-)
+SEMANTIC_ORACLE_CODE = """
+import json
+data = json.load(open('/tmp/semantic-search-source.json', encoding='utf-8'))
+sam = [record for record in data['records'] if record['kind'] == 'npc' and record['label'].casefold() == 'sam']
+thais = [record for record in data['records'] if record['kind'] == 'town' and record['label'].casefold() == 'thais']
+assert data['semantic_digest'] == 'sha256:035c911b11e588a969e8fb642965772eee598c30ad80d5d04f9ceda32461e530'
+assert data['counts'] == {'records': 88684, 'kinds': {'monster': 87565, 'npc': 1068, 'town': 33, 'waypoint': 18}}
+assert len(sam) == 1, len(sam)
+assert sam[0]['id'] == 'npc:726487438c8308abf291622a52d91b24', sam[0]
+assert sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}, sam[0]
+assert 'shop' in sam[0]['capabilities'], sam[0]
+assert sam[0]['provenance']['service_resolution_state'] == 'RESOLVED', sam[0]
+assert len(thais) == 1, len(thais)
+assert thais[0]['id'] == 'semantic-record:23716a35099a04179f7b9e3e6c9198ee', thais[0]
+assert thais[0]['position'] == {'x': 32369, 'y': 32241, 'floor': -7}, thais[0]
+assert thais[0]['bounds'] is None, thais[0]
+assert data['input_floor_aliases']['7'] == -7
+print(json.dumps({
+    'semantic_digest': data['semantic_digest'],
+    'records': data['counts']['records'],
+    'sam_id': sam[0]['id'],
+    'thais_id': thais[0]['id'],
+}, sort_keys=True))
+"""
+
+STATIC_ORACLE_CODE = """
+import collections, json
+from pathlib import Path
+data=json.loads(Path('/tmp/creatures-a.json').read_text())
+assert data['contract_id']=='oteryn-game-atlas-export-v1'
+assert data['capability']=='static-creatures-v1'
+assert data['semantic_revision']==1
+assert data['npc_role_schema_version']==1
+assert data['statistics']=={'npcs':1068,'monster_spawns':87565,'unresolved':461,'ambiguous':5}
+assert data['semantic_digest']=='sha256:81505e91d7089f91e71813ec43f97118932db9cc7fd76d291fa399447ee2dfa4'
+counts=collections.Counter(role for npc in data['npcs'] for role in npc.get('roles',[]))
+assert dict(counts)=={'bank':25,'travel':51,'shop':313,'quest':432,'blessing':26,'trainer':54}
+assert sum(bool(npc.get('roles')) for npc in data['npcs'])==705
+assert sum(npc.get('role_resolution_state')=='AMBIGUOUS' for npc in data['npcs'])==10
+assert all('roles' not in record and 'role_resolution_state' not in record for record in data['monster_spawns'])
+print(json.dumps({'semantic_digest':data['semantic_digest'],'roles':dict(counts)},sort_keys=True))
+"""
 
 
 def _git_blob_sha(text: str) -> str:
     data = text.encode("utf-8")
-    header = f"blob {len(data)}\0".encode("ascii")
-    return hashlib.sha1(header + data).hexdigest()
-
-
-def _event_block(workflow: str, event: str) -> str:
-    """Return one top-level event's YAML block without interpreting candidate YAML."""
-    match = re.search(
-        rf"(?ms)^  {re.escape(event)}:(.*?)(?=^  [a-z_]+:|^permissions:)",
-        workflow,
-    )
-    assert match is not None, f"missing event {event}"
-    return match.group(1)
-
-
-def _event_keys(workflow: str, event: str) -> tuple[str, ...]:
-    return tuple(re.findall(r"(?m)^    ([a-z_-]+):", _event_block(workflow, event)))
+    return hashlib.sha1(f"blob {len(data)}\0".encode("ascii") + data).hexdigest()
 
 
 def _decode_yaml_scalar(raw: str) -> str:
     raw = raw.strip()
     assert raw, "empty YAML scalar"
     if raw.startswith("'"):
-        assert raw.endswith("'") and len(raw) >= 2, f"malformed single-quoted scalar: {raw!r}"
+        assert raw.endswith("'") and len(raw) >= 2
         return raw[1:-1].replace("''", "'")
     if raw.startswith('"'):
-        assert raw.endswith('"') and len(raw) >= 2, f"malformed double-quoted scalar: {raw!r}"
+        assert raw.endswith('"') and len(raw) >= 2
         value = json.loads(raw)
         assert isinstance(value, str)
         return value
@@ -121,145 +121,7 @@ def _decode_yaml_scalar(raw: str) -> str:
     return raw
 
 
-def _paths(workflow: str, event: str) -> tuple[str, ...]:
-    """Parse the complete paths sequence, including entries after comments/blank lines."""
-    lines = _event_block(workflow, event).splitlines()
-    try:
-        start = lines.index("    paths:") + 1
-    except ValueError as exc:
-        raise AssertionError(f"missing canonical paths list for {event}") from exc
-
-    entries: list[str] = []
-    for line in lines[start:]:
-        if re.match(r"^    [A-Za-z_][A-Za-z0-9_-]*:\s*", line):
-            break
-        stripped = line.strip()
-        if not stripped or stripped.startswith("#"):
-            continue
-        item = re.fullmatch(r"      - (.+)", line)
-        assert item is not None, f"unexpected content in {event} paths sequence: {line!r}"
-        entries.append(_decode_yaml_scalar(item.group(1)))
-    assert entries, f"empty paths list for {event}"
-    return tuple(entries)
-
-
-def _quoted_scalar_end(text: str) -> int | None:
-    """Return the closing quote index for a leading YAML quoted scalar in linear time."""
-    if not text or text[0] not in ("'", '"'):
-        return None
-    quote = text[0]
-    index = 1
-    while index < len(text):
-        char = text[index]
-        if quote == "'":
-            if char == "'":
-                if index + 1 < len(text) and text[index + 1] == "'":
-                    index += 2
-                    continue
-                return index
-            index += 1
-            continue
-        if char == "\\":
-            index += 2
-            continue
-        if char == '"':
-            return index
-        index += 1
-    return None
-
-
-def _mapping_key_from_indented_line(line: str) -> str | None:
-    """Decode a simple indented YAML mapping key without backtracking regexes."""
-    if not line or line[0] not in " \t":
-        return None
-    text = line.lstrip(" \t")
-    if not text or text.startswith("#") or text.startswith("-"):
-        return None
-
-    explicit = False
-    if text.startswith("?"):
-        explicit = True
-        text = text[1:].lstrip()
-        if not text or text.startswith("#"):
-            return None
-
-    if text.startswith(("'", '"')):
-        end = _quoted_scalar_end(text)
-        if end is None:
-            return None
-        raw_key = text[: end + 1]
-        remainder = text[end + 1 :].lstrip()
-        if not explicit and not remainder.startswith(":"):
-            return None
-        if explicit and remainder and not remainder.startswith("#"):
-            return None
-        return _decode_yaml_scalar(raw_key)
-
-    if explicit:
-        raw_key = text.split("#", 1)[0].rstrip()
-        try:
-            return _decode_yaml_scalar(raw_key)
-        except (AssertionError, json.JSONDecodeError):
-            return None
-
-    colon = text.find(":")
-    if colon <= 0:
-        return None
-    raw_key = text[:colon].rstrip()
-    try:
-        return _decode_yaml_scalar(raw_key)
-    except (AssertionError, json.JSONDecodeError):
-        return None
-
-
-def _decoded_indented_mapping_keys(workflow: str) -> tuple[str, ...]:
-    keys: list[str] = []
-    for line in workflow.splitlines():
-        key = _mapping_key_from_indented_line(line)
-        if key is not None:
-            keys.append(key)
-    return tuple(keys)
-
-
-def _mapping_entry_from_indented_line(line: str) -> tuple[str, str] | None:
-    """Decode a simple indented YAML mapping entry, including a step-list prefix."""
-    if not line or line[0] not in " \t":
-        return None
-    text = line.lstrip(" \t")
-    if not text or text.startswith("#"):
-        return None
-    if text.startswith("- "):
-        text = text[2:].lstrip()
-    elif text.startswith("-"):
-        return None
-    if not text or text.startswith(("#", "?")):
-        return None
-
-    if text.startswith(("'", '"')):
-        end = _quoted_scalar_end(text)
-        if end is None:
-            return None
-        raw_key = text[: end + 1]
-        remainder = text[end + 1 :].lstrip()
-        if not remainder.startswith(":"):
-            return None
-        raw_value = remainder[1:].strip()
-    else:
-        colon = text.find(":")
-        if colon <= 0:
-            return None
-        raw_key = text[:colon].rstrip()
-        raw_value = text[colon + 1 :].strip()
-
-    try:
-        key = _decode_yaml_scalar(raw_key)
-    except (AssertionError, json.JSONDecodeError):
-        return None
-    return key, raw_value
-
-
 def _strip_yaml_inline_comment(raw: str) -> str:
-    """Strip a YAML inline comment without treating hashes inside quotes as comments."""
     quote: str | None = None
     index = 0
     while index < len(raw):
@@ -291,7 +153,6 @@ def _strip_yaml_inline_comment(raw: str) -> str:
 
 
 def _strip_github_expressions(raw: str) -> str:
-    """Remove GitHub expression delimiters before looking for YAML flow mappings."""
     output: list[str] = []
     index = 0
     while index < len(raw):
@@ -306,21 +167,26 @@ def _strip_github_expressions(raw: str) -> str:
     return "".join(output)
 
 
-def _has_unquoted_flow_mapping(text: str) -> bool:
+def _mask_quoted_scalars(raw: str) -> str:
+    output = list(raw)
     quote: str | None = None
     index = 0
-    while index < len(text):
-        char = text[index]
+    while index < len(raw):
+        char = raw[index]
         if quote == "'":
+            output[index] = " "
             if char == "'":
-                if index + 1 < len(text) and text[index + 1] == "'":
+                if index + 1 < len(raw) and raw[index + 1] == "'":
+                    output[index + 1] = " "
                     index += 2
                     continue
                 quote = None
             index += 1
             continue
         if quote == '"':
-            if char == "\\":
+            output[index] = " "
+            if char == "\\" and index + 1 < len(raw):
+                output[index + 1] = " "
                 index += 2
                 continue
             if char == '"':
@@ -329,16 +195,14 @@ def _has_unquoted_flow_mapping(text: str) -> bool:
             continue
         if char in ("'", '"'):
             quote = char
-            index += 1
-            continue
-        if char in "{}":
-            return True
+            output[index] = " "
         index += 1
-    return False
+    assert quote is None, f"unterminated YAML quote: {raw!r}"
+    return "".join(output)
 
 
-def _assert_no_flow_style_mappings(workflow: str) -> None:
-    """Fail closed on YAML flow mappings while ignoring literal block-scalar bodies."""
+def _assert_safe_yaml_structure(workflow: str) -> None:
+    """Reject YAML features that could hide protected keys from the block parser."""
     block_scalar_indent: int | None = None
     for line in workflow.splitlines():
         stripped = line.strip()
@@ -353,21 +217,100 @@ def _assert_no_flow_style_mappings(workflow: str) -> None:
         structural = _strip_yaml_inline_comment(_strip_github_expressions(line))
         if re.search(r":\s*[|>][+-]?\d?\s*$", structural):
             block_scalar_indent = indent
-        assert not _has_unquoted_flow_mapping(structural), (
-            f"YAML flow-style mappings are forbidden in protected workflows: {line!r}"
+        masked = _mask_quoted_scalars(structural)
+        assert not any(marker in masked for marker in ("{", "}", "&", "*", "!")), (
+            f"advanced/flow YAML syntax is forbidden in protected workflows: {line!r}"
         )
+        assert not masked.lstrip().startswith("?"), (
+            f"explicit YAML mapping keys are forbidden: {line!r}"
+        )
+        assert "<<:" not in masked, f"YAML merge keys are forbidden: {line!r}"
+
+
+def _quoted_scalar_end(text: str) -> int | None:
+    if not text or text[0] not in ("'", '"'):
+        return None
+    quote = text[0]
+    index = 1
+    while index < len(text):
+        char = text[index]
+        if quote == "'":
+            if char == "'":
+                if index + 1 < len(text) and text[index + 1] == "'":
+                    index += 2
+                    continue
+                return index
+            index += 1
+            continue
+        if char == "\\":
+            index += 2
+            continue
+        if char == '"':
+            return index
+        index += 1
+    return None
+
+
+def _mapping_entry(line: str) -> tuple[str, str] | None:
+    text = line.lstrip(" \t")
+    if not text or text.startswith("#"):
+        return None
+    if text.startswith("- "):
+        text = text[2:].lstrip()
+    elif text.startswith("-"):
+        return None
+    if not text:
+        return None
+    if text.startswith(("'", '"')):
+        end = _quoted_scalar_end(text)
+        assert end is not None, f"malformed quoted mapping key: {line!r}"
+        raw_key = text[: end + 1]
+        remainder = text[end + 1 :].lstrip()
+        if not remainder:
+            return None
+        assert remainder.startswith(":"), f"unsupported quoted mapping syntax: {line!r}"
+        raw_value = remainder[1:].strip()
+    else:
+        colon = text.find(":")
+        if colon <= 0:
+            return None
+        raw_key = text[:colon].rstrip()
+        raw_value = text[colon + 1 :].strip()
+    return _decode_yaml_scalar(raw_key), _strip_yaml_inline_comment(raw_value)
+
+
+def _yaml_structural_lines(workflow: str):
+    block_scalar_indent: int | None = None
+    for line in workflow.splitlines():
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip(" "))
+        if block_scalar_indent is not None:
+            if not stripped:
+                continue
+            if indent > block_scalar_indent:
+                continue
+            block_scalar_indent = None
+        structural = _strip_yaml_inline_comment(_strip_github_expressions(line))
+        yield line
+        if re.search(r":\s*[|>][+-]?\d?\s*$", structural):
+            block_scalar_indent = indent
 
 
 def _decoded_mapping_values(workflow: str, wanted_key: str) -> tuple[str, ...]:
     values: list[str] = []
-    for line in workflow.splitlines():
-        simple_key = _mapping_key_from_indented_line(line)
-        entry = _mapping_entry_from_indented_line(line)
-        if simple_key == wanted_key and entry is None:
-            raise AssertionError(f"unsupported YAML mapping syntax for {wanted_key!r}")
+    for line in _yaml_structural_lines(workflow):
+        entry = _mapping_entry(line)
         if entry is not None and entry[0] == wanted_key:
-            values.append(_strip_yaml_inline_comment(entry[1]))
+            values.append(entry[1])
     return tuple(values)
+
+
+def _decoded_mapping_keys(workflow: str) -> tuple[str, ...]:
+    return tuple(
+        entry[0]
+        for line in _yaml_structural_lines(workflow)
+        if (entry := _mapping_entry(line)) is not None
+    )
 
 
 def _decode_mapping_scalar(raw: str) -> str:
@@ -377,6 +320,46 @@ def _decode_mapping_scalar(raw: str) -> str:
         return _decode_yaml_scalar(raw)
     assert not any(char.isspace() for char in raw), f"unsupported YAML mapping value: {raw!r}"
     return raw
+
+
+def _event_block(workflow: str, event: str) -> str:
+    match = re.search(
+        rf"(?ms)^  {re.escape(event)}:(.*?)(?=^  [a-z_]+:|^permissions:)",
+        workflow,
+    )
+    assert match is not None, f"missing event {event}"
+    return match.group(1)
+
+
+def _event_keys(workflow: str, event: str) -> tuple[str, ...]:
+    keys: list[str] = []
+    for line in _event_block(workflow, event).splitlines():
+        if len(line) - len(line.lstrip(" ")) != 4:
+            continue
+        entry = _mapping_entry(line)
+        if entry is not None:
+            keys.append(entry[0])
+    return tuple(keys)
+
+
+def _paths(workflow: str, event: str) -> tuple[str, ...]:
+    lines = _event_block(workflow, event).splitlines()
+    try:
+        start = lines.index("    paths:") + 1
+    except ValueError as exc:
+        raise AssertionError(f"missing canonical paths list for {event}") from exc
+    entries: list[str] = []
+    for line in lines[start:]:
+        if len(line) - len(line.lstrip(" ")) == 4 and _mapping_entry(line) is not None:
+            break
+        stripped = line.strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        item = re.fullmatch(r"      - (.+)", line)
+        assert item is not None, f"unexpected content in {event} paths: {line!r}"
+        entries.append(_decode_yaml_scalar(item.group(1)))
+    assert entries, f"empty paths list for {event}"
+    return tuple(entries)
 
 
 def _step_block(workflow: str, name: str) -> str:
@@ -389,68 +372,26 @@ def _step_block(workflow: str, name: str) -> str:
 
 
 def _python_heredoc(workflow: str, step_name: str) -> str:
-    block = _step_block(workflow, step_name)
-    match = re.search(
-        r"(?ms)^          python - <<'PY'\n(?P<code>.*?)(?=^          PY\s*$)",
-        block,
+    """Require the oracle Python heredoc to be the first reachable shell command."""
+    lines = _step_block(workflow, step_name).rstrip().splitlines()
+    assert lines[:4] == [
+        "        shell: bash",
+        "        run: |",
+        "          set -euo pipefail",
+        "          python - <<'PY'",
+    ], f"oracle shell prefix changed or became bypassable in {step_name!r}"
+    assert lines[-1] == "          PY", f"oracle heredoc must be the final shell command in {step_name!r}"
+    code_lines = lines[4:-1]
+    assert code_lines and all(line.startswith("          ") for line in code_lines)
+    return textwrap.dedent("\n".join(code_lines)) + "\n"
+
+
+def _assert_exact_oracle_code(code: str, expected: str) -> None:
+    actual_tree = ast.parse(code)
+    expected_tree = ast.parse(textwrap.dedent(expected).strip() + "\n")
+    assert ast.dump(actual_tree, include_attributes=False) == ast.dump(expected_tree, include_attributes=False), (
+        "oracle setup, checks, diagnostics, or control flow changed"
     )
-    assert match is not None, f"missing active Python heredoc in {step_name!r}"
-    return textwrap.dedent(match.group("code"))
-
-
-def _call_name(node: ast.expr) -> str | None:
-    if isinstance(node, ast.Name):
-        return node.id
-    if isinstance(node, ast.Attribute):
-        prefix = _call_name(node.value)
-        return f"{prefix}.{node.attr}" if prefix else node.attr
-    return None
-
-
-def _assert_executable_assertions(code: str, expected: tuple[str, ...]) -> None:
-    tree = ast.parse(code)
-    allowed_top_level = (ast.Import, ast.ImportFrom, ast.Assign, ast.Assert, ast.Expr)
-    assert all(isinstance(statement, allowed_top_level) for statement in tree.body), (
-        "oracle heredoc must remain straight-line top-level code"
-    )
-
-    terminating_calls = {
-        "exit",
-        "quit",
-        "sys.exit",
-        "os._exit",
-        "os.abort",
-        "builtins.exit",
-        "builtins.quit",
-    }
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
-            name = _call_name(node.func)
-            assert name not in terminating_calls, f"terminating oracle call is forbidden: {name}"
-
-    expression_statements = [
-        (index, statement)
-        for index, statement in enumerate(tree.body)
-        if isinstance(statement, ast.Expr)
-    ]
-    assert len(expression_statements) <= 1, "oracle heredoc may only have one trailing expression"
-    if expression_statements:
-        index, statement = expression_statements[0]
-        assert index == len(tree.body) - 1, "oracle expression must be the final statement"
-        assert isinstance(statement.value, ast.Call) and _call_name(statement.value.func) == "print", (
-            "only a final diagnostic print call is allowed in oracle heredocs"
-        )
-
-    actual = tuple(
-        ast.dump(statement.test, include_attributes=False)
-        for statement in tree.body
-        if isinstance(statement, ast.Assert)
-    )
-    wanted = tuple(
-        ast.dump(ast.parse(expression, mode="eval").body, include_attributes=False)
-        for expression in expected
-    )
-    assert actual == wanted, "oracle assertions must remain complete, ordered, and directly executable"
 
 
 def _assert_active_run_command(workflow: str, command: str) -> None:
@@ -463,10 +404,8 @@ def _assert_read_only_permissions(workflow: str) -> None:
     top = re.search(r"(?ms)^permissions:\n(?P<body>(?:^  [^\n]+\n)+)", workflow)
     assert top is not None, "missing top-level permissions"
     assert top.group("body") == "  contents: read\n", "top-level permissions must remain contents: read"
-    assert len(re.findall(r"(?m)^permissions:", workflow)) == 1
-    assert "permissions" not in _decoded_indented_mapping_keys(workflow), (
-        "job/step-level permissions overrides are forbidden"
-    )
+    keys = _decoded_mapping_keys(workflow)
+    assert keys.count("permissions") == 1, "job/step permission overrides are forbidden"
     assert "write-all" not in workflow
 
 
@@ -476,15 +415,17 @@ def _assert_pinned_actions_and_no_bypass(workflow: str) -> None:
     assert all(re.fullmatch(r"[^@\s#]+@[0-9a-f]{40}", action) for action in actions), (
         "every uses action must be pinned to a 40-character commit SHA"
     )
-    keys = _decoded_indented_mapping_keys(workflow)
+    keys = _decoded_mapping_keys(workflow)
     assert "continue-on-error" not in keys
-    assert "continue-on-error" not in workflow
-    assert not _decoded_mapping_values(workflow, "if"), (
-        "workflow if conditions are forbidden in protected Atlas qualification workflows"
-    )
+    assert "if" not in keys, "workflow if conditions are forbidden in protected Atlas qualification workflows"
+    for dangerous in ("PYTHONOPTIMIZE", "BASH_ENV"):
+        assert dangerous not in keys and dangerous not in workflow, f"dangerous execution environment key: {dangerous}"
 
 
-def _assert_contract(semantic: str, static: str) -> None:
+def _assert_contract(semantic: str, static: str, *, verify_blobs: bool = True) -> None:
+    _assert_safe_yaml_structure(semantic)
+    _assert_safe_yaml_structure(static)
+
     assert _event_keys(semantic, "pull_request") == ("paths",)
     assert _event_keys(semantic, "push") == ("branches", "paths")
     assert _event_keys(static, "pull_request") == ("branches", "paths")
@@ -494,24 +435,21 @@ def _assert_contract(semantic: str, static: str) -> None:
     assert "branches: [main]" in _event_block(semantic, "push")
     assert not re.search(r"(?m)^  push:", static)
 
-    _assert_no_flow_style_mappings(semantic)
-    _assert_no_flow_style_mappings(static)
     _assert_active_run_command(semantic, REGRESSION_COMMAND)
     _assert_active_run_command(static, REGRESSION_COMMAND)
     _assert_active_run_command(semantic, "python tools/game-atlas-semantic-search/self_test.py")
-
     _assert_read_only_permissions(semantic)
     _assert_read_only_permissions(static)
     _assert_pinned_actions_and_no_bypass(semantic)
     _assert_pinned_actions_and_no_bypass(static)
 
-    _assert_executable_assertions(
+    _assert_exact_oracle_code(
         _python_heredoc(semantic, "Qualify Sam and Thais on real pinned data"),
-        SEMANTIC_ASSERTIONS,
+        SEMANTIC_ORACLE_CODE,
     )
-    _assert_executable_assertions(
+    _assert_exact_oracle_code(
         _python_heredoc(static, "Verify exact role and creature census"),
-        STATIC_ASSERTIONS,
+        STATIC_ORACLE_CODE,
     )
     static_double_export = _step_block(static, "Build exact pinned product twice")
     assert re.search(
@@ -519,8 +457,9 @@ def _assert_contract(semantic: str, static: str) -> None:
         static_double_export,
     ), "static deterministic double-export comparison must remain executable"
 
-    assert _git_blob_sha(semantic) == EXPECTED_SEMANTIC_WORKFLOW_BLOB
-    assert _git_blob_sha(static) == EXPECTED_STATIC_WORKFLOW_BLOB
+    if verify_blobs:
+        assert _git_blob_sha(semantic) == EXPECTED_SEMANTIC_WORKFLOW_BLOB
+        assert _git_blob_sha(static) == EXPECTED_STATIC_WORKFLOW_BLOB
 
 
 class AtlasTriggerClosureTest(unittest.TestCase):
@@ -533,18 +472,13 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         fullworld = (ROOT / FULLWORLD_PRODUCER).read_text(encoding="utf-8")
         semantic_export = (ROOT / "tools/game-atlas-semantic-search/export.py").read_text(encoding="utf-8")
         creature_export = (ROOT / "tools/game-atlas-creatures/export.py").read_text(encoding="utf-8")
-
         self.assertIn('"game-atlas-fullworld-source" / "producer.py"', semantic_export)
         self.assertIn("tools/game-atlas-thais-fixture/export.py", fullworld)
         self.assertRegex(creature_export, r"from identity import .*stable_creature_entity_id")
-
-        semantic_pr = _paths(self.semantic, "pull_request")
-        semantic_push = _paths(self.semantic, "push")
-        static_pr = _paths(self.static, "pull_request")
         for dependency in (CREATURE_EXPORT, CREATURE_IDENTITY, FULLWORLD_PRODUCER, THAIS_PRODUCER):
-            self.assertIn(dependency, semantic_pr)
-            self.assertIn(dependency, semantic_push)
-        self.assertIn(CREATURE_IDENTITY, static_pr)
+            self.assertIn(dependency, _paths(self.semantic, "pull_request"))
+            self.assertIn(dependency, _paths(self.semantic, "push"))
+        self.assertIn(CREATURE_IDENTITY, _paths(self.static, "pull_request"))
 
     def test_shared_regression_and_workflow_changes_select_both(self) -> None:
         semantic_pr = _paths(self.semantic, "pull_request")
@@ -565,84 +499,58 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         self.assertIn("branches: [main]", _event_block(self.semantic, "push"))
         self.assertNotRegex(self.static, r"(?m)^  push:")
 
-    def test_lexical_guards_cover_review_bypasses(self) -> None:
-        mutated_paths = self.semantic.replace(
-            "      - '.github/workflows/game-atlas-static-creatures.yml'\n",
-            "      - '.github/workflows/game-atlas-static-creatures.yml'\n"
-            "      # valid YAML comment inside the same paths sequence\n"
-            '      - "tools/game-atlas-*/**"\n',
-            1,
-        )
-        self.assertIn("tools/game-atlas-*/**", _paths(mutated_paths, "pull_request"))
-
-        escaped_permissions = (
-            "jobs:\n"
-            "  build:\n"
-            '    "permi\\u0073sions":\n'
-            "      contents: write\n"
-        )
-        self.assertIn("permissions", _decoded_indented_mapping_keys(escaped_permissions))
-        self.assertIn("permissions", _decoded_indented_mapping_keys("jobs:\n  build:\n    'permissions':\n      contents: write\n"))
-
-        quoted_uses = (
-            "jobs:\n"
-            "  verify:\n"
-            "    steps:\n"
-            "      - name: checkout\n"
-            "        'uses': actions/checkout@main\n"
-        )
-        self.assertEqual(_decoded_mapping_values(quoted_uses, "uses"), ("actions/checkout@main",))
-        with self.assertRaises(AssertionError):
-            _assert_pinned_actions_and_no_bypass(quoted_uses)
-
-        flow_uses = (
-            "jobs:\n"
-            "  verify:\n"
-            "    steps:\n"
-            '      - {name: bad, "uses": actions/setup-python@main}\n'
-        )
-        with self.assertRaises(AssertionError):
-            _assert_no_flow_style_mappings(flow_uses)
-
-        flow_permissions = (
-            "jobs:\n"
-            "  verify: {runs-on: ubuntu-24.04, permissions: {contents: write}, steps: []}\n"
-        )
-        with self.assertRaises(AssertionError):
-            _assert_no_flow_style_mappings(flow_permissions)
-
-        false_condition = (
-            "jobs:\n"
-            "  verify:\n"
-            "    steps:\n"
-            "      - name: disabled\n"
-            "        if: ${{ false && true }}\n"
-            "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n"
-        )
-        with self.assertRaises(AssertionError):
-            _assert_pinned_actions_and_no_bypass(false_condition)
-
-        with self.assertRaises(AssertionError):
-            _assert_executable_assertions("if False:\n    assert value == 1\n", ("value == 1",))
-        with self.assertRaises(AssertionError):
-            _assert_executable_assertions(
-                "import sys\nsys.exit(0)\nassert value == 1\n",
-                ("value == 1",),
-            )
+    def test_review_bypasses_fail_closed_without_blob_binding(self) -> None:
+        attacks = [
+            (
+                self.semantic.replace(
+                    "          set -euo pipefail\n          python - <<'PY'\n",
+                    "          set -euo pipefail\n          exit 0\n          python - <<'PY'\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "          import json\n",
+                    "          from sys import exit as done\n          ignored = done(0)\n          import json\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "        shell: bash\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n",
+                    "        shell: bash\n        env:\n          PYTHONOPTIMIZE: '1'\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "      - name: Verify Atlas trigger closure\n",
+                    "      - name: &conditional_key if\n"
+                    "        ? *conditional_key\n"
+                    "        : ${{ false && true }}\n"
+                    "      - name: Verify Atlas trigger closure\n",
+                    1,
+                ),
+                self.static,
+            ),
+        ]
+        for semantic, static in attacks:
+            with self.assertRaises(AssertionError):
+                _assert_contract(semantic, static, verify_blobs=False)
 
     def test_exact_oracles_and_workflow_safety_remain(self) -> None:
         _assert_contract(self.semantic, self.static)
 
-    def test_every_new_control_is_mutation_protected(self) -> None:
-        _assert_contract(self.semantic, self.static)
+    def test_every_control_is_mutation_protected_without_blob_binding(self) -> None:
         mutations: list[tuple[str, str]] = []
-
         for path in (CREATURE_EXPORT, CREATURE_IDENTITY, FULLWORLD_PRODUCER, THAIS_PRODUCER):
             mutations.append((self.semantic.replace(f"      - '{path}'\n", "", 1), self.static))
             push_pos = self.semantic.index("  push:")
             mutations.append((
-                self.semantic[:push_pos]
-                + self.semantic[push_pos:].replace(f"      - '{path}'\n", "", 1),
+                self.semantic[:push_pos] + self.semantic[push_pos:].replace(f"      - '{path}'\n", "", 1),
                 self.static,
             ))
         for path in (REGRESSION, STATIC_WORKFLOW_PATH):
@@ -666,9 +574,7 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (
                 self.semantic.replace(
                     "    runs-on: ubuntu-24.04\n",
-                    "    runs-on: ubuntu-24.04\n"
-                    '    "permi\\u0073sions":\n'
-                    "      contents: write\n",
+                    "    runs-on: ubuntu-24.04\n    'permissions':\n      contents: write\n",
                     1,
                 ),
                 self.static,
@@ -692,8 +598,7 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (
                 self.semantic.replace(
                     "          assert sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}, sam[0]\n",
-                    "          if False:\n"
-                    "              assert sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}, sam[0]\n",
+                    "          if False:\n              assert sam[0]['position'] == {'x': 32361, 'y': 32198, 'floor': -7}, sam[0]\n",
                     1,
                 ),
                 self.static,
@@ -709,17 +614,7 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (
                 self.semantic.replace(
                     "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
-                    "        if: ${{ false }}\n"
-                    "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
-                    1,
-                ),
-                self.static,
-            ),
-            (
-                self.semantic.replace(
-                    "          import json\n",
-                    "          import json, sys\n"
-                    "          sys.exit(0)\n",
+                    "        if: ${{ false && true }}\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
                     1,
                 ),
                 self.static,
@@ -736,17 +631,42 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (
                 self.semantic.replace(
                     "jobs:\n",
-                    "jobs:\n"
-                    "  injected: {runs-on: ubuntu-24.04, permissions: {contents: write}, steps: []}\n",
+                    "jobs:\n  injected: {runs-on: ubuntu-24.04, permissions: {contents: write}, steps: []}\n",
                     1,
                 ),
                 self.static,
             ),
             (
                 self.semantic.replace(
-                    "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
-                    "        if: ${{ false && true }}\n"
-                    "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "          set -euo pipefail\n          python - <<'PY'\n",
+                    "          set -euo pipefail\n          exit 0\n          python - <<'PY'\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "          import json\n",
+                    "          from sys import exit as done\n          ignored = done(0)\n          import json\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "        shell: bash\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n",
+                    "        shell: bash\n        env:\n          PYTHONOPTIMIZE: '1'\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "      - name: Verify Atlas trigger closure\n",
+                    "      - name: &conditional_key if\n"
+                    "        ? *conditional_key\n"
+                    "        : ${{ false && true }}\n"
+                    "      - name: Verify Atlas trigger closure\n",
                     1,
                 ),
                 self.static,
@@ -755,7 +675,7 @@ class AtlasTriggerClosureTest(unittest.TestCase):
 
         for semantic, static in mutations:
             with self.assertRaises(AssertionError):
-                _assert_contract(semantic, static)
+                _assert_contract(semantic, static, verify_blobs=False)
 
 
 if __name__ == "__main__":
