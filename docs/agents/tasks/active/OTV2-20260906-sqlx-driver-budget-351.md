@@ -1025,29 +1025,6 @@ next_action: carry the same backing-bound representation through generic decoded
 P1 `3966866700` and umbrella P1 `3954831069` remain open because generic list
 backing and the complete retained-descendant matrix are not yet proven.
 
-## Window36 empty TLS 1.3 CertificateRequest context repair
-
-Owner-aware zero-length decoded copies now return the allocation-free empty `Vec`
-without a custody token. This matches representation truth (`Vec::with_capacity(0)`
-has no backing allocation), leaves charged/custodied counters unchanged, and allows
-the valid empty TLS 1.3 CertificateRequest handshake context to pass through the
-ordinary owner-free `PayloadU8::clone` without panic. The existing client rejection
-of non-empty handshake contexts is unchanged.
-
-Focused production-source decoding covers a complete empty-context
-CertificateRequest with a signature-algorithms extension, proves clone does not add
-a debit, and proves final owner release remains exact.
-
-```yaml
-status: active
-empty_certificate_request_context: PROVEN_FOCUSED
-complete_tls_accounting: NOT_PROVEN
-remaining_acceptance_cells: generic list backing; borrowed Payload ownership; retained descendants; transcript and complete-handshake composition; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
-next_action: continue generic list backing custody and every retained descendant cell without aggregate rollback as lifetime authority
-```
-
-P1 `3966866700` and umbrella P1 `3954831069` remain open.
-
 ## Window35 charged HRR cookie copy repair
 
 Exact-head review found that a peer-supplied, owner-aware decoded HRR cookie reached
@@ -1072,6 +1049,29 @@ payload_u8_u16_backing_custody: PROVEN_FOCUSED
 complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: generic list backing; borrowed Payload ownership; retained descendants; transcript and complete-handshake composition; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
 next_action: continue generic list backing custody and every retained descendant cell without using aggregate rollback as lifetime authority
+```
+
+P1 `3966866700` and umbrella P1 `3954831069` remain open.
+
+## Window36 empty TLS 1.3 CertificateRequest context repair
+
+Owner-aware zero-length decoded copies now return the allocation-free empty `Vec`
+without a custody token. This matches representation truth (`Vec::with_capacity(0)`
+has no backing allocation), leaves charged/custodied counters unchanged, and allows
+the valid empty TLS 1.3 CertificateRequest handshake context to pass through the
+ordinary owner-free `PayloadU8::clone` without panic. The existing client rejection
+of non-empty handshake contexts is unchanged.
+
+Focused production-source decoding covers a complete empty-context
+CertificateRequest with a signature-algorithms extension, proves clone does not add
+a debit, and proves final owner release remains exact.
+
+```yaml
+status: active
+empty_certificate_request_context: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: generic list backing; borrowed Payload ownership; retained descendants; transcript and complete-handshake composition; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: continue generic list backing custody and every retained descendant cell without aggregate rollback as lifetime authority
 ```
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open.
