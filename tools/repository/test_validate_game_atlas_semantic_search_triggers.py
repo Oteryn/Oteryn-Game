@@ -467,6 +467,7 @@ def _assert_pinned_actions_and_no_bypass(workflow: str) -> None:
     keys = _decoded_mapping_keys(workflow)
     assert "continue-on-error" not in keys
     assert "if" not in keys, "workflow if conditions are forbidden in protected Atlas qualification workflows"
+    assert "defaults" not in keys, "workflow/job run defaults are forbidden in protected Atlas qualification workflows"
     for dangerous in ("PYTHONOPTIMIZE", "BASH_ENV"):
         assert dangerous not in keys and dangerous not in workflow, f"dangerous execution environment key: {dangerous}"
 
@@ -650,6 +651,14 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                 self.static,
             ),
             (
+                self.semantic.replace(
+                    "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
+                    "  semantic-search-source:\n    defaults:\n      run:\n        shell: \"true {0}\"\n    runs-on: ubuntu-24.04\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
                 self.semantic,
                 self.static.replace("          python tools/game-atlas-creatures/self_test.py\n", "", 1),
             ),
@@ -827,6 +836,14 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                 self.semantic.replace(
                     "      - name: Run deterministic and negative tests\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
                     "      - name: Run deterministic and negative tests\n        shell: \"true {0}\"\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
+                    "  semantic-search-source:\n    defaults:\n      run:\n        shell: \"true {0}\"\n    runs-on: ubuntu-24.04\n",
                     1,
                 ),
                 self.static,
