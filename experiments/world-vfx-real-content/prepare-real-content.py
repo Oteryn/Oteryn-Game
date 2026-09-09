@@ -212,7 +212,10 @@ def decode_sheet_bytes(data: bytes) -> tuple[int, int, bytes]:
     for row in rows:
         for index in range(0, len(row), 4):
             blue, green, red, alpha = row[index : index + 4]
-            rgba[target : target + 4] = bytes((red, green, blue, alpha))
+            if red == 0xFF and green == 0x00 and blue == 0xFF:
+                rgba[target : target + 4] = b"\x00\x00\x00\x00"
+            else:
+                rgba[target : target + 4] = bytes((red, green, blue, alpha))
             target += 4
     return width, abs(height), bytes(rgba)
 
