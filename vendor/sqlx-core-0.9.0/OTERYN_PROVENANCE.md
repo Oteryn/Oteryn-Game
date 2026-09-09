@@ -972,7 +972,24 @@ Aggregate KX/provider residency and complete WP3 remain open pending the full
 actual-HRR, thread-churn, cancellation/drop, TLS custody, TLS-positive, and
 PostgreSQL 17.6 matrices on the final graph.
 
-### Window24 retained thread-residency qualification
+## Window24a actual HelloRetryRequest wire path
+
+The executable AWS-LC SQLx harness now creates an owner-aware PQ-first rustls
+client and an ordinary TLS 1.3 server restricted to P-256, then moves the real
+TLS records between them.  This forces rustls's server implementation to emit
+an actual HelloRetryRequest and the client to report
+`HandshakeKind::FullWithHelloRetryRequest`.  Test-only peak observation on the
+same ledger proves the 1,625-byte replacement reservation occurs while the
+initial 7,881-byte hybrid reservation is live.  Current-charge observation
+after HRR processing proves the old exchange is destroyed and released only
+after the replacement is installed.  The exchange then completes normally.
+
+This closes the actual-wire HRR cell only.  Initial/post-HRR cancellation,
+sequential caller-thread churn, the rest of complete TLS allocation custody,
+the SQLx socket-level TLS-positive case, and PostgreSQL qualification remain
+open; aggregate KX/provider residency is therefore still `NOT_PROVEN`.
+
+## Window24b retained thread-residency qualification
 
 After the normal protected-main merge, the executable exact-graph AWS-LC proof
 now exercises thread churn on the same root.  Three new threads each acquire
@@ -983,29 +1000,18 @@ before provider/KX use.  These shared debits remain intentionally unreleased.
 This closes the focused thread-churn cell only; actual wire HRR, cancellation,
 and complete TLS custody remain open.
 
-### Window25 actual wire HRR and KX cancellation qualification
+### Window25 actual wire HelloRetryRequest
 
-The executable exact-graph AWS-LC harness now runs an actual TLS 1.3 client and
-server exchange.  The PQ-first owner-aware client initially holds the protected
-7,881-byte X25519MLKEM768 reservation; an ordinary AWS-LC server configured for
-P-256 only emits a real HelloRetryRequest.  Ledger event ordering proves the
-1,625-byte replacement debit is accepted while the initial debit is still held,
-before the initial 7,881-byte debit releases.  Both peers report
-`HandshakeKind::FullWithHelloRetryRequest`, and the handshake completes.
-
-The same wire route with only 1,624 replacement bytes available fails before a
-P-256 debit/provider start, then releases the initial KX during actual error
-unwind.  Separate connection drops before retry and after successful HRR prove
-the initial and replacement debits remain until their respective active
-exchange state is destroyed.  Completion exercises the returned-secret path
-through the real TLS key schedule rather than only inspecting a direct KX unit
-result.  Static test-only P-256 certificate/key bytes avoid a new dependency or
-fixture mutation.
-
-`actual_wire_hrr = PROVEN_FOCUSED`
-
-`kx_error_and_pre_post_hrr_drop = PROVEN_FOCUSED`
-
-Aggregate complete TLS accounting remains open; these tests do not claim that
-the still-unimplemented decoded/configuration/session/transcript/peer-chain
-custody graph is complete.
+The exact AWS-LC SQLx harness now drives an owner-aware PQ-first rustls client
+against an ordinary P-256-only rustls server using an embedded test-only
+certificate.  The server and client both report
+`FullWithHelloRetryRequest`.  Ledger event ordering proves the P-256
+replacement's 1,625-byte reservation succeeds before the initial hybrid's
+7,881-byte reservation releases, and peak usage includes both.  A second real
+wire exchange funded with only 1,624 bytes beyond its live initial state fails
+without a successful replacement reservation and unwinds the initial exchange
+with the fatal connection state.  Separate connection drops before HRR and
+after replacement selection exercise destruction-time release of the initial
+and replacement reservations.  This replaces the earlier synthetic direct
+two-group overlap as the focused HRR evidence; complete TLS accounting and the
+remaining key-schedule/cancellation matrix are still open.

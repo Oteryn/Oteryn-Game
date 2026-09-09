@@ -362,7 +362,19 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Re-run allocation-free validation and the executable racing-first-use accounting proof on the final feature graph.
 - [ ] Complete actual HRR, thread-churn, cancellation, complete TLS composition, funded TLS-positive, and PostgreSQL 17.6 qualification before any aggregate WP3 acceptance claim.
 
-## Window24 continuation
+## Window24a actual HRR wire proof
+
+- [x] Drive a real owner-aware PQ-first client against an ordinary P-256-only
+  TLS 1.3 server and require `FullWithHelloRetryRequest`.
+- [x] Observe the same-ledger peak containing the initial 7,881-byte hybrid KX
+  plus the 1,625-byte replacement before old-backing release.
+- [x] Complete the negotiated handshake and preserve ordinary server,
+  certificate, provider, and protocol semantics.
+- [ ] Finish initial/post-HRR cancellation and thread-churn controls before
+  aggregate KX/provider GREEN.
+- [ ] Continue complete TLS custody, funded SQLx TLS-positive, and PostgreSQL
+  17.6 qualification.
+## Window24b retained provider-thread churn
 
 - [x] Normally merge protected `main@e1750ede386c0ee1001894ab9d91129de5d03fce`.
 - [x] Prove retained 1,360-byte per-thread residency, repeat-use idempotence, and same-root churn exhaustion before AWS-LC use.
@@ -372,7 +384,12 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 
 ## Window25 actual wire HRR
 
-- [x] Run a real PQ-first client/P-256-only server TLS 1.3 exchange and verify both peers report `FullWithHelloRetryRequest`.
-- [x] Prove replacement admission occurs while the initial full KX debit remains held, and that insufficient replacement funding fails before provider start.
-- [x] Prove pre-retry and post-HRR connection drops release KX custody only with active-state destruction; exercise returned-secret consumption through the real TLS key schedule.
-- [ ] Continue the protected decoded/config/session/cache/send/transcript/error custody graph before complete TLS or WP3 acceptance.
+- [x] Drive a real PQ-first AWS-LC TLS 1.3 client into a P-256-only server and
+  assert `FullWithHelloRetryRequest` on the actual rustls state path.
+- [x] Prove replacement reservation precedes initial release, exact
+  initial-only capacity denies replacement, and pre/post-HRR connection drops
+  release the corresponding active exchange with state destruction.
+- [ ] Prove the remaining actual key-schedule consumer and cancellation/error
+  controls before aggregate KX/provider residency becomes GREEN.
+- [ ] Continue decoded/config/session/cache/send/transcript/error custody,
+  funded TLS-positive, and PostgreSQL 17.6 qualification.
