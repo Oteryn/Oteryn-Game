@@ -151,9 +151,9 @@ All prior protected grants remain unchanged within their exact scopes.
 
 This is a HIGH-risk control-plane allocation candidate and cannot authorize or integrate itself. It remains `NOT_ACTIVE_CONDITIONAL` until all of the following complete:
 
-1. freeze the exact effective diff and exact candidate head/tree;
+1. freeze the exact effective diff and exact candidate head/tree, then record a producer exact-head full-diff self-review with no unresolved producer P0/P1/P2 findings;
 2. run deterministic exact-head repository checks and require all applicable checks terminal GREEN;
-3. obtain genuinely independent exact-head HIGH-risk/deep review with no unresolved P0/P1/P2;
+3. obtain genuinely independent exact-head HIGH-risk/deep review with no unresolved P0/P1/P2, and require zero unresolved review threads and zero outstanding requested-changes reviews before owner authorization or integration preflight;
 4. obtain explicit human-owner authorization for that exact candidate, not a generic continuation instruction;
 5. immediately before integration, fresh target-bound live preflight verifies repository, PR, `base=main`, exact qualified head, authorization, eligibility and intended protected base/queue state;
 6. submit only through the META 3.1 native exact-head REST `merge-async` route with exact `sha` and explicit `merge_action="merge_queue"`;
@@ -172,8 +172,10 @@ Protection of this document alone does not activate it. Even after protection, m
 
 ```text
 allocation-only NOT_ACTIVE_CONDITIONAL candidate
--> exact effective diff + deterministic exact-head checks
+-> exact effective diff + producer exact-head full-diff self-review
+-> deterministic exact-head checks
 -> independent HIGH-risk exact-head review with P0/P1/P2=0
+-> zero unresolved review threads + zero outstanding requested-changes reviews
 -> explicit owner authorization for exact candidate
 -> fresh target-bound exact-head/base/auth/eligibility preflight
 -> native REST merge-async exact sha + merge_action=merge_queue
