@@ -247,6 +247,10 @@ def _assert_safe_yaml_structure(workflow: str) -> None:
             f"explicit YAML mapping keys are forbidden: {line!r}"
         )
         assert "<<:" not in masked, f"YAML merge keys are forbidden: {line!r}"
+        entry = _mapping_entry(line)
+        assert not (entry is not None and entry[0] == "env" and indent < 8), (
+            f"workflow/job environment mappings are forbidden: {line!r}"
+        )
         assert not (indent == 6 and structural.strip() == "-"), (
             f"bare workflow step sequence markers are forbidden: {line!r}"
         )
@@ -748,6 +752,22 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         attacks = [
             (
                 self.semantic.replace(
+                    "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
+                    "  semantic-search-source:\n    env:\n      PYTHONPATH: tools/game-atlas-semantic-search\n    runs-on: ubuntu-24.04\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic,
+                self.static.replace(
+                    "  verify:\n    name: Game Atlas static creature producer / exact-source\n    runs-on: ubuntu-24.04\n",
+                    "  verify:\n    name: Game Atlas static creature producer / exact-source\n    env:\n      PYTHONHOME: /tmp/atlas-python-home\n    runs-on: ubuntu-24.04\n",
+                    1,
+                ),
+            ),
+            (
+                self.semantic.replace(
                     "      - name: Check out exact Game revision\n"
                     "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n"
                     "        with:\n"
@@ -949,6 +969,22 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             mutations.append((self.semantic, self.static.replace(f"      - '{path}'\n", "", 1)))
 
         mutations.extend((
+            (
+                self.semantic.replace(
+                    "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
+                    "  semantic-search-source:\n    env:\n      PYTHONPATH: tools/game-atlas-semantic-search\n    runs-on: ubuntu-24.04\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic,
+                self.static.replace(
+                    "  verify:\n    name: Game Atlas static creature producer / exact-source\n    runs-on: ubuntu-24.04\n",
+                    "  verify:\n    name: Game Atlas static creature producer / exact-source\n    env:\n      PYTHONHOME: /tmp/atlas-python-home\n    runs-on: ubuntu-24.04\n",
+                    1,
+                ),
+            ),
             (
                 self.semantic.replace(
                     "      - name: Check out exact Game revision\n"
