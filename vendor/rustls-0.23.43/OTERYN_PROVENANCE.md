@@ -376,16 +376,18 @@ Complete compressed wire/error/cancellation evidence and whole-handshake composi
 
 ## Actual-capacity family sweep
 
-Rust 1.94 `RawVec` permits allocator excess, so post-allocation equality checks
-do not prove that request-sized precharge covered the allocation.  Charged byte
-copies now construct an exact-layout `Box<[u8]>` from the source and use the
-allocation-free `Box<[u8]>::into_vec` conversion.  This covers decoded payload
-copies, retained secret copies, certificate DER copies and OCSP destinations.
+Charged byte copies construct an exact-layout `Box<[u8]>` from the source and use
+the allocation-free `Box<[u8]>::into_vec` conversion.  This safe implementation
+may remain.  It is not required to resolve allocator excess for initial Global
+vectors: pinned Rust 1.94 routes `Vec::with_capacity(n)` and zeroed
+`vec![0u8; n]` through `try_allocate_in(n)` and stores `cap = n`.  Consequently
+transformed outer vectors and compressed zeroed storage are not unproven solely
+on that withdrawn premise, and no unsafe initialization seam is required.
+Actual-capacity reconciliation remains required for growth/reallocation and any
+construction outside that pinned initial-Global path.
 
-Dynamic transformed outer certificate/list vectors and the zero-initialized
-compressed-certificate destination remain open.  Unlike byte copies, no fully
-initialized source slice exists before those allocations.  The pinned standard
-library's uninitialized boxed-slice route needs unsafe initialization/conversion,
-but rustls has crate-wide `#![forbid(unsafe_code)]`.  This checkpoint neither
-guesses allocator excess nor weakens that policy, and therefore does not claim
-the complete capacity family or complete TLS accounting.
+Compressed second-decode read failures now roll parser-local aggregate charges
+back to the pre-read checkpoint after partial AST and local guards have been
+destroyed.  Backing-bound decompression/payload custody is excluded and remains
+live until its own backing drops.  Focused malformed-body coverage commits a
+nested list before a later truncated field and proves exact rollback.

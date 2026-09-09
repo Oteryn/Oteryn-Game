@@ -1030,6 +1030,25 @@ struct ExpectCompressedCertificate {
     ech_retry_configs: Option<Vec<EchConfigPayload>>,
 }
 
+#[cfg(feature = "std")]
+fn read_second_decode_with_rollback<'a, T: Codec<'a>>(
+    reader: &mut Reader<'a>,
+    owner: &Arc<crate::msgs::codec::DecodedOwner>,
+    checkpoint: crate::msgs::codec::DecodedCheckpoint,
+) -> Result<T, InvalidMessage> {
+    match T::read(reader) {
+        Ok(value) => Ok(value),
+        Err(err) => {
+            // `read` has returned, so every partially-built value and armed
+            // local guard has already been destroyed.  Return only the
+            // parser-local aggregate charges left by successful nested
+            // subreads; backing-bound custody is excluded by `rollback`.
+            owner.rollback(checkpoint);
+            Err(err)
+        }
+    }
+}
+
 impl State<ClientConnectionData> for ExpectCompressedCertificate {
     fn handle<'m>(
         mut self: Box<Self>,
@@ -1113,15 +1132,40 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
         };
         #[cfg(not(feature = "std"))]
         let mut second_reader = Reader::init(&decompress_buffer);
-        let cert_payload =
-            match CertificatePayloadTls13::read(&mut second_reader) {
+        #[cfg(feature = "std")]
+        let cert_payload = match (&decoded_owner, second_checkpoint) {
+            (Some(owner), Some(checkpoint)) => {
+                match read_second_decode_with_rollback::<CertificatePayloadTls13<'_>>(
+                    &mut second_reader,
+                    owner,
+                    checkpoint,
+                ) {
+                    Ok(cm) => cm,
+                    Err(err) => {
+                        return Err(cx
+                            .common
+                            .send_fatal_alert(AlertDescription::BadCertificate, err));
+                    }
+                }
+            }
+            _ => match CertificatePayloadTls13::read(&mut second_reader) {
                 Ok(cm) => cm,
                 Err(err) => {
                     return Err(cx
                         .common
                         .send_fatal_alert(AlertDescription::BadCertificate, err));
                 }
-            };
+            },
+        };
+        #[cfg(not(feature = "std"))]
+        let cert_payload = match CertificatePayloadTls13::read(&mut second_reader) {
+            Ok(cm) => cm,
+            Err(err) => {
+                return Err(cx
+                    .common
+                    .send_fatal_alert(AlertDescription::BadCertificate, err));
+            }
+        };
         trace!(
             "Server certificate decompressed using {:?} ({} bytes -> {})",
             compressed_cert.alg,
@@ -1877,5 +1921,102 @@ impl KernelState for ExpectQuicTraffic {
         nst: &NewSessionTicketPayloadTls13,
     ) -> Result<(), Error> {
         self.0.handle_new_ticket_impl(cx, nst)
+    }
+}
+
+#[cfg(all(test, feature = "std"))]
+mod resource_owner_tests {
+    use core::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
+
+    use super::*;
+    use crate::DeframerBufferOwner;
+    use crate::msgs::codec::{
+        DecodedOwner, ListLength, ProspectiveDecodedCustody, TlsListElement,
+    };
+
+    #[derive(Debug)]
+    struct TestOwner {
+        used: AtomicUsize,
+    }
+
+    impl DeframerBufferOwner for TestOwner {
+        fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+            self.used.fetch_add(bytes, Ordering::SeqCst);
+            Ok(())
+        }
+
+        fn release(&self, bytes: usize) {
+            self.used.fetch_sub(bytes, Ordering::SeqCst);
+        }
+    }
+
+    #[derive(Debug)]
+    struct NestedByte(u8);
+
+    impl Codec<'_> for NestedByte {
+        fn encode(&self, bytes: &mut Vec<u8>) {
+            self.0.encode(bytes);
+        }
+
+        fn read(reader: &mut Reader<'_>) -> Result<Self, InvalidMessage> {
+            Ok(Self(u8::read(reader)?))
+        }
+    }
+
+    impl TlsListElement for NestedByte {
+        const SIZE_LEN: ListLength = ListLength::U16;
+    }
+
+    /// Models a malformed decompressed Certificate body: a nested list is
+    /// decoded successfully before a later field is truncated.
+    #[derive(Debug)]
+    struct MalformedCompressedCertificateBody;
+
+    impl Codec<'_> for MalformedCompressedCertificateBody {
+        fn encode(&self, _bytes: &mut Vec<u8>) {}
+
+        fn read(reader: &mut Reader<'_>) -> Result<Self, InvalidMessage> {
+            let _successfully_decoded_nested_list = Vec::<NestedByte>::read(reader)?;
+            let _missing_later_field = u16::read(reader)?;
+            Ok(Self)
+        }
+    }
+
+    #[test]
+    fn compressed_second_decode_error_rolls_back_nested_list_charge() {
+        let ledger = Arc::new(TestOwner {
+            used: AtomicUsize::new(0),
+        });
+        let (decoded_owner, arc_charge) = DecodedOwner::new(ledger.clone()).unwrap();
+
+        // This represents the independently custodied decompression backing.
+        // It is deliberately established before the second-decode checkpoint.
+        let prospective =
+            ProspectiveDecodedCustody::reserve(decoded_owner.clone(), 4).unwrap();
+        let decompressed = vec![0u8; 4];
+        let decompression_custody = prospective.commit();
+        let before_second_decode = ledger.used.load(Ordering::SeqCst);
+        let checkpoint = decoded_owner.checkpoint();
+
+        // u16 list length=2, two successfully decoded entries, then the
+        // required trailing u16 field is absent.
+        let malformed = [0, 2, 1, 2];
+        let mut reader = Reader::init_with_owner(&malformed, decoded_owner.clone());
+        assert!(read_second_decode_with_rollback::<MalformedCompressedCertificateBody>(
+            &mut reader,
+            &decoded_owner,
+            checkpoint,
+        )
+        .is_err());
+
+        assert_eq!(ledger.used.load(Ordering::SeqCst), before_second_decode);
+        assert_eq!(decompressed.len(), 4);
+
+        drop(decompressed);
+        drop(decompression_custody);
+        drop(decoded_owner);
+        drop(arc_charge);
+        assert_eq!(ledger.used.load(Ordering::SeqCst), 0);
     }
 }

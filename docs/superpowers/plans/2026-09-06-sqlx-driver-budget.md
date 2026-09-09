@@ -656,7 +656,9 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   source-proven exact boxed-slice backing and allocation-free `into_vec`.
 - [x] Sweep decoded payload, retained secret, certificate DER/current-peer and
   OCSP byte-copy variants.
-- [ ] Supply a reviewed safe exact-length initialization seam (or an
-  allocator-authoritative preallocation bound) for transformed outer vectors
-  and zero-filled decompression backing; do not weaken rustls's unsafe-code ban.
-- [ ] Re-run compressed wire/error/cancellation and full capacity-family proof.
+- [x] Correct the withdrawn allocator-excess premise: pinned Rust 1.94 initial
+  Global `Vec::with_capacity(n)` / `vec![0u8; n]` stores capacity `n`; no unsafe
+  exact-initialization seam is required solely for those paths.
+- [x] Roll back parser-local second-decode aggregate charges after a top-level
+  compressed-certificate read error, excluding independent backing custody.
+- [ ] Re-run complete compressed wire/error/cancellation qualification.
