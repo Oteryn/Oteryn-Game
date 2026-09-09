@@ -437,7 +437,7 @@ def _step_names(workflow: str) -> tuple[str, ...]:
             continue
         entry = _mapping_entry(line)
         if entry is not None and entry[0] == "name":
-            names.append(_decode_mapping_scalar(entry[1]))
+            names.append(_decode_yaml_scalar(entry[1]))
     return tuple(names)
 
 
