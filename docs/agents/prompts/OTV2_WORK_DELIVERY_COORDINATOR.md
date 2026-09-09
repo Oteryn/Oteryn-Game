@@ -253,8 +253,8 @@ For every worker return:
 6. run focused/component/integration/E2E evidence appropriate to risk;
 7. require independent exact-head review where repository policy requires it;
 8. refresh to current integration `main` without discarding valid history;
-9. require exact-head repository CI and zero unresolved threads, then route integration only through the bound META policy’s governed atomic Merge Queue capability; if unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head rather than substituting direct merge or generic auto-merge;
-10. after successful governed Merge Queue integration, verify protected-main readback confirms the accepted candidate is integrated, then archive the task and release ownership/lease;
+9. require exact-head repository CI and zero unresolved threads, then route integration only through the authenticated bound META 3.1 native exact-head Merge Queue contract: REST `merge-async` with the exact qualified `sha` and explicit `merge_action="merge_queue"` after fresh repository/PR/`base=main`/head/auth/eligibility preflight. Treat HTTP `202` as acceptance only, bind its exact returned async UUID to an executor-owned receipt sequence, and require immediate same-target live readback carrying that UUID at a strictly greater executor sequence; wall-clock timestamps are freshness-only. Reconcile HTTP `200`/`409`. Direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, a default merge action, no-op/retrigger commits and ambiguous automated dequeue are forbidden substitutes. If the selected native operation is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified candidate;
+10. queue admission is not terminal proof: require real `merge_group` `game-gate` SUCCESS and protected-main readback confirming the accepted candidate is integrated, then archive the task and release ownership/lease;
 11. recompute dependent lane readiness.
 
 Worker completion order never overrides dependency-aware integration order.
