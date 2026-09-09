@@ -274,3 +274,15 @@ Ordinary owner-free constructors and no-std behavior remain unchanged. Focused t
 source/destination overlap, max-minus-one Arc denial, clone no-double-charge, and final
 release. This does not prove certificate-message, transcript, compressed-certificate, or
 complete TLS accounting.
+
+## Charged certificate outer-vector transfer
+
+The owner-aware TLS 1.3 certificate conversion already creates and charges an owned
+`CertificateChain<'static>` destination. A later ordinary `CertificateChain::into_owned()`
+would consume that vector and allocate a replacement outer vector with `collect()`. The
+client certificate state now records whether a chain is ordinary or already-static/charged:
+ordinary borrowed conversion is unchanged, while the charged variant moves its original
+outer allocation through `ServerCertDetails` and `CommonState` without reallocating or
+debiting again. Focused pointer/capacity and ledger assertions cover successor and peer-state
+transfer plus backing-before-custody final release. TLS 1.2, compressed-certificate and
+complete TLS accounting remain open.

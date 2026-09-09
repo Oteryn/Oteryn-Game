@@ -900,7 +900,7 @@ impl State<ClientConnectionData> for ExpectServerDone<'_> {
                         .send_cert_verify_error_alert(err)
                 })?
         };
-        cx.common.peer_certificates = Some(st.server_cert.cert_chain.into_owned());
+        cx.common.peer_certificates = Some(st.server_cert.take_peer_certificates());
 
         // 3.
         if let Some(client_auth) = &st.client_auth {

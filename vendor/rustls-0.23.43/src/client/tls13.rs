@@ -1261,10 +1261,15 @@ impl State<ClientConnectionData> for ExpectCertificateVerify<'_> {
                     .send_cert_verify_error_alert(err)
             })?;
 
-        cx.common.peer_certificates = Some(self.server_cert.cert_chain.into_owned());
+        #[cfg(feature = "std")]
+        let (peer_certificates, peer_certificate_custody) =
+            self.server_cert.into_peer_certificates();
+        #[cfg(not(feature = "std"))]
+        let peer_certificates = self.server_cert.into_peer_certificates();
+        cx.common.peer_certificates = Some(peer_certificates);
         #[cfg(feature = "std")]
         {
-            cx.common.peer_certificate_custody = self.server_cert.resource_custody;
+            cx.common.peer_certificate_custody = peer_certificate_custody;
         }
         self.transcript.add_message(&m);
 

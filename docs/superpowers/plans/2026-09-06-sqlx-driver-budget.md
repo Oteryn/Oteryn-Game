@@ -584,3 +584,11 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Precharge and retain secret, deep certificate destination, and certificate Arc-control backing through final destruction.
 - [ ] Continue certificate/OCSP message ownership, compressed-certificate overlap, and transcript/hash-context custody.
 - [ ] Prove the complete simultaneous-live TLS composition before TLS-positive or PostgreSQL qualification.
+
+## Window43 charged certificate transfer repair
+
+- [x] Preserve the already-charged TLS 1.3 certificate outer vector across
+  `ServerCertDetails::into_owned` and `CommonState::peer_certificates` transfer.
+- [x] Keep ordinary borrowed/owner-free `CertificateChain::into_owned` semantics unchanged.
+- [x] Prove pointer/capacity identity, no second debit, and backing-before-token release.
+- [ ] Continue TLS 1.2 and compressed-certificate custody, then transcript/hash contexts.

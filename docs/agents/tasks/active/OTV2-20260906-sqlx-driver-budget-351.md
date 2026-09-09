@@ -1260,3 +1260,27 @@ tls13_certificate_destination_custody: PROVEN_FOCUSED
 complete_tls_accounting: NOT_PROVEN
 next_action: complete equivalent TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
+
+## Window43 charged certificate outer-backing transfer repair
+
+Exact-head review found that the charged TLS 1.3 certificate destination was subsequently
+passed through ordinary `CertificateChain::into_owned()`, whose `collect()` allocated a new
+outer vector after the original outer backing had already been charged. `ServerCertDetails`
+now distinguishes ordinary borrowed chains from already-static charged chains. Ordinary
+chains retain the upstream deep-owning conversion, while charged chains move their existing
+outer vector allocation-free through successor conversion and into `CommonState` together
+with the same custody token.
+
+Focused evidence pins the charged outer pointer and capacity across both transfers, observes
+no second debit, and verifies final peer backing destruction before custody release.
+Verification/error paths continue to destroy `ServerCertDetails` fields in
+chain/OCSP/custody order. TLS 1.2 certificate ownership, compressed certificates,
+transcript/hash contexts and complete-handshake composition remain open.
+
+```yaml
+status: active
+tls13_certificate_destination_custody: PROVEN_FOCUSED
+charged_certificate_outer_transfer: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+next_action: complete equivalent TLS1.2 and compressed-certificate custody, then transcript/hash contexts
+```
