@@ -1061,6 +1061,8 @@ mod tests {
             effect_phase: 0,
             missile_phase: 0,
             actor_direction: crate::demo::DemoDirection::South,
+            qualification_floors: crate::demo::QUALIFICATION_FLOORS,
+            roof_visible: true,
         }
     }
 

@@ -4,7 +4,10 @@ use crate::visible_set::{VisibleSpriteEntry, VisibleSpriteSet};
 
 pub const TILE_UNITS: f32 = 32.0;
 pub const CARRIER_UNITS: f32 = 64.0;
+pub const DEMO_WORLD_FLOOR: i16 = -7;
+pub const QUALIFICATION_FLOORS: [i16; 3] = [-8, -7, -6];
 const CARRIER_OVERHANG_UNITS: f32 = CARRIER_UNITS - TILE_UNITS;
+const ROOF_TOGGLE_MS: u64 = 1_500;
 const DEMO_PATH_MS: u64 = 2_400;
 const DEMO_LEG_MS: u64 = DEMO_PATH_MS / 2;
 const DEMO_MISSILE_MS: u64 = 800;
@@ -39,6 +42,7 @@ pub enum BlendMode {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DrawOrderKey {
+    pub floor: i16,
     pub scene_y: i32,
     pub scene_x: i32,
     pub plane: i64,
@@ -117,6 +121,8 @@ pub struct DemoFrame {
     pub effect_phase: usize,
     pub missile_phase: usize,
     pub actor_direction: DemoDirection,
+    pub qualification_floors: [i16; 3],
+    pub roof_visible: bool,
 }
 
 pub fn build_demo_frame(
@@ -153,12 +159,15 @@ pub fn build_demo_frame(
             .len()
             .saturating_add(outfit.layers)
             .saturating_add(effect.layers)
-            .saturating_add(missile_program.layers),
+            .saturating_add(missile_program.layers)
+            .saturating_add(6),
     );
 
     for primitive in bundle.scene().primitives() {
         sprites.push(static_draw(primitive, visible)?);
     }
+    let roof_visible = roof_visible_at(elapsed_ms);
+    append_multifloor_fixture(&mut sprites, bundle, visible, roof_visible)?;
 
     append_program_draws(
         &mut sprites,
@@ -255,6 +264,8 @@ pub fn build_demo_frame(
         effect_phase,
         missile_phase,
         actor_direction: actor.direction,
+        qualification_floors: QUALIFICATION_FLOORS,
+        roof_visible,
     })
 }
 
@@ -267,6 +278,7 @@ fn static_draw(
     let tile_y = primitive.tile.scene_y as f32 * TILE_UNITS;
     Ok(SpriteDraw {
         order_key: DrawOrderKey {
+            floor: DEMO_WORLD_FLOOR,
             scene_y: primitive.tile.scene_y,
             scene_x: primitive.tile.scene_x,
             plane: primitive.presentation_order.plane,
@@ -286,6 +298,93 @@ fn static_draw(
             tile_y + primitive.displacement.dy_units as f32,
         ),
     })
+}
+
+fn append_multifloor_fixture(
+    target: &mut Vec<SpriteDraw>,
+    bundle: &QualificationBundle,
+    visible: &VisibleSpriteSet,
+    roof_visible: bool,
+) -> Result<(), String> {
+    let primitives = bundle.scene().primitives();
+    let lower = primitives
+        .iter()
+        .find(|primitive| {
+            primitive.source_role == "ground"
+                && primitive.locator.source_width == 32
+                && primitive.locator.source_height == 32
+        })
+        .ok_or_else(|| "multi-floor fixture requires a real 32x32 ground sprite".to_owned())?;
+    let current = primitives
+        .iter()
+        .find(|primitive| {
+            primitive.source_role == "ground"
+                && primitive.locator.source_width == 64
+                && primitive.locator.source_height == 64
+        })
+        .ok_or_else(|| "multi-floor fixture requires a real 64x64 ground sprite".to_owned())?;
+    let roof = primitives
+        .iter()
+        .find(|primitive| {
+            primitive.source_role == "tile_item"
+                && primitive.locator.source_width == 64
+                && primitive.locator.source_height == 64
+        })
+        .ok_or_else(|| {
+            "multi-floor fixture requires a real 64x64 tile-item roof sprite".to_owned()
+        })?;
+
+    for (source, floor, scene_x, scene_y, order) in [
+        (lower, -8_i16, 24_i32, 10_i32, 20_000_i64),
+        (current, -7_i16, 25_i32, 10_i32, 20_001_i64),
+        (roof, -6_i16, 26_i32, 10_i32, 20_002_i64),
+        (lower, -8_i16, 24_i32, 12_i32, 20_010_i64),
+        (current, -7_i16, 24_i32, 12_i32, 20_011_i64),
+    ] {
+        target.push(qualification_fixture_draw(
+            source, visible, floor, scene_x, scene_y, order,
+        )?);
+    }
+    if roof_visible {
+        target.push(qualification_fixture_draw(
+            roof, visible, -6, 24, 12, 20_012,
+        )?);
+    }
+    Ok(())
+}
+
+fn qualification_fixture_draw(
+    source: &SceneDrawPrimitive,
+    visible: &VisibleSpriteSet,
+    floor: i16,
+    scene_x: i32,
+    scene_y: i32,
+    order: i64,
+) -> Result<SpriteDraw, String> {
+    let entry = visible_entry(visible, source.sprite_source_id)?;
+    Ok(SpriteDraw {
+        order_key: DrawOrderKey {
+            floor,
+            scene_y,
+            scene_x,
+            plane: i64::MAX / 8,
+            order,
+            layer: 0,
+            primitive: 0,
+            role_rank: STATIC_ROLE_RANK,
+        },
+        role: SpriteRole::StaticWorld,
+        blend: BlendMode::Alpha,
+        sprite_source_id: source.sprite_source_id,
+        dense_index: entry.dense_index,
+        source_width: entry.source_width,
+        source_height: entry.source_height,
+        rect: carrier_rect(scene_x as f32 * TILE_UNITS, scene_y as f32 * TILE_UNITS),
+    })
+}
+
+fn roof_visible_at(elapsed_ms: u64) -> bool {
+    (elapsed_ms / ROOF_TOGGLE_MS).is_multiple_of(2)
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -334,6 +433,7 @@ fn append_program_draws(
         let entry = visible_entry(visible, sprite_source_id)?;
         target.push(SpriteDraw {
             order_key: DrawOrderKey {
+                floor: DEMO_WORLD_FLOOR,
                 scene_y: request.scene_tile.1,
                 scene_x: request.scene_tile.0,
                 plane: i64::MAX / 4,
@@ -603,6 +703,29 @@ mod tests {
         assert_eq!(west_mid.direction, DemoDirection::West);
         assert!(east_mid.position_units.0 > start.position_units.0);
         assert!(west_mid.position_units.0 < turn.position_units.0);
+    }
+
+    #[test]
+    fn qualification_floor_order_draws_lower_before_upper() {
+        let key = |floor| DrawOrderKey {
+            floor,
+            scene_y: 0,
+            scene_x: 0,
+            plane: 0,
+            order: 0,
+            layer: 0,
+            primitive: 0,
+            role_rank: 0,
+        };
+        assert!(key(-8) < key(-7));
+        assert!(key(-7) < key(-6));
+    }
+
+    #[test]
+    fn roof_occlusion_fixture_exercises_both_states() {
+        assert!(roof_visible_at(0));
+        assert!(!roof_visible_at(ROOF_TOGGLE_MS));
+        assert!(roof_visible_at(ROOF_TOGGLE_MS * 2));
     }
 
     #[test]

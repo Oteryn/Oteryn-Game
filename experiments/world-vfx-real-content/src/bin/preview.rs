@@ -1,4 +1,6 @@
-use oteryn_world_vfx_real_content::demo::{DemoFrame, build_demo_frame};
+use oteryn_world_vfx_real_content::demo::{
+    DemoFrame, QUALIFICATION_FLOORS, SpriteRole, build_demo_frame,
+};
 use oteryn_world_vfx_real_content::prepared_cache::SOURCE_ZIP_SHA256;
 use oteryn_world_vfx_real_content::renderer::RealContentRenderer;
 use oteryn_world_vfx_real_content::scene::QualificationBundle;
@@ -108,6 +110,100 @@ where
     Ok(parsed)
 }
 
+#[derive(Debug, Clone, Copy, Default)]
+struct ObservedRange {
+    min: Option<f32>,
+    max: Option<f32>,
+}
+
+impl ObservedRange {
+    fn observe(&mut self, value: f32) {
+        self.min = Some(self.min.map_or(value, |current| current.min(value)));
+        self.max = Some(self.max.map_or(value, |current| current.max(value)));
+    }
+
+    fn span(self) -> f32 {
+        match (self.min, self.max) {
+            (Some(min), Some(max)) => max - min,
+            _ => 0.0,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Default)]
+struct SmokeCoverage {
+    real_object_seen: bool,
+    real_outfit_seen: bool,
+    real_effect_seen: bool,
+    real_missile_seen: bool,
+    overlay_seen: bool,
+    multi_floor_seen: bool,
+    roof_visible_seen: bool,
+    roof_hidden_seen: bool,
+    actor_x: ObservedRange,
+    ambient: ObservedRange,
+    telegraph_pulse: ObservedRange,
+    camera_x: ObservedRange,
+    camera_zoom: ObservedRange,
+}
+
+impl SmokeCoverage {
+    fn observe(&mut self, frame: &DemoFrame) {
+        for sprite in &frame.sprites {
+            match sprite.role {
+                SpriteRole::StaticWorld => self.real_object_seen = true,
+                SpriteRole::OutfitBase | SpriteRole::OutfitMask => self.real_outfit_seen = true,
+                SpriteRole::Effect => self.real_effect_seen = true,
+                SpriteRole::Missile => self.real_missile_seen = true,
+            }
+        }
+        self.overlay_seen |= !frame.actor_overlay.name.is_empty()
+            && (0.0..=1.0).contains(&frame.actor_overlay.hp_ratio);
+        self.multi_floor_seen |= frame.qualification_floors == QUALIFICATION_FLOORS;
+        if frame.roof_visible {
+            self.roof_visible_seen = true;
+        } else {
+            self.roof_hidden_seen = true;
+        }
+        self.actor_x.observe(frame.actor_overlay.anchor_x_units);
+        self.ambient.observe(frame.lighting.ambient);
+        self.telegraph_pulse.observe(frame.telegraph.pulse);
+        self.camera_x.observe(frame.camera.center_x_units);
+        self.camera_zoom.observe(frame.camera.zoom);
+    }
+
+    fn validate(&self) -> Result<(), String> {
+        for (label, observed) in [
+            ("real object", self.real_object_seen),
+            ("real outfit", self.real_outfit_seen),
+            ("real effect", self.real_effect_seen),
+            ("real missile", self.real_missile_seen),
+            ("screen-space overlay", self.overlay_seen),
+            ("multi-floor fixture", self.multi_floor_seen),
+            ("roof-visible state", self.roof_visible_seen),
+            ("roof-hidden state", self.roof_hidden_seen),
+        ] {
+            if !observed {
+                return Err(format!("smoke coverage did not exercise {label}"));
+            }
+        }
+        for (label, span, required) in [
+            ("movement interpolation", self.actor_x.span(), 32.0_f32),
+            ("day/night ambient", self.ambient.span(), 0.20_f32),
+            ("telegraph pulse", self.telegraph_pulse.span(), 0.50_f32),
+            ("camera scroll", self.camera_x.span(), 32.0_f32),
+            ("fractional zoom", self.camera_zoom.span(), 0.20_f32),
+        ] {
+            if span < required {
+                return Err(format!(
+                    "smoke coverage {label} span {span:.3} is below required {required:.3}"
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
 struct PreviewApplication {
     config: PreviewConfig,
     bundle: QualificationBundle,
@@ -116,6 +212,7 @@ struct PreviewApplication {
     renderer: Option<RealContentRenderer>,
     semantic_frame: u64,
     last_frame: Option<DemoFrame>,
+    coverage: SmokeCoverage,
     evidence_printed: bool,
     fatal_error: Option<String>,
 }
@@ -130,6 +227,7 @@ impl PreviewApplication {
             renderer: None,
             semantic_frame: 0,
             last_frame: None,
+            coverage: SmokeCoverage::default(),
             evidence_printed: false,
             fatal_error: None,
         }
@@ -146,6 +244,7 @@ impl PreviewApplication {
         if self.evidence_printed {
             return Ok(());
         }
+        self.coverage.validate()?;
         let renderer = self
             .renderer
             .as_ref()
@@ -191,15 +290,28 @@ impl PreviewApplication {
                 "bytes_read": cache.bytes_read,
             },
             "renderer": renderer.evidence(),
-            "real_object_path_visible": true,
-            "real_outfit_path_visible": true,
-            "real_effect_path_visible": true,
-            "real_missile_path_visible": true,
-            "movement_interpolation_visible": true,
-            "screen_space_name_hp_overlay_visible": true,
-            "day_night_light_path_visible": true,
-            "telegraph_overlay_visible": true,
-            "camera_scroll_fractional_zoom_visible": true,
+            "coverage": {
+                "qualification_floors": QUALIFICATION_FLOORS,
+                "roof_visible_seen": self.coverage.roof_visible_seen,
+                "roof_hidden_seen": self.coverage.roof_hidden_seen,
+                "actor_x_span_units": self.coverage.actor_x.span(),
+                "ambient_span": self.coverage.ambient.span(),
+                "telegraph_pulse_span": self.coverage.telegraph_pulse.span(),
+                "camera_x_span_units": self.coverage.camera_x.span(),
+                "camera_zoom_span": self.coverage.camera_zoom.span(),
+            },
+            "real_object_path_visible": self.coverage.real_object_seen,
+            "real_outfit_path_visible": self.coverage.real_outfit_seen,
+            "real_effect_path_visible": self.coverage.real_effect_seen,
+            "real_missile_path_visible": self.coverage.real_missile_seen,
+            "multi_floor_fixture_visible": self.coverage.multi_floor_seen,
+            "roof_occlusion_visible": self.coverage.roof_visible_seen && self.coverage.roof_hidden_seen,
+            "movement_interpolation_visible": self.coverage.actor_x.span() >= 32.0,
+            "screen_space_name_hp_overlay_visible": self.coverage.overlay_seen,
+            "day_night_light_path_visible": self.coverage.ambient.span() >= 0.20,
+            "telegraph_overlay_visible": self.coverage.telegraph_pulse.span() >= 0.50,
+            "camera_scroll_fractional_zoom_visible": self.coverage.camera_x.span() >= 32.0
+                && self.coverage.camera_zoom.span() >= 0.20,
             "proprietary_pixels_committed": false,
         });
         let encoded = serde_json::to_string(&evidence)
@@ -266,6 +378,7 @@ impl ApplicationHandler for PreviewApplication {
                     self.fail(event_loop, error);
                     return;
                 }
+                self.coverage.observe(&frame);
                 self.semantic_frame = self.semantic_frame.saturating_add(1);
                 self.last_frame = Some(frame);
                 if self.semantic_frame >= self.config.frames {
@@ -284,5 +397,25 @@ impl ApplicationHandler for PreviewApplication {
         if let Some(window) = &self.window {
             window.request_redraw();
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn observed_range_tracks_span() {
+        let mut range = ObservedRange::default();
+        range.observe(4.0);
+        range.observe(-2.0);
+        range.observe(7.5);
+        assert!((range.span() - 9.5).abs() < f32::EPSILON);
+    }
+
+    #[test]
+    fn incomplete_smoke_coverage_fails_closed() {
+        let coverage = SmokeCoverage::default();
+        assert!(coverage.validate().is_err());
     }
 }
