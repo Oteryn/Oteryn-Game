@@ -12,8 +12,7 @@ const MAX_PATTERN_DIMENSION: usize = 64;
 const MAX_LAYERS: usize = 16;
 const MAX_PHASES: usize = 1_024;
 const MAX_SPRITE_REFS: usize = 2_000_000;
-const EXPECTED_INDEX_ORDER: [&str; 5] =
-    ["phase", "pattern_z", "pattern_y", "pattern_x", "layer"];
+const EXPECTED_INDEX_ORDER: [&str; 5] = ["phase", "pattern_z", "pattern_y", "pattern_x", "layer"];
 const EXPECTED_TIMING_POLICY: &str =
     "source-range-first-nonzero-fallback+deterministic-midpoint-v1";
 
@@ -124,18 +123,9 @@ impl PreparedPrograms {
             .map_err(|error| format!("parse {}: {error}", manifest_path.display()))?;
         validate_manifest_identity(&manifest)?;
 
-        manifest
-            .bindings
-            .outfit
-            .validate_for_category("outfit")?;
-        manifest
-            .bindings
-            .effect
-            .validate_for_category("effect")?;
-        manifest
-            .bindings
-            .missile
-            .validate_for_category("missile")?;
+        manifest.bindings.outfit.validate_for_category("outfit")?;
+        manifest.bindings.effect.validate_for_category("effect")?;
+        manifest.bindings.missile.validate_for_category("missile")?;
 
         Ok(Self {
             outfit: manifest.bindings.outfit,
@@ -330,7 +320,10 @@ impl NormalizedProgram {
             .try_fold(0_u64, |total, duration| total.checked_add(*duration))
             .ok_or_else(|| format!("{} presentation cycle duration overflow", self.category))?;
         if cycle_ms == 0 {
-            return Err(format!("{} presentation cycle duration is zero", self.category));
+            return Err(format!(
+                "{} presentation cycle duration is zero",
+                self.category
+            ));
         }
 
         let mut remaining = elapsed_ms % cycle_ms;
