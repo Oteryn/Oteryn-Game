@@ -344,7 +344,7 @@ For each candidate/merged PR verify:
 - skipped jobs are justified by path scope, not mistaken for success;
 - independent exact-head review exists where policy requires it;
 - zero unresolved review threads before merge;
-- expected-head merge fence was used where available/required;
+- governed atomic Merge Queue submission/integration identity is bound to the exact qualified head and intended protected base/queue state, and protected-main readback confirms the accepted candidate before lifecycle closeout;
 - no final-head mutation occurred after qualification without requalification.
 
 A green aggregate cannot substitute for a missing risk-required check.

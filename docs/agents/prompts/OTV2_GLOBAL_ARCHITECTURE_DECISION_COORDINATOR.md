@@ -232,7 +232,7 @@ For an accepted worker PR require, on the final unchanged head:
 - no base drift/dependency hold;
 - no unapproved Codex/AI or authority use.
 
-Use squash merge. Never force/bypass protections or weaken gates.
+Submit integration only through the repository control plane's governed atomic Merge Queue route, binding the exact qualified head and intended protected base/queue state. If that route is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified candidate. Never substitute direct/immediate merge, generic auto-merge, force/bypass, protection weakening or no-op/retrigger churn.
 
 ## 13. Lifecycle closeout
 

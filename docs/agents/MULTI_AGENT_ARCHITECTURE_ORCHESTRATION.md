@@ -69,8 +69,8 @@ The coordinator is the single integration and merge authority for work allocated
 - decide dependency-aware integration/merge order;
 - perform final exact-head audit and applicable independent-review gating;
 - resolve integration conflicts;
-- merge accepted PRs serially;
-- archive/release worker ownership after merge;
+- submit accepted PRs serially through the governed atomic Merge Queue route required by the bound META policy;
+- archive/release worker ownership only after successful Merge Queue integration and protected-main readback confirm the accepted candidate is integrated;
 - reconcile canonical programme overlays after accepted state actually changes.
 
 The coordinator may not use this role to bypass owner-funded AI restrictions, runtime/production authority or repository protections.
@@ -175,7 +175,8 @@ coordinator audit
 -> ACCEPT | REWORK | BLOCKED | SUPERSEDED
 -> optional exact owner-authorized independent/Codex review when required
 -> final exact-head CI/review/thread/drift check
--> squash merge
+-> governed atomic Merge Queue submission, or BLOCKED_CAPABILITY_UNAVAILABLE when no callable governed route exists
+-> successful Merge Queue integration and protected-main readback confirming the accepted candidate is integrated
 -> lifecycle closeout/archive/ownership release
 -> canonical overlay reconciliation
 ```

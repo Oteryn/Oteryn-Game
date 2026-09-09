@@ -260,7 +260,7 @@ If a reviewer leaves a technical finding, return it to the owning Sol lead. Do n
 
 ## Merge behavior
 
-When the integration predicate is true, use expected-head protected merge under current repository policy. If main advances, classify `UPSTREAM_ADVANCED`, preserve branch history and perform only the normal reconciliation allowed by current instructions. Never restart/recreate/force-push simply because main moved.
+When the integration predicate is true, submit only through the repository control plane's governed atomic Merge Queue route, binding the exact qualified head and intended protected base/queue state. If no callable governed route is available, record `BLOCKED_CAPABILITY_UNAVAILABLE`, preserve the qualified candidate and continue safe path-disjoint work; do not substitute direct/immediate merge or generic auto-merge. If main advances, classify `UPSTREAM_ADVANCED`, preserve branch history and perform only the normal reconciliation allowed by current instructions. Never restart/recreate/force-push simply because main moved.
 
 After merge, verify protected-main readback, close/archive/release only what current lifecycle policy mechanically allows, then recompute dependent lanes from fresh state.
 
