@@ -12,7 +12,7 @@ Oteryn: real-content visual slice
 
 ## Purpose
 
-Continue the protected World + VFX line after #480/#489 by replacing the synthetic coloured benchmark placeholders with a bounded real-content visual slice. The experiment must use the same custom Rust + `wgpu` renderer direction while consuming Game-owned normalized appearance/world semantics and the exact locally authorized Tibia 15.32 pixels only as physical presentation input.
+Continue the protected World + VFX line after #480/#489 and the real-Atlas semantic follow-up #505 by replacing the synthetic coloured benchmark placeholders with a bounded real-content visual slice. The experiment must use the same custom Rust + `wgpu` renderer direction while consuming Game-owned normalized appearance/world semantics and the exact locally authorized Tibia 15.32 pixels only as physical presentation input.
 
 This directory grants no production renderer/client/server/protocol/content/deployment authority.
 
@@ -26,13 +26,15 @@ e6dfcef4fb6c270a1b2af09a2fe02c6b5bbdc108
 
 The corresponding `Game Merge Queue gate` / `merge_group` run completed SUCCESS, and protected-main readback confirmed the final #480 evidence pack.
 
-The protected #480 verdicts remain binding evidence for this continuation:
+Merged PR #505 then qualified a digest-pinned real Atlas FullWorld semantic workload and superseded the older procedural-only resource-layout conclusion. Current protected verdicts for this continuation are:
 
 - custom Rust + `wgpu` remains the renderer foundation;
 - bounded visible working set with eviction: `ADOPT`;
-- measured simple hybrid resource layout: `REJECT` for that workload;
 - atlas vs texture arrays: `INSUFFICIENT_EVIDENCE`;
-- KTX2 vs DDS, hard RAM/VRAM budgets, final particle/light/batching/filtering policy: still unresolved.
+- simple hybrid resource-layout challenger: `INSUFFICIENT_EVIDENCE`;
+- KTX2 vs DDS, hard RAM/VRAM budgets, final particle/light/batching/filtering policy: still unresolved / `INSUFFICIENT_EVIDENCE`.
+
+Do not reassert the older procedural-only `hybrid=REJECT` result as current authority.
 
 ## Authority and owned paths
 
@@ -171,7 +173,7 @@ For a local renderer atlas, a valid prototype approach is a 64x64 carrier cell w
 4. Render the dense Thais viewport using the fixture's explicit `PresentationOrderKey`, primitive dimensions, displacement and visual coverage.
 5. Add at least one real animated outfit/creature path using normalized direction/frame/timing semantics.
 6. Add at least one real effect and one real missile path.
-7. Preserve movement interpolation, names/HP overlay, light/day-night and critical VFX overlay from the #480 architecture.
+7. Preserve movement interpolation, names/HP overlay, light/day-night and critical VFX overlay from the protected World + VFX architecture.
 8. Exercise zoom/fractional zoom, large-sprite overhang and bounded resource decode/cache churn.
 9. Run smoke on Molehill-PC / RX 9070 XT / DX12 and store only public-safe measurements/digests/IDs in Git.
 10. Verify the Git diff contains zero proprietary pixel bytes or extracted sprite sheets.
@@ -194,7 +196,7 @@ Do not call #509 complete until:
 
 ## Continuation directive
 
-GitHub LIVE state is the only current authority. Continue the **same #509 worker and branch**; do not create replacement Issues/branches/PRs unless the canonical worker is genuinely unavailable. Treat CI/review/Merge Queue as checkpoints, not architecture redesign opportunities. Do not reopen engine selection or convert #480 calibration cache sizes into production hard limits.
+GitHub LIVE state is the only current authority. Continue the **same #509 worker and branch**; do not create replacement Issues/branches/PRs unless the canonical worker is genuinely unavailable. Re-read #505 before material decisions so its real-world verdicts supersede the older procedural-only resource-layout result. Treat CI/review/Merge Queue as checkpoints, not architecture redesign opportunities. Do not reopen engine selection or convert experiment cache sizes into production hard limits.
 
 `IMPLEMENTATION_AUTHORITY: NON_PRODUCTION_EXPERIMENT_ONLY`
 `RUNTIME_ACTIVATION_AUTHORITY: NONE`
