@@ -132,13 +132,15 @@ All existing grants #425/#427/#429/#430/#432/#451/#453/#458/#466 remain unchange
 
 ## Integration and activation gates
 
-This is a material HIGH-risk control-plane allocation. Under the adopted organization AI-review policy, a candidate-controlled mechanism cannot be the sole authority for integrating its own control-plane authority change. Therefore this allocation remains `NOT_ACTIVE_CONDITIONAL` until all of the following are true:
+Current Game governance is bound by `docs/agents/META_AGENT_POLICY_BINDING.json` to `OTERYN_ORGANIZATION_AGENT_POLICY` v3.0.0 at `Oteryn/Oteryn@d1caa3adba0fa4b32b84985bf1d6dcbe8055858c`.
+
+This is a material HIGH-risk control-plane allocation. Under that policy, a candidate-controlled mechanism cannot be the sole authority for integrating its own control-plane authority change. Therefore this allocation remains `NOT_ACTIVE_CONDITIONAL` until all of the following are true:
 
 1. this exact allocation candidate receives genuinely independent exact-head HIGH-risk/deep review with no unresolved actionable finding;
 2. exact-head deterministic/canonical repository checks are terminal GREEN;
 3. a human owner explicitly authorizes repository integration of the then-current exact #493 candidate; a general instruction to continue useful work MUST NOT be reinterpreted as specific merge approval;
-4. it integrates only through the governed normal FULL Merge Queue; no direct merge, generic auto-merge, bypass, protection change or no-op retrigger substitute;
-5. protected-main readback proves this exact allocation is present;
+4. submission uses only a governed Merge Queue mutation that atomically fences BOTH the exact qualified head and the expected `main` base/queue in the same server-side operation. If no callable route provides that complete fence, integration is exactly `BLOCKED_CAPABILITY_UNAVAILABLE`: preserve the qualified head and do not use direct merge, generic auto-merge, bypass, protection changes, no-op/retrigger commits or post-hoc dequeue as substitutes;
+5. normal FULL `merge_group` qualification succeeds and protected-main readback proves this exact allocation is present;
 6. Work freshly re-reads the canonical #356 branch, then-current protected main and all overlapping rustls custody;
 7. no replacement/competing rustls material worker exists;
 8. the recovered SAME #351/#356 worker provides exact source/build evidence that #427 caller-only implementation is insufficient;
@@ -153,7 +155,9 @@ conditional allocation-only amendment
 -> deterministic exact-head validation
 -> one independent exact-head HIGH-risk/deep review
 -> explicit human-owner authorization for the exact candidate
--> governed normal FULL Merge Queue
+-> atomically exact-head + expected-main/queue fenced FULL Merge Queue
+   OR BLOCKED_CAPABILITY_UNAVAILABLE with the qualified head preserved
+-> merge_group aggregate-gate success
 -> protected-main readback
 -> WAIT for recovered SAME #351/#356 worker
 -> prove caller-only #427 insufficient on then-current exact source/build
@@ -164,7 +168,7 @@ conditional allocation-only amendment
 -> real funded SQLx AWS-LC TLS-positive
 -> configured PostgreSQL 17.6 positive/hostile/denial/recovery
 -> final independent whole-diff exact-head review
--> canonical exact-head CI + normal FULL Merge Queue
+-> canonical exact-head CI + governed normal FULL Merge Queue
 -> protected WP3 readback and explicit custody release
 -> only then resume WP4/#335
 ```
