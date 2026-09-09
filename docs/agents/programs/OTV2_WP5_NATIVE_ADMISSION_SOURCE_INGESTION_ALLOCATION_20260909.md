@@ -296,12 +296,12 @@ for another.
 this allocation protected
 -> keep S1/S2/S3 NOT_ACTIVE while their exact gates remain false
 -> WP3 protected/released
+-> activate S1 only with exact shared-path/Cargo leases and either a compatible
+   separately authorized producer or controlled independent test producer
+-> exact-head review + canonical CI/MQ + protected readback for S1
 -> WP4 protected/released
 -> reviewed #416 amendment registers native_admission_source_postgres
 -> amended #416 routing protected/materially exercised for that exact target
--> activate S1 only with exact shared-path/Cargo leases and either a compatible
-   separately authorized producer or controlled independent test producer
--> exact-head review + canonical CI/MQ + protected readback
 -> activate S2 with selected next migration and dedicated PG target
 -> actual PostgreSQL17.6/restart/rollback qualification + review/CI/MQ/readback
 -> external Platform counterpart proceeds independently under separate authority
@@ -323,7 +323,9 @@ by real dependencies/authority, principally:
 
 - missing separately authorized compatible Platform native producer for final
   authenticated source composition;
-- unreleased WP3/WP4 shared Cargo/PostgreSQL/durability custody;
+- unreleased WP3 shared Cargo/TLS/dependency custody needed before S1 can receive
+  exact shared-path leases;
+- unreleased WP4 PostgreSQL/durability custody needed before S2;
 - shared `lib.rs`/Foundation composition custody;
 - required reviewed #416 amendment registering `native_admission_source_postgres`
   and subsequent material routing activation for that exact target.
