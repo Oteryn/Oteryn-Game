@@ -627,3 +627,10 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Preserve TLS 1.2 session-ID-only same-ledger owner selection without ticket dependence.
 - [ ] Continue resumed TLS 1.2 chain copying, compressed certificate decoding, transcript/hash
   ownership, and complete simultaneous-live TLS proof.
+
+## Window48 TLS1.2 retained-session owner repair
+
+- [x] Expose an allocation-free private clone of the underlying operation owner from decoded custody.
+- [x] Use the underlying owner, rather than an `Arc<DecodedOwner>` trait-object coercion, for TLS1.2 retained secret and chain construction.
+- [x] Prove retained secret/chain custody survives decoded-owner and Arc-charge destruction and releases exactly on retained-session final drop.
+- [ ] Continue resumed TLS1.2 chain copying, compressed certificate decoding, transcript/hash ownership, and complete simultaneous-live TLS proof.

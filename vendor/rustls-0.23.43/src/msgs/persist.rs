@@ -610,6 +610,12 @@ mod owner_tests {
     use core::sync::atomic::{AtomicUsize, Ordering};
 
     use super::*;
+    use crate::client::danger::{HandshakeSignatureValid, ServerCertVerified};
+    use crate::sign;
+    use crate::enums::SignatureScheme;
+    use crate::msgs::codec::{DecodedCustody, DecodedOwner};
+    use crate::pki_types::{CertificateDer, ServerName};
+    use crate::{DigitallySignedStruct, Error};
 
     #[derive(Debug)]
     struct Owner {
@@ -630,6 +636,141 @@ mod owner_tests {
         fn release(&self, bytes: usize) {
             self.used.fetch_sub(bytes, Ordering::Relaxed);
         }
+    }
+
+    #[derive(Debug)]
+    struct DummyServerCertVerifier;
+
+    impl ServerCertVerifier for DummyServerCertVerifier {
+        fn verify_server_cert(
+            &self,
+            _end_entity: &CertificateDer<'_>,
+            _intermediates: &[CertificateDer<'_>],
+            _server_name: &ServerName<'_>,
+            _ocsp_response: &[u8],
+            _now: UnixTime,
+        ) -> Result<ServerCertVerified, Error> {
+            unreachable!()
+        }
+
+        fn verify_tls12_signature(
+            &self,
+            _message: &[u8],
+            _cert: &CertificateDer<'_>,
+            _dss: &DigitallySignedStruct,
+        ) -> Result<HandshakeSignatureValid, Error> {
+            unreachable!()
+        }
+
+        fn verify_tls13_signature(
+            &self,
+            _message: &[u8],
+            _cert: &CertificateDer<'_>,
+            _dss: &DigitallySignedStruct,
+        ) -> Result<HandshakeSignatureValid, Error> {
+            unreachable!()
+        }
+
+        fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+            unreachable!()
+        }
+    }
+
+    #[derive(Debug)]
+    struct DummyResolvesClientCert;
+
+    impl ResolvesClientCert for DummyResolvesClientCert {
+        fn resolve(
+            &self,
+            _root_hint_subjects: &[&[u8]],
+            _sigschemes: &[SignatureScheme],
+        ) -> Option<Arc<sign::CertifiedKey>> {
+            unreachable!()
+        }
+
+        fn has_certs(&self) -> bool {
+            unreachable!()
+        }
+    }
+
+    #[test]
+    fn tls12_session_id_retention_uses_underlying_owner_after_decoded_owner_drop() {
+        let source = CertificateChain(vec![CertificateDer::from(vec![1, 2, 3])]);
+        let secret = [4, 5, 6, 7];
+        let retained_bytes = secret.len()
+            + size_of::<CertificateDer<'static>>()
+            + source[0].as_ref().len()
+            + RetainedCertificateChain::arc_layout().unwrap();
+        let decoded_arc_bytes = DecodedOwner::arc_layout().unwrap();
+        let base = Arc::new(Owner {
+            limit: decoded_arc_bytes + 1 + retained_bytes,
+            used: AtomicUsize::new(0),
+        });
+        let (decoded, decoded_arc_charge) = DecodedOwner::new(base.clone()).unwrap();
+        decoded.reserve(1).unwrap();
+        let peer_custody = DecodedCustody::exact(decoded.clone(), 1);
+        let decoded_strong_count = Arc::strong_count(&decoded);
+        let resource_owner = peer_custody.resource_owner();
+        assert_eq!(Arc::strong_count(&decoded), decoded_strong_count);
+
+        let verifier: Arc<dyn ServerCertVerifier> = Arc::new(DummyServerCertVerifier);
+        let resolver: Arc<dyn ResolvesClientCert> = Arc::new(DummyResolvesClientCert);
+        let retained = ClientSessionCommon::new_with_resource_owner(
+            TicketPayload::from_unowned(PayloadU16::empty()),
+            &secret,
+            UnixTime::since_unix_epoch(core::time::Duration::from_secs(1)),
+            0,
+            &source,
+            &verifier,
+            &resolver,
+            resource_owner,
+        )
+        .unwrap();
+
+        drop(peer_custody);
+        drop(decoded);
+        drop(decoded_arc_charge);
+        assert_eq!(base.used.load(Ordering::Relaxed), retained_bytes);
+        drop(retained);
+        assert_eq!(base.used.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn tls12_session_id_retention_denies_before_secret_or_chain_backing_survives() {
+        let source = CertificateChain(vec![CertificateDer::from(vec![1, 2, 3])]);
+        let secret = [4, 5, 6, 7];
+        let verifier: Arc<dyn ServerCertVerifier> = Arc::new(DummyServerCertVerifier);
+        let resolver: Arc<dyn ResolvesClientCert> = Arc::new(DummyResolvesClientCert);
+        let construct = |owner: Arc<Owner>| {
+            ClientSessionCommon::new_with_resource_owner(
+                TicketPayload::from_unowned(PayloadU16::empty()),
+                &secret,
+                UnixTime::since_unix_epoch(core::time::Duration::from_secs(1)),
+                0,
+                &source,
+                &verifier,
+                &resolver,
+                owner,
+            )
+        };
+
+        let before_secret = Arc::new(Owner {
+            limit: secret.len() - 1,
+            used: AtomicUsize::new(0),
+        });
+        assert!(construct(before_secret.clone()).is_err());
+        assert_eq!(before_secret.used.load(Ordering::Relaxed), 0);
+
+        let complete = secret.len()
+            + size_of::<CertificateDer<'static>>()
+            + source[0].as_ref().len()
+            + RetainedCertificateChain::arc_layout().unwrap();
+        let before_chain_control = Arc::new(Owner {
+            limit: complete - 1,
+            used: AtomicUsize::new(0),
+        });
+        assert!(construct(before_chain_control.clone()).is_err());
+        assert_eq!(before_chain_control.used.load(Ordering::Relaxed), 0);
     }
 
     #[test]

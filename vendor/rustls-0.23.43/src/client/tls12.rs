@@ -1222,7 +1222,7 @@ impl ExpectFinished {
             .common
             .peer_certificate_custody
             .as_ref()
-            .map(|custody| -> Arc<dyn crate::DeframerBufferOwner> { custody.owner() });
+            .map(|custody| custody.resource_owner());
         #[cfg(feature = "std")]
         let session_owner = peer_owner.or_else(|| ticket.resource_owner());
         #[cfg(feature = "std")]

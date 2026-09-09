@@ -335,3 +335,17 @@ and Arc backing before releasing the combined direct debit. Consequently droppin
 ticket/session backing uncharged or extending the connection proxy artificially. Focused
 tests cover connection-equivalent owner/control destruction while retained ticket backing
 survives and exact final release. Complete TLS accounting remains open.
+
+## TLS 1.2 retained-session underlying-owner correction
+
+The initial retained-session repair still coerced `Arc<DecodedOwner>` into the
+`DeframerBufferOwner` trait object used by TLS 1.2 session-ID storage.  The retained
+secret and certificate-chain custody could consequently preserve the connection proxy
+after `ConnectionCore` released its separately held Arc-control debit.  Decoded custody
+now provides a crate-private allocation-free clone of the underlying accepted operation
+owner, and TLS 1.2 session saving uses it for all retained destination reservations.
+The focused empty-ticket/session-ID-family test drops decoded custody, the decoded-owner
+handle, and its Arc charge while the retained secret and certificate chain remain live;
+their exact outer-vector, DER, Arc-control, and secret debits remain on the underlying
+owner until final retained-session destruction.  Existing max-minus-one coverage denies
+before retained-chain Arc allocation.  Complete TLS accounting remains open.

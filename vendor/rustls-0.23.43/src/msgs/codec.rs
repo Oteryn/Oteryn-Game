@@ -218,6 +218,12 @@ impl DecodedCustody {
         self.owner.clone()
     }
 
+    /// Clone the accepted operation owner without retaining the
+    /// connection-scoped decoded-owner proxy.
+    pub(crate) fn resource_owner(&self) -> Arc<dyn DeframerBufferOwner> {
+        self.owner.owner()
+    }
+
     pub(crate) fn owner_ref(&self) -> &Arc<DecodedOwner> {
         &self.owner
     }

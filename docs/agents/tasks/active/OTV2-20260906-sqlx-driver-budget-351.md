@@ -1325,6 +1325,30 @@ complete_tls_accounting: NOT_PROVEN
 next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
 
+## Window48 TLS1.2 retained-session underlying-owner repair
+
+Independent reread found that Window47 still coerced
+`peer_certificate_custody.owner()` from `Arc<DecodedOwner>` to the retained
+session's trait-object owner.  A session-ID-only value could therefore outlive
+`ConnectionCore` while keeping the decoded proxy alive after the
+connection-local Arc-control debit was released.
+
+`DecodedCustody::resource_owner()` now clones the accepted underlying operation
+owner allocation-free.  TLS1.2 session saving uses that owner for the retained
+secret and certificate-chain destination, so neither retained custody token
+keeps `Arc<DecodedOwner>`.  Focused proof constructs an empty-ticket retained
+session, drops the peer custody, decoded-owner handle, and Arc-control charge,
+then observes the complete secret, outer-chain, DER, and chain-Arc debit until
+the retained session's final drop.  The max-minus-one chain-control test remains
+the denial-before-control-allocation proof.
+
+```yaml
+status: active
+retained_tls12_session_id_control_lifetime: PROVEN_FIXED_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
+```
+
 ## Window47 retained decoded-owner lifetime repair
 
 Fresh review found that retained ticket/session values kept raw `Arc<DecodedOwner>` handles
