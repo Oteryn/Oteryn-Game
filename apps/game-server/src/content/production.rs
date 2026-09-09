@@ -190,6 +190,11 @@ pub struct Sha256HexDigest(String);
 
 impl Sha256HexDigest {
     pub fn new(value: &str) -> Result<Self, ContentError> {
+        FirstProductionLimits::v1().check(
+            "first-production sha256 digest bytes",
+            value.len(),
+            64,
+        )?;
         if value.len() != 64
             || !value
                 .bytes()
@@ -930,7 +935,13 @@ fn validate_source_shape(source: &FirstProductionContentSource) -> Result<(), Co
 
     let mut aggregate_population = 0usize;
     for spawn in &source.spawns {
-        if usize::from(spawn.population_limit) != FIRST_PRODUCTION_MAX_SPAWN_POPULATION {
+        let population = usize::from(spawn.population_limit);
+        limits.check(
+            "first-production spawn population per spawn",
+            population,
+            FIRST_PRODUCTION_MAX_SPAWN_POPULATION,
+        )?;
+        if population != FIRST_PRODUCTION_MAX_SPAWN_POPULATION {
             return Err(ContentError::InvalidArtifact(
                 "first-production spawn population must equal 1",
             ));
@@ -2449,7 +2460,13 @@ fn validate_parsed_semantics(
                     record.fields[2].clone(),
                     record.fields[3].clone(),
                 ]);
-                if parse_positive_u16(&record.fields[4])? != 1 {
+                let population = usize::from(parse_positive_u16(&record.fields[4])?);
+                FirstProductionLimits::v1().check(
+                    "first-production spawn population per spawn",
+                    population,
+                    FIRST_PRODUCTION_MAX_SPAWN_POPULATION,
+                )?;
+                if population != FIRST_PRODUCTION_MAX_SPAWN_POPULATION {
                     return Err(ContentError::InvalidArtifact(
                         "first-production spawn population must equal 1",
                     ));
@@ -2981,9 +2998,32 @@ mod tests {
 
         let mut two = test_source(3)?;
         two.spawns[0].population_limit = 2;
-        assert!(
-            compile_first_production(&two, FirstProductionCompileTarget::OrdinaryRelease).is_err()
-        );
+        assert!(matches!(
+            compile_first_production(&two, FirstProductionCompileTarget::OrdinaryRelease),
+            Err(ContentError::LimitExceeded {
+                resource: "first-production spawn population per spawn",
+                actual: 2,
+                limit: 1,
+            })
+        ));
+
+        let server_metadata = ProductionArtifactMetadata::from_source(
+            &two,
+            ProductionProjection::ServerAuthoritative,
+        )?;
+        let client_metadata =
+            ProductionArtifactMetadata::from_source(&two, ProductionProjection::ClientSafe)?;
+        let server = encode_artifact(&server_metadata, &server_records(&two)?)?;
+        let client = encode_artifact(&client_metadata, &client_records(&two))?;
+        let expected = FirstProductionExpectation::from_source(&two)?;
+        assert!(matches!(
+            StagedGeneration::stage(&server.bytes, &client.bytes, &expected),
+            Err(ContentError::LimitExceeded {
+                resource: "first-production spawn population per spawn",
+                actual: 2,
+                limit: 1,
+            })
+        ));
 
         let mut empty_lock = test_source(3)?;
         empty_lock.content_lock.entries.clear();
@@ -3112,7 +3152,14 @@ mod tests {
             Err(ContentError::LimitExceeded { .. })
         ));
         assert!(Sha256HexDigest::new(&"a".repeat(63)).is_err());
-        assert!(Sha256HexDigest::new(&"a".repeat(65)).is_err());
+        assert!(matches!(
+            Sha256HexDigest::new(&"a".repeat(65)),
+            Err(ContentError::LimitExceeded {
+                resource: "first-production sha256 digest bytes",
+                actual: 65,
+                limit: 64,
+            })
+        ));
         assert!(Sha256HexDigest::new(&format!("{}g", "a".repeat(63))).is_err());
         Ok(())
     }
