@@ -133,7 +133,7 @@ These files are intentionally centralized because they integrate state across ma
 5. Coordinator-only surfaces are never worker-owned.
 6. If two proposals need the same eventual shared contract, neither worker unilaterally freezes it. The coordinator chooses an integration owner or a later bounded shared-contract task.
 
-## Cross-domain finding contract
+## cross-domain finding contract
 
 Use this minimum shape in worker analysis/PRs:
 
@@ -176,6 +176,7 @@ coordinator audit
 -> optional exact owner-authorized independent/Codex review when required
 -> final exact-head CI/review/thread/drift check
 -> governed atomic Merge Queue submission, or BLOCKED_CAPABILITY_UNAVAILABLE when no callable governed route exists
+-> successful Merge Queue integration and protected-main readback confirming the accepted candidate is integrated
 -> lifecycle closeout/archive/ownership release
 -> canonical overlay reconciliation
 ```
