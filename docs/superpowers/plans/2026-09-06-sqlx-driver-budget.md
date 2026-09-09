@@ -418,3 +418,12 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   controls before aggregate KX/provider residency becomes GREEN.
 - [ ] Continue decoded/config/session/cache/send/transcript/error custody,
   funded TLS-positive, and PostgreSQL 17.6 qualification.
+
+## Window27 continuation
+
+- Completed the protected #425 handshake-span capacity boundary: pre-allocation
+  initial/growth reservations, old/new overlap, high-water retention, and final
+  destruction ordering.
+- Continue Reader/list/payload/message, transcript, certificate/OCSP,
+  successor-state, compressed-certificate, and retained-session custody before
+  claiming complete TLS or running TLS-positive/PostgreSQL qualification.
