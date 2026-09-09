@@ -420,7 +420,10 @@ impl<'a, T: Codec<'a> + TlsListElement + Debug> Codec<'a> for Vec<T> {
                     r.reserve_vec_capacity::<T>(prospective)?;
                     prospective
                 };
+                #[cfg(feature = "std")]
                 ret.reserve_exact(prospective - ret.len());
+                #[cfg(not(feature = "std"))]
+                ret.reserve(1);
                 #[cfg(feature = "std")]
                 if r.decoded_owner.is_some() && ret.capacity() != prospective {
                     // The prospective backing must die before either its debit or
