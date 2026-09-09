@@ -94,6 +94,24 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
     assert_eq!(provider.cipher_suites.capacity(), provider.cipher_suites.len());
     assert_eq!(provider.kx_groups.capacity(), provider.kx_groups.len());
     let ordinary = rustls::crypto::aws_lc_rs::default_provider();
+    let expected = [
+        rustls::NamedGroup::X25519MLKEM768,
+        rustls::NamedGroup::X25519,
+        rustls::NamedGroup::secp256r1,
+        rustls::NamedGroup::secp384r1,
+    ];
+    assert_eq!(provider.kx_groups.len(), expected.len());
+    assert_eq!(ordinary.kx_groups.len(), expected.len());
+    assert!(provider
+        .kx_groups
+        .iter()
+        .zip(expected)
+        .all(|(group, expected)| group.name() == expected));
+    assert!(ordinary
+        .kx_groups
+        .iter()
+        .zip(expected)
+        .all(|(group, expected)| group.name() == expected));
     assert_eq!(
         provider
             .kx_groups

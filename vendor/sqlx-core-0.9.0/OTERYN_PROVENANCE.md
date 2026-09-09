@@ -953,3 +953,21 @@ No Cargo feature or provider ordering was changed under #453.
 `provider_configuration_owner = NOT_PROVEN`
 
 `SHARED_LEASE_REQUIRED = vendor/sqlx-core-0.9.0/Cargo.toml :: _tls-rustls-aws-lc-rs / rustls prefer-post-quantum feature :: protected #451/#453 require the qualified ordinary AWS-LC default provider to be PQ-first, while the exact SQLx AWS profile disables rustls defaults and currently does not enable prefer-post-quantum`
+
+## Window23 protected PQ-first feature closure
+
+Protected #458 adds exactly the `rustls/prefer-post-quantum` dependency-feature
+edge to SQLx-core's `_tls-rustls-aws-lc-rs` profile.  The focused exact-profile
+test now asserts the explicit ordinary and owner-aware four-group sequence
+`X25519MLKEM768 -> X25519 -> secp256r1 -> secp384r1`; it does not qualify
+additional `ALL_KX_GROUPS` entries or rely on equality between the two providers.
+No dependency version, source, default-feature, root manifest, lockfile, or
+rustls source change is part of this feature closure.
+
+`pq_first_profile = PROVEN_FOCUSED`
+
+`provider_configuration_owner = PROVEN_FOCUSED`
+
+Aggregate KX/provider residency and complete WP3 remain open pending the full
+actual-HRR, thread-churn, cancellation/drop, TLS custody, TLS-positive, and
+PostgreSQL 17.6 matrices on the final graph.
