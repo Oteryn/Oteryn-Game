@@ -108,24 +108,31 @@ acceptance depends on that evidence.
 
 After the exact held target exists, a separate Work application must refresh all
 live ownership and acquire sole-writer leases before touching any #416 control
-surface. Candidate paths inherited from the protected #416 contract include:
+surface. The protected #416 gate-candidate scope is:
 
 ```text
 .github/workflows/merge-gate.yml
 .github/workflows/merge-group-gate.yml
 .github/workflows/rust.yml
-tools/repository/validate_repository_policy.py
+
 tools/repository/validate_repository_policy_core.py
 tools/repository/validate_pr_gate_pg_sim.py
-tools/repository/POLICY_CORE_SHA256
-tools/repository/AUDITED_VALIDATE_REPOSITORY_POLICY_SHA256
-tools/repository/AUDITED_PG_SIM_HARNESS_SHA256
+tools/repository/test_validate_pr_gate_pg_sim.py
+tools/repository/test_validate_merge_group_pg_sim.py
+# plus one new small protected-base target-routing helper/regression only if
+# direct fixed-target wiring cannot prove deletion/rename fail-closed behavior.
+```
+
+The separate protected audit-pin rotation surface is:
+
+```text
+.github/workflows/merge-authority-audit.yml
 ```
 
 None of those paths is leased by this amendment. The future material writer must
 refresh protected main, #416, active PRs/tasks and exact path custody. Any overlap
-with another workflow/policy/pin writer is a hard hold, not authority to combine
-lanes.
+with another workflow/policy/audit-pin writer is a hard hold, not authority to
+combine lanes.
 
 ## Material activation gates
 
@@ -141,7 +148,8 @@ following are true:
 4. `apps/game-server/tests/native_admission_source_postgres.rs` exists on a held
    S2 branch with a stable exact target contract that the routing writer can read;
 5. the routing writer holds explicit sole-writer leases for every workflow,
-   classifier, policy-core, pin and harness path it actually changes;
+   classifier, policy-core/regression and separately owned audit-pin path it
+   actually changes;
 6. no #351/#356, #335, Server Seam, Platform, production or unrelated WP5 path is
    pulled into that material routing change.
 
@@ -164,9 +172,9 @@ sequence without pulling the held S2 target into the routing writer's scope:
 5. update the exact affected policy-core expectations/pins in the material gate
    candidate as required by protected #416, compute the exact future merge-group
    gate blob, and independently review that exact material head;
-6. perform the separately serialized protected audit-pin rotation required by
-   #416, then refresh protected-base audit evidence for the material gate
-   candidate;
+6. perform the separately serialized protected `merge-authority-audit.yml` pin
+   rotation required by #416, then refresh protected-base audit evidence for the
+   material gate candidate;
 7. obtain the material routing candidate's exact canonical repository checks,
    normal FULL Merge Queue and protected-main readback;
 8. only after step 7 may the held S2 branch reconcile with protected routing and
@@ -192,7 +200,7 @@ The routing contract fails closed if any of the following occurs:
 - a required routing or post-routing S2 job is skipped, neutral, cancelled or
   nonzero;
 - a generic/other target result is substituted;
-- policy-core or audited pin custody cannot be proven;
+- policy-core or merge-authority audit-pin custody cannot be proven;
 - protected-base SHA or target contract changes without fresh reconciliation;
 - S2 attempts to count PG evidence produced before routing was protected.
 
