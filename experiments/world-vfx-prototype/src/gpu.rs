@@ -1,6 +1,6 @@
 use crate::model::{
-    BenchConfig, CorpusShape, FramePlan, MaterialClass, PAGE_CELLS, PrewarmMode, PrimitiveKind,
-    ResourceLayout, MAX_LIGHTS,
+    BenchConfig, CorpusShape, FramePlan, MAX_LIGHTS, MaterialClass, PAGE_CELLS, PrewarmMode,
+    PrimitiveKind, ResourceLayout,
 };
 use serde_json::json;
 use std::collections::{BTreeMap, BTreeSet};
@@ -207,7 +207,11 @@ impl Renderer {
         let mut surface_config = surface
             .get_default_config(&adapter, config.width, config.height)
             .ok_or_else(|| "surface has no default configuration".to_owned())?;
-        if let Some(format) = capabilities.formats.iter().copied().find(wgpu::TextureFormat::is_srgb)
+        if let Some(format) = capabilities
+            .formats
+            .iter()
+            .copied()
+            .find(wgpu::TextureFormat::is_srgb)
         {
             surface_config.format = format;
         }
@@ -436,10 +440,14 @@ impl Renderer {
         }
         let encode_start = Instant::now();
         let instance_bytes = encode_instances(config, plan)?;
-        self.queue.write_buffer(&self.instance_buffer, 0, &instance_bytes);
-        let global_bytes = encode_globals(self.surface_config.width, self.surface_config.height, plan);
-        self.queue.write_buffer(&self.global_buffer, 0, &global_bytes);
-        let prep = model_prep + encode_start.elapsed() + Duration::from_secs_f64(cache.upload_ms / 1000.0);
+        self.queue
+            .write_buffer(&self.instance_buffer, 0, &instance_bytes);
+        let global_bytes =
+            encode_globals(self.surface_config.width, self.surface_config.height, plan);
+        self.queue
+            .write_buffer(&self.global_buffer, 0, &global_bytes);
+        let prep =
+            model_prep + encode_start.elapsed() + Duration::from_secs_f64(cache.upload_ms / 1000.0);
 
         let frame = match self.surface.get_current_texture() {
             wgpu::CurrentSurfaceTexture::Success(frame)
@@ -466,7 +474,9 @@ impl Renderer {
                 return Err("surface validation failure".to_owned());
             }
         };
-        let view = frame.texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let view = frame
+            .texture
+            .create_view(&wgpu::TextureViewDescriptor::default());
         let batches = make_batches(&plan.instances);
         let mut encoder = self
             .device
@@ -475,13 +485,14 @@ impl Renderer {
             });
         let query_base = u32::try_from(self.frame_number * 2)
             .map_err(|_| "frame query index exceeds u32".to_owned())?;
-        let timestamp_writes = self.timestamp.as_ref().map(|timestamp| {
-            wgpu::RenderPassTimestampWrites {
-                query_set: &timestamp.query_set,
-                beginning_of_pass_write_index: Some(query_base),
-                end_of_pass_write_index: Some(query_base + 1),
-            }
-        });
+        let timestamp_writes =
+            self.timestamp
+                .as_ref()
+                .map(|timestamp| wgpu::RenderPassTimestampWrites {
+                    query_set: &timestamp.query_set,
+                    beginning_of_pass_write_index: Some(query_base),
+                    end_of_pass_write_index: Some(query_base + 1),
+                });
         let clear = clear_color(plan);
         {
             let attachments = [Some(wgpu::RenderPassColorAttachment {
@@ -587,13 +598,19 @@ impl Renderer {
                     .filter(|(id, _)| !needed.contains(id))
                     .min_by_key(|(_, page)| page.last_used)
                     .map(|(id, _)| *id)
-                    .or_else(|| self.pages.iter().min_by_key(|(_, page)| page.last_used).map(|(id, _)| *id));
+                    .or_else(|| {
+                        self.pages
+                            .iter()
+                            .min_by_key(|(_, page)| page.last_used)
+                            .map(|(id, _)| *id)
+                    });
                 if let Some(evicted) = candidate {
                     self.pages.remove(&evicted);
                     stats.evictions = stats.evictions.saturating_add(1);
                 }
             }
-            let bytes = procedural_page_bytes(config.density, *page_id, config.layout, config.family);
+            let bytes =
+                procedural_page_bytes(config.density, *page_id, config.layout, config.family);
             let upload_started = Instant::now();
             let page = self.create_page(config, *page_id, &bytes)?;
             stats.upload_ms += ms(upload_started.elapsed());
@@ -717,7 +734,8 @@ impl Renderer {
                 let begin = u64::from_ne_bytes(begin_array);
                 let end = u64::from_ne_bytes(end_array);
                 if end >= begin {
-                    let duration_ms = (end - begin) as f64 * f64::from(timestamp.period_ns) / 1_000_000.0;
+                    let duration_ms =
+                        (end - begin) as f64 * f64::from(timestamp.period_ns) / 1_000_000.0;
                     self.samples.gpu_frame_ms.push(duration_ms);
                 }
             }
@@ -911,18 +929,17 @@ fn encode_instances(config: &BenchConfig, plan: &FramePlan) -> Result<Vec<u8>, S
             ResourceLayout::Atlas => {
                 let cell_x = instance.cell % 4;
                 let cell_y = instance.cell / 4;
-                [
-                    cell_x as f32 / 4.0,
-                    cell_y as f32 / 4.0,
-                    0.25,
-                    0.25,
-                ]
+                [cell_x as f32 / 4.0, cell_y as f32 / 4.0, 0.25, 0.25]
             }
             ResourceLayout::Array => [instance.cell as f32, 0.0, 1.0, 1.0],
         };
         let meta = [
             instance.emissive,
-            if instance.kind == PrimitiveKind::Overlay { 1.0 } else { 0.0 },
+            if instance.kind == PrimitiveKind::Overlay {
+                1.0
+            } else {
+                0.0
+            },
             if instance.screen_space { 1.0 } else { 0.0 },
             if instance.critical { 1.0 } else { 0.0 },
         ];
@@ -955,12 +972,16 @@ fn encode_globals(width: u32, height: u32, plan: &FramePlan) -> Vec<u8> {
         bytes.extend_from_slice(&value.to_ne_bytes());
     }
     for index in 0..MAX_LIGHTS {
-        let light = plan.lights.get(index).copied().unwrap_or(crate::model::LocalLight {
-            x: 0.0,
-            y: 0.0,
-            radius: 1.0,
-            intensity: 0.0,
-        });
+        let light = plan
+            .lights
+            .get(index)
+            .copied()
+            .unwrap_or(crate::model::LocalLight {
+                x: 0.0,
+                y: 0.0,
+                radius: 1.0,
+                intensity: 0.0,
+            });
         for value in [light.x, light.y, light.radius, light.intensity] {
             bytes.extend_from_slice(&value.to_ne_bytes());
         }
@@ -994,15 +1015,12 @@ fn procedural_page_bytes(
                     .wrapping_mul(47)
                     .wrapping_add(cell.wrapping_mul(83))
                     .wrapping_add(31);
-                let border = local_x < 2
-                    || local_y < 2
-                    || local_x + 2 >= density
-                    || local_y + 2 >= density;
-                let checker = ((local_x / (density / 8).max(1))
-                    + (local_y / (density / 8).max(1))
-                    + cell)
-                    % 2
-                    == 0;
+                let border =
+                    local_x < 2 || local_y < 2 || local_x + 2 >= density || local_y + 2 >= density;
+                let checker =
+                    ((local_x / (density / 8).max(1)) + (local_y / (density / 8).max(1)) + cell)
+                        % 2
+                        == 0;
                 let family_bias = match family {
                     crate::model::PresentationFamily::Classic => 0_u32,
                     crate::model::PresentationFamily::Enhanced => 17,
@@ -1011,9 +1029,27 @@ fn procedural_page_bytes(
                 let r = ((seed + family_bias) % 160 + 64) as u8;
                 let g = ((seed.wrapping_mul(3) + family_bias) % 160 + 64) as u8;
                 let b = ((seed.wrapping_mul(7) + family_bias) % 160 + 64) as u8;
-                bytes[offset] = if border { 245 } else if checker { r } else { r / 2 };
-                bytes[offset + 1] = if border { 245 } else if checker { g } else { g / 2 };
-                bytes[offset + 2] = if border { 245 } else if checker { b } else { b / 2 };
+                bytes[offset] = if border {
+                    245
+                } else if checker {
+                    r
+                } else {
+                    r / 2
+                };
+                bytes[offset + 1] = if border {
+                    245
+                } else if checker {
+                    g
+                } else {
+                    g / 2
+                };
+                bytes[offset + 2] = if border {
+                    245
+                } else if checker {
+                    b
+                } else {
+                    b / 2
+                };
                 bytes[offset + 3] = 255;
             }
         }
@@ -1103,7 +1139,11 @@ mod tests {
             class: PresentationClass::Common,
             kind: PrimitiveKind::Sprite,
             material,
-            world: WorldPosition { x: 0, y: 0, floor: 0 },
+            world: WorldPosition {
+                x: 0,
+                y: 0,
+                floor: 0,
+            },
             screen_x: 0.0,
             screen_y: 0.0,
             width: 32.0,

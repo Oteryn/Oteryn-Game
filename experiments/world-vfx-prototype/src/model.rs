@@ -307,8 +307,8 @@ impl CorpusShape {
         };
         let text = std::fs::read_to_string(Path::new(path))
             .map_err(|error| format!("read census {path}: {error}"))?;
-        let value: Value = serde_json::from_str(&text)
-            .map_err(|error| format!("parse census {path}: {error}"))?;
+        let value: Value =
+            serde_json::from_str(&text).map_err(|error| format!("parse census {path}: {error}"))?;
         let census = value
             .get("census")
             .ok_or_else(|| "census JSON is missing census object".to_owned())?;
@@ -1090,17 +1090,11 @@ impl<'a> PlanBuilder<'a> {
     }
 
     fn emit_overlays(&mut self) {
-        let overlays: Vec<(f32, f32, u32)> = self.creature_screens.iter().copied().take(12).collect();
+        let overlays: Vec<(f32, f32, u32)> =
+            self.creature_screens.iter().copied().take(12).collect();
         for (index, (x, y, hp)) in overlays.into_iter().enumerate() {
             let width = 34.0;
-            self.push_overlay_rect(
-                x,
-                y - 28.0,
-                width,
-                4.0,
-                [0.10, 0.10, 0.10, 0.88],
-                98_100,
-            );
+            self.push_overlay_rect(x, y - 28.0, width, 4.0, [0.10, 0.10, 0.10, 0.88], 98_100);
             self.push_overlay_rect(
                 x - (width - width * hp as f32 / 100.0) * 0.5,
                 y - 28.0,
@@ -1232,8 +1226,8 @@ impl<'a> PlanBuilder<'a> {
         for channel in 0..3 {
             color[channel] *= family_tint[channel];
         }
-        let fallback = self.config.family == PresentationFamily::Hd
-            && spec.appearance.semantic_id % 17 == 0;
+        let fallback =
+            self.config.family == PresentationFamily::Hd && spec.appearance.semantic_id % 17 == 0;
         if fallback {
             self.stats.variant_fallbacks = self.stats.variant_fallbacks.saturating_add(1);
             color[0] *= 0.98;
@@ -1241,7 +1235,11 @@ impl<'a> PlanBuilder<'a> {
         }
         let page_id = self.resource_page(spec.appearance.semantic_id);
         self.pages.insert(page_id);
-        let order_floor = if spec.screen_space { i32::MAX } else { spec.world.floor };
+        let order_floor = if spec.screen_space {
+            i32::MAX
+        } else {
+            spec.world.floor
+        };
         let order_y = if spec.screen_space {
             i32::MAX - 1
         } else {
@@ -1431,21 +1429,49 @@ const fn xorshift32(mut value: u32) -> u32 {
 }
 
 fn projectile_pattern(dx: f32, dy: f32) -> u32 {
-    let horizontal = if dx < -0.1 { 0 } else if dx > 0.1 { 2 } else { 1 };
-    let vertical = if dy < -0.1 { 0 } else if dy > 0.1 { 2 } else { 1 };
+    let horizontal = if dx < -0.1 {
+        0
+    } else if dx > 0.1 {
+        2
+    } else {
+        1
+    };
+    let vertical = if dy < -0.1 {
+        0
+    } else if dy > 0.1 {
+        2
+    } else {
+        1
+    };
     vertical * 3 + horizontal
 }
 
 fn glyph_mask(character: char) -> u64 {
     match character {
-        'B' => rows([0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110]),
-        'D' => rows([0b11110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11110]),
-        'E' => rows([0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111]),
-        'M' => rows([0b10001, 0b11011, 0b10101, 0b10101, 0b10001, 0b10001, 0b10001]),
-        'N' => rows([0b10001, 0b11001, 0b10101, 0b10011, 0b10001, 0b10001, 0b10001]),
-        'O' => rows([0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110]),
-        'S' => rows([0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110]),
-        _ => rows([0b11111, 0b10001, 0b00110, 0b00100, 0b00100, 0b00000, 0b00100]),
+        'B' => rows([
+            0b11110, 0b10001, 0b10001, 0b11110, 0b10001, 0b10001, 0b11110,
+        ]),
+        'D' => rows([
+            0b11110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b11110,
+        ]),
+        'E' => rows([
+            0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111,
+        ]),
+        'M' => rows([
+            0b10001, 0b11011, 0b10101, 0b10101, 0b10001, 0b10001, 0b10001,
+        ]),
+        'N' => rows([
+            0b10001, 0b11001, 0b10101, 0b10011, 0b10001, 0b10001, 0b10001,
+        ]),
+        'O' => rows([
+            0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110,
+        ]),
+        'S' => rows([
+            0b01111, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b11110,
+        ]),
+        _ => rows([
+            0b11111, 0b10001, 0b00110, 0b00100, 0b00100, 0b00000, 0b00100,
+        ]),
     }
 }
 
