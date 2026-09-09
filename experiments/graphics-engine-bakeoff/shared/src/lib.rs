@@ -145,12 +145,7 @@ pub struct RenderSnapshot {
 pub fn build_snapshot(config: &BenchConfig) -> RenderSnapshot {
     RenderSnapshot {
         static_quads: build_quads(config, config.scenario.static_quads(), 0x9E37_79B9, false),
-        animated_quads: build_quads(
-            config,
-            config.scenario.animated_quads(),
-            0x85EB_CA6B,
-            true,
-        ),
+        animated_quads: build_quads(config, config.scenario.animated_quads(), 0x85EB_CA6B, true),
     }
 }
 
@@ -215,9 +210,27 @@ pub fn synthetic_atlas_rgba8(sprite_px: u32) -> Vec<u8> {
                     || local_x + 1 == sprite_px
                     || local_y + 1 == sprite_px;
                 let checker = ((local_x / 4) + (local_y / 4) + frame) % 2 == 0;
-                bytes[offset] = if border { 255 } else if checker { base_r } else { base_r / 2 };
-                bytes[offset + 1] = if border { 255 } else if checker { base_g } else { base_g / 2 };
-                bytes[offset + 2] = if border { 255 } else if checker { base_b } else { base_b / 2 };
+                bytes[offset] = if border {
+                    255
+                } else if checker {
+                    base_r
+                } else {
+                    base_r / 2
+                };
+                bytes[offset + 1] = if border {
+                    255
+                } else if checker {
+                    base_g
+                } else {
+                    base_g / 2
+                };
+                bytes[offset + 2] = if border {
+                    255
+                } else if checker {
+                    base_b
+                } else {
+                    base_b / 2
+                };
                 bytes[offset + 3] = 255;
             }
         }
