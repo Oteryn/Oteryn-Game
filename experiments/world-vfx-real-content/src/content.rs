@@ -22,7 +22,8 @@ const LZMA_SIZE_FIELD_START: usize = 5;
 const LZMA_SIZE_FIELD_END: usize = 13;
 const MAX_CATALOG_BYTES: u64 = 16 * 1024 * 1024;
 const MAX_COMPRESSED_SHEET_BYTES: u64 = 2 * 1024 * 1024;
-const MAX_DECOMPRESSED_SHEET_BYTES: usize = (SHEET_SIZE as usize * SHEET_SIZE as usize * 4) + 65_536;
+const MAX_DECOMPRESSED_SHEET_BYTES: usize =
+    (SHEET_SIZE as usize * SHEET_SIZE as usize * 4) + 65_536;
 const MAX_FIXTURE_MANIFEST_BYTES: u64 = 2 * 1024 * 1024;
 const MAX_TILE_LINE_BYTES: usize = 2 * 1024 * 1024;
 
@@ -147,7 +148,9 @@ impl SpriteCatalog {
                 .ok_or_else(|| "sprite catalog entry is missing file".to_owned())?;
             validate_sheet_file_name(&file)?;
             if last < first {
-                return Err(format!("sprite sheet {file} has inverted ID range {first}..={last}"));
+                return Err(format!(
+                    "sprite sheet {file} has inverted ID range {first}..={last}"
+                ));
             }
             let count = last - first + 1;
             if count > layout.capacity() {
@@ -227,7 +230,9 @@ fn validate_sheet_file_name(file: &str) -> Result<(), String> {
         || file == ".."
         || !file.ends_with(".bmp.lzma")
     {
-        return Err(format!("unsafe or unsupported sprite-sheet file name {file:?}"));
+        return Err(format!(
+            "unsafe or unsupported sprite-sheet file name {file:?}"
+        ));
     }
     Ok(())
 }
@@ -308,11 +313,9 @@ impl SpriteDecoder {
     pub fn decode_sprite(&mut self, sprite_id: u32) -> Result<SpritePixels, String> {
         self.stats.sprite_requests = self.stats.sprite_requests.saturating_add(1);
         self.tick = self.tick.saturating_add(1);
-        let descriptor = self
-            .catalog
-            .locate(sprite_id)
-            .cloned()
-            .ok_or_else(|| format!("sprite_source_id {sprite_id} is absent from exact 15.32 catalog"))?;
+        let descriptor = self.catalog.locate(sprite_id).cloned().ok_or_else(|| {
+            format!("sprite_source_id {sprite_id} is absent from exact 15.32 catalog")
+        })?;
 
         let cache_index = if let Some(index) = self
             .cache
@@ -370,7 +373,10 @@ fn decode_cip_sprite_sheet(path: &Path) -> Result<(DecodedSheet, u64), String> {
 
     let mut lzma_alone = encoded[CIP_HEADER_BYTES..].to_vec();
     if lzma_alone.len() < LZMA_SIZE_FIELD_END {
-        return Err(format!("sprite sheet {} has truncated LZMA header", path.display()));
+        return Err(format!(
+            "sprite sheet {} has truncated LZMA header",
+            path.display()
+        ));
     }
     lzma_alone[LZMA_SIZE_FIELD_START..LZMA_SIZE_FIELD_END].fill(0xFF);
 
@@ -401,7 +407,9 @@ fn parse_bmp_rgba(data: &[u8]) -> Result<Vec<u8>, String> {
         return Err(format!("decoded sprite sheet must be 32-bpp, got {bpp}"));
     }
     if compression != 0 && compression != 3 {
-        return Err(format!("unsupported sprite-sheet BMP compression {compression}"));
+        return Err(format!(
+            "unsupported sprite-sheet BMP compression {compression}"
+        ));
     }
 
     let row_bytes = SHEET_SIZE as usize * 4;
@@ -541,26 +549,15 @@ pub fn select_fixture_sprites(
             "Thais fixture artifact mismatch: expected {THAIS_FIXTURE_ARTIFACT}, got {artifact_digest}"
         ));
     }
-    let source_zip = value_str(
-        &manifest,
-        &["asset_catalog_revision", "zip_sha256"],
-    )?;
+    let source_zip = value_str(&manifest, &["asset_catalog_revision", "zip_sha256"])?;
     if source_zip != SOURCE_ZIP_SHA256 {
         return Err(format!(
             "Thais fixture source ZIP mismatch: expected {SOURCE_ZIP_SHA256}, got {source_zip}"
         ));
     }
     require_u64(&manifest, &["counts", "tiles"], 24_311)?;
-    require_u64(
-        &manifest,
-        &["counts", "presentation_records"],
-        39_282,
-    )?;
-    require_u64(
-        &manifest,
-        &["counts", "resolved_primitives"],
-        39_282,
-    )?;
+    require_u64(&manifest, &["counts", "presentation_records"], 39_282)?;
+    require_u64(&manifest, &["counts", "resolved_primitives"], 39_282)?;
     require_u64(
         &manifest,
         &["counts", "unique_sprite_source_ids"],
@@ -593,11 +590,18 @@ pub fn select_fixture_sprites(
             break;
         }
         if bytes > MAX_TILE_LINE_BYTES {
-            return Err(format!("{} contains an oversized tile record", tiles_path.display()));
+            return Err(format!(
+                "{} contains an oversized tile record",
+                tiles_path.display()
+            ));
         }
         tile_records_scanned = tile_records_scanned.saturating_add(1);
-        let row: serde_json::Value = serde_json::from_str(&line)
-            .map_err(|error| format!("parse {} line {tile_records_scanned}: {error}", tiles_path.display()))?;
+        let row: serde_json::Value = serde_json::from_str(&line).map_err(|error| {
+            format!(
+                "parse {} line {tile_records_scanned}: {error}",
+                tiles_path.display()
+            )
+        })?;
         let x = value_i64(&row, &["position", "x"])?;
         let y = value_i64(&row, &["position", "y"])?;
         let floor = value_i64(&row, &["position", "floor"])?;
@@ -650,7 +654,9 @@ pub fn select_fixture_sprites(
         }
         Some(_) => {
             if presentation_primitives == 0 {
-                return Err("selected Thais viewport contains no presentation primitives".to_owned());
+                return Err(
+                    "selected Thais viewport contains no presentation primitives".to_owned(),
+                );
             }
         }
     }
@@ -718,7 +724,10 @@ pub fn qualify_fixture_decode(
     })
 }
 
-fn value_at<'a>(root: &'a serde_json::Value, path: &[&str]) -> Result<&'a serde_json::Value, String> {
+fn value_at<'a>(
+    root: &'a serde_json::Value,
+    path: &[&str],
+) -> Result<&'a serde_json::Value, String> {
     let mut current = root;
     for key in path {
         current = current
@@ -754,7 +763,8 @@ fn require_u64(root: &serde_json::Value, path: &[&str], expected: u64) -> Result
 }
 
 fn read_bounded_file(path: &Path, max_bytes: u64, label: &str) -> Result<Vec<u8>, String> {
-    let mut file = File::open(path).map_err(|error| format!("open {label} {}: {error}", path.display()))?;
+    let mut file =
+        File::open(path).map_err(|error| format!("open {label} {}: {error}", path.display()))?;
     let size = file
         .metadata()
         .map_err(|error| format!("stat {label} {}: {error}", path.display()))?
