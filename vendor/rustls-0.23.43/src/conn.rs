@@ -885,6 +885,22 @@ impl<Data> ConnectionCore<Data> {
         }
     }
 
+    #[cfg(feature = "std")]
+    pub(crate) fn new_with_resource_owner(
+        state: Box<dyn State<Data>>,
+        data: Data,
+        common_state: CommonState,
+        owner: crate::sync::Arc<dyn DeframerBufferOwner>,
+    ) -> Result<Self, Error> {
+        Ok(Self {
+            state: Ok(state),
+            data,
+            common_state,
+            hs_deframer: HandshakeDeframer::new_with_resource_owner(owner)?,
+            seen_consecutive_empty_fragments: 0,
+        })
+    }
+
     pub(crate) fn process_new_packets(
         &mut self,
         deframer_buffer: &mut DeframerVecBuffer,
@@ -1091,7 +1107,7 @@ impl<Data> ConnectionCore<Data> {
 
             let message = unborrowed.reborrow(&Delocator::new(buffer));
             self.hs_deframer
-                .input_message(message, &locator, buffer_progress.processed());
+                .input_message_with_resource_owner(message, &locator, buffer_progress.processed())?;
             self.hs_deframer.coalesce(buffer)?;
 
             self.common_state.aligned_handshake = self.hs_deframer.is_aligned();

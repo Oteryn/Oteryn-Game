@@ -59,3 +59,15 @@ source validity, and unsupported-store fail-closed behavior. Ordinary retrieval
 remains available and unchanged. The next executable allocation boundary is the
 still-unallocated `client::tls13::initial_key_share` call to
 `SupportedKxGroup::start`; no key-exchange or crypto source was changed.
+
+## Protected #425 decoded-owner span checkpoint
+
+The owner-aware client constructor now initializes the handshake deframer with
+the same existing `DeframerBufferOwner` before its initial span-vector
+allocation.  Checked prospective capacity is reserved before each replacement;
+old and new capacity charges overlap until the old backing is destroyed, drained
+high-water capacity stays charged, and final backing destruction precedes
+release.  Focused inline tests cover initial max-minus-one denial, exact initial
+capacity, growth overlap, retained high-water custody, and final release.  This
+is one protected decoded-owner boundary only; complete decoded/TLS accounting
+remains open.

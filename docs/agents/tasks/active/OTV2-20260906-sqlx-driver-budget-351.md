@@ -787,3 +787,23 @@ kx_secret_key_schedule_custody: PROVEN_ACTUAL_TLS
 remaining_acceptance_cells: complete decoded/config/session/cache/send/transcript/error custody and handshake overlap; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
 next_action: continue complete TLS accounting on the already-protected paths
 ```
+
+## Window27 decoded-owner span checkpoint
+
+The protected #425 implementation has begun at the earliest independent decoded
+backing: owner-aware client construction now creates `HandshakeDeframer` with
+its operation owner before the initial `Vec<FragmentSpan>` allocation.  Span
+capacity is reserved with checked layout arithmetic before allocation and each
+growth replacement holds old plus prospective-new custody until the old vector
+is destroyed.  Draining messages retains high-water capacity; final deframer
+drop destroys the vector before releasing its charge.  Ordinary/no-std and
+unowned QUIC construction retain the upstream path.
+
+```yaml
+status: active
+aws_lc_kx_provider_resident: PROVEN
+handshake_span_capacity_owner: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: generic reader/list/payload/message ownership; transcript; decoded ClientHello/ServerHello; certificate/OCSP and successor-state custody; compressed certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: continue the remaining protected #425 boundaries on this same lineage
+```

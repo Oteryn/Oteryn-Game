@@ -1012,7 +1012,7 @@ impl ConnectionCore<ClientConnectionData> {
             custody.bytes_mut(),
         )?;
         let state = input.start_handshake(extra_exts, &mut cx)?;
-        Ok(Self::new(state, data, common_state))
+        Self::new_with_resource_owner(state, data, common_state, custody.owner())
     }
 
     #[cfg(feature = "std")]

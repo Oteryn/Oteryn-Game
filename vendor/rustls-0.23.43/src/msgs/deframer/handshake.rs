@@ -1,6 +1,11 @@
 use alloc::vec::Vec;
 use core::mem;
+#[cfg(feature = "std")]
+use core::mem::size_of;
 use core::ops::Range;
+
+#[cfg(feature = "std")]
+use crate::sync::Arc;
 
 use super::buffers::{BufferProgress, Coalescer, Delocator, Locator};
 use crate::error::InvalidMessage;
@@ -16,6 +21,12 @@ pub(crate) struct HandshakeDeframer {
     /// Discard value, tracking the rightmost extent of the last message
     /// in `spans`.
     outer_discard: usize,
+
+    #[cfg(feature = "std")]
+    owner: Option<Arc<dyn crate::DeframerBufferOwner>>,
+
+    #[cfg(feature = "std")]
+    charged_capacity: usize,
 }
 
 impl HandshakeDeframer {
@@ -33,12 +44,32 @@ impl HandshakeDeframer {
     /// This would not be possible if the messages were borrowing from that buffer.
     ///
     /// `outer_discard` is the rightmost extent of the original message.
+    #[cfg(feature = "std")]
     pub(crate) fn input_message(
         &mut self,
         msg: InboundPlainMessage<'_>,
         containing_buffer: &Locator,
         outer_discard: usize,
     ) {
+        self.input_message_inner(msg, containing_buffer, outer_discard)
+            .expect("owner-free handshake deframing cannot be denied");
+    }
+
+    pub(crate) fn input_message_with_resource_owner(
+        &mut self,
+        msg: InboundPlainMessage<'_>,
+        containing_buffer: &Locator,
+        outer_discard: usize,
+    ) -> Result<(), crate::Error> {
+        self.input_message_inner(msg, containing_buffer, outer_discard)
+    }
+
+    fn input_message_inner(
+        &mut self,
+        msg: InboundPlainMessage<'_>,
+        containing_buffer: &Locator,
+        outer_discard: usize,
+    ) -> Result<(), crate::Error> {
         debug_assert_eq!(msg.typ, ContentType::Handshake);
         debug_assert!(containing_buffer.fully_contains(msg.payload));
         debug_assert!(self.outer_discard <= outer_discard);
@@ -58,19 +89,68 @@ impl HandshakeDeframer {
             .last()
             .filter(|span| !span.is_complete())
         {
-            self.spans.push(FragmentSpan {
+            self.push_span(FragmentSpan {
                 version: msg.version,
                 size: None,
                 bounds: containing_buffer.locate(msg.payload),
-            });
-            return;
+            })?;
+            return Ok(());
         }
 
         // otherwise, we can expect `msg` to contain a handshake header introducing
         // a new message (and perhaps several of them.)
         for span in DissectHandshakeIter::new(msg, containing_buffer) {
-            self.spans.push(span);
+            self.push_span(span)?;
         }
+        Ok(())
+    }
+
+    fn push_span(&mut self, span: FragmentSpan) -> Result<(), crate::Error> {
+        #[cfg(feature = "std")]
+        if self.spans.len() == self.spans.capacity() {
+            self.grow_spans(1)?;
+        }
+        self.spans.push(span);
+        Ok(())
+    }
+
+    #[cfg(feature = "std")]
+    fn grow_spans(&mut self, additional: usize) -> Result<(), crate::Error> {
+        let needed = self.spans.len().checked_add(additional)
+            .ok_or_else(|| crate::Error::General("resource budget unavailable".into()))?;
+        let new_capacity = self.spans.capacity().saturating_mul(2).max(needed);
+        let bytes = new_capacity.checked_mul(size_of::<FragmentSpan>())
+            .ok_or_else(|| crate::Error::General("resource budget unavailable".into()))?;
+        let Some(owner) = self.owner.clone() else {
+            self.spans.reserve(additional);
+            return Ok(());
+        };
+        owner.try_reserve(bytes)
+            .map_err(|_| crate::Error::General("resource budget unavailable".into()))?;
+        let mut replacement = Vec::with_capacity(new_capacity);
+        replacement.append(&mut self.spans);
+        let old = mem::replace(&mut self.spans, replacement);
+        let old_charge = mem::replace(&mut self.charged_capacity, bytes);
+        drop(old);
+        owner.release(old_charge);
+        Ok(())
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn new_with_resource_owner(
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<Self, crate::Error> {
+        let capacity = 16usize;
+        let bytes = capacity.checked_mul(size_of::<FragmentSpan>())
+            .ok_or_else(|| crate::Error::General("resource budget unavailable".into()))?;
+        owner.try_reserve(bytes)
+            .map_err(|_| crate::Error::General("resource budget unavailable".into()))?;
+        Ok(Self {
+            spans: Vec::with_capacity(capacity),
+            outer_discard: 0,
+            owner: Some(owner),
+            charged_capacity: bytes,
+        })
     }
 
     /// Returns a `BufferProgress` that skips over unprocessed handshake data.
@@ -234,6 +314,21 @@ impl Default for HandshakeDeframer {
             // a single flight
             spans: Vec::with_capacity(16),
             outer_discard: 0,
+            #[cfg(feature = "std")]
+            owner: None,
+            #[cfg(feature = "std")]
+            charged_capacity: 0,
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for HandshakeDeframer {
+    fn drop(&mut self) {
+        let spans = mem::take(&mut self.spans);
+        drop(spans);
+        if let Some(owner) = self.owner.take() {
+            owner.release(mem::take(&mut self.charged_capacity));
         }
     }
 }
@@ -377,10 +472,73 @@ const MAX_HANDSHAKE_SIZE: usize = 0xffff;
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::vec;
 
     use super::*;
     use crate::msgs::deframer::DeframerIter;
+
+    #[derive(Debug)]
+    struct SpanOwner {
+        limit: usize,
+        used: AtomicUsize,
+        peak: AtomicUsize,
+    }
+
+    impl crate::DeframerBufferOwner for SpanOwner {
+        fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+            let result = self.used.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |used| {
+                let next = used.checked_add(bytes)?;
+                (next <= self.limit).then_some(next)
+            });
+            let next = result.map_err(|_| crate::DeframerBufferError)? + bytes;
+            self.peak.fetch_max(next, Ordering::SeqCst);
+            Ok(())
+        }
+
+        fn release(&self, bytes: usize) {
+            self.used.fetch_sub(bytes, Ordering::SeqCst);
+        }
+    }
+
+    #[test]
+    fn span_owner_reserves_capacity_before_growth_and_retains_high_water() {
+        let initial = 16 * size_of::<FragmentSpan>();
+        let grown = 32 * size_of::<FragmentSpan>();
+        let owner = Arc::new(SpanOwner {
+            limit: initial + grown,
+            used: AtomicUsize::new(0),
+            peak: AtomicUsize::new(0),
+        });
+        let mut hs = HandshakeDeframer::new_with_resource_owner(owner.clone()).unwrap();
+        assert_eq!(owner.used.load(Ordering::SeqCst), initial);
+
+        for i in 0..17 {
+            hs.push_span(FragmentSpan {
+                version: ProtocolVersion::TLSv1_3,
+                size: Some(0),
+                bounds: i..i + HANDSHAKE_HEADER_LEN,
+            }).unwrap();
+        }
+        assert_eq!(owner.peak.load(Ordering::SeqCst), initial + grown);
+        assert_eq!(owner.used.load(Ordering::SeqCst), grown);
+        hs.spans.clear();
+        assert_eq!(owner.used.load(Ordering::SeqCst), grown);
+        drop(hs);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn span_owner_denies_before_initial_allocation() {
+        let owner = Arc::new(SpanOwner {
+            limit: 16 * size_of::<FragmentSpan>() - 1,
+            used: AtomicUsize::new(0),
+            peak: AtomicUsize::new(0),
+        });
+        assert!(HandshakeDeframer::new_with_resource_owner(owner.clone()).is_err());
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
 
     fn add_bytes(hs: &mut HandshakeDeframer, slice: &[u8], within: &[u8]) {
         let msg = InboundPlainMessage {
