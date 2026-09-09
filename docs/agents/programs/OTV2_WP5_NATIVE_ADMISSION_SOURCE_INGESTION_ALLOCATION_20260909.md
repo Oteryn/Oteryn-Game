@@ -281,14 +281,16 @@ for another.
 ```text
 this allocation protected
 -> keep S1/S2/S3 NOT_ACTIVE while their exact gates remain false
--> external Platform counterpart separately authorized + implemented/reviewed
 -> WP3 protected/released
 -> WP4 protected/released
 -> #416 prerequisite protected/materially exercised
--> activate S1 only with exact shared-path/Cargo leases
+-> activate S1 only with exact shared-path/Cargo leases and either a compatible
+   separately authorized producer or controlled independent test producer
 -> exact-head review + canonical CI/MQ + protected readback
 -> activate S2 with selected next migration and dedicated PG target
 -> actual PostgreSQL17.6/restart/rollback qualification + review/CI/MQ/readback
+-> external Platform counterpart proceeds independently under separate authority
+   and must be protected/compatible before S3/final source composition
 -> activate S3 only after fresh Foundation/composition custody readback
 -> authenticated producer/consumer interoperability + nonrollback composition
 -> compose with #414 Character Authority and #415 Channel assignment
@@ -304,7 +306,8 @@ Game-side preparation in this document is independently mergeable because it
 changes one new documentation path only. Material source mutation remains blocked
 by real dependencies/authority, principally:
 
-- missing separately authorized compatible Platform native producer;
+- missing separately authorized compatible Platform native producer for final
+  authenticated source composition;
 - unreleased WP3/WP4 shared Cargo/PostgreSQL/durability custody;
 - shared `lib.rs`/Foundation composition custody;
 - #416 material routing activation for future dedicated PG targets.
