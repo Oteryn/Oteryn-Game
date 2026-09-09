@@ -6,6 +6,9 @@ use std::sync::{Arc, Mutex};
 struct Ledger {
     limit: AtomicUsize,
     used: AtomicUsize,
+    peak: AtomicUsize,
+    debits: Mutex<Vec<(usize, usize)>>,
+    events: Mutex<Vec<(bool, usize, usize)>>,
     provider_shared_debits: Mutex<Vec<usize>>,
 }
 impl ResourceBudget for Ledger {
@@ -15,12 +18,17 @@ impl ResourceBudget for Ledger {
                 used.checked_add(bytes)
                     .filter(|next| *next <= self.limit.load(Ordering::Acquire))
             })
-            .map(|_| ())
+            .map(|prior| {
+                self.peak.fetch_max(prior + bytes, Ordering::AcqRel);
+                self.debits.lock().unwrap().push((bytes, prior));
+                self.events.lock().unwrap().push((true, bytes, prior));
+            })
             .map_err(|_| BudgetError::Unavailable)
     }
     fn release(&self, bytes: usize) {
         let prior = self.used.fetch_sub(bytes, Ordering::AcqRel);
         assert!(prior >= bytes, "reservation released twice");
+        self.events.lock().unwrap().push((false, bytes, prior));
     }
     fn try_reserve_provider_shared(&self, bytes: usize) -> Result<(), BudgetError> {
         self.try_reserve(bytes)?;
@@ -32,8 +40,76 @@ fn ledger(limit: usize) -> Arc<Ledger> {
     Arc::new(Ledger {
         limit: AtomicUsize::new(limit),
         used: AtomicUsize::new(0),
+        peak: AtomicUsize::new(0),
+        debits: Mutex::new(Vec::new()),
+        events: Mutex::new(Vec::new()),
         provider_shared_debits: Mutex::new(Vec::new()),
     })
+}
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+const WIRE_HRR_CERT: &[u8] = b"-----BEGIN CERTIFICATE-----\nMIIBkDCCATagAwIBAgIURsB57nbF6bHg2HFFElqCXdO7xpEwCgYIKoZIzj0EAwIw\nFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwOTA5MDU0NFoXDTM2MDkwNjA5\nMDU0NFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAEqY6KAunhG2Xvb5xxCuO/KIULRV3m80ed9D53xeLN0Ili8IMjrUL2tUsI\nhe+ZZld96RYgMA5QVWCrpGH0xhTtP6NmMGQwHQYDVR0OBBYEFApEVL+QFcknQK+b\nuTJ38WFTpVWaMB8GA1UdIwQYMBaAFApEVL+QFcknQK+buTJ38WFTpVWaMBQGA1Ud\nEQQNMAuCCWxvY2FsaG9zdDAMBgNVHRMBAf8EAjAAMAoGCCqGSM49BAMCA0gAMEUC\nIBFb1zJ2xJULfJMYdasAW8ouNnzG8h1sv8yTM9SRBqIpAiEA9F9l8fTm2WvOdnR7\nKlyR+War24RmmD1/24ayjWV4uIw=\n-----END CERTIFICATE-----\n";
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+const WIRE_HRR_KEY: &[u8] = b"-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgq/IEYNZKofj0whWy\nKHVp+/CPsA35UPce9c5XlrHSL+2hRANCAASpjooC6eEbZe9vnHEK478ohQtFXebz\nR530PnfF4s3QiWLwgyOtQva1SwiF75lmV33pFiAwDlBVYKukYfTGFO0/\n-----END PRIVATE KEY-----\n";
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+fn wire_hrr_server() -> rustls::ServerConnection {
+    let (certs, key) = super::tls_rustls::client_auth_from_pem(WIRE_HRR_CERT, WIRE_HRR_KEY).unwrap();
+    let mut provider = rustls::crypto::aws_lc_rs::default_provider();
+    provider.kx_groups = vec![rustls::crypto::aws_lc_rs::kx_group::SECP256R1];
+    let config = rustls::ServerConfig::builder_with_provider(Arc::new(provider))
+        .with_protocol_versions(&[&rustls::version::TLS13])
+        .unwrap()
+        .with_no_client_auth()
+        .with_single_cert(certs, key)
+        .unwrap();
+    rustls::ServerConnection::new(Arc::new(config)).unwrap()
+}
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+fn wire_hrr_client(
+    provider: Arc<rustls::crypto::CryptoProvider>,
+    budget: Arc<Ledger>,
+) -> rustls::ClientConnection {
+    let (certs, _) = super::tls_rustls::client_auth_from_pem(WIRE_HRR_CERT, WIRE_HRR_KEY).unwrap();
+    let mut roots = rustls::RootCertStore::empty();
+    roots.add(certs.into_iter().next().unwrap()).unwrap();
+    let config = rustls::ClientConfig::builder_with_provider(provider)
+        .with_protocol_versions(&[&rustls::version::TLS13])
+        .unwrap()
+        .with_root_certificates(roots)
+        .with_no_client_auth();
+    let owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(super::tls_rustls::DeframerBudgetOwner(budget));
+    rustls::ClientConnection::new_with_resource_owner(
+        Arc::new(config),
+        "localhost".try_into().unwrap(),
+        owner,
+    )
+    .unwrap()
+}
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+fn client_flight(
+    client: &mut rustls::ClientConnection,
+    server: &mut rustls::ServerConnection,
+) -> Result<(), rustls::Error> {
+    let mut wire = Vec::new();
+    client.write_tls(&mut wire).unwrap();
+    server.read_tls(&mut wire.as_slice()).unwrap();
+    server.process_new_packets().map(|_| ())
+}
+
+#[cfg(feature = "_tls-rustls-aws-lc-rs")]
+fn server_flight(
+    server: &mut rustls::ServerConnection,
+    client: &mut rustls::ClientConnection,
+) -> Result<(), rustls::Error> {
+    let mut wire = Vec::new();
+    server.write_tls(&mut wire).unwrap();
+    client.read_tls(&mut wire.as_slice()).unwrap();
+    client.process_new_packets().map(|_| ())
 }
 
 #[test]
@@ -185,6 +261,105 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
     .unwrap()
     .is_err());
     process.limit.store(1_000_000, Ordering::Release);
+
+    // Exercise the real TLS 1.3 state machines.  A P-256-only server supports
+    // a group advertised by the PQ-first client but absent from its initial
+    // hybrid/X25519 shares, so the first server flight is a wire HRR.
+    let mut client = wire_hrr_client(provider.clone(), process.clone());
+    let mut server = wire_hrr_server();
+    client_flight(&mut client, &mut server).unwrap();
+    assert_eq!(
+        server.handshake_kind(),
+        Some(rustls::HandshakeKind::FullWithHelloRetryRequest)
+    );
+    let mut hrr_wire = Vec::new();
+    server.write_tls(&mut hrr_wire).unwrap();
+    client.read_tls(&mut hrr_wire.as_slice()).unwrap();
+    let held_initial = process.used.load(Ordering::Acquire);
+    let event_start = process.debits.lock().unwrap().len();
+    let lifecycle_start = process.events.lock().unwrap().len();
+    process.peak.store(held_initial, Ordering::Release);
+    client.process_new_packets().unwrap();
+    assert_eq!(
+        client.handshake_kind(),
+        Some(rustls::HandshakeKind::FullWithHelloRetryRequest)
+    );
+    assert!(process.debits.lock().unwrap()[event_start..]
+        .iter()
+        .any(|&(bytes, prior)| bytes == 1_625 && prior == held_initial));
+    assert!(process.peak.load(Ordering::Acquire) >= held_initial + 1_625);
+    let lifecycle = process.events.lock().unwrap();
+    let replacement_at = lifecycle[lifecycle_start..]
+        .iter()
+        .position(|&(reserve, bytes, prior)| reserve && bytes == 1_625 && prior == held_initial)
+        .unwrap();
+    let initial_release_at = lifecycle[lifecycle_start..]
+        .iter()
+        .position(|&(reserve, bytes, _)| !reserve && bytes == 7_881)
+        .unwrap();
+    assert!(replacement_at < initial_release_at);
+    drop(lifecycle);
+
+    for _ in 0..8 {
+        if !client.is_handshaking() && !server.is_handshaking() {
+            break;
+        }
+        client_flight(&mut client, &mut server).unwrap();
+        server_flight(&mut server, &mut client).unwrap();
+    }
+    assert!(!client.is_handshaking());
+    assert!(!server.is_handshaking());
+    assert_eq!(
+        client.handshake_kind(),
+        Some(rustls::HandshakeKind::FullWithHelloRetryRequest)
+    );
+    drop((client, server));
+
+    // A second real HRR gets only the already-held initial custody plus one
+    // byte less than the P-256 replacement bound.  It must fail before the
+    // replacement provider start and unwind the original only as the failed
+    // connection state is destroyed.
+    let mut denied_client = wire_hrr_client(provider.clone(), process.clone());
+    let mut denied_server = wire_hrr_server();
+    client_flight(&mut denied_client, &mut denied_server).unwrap();
+    let mut denied_hrr = Vec::new();
+    denied_server.write_tls(&mut denied_hrr).unwrap();
+    denied_client.read_tls(&mut denied_hrr.as_slice()).unwrap();
+    let denied_held = process.used.load(Ordering::Acquire);
+    let denied_event_start = process.debits.lock().unwrap().len();
+    let denied_lifecycle_start = process.events.lock().unwrap().len();
+    process.limit.store(denied_held + 1_624, Ordering::Release);
+    assert!(denied_client.process_new_packets().is_err());
+    assert!(!process.debits.lock().unwrap()[denied_event_start..]
+        .iter()
+        .any(|&(bytes, _)| bytes == 1_625));
+    assert!(process.events.lock().unwrap()[denied_lifecycle_start..]
+        .iter()
+        .any(|&(reserve, bytes, _)| !reserve && bytes == 7_881));
+    assert!(process.used.load(Ordering::Acquire) < denied_held);
+    process.limit.store(1_000_000, Ordering::Release);
+    drop((denied_client, denied_server));
+
+    let pre_drop_start = process.events.lock().unwrap().len();
+    let pre_retry_cancel = wire_hrr_client(provider.clone(), process.clone());
+    drop(pre_retry_cancel);
+    assert!(process.events.lock().unwrap()[pre_drop_start..]
+        .iter()
+        .any(|&(reserve, bytes, _)| !reserve && bytes == 7_881));
+
+    let mut post_hrr_cancel = wire_hrr_client(provider.clone(), process.clone());
+    let mut post_hrr_server = wire_hrr_server();
+    client_flight(&mut post_hrr_cancel, &mut post_hrr_server).unwrap();
+    server_flight(&mut post_hrr_server, &mut post_hrr_cancel).unwrap();
+    assert_eq!(
+        post_hrr_cancel.handshake_kind(),
+        Some(rustls::HandshakeKind::FullWithHelloRetryRequest)
+    );
+    let post_drop_start = process.events.lock().unwrap().len();
+    drop(post_hrr_cancel);
+    assert!(process.events.lock().unwrap()[post_drop_start..]
+        .iter()
+        .any(|&(reserve, bytes, _)| !reserve && bytes == 1_625));
 
     let groups: [(&dyn SupportedKxGroup, usize); 5] = [
         (rustls::crypto::aws_lc_rs::kx_group::X25519, 554),

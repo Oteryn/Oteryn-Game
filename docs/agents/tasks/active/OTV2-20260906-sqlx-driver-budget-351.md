@@ -714,3 +714,28 @@ complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: actual wire HRR; cancellation/error/drop matrix; decoded/config/session/cache/send/transcript/error custody; funded TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
 next_action: execute actual HRR and cancellation lifecycle proof, then continue the protected complete-TLS matrix
 ```
+
+## Window25 actual wire HRR and KX lifecycle
+
+The exact pinned AWS-LC harness now performs a real TLS 1.3 exchange between an
+owner-aware PQ-first client and an ordinary P-256-only server.  The server emits
+a wire HelloRetryRequest, both peers report
+`FullWithHelloRetryRequest`, and ledger events prove the 1,625-byte replacement
+is reserved while the initial 7,881-byte hybrid KX remains charged.  An
+initial-only funded run denies before replacement admission, and explicit
+pre-retry/post-HRR connection drops prove release follows active-state
+destruction.  The successful exchange consumes the returned secret through the
+actual TLS key schedule.
+
+```yaml
+status: active
+provider_thread_churn: PROVEN_FOCUSED
+actual_wire_hrr: PROVEN_FOCUSED
+hrr_initial_replacement_overlap: PROVEN_FOCUSED
+hrr_replacement_denial_before_start: PROVEN_FOCUSED
+kx_pre_retry_and_post_hrr_drop: PROVEN_FOCUSED
+aws_lc_kx_provider_resident: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: complete decoded/configuration/session/cache/send/transcript/error custody; complete cancellation/error matrix; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: continue the already-protected decoded and retained TLS ownership graph before any aggregate WP3 claim
+```

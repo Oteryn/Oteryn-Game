@@ -982,3 +982,30 @@ exhaust the root.  The denial occurs in `ensure_aws_lc_provider_residency`
 before provider/KX use.  These shared debits remain intentionally unreleased.
 This closes the focused thread-churn cell only; actual wire HRR, cancellation,
 and complete TLS custody remain open.
+
+### Window25 actual wire HRR and KX cancellation qualification
+
+The executable exact-graph AWS-LC harness now runs an actual TLS 1.3 client and
+server exchange.  The PQ-first owner-aware client initially holds the protected
+7,881-byte X25519MLKEM768 reservation; an ordinary AWS-LC server configured for
+P-256 only emits a real HelloRetryRequest.  Ledger event ordering proves the
+1,625-byte replacement debit is accepted while the initial debit is still held,
+before the initial 7,881-byte debit releases.  Both peers report
+`HandshakeKind::FullWithHelloRetryRequest`, and the handshake completes.
+
+The same wire route with only 1,624 replacement bytes available fails before a
+P-256 debit/provider start, then releases the initial KX during actual error
+unwind.  Separate connection drops before retry and after successful HRR prove
+the initial and replacement debits remain until their respective active
+exchange state is destroyed.  Completion exercises the returned-secret path
+through the real TLS key schedule rather than only inspecting a direct KX unit
+result.  Static test-only P-256 certificate/key bytes avoid a new dependency or
+fixture mutation.
+
+`actual_wire_hrr = PROVEN_FOCUSED`
+
+`kx_error_and_pre_post_hrr_drop = PROVEN_FOCUSED`
+
+Aggregate complete TLS accounting remains open; these tests do not claim that
+the still-unimplemented decoded/configuration/session/transcript/peer-chain
+custody graph is complete.

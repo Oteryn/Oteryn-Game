@@ -369,3 +369,10 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Prove actual wire HRR initial/replacement overlap and cancellation/error/drop ordering.
 - [ ] Complete decoded/config/session/cache/send/transcript/error TLS custody.
 - [ ] Execute funded AWS-LC TLS-positive and configured PostgreSQL 17.6 positive/hostile qualification.
+
+## Window25 actual wire HRR
+
+- [x] Run a real PQ-first client/P-256-only server TLS 1.3 exchange and verify both peers report `FullWithHelloRetryRequest`.
+- [x] Prove replacement admission occurs while the initial full KX debit remains held, and that insufficient replacement funding fails before provider start.
+- [x] Prove pre-retry and post-HRR connection drops release KX custody only with active-state destruction; exercise returned-secret consumption through the real TLS key schedule.
+- [ ] Continue the protected decoded/config/session/cache/send/transcript/error custody graph before complete TLS or WP3 acceptance.
