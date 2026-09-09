@@ -1,3 +1,4 @@
+use crate::atlas_slice::{AtlasCreature, AtlasPrimitive, AtlasSlice, AtlasTile};
 use crate::config::{BenchConfig, CorpusCensus, Family, RESOURCE_SPRITES_PER_PAGE, Scenario};
 use serde::Serialize;
 use std::collections::BTreeSet;
@@ -306,12 +307,13 @@ pub struct AnimationEvaluationEvidence {
 #[derive(Debug, Clone)]
 pub struct SceneModel {
     census: CorpusCensus,
+    atlas_slice: Option<AtlasSlice>,
     animation_programs: Vec<AnimationProgram>,
     events: Vec<PresentationEvent>,
 }
 
 impl SceneModel {
-    pub fn new(census: CorpusCensus) -> Self {
+    pub fn new(census: CorpusCensus, atlas_slice: Option<AtlasSlice>) -> Self {
         let animation_programs = vec![
             AnimationProgram {
                 id: 1,
@@ -371,6 +373,7 @@ impl SceneModel {
         deduper.reset_for_snapshot_replacement(&retained_ids);
         Self {
             census,
+            atlas_slice,
             animation_programs,
             events,
         }
@@ -430,7 +433,7 @@ impl SceneModel {
     }
 
     pub fn frame(&self, config: &BenchConfig, time_ms: u64, frame_number: u64) -> RenderSnapshot {
-        let camera = camera_for(config, time_ms);
+        let camera = camera_for(config, time_ms, self.atlas_slice.as_ref());
         let environment = environment_for(time_ms);
         let mut primitives = Vec::with_capacity(60_000);
         let mut stats = FrameSemanticStats::default();
@@ -491,6 +494,10 @@ impl SceneModel {
         out: &mut Vec<RenderPrimitive>,
         stats: &mut FrameSemanticStats,
     ) {
+        if let Some(slice) = &self.atlas_slice {
+            self.append_atlas_world(config, camera, environment, slice, out, stats);
+            return;
+        }
         let half_x = (config.width as f32 / camera.pixels_per_tile / 2.0).ceil() as i32 + 4;
         let half_y = (config.height as f32 / camera.pixels_per_tile / 2.0).ceil() as i32 + 4;
         let center_x = camera.world_x.floor() as i32;
@@ -548,6 +555,131 @@ impl SceneModel {
                 }
             }
         }
+    }
+
+    fn append_atlas_world(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        environment: &EnvironmentState,
+        slice: &AtlasSlice,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
+    ) {
+        let half_x = (config.width as f32 / camera.pixels_per_tile / 2.0).ceil() as i32 + 4;
+        let half_y = (config.height as f32 / camera.pixels_per_tile / 2.0).ceil() as i32 + 4;
+        let center_x = camera.world_x.floor() as i32;
+        let center_y = camera.world_y.floor() as i32;
+        let sprite_domain = self.census.census.object.unique_sprite_ids.max(16);
+        let tint = world_tint(environment);
+        for tile in &slice.tiles {
+            if (tile.x - center_x).abs() > half_x
+                || (tile.y - center_y).abs() > half_y
+                || (tile.floor - camera.floor).abs() > 1
+            {
+                continue;
+            }
+            for presentation in &tile.presentations {
+                let stack = atlas_stack_class(presentation.role.as_str(), tile.floor, camera.floor);
+                if presentation.primitives.is_empty() {
+                    push_world_primitive(
+                        config,
+                        camera,
+                        out,
+                        PrimitiveSpec {
+                            stable_id: stable_id(tile.x, tile.y, tile.floor, presentation.order),
+                            tile_x: tile.x,
+                            tile_y: tile.y,
+                            floor: tile.floor,
+                            stack,
+                            local_order: presentation.order,
+                            geometry: GeometryClass::Cell32x32,
+                            sprite_id: FALLBACK_SPRITE_ID,
+                            color: tint,
+                            displacement: [0.0, 0.0],
+                            source: SourceClass::Default,
+                            critical: false,
+                            blend: BlendMode::Alpha,
+                            missing_variant: true,
+                        },
+                    );
+                    stats.world_primitives += 1;
+                    stats.fallback_variants += 1;
+                    continue;
+                }
+                for primitive in &presentation.primitives {
+                    self.append_atlas_primitive(
+                        config,
+                        camera,
+                        tint,
+                        tile,
+                        presentation.order,
+                        presentation.appearance_source_id,
+                        primitive,
+                        stack,
+                        sprite_domain,
+                        out,
+                        stats,
+                    );
+                }
+            }
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn append_atlas_primitive(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        tint: [f32; 4],
+        tile: &AtlasTile,
+        presentation_order: u16,
+        appearance_source_id: u32,
+        primitive: &AtlasPrimitive,
+        stack: StackClass,
+        sprite_domain: u32,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
+    ) {
+        let Some(geometry) = geometry_from_units(primitive.width_units, primitive.height_units)
+        else {
+            return;
+        };
+        let physical_sprite = atlas_physical_sprite_id(
+            config,
+            tile.x,
+            tile.y,
+            tile.floor,
+            stack,
+            primitive.sprite_id,
+            appearance_source_id,
+            sprite_domain,
+        );
+        let local_order = presentation_order
+            .saturating_mul(8)
+            .saturating_add(primitive.layer_index);
+        push_world_primitive(
+            config,
+            camera,
+            out,
+            PrimitiveSpec {
+                stable_id: stable_id(tile.x, tile.y, tile.floor, local_order),
+                tile_x: tile.x,
+                tile_y: tile.y,
+                floor: tile.floor,
+                stack,
+                local_order,
+                geometry,
+                sprite_id: physical_sprite,
+                color: tint,
+                displacement: [primitive.dx_units as f32, primitive.dy_units as f32],
+                source: SourceClass::Default,
+                critical: false,
+                blend: BlendMode::Alpha,
+                missing_variant: false,
+            },
+        );
+        stats.world_primitives += 1;
     }
 
     #[allow(clippy::too_many_arguments)]
@@ -756,6 +888,10 @@ impl SceneModel {
         out: &mut Vec<RenderPrimitive>,
         stats: &mut FrameSemanticStats,
     ) {
+        if let Some(slice) = &self.atlas_slice {
+            self.append_atlas_creatures(config, camera, time_ms, slice, out, stats);
+            return;
+        }
         let count = config.scenario.creature_count();
         let outfit_domain = self.census.census.outfit.unique_sprite_ids.max(16);
         for index in 0..count {
@@ -861,6 +997,144 @@ impl SceneModel {
                 });
                 stats.effects += 1;
             }
+        }
+    }
+
+    fn append_atlas_creatures(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        time_ms: u64,
+        slice: &AtlasSlice,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
+    ) {
+        let half_x = (config.width as f32 / camera.pixels_per_tile / 2.0).ceil() as i32 + 8;
+        let half_y = (config.height as f32 / camera.pixels_per_tile / 2.0).ceil() as i32 + 8;
+        let visible: Vec<&AtlasCreature> = slice
+            .creatures
+            .iter()
+            .filter(|creature| {
+                creature.floor == camera.floor
+                    && (creature.x - camera.world_x.floor() as i32).abs() <= half_x
+                    && (creature.y - camera.world_y.floor() as i32).abs() <= half_y
+            })
+            .collect();
+        if visible.is_empty() {
+            return;
+        }
+        let count = config.scenario.creature_count();
+        let outfit_domain = self.census.census.outfit.unique_sprite_ids.max(16);
+        for index in 0..count {
+            let creature = visible[index % visible.len()];
+            let seed = mix64(config.seed ^ stable_text_hash(&creature.record_id) ^ index as u64);
+            let duplicate = index / visible.len();
+            let jitter_x = if duplicate == 0 {
+                0.0
+            } else {
+                ((seed & 3) as f32 - 1.5) * 0.7
+            };
+            let jitter_y = if duplicate == 0 {
+                0.0
+            } else {
+                (((seed >> 3) & 3) as f32 - 1.5) * 0.7
+            };
+            let step_period = 520_u64 + seed % 480;
+            let progress = (time_ms % step_period) as f32 / step_period as f32;
+            let world_x =
+                creature.x as f32 + jitter_x + progress * if seed & 1 == 0 { 1.0 } else { -1.0 };
+            let world_y =
+                creature.y as f32 + jitter_y + progress * if seed & 2 == 0 { 0.0 } else { 1.0 };
+            self.append_atlas_creature(
+                config,
+                camera,
+                time_ms,
+                index,
+                creature,
+                seed,
+                world_x,
+                world_y,
+                outfit_domain,
+                out,
+                stats,
+            );
+        }
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    fn append_atlas_creature(
+        &self,
+        config: &BenchConfig,
+        camera: &CameraState,
+        time_ms: u64,
+        index: usize,
+        creature: &AtlasCreature,
+        seed: u64,
+        world_x: f32,
+        world_y: f32,
+        outfit_domain: u32,
+        out: &mut Vec<RenderPrimitive>,
+        stats: &mut FrameSemanticStats,
+    ) {
+        let phase = atlas_creature_phase(creature, time_ms, seed);
+        let tile_x = world_x.floor() as i32;
+        let tile_y = world_y.floor() as i32;
+        let source = if creature.kind == "monster" {
+            SourceClass::Monster
+        } else {
+            SourceClass::Default
+        };
+        let geometry = GeometryClass::Cell32x32;
+        let source_sprite = creature.look_type.saturating_mul(32).saturating_add(phase);
+        let sprite_id = atlas_physical_sprite_id(
+            config,
+            tile_x,
+            tile_y,
+            creature.floor,
+            StackClass::Creature,
+            source_sprite,
+            creature.look_type,
+            outfit_domain,
+        );
+        let [sx, sy] = world_to_screen(camera, world_x, world_y, creature.floor, config);
+        let width = camera.pixels_per_tile;
+        let height = camera.pixels_per_tile;
+        let alpha = effect_alpha(source, false, config.scenario);
+        let id = 20_000_000_u64 + index as u64;
+        out.push(RenderPrimitive {
+            stable_id: id,
+            sort_key: SortKey {
+                floor: creature.floor,
+                diagonal: tile_x + tile_y,
+                y: tile_y,
+                x: tile_x,
+                stack: StackClass::Creature,
+                local_order: index.min(u16::MAX as usize) as u16,
+                stable_id: id,
+            },
+            rect_px: [
+                sx - width * 0.5 + creature.dx_units as f32 * camera.zoom,
+                sy - height * 0.75 + creature.dy_units as f32 * camera.zoom,
+                width,
+                height,
+            ],
+            texture: TextureRef::World {
+                sprite_id: if creature.presentation_resolved {
+                    sprite_id
+                } else {
+                    FALLBACK_SPRITE_ID
+                },
+                geometry,
+                missing_variant: !creature.presentation_resolved,
+            },
+            color: [1.0, 1.0, 1.0, alpha],
+            blend: BlendMode::Alpha,
+            source,
+            critical: false,
+        });
+        stats.creatures += 1;
+        if !creature.presentation_resolved {
+            stats.fallback_variants += 1;
         }
     }
 
@@ -1297,8 +1571,30 @@ fn gameplay_signature(
     signature
 }
 
-fn camera_for(config: &BenchConfig, time_ms: u64) -> CameraState {
+fn camera_for(config: &BenchConfig, time_ms: u64, atlas_slice: Option<&AtlasSlice>) -> CameraState {
     let time = time_ms as f32 * 0.001;
+    let (origin_x, origin_y, base_floor) =
+        atlas_slice.map_or((32_300.0, 32_230.0, CAMERA_FLOOR), AtlasSlice::center);
+    let floor = if let Some(slice) = atlas_slice {
+        let phase_ms = time_ms % 6_000;
+        let upper = if slice.bounds.floors.contains(&(base_floor + 1)) {
+            base_floor + 1
+        } else {
+            base_floor
+        };
+        let lower = if slice.bounds.floors.contains(&(base_floor - 1)) {
+            base_floor - 1
+        } else {
+            base_floor
+        };
+        match phase_ms {
+            2_500..3_000 => upper,
+            5_000..5_500 => lower,
+            _ => base_floor,
+        }
+    } else {
+        base_floor
+    };
     let zoom = config.fixed_zoom.unwrap_or_else(|| {
         let base = match config.scenario {
             Scenario::Basic => 1.15,
@@ -1308,9 +1604,9 @@ fn camera_for(config: &BenchConfig, time_ms: u64) -> CameraState {
         (base + 0.07 * (time * 0.43).sin()).clamp(0.35, 2.5)
     });
     CameraState {
-        world_x: 32_300.0 + (time * 0.23).sin() * 22.0 + time * 0.45,
-        world_y: 32_230.0 + (time * 0.19).cos() * 14.0 + time * 0.22,
-        floor: CAMERA_FLOOR,
+        world_x: origin_x + (time * 0.23).sin() * 22.0 + time * 0.45,
+        world_y: origin_y + (time * 0.19).cos() * 14.0 + time * 0.22,
+        floor,
         zoom,
         pixels_per_tile: LOGICAL_TILE_UNITS * zoom,
     }
@@ -1397,6 +1693,26 @@ pub fn is_weather_exposed(x: i32, y: i32) -> bool {
     !is_interior(x, y)
 }
 
+fn geometry_from_units(width: u32, height: u32) -> Option<GeometryClass> {
+    match (width, height) {
+        (32, 32) => Some(GeometryClass::Cell32x32),
+        (32, 64) => Some(GeometryClass::Cell32x64),
+        (64, 32) => Some(GeometryClass::Cell64x32),
+        (64, 64) => Some(GeometryClass::Cell64x64),
+        _ => None,
+    }
+}
+
+fn atlas_stack_class(role: &str, floor: i16, camera_floor: i16) -> StackClass {
+    if floor < camera_floor {
+        StackClass::LowerFloor
+    } else if role == "ground" {
+        StackClass::Ground
+    } else {
+        StackClass::Common
+    }
+}
+
 fn geometry_from_hash(hash: u64) -> GeometryClass {
     match hash % 20 {
         0..=11 => GeometryClass::Cell32x32,
@@ -1404,6 +1720,40 @@ fn geometry_from_hash(hash: u64) -> GeometryClass {
         15..=17 => GeometryClass::Cell64x32,
         _ => GeometryClass::Cell64x64,
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn atlas_physical_sprite_id(
+    config: &BenchConfig,
+    x: i32,
+    y: i32,
+    floor: i16,
+    stack: StackClass,
+    source_sprite_id: u32,
+    appearance_source_id: u32,
+    sprite_domain: u32,
+) -> u32 {
+    let locality_span = match config.scenario {
+        Scenario::Basic => 22,
+        Scenario::Normal => 18,
+        Scenario::Stress => 14,
+    };
+    let locality_x = x.div_euclid(locality_span);
+    let locality_y = y.div_euclid(locality_span);
+    let pages = (sprite_domain / RESOURCE_SPRITES_PER_PAGE).max(128);
+    let locality_hash = mix64(
+        (locality_x as i64 as u64)
+            ^ (locality_y as i64 as u64).rotate_left(17)
+            ^ (floor as i64 as u64).rotate_left(31),
+    );
+    let page = locality_hash as u32 % pages;
+    let cell_hash = mix64(
+        u64::from(source_sprite_id)
+            ^ u64::from(appearance_source_id).rotate_left(23)
+            ^ (stack as u64).rotate_left(41),
+    );
+    let cell = cell_hash as u32 % RESOURCE_SPRITES_PER_PAGE;
+    (page * RESOURCE_SPRITES_PER_PAGE + cell).max(1)
 }
 
 fn localized_sprite_id(
@@ -1436,6 +1786,65 @@ fn animated_sprite_id(
 ) -> u32 {
     let phase = program.phase_at(time_ms, seed) as u32;
     (base + phase) % domain.max(1)
+}
+
+fn stable_text_hash(text: &str) -> u64 {
+    text.as_bytes()
+        .iter()
+        .fold(0xcbf2_9ce4_8422_2325_u64, |hash, byte| {
+            (hash ^ u64::from(*byte)).wrapping_mul(0x100_0000_01b3)
+        })
+}
+
+fn atlas_creature_phase(creature: &AtlasCreature, time_ms: u64, seed: u64) -> u32 {
+    let count = creature.phase_count.max(1);
+    if count == 1 {
+        return 0;
+    }
+    let sequence_len = if creature.loop_type == "pingpong" && count > 1 {
+        count * 2 - 2
+    } else {
+        count
+    };
+    let phase_for = |index: u32| -> u32 {
+        if index < count {
+            index
+        } else {
+            count * 2 - 2 - index
+        }
+    };
+    let duration_for = |phase: u32| -> u64 {
+        creature
+            .phase_durations_ms
+            .get(phase as usize)
+            .copied()
+            .unwrap_or(300)
+            .max(1)
+            .into()
+    };
+    let cycle = (0..sequence_len)
+        .map(|index| duration_for(phase_for(index)))
+        .sum::<u64>()
+        .max(1);
+    let offset = if creature.synchronized {
+        0
+    } else {
+        mix64(seed) % cycle
+    };
+    let mut elapsed = time_ms.saturating_add(offset);
+    if creature.loop_type == "counted" && elapsed >= cycle {
+        return count - 1;
+    }
+    elapsed %= cycle;
+    for index in 0..sequence_len {
+        let phase = phase_for(index);
+        let duration = duration_for(phase);
+        if elapsed < duration {
+            return phase;
+        }
+        elapsed -= duration;
+    }
+    count - 1
 }
 
 fn stable_id(x: i32, y: i32, floor: i16, local: u16) -> u64 {

@@ -1058,6 +1058,12 @@ impl Renderer {
         RunResult {
             schema: "oteryn-world-vfx-prototype-result-v1",
             backend: "custom-wgpu-30.0.0-dx12",
+            workload: if config.atlas_slice_path.is_some() {
+                "real_atlas_fullworld_slice"
+            } else {
+                "procedural_corpus_shape"
+            }
+            .to_owned(),
             scenario: config.scenario.as_str().to_owned(),
             resource_mode: config.resource_mode.as_str().to_owned(),
             presentation_family: config.family().as_str().to_owned(),

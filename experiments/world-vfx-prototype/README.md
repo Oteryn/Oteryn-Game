@@ -17,6 +17,11 @@ Classic uses pixel-stable nearest sampling in this evidence harness; Enhanced/HD
 ## Asset and corpus discipline
 
 The protected Game-owned 15.32 census supplies workload shape and provenance. No proprietary Tibia pixels are committed. A locally authorized asset ZIP may be verified by SHA-256 and exercised without entering Git; result records only evidence metadata.
+
+For the real-world qualification path, `tools/prepare-atlas-slice.py` reads only the pinned Atlas FullWorld publication and creature shards, verifies the protected publication/semantic/pixel/runtime roots plus each fetched semantic range/creature shard digest, and writes a bounded semantic replay under `target/`. The replay carries real tile positions, presentation order, appearance/sprite provenance, decoded 32/64-unit geometry/displacement, real spawn positions and verified creature animation timing. It never commits source pixel bytes.
+
+Real FullWorld static semantics and creature presentation templates are combined with synthetic presentation-only movement, combat VFX and environment transitions. Those synthetic events do not claim server movement/combat/weather authority. Physical GPU page IDs remain candidate cache state derived downstream from semantic source IDs, never gameplay identity.
+
 ## Evidence and metrics
 
 The final Molehill matrix measures BASIC/NORMAL/STRESS × 32/64/128 × atlas/array/hybrid with repeated runs on the named RX 9070 XT. It records CPU p50/p95/p99, reliable GPU timestamp p50/p95/p99 when supported, mean throughput/FPS, host peak working set, visible primitives, order-preserving batches, upload/cache/eviction activity, scroll/zoom/floor-transition frame tails, first-frame and pipeline-prewarm cost, environment/readability counters and explicit surface-failure counters.
@@ -28,11 +33,11 @@ The harness also compares 50,000 animation instances using independent cloned ti
 `analyze-results.py` emits only `ADOPT`, `REJECT`, or `INSUFFICIENT_EVIDENCE` verdicts. Missing or unreliable evidence is never replaced with an estimate.
 
 
-## Final physical qualification
+## Physical qualification lifecycle
 
-Final accepted physical evidence for Issue #480 is under `evidence/mollehill-final-20260909/` and was measured on `280afa3355d4ab7a69ce4c8ebcc6f8f5b3fc1de8`. The set contains 81 primary runs plus 3 independent-family smoke runs with reliable RX 9070 XT GPU timestamps, zero primary cache-overflow fallbacks, zero surface/device failures and equivalent Classic/Enhanced/HD gameplay signatures.
+The earlier procedural matrix remains provenance/baseline evidence only. Terminal Issue #480 qualification is rerun against a digest-pinned real Atlas FullWorld semantic slice so that static world density, presentation ordering, decoded geometry/displacement and creature presentation templates come from the real publication while dynamic movement/VFX/environment events remain explicitly synthetic presentation workload.
 
-Bounded decisions from this gate are: keep atlas vs texture arrays open (`INSUFFICIENT_EVIDENCE`), reject the exact simple hybrid tested here (`REJECT`), and adopt bounded visible-working-set residency with eviction as the streaming/cache direction (`ADOPT`). KTX2/DDS, final filtering/mips, particle backend, hard VFX/light limits and production RAM/VRAM budgets remain evidence-gated.
+The final evidence directory must bind one exact code head, the generated semantic-slice SHA/root manifest, 81 primary runs and 3 independent-family smoke runs. `ADOPT`/`REJECT` decisions are valid only after that real-world matrix passes reliability, GPU timestamp, cache-churn, family-equivalence and exact-head checks.
 
 ## Validation
 
@@ -41,7 +46,9 @@ cargo test --locked
 cargo fmt --all --check
 cargo clippy --locked --all-targets -- -D warnings
 cargo build --locked --release
-.\run-matrix.ps1 -Repetitions 3 -Warmup 120 -Frames 600
+.\run-matrix.ps1 -Repetitions 3 -Warmup 120 -Frames 600 `
+  -EvidenceDir evidence/molehill-real-atlas-20260909 `
+  -AtlasOrigin http://192.168.1.2:8097
 ```
 
 `IMPLEMENTATION_AUTHORITY: NON_PRODUCTION_EXPERIMENT_ONLY`

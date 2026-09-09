@@ -137,6 +137,11 @@ def main() -> None:
     expected = {(s, d, m) for s in SCENARIOS for d in DENSITIES for m in MODES}
     matrix_complete = len(rows) == 81 and set(groups) == expected and all(len(groups[key]) == 3 for key in expected)
     fixed_family = {row.get("presentation_family") for row in rows} == {"enhanced"}
+    workloads = {str(row.get("workload")) for row in rows + family_rows}
+    workload_consistent = len(workloads) == 1
+    real_atlas_workload = workloads == {"real_atlas_fullworld_slice"}
+    commit_shas = {str(row.get("commit_sha")) for row in rows + family_rows if row.get("commit_sha")}
+    exact_head_consistent = len(commit_shas) == 1
     gpu_reliable = all(row.get("gpu_timestamp_reliable") is True and isinstance(row.get("gpu_frame_ms"), dict) for row in rows)
     reliability = all(reliability_ok(row) for row in rows + family_rows)
     family_signatures = {str(row.get("gameplay_signature_xor")) for row in family_rows}
@@ -144,6 +149,10 @@ def main() -> None:
     families_seen = {row.get("presentation_family") for row in family_rows}
     family_axis_complete = families_seen == {"classic", "enhanced", "hd"}
     churn = any((nested(row, "cache", "evictions") or 0) > 0 and (nested(row, "cache", "uploads") or 0) > 0 for row in rows)
+    churn_cells = sum(
+        1 for cell_rows in groups.values()
+        if any((nested(row, "cache", "evictions") or 0) > 0 and (nested(row, "cache", "uploads") or 0) > 0 for row in cell_rows)
+    )
     readability = all((nested(row, "max_semantics", "critical_vfx") or 0) > 0 for row in rows)
     multi_page = all((nested(row, "active_resource_pages", "max") or 0) > 1 for row in rows)
     cells = [cell_summary(key, groups[key]) for key in sorted(groups)]
@@ -155,9 +164,9 @@ def main() -> None:
             "reason": "decoded GPU page layout was measured; container IO/decode/transcode challengers were not",
         },
         "streaming_cache_model": {
-            "verdict": "ADOPT" if churn and reliability and multi_page else "INSUFFICIENT_EVIDENCE",
-            "choice": "bounded_visible_working_set_with_eviction" if churn and reliability and multi_page else None,
-            "reason": "camera-driven multi-page upload/eviction churn completed without renderer failure" if churn and reliability and multi_page else "required churn/reliability evidence incomplete",
+            "verdict": "ADOPT" if real_atlas_workload and churn and reliability and multi_page else "INSUFFICIENT_EVIDENCE",
+            "choice": "bounded_visible_working_set_with_eviction" if real_atlas_workload and churn and reliability and multi_page else None,
+            "reason": "real Atlas FullWorld viewport semantics drove multi-page upload/eviction churn without renderer failure" if real_atlas_workload and churn and reliability and multi_page else "real-world churn/reliability evidence incomplete",
         },
         "particle_implementation_direction": {
             "verdict": "INSUFFICIENT_EVIDENCE",
@@ -185,16 +194,22 @@ def main() -> None:
         },
     }
     report = {
-        "report": "oteryn-world-vfx-prototype-physical-summary-v2",
+        "report": "oteryn-world-vfx-prototype-physical-summary-v3",
         "primary_runs": len(rows),
         "family_smoke_runs": len(family_rows),
         "matrix_complete": matrix_complete,
         "primary_family_fixed": fixed_family,
+        "workloads": sorted(workloads),
+        "workload_consistent": workload_consistent,
+        "real_atlas_workload": real_atlas_workload,
+        "exact_head_consistent": exact_head_consistent,
+        "commit_shas": sorted(commit_shas),
         "gpu_timestamp_reliable": gpu_reliable,
         "reliability_pass": reliability,
         "readability_pass": readability,
         "multi_page_pass": multi_page,
         "cache_churn_exercised": churn,
+        "cache_churn_cells": churn_cells,
         "family_axis_complete": family_axis_complete,
         "family_gameplay_semantics_equal": family_semantics_equal,
         "family_signatures": sorted(family_signatures),
@@ -206,7 +221,8 @@ def main() -> None:
         "# Oteryn World + VFX Prototype — physical summary",
         "",
         f"Primary matrix: **{len(rows)} runs**, complete={matrix_complete}, fixed Enhanced={fixed_family}.",
-        f"GPU timestamps reliable={gpu_reliable}; reliability pass={reliability}; cache churn={churn}.",
+        f"Workload={','.join(sorted(workloads))}; real Atlas={real_atlas_workload}; exact-head consistent={exact_head_consistent}.",
+        f"GPU timestamps reliable={gpu_reliable}; reliability pass={reliability}; cache churn={churn} across {churn_cells}/27 cells.",
         f"Classic/Enhanced/HD independent family smoke: complete={family_axis_complete}, gameplay signatures equal={family_semantics_equal}.",
         "",
         "| Scenario | Density | Mode | CPU p95 ms | GPU p95 ms | FPS | RAM MiB | Batches mean | Evictions | Overflow |",

@@ -1,8 +1,10 @@
+mod atlas_slice;
 mod config;
 mod metrics;
 mod model;
 mod renderer;
 
+use crate::atlas_slice::AtlasSlice;
 use crate::config::{AssetProof, BenchConfig, CorpusCensus, hash_asset_zip, require_asset_match};
 use crate::model::{AnimationEvaluationEvidence, SceneModel};
 use crate::renderer::Renderer;
@@ -43,8 +45,18 @@ fn run() -> Result<(), String> {
     if let Some(proof) = &asset {
         require_asset_match(proof)?;
     }
+    let atlas_slice = config
+        .atlas_slice_path
+        .as_deref()
+        .map(AtlasSlice::load)
+        .transpose()?;
+    if let Some(slice) = &atlas_slice {
+        let evidence = serde_json::to_string(&slice.evidence())
+            .map_err(|error| format!("serialize Atlas slice evidence: {error}"))?;
+        eprintln!("atlas-slice-evidence={evidence}");
+    }
 
-    let scene = SceneModel::new(census.clone());
+    let scene = SceneModel::new(census.clone(), atlas_slice);
     let event_loop = EventLoop::new().map_err(|error| format!("event loop: {error}"))?;
     let mut application = Application::new(config, census, scene, asset);
     event_loop

@@ -154,6 +154,7 @@ pub struct BenchConfig {
     pub seed: u64,
     pub asset_zip: Option<PathBuf>,
     pub census_path: PathBuf,
+    pub atlas_slice_path: Option<PathBuf>,
     pub preview: bool,
     pub fixed_zoom: Option<f32>,
 }
@@ -173,6 +174,7 @@ impl Default for BenchConfig {
             asset_zip: None,
             census_path: Path::new(env!("CARGO_MANIFEST_DIR"))
                 .join("../../docs/contracts/OTERYN_ATLAS_15_32_ANIMATION_CENSUS_V1.json"),
+            atlas_slice_path: None,
             preview: false,
             fixed_zoom: None,
         }
@@ -214,6 +216,9 @@ impl BenchConfig {
                     config.asset_zip = Some(PathBuf::from(next_value(&mut args, &flag)?))
                 }
                 "--census" => config.census_path = PathBuf::from(next_value(&mut args, &flag)?),
+                "--atlas-slice" => {
+                    config.atlas_slice_path = Some(PathBuf::from(next_value(&mut args, &flag)?));
+                }
                 "--zoom" => {
                     let raw = next_value(&mut args, &flag)?;
                     let zoom = raw
