@@ -186,6 +186,7 @@ impl Renderer {
             compatible_surface: Some(&surface),
             power_preference: wgpu::PowerPreference::HighPerformance,
             force_fallback_adapter: false,
+            apply_limit_buckets: false,
         }))
         .map_err(|error| format!("adapter request: {error}"))?;
         let adapter_features = adapter.features();
@@ -698,7 +699,9 @@ impl Renderer {
             .map_err(|error| format!("timestamp callback channel: {error}"))?;
         mapped.map_err(|error| format!("timestamp map: {error}"))?;
         {
-            let bytes = slice.get_mapped_range();
+            let bytes = slice
+                .get_mapped_range()
+                .map_err(|error| format!("timestamp mapped range: {error}"))?;
             for frame in config.warmup_frames..config.total_frames() {
                 let offset = frame as usize * 16;
                 let Some(begin_bytes) = bytes.get(offset..offset + 8) else {
