@@ -322,6 +322,19 @@ def _decode_mapping_scalar(raw: str) -> str:
     return raw
 
 
+def _top_level_event_keys(workflow: str) -> tuple[str, ...]:
+    match = re.search(r"(?ms)^on:\n(?P<body>.*?)(?=^[A-Za-z_][A-Za-z0-9_-]*:|\Z)", workflow)
+    assert match is not None, "missing canonical on block"
+    keys: list[str] = []
+    for line in match.group("body").splitlines():
+        if len(line) - len(line.lstrip(" ")) != 2:
+            continue
+        entry = _mapping_entry(line)
+        if entry is not None:
+            keys.append(entry[0])
+    return tuple(keys)
+
+
 def _event_block(workflow: str, event: str) -> str:
     match = re.search(
         rf"(?ms)^  {re.escape(event)}:(.*?)(?=^  [a-z_]+:|^permissions:)",
@@ -400,6 +413,17 @@ def _assert_active_run_command(workflow: str, command: str) -> None:
     )
 
 
+def _assert_exact_bash_step(workflow: str, step_name: str, commands: tuple[str, ...]) -> None:
+    lines = _step_block(workflow, step_name).rstrip().splitlines()
+    expected = [
+        "        shell: bash",
+        "        run: |",
+        "          set -euo pipefail",
+        *(f"          {command}" for command in commands),
+    ]
+    assert lines == expected, f"protected shell step changed or became bypassable: {step_name!r}"
+
+
 def _assert_read_only_permissions(workflow: str) -> None:
     top = re.search(r"(?ms)^permissions:\n(?P<body>(?:^  [^\n]+\n)+)", workflow)
     assert top is not None, "missing top-level permissions"
@@ -426,6 +450,8 @@ def _assert_contract(semantic: str, static: str, *, verify_blobs: bool = True) -
     _assert_safe_yaml_structure(semantic)
     _assert_safe_yaml_structure(static)
 
+    assert _top_level_event_keys(semantic) == ("pull_request", "push")
+    assert _top_level_event_keys(static) == ("pull_request", "workflow_dispatch")
     assert _event_keys(semantic, "pull_request") == ("paths",)
     assert _event_keys(semantic, "push") == ("branches", "paths")
     assert _event_keys(static, "pull_request") == ("branches", "paths")
@@ -433,11 +459,18 @@ def _assert_contract(semantic: str, static: str, *, verify_blobs: bool = True) -
     assert _paths(semantic, "push") == SEMANTIC_PUSH_PATHS
     assert _paths(static, "pull_request") == STATIC_PR_PATHS
     assert "branches: [main]" in _event_block(semantic, "push")
-    assert not re.search(r"(?m)^  push:", static)
 
     _assert_active_run_command(semantic, REGRESSION_COMMAND)
     _assert_active_run_command(static, REGRESSION_COMMAND)
     _assert_active_run_command(semantic, "python tools/game-atlas-semantic-search/self_test.py")
+    _assert_exact_bash_step(
+        static,
+        "Compile and run producer self-test",
+        (
+            "python -m py_compile tools/game-atlas-creatures/export.py tools/game-atlas-creatures/self_test.py",
+            "python tools/game-atlas-creatures/self_test.py",
+        ),
+    )
     _assert_read_only_permissions(semantic)
     _assert_read_only_permissions(static)
     _assert_pinned_actions_and_no_bypass(semantic)
@@ -451,11 +484,16 @@ def _assert_contract(semantic: str, static: str, *, verify_blobs: bool = True) -
         _python_heredoc(static, "Verify exact role and creature census"),
         STATIC_ORACLE_CODE,
     )
-    static_double_export = _step_block(static, "Build exact pinned product twice")
-    assert re.search(
-        r"(?m)^          cmp /tmp/creatures-a\.json /tmp/creatures-b\.json\s*$",
-        static_double_export,
-    ), "static deterministic double-export comparison must remain executable"
+    _assert_exact_bash_step(
+        static,
+        "Build exact pinned product twice",
+        (
+            'ROOT="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global"',
+            'python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-a.json',
+            'python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-b.json',
+            "cmp /tmp/creatures-a.json /tmp/creatures-b.json",
+        ),
+    )
 
     if verify_blobs:
         assert _git_blob_sha(semantic) == EXPECTED_SEMANTIC_WORKFLOW_BLOB
@@ -490,6 +528,8 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         _assert_active_run_command(self.static, REGRESSION_COMMAND)
 
     def test_event_models_original_paths_and_exclusions(self) -> None:
+        self.assertEqual(_top_level_event_keys(self.semantic), ("pull_request", "push"))
+        self.assertEqual(_top_level_event_keys(self.static), ("pull_request", "workflow_dispatch"))
         self.assertEqual(_paths(self.semantic, "pull_request"), SEMANTIC_PR_PATHS)
         self.assertEqual(_paths(self.semantic, "push"), SEMANTIC_PUSH_PATHS)
         self.assertEqual(_paths(self.static, "pull_request"), STATIC_PR_PATHS)
@@ -497,7 +537,6 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         self.assertEqual(_event_keys(self.semantic, "push"), ("branches", "paths"))
         self.assertEqual(_event_keys(self.static, "pull_request"), ("branches", "paths"))
         self.assertIn("branches: [main]", _event_block(self.semantic, "push"))
-        self.assertNotRegex(self.static, r"(?m)^  push:")
 
     def test_review_bypasses_fail_closed_without_blob_binding(self) -> None:
         attacks = [
@@ -535,6 +574,28 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                     1,
                 ),
                 self.static,
+            ),
+            (self.semantic.replace("  push:\n", "  workflow_dispatch:\n  push:\n", 1), self.static),
+            (
+                self.semantic,
+                self.static.replace(
+                    "  workflow_dispatch:\n",
+                    "  workflow_dispatch:\n  schedule:\n    - cron: '0 0 * * *'\n",
+                    1,
+                ),
+            ),
+            (self.semantic, self.static.replace("  workflow_dispatch:\n", "", 1)),
+            (
+                self.semantic,
+                self.static.replace("          python tools/game-atlas-creatures/self_test.py\n", "", 1),
+            ),
+            (
+                self.semantic,
+                self.static.replace(
+                    "          cmp /tmp/creatures-a.json /tmp/creatures-b.json\n",
+                    "          exit 0\n          cmp /tmp/creatures-a.json /tmp/creatures-b.json\n",
+                    1,
+                ),
             ),
         ]
         for semantic, static in attacks:
@@ -670,6 +731,20 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                     1,
                 ),
                 self.static,
+            ),
+            (self.semantic.replace("  push:\n", "  workflow_dispatch:\n  push:\n", 1), self.static),
+            (self.semantic, self.static.replace("  workflow_dispatch:\n", "", 1)),
+            (
+                self.semantic,
+                self.static.replace("          python tools/game-atlas-creatures/self_test.py\n", "", 1),
+            ),
+            (
+                self.semantic,
+                self.static.replace(
+                    "          cmp /tmp/creatures-a.json /tmp/creatures-b.json\n",
+                    "          exit 0\n          cmp /tmp/creatures-a.json /tmp/creatures-b.json\n",
+                    1,
+                ),
             ),
         ))
 
