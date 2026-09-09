@@ -85,6 +85,7 @@ The observed gap becomes larger as sprite count rises, which is directly relevan
 This is not a complete game benchmark. It deliberately does not yet measure:
 
 - real Oteryn floor/stack ordering and occlusion; `z` was neutralized so both candidates paid the same base sprite-throughput workload;
+- camera scrolling/zoom, visibility-set churn or tile-page replacement; the measured visible set is static and the custom candidate uploads static instance records once;
 - production UI, text/nameplates, lighting, particles, missiles or post-processing;
 - real content streaming, texture eviction or large multi-sheet working sets;
 - GPU timestamp-query frame attribution or trustworthy VRAM usage;
