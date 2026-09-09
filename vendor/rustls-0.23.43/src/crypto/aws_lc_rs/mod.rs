@@ -128,8 +128,12 @@ pub fn default_provider_with_resource_owner(
     if provider.cipher_suites.capacity() != DEFAULT_CIPHER_SUITES.len()
         || provider.kx_groups.capacity() != DEFAULT_KX_GROUPS.len()
         || provider.cipher_suites.as_slice() != DEFAULT_CIPHER_SUITES
-        || provider.kx_groups.iter().map(|group| group.name()).collect::<Vec<_>>()
-            != DEFAULT_KX_GROUPS.iter().map(|group| group.name()).collect::<Vec<_>>()
+        || provider.kx_groups.len() != DEFAULT_KX_GROUPS.len()
+        || !provider
+            .kx_groups
+            .iter()
+            .zip(DEFAULT_KX_GROUPS.iter())
+            .all(|(actual, expected)| actual.name() == expected.name())
     {
         return Err(Error::FailedToGetRandomBytes);
     }
@@ -233,17 +237,11 @@ mod owner_provider_tests {
         assert_eq!(providers[0].cipher_suites.capacity(), DEFAULT_CIPHER_SUITES.len());
         assert_eq!(providers[0].kx_groups.capacity(), DEFAULT_KX_GROUPS.len());
         assert_eq!(providers[0].cipher_suites.as_slice(), DEFAULT_CIPHER_SUITES);
-        assert_eq!(
-            providers[0]
-                .kx_groups
-                .iter()
-                .map(|group| group.name())
-                .collect::<Vec<_>>(),
-            DEFAULT_KX_GROUPS
-                .iter()
-                .map(|group| group.name())
-                .collect::<Vec<_>>()
-        );
+        assert!(providers[0]
+            .kx_groups
+            .iter()
+            .zip(DEFAULT_KX_GROUPS.iter())
+            .all(|(actual, expected)| actual.name() == expected.name()));
     }
 }
 

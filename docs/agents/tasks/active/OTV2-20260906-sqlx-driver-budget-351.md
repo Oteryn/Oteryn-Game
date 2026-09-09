@@ -646,3 +646,33 @@ complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: full #451 HRR/thread-churn/cancellation matrix; decoded/ClientHello/session/cache/send/transcript/error composition; funded TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
 next_action: reproduce the remaining #451 matrix on the provider-shared final shape, then continue every already-protected TLS custody cell
 ```
+
+## Window22 provider proof repair and PQ profile boundary
+
+Independent exact-head review found that provider validation allocated two
+temporary vectors outside #453's protected provider-configuration formula and
+that the required four-thread racing first-use test had not executed.  The
+validation is now allocation-free (`len`/capacity checks plus iterator `zip`),
+and the executable SQLx AWS-LC test races four first calls in a fresh process,
+asserts one pointer-identical provider, exactly one configuration shared debit,
+one process debit, and the distinct 1,360-byte debit for each participating
+thread.  The main test thread then registers its own 1,360-byte residency before
+the existing per-connection KX bounds run on separate ledgers.
+
+Exact `cargo tree -e features` evidence for the qualified SQLx AWS-LC profile
+shows rustls `aws-lc-rs`, `aws_lc_rs`, `std`, and `tls12`, but no
+`prefer-post-quantum`.  Consequently the profile's ordinary provider is
+hybrid-last, and equality against that provider cannot establish the protected
+PQ-first order.  This task does not have authority to change the manifest or
+manually reorder the groups.
+
+```yaml
+status: blocked_pending_shared_lease
+provider_configuration_owner: NOT_PROVEN
+provider_validation_allocation_free: PROVEN
+provider_racing_first_use: PROVEN
+pq_first_profile: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+shared_lease_required: vendor/sqlx-core-0.9.0/Cargo.toml :: _tls-rustls-aws-lc-rs / rustls prefer-post-quantum feature :: protected #451/#453 require the qualified ordinary AWS-LC default provider to be PQ-first, while the exact SQLx AWS profile disables rustls defaults and currently does not enable prefer-post-quantum
+next_action: obtain the exact SQLx AWS profile feature amendment, assert the explicit four-name PQ-first order under that profile, then resume the remaining #451 and WP3 matrices
+```

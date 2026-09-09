@@ -339,3 +339,17 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Remove process retention of the caller's owner-wrapper Arc and precharge the remaining per-connection owner Arc allocation.
 - [x] Preserve ordinary provider construction and the protected AWS-LC KX bounds/order.
 - [ ] Reproduce actual HRR, provider first-use/thread-churn, cancellation, and the remaining decoded/config/session/cache/send/transcript/error matrix before aggregate WP3 GREEN.
+
+## Window22 provider proof repair and PQ profile stop
+
+- [x] Remove avoidable provider-validation `Vec` allocations without enlarging
+  #453's protected configuration reservation.
+- [x] Move the required racing-first-use proof into the executable SQLx AWS-LC
+  harness and distinguish one process debit, per-thread 1,360-byte debits, and
+  exactly one provider-configuration debit.
+- [x] Prove from the exact SQLx AWS feature closure that
+  `rustls/prefer-post-quantum` is absent.
+- [x] Correct `provider_configuration_owner` to `NOT_PROVEN`; source-equivalence
+  under a hybrid-last profile is not the protected PQ-first proof.
+- [ ] Stop before Cargo mutation or manual group reordering at:
+  `SHARED_LEASE_REQUIRED = vendor/sqlx-core-0.9.0/Cargo.toml :: _tls-rustls-aws-lc-rs / rustls prefer-post-quantum feature :: protected #451/#453 require the qualified ordinary AWS-LC default provider to be PQ-first, while the exact SQLx AWS profile disables rustls defaults and currently does not enable prefer-post-quantum`.

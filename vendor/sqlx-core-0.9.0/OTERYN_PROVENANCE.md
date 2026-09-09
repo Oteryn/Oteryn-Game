@@ -925,3 +925,31 @@ boundary above.
 Protected #453 closes the allocation-owning provider boundary. The owner-aware rustls constructor establishes #451 residency before configuration work, derives the exact Rust 1.94 `DEFAULT_CIPHER_SUITES` Vec, `DEFAULT_KX_GROUPS` Vec, and `ArcInner<CryptoProvider>` requested layouts with checked arithmetic, and debits the same shared root before either Vec or Arc allocation. It retains one canonical process provider and returns allocation-free Arc clones after per-thread residency. SQLx no longer constructs an uncharged provider Arc per connection.
 
 The #451 process-registration mutex now retains only a bool because successful shared-root process debits have no release API; it no longer extends a caller wrapper Arc to process lifetime. SQLx precharges the remaining per-connection owner-wrapper Arc allocation and keeps its reservation after connection state so backing dies before release. Ordinary provider/TLS behavior remains unchanged. Aggregate WP3 and aggregate KX remain open pending the full final-shape matrices and real TLS/PostgreSQL qualification.
+
+## Window22 provider proof repair and PQ feature closure
+
+Exact-head review found two proof defects.  First, the owner-aware provider's
+source/order validation collected both KX-name iterators into temporary vectors
+after the protected shared debit.  It now validates order allocation-free with
+the already-required length/capacity checks and iterator `zip().all()`, without
+changing the #453 formula or ordinary provider behavior.  Second, rustls's
+in-crate four-thread test had not executed because the published package lacks
+repository-only fixtures.  The executable SQLx AWS-LC test now performs four
+racing first calls in a fresh isolated test process before any provider is
+cached, proves all returned Arcs pointer-identical, and observes exactly one
+process debit, one provider-configuration debit, and one 1,360-byte current-
+thread debit for each racer.  The main test thread's later 1,360-byte debit is
+recorded separately before KX qualification.
+
+The exact patched/locked SQLx feature tree resolves rustls 0.23.43, Tokio
+1.53.1, aws-lc-rs 1.18.0, and aws-lc-sys 0.44.0, but enables only rustls
+`aws-lc-rs`, `aws_lc_rs`, `std`, and `tls12`.  It does not enable
+`prefer-post-quantum`: `sqlx-core` declares rustls with defaults disabled, and
+`_tls-rustls-aws-lc-rs` does not add that feature.  Under this exact profile the
+ordinary `DEFAULT_KX_GROUPS` order is hybrid-last, so a source-equivalence check
+cannot prove the protected `X25519MLKEM768 -> X25519 -> P-256 -> P-384` order.
+No Cargo feature or provider ordering was changed under #453.
+
+`provider_configuration_owner = NOT_PROVEN`
+
+`SHARED_LEASE_REQUIRED = vendor/sqlx-core-0.9.0/Cargo.toml :: _tls-rustls-aws-lc-rs / rustls prefer-post-quantum feature :: protected #451/#453 require the qualified ordinary AWS-LC default provider to be PQ-first, while the exact SQLx AWS profile disables rustls defaults and currently does not enable prefer-post-quantum`

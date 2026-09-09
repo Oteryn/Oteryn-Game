@@ -1,11 +1,12 @@
 use crate::net::resource_budget::{BudgetError, ResourceBudget, ResourceReservation};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 #[derive(Debug)]
 struct Ledger {
     limit: usize,
     used: AtomicUsize,
+    provider_shared_debits: Mutex<Vec<usize>>,
 }
 impl ResourceBudget for Ledger {
     fn try_reserve(&self, bytes: usize) -> Result<(), BudgetError> {
@@ -21,13 +22,16 @@ impl ResourceBudget for Ledger {
         assert!(prior >= bytes, "reservation released twice");
     }
     fn try_reserve_provider_shared(&self, bytes: usize) -> Result<(), BudgetError> {
-        self.try_reserve(bytes)
+        self.try_reserve(bytes)?;
+        self.provider_shared_debits.lock().unwrap().push(bytes);
+        Ok(())
     }
 }
 fn ledger(limit: usize) -> Arc<Ledger> {
     Arc::new(Ledger {
         limit,
         used: AtomicUsize::new(0),
+        provider_shared_debits: Mutex::new(Vec::new()),
     })
 }
 
@@ -66,13 +70,27 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
     let process = ledger(1_000_000);
     let process_owner: Arc<dyn rustls::DeframerBufferOwner> =
         Arc::new(DeframerBudgetOwner(process.clone()));
-    let provider = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(
-        process_owner.clone(),
-    )
-    .unwrap();
-    let repeated = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(process_owner)
-        .unwrap();
-    assert!(Arc::ptr_eq(&provider, &repeated));
+    // This test is run by its exact name in a fresh test process. Race the
+    // first provider use before any provider can be cached in that process.
+    let threads = (0..4)
+        .map(|_| {
+            let owner = process_owner.clone();
+            std::thread::spawn(move || {
+                rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner).unwrap()
+            })
+        })
+        .collect::<Vec<_>>();
+    let providers = threads
+        .into_iter()
+        .map(|thread| thread.join().unwrap())
+        .collect::<Vec<_>>();
+    let provider = &providers[0];
+    assert!(providers
+        .iter()
+        .all(|candidate| Arc::ptr_eq(provider, candidate)));
+    let main_thread_provider =
+        rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(process_owner).unwrap();
+    assert!(Arc::ptr_eq(provider, &main_thread_provider));
     assert_eq!(provider.cipher_suites.capacity(), provider.cipher_suites.len());
     assert_eq!(provider.kx_groups.capacity(), provider.kx_groups.len());
     let ordinary = rustls::crypto::aws_lc_rs::default_provider();
@@ -88,8 +106,29 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
             .map(|group| group.name())
             .collect::<Vec<_>>()
     );
-    let shared = process.used.load(Ordering::Acquire);
-    assert!(shared >= 140_208 + 2 * 4096 + 1360);
+    let (arc_inner, _) = core::alloc::Layout::new::<[AtomicUsize; 2]>()
+        .extend(core::alloc::Layout::new::<rustls::crypto::CryptoProvider>())
+        .unwrap();
+    let provider_config = provider.cipher_suites.len()
+        * core::mem::size_of::<rustls::SupportedCipherSuite>()
+        + provider.kx_groups.len()
+            * core::mem::size_of::<&'static dyn rustls::crypto::SupportedKxGroup>()
+        + arc_inner.pad_to_align().size();
+    let debits = process.provider_shared_debits.lock().unwrap();
+    assert_eq!(debits.iter().filter(|debit| **debit == 1360).count(), 5);
+    assert_eq!(
+        debits
+            .iter()
+            .filter(|debit| **debit == provider_config)
+            .count(),
+        1
+    );
+    assert_eq!(
+        debits.len(),
+        7,
+        "one process, five thread, one config debit"
+    );
+    drop(debits);
 
     let groups: [(&dyn SupportedKxGroup, usize); 5] = [
         (rustls::crypto::aws_lc_rs::kx_group::X25519, 554),
