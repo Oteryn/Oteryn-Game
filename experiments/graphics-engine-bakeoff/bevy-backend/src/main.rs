@@ -123,7 +123,7 @@ fn setup(
                     custom_size: Some(Vec2::splat(quad.logical_size)),
                     ..default()
                 },
-                Transform::from_xyz(quad.x, quad.y, quad.z),
+                Transform::from_xyz(quad.x, quad.y, 0.0),
             )
         })
         .collect();
@@ -145,7 +145,7 @@ fn setup(
                     custom_size: Some(Vec2::splat(quad.logical_size)),
                     ..default()
                 },
-                Transform::from_xyz(quad.x, quad.y, quad.z),
+                Transform::from_xyz(quad.x, quad.y, 0.0),
                 AnimatedSprite { phase: quad.phase },
             )
         })
