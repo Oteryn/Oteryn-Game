@@ -6,7 +6,9 @@ param(
     [string]$ScenarioFilter = "",
     [string]$ModeFilter = "",
     [string]$DensityFilter = "",
-    [string]$Family = "enhanced"
+    [string]$Family = "enhanced",
+    [string]$AtlasOrigin = "",
+    [string]$AtlasSlice = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,6 +25,18 @@ if ($LASTEXITCODE -ne 0) { throw "release build failed" }
 $exe = Join-Path $PSScriptRoot "target/release/oteryn-world-vfx-prototype.exe"
 $evidence = Join-Path $PSScriptRoot $EvidenceDir
 New-Item -ItemType Directory -Force -Path $evidence | Out-Null
+$resolvedAtlasSlice = ""
+$atlasEvidence = $null
+if ($AtlasOrigin) {
+    $resolvedAtlasSlice = Join-Path $PSScriptRoot "target/atlas-replay/slice.json"
+    $atlasManifest = Join-Path $evidence "atlas-slice-manifest.json"
+    python (Join-Path $PSScriptRoot "tools/prepare-atlas-slice.py") `
+        --origin $AtlasOrigin --output $resolvedAtlasSlice --manifest-output $atlasManifest
+    if ($LASTEXITCODE -ne 0) { throw "Atlas slice preparation failed" }
+    $atlasEvidence = Get-Content $atlasManifest -Raw | ConvertFrom-Json
+} elseif ($AtlasSlice) {
+    $resolvedAtlasSlice = (Resolve-Path $AtlasSlice).Path
+}
 $raw = Join-Path $evidence "raw.jsonl"
 $familyRaw = Join-Path $evidence "family-smoke.jsonl"
 $stderrLog = Join-Path $evidence "stderr.log"
@@ -55,6 +69,9 @@ function Invoke-PrototypeRun {
         '--warmup', $WarmupFrames,
         '--frames', $MeasuredFrames
     )
+    if ($resolvedAtlasSlice) {
+        $arguments += @('--atlas-slice', $resolvedAtlasSlice)
+    }
     $process = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru `
         -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
     [int64]$peakWorkingSet = 0
@@ -82,6 +99,9 @@ function Invoke-PrototypeRun {
     $result | Add-Member -NotePropertyName peak_working_set_bytes -NotePropertyValue $peakWorkingSet
     $result | Add-Member -NotePropertyName commit_sha -NotePropertyValue $commit
     $result | Add-Member -NotePropertyName host_machine -NotePropertyValue 'Molehill-PC'
+    if ($atlasEvidence) {
+        $result | Add-Member -NotePropertyName atlas_slice_evidence -NotePropertyValue $atlasEvidence
+    }
     ($result | ConvertTo-Json -Depth 20 -Compress) | Add-Content $Destination
     if (Test-Path $stderrPath) { Get-Content $stderrPath | Add-Content $stderrLog }
     Remove-Item $stdoutPath,$stderrPath -ErrorAction SilentlyContinue

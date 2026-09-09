@@ -228,6 +228,7 @@ pub struct ReliabilityEvidence {
 pub struct RunResult {
     pub schema: &'static str,
     pub backend: &'static str,
+    pub workload: String,
     pub scenario: String,
     pub resource_mode: String,
     pub presentation_family: String,
