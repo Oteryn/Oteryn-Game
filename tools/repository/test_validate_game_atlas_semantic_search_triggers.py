@@ -250,9 +250,12 @@ def _assert_safe_yaml_structure(workflow: str) -> None:
         assert not (indent == 6 and structural.strip() == "-"), (
             f"bare workflow step sequence markers are forbidden: {line!r}"
         )
+        assert not (indent == 6 and re.match(r"-\s+\?", masked.lstrip())), (
+            f"sequence-prefixed explicit mapping keys are forbidden: {line!r}"
+        )
         if indent == 6 and masked.lstrip().startswith("- "):
             step_entry = _mapping_entry(line)
-            assert step_entry is not None and step_entry[0] == "name", (
+            assert step_entry is None or step_entry[0] == "name", (
                 f"block-style workflow step entries must start with name: {line!r}"
             )
 
