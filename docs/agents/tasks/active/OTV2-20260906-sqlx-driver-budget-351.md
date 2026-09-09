@@ -1284,3 +1284,19 @@ charged_certificate_outer_transfer: PROVEN_FOCUSED
 complete_tls_accounting: NOT_PROVEN
 next_action: complete equivalent TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
+
+## Window44 owner-aware OCSP source borrowing
+
+Owner-aware TLS 1.3 certificate-entry decoding now retains the stapled OCSP payload as a
+borrow from the decoded message instead of eagerly allocating an ordinary intermediate
+`Vec`. The explicit charged certificate destination conversion remains the sole OCSP copy,
+and performs its precharge while the message source is alive. The owner-free path retains
+upstream eager ownership. Compressed-certificate second decode and TLS 1.2 certificate/OCSP
+custody remain open, so complete TLS accounting is not proven.
+
+```yaml
+status: active
+owner_aware_ocsp_source_copy: ELIMINATED_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+next_action: complete TLS1.2 and compressed-certificate custody, then transcript/hash contexts
+```

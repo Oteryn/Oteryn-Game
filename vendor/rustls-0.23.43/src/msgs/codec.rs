@@ -435,6 +435,11 @@ impl<'a> Reader<'a> {
         Self { buffer: bytes, cursor: 0, decoded_owner: Some(owner) }
     }
 
+    #[cfg(feature = "std")]
+    pub(crate) fn has_decoded_owner(&self) -> bool {
+        self.decoded_owner.is_some()
+    }
+
     /// Attempts to create a new Reader on a sub section of this
     /// readers bytes by taking a slice of the provided `length`
     /// will return None if there is not enough bytes

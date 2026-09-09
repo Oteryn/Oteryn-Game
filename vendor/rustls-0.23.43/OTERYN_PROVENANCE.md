@@ -286,3 +286,12 @@ outer allocation through `ServerCertDetails` and `CommonState` without reallocat
 debiting again. Focused pointer/capacity and ledger assertions cover successor and peer-state
 transfer plus backing-before-custody final release. TLS 1.2, compressed-certificate and
 complete TLS accounting remain open.
+
+## Owner-aware OCSP source allocation
+
+`CertificateEntry::read` no longer eagerly owns a borrowed OCSP payload when its `Reader`
+has a decoded owner. This eliminates the redundant uncharged intermediate vector; the
+existing owner-aware certificate destination conversion reserves its final OCSP backing
+before copying while the decoded message source remains live. Owner-free decoding preserves
+the upstream eager `into_owned` behavior. Compressed second decode and TLS 1.2 certificate
+custody remain unproven.

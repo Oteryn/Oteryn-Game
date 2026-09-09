@@ -1812,9 +1812,24 @@ impl<'a> Codec<'a> for CertificateEntry<'a> {
     }
 
     fn read(r: &mut Reader<'a>) -> Result<Self, InvalidMessage> {
+        let cert = CertificateDer::read(r)?;
+        let extensions = CertificateExtensions::read(r)?;
+        #[cfg(feature = "std")]
+        let extensions = if r.has_decoded_owner() {
+            // Keep stapled OCSP borrowed from the decoded message.  The
+            // owner-aware certificate destination conversion below reserves
+            // its final backing while this source remains alive.  Eagerly
+            // owning it here would create an uncharged intermediate Vec.
+            extensions
+        } else {
+            extensions.into_owned()
+        };
+        #[cfg(not(feature = "std"))]
+        let extensions = extensions.into_owned();
+
         Ok(Self {
-            cert: CertificateDer::read(r)?,
-            extensions: CertificateExtensions::read(r)?.into_owned(),
+            cert,
+            extensions,
         })
     }
 }

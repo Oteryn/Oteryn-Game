@@ -592,3 +592,9 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Keep ordinary borrowed/owner-free `CertificateChain::into_owned` semantics unchanged.
 - [x] Prove pointer/capacity identity, no second debit, and backing-before-token release.
 - [ ] Continue TLS 1.2 and compressed-certificate custody, then transcript/hash contexts.
+
+## Window44 OCSP source allocation repair
+
+- [x] Keep TLS 1.3 owner-aware stapled OCSP borrowed until the precharged final certificate conversion.
+- [x] Preserve owner-free eager ownership behavior.
+- [ ] Complete compressed-certificate same-owner second decoding and TLS 1.2 chain/OCSP custody.
