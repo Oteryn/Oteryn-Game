@@ -187,9 +187,8 @@ S2 activation prerequisites:
    overlap with #415 or any other durability writer;
 4. a separately reviewed and protected amendment to #416 has registered the exact
    dedicated target `native_admission_source_postgres`, preserving #416 trusted-
-   base/fail-closed routing, PostgreSQL 17.6 execution, policy-core/pin custody and
-   FULL Merge Queue requirements; that amended routing is then materially
-   activated/exercised for this exact target before hosted PG evidence counts;
+   base/fail-closed routing, PostgreSQL 17.6, policy-core/pin custody and FULL Merge
+   Queue requirements; target registration alone grants no workflow write lease;
 5. S1 exact descriptor/wire semantics are protected or a serialized predecessor;
 6. every conditional durability hook actually selected for S2 has an explicit
    serialized sole-writer Work lease and no active-owner overlap at activation;
@@ -200,6 +199,29 @@ The protected #416 baseline currently registers only
 contract forbids activation with a different target without a reviewed amendment.
 This packet allocates the required future target identity but does not edit any
 workflow, policy-core/pin or #416 control-plane source.
+
+#### S2 routing handoff
+
+S2 activation authorizes only its exact held implementation paths. It does **not**
+make PostgreSQL evidence canonical by itself.
+
+After S2 has created `native_admission_source_postgres` on a held branch:
+
+1. the S2 target remains held and its hosted PostgreSQL result cannot count as
+   acceptance evidence yet;
+2. a separately serialized #416 control-plane writer refreshes the exact held
+   target contract/custody and executes #416's material activation order: test-only
+   RED, minimal PR/MQ/push routing, exact policy-core pins, independent review,
+   separate protected audit-pin rotation, canonical checks, FULL Merge Queue and
+   protected readback;
+3. only after that material routing is protected may the held S2 branch reconcile
+   with protected main and run `native_admission_source_postgres` under the real
+   PostgreSQL 17.6 canonical PR/MQ lanes; only those post-routing results count;
+4. S2 may not merge or claim terminal PostgreSQL qualification before step 3.
+
+This ordering satisfies #416's requirement that a material target implementation
+exist on a held branch before routing activation without creating a cycle in which
+routing must already be active before S2 is allowed to create the target.
 
 S2 semantics:
 
@@ -282,8 +304,10 @@ production change is authorized here.
 - **#416 PostgreSQL routing** is the control prerequisite for dedicated WP5 PG
   targets. Its protected baseline registers only the #414/#415 targets; S2
   therefore requires a reviewed/protected target-registration amendment before
-  `native_admission_source_postgres` may count. Workflow/policy paths remain
-  separately serialized and are not edited here.
+  `native_admission_source_postgres` may be created under S2, followed by material
+  routing after the held target exists and before its PG evidence/integration may
+  count. Workflow/policy paths remain separately serialized and are not edited
+  here.
 - this allocation owns only authenticated Platform security/trust ingestion,
   nonrollback source bootstrap and later sealed consumer composition.
 
@@ -300,9 +324,11 @@ this allocation protected
    separately authorized producer or controlled independent test producer
 -> exact-head review + canonical CI/MQ + protected readback for S1
 -> WP4 protected/released
--> reviewed #416 amendment registers native_admission_source_postgres
--> amended #416 routing protected/materially exercised for that exact target
--> activate S2 with selected next migration and dedicated PG target
+-> reviewed/protected #416 amendment registers native_admission_source_postgres
+-> activate S2 on a held branch; create exact migration/source/PG target only
+-> material #416 routing activates against that held target contract
+-> #416 independent review + audit-pin rotation + canonical CI/MQ + readback
+-> reconcile held S2 with protected routing
 -> actual PostgreSQL17.6/restart/rollback qualification + review/CI/MQ/readback
 -> external Platform counterpart proceeds independently under separate authority
    and must be protected/compatible before S3/final source composition
@@ -327,8 +353,9 @@ by real dependencies/authority, principally:
   exact shared-path leases;
 - unreleased WP4 PostgreSQL/durability custody needed before S2;
 - shared `lib.rs`/Foundation composition custody;
-- required reviewed #416 amendment registering `native_admission_source_postgres`
-  and subsequent material routing activation for that exact target.
+- required reviewed #416 target-registration amendment before S2 mutation, then
+  material #416 routing after the held target exists and before S2 PostgreSQL
+  evidence/integration can count.
 
 Those are activation blockers, not reasons to weaken source authentication or
 reuse fixtures as authority.
