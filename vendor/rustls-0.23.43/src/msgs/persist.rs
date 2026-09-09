@@ -1,5 +1,11 @@
 use alloc::vec::Vec;
+#[cfg(feature = "std")]
+use core::alloc::Layout;
 use core::cmp;
+#[cfg(feature = "std")]
+use core::sync::atomic::AtomicUsize;
+#[cfg(feature = "std")]
+use core::mem::size_of;
 
 use pki_types::{DnsName, UnixTime};
 use zeroize::Zeroizing;
@@ -111,6 +117,32 @@ impl Tls13ClientSessionValue {
         }
     }
 
+    #[cfg(feature = "std")]
+    pub(crate) fn new_with_resource_owner(
+        suite: &'static Tls13CipherSuite,
+        ticket: TicketPayload,
+        secret: &[u8],
+        server_cert_chain: &CertificateChain<'static>,
+        server_cert_verifier: &Arc<dyn ServerCertVerifier>,
+        client_creds: &Arc<dyn ResolvesClientCert>,
+        time_now: UnixTime,
+        lifetime_secs: u32,
+        age_add: u32,
+        max_early_data_size: u32,
+    ) -> Result<Self, crate::DeframerBufferError> {
+        let owner = ticket.decoded_owner().ok_or(crate::DeframerBufferError)?;
+        Ok(Self {
+            suite,
+            age_add,
+            max_early_data_size,
+            common: ClientSessionCommon::new_with_resource_owner(
+                ticket, secret, time_now, lifetime_secs, server_cert_chain,
+                server_cert_verifier, client_creds, owner,
+            )?,
+            quic_params: PayloadU16::new(Vec::new()),
+        })
+    }
+
     pub fn max_early_data_size(&self) -> u32 {
         self.max_early_data_size
     }
@@ -191,6 +223,31 @@ impl Tls12ClientSessionValue {
         }
     }
 
+    #[cfg(feature = "std")]
+    pub(crate) fn new_with_resource_owner(
+        suite: &'static Tls12CipherSuite,
+        session_id: SessionId,
+        ticket: TicketPayload,
+        master_secret: &[u8],
+        server_cert_chain: &CertificateChain<'static>,
+        server_cert_verifier: &Arc<dyn ServerCertVerifier>,
+        client_creds: &Arc<dyn ResolvesClientCert>,
+        time_now: UnixTime,
+        lifetime_secs: u32,
+        extended_ms: bool,
+    ) -> Result<Self, crate::DeframerBufferError> {
+        let owner = ticket.decoded_owner().ok_or(crate::DeframerBufferError)?;
+        Ok(Self {
+            suite,
+            session_id,
+            extended_ms,
+            common: ClientSessionCommon::new_with_resource_owner(
+                ticket, master_secret, time_now, lifetime_secs, server_cert_chain,
+                server_cert_verifier, client_creds, owner,
+            )?,
+        })
+    }
+
     pub(crate) fn ticket(&mut self) -> TicketPayload {
         self.common.ticket.clone()
     }
@@ -250,7 +307,7 @@ pub struct ClientSessionCommon {
     secret: Zeroizing<PayloadU8>,
     epoch: u64,
     lifetime_secs: u32,
-    server_cert_chain: Arc<CertificateChain<'static>>,
+    server_cert_chain: RetainedCertificateChain,
     server_cert_verifier: Weak<dyn ServerCertVerifier>,
     client_creds: Weak<dyn ResolvesClientCert>,
     #[cfg(feature = "std")]
@@ -262,6 +319,132 @@ pub struct ClientSessionCommon {
 struct RetainedSessionCustody {
     owner: Arc<dyn crate::DeframerBufferOwner>,
     bytes: usize,
+}
+
+
+#[derive(Debug)]
+struct RetainedCertificateChain {
+    chain: Option<Arc<CertificateChain<'static>>>,
+    #[cfg(feature = "std")]
+    owner: Option<Arc<dyn crate::DeframerBufferOwner>>,
+    #[cfg(feature = "std")]
+    bytes: usize,
+}
+
+impl RetainedCertificateChain {
+    fn unowned(chain: CertificateChain<'static>) -> Self {
+        Self {
+            chain: Some(Arc::new(chain)),
+            #[cfg(feature = "std")]
+            owner: None,
+            #[cfg(feature = "std")]
+            bytes: 0,
+        }
+    }
+
+    #[cfg(feature = "std")]
+    fn arc_layout() -> Result<usize, crate::DeframerBufferError> {
+        Layout::new::<[AtomicUsize; 2]>()
+            .extend(Layout::new::<CertificateChain<'static>>())
+            .map(|(layout, _)| layout.pad_to_align().size())
+            .map_err(|_| crate::DeframerBufferError)
+    }
+
+    #[cfg(feature = "std")]
+    fn deep_copy(
+        source: &CertificateChain<'static>,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<Self, crate::DeframerBufferError> {
+        let outer = source.0.len().checked_mul(size_of::<pki_types::CertificateDer<'static>>())
+            .ok_or(crate::DeframerBufferError)?;
+        owner.try_reserve(outer)?;
+        let mut reserved = outer;
+        let mut certificates = Vec::with_capacity(source.0.len());
+        if certificates.capacity() != source.0.len() {
+            drop(certificates);
+            owner.release(reserved);
+            return Err(crate::DeframerBufferError);
+        }
+        for certificate in &source.0 {
+            let bytes = certificate.as_ref().len();
+            if owner.try_reserve(bytes).is_err() {
+                drop(certificates);
+                owner.release(reserved);
+                return Err(crate::DeframerBufferError);
+            }
+            reserved = match reserved.checked_add(bytes) {
+                Some(total) => total,
+                None => {
+                    owner.release(bytes);
+                    drop(certificates);
+                    owner.release(reserved);
+                    return Err(crate::DeframerBufferError);
+                }
+            };
+            let mut owned = Vec::with_capacity(bytes);
+            owned.extend_from_slice(certificate.as_ref());
+            if owned.capacity() != bytes {
+                drop(owned);
+                drop(certificates);
+                owner.release(reserved);
+                return Err(crate::DeframerBufferError);
+            }
+            certificates.push(pki_types::CertificateDer::from(owned));
+        }
+        let control = match Self::arc_layout() {
+            Ok(control) => control,
+            Err(error) => {
+                drop(certificates);
+                owner.release(reserved);
+                return Err(error);
+            }
+        };
+        if owner.try_reserve(control).is_err() {
+            drop(certificates);
+            owner.release(reserved);
+            return Err(crate::DeframerBufferError);
+        }
+        reserved = match reserved.checked_add(control) {
+            Some(total) => total,
+            None => {
+                owner.release(control);
+                drop(certificates);
+                owner.release(reserved);
+                return Err(crate::DeframerBufferError);
+            }
+        };
+        Ok(Self { chain: Some(Arc::new(CertificateChain(certificates))), owner: Some(owner), bytes: reserved })
+    }
+}
+
+impl Clone for RetainedCertificateChain {
+    fn clone(&self) -> Self {
+        Self {
+            chain: self.chain.clone(),
+            #[cfg(feature = "std")]
+            owner: self.owner.clone(),
+            #[cfg(feature = "std")]
+            bytes: self.bytes,
+        }
+    }
+}
+
+impl core::ops::Deref for RetainedCertificateChain {
+    type Target = CertificateChain<'static>;
+    fn deref(&self) -> &Self::Target { self.chain.as_deref().unwrap() }
+}
+
+impl Drop for RetainedCertificateChain {
+    fn drop(&mut self) {
+        #[cfg(feature = "std")]
+        let final_control = self.owner.is_some()
+            && self.chain.as_ref().is_some_and(|chain| Arc::strong_count(chain) == 1);
+        drop(self.chain.take());
+        #[cfg(feature = "std")]
+        if final_control {
+            if let Some(owner) = self.owner.take() { owner.release(self.bytes); }
+        }
+    }
 }
 
 #[cfg(feature = "std")]
@@ -286,12 +469,54 @@ impl ClientSessionCommon {
             secret: Zeroizing::new(PayloadU8::new(secret.to_vec())),
             epoch: time_now.as_secs(),
             lifetime_secs: cmp::min(lifetime_secs, MAX_TICKET_LIFETIME),
-            server_cert_chain: Arc::new(server_cert_chain),
+            server_cert_chain: RetainedCertificateChain::unowned(server_cert_chain),
             server_cert_verifier: Arc::downgrade(server_cert_verifier),
             client_creds: Arc::downgrade(client_creds),
             #[cfg(feature = "std")]
             _resource_custody: None,
         }
+    }
+
+
+    #[cfg(feature = "std")]
+    fn new_with_resource_owner(
+        ticket: TicketPayload,
+        secret: &[u8],
+        time_now: UnixTime,
+        lifetime_secs: u32,
+        server_cert_chain: &CertificateChain<'static>,
+        server_cert_verifier: &Arc<dyn ServerCertVerifier>,
+        client_creds: &Arc<dyn ResolvesClientCert>,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<Self, crate::DeframerBufferError> {
+        let secret_bytes = secret.len();
+        owner.try_reserve(secret_bytes)?;
+        let mut secret_copy = Vec::with_capacity(secret_bytes);
+        secret_copy.extend_from_slice(secret);
+        if secret_copy.capacity() != secret_bytes {
+            drop(secret_copy);
+            owner.release(secret_bytes);
+            return Err(crate::DeframerBufferError);
+        }
+        let secret_copy = Zeroizing::new(PayloadU8::new(secret_copy));
+        let server_cert_chain = match RetainedCertificateChain::deep_copy(server_cert_chain, owner.clone()) {
+            Ok(chain) => chain,
+            Err(_error) => {
+                drop(secret_copy);
+                owner.release(secret_bytes);
+                return Err(crate::DeframerBufferError);
+            }
+        };
+        Ok(Self {
+            ticket,
+            secret: secret_copy,
+            epoch: time_now.as_secs(),
+            lifetime_secs: cmp::min(lifetime_secs, MAX_TICKET_LIFETIME),
+            server_cert_chain,
+            server_cert_verifier: Arc::downgrade(server_cert_verifier),
+            client_creds: Arc::downgrade(client_creds),
+            _resource_custody: Some(RetainedSessionCustody { owner, bytes: secret_bytes }),
+        })
     }
 
     #[cfg(feature = "std")]
@@ -378,6 +603,71 @@ static MAX_TICKET_LIFETIME: u32 = 7 * 24 * 60 * 60;
 /// times in case packet loss occurs when the client sends the ClientHello
 /// or receives the NewSessionTicket, _and_ actual clock skew over this period.
 static MAX_FRESHNESS_SKEW_MS: u32 = 60 * 1000;
+
+#[cfg(all(test, feature = "std"))]
+mod owner_tests {
+    use alloc::vec;
+    use core::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
+
+    #[derive(Debug)]
+    struct Owner {
+        limit: usize,
+        used: AtomicUsize,
+    }
+
+    impl crate::DeframerBufferOwner for Owner {
+        fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+            self.used
+                .fetch_update(Ordering::Relaxed, Ordering::Relaxed, |used| {
+                    used.checked_add(bytes).filter(|next| *next <= self.limit)
+                })
+                .map(|_| ())
+                .map_err(|_| crate::DeframerBufferError)
+        }
+
+        fn release(&self, bytes: usize) {
+            self.used.fetch_sub(bytes, Ordering::Relaxed);
+        }
+    }
+
+    #[test]
+    fn retained_certificate_chain_deep_copy_and_arc_custody() {
+        let source = CertificateChain(vec![
+            pki_types::CertificateDer::from(vec![1, 2, 3]),
+            pki_types::CertificateDer::from(vec![4, 5]),
+        ]);
+        let outer = 2 * size_of::<pki_types::CertificateDer<'static>>();
+        let expected = outer + 5 + RetainedCertificateChain::arc_layout().unwrap();
+        let owner = Arc::new(Owner { limit: expected, used: AtomicUsize::new(0) });
+
+        let retained = RetainedCertificateChain::deep_copy(&source, owner.clone()).unwrap();
+        assert_eq!(owner.used.load(Ordering::Relaxed), expected);
+        assert_ne!(retained[0].as_ref().as_ptr(), source[0].as_ref().as_ptr());
+        let clone = retained.clone();
+        assert_eq!(owner.used.load(Ordering::Relaxed), expected);
+        drop(source);
+        drop(retained);
+        assert_eq!(owner.used.load(Ordering::Relaxed), expected);
+        drop(clone);
+        assert_eq!(owner.used.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn retained_certificate_chain_denies_before_arc_allocation() {
+        let source = CertificateChain(vec![pki_types::CertificateDer::from(vec![1, 2, 3])]);
+        let before_control = size_of::<pki_types::CertificateDer<'static>>() + 3;
+        let owner = Arc::new(Owner {
+            limit: before_control + RetainedCertificateChain::arc_layout().unwrap() - 1,
+            used: AtomicUsize::new(0),
+        });
+
+        assert!(RetainedCertificateChain::deep_copy(&source, owner.clone()).is_err());
+        assert_eq!(owner.used.load(Ordering::Relaxed), 0);
+        assert_eq!(source[0].as_ref(), [1, 2, 3]);
+    }
+}
 
 // --- Server types ---
 #[derive(Debug)]

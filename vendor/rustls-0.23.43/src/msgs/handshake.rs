@@ -2435,6 +2435,11 @@ impl TicketPayload {
             control_bytes: 0,
         }
     }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn decoded_owner(&self) -> Option<Arc<DecodedOwner>> {
+        self.control_owner.clone()
+    }
 }
 
 impl Clone for TicketPayload {

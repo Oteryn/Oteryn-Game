@@ -36,6 +36,8 @@ use crate::msgs::handshake::{
     PresharedKeyBinder, PresharedKeyIdentity, PresharedKeyOffer, ServerExtensions,
     ServerHelloPayload,
 };
+#[cfg(feature = "std")]
+use crate::msgs::handshake::CertificateChain;
 use crate::msgs::message::{Message, MessagePayload};
 use crate::msgs::persist::{self, Retrieved};
 use crate::sign::{CertifiedKey, Signer};
@@ -1535,14 +1537,14 @@ impl ExpectTraffic {
 
         let now = self.config.current_time()?;
 
+        #[cfg(feature = "std")]
         #[allow(unused_mut)]
-        let mut value = persist::Tls13ClientSessionValue::new(
+        let mut value = if nst.ticket.decoded_owner().is_some() {
+            persist::Tls13ClientSessionValue::new_with_resource_owner(
             self.suite,
             nst.ticket.clone(),
             secret.as_ref(),
-            cx.peer_certificates
-                .cloned()
-                .unwrap_or_default(),
+            cx.peer_certificates.unwrap_or(&CertificateChain::default()),
             &self.config.verifier,
             &self.config.client_auth_cert_resolver,
             now,
@@ -1551,6 +1553,29 @@ impl ExpectTraffic {
             nst.extensions
                 .max_early_data_size
                 .unwrap_or_default(),
+            ).map_err(|_| Error::InvalidMessage(InvalidMessage::MessageTooLarge))?
+        } else {
+            persist::Tls13ClientSessionValue::new(
+                self.suite, nst.ticket.clone(), secret.as_ref(),
+                cx.peer_certificates.cloned().unwrap_or_default(),
+                &self.config.verifier, &self.config.client_auth_cert_resolver, now,
+                nst.lifetime, nst.age_add,
+                nst.extensions.max_early_data_size.unwrap_or_default(),
+            )
+        };
+        #[cfg(not(feature = "std"))]
+        #[allow(unused_mut)]
+        let mut value = persist::Tls13ClientSessionValue::new(
+            self.suite,
+            nst.ticket.clone(),
+            secret.as_ref(),
+            cx.peer_certificates.cloned().unwrap_or_default(),
+            &self.config.verifier,
+            &self.config.client_auth_cert_resolver,
+            now,
+            nst.lifetime,
+            nst.age_add,
+            nst.extensions.max_early_data_size.unwrap_or_default(),
         );
 
         if cx.is_quic() {

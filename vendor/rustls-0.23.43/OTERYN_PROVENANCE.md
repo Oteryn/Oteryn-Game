@@ -250,3 +250,17 @@ single control-block debit across allocation-free Arc clones and releases it onl
 last Arc backing is destroyed. This closes the focused retained-ticket boundary; session
 secret and peer-chain construction, transcript/certificate ownership, and complete TLS
 composition remain unproven.
+
+## Retained session secret and peer-chain custody
+
+Owner-aware TLS 1.2/TLS 1.3 cache values reuse the decoded ticket's existing owner identity.
+Secret destination capacity is reserved before copying and remains charged until the
+zeroizing payload has been destroyed. Retained peer certificates are a real deep-copy
+destination: the implementation reserves the exact outer certificate-vector backing, each
+DER byte vector, and the qualified Rust 1.94 `ArcInner<CertificateChain>` control allocation
+before each allocation. A private wrapper encapsulates all strong handles and shares the
+single backing/control debit across allocation-free clones until final Arc destruction.
+Ordinary owner-free constructors and no-std behavior remain unchanged. Focused tests prove
+source/destination overlap, max-minus-one Arc denial, clone no-double-charge, and final
+release. This does not prove certificate-message, transcript, compressed-certificate, or
+complete TLS accounting.

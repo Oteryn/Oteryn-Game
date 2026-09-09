@@ -1188,7 +1188,18 @@ impl ExpectFinished {
             return;
         };
 
-        let session_value = persist::Tls12ClientSessionValue::new(
+        #[cfg(feature = "std")]
+        let chain = cx.common.peer_certificates.as_ref();
+        #[cfg(feature = "std")]
+        let session_value = if ticket.decoded_owner().is_some() {
+            let Some(chain) = chain else { return; };
+            let Ok(value) = persist::Tls12ClientSessionValue::new_with_resource_owner(
+                self.secrets.suite(), self.session_id, ticket,
+                self.secrets.master_secret(), chain, &self.config.verifier,
+                &self.config.client_auth_cert_resolver, now, lifetime, self.using_ems,
+            ) else { return; };
+            value
+        } else { persist::Tls12ClientSessionValue::new(
             self.secrets.suite(),
             self.session_id,
             ticket,
@@ -1201,6 +1212,13 @@ impl ExpectFinished {
             &self.config.client_auth_cert_resolver,
             now,
             lifetime,
+            self.using_ems,
+        ) };
+        #[cfg(not(feature = "std"))]
+        let session_value = persist::Tls12ClientSessionValue::new(
+            self.secrets.suite(), self.session_id, ticket, self.secrets.master_secret(),
+            cx.common.peer_certificates.clone().unwrap_or_default(),
+            &self.config.verifier, &self.config.client_auth_cert_resolver, now, lifetime,
             self.using_ems,
         );
 

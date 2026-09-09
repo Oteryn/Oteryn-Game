@@ -568,3 +568,10 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Precharge exact Rust 1.94 `ArcInner<PayloadU16>` backing and retain one debit across Arc clones through final deallocation.
 - [x] Carry ticket backing/control custody through TLS 1.2 and TLS 1.3 retained-session values.
 - [ ] Precharge retained secret and peer-chain backing/control allocations and continue the remaining complete-TLS matrix.
+
+## Retained session continuation
+
+- [x] Reuse the charged ticket's owner for retained TLS 1.2/TLS 1.3 session construction.
+- [x] Precharge and retain secret, deep certificate destination, and certificate Arc-control backing through final destruction.
+- [ ] Continue certificate/OCSP message ownership, compressed-certificate overlap, and transcript/hash-context custody.
+- [ ] Prove the complete simultaneous-live TLS composition before TLS-positive or PostgreSQL qualification.

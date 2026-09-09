@@ -125,6 +125,24 @@ impl DecodedOwner {
 }
 
 #[cfg(feature = "std")]
+impl DeframerBufferOwner for DecodedOwner {
+    fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+        self.reserve(bytes).map_err(|_| crate::DeframerBufferError)
+    }
+
+    fn release(&self, bytes: usize) {
+        Self::release(self, bytes);
+    }
+
+    fn try_reserve_provider_shared(
+        &self,
+        bytes: usize,
+    ) -> Result<(), crate::DeframerBufferError> {
+        self.owner.try_reserve_provider_shared(bytes)
+    }
+}
+
+#[cfg(feature = "std")]
 impl Drop for DecodedOwner {
     fn drop(&mut self) {
         self.owner.release(self.charged.load(Ordering::Relaxed));

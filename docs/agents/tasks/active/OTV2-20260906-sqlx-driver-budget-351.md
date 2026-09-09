@@ -1208,3 +1208,34 @@ retained_session_secret_and_peer_chain: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
 next_action: extend the same retained-session model to secret and peer-chain backing, then continue certificate/transcript ownership
 ```
+
+## Window41 retained secret and peer-chain custody
+
+Retained TLS 1.2 and TLS 1.3 session construction now derives the already-installed owner
+from the charged `TicketPayload`. Before copying a PSK/master secret it reserves the exact
+destination byte capacity; the source remains live through construction, and the final
+`Zeroizing<PayloadU8>` is declared before its custody so zeroization and backing destruction
+precede release. The normal TLS 1.3 path no longer clones `CommonState::peer_certificates`
+before admission.
+
+The retained certificate destination is an intentional deep copy. It precharges the exact
+outer `Vec<CertificateDer>` backing and each DER byte destination before the respective
+allocation, then precharges the padded Rust 1.94 `ArcInner<CertificateChain<'static>>`
+layout before `Arc::new`. A private wrapper encapsulates every strong Arc handle in the
+retained-session graph, shares one control/backing debit across allocation-free clones, and
+releases only after final Arc destruction. Thus the connection-owned source chain and the
+retained destination coexist under separate custody, and session/cache clones neither
+allocate nor double-charge the retained chain.
+
+Focused tests cover funded deep copy, source/destination coexistence, allocation-free Arc
+clone, source drop while retained custody survives, max-minus-one denial at the Arc-control
+boundary, and exact final release. Complete certificate-message transfer, transcript/hash
+contexts, compressed certificates, and complete-handshake composition remain open.
+
+```yaml
+status: active
+retained_ticket_backing_and_arc_control: PROVEN_FOCUSED
+retained_session_secret_and_peer_chain: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+next_action: continue certificate/OCSP ownership and transcript context custody, then compose complete TLS
+```
