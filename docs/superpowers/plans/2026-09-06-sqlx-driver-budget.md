@@ -353,3 +353,11 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   under a hybrid-last profile is not the protected PQ-first proof.
 - [ ] Stop before Cargo mutation or manual group reordering at:
   `SHARED_LEASE_REQUIRED = vendor/sqlx-core-0.9.0/Cargo.toml :: _tls-rustls-aws-lc-rs / rustls prefer-post-quantum feature :: protected #451/#453 require the qualified ordinary AWS-LC default provider to be PQ-first, while the exact SQLx AWS profile disables rustls defaults and currently does not enable prefer-post-quantum`.
+
+## Window23 protected PQ-first profile
+
+- [x] Merge protected `main@4f1ce7b4c3092a79ffa42e0b63e786015dedea53` normally.
+- [x] Add only `rustls/prefer-post-quantum` to `_tls-rustls-aws-lc-rs` and preserve the root lockfile byte-for-byte.
+- [x] Prove the direct feature edge and explicitly assert the ordinary and owner-aware four-group PQ-first sequence.
+- [x] Re-run allocation-free validation and the executable racing-first-use accounting proof on the final feature graph.
+- [ ] Complete actual HRR, thread-churn, cancellation, complete TLS composition, funded TLS-positive, and PostgreSQL 17.6 qualification before any aggregate WP3 acceptance claim.
