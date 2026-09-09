@@ -133,7 +133,7 @@ These files are intentionally centralized because they integrate state across ma
 5. Coordinator-only surfaces are never worker-owned.
 6. If two proposals need the same eventual shared contract, neither worker unilaterally freezes it. The coordinator chooses an integration owner or a later bounded shared-contract task.
 
-## cross-domain finding contract
+## Cross-domain finding contract
 
 Use this minimum shape in worker analysis/PRs:
 
