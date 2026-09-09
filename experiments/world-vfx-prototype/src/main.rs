@@ -1,7 +1,9 @@
 #![recursion_limit = "256"]
 #![allow(
     dead_code,
-    reason = "the evidence model intentionally retains semantic fields not consumed by every GPU path"
+    clippy::collapsible_if,
+    clippy::manual_is_multiple_of,
+    reason = "the bounded evidence model retains semantic-only fields, explicit parity formulas and a readable final-frame timestamp block"
 )]
 
 mod gpu;
