@@ -187,7 +187,10 @@ S2 activation prerequisites:
    overlap with #415 or any other durability writer;
 4. #416's dedicated PostgreSQL routing prerequisite is protected and materially
    activated for this exact target before hosted PG evidence counts;
-5. S1 exact descriptor/wire semantics are protected or a serialized predecessor.
+5. S1 exact descriptor/wire semantics are protected or a serialized predecessor;
+6. every conditional durability hook actually selected for S2 has an explicit
+   serialized sole-writer Work lease and no active-owner overlap at activation;
+   WP4 protection/release alone never transfers custody of those shared paths.
 
 S2 semantics:
 
