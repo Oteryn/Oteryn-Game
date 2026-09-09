@@ -185,30 +185,53 @@ fn public_production_compile_and_restart_staging_use_immutable_bytes() -> Result
     let source = source(3)?;
     let compiled =
         compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
-    let staged = StagedGeneration::stage(
-        &compiled.server_artifact,
-        &compiled.client_artifact,
-        compiled.expectation(),
-    )?;
+
+    let mut controller = ContentActivationController::new();
+    let staged_identity = controller
+        .stage_primary(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            compiled.expectation(),
+        )
+        .map_err(|error| match error {
+            ContentActivationError::Content(error) => error,
+            _ => ContentError::InvalidArtifact("unexpected activation staging error"),
+        })?
+        .clone();
     assert_eq!(
-        staged.identity().package_provenance_digest(),
+        staged_identity.package_provenance_digest(),
         compiled.expectation().package_provenance_digest()
     );
-    let reconstructed = FirstProductionExpectation::from_generation_identity(staged.identity());
-    let restaged = StagedGeneration::stage(
-        &compiled.server_artifact,
-        &compiled.client_artifact,
-        &reconstructed,
-    )?;
-    assert_eq!(restaged.identity(), staged.identity());
-    assert_eq!(staged.identity().world_id(), source.world_id);
+
+    let reconstructed = FirstProductionExpectation::from_generation_identity(&staged_identity);
+    let mut restarted = ContentActivationController::new();
+    let restaged_identity = restarted
+        .stage_primary(
+            &compiled.server_artifact,
+            &compiled.client_artifact,
+            &reconstructed,
+        )
+        .map_err(|error| match error {
+            ContentActivationError::Content(error) => error,
+            _ => ContentError::InvalidArtifact("unexpected restart staging error"),
+        })?
+        .clone();
+    assert_eq!(restaged_identity, staged_identity);
+    assert_eq!(staged_identity.world_id(), source.world_id);
 
     let mut corrupt = compiled.server_artifact.clone();
     let index = corrupt.len() - 33;
     corrupt[index] ^= 0x5a;
+    let mut corrupt_controller = ContentActivationController::new();
     assert!(matches!(
-        StagedGeneration::stage(&corrupt, &compiled.client_artifact, compiled.expectation()),
-        Err(ContentError::IntegrityMismatch(_))
+        corrupt_controller.stage_primary(
+            &corrupt,
+            &compiled.client_artifact,
+            compiled.expectation()
+        ),
+        Err(ContentActivationError::Content(
+            ContentError::IntegrityMismatch(_)
+        ))
     ));
     Ok(())
 }
