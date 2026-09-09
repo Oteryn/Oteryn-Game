@@ -3,7 +3,6 @@ use core::fmt::Debug;
 #[cfg(feature = "std")]
 use core::alloc::Layout;
 use core::marker::PhantomData;
-use core::ops::{Deref, DerefMut};
 #[cfg(feature = "std")]
 use core::ops::{Deref, DerefMut};
 #[cfg(feature = "std")]
@@ -134,85 +133,6 @@ pub(crate) struct DecodedCustody {
     owner: Arc<DecodedOwner>,
     bytes: usize,
     tracked_backing: bool,
-}
-
-/// A decoded vector whose reservation follows the allocator backing.
-///
-/// Keeping the vector before its custody is intentional: fields are dropped
-/// in declaration order, so the allocation is destroyed before its debit is
-/// returned.  This type is crate-private because owner-aware cloning must be
-/// fallible; exposing `Vec`'s infallible `Clone` would permit an uncharged
-/// destination allocation.
-#[derive(Debug)]
-pub(crate) struct DecodedVec<T> {
-    values: Vec<T>,
-    #[cfg(feature = "std")]
-    custody: Option<DecodedCustody>,
-}
-
-impl<T> DecodedVec<T> {
-    pub(crate) fn from_unowned(values: Vec<T>) -> Self {
-        Self { values, #[cfg(feature = "std")] custody: None }
-    }
-
-    fn into_aggregate(mut self) -> Vec<T> {
-        #[cfg(feature = "std")]
-        if let Some(mut custody) = self.custody.take() {
-            // Legacy plain-Vec fields remain covered by the enclosing Message
-            // transaction until they are migrated to `DecodedVec`.
-            custody.owner.custodied.fetch_sub(custody.bytes, Ordering::Relaxed);
-            custody.tracked_backing = false;
-            custody.bytes = 0;
-        }
-        core::mem::take(&mut self.values)
-    }
-}
-
-impl<T> Default for DecodedVec<T> {
-    fn default() -> Self { Self::from_unowned(Vec::new()) }
-}
-
-impl<T> Deref for DecodedVec<T> {
-    type Target = [T];
-    fn deref(&self) -> &[T] { &self.values }
-}
-
-impl<T> DerefMut for DecodedVec<T> {
-    fn deref_mut(&mut self) -> &mut [T] { &mut self.values }
-}
-
-impl<T: PartialEq> PartialEq for DecodedVec<T> {
-    fn eq(&self, other: &Self) -> bool { self.values == other.values }
-}
-
-impl<T: Eq> Eq for DecodedVec<T> {}
-
-impl<T: Clone> Clone for DecodedVec<T> {
-    fn clone(&self) -> Self {
-        #[cfg(feature = "std")]
-        assert!(self.custody.is_none(), "charged decoded vectors require an owner-aware deep copy");
-        Self::from_unowned(self.values.clone())
-    }
-}
-
-impl<T> From<Vec<T>> for DecodedVec<T> {
-    fn from(values: Vec<T>) -> Self { Self::from_unowned(values) }
-}
-
-impl<T> FromIterator<T> for DecodedVec<T> {
-    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        Self::from_unowned(iter.into_iter().collect())
-    }
-}
-
-impl<T> IntoIterator for DecodedVec<T> {
-    type Item = T;
-    type IntoIter = alloc::vec::IntoIter<T>;
-    fn into_iter(self) -> Self::IntoIter {
-        #[cfg(feature = "std")]
-        assert!(self.custody.is_none(), "charged decoded vectors require custody-preserving consumption");
-        self.values.into_iter()
-    }
 }
 
 #[cfg(feature = "std")]
@@ -354,11 +274,8 @@ impl ListChargeGuard {
         self.capacity = capacity;
     }
 
-    fn into_custody(mut self) -> Option<DecodedCustody> {
+    fn commit(mut self) {
         self.armed = false;
-        let owner = self.owner.take()?;
-        let bytes = self.capacity.checked_mul(self.element_size)?;
-        (bytes != 0).then(|| DecodedCustody::exact(owner, bytes))
     }
 }
 
@@ -652,40 +569,34 @@ impl<'a, T: Codec<'a> + TlsListElement + Debug> Codec<'a> for Vec<T> {
     }
 
     fn read(r: &mut Reader<'a>) -> Result<Self, InvalidMessage> {
-        DecodedVec::read(r).map(DecodedVec::into_aggregate)
-    }
-}
-
-impl<'a, T: Codec<'a> + TlsListElement + Debug> Codec<'a> for DecodedVec<T> {
-    fn encode(&self, bytes: &mut Vec<u8>) {
-        self.values.encode(bytes);
-    }
-
-    fn read(r: &mut Reader<'a>) -> Result<Self, InvalidMessage> {
         #[cfg(feature = "std")]
         let mut charge = ListChargeGuard::new::<T>(r);
-        let mut values = Vec::new();
+        let mut ret = Self::new();
         for item in TlsListIter::<T>::new(r)? {
             let item = item?;
-            if values.len() == values.capacity() {
+            if ret.len() == ret.capacity() {
                 #[cfg(feature = "std")]
-                let old_capacity = values.capacity();
+                let old_capacity = ret.capacity();
                 #[cfg(feature = "std")]
                 let prospective = {
+                    // Match the pinned RawVec amortized-growth policy rather than
+                    // forcing an input-controlled allocation for every element.
                     let minimum = if size_of::<T>() == 1 { 8 } else if size_of::<T>() <= 1024 { 4 } else { 1 };
                     let prospective = old_capacity.saturating_mul(2)
                         .max(minimum)
-                        .max(values.len().checked_add(1).ok_or(InvalidMessage::MessageTooLarge)?);
+                        .max(ret.len().checked_add(1).ok_or(InvalidMessage::MessageTooLarge)?);
                     r.reserve_vec_capacity::<T>(prospective)?;
                     prospective
                 };
                 #[cfg(feature = "std")]
-                values.reserve_exact(prospective - values.len());
+                ret.reserve_exact(prospective - ret.len());
                 #[cfg(not(feature = "std"))]
-                values.reserve(1);
+                ret.reserve(1);
                 #[cfg(feature = "std")]
-                if r.decoded_owner.is_some() && values.capacity() != prospective {
-                    drop(values);
+                if r.decoded_owner.is_some() && ret.capacity() != prospective {
+                    // The prospective backing must die before either its debit or
+                    // the replaced backing's debit is released.
+                    drop(ret);
                     r.release_vec_capacity::<T>(prospective);
                     r.release_vec_capacity::<T>(old_capacity);
                     return Err(InvalidMessage::MessageTooLarge);
@@ -693,16 +604,15 @@ impl<'a, T: Codec<'a> + TlsListElement + Debug> Codec<'a> for DecodedVec<T> {
                 #[cfg(feature = "std")]
                 {
                     r.release_vec_capacity::<T>(old_capacity);
-                    charge.replace(values.capacity());
+                    charge.replace(ret.capacity());
                 }
             }
-            values.push(item);
+            ret.push(item);
         }
-        Ok(Self {
-            values,
-            #[cfg(feature = "std")]
-            custody: charge.into_custody(),
-        })
+
+        #[cfg(feature = "std")]
+        charge.commit();
+        Ok(ret)
     }
 }
 
@@ -954,11 +864,11 @@ mod tests {
         let owner = Arc::new(TestOwner { limit: arc_bytes + 8, used: AtomicUsize::new(0) });
         let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
         let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
-        let values = DecodedVec::<Tiny>::read(&mut reader).unwrap();
+        let values = Vec::<Tiny>::read(&mut reader).unwrap();
         assert_eq!(values.iter().map(|v| v.0).collect::<Vec<_>>(), [1, 2, 3]);
-        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + values.values.capacity());
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + values.capacity());
         drop(values);
-        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes, "list backing releases before decode scope");
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 8, "custody follows decode scope");
         drop(reader);
         drop(decoded);
         drop(arc_charge);
@@ -1119,7 +1029,7 @@ mod tests {
         let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
         let mut reader = Reader::init_with_owner(&[0, 2, 1, 0], decoded.clone());
         assert_eq!(
-            DecodedVec::<LaterError>::read(&mut reader),
+            Vec::<LaterError>::read(&mut reader),
             Err(InvalidMessage::MissingData("later element"))
         );
         assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
