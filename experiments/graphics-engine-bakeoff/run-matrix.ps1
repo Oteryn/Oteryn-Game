@@ -6,7 +6,11 @@ param(
     [ValidateRange(1, 100000)]
     [int]$SampleFrames = 900,
     [string]$HardwareAlias = "Molehill-PC",
-    [switch]$SkipBuild
+    [switch]$SkipBuild,
+    [ValidateRange(0, 5000)]
+    [int]$InterRunDelayMs = 500,
+    [ValidateRange(1, 5)]
+    [int]$MaxAttempts = 3
 )
 
 $ErrorActionPreference = "Stop"
@@ -23,6 +27,7 @@ New-Item -ItemType Directory -Force -Path $Results | Out-Null
 
 $Timestamp = (Get-Date).ToUniversalTime().ToString("yyyyMMddTHHmmssZ")
 $RawPath = Join-Path $Results "raw-$Timestamp.jsonl"
+$FailurePath = Join-Path $Results "failures-$Timestamp.jsonl"
 $BuildPath = Join-Path $Results "build-$Timestamp.json"
 
 function Invoke-CargoBuild {
@@ -75,11 +80,12 @@ function Invoke-BenchmarkCell {
         [Parameter(Mandatory = $true)][string]$Scenario,
         [Parameter(Mandatory = $true)][int]$SpritePx,
         [Parameter(Mandatory = $true)][int]$Repetition,
+        [Parameter(Mandatory = $true)][int]$Attempt,
         [Parameter(Mandatory = $true)]$Machine
     )
 
-    $stdout = Join-Path $env:TEMP "oteryn-bakeoff-$PID-$Backend-$Scenario-$SpritePx-$Repetition.out"
-    $stderr = Join-Path $env:TEMP "oteryn-bakeoff-$PID-$Backend-$Scenario-$SpritePx-$Repetition.err"
+    $stdout = Join-Path $env:TEMP "oteryn-bakeoff-$PID-$Backend-$Scenario-$SpritePx-$Repetition-$Attempt.out"
+    $stderr = Join-Path $env:TEMP "oteryn-bakeoff-$PID-$Backend-$Scenario-$SpritePx-$Repetition-$Attempt.err"
     Remove-Item -Force -ErrorAction SilentlyContinue $stdout, $stderr
 
     $arguments = @(
@@ -91,15 +97,21 @@ function Invoke-BenchmarkCell {
 
     $process = Start-Process -FilePath $Executable -ArgumentList $arguments -PassThru `
         -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+
+    [long]$peakWorkingSet = 0
+    while (-not $process.HasExited) {
+        try {
+            $process.Refresh()
+            if ($process.WorkingSet64 -gt $peakWorkingSet) {
+                $peakWorkingSet = $process.WorkingSet64
+            }
+        } catch {
+            # The process can exit between HasExited and Refresh; keep the last valid sample.
+        }
+        Start-Sleep -Milliseconds 10
+    }
     $process.WaitForExit()
     $process.Refresh()
-
-    $peakWorkingSet = $null
-    try {
-        $peakWorkingSet = $process.PeakWorkingSet64
-    } catch {
-        $peakWorkingSet = $null
-    }
 
     $exitCode = $null
     try {
@@ -107,21 +119,22 @@ function Invoke-BenchmarkCell {
     } catch {
         $exitCode = $null
     }
-    if ($null -ne $exitCode -and $exitCode -ne 0) {
-        $errorText = if (Test-Path $stderr) { Get-Content -Raw $stderr } else { "" }
-        throw "$Backend/$Scenario/$SpritePx repetition $Repetition failed with exit ${exitCode}: $errorText"
-    }
 
-    $stdoutLines = @(Get-Content $stdout)
+    $stdoutLines = if (Test-Path $stdout) { @(Get-Content $stdout) } else { @() }
     $jsonLine = $stdoutLines | Where-Object { $_ -match '^\{.*\}$' } | Select-Object -Last 1
     if (-not $jsonLine) {
         $errorText = if (Test-Path $stderr) { Get-Content -Raw $stderr } else { "" }
-        throw "$Backend/$Scenario/$SpritePx repetition $Repetition produced no result JSON; exit=${exitCode}; stderr=$errorText"
+        throw "$Backend/$Scenario/$SpritePx repetition $Repetition attempt $Attempt produced no result JSON; exit=${exitCode}; stderr=$errorText"
+    }
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
+        $errorText = if (Test-Path $stderr) { Get-Content -Raw $stderr } else { "" }
+        throw "$Backend/$Scenario/$SpritePx repetition $Repetition attempt $Attempt failed with exit ${exitCode}: $errorText"
     }
 
     $adapterLog = $stdoutLines | Where-Object { $_ -match 'AdapterInfo.*name:' } | Select-Object -Last 1
     $record = $jsonLine | ConvertFrom-Json
     $record | Add-Member -NotePropertyName repetition -NotePropertyValue $Repetition
+    $record | Add-Member -NotePropertyName attempt -NotePropertyValue $Attempt
     $record | Add-Member -NotePropertyName peak_working_set_bytes -NotePropertyValue $peakWorkingSet
     $record | Add-Member -NotePropertyName adapter_log -NotePropertyValue $adapterLog
     $record | Add-Member -NotePropertyName hardware -NotePropertyValue $Machine
@@ -169,6 +182,8 @@ $buildEvidence = [ordered]@{
     repetitions = $Repetitions
     warmup_frames = $WarmupFrames
     sample_frames = $SampleFrames
+    inter_run_delay_ms = $InterRunDelayMs
+    max_attempts = $MaxAttempts
 }
 $buildEvidence | ConvertTo-Json -Depth 8 | Set-Content -Encoding utf8 $BuildPath
 
@@ -183,13 +198,41 @@ foreach ($scenario in $scenarios) {
     foreach ($spritePx in $densities) {
         foreach ($repetition in 1..$Repetitions) {
             foreach ($backend in $backends) {
-                Write-Host "RUN $($backend.name) scenario=$scenario sprite=$spritePx repetition=$repetition/$Repetitions"
-                Invoke-BenchmarkCell -Backend $backend.name -Executable $backend.executable `
-                    -Scenario $scenario -SpritePx $spritePx -Repetition $repetition -Machine $Machine
+                $success = $false
+                for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
+                    Write-Host "RUN $($backend.name) scenario=$scenario sprite=$spritePx repetition=$repetition/$Repetitions attempt=$attempt/$MaxAttempts"
+                    try {
+                        Invoke-BenchmarkCell -Backend $backend.name -Executable $backend.executable `
+                            -Scenario $scenario -SpritePx $spritePx -Repetition $repetition `
+                            -Attempt $attempt -Machine $Machine
+                        $success = $true
+                        break
+                    } catch {
+                        $failure = [ordered]@{
+                            captured_at_utc = (Get-Date).ToUniversalTime().ToString("o")
+                            backend = $backend.name
+                            scenario = $scenario
+                            sprite_px = $spritePx
+                            repetition = $repetition
+                            attempt = $attempt
+                            error = $_.Exception.Message
+                        }
+                        ($failure | ConvertTo-Json -Compress) | Add-Content -Encoding utf8 $FailurePath
+                        Write-Warning "transient benchmark failure recorded; retrying if attempts remain"
+                        Start-Sleep -Milliseconds ([Math]::Max(1000, $InterRunDelayMs))
+                    }
+                }
+                if (-not $success) {
+                    throw "$($backend.name)/$scenario/$spritePx repetition $repetition exhausted $MaxAttempts attempts"
+                }
+                if ($InterRunDelayMs -gt 0) {
+                    Start-Sleep -Milliseconds $InterRunDelayMs
+                }
             }
         }
     }
 }
 
 Write-Host "RAW_RESULTS=$RawPath"
+Write-Host "FAILURES=$FailurePath"
 Write-Host "BUILD_RESULTS=$BuildPath"
