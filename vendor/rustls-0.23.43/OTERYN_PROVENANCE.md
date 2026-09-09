@@ -182,3 +182,15 @@ charged-payload Clone assertion while avoiding fake zero-byte lifetime ownership
 The client still rejects non-empty handshake contexts before client-auth resolution.
 A focused decode of a complete CertificateRequest proves no clone debit, no panic,
 and exact final release. Generic-list custody and complete TLS accounting remain open.
+
+## Generic decoded backing representation
+
+`msgs/codec.rs` now contains the crate-private `DecodedVec<T>` building block for the
+protected decoded-owner migration. It binds checked actual-capacity custody directly to
+the vector, preserves geometric growth and old/new overlap, moves without recharging,
+and exposes only an explicit fallible charged deep copy. Partial decoding errors destroy
+the vector before its custody releases. Focused tests execute those lifetime rules.
+
+The ordinary `Vec<T>` codec and remaining private handshake fields have not yet been
+migrated, so this is a material Gate-1 implementation checkpoint rather than complete
+TLS proof. The decoded-owner P1s remain open.

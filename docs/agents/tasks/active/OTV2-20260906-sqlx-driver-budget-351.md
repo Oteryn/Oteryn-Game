@@ -1001,6 +1001,8 @@ next_action: replace aggregate list/payload retention and checkpoint rollback wi
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open.
 
+field migration and full retained-descendant matrix are independently verified.
+
 ## Window34 payload backing custody
 
 `PayloadU8` and `PayloadU16` now retain an exact, non-allocating custody token after
@@ -1075,3 +1077,30 @@ next_action: continue generic list backing custody and every retained descendant
 ```
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open.
+
+## Window37 generic backing-bound list representation
+
+Added the private `DecodedVec<T>` representation required to move generic decoded-list
+capacity out of connection-aggregate lifetime authority. Owner-aware decoding reserves a
+checked geometric prospective capacity before allocation, verifies actual capacity, and
+keeps old and replacement custody live until the old vector is destroyed. The resulting
+token is declared after its vector, so local destruction returns the exact capacity debit
+before the reader or connection owner drops. Moves are allocation-free; the explicit
+fallible deep-copy operation reserves the destination while source custody remains live;
+later-element failure drops the partial vector and returns its debit.
+
+Focused tests prove local drop, move, separately charged clone overlap, and later-element
+rollback. This checkpoint intentionally does not migrate the remaining private handshake
+fields yet, so aggregate `Codec for Vec<T>` and the retained-descendant/complete-handshake
+matrix remain open.
+
+```yaml
+status: active
+generic_backing_bound_representation: PROVEN_FOCUSED
+generic_handshake_field_migration: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: migrate private decoded handshake list fields to DecodedVec and continue payload/message/retained ownership
+```
+
+P1 `3966866700` and umbrella P1 `3954831069` remain open until the private handshake
+field migration and full retained-descendant matrix are independently verified.
