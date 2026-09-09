@@ -860,3 +860,29 @@ PEM backing or ledger debit, insufficient balance before a second charged input
 can be constructed, parse-error retention and unwind, and exact final release.
 This closes only P1 `3957222192`; it does not allocate or enter the still-open
 rustls key-exchange boundary.
+## Window18 post-KX configuration-owner boundary
+
+After the protected #451 KX/provider-resident checkpoint, the resource-owned
+handshake acquires the accepted AWS-LC process/thread residency and then calls
+`rustls::crypto::aws_lc_rs::default_provider()`.  On the exact pinned
+x86_64-unknown-linux-gnu, non-FIPS graph, that function allocates two
+configuration-owned vectors with `DEFAULT_CIPHER_SUITES.to_vec()` and
+`DEFAULT_KX_GROUPS.to_vec()` before returning the provider to SQLx.  Neither
+allocation is reserved on the caller's `ResourceBudget`; the #451
+provider-resident debit covers AWS-LC process/thread backing, not these Rust
+`Vec` capacities.
+
+The allocation-owning file is explicitly read-only under #451.  SQLx cannot
+reserve actual capacities before these private `to_vec()` calls, attach custody
+to the returned provider, or prove denial before allocation from its existing
+call site.  Charging after `default_provider()` returns would be prohibited
+post-allocation catch-up, and copying the current slice lengths/layout into
+SQLx would duplicate private configuration semantics rather than account actual
+allocator capacity.
+
+`SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: reserve and retain the same-ledger actual cipher-suite and KX-group Vec capacities before allocation through final provider/config destruction`
+
+No decoded, ClientHello, PostgreSQL, workflow, registry, or production source
+was changed at this boundary.  The #451 KX/provider-resident result remains
+completed, but complete TLS configuration/composition, a funded TLS-positive
+handshake, and PostgreSQL 17.6 qualification remain not proven.

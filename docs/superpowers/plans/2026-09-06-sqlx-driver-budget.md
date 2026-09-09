@@ -290,3 +290,21 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   release, and ordinary owner-free configured-client behavior.
 - [ ] Stop at the already-published `client::tls13::initial_key_share` /
   `SupportedKxGroup::start` shared-lease boundary.
+
+## Window18 post-KX configuration preflight
+
+- [x] Normally merge protected
+  `main@b26395edff3dde1ebcc155ab70758520d780884c` without rebase, reset, or
+  force-push.
+- [x] Preserve the completed #451 KX/provider-resident checkpoint and inspect
+  the next allocation before claiming complete TLS composition.
+- [x] Stop before mutation at
+  `vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs::{default_provider,default_kx_groups}`:
+  the exact production path allocates cipher-suite and KX-group vectors before
+  SQLx can reserve their actual capacities, and #451 explicitly keeps this file
+  read-only.
+- [ ] Obtain a narrow provider-configuration owner amendment carrying the same
+  ledger and custody through final provider/config destruction; do not use
+  post-allocation catch-up or duplicate rustls's private slice/layout semantics.
+- [ ] Keep decoded/ClientHello/session/cache composition, actual funded TLS,
+  PostgreSQL 17.6, review, CI/MQ, and protected readback open.

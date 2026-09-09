@@ -550,3 +550,27 @@ next_action: obtain exact key-exchange allocation authority before continuing Cl
 shared_lease_required: vendor/rustls-0.23.43/src/client/tls13.rs :: initial_key_share / SupportedKxGroup::start :: owner-aware ClientHello construction reaches active key-exchange allocation before protected emit/decode continuation
 remaining_acceptance_cells: key-share/ECH/configuration/crypto ownership; protected ClientHello emit and decoded-owner cells; complete TLS composition; TLS-positive proof; PostgreSQL17.6 final-candidate qualification; whole-diff review; canonical CI/FULL MQ; protected readback and target release
 ```
+
+## Window18 post-KX configuration-owner preflight
+
+Protected #451 KX/provider-resident work is retained as completed.  After the
+normal merge of protected `main@b26395edff3dde1ebcc155ab70758520d780884c`,
+the next resource-owned handshake allocation was preflighted before further
+semantic mutation.  `aws_lc_rs::default_provider()` allocates the cipher-suite
+and non-FIPS default KX-group vectors inside an explicitly read-only #451 path,
+before SQLx can observe actual capacity or bind custody to the returned
+provider.
+
+```yaml
+status: blocked_pending_shared_lease
+tls_blocking_owner: PROVEN
+rustls_deframer_owner: PROVEN
+session_retrieval_owner: PROVEN
+operation_owner_propagation: PROVEN
+aws_lc_kx_provider_resident: PROVEN
+complete_tls_accounting: NOT_PROVEN
+last_progress: normally merged current protected main and proved the earliest post-KX provider-configuration allocation boundary
+shared_lease_required: vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: same-ledger preallocation and lifetime custody for actual cipher-suite and KX-group Vec capacities
+next_action: obtain the exact provider-configuration owner amendment, then resume decoded, ClientHello, session/cache and complete TLS composition on the same ledger
+remaining_acceptance_cells: provider configuration vectors; all protected decoded/ClientHello composition; remaining session/cache/error/handshake overlap; funded AWS-LC TLS-positive handshake; PostgreSQL17.6 qualification; independent whole-diff review; canonical CI/FULL MQ; protected readback and target release
+```
