@@ -123,6 +123,66 @@ class PrepareRealContentTests(unittest.TestCase):
         _width, _height, rgba = M.decode_sheet_bytes(wrapper)
         self.assertEqual(rgba[:4], b"\x00\x00\x00\x00")
 
+    def test_decode_sheet_accepts_exact_bitfield_masks(self) -> None:
+        bmp = synthetic_bitfields_bmp()
+        wrapper = synthetic_wrapper(bmp)
+        width, height, rgba = M.decode_sheet_bytes(wrapper)
+        self.assertEqual((width, height), (384, 384))
+        self.assertEqual(rgba[:4], b"\x03\x02\x01\x04")
+
+    def test_decode_sheet_rejects_unknown_bitfield_masks(self) -> None:
+        bmp = bytearray(synthetic_bitfields_bmp())
+        bmp[54:58] = (0x000000FF).to_bytes(4, "little")
+        with self.assertRaisesRegex(M.PrepareError, "BI_BITFIELDS channel masks"):
+            M.decode_sheet_bytes(synthetic_wrapper(bytes(bmp)))
+
+
+def synthetic_wrapper(bmp: bytes) -> bytes:
+    filters = [
+        {
+            "id": lzma.FILTER_LZMA1,
+            "dict_size": 1 << 20,
+            "lc": 3,
+            "lp": 0,
+            "pb": 2,
+        }
+    ]
+    compressed = lzma.compress(bmp, format=lzma.FORMAT_RAW, filters=filters)
+    properties = 3 + 9 * (0 + 5 * 2)
+    return (
+        b"\x70\x0a\xfa\x80\x24"
+        + b"\x00"
+        + bytes((properties,))
+        + (1 << 20).to_bytes(4, "little")
+        + len(bmp).to_bytes(8, "little")
+        + compressed
+    )
+
+
+def synthetic_bitfields_bmp() -> bytes:
+    width = height = 384
+    pixel_bytes = bytes((1, 2, 3, 4)) * (width * height)
+    pixel_offset = 122
+    file_size = pixel_offset + len(pixel_bytes)
+    header = bytearray(pixel_offset)
+    header[0:2] = b"BM"
+    header[2:6] = file_size.to_bytes(4, "little")
+    header[10:14] = pixel_offset.to_bytes(4, "little")
+    header[14:18] = (108).to_bytes(4, "little")
+    header[18:22] = width.to_bytes(4, "little", signed=True)
+    header[22:26] = (-height).to_bytes(4, "little", signed=True)
+    header[26:28] = (1).to_bytes(2, "little")
+    header[28:30] = (32).to_bytes(2, "little")
+    header[30:34] = (3).to_bytes(4, "little")
+    header[34:38] = len(pixel_bytes).to_bytes(4, "little")
+    for offset, mask in zip(
+        (54, 58, 62, 66),
+        (0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000),
+        strict=True,
+    ):
+        header[offset : offset + 4] = mask.to_bytes(4, "little")
+    return bytes(header) + pixel_bytes
+
 
 def synthetic_bmp() -> bytes:
     width = height = 384
