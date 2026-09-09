@@ -270,32 +270,49 @@ fn aws_lc_real_hrr_wire_retains_initial_until_replacement_is_started() {
         Arc::new(DeframerBudgetOwner(budget.clone()));
     let provider = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner.clone())
         .unwrap();
-    let client_config = rustls::ClientConfig::builder_with_provider(provider.clone())
+    let client_config = Arc::new(rustls::ClientConfig::builder_with_provider(provider.clone())
         .with_protocol_versions(&[&rustls::version::TLS13])
         .unwrap()
         .dangerous()
         .with_custom_certificate_verifier(Arc::new(DummyTlsVerifier {
             provider: provider.clone(),
         }))
-        .with_no_client_auth();
-    let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
-    let mut client = rustls::ClientConnection::new_with_resource_owner(
-        Arc::new(client_config),
-        name,
-        owner,
-    )
-    .unwrap();
+        .with_no_client_auth());
 
     let (chain, key) = client_auth_from_pem(CERT, KEY).unwrap();
     let mut server_provider = rustls::crypto::aws_lc_rs::default_provider();
     server_provider.kx_groups = vec![rustls::crypto::aws_lc_rs::kx_group::SECP256R1];
-    let server_config = rustls::ServerConfig::builder_with_provider(Arc::new(server_provider))
+    let server_config = Arc::new(rustls::ServerConfig::builder_with_provider(Arc::new(server_provider))
         .with_protocol_versions(&[&rustls::version::TLS13])
         .unwrap()
         .with_no_client_auth()
         .with_single_cert(chain, key)
-        .unwrap();
-    let mut server = rustls::ServerConnection::new(Arc::new(server_config)).unwrap();
+        .unwrap());
+
+    let new_client = |owner: Arc<dyn rustls::DeframerBufferOwner>| {
+        rustls::ClientConnection::new_with_resource_owner(
+            client_config.clone(),
+            rustls::pki_types::ServerName::try_from("localhost").unwrap(),
+            owner,
+        )
+        .unwrap()
+    };
+    let new_server = || rustls::ServerConnection::new(server_config.clone()).unwrap();
+
+    // Cancellation before any ServerHello destroys the initial active KX before
+    // returning its operation reservation. Provider-shared process/thread/config
+    // debits are intentionally retained and therefore form the stable baseline.
+    let shared_baseline = budget.used.load(Ordering::Acquire);
+    let cancelled_initial = new_client(Arc::new(DeframerBudgetOwner(budget.clone())));
+    let with_initial = budget.used.load(Ordering::Acquire);
+    assert!(with_initial >= shared_baseline + 7_881);
+    drop(cancelled_initial);
+    assert_eq!(budget.used.load(Ordering::Acquire), shared_baseline);
+
+    let owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(DeframerBudgetOwner(budget.clone()));
+    let mut client = new_client(owner);
+    let mut server = new_server();
 
     let initial_used = budget.used.load(Ordering::Acquire);
     assert!(initial_used >= 7_881, "initial PQ KX must already be charged");
@@ -320,6 +337,74 @@ fn aws_lc_real_hrr_wire_retains_initial_until_replacement_is_started() {
         budget.used.load(Ordering::Acquire) < initial_used,
         "the initial KX must be destroyed after the replacement is installed"
     );
+
+    // Cancellation after real HRR processing destroys the replacement KX and
+    // returns to the same retained provider-shared baseline. The peak above
+    // already proves the predecessor and replacement overlapped before handoff.
+    let post_hrr_used = budget.used.load(Ordering::Acquire);
+    assert!(post_hrr_used >= shared_baseline + 1_625);
+    drop(client);
+    assert_eq!(budget.used.load(Ordering::Acquire), shared_baseline);
+
+    // Funding the initial KX but not its HRR replacement fails at reservation
+    // admission. Since the limit is fixed at the post-ClientHello usage, the
+    // P-256 provider start cannot be reached and all operation custody unwinds.
+    let denial_budget = ledger(2_000_000);
+    let denial_owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(DeframerBudgetOwner(denial_budget.clone()));
+    let denial_provider =
+        rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(denial_owner.clone())
+            .unwrap();
+    assert!(Arc::ptr_eq(&provider, &denial_provider));
+    let denial_config = Arc::new(
+        rustls::ClientConfig::builder_with_provider(denial_provider)
+            .with_protocol_versions(&[&rustls::version::TLS13])
+            .unwrap()
+            .dangerous()
+            .with_custom_certificate_verifier(Arc::new(DummyTlsVerifier {
+                provider: provider.clone(),
+            }))
+            .with_no_client_auth(),
+    );
+    let mut denied = rustls::ClientConnection::new_with_resource_owner(
+        denial_config,
+        rustls::pki_types::ServerName::try_from("localhost").unwrap(),
+        denial_owner,
+    )
+    .unwrap();
+    let denied_initial = denial_budget.used.load(Ordering::Acquire);
+    let mut denial_server = new_server();
+    wire.clear();
+    denied.write_tls(&mut wire).unwrap();
+    denial_server.read_tls(&mut Cursor::new(&wire)).unwrap();
+    denial_server.process_new_packets().unwrap();
+    wire.clear();
+    denial_server.write_tls(&mut wire).unwrap();
+    denied.read_tls(&mut Cursor::new(&wire)).unwrap();
+    let before_replacement = denial_budget.used.load(Ordering::Acquire);
+    denial_budget.limit.store(before_replacement, Ordering::Release);
+    assert!(denied.process_new_packets().is_err());
+    drop(denied);
+    assert!(
+        denial_budget.used.load(Ordering::Acquire) < denied_initial,
+        "initial KX custody must unwind after replacement admission denial"
+    );
+
+    // A fresh connection completes the real HRR path. This exercises the
+    // ResourceOwnedSecret -> into_handshake(secret) custody transfer in the
+    // actual TLS consumer; the KX debit is gone only after that call returns.
+    let owner: Arc<dyn rustls::DeframerBufferOwner> =
+        Arc::new(DeframerBudgetOwner(budget.clone()));
+    let mut client = new_client(owner);
+    let mut server = new_server();
+    wire.clear();
+    client.write_tls(&mut wire).unwrap();
+    server.read_tls(&mut Cursor::new(&wire)).unwrap();
+    server.process_new_packets().unwrap();
+    wire.clear();
+    server.write_tls(&mut wire).unwrap();
+    client.read_tls(&mut Cursor::new(&wire)).unwrap();
+    client.process_new_packets().unwrap();
 
     for _ in 0..8 {
         wire.clear();
