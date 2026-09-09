@@ -28,7 +28,8 @@ $familyRaw = Join-Path $evidence "family-smoke.jsonl"
 $stderrLog = Join-Path $evidence "stderr.log"
 Set-Content -Path $raw -Value "" -NoNewline
 Set-Content -Path $familyRaw -Value "" -NoNewline
-Set-Content -Path $stderrLog -Value "" -NoNewline$commit = (git -C (Resolve-Path (Join-Path $PSScriptRoot '..\..')) rev-parse HEAD).Trim()
+Set-Content -Path $stderrLog -Value "" -NoNewline
+$commit = (git -C (Resolve-Path (Join-Path $PSScriptRoot '..\..')) rev-parse HEAD).Trim()
 $scenarios = if ($ScenarioFilter) { @($ScenarioFilter.Split(',')) } else { @('basic','normal','stress') }
 $modes = if ($ModeFilter) { @($ModeFilter.Split(',')) } else { @('atlas','array','hybrid') }
 $densities = if ($DensityFilter) { @($DensityFilter.Split(',') | ForEach-Object { [int]$_ }) } else { @(32,64,128) }
@@ -55,7 +56,8 @@ function Invoke-PrototypeRun {
         '--frames', $MeasuredFrames
     )
     $process = Start-Process -FilePath $exe -ArgumentList $arguments -PassThru `
-        -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath    [int64]$peakWorkingSet = 0
+        -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+    [int64]$peakWorkingSet = 0
     while (-not $process.HasExited) {
         try {
             $sample = Get-Process -Id $process.Id -ErrorAction Stop
@@ -83,7 +85,8 @@ function Invoke-PrototypeRun {
     ($result | ConvertTo-Json -Depth 20 -Compress) | Add-Content $Destination
     if (Test-Path $stderrPath) { Get-Content $stderrPath | Add-Content $stderrLog }
     Remove-Item $stdoutPath,$stderrPath -ErrorAction SilentlyContinue
-}$total = $Repetitions * $scenarios.Count * $modes.Count * $densities.Count
+}
+$total = $Repetitions * $scenarios.Count * $modes.Count * $densities.Count
 $index = 0
 foreach ($rep in 1..$Repetitions) {
     foreach ($scenario in $scenarios) {
@@ -107,7 +110,8 @@ foreach ($presentationFamily in @('classic','enhanced','hd')) {
         -PresentationFamily $presentationFamily -WarmupFrames 60 -MeasuredFrames 360 `
         -Repeat 1 -Destination $familyRaw
 }
-Write-Host "matrix-complete=$total raw=$raw family=$familyRaw"$hardware = [ordered]@{
+Write-Host "matrix-complete=$total raw=$raw family=$familyRaw"
+$hardware = [ordered]@{
     report = 'oteryn-world-vfx-prototype-hardware-v1'
     machine = 'Molehill-PC'
     commit_sha = $commit

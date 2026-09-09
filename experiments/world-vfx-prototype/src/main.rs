@@ -15,6 +15,12 @@ use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::window::{Window, WindowAttributes, WindowId};
 
+const SEMANTIC_TICKS_PER_SECOND: u64 = 60;
+
+fn semantic_time_ms(frame: u64) -> u64 {
+    frame.saturating_mul(1_000) / SEMANTIC_TICKS_PER_SECOND
+}
+
 fn main() -> ExitCode {
     match run() {
         Ok(()) => ExitCode::SUCCESS,
@@ -186,10 +192,10 @@ impl ApplicationHandler for Application {
                 }
             }
             WindowEvent::RedrawRequested => {
-                let elapsed_ms = self.process_start.elapsed().as_millis() as u64;
+                let semantic_ms = semantic_time_ms(self.semantic_frame);
                 let snapshot = self
                     .scene
-                    .frame(&self.config, elapsed_ms, self.semantic_frame);
+                    .frame(&self.config, semantic_ms, self.semantic_frame);
                 self.semantic_frame = self.semantic_frame.saturating_add(1);
                 let Some(renderer) = &mut self.renderer else {
                     return;
@@ -218,6 +224,14 @@ impl ApplicationHandler for Application {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn semantic_clock_is_render_speed_independent() {
+        assert_eq!(semantic_time_ms(0), 0);
+        assert_eq!(semantic_time_ms(1), 16);
+        assert_eq!(semantic_time_ms(60), 1_000);
+        assert_eq!(semantic_time_ms(600), 10_000);
+    }
 
     #[test]
     fn pinned_census_shape_is_accepted() -> Result<(), String> {
