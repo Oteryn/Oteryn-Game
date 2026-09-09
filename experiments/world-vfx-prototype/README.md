@@ -39,6 +39,15 @@ The earlier procedural matrix remains provenance/baseline evidence only. Termina
 
 The final evidence directory must bind one exact code head, the generated semantic-slice SHA/root manifest, 81 primary runs and 3 independent-family smoke runs. `ADOPT`/`REJECT` decisions are valid only after that real-world matrix passes reliability, GPU timestamp, cache-churn, family-equivalence and exact-head checks.
 
+## Final real-Atlas qualification
+
+The first full real-world pass exposed cache-capacity overflow in NORMAL/STRESS. That diagnostic run was not accepted as terminal evidence. Capacities were recalibrated above the measured simultaneous active working set and the full matrix was repeated from exact code head `de1843fd75066ad3671864cbdf030913a36a81f7`.
+
+Final evidence is under `evidence/molehill-real-atlas-final-20260909/`: 81/81 primary runs plus 3/3 Classic/Enhanced/HD family-smoke runs on AMD Radeon RX 9070 XT / DX12. All runs use the digest-pinned 96x96 Atlas FullWorld slice (`20,797` tiles, `30,974` resolved presentation primitives, `112` resolved creature records, slice SHA-256 `a72448fd04481a24fe1d34e284d7e9504738d5c6c169f43fef19077fe2b3186f`).
+
+Terminal checks: reliable GPU timestamps, surface/device reliability, multi-page usage, cache churn in 27/27 primary cells, critical-VFX readability, exact-head consistency, family-axis completeness and gameplay-signature equality all pass; resource overflow fallback is `0` across all 84 physical runs. BASIC CPU/GPU p95 ranges are `1.531-1.832 ms` / `0.079-0.140 ms`; NORMAL `3.224-4.174 ms` / `0.147-0.353 ms`; STRESS `6.007-9.124 ms` / `0.368-0.898 ms`.
+
+Evidence supports `ADOPT` for bounded visible-working-set residency with eviction. Atlas vs texture arrays, the simple hybrid challenger, KTX2 vs DDS, particle backend, production light/VFX limits, batching thresholds, RAM/VRAM budgets and final filtering/mipmap policy remain `INSUFFICIENT_EVIDENCE` under the real-world matrix.
 ## Validation
 
 ```powershell
@@ -47,7 +56,7 @@ cargo fmt --all --check
 cargo clippy --locked --all-targets -- -D warnings
 cargo build --locked --release
 .\run-matrix.ps1 -Repetitions 3 -Warmup 120 -Frames 600 `
-  -EvidenceDir evidence/molehill-real-atlas-20260909 `
+  -EvidenceDir evidence/molehill-real-atlas-final-20260909 `
   -AtlasOrigin http://192.168.1.2:8097
 ```
 
