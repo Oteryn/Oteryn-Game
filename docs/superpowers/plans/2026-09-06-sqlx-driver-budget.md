@@ -457,3 +457,15 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Restore amortized geometric decoded-list growth with prospective rollback.
 - [ ] Bind each decoded list/payload backing to destruction-time custody; the
       current aggregate remains foundation-only and complete TLS stays open.
+
+## Window30 backing-custody representation boundary
+
+- [x] Preflight a non-allocating custody field after `Message::payload`, so
+  backing destruction precedes debit release.
+- [x] Confirm that all decoded client parsing can transfer the transaction into
+  that field without a second owner or address registry.
+- [ ] Obtain the minimum mechanical constructor-factoring lease for excluded
+  `client/ech.rs`, `server/tls12.rs`, `server/tls13.rs`, and the existing
+  `common_state.rs` literal before retaining the representation change.
+- [ ] Resume backing-bound list/payload/message custody and the remaining #425
+  matrix; complete TLS and PostgreSQL qualification remain blocked.

@@ -1032,3 +1032,20 @@ after replacement selection exercise destruction-time release of the initial
 and replacement reservations.  This replaces the earlier synthetic direct
 two-group overlap as the focused HRR evidence; complete TLS accounting and the
 remaining key-schedule/cancellation matrix are still open.
+
+### Window30 decoded backing-custody representation boundary
+
+The aggregate `DecodedOwner` cannot close backing lifetime: `Vec<T>` has no
+custody/drop extension point, and address registries are forbidden. A concrete
+non-allocating `Message` custody-field preflight placed custody after payload
+backing and transferred the successful parse transaction into it. Rust then
+correctly required every `Message` literal to initialize the field, including
+excluded `vendor/rustls-0.23.43/src/client/ech.rs`,
+`src/server/tls12.rs`, and `src/server/tls13.rs` construction sites. The
+attempt was removed before commit; no excluded source changed.
+
+`SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/ech.rs + src/server/tls12.rs + src/server/tls13.rs + src/common_state.rs :: Message construction sites / minimum custody-preserving constructor factoring :: source-compatible backing-bound Message custody cannot be introduced while those existing constructors are outside the authored lease`
+
+This does not close P1 `3966866700`, the umbrella decoded-owner P1, complete TLS,
+TLS-positive, or PostgreSQL qualification. Existing Arc precharge, geometric
+list growth, payload denial, and nested rollback evidence remains valid.
