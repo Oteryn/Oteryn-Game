@@ -229,6 +229,14 @@ pub(crate) struct DecodedVec<T> {
     custody: Option<DecodedCustody>,
 }
 
+/// Owner-aware custody is a `std`-only capability, but decoded AST fields must
+/// keep their upstream `no_std` representation.  This alias lets those fields
+/// use `DecodedVec<T>` without adding bookkeeping or changing allocation and
+/// clone behavior when `std` is disabled.
+#[cfg(not(feature = "std"))]
+#[allow(dead_code)] // Consumed once private decoded fields migrate to this name.
+pub(crate) type DecodedVec<T> = Vec<T>;
+
 #[cfg(feature = "std")]
 impl<T> DecodedVec<T> {
     /// Copy an owner-aware vector whose elements are known not to allocate.

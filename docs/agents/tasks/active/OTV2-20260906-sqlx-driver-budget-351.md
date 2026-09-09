@@ -1136,3 +1136,9 @@ next_action: perform the SQLx client generic-list lifetime census and migrate or
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open pending the field census,
 retained-descendant composition, and final independent exact-head review.
+
+The field-migration representation is now also source-compatible with `no_std`:
+`DecodedVec<T>` aliases ordinary `Vec<T>` without custody when `std` is disabled.
+The charged `std` copy restrictions and owner-free `no_std` clone/allocation behavior
+therefore remain separate. This is a compatibility repair, not field-migration or
+complete-TLS proof.

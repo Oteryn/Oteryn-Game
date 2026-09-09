@@ -549,3 +549,5 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Census SQLx-client generic lists by MESSAGE_LOCAL/EARLY_DROP/MOVE/DEEP_COPY and
   use field-specific recursive fallible copies for any allocating destination elements.
 - [ ] Continue the complete decoded/TLS and PostgreSQL qualification matrix.
+- [x] Keep `DecodedVec<T>` available as a plain `Vec<T>` alias in `no_std`, with
+  custody compiled only for the owner-aware `std` representation.

@@ -213,3 +213,7 @@ Focused coverage includes exact max-minus-one denial before destination allocati
 unchanged live source pointer/content/custody, no leaked reservation, funded overlap, and
 independent source/destination final release. The handshake-field census and migration,
 retained descendants, and complete TLS accounting remain open.
+
+`DecodedVec<T>` is additionally an ordinary `Vec<T>` alias when `std` is disabled.
+Only the `std` representation carries custody, so later private-field migration can
+preserve rustls's existing owner-free `no_std` allocation and clone behavior.
