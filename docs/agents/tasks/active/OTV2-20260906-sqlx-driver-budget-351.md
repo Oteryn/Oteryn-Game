@@ -808,19 +808,28 @@ remaining_acceptance_cells: generic reader/list/payload/message ownership; trans
 next_action: continue the remaining protected #425 boundaries on this same lineage
 ```
 
-## Window28 decoded span growth-denial regression
+## Window27b decoded reader/list checkpoint
 
-Protected `main@10ce3393a51dac14105b831040e1f4faa3ca565f` was normally merged into
-the canonical lineage. The span-owner test matrix now also exercises a full
-16-element vector with one byte less than the old-plus-32-element replacement
-overlap. Denial leaves the original pointer, capacity, contents, and charge
-unchanged and releases that charge only after the original backing is dropped.
+The span checkpoint was normally reconciled with the path-disjoint decoded
+reader work. The same owner is now retained by `ConnectionCore`, supplied to
+ordinary and first-message decode entry points, and propagated through nested
+`Reader::sub` calls. Generic TLS lists reserve checked prospective element
+capacity before each exact-capacity growth and hold old plus new capacity until
+the allocator has destroyed the old backing. Focused funded and max-minus-one
+controls cover this boundary.
 
 ```yaml
 status: active
-aws_lc_kx_provider_resident: PROVEN
-handshake_span_growth_denial_before_allocation: PROVEN_FOCUSED
+decoded_owner_reader_propagation: PROVEN_FOCUSED
+decoded_owner_generic_list_growth: PROVEN_FOCUSED
 complete_tls_accounting: NOT_PROVEN
-remaining_acceptance_cells: generic reader/list/payload/message ownership; transcript; decoded ClientHello/ServerHello; certificate/OCSP and successor-state custody; compressed certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
-next_action: continue the remaining protected #425 boundaries on this same lineage
+remaining_acceptance_cells: payload/message rollback and ownership; transcript; decoded ClientHello/ServerHello; certificate/OCSP and successor-state custody; compressed certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: continue #425 at payload/message ownership and nested failure rollback
 ```
+
+## Window28b decoded span growth-denial regression
+
+The span-owner test matrix funds a full 16-element vector with one byte less
+than the old-plus-32-element replacement overlap. Denial leaves the original
+pointer, capacity, contents, and charge unchanged and releases only after the
+original backing is dropped. Complete TLS accounting remains `NOT_PROVEN`.

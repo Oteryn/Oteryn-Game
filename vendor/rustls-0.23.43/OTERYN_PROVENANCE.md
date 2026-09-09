@@ -72,7 +72,22 @@ capacity, growth overlap, retained high-water custody, and final release.  This
 is one protected decoded-owner boundary only; complete decoded/TLS accounting
 remains open.
 
-The final-graph regression additionally funds the live 16-element span backing
-with one byte less than the prospective 32-element replacement overlap. It
-proves denial occurs before replacement allocation or mutation: pointer,
-capacity, contents, and the old charge remain unchanged until deframer drop.
+## Protected #425 decoded reader/list checkpoint
+
+The same #424 owner identity is retained in `ConnectionCore` and propagated
+into both normal inbound decoding and the first-handshake shortcut. Root and
+nested `Reader`s share one connection decode tracker without creating a second
+ledger. Generic TLS lists use checked `capacity * size_of::<T>()` accounting,
+reserve the complete prospective exact capacity before growth, keep the old
+charge through allocator replacement, and release it only after the old
+backing has been destroyed. Focused controls cover funded actual capacity and
+max-minus-one denial. Ordinary owner-free and no-std parsing remain unchanged.
+
+This checkpoint is not complete decoded/TLS accounting. Payload, message,
+transcript, certificate/OCSP, successor-state, compressed-certificate,
+peer-chain and retained-session boundaries remain open.
+
+The final-graph span regression funds the live 16-element backing with one byte
+less than the prospective 32-element replacement overlap. It proves denial
+before replacement allocation or mutation: pointer, capacity, contents, and
+old charge remain unchanged until deframer drop.
