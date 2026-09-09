@@ -56,6 +56,28 @@ STATIC_PR_PATHS = (
     STATIC_WORKFLOW_PATH,
     SEMANTIC_WORKFLOW_PATH,
 )
+SEMANTIC_STEP_NAMES = (
+    "Check out exact Game revision",
+    "Verify exact checked-out revision",
+    "Compile exporter",
+    "Verify Atlas trigger closure",
+    "Run deterministic and negative tests",
+    "Verify authority boundaries",
+    "Check out exact pinned migration evidence",
+    "Build real pinned Game creature and semantic sources",
+    "Qualify Sam and Thais on real pinned data",
+)
+STATIC_STEP_NAMES = (
+    "Check out exact Game revision",
+    "Set up Python",
+    "Verify exact checked-out head",
+    "Check out pinned migration evidence",
+    "Verify migration evidence revision",
+    "Compile and run producer self-test",
+    "Verify Atlas trigger closure",
+    "Build exact pinned product twice",
+    "Verify exact role and creature census",
+)
 
 SEMANTIC_ORACLE_CODE = """
 import json
@@ -408,6 +430,17 @@ def _step_block(workflow: str, name: str) -> str:
     return match.group("body")
 
 
+def _step_names(workflow: str) -> tuple[str, ...]:
+    names: list[str] = []
+    for line in workflow.splitlines():
+        if len(line) - len(line.lstrip(" ")) != 6:
+            continue
+        entry = _mapping_entry(line)
+        if entry is not None and entry[0] == "name":
+            names.append(_decode_mapping_scalar(entry[1]))
+    return tuple(names)
+
+
 def _python_heredoc(workflow: str, step_name: str) -> str:
     """Require the oracle Python heredoc to be the first reachable shell command."""
     lines = _step_block(workflow, step_name).rstrip().splitlines()
@@ -431,22 +464,23 @@ def _assert_exact_oracle_code(code: str, expected: str) -> None:
     )
 
 
+def _assert_exact_step_lines(workflow: str, step_name: str, expected: tuple[str, ...]) -> None:
+    lines = tuple(_step_block(workflow, step_name).rstrip().splitlines())
+    assert lines == expected, f"protected step changed or became bypassable: {step_name!r}"
+
+
 def _assert_exact_run_step(workflow: str, step_name: str, command: str) -> None:
-    lines = _step_block(workflow, step_name).rstrip().splitlines()
-    assert lines == [f"        run: {command}"], (
-        f"protected single-line command step changed or became bypassable: {step_name!r}"
-    )
+    _assert_exact_step_lines(workflow, step_name, (f"        run: {command}",))
 
 
 def _assert_exact_bash_step(workflow: str, step_name: str, commands: tuple[str, ...]) -> None:
-    lines = _step_block(workflow, step_name).rstrip().splitlines()
-    expected = [
+    expected = (
         "        shell: bash",
         "        run: |",
         "          set -euo pipefail",
         *(f"          {command}" for command in commands),
-    ]
-    assert lines == expected, f"protected shell step changed or became bypassable: {step_name!r}"
+    )
+    _assert_exact_step_lines(workflow, step_name, expected)
 
 
 def _assert_read_only_permissions(workflow: str) -> None:
@@ -472,6 +506,102 @@ def _assert_pinned_actions_and_no_bypass(workflow: str) -> None:
         assert dangerous not in keys and dangerous not in workflow, f"dangerous execution environment key: {dangerous}"
 
 
+def _assert_semantic_execution_steps(workflow: str) -> None:
+    assert _step_names(workflow) == SEMANTIC_STEP_NAMES, "semantic workflow step sequence changed"
+    _assert_exact_step_lines(
+        workflow,
+        "Verify exact checked-out revision",
+        (
+            "        shell: bash",
+            "        env:",
+            "          EXPECTED_SHA: ${{ github.event.pull_request.head.sha || github.sha }}",
+            '        run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"',
+        ),
+    )
+    _assert_exact_run_step(
+        workflow,
+        "Compile exporter",
+        "python -m py_compile tools/game-atlas-semantic-search/export.py tools/game-atlas-semantic-search/self_test.py",
+    )
+    _assert_exact_run_step(workflow, "Verify Atlas trigger closure", REGRESSION_COMMAND)
+    _assert_exact_run_step(
+        workflow,
+        "Run deterministic and negative tests",
+        "python tools/game-atlas-semantic-search/self_test.py",
+    )
+    _assert_exact_bash_step(
+        workflow,
+        "Verify authority boundaries",
+        (
+            "grep -q 'semantic-search-source-v1' docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md",
+            "grep -q 'input_floor_aliases' tools/game-atlas-semantic-search/export.py",
+            "! grep -R -E 'action_id|unique_id' tools/game-atlas-semantic-search --include='*.json'",
+        ),
+    )
+    _assert_exact_bash_step(
+        workflow,
+        "Build real pinned Game creature and semantic sources",
+        (
+            "python tools/game-atlas-creatures/export.py \\",
+            "  legacy/vendor/map-analysis/crystalserver/data-global/world \\",
+            "  legacy/vendor/map-analysis/crystalserver/data-global/npc \\",
+            "  legacy/vendor/map-analysis/crystalserver/data-global/monster \\",
+            "  /tmp/static-creatures.json",
+            "python tools/game-atlas-semantic-search/export.py \\",
+            "  --creatures /tmp/static-creatures.json \\",
+            "  --npc-root legacy/vendor/map-analysis/crystalserver/data-global/npc \\",
+            "  --legacy-root legacy \\",
+            "  --map-path legacy/vendor/map-analysis/crystalserver/data-global/world/world.otbm \\",
+            "  --output /tmp/semantic-search-source.json",
+        ),
+    )
+
+
+def _assert_static_execution_steps(workflow: str) -> None:
+    assert _step_names(workflow) == STATIC_STEP_NAMES, "static workflow step sequence changed"
+    _assert_exact_step_lines(
+        workflow,
+        "Verify exact checked-out head",
+        (
+            "        shell: bash",
+            "        env:",
+            "          EXPECTED_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}",
+            "        run: |",
+            "          set -euo pipefail",
+            '          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"',
+        ),
+    )
+    _assert_exact_bash_step(
+        workflow,
+        "Verify migration evidence revision",
+        (
+            "test \"$(git -C legacy rev-parse HEAD)\" = 'e417c5e7c22986bf4acef0495eb47f7b72c97cce'",
+            "test -d legacy/vendor/map-analysis/crystalserver/data-global/world",
+            "test -d legacy/vendor/map-analysis/crystalserver/data-global/npc",
+            "test -d legacy/vendor/map-analysis/crystalserver/data-global/monster",
+        ),
+    )
+    _assert_exact_bash_step(
+        workflow,
+        "Compile and run producer self-test",
+        (
+            "python -m py_compile tools/game-atlas-creatures/export.py tools/game-atlas-creatures/self_test.py",
+            "python tools/game-atlas-creatures/self_test.py",
+        ),
+    )
+    _assert_exact_run_step(workflow, "Verify Atlas trigger closure", REGRESSION_COMMAND)
+    _assert_exact_bash_step(
+        workflow,
+        "Build exact pinned product twice",
+        (
+            'ROOT="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global"',
+            'python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-a.json',
+            'python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-b.json',
+            "cmp /tmp/creatures-a.json /tmp/creatures-b.json",
+        ),
+    )
+
+
 def _assert_contract(semantic: str, static: str, *, verify_blobs: bool = True) -> None:
     _assert_safe_yaml_structure(semantic)
     _assert_safe_yaml_structure(static)
@@ -487,21 +617,8 @@ def _assert_contract(semantic: str, static: str, *, verify_blobs: bool = True) -
     assert _paths(semantic, "push") == SEMANTIC_PUSH_PATHS
     assert _paths(static, "pull_request") == STATIC_PR_PATHS
 
-    _assert_exact_run_step(semantic, "Verify Atlas trigger closure", REGRESSION_COMMAND)
-    _assert_exact_run_step(static, "Verify Atlas trigger closure", REGRESSION_COMMAND)
-    _assert_exact_run_step(
-        semantic,
-        "Run deterministic and negative tests",
-        "python tools/game-atlas-semantic-search/self_test.py",
-    )
-    _assert_exact_bash_step(
-        static,
-        "Compile and run producer self-test",
-        (
-            "python -m py_compile tools/game-atlas-creatures/export.py tools/game-atlas-creatures/self_test.py",
-            "python tools/game-atlas-creatures/self_test.py",
-        ),
-    )
+    _assert_semantic_execution_steps(semantic)
+    _assert_static_execution_steps(static)
     _assert_read_only_permissions(semantic)
     _assert_read_only_permissions(static)
     _assert_pinned_actions_and_no_bypass(semantic)
@@ -514,16 +631,6 @@ def _assert_contract(semantic: str, static: str, *, verify_blobs: bool = True) -
     _assert_exact_oracle_code(
         _python_heredoc(static, "Verify exact role and creature census"),
         STATIC_ORACLE_CODE,
-    )
-    _assert_exact_bash_step(
-        static,
-        "Build exact pinned product twice",
-        (
-            'ROOT="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global"',
-            'python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-a.json',
-            'python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-b.json',
-            "cmp /tmp/creatures-a.json /tmp/creatures-b.json",
-        ),
     )
 
     if verify_blobs:
@@ -654,6 +761,26 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                 self.semantic.replace(
                     "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
                     "  semantic-search-source:\n    defaults:\n      run:\n        shell: \"true {0}\"\n    runs-on: ubuntu-24.04\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "          ! grep -R -E 'action_id|unique_id' tools/game-atlas-semantic-search --include='*.json'\n",
+                    "          ! grep -R -E 'action_id|unique_id' tools/game-atlas-semantic-search --include='*.json'\n"
+                    "          printf 'exit 0\\n' > /tmp/atlas-bypass\n"
+                    "          echo \"BASH\"\"_ENV=/tmp/atlas-bypass\" >> \"$GITHUB_ENV\"\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "      - name: Check out exact pinned migration evidence\n",
+                    "      - name: Inject environment persistence\n"
+                    "        run: echo 'BASH_ENV=/tmp/atlas-bypass' >> \"$GITHUB_ENV\"\n\n"
+                    "      - name: Check out exact pinned migration evidence\n",
                     1,
                 ),
                 self.static,
@@ -844,6 +971,26 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                 self.semantic.replace(
                     "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
                     "  semantic-search-source:\n    defaults:\n      run:\n        shell: \"true {0}\"\n    runs-on: ubuntu-24.04\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "          ! grep -R -E 'action_id|unique_id' tools/game-atlas-semantic-search --include='*.json'\n",
+                    "          ! grep -R -E 'action_id|unique_id' tools/game-atlas-semantic-search --include='*.json'\n"
+                    "          printf 'exit 0\\n' > /tmp/atlas-bypass\n"
+                    "          echo \"BASH\"\"_ENV=/tmp/atlas-bypass\" >> \"$GITHUB_ENV\"\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "      - name: Check out exact pinned migration evidence\n",
+                    "      - name: Inject environment persistence\n"
+                    "        run: echo 'BASH_ENV=/tmp/atlas-bypass' >> \"$GITHUB_ENV\"\n\n"
+                    "      - name: Check out exact pinned migration evidence\n",
                     1,
                 ),
                 self.static,
