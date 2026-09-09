@@ -217,3 +217,26 @@ retained descendants, and complete TLS accounting remain open.
 `DecodedVec<T>` is additionally an ordinary `Vec<T>` alias when `std` is disabled.
 Only the `std` representation carries custody, so later private-field migration can
 preserve rustls's existing owner-free `no_std` allocation and clone behavior.
+
+## SQLx-client generic-list lifetime census and divergent destination
+
+The exact client graph was traced from `ConnectionCore::process_msg` through the TLS 1.2
+and TLS 1.3 client states. Generic lists that remain embedded in ServerHello,
+EncryptedExtensions, CertificateRequest, and ticket messages are MESSAGE_LOCAL: their
+outer debit is actual `capacity * size_of::<T>()`, and their backing is destroyed before
+the following Message custody token. HRR cookie, owned certificate/OCSP, peer-chain and
+session destinations diverge and therefore require separately charged deep copies or
+an exact transfer into retained custody; those retained cells remain open.
+
+As the first additional production divergence, TLS 1.3 CertificateRequest filtering now
+constructs its compatible-signature destination through `DecodedVec::try_copy_filtered`.
+`SignatureScheme` is `Copy`, so no nested clone allocation is hidden. The helper counts
+the destination allocation-free, reserves checked exact bytes before `Vec::with_capacity`,
+verifies the returned capacity, and commits armed prospective custody only after the copy.
+The source Message stays live throughout. The temporary destination is borrowed by
+client-auth resolution and then drops/releases before the successor state, Message, or
+connection, avoiding both a second untracked allocation and connection-lifetime retention.
+Owner-free and `no_std` paths preserve the upstream filtered collection behavior.
+
+Focused tests cover exact funded capacity, early release, and max-minus-one denial with no
+leaked debit. Complete retained certificate/session custody and TLS composition remain open.

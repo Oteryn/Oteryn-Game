@@ -137,6 +137,9 @@ pub(crate) struct DecodedCustody {
 
 #[cfg(feature = "std")]
 impl DecodedCustody {
+    pub(crate) fn owner(&self) -> Arc<DecodedOwner> {
+        self.owner.clone()
+    }
     pub(crate) fn exact(owner: Arc<DecodedOwner>, bytes: usize) -> Self {
         owner.custodied.fetch_add(bytes, Ordering::Relaxed);
         Self { owner, bytes, tracked_backing: true }
@@ -170,6 +173,7 @@ impl DecodedCustody {
             Self::exact(self.owner.clone(), capacity),
         ))
     }
+
 }
 
 /// A reservation for backing that has not yet been committed to its final
@@ -239,6 +243,38 @@ pub(crate) type DecodedVec<T> = Vec<T>;
 
 #[cfg(feature = "std")]
 impl<T> DecodedVec<T> {
+    pub(crate) fn try_copy_filtered<F>(
+        owner: Option<Arc<DecodedOwner>>,
+        source: &[T],
+        keep: F,
+    ) -> Result<Self, InvalidMessage>
+    where
+        T: Copy,
+        F: Fn(&T) -> bool,
+    {
+        let count = source.iter().filter(|item| keep(item)).count();
+        if count == 0 {
+            return Ok(Self { values: Vec::new(), custody: None });
+        }
+        let Some(owner) = owner else {
+            return Ok(Self {
+                values: source.iter().copied().filter(keep).collect(),
+                custody: None,
+            });
+        };
+        let bytes = count
+            .checked_mul(size_of::<T>())
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+        let prospective = ProspectiveDecodedCustody::reserve(owner, bytes)?;
+        let mut values = Vec::with_capacity(count);
+        values.extend(source.iter().copied().filter(keep));
+        if values.capacity() != count {
+            drop(values);
+            return Err(InvalidMessage::MessageTooLarge);
+        }
+        Ok(Self { values, custody: Some(prospective.commit()) })
+    }
+
     /// Copy an owner-aware vector whose elements are known not to allocate.
     ///
     /// Allocating element copies require a field-specific fallible operation
@@ -1032,6 +1068,49 @@ mod tests {
         drop(source);
         assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
         drop(reader);
+        drop(decoded);
+        drop(arc_charge);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn decoded_filtered_destination_has_early_drop_custody() {
+        let arc_bytes = DecodedOwner::arc_layout().unwrap();
+        let owner = Arc::new(TestOwner { limit: arc_bytes + 3, used: AtomicUsize::new(0) });
+        let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+
+        let filtered = DecodedVec::try_copy_filtered(
+            Some(decoded.clone()),
+            &[1u8, 2, 3, 4],
+            |value| value % 2 == 0,
+        )
+        .unwrap();
+        assert_eq!(&*filtered, [2, 4]);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 2);
+        drop(filtered);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
+
+        drop(decoded);
+        drop(arc_charge);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn decoded_filtered_destination_max_minus_one_denies_before_allocation() {
+        let arc_bytes = DecodedOwner::arc_layout().unwrap();
+        let owner = Arc::new(TestOwner { limit: arc_bytes + 1, used: AtomicUsize::new(0) });
+        let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+
+        assert_eq!(
+            DecodedVec::try_copy_filtered(
+                Some(decoded.clone()),
+                &[1u8, 2, 3, 4],
+                |value| value % 2 == 0,
+            ),
+            Err(InvalidMessage::MessageTooLarge)
+        );
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
+
         drop(decoded);
         drop(arc_charge);
         assert_eq!(owner.used.load(Ordering::SeqCst), 0);

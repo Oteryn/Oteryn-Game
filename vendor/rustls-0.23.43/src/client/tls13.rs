@@ -20,9 +20,9 @@ use crate::crypto::hash::Hash;
 use crate::crypto::{ActiveKeyExchangeState, SharedSecret};
 #[cfg(feature = "std")]
 use crate::crypto::KxReservation;
-use crate::enums::{
-    AlertDescription, ContentType, HandshakeType, ProtocolVersion, SignatureScheme,
-};
+use crate::enums::{AlertDescription, ContentType, HandshakeType, ProtocolVersion};
+#[cfg(not(feature = "std"))]
+use crate::enums::SignatureScheme;
 use crate::error::{Error, InvalidMessage, PeerIncompatible, PeerMisbehaved};
 use crate::hash_hs::{HandshakeHash, HandshakeHashBuffer};
 use crate::log::{debug, trace, warn};
@@ -936,15 +936,23 @@ impl State<ClientConnectionData> for ExpectCertificateRequest {
             ));
         }
 
-        let compat_sigschemes = certreq
+        let offered_sigschemes = certreq
             .extensions
             .signature_algorithms
             .as_deref()
-            .unwrap_or_default()
+            .unwrap_or_default();
+        #[cfg(feature = "std")]
+        let compat_sigschemes = m
+            .copy_decoded_filter(offered_sigschemes, |scheme| {
+                scheme.supported_in_tls13()
+            })
+            .map_err(Error::InvalidMessage)?;
+        #[cfg(not(feature = "std"))]
+        let compat_sigschemes = offered_sigschemes
             .iter()
-            .cloned()
+            .copied()
             .filter(SignatureScheme::supported_in_tls13)
-            .collect::<Vec<SignatureScheme>>();
+            .collect::<Vec<_>>();
 
         if compat_sigschemes.is_empty() {
             return Err(cx.common.send_fatal_alert(

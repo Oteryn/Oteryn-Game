@@ -4,6 +4,8 @@ use crate::msgs::alert::AlertMessagePayload;
 use crate::msgs::base::Payload;
 use crate::msgs::ccs::ChangeCipherSpecPayload;
 use crate::msgs::codec::{Codec, Reader};
+#[cfg(feature = "std")]
+use crate::msgs::codec::DecodedVec;
 #[cfg(all(feature = "std", not(test)))]
 use crate::msgs::codec::DecodedCustody;
 #[cfg(feature = "std")]
@@ -216,6 +218,26 @@ impl<'a> Message<'a> {
         } else {
             false
         }
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn copy_decoded_filter<T, F>(
+        &self,
+        source: &[T],
+        keep: F,
+    ) -> Result<DecodedVec<T>, InvalidMessage>
+    where
+        T: Copy,
+        F: Fn(&T) -> bool,
+    {
+        #[cfg(not(test))]
+        let owner = self
+            .decoded_custody
+            .as_ref()
+            .map(DecodedCustody::owner);
+        #[cfg(test)]
+        let owner = None;
+        DecodedVec::try_copy_filtered(owner, source, keep)
     }
 
     pub fn build_alert(level: AlertLevel, desc: AlertDescription) -> Self {

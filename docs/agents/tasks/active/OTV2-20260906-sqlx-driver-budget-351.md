@@ -1142,3 +1142,45 @@ The field-migration representation is now also source-compatible with `no_std`:
 The charged `std` copy restrictions and owner-free `no_std` clone/allocation behavior
 therefore remain separate. This is a compatibility repair, not field-migration or
 complete-TLS proof.
+
+## Window39 SQLx-client list census and first divergent lifetime
+
+The owner-aware SQLx client reaches the rustls client handshake only (TCP, no ECH).
+The source census below is limited to generic TLS lists decoded on that graph. In every
+row the source backing debit is the allocator-confirmed `Vec.capacity() * size_of::<T>()`
+reserved by `Codec for Vec<T>` on the same `DecodedOwner`; zero capacity has no debit.
+`Message::decoded_custody` follows the payload fields in drop order and is sufficient only
+for rows whose source backing remains in that payload until message destruction.
+
+| Phase / exact source field | Lifetime | Backing and owner | Exact terminal point |
+| --- | --- | --- | --- |
+| ServerHello `ServerExtensions` optional lists (`versions`, key share and ordinary extension lists) | MESSAGE_LOCAL | each decoded outer `Vec<T>` capacity on the message `DecodedOwner`; nested payload bytes have their own custody | read by `ExpectServerHello*::handle`; source AST dies with `Message` |
+| HelloRetryRequest `HelloRetryRequestExtensions::order` | MESSAGE_LOCAL | `Vec<ExtensionType>` capacity on message custody | ordering checks complete; source dies with HRR `Message` |
+| HelloRetryRequest `cookie: PayloadU16` | DEEP_COPY_DESTINATION | source payload capacity has backing-bound custody; retry-cookie destination is separately reserved | source dies with HRR message; charged destination moves into retry ClientHello successor |
+| EncryptedExtensions extension lists | MESSAGE_LOCAL | decoded outer capacities on message custody | consumed by `ExpectEncryptedExtensions::handle`; source dies with message |
+| TLS 1.3 CertificateRequest `signature_algorithms` | MESSAGE_LOCAL | decoded `Vec<SignatureScheme>` source capacity on message custody | source dies with CertificateRequest message |
+| TLS 1.3 CertificateRequest compatible-signature subset | EARLY_DROP / DEEP_COPY_DESTINATION | new exact-capacity `DecodedVec<SignatureScheme>` destination, separately reserved from the same owner | passed by reference to client-auth resolution, then backing dies and releases before successor/message drop |
+| TLS 1.3 CertificateRequest authority names and compression algorithms | MESSAGE_LOCAL | outer generic list capacities on message custody; name payloads use decoded payload custody | borrowed during resolver/compressor selection, then die with message |
+| TLS 1.2 CertificateRequest `certtypes`, `sigschemes`, `canames` | MESSAGE_LOCAL with later destination copies still open | outer capacities on message custody | consulted by TLS 1.2 client-auth resolution; source dies with message |
+| TLS 1.2/TLS 1.3 Certificate outer entry/chain lists | DEEP_COPY_DESTINATION then MOVE_TO_PEER_CHAIN_SESSION | source outer capacity on message custody; owned certificate bytes and retained destination capacities require independent pre-reservation | source message dies after verification; owned destination moves through verifier state into `CommonState::peer_certificates` and session state |
+| NewSessionTicket extension/metadata lists | MESSAGE_LOCAL with retained ticket copy open | decoded list capacities on message custody | source dies after ticket processing; separately charged ticket/session destination must survive cache retention |
+
+The first new divergent production path is the TLS 1.3 CertificateRequest compatible
+signature list. It no longer uses untracked `collect::<Vec<_>>()`: the message exposes its
+same owner to a `T: Copy` filtered-copy operation, reserves the exact destination capacity
+before allocation, and binds the debit to `DecodedVec`. The source message remains charged
+during construction; the temporary destination releases immediately after client-auth
+resolution, before the successor state and connection are dropped. A max-minus-one test
+denies before destination allocation and an exact funded test proves early release.
+
+This does not close the certificate/peer/session rows, borrowed Payload conversion,
+transcript contexts, or complete-handshake composition.
+
+```yaml
+status: active
+sqlx_client_generic_list_lifetime_census: PROVEN_SOURCE_DERIVED
+certificate_request_compatible_signature_destination: PROVEN_FOCUSED
+generic_handshake_field_migration: IN_PROGRESS
+complete_tls_accounting: NOT_PROVEN
+next_action: continue certificate/peer/session destination custody and owner-aware Message/Payload ownership conversion
+```

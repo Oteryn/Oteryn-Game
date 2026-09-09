@@ -551,3 +551,13 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Continue the complete decoded/TLS and PostgreSQL qualification matrix.
 - [x] Keep `DecodedVec<T>` available as a plain `Vec<T>` alias in `no_std`, with
   custody compiled only for the owner-aware `std` representation.
+
+## Window39 lifetime census and first production divergence
+
+- [x] Census generic list backing reachable from the SQLx rustls client and classify
+  MESSAGE_LOCAL, EARLY_DROP, MOVE_TO_SUCCESSOR/PEER_SESSION, and DEEP_COPY destinations.
+- [x] Replace the TLS 1.3 CertificateRequest compatible-signature `Vec` collection with
+  a separately precharged backing-bound `DecodedVec<SignatureScheme>` temporary.
+- [x] Prove exact funded early-drop release and max-minus-one denial before allocation.
+- [ ] Continue certificate/OCSP, peer-chain/session and Message/Payload destination
+  ownership; complete TLS and PostgreSQL qualification remain open.

@@ -48,6 +48,24 @@ impl<'a> Payload<'a> {
         }
     }
 
+    /// Convert borrowed payload bytes into independently charged backing.
+    /// Owned payloads move allocation-free and therefore need no new debit.
+    #[cfg(feature = "std")]
+    #[allow(dead_code)] // Consumed by the next owner-aware Message conversion.
+    pub(crate) fn into_owned_with_resource_owner(
+        self,
+        source_custody: &DecodedCustody,
+    ) -> Result<(Payload<'static>, Option<DecodedCustody>), InvalidMessage> {
+        match self {
+            Self::Borrowed([]) => Ok((Payload::Owned(Vec::new()), None)),
+            Self::Borrowed(bytes) => {
+                let (bytes, custody) = source_custody.copy_bytes(bytes)?;
+                Ok((Payload::Owned(bytes), Some(custody)))
+            }
+            Self::Owned(bytes) => Ok((Payload::Owned(bytes), None)),
+        }
+    }
+
     pub fn read(r: &mut Reader<'a>) -> Self {
         Self::Borrowed(r.rest())
     }
