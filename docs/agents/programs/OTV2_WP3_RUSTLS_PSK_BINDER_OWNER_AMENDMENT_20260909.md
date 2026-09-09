@@ -88,9 +88,11 @@ No other symbol in either file is granted by this amendment.
 Any activated implementation must:
 
 - reuse the SAME accepted #351/#356 resource owner and ledger; no second owner plane;
-- reserve checked exact prospective backing before each binder-signing allocation or growth;
+- before each binder-signing allocation or growth, reserve a checked, source-proven upper bound for the actual possible resulting `Vec` capacity/backing, not merely the requested element or byte count;
+- treat a requested length/capacity as that bound only when the chosen construction/API has a source-proven contract that the resulting charged capacity cannot exceed the pre-reserved amount;
+- when an allocation API may return capacity above its request, pre-reserve a proven finite upper bound covering that excess, allocate only after reservation, then verify `actual_capacity <= pre_reserved_capacity`; release any unused over-reservation only after that verification and only while every live backing remains fully charged;
+- never use post-allocation discovery or catch-up charging to cover excess capacity; if a temporary has neither a defensible finite pre-allocation upper bound nor an exact-capacity construction strategy, fail closed before allocation with a new exact evidence-backed blocker;
 - use source-derived/non-allocating size calculation where exact preallocation is required;
-- construct destination vectors with the proven exact capacity, verify the resulting capacity, and fail closed if the allocator/result cannot satisfy the proven representation;
 - account simultaneous-live source/destination and dummy/replacement overlap truthfully;
 - retain reservation custody through the actual backing lifetime and release only after backing destruction on success, error, cancellation or unwind;
 - avoid reserve-again when already-charged backing is transferred rather than copied;
@@ -107,7 +109,8 @@ Before this conditional seam can be considered proven, the SAME #356 lineage mus
 - binder-signing full ClientHello temporary backing reserved before allocation;
 - binder-list temporary backing reserved before allocation;
 - dummy-binder and real-binder replacement overlap;
-- exact-capacity or exact-request validation for every newly owner-aware temporary;
+- proof for every newly owner-aware temporary that its pre-reservation covers the actual resulting capacity/backing, including an over-capacity or allocator-rounding case whenever the chosen implementation can exercise one;
+- post-allocation verification that each `actual_capacity <= pre_reserved_capacity`, with any unused over-reservation released only after verification and without undercharging live backing;
 - max-minus-one/underfunded denial before the first unauthorized allocation;
 - failure/unwind after the first temporary but before binder replacement with no leaked or early credit;
 - successful binder generation producing the same wire/transcript semantics as the ordinary path;
