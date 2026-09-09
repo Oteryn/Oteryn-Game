@@ -1089,25 +1089,10 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
 
         let decompressed_len = compressed_cert.uncompressed_len as usize;
         #[cfg(feature = "std")]
-        let prospective_decompression = decoded_owner
-            .as_ref()
-            .map(|owner| {
-                crate::msgs::codec::ProspectiveDecodedCustody::reserve(
-                    owner.clone(),
-                    decompressed_len,
-                )
-            })
-            .transpose()?;
-        let decompress_buffer = vec![0u8; decompressed_len];
-        #[cfg(feature = "std")]
-        let decompression_custody = prospective_decompression.map(|prospective| prospective.commit());
-        #[cfg(feature = "std")]
-        let mut decompressed = ChargedDecompressedCertificate {
-            bytes: decompress_buffer,
-            _custody: decompression_custody,
-        };
+        let mut decompressed =
+            ChargedDecompressedCertificate::new(decoded_owner.as_ref(), decompressed_len)?;
         #[cfg(not(feature = "std"))]
-        let mut decompress_buffer = decompress_buffer;
+        let mut decompress_buffer = vec![0u8; decompressed_len];
         if let Err(compress::DecompressionFailed) =
             decompressor.decompress(
                 compressed_cert.compressed.0.bytes(),
@@ -1248,6 +1233,26 @@ struct ChargedDecompressedCertificate {
     // Backing precedes custody so it is destroyed before the debit releases.
     bytes: Vec<u8>,
     _custody: Option<crate::msgs::codec::DecodedCustody>,
+}
+
+#[cfg(feature = "std")]
+impl ChargedDecompressedCertificate {
+    fn new(
+        owner: Option<&Arc<crate::msgs::codec::DecodedOwner>>,
+        len: usize,
+    ) -> Result<Self, Error> {
+        let prospective = owner
+            .map(|owner| {
+                crate::msgs::codec::ProspectiveDecodedCustody::reserve(owner.clone(), len)
+            })
+            .transpose()?;
+        let bytes = vec![0u8; len];
+        let custody = prospective.map(|prospective| prospective.commit());
+        Ok(Self {
+            bytes,
+            _custody: custody,
+        })
+    }
 }
 
 struct ExpectCertificate {
@@ -1926,7 +1931,7 @@ impl KernelState for ExpectQuicTraffic {
 
 #[cfg(all(test, feature = "std"))]
 mod resource_owner_tests {
-    use core::sync::atomic::{AtomicUsize, Ordering};
+    use core::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
     use std::sync::Arc;
 
     use super::*;
@@ -1942,6 +1947,28 @@ mod resource_owner_tests {
 
     impl DeframerBufferOwner for TestOwner {
         fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+            self.used.fetch_add(bytes, Ordering::SeqCst);
+            Ok(())
+        }
+
+        fn release(&self, bytes: usize) {
+            self.used.fetch_sub(bytes, Ordering::SeqCst);
+        }
+    }
+
+    #[derive(Debug)]
+    struct SwitchOwner {
+        attempts: AtomicUsize,
+        deny: AtomicBool,
+        used: AtomicUsize,
+    }
+
+    impl DeframerBufferOwner for SwitchOwner {
+        fn try_reserve(&self, bytes: usize) -> Result<(), crate::DeframerBufferError> {
+            self.attempts.fetch_add(1, Ordering::SeqCst);
+            if self.deny.load(Ordering::SeqCst) {
+                return Err(crate::DeframerBufferError);
+            }
             self.used.fetch_add(bytes, Ordering::SeqCst);
             Ok(())
         }
@@ -2016,6 +2043,41 @@ mod resource_owner_tests {
         drop(decompressed);
         drop(decompression_custody);
         drop(decoded_owner);
+        drop(arc_charge);
+        assert_eq!(ledger.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn compressed_decompression_custody_denies_before_allocation_and_survives_drop() {
+        let denied = Arc::new(SwitchOwner {
+            attempts: AtomicUsize::new(0),
+            deny: AtomicBool::new(false),
+            used: AtomicUsize::new(0),
+        });
+        let (denied_owner, denied_arc_charge) = DecodedOwner::new(denied.clone()).unwrap();
+        let before_denial = denied.used.load(Ordering::SeqCst);
+        denied.deny.store(true, Ordering::SeqCst);
+        assert!(ChargedDecompressedCertificate::new(Some(&denied_owner), 37).is_err());
+        assert_eq!(denied.used.load(Ordering::SeqCst), before_denial);
+        denied.deny.store(false, Ordering::SeqCst);
+        drop(denied_owner);
+        drop(denied_arc_charge);
+        assert_eq!(denied.used.load(Ordering::SeqCst), 0);
+
+        let ledger = Arc::new(TestOwner {
+            used: AtomicUsize::new(0),
+        });
+        let (owner, arc_charge) = DecodedOwner::new(ledger.clone()).unwrap();
+        let owner_control = ledger.used.load(Ordering::SeqCst);
+        let decompressed = ChargedDecompressedCertificate::new(Some(&owner), 37).unwrap();
+        assert_eq!(decompressed.bytes.capacity(), 37);
+        assert_eq!(ledger.used.load(Ordering::SeqCst), owner_control + 37);
+
+        // A handler error or cancellation drops this value before returning;
+        // the backing field is destroyed before its custody field releases.
+        drop(decompressed);
+        assert_eq!(ledger.used.load(Ordering::SeqCst), owner_control);
+        drop(owner);
         drop(arc_charge);
         assert_eq!(ledger.used.load(Ordering::SeqCst), 0);
     }

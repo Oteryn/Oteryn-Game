@@ -1512,3 +1512,56 @@ tls12_server_kx_source_copy: PROVEN_REMOVED_FOCUSED
 complete_tls_accounting: NOT_PROVEN
 next_action: "SHARED_LEASE_REQUIRED = vendor/rustls-0.23.43/src/client/tls12.rs :: ExpectServerKx::handle + emit_client_kx :: retained signed-parameter and outbound ClientKeyExchange backing are first allocated inside omitted symbols, so downstream charging would be post-allocation"
 ```
+
+## Window54 current-grant exhaustion and consolidated lease boundary
+
+Compressed-certificate decompression admission is now factored through the production
+`ChargedDecompressedCertificate::new` path. Focused denial proves the accepted owner rejects
+before the zeroed destination allocation, while funded drop/error/cancellation-equivalent
+unwind retains the debit until after the decompression backing is destroyed. Together with
+Window52's nested second-decode rollback and the existing source/build path, this completes the
+compressed TLS 1.3 allocation-admission and destruction-time storage qualification available in
+current custody. A separate compressor wire fixture would not close the complete handshake while
+the earlier first-allocation seams below remain open.
+
+A final current-grant source census exhausted the remaining legal cells without using conditional
+#493 or #501:
+
+- TLS 1.2 input `ServerKeyExchangePayload` is borrowed (Window53), but retained signed parameters
+  and outbound ClientKeyExchange backing first allocate inside excluded
+  `ExpectServerKx::handle` and `emit_client_kx`.
+- #427 caller-visible ClientHello sources were classified, but the first unavoidable arbitrary
+  custom-verifier result allocation occurs inside
+  `ServerCertVerifier::supported_verify_schemes()` before the caller receives a length/capacity.
+  Reordering, replacing the verifier result, or assuming WebPki would change accepted custom
+  verifier semantics; charging afterward is forbidden.
+- Transcript `add_message`/`add_raw`/`clone` work cannot establish persistent custody first:
+  normal client flow creates the retained hash context in excluded
+  `HandshakeHashBuffer::start_hash` and later creates the HRR successor encoding in excluded
+  `HandshakeHash::into_hrr_buffer`. The already-authorized add/growth symbols cannot reserve
+  before either allocation or carry their custody backward across those lifecycle transitions.
+- Resumption binder dummy/replacement byte sizes visible to #427 do not close the two internal
+  encoding Vec allocations in `fill_in_psk_binder` /
+  `encoding_for_binder_signing` / `total_binder_length`. Conditional #493 remains inactive and
+  was not used.
+
+The simultaneous-live composition witness therefore carries the proven Tokio blocking owner,
+deframer, decoded/message/payload/certificate/session, AWS-LC provider/KX, and compressed decode
+cells, but keeps the four reachable seams below OPEN. It cannot lawfully assert fail-before-first-
+unauthorized-allocation for a complete handshake until all four are protected and implemented.
+No further current-grant semantic source work remains that can remove those first-allocation
+boundaries without crossing an omitted symbol.
+
+```yaml
+status: blocked_pending_shared_lease
+compressed_tls13_decompression_admission_drop: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+conditional_493_binder: NOT_ACTIVE_CONDITIONAL
+conditional_501_transcript: NOT_ACTIVE_CONDITIONAL
+next_action: >-
+  SHARED_LEASE_REQUIRED =
+  (1) vendor/rustls-0.23.43/src/client/tls12.rs :: ExpectServerKx::handle + emit_client_kx :: retained signed-parameter and outbound ClientKeyExchange backing first allocate inside omitted symbols;
+  (2) vendor/rustls-0.23.43/src/verify.rs :: ServerCertVerifier owner-aware supported-scheme extraction + vendor/rustls-0.23.43/src/webpki/server_verifier.rs :: built-in owner-aware implementation :: arbitrary custom supported_verify_schemes Vec allocates before #427 caller can reserve;
+  (3) vendor/rustls-0.23.43/src/hash_hs.rs :: HandshakeHashBuffer::start_hash + HandshakeHash::into_hrr_buffer and minimum private persistent owner/custody representation :: retained hash Box/C context and HRR successor encoding outlive currently granted add/growth calls;
+  (4) protected conditional #493 symbols only after separate fresh necessity/custody activation :: internal PSK binder-signing encoding Vecs have no #427 caller-visible preallocation seam.
+```

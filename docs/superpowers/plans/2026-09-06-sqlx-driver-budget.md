@@ -672,3 +672,14 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   and omitted `emit_client_kx` outbound backing before their allocations.
 - [ ] Keep #493 binder and #501 transcript/hash conditional surfaces inactive; complete TLS,
   TLS-positive SQLx, and PostgreSQL qualification remain blocked.
+
+## Window54 current-grant terminal census
+
+- [x] Factor compressed decompression admission through the production charged constructor and
+  prove denial before allocation plus destruction-time release for the production storage path.
+- [x] Preserve second-decode nested-error rollback and classify decompression storage admission/drop
+  as current-grant focused-proven without claiming a complete TLS wire witness.
+- [x] Exhaust and record the exact TLS1.2 KX, custom-verifier ClientHello, persistent transcript,
+  and PSK-binder first-allocation boundaries without using conditional #493/#501.
+- [ ] Obtain one consolidated protected amendment for the minimum still-required seams recorded in
+  the task before resuming complete-handshake composition, TLS-positive SQLx, or PostgreSQL 17.6.

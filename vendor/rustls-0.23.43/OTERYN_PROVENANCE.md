@@ -404,3 +404,19 @@ This exhausts the legal source-payload repair but does not cover two later alloc
 owning symbols are outside the active #425 lease: `ExpectServerKx::handle` creates retained
 signed-parameter encoding and `emit_client_kx` creates outbound public-key and encoded-message
 vectors. Complete TLS accounting remains unproven; #493 and #501 remain inactive.
+
+## Current-grant terminal census (Window54)
+
+The production compressed-certificate allocation now uses one fallible charged constructor.
+Focused denial occurs before destination backing allocation, and funded drop/error/cancellation-
+equivalent unwind retains custody until after the backing field is destroyed. Window52 separately
+proves nested second-decode read-error rollback after partial AST destruction.
+
+The remaining complete-handshake proof is not closed by the present authored symbols. Exact source
+census leaves four first-allocation/lifecycle seams: TLS 1.2 retained/outbound KX backing in
+`ExpectServerKx::handle` and `emit_client_kx`; arbitrary custom-verifier scheme backing behind
+`ServerCertVerifier::supported_verify_schemes`; persistent transcript context/HRR successor
+backing in `HandshakeHashBuffer::start_hash` and `HandshakeHash::into_hrr_buffer`; and PSK binder
+internal encodings behind conditional #493. Conditional #493 and #501 remain inactive and no
+source governed only by either was changed. These are carried as OPEN simultaneous-live cells;
+`complete_tls_accounting` remains NOT_PROVEN.
