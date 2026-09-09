@@ -100,18 +100,30 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
         rustls::NamedGroup::secp256r1,
         rustls::NamedGroup::secp384r1,
     ];
-    assert_eq!(ordinary.kx_groups.len(), expected.len());
-    assert!(ordinary
-        .kx_groups
-        .iter()
-        .zip(expected)
-        .all(|(group, expected)| group.name() == expected));
     assert_eq!(provider.kx_groups.len(), expected.len());
+    assert_eq!(ordinary.kx_groups.len(), expected.len());
     assert!(provider
         .kx_groups
         .iter()
         .zip(expected)
         .all(|(group, expected)| group.name() == expected));
+    assert!(ordinary
+        .kx_groups
+        .iter()
+        .zip(expected)
+        .all(|(group, expected)| group.name() == expected));
+    assert_eq!(
+        provider
+            .kx_groups
+            .iter()
+            .map(|group| group.name())
+            .collect::<Vec<_>>(),
+        ordinary
+            .kx_groups
+            .iter()
+            .map(|group| group.name())
+            .collect::<Vec<_>>()
+    );
     let (arc_inner, _) = core::alloc::Layout::new::<[AtomicUsize; 2]>()
         .extend(core::alloc::Layout::new::<rustls::crypto::CryptoProvider>())
         .unwrap();

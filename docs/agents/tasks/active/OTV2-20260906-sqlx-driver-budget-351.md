@@ -677,18 +677,21 @@ shared_lease_required: vendor/sqlx-core-0.9.0/Cargo.toml :: _tls-rustls-aws-lc-r
 next_action: obtain the exact SQLx AWS profile feature amendment, assert the explicit four-name PQ-first order under that profile, then resume the remaining #451 and WP3 matrices
 ```
 
-## Window23 protected PQ-first profile activation
+## Window23 protected PQ-first feature closure
 
-Protected #458 is applied after the normal merge of `main@4f1ce7b4c3092a79ffa42e0b63e786015dedea53`. The isolated SQLx AWS-LC feature now directly requests `rustls/prefer-post-quantum`; `cargo tree -e features -i rustls` attributes that edge to `_tls-rustls-aws-lc-rs`. The executable fresh-process race asserts both the ordinary and owner-aware providers expose exactly `X25519MLKEM768`, `X25519`, `secp256r1`, and `secp384r1`, with no qualification of additional `ALL_KX_GROUPS` entries. The allocation-free provider validation, pointer-identical first-use reuse, one process/configuration debit, and five per-thread debits remain executable on the final PQ-first graph. Root `Cargo.lock` remains byte-identical.
+Protected #458 is applied after normally merging protected
+`main@4f1ce7b4c3092a79ffa42e0b63e786015dedea53`.  The exact SQLx AWS-LC profile
+now requests `rustls/prefer-post-quantum` directly and the executable provider
+test asserts the explicit ordinary and owner-aware order
+`X25519MLKEM768 -> X25519 -> secp256r1 -> secp384r1`, with exactly four
+qualified default entries.  No root manifest or lockfile change is required.
 
 ```yaml
 status: active
+pq_first_profile: PROVEN_FOCUSED
 provider_configuration_owner: PROVEN_FOCUSED
-provider_validation_allocation_free: PROVEN
-provider_racing_first_use: PROVEN
-pq_first_profile: PROVEN
 aws_lc_kx_provider_resident: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
-remaining_acceptance_cells: actual HRR/thread-churn/cancellation matrix; decoded/ClientHello/session/cache/send/transcript/error composition; funded TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
-next_action: complete the remaining #451 provider/KX matrix, then continue the already-protected TLS composition and qualification cells
+remaining_acceptance_cells: actual HRR; thread churn; cancellation/error/drop; decoded/config/session/cache/send/transcript custody; TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: finish the full #451 final-graph matrix, then continue every already-protected TLS and PostgreSQL custody cell
 ```
