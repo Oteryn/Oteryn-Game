@@ -972,7 +972,7 @@ Aggregate KX/provider residency and complete WP3 remain open pending the full
 actual-HRR, thread-churn, cancellation/drop, TLS custody, TLS-positive, and
 PostgreSQL 17.6 matrices on the final graph.
 
-## Window24 actual HelloRetryRequest wire path
+## Window24a actual HelloRetryRequest wire path
 
 The executable AWS-LC SQLx harness now creates an owner-aware PQ-first rustls
 client and an ordinary TLS 1.3 server restricted to P-256, then moves the real
@@ -988,3 +988,13 @@ This closes the actual-wire HRR cell only.  Initial/post-HRR cancellation,
 sequential caller-thread churn, the rest of complete TLS allocation custody,
 the SQLx socket-level TLS-positive case, and PostgreSQL qualification remain
 open; aggregate KX/provider residency is therefore still `NOT_PROVEN`.
+## Window24b retained thread-residency qualification
+
+After the normal protected-main merge, the executable exact-graph AWS-LC proof
+now exercises thread churn on the same root.  Three new threads each acquire
+one 1,360-byte provider residency debit, repeated use on each thread adds no
+second debit, and the next thread is rejected when the retained registrations
+exhaust the root.  The denial occurs in `ensure_aws_lc_provider_residency`
+before provider/KX use.  These shared debits remain intentionally unreleased.
+This closes the focused thread-churn cell only; actual wire HRR, cancellation,
+and complete TLS custody remain open.
