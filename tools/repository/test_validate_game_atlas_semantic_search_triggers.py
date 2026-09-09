@@ -290,6 +290,74 @@ def _strip_yaml_inline_comment(raw: str) -> str:
     return raw.rstrip()
 
 
+def _strip_github_expressions(raw: str) -> str:
+    """Remove GitHub expression delimiters before looking for YAML flow mappings."""
+    output: list[str] = []
+    index = 0
+    while index < len(raw):
+        if raw.startswith("${{", index):
+            end = raw.find("}}", index + 3)
+            assert end >= 0, "unterminated GitHub expression"
+            output.append("GITHUB_EXPRESSION")
+            index = end + 2
+            continue
+        output.append(raw[index])
+        index += 1
+    return "".join(output)
+
+
+def _has_unquoted_flow_mapping(text: str) -> bool:
+    quote: str | None = None
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if quote == "'":
+            if char == "'":
+                if index + 1 < len(text) and text[index + 1] == "'":
+                    index += 2
+                    continue
+                quote = None
+            index += 1
+            continue
+        if quote == '"':
+            if char == "\\":
+                index += 2
+                continue
+            if char == '"':
+                quote = None
+            index += 1
+            continue
+        if char in ("'", '"'):
+            quote = char
+            index += 1
+            continue
+        if char in "{}":
+            return True
+        index += 1
+    return False
+
+
+def _assert_no_flow_style_mappings(workflow: str) -> None:
+    """Fail closed on YAML flow mappings while ignoring literal block-scalar bodies."""
+    block_scalar_indent: int | None = None
+    for line in workflow.splitlines():
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip(" "))
+        if block_scalar_indent is not None:
+            if not stripped:
+                continue
+            if indent > block_scalar_indent:
+                continue
+            block_scalar_indent = None
+
+        structural = _strip_yaml_inline_comment(_strip_github_expressions(line))
+        if re.search(r":\s*[|>][+-]?\d?\s*$", structural):
+            block_scalar_indent = indent
+        assert not _has_unquoted_flow_mapping(structural), (
+            f"YAML flow-style mappings are forbidden in protected workflows: {line!r}"
+        )
+
+
 def _decoded_mapping_values(workflow: str, wanted_key: str) -> tuple[str, ...]:
     values: list[str] = []
     for line in workflow.splitlines():
@@ -330,33 +398,59 @@ def _python_heredoc(workflow: str, step_name: str) -> str:
     return textwrap.dedent(match.group("code"))
 
 
+def _call_name(node: ast.expr) -> str | None:
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        prefix = _call_name(node.value)
+        return f"{prefix}.{node.attr}" if prefix else node.attr
+    return None
+
+
 def _assert_executable_assertions(code: str, expected: tuple[str, ...]) -> None:
     tree = ast.parse(code)
-    forbidden_control_flow = (
-        ast.If,
-        ast.For,
-        ast.AsyncFor,
-        ast.While,
-        ast.Try,
-        ast.With,
-        ast.AsyncWith,
-        ast.Match,
-        ast.FunctionDef,
-        ast.AsyncFunctionDef,
-        ast.ClassDef,
-        ast.Raise,
-    )
-    assert not any(isinstance(node, forbidden_control_flow) for node in tree.body), (
+    allowed_top_level = (ast.Import, ast.ImportFrom, ast.Assign, ast.Assert, ast.Expr)
+    assert all(isinstance(statement, allowed_top_level) for statement in tree.body), (
         "oracle heredoc must remain straight-line top-level code"
     )
-    actual = {
+
+    terminating_calls = {
+        "exit",
+        "quit",
+        "sys.exit",
+        "os._exit",
+        "os.abort",
+        "builtins.exit",
+        "builtins.quit",
+    }
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            name = _call_name(node.func)
+            assert name not in terminating_calls, f"terminating oracle call is forbidden: {name}"
+
+    expression_statements = [
+        (index, statement)
+        for index, statement in enumerate(tree.body)
+        if isinstance(statement, ast.Expr)
+    ]
+    assert len(expression_statements) <= 1, "oracle heredoc may only have one trailing expression"
+    if expression_statements:
+        index, statement = expression_statements[0]
+        assert index == len(tree.body) - 1, "oracle expression must be the final statement"
+        assert isinstance(statement.value, ast.Call) and _call_name(statement.value.func) == "print", (
+            "only a final diagnostic print call is allowed in oracle heredocs"
+        )
+
+    actual = tuple(
         ast.dump(statement.test, include_attributes=False)
         for statement in tree.body
         if isinstance(statement, ast.Assert)
-    }
-    for expression in expected:
-        wanted = ast.dump(ast.parse(expression, mode="eval").body, include_attributes=False)
-        assert wanted in actual, f"missing executable top-level assertion: {expression}"
+    )
+    wanted = tuple(
+        ast.dump(ast.parse(expression, mode="eval").body, include_attributes=False)
+        for expression in expected
+    )
+    assert actual == wanted, "oracle assertions must remain complete, ordered, and directly executable"
 
 
 def _assert_active_run_command(workflow: str, command: str) -> None:
@@ -376,19 +470,6 @@ def _assert_read_only_permissions(workflow: str) -> None:
     assert "write-all" not in workflow
 
 
-def _normalize_static_condition(raw: str) -> str:
-    raw = _strip_yaml_inline_comment(raw).strip()
-    assert raw, "empty if condition"
-    if raw.startswith(("'", '"')):
-        raw = _decode_yaml_scalar(raw).strip()
-    if raw.startswith("${{") and raw.endswith("}}"):
-        raw = raw[3:-2].strip()
-    normalized = re.sub(r"\s+", "", raw).lower()
-    while len(normalized) >= 2 and normalized.startswith("(") and normalized.endswith(")"):
-        normalized = normalized[1:-1]
-    return normalized
-
-
 def _assert_pinned_actions_and_no_bypass(workflow: str) -> None:
     actions = tuple(_decode_mapping_scalar(raw) for raw in _decoded_mapping_values(workflow, "uses"))
     assert actions
@@ -398,11 +479,9 @@ def _assert_pinned_actions_and_no_bypass(workflow: str) -> None:
     keys = _decoded_indented_mapping_keys(workflow)
     assert "continue-on-error" not in keys
     assert "continue-on-error" not in workflow
-    static_false = {"false", "no", "off", "0", "-0", "null", "~", "!true"}
-    for raw_condition in _decoded_mapping_values(workflow, "if"):
-        assert _normalize_static_condition(raw_condition) not in static_false, (
-            f"statically false workflow condition is forbidden: {raw_condition!r}"
-        )
+    assert not _decoded_mapping_values(workflow, "if"), (
+        "workflow if conditions are forbidden in protected Atlas qualification workflows"
+    )
 
 
 def _assert_contract(semantic: str, static: str) -> None:
@@ -415,6 +494,8 @@ def _assert_contract(semantic: str, static: str) -> None:
     assert "branches: [main]" in _event_block(semantic, "push")
     assert not re.search(r"(?m)^  push:", static)
 
+    _assert_no_flow_style_mappings(semantic)
+    _assert_no_flow_style_mappings(static)
     _assert_active_run_command(semantic, REGRESSION_COMMAND)
     _assert_active_run_command(static, REGRESSION_COMMAND)
     _assert_active_run_command(semantic, "python tools/game-atlas-semantic-search/self_test.py")
@@ -514,12 +595,28 @@ class AtlasTriggerClosureTest(unittest.TestCase):
         with self.assertRaises(AssertionError):
             _assert_pinned_actions_and_no_bypass(quoted_uses)
 
+        flow_uses = (
+            "jobs:\n"
+            "  verify:\n"
+            "    steps:\n"
+            '      - {name: bad, "uses": actions/setup-python@main}\n'
+        )
+        with self.assertRaises(AssertionError):
+            _assert_no_flow_style_mappings(flow_uses)
+
+        flow_permissions = (
+            "jobs:\n"
+            "  verify: {runs-on: ubuntu-24.04, permissions: {contents: write}, steps: []}\n"
+        )
+        with self.assertRaises(AssertionError):
+            _assert_no_flow_style_mappings(flow_permissions)
+
         false_condition = (
             "jobs:\n"
             "  verify:\n"
             "    steps:\n"
             "      - name: disabled\n"
-            "        if: ${{ false }}\n"
+            "        if: ${{ false && true }}\n"
             "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1\n"
         )
         with self.assertRaises(AssertionError):
@@ -527,6 +624,11 @@ class AtlasTriggerClosureTest(unittest.TestCase):
 
         with self.assertRaises(AssertionError):
             _assert_executable_assertions("if False:\n    assert value == 1\n", ("value == 1",))
+        with self.assertRaises(AssertionError):
+            _assert_executable_assertions(
+                "import sys\nsys.exit(0)\nassert value == 1\n",
+                ("value == 1",),
+            )
 
     def test_exact_oracles_and_workflow_safety_remain(self) -> None:
         _assert_contract(self.semantic, self.static)
@@ -608,6 +710,42 @@ class AtlasTriggerClosureTest(unittest.TestCase):
                 self.semantic.replace(
                     "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
                     "        if: ${{ false }}\n"
+                    "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "          import json\n",
+                    "          import json, sys\n"
+                    "          sys.exit(0)\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "      - name: Check out exact Game revision\n"
+                    "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n",
+                    '      - {name: bad, "uses": actions/checkout@main}\n',
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "jobs:\n",
+                    "jobs:\n"
+                    "  injected: {runs-on: ubuntu-24.04, permissions: {contents: write}, steps: []}\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace(
+                    "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "        if: ${{ false && true }}\n"
                     "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
                     1,
                 ),
