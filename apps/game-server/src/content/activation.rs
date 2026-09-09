@@ -99,7 +99,13 @@ impl From<ContentError> for ContentActivationError {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+/// The authoritative runtime generation is intentionally non-cloneable.
+///
+/// ```compile_fail
+/// fn require_clone<T: Clone>() {}
+/// require_clone::<oteryn_game_server::content::ActiveGeneration>();
+/// ```
+#[derive(Debug, PartialEq, Eq)]
 pub struct ActiveGeneration {
     identity: GenerationIdentity,
     activation_sequence: u64,
@@ -572,7 +578,15 @@ mod tests {
             )?
             .clone();
         controller.activate(&authorization(&first_identity, None, 10))?;
-        let active_before = controller.active().cloned().ok_or("active missing")?;
+        let active_before_identity = controller
+            .active()
+            .map(ActiveGeneration::identity)
+            .cloned()
+            .ok_or("active missing")?;
+        let active_before_sequence = controller
+            .active()
+            .map(ActiveGeneration::activation_sequence)
+            .ok_or("active missing")?;
 
         controller.stage_primary(
             &second.server_artifact,
@@ -589,28 +603,64 @@ mod tests {
             controller.activate(&wrong_target),
             Err(ContentActivationError::AuthorizationTargetMismatch)
         ));
-        assert_eq!(controller.active(), Some(&active_before));
+        assert_eq!(
+            controller.active().map(ActiveGeneration::identity),
+            Some(&active_before_identity)
+        );
+        assert_eq!(
+            controller
+                .active()
+                .map(ActiveGeneration::activation_sequence),
+            Some(active_before_sequence)
+        );
 
         let stale_expected = authorization(&second_identity, None, 11);
         assert!(matches!(
             controller.activate(&stale_expected),
             Err(ContentActivationError::ExpectedCurrentMismatch)
         ));
-        assert_eq!(controller.active(), Some(&active_before));
+        assert_eq!(
+            controller.active().map(ActiveGeneration::identity),
+            Some(&active_before_identity)
+        );
+        assert_eq!(
+            controller
+                .active()
+                .map(ActiveGeneration::activation_sequence),
+            Some(active_before_sequence)
+        );
 
         let stale_sequence = authorization(&second_identity, Some((&first_identity, 9)), 11);
         assert!(matches!(
             controller.activate(&stale_sequence),
             Err(ContentActivationError::ExpectedCurrentMismatch)
         ));
-        assert_eq!(controller.active(), Some(&active_before));
+        assert_eq!(
+            controller.active().map(ActiveGeneration::identity),
+            Some(&active_before_identity)
+        );
+        assert_eq!(
+            controller
+                .active()
+                .map(ActiveGeneration::activation_sequence),
+            Some(active_before_sequence)
+        );
 
         let nonmonotonic = authorization(&second_identity, Some((&first_identity, 10)), 10);
         assert!(matches!(
             controller.activate(&nonmonotonic),
             Err(ContentActivationError::NonMonotonicActivationSequence { .. })
         ));
-        assert_eq!(controller.active(), Some(&active_before));
+        assert_eq!(
+            controller.active().map(ActiveGeneration::identity),
+            Some(&active_before_identity)
+        );
+        assert_eq!(
+            controller
+                .active()
+                .map(ActiveGeneration::activation_sequence),
+            Some(active_before_sequence)
+        );
         assert_eq!(controller.staged_identity(), Some(&second_identity));
         Ok(())
     }

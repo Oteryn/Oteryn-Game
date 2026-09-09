@@ -108,11 +108,14 @@ impl FirstProductionLimits {
 
 fn has_nonproduction_marker(value: &str) -> bool {
     let lower = value.to_ascii_lowercase();
+    let has_test_segment = lower
+        .split([':', '.', '/', '_', '-'])
+        .any(|segment| segment == "test");
     lower.contains("fixture")
         || lower.contains("synthetic")
         || lower.contains("evidence")
-        || lower.starts_with("test:")
         || lower.contains("test-only")
+        || has_test_segment
 }
 
 fn valid_key_bytes(value: &str) -> bool {
@@ -668,15 +671,23 @@ impl ProductionArtifactMetadata {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FirstProductionExpectation {
     metadata: ProductionArtifactMetadata,
+    server_artifact_digest: [u8; 32],
+    client_artifact_digest: [u8; 32],
 }
 
 impl FirstProductionExpectation {
-    fn from_source(source: &FirstProductionContentSource) -> Result<Self, ContentError> {
+    fn from_source(
+        source: &FirstProductionContentSource,
+        server_artifact_digest: [u8; 32],
+        client_artifact_digest: [u8; 32],
+    ) -> Result<Self, ContentError> {
         Ok(Self {
             metadata: ProductionArtifactMetadata::from_source(
                 source,
                 ProductionProjection::ServerAuthoritative,
             )?,
+            server_artifact_digest,
+            client_artifact_digest,
         })
     }
 
@@ -696,6 +707,8 @@ impl FirstProductionExpectation {
                 migration_class: identity.migration_class,
                 capability_profile: identity.capability_profile.clone(),
             },
+            server_artifact_digest: identity.server_artifact_digest,
+            client_artifact_digest: identity.client_artifact_digest,
         }
     }
 
@@ -763,7 +776,11 @@ pub fn compile_first_production(
         client_artifact: client.bytes,
         server_digest: server.digest,
         client_digest: client.digest,
-        expectation: FirstProductionExpectation::from_source(&canonical.source)?,
+        expectation: FirstProductionExpectation::from_source(
+            &canonical.source,
+            server.digest,
+            client.digest,
+        )?,
     })
 }
 
@@ -1750,6 +1767,13 @@ impl StagedGeneration {
         verify_projection_pair_semantics(&server.records, &client.records)?;
         verify_expected(&server.metadata, expected)?;
         verify_expected(&client.metadata, expected)?;
+        if server.artifact_digest != expected.server_artifact_digest
+            || client.artifact_digest != expected.client_artifact_digest
+        {
+            return Err(ContentError::RevisionMismatch(
+                "first-production expected artifact digest pair",
+            ));
+        }
         let decoded_fields = server
             .decoded_fields
             .checked_add(client.decoded_fields)
@@ -3015,7 +3039,7 @@ mod tests {
             ProductionArtifactMetadata::from_source(&two, ProductionProjection::ClientSafe)?;
         let server = encode_artifact(&server_metadata, &server_records(&two)?)?;
         let client = encode_artifact(&client_metadata, &client_records(&two))?;
-        let expected = FirstProductionExpectation::from_source(&two)?;
+        let expected = FirstProductionExpectation::from_source(&two, server.digest, client.digest)?;
         assert!(matches!(
             StagedGeneration::stage(&server.bytes, &client.bytes, &expected),
             Err(ContentError::LimitExceeded {
@@ -3047,6 +3071,8 @@ mod tests {
     #[test]
     fn nonproduction_markers_and_digest_shape_are_rejected() {
         assert!(ProductionKey::new("oteryn:fixture.item").is_err());
+        assert!(ProductionKey::new("oteryn:test.formula").is_err());
+        assert!(ProductionKey::new("oteryn:prod.test.formula").is_err());
         assert!(ProductionAtom::new("presentation", "synthetic://asset").is_err());
         assert!(ProductionAtom::new("profile", "evidence:test-v1").is_err());
         assert!(
@@ -3104,12 +3130,47 @@ mod tests {
             ProductionArtifactMetadata::from_source(&source, ProductionProjection::ClientSafe)?;
         let server = encode_artifact(&server_metadata, &server_records(&source)?)?;
         let client = encode_artifact(&client_metadata, &client_records(&source))?;
-        let expected = FirstProductionExpectation::from_source(&source)?;
+        let expected =
+            FirstProductionExpectation::from_source(&source, server.digest, client.digest)?;
 
         assert!(matches!(
             StagedGeneration::stage(&server.bytes, &client.bytes, &expected),
             Err(ContentError::InvalidArtifact(
                 "first-production cells must contain at least 3 entries"
+            ))
+        ));
+        Ok(())
+    }
+
+    #[test]
+    fn staging_expectation_binds_exact_artifact_digest_pair() -> Result<(), ContentError> {
+        let source = test_source(3)?;
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let mut records = server_records(&source)?;
+        let cell = records
+            .iter_mut()
+            .find(|record| record.kind == RECORD_CELL)
+            .ok_or(ContentError::InvalidArtifact("cell record missing in test"))?;
+        cell.fields[7] = if cell.fields[7] == "walkable" {
+            "blocked".to_owned()
+        } else {
+            "walkable".to_owned()
+        };
+        let metadata = ProductionArtifactMetadata::from_source(
+            &source,
+            ProductionProjection::ServerAuthoritative,
+        )?;
+        let crafted = encode_artifact(&metadata, &records)?;
+
+        assert!(matches!(
+            StagedGeneration::stage(
+                &crafted.bytes,
+                &compiled.client_artifact,
+                compiled.expectation(),
+            ),
+            Err(ContentError::RevisionMismatch(
+                "first-production expected artifact digest pair"
             ))
         ));
         Ok(())
