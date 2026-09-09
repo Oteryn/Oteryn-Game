@@ -540,6 +540,49 @@ mod tests {
         assert_eq!(owner.used.load(Ordering::SeqCst), 0);
     }
 
+    #[test]
+    fn span_owner_denies_growth_before_replacing_live_backing() {
+        let initial = 16 * size_of::<FragmentSpan>();
+        let owner = Arc::new(SpanOwner {
+            // There is enough budget for the live initial allocation, but one
+            // byte less than the old + prospective replacement overlap.
+            limit: initial + (32 * size_of::<FragmentSpan>()) - 1,
+            used: AtomicUsize::new(0),
+            peak: AtomicUsize::new(0),
+        });
+        let mut hs = HandshakeDeframer::new_with_resource_owner(owner.clone()).unwrap();
+
+        for i in 0..16 {
+            hs.push_span(FragmentSpan {
+                version: ProtocolVersion::TLSv1_3,
+                size: Some(0),
+                bounds: i..i + HANDSHAKE_HEADER_LEN,
+            })
+            .unwrap();
+        }
+
+        let old_ptr = hs.spans.as_ptr();
+        let old_capacity = hs.spans.capacity();
+        assert!(hs
+            .push_span(FragmentSpan {
+                version: ProtocolVersion::TLSv1_3,
+                size: Some(0),
+                bounds: 16..16 + HANDSHAKE_HEADER_LEN,
+            })
+            .is_err());
+
+        // Denial precedes replacement allocation and mutation: the original
+        // backing, contents, capacity, and charge remain under custody.
+        assert_eq!(hs.spans.as_ptr(), old_ptr);
+        assert_eq!(hs.spans.capacity(), old_capacity);
+        assert_eq!(hs.spans.len(), 16);
+        assert_eq!(owner.used.load(Ordering::SeqCst), initial);
+        assert_eq!(owner.peak.load(Ordering::SeqCst), initial);
+
+        drop(hs);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
     fn add_bytes(hs: &mut HandshakeDeframer, slice: &[u8], within: &[u8]) {
         let msg = InboundPlainMessage {
             typ: ContentType::Handshake,

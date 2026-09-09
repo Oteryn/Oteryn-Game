@@ -71,3 +71,8 @@ release.  Focused inline tests cover initial max-minus-one denial, exact initial
 capacity, growth overlap, retained high-water custody, and final release.  This
 is one protected decoded-owner boundary only; complete decoded/TLS accounting
 remains open.
+
+The final-graph regression additionally funds the live 16-element span backing
+with one byte less than the prospective 32-element replacement overlap. It
+proves denial occurs before replacement allocation or mutation: pointer,
+capacity, contents, and the old charge remain unchanged until deframer drop.

@@ -807,3 +807,20 @@ complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: generic reader/list/payload/message ownership; transcript; decoded ClientHello/ServerHello; certificate/OCSP and successor-state custody; compressed certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
 next_action: continue the remaining protected #425 boundaries on this same lineage
 ```
+
+## Window28 decoded span growth-denial regression
+
+Protected `main@10ce3393a51dac14105b831040e1f4faa3ca565f` was normally merged into
+the canonical lineage. The span-owner test matrix now also exercises a full
+16-element vector with one byte less than the old-plus-32-element replacement
+overlap. Denial leaves the original pointer, capacity, contents, and charge
+unchanged and releases that charge only after the original backing is dropped.
+
+```yaml
+status: active
+aws_lc_kx_provider_resident: PROVEN
+handshake_span_growth_denial_before_allocation: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: generic reader/list/payload/message ownership; transcript; decoded ClientHello/ServerHello; certificate/OCSP and successor-state custody; compressed certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: continue the remaining protected #425 boundaries on this same lineage
+```
