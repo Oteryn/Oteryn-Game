@@ -58,15 +58,20 @@ fn main() {
     let _exit = App::new()
         .insert_resource(BenchRuntime::new(config, snapshot))
         .insert_resource(WinitSettings::continuous())
-        .add_plugins(DefaultPlugins.set(ImagePlugin::default_nearest()).set(WindowPlugin {
-            primary_window: Some(Window {
-                title: "Oteryn graphics bake-off — Bevy 0.19.1".to_owned(),
-                present_mode: PresentMode::AutoNoVsync,
-                resolution: WindowResolution::new(width, height).with_scale_factor_override(1.0),
-                ..default()
-            }),
-            ..default()
-        }))
+        .add_plugins(
+            DefaultPlugins
+                .set(ImagePlugin::default_nearest())
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: "Oteryn graphics bake-off — Bevy 0.19.1".to_owned(),
+                        present_mode: PresentMode::AutoNoVsync,
+                        resolution: WindowResolution::new(width, height)
+                            .with_scale_factor_override(1.0),
+                        ..default()
+                    }),
+                    ..default()
+                }),
+        )
         .add_systems(Startup, setup)
         .add_systems(Update, benchmark_tick)
         .run();
