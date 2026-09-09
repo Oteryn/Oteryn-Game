@@ -25,6 +25,8 @@ use crate::net::Socket;
 pub struct RustlsSocket<S: Socket> {
     inner: StdSocket<S>,
     state: ClientConnection,
+    // Connection-held owner Arcs are dropped with `state` before this charge.
+    _owner_allocation: Option<crate::net::resource_budget::ResourceReservation>,
     close_notify_sent: bool,
 }
 
@@ -186,6 +188,7 @@ where
     let mut socket = RustlsSocket {
         inner: StdSocket::new(socket),
         state: ClientConnection::new(Arc::new(config), host).map_err(Error::tls)?,
+        _owner_allocation: None,
         close_notify_sent: false,
     };
 
@@ -203,12 +206,23 @@ pub async fn handshake_with_resource_budget<S>(
 where
     S: Socket,
 {
+    use core::alloc::Layout;
+    use core::sync::atomic::AtomicUsize;
+    use crate::net::resource_budget::ResourceReservation;
+
+    let (owner_arc_layout, _) = Layout::new::<[AtomicUsize; 2]>()
+        .extend(Layout::new::<DeframerBudgetOwner>())
+        .map_err(|_| Error::tls("resource-owner Arc layout overflow"))?;
+    let owner_allocation = ResourceReservation::try_new(
+        resource_budget.clone(),
+        owner_arc_layout.pad_to_align().size(),
+    )
+    .map_err(|_| Error::tls("resource-owner allocation denied"))?;
     let owner: Arc<dyn rustls::DeframerBufferOwner> =
         Arc::new(DeframerBudgetOwner(resource_budget.clone()));
     #[cfg(feature = "_tls-rustls-aws-lc-rs")]
-    rustls::crypto::ensure_aws_lc_provider_residency(owner.clone()).map_err(Error::tls)?;
-    #[cfg(feature = "_tls-rustls-aws-lc-rs")]
-    let provider = Arc::new(rustls::crypto::aws_lc_rs::default_provider());
+    let provider = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner.clone())
+        .map_err(Error::tls)?;
     #[cfg(not(feature = "_tls-rustls-aws-lc-rs"))]
     let provider = Arc::new(rustls::crypto::ring::default_provider());
     if cfg!(not(feature = "_tls-rustls-aws-lc-rs")) {
@@ -292,11 +306,13 @@ where
     };
 
     let host = ServerName::try_from(tls_config.hostname.to_owned()).map_err(Error::tls)?;
-    let state = ClientConnection::new_with_resource_owner(Arc::new(config), host, owner)
+    let state = ClientConnection::new_with_resource_owner(Arc::new(config), host, owner.clone())
         .map_err(Error::tls)?;
+    drop(owner);
     let mut socket = RustlsSocket {
         inner: StdSocket::new(socket),
         state,
+        _owner_allocation: Some(owner_allocation),
         close_notify_sent: false,
     };
     socket.complete_io().await?;

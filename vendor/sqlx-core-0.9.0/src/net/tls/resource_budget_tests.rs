@@ -66,7 +66,28 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
     let process = ledger(1_000_000);
     let process_owner: Arc<dyn rustls::DeframerBufferOwner> =
         Arc::new(DeframerBudgetOwner(process.clone()));
-    rustls::crypto::ensure_aws_lc_provider_residency(process_owner).unwrap();
+    let provider = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(
+        process_owner.clone(),
+    )
+    .unwrap();
+    let repeated = rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(process_owner)
+        .unwrap();
+    assert!(Arc::ptr_eq(&provider, &repeated));
+    assert_eq!(provider.cipher_suites.capacity(), provider.cipher_suites.len());
+    assert_eq!(provider.kx_groups.capacity(), provider.kx_groups.len());
+    let ordinary = rustls::crypto::aws_lc_rs::default_provider();
+    assert_eq!(
+        provider
+            .kx_groups
+            .iter()
+            .map(|group| group.name())
+            .collect::<Vec<_>>(),
+        ordinary
+            .kx_groups
+            .iter()
+            .map(|group| group.name())
+            .collect::<Vec<_>>()
+    );
     let shared = process.used.load(Ordering::Acquire);
     assert!(shared >= 140_208 + 2 * 4096 + 1360);
 

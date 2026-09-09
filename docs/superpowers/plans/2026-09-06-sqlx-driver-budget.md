@@ -331,3 +331,11 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   provider-configuration owner boundary are unaffected by this correction.
 - [ ] Stop at the unchanged unleased
   `crypto/aws_lc_rs/mod.rs::{default_provider,default_kx_groups}` boundary.
+
+## Window21 provider configuration
+
+- [x] Merge protected `main@0c69d04a49778e539515fb6848b0ab89268c1fa9` normally.
+- [x] Replace the uncharged per-connection AWS-LC provider configuration with one exact-layout, same-root, process-shared owner-aware provider.
+- [x] Remove process retention of the caller's owner-wrapper Arc and precharge the remaining per-connection owner Arc allocation.
+- [x] Preserve ordinary provider construction and the protected AWS-LC KX bounds/order.
+- [ ] Reproduce actual HRR, provider first-use/thread-churn, cancellation, and the remaining decoded/config/session/cache/send/transcript/error matrix before aggregate WP3 GREEN.

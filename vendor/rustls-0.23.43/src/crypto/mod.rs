@@ -444,8 +444,7 @@ pub trait SupportedKxGroup: Send + Sync + Debug {
 }
 
 #[cfg(all(feature = "std", feature = "aws_lc_rs", target_os = "linux", target_arch = "x86_64"))]
-static AWS_LC_PROCESS_OWNER: std::sync::Mutex<Option<Arc<dyn DeframerBufferOwner>>> =
-    std::sync::Mutex::new(None);
+static AWS_LC_PROCESS_INITIALIZED: std::sync::Mutex<bool> = std::sync::Mutex::new(false);
 
 #[cfg(all(feature = "std", feature = "aws_lc_rs", target_os = "linux", target_arch = "x86_64"))]
 std::thread_local! {
@@ -483,16 +482,19 @@ pub fn ensure_aws_lc_provider_residency(
         .and_then(|pages| pages.checked_add(140_208))
         .ok_or(Error::FailedToGetRandomBytes)?;
 
-    let mut process_owner = AWS_LC_PROCESS_OWNER
+    let mut process_initialized = AWS_LC_PROCESS_INITIALIZED
         .lock()
         .map_err(|_| Error::FailedToGetRandomBytes)?;
-    if process_owner.is_none() {
+    if !*process_initialized {
         owner
             .try_reserve_provider_shared(process_bytes)
             .map_err(|_| Error::FailedToGetRandomBytes)?;
-        *process_owner = Some(owner.clone());
+        // The shared-root debit has no release operation and intentionally
+        // survives until process teardown.  Retaining the caller's Arc here
+        // would add an uncharged process-lifetime allocation.
+        *process_initialized = true;
     }
-    drop(process_owner);
+    drop(process_initialized);
 
     AWS_LC_THREAD_OWNER_REGISTERED.with(|registered| {
         if registered.get() {

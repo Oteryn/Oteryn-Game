@@ -1,5 +1,17 @@
 use alloc::vec::Vec;
 
+#[cfg(all(feature = "std", not(feature = "fips"), target_os = "linux", target_arch = "x86_64"))]
+use core::alloc::Layout;
+#[cfg(all(
+    feature = "std",
+    not(feature = "fips"),
+    target_os = "linux",
+    target_arch = "x86_64"
+))]
+use core::mem::size_of;
+#[cfg(all(feature = "std", not(feature = "fips"), target_os = "linux", target_arch = "x86_64"))]
+use core::sync::atomic::AtomicUsize;
+
 // aws-lc-rs has a -- roughly -- ring-compatible API, so we just reuse all that
 // glue here.  The shared files should always use `super::ring_like` to access a
 // ring-compatible crate, and `super::ring_shim` to bridge the gaps where they are
@@ -9,6 +21,8 @@ use pki_types::PrivateKeyDer;
 use webpki::aws_lc_rs as webpki_algs;
 
 use crate::crypto::{CryptoProvider, KeyProvider, SecureRandom, SupportedKxGroup};
+#[cfg(all(feature = "std", not(feature = "fips"), target_os = "linux", target_arch = "x86_64"))]
+use crate::DeframerBufferOwner;
 use crate::enums::SignatureScheme;
 use crate::rand::GetRandomFailed;
 use crate::sign::SigningKey;
@@ -61,6 +75,175 @@ fn default_kx_groups() -> Vec<&'static dyn SupportedKxGroup> {
     #[cfg(not(feature = "fips"))]
     {
         DEFAULT_KX_GROUPS.to_vec()
+    }
+}
+
+#[cfg(all(feature = "std", not(feature = "fips"), target_os = "linux", target_arch = "x86_64"))]
+static OWNER_DEFAULT_PROVIDER: std::sync::Mutex<Option<Arc<CryptoProvider>>> =
+    std::sync::Mutex::new(None);
+
+#[cfg(all(feature = "std", not(feature = "fips"), target_os = "linux", target_arch = "x86_64"))]
+fn owner_default_provider_bytes() -> Result<usize, Error> {
+    let cipher_vec = DEFAULT_CIPHER_SUITES
+        .len()
+        .checked_mul(size_of::<SupportedCipherSuite>())
+        .ok_or(Error::FailedToGetRandomBytes)?;
+    let kx_vec = DEFAULT_KX_GROUPS
+        .len()
+        .checked_mul(size_of::<&'static dyn SupportedKxGroup>())
+        .ok_or(Error::FailedToGetRandomBytes)?;
+
+    // Rust 1.94 alloc::sync::Arc requests the padded ArcInner<T> layout:
+    // two AtomicUsize counters followed by T.
+    let (arc_inner, _) = Layout::new::<[AtomicUsize; 2]>()
+        .extend(Layout::new::<CryptoProvider>())
+        .map_err(|_| Error::FailedToGetRandomBytes)?;
+    let arc_provider = arc_inner.pad_to_align().size();
+
+    cipher_vec
+        .checked_add(kx_vec)
+        .and_then(|bytes| bytes.checked_add(arc_provider))
+        .ok_or(Error::FailedToGetRandomBytes)
+}
+
+/// Return the process-shared default AWS-LC provider after charging its exact
+/// Rust 1.94 configuration backing to the caller's shared root.
+#[cfg(all(feature = "std", not(feature = "fips"), target_os = "linux", target_arch = "x86_64"))]
+pub fn default_provider_with_resource_owner(
+    owner: Arc<dyn DeframerBufferOwner>,
+) -> Result<Arc<CryptoProvider>, Error> {
+    super::ensure_aws_lc_provider_residency(owner.clone())?;
+    let mut shared = OWNER_DEFAULT_PROVIDER
+        .lock()
+        .map_err(|_| Error::FailedToGetRandomBytes)?;
+    if let Some(provider) = shared.as_ref() {
+        return Ok(provider.clone());
+    }
+
+    let bytes = owner_default_provider_bytes()?;
+    owner
+        .try_reserve_provider_shared(bytes)
+        .map_err(|_| Error::FailedToGetRandomBytes)?;
+    let provider = Arc::new(default_provider());
+    if provider.cipher_suites.capacity() != DEFAULT_CIPHER_SUITES.len()
+        || provider.kx_groups.capacity() != DEFAULT_KX_GROUPS.len()
+        || provider.cipher_suites.as_slice() != DEFAULT_CIPHER_SUITES
+        || provider.kx_groups.iter().map(|group| group.name()).collect::<Vec<_>>()
+            != DEFAULT_KX_GROUPS.iter().map(|group| group.name()).collect::<Vec<_>>()
+    {
+        return Err(Error::FailedToGetRandomBytes);
+    }
+    *shared = Some(provider.clone());
+    Ok(provider)
+}
+
+#[cfg(all(feature = "std", any(
+    feature = "fips",
+    not(all(target_os = "linux", target_arch = "x86_64"))
+)))]
+pub fn default_provider_with_resource_owner(
+    _owner: Arc<dyn crate::DeframerBufferOwner>,
+) -> Result<Arc<CryptoProvider>, Error> {
+    Err(Error::FailedToGetRandomBytes)
+}
+
+#[cfg(all(
+    test,
+    feature = "std",
+    not(feature = "fips"),
+    target_os = "linux",
+    target_arch = "x86_64"
+))]
+mod owner_provider_tests {
+    use super::*;
+    use std::sync::Mutex;
+
+    #[derive(Debug)]
+    struct Owner {
+        config_limit: usize,
+        debits: Mutex<Vec<usize>>,
+    }
+
+    impl DeframerBufferOwner for Owner {
+        fn try_reserve(&self, _bytes: usize) -> Result<(), crate::DeframerBufferError> {
+            Ok(())
+        }
+
+        fn release(&self, _bytes: usize) {}
+
+        fn try_reserve_provider_shared(
+            &self,
+            bytes: usize,
+        ) -> Result<(), crate::DeframerBufferError> {
+            self.debits.lock().unwrap().push(bytes);
+            if bytes == owner_default_provider_bytes().unwrap() && bytes > self.config_limit {
+                return Err(crate::DeframerBufferError);
+            }
+            Ok(())
+        }
+    }
+
+    #[test]
+    fn owner_provider_denies_before_allocation_then_racing_first_use_is_shared() {
+        let config_bytes = owner_default_provider_bytes().unwrap();
+        let denied = Arc::new(Owner {
+            config_limit: config_bytes - 1,
+            debits: Mutex::new(Vec::new()),
+        });
+        assert!(default_provider_with_resource_owner(denied.clone()).is_err());
+        assert_eq!(
+            denied
+                .debits
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|bytes| **bytes == config_bytes)
+                .count(),
+            1
+        );
+
+        let funded = Arc::new(Owner {
+            config_limit: config_bytes,
+            debits: Mutex::new(Vec::new()),
+        });
+        let threads = (0..4)
+            .map(|_| {
+                let owner = funded.clone();
+                std::thread::spawn(move || default_provider_with_resource_owner(owner).unwrap())
+            })
+            .collect::<Vec<_>>();
+        let providers = threads
+            .into_iter()
+            .map(|thread| thread.join().unwrap())
+            .collect::<Vec<_>>();
+
+        assert!(providers
+            .iter()
+            .all(|provider| Arc::ptr_eq(&providers[0], provider)));
+        assert_eq!(
+            funded
+                .debits
+                .lock()
+                .unwrap()
+                .iter()
+                .filter(|bytes| **bytes == config_bytes)
+                .count(),
+            1
+        );
+        assert_eq!(providers[0].cipher_suites.capacity(), DEFAULT_CIPHER_SUITES.len());
+        assert_eq!(providers[0].kx_groups.capacity(), DEFAULT_KX_GROUPS.len());
+        assert_eq!(providers[0].cipher_suites.as_slice(), DEFAULT_CIPHER_SUITES);
+        assert_eq!(
+            providers[0]
+                .kx_groups
+                .iter()
+                .map(|group| group.name())
+                .collect::<Vec<_>>(),
+            DEFAULT_KX_GROUPS
+                .iter()
+                .map(|group| group.name())
+                .collect::<Vec<_>>()
+        );
     }
 }
 

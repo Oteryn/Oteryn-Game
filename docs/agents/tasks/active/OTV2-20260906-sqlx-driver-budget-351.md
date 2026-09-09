@@ -631,3 +631,18 @@ complete_tls_accounting: NOT_PROVEN
 shared_lease_required: vendor/rustls-0.23.43/src/crypto/aws_lc_rs/mod.rs :: default_provider / default_kx_groups :: same-ledger preallocation and lifetime custody for actual cipher-suite and KX-group Vec capacities
 next_action: obtain the provider-configuration owner amendment, then finish actual HRR/cancellation and the remaining #451 matrix before any aggregate KX GREEN claim
 ```
+
+## Window21 provider-configuration shared custody
+
+Protected #453 is applied after the normal merge of `main@0c69d04a49778e539515fb6848b0ab89268c1fa9`. The exact-target owner-aware AWS-LC constructor now establishes process/current-thread residency first, computes the Rust 1.94 two-Vec plus `ArcInner<CryptoProvider>` layout with checked arithmetic, debits the same shared root before allocation, and retains one canonical provider/debit for process lifetime. SQLx consumes that shared Arc directly. Provider registration now stores only a non-allocating initialized flag rather than promoting a caller wrapper Arc to process lifetime, and SQLx separately precharges its per-connection owner-wrapper Arc allocation with destruction-ordered custody.
+
+```yaml
+status: active
+provider_configuration_owner: PROVEN_FOCUSED
+provider_registration_bookkeeping: PROVEN_FIXED
+kx_protected_bounds: PROVEN_AWS_LC_554_1625_1705_6264_7881
+aws_lc_kx_provider_resident: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: full #451 HRR/thread-churn/cancellation matrix; decoded/ClientHello/session/cache/send/transcript/error composition; funded TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: reproduce the remaining #451 matrix on the provider-shared final shape, then continue every already-protected TLS custody cell
+```

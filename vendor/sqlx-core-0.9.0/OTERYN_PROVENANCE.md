@@ -919,3 +919,9 @@ remains `NOT_PROVEN` pending the previously recorded actual HRR wire,
 cancellation, provider-first-use/thread-churn matrix.  Work still stops at the
 unleased `crypto/aws_lc_rs/mod.rs::{default_provider,default_kx_groups}` owner
 boundary above.
+
+## Window21 AWS-LC provider configuration ownership
+
+Protected #453 closes the allocation-owning provider boundary. The owner-aware rustls constructor establishes #451 residency before configuration work, derives the exact Rust 1.94 `DEFAULT_CIPHER_SUITES` Vec, `DEFAULT_KX_GROUPS` Vec, and `ArcInner<CryptoProvider>` requested layouts with checked arithmetic, and debits the same shared root before either Vec or Arc allocation. It retains one canonical process provider and returns allocation-free Arc clones after per-thread residency. SQLx no longer constructs an uncharged provider Arc per connection.
+
+The #451 process-registration mutex now retains only a bool because successful shared-root process debits have no release API; it no longer extends a caller wrapper Arc to process lifetime. SQLx precharges the remaining per-connection owner-wrapper Arc allocation and keeps its reservation after connection state so backing dies before release. Ordinary provider/TLS behavior remains unchanged. Aggregate WP3 and aggregate KX remain open pending the full final-shape matrices and real TLS/PostgreSQL qualification.
