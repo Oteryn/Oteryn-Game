@@ -1002,6 +1002,11 @@ fn validate_source_shape(source: &FirstProductionContentSource) -> Result<(), Co
                 "first-production spawn population must equal 1",
             ));
         }
+        if spawn.multiplicity == MultiplicityClass::ExplicitEventPolicyRequired {
+            return Err(ContentError::InvalidArtifact(
+                "first-production explicit event policy is unresolved",
+            ));
+        }
         aggregate_population = aggregate_population
             .checked_add(usize::from(spawn.population_limit))
             .ok_or(ContentError::InvalidSectionBounds)?;
@@ -2580,12 +2585,16 @@ fn validate_parsed_semantics(
                         "invalid first-production spawn recovery class",
                     ));
                 }
+                if record.fields[6] == "EXPLICIT_EVENT_POLICY_REQUIRED" {
+                    return Err(ContentError::InvalidArtifact(
+                        "first-production explicit event policy is unresolved",
+                    ));
+                }
                 if !matches!(
                     record.fields[6].as_str(),
                     "CHANNEL_LOCAL_REPEATABLE"
                         | "CHANNEL_LOCAL_SHARED_ELIGIBILITY"
                         | "WORLD_SCOPED_UNIQUE"
-                        | "EXPLICIT_EVENT_POLICY_REQUIRED"
                 ) {
                     return Err(ContentError::InvalidArtifact(
                         "invalid first-production multiplicity class",
@@ -3488,6 +3497,49 @@ mod tests {
         Ok(())
     }
 
+    #[test]
+    fn explicit_event_policy_required_fails_closed_without_event_owner_policy()
+    -> Result<(), ContentError> {
+        let mut invalid_source = test_source(3)?;
+        invalid_source.spawns[0].multiplicity = MultiplicityClass::ExplicitEventPolicyRequired;
+        assert!(matches!(
+            compile_first_production(
+                &invalid_source,
+                FirstProductionCompileTarget::OrdinaryRelease
+            ),
+            Err(ContentError::InvalidArtifact(
+                "first-production explicit event policy is unresolved"
+            ))
+        ));
+
+        let source = test_source(3)?;
+        let compiled =
+            compile_first_production(&source, FirstProductionCompileTarget::OrdinaryRelease)?;
+        let mut records = server_records(&source)?;
+        let spawn = records
+            .iter_mut()
+            .find(|record| record.kind == RECORD_SPAWN)
+            .ok_or(ContentError::InvalidArtifact(
+                "spawn record missing in explicit-event policy test",
+            ))?;
+        spawn.fields[6] = "EXPLICIT_EVENT_POLICY_REQUIRED".to_owned();
+        let metadata = ProductionArtifactMetadata::from_source(
+            &source,
+            ProductionProjection::ServerAuthoritative,
+        )?;
+        let crafted = encode_artifact(&metadata, &records)?;
+        assert!(matches!(
+            StagedGeneration::stage(
+                &crafted.bytes,
+                &compiled.client_artifact,
+                compiled.expectation(),
+            ),
+            Err(ContentError::InvalidArtifact(
+                "first-production explicit event policy is unresolved"
+            ))
+        ));
+        Ok(())
+    }
     #[test]
     fn cross_family_references_fail_in_compiler_and_staging() -> Result<(), ContentError> {
         let mut invalid_source = test_source(3)?;
