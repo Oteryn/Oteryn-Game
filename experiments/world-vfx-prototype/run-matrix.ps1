@@ -65,18 +65,29 @@ function Invoke-Prototype {
         Start-Sleep -Milliseconds 10
     }
     $process.WaitForExit()
-    if ($process.ExitCode -ne 0) {
-        $errorText = Get-Content $stderr -Raw -ErrorAction SilentlyContinue
-        throw "prototype failed ($Scenario/$Density/$Layout/$Family/$Prewarm): $errorText"
+    $process.Refresh()
+    $exitCode = $process.ExitCode
+    $errorText = Get-Content $stderr -Raw -ErrorAction SilentlyContinue
+    if ($null -ne $exitCode -and $exitCode -ne 0) {
+        throw "prototype failed with exit $exitCode ($Scenario/$Density/$Layout/$Family/$Prewarm): $errorText"
     }
     $line = Get-Content $stdout | Where-Object { $_.Trim() } | Select-Object -Last 1
-    if (-not $line) { throw "prototype emitted no JSON result" }
-    $record = $line | ConvertFrom-Json
+    if (-not $line) {
+        throw "prototype emitted no JSON result ($Scenario/$Density/$Layout/$Family/$Prewarm): $errorText"
+    }
+    try {
+        $record = $line | ConvertFrom-Json
+    } catch {
+        throw "prototype emitted invalid JSON ($Scenario/$Density/$Layout/$Family/$Prewarm): $line"
+    }
     $record | Add-Member -NotePropertyName host -NotePropertyValue ([pscustomobject]@{
         machine = 'Molehill-PC'
         repeat = $Repeat
         peak_working_set_bytes = $peak
         commit_sha = $commit
+        process_exit_code = $exitCode
+        process_exit_code_status = if ($null -eq $exitCode) { 'UNAVAILABLE_BY_START_PROCESS_WRAPPER' } else { 'MEASURED' }
+        stderr_bytes = (Get-Item $stderr).Length
     })
     Remove-Item $stdout,$stderr -Force -ErrorAction SilentlyContinue
     return ($record | ConvertTo-Json -Depth 12 -Compress)
