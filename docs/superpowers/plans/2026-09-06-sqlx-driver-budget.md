@@ -641,3 +641,11 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Keep the old retained-chain Arc/backing charged to its original owner throughout destination construction and current-connection lifetime.
 - [x] Deny at max-minus-one before destination allocation and release current destination custody only after peer-chain destruction.
 - [ ] Continue compressed certificate same-owner decoding, remaining legal TLS1.2 vectors, transcript/hash ownership, and ClientHello/resumption accounting.
+
+## Window50 compressed TLS1.3 source/build checkpoint
+
+- [x] Reserve decompression backing before allocation and retain it through decompressor/error lifetime.
+- [x] Decode the decompressed certificate with the same accepted owner.
+- [x] Remove ordinary certificate deep ownership and unnecessary synthetic handshake encoding from the owner-aware path.
+- [ ] Add complete compressed-certificate wire/error/cancellation overlap qualification.
+- [ ] Finish remaining legal TLS1.2 and ClientHello cells, then record exact excluded-symbol blockers.

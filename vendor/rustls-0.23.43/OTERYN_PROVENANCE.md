@@ -361,3 +361,15 @@ re-reserved nor reclassified.  Focused coverage proves source/destination overla
 max-minus-one denial before destination allocation, independent current-owner final
 release, and preservation of the original retained charge until cache/session drop.
 Complete TLS accounting remains open.
+
+## Compressed TLS 1.3 same-owner second decode
+
+The owner-aware compressed-certificate path now reserves decompression backing before its
+allocation and keeps its custody beside the Vec, so partial decompressor errors and all later
+returns destroy backing before release. The second `CertificatePayloadTls13` decode inherits the
+same `DecodedOwner`. On success it is converted directly to the precharged certificate/DER/OCSP
+destination while compressed input and decompression backing remain live. The former ordinary
+`cert_payload.into_owned()` and synthetic `MessagePayload::handshake(...get_encoding())` copies
+are absent from this path. Parser-local second-decode reservations are reconciled after source
+destruction without releasing independently transferred payload or final-certificate custody.
+Complete compressed wire/error/cancellation evidence and whole-handshake composition remain open.

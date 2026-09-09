@@ -1373,6 +1373,29 @@ complete_tls_accounting: NOT_PROVEN
 next_action: complete compressed-certificate custody and remaining legal TLS1.2 vectors, then transcript/hash and ClientHello cells
 ```
 
+## Window50 compressed TLS1.3 same-owner decoding
+
+The compressed-certificate client state now reserves the complete decompression byte backing
+before `vec![0; len]`, retains that debit through decompressor success and partial-error unwind,
+and performs the second certificate parse with the same accepted `DecodedOwner`. The successful
+owner-aware path converts the borrowed second decode directly into the already-funded
+chain/DER/OCSP destination while the decompression backing remains live. It no longer calls
+ordinary `cert_payload.into_owned()` and no longer constructs the unnecessary synthetic
+handshake encoding Vec. Parser-local generic-list reservations are rolled back only after the
+second-decoded source AST is consumed or destroyed; independently custodied payload backing is
+excluded from that rollback.
+
+The component compiles on the `std` AWS-LC and owner-free `no_std`/TLS1.2 profiles. Full
+compressed-certificate wire/error/cancellation qualification and the complete simultaneous-live
+TLS matrix remain open; this checkpoint does not claim `complete_tls_accounting`.
+
+```yaml
+status: active
+compressed_tls13_same_owner_decode: PROVEN_FOCUSED_SOURCE_AND_BUILD
+complete_tls_accounting: NOT_PROVEN
+next_action: qualify compressed-certificate wire/error overlap, finish legal TLS1.2 and ClientHello cells, then disposition excluded transcript/binder symbols
+```
+
 ## Window47 retained decoded-owner lifetime repair
 
 Fresh review found that retained ticket/session values kept raw `Arc<DecodedOwner>` handles

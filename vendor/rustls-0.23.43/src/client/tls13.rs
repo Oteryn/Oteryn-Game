@@ -1040,6 +1040,8 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
         Self: 'm,
     {
         self.transcript.add_message(&m);
+        #[cfg(feature = "std")]
+        let decoded_owner = m.decoded_owner();
         let compressed_cert = require_handshake_msg_move!(
             m,
             HandshakeType::CompressedCertificate,
@@ -1066,9 +1068,35 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
             ));
         }
 
-        let mut decompress_buffer = vec![0u8; compressed_cert.uncompressed_len as usize];
+        let decompressed_len = compressed_cert.uncompressed_len as usize;
+        #[cfg(feature = "std")]
+        let prospective_decompression = decoded_owner
+            .as_ref()
+            .map(|owner| {
+                crate::msgs::codec::ProspectiveDecodedCustody::reserve(
+                    owner.clone(),
+                    decompressed_len,
+                )
+            })
+            .transpose()?;
+        let decompress_buffer = vec![0u8; decompressed_len];
+        #[cfg(feature = "std")]
+        let decompression_custody = prospective_decompression.map(|prospective| prospective.commit());
+        #[cfg(feature = "std")]
+        let mut decompressed = ChargedDecompressedCertificate {
+            bytes: decompress_buffer,
+            _custody: decompression_custody,
+        };
+        #[cfg(not(feature = "std"))]
+        let mut decompress_buffer = decompress_buffer;
         if let Err(compress::DecompressionFailed) =
-            decompressor.decompress(compressed_cert.compressed.0.bytes(), &mut decompress_buffer)
+            decompressor.decompress(
+                compressed_cert.compressed.0.bytes(),
+                #[cfg(feature = "std")]
+                &mut decompressed.bytes,
+                #[cfg(not(feature = "std"))]
+                &mut decompress_buffer,
+            )
         {
             return Err(cx.common.send_fatal_alert(
                 AlertDescription::BadCertificate,
@@ -1076,8 +1104,17 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
             ));
         }
 
+        #[cfg(feature = "std")]
+        let second_checkpoint = decoded_owner.as_ref().map(|owner| owner.checkpoint());
+        #[cfg(feature = "std")]
+        let mut second_reader = match decoded_owner.as_ref() {
+            Some(owner) => Reader::init_with_owner(&decompressed.bytes, owner.clone()),
+            None => Reader::init(&decompressed.bytes),
+        };
+        #[cfg(not(feature = "std"))]
+        let mut second_reader = Reader::init(&decompress_buffer);
         let cert_payload =
-            match CertificatePayloadTls13::read(&mut Reader::init(&decompress_buffer)) {
+            match CertificatePayloadTls13::read(&mut second_reader) {
                 Ok(cm) => cm,
                 Err(err) => {
                     return Err(cx
@@ -1096,9 +1133,52 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
             compressed_cert.uncompressed_len,
         );
 
-        let m = Message::new(ProtocolVersion::TLSv1_3, MessagePayload::handshake(HandshakeMessagePayload(
+        #[cfg(feature = "std")]
+        if let (Some(owner), Some(checkpoint)) = (decoded_owner, second_checkpoint) {
+            if !cert_payload.context.0.is_empty() {
+                drop(cert_payload);
+                owner.rollback(checkpoint);
+                return Err(cx.common.send_fatal_alert(
+                    AlertDescription::DecodeError,
+                    InvalidMessage::InvalidCertRequest,
+                ));
+            }
+            let converted = cert_payload
+                .into_owned_chain_and_ocsp_with_resource_owner(owner.clone());
+            // The conversion consumed and destroyed all second-decode source
+            // backing.  Payload backing carries its own token; this releases
+            // only parser-local generic-list reservations still owned by the
+            // second-decode scope.
+            owner.rollback(checkpoint);
+            let (chain, ocsp, custody) = converted?;
+            let server_cert =
+                ServerCertDetails::new_with_resource_custody(chain, ocsp, custody);
+            return Ok(Box::new(ExpectCertificateVerify {
+                config: self.config,
+                server_name: self.server_name,
+                randoms: self.randoms,
+                suite: self.suite,
+                transcript: self.transcript,
+                key_schedule: self.key_schedule,
+                server_cert,
+                client_auth: self.client_auth,
+                ech_retry_configs: self.ech_retry_configs,
+            }));
+        }
+        #[cfg(feature = "std")]
+        let m = Message::new(
+            ProtocolVersion::TLSv1_3,
+            MessagePayload::handshake(HandshakeMessagePayload(
                 HandshakePayload::CertificateTls13(cert_payload.into_owned()),
-            )));
+            )),
+        );
+        #[cfg(not(feature = "std"))]
+        let m = Message::new(
+            ProtocolVersion::TLSv1_3,
+            MessagePayload::handshake(HandshakeMessagePayload(
+                HandshakePayload::CertificateTls13(cert_payload.into_owned()),
+            )),
+        );
 
         Box::new(ExpectCertificate {
             config: self.config,
@@ -1117,6 +1197,13 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
     fn into_owned(self: Box<Self>) -> hs::NextState<'static> {
         self
     }
+}
+
+#[cfg(feature = "std")]
+struct ChargedDecompressedCertificate {
+    // Backing precedes custody so it is destroyed before the debit releases.
+    bytes: Vec<u8>,
+    _custody: Option<crate::msgs::codec::DecodedCustody>,
 }
 
 struct ExpectCertificate {
