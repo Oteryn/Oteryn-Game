@@ -163,12 +163,23 @@ mod server_hello {
 
                     // Since we're resuming, we verified the certificate and
                     // proof of possession in the prior session.
-                    cx.common.peer_certificates = Some(
-                        resuming
-                            .server_cert_chain()
-                            .clone()
-                            .into_owned(),
-                    );
+                    #[cfg(feature = "std")]
+                    {
+                        let (peer_certificates, custody) = resuming
+                            .copy_server_cert_chain_for_current_owner()
+                            .map_err(|_| InvalidMessage::MessageTooLarge)?;
+                        cx.common.peer_certificates = Some(peer_certificates);
+                        cx.common.peer_certificate_custody = Some(custody.into());
+                    }
+                    #[cfg(not(feature = "std"))]
+                    {
+                        cx.common.peer_certificates = Some(
+                            resuming
+                                .server_cert_chain()
+                                .clone()
+                                .into_owned(),
+                        );
+                    }
                     cx.common.handshake_kind = Some(HandshakeKind::Resumed);
                     let cert_verified = verify::ServerCertVerified::assertion();
                     let sig_verified = verify::HandshakeSignatureValid::assertion();
@@ -922,7 +933,7 @@ impl State<ClientConnectionData> for ExpectServerDone<'_> {
         {
             let (peer_certificates, custody) = st.server_cert.take_peer_certificates();
             cx.common.peer_certificates = Some(peer_certificates);
-            cx.common.peer_certificate_custody = custody;
+            cx.common.peer_certificate_custody = custody.map(Into::into);
         }
         #[cfg(not(feature = "std"))]
         {

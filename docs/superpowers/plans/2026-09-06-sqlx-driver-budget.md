@@ -634,3 +634,10 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Use the underlying owner, rather than an `Arc<DecodedOwner>` trait-object coercion, for TLS1.2 retained secret and chain construction.
 - [x] Prove retained secret/chain custody survives decoded-owner and Arc-charge destruction and releases exactly on retained-session final drop.
 - [ ] Continue resumed TLS1.2 chain copying, compressed certificate decoding, transcript/hash ownership, and complete simultaneous-live TLS proof.
+
+## Window49 resumed TLS1.2 peer-chain rebinding
+
+- [x] Rebind the retained session chain to a separately precharged current-operation `CommonState` destination.
+- [x] Keep the old retained-chain Arc/backing charged to its original owner throughout destination construction and current-connection lifetime.
+- [x] Deny at max-minus-one before destination allocation and release current destination custody only after peer-chain destruction.
+- [ ] Continue compressed certificate same-owner decoding, remaining legal TLS1.2 vectors, transcript/hash ownership, and ClientHello/resumption accounting.

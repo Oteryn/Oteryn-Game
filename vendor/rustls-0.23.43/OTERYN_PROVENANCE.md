@@ -349,3 +349,15 @@ handle, and its Arc charge while the retained secret and certificate chain remai
 their exact outer-vector, DER, Arc-control, and secret debits remain on the underlying
 owner until final retained-session destruction.  Existing max-minus-one coverage denies
 before retained-chain Arc allocation.  Complete TLS accounting remains open.
+
+## Resumed TLS 1.2 current peer-chain custody
+
+The owner-aware TLS 1.2 resumption path now obtains the current operation owner from the
+retrieved session's retained-secret custody and reserves the complete destination
+certificate outer-vector and DER backing before copying.  It installs the ordinary
+`CertificateChain<'static>` together with direct same-ledger custody in `CommonState`.
+The cached source Arc remains independently charged to its original owner and is neither
+re-reserved nor reclassified.  Focused coverage proves source/destination overlap,
+max-minus-one denial before destination allocation, independent current-owner final
+release, and preservation of the original retained charge until cache/session drop.
+Complete TLS accounting remains open.

@@ -448,6 +448,52 @@ impl Drop for RetainedCertificateChain {
 }
 
 #[cfg(feature = "std")]
+fn copy_certificate_chain_for_peer(
+    source: &CertificateChain<'static>,
+    owner: Arc<dyn crate::DeframerBufferOwner>,
+) -> Result<
+    (
+        CertificateChain<'static>,
+        crate::msgs::codec::DirectDecodedCustody,
+    ),
+    crate::DeframerBufferError,
+> {
+    let outer = source
+        .0
+        .len()
+        .checked_mul(size_of::<pki_types::CertificateDer<'static>>())
+        .ok_or(crate::DeframerBufferError)?;
+    let bytes = source.0.iter().try_fold(outer, |total, certificate| {
+        total
+            .checked_add(certificate.as_ref().len())
+            .ok_or(crate::DeframerBufferError)
+    })?;
+    let custody = crate::msgs::codec::DirectDecodedCustody::reserve(owner, bytes)
+        .map_err(|_| crate::DeframerBufferError)?;
+
+    let mut certificates = Vec::with_capacity(source.0.len());
+    if certificates.capacity() != source.0.len() {
+        drop(certificates);
+        drop(custody);
+        return Err(crate::DeframerBufferError);
+    }
+    for certificate in &source.0 {
+        let expected = certificate.as_ref().len();
+        let mut copied = Vec::with_capacity(expected);
+        copied.extend_from_slice(certificate.as_ref());
+        if copied.capacity() != expected {
+            drop(copied);
+            drop(certificates);
+            drop(custody);
+            return Err(crate::DeframerBufferError);
+        }
+        certificates.push(pki_types::CertificateDer::from(copied));
+    }
+
+    Ok((CertificateChain(certificates), custody))
+}
+
+#[cfg(feature = "std")]
 impl Drop for RetainedSessionCustody {
     fn drop(&mut self) {
         self.owner.release(self.bytes);
@@ -569,6 +615,25 @@ impl ClientSessionCommon {
 
     pub(crate) fn server_cert_chain(&self) -> &CertificateChain<'static> {
         &self.server_cert_chain
+    }
+
+    #[cfg(feature = "std")]
+    pub(crate) fn copy_server_cert_chain_for_current_owner(
+        &self,
+    ) -> Result<
+        (
+            CertificateChain<'static>,
+            crate::msgs::codec::DirectDecodedCustody,
+        ),
+        crate::DeframerBufferError,
+    > {
+        let owner = self
+            ._resource_custody
+            .as_ref()
+            .ok_or(crate::DeframerBufferError)?
+            .owner
+            .clone();
+        copy_certificate_chain_for_peer(&self.server_cert_chain, owner)
     }
 
     pub(crate) fn secret(&self) -> &[u8] {
@@ -793,6 +858,83 @@ mod owner_tests {
         assert_eq!(owner.used.load(Ordering::Relaxed), expected);
         drop(clone);
         assert_eq!(owner.used.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn resumed_tls12_rebinds_peer_chain_to_current_owner() {
+        let source = CertificateChain(vec![
+            CertificateDer::from(vec![1, 2, 3]),
+            CertificateDer::from(vec![4, 5]),
+        ]);
+        let secret = [6, 7, 8, 9];
+        let verifier: Arc<dyn ServerCertVerifier> = Arc::new(DummyServerCertVerifier);
+        let resolver: Arc<dyn ResolvesClientCert> = Arc::new(DummyResolvesClientCert);
+        let retained_chain_bytes = 2 * size_of::<CertificateDer<'static>>()
+            + 5
+            + RetainedCertificateChain::arc_layout().unwrap();
+        let old_owner = Arc::new(Owner {
+            limit: secret.len() + retained_chain_bytes,
+            used: AtomicUsize::new(0),
+        });
+        let stored = ClientSessionCommon::new_with_resource_owner(
+            TicketPayload::from_unowned(PayloadU16::empty()),
+            &secret,
+            UnixTime::since_unix_epoch(core::time::Duration::from_secs(1)),
+            0,
+            &source,
+            &verifier,
+            &resolver,
+            old_owner.clone(),
+        )
+        .unwrap();
+        assert_eq!(old_owner.used.load(Ordering::Relaxed), secret.len() + retained_chain_bytes);
+
+        let peer_chain_bytes = 2 * size_of::<CertificateDer<'static>>() + 5;
+        let current_owner = Arc::new(Owner {
+            limit: secret.len() + peer_chain_bytes,
+            used: AtomicUsize::new(0),
+        });
+        let retrieved = stored
+            .clone_with_resource_owner(current_owner.clone())
+            .unwrap();
+        let (peer_chain, peer_custody) = retrieved
+            .copy_server_cert_chain_for_current_owner()
+            .unwrap();
+        assert_eq!(current_owner.used.load(Ordering::Relaxed), secret.len() + peer_chain_bytes);
+        assert_eq!(old_owner.used.load(Ordering::Relaxed), secret.len() + retained_chain_bytes);
+        assert_ne!(peer_chain[0].as_ref().as_ptr(), stored.server_cert_chain()[0].as_ref().as_ptr());
+
+        drop(peer_chain);
+        drop(peer_custody);
+        assert_eq!(current_owner.used.load(Ordering::Relaxed), secret.len());
+        drop(retrieved);
+        assert_eq!(current_owner.used.load(Ordering::Relaxed), 0);
+        assert_eq!(old_owner.used.load(Ordering::Relaxed), secret.len() + retained_chain_bytes);
+        drop(stored);
+        assert_eq!(old_owner.used.load(Ordering::Relaxed), 0);
+
+        let denied_owner = Arc::new(Owner {
+            limit: secret.len() + peer_chain_bytes - 1,
+            used: AtomicUsize::new(0),
+        });
+        let stored = ClientSessionCommon::new_with_resource_owner(
+            TicketPayload::from_unowned(PayloadU16::empty()),
+            &secret,
+            UnixTime::since_unix_epoch(core::time::Duration::from_secs(1)),
+            0,
+            &source,
+            &verifier,
+            &resolver,
+            old_owner.clone(),
+        )
+        .unwrap();
+        let retrieved = stored
+            .clone_with_resource_owner(denied_owner.clone())
+            .unwrap();
+        assert!(retrieved.copy_server_cert_chain_for_current_owner().is_err());
+        assert_eq!(denied_owner.used.load(Ordering::Relaxed), secret.len());
+        drop(retrieved);
+        assert_eq!(denied_owner.used.load(Ordering::Relaxed), 0);
     }
 
     #[test]

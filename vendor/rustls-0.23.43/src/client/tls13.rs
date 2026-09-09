@@ -1269,7 +1269,7 @@ impl State<ClientConnectionData> for ExpectCertificateVerify<'_> {
         cx.common.peer_certificates = Some(peer_certificates);
         #[cfg(feature = "std")]
         {
-            cx.common.peer_certificate_custody = peer_certificate_custody;
+            cx.common.peer_certificate_custody = peer_certificate_custody.map(Into::into);
         }
         self.transcript.add_message(&m);
 

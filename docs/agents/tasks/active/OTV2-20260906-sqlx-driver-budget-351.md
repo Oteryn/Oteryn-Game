@@ -1349,6 +1349,30 @@ complete_tls_accounting: NOT_PROVEN
 next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
 
+## Window49 resumed TLS1.2 current-peer-chain rebinding
+
+Successful TLS1.2 resumption no longer performs an ordinary charged
+`server_cert_chain().clone().into_owned()` into `CommonState`.  The retrieved
+session exposes only its current operation's underlying owner from retained
+secret custody.  While the old retained-chain Arc and its original-owner debit
+remain live, the current owner reserves the complete destination outer-vector
+capacity and every DER destination before allocation.  The resulting ordinary
+peer chain carries direct same-ledger custody in `CommonState`; full-handshake
+decoded custody remains distinct and continues to supply its underlying owner
+for session-ID storage.
+
+Focused proof covers old/new owner overlap, destination pointer independence,
+max-minus-one denial before destination allocation, current peer backing release
+before its token, current retrieved-secret release, and preservation of the old
+retained owner until the stored session's final drop.
+
+```yaml
+status: active
+tls12_resumed_certificate_custody: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+next_action: complete compressed-certificate custody and remaining legal TLS1.2 vectors, then transcript/hash and ClientHello cells
+```
+
 ## Window47 retained decoded-owner lifetime repair
 
 Fresh review found that retained ticket/session values kept raw `Arc<DecodedOwner>` handles

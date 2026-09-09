@@ -88,6 +88,37 @@ impl Drop for DirectDecodedCustody {
 }
 
 #[cfg(feature = "std")]
+#[derive(Debug)]
+pub(crate) enum PeerCertificateCustody {
+    Decoded(DecodedCustody),
+    Direct(DirectDecodedCustody),
+}
+
+#[cfg(feature = "std")]
+impl PeerCertificateCustody {
+    pub(crate) fn resource_owner(&self) -> Arc<dyn DeframerBufferOwner> {
+        match self {
+            Self::Decoded(custody) => custody.resource_owner(),
+            Self::Direct(custody) => custody.owner(),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<DecodedCustody> for PeerCertificateCustody {
+    fn from(custody: DecodedCustody) -> Self {
+        Self::Decoded(custody)
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<DirectDecodedCustody> for PeerCertificateCustody {
+    fn from(custody: DirectDecodedCustody) -> Self {
+        Self::Direct(custody)
+    }
+}
+
+#[cfg(feature = "std")]
 impl Drop for DecodedOwnerArcCharge {
     fn drop(&mut self) {
         self.owner.release(self.bytes);
