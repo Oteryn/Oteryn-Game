@@ -177,10 +177,10 @@ pub fn build_demo_frame(
             order: 10_000,
         },
     )?;
-    if outfit.layers == 2 {
-        if let Some(last) = sprites.last_mut() {
-            last.role = SpriteRole::OutfitMask;
-        }
+    if outfit.layers == 2
+        && let Some(last) = sprites.last_mut()
+    {
+        last.role = SpriteRole::OutfitMask;
     }
 
     append_program_draws(
@@ -442,11 +442,7 @@ fn actor_state(elapsed_ms: u64) -> ActorState {
     }
 }
 
-fn missile_position(
-    elapsed_ms: u64,
-    actor_position: (f32, f32),
-    target: (f32, f32),
-) -> (f32, f32) {
+fn missile_position(elapsed_ms: u64, actor_position: (f32, f32), target: (f32, f32)) -> (f32, f32) {
     let progress = ratio(elapsed_ms % DEMO_MISSILE_MS, DEMO_MISSILE_MS);
     let start = (actor_position.0 - 6.0 * TILE_UNITS, actor_position.1);
     lerp2(start, target, progress)
@@ -557,10 +553,7 @@ mod tests {
     fn rejects_non_south_direction_for_single_pattern_outfit() {
         let program = direction_program(1);
         assert!(direction_pattern_x(&program, DemoDirection::North).is_err());
-        assert_eq!(
-            direction_pattern_x(&program, DemoDirection::South),
-            Ok(0)
-        );
+        assert_eq!(direction_pattern_x(&program, DemoDirection::South), Ok(0));
     }
 
     #[test]

@@ -27,7 +27,8 @@ fn main() -> ExitCode {
 
 fn run() -> Result<(), String> {
     let config = PreviewConfig::from_args()?;
-    let mut bundle = QualificationBundle::open(&config.manifest, &config.scene, config.cache_pages)?;
+    let mut bundle =
+        QualificationBundle::open(&config.manifest, &config.scene, config.cache_pages)?;
     let visible = VisibleSpriteSet::build(&mut bundle)?;
     let event_loop = EventLoop::new().map_err(|error| format!("event loop: {error}"))?;
     let mut application = PreviewApplication::new(config, bundle, visible);
@@ -249,8 +250,8 @@ impl ApplicationHandler for PreviewApplication {
                 }
             }
             WindowEvent::RedrawRequested => {
-                let elapsed_ms = self.semantic_frame.saturating_mul(1_000)
-                    / SEMANTIC_TICKS_PER_SECOND;
+                let elapsed_ms =
+                    self.semantic_frame.saturating_mul(1_000) / SEMANTIC_TICKS_PER_SECOND;
                 let frame = match build_demo_frame(&self.bundle, &self.visible, elapsed_ms) {
                     Ok(frame) => frame,
                     Err(error) => {

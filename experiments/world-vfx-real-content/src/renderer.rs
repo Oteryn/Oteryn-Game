@@ -199,7 +199,10 @@ impl RealContentRenderer {
         let mut sprite_pages = Vec::with_capacity(gpu_page_count);
         for page_index in 0..gpu_page_count {
             let start = page_index.saturating_mul(page_bytes);
-            let end = visible.rgba_cells().len().min(start.saturating_add(page_bytes));
+            let end = visible
+                .rgba_cells()
+                .len()
+                .min(start.saturating_add(page_bytes));
             let mut bytes = vec![0_u8; page_bytes];
             bytes[..end.saturating_sub(start)].copy_from_slice(&visible.rgba_cells()[start..end]);
             sprite_pages.push(create_sprite_page(
@@ -303,12 +306,7 @@ impl RealContentRenderer {
             let index = u32::try_from(sprite_instances.len())
                 .map_err(|_| "sprite instance index exceeds u32".to_owned())?;
             sprite_instances.push(encode_sprite_instance(
-                draw.rect,
-                layer,
-                lighting,
-                frame,
-                width,
-                height,
+                draw.rect, layer, lighting, frame, width, height,
             ));
             push_sprite_batch(
                 &mut sprite_batches,
@@ -462,8 +460,9 @@ impl RealContentRenderer {
             surface_outdated: self.surface_outdated,
             surface_lost: self.surface_lost,
             device_loss_detected: false,
-            gpu_storage_policy: "experiment-only-paged-64-layer-texture-array; no production atlas-vs-array verdict"
-                .to_owned(),
+            gpu_storage_policy:
+                "experiment-only-paged-64-layer-texture-array; no production atlas-vs-array verdict"
+                    .to_owned(),
             sampler: "nearest".to_owned(),
         }
     }
@@ -590,6 +589,7 @@ fn build_overlays(
 ) -> Result<(Vec<GpuOverlayInstance>, Vec<OverlayBatch>), String> {
     let mut instances = Vec::new();
     let mut batches = Vec::new();
+    let viewport = (width, height);
 
     let telegraph_center = world_to_screen(
         frame.telegraph.center_x_units,
@@ -612,8 +612,7 @@ fn build_overlays(
             telegraph_diameter,
             [1.0, 0.24, 0.05, 0.20 + frame.telegraph.pulse * 0.42],
             [1.0, 0.0, 0.0, 0.0],
-            width,
-            height,
+            viewport,
         ),
     )?;
 
@@ -640,8 +639,7 @@ fn build_overlays(
             19.0,
             [0.0, 0.0, 0.0, 0.62],
             [0.0; 4],
-            width,
-            height,
+            viewport,
         ),
     )?;
     push_text(
@@ -651,8 +649,7 @@ fn build_overlays(
         text_top,
         &frame.actor_overlay.name,
         [0.96, 0.98, 1.0, 1.0],
-        width,
-        height,
+        viewport,
     )?;
 
     let hp_width = 76.0;
@@ -671,8 +668,7 @@ fn build_overlays(
             7.0,
             [0.03, 0.03, 0.03, 0.88],
             [0.0; 4],
-            width,
-            height,
+            viewport,
         ),
     )?;
     let hp_ratio = frame.actor_overlay.hp_ratio.clamp(0.0, 1.0);
@@ -689,8 +685,7 @@ fn build_overlays(
             5.0,
             [0.16, 0.82, 0.24, 0.96],
             [0.0; 4],
-            width,
-            height,
+            viewport,
         ),
     )?;
 
@@ -704,8 +699,7 @@ fn push_text(
     top: f32,
     text: &str,
     color: [f32; 4],
-    width: f32,
-    height: f32,
+    viewport: (f32, f32),
 ) -> Result<(), String> {
     let key = OverlayBatchKey {
         blend: BlendMode::Alpha,
@@ -726,8 +720,7 @@ fn push_text(
                     FONT_SCALE_PX,
                     color,
                     [0.0; 4],
-                    width,
-                    height,
+                    viewport,
                 );
                 push_overlay(instances, batches, key, rect)?;
             }
@@ -743,21 +736,47 @@ fn text_pixel_width(text: &str, scale: f32) -> f32 {
 
 fn glyph_rows(character: char) -> [u8; 7] {
     match character {
-        '1' => [0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110],
-        '2' => [0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b01000, 0b11111],
-        '3' => [0b11110, 0b00001, 0b00001, 0b01110, 0b00001, 0b00001, 0b11110],
-        '5' => [0b11111, 0b10000, 0b10000, 0b11110, 0b00001, 0b00001, 0b11110],
+        '1' => [
+            0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110,
+        ],
+        '2' => [
+            0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b01000, 0b11111,
+        ],
+        '3' => [
+            0b11110, 0b00001, 0b00001, 0b01110, 0b00001, 0b00001, 0b11110,
+        ],
+        '5' => [
+            0b11111, 0b10000, 0b10000, 0b11110, 0b00001, 0b00001, 0b11110,
+        ],
         '.' => [0, 0, 0, 0, 0, 0b00110, 0b00110],
-        'A' => [0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001],
-        'C' => [0b01111, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b01111],
-        'E' => [0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111],
-        'L' => [0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111],
-        'N' => [0b10001, 0b11001, 0b10101, 0b10101, 0b10011, 0b10001, 0b10001],
-        'O' => [0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110],
-        'R' => [0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001],
-        'T' => [0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100],
+        'A' => [
+            0b01110, 0b10001, 0b10001, 0b11111, 0b10001, 0b10001, 0b10001,
+        ],
+        'C' => [
+            0b01111, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b01111,
+        ],
+        'E' => [
+            0b11111, 0b10000, 0b10000, 0b11110, 0b10000, 0b10000, 0b11111,
+        ],
+        'L' => [
+            0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b10000, 0b11111,
+        ],
+        'N' => [
+            0b10001, 0b11001, 0b10101, 0b10101, 0b10011, 0b10001, 0b10001,
+        ],
+        'O' => [
+            0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110,
+        ],
+        'R' => [
+            0b11110, 0b10001, 0b10001, 0b11110, 0b10100, 0b10010, 0b10001,
+        ],
+        'T' => [
+            0b11111, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100, 0b00100,
+        ],
         ' ' => [0; 7],
-        _ => [0b11111, 0b10001, 0b00110, 0b00100, 0b00110, 0b10001, 0b11111],
+        _ => [
+            0b11111, 0b10001, 0b00110, 0b00100, 0b00110, 0b10001, 0b11111,
+        ],
     }
 }
 
@@ -768,9 +787,9 @@ fn overlay_rect_px(
     rect_height: f32,
     color: [f32; 4],
     shape: [f32; 4],
-    width: f32,
-    height: f32,
+    viewport: (f32, f32),
 ) -> GpuOverlayInstance {
+    let (width, height) = viewport;
     let center_x = ((left + rect_width * 0.5) / width) * 2.0 - 1.0;
     let center_y = 1.0 - ((top + rect_height * 0.5) / height) * 2.0;
     GpuOverlayInstance {
