@@ -14,3 +14,9 @@ The root bootstrap and `docs/agents/META_AGENT_POLICY_BINDING.json` supply organ
 Use `tasks/TASK_TEMPLATE.md` for substantial task records. For architecture or contract work, load `ARCHITECTURE_DECISION_DISCIPLINE.md` and the current domain authority. For execution and validation, load only the applicable build matrix, task allocation and nearest path instructions. Multi-agent architecture programmes additionally use `MULTI_AGENT_ARCHITECTURE_ORCHESTRATION.md` when a live allocation invokes it.
 
 Classify evidence as `PROVEN`, `DERIVED`, `UNKNOWN` or `CONFLICT`. An unmerged task document cannot authorize architecture, production access or cross-repository writes. Preserve history when later decisions supersede only part of an older contract.
+
+## Integration routing precedence
+
+Integration wording in reusable prompts and routed procedures such as `merge`, `squash merge`, `expected-head merge`, `protected merge` or `auto-merge` describes lifecycle intent only; it does not select or authorize a GitHub merge primitive. For every integration action, resolve the immutable META policy bound by `META_AGENT_POLICY_BINDING.json` and the live repository control-plane capability.
+
+Autonomous Merge Queue submission must use only a governed route that atomically binds the exact qualified head and the intended protected base/queue state. Direct/immediate merge and generic auto-merge are not substitutes. If integration is otherwise ready but no callable governed atomic Merge Queue route is available, record `BLOCKED_CAPABILITY_UNAVAILABLE`, preserve the qualified head, release active waiting ownership as applicable and continue safe path-disjoint work. Do not weaken protection, create no-op/retrigger commits or mutate merge state to work around a missing enqueue capability.

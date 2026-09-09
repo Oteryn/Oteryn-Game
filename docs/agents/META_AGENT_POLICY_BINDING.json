@@ -3,7 +3,7 @@
   "policy_id": "OTERYN_ORGANIZATION_AGENT_POLICY",
   "policy_version": "3.0.0",
   "authority_repository": "Oteryn/Oteryn",
-  "authority_commit": "5ed3f14400af450b5875c091e443da70f2d67ab9",
+  "authority_commit": "d1caa3adba0fa4b32b84985bf1d6dcbe8055858c",
   "organization_policy_path": "docs/agents/policy/ORGANIZATION_AGENT_POLICY.md",
   "prompting_standard_path": "docs/agents/policy/PROMPTING_STANDARD.md",
   "prompt_eval_standard_path": "docs/agents/policy/PROMPT_EVAL_STANDARD.md"
