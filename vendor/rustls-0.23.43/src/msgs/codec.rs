@@ -337,6 +337,14 @@ impl<'a> Reader<'a> {
         bytes: &[u8],
     ) -> Result<(Vec<u8>, Option<DecodedCustody>), InvalidMessage> {
         let Some(owner) = &self.decoded_owner else { return Ok((bytes.to_vec(), None)); };
+        // An empty `Vec` has no allocator backing.  In particular, do not
+        // attach a zero-byte custody marker: payload `Clone` uses the
+        // presence of custody to distinguish peer-owned backing from an
+        // ordinary owner-free value, and valid empty TLS payloads may flow
+        // through ordinary clone sites without allocating.
+        if bytes.is_empty() {
+            return Ok((Vec::new(), None));
+        }
         owner.reserve(bytes.len())?;
         let mut copied = Vec::with_capacity(bytes.len());
         copied.extend_from_slice(bytes);
@@ -692,6 +700,7 @@ mod tests {
 
     use super::*;
     use crate::msgs::base::{MaybeEmpty, NonEmpty, PayloadU8, PayloadU16};
+    use crate::msgs::handshake::CertificateRequestPayloadTls13;
 
     #[derive(Debug)]
     struct TestOwner { limit: usize, used: AtomicUsize }
@@ -765,6 +774,34 @@ mod tests {
             arc_bytes,
             "payload backing releases before reader or connection owner drop"
         );
+        drop(reader);
+        drop(decoded);
+        drop(arc_charge);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn decoded_empty_certificate_request_context_has_no_custody_or_debit() {
+        let arc_bytes = DecodedOwner::arc_layout().unwrap();
+        let owner = Arc::new(TestOwner { limit: arc_bytes + 128, used: AtomicUsize::new(0) });
+        let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+        // Empty context followed by a signature_algorithms extension carrying
+        // rsa_pss_rsae_sha256.  A non-empty context is still rejected by the
+        // TLS 1.3 client handler before its client-auth context copy.
+        let encoded = [0, 0, 8, 0, 13, 0, 4, 0, 2, 8, 4];
+        let mut reader = Reader::init_with_owner(&encoded, decoded.clone());
+
+        let request = CertificateRequestPayloadTls13::read(&mut reader).unwrap();
+        assert!(request.context.0.is_empty());
+        let after_decode = owner.used.load(Ordering::SeqCst);
+
+        let cloned = request.context.clone();
+        assert!(cloned.0.is_empty());
+        assert_eq!(owner.used.load(Ordering::SeqCst), after_decode);
+
+        drop(cloned);
+        drop(request);
+        assert_eq!(owner.used.load(Ordering::SeqCst), after_decode);
         drop(reader);
         drop(decoded);
         drop(arc_charge);

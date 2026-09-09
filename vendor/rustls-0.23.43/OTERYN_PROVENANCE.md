@@ -172,3 +172,13 @@ source/destination destruction and release, and the owner-free control. Current 
 census found retained ticket operations clone their `Arc` rather than payload backing;
 the TLS 1.3 handshake client-auth context is required to be empty and therefore creates
 no byte backing. Generic-list custody and complete TLS accounting remain open.
+
+## Empty CertificateRequest context repair
+
+The owner-aware decoded-copy path now treats length zero according to allocator
+reality: it returns `Vec::new()` with no backing-custody token and performs no debit.
+This prevents the valid empty TLS 1.3 CertificateRequest context from reaching the
+charged-payload Clone assertion while avoiding fake zero-byte lifetime ownership.
+The client still rejects non-empty handshake contexts before client-auth resolution.
+A focused decode of a complete CertificateRequest proves no clone debit, no panic,
+and exact final release. Generic-list custody and complete TLS accounting remain open.

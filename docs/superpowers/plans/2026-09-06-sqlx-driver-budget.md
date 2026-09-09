@@ -516,3 +516,14 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   PayloadU8/PayloadU16 clone sites for equivalent reachable charged copies.
 - [ ] Continue generic list backing custody and the remaining retained
   handshake/transcript/certificate/session composition.
+
+## Window36 empty CertificateRequest context repair
+
+- [x] Represent an owner-aware zero-length decoded copy as an allocation-free
+  empty Vec without a spurious zero-byte custody token.
+- [x] Exercise a decoded TLS 1.3 CertificateRequest with an empty context and
+  prove its required clone neither panics nor changes the ledger.
+- [x] Preserve the existing non-empty-context rejection and ordinary owner-free
+  payload semantics.
+- [ ] Continue generic list backing custody and the remaining retained
+  handshake/transcript/certificate/session composition.
