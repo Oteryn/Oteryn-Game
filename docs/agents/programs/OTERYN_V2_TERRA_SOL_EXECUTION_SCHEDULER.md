@@ -301,7 +301,7 @@ Terra does not create future technical lanes itself. When Terra is the active co
 | product priority/scope/authority decision | `OWNER_DECISION_REQUIRED` |
 | canonical rules conflict | `POLICY_CONFLICT` |
 | external condition unchanged | `WAITING_EXTERNAL` |
-| every integration predicate proven | mechanical expected-head integration permitted |
+| every integration predicate proven | use only the bound META policy’s governed atomic Merge Queue capability; if unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head |
 
 ## Owner launch sheet
 

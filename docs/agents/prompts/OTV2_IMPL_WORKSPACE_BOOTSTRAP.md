@@ -79,4 +79,4 @@ If this PR changes protocol/session/security semantics rather than only making r
 
 ## Completion
 
-Continue through repairs, exact-head validation, review, squash merge, post-merge verification, task archive and ownership release. Do not mark bootstrap complete while policy/tooling and real workspace shape disagree.
+Continue through repairs, exact-head validation and review, then hand off integration only through the bound META policy’s governed atomic Merge Queue capability. If it is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head rather than substituting direct merge or generic auto-merge. After protected-main readback, complete post-integration verification, task archive and ownership release. Do not mark bootstrap complete while policy/tooling and real workspace shape disagree.

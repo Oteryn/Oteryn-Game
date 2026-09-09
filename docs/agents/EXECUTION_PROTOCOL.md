@@ -39,4 +39,4 @@ A self-review by the implementing agent is not independent review. Codex is one 
 
 ## Closeout
 
-Perform mandatory self-review, any required independent review, E2E classification, exact-head CI, review-thread cleanup, merge, task archive and ownership release. A merge is not automatically programme completion.
+Perform mandatory self-review, any required independent review, E2E classification, exact-head CI and review-thread cleanup. Route integration only through the governed atomic Merge Queue capability required by the bound META policy; if it is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head rather than substituting direct merge or generic auto-merge. After protected-main readback, archive the task and release ownership. Integration is not automatically programme completion.
