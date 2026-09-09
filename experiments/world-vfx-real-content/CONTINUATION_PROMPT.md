@@ -11,11 +11,11 @@ Full continuation directive:
 ```text
 Oteryn: real-content visual slice.
 
-Kontynuuj autonomicznie TEN SAM kanoniczny worker Issue #509 na branchu `agent/world-vfx-real-content-509` w `Oteryn/Oteryn-Game`. GitHub LIVE state jest jedynym źródłem prawdy. Najpierw odczytaj #509, protected #480/#489, #502 oraz `experiments/world-vfx-real-content/README.md`; nie twórz replacement Issue/branch/PR, jeśli istniejący worker nadal jest dostępny.
+Kontynuuj autonomicznie TEN SAM kanoniczny worker Issue #509 na branchu `agent/world-vfx-real-content-509` w `Oteryn/Oteryn-Game`. GitHub LIVE state jest jedynym źródłem prawdy. Najpierw odczytaj #509, protected #480/#489, merged #505, #502 oraz `experiments/world-vfx-real-content/README.md`; nie twórz replacement Issue/branch/PR, jeśli istniejący worker nadal jest dostępny.
 
 Cel: zastąpić syntetyczne kolorowe placeholdery z `OTERYN WORLD + VFX PROTOTYPE` prawdziwym, lokalnym real-content visual slice opartym o dokładny Tibia 15.32 source i Game-owned normalized appearance/world semantics, bez commitowania proprietary pixels i bez mutacji produkcyjnego klienta/renderera/servera.
 
-Zachowaj custom Rust + `wgpu`, server/gameplay authority, explicit floor/tile/stack ordering, visual coverage/displacement niezależne od gameplay footprint, time-based animations, screen-space overlays oraz bounded visible working-set/cache direction z #480.
+Zachowaj custom Rust + `wgpu`, server/gameplay authority, explicit floor/tile/stack ordering, visual coverage/displacement niezależne od gameplay footprint, time-based animations, screen-space overlays oraz bounded visible working-set/cache direction. Traktuj #505 jako nowszą authority dla resource-layout verdicts: bounded visible working set with eviction = `ADOPT`, atlas vs arrays = `INSUFFICIENT_EVIDENCE`, simple hybrid = `INSUFFICIENT_EVIDENCE`; nie przywracaj starego proceduralnego `hybrid=REJECT`.
 
 Użyj istniejącego Game-owned Thais Z7 fixture producer i normalized 15.32 appearance programs. Lokalny Thais fixture jest już zweryfikowany: 24,311 tiles, 39,282 presentation records, 862 appearances, 990 unique sprite IDs; artifact `sha256:4b340053f72b3522a9fe644c9afdf08d9c7b9b686aec0b57cef764a7cb7dc468`. Exact `15.32.zip` SHA-256: `1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f`. Candidate dense viewport: x=32400..32439, y=32239..32268.
 
