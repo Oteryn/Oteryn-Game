@@ -853,3 +853,22 @@ complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: Payload borrowed-to-owned custody; Message into_owned parsed+encoded overlap; handshake AST/DNS/Box ownership; transcript; certificate/OCSP and successor-state custody; compressed-certificate overlap; retained-session composition; complete TLS witness; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
 next_action: continue #425 at Payload into_owned and Message parsed/encoded transfer, then handshake AST ownership
 ```
+
+## Window30 decoded foundation P1 repair
+
+Decoded TLS list growth again follows a checked geometric capacity sequence
+instead of forcing one-element `reserve_exact` growth.  The owner-aware path
+reserves the entire prospective backing before allocation and retains the old
+charge until replacement succeeds; the ordinary path uses normal `Vec::reserve`
+amortization.  The Rust 1.94 `ArcInner<DecodedOwner>` requested layout is now
+derived with `Layout::extend`, reserved before `Arc::new`, and held by external
+connection custody until after the final Arc control block is destroyed.
+
+```yaml
+status: active
+p1_3966866676_geometric_list_growth: PROVEN_IMPLEMENTED
+p1_3966866690_decoded_owner_arc_precharge: PROVEN_IMPLEMENTED
+p1_3966866700_backing_coupled_list_custody: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+next_action: replace aggregate decoded-list debits with backing-coupled custody, then continue the protected #425 payload/message matrix
+```
