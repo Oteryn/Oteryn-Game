@@ -493,10 +493,7 @@ pub(super) fn emit_fake_ccs(sent_tls13_fake_ccs: &mut bool, common: &mut CommonS
         return;
     }
 
-    let m = Message {
-        version: ProtocolVersion::TLSv1_2,
-        payload: MessagePayload::ChangeCipherSpec(ChangeCipherSpecPayload {}),
-    };
+    let m = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::ChangeCipherSpec(ChangeCipherSpecPayload {}));
     common.send_msg(m, false);
 }
 
@@ -1089,12 +1086,9 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
             compressed_cert.uncompressed_len,
         );
 
-        let m = Message {
-            version: ProtocolVersion::TLSv1_3,
-            payload: MessagePayload::handshake(HandshakeMessagePayload(
+        let m = Message::new(ProtocolVersion::TLSv1_3, MessagePayload::handshake(HandshakeMessagePayload(
                 HandshakePayload::CertificateTls13(cert_payload.into_owned()),
-            )),
-        };
+            )));
 
         Box::new(ExpectCertificate {
             config: self.config,
@@ -1347,12 +1341,9 @@ fn emit_end_of_early_data_tls13(transcript: &mut HandshakeHash, common: &mut Com
         return;
     }
 
-    let m = Message {
-        version: ProtocolVersion::TLSv1_3,
-        payload: MessagePayload::handshake(HandshakeMessagePayload(
+    let m = Message::new(ProtocolVersion::TLSv1_3, MessagePayload::handshake(HandshakeMessagePayload(
             HandshakePayload::EndOfEarlyData,
-        )),
-    };
+        )));
 
     transcript.add_message(&m);
     common.send_msg(m, true);

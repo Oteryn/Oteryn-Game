@@ -531,9 +531,7 @@ mod client_hello {
             ..Default::default()
         });
 
-        let sh = Message {
-            version: ProtocolVersion::TLSv1_2,
-            payload: MessagePayload::handshake(HandshakeMessagePayload(
+        let sh = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::handshake(HandshakeMessagePayload(
                 HandshakePayload::ServerHello(ServerHelloPayload {
                     legacy_version: ProtocolVersion::TLSv1_2,
                     random: Random::from(randoms.server),
@@ -542,8 +540,7 @@ mod client_hello {
                     compression_method: Compression::Null,
                     extensions,
                 }),
-            )),
-        };
+            )));
 
         cx.common.check_aligned_handshake()?;
 
@@ -586,10 +583,7 @@ mod client_hello {
         if common.is_quic() {
             return;
         }
-        let m = Message {
-            version: ProtocolVersion::TLSv1_2,
-            payload: MessagePayload::ChangeCipherSpec(ChangeCipherSpecPayload {}),
-        };
+        let m = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::ChangeCipherSpec(ChangeCipherSpecPayload {}));
         common.send_msg(m, false);
     }
 
@@ -611,12 +605,9 @@ mod client_hello {
             },
         };
 
-        let m = Message {
-            version: ProtocolVersion::TLSv1_2,
-            payload: MessagePayload::handshake(HandshakeMessagePayload(
+        let m = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::handshake(HandshakeMessagePayload(
                 HandshakePayload::HelloRetryRequest(req),
-            )),
-        };
+            )));
 
         trace!("Requesting retry {m:?}");
         transcript.rollup_for_hrr();
@@ -1016,12 +1007,9 @@ impl State<ServerConnectionData> for ExpectCompressedCertificate {
             compressed_cert.uncompressed_len,
         );
 
-        let m = Message {
-            version: ProtocolVersion::TLSv1_3,
-            payload: MessagePayload::handshake(HandshakeMessagePayload(
+        let m = Message::new(ProtocolVersion::TLSv1_3, MessagePayload::handshake(HandshakeMessagePayload(
                 HandshakePayload::CertificateTls13(cert_payload.into_owned()),
-            )),
-        };
+            )));
 
         Box::new(ExpectCertificate {
             config: self.config,

@@ -1045,13 +1045,10 @@ impl<'a, const TLS13: bool> HandshakeFlight<'a, TLS13> {
 
     pub(crate) fn finish(self, common: &mut CommonState) {
         common.send_msg(
-            Message {
-                version: match TLS13 {
+            Message::new(match TLS13 {
                     true => ProtocolVersion::TLSv1_3,
                     false => ProtocolVersion::TLSv1_2,
-                },
-                payload: MessagePayload::HandshakeFlight(Payload::new(self.body)),
-            },
+                }, MessagePayload::HandshakeFlight(Payload::new(self.body))),
             TLS13,
         );
     }

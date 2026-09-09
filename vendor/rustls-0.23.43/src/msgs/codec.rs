@@ -94,6 +94,34 @@ impl Drop for DecodedOwner {
     }
 }
 
+/// Non-allocating custody for the decoded backing contained by one message.
+///
+/// This value must be declared after the backing it covers: Rust drops fields
+/// in declaration order, so the message payload is destroyed before this
+/// token returns its debit.
+#[cfg(feature = "std")]
+#[derive(Debug)]
+pub(crate) struct DecodedCustody {
+    owner: Arc<DecodedOwner>,
+    bytes: usize,
+}
+
+#[cfg(feature = "std")]
+impl DecodedCustody {
+    pub(crate) fn since(owner: Arc<DecodedOwner>, checkpoint: usize) -> Self {
+        let charged = owner.checkpoint();
+        debug_assert!(charged >= checkpoint);
+        Self { owner, bytes: charged - checkpoint }
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for DecodedCustody {
+    fn drop(&mut self) {
+        self.owner.release(self.bytes);
+    }
+}
+
 #[cfg(feature = "std")]
 struct ListChargeGuard {
     owner: Option<Arc<DecodedOwner>>,
@@ -623,6 +651,23 @@ mod tests {
         fn read(r: &mut Reader<'_>) -> Result<Self, InvalidMessage> { Ok(Self(u8::read(r)?)) }
     }
     impl TlsListElement for Tiny { const SIZE_LEN: ListLength = ListLength::U16; }
+
+    #[test]
+    fn decoded_custody_moves_without_recharging_and_releases_once() {
+        let arc_bytes = DecodedOwner::arc_layout().unwrap();
+        let owner = Arc::new(TestOwner { limit: arc_bytes + 8, used: AtomicUsize::new(0) });
+        let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+        decoded.reserve(8).unwrap();
+        let custody = DecodedCustody::since(decoded.clone(), 0);
+        let moved = custody;
+
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 8);
+        drop(moved);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
+        drop(decoded);
+        drop(arc_charge);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
 
     #[test]
     fn decoded_list_reserves_before_each_exact_capacity() {

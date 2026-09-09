@@ -795,15 +795,12 @@ fn emit_ticket(
         .unwrap_or_default();
     let ticket_lifetime = ticketer.lifetime();
 
-    let m = Message {
-        version: ProtocolVersion::TLSv1_2,
-        payload: MessagePayload::handshake(HandshakeMessagePayload(
+    let m = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::handshake(HandshakeMessagePayload(
             HandshakePayload::NewSessionTicket(NewSessionTicketPayload::new(
                 ticket_lifetime,
                 ticket,
             )),
-        )),
-    };
+        )));
 
     transcript.add_message(&m);
     cx.common.send_msg(m, false);
@@ -811,10 +808,7 @@ fn emit_ticket(
 }
 
 fn emit_ccs(common: &mut CommonState) {
-    let m = Message {
-        version: ProtocolVersion::TLSv1_2,
-        payload: MessagePayload::ChangeCipherSpec(ChangeCipherSpecPayload {}),
-    };
+    let m = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::ChangeCipherSpec(ChangeCipherSpecPayload {}));
 
     common.send_msg(m, false);
 }
@@ -828,12 +822,9 @@ fn emit_finished(
     let verify_data = secrets.server_verify_data(&vh);
     let verify_data_payload = Payload::new(verify_data);
 
-    let f = Message {
-        version: ProtocolVersion::TLSv1_2,
-        payload: MessagePayload::handshake(HandshakeMessagePayload(HandshakePayload::Finished(
+    let f = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::handshake(HandshakeMessagePayload(HandshakePayload::Finished(
             verify_data_payload,
-        ))),
-    };
+        ))));
 
     transcript.add_message(&f);
     common.send_msg(f, true);

@@ -526,12 +526,9 @@ fn emit_certificate(
     cert_chain: CertificateChain<'static>,
     common: &mut CommonState,
 ) {
-    let cert = Message {
-        version: ProtocolVersion::TLSv1_2,
-        payload: MessagePayload::handshake(HandshakeMessagePayload(HandshakePayload::Certificate(
+    let cert = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::handshake(HandshakeMessagePayload(HandshakePayload::Certificate(
             cert_chain,
-        ))),
-    };
+        ))));
 
     transcript.add_message(&cert);
     common.send_msg(cert, false);
@@ -555,12 +552,9 @@ fn emit_client_kx(
     .encode(&mut buf);
     let pubkey = Payload::new(buf);
 
-    let ckx = Message {
-        version: ProtocolVersion::TLSv1_2,
-        payload: MessagePayload::handshake(HandshakeMessagePayload(
+    let ckx = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::handshake(HandshakeMessagePayload(
             HandshakePayload::ClientKeyExchange(pubkey),
-        )),
-    };
+        )));
 
     transcript.add_message(&ckx);
     common.send_msg(ckx, false);
@@ -579,12 +573,9 @@ fn emit_certverify(
     let sig = signer.sign(&message)?;
     let body = DigitallySignedStruct::new(scheme, sig);
 
-    let m = Message {
-        version: ProtocolVersion::TLSv1_2,
-        payload: MessagePayload::handshake(HandshakeMessagePayload(
+    let m = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::handshake(HandshakeMessagePayload(
             HandshakePayload::CertificateVerify(body),
-        )),
-    };
+        )));
 
     transcript.add_message(&m);
     common.send_msg(m, false);
@@ -592,10 +583,7 @@ fn emit_certverify(
 }
 
 fn emit_ccs(common: &mut CommonState) {
-    let ccs = Message {
-        version: ProtocolVersion::TLSv1_2,
-        payload: MessagePayload::ChangeCipherSpec(ChangeCipherSpecPayload {}),
-    };
+    let ccs = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::ChangeCipherSpec(ChangeCipherSpecPayload {}));
 
     common.send_msg(ccs, false);
 }
@@ -609,12 +597,9 @@ fn emit_finished(
     let verify_data = secrets.client_verify_data(&vh);
     let verify_data_payload = Payload::new(verify_data);
 
-    let f = Message {
-        version: ProtocolVersion::TLSv1_2,
-        payload: MessagePayload::handshake(HandshakeMessagePayload(HandshakePayload::Finished(
+    let f = Message::new(ProtocolVersion::TLSv1_2, MessagePayload::handshake(HandshakeMessagePayload(HandshakePayload::Finished(
             verify_data_payload,
-        ))),
-    };
+        ))));
 
     transcript.add_message(&f);
     common.send_msg(f, true);

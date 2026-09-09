@@ -128,3 +128,15 @@ reserve the prospective full capacity before allocation, retain old/new overlap,
 verify actual capacity, and destroy a mismatched replacement before rollback.
 Ordinary readers retain amortized growth. Per-list backing-bound final custody is
 still open; the aggregate decoded owner is not claimed as complete TLS proof.
+
+## Protected Message custody constructor checkpoint
+
+The protected 2026-09-09 constructor amendment permits mechanical compatibility in
+`client/ech.rs`, `server/tls12.rs`, and `server/tls13.rs`. Those ordinary generated
+messages now carry no decoded custody. Under protected #425, owner-aware decoded
+messages attach the successful decode transaction to a private non-allocating token
+declared after `payload`; message destruction therefore destroys decoded backing before
+returning its debit, and moves transfer the same token. This is a focused representation
+checkpoint only. Deep ownership and custody transfer into successor/peer/session state,
+the complete TLS composition matrix, TLS-positive execution, and PostgreSQL qualification
+remain open.

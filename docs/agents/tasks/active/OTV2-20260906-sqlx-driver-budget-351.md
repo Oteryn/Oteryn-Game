@@ -934,3 +934,26 @@ No semantic source from the failed preflight is retained. The earlier
 ArcInner precharge, geometric growth, payload denial, and rollback repairs remain
 unchanged and regression-only. P1 `3966866700` and umbrella P1 `3954831069`
 remain open.
+
+## Window31 Message backing-custody checkpoint
+
+Protected constructor amendment `OTV2-WP3-RUSTLS-MESSAGE-CUSTODY-CONSTRUCTORS-20260909`
+is now applied. `Message` carries a private, non-allocating decoded-custody token after
+its payload, so payload backing is destroyed before its exact decode debit is released.
+Owner-aware parsing snapshots the decoded transaction and attaches its successful debit
+to the returned message; moving the message transfers the token without another debit.
+All ordinary ECH, TLS1.2-server and TLS1.3-server message construction is routed through
+an unowned constructor or explicitly initializes no custody.
+
+```yaml
+status: active
+message_backing_custody: PROVEN_FOCUSED
+constructor_compatibility_ech_server: PROVEN_COMPILE
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: owner-aware deep-copy destination reservation; custody split/transfer into successor, peer-chain and retained session state; transcript and complete handshake composition; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: continue #425 ownership conversion and retained-descendant custody on the Message token foundation
+```
+
+P1 `3966866700` and umbrella P1 `3954831069` remain open: this checkpoint closes
+message-local drop and move custody only; it does not yet prove every deep-copy or
+retained-descendant transfer in the complete TLS matrix.

@@ -558,6 +558,8 @@ fn emit_client_hello_for_retry(
             None => ProtocolVersion::TLSv1_0,
         },
         payload: MessagePayload::handshake(chp),
+        #[cfg(all(feature = "std", not(test)))]
+        decoded_custody: None,
     };
 
     if retryreq.is_some() {

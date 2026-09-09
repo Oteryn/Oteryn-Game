@@ -718,6 +718,8 @@ impl EchState {
             payload: MessagePayload::handshake(HandshakeMessagePayload(
                 HandshakePayload::ClientHello(inner_hello),
             )),
+            #[cfg(all(feature = "std", not(test)))]
+            decoded_custody: None,
         };
 
         // Update the inner transcript buffer with the inner hello message.
@@ -773,15 +775,12 @@ impl EchState {
         let mut encoded = server_hello_encoded.clone().into_vec();
         encoded[SERVER_HELLO_ECH_CONFIRMATION_SPAN].fill(0x00);
 
-        Message {
-            version: ProtocolVersion::TLSv1_3,
-            payload: MessagePayload::Handshake {
+        Message::new(ProtocolVersion::TLSv1_3, MessagePayload::Handshake {
                 encoded: Payload::Owned(encoded),
                 parsed: HandshakeMessagePayload(HandshakePayload::ServerHello(
                     server_hello.clone(),
                 )),
-            },
-        }
+            })
     }
 
     fn hello_retry_request_conf(retry_req: &HelloRetryRequest) -> Message<'_> {
@@ -793,13 +792,10 @@ impl EchState {
     fn ech_conf_message(hmp: HandshakeMessagePayload<'_>) -> Message<'_> {
         let mut hmp_encoded = Vec::new();
         hmp.payload_encode(&mut hmp_encoded, Encoding::EchConfirmation);
-        Message {
-            version: ProtocolVersion::TLSv1_3,
-            payload: MessagePayload::Handshake {
+        Message::new(ProtocolVersion::TLSv1_3, MessagePayload::Handshake {
                 encoded: Payload::new(hmp_encoded),
                 parsed: hmp,
-            },
-        }
+            })
     }
 }
 
@@ -851,12 +847,9 @@ mod tests {
             compression_method: Compression::Null,
             extensions: Box::new(ServerExtensions::default()),
         };
-        let message = Message {
-            version: ProtocolVersion::TLSv1_3,
-            payload: MessagePayload::handshake(HandshakeMessagePayload(
+        let message = Message::new(ProtocolVersion::TLSv1_3, MessagePayload::handshake(HandshakeMessagePayload(
                 HandshakePayload::ServerHello(server_hello.clone()),
-            )),
-        };
+            )));
         let Message {
             payload:
                 MessagePayload::Handshake {

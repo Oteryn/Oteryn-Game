@@ -469,3 +469,11 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   `common_state.rs` literal before retaining the representation change.
 - [ ] Resume backing-bound list/payload/message custody and the remaining #425
   matrix; complete TLS and PostgreSQL qualification remain blocked.
+
+## Window31 Message custody continuation
+
+- [x] Apply the protected mechanical ECH/TLS1.2-server/TLS1.3-server constructor amendment.
+- [x] Attach successful owner-aware decode debit to a private `Message` custody token ordered after payload backing.
+- [x] Preserve ordinary owner-free std/no_std construction and prove move custody without a second debit.
+- [ ] Reserve separately for borrowed/deep-owned destinations and split/transfer custody into successor, peer-chain, transcript and retained-session owners.
+- [ ] Complete the full TLS composition witness before TLS-positive or PostgreSQL qualification.

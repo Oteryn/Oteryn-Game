@@ -4,6 +4,8 @@ use crate::msgs::alert::AlertMessagePayload;
 use crate::msgs::base::Payload;
 use crate::msgs::ccs::ChangeCipherSpecPayload;
 use crate::msgs::codec::{Codec, Reader};
+#[cfg(all(feature = "std", not(test)))]
+use crate::msgs::codec::DecodedCustody;
 #[cfg(feature = "std")]
 use crate::msgs::codec::DecodedOwner;
 #[cfg(feature = "std")]
@@ -194,9 +196,19 @@ impl PlainMessage {
 pub struct Message<'a> {
     pub version: ProtocolVersion,
     pub payload: MessagePayload<'a>,
+    #[cfg(all(feature = "std", not(test)))]
+    pub(crate) decoded_custody: Option<DecodedCustody>,
 }
 
-impl Message<'_> {
+impl<'a> Message<'a> {
+    pub(crate) fn new(version: ProtocolVersion, payload: MessagePayload<'a>) -> Self {
+        Self {
+            version,
+            payload,
+            #[cfg(all(feature = "std", not(test)))]
+            decoded_custody: None,
+        }
+    }
     pub fn is_handshake_type(&self, hstyp: HandshakeType) -> bool {
         // Bit of a layering violation, but OK.
         if let MessagePayload::Handshake { parsed, .. } = &self.payload {
@@ -207,39 +219,46 @@ impl Message<'_> {
     }
 
     pub fn build_alert(level: AlertLevel, desc: AlertDescription) -> Self {
-        Self {
-            version: ProtocolVersion::TLSv1_2,
-            payload: MessagePayload::Alert(AlertMessagePayload {
+        Self::new(
+            ProtocolVersion::TLSv1_2,
+            MessagePayload::Alert(AlertMessagePayload {
                 level,
                 description: desc,
             }),
-        }
+        )
     }
 
     pub fn build_key_update_notify() -> Self {
-        Self {
-            version: ProtocolVersion::TLSv1_3,
-            payload: MessagePayload::handshake(HandshakeMessagePayload(
+        Self::new(
+            ProtocolVersion::TLSv1_3,
+            MessagePayload::handshake(HandshakeMessagePayload(
                 HandshakePayload::KeyUpdate(KeyUpdateRequest::UpdateNotRequested),
             )),
-        }
+        )
     }
 
     pub fn build_key_update_request() -> Self {
-        Self {
-            version: ProtocolVersion::TLSv1_3,
-            payload: MessagePayload::handshake(HandshakeMessagePayload(
+        Self::new(
+            ProtocolVersion::TLSv1_3,
+            MessagePayload::handshake(HandshakeMessagePayload(
                 HandshakePayload::KeyUpdate(KeyUpdateRequest::UpdateRequested),
             )),
-        }
+        )
     }
 
     #[cfg(feature = "std")]
     pub(crate) fn into_owned(self) -> Message<'static> {
-        let Self { version, payload } = self;
+        let Self {
+            version,
+            payload,
+            #[cfg(not(test))]
+            decoded_custody,
+        } = self;
         Message {
             version,
             payload: payload.into_owned(),
+            #[cfg(not(test))]
+            decoded_custody,
         }
     }
 
@@ -259,6 +278,8 @@ impl TryFrom<PlainMessage> for Message<'static> {
             version: plain.version,
             payload: MessagePayload::new(plain.typ, plain.version, plain.payload.bytes())?
                 .into_owned(),
+            #[cfg(all(feature = "std", not(test)))]
+            decoded_custody: None,
         })
     }
 }
@@ -274,6 +295,8 @@ impl<'a> TryFrom<InboundPlainMessage<'a>> for Message<'a> {
         Ok(Self {
             version: plain.version,
             payload: MessagePayload::new(plain.typ, plain.version, plain.payload)?,
+            #[cfg(all(feature = "std", not(test)))]
+            decoded_custody: None,
         })
     }
 }
@@ -284,14 +307,19 @@ impl<'a> Message<'a> {
         value: InboundPlainMessage<'a>,
         owner: Arc<DecodedOwner>,
     ) -> Result<Self, InvalidMessage> {
+        #[cfg(not(test))]
+        let checkpoint = owner.checkpoint();
+        let payload = MessagePayload::new_with_resource_owner(
+            value.typ,
+            value.version,
+            value.payload,
+            owner.clone(),
+        )?;
         Ok(Self {
             version: value.version,
-            payload: MessagePayload::new_with_resource_owner(
-                value.typ,
-                value.version,
-                value.payload,
-                owner,
-            )?,
+            payload,
+            #[cfg(not(test))]
+            decoded_custody: Some(DecodedCustody::since(owner, checkpoint)),
         })
     }
 }
