@@ -717,6 +717,8 @@ aws_lc_kx_provider_resident: NOT_PROVEN
 complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: initial/post-HRR cancellation ordering; sequential thread churn; complete decoded/config/session/cache/send/transcript/error custody; funded SQLx TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
 next_action: finish cancellation and thread-churn controls, then continue the complete TLS ownership matrix
+```
+
 ## Window24b retained provider-thread churn
 
 Protected `main@e1750ede386c0ee1001894ab9d91129de5d03fce` was merged normally.

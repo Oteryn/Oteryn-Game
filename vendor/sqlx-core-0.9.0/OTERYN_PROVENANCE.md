@@ -988,6 +988,7 @@ This closes the actual-wire HRR cell only.  Initial/post-HRR cancellation,
 sequential caller-thread churn, the rest of complete TLS allocation custody,
 the SQLx socket-level TLS-positive case, and PostgreSQL qualification remain
 open; aggregate KX/provider residency is therefore still `NOT_PROVEN`.
+
 ## Window24b retained thread-residency qualification
 
 After the normal protected-main merge, the executable exact-graph AWS-LC proof
