@@ -8,7 +8,7 @@ Coordinator: #162. Programme: #364. Existing sole material worker: #351 / #356. 
 allocation_id: OTV2-WP3-RUSTLS-PSK-BINDER-OWNER-20260909
 repository: Oteryn/Oteryn-Game
 allocation_base_main_sha: ece300c384aa1e53f208975f25e94635c2fcc7ce
-governance_reconciliation_main_sha: fce21fda538e4a9cd6e8c1c1386b6b9f6a3edc89
+governance_reconciliation_main_sha: e6dfcef4fb6c270a1b2af09a2fe02c6b5bbdc108
 allocation_state: NOT_ACTIVE_CONDITIONAL
 preparation_branch: coord/wp3-rustls-psk-binder-owner-351
 worker_branch: agent/sqlx-driver-budget-351
@@ -133,7 +133,7 @@ All existing grants #425/#427/#429/#430/#432/#451/#453/#458/#466 remain unchange
 
 ## Integration and activation gates
 
-The historical creation provenance remains `allocation_base_main_sha` `ece300c384aa1e53f208975f25e94635c2fcc7ce`. This repair reconciles governance against protected `main` `fce21fda538e4a9cd6e8c1c1386b6b9f6a3edc89`, whose `docs/agents/META_AGENT_POLICY_BINDING.json` binds `OTERYN_ORGANIZATION_AGENT_POLICY` v3.1.0 at `Oteryn/Oteryn@ed6c8c98605a7fbfea858e0ef616f89baa617262`. Future integration inherits the then-current protected binding rather than freezing this document to a superseded integration algorithm.
+The historical creation provenance remains `allocation_base_main_sha` `ece300c384aa1e53f208975f25e94635c2fcc7ce`. This repair reconciles governance against protected `main` `e6dfcef4fb6c270a1b2af09a2fe02c6b5bbdc108`, whose `docs/agents/META_AGENT_POLICY_BINDING.json` binds `OTERYN_ORGANIZATION_AGENT_POLICY` v3.1.0 at `Oteryn/Oteryn@ed6c8c98605a7fbfea858e0ef616f89baa617262`. Future integration inherits the then-current protected binding rather than freezing this document to a superseded integration algorithm.
 
 Historical exact head `2de8e9415f2d452d0589a97b0cbd8832e85c982e` carried the superseded v3.0 rule requiring one queue mutation to atomically fence the exact head and expected `main` base/queue. Independent exact-head HIGH-risk review found that active requirement to be a P1 after protected #497 adopted META 3.1. This repair removes that superseded algorithm as active authority while retaining the historical fact.
 
