@@ -4,7 +4,7 @@
 task_id: OTV2-20260822-impl-vsl-content
 title: Implement minimal native VSL content compiler loader seam
 mode: IMPLEMENT
-status: first_production_review_findings_fixed_pending_requalification
+status: first_production_post_merge_p1_repair_local_qualified
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: agent/content-first-production-54-20260909
@@ -14,7 +14,7 @@ pr: 481
 allocation_id: CONTENT54-FIRST-PRODUCTION-v1-20260909
 allocation_comment: 5601519485
 allocation_admission_sha: 9afb7cbb538674408bc7d2eaaaaa1e8917b04640
-current_reconciled_base_sha: 4d06bad1c0d21f2237df290865be55d8f7ed4f02
+current_reconciled_base_sha: fce21fda538e4a9cd6e8c1c1386b6b9f6a3edc89
 registry_pr: 472
 registry_merge_sha: 9afb7cbb538674408bc7d2eaaaaa1e8917b04640
 evidence_delivery_pr: 58
@@ -24,7 +24,7 @@ repair_pr: 87
 repair_merge_sha: db95bc720529b643531c79f708086f69dd612d22
 owner: content-first-production-coordinator
 created_at: 2026-08-22T18:11:00+02:00
-updated_at: 2026-09-09T16:50:44+02:00
+updated_at: 2026-09-09T20:39:00+02:00
 owned_paths:
   - apps/game-server/src/content/mod.rs
   - apps/game-server/src/content/model.rs
@@ -108,6 +108,20 @@ Focused post-fix regression evidence is `37/37` CONTENT unit tests, `4/4` public
 
 Fresh post-fix whole-diff self-review: **PASS** with P0=0, P1=0, P2=0 open after reproducing and closing F3-F8. This remains self-review and does not replace fresh independent exact-head re-review.
 
+## Later review generations and post-merge P1 repair
+
+Subsequent exact-head independent review generations before protected integration found and repaired additional bounded issues on the same canonical branch: spawn-population overflow classification; overlong SHA-256 capacity classification; token-aware rejection of explicit `test` namespaces; non-cloneable active runtime generation; exact artifact-digest binding in staging expectations; typed UUIDv7 `WorldId`; and one-to-one presentation closure. The final delivery source head was `df3c4cf0ad5bc3153e3d34f7dc78698eb49ca59e`.
+
+PR #481 then passed canonical exact-head CI and FULL Merge Queue and was protected as `main@ece300c384aa1e53f208975f25e94635c2fcc7ce`. A post-merge independent whole-head review of unchanged `df3c4cf...` found one additional **P1**, accepted and reproduced against the protected implementation: `MultiplicityClass::ExplicitEventPolicyRequired` was accepted by both compiler and staging even though `GAME-CHANNEL-01_CHANNEL_PRODUCT_POLICY_CONTRACT.md` requires exact event-owner simulation/eligibility policy before activation and `FIRST_PRODUCTION_CONTENT_PROFILE/v1` carries no such policy.
+
+- **POST-MERGE P1 ACCEPTED/FIXED (local repair candidate):** first-production v1 now rejects `ExplicitEventPolicyRequired` at typed-source validation and independently rejects the serialized `EXPLICIT_EVENT_POLICY_REQUIRED` sentinel during staging. Supported resolved classes remain `CHANNEL_LOCAL_REPEATABLE`, `CHANNEL_LOCAL_SHARED_ELIGIBILITY`, and `WORLD_SCOPED_UNIQUE`.
+- RED evidence: focused regression failed on protected behavior before the repair because `compile_first_production` accepted the sentinel.
+- GREEN evidence: `explicit_event_policy_required_fails_closed_without_event_owner_policy` passes for both compiler and a self-consistent crafted artifact; full production suite is `21/21 PASS`.
+- This repair does not add event policy, runtime event authority, permanent content format, network/deployment behavior, or live activation authority.
+
+Fresh independent exact-head review, canonical CI, FULL Merge Queue and protected-main readback are mandatory for the repair generation before #54 closeout.
+
+Post-repair adversarial whole-diff self-review: **PASS, P0=0 / P1=0 / P2=0 open**. Finding-family sweep covers both applicable consumer boundaries (typed source compilation and independent artifact staging); authority/recovery/session/persistence/retry/concurrency operators are NOT_APPLICABLE because this repair only rejects an unresolved authored multiplicity sentinel before staging/activation and introduces no mutation authority.
 ## Whole-diff self-review
 
 The pre-Codex self-review after F1/F2 repair was `P0=0/P1=0/P2=0`, but independent review later found F3-F8 above. After accepting and fixing all six independent findings, the candidate requires a fresh whole-diff self-review plus fresh independent exact-head re-review before integration.
@@ -141,11 +155,11 @@ The pre-Codex self-review after F1/F2 repair was `P0=0/P1=0/P2=0`, but independe
 ## Context checkpoint
 
 ```yaml
-last_progress: PR #481 independent Codex findings F3-F8 accepted and fixed on the same branch after path-disjoint reconciliation with protected main
-status: first_production_review_findings_fixed_pending_requalification
+last_progress: post-merge independent review P1 reproduced RED and fixed on the same canonical #54 branch, then reconciled path-disjoint with protected META 3.1 main@fce21fda
+status: first_production_post_merge_p1_repair_local_qualified
 branch: agent/content-first-production-54-20260909
 head_sha: null
-current_reconciled_base_sha: 4d06bad1c0d21f2237df290865be55d8f7ed4f02
+current_reconciled_base_sha: fce21fda538e4a9cd6e8c1c1386b6b9f6a3edc89
 pr: 481
 allocation_id: CONTENT54-FIRST-PRODUCTION-v1-20260909
 registry_merge_sha: 9afb7cbb538674408bc7d2eaaaaa1e8917b04640
@@ -154,9 +168,9 @@ public_integration_tests: 4/4 PASS
 strict_clippy: PASS
 governance_validation: pending_fresh_exact_head
 architecture_semantic: pending_fresh_exact_head
-review_findings: F1-F8 fixed; Codex pre-fix verdict P0=0/P1=5/P2=1
+review_findings: historical findings fixed; post-merge ExplicitEventPolicyRequired P1 accepted and fixed locally
 whole_diff_self_review: PASS_POST_FIX_P0_0_P1_0_P2_0
-blocker: fresh exact-head re-review, canonical CI, FULL Merge Queue and protected-main readback
+blocker: repair generation requires fresh exact-head independent review, canonical CI, FULL Merge Queue and protected-main readback
 owner_action_required: null
-next_action: freeze and commit fixes, push same branch, resolve review threads with evidence, repeat independent review/CI, FULL Merge Queue and protected-main readback
+next_action: qualify and freeze the post-merge P1 repair, push same canonical branch, open bounded repair PR, then complete fresh review/CI/FULL Merge Queue/readback
 ```
