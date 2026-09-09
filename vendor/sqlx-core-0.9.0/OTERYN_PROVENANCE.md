@@ -971,3 +971,20 @@ rustls source change is part of this feature closure.
 Aggregate KX/provider residency and complete WP3 remain open pending the full
 actual-HRR, thread-churn, cancellation/drop, TLS custody, TLS-positive, and
 PostgreSQL 17.6 matrices on the final graph.
+
+## Window24 actual HelloRetryRequest wire path
+
+The executable AWS-LC SQLx harness now creates an owner-aware PQ-first rustls
+client and an ordinary TLS 1.3 server restricted to P-256, then moves the real
+TLS records between them.  This forces rustls's server implementation to emit
+an actual HelloRetryRequest and the client to report
+`HandshakeKind::FullWithHelloRetryRequest`.  Test-only peak observation on the
+same ledger proves the 1,625-byte replacement reservation occurs while the
+initial 7,881-byte hybrid reservation is live.  Current-charge observation
+after HRR processing proves the old exchange is destroyed and released only
+after the replacement is installed.  The exchange then completes normally.
+
+This closes the actual-wire HRR cell only.  Initial/post-HRR cancellation,
+sequential caller-thread churn, the rest of complete TLS allocation custody,
+the SQLx socket-level TLS-positive case, and PostgreSQL qualification remain
+open; aggregate KX/provider residency is therefore still `NOT_PROVEN`.

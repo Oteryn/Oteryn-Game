@@ -361,3 +361,16 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Prove the direct feature edge and explicitly assert the ordinary and owner-aware four-group PQ-first sequence.
 - [x] Re-run allocation-free validation and the executable racing-first-use accounting proof on the final feature graph.
 - [ ] Complete actual HRR, thread-churn, cancellation, complete TLS composition, funded TLS-positive, and PostgreSQL 17.6 qualification before any aggregate WP3 acceptance claim.
+
+## Window24 actual HRR wire proof
+
+- [x] Drive a real owner-aware PQ-first client against an ordinary P-256-only
+  TLS 1.3 server and require `FullWithHelloRetryRequest`.
+- [x] Observe the same-ledger peak containing the initial 7,881-byte hybrid KX
+  plus the 1,625-byte replacement before old-backing release.
+- [x] Complete the negotiated handshake and preserve ordinary server,
+  certificate, provider, and protocol semantics.
+- [ ] Finish initial/post-HRR cancellation and thread-churn controls before
+  aggregate KX/provider GREEN.
+- [ ] Continue complete TLS custody, funded SQLx TLS-positive, and PostgreSQL
+  17.6 qualification.
