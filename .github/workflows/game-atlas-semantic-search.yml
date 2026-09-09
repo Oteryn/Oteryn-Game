@@ -4,12 +4,22 @@ on:
   pull_request:
     paths:
       - 'tools/game-atlas-semantic-search/**'
+      - 'tools/game-atlas-creatures/export.py'
+      - 'tools/game-atlas-creatures/identity.py'
+      - 'tools/game-atlas-fullworld-source/producer.py'
+      - 'tools/game-atlas-thais-fixture/export.py'
+      - 'tools/repository/test_validate_game_atlas_semantic_search_triggers.py'
       - 'docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md'
       - '.github/workflows/game-atlas-semantic-search.yml'
+      - '.github/workflows/game-atlas-static-creatures.yml'
   push:
     branches: [main]
     paths:
       - 'tools/game-atlas-semantic-search/**'
+      - 'tools/game-atlas-creatures/export.py'
+      - 'tools/game-atlas-creatures/identity.py'
+      - 'tools/game-atlas-fullworld-source/producer.py'
+      - 'tools/game-atlas-thais-fixture/export.py'
       - 'docs/contracts/OTERYN_GAME_ATLAS_SEMANTIC_SEARCH_PROFILE_V1.md'
       - '.github/workflows/game-atlas-semantic-search.yml'
 
@@ -37,10 +47,13 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Compile exporter
-        run: python -m py_compile tools/game-atlas-semantic-search/export.py tools/game-atlas-semantic-search/self_test.py
+        run: python -S -m py_compile tools/game-atlas-semantic-search/export.py tools/game-atlas-semantic-search/self_test.py
+
+      - name: Verify Atlas trigger closure
+        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py
 
       - name: Run deterministic and negative tests
-        run: python tools/game-atlas-semantic-search/self_test.py
+        run: python -S tools/game-atlas-semantic-search/self_test.py
 
       - name: Verify authority boundaries
         shell: bash
@@ -62,12 +75,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python tools/game-atlas-creatures/export.py \
+          python -S tools/game-atlas-creatures/export.py \
             legacy/vendor/map-analysis/crystalserver/data-global/world \
             legacy/vendor/map-analysis/crystalserver/data-global/npc \
             legacy/vendor/map-analysis/crystalserver/data-global/monster \
             /tmp/static-creatures.json
-          python tools/game-atlas-semantic-search/export.py \
+          python -S tools/game-atlas-semantic-search/export.py \
             --creatures /tmp/static-creatures.json \
             --npc-root legacy/vendor/map-analysis/crystalserver/data-global/npc \
             --legacy-root legacy \
@@ -78,12 +91,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python -S - <<'PY'
           import json
           data = json.load(open('/tmp/semantic-search-source.json', encoding='utf-8'))
           sam = [record for record in data['records'] if record['kind'] == 'npc' and record['label'].casefold() == 'sam']
           thais = [record for record in data['records'] if record['kind'] == 'town' and record['label'].casefold() == 'thais']
-          assert data['semantic_digest'] == 'sha256:0cc0546aff0e9a8f85716dcbe5babc6043e148e946a448b1d87f083410cb1005'
+          assert data['semantic_digest'] == 'sha256:035c911b11e588a969e8fb642965772eee598c30ad80d5d04f9ceda32461e530'
           assert data['counts'] == {'records': 88684, 'kinds': {'monster': 87565, 'npc': 1068, 'town': 33, 'waypoint': 18}}
           assert len(sam) == 1, len(sam)
           assert sam[0]['id'] == 'npc:726487438c8308abf291622a52d91b24', sam[0]
