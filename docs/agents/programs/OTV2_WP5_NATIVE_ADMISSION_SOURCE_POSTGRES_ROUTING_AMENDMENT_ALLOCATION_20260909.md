@@ -149,29 +149,36 @@ If any gate is false, material routing stays `NOT_ACTIVE`.
 
 ## Required material proof sequence
 
-The later material change must preserve #416's fail-closed sequence rather than
-shortcut it:
+The later material #416 change must preserve the parent allocation's fail-closed
+sequence without pulling the held S2 target into the routing writer's scope:
 
-1. add/refresh regression coverage for the exact target identity and exact held
-   target path;
-2. prove a test-only RED where the target exists but is intentionally not routed;
+1. add/refresh regression coverage for the exact registered target identity and
+   exact held-target path contract;
+2. prove a test-only RED that protected routing does not yet recognize/select the
+   registered target; this is a control-plane regression proof, not PostgreSQL
+   acceptance evidence for the held S2 implementation;
 3. add the smallest exact PR / Merge Queue / push routing needed for
    `native_admission_source_postgres` without broadening unrelated paths;
 4. preserve trusted protected-base classification and fail closed on unknown,
    renamed, missing, skipped or untrusted target state;
-5. run the target against real PostgreSQL 17.6 in canonical PR and merge-group
-   lanes; a stub, parser-only fixture, SQLite substitute, skipped job or unrelated
-   `durability_postgres` result never counts;
-6. independently review the exact material head;
-7. update policy-core pins only through the separately serialized pin-owning
-   procedure required by #416;
-8. rotate audited policy/harness pins only after their predecessor material source
-   is protected and re-read;
-9. obtain exact canonical repository checks, FULL Merge Queue and protected-main
-   readback.
+5. update the exact affected policy-core expectations/pins in the material gate
+   candidate as required by protected #416, compute the exact future merge-group
+   gate blob, and independently review that exact material head;
+6. perform the separately serialized protected audit-pin rotation required by
+   #416, then refresh protected-base audit evidence for the material gate
+   candidate;
+7. obtain the material routing candidate's exact canonical repository checks,
+   normal FULL Merge Queue and protected-main readback;
+8. only after step 7 may the held S2 branch reconcile with protected routing and
+   execute `native_admission_source_postgres` against real PostgreSQL 17.6 in its
+   own canonical PR and merge-group lanes;
+9. only the post-routing S2 PostgreSQL results from step 8 may count as target
+   acceptance evidence. A stub, parser-only fixture, SQLite substitute, skipped
+   job, unrelated `durability_postgres` result or pre-routing run never counts.
 
-Only after that protected material readback may the held S2 target reconcile and
-produce acceptance evidence that counts.
+The material routing PR therefore proves truthful fail-closed routing/policy on its
+own authorized control-plane paths. It does **not** need to absorb the held S2 test
+file or claim that target's real PostgreSQL execution before routing protection.
 
 ## Failure semantics
 
@@ -181,8 +188,9 @@ The routing contract fails closed if any of the following occurs:
 - target file is missing from the held S2 lineage when material routing starts;
 - target is classified by an unreviewed/unprotected head-side classifier;
 - the PR lane or merge-group lane is omitted;
-- PostgreSQL is not exactly the accepted 17.6 execution for qualification;
-- a required job is skipped, neutral, cancelled or nonzero;
+- the reconciled S2 acceptance run is not exactly PostgreSQL 17.6;
+- a required routing or post-routing S2 job is skipped, neutral, cancelled or
+  nonzero;
 - a generic/other target result is substituted;
 - policy-core or audited pin custody cannot be proven;
 - protected-base SHA or target contract changes without fresh reconciliation;
