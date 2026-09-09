@@ -369,8 +369,8 @@ fn import_root_certs() -> RootCertStore {
 }
 
 #[derive(Debug)]
-struct DummyTlsVerifier {
-    provider: Arc<CryptoProvider>,
+pub(super) struct DummyTlsVerifier {
+    pub(super) provider: Arc<CryptoProvider>,
 }
 
 impl ServerCertVerifier for DummyTlsVerifier {
