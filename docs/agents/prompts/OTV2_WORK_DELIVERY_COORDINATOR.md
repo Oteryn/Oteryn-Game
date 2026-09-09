@@ -253,8 +253,8 @@ For every worker return:
 6. run focused/component/integration/E2E evidence appropriate to risk;
 7. require independent exact-head review where repository policy requires it;
 8. refresh to current integration `main` without discarding valid history;
-9. require exact-head repository CI, zero unresolved threads and expected-head merge;
-10. post-merge verify, archive task, release ownership/lease;
+9. require exact-head repository CI and zero unresolved threads, then route integration only through the bound META policy’s governed atomic Merge Queue capability; if unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head rather than substituting direct merge or generic auto-merge;
+10. after successful governed Merge Queue integration, verify protected-main readback confirms the accepted candidate is integrated, then archive the task and release ownership/lease;
 11. recompute dependent lane readiness.
 
 Worker completion order never overrides dependency-aware integration order.

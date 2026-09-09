@@ -102,7 +102,7 @@ Do not call synthetic unit/integration tests real E2E.
 
 ## Merge gate
 
-Merge only when exact final head is unchanged and all applicable repository gates pass. A later build-affecting commit invalidates prior build/E2E evidence. A later docs-only commit still requires applicable governance/document validation on the new head.
+Integration may proceed only when the exact final head is unchanged and all applicable repository gates pass. A later build-affecting commit invalidates prior build/E2E evidence. A later docs-only commit still requires applicable governance/document validation on the new head.
 
 A required check cannot be replaced by a local command, PR comment or manually asserted success. Trusted manual dispatch is acceptable only when it validates the open PR and exact frozen head and produces the repository-required context on that SHA.
 
@@ -110,11 +110,13 @@ Mandatory self-review must be clean. When independent review is required by the 
 
 ## Closeout
 
-After merge:
+Do not close the lifecycle from enqueue/submission or an unverified merge result. Closeout begins only after the bound META policy's governed Merge Queue integration succeeds and protected-main readback confirms the accepted candidate is integrated.
 
-- record merge commit and resulting state;
+After that protected-main readback:
+
+- record the integration commit/resulting state;
 - archive task and release owned paths/leases;
 - close/update linked Issue/programme barriers;
 - mark superseded PRs intentionally terminal;
 - preserve evidence and one next programme action, if any;
-- do not leave an active task merely because the implementation PR merged.
+- do not leave an active task merely because the implementation PR integrated.

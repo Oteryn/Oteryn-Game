@@ -101,7 +101,7 @@ Before implementation, the live allocation/task must name exact tests and comman
 6. full workspace build/test/strict Clippy and supply-chain checks required by current merge policy;
 7. mandatory whole-diff self-review;
 8. genuinely independent exact-head review because protocol/session/admission/fencing is high risk;
-9. exact-head GitHub CI including `game-gate`, zero unresolved review threads and expected-head squash merge.
+9. exact-head GitHub CI including `game-gate` and zero unresolved review threads, followed by integration only through the bound META policy’s governed atomic Merge Queue capability; if unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head rather than substituting direct merge or generic auto-merge.
 
 The Server Seam delivery may establish a Tier-1-capable physical boundary, but ADR-0007 Tier 1 remains `NOT_EVALUATED` until the separately allocated QA lane records accepted physical journey evidence.
 
@@ -121,6 +121,6 @@ Elapsed implementation time is not a stop condition. Routine test failures, revi
 
 ## Completion
 
-Do not claim completion from a listener that merely binds a socket or from synthetic tests. Completion requires the allocated production seam implementation, required tests/review/exact-head CI, squash merge, post-merge readback, task archive and ownership/shared-lease release.
+Do not claim completion from a listener that merely binds a socket or from synthetic tests. Completion requires the allocated production seam implementation, required tests/review/exact-head CI, governed Merge Queue integration under the bound META policy, protected-main readback, task archive and ownership/shared-lease release. If the governed atomic queue capability is unavailable, record `BLOCKED_CAPABILITY_UNAVAILABLE` and preserve the qualified head; do not claim completion or substitute direct merge or generic auto-merge.
 
 Only after the compatible seam is verified on `main` may the coordinator release Client and a new QA Tier-1 allocation.
