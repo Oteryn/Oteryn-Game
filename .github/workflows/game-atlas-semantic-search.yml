@@ -47,13 +47,13 @@ jobs:
         run: test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
 
       - name: Compile exporter
-        run: python -m py_compile tools/game-atlas-semantic-search/export.py tools/game-atlas-semantic-search/self_test.py
+        run: python -S -m py_compile tools/game-atlas-semantic-search/export.py tools/game-atlas-semantic-search/self_test.py
 
       - name: Verify Atlas trigger closure
-        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py
+        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py
 
       - name: Run deterministic and negative tests
-        run: python tools/game-atlas-semantic-search/self_test.py
+        run: python -S tools/game-atlas-semantic-search/self_test.py
 
       - name: Verify authority boundaries
         shell: bash
@@ -75,12 +75,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python tools/game-atlas-creatures/export.py \
+          python -S tools/game-atlas-creatures/export.py \
             legacy/vendor/map-analysis/crystalserver/data-global/world \
             legacy/vendor/map-analysis/crystalserver/data-global/npc \
             legacy/vendor/map-analysis/crystalserver/data-global/monster \
             /tmp/static-creatures.json
-          python tools/game-atlas-semantic-search/export.py \
+          python -S tools/game-atlas-semantic-search/export.py \
             --creatures /tmp/static-creatures.json \
             --npc-root legacy/vendor/map-analysis/crystalserver/data-global/npc \
             --legacy-root legacy \
@@ -91,7 +91,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python - <<'PY'
+          python -S - <<'PY'
           import json
           data = json.load(open('/tmp/semantic-search-source.json', encoding='utf-8'))
           sam = [record for record in data['records'] if record['kind'] == 'npc' and record['label'].casefold() == 'sam']

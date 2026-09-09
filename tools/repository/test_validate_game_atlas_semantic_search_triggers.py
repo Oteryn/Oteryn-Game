@@ -22,9 +22,9 @@ CREATURE_IDENTITY = "tools/game-atlas-creatures/identity.py"
 REGRESSION = "tools/repository/test_validate_game_atlas_semantic_search_triggers.py"
 SEMANTIC_WORKFLOW_PATH = ".github/workflows/game-atlas-semantic-search.yml"
 STATIC_WORKFLOW_PATH = ".github/workflows/game-atlas-static-creatures.yml"
-REGRESSION_COMMAND = f"python {REGRESSION}"
-EXPECTED_SEMANTIC_WORKFLOW_BLOB = "8ff643337108876bd709064014a7a146134d69b2"
-EXPECTED_STATIC_WORKFLOW_BLOB = "51758c91ebcad0140739f1c1ea9acba32032a238"
+REGRESSION_COMMAND = f"python -S {REGRESSION}"
+EXPECTED_SEMANTIC_WORKFLOW_BLOB = "0b568d63fb927f421c1fab280adb05a48ab26a8d"
+EXPECTED_STATIC_WORKFLOW_BLOB = "0ac19bcea61f375d66628063ca671bcb502164db"
 
 SEMANTIC_PR_PATHS = (
     "tools/game-atlas-semantic-search/**",
@@ -463,7 +463,7 @@ def _python_heredoc(workflow: str, step_name: str) -> str:
         "        shell: bash",
         "        run: |",
         "          set -euo pipefail",
-        "          python - <<'PY'",
+        "          python -S - <<'PY'",
     ], f"oracle shell prefix changed or became bypassable in {step_name!r}"
     assert lines[-1] == "          PY", f"oracle heredoc must be the final shell command in {step_name!r}"
     code_lines = lines[4:-1]
@@ -513,10 +513,13 @@ def _assert_pinned_actions_and_no_bypass(workflow: str) -> None:
     assert all(re.fullmatch(r"[^@\s#]+@[0-9a-f]{40}", action) for action in actions), (
         "every uses action must be pinned to a 40-character commit SHA"
     )
+    runners = tuple(_decode_mapping_scalar(raw) for raw in _decoded_mapping_values(workflow, "runs-on"))
+    assert runners == ("ubuntu-24.04",), "protected Atlas workflow must keep exactly one trusted ubuntu-24.04 job"
     keys = _decoded_mapping_keys(workflow)
     assert "continue-on-error" not in keys
     assert "if" not in keys, "workflow if conditions are forbidden in protected Atlas qualification workflows"
     assert "defaults" not in keys, "workflow/job run defaults are forbidden in protected Atlas qualification workflows"
+    assert "container" not in keys, "job containers are forbidden in protected Atlas qualification workflows"
     for dangerous in ("PYTHONOPTIMIZE", "BASH_ENV"):
         assert dangerous not in keys and dangerous not in workflow, f"dangerous execution environment key: {dangerous}"
 
@@ -546,13 +549,13 @@ def _assert_semantic_execution_steps(workflow: str) -> None:
     _assert_exact_run_step(
         workflow,
         "Compile exporter",
-        "python -m py_compile tools/game-atlas-semantic-search/export.py tools/game-atlas-semantic-search/self_test.py",
+        "python -S -m py_compile tools/game-atlas-semantic-search/export.py tools/game-atlas-semantic-search/self_test.py",
     )
     _assert_exact_run_step(workflow, "Verify Atlas trigger closure", REGRESSION_COMMAND)
     _assert_exact_run_step(
         workflow,
         "Run deterministic and negative tests",
-        "python tools/game-atlas-semantic-search/self_test.py",
+        "python -S tools/game-atlas-semantic-search/self_test.py",
     )
     _assert_exact_bash_step(
         workflow,
@@ -579,12 +582,12 @@ def _assert_semantic_execution_steps(workflow: str) -> None:
         workflow,
         "Build real pinned Game creature and semantic sources",
         (
-            "python tools/game-atlas-creatures/export.py \\",
+            "python -S tools/game-atlas-creatures/export.py \\",
             "  legacy/vendor/map-analysis/crystalserver/data-global/world \\",
             "  legacy/vendor/map-analysis/crystalserver/data-global/npc \\",
             "  legacy/vendor/map-analysis/crystalserver/data-global/monster \\",
             "  /tmp/static-creatures.json",
-            "python tools/game-atlas-semantic-search/export.py \\",
+            "python -S tools/game-atlas-semantic-search/export.py \\",
             "  --creatures /tmp/static-creatures.json \\",
             "  --npc-root legacy/vendor/map-analysis/crystalserver/data-global/npc \\",
             "  --legacy-root legacy \\",
@@ -656,8 +659,8 @@ def _assert_static_execution_steps(workflow: str) -> None:
         workflow,
         "Compile and run producer self-test",
         (
-            "python -m py_compile tools/game-atlas-creatures/export.py tools/game-atlas-creatures/self_test.py",
-            "python tools/game-atlas-creatures/self_test.py",
+            "python -S -m py_compile tools/game-atlas-creatures/export.py tools/game-atlas-creatures/self_test.py",
+            "python -S tools/game-atlas-creatures/self_test.py",
         ),
     )
     _assert_exact_run_step(workflow, "Verify Atlas trigger closure", REGRESSION_COMMAND)
@@ -666,8 +669,8 @@ def _assert_static_execution_steps(workflow: str) -> None:
         "Build exact pinned product twice",
         (
             'ROOT="$GITHUB_WORKSPACE/legacy/vendor/map-analysis/crystalserver/data-global"',
-            'python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-a.json',
-            'python tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-b.json',
+            'python -S tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-a.json',
+            'python -S tools/game-atlas-creatures/export.py "$ROOT/world" "$ROOT/npc" "$ROOT/monster" /tmp/creatures-b.json',
             "cmp /tmp/creatures-a.json /tmp/creatures-b.json",
         ),
     )
@@ -751,6 +754,26 @@ class AtlasTriggerClosureTest(unittest.TestCase):
     def test_review_bypasses_fail_closed_without_blob_binding(self) -> None:
         attacks = [
             (
+                self.semantic.replace(REGRESSION_COMMAND, f"python {REGRESSION}", 1),
+                self.static,
+            ),
+            (
+                self.semantic,
+                self.static.replace(REGRESSION_COMMAND, f"python {REGRESSION}", 1),
+            ),
+            (
+                self.semantic.replace(
+                    "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
+                    "  semantic-search-source:\n    container: python:3.12\n    runs-on: ubuntu-24.04\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace("    runs-on: ubuntu-24.04\n", "    runs-on: self-hosted\n", 1),
+                self.static,
+            ),
+            (
                 self.semantic.replace(
                     "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
                     "  semantic-search-source:\n    env:\n      PYTHONPATH: tools/game-atlas-semantic-search\n    runs-on: ubuntu-24.04\n",
@@ -795,8 +818,8 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             ),
             (
                 self.semantic.replace(
-                    "          set -euo pipefail\n          python - <<'PY'\n",
-                    "          set -euo pipefail\n          exit 0\n          python - <<'PY'\n",
+                    "          set -euo pipefail\n          python -S - <<'PY'\n",
+                    "          set -euo pipefail\n          exit 0\n          python -S - <<'PY'\n",
                     1,
                 ),
                 self.static,
@@ -811,8 +834,8 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             ),
             (
                 self.semantic.replace(
-                    "        shell: bash\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n",
-                    "        shell: bash\n        env:\n          PYTHONOPTIMIZE: '1'\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n",
+                    "        shell: bash\n        run: |\n          set -euo pipefail\n          python -S - <<'PY'\n",
+                    "        shell: bash\n        env:\n          PYTHONOPTIMIZE: '1'\n        run: |\n          set -euo pipefail\n          python -S - <<'PY'\n",
                     1,
                 ),
                 self.static,
@@ -849,8 +872,8 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (self.semantic, self.static.replace("    branches: [main]\n", "    branches: [develop]\n", 1)),
             (
                 self.semantic.replace(
-                    "      - name: Verify Atlas trigger closure\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
-                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
                     1,
                 ),
                 self.static,
@@ -858,15 +881,15 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (
                 self.semantic,
                 self.static.replace(
-                    "      - name: Verify Atlas trigger closure\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
-                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
                     1,
                 ),
             ),
             (
                 self.semantic.replace(
-                    "      - name: Run deterministic and negative tests\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
-                    "      - name: Run deterministic and negative tests\n        shell: \"true {0}\"\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
+                    "      - name: Run deterministic and negative tests\n        run: python -S tools/game-atlas-semantic-search/self_test.py\n",
+                    "      - name: Run deterministic and negative tests\n        shell: \"true {0}\"\n        run: python -S tools/game-atlas-semantic-search/self_test.py\n",
                     1,
                 ),
                 self.static,
@@ -936,7 +959,7 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             ),
             (
                 self.semantic,
-                self.static.replace("          python tools/game-atlas-creatures/self_test.py\n", "", 1),
+                self.static.replace("          python -S tools/game-atlas-creatures/self_test.py\n", "", 1),
             ),
             (
                 self.semantic,
@@ -969,6 +992,26 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             mutations.append((self.semantic, self.static.replace(f"      - '{path}'\n", "", 1)))
 
         mutations.extend((
+            (
+                self.semantic.replace(REGRESSION_COMMAND, f"python {REGRESSION}", 1),
+                self.static,
+            ),
+            (
+                self.semantic,
+                self.static.replace(REGRESSION_COMMAND, f"python {REGRESSION}", 1),
+            ),
+            (
+                self.semantic.replace(
+                    "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
+                    "  semantic-search-source:\n    container: python:3.12\n    runs-on: ubuntu-24.04\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic.replace("    runs-on: ubuntu-24.04\n", "    runs-on: self-hosted\n", 1),
+                self.static,
+            ),
             (
                 self.semantic.replace(
                     "  semantic-search-source:\n    runs-on: ubuntu-24.04\n",
@@ -1066,8 +1109,8 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             ),
             (
                 self.semantic.replace(
-                    "        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
-                    "        if: ${{ false && true }}\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "        if: ${{ false && true }}\n        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
                     1,
                 ),
                 self.static,
@@ -1091,8 +1134,8 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             ),
             (
                 self.semantic.replace(
-                    "          set -euo pipefail\n          python - <<'PY'\n",
-                    "          set -euo pipefail\n          exit 0\n          python - <<'PY'\n",
+                    "          set -euo pipefail\n          python -S - <<'PY'\n",
+                    "          set -euo pipefail\n          exit 0\n          python -S - <<'PY'\n",
                     1,
                 ),
                 self.static,
@@ -1107,8 +1150,8 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             ),
             (
                 self.semantic.replace(
-                    "        shell: bash\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n",
-                    "        shell: bash\n        env:\n          PYTHONOPTIMIZE: '1'\n        run: |\n          set -euo pipefail\n          python - <<'PY'\n",
+                    "        shell: bash\n        run: |\n          set -euo pipefail\n          python -S - <<'PY'\n",
+                    "        shell: bash\n        env:\n          PYTHONOPTIMIZE: '1'\n        run: |\n          set -euo pipefail\n          python -S - <<'PY'\n",
                     1,
                 ),
                 self.static,
@@ -1137,8 +1180,8 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (self.semantic, self.static.replace("    branches: [main]\n", "    branches: [develop]\n", 1)),
             (
                 self.semantic.replace(
-                    "      - name: Verify Atlas trigger closure\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
-                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
                     1,
                 ),
                 self.static,
@@ -1146,15 +1189,15 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             (
                 self.semantic,
                 self.static.replace(
-                    "      - name: Verify Atlas trigger closure\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
-                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
+                    "      - name: Verify Atlas trigger closure\n        shell: \"true {0}\"\n        run: python -S tools/repository/test_validate_game_atlas_semantic_search_triggers.py\n",
                     1,
                 ),
             ),
             (
                 self.semantic.replace(
-                    "      - name: Run deterministic and negative tests\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
-                    "      - name: Run deterministic and negative tests\n        shell: \"true {0}\"\n        run: python tools/game-atlas-semantic-search/self_test.py\n",
+                    "      - name: Run deterministic and negative tests\n        run: python -S tools/game-atlas-semantic-search/self_test.py\n",
+                    "      - name: Run deterministic and negative tests\n        shell: \"true {0}\"\n        run: python -S tools/game-atlas-semantic-search/self_test.py\n",
                     1,
                 ),
                 self.static,
@@ -1224,7 +1267,7 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             ),
             (
                 self.semantic,
-                self.static.replace("          python tools/game-atlas-creatures/self_test.py\n", "", 1),
+                self.static.replace("          python -S tools/game-atlas-creatures/self_test.py\n", "", 1),
             ),
             (
                 self.semantic,
