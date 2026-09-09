@@ -374,30 +374,20 @@ are absent from this path. Parser-local second-decode reservations are reconcile
 destruction without releasing independently transferred payload or final-certificate custody.
 Complete compressed wire/error/cancellation evidence and whole-handshake composition remain open.
 
-## Exact byte-copy implementation and pinned-capacity correction
+## Actual-capacity family sweep
 
-Charged byte copies construct an exact-layout `Box<[u8]>` from the source and
-use the allocation-free `Box<[u8]>::into_vec` conversion.  This covers decoded
-payload copies, retained secret copies, certificate DER copies and OCSP
-destinations and may remain as a valid implementation.
+Charged byte copies construct an exact-layout `Box<[u8]>` from the source and use
+the allocation-free `Box<[u8]>::into_vec` conversion.  This safe implementation
+may remain.  It is not required to resolve allocator excess for initial Global
+vectors: pinned Rust 1.94 routes `Vec::with_capacity(n)` and zeroed
+`vec![0u8; n]` through `try_allocate_in(n)` and stores `cap = n`.  Consequently
+transformed outer vectors and compressed zeroed storage are not unproven solely
+on that withdrawn premise, and no unsafe initialization seam is required.
+Actual-capacity reconciliation remains required for growth/reallocation and any
+construction outside that pinned initial-Global path.
 
-The earlier blocker based solely on allocator over-capacity is withdrawn.  In
-the exact Rust 1.94 Global initial-allocation path, `with_capacity` and
-`with_capacity_zeroed` call `try_allocate_in(requested)` and store the requested
-capacity; the current allocator result matches the requested layout.  Initial
-`Vec::with_capacity(n)` and `vec![0; n]` paths are therefore covered when the
-requested backing is reserved first and the resulting capacity is verified.
-No unsafe seam is needed, and `#![forbid(unsafe_code)]` remains unchanged.
-Geometric growth and reallocation still require actual-capacity reconciliation.
-
-## Compressed second-decode read-error rollback
-
-The owner-aware compressed-certificate path now rolls back to its
-`second_checkpoint` after a failed `CertificatePayloadTls13::read` has returned
-and destroyed partial AST/list guards, and before returning the fatal decode
-alert.  The parser-local rollback excludes independently custodied backing.  A
-focused malformed body creates one complete certificate entry before a later
-truncated entry fails, proves exact return to the pre-second-decode aggregate,
-and proves decompression custody remains live until its independent drop.
-Successful conversion ordering remains source destruction, parser-local
-rollback, then live final certificate/OCSP custody.
+Compressed second-decode read failures now roll parser-local aggregate charges
+back to the pre-read checkpoint after partial AST and local guards have been
+destroyed.  Backing-bound decompression/payload custody is excluded and remains
+live until its own backing drops.  Focused malformed-body coverage commits a
+nested list before a later truncated field and proves exact rollback.

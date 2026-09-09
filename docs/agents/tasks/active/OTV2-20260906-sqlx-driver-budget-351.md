@@ -1325,48 +1325,29 @@ complete_tls_accounting: NOT_PROVEN
 next_action: complete resumed TLS1.2 and compressed-certificate custody, then transcript/hash contexts
 ```
 
-## Window51 exact byte-copy implementation and corrected capacity disposition
+## Window51 actual-capacity family repair and exact-construction boundary
 
-The charged byte-copy family allocates an exact-layout `Box<[u8]>` directly from
-the source and converts it to `Vec` allocation-free.  That implementation may
-remain.  The former allocator-excess blocker is withdrawn: exact Rust 1.94
-Global `RawVec::with_capacity` and `with_capacity_zeroed` route through
-`try_allocate_in(requested)`, whose current allocator result matches the
-requested layout and whose stored capacity is exactly `requested`.  Initial
-`Vec::with_capacity(n)` and `vec![0; n]` paths that reserve the requested backing
-before allocation and verify capacity are therefore admissible on the pinned
-graph.  Actual-capacity reconciliation remains required for geometric growth,
-reallocation, and other construction paths.
+The charged byte-copy family uses an exact-layout `Box<[u8]>` converted to a
+`Vec` allocation-free.  This remains a safe implementation choice for decoded
+payloads, retained-session secrets, retained/current certificate DER copies,
+certificate OCSP destinations, and borrowed payload deep copies.
 
-No unsafe initialization seam, allocator-excess multiplier, or weakening of
-rustls's crate-wide `#![forbid(unsafe_code)]` is required or permitted for those
-pinned initial Global allocations.  Complete TLS remains not proven for the
-independent lifecycle and allocation cells below, not because of this withdrawn
-capacity theory.
+Exact pinned Rust 1.94 source establishes that initial Global
+`Vec::with_capacity(n)` and `vec![0u8; n]` construction routes through
+`try_allocate_in(n)` and stores `cap = n`.  Accordingly, transformed outer
+vectors and the zero-filled compressed-certificate destination are not blocked
+solely by allocator-overcapacity speculation.  The boxed-slice helper remains,
+but no unsafe initialization seam or new allocator bound is required for those
+initial allocations.  Actual-capacity reconciliation remains mandatory for
+geometric growth/reallocation and other construction paths.
 
 ```yaml
 status: active
 actual_capacity_byte_copy_family: PROVEN_SOURCE_AND_BUILD
-initial_global_vec_capacity: PROVEN_PINNED_RUST_1_94
+actual_capacity_outer_list_family: PROVEN_PINNED_RUST_1_94_INITIAL_GLOBAL
+compressed_tls13_actual_capacity: PROVEN_PINNED_RUST_1_94_INITIAL_GLOBAL
 complete_tls_accounting: NOT_PROVEN
-next_action: finish compressed wire/error/cancellation qualification and remaining legal TLS cells
-```
-
-## Window52 compressed second-decode read-error rollback
-
-The compressed TLS 1.3 second decode now waits for a failed
-`CertificatePayloadTls13::read` to return (destroying its partial AST and active
-list guards), then rolls the parser-local aggregate back to `second_checkpoint`
-before returning the fatal decode alert.  Backing with independent custody,
-including the decompression buffer, remains excluded from that rollback.  A
-malformed body proves one complete certificate entry/list allocation followed
-by a truncated later entry returns exactly to the pre-second-decode aggregate;
-the decompression debit then follows its separate final-drop lifetime.
-
-```yaml
-compressed_second_decode_read_error_rollback: PROVEN_FOCUSED
-complete_tls_accounting: NOT_PROVEN
-next_action: finish compressed wire/error/cancellation qualification and remaining legal TLS1.2, ClientHello, and transcript cells
+next_action: repair compressed second-decode error rollback, then finish wire/error qualification and remaining legal TLS cells
 ```
 
 ## Window48 TLS1.2 retained-session underlying-owner repair
@@ -1438,6 +1419,27 @@ status: active
 compressed_tls13_same_owner_decode: PROVEN_FOCUSED_SOURCE_AND_BUILD
 complete_tls_accounting: NOT_PROVEN
 next_action: qualify compressed-certificate wire/error overlap, finish legal TLS1.2 and ClientHello cells, then disposition excluded transcript/binder symbols
+```
+
+## Window52 compressed second-decode read-error rollback
+
+The owner-aware compressed-certificate second decode now rolls parser-local
+aggregate charges back to its pre-read checkpoint when the top-level certificate
+read fails.  Rollback occurs only after the failed read has returned and partial
+AST/local guards have been destroyed.  Independently custodied decompression and
+payload backing remains excluded from the rollback and follows its own lifetime.
+
+Focused malformed-body coverage commits a successful nested list allocation,
+then fails on a later truncated field and proves exact return to the pre-second-
+decode aggregate while decompression custody remains live.  The successful
+conversion ordering remains source AST destruction, parser-local rollback, then
+live final certificate/OCSP custody.
+
+```yaml
+status: active
+compressed_tls13_read_error_rollback: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+next_action: finish compressed wire/error/cancellation qualification and all remaining legal TLS1.2/ClientHello cells, then disposition excluded symbols
 ```
 
 ## Window47 retained decoded-owner lifetime repair
