@@ -24,7 +24,12 @@ use crate::DeframerBufferOwner;
 pub(crate) struct DecodedOwner {
     owner: Arc<dyn DeframerBufferOwner>,
     charged: AtomicUsize,
+    custodied: AtomicUsize,
 }
+
+#[cfg(feature = "std")]
+#[derive(Clone, Copy)]
+pub(crate) struct DecodedCheckpoint { charged: usize, custodied: usize }
 
 #[cfg(feature = "std")]
 #[derive(Debug)]
@@ -56,7 +61,11 @@ impl DecodedOwner {
         let bytes = Self::arc_layout()?;
         owner.try_reserve(bytes).map_err(|_| InvalidMessage::MessageTooLarge)?;
         let charge = DecodedOwnerArcCharge { owner: owner.clone(), bytes };
-        let decoded = Arc::new(Self { owner, charged: AtomicUsize::new(0) });
+        let decoded = Arc::new(Self {
+            owner,
+            charged: AtomicUsize::new(0),
+            custodied: AtomicUsize::new(0),
+        });
         Ok((decoded, charge))
     }
 
@@ -84,17 +93,23 @@ impl DecodedOwner {
         self.owner.release(bytes);
     }
 
-    pub(crate) fn checkpoint(&self) -> usize {
-        self.charged.load(Ordering::Relaxed)
+    pub(crate) fn checkpoint(&self) -> DecodedCheckpoint {
+        DecodedCheckpoint {
+            charged: self.charged.load(Ordering::Relaxed),
+            custodied: self.custodied.load(Ordering::Relaxed),
+        }
     }
 
     /// Roll back allocations made after `checkpoint`.
     ///
     /// Callers must first destroy all backing covered by those allocations.
-    pub(crate) fn rollback(&self, checkpoint: usize) {
+    pub(crate) fn rollback(&self, checkpoint: DecodedCheckpoint) {
         let charged = self.charged.load(Ordering::Relaxed);
-        debug_assert!(charged >= checkpoint);
-        self.release(charged - checkpoint);
+        let custodied = self.custodied.load(Ordering::Relaxed);
+        let local = charged.saturating_sub(checkpoint.charged);
+        let transferred = custodied.saturating_sub(checkpoint.custodied);
+        debug_assert!(local >= transferred);
+        self.release(local.saturating_sub(transferred));
     }
 }
 
@@ -115,20 +130,31 @@ impl Drop for DecodedOwner {
 pub(crate) struct DecodedCustody {
     owner: Arc<DecodedOwner>,
     bytes: usize,
+    tracked_backing: bool,
 }
 
 #[cfg(feature = "std")]
 impl DecodedCustody {
-    pub(crate) fn since(owner: Arc<DecodedOwner>, checkpoint: usize) -> Self {
+    pub(crate) fn exact(owner: Arc<DecodedOwner>, bytes: usize) -> Self {
+        owner.custodied.fetch_add(bytes, Ordering::Relaxed);
+        Self { owner, bytes, tracked_backing: true }
+    }
+
+    pub(crate) fn since(owner: Arc<DecodedOwner>, checkpoint: DecodedCheckpoint) -> Self {
         let charged = owner.checkpoint();
-        debug_assert!(charged >= checkpoint);
-        Self { owner, bytes: charged - checkpoint }
+        let local = charged.charged.saturating_sub(checkpoint.charged);
+        let backing = charged.custodied.saturating_sub(checkpoint.custodied);
+        debug_assert!(local >= backing);
+        Self { owner, bytes: local.saturating_sub(backing), tracked_backing: false }
     }
 }
 
 #[cfg(feature = "std")]
 impl Drop for DecodedCustody {
     fn drop(&mut self) {
+        if self.tracked_backing {
+            self.owner.custodied.fetch_sub(self.bytes, Ordering::Relaxed);
+        }
         self.owner.release(self.bytes);
     }
 }
@@ -285,8 +311,11 @@ impl<'a> Reader<'a> {
 
     /// Copy `bytes` into exactly-sized decoded backing, reserving before allocation.
     #[cfg(feature = "std")]
-    pub(crate) fn copy_decoded(&self, bytes: &[u8]) -> Result<Vec<u8>, InvalidMessage> {
-        let Some(owner) = &self.decoded_owner else { return Ok(bytes.to_vec()); };
+    pub(crate) fn copy_decoded(
+        &self,
+        bytes: &[u8],
+    ) -> Result<(Vec<u8>, Option<DecodedCustody>), InvalidMessage> {
+        let Some(owner) = &self.decoded_owner else { return Ok((bytes.to_vec(), None)); };
         owner.reserve(bytes.len())?;
         let mut copied = Vec::with_capacity(bytes.len());
         copied.extend_from_slice(bytes);
@@ -296,7 +325,7 @@ impl<'a> Reader<'a> {
             owner.release(reserved);
             return Err(InvalidMessage::MessageTooLarge);
         }
-        Ok(copied)
+        Ok((copied, Some(DecodedCustody::exact(owner.clone(), bytes.len()))))
     }
 }
 
@@ -668,8 +697,9 @@ mod tests {
         let arc_bytes = DecodedOwner::arc_layout().unwrap();
         let owner = Arc::new(TestOwner { limit: arc_bytes + 8, used: AtomicUsize::new(0) });
         let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+        let checkpoint = decoded.checkpoint();
         decoded.reserve(8).unwrap();
-        let custody = DecodedCustody::since(decoded.clone(), 0);
+        let custody = DecodedCustody::since(decoded.clone(), checkpoint);
         let moved = custody;
 
         assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 8);
@@ -709,6 +739,11 @@ mod tests {
         assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + payload.0.capacity());
 
         drop(payload);
+        assert_eq!(
+            owner.used.load(Ordering::SeqCst),
+            arc_bytes,
+            "payload backing releases before reader or connection owner drop"
+        );
         drop(reader);
         drop(decoded);
         drop(arc_charge);

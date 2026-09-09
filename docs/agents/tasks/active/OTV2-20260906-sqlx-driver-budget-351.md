@@ -1000,3 +1000,27 @@ next_action: replace aggregate list/payload retention and checkpoint rollback wi
 ```
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open.
+
+## Window34 payload backing custody
+
+`PayloadU8` and `PayloadU16` now retain an exact, non-allocating custody token after
+their byte vector. Owner-aware decoding reserves before copying and binds the debit to
+the returned backing; tuple-field drop order destroys the vector before returning its
+debit. Ordinary constructors remain uncharged. Deep cloning a charged payload is
+explicitly rejected until the destination-owner path can reserve separately.
+
+Per-backing custody is excluded from the enclosing Message aggregate transaction. A
+decode checkpoint now records both total and already-custodied bytes, so Message commit
+and parse rollback release only still-local reservations and cannot double-release or
+steal transferred backing custody.
+
+```yaml
+status: active
+payload_u8_u16_backing_custody: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: generic list backing wrapper; borrowed Payload ownership; explicit owner-aware deep copies; retained descendants; transcript and complete-handshake composition; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: carry the same backing-bound representation through generic decoded lists and owner-aware deep-copy destinations
+```
+
+P1 `3966866700` and umbrella P1 `3954831069` remain open because generic list
+backing and the complete retained-descendant matrix are not yet proven.

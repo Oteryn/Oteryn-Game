@@ -494,3 +494,14 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [ ] Replace aggregate checkpoint rollback with explicit local/prospective guards
   as per-backing list and payload custody lands; aggregate accounting remains
   debug state only.
+
+## Window34 payload custody continuation
+
+- [x] Bind successful owner-aware `PayloadU8`/`PayloadU16` capacity debit to the
+  byte-vector lifetime with backing-before-token destruction order.
+- [x] Exclude exact backing tokens from Message aggregate commit/rollback so an
+  error scope releases only still-local custody.
+- [ ] Introduce the private charged generic-list backing representation and
+  owner-aware destination-copy paths without restoring an uncharged Clone shortcut.
+- [ ] Continue retained handshake/transcript/certificate/session composition;
+  complete TLS and PostgreSQL qualification remain open.

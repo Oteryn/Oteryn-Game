@@ -140,3 +140,18 @@ returning its debit, and moves transfer the same token. This is a focused repres
 checkpoint only. Deep ownership and custody transfer into successor/peer/session state,
 the complete TLS composition matrix, TLS-positive execution, and PostgreSQL qualification
 remain open.
+
+## Payload backing lifetime checkpoint
+
+The decoded byte payload representation now places a non-allocating exact-capacity
+custody token after each `PayloadU8`/`PayloadU16` vector. Owner-aware reads reserve
+before allocation, verify actual capacity, and transfer the token with moves; field
+destruction drops byte backing before returning its debit. Ordinary payload values
+remain uncharged. Charged payload `Clone` is deliberately rejected pending an explicit
+owner-aware destination reservation rather than silently allocating an uncharged copy.
+
+Decode checkpoints separately observe backing-bound custody. Message commit and error
+rollback subtract transferred backing custody from their local transaction, preventing
+the aggregate tracker from double-releasing a dropped token or releasing a live
+transferred payload. Generic decoded lists and retained descendants remain open, so
+this checkpoint does not prove complete TLS accounting or close the decoded-owner P1.

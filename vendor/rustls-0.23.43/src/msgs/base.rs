@@ -8,6 +8,9 @@ use zeroize::Zeroize;
 use crate::error::InvalidMessage;
 use crate::msgs::codec;
 use crate::msgs::codec::{Codec, Reader};
+#[cfg(feature = "std")]
+use crate::msgs::codec::DecodedCustody;
+
 
 /// An externally length'd payload
 #[derive(Clone, Eq, PartialEq)]
@@ -114,13 +117,22 @@ impl fmt::Debug for PayloadU24<'_> {
 ///
 /// The `C` type parameter controls whether decoded values may
 /// be empty.
-#[derive(Clone, Eq, PartialEq)]
-pub struct PayloadU16<C: Cardinality = MaybeEmpty>(pub(crate) Vec<u8>, PhantomData<C>);
+pub struct PayloadU16<C: Cardinality = MaybeEmpty>(pub(crate) Vec<u8>, PhantomData<C>, #[cfg(feature = "std")] Option<DecodedCustody>);
+
+impl<C: Cardinality> Clone for PayloadU16<C> {
+    fn clone(&self) -> Self {
+        #[cfg(feature = "std")]
+        assert!(self.2.is_none(), "charged payloads require an owner-aware deep copy");
+        Self::new(self.0.clone())
+    }
+}
+impl<C: Cardinality> PartialEq for PayloadU16<C> { fn eq(&self, other: &Self) -> bool { self.0 == other.0 } }
+impl<C: Cardinality> Eq for PayloadU16<C> {}
 
 impl<C: Cardinality> PayloadU16<C> {
     pub fn new(bytes: Vec<u8>) -> Self {
         debug_assert!(bytes.len() >= C::MIN);
-        Self(bytes, PhantomData)
+        Self(bytes, PhantomData, #[cfg(feature = "std")] None)
     }
 }
 
@@ -150,6 +162,9 @@ impl<C: Cardinality> Codec<'_> for PayloadU16<C> {
         };
         #[cfg(not(feature = "std"))]
         let body = sub.rest().to_vec();
+        #[cfg(feature = "std")]
+        return Ok(Self(body.0, PhantomData, body.1));
+        #[cfg(not(feature = "std"))]
         Ok(Self(body, PhantomData))
     }
 }
@@ -163,8 +178,17 @@ impl<C: Cardinality> fmt::Debug for PayloadU16<C> {
 /// An arbitrary, unknown-content, u8-length-prefixed payload
 ///
 /// `C` controls the minimum length accepted when decoding.
-#[derive(Clone, Eq, PartialEq)]
-pub(crate) struct PayloadU8<C: Cardinality = MaybeEmpty>(pub(crate) Vec<u8>, PhantomData<C>);
+pub(crate) struct PayloadU8<C: Cardinality = MaybeEmpty>(pub(crate) Vec<u8>, PhantomData<C>, #[cfg(feature = "std")] Option<DecodedCustody>);
+
+impl<C: Cardinality> Clone for PayloadU8<C> {
+    fn clone(&self) -> Self {
+        #[cfg(feature = "std")]
+        assert!(self.2.is_none(), "charged payloads require an owner-aware deep copy");
+        Self::new(self.0.clone())
+    }
+}
+impl<C: Cardinality> PartialEq for PayloadU8<C> { fn eq(&self, other: &Self) -> bool { self.0 == other.0 } }
+impl<C: Cardinality> Eq for PayloadU8<C> {}
 
 impl<C: Cardinality> PayloadU8<C> {
     pub(crate) fn encode_slice(slice: &[u8], bytes: &mut Vec<u8>) {
@@ -174,13 +198,13 @@ impl<C: Cardinality> PayloadU8<C> {
 
     pub(crate) fn new(bytes: Vec<u8>) -> Self {
         debug_assert!(bytes.len() >= C::MIN);
-        Self(bytes, PhantomData)
+        Self(bytes, PhantomData, #[cfg(feature = "std")] None)
     }
 }
 
 impl PayloadU8<MaybeEmpty> {
     pub(crate) fn empty() -> Self {
-        Self(Vec::new(), PhantomData)
+        Self(Vec::new(), PhantomData, #[cfg(feature = "std")] None)
     }
 }
 
@@ -204,6 +228,9 @@ impl<C: Cardinality> Codec<'_> for PayloadU8<C> {
         };
         #[cfg(not(feature = "std"))]
         let body = sub.rest().to_vec();
+        #[cfg(feature = "std")]
+        return Ok(Self(body.0, PhantomData, body.1));
+        #[cfg(not(feature = "std"))]
         Ok(Self(body, PhantomData))
     }
 }
