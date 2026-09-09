@@ -449,3 +449,11 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   and prove parsed plus encoded/source plus destination overlap.
 - [ ] Continue handshake AST, transcript, certificate/OCSP, successor-state,
   compressed-certificate, retained-session and complete-handshake composition.
+  claiming complete TLS or running TLS-positive/PostgreSQL qualification.
+
+## Decoded-owner review repair checkpoint
+
+- [x] Precharge and externally retain exact `ArcInner<DecodedOwner>` custody.
+- [x] Restore amortized geometric decoded-list growth with prospective rollback.
+- [ ] Bind each decoded list/payload backing to destruction-time custody; the
+      current aggregate remains foundation-only and complete TLS stays open.
