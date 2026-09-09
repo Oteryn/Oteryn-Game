@@ -695,3 +695,24 @@ complete_tls_accounting: NOT_PROVEN
 remaining_acceptance_cells: actual HRR; thread churn; cancellation/error/drop; decoded/config/session/cache/send/transcript custody; TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
 next_action: finish the full #451 final-graph matrix, then continue every already-protected TLS and PostgreSQL custody cell
 ```
+
+## Window24 final-graph HRR and thread-churn checkpoint
+
+After normally merging protected `main@e1750ede386c0ee1001894ab9d91129de5d03fce`,
+the executable SQLx AWS-LC harness drives a real client/server TLS 1.3
+HelloRetryRequest selecting P-256. Its event ledger proves the 7,881-byte
+initial hybrid debit remains live when the 1,625-byte replacement is acquired,
+and the old debit releases only after replacement construction. A separate
+fresh-process control funds exactly the process/provider configuration charges
+and two 1,360-byte thread debits: same-thread reuse is free, one churned thread
+succeeds, and the next is denied before owner-aware provider use.
+
+```yaml
+status: active
+actual_hrr_wire: PROVEN_FOCUSED
+thread_residency_churn: PROVEN_FOCUSED
+aws_lc_kx_provider_resident: NOT_PROVEN
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: HRR replacement denial; cancellation/error/drop; decoded/config/session/cache/send/transcript custody; TLS-positive; PostgreSQL17.6 positive/hostile qualification; independent review; exact-head CI/FULL MQ; protected readback
+next_action: finish the remaining #451 cancellation and denial matrix, then continue complete TLS custody
+```

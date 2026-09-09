@@ -971,3 +971,14 @@ rustls source change is part of this feature closure.
 Aggregate KX/provider residency and complete WP3 remain open pending the full
 actual-HRR, thread-churn, cancellation/drop, TLS custody, TLS-positive, and
 PostgreSQL 17.6 matrices on the final graph.
+
+## Window24 final-graph HRR and thread churn
+
+The executable AWS-LC SQLx harness now processes an actual TLS 1.3
+ClientHello/server HelloRetryRequest exchange selecting P-256. Reservation
+events show the 7,881-byte initial hybrid debit, then the 1,625-byte replacement
+debit, then release of the initial debit. This supersedes synthetic-only overlap
+evidence. A fresh-process exhaustion control also proves exact 1,360-byte
+first-use thread debits, allocation-free same-thread repeat, permanent shared
+custody, and denial of the next churned thread when only two thread debits are
+funded. Aggregate KX/provider residency and complete TLS remain open.
