@@ -8,11 +8,12 @@ Coordinator: #162. Programme: #364. Existing sole material worker: #351 / #356. 
 allocation_id: OTV2-WP3-RUSTLS-PSK-BINDER-OWNER-20260909
 repository: Oteryn/Oteryn-Game
 allocation_base_main_sha: ece300c384aa1e53f208975f25e94635c2fcc7ce
+governance_reconciliation_main_sha: fce21fda538e4a9cd6e8c1c1386b6b9f6a3edc89
 allocation_state: NOT_ACTIVE_CONDITIONAL
 preparation_branch: coord/wp3-rustls-psk-binder-owner-351
 worker_branch: agent/sqlx-driver-budget-351
-source_wp3_head: 3c0c706ae9f5ab33ddb017b00be6518e4d08a595
-source_wp3_tree: d8e51ad4cf9edc74411680ed9058b23e9f1493bc
+source_wp3_head: a538aeb1e0a01172db3cd87e4313c6498fcdf156
+source_wp3_tree: fad2df6d37b3329eae4fe3ae17449d184e0744df
 risk: HIGH
 material_worker_status_at_allocation: BLOCKED_CODEX_USAGE_LIMIT
 ```
@@ -23,14 +24,14 @@ Material application is permitted only after all repository lifecycle gates belo
 
 ## Exact source evidence
 
-Fresh read-only inspection is bound to canonical #356 head `3c0c706ae9f5ab33ddb017b00be6518e4d08a595`.
+Fresh read-only inspection is bound to canonical #356 head `a538aeb1e0a01172db3cd87e4313c6498fcdf156` and tree `fad2df6d37b3329eae4fe3ae17449d184e0744df`.
 
 Relevant exact blobs:
 
 - `vendor/rustls-0.23.43/src/client/hs.rs` — `4ac00c3dede88082591c4b09fce36aa7ad5be8dc`;
 - `vendor/rustls-0.23.43/src/client/tls13.rs` — `664f1047f29a16c63b303d8c7df31813cceb60b5`;
 - `vendor/rustls-0.23.43/src/msgs/handshake.rs` — `04c84e49e9e235c2a011ddf02c9c0a41387346ee`;
-- read-only generic `vendor/rustls-0.23.43/src/msgs/codec.rs` — `ba60f02b80376aad66b3321db4cdd2b4b4e0fbe9`.
+- read-only generic `vendor/rustls-0.23.43/src/msgs/codec.rs` — `41a726bca89da2ef3dce5999035126e2288f060e`.
 
 Protected #427 grants only:
 
@@ -132,19 +133,24 @@ All existing grants #425/#427/#429/#430/#432/#451/#453/#458/#466 remain unchange
 
 ## Integration and activation gates
 
-Current Game governance is bound by `docs/agents/META_AGENT_POLICY_BINDING.json` to `OTERYN_ORGANIZATION_AGENT_POLICY` v3.0.0 at `Oteryn/Oteryn@d1caa3adba0fa4b32b84985bf1d6dcbe8055858c`.
+The historical creation provenance remains `allocation_base_main_sha` `ece300c384aa1e53f208975f25e94635c2fcc7ce`. This repair reconciles governance against protected `main` `fce21fda538e4a9cd6e8c1c1386b6b9f6a3edc89`, whose `docs/agents/META_AGENT_POLICY_BINDING.json` binds `OTERYN_ORGANIZATION_AGENT_POLICY` v3.1.0 at `Oteryn/Oteryn@ed6c8c98605a7fbfea858e0ef616f89baa617262`. Future integration inherits the then-current protected binding rather than freezing this document to a superseded integration algorithm.
 
-This is a material HIGH-risk control-plane allocation. Under that policy, a candidate-controlled mechanism cannot be the sole authority for integrating its own control-plane authority change. Therefore this allocation remains `NOT_ACTIVE_CONDITIONAL` until all of the following are true:
+Historical exact head `2de8e9415f2d452d0589a97b0cbd8832e85c982e` carried the superseded v3.0 rule requiring one queue mutation to atomically fence the exact head and expected `main` base/queue. Independent exact-head HIGH-risk review found that active requirement to be a P1 after protected #497 adopted META 3.1. This repair removes that superseded algorithm as active authority while retaining the historical fact.
+
+This is a material HIGH-risk control-plane allocation. A candidate-controlled mechanism cannot be the sole authority for integrating its own control-plane authority change. Therefore this allocation remains `NOT_ACTIVE_CONDITIONAL` until all of the following are true:
 
 1. this exact allocation candidate receives genuinely independent exact-head HIGH-risk/deep review with no unresolved actionable finding;
 2. exact-head deterministic/canonical repository checks are terminal GREEN;
-3. a human owner explicitly authorizes repository integration of the then-current exact #493 candidate; a general instruction to continue useful work MUST NOT be reinterpreted as specific merge approval;
-4. submission uses only a governed Merge Queue mutation that atomically fences BOTH the exact qualified head and the expected `main` base/queue in the same server-side operation. If no callable route provides that complete fence, integration is exactly `BLOCKED_CAPABILITY_UNAVAILABLE`: preserve the qualified head and do not use direct merge, generic auto-merge, bypass, protection changes, no-op/retrigger commits or post-hoc dequeue as substitutes;
-5. normal FULL `merge_group` qualification succeeds and protected-main readback proves this exact allocation is present;
-6. Work freshly re-reads the canonical #356 branch, then-current protected main and all overlapping rustls custody;
-7. no replacement/competing rustls material worker exists;
-8. the recovered SAME #351/#356 worker provides exact source/build evidence that #427 caller-only implementation is insufficient;
-9. Work explicitly activates this amendment for that SAME worker.
+3. a human owner explicitly authorizes repository integration of the then-current exact #493 candidate; a general instruction to continue useful work MUST NOT be reinterpreted as specific candidate approval;
+4. immediately before submission, fresh target-bound live preflight verifies the exact repository, PR #493, `base=main`, exact qualified/frozen head, authorization and queue eligibility;
+5. submission uses only REST `PUT /repos/{owner}/{repo}/pulls/{pull_number}/merge-async` with the exact qualified head in `sha` and explicit `merge_action="merge_queue"`; default merge action, direct/immediate merge, generic `enablePullRequestAutoMerge`, bypass, force, protection changes, no-op/retrigger commits and ambiguous dequeue are forbidden substitutes;
+6. HTTP `202` is acceptance only: capture the exact returned async UUID and a positive executor-owned monotonic receipt sequence, then immediately obtain same-target live readback that carries the same UUID at an executor sequence strictly greater than the receipt sequence and still binds the same repository, PR number, `base=main` and exact head. Reconcile HTTP `200` or `409` and the async request/status from live state; none is terminal integration proof by itself;
+7. if the selected native exact-head operation is unavailable, integration is exactly `BLOCKED_CAPABILITY_UNAVAILABLE`, with the qualified candidate preserved and no forbidden substitute;
+8. actual Merge Queue admission is non-terminal: a real `merge_group` aggregate `game-gate` must succeed and protected-main readback must prove this exact allocation is present;
+9. Work freshly re-reads the canonical #356 branch, then-current protected main and all overlapping rustls custody;
+10. no replacement/competing rustls material worker exists;
+11. the recovered SAME #351/#356 worker provides exact source/build evidence that #427 caller-only implementation is insufficient;
+12. Work explicitly activates this amendment for that SAME worker.
 
 No activation is implied merely by merging this document.
 
@@ -155,9 +161,13 @@ conditional allocation-only amendment
 -> deterministic exact-head validation
 -> one independent exact-head HIGH-risk/deep review
 -> explicit human-owner authorization for the exact candidate
--> atomically exact-head + expected-main/queue fenced FULL Merge Queue
-   OR BLOCKED_CAPABILITY_UNAVAILABLE with the qualified head preserved
--> merge_group aggregate-gate success
+-> fresh target-bound repo/PR/base=main/exact-head/auth/eligibility preflight
+-> REST merge-async with exact sha + explicit merge_action="merge_queue"
+   OR BLOCKED_CAPABILITY_UNAVAILABLE with the qualified candidate preserved
+-> accepted UUID + positive executor receipt sequence
+-> immediate same-target same-UUID readback at a strictly greater executor sequence
+-> reconcile HTTP 200/409 and async status without treating admission as terminal
+-> real merge_group aggregate game-gate success
 -> protected-main readback
 -> WAIT for recovered SAME #351/#356 worker
 -> prove caller-only #427 insufficient on then-current exact source/build
