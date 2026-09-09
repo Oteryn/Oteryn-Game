@@ -521,6 +521,16 @@ def _assert_semantic_execution_steps(workflow: str) -> None:
     assert _step_names(workflow) == SEMANTIC_STEP_NAMES, "semantic workflow step sequence changed"
     _assert_exact_step_lines(
         workflow,
+        "Check out exact Game revision",
+        (
+            "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+            "        with:",
+            "          ref: ${{ github.event.pull_request.head.sha || github.sha }}",
+            "          persist-credentials: false",
+        ),
+    )
+    _assert_exact_step_lines(
+        workflow,
         "Verify exact checked-out revision",
         (
             "        shell: bash",
@@ -549,6 +559,18 @@ def _assert_semantic_execution_steps(workflow: str) -> None:
             "! grep -R -E 'action_id|unique_id' tools/game-atlas-semantic-search --include='*.json'",
         ),
     )
+    _assert_exact_step_lines(
+        workflow,
+        "Check out exact pinned migration evidence",
+        (
+            "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+            "        with:",
+            "          repository: blakinio/Otheryn",
+            "          ref: e417c5e7c22986bf4acef0495eb47f7b72c97cce",
+            "          path: legacy",
+            "          persist-credentials: false",
+        ),
+    )
     _assert_exact_bash_step(
         workflow,
         "Build real pinned Game creature and semantic sources",
@@ -572,6 +594,27 @@ def _assert_static_execution_steps(workflow: str) -> None:
     assert _step_names(workflow) == STATIC_STEP_NAMES, "static workflow step sequence changed"
     _assert_exact_step_lines(
         workflow,
+        "Check out exact Game revision",
+        (
+            "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+            "        with:",
+            "          ref: ${{ github.event.pull_request.head.sha || github.sha }}",
+            "          fetch-depth: 1",
+            "          persist-credentials: false",
+        ),
+    )
+    _assert_exact_step_lines(
+        workflow,
+        "Set up Python",
+        (
+            "        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6.0.0",
+            "        with:",
+            "          python-version: '3.12'",
+            "          check-latest: false",
+        ),
+    )
+    _assert_exact_step_lines(
+        workflow,
         "Verify exact checked-out head",
         (
             "        shell: bash",
@@ -580,6 +623,19 @@ def _assert_static_execution_steps(workflow: str) -> None:
             "        run: |",
             "          set -euo pipefail",
             '          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"',
+        ),
+    )
+    _assert_exact_step_lines(
+        workflow,
+        "Check out pinned migration evidence",
+        (
+            "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1",
+            "        with:",
+            "          repository: blakinio/Otheryn",
+            "          ref: e417c5e7c22986bf4acef0495eb47f7b72c97cce",
+            "          path: legacy",
+            "          fetch-depth: 1",
+            "          persist-credentials: false",
         ),
     )
     _assert_exact_bash_step(
@@ -690,6 +746,33 @@ class AtlasTriggerClosureTest(unittest.TestCase):
 
     def test_review_bypasses_fail_closed_without_blob_binding(self) -> None:
         attacks = [
+            (
+                self.semantic.replace(
+                    "      - name: Check out exact Game revision\n"
+                    "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n"
+                    "        with:\n"
+                    "          ref: ${{ github.event.pull_request.head.sha || github.sha }}\n"
+                    "          persist-credentials: false\n",
+                    "      - name: Check out exact Game revision\n"
+                    "        run: echo \"BASH\"\"_ENV=/tmp/atlas-bypass\" >> \"$GITHUB_ENV\"\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic,
+                self.static.replace(
+                    "      - name: Check out exact Game revision\n"
+                    "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n"
+                    "        with:\n"
+                    "          ref: ${{ github.event.pull_request.head.sha || github.sha }}\n"
+                    "          fetch-depth: 1\n"
+                    "          persist-credentials: false\n",
+                    "      - name: Check out exact Game revision\n"
+                    "        run: echo \"BASH\"\"_ENV=/tmp/atlas-bypass\" >> \"$GITHUB_ENV\"\n",
+                    1,
+                ),
+            ),
             (
                 self.semantic.replace(
                     "          set -euo pipefail\n          python - <<'PY'\n",
@@ -866,6 +949,33 @@ class AtlasTriggerClosureTest(unittest.TestCase):
             mutations.append((self.semantic, self.static.replace(f"      - '{path}'\n", "", 1)))
 
         mutations.extend((
+            (
+                self.semantic.replace(
+                    "      - name: Check out exact Game revision\n"
+                    "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n"
+                    "        with:\n"
+                    "          ref: ${{ github.event.pull_request.head.sha || github.sha }}\n"
+                    "          persist-credentials: false\n",
+                    "      - name: Check out exact Game revision\n"
+                    "        run: echo \"BASH\"\"_ENV=/tmp/atlas-bypass\" >> \"$GITHUB_ENV\"\n",
+                    1,
+                ),
+                self.static,
+            ),
+            (
+                self.semantic,
+                self.static.replace(
+                    "      - name: Check out exact Game revision\n"
+                    "        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n"
+                    "        with:\n"
+                    "          ref: ${{ github.event.pull_request.head.sha || github.sha }}\n"
+                    "          fetch-depth: 1\n"
+                    "          persist-credentials: false\n",
+                    "      - name: Check out exact Game revision\n"
+                    "        run: echo \"BASH\"\"_ENV=/tmp/atlas-bypass\" >> \"$GITHUB_ENV\"\n",
+                    1,
+                ),
+            ),
             (self.semantic.replace(REGRESSION_COMMAND, "python missing-regression.py", 1), self.static),
             (self.semantic, self.static.replace(REGRESSION_COMMAND, "python missing-regression.py", 1)),
             (
