@@ -147,6 +147,27 @@ impl DecodedCustody {
         debug_assert!(local >= backing);
         Self { owner, bytes: local.saturating_sub(backing), tracked_backing: false }
     }
+
+    pub(crate) fn copy_bytes(
+        &self,
+        source: &[u8],
+    ) -> Result<(Vec<u8>, Self), InvalidMessage> {
+        let capacity = source.len();
+        self.owner.reserve(capacity)?;
+
+        let mut destination = Vec::with_capacity(capacity);
+        destination.extend_from_slice(source);
+        if destination.capacity() != capacity {
+            drop(destination);
+            self.owner.release(capacity);
+            return Err(InvalidMessage::MessageTooLarge);
+        }
+
+        Ok((
+            destination,
+            Self::exact(self.owner.clone(), capacity),
+        ))
+    }
 }
 
 #[cfg(feature = "std")]
@@ -670,7 +691,7 @@ mod tests {
     use std::vec;
 
     use super::*;
-    use crate::msgs::base::{MaybeEmpty, PayloadU8};
+    use crate::msgs::base::{MaybeEmpty, NonEmpty, PayloadU8, PayloadU16};
 
     #[derive(Debug)]
     struct TestOwner { limit: usize, used: AtomicUsize }
@@ -766,6 +787,56 @@ mod tests {
         drop(decoded);
         drop(arc_charge);
         assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn decoded_payload_owner_aware_clone_has_independent_custody() {
+        let arc_bytes = DecodedOwner::arc_layout().unwrap();
+        let owner = Arc::new(TestOwner { limit: arc_bytes + 6, used: AtomicUsize::new(0) });
+        let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+        let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
+        let source = PayloadU16::<NonEmpty>::read(&mut reader).unwrap();
+
+        let destination = source.try_clone_with_resource_owner().unwrap();
+        assert_eq!(source.0, destination.0);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 6);
+
+        drop(source);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 3);
+        drop(destination);
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes);
+        drop(reader);
+        drop(decoded);
+        drop(arc_charge);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn decoded_payload_owner_aware_clone_denies_before_destination_allocation() {
+        let arc_bytes = DecodedOwner::arc_layout().unwrap();
+        let owner = Arc::new(TestOwner { limit: arc_bytes + 5, used: AtomicUsize::new(0) });
+        let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+        let mut reader = Reader::init_with_owner(&[0, 3, 1, 2, 3], decoded.clone());
+        let source = PayloadU16::<NonEmpty>::read(&mut reader).unwrap();
+
+        assert_eq!(
+            source.try_clone_with_resource_owner(),
+            Err(InvalidMessage::MessageTooLarge)
+        );
+        assert_eq!(owner.used.load(Ordering::SeqCst), arc_bytes + 3);
+
+        drop(source);
+        drop(reader);
+        drop(decoded);
+        drop(arc_charge);
+        assert_eq!(owner.used.load(Ordering::SeqCst), 0);
+    }
+
+    #[test]
+    fn owner_free_payload_clone_preserves_upstream_behavior() {
+        let source = PayloadU16::<NonEmpty>::new(vec![1, 2, 3]);
+        let destination = source.clone();
+        assert_eq!(source, destination);
     }
 
     #[test]

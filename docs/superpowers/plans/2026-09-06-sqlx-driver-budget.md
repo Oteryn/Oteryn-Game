@@ -505,3 +505,14 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
   owner-aware destination-copy paths without restoring an uncharged Clone shortcut.
 - [ ] Continue retained handshake/transcript/certificate/session composition;
   complete TLS and PostgreSQL qualification remain open.
+
+## Window35 charged HRR cookie repair
+
+- [x] Replace the reachable charged HRR cookie `Clone` panic with an explicit
+  fallible owner-aware destination copy.
+- [x] Reserve before destination allocation, retain source/destination overlap,
+  and prove independent final release plus max-minus-one denial.
+- [x] Preserve ordinary owner-free payload `Clone` behavior and audit current
+  PayloadU8/PayloadU16 clone sites for equivalent reachable charged copies.
+- [ ] Continue generic list backing custody and the remaining retained
+  handshake/transcript/certificate/session composition.

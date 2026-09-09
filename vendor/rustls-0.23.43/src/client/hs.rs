@@ -392,7 +392,11 @@ fn emit_client_hello_for_retry(
     }
 
     if let Some(cookie) = retryreq.and_then(|hrr| hrr.cookie.as_ref()) {
-        exts.cookie = Some(cookie.clone());
+        exts.cookie = Some(
+            cookie
+                .try_clone_with_resource_owner()
+                .map_err(Error::InvalidMessage)?,
+        );
     }
 
     if supported_versions.tls13 {

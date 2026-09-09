@@ -155,3 +155,20 @@ rollback subtract transferred backing custody from their local transaction, prev
 the aggregate tracker from double-releasing a dropped token or releasing a live
 transferred payload. Generic decoded lists and retained descendants remain open, so
 this checkpoint does not prove complete TLS accounting or close the decoded-owner P1.
+
+## Charged HRR cookie destination-copy repair
+
+The normal retry ClientHello previously cloned a decoded `HelloRetryRequest` cookie
+through the infallible `PayloadU16::clone` implementation. Once decoded payloads gained
+backing custody, that reachable peer-controlled path asserted and panicked. It now uses
+a private fallible owner-aware copy that reserves exact destination capacity before
+allocation, keeps source custody live, verifies actual capacity, and binds distinct
+custody to the destination. Capacity mismatch destroys the destination before rollback;
+underfunding returns a bounded decode error before allocation. Ordinary owner-free
+`Clone` semantics remain unchanged.
+
+Focused tests cover funded overlap, destination max-minus-one denial, independent
+source/destination destruction and release, and the owner-free control. Current clone
+census found retained ticket operations clone their `Arc` rather than payload backing;
+the TLS 1.3 handshake client-auth context is required to be empty and therefore creates
+no byte backing. Generic-list custody and complete TLS accounting remain open.

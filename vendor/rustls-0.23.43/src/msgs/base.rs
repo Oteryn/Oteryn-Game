@@ -134,6 +134,16 @@ impl<C: Cardinality> PayloadU16<C> {
         debug_assert!(bytes.len() >= C::MIN);
         Self(bytes, PhantomData, #[cfg(feature = "std")] None)
     }
+
+    pub(crate) fn try_clone_with_resource_owner(&self) -> Result<Self, InvalidMessage> {
+        #[cfg(feature = "std")]
+        if let Some(custody) = &self.2 {
+            let (bytes, custody) = custody.copy_bytes(&self.0)?;
+            return Ok(Self(bytes, PhantomData, Some(custody)));
+        }
+
+        Ok(Self::new(self.0.clone()))
+    }
 }
 
 impl PayloadU16<MaybeEmpty> {

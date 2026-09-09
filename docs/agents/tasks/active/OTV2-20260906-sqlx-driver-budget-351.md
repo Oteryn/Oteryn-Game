@@ -1024,3 +1024,31 @@ next_action: carry the same backing-bound representation through generic decoded
 
 P1 `3966866700` and umbrella P1 `3954831069` remain open because generic list
 backing and the complete retained-descendant matrix are not yet proven.
+
+## Window35 charged HRR cookie copy repair
+
+Exact-head review found that a peer-supplied, owner-aware decoded HRR cookie reached
+the ordinary `PayloadU16::clone` assertion in the retry ClientHello path. The charged
+protocol path now uses an explicit fallible deep copy: it reserves the destination
+capacity before allocation while source custody remains live, verifies the actual
+capacity, and attaches independent custody to the destination. Owner-free `Clone`
+retains upstream behavior; charged protocol flow no longer panics or creates an
+uncharged destination.
+
+Focused controls cover funded source/destination overlap, max-minus-one destination
+denial, independent source and destination final release, and the owner-free clone.
+The current payload clone census also found the TLS 1.3 ticket sites use `Arc` clones
+rather than payload-backing deep copies; the empty handshake client-auth context copy
+does not allocate backing. Aggregate decoded/list lifetime and the broader #425 matrix
+remain open.
+
+```yaml
+status: active
+charged_hrr_cookie_copy: PROVEN_FOCUSED
+payload_u8_u16_backing_custody: PROVEN_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: generic list backing; borrowed Payload ownership; retained descendants; transcript and complete-handshake composition; TLS-positive; PostgreSQL17.6; review/CI/MQ/readback
+next_action: continue generic list backing custody and every retained descendant cell without using aggregate rollback as lifetime authority
+```
+
+P1 `3966866700` and umbrella P1 `3954831069` remain open.
