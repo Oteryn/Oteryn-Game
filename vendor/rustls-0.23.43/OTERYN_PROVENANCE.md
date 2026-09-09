@@ -101,3 +101,19 @@ partial-parse and actual-capacity mismatch paths destroy prospective backing
 before rolling back its debit. Successful decoded-list custody is still
 connection-aggregate and therefore remains explicitly not proven; it must be
 replaced by backing-coupled custody/transfer before complete TLS accounting.
+
+## Protected #425 decoded byte-payload checkpoint
+
+Owner-aware nested readers now reserve the full qualified byte-vector capacity
+before `PayloadU8` and `PayloadU16` copy their input. The returned allocator
+capacity is checked; on mismatch the vector is destroyed before the prospective
+debit is released. Focused controls cover exact-capacity admission and
+max-minus-one denial. Owner-aware message parsing checkpoints aggregate decoded
+custody and rolls back partial nested allocations only after parser unwind.
+Generic-list mismatch cleanup likewise destroys the replacement before
+releasing old and prospective charges.
+
+This is not complete decoded/TLS accounting. Borrowed payload `into_owned`,
+parsed/encoded message overlap, handshake AST, transcript, certificate/OCSP,
+successor, compressed-certificate, peer-chain and retained-session ownership
+remain open.

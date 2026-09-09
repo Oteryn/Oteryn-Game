@@ -143,6 +143,12 @@ impl<C: Cardinality> Codec<'_> for PayloadU16<C> {
             return Err(InvalidMessage::IllegalEmptyValue);
         }
         let mut sub = r.sub(len)?;
+        #[cfg(feature = "std")]
+        let body = {
+            let bytes = sub.rest();
+            sub.copy_decoded(bytes)?
+        };
+        #[cfg(not(feature = "std"))]
         let body = sub.rest().to_vec();
         Ok(Self(body, PhantomData))
     }
@@ -191,6 +197,12 @@ impl<C: Cardinality> Codec<'_> for PayloadU8<C> {
             return Err(InvalidMessage::IllegalEmptyValue);
         }
         let mut sub = r.sub(len)?;
+        #[cfg(feature = "std")]
+        let body = {
+            let bytes = sub.rest();
+            sub.copy_decoded(bytes)?
+        };
+        #[cfg(not(feature = "std"))]
         let body = sub.rest().to_vec();
         Ok(Self(body, PhantomData))
     }
