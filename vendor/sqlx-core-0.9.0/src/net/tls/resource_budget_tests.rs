@@ -394,6 +394,26 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
     assert!(budget.events.lock().unwrap()[completion_event_start..]
         .iter()
         .any(|(reserve, bytes, _)| !*reserve && *bytes == 1_625));
+    // rustls is a dependency of this SQLx unit-test binary, so rustls itself is
+    // compiled with `cfg(test) == false`.  These events therefore exercise the
+    // production-only `Message::decoded_custody` field, its owner-aware parse
+    // attachment, the first-message `into_owned` move, and its Drop path.
+    let completion_events = budget.events.lock().unwrap();
+    let decoded_reservations = completion_events[completion_event_start..]
+        .iter()
+        .filter(|(reserve, bytes, _)| *reserve && !matches!(*bytes, 554 | 1_625 | 1_705 | 6_264 | 7_881))
+        .map(|(_, bytes, _)| *bytes)
+        .collect::<Vec<_>>();
+    assert!(
+        !decoded_reservations.is_empty(),
+        "production Message decode did not reserve any decoded backing"
+    );
+    assert!(decoded_reservations.iter().any(|bytes| {
+        completion_events[completion_event_start..]
+            .iter()
+            .any(|(reserve, released, _)| !*reserve && released == bytes)
+    }), "production Message dropped without releasing decoded backing");
+    drop(completion_events);
 
     // Cancellation before receiving HRR retains the initial reservation until
     // the connection-owned active exchange is actually destroyed.

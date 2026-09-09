@@ -957,3 +957,26 @@ next_action: continue #425 ownership conversion and retained-descendant custody 
 P1 `3966866700` and umbrella P1 `3954831069` remain open: this checkpoint closes
 message-local drop and move custody only; it does not yet prove every deep-copy or
 retained-descendant transfer in the complete TLS matrix.
+
+## Window32 production Message custody witness
+
+The exact-graph SQLx AWS-LC wire-handshake harness compiles rustls as a dependency,
+so rustls has `cfg(test) == false` and its production-only
+`Message::decoded_custody` representation is present. The completed real handshake
+now requires a non-KX decoded reservation and its matching release during client
+packet processing. This executes the real owner-aware `Message` parse, first-message
+`into_owned` transfer, and production drop path rather than constructing
+`DecodedCustody` directly in a rustls unit test. The ordinary server remains
+owner-free, and the existing underfunded HRR case continues to deny before its
+unauthorized reservation.
+
+```yaml
+status: active
+message_backing_custody: PROVEN_PRODUCTION_FOCUSED
+complete_tls_accounting: NOT_PROVEN
+remaining_acceptance_cells: per-backing local list/payload release; separately charged deep ownership; retained successor/peer/session custody; transcript and complete handshake composition; TLS-positive SQLx socket; PostgreSQL17.6; review/CI/MQ/readback
+next_action: replace aggregate list/payload retention with per-backing custody without connection-wide checkpoint rollback
+```
+
+P1 `3966866700` and umbrella P1 `3954831069` remain open. This production witness
+validates the Message custody foundation only and does not promote complete TLS.

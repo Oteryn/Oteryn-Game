@@ -477,3 +477,12 @@ cache/handshake overlap, TLS-positive evidence and PostgreSQL17.6 remain OPEN.
 - [x] Preserve ordinary owner-free std/no_std construction and prove move custody without a second debit.
 - [ ] Reserve separately for borrowed/deep-owned destinations and split/transfer custody into successor, peer-chain, transcript and retained-session owners.
 - [ ] Complete the full TLS composition witness before TLS-positive or PostgreSQL qualification.
+
+## Window32 production Message witness
+
+- [x] Exercise rustls as a production-mode dependency (`cfg(test) == false`) in the
+  real AWS-LC wire-handshake harness and require decoded reservation/release events.
+- [x] Cover the real owner-aware Message attachment, first-message `into_owned` move,
+  and production drop path without promoting complete TLS.
+- [ ] Continue per-backing list/payload custody and remove connection-wide aggregate
+  rollback as a lifetime authority before retained-state composition.

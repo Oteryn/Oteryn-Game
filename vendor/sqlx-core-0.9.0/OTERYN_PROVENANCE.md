@@ -1049,3 +1049,15 @@ attempt was removed before commit; no excluded source changed.
 This does not close P1 `3966866700`, the umbrella decoded-owner P1, complete TLS,
 TLS-positive, or PostgreSQL qualification. Existing Arc precharge, geometric
 list growth, payload denial, and nested rollback evidence remains valid.
+
+### Window32 production Message-custody witness
+
+The SQLx AWS-LC real-wire harness compiles the patched rustls crate as a dependency,
+where `cfg(test)` is false. Its successful full-handshake packet processing now
+observes at least one non-KX decoded reservation and a matching release. It therefore
+executes the actual production `Message::decoded_custody` field, owner-aware parse
+attachment, first-message `into_owned` move, and destruction path. This closes the
+specific production-path evidence gap in the Window31 foundation. It does not close
+per-backing list/payload lifetime, deep-copy, retained descendant, transcript, or
+complete-handshake composition accounting; P1 `3966866700` and the umbrella decoded
+ownership finding remain open.
