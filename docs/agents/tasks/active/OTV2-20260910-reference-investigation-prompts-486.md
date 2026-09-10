@@ -4,19 +4,19 @@
 task_id: OTV2-20260910-reference-investigation-prompts-486
 title: Register reusable Reference investigation prompt and operator runbook
 mode: GOVERNANCE
-status: validating
+status: ready
 repository: Oteryn/Oteryn-Game
 issue: 486
 base_branch: main
 branch: docs/reference-investigator-486
-pr: null
+pr: 527
 base_sha: 43ff3341e079f2883b78d01db5cee649290d90be
 head_sha: null
 final_head_sha: null
-final_head_frozen_at: null
+final_head_frozen_at: 2026-09-10T09:43:00+02:00
 owner: OTV2_WORK_DELIVERY_COORDINATOR
 created_at: 2026-09-10T08:51:00+02:00
-updated_at: 2026-09-10T08:51:00+02:00
+updated_at: 2026-09-10T09:43:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/prompts/OTV2_REFERENCE_INVESTIGATOR.md
@@ -49,8 +49,8 @@ Register one reusable read-only Reference investigator prompt with eight short l
 - **PROVEN:** #162 / `OTV2_WORK_DELIVERY_COORDINATOR` remains the current active control plane; the new investigator prompt is read-only and cannot allocate/integrate/mutate gameplay work.
 - **PROVEN:** `docs/agents/PROMPTING_STANDARD.md` requires every reusable prompt to be registered in `PROMPT_LIFECYCLE.json`; alias invocation grants no write authority.
 - **PROVEN:** programme #486 already decomposes Reference-first work across R0-R10 and requires official/primary evidence before OTS hypotheses.
-- **PROVEN:** Tibia Wiki (`tibiawiki.com.br`) is a maintained high-volume structured Tibia encyclopedia and is suitable as an operational bulk-data source; it remains below exact official/controlled evidence when resolving behavior-sensitive conflicts.
-- **DERIVED:** one parameterized prompt plus lane aliases is lower-governance/churn than seven duplicated prompt files while preserving lane-specific contracts.
+- **DERIVED:** Tibia Wiki (`tibiawiki.com.br`) is treated operationally as a first-class high-volume structured data source for bulk content extraction; exact evidence strength remains field-specific and below stronger conflicting official/controlled evidence.
+- **DERIVED:** one parameterized prompt plus lane aliases creates less prompt-governance duplication than seven or eight separate prompt files while preserving lane-specific contracts.
 
 ## High-risk authority/recovery qualification
 
@@ -62,15 +62,15 @@ Register one reusable read-only Reference investigator prompt with eight short l
 - [x] Alias is explicitly read-only and cannot become a second #162 control plane or implementation writer.
 - [x] Source registry separates Oteryn project truth from external Reference evidence strength.
 - [x] CipSoft official remains primary external evidence for exact rules/chronology/conflicts.
-- [x] Tibia Wiki is first-class `STRUCTURED_REFERENCE_DATA` for bulk content extraction and field-level cross-check.
+- [x] Tibia Wiki is first-class `STRUCTURED_REFERENCE_DATA` for bulk content extraction and field-level cross-check without automatic `PROVEN` promotion.
 - [x] Canary/Crystal/legacy OTS remain `OTS_HYPOTHESIS_ONLY` regardless of cross-OTS consensus.
 - [x] Target cut remains the accepted post-2026-07-28 Global boundary; post-target data requires continuity analysis.
 - [x] Operator runbook gives exact recommended aliases, wave ordering and effort levels.
 - [x] Existing #511/#525, #507, WP3/#356, WP4/#335 and other implementation lineages are not mutated or replaced.
-- [ ] `PROMPT_LIFECYCLE.json` remains valid JSON and registers the new prompt exactly once.
+- [x] `PROMPT_LIFECYCLE.json` registers the new prompt exactly once; Agent Governance generation on the pre-freeze content passed after the PR metadata heading repair.
 - [x] Prompt README exposes the new reusable alias family.
-- [ ] Repository Agent Governance / Architecture Semantic Audit / Merge Gate are green on the final exact head.
-- [ ] Whole-diff self-review has no open material P0/P1/P2 finding.
+- [ ] Final exact-head repository Agent Governance / Architecture Semantic Audit / Merge Gate are green; record externally on the PR after this freeze commit.
+- [x] Whole-diff self-review found no open material P0/P1/P2 finding.
 
 ## Excluded scope
 
@@ -98,17 +98,41 @@ REFERENCE EVIDENCE
 
 Structured/wiki data is decomposed to atomic fields. Wiki/OTS consensus may efficiently create explicit `DERIVED` candidates when target continuity is reasoned and no stronger conflict exists; it cannot silently produce `PROVEN`. Subtle runtime mechanics use the slower official/controlled-observation path.
 
+### Whole-diff self-review
+
+Reviewed the complete intended six-path docs/governance delta against the admission base. Falsified for: creating a second coordinator; implicit tracked-file or external-repository write authority; implementation-worker replacement; OTS-to-Reference promotion; wiki-only automatic `PROVEN`; post-target current-Global target drift; paid-review authorization; runtime/production authority; Evolved leakage; and alias ambiguity.
+
+Result:
+
+```text
+P0=0
+P1=0
+P2=0
+VERDICT=PASS
+```
+
+### Independent review routing
+
+Bound META `docs/governance/AI_REVIEW_POLICY.md` routes default/low-risk documentation to no external AI review and reserves mandatory deep review for material high-risk/control-plane changes that can alter autonomous write/integration authority. This additive prompt explicitly grants no such authority and does not change workflows, permissions, protection, rulesets, required checks, Merge Queue or production authority.
+
+```text
+INDEPENDENT_EXTERNAL_AI_REVIEW=NO
+REASON=LOW_RISK_READ_ONLY_PROMPT_AND_DOCUMENTATION; DETERMINISTIC_GOVERNANCE_AND_SELF_REVIEW_APPLY
+```
+
+No owner-funded/quota AI is consumed for this candidate.
+
 ## Validation
 
 ### Focused
 
-- command/run: pending PR/governance validation
-- result: pending
+- command/run: repository Agent Governance validates prompt lifecycle/discovery/policy on PR exact head
+- result: pre-freeze content generation PASS; final frozen-head generation pending externally
 
 ### Component/integration
 
-- command/run: repository governance validation through applicable PR checks
-- result: pending
+- command/run: Architecture Semantic Audit + repository Merge Gate selected by changed paths
+- result: final frozen-head generation pending externally
 
 ### E2E
 
@@ -117,53 +141,53 @@ Structured/wiki data is decomposed to atomic fields. Wiki/OTS consensus may effi
 
 ### Exact-head CI
 
-- final head: pending
+- final head: intentionally recorded in immutable PR/check evidence after this commit exists; a commit cannot contain its own SHA
 - trigger source: pull_request
-- workflow/run/job: pending
-- runner assignment: pending
+- workflow/run/job: pending final frozen-head generation
+- runner assignment: repository-hosted/selected by workflows
 - classification: docs/governance
-- result: pending
+- result: pending external exact-head evidence
 
 ## Self-review
 
-- exact head: pending
+- exact head: final SHA to be bound externally after this freeze commit exists
 - method/reviewer: coordinating author, complete changed-file/whole-diff challenge
-- material findings: pending
-- verdict: pending
+- material findings: P0=0 / P1=0 / P2=0
+- verdict: PASS
 
 ## Independent review
 
-- required: resolve from current META risk routing on final exact paths; do not infer owner-funded AI authority
-- exact head: pending
-- method/auditor: pending
-- material findings: pending
-- verdict: pending
+- required: NO — bound META risk policy; read-only docs/prompt with zero autonomous write/integration authority
+- exact head: NOT_APPLICABLE
+- method/auditor: NOT_APPLICABLE
+- material findings: NOT_APPLICABLE
+- verdict: NOT_APPLICABLE
 
 ## PR and closeout
 
-- changed-file review: pending
-- unresolved review threads: pending
+- changed-file review: PASS — exactly six allocated docs/governance paths
+- unresolved review threads: verify externally before integration
 - related/superseded PRs: none for this prompt family at preflight
-- protected Merge Queue: required if integration is authorized after qualification
+- protected Merge Queue: required if/when exact candidate integration is authorized
 - merge commit/result: pending
-- ownership release: pending
+- ownership release: after protected integration/readback
 
 ## Context checkpoint
 
 ```yaml
-last_progress: prompt/source registry/operator runbook/lifecycle/README authored on the dedicated docs branch; task bound to issue 486
-status: validating
+last_progress: final intended six-path prompt/source-registry/operator-runbook/lifecycle/README/task candidate frozen; remaining qualification is external exact-head CI/MQ/readback
+status: ready
 branch: docs/reference-investigator-486
-head_sha: pending final exact candidate
-pr: null
-final_head_sha: null
-final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+head_sha: external exact-head PR evidence after freeze commit
+pr: 527
+final_head_sha: external exact-head PR evidence after freeze commit
+final_head_frozen_at: 2026-09-10T09:43:00+02:00
+ci_trigger_source: pull_request
+ci_check_generation: final frozen-head generation pending
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
-runner_assignment_state: not_started
+runner_assignment_state: repository_selected
 terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
@@ -173,5 +197,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: open the docs-only PR and consume exact-head governance/semantic/merge-gate results
+next_action: require final frozen-head governance/semantic/merge-gate success, then protected Merge Queue and protected-main readback
 ```
