@@ -573,7 +573,87 @@ fn emit_client_kx(
     kxa: KeyExchangeAlgorithm,
     common: &mut CommonState,
     pub_key: &[u8],
-) {
+) -> Result<(), Error> {
+    #[cfg(feature = "std")]
+    if let Some(owner) = common
+        .peer_certificate_custody
+        .as_ref()
+        .map(|custody| custody.resource_owner())
+    {
+        use crate::msgs::codec::{exact_vec_copy, Codec, DirectDecodedCustody};
+        use crate::vecbuf::OutboundTlsCustody;
+
+        // ExpectServerDone has transferred the authenticated certificate's
+        // custody to CommonState before this call: reuse that SAME ledger.
+        let prefix_len = match kxa {
+            KeyExchangeAlgorithm::ECDHE => 1usize,
+            KeyExchangeAlgorithm::DHE => 2usize,
+        };
+        let body_len = prefix_len
+            .checked_add(pub_key.len())
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+        let encoded_len = 4usize
+            .checked_add(body_len)
+            .ok_or(InvalidMessage::MessageTooLarge)?;
+
+        // Declare each debit before its backing so every error/unwind destroys
+        // the backing first. The provider's borrowed key remains with the KX.
+        let source_custody = DirectDecodedCustody::reserve(owner.clone(), pub_key.len())?;
+        let public = exact_vec_copy(pub_key);
+        if public.capacity() != pub_key.len() {
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+        let params = match kxa {
+            KeyExchangeAlgorithm::ECDHE => ClientKeyExchangeParams::Ecdh(ClientEcdhParams {
+                public: PayloadU8::new(public),
+            }),
+            KeyExchangeAlgorithm::DHE => ClientKeyExchangeParams::Dh(ClientDhParams {
+                public: PayloadU16::new(public),
+            }),
+        };
+        let body_custody = DirectDecodedCustody::reserve(owner.clone(), body_len)?;
+        let mut body = Vec::with_capacity(body_len);
+        if body.capacity() != body_len {
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+        params.encode(&mut body);
+        if body.len() != body_len || body.capacity() != body_len {
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+        drop(params);
+        drop(source_custody);
+
+        let parsed =
+            HandshakeMessagePayload(HandshakePayload::ClientKeyExchange(Payload::new(body)));
+        let encoded_custody = DirectDecodedCustody::reserve(owner.clone(), encoded_len)?;
+        let mut encoded = Vec::with_capacity(encoded_len);
+        if encoded.capacity() != encoded_len {
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+        // Use the existing encoder into pre-funded exact-capacity backing;
+        // MessagePayload::handshake would allocate its own unreserved Vec.
+        parsed.encode(&mut encoded);
+        if encoded.len() != encoded_len || encoded.capacity() != encoded_len {
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+        let ckx = Message::new(
+            ProtocolVersion::TLSv1_2,
+            MessagePayload::Handshake {
+                parsed,
+                encoded: Payload::new(encoded),
+            },
+        );
+        let outbound = DirectDecodedCustody::reserve(owner, common.client_kx_outbound_len(&ckx)?)?;
+        transcript.try_add_message(&ckx)?;
+        common.send_msg_with_custody(&ckx, OutboundTlsCustody::from_reserved(outbound))?;
+        // The transcript copied/hashed the bytes and the queue owns separate
+        // funded records. Release these debits only after both message buffers.
+        drop(ckx);
+        drop(encoded_custody);
+        drop(body_custody);
+        return Ok(());
+    }
+
     let mut buf = Vec::new();
     match kxa {
         KeyExchangeAlgorithm::ECDHE => ClientKeyExchangeParams::Ecdh(ClientEcdhParams {
@@ -592,6 +672,7 @@ fn emit_client_kx(
 
     transcript.add_message(&ckx);
     common.send_msg(ckx, false);
+    Ok(())
 }
 
 fn emit_certverify(
@@ -1058,7 +1139,7 @@ impl State<ClientConnectionData> for ExpectServerDone<'_> {
 
         // 4b.
         let mut transcript = st.transcript;
-        emit_client_kx(&mut transcript, st.suite.kx, cx.common, kx.pub_key());
+        emit_client_kx(&mut transcript, st.suite.kx, cx.common, kx.pub_key())?;
         // Note: EMS handshake hash only runs up to ClientKeyExchange.
         let ems_seed = st
             .using_ems
@@ -1494,5 +1575,280 @@ impl KernelState for ExpectTraffic {
         Err(Error::General(
             "TLS 1.2 session tickets may not be sent once the handshake has completed".into(),
         ))
+    }
+}
+
+#[cfg(all(test, feature = "std", feature = "ring"))]
+pub(crate) mod client_kx_custody_tests {
+    use super::*;
+    use crate::crypto::ring::hash::SHA256;
+    use crate::hash_hs::HandshakeHashBuffer;
+    use crate::msgs::codec::DirectDecodedCustody;
+    use crate::vecbuf::outbound_custody_tests::{control_bytes, Owner};
+    use core::sync::atomic::Ordering;
+
+    fn common_with_owner(owner: &Arc<Owner>) -> CommonState {
+        let mut common = CommonState::new(Side::Client);
+        common.peer_certificate_custody = Some(
+            DirectDecodedCustody::reserve(owner.clone(), 0)
+                .unwrap()
+                .into(),
+        );
+        common
+    }
+
+    #[test]
+    fn client_kx_custody_wire_transcript_ems_and_drain() {
+        for (kxa, key_len, prefix) in [
+            (KeyExchangeAlgorithm::ECDHE, 32, 1),
+            (KeyExchangeAlgorithm::DHE, 256, 2),
+        ] {
+            let key = vec![0x42; key_len];
+            let owner = Owner::new(usize::MAX);
+            let mut common = common_with_owner(&owner);
+            let mut ordinary = CommonState::new(Side::Client);
+            common.set_max_fragment_size(Some(32)).unwrap();
+            ordinary.set_max_fragment_size(Some(32)).unwrap();
+            let mut transcript = HandshakeHashBuffer::new().start_hash(&SHA256);
+            let mut expected_hash = HandshakeHashBuffer::new().start_hash(&SHA256);
+            emit_client_kx(&mut transcript, kxa, &mut common, &key).unwrap();
+            emit_client_kx(&mut expected_hash, kxa, &mut ordinary, &key).unwrap();
+            // EMS observes precisely the transcript through ClientKeyExchange.
+            assert_eq!(
+                transcript.current_hash().as_ref(),
+                expected_hash.current_hash().as_ref()
+            );
+            let mut expected = Vec::new();
+            ordinary.sendable_tls.write_to(&mut expected).unwrap();
+            let records =
+                (expected.len() - (4 + prefix + key_len)) / crate::msgs::message::HEADER_SIZE;
+            let control = control_bytes(records);
+            assert_eq!(owner.used(), expected.len() + control);
+            assert_eq!(
+                owner.peak.load(Ordering::SeqCst),
+                key_len + prefix + 4 + key_len + prefix + expected.len() + control
+            );
+            let attempts = owner.attempts.load(Ordering::SeqCst);
+            let mut actual = Vec::new();
+            assert_eq!(
+                common.sendable_tls.write_to(&mut actual).unwrap(),
+                expected.len()
+            );
+            assert_eq!(actual, expected);
+            assert_eq!(owner.used(), control);
+            assert_eq!(owner.attempts.load(Ordering::SeqCst), attempts);
+            drop(common);
+            assert_eq!(owner.used(), 0);
+        }
+    }
+
+    #[test]
+    fn client_kx_custody_each_admission_max_minus_one() {
+        for (kxa, key_len, prefix) in [
+            (KeyExchangeAlgorithm::ECDHE, 32, 1),
+            (KeyExchangeAlgorithm::DHE, 256, 2),
+        ] {
+            let key = vec![0x42; key_len];
+            let body = key_len + prefix;
+            let encoded = 4 + body;
+            let outbound = 5 + encoded;
+            let thresholds = [
+                key_len,
+                key_len + body,
+                body + encoded,
+                body + encoded + outbound,
+                body + encoded + outbound + control_bytes(1),
+            ];
+            for (stage, threshold) in thresholds.into_iter().enumerate() {
+                let owner = Owner::new(threshold - 1);
+                let mut common = common_with_owner(&owner);
+                let mut transcript = HandshakeHashBuffer::new().start_hash(&SHA256);
+                let before = transcript.current_hash();
+                assert!(matches!(
+                    emit_client_kx(&mut transcript, kxa, &mut common, &key),
+                    Err(Error::InvalidMessage(InvalidMessage::MessageTooLarge))
+                ));
+                assert!(common.sendable_tls.is_empty());
+                assert_eq!(owner.used(), 0);
+                assert_eq!(owner.attempts.load(Ordering::SeqCst), stage + 2);
+                if stage < 4 {
+                    assert_eq!(transcript.current_hash().as_ref(), before.as_ref());
+                }
+                drop(common);
+                assert_eq!(owner.used(), 0);
+            }
+            let owner = Owner::new(*thresholds.last().unwrap());
+            let mut common = common_with_owner(&owner);
+            let mut transcript = HandshakeHashBuffer::new().start_hash(&SHA256);
+            emit_client_kx(&mut transcript, kxa, &mut common, &key).unwrap();
+            assert_eq!(owner.used(), outbound + control_bytes(1));
+            drop(common);
+            assert_eq!(owner.used(), 0);
+        }
+    }
+
+    // This state-level fixture isolates admission after certificate/signature
+    // verification. It is not a certificate-verification or handshake E2E test.
+    #[derive(Debug)]
+    struct FixtureVerifier;
+
+    impl verify::ServerCertVerifier for FixtureVerifier {
+        fn verify_server_cert(
+            &self,
+            _: &pki_types::CertificateDer<'_>,
+            _: &[pki_types::CertificateDer<'_>],
+            _: &ServerName<'_>,
+            _: &[u8],
+            _: pki_types::UnixTime,
+        ) -> Result<verify::ServerCertVerified, Error> {
+            Ok(verify::ServerCertVerified::assertion())
+        }
+
+        fn verify_tls12_signature(
+            &self,
+            _: &[u8],
+            _: &pki_types::CertificateDer<'_>,
+            _: &DigitallySignedStruct,
+        ) -> Result<verify::HandshakeSignatureValid, Error> {
+            Ok(verify::HandshakeSignatureValid::assertion())
+        }
+
+        fn verify_tls13_signature(
+            &self,
+            _: &[u8],
+            _: &pki_types::CertificateDer<'_>,
+            _: &DigitallySignedStruct,
+        ) -> Result<verify::HandshakeSignatureValid, Error> {
+            panic!("TLS1.3 is outside this fixture")
+        }
+
+        fn supported_verify_schemes(&self) -> Vec<crate::SignatureScheme> {
+            vec![crate::SignatureScheme::ECDSA_NISTP256_SHA256]
+        }
+    }
+
+    struct BeforeEmsHash;
+    struct BeforeEmsContext(Box<dyn crate::crypto::hash::Context>);
+
+    impl crate::crypto::hash::Hash for BeforeEmsHash {
+        fn start(&self) -> Box<dyn crate::crypto::hash::Context> {
+            Box::new(BeforeEmsContext(SHA256.start()))
+        }
+        fn hash(&self, data: &[u8]) -> crate::crypto::hash::Output {
+            SHA256.hash(data)
+        }
+        fn output_len(&self) -> usize {
+            32
+        }
+        fn algorithm(&self) -> crate::crypto::hash::HashAlgorithm {
+            crate::crypto::hash::HashAlgorithm::SHA256
+        }
+    }
+
+    impl crate::crypto::hash::Context for BeforeEmsContext {
+        fn fork_finish(&self) -> crate::crypto::hash::Output {
+            panic!("denied KX must return before EMS seed capture")
+        }
+        fn fork(&self) -> Box<dyn crate::crypto::hash::Context> {
+            panic!("denied KX must not fork the transcript")
+        }
+        fn finish(self: Box<Self>) -> crate::crypto::hash::Output {
+            panic!("denied KX must not finish the transcript")
+        }
+        fn update(&mut self, bytes: &[u8]) {
+            self.0.update(bytes);
+        }
+    }
+
+    #[test]
+    fn client_kx_custody_server_done_denial_precedes_ems_and_later_flight() {
+        use crate::msgs::codec::DecodedOwner;
+        use crate::msgs::handshake::ServerEcdhParams;
+
+        let config = Arc::new(
+            ClientConfig::builder_with_provider(Arc::new(crate::crypto::ring::default_provider()))
+                .with_protocol_versions(&[&crate::version::TLS12])
+                .unwrap()
+                .dangerous()
+                .with_custom_certificate_verifier(Arc::new(FixtureVerifier))
+                .with_no_client_auth(),
+        );
+        let SupportedCipherSuite::Tls12(suite) =
+            crate::crypto::ring::cipher_suite::TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+        else {
+            unreachable!();
+        };
+        // X25519 has a 32-byte public key. Fail each KX reservation in turn,
+        // including the lower-layer queue/control admission after hashing KX.
+        for (stage, allowance) in [31, 64, 69, 110, 110 + control_bytes(1)]
+            .into_iter()
+            .enumerate()
+        {
+            let owner = Owner::new(usize::MAX);
+            let (decoded, arc_charge) = DecodedOwner::new(owner.clone()).unwrap();
+            let (certs, custody) =
+                CertificateChain(vec![pki_types::CertificateDer::from(&[1][..])])
+                    .into_owned_with_resource_owner(decoded.clone())
+                    .unwrap();
+            let retained = owner.used();
+            let server_kx = crate::crypto::ring::kx_group::X25519.start().unwrap();
+            let st = ExpectServerDone {
+                config: config.clone(),
+                resuming_session: None,
+                session_id: SessionId::empty(),
+                server_name: ServerName::try_from("localhost").unwrap(),
+                randoms: ConnectionRandoms {
+                    client: [0; 32],
+                    server: [1; 32],
+                },
+                using_ems: true,
+                transcript: HandshakeHashBuffer::new().start_hash(&BeforeEmsHash),
+                suite,
+                server_cert: ServerCertDetails::new_with_resource_custody(certs, vec![], custody),
+                server_kx: ServerKxDetails::new(
+                    &ServerKeyExchangeParams::Ecdh(ServerEcdhParams::new(server_kx.as_ref())),
+                    DigitallySignedStruct::new(
+                        crate::SignatureScheme::ECDSA_NISTP256_SHA256,
+                        vec![],
+                    ),
+                ),
+                client_auth: None,
+                must_issue_new_ticket: false,
+            };
+            let mut connection = crate::ClientConnection::new(
+                config.clone(),
+                ServerName::try_from("localhost").unwrap(),
+            )
+            .unwrap();
+            let mut common = CommonState::new(Side::Client);
+            let mut cx = ClientContext {
+                common: &mut common,
+                data: &mut connection.core.data,
+                sendable_plaintext: None,
+            };
+            owner.limit.store(retained + allowance, Ordering::SeqCst);
+            let attempts = owner.attempts.load(Ordering::SeqCst);
+            assert!(matches!(
+                Box::new(st).handle(
+                    &mut cx,
+                    Message::new(
+                        ProtocolVersion::TLSv1_2,
+                        MessagePayload::handshake(HandshakeMessagePayload(
+                            HandshakePayload::ServerHelloDone
+                        )),
+                    )
+                ),
+                Err(Error::InvalidMessage(InvalidMessage::MessageTooLarge))
+            ));
+            assert_eq!(owner.attempts.load(Ordering::SeqCst) - attempts, stage + 1);
+            assert!(common.sendable_tls.is_empty());
+            assert!(matches!(common.kx_state, KxState::Start(_)));
+            assert!(!common.may_send_application_data);
+            assert_eq!(owner.used(), retained);
+            drop(common);
+            drop(decoded);
+            drop(arc_charge);
+            assert_eq!(owner.used(), 0);
+        }
     }
 }
