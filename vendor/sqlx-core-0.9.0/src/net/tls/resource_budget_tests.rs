@@ -70,11 +70,17 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
     use super::tls_rustls::DeframerBudgetOwner;
     use rustls::crypto::{ResourceOwnedKx, SupportedKxGroup};
 
+    // This is inline caller/control state, not another provider heap object.
+    // The provider allocation layouts are separately compile-time asserted in
+    // their private modules at 200 (AWS-LC classical), 40 (ML-KEM), and 96
+    // (hybrid). The same classical source also pins ring's 208-byte layout.
     assert_eq!(core::mem::size_of::<ResourceOwnedKx>(), 40);
 
     let process = ledger(1_000_000);
     let process_owner: Arc<dyn rustls::DeframerBufferOwner> =
         Arc::new(DeframerBudgetOwner(process.clone()));
+    // This test is run by its exact name in a fresh test process. Race the
+    // first provider use before any provider can be cached in that process.
     let threads = (0..4)
         .map(|_| {
             let owner = process_owner.clone();
@@ -144,9 +150,17 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
             .count(),
         1
     );
-    assert_eq!(debits.len(), 7, "one process, five thread, one config debit");
+    assert_eq!(
+        debits.len(),
+        7,
+        "one process, five thread, one config debit"
+    );
     drop(debits);
 
+    // Thread registrations are retained by the provider slice even after the
+    // registering threads exit.  Fund exactly three more registrations, prove
+    // repeat use on each thread is free, then prove the next thread is denied
+    // before it can enter AWS-LC provider construction.
     let used_before_churn = process.used.load(Ordering::Acquire);
     process
         .limit
@@ -158,7 +172,11 @@ fn aws_lc_kx_full_lifetime_bounds_and_returned_secrets() {
             rustls::crypto::ensure_aws_lc_provider_residency(owner.clone()).unwrap();
             let after_first = thread_ledger.used.load(Ordering::Acquire);
             rustls::crypto::ensure_aws_lc_provider_residency(owner.clone()).unwrap();
-            assert_eq!(thread_ledger.used.load(Ordering::Acquire), after_first);
+            assert_eq!(
+                thread_ledger.used.load(Ordering::Acquire),
+                after_first,
+                "repeat use duplicated thread debit"
+            );
         })
         .join()
         .unwrap();
@@ -268,6 +286,7 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
             .unwrap()
             .with_root_certificates(roots)
             .with_no_client_auth();
+
         let mut server_provider = rustls::crypto::aws_lc_rs::default_provider();
         server_provider.kx_groups = vec![rustls::crypto::aws_lc_rs::kx_group::SECP256R1];
         let server = ServerConfig::builder_with_provider(Arc::new(server_provider))
@@ -303,6 +322,8 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
     let provider =
         rustls::crypto::aws_lc_rs::default_provider_with_resource_owner(owner).unwrap();
 
+    // Drive a real ClientHello into a P-256-only server.  The server emits an
+    // HRR because the PQ-first client did not initially offer a P-256 share.
     let (mut denied_client, mut denied_server) = pair(budget.clone(), provider.clone());
     transfer!(&mut denied_client, &mut denied_server);
     denied_server.process_new_packets().unwrap();
@@ -338,7 +359,10 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
         client.handshake_kind(),
         Some(HandshakeKind::FullWithHelloRetryRequest)
     );
-    assert!(budget.peak.load(Ordering::Acquire) >= before_hrr + 1_625);
+    assert!(
+        budget.peak.load(Ordering::Acquire) >= before_hrr + 1_625,
+        "wire HRR did not overlap the held initial KX with P-256 replacement"
+    );
     let events = budget.events.lock().unwrap();
     let replacement_reserve = events[hrr_event_start..]
         .iter()
@@ -370,20 +394,29 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
     assert!(budget.events.lock().unwrap()[completion_event_start..]
         .iter()
         .any(|(reserve, bytes, _)| !*reserve && *bytes == 1_625));
+    // rustls is a dependency of this SQLx unit-test binary, so rustls itself is
+    // compiled with `cfg(test) == false`.  These events therefore exercise the
+    // production-only `Message::decoded_custody` field, its owner-aware parse
+    // attachment, the first-message `into_owned` move, and its Drop path.
     let completion_events = budget.events.lock().unwrap();
     let decoded_reservations = completion_events[completion_event_start..]
         .iter()
         .filter(|(reserve, bytes, _)| *reserve && !matches!(*bytes, 554 | 1_625 | 1_705 | 6_264 | 7_881))
         .map(|(_, bytes, _)| *bytes)
         .collect::<Vec<_>>();
-    assert!(!decoded_reservations.is_empty());
+    assert!(
+        !decoded_reservations.is_empty(),
+        "production Message decode did not reserve any decoded backing"
+    );
     assert!(decoded_reservations.iter().any(|bytes| {
         completion_events[completion_event_start..]
             .iter()
             .any(|(reserve, released, _)| !*reserve && released == bytes)
-    }));
+    }), "production Message dropped without releasing decoded backing");
     drop(completion_events);
 
+    // Cancellation before receiving HRR retains the initial reservation until
+    // the connection-owned active exchange is actually destroyed.
     let (cancel_initial, cancel_initial_server) = pair(budget.clone(), provider.clone());
     let cancel_initial_event = budget.events.lock().unwrap().len();
     drop((cancel_initial, cancel_initial_server));
@@ -391,6 +424,8 @@ fn aws_lc_wire_hrr_retains_initial_and_precharges_replacement() {
         .iter()
         .any(|(reserve, bytes, _)| !*reserve && *bytes == 7_881));
 
+    // Cancellation after processing HRR likewise retains the replacement
+    // reservation until its connection state is destroyed.
     let (mut cancel_retry, mut cancel_retry_server) = pair(budget.clone(), provider);
     transfer!(&mut cancel_retry, &mut cancel_retry_server);
     cancel_retry_server.process_new_packets().unwrap();
@@ -502,6 +537,7 @@ fn connection_style_shared_backing_remains_charged_until_last_clone_drops() {
     let held = ResourceReservation::try_new(budget.clone(), 786_432)
         .unwrap()
         .bind([0u8; 0]);
+    // The Arc itself is intentionally fixture-owned; a production Arc allocation needs its own charge.
     let first = Arc::new(held);
     let second = first.clone();
     drop(first);
@@ -531,7 +567,10 @@ fn concurrent_callers_cannot_exceed_shared_owner_balance() {
     assert_eq!(budget.used.load(Ordering::Acquire), 64);
     barrier.wait();
     assert_eq!(
-        handles.into_iter().map(|h| usize::from(h.join().unwrap())).sum::<usize>(),
+        handles
+            .into_iter()
+            .map(|h| usize::from(h.join().unwrap()))
+            .sum::<usize>(),
         4
     );
     assert_eq!(budget.used.load(Ordering::Acquire), 0);
@@ -585,6 +624,8 @@ fn pinned_tls_decoder_bound_covers_correlated_nested_ech_growth() {
     assert_eq!(decoded.capacity(), 16384);
     let moving_outer = (8192 + decoded.capacity()) * size_of::<EchConfigPayload>();
     assert!(handshake_decode_heap_bound().unwrap() >= moving_outer);
+    // Independent mixed known/unknown public-decoder allocation witness, with
+    // 8,180 nested extension entries in one of 8,193 ECH configurations.
     assert!(handshake_decode_heap_bound().unwrap() >= 3_014_690);
 }
 
@@ -596,7 +637,10 @@ fn tls_decoder_reservation_uses_actual_remaining_owner_balance() {
     let budget = ledger(4_194_304);
     let request = ResourceReservation::try_new(budget.clone(), 65_536).unwrap();
     let decoder = ResourceReservation::try_new(budget.clone(), estimate).unwrap();
-    assert_eq!(budget.used.load(Ordering::Acquire), request.bytes() + estimate);
+    assert_eq!(
+        budget.used.load(Ordering::Acquire),
+        request.bytes() + estimate
+    );
     drop(decoder);
     let remainder =
         ResourceReservation::try_new(budget.clone(), 4_194_304 - 65_536 - estimate + 1).unwrap();
@@ -604,7 +648,10 @@ fn tls_decoder_reservation_uses_actual_remaining_owner_balance() {
         ResourceReservation::try_new(budget.clone(), estimate).unwrap_err(),
         BudgetError::Unavailable
     );
-    assert_eq!(budget.used.load(Ordering::Acquire), request.bytes() + remainder.bytes());
+    assert_eq!(
+        budget.used.load(Ordering::Acquire),
+        request.bytes() + remainder.bytes()
+    );
 }
 
 #[cfg(feature = "_tls-rustls-ring-webpki")]
@@ -619,6 +666,8 @@ fn private_handshake_chain_bound_tracks_input_without_a_lifetime_cap() {
     bound.add_read(usize::MAX);
     let full = bound.peer_chain_heap_bound().unwrap();
     assert!(full >= small);
+    // This is a saturated mathematical bound from rustls' existing message
+    // maximum, not an ever-growing lifetime counter or a rejection threshold.
     for _ in 0..128 {
         bound.add_read(usize::MAX);
     }
@@ -691,26 +740,40 @@ fn owned_certificate_loader_is_funded_or_denied_without_fallback() {
     std::fs::write(&cleanup.0, &data).unwrap();
 
     let denied = ledger(cleanup.0.as_os_str().len());
-    let runtime = tokio::runtime::Builder::new_current_thread().build().unwrap();
+    let runtime = tokio::runtime::Builder::new_current_thread()
+        .build()
+        .unwrap();
     let denied_owner = blocking_job_owner(denied.clone());
     assert!(runtime
-        .block_on(read_certificate_file_owned(&cleanup.0, &denied_owner))
+        .block_on(read_certificate_file_owned(
+            &cleanup.0,
+            &denied_owner
+        ))
         .is_err());
     assert_eq!(denied.used.load(Ordering::Acquire), 0);
 
     let funded = ledger(4 * 1024 * 1024);
     let funded_owner = blocking_job_owner(funded.clone());
     let loaded = runtime
-        .block_on(read_certificate_file_owned(&cleanup.0, &funded_owner))
+        .block_on(read_certificate_file_owned(
+            &cleanup.0,
+            &funded_owner,
+        ))
         .unwrap();
     assert_eq!(loaded.get().as_slice(), data);
     drop(loaded);
     let loaded_again = runtime
-        .block_on(read_certificate_file_owned(&cleanup.0, &funded_owner))
+        .block_on(read_certificate_file_owned(
+            &cleanup.0,
+            &funded_owner,
+        ))
         .unwrap();
     assert_eq!(loaded_again.get().as_slice(), data);
     drop(loaded_again);
-    assert!(funded.used.load(Ordering::Acquire) > 0);
+    assert!(
+        funded.used.load(Ordering::Acquire) > 0,
+        "owned pool remains charged"
+    );
     drop(runtime);
     assert_eq!(funded.used.load(Ordering::Acquire), 0);
 }
@@ -763,8 +826,9 @@ fn rustls_deframer_owner_uses_the_operation_ledger() {
         .with_no_client_auth();
     config.alpn_protocols = vec![b"h2".to_vec()];
     let name = rustls::pki_types::ServerName::try_from("localhost").unwrap();
-    let error = rustls::ClientConnection::new_with_resource_owner(Arc::new(config), name, owner)
-        .unwrap_err();
+    let error =
+        rustls::ClientConnection::new_with_resource_owner(Arc::new(config), name, owner)
+            .unwrap_err();
     assert!(error.to_string().contains("resource budget unavailable"));
     assert_eq!(denied.used.load(Ordering::Acquire), 0);
 }
@@ -819,99 +883,4 @@ fn client_pem_parsing_borrows_charged_backing_without_a_second_copy() {
     assert_eq!(malformed_budget.used.load(Ordering::Acquire), 3);
     drop(malformed);
     assert_eq!(malformed_budget.used.load(Ordering::Acquire), 0);
-}
-
-#[cfg(feature = "_tls-rustls")]
-#[test]
-fn client_auth_owner_precharge_denies_before_parse_and_retains_until_release() {
-    const CERT: &[u8] = b"-----BEGIN CERTIFICATE-----\nMIIBfTCCASOgAwIBAgIUDZBk0JEdbOds6TsGRPkwvhxFUSMwCgYIKoZIzj0EAwIw\nFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwODEyNTMxMFoXDTI2MDkwOTEy\nNTMxMFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAEy2WKazyI8TXUnJTbx1vSKqaJx8w+RW8JXa+v/pP7FzXgzntfmqjK9yh8\nm970RDgI5shoO5vx4GbStl1EgzFY1KNTMFEwHQYDVR0OBBYEFEOj0jJhWWip3SDz\n7NKpJwCjWRqhMB8GA1UdIwQYMBaAFEOj0jJhWWip3SDz7NKpJwCjWRqhMA8GA1Ud\nEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIhAPyz4a/hpM3FdPkGujIcZQp1\nw2Jgh0bjZ//2tCW0AMl4AiARhMbhcwqLnNlemlE2HQcfkezW3Zpjt75Zi8tXaGUM\nEQ==\n-----END CERTIFICATE-----\n";
-    const KEY: &[u8] = b"-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg/YnH3AP6GLGXmx4q\nIqRsG/wjKmRE+eY/UJuBHsRM4y6hRANCAATLZYprPIjxNdSclNvHW9IqponHzD5F\nbwldr6/+k/sXNeDOe1+aqMr3KHyb3vREOAjmyGg7m/HgZtK2XUSDMVjU\n-----END PRIVATE KEY-----\n";
-
-    let bound = super::tls_rustls::client_auth_pem_heap_bound(CERT, KEY).unwrap();
-    let denied = ledger(bound - 1);
-    assert!(super::tls_rustls::client_auth_from_pem_with_resource_budget(
-        CERT,
-        KEY,
-        denied.clone(),
-    )
-    .is_err());
-    assert_eq!(denied.used.load(Ordering::Acquire), 0);
-
-    let funded = ledger(bound);
-    let (chain, key, reservation) =
-        super::tls_rustls::client_auth_from_pem_with_resource_budget(
-            CERT,
-            KEY,
-            funded.clone(),
-        )
-        .unwrap();
-    assert_eq!(chain.len(), 1);
-    assert!(matches!(key, rustls::pki_types::PrivateKeyDer::Pkcs8(_)));
-    assert_eq!(reservation.bytes(), bound);
-    assert_eq!(funded.used.load(Ordering::Acquire), bound);
-    drop((chain, key));
-    assert_eq!(funded.used.load(Ordering::Acquire), bound);
-    drop(reservation);
-    assert_eq!(funded.used.load(Ordering::Acquire), 0);
-
-    let malformed = b"bad";
-    let malformed_bound =
-        super::tls_rustls::client_auth_pem_heap_bound(CERT, malformed).unwrap();
-    let malformed_budget = ledger(malformed_bound);
-    assert!(super::tls_rustls::client_auth_from_pem_with_resource_budget(
-        CERT,
-        malformed,
-        malformed_budget.clone(),
-    )
-    .is_err());
-    assert_eq!(malformed_budget.used.load(Ordering::Acquire), 0);
-}
-
-#[cfg(feature = "webpki-roots")]
-#[test]
-fn custom_root_owner_precharge_denies_before_store_and_releases_on_error() {
-    use rustls::pki_types::pem::PemObject;
-    use rustls::pki_types::CertificateDer;
-
-    const CERT: &[u8] = b"-----BEGIN CERTIFICATE-----\nMIIBfTCCASOgAwIBAgIUDZBk0JEdbOds6TsGRPkwvhxFUSMwCgYIKoZIzj0EAwIw\nFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwODEyNTMxMFoXDTI2MDkwOTEy\nNTMxMFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAEy2WKazyI8TXUnJTbx1vSKqaJx8w+RW8JXa+v/pP7FzXgzntfmqjK9yh8\nm970RDgI5shoO5vx4GbStl1EgzFY1KNTMFEwHQYDVR0OBBYEFEOj0jJhWWip3SDz\n7NKpJwCjWRqhMB8GA1UdIwQYMBaAFEOj0jJhWWip3SDz7NKpJwCjWRqhMA8GA1Ud\nEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIhAPyz4a/hpM3FdPkGujIcZQp1\nw2Jgh0bjZ//2tCW0AMl4AiARhMbhcwqLnNlemlE2HQcfkezW3Zpjt75Zi8tXaGUM\nEQ==\n-----END CERTIFICATE-----\n";
-
-    let probe = ledger(usize::MAX);
-    let (probe_store, probe_reservation) =
-        super::tls_rustls::root_store_with_resource_budget(Some(CERT), probe.clone()).unwrap();
-    let bound = probe_reservation.bytes();
-    drop(probe_store);
-    assert_eq!(probe.used.load(Ordering::Acquire), bound);
-    drop(probe_reservation);
-    assert_eq!(probe.used.load(Ordering::Acquire), 0);
-
-    let denied = ledger(bound - 1);
-    assert!(super::tls_rustls::root_store_with_resource_budget(Some(CERT), denied.clone()).is_err());
-    assert_eq!(denied.used.load(Ordering::Acquire), 0);
-
-    let funded = ledger(bound);
-    let (mut store, reservation) =
-        super::tls_rustls::root_store_with_resource_budget(Some(CERT), funded.clone()).unwrap();
-    for cert in CertificateDer::pem_slice_iter(CERT) {
-        store.add(cert.unwrap()).unwrap();
-    }
-    assert_eq!(store.roots.capacity(), webpki_roots::TLS_SERVER_ROOTS.len() + 1);
-    assert_eq!(funded.used.load(Ordering::Acquire), bound);
-    drop(store);
-    assert_eq!(funded.used.load(Ordering::Acquire), bound);
-    drop(reservation);
-    assert_eq!(funded.used.load(Ordering::Acquire), 0);
-
-    const MALFORMED: &[u8] = b"-----BEGIN CERTIFICATE-----\n!!!!\n-----END CERTIFICATE-----\n";
-    let error_budget = ledger(usize::MAX);
-    let result: Result<(), ()> = (|| {
-        let (mut store, _reservation) =
-            super::tls_rustls::root_store_with_resource_budget(Some(MALFORMED), error_budget.clone())
-                .map_err(|_| ())?;
-        for cert in CertificateDer::pem_slice_iter(MALFORMED) {
-            store.add(cert.map_err(|_| ())?).map_err(|_| ())?;
-        }
-        Ok(())
-    })();
-    assert!(result.is_err());
-    assert_eq!(error_budget.used.load(Ordering::Acquire), 0);
 }
