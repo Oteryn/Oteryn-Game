@@ -6,7 +6,7 @@ It grants no write, merge, production or owner-funded AI authority.
 
 ## Topology
 
-Use at most three concurrent roles for this WP3 slice:
+Recommended topology for this WP3 slice is three roles:
 
 ```text
 Oteryn: wp3 writer
@@ -57,3 +57,5 @@ Consume the attached WP3 audit packet. Refresh live GitHub first. Reject stale e
 The writer may return `READY_FOR_FINAL_INDEPENDENT_REVIEW` only after material WP3 implementation and runtime qualification are complete on one stable exact head. The two helper audits do not satisfy the required final independent HIGH-risk review.
 
 `WP3_PROTECTED_COMPLETE` requires the later control-plane sequence selected by current policy, including the required independent exact-head review, canonical CI, truthful Ready state, native FULL Merge Queue, real `merge_group` aggregate `game-gate`, protected-main readback and shared PostgreSQL-test custody release.
+
+After verified `WP3_PROTECTED_COMPLETE`, retire these WP3-specific aliases in `PROMPT_LIFECYCLE.json`; a future resource-accounting task must not treat the historical #351/#356 aliases as authority.
