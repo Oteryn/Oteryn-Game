@@ -9,14 +9,14 @@ repository: Oteryn/Oteryn-Game
 issue: 511
 base_branch: main
 branch: agent/reference-world-corridor-census-511
-pr: null
+pr: 525
 base_sha: 43ff3341e079f2883b78d01db5cee649290d90be
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: REFERENCE_WORLD_CORRIDOR_CENSUS_511
 created_at: 2026-09-10T08:40:00+02:00
-updated_at: 2026-09-10T08:40:00+02:00
+updated_at: 2026-09-10T09:05:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/**
@@ -199,13 +199,17 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 
 ### Focused
 
-- command/run: pending material implementation
-- result: pending
+- command/run: `python tools/reference-world-corridor-census/self_test.py`
+- result: PASS after recorded missing-module RED; boundary/floor/order/unresolved/losslessness/overflow/digest negatives all GREEN
+- command/run: `python -m py_compile tools/reference-world-corridor-census/census.py tools/reference-world-corridor-census/self_test.py`
+- result: PASS
 
 ### Component/integration
 
-- command/run: existing producer contract validation + exact census summary validation
-- result: pending
+- command/run: `python -m py_compile tools/game-atlas-fullworld-source/producer.py tools/game-atlas-fullworld-source/self_test.py && python tools/game-atlas-fullworld-source/self_test.py`
+- result: PASS
+- command/run: two independent exact pinned-corpus census executions followed by `cmp /tmp/census-a.json /tmp/census-b.json`
+- result: PASS; canonical SHA-256 `605dcb2c913bf2fd969957652251a99971cb5a43c99dc5ffd55b61374bc87979`
 
 ### E2E
 
@@ -221,9 +225,9 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 
 ## Self-review
 
-- exact head: pending
-- material findings: pending
-- verdict: pending
+- exact head: pending final commit/readback
+- material findings: 0 after changed-file and whole-diff review
+- verdict: PASS
 
 ## Independent review
 
@@ -231,30 +235,34 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 - exact head: pending or `NOT_APPLICABLE`
 - verdict: pending or `NOT_APPLICABLE`
 
+## Phase-A measured result
+
+- Newhaven: one 32x32 shard, 1,024 cells/tile records, 1,199 ordered presentations, max 5/cell, 70 appearance IDs, 84 sprite IDs, 899,694 semantic bytes, zero unresolved.
+- Targuna: one 32x32 shard, 1,024 cells/tile records, 1,264 ordered presentations, max 5/cell, 156 appearance IDs, 190 sprite IDs, 939,759 semantic bytes, zero unresolved.
+- Both four-edge occupancies are `AMBIGUOUS_EXPANSION`; no adjacent shard was added without a provable semantic need.
+- Canonical details: `tools/reference-world-corridor-census/phase-a-summary.json` and public-safe evidence document.
+- `phase_b_target_parity=NOT_PERFORMED`; `registry_maxima_selected=false`; `production_authority=NONE`.
+
 ## Context checkpoint
 
 ```yaml
-last_progress: protected allocation #523 integrated/read back; #162 activation 5614294048; SAME material branch created from protected main including #524
+last_progress: Phase-A consumer, focused tests, exact real-corpus double run, deterministic summary and evidence complete
 status: active
 branch: agent/reference-world-corridor-census-511
-head_sha: null
-pr: null
-final_head_sha: null
+head_sha: pending implementation commit
+pr: 525
+final_head_sha: pending exact-head CI
 final_head_frozen_at: null
-ci_trigger_source: null
-ci_check_generation: null
+ci_trigger_source: pull_request
+ci_check_generation: pending push
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
 runner_assignment_state: not_started
-terminal_ci_wait_started_at: null
-terminal_ci_checks_for_current_generation: 0
-unchanged_state_checks: 0
-identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
-ci_recovery_actions_for_current_head: 0
-stall_warnings: 0
 owner_action_required: none
 blocker: null
-next_action: open one Draft PR from this SAME branch and hand one material writer the exact bounded Phase-A implementation; do not create a second writer
+phase_a_result: PASS
+phase_b_target_parity: NOT_PERFORMED
+production_authority: NONE
+next_action: push the same branch, update Draft PR #525 with exact results, and obtain exact-head repository checks/review; do not begin Phase B
 ```
