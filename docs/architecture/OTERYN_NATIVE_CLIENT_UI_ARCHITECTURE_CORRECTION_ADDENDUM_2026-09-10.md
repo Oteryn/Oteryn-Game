@@ -6,7 +6,7 @@
 - Audit source: `docs/architecture/reviews/OTERYN_NATIVE_CLIENT_UI_PR549_INDEPENDENT_AUDIT_AND_REQUIRED_CORRECTIONS_2026-09-10.md`
 - Audited PR head: `83314bcbf2978b20f07ca539dd697900dcdb410f`
 - Protected baseline containing the audited documents: `main@7144c0b9ec8691e481df058c85d890ac88d32461`
-- Status: **CORRECTION CANDIDATE / FRESH EXACT-HEAD REVIEW REQUIRED**
+- Status: **CORRECTION CANDIDATE / FRESH EXACT-HEAD REVIEW REQUIRED BEFORE INTEGRATION**
 - Runtime implementation authority: **NONE**
 - Production/client/server/protocol/content mutation authority: **NONE**
 - Final FOV policy: **UNDECIDED / EVIDENCE-GATED**
@@ -16,7 +16,7 @@
 
 This addendum applies the independent `FIX` findings recorded after PR #549. It does not reopen the native Rust + `wgpu` direction, the ALPHA-CLIENT authority boundary, the Visual World Slice authority model, or the deliberate deferral of final FOV and addon-platform decisions.
 
-When this addendum conflicts with the three documents delivered by PR #549, this addendum supersedes only the exact topics named below:
+When this addendum conflicts with the three documents delivered by PR #549, this addendum supersedes only these topics:
 
 - UI-P1 workspace/Cargo ownership and entry conditions;
 - input routing/arbitration and IME semantics;
@@ -30,13 +30,27 @@ When this addendum conflicts with the three documents delivered by PR #549, this
 - P8 dependency shape relative to P7;
 - retained-tree decision analysis completeness.
 
-All unaffected requirements in the original UI baseline, implementation plan, and viewport experiment remain binding candidates/accepted content according to their current repository status.
+All unaffected requirements in the original UI baseline, implementation plan, and viewport experiment remain binding according to their current repository status.
 
-This addendum grants no worker allocation and no runtime authority. Before UI-P1 starts, this correction must be protected-integrated, read back from protected `main`, pass its required fresh exact-head architecture review, and satisfy the shared-workspace ownership entry gate defined below.
+This addendum grants no worker allocation and no runtime authority.
+
+The correction lifecycle is fail-closed and ordered:
+
+```text
+correction candidate exact head
+  -> fresh independent exact-head architecture review
+  -> KEEP with zero unresolved material findings
+  -> repository-required exact-head checks
+  -> normal Merge Queue only
+  -> merge_group game-gate
+  -> protected-main readback
+  -> fresh shared-workspace ownership census/allocation
+  -> UI-P1 may be admitted
+```
+
+A correction candidate MUST NOT be integrated merely because documentation CI is green. If review returns `FIX` or `NEEDS_DECISION`, repair/review continues on the correction branch and the previous review target becomes historical.
 
 ## 2. Decisions preserved unchanged
-
-The following findings from PR #549 are explicitly retained.
 
 ### 2.1 Product/authority boundary
 
@@ -75,7 +89,7 @@ Data-flow arrows are not Cargo dependency arrows. The compile-time shape for the
 
 ```text
 apps/client -> ui-core
-renderer    -> ui-core       # to consume renderer-neutral UiDrawList/types when needed
+renderer    -> ui-core       # when P3 consumes renderer-neutral UiDrawList/types
 
 ui-core     -X-> renderer
 ui-core     -X-> wgpu
@@ -83,7 +97,7 @@ ui-core     -X-> winit
 ui-core     -X-> synthetic-only packages
 ```
 
-The exact minimal dependencies of `ui-core` remain implementation-local but must be declared in the workspace boundary registry and independently reviewed at P1.
+At P1 do not add speculative renderer/app edges before the corresponding real dependency exists. `workspace-boundaries.toml` must match exact Cargo metadata at every candidate.
 
 ### 2.3 FOV and addons
 
@@ -108,9 +122,9 @@ No addon runtime, scripting VM, manifest/package format, community widget API, s
 
 The original P1 two-path statement is superseded.
 
-### 3.1 P1 semantic implementation scope
+### 3.1 Mechanically complete surfaces
 
-The first implementation remains a single framework-neutral UI foundation, but the mechanically complete workspace surfaces are:
+The first implementation remains one framework-neutral UI foundation, but the complete workspace surfaces are:
 
 ```text
 NEW/MODIFY: crates/ui-core/**
@@ -123,23 +137,21 @@ No server/gameplay/protocol/production-networking/client-domain semantic/art/fin
 
 ### 3.2 Required workspace declaration
 
-P1 must register the selected package name, expected to be `oteryn-ui-core` unless the exact implementation review chooses another non-conflicting name, in the repository's enforced workspace policy.
+P1 must register the selected package name, expected to be `oteryn-ui-core` unless exact implementation review selects another non-conflicting name, in the repository's enforced workspace policy.
 
-The package must receive exactly one release role. For the native product foundation it is expected to be **production**, because both the production native client and production renderer may consume it. A different role requires explicit architecture justification and production-closure proof.
+The package must receive exactly one release role. For the native product foundation the expected role is **production**, because production client and renderer may consume it. A different role requires explicit architecture justification and production-closure proof.
 
-The policy must declare exact internal dependency edges for the package and for existing packages newly depending on it.
+The policy must declare exact internal dependency edges for the package and for any existing package newly depending on it.
 
-The expected minimal dependency direction is:
+Expected direction:
 
 ```text
 ui-core -> only framework-neutral production foundations proven necessary
 apps/client -> ui-core
-renderer -> ui-core       # once P3 needs UiDrawList consumption
+renderer -> ui-core       # only once P3 actually introduces this dependency
 ```
 
-At P1, do not predeclare speculative renderer/app edges that do not yet exist merely for future convenience. The registry must match actual Cargo metadata at each exact candidate.
-
-### 3.3 P1 required mechanical proof
+### 3.3 P1 mechanical proof
 
 At minimum:
 
@@ -152,11 +164,9 @@ cargo +1.94.0 clippy --locked -p <ui-core-package> --all-targets -- -D warnings
 repository-selected exact-head gate
 ```
 
-The exact repository CI selected by current protected policy remains authoritative. No validator or protection weakening is permitted to make P1 pass.
+Current protected repository CI remains authoritative. No policy/validator/protection weakening is permitted.
 
 ### 3.4 P1 shared-workspace entry gate
-
-A successful architecture correction does not itself grant a P1 writer the root workspace.
 
 Immediately before allocation/admission, the coordinator must perform a fresh live ownership census for:
 
@@ -170,22 +180,20 @@ P1 may start only when:
 
 ```text
 P1_WORKSPACE_ENTRY_READY =
-    correction protected-integrated and read back
-AND fresh exact-head correction audit is clean
+    correction integrated and read back from protected main
+AND correction's pre-integration exact-head independent review was KEEP
 AND no conflicting active writer owns root Cargo/Cargo.lock
-AND workspace-boundaries.toml ownership is explicitly allocated
-AND the P1 branch/base/owned paths are exactly recorded
+AND workspace-boundaries.toml ownership is explicitly available/allocated
+AND exact P1 branch/base/owned paths are recorded
 ```
 
-At the time of the original audit, Issue #351 / Draft PR #356 held the serialized root Cargo lease. That fact is historical evidence, not a permanent dependency. The start gate must use LIVE ownership, not assume #351 still blocks or has released it.
+At the original audit snapshot, Issue #351 / Draft PR #356 held the serialized root Cargo lease. That is historical/live execution evidence, not a permanent dependency. The start gate must use current GitHub ownership.
 
 ## 4. UI-P1 size and sub-slicing
 
 P1 must remain a minimal coherent foundation rather than a requirement to land every generic UI facility in one oversized PR.
 
-The semantic P1 programme may be split into bounded serial sub-slices when independent reviewability improves, provided all sub-slices remain within the same frozen foundation architecture and do not create speculative crates.
-
-Recommended minimum-to-HUD order inside P1 if splitting is needed:
+If reviewability requires it, the semantic P1 programme may be split into bounded serial sub-slices without creating speculative crates. A reasonable order is:
 
 ```text
 P1a: node identity/tree + geometry + deterministic layout + draw primitives
@@ -193,17 +201,15 @@ P1b: focus/modal/capture + interaction-state transitions
 P1c: minimal docking/virtualization/text interfaces/diagnostics required by P2-P5
 ```
 
-This is not a mandatory three-PR topology. A single P1 PR remains valid if its API and review surface stay bounded.
+This is not a mandatory three-PR topology. One P1 PR remains valid if its public API and review surface stay bounded.
 
-Do not implement broad market/quest/social widget frameworks, production panel models, theme marketplace abstractions, or general extension APIs in P1.
+Do not add broad product panels, market/quest/social frameworks, theme marketplaces, extension APIs, or unrelated UI systems in P1.
 
 ## 5. Corrected input architecture
 
-The original diagram that routes all UI input through `input-actions` is superseded because current contracts do not make `input-actions` a general UI event bus.
+The original diagram routing all UI input through `input-actions` is superseded because current `input-actions` is not a general UI event bus.
 
 ### 5.1 Ownership
-
-Keep these responsibilities distinct:
 
 ```text
 input-platform
@@ -217,12 +223,10 @@ ui-core
     framework-neutral UI hit/focus/modal/drag/text-interaction state
 
 apps/client
-    application-level arbitration and composition between UI and gameplay/action routes
+    application-level arbitration/composition between UI and gameplay/action routes
 ```
 
 ### 5.2 Correct event flow
-
-The application-level flow is:
 
 ```text
 winit / OS event
@@ -231,7 +235,7 @@ winit / OS event
 input-platform normalization
       |
       v
-NormalizedInputEvent / bounded UI-relevant normalized primitives
+normalized event / bounded UI-relevant primitive
       |
       v
 apps/client input arbitration
@@ -241,32 +245,29 @@ apps/client input arbitration
       |       `--> UiIntent / consume / reserve / local UI transition
       |
       `--> input-actions semantic gameplay/action route
-              only when the current UI ownership state permits it
+              only when current UI ownership permits it
 ```
 
 This must not duplicate physical normalization in `apps/client` or `ui-core`.
 
-### 5.3 Deterministic arbitration rule
+### 5.3 Deterministic arbitration
 
-For each normalized input event, the application must deterministically decide whether UI owns/reserves the event before an unintended gameplay action can be produced.
+For every normalized event, the app must determine UI ownership/reservation before unintended gameplay action emission.
 
 At minimum:
 
-- active text focus reserves text-producing keyboard behavior from gameplay;
-- active modal scope reserves interaction outside the permitted modal route;
-- active UI pointer capture keeps receiving the matching pointer lifecycle until completion/cancel;
-- UI drag capture and OS pointer capture are distinct facts;
-- absence/failure of interaction-critical arbitration must not default to permissive gameplay pass-through.
-
-A single physical event must not produce both a UI action and an unintended gameplay command.
+- text focus reserves text-producing keyboard behavior from gameplay;
+- modal scope reserves interaction outside the modal route;
+- UI pointer capture receives the matching pointer lifecycle until completion/cancel;
+- UI drag capture and confirmed OS pointer capture remain distinct facts;
+- failure/absence of interaction-critical arbitration does not default to permissive gameplay pass-through;
+- one physical event cannot produce both a UI action and an unintended gameplay command.
 
 ## 6. Full IME correction
 
-P2 must support the minimum bounded IME semantics needed for correct Windows text entry.
+P2 must support the minimum bounded IME semantics required for Windows text entry. Existing `Ime::Preedit(text, cursor)` data cannot be discarded by the final implementation.
 
-The existing `Ime::Preedit(text, cursor)` information cannot be discarded by the final P2 implementation.
-
-Required framework-neutral concepts may use different exact Rust names, but must represent:
+Required framework-neutral semantics, exact names implementation-local:
 
 ```text
 IME enabled/disabled
@@ -279,22 +280,22 @@ focus-loss cancellation/reset
 
 Requirements:
 
-- IME preedit is local presentation state and is not a gameplay command;
+- preedit is local presentation state, never gameplay authority;
 - committed text is emitted exactly once;
-- keyboard `KeyEvent::text` and `Ime::Commit` must not double-insert the same logical text;
+- keyboard `KeyEvent::text` and `Ime::Commit` do not double-insert one logical text input;
 - disabling IME or losing focus clears/cancels transient composition safely;
-- composition text and ranges are bounded under the same untrusted-text/resource principles as other UI text;
-- tests must cover Polish diacritics and at least one composition sequence that exercises preedit before commit.
+- composition text/ranges are bounded as untrusted UI text;
+- tests cover Polish diacritics and a real preedit-before-commit sequence.
 
-`input-platform/**` may be modified in P2 only for demonstrated missing platform normalization primitives. `input-actions/**` may be modified only if a demonstrated semantic action primitive is missing. Do not move widget focus/composition ownership into either crate.
+`input-platform/**` may change in P2 only for demonstrated missing normalization primitives. `input-actions/**` may change only for demonstrated missing semantic action primitives. Widget focus/composition ownership does not move into either crate.
 
-## 7. Active gameplay action cancellation on UI ownership changes
+## 7. Active gameplay action cancellation on UI ownership change
 
 Input eligibility changes must reconcile already-active semantic actions, not only future key presses.
 
-When a UI transition makes an existing gameplay/action route no longer eligible, the app/input layer must deterministically end or cancel the active semantic action according to the existing `input-actions` lifecycle contract.
+When UI state makes an existing gameplay/action route ineligible, the app/input layer must deterministically emit/cause `Ended` or `Cancelled` according to the owning `input-actions` contract.
 
-Required negative cases include:
+Required cases:
 
 ```text
 gameplay key held -> text field gains focus
@@ -306,48 +307,44 @@ device reset/loss while UI interaction is active
 IME composition starts while a text-producing gameplay binding is otherwise eligible
 ```
 
-No stuck movement/action state may survive these transitions.
+No stuck gameplay action may survive these transitions.
 
-The exact distinction between `Ended` and `Cancelled` follows the owning `input-actions` contract and must be tested rather than redefined by UI widgets.
+## 8. P2 client composition correction
 
-## 8. Client composition correction for P2
+P2 must reconcile existing pre-native composition instead of adding a third owner.
 
-P2 must reconcile existing pre-native client composition instead of adding another parallel owner.
-
-The production application remains `apps/client`.
-
-Required ownership after P2:
+Required ownership:
 
 ```text
 apps/client
-    owns composition and ordering of runtime, input arbitration,
-    UI semantic state, window lifecycle, renderer and product view adapters
+    composition and ordering of runtime, input arbitration,
+    UI semantics, window lifecycle, renderer and product view adapters
 
 client-runtime
-    owns async runtime/cancellation lifecycle only
+    async runtime/cancellation lifecycle only
 
 input-platform
-    owns platform normalization only
+    platform normalization only
 
 input-actions
-    owns semantic action contracts/router only
+    semantic action contracts/router only
 
 ui-core
-    owns framework-neutral UI semantics only
+    framework-neutral UI semantics only
 
 renderer
-    owns physical GPU/surface/resource state only
+    physical GPU/surface/resource state only
 ```
 
-`ClientBootstrap` and the interactive Windows shell may be refactored/combined internally, but P2 must not leave two contradictory production ownership paths or introduce a third runtime/input/renderer composition root.
+`ClientBootstrap` and the interactive Windows shell may be refactored/combined internally, but P2 must not leave contradictory production ownership paths.
 
-The pre-native gameplay entry fail-closed behavior must remain unchanged unless a separately authorized gameplay/client-runtime programme changes it.
+The current pre-native gameplay-entry fail-closed behavior remains unchanged unless a separate authorized gameplay/client-runtime programme changes it.
 
 ## 9. P2/P3 concurrency correction
 
-P2 and P3 may still proceed semantically in parallel after stable P1 contracts, but only if their actual writable paths are disjoint.
+P2 and P3 may proceed semantically in parallel after stable P1 contracts only when their actual writable paths are disjoint.
 
-Shared surfaces that require explicit serialization include as applicable:
+Shared surfaces requiring explicit serialization as applicable:
 
 ```text
 Cargo.toml
@@ -358,55 +355,49 @@ apps/client/src/ui/** composition glue
 public ui-core draw/input contract files
 ```
 
-No two active writers receive overlapping ownership merely because the high-level DAG draws P2 and P3 as parallel branches.
-
-The coordinator may choose either:
+Allowed execution patterns:
 
 - serial P2 then P3;
 - serial P3 then P2; or
-- parallel workers with a separately serialized shared-path prerequisite/lease.
+- parallel disjoint workers plus separately serialized shared-path prerequisite/lease.
 
-The choice is execution planning, not a new architecture decision, as long as the ownership invariants stay unchanged.
+This is execution planning, not a new architecture decision.
 
 ## 10. P3 renderer seam
 
-P3 remains responsible for a bounded physical UI draw path.
-
-Requirements:
+P3 remains responsible for a bounded physical UI draw path:
 
 ```text
 UiDrawList -> renderer-owned extraction/batching/resources -> wgpu submission
 ```
 
+Requirements:
+
 - `ui-core` exposes renderer-neutral primitives only;
-- renderer owns pipelines, bind groups, buffers, atlases/caches and surface/device resources;
+- renderer owns pipelines, bind groups, buffers, atlases/caches and device/surface resources;
 - renderer failure/loss does not mutate semantic UI/game state;
 - UI and world timing remain logically separable;
-- the first physical fixture proves actual rendered pixels/primitives, not only successful surface creation.
+- the first physical fixture proves actual rendered primitives/pixels, not only successful surface creation.
 
-A physical pass may later be combined for optimization only if semantic separation and observability remain intact.
+A physical pass may later be merged for optimization only if semantic separation and observability remain intact.
 
 ## 11. P4 text/resource boundary
 
-P4 may select a reversible shaping/rasterization implementation behind the already defined semantic boundary.
+P4 may select a reversible shaping/rasterization implementation behind the semantic boundary.
 
 Required behavior:
 
 - Unicode and Polish diacritics measure and render correctly;
-- glyph/fallback caches are reconstructible after physical renderer loss;
+- glyph/fallback caches are reconstructible after renderer loss;
 - untrusted text has bounded size/work behavior;
 - app/domain/panel logic owns no GPU glyph resources;
-- exact library choice remains implementation evidence unless a later public/stable contract requires it.
-
-P4 must not turn one chosen font library into a gameplay or protocol dependency.
+- exact library choice remains implementation evidence unless a later stable/public contract requires it.
 
 ## 12. P5 shared HUD composition and synthetic boundary
 
-P5 must define one reusable, production-safe HUD composition seam before the synthetic qualification host can claim representative UI coverage.
+P5 must define one reusable production-safe HUD composition seam before synthetic qualification can claim representative coverage.
 
-### 12.1 Dependency rule
-
-Allowed direction:
+Allowed dependency direction:
 
 ```text
 production-safe UI semantics/composition API
@@ -415,7 +406,7 @@ production-safe UI semantics/composition API
 synthetic qualification adapters/harness
 ```
 
-Forbidden direction:
+Forbidden production direction:
 
 ```text
 apps/client / ui-core / renderer
@@ -425,27 +416,17 @@ apps/client / ui-core / renderer
           -> synthetic-client-harness
 ```
 
-Synthetic fixtures may adapt synthetic state into the same presentation-safe view-model/input contracts consumed by the HUD, but production packages must never depend on synthetic-only packages.
+Synthetic fixtures may adapt synthetic state into the same presentation-safe view-model/input contracts used by the HUD, but production packages never depend on synthetic-only packages.
 
-### 12.2 HUD host contract
+Before P5 is physically demonstrated, the selected qualification host must instantiate the same UI semantics and drive an actual physical renderer path, not merely calculate `SurfaceState` transitions or print state.
 
-Before P5 is considered physically demonstrated, the selected qualification host must be able to instantiate the same UI foundation/HUD semantics and drive an actual physical renderer path, not merely calculate `SurfaceState` transitions or print semantic state.
-
-The host may be:
-
-- an explicitly test-only mode/profile of the native client;
-- a dedicated native qualification binary with production-safe dependencies;
-- another bounded host accepted during implementation review.
-
-The host must not become a second production client composition root.
-
-The exact host executable name is deferred until the bounded P5 implementation package, but its ownership/dependency direction must satisfy this section.
+The host may be an explicitly test-only native-client mode/profile, a dedicated native qualification binary with production-safe dependencies, or another bounded host accepted during implementation review. It must not become a second production client composition root.
 
 ## 13. P6 physical world + HUD qualification gate
 
-P6 requires a real physical world-render seam before it can claim an A/B result representative of the intended product presentation.
+P6 requires a real physical world-render seam before claiming an A/B result representative of intended product presentation.
 
-Current isolated World+VFX experiment evidence may inform or supply a later promotion/reuse plan, but UI work must not silently copy/migrate broad experiment code under an unspecified `renderer/world presentation paths` allowance.
+Current isolated World+VFX experiment evidence may inform or supply a later promotion/reuse plan, but UI work must not silently migrate broad experiment code under an unspecified `renderer/world presentation paths` allowance.
 
 Before P6 admission, one bounded allocation must establish how the physical qualification host obtains:
 
@@ -458,11 +439,11 @@ representative RenderSnapshot / PresentationEvents / EnvironmentState
 
 The source may be a production-ready world renderer by then or an explicitly bounded qualification-only bridge. Either way:
 
-- provenance/evidence classification must be explicit;
+- provenance/evidence classification is explicit;
 - synthetic world inputs remain labelled synthetic where applicable;
-- production client must not gain synthetic-only dependencies;
-- no server/gameplay authority moves into the renderer/UI;
-- reuse/promotion from `experiments/world-vfx-prototype` requires an explicit path allocation and review.
+- production client gains no synthetic-only dependencies;
+- server/gameplay authority does not move into renderer/UI;
+- reuse/promotion from `experiments/world-vfx-prototype` requires explicit path allocation/review.
 
 P1-P4 are not blocked on full World+VFX completion. This is a P5/P6 physical-proof gate.
 
@@ -472,74 +453,44 @@ General green CI is necessary but not sufficient for physical client/UI proof.
 
 ### 14.1 P1
 
-Required proof:
-
-- deterministic tree/layout/geometry/draw ordering tests;
-- focus/modal/capture state-machine tests for any included interaction core;
-- workspace metadata/boundary proof;
-- package strict Clippy/tests;
-- repository exact-head gate.
-
-No physical GPU proof is required merely to establish pure `ui-core` semantics.
+Require deterministic foundation tests, workspace metadata/boundary proof, package strict Clippy/tests, and repository exact-head gate. Physical GPU proof is not required merely to establish pure `ui-core` semantics.
 
 ### 14.2 P2
 
-Required deterministic/client tests include:
+Required deterministic/client cases:
 
-- resize small->large->small;
+- resize small -> large -> small;
 - scale-factor transition;
 - zero/minimized and restore;
 - app focus loss/regain;
 - OS capture gain/loss;
 - UI pointer/drag capture transition;
-- text focus and modal reservation;
+- text focus/modal reservation;
 - IME enable/preedit/commit/cancel/disable;
 - active semantic action cancellation on UI ownership changes;
-- gameplay fail-closed pre-native state remains unchanged.
+- pre-native gameplay unavailability remains fail-closed.
 
-Where platform behavior cannot be simulated faithfully, retain a named Windows-native qualification case instead of replacing it with a pure unit claim.
+Where platform behavior cannot be simulated faithfully, retain a named Windows-native qualification case rather than replacing it with a pure unit claim.
 
 ### 14.3 P3/P4
 
-Require actual physical `wgpu` evidence for:
-
-- quad/border/image/text primitives;
-- clip/scissor behavior;
-- z/order semantics;
-- resize/reconfigure;
-- text/glyph cache behavior;
-- surface/device reconstruction where the renderer exposes the applicable recovery boundary;
-- independent UI timing/counters.
+Require actual physical `wgpu` evidence for primitives, clipping/scissor, text/glyph rendering, z/order, resize/reconfigure, resource reconstruction where applicable, and independent UI timing/counters.
 
 ### 14.4 P5/P6
 
-Require a named Windows native/hardware/scene cell and Tier-2-equivalent interaction/render evidence where applicable to user-observable UI behavior.
+Require a named Windows native/hardware/scene qualification cell and Tier-2-equivalent interaction/render evidence where applicable to user-observable UI behavior. A console/headless synthetic harness alone cannot be reported as native-client UI/render proof.
 
-A console/headless synthetic harness alone cannot be reported as native-client UI/render proof.
+### 14.5 Release
 
-### 14.5 Release stage
-
-Tier 3 production-binary evidence remains a later release/product gate. It does not block creation of `ui-core` or the first qualification HUD.
+Tier 3 production-binary evidence remains a later release/product gate. It does not block `ui-core` or the qualification HUD.
 
 ## 15. Interaction-critical fail-closed behavior
 
-The original general failure semantics are refined as follows.
+Optional presentation resources may degrade through bounded compatible fallback.
 
-### 15.1 Decorative degradation
+Interaction-critical ownership failure must not default to gameplay pass-through.
 
-For optional presentation resources:
-
-```text
-missing optional asset
-unsupported optional effect
-non-critical cache pressure
-```
-
-use a bounded compatible fallback/degraded presentation where available.
-
-### 15.2 Interaction-critical failure
-
-For state required to arbitrate player input safely:
+Examples:
 
 ```text
 invalid/inconsistent modal ownership
@@ -549,66 +500,49 @@ interaction router failure
 corrupt hit-test state affecting ownership
 ```
 
-do **not** default to permissive gameplay pass-through.
+For these cases the affected interaction fails closed until coherent state is restored. The client must not invent authoritative outcome or silently reinterpret an unavailable UI ownership decision as a gameplay command.
 
-The affected interaction fails closed until a coherent safe state is restored. The client must not invent authoritative gameplay outcome and must not silently convert an unavailable UI ownership decision into a gameplay command.
-
-### 15.3 Renderer/UI failure
-
-A UI renderer failure may make presentation degraded/unavailable, but it must not mutate authoritative game/client state. Physical resources are reconstructible caches.
-
-If a shipped interaction-critical control becomes unavailable, the product must surface a bounded degraded/error state appropriate to that implementation rather than pretending the action succeeded.
+UI renderer failure may degrade presentation but must not mutate authoritative game/client state; physical resources remain reconstructible caches.
 
 ## 16. Corrected Variant B definition
 
-The viewport experiment requires one deterministic Variant-B policy per comparison population. The broad phrase `fit/crop within safe constraints, or another measured presentation policy` is superseded for the primary A/B cell.
+The primary A/B comparison must use one deterministic Variant-B policy. The original broad `fit/crop/or another measured presentation policy` wording is superseded for the primary cell.
 
 ### 16.1 Primary B fixture
-
-The primary B comparison uses:
 
 ```text
 fixed baseline GameplayFovExtent fixture
 preserve world aspect ratio
 uniform presentation scaling
-center the fitted world image
+center fitted world image
 letterbox/pillarbox unused viewport area as necessary
 no non-uniform stretching
-no crop in the primary comparison cell
+no crop in primary B cell
 ```
 
-A separate crop-based or alternative fixed-FOV presentation may be evaluated later as a distinct experiment cell, but it must not be mixed into the same `Variant B` identity.
-
-The baseline tile extent remains an experiment fixture, not a final product constant.
+Crop-based or alternative fixed-FOV presentation may be tested later as a distinct experiment identity. The baseline tile extent remains a fixture, not a final product constant.
 
 ### 16.2 World zoom versus fit scale
 
-Direct A/B comparison must record two separate concepts:
+Record separately:
 
 ```text
 world_zoom
-    semantic player/world presentation zoom used to define the comparison
+    semantic player/world presentation zoom used by direct A/B comparison
 
 viewport_fit_scale
-    derived uniform physical scale used by fixed-FOV B to fit the
-    fixed world extent into the current viewport
+    derived uniform scale used by fixed-FOV B to fit the fixed world extent
 ```
 
-`viewport_fit_scale` must never be reported as a changed player world zoom.
+`viewport_fit_scale` must not be reported as changed player world zoom.
 
 ### 16.3 Pointer mapping
 
-For Variant B, pointer-to-world mapping must invert the same fitted transform used by presentation.
-
-Pointer positions in letterbox/pillarbox regions do not resolve to a world tile.
-
-The mapping must be deterministic across resize/DPI transitions and covered by tests.
+Variant-B pointer-to-world mapping must invert the same fitted transform used for rendering. Pointer positions in letterbox/pillarbox regions resolve to no world tile. Mapping must remain deterministic across resize/DPI transitions.
 
 ## 17. A/B evidence population identity
 
-Every direct A/B cell must bind enough identity to prevent accidental comparison of different workloads.
-
-At minimum record:
+Every direct A/B cell must record at minimum:
 
 ```text
 client/code exact SHA
@@ -619,7 +553,7 @@ world_zoom
 presentation family/quality/resource density
 HUD fixture identity
 OS + target triple
-GPU + driver + relevant adapter/backend identity
+GPU + driver + adapter/backend identity
 window physical size
 window logical size
 platform DPI scale
@@ -630,112 +564,100 @@ repeat/attempt population identity
 event/workload timing identity
 ```
 
-Any material difference in scene state, workload timing, HUD information fixture or presentation family invalidates a direct A/B pair unless explicitly treated as a separate matrix dimension.
+Any material difference in scene state, workload timing, HUD information fixture, or presentation family invalidates a direct pair unless explicitly treated as another matrix dimension.
 
 No hidden retry until a preferred result appears is permitted.
 
 ## 18. Fairness information-surface controls
 
-FOV fairness cannot be measured only from rendered world pixels.
-
-The A/B experiment must control or explicitly record information available through:
+FOV fairness cannot be measured only from world pixels. The A/B experiment must control or explicitly record information available through:
 
 - minimap;
 - battle list;
 - target acquisition/selection;
 - names/health bars;
 - alerts/markers;
-- any other synthetic or production HUD surface that can reveal entities/positions outside the directly rendered world viewport.
+- any other HUD surface revealing entities/positions outside the rendered viewport.
 
-The direct A/B fixture should keep those information surfaces equivalent unless the purpose of a separate test is specifically to measure their interaction with viewport policy.
+Direct A/B fixtures should keep these equivalent unless a separate test intentionally measures their interaction with viewport policy.
 
-Responsive FOV cannot be accepted as fair merely because UI panels expose equivalent information; the review must still assess monitor-dependent world awareness, target opportunity, PvE avoidance and PvP scouting/reaction effects.
+Responsive FOV still requires assessment of monitor-dependent world awareness, target opportunity, PvE avoidance, and PvP scouting/reaction effects.
 
 ## 19. P7/P8 dependency correction
 
-The original visual DAG's unconditional `P7 -> P8` edge is refined.
+The original unconditional `P7 -> P8` edge is refined. P8 remains feature/dependency-driven.
 
-P8 remains feature/dependency-driven.
+FOV-sensitive production adapters remain blocked by the applicable P7 decision and later server/relevance proof where responsive FOV is selected.
 
-### 19.1 FOV-sensitive P8 work
+FOV-independent adapters such as connection/session presentation, chat, player status, or another feature whose owning contract does not depend on FOV may proceed after their own production-safe source projection, allowed intent/command boundary, required UI foundation, path ownership, review, and CI exist.
 
-Any production adapter whose semantics depend on selected world visibility/relevance/viewport behavior remains blocked by the applicable P7 decision and later server/relevance proof where responsive FOV is selected.
+P7 must not become an artificial blocker for unrelated adapters. This addendum does not authorize bulk P8 work.
 
-### 19.2 FOV-independent P8 work
+For responsive outcome, P7 may record only:
 
-Production-safe view-model adapters such as connection/session presentation, chat, player status, or another feature whose owning contract does not depend on FOV may proceed after:
+```text
+RESPONSIVE_FOV_PREFERRED_PENDING_SERVER_RELEVANCE_PROOF
+```
 
-- its production-safe source projection exists;
-- its allowed intents/command boundary are accepted;
-- UI foundation/input/render prerequisites for that feature are present;
-- shared path ownership is available;
-- normal exact-head review/CI requirements are satisfied.
+until the separate server/network/fairness spike succeeds. The product terminal `VIEWPORT_RESPONSIVE_FOV_ACCEPTED_AFTER_SERVER_RELEVANCE_PROOF` remains unavailable before that proof.
 
-P7 must not become an artificial blocker for unrelated adapters.
-
-This does not authorize bulk P8 work or production gameplay implementation from this documentation addendum.
-
-## 20. Retained-tree architecture decision analysis completion
-
-The retained-tree direction remains recommended, but its decision record is completed here according to `ARCHITECTURE_DECISION_DISCIPLINE.md`.
+## 20. Retained-tree decision analysis completion
 
 ### Problem
 
-The gameplay HUD requires stable focus, text composition, docking, scroll/virtualization, drag/drop, modal state and deterministic automation across many long-lived panels. The implementation needs a state model that does not force these concerns to be reconstructed independently by each panel every frame.
+The gameplay HUD requires stable focus, text composition, docking, scrolling/virtualization, drag/drop, modal state, and deterministic automation across long-lived panels. The implementation needs one ownership model rather than panel-specific cross-frame state mechanisms.
 
 ### Constraints
 
 - UI is non-authoritative;
-- `ui-core` must be framework/GPU/platform neutral;
-- Windows-first native client with DPI/IME requirements;
+- `ui-core` is framework/GPU/platform neutral;
+- Windows-first native client requires DPI/IME behavior;
 - deterministic tests and stable widget identity are required;
-- representative MMO HUD density and long-lived panels are expected;
-- final styling and physical renderer implementation remain replaceable.
+- MMO HUD density and long-lived panels are expected;
+- final styling and physical renderer remain replaceable.
 
 ### Realistic options
 
-**Option A — retained UI tree**
+**A — retained production UI tree:** long-lived nodes retain identity; relevant state changes invalidate/update portions; renderer-neutral draw extraction follows interaction/layout resolution.
 
-Long-lived nodes/widgets retain stable identity; state changes invalidate/update only relevant portions; renderer-neutral draw extraction occurs after layout/interaction resolution.
+**B — immediate-mode production HUD:** logical widget descriptions are rebuilt each frame and all required cross-frame interaction state is externalized.
 
-**Option B — immediate-mode production HUD**
-
-Rebuild the logical widget description each frame and retain only externalized interaction state needed across frames.
-
-A hybrid remains possible for engineering/debug overlays, but production gameplay UI must have one coherent ownership model.
+Immediate helpers remain acceptable for debug/engineering overlays that do not define production gameplay UI ownership.
 
 ### Trade-offs
 
-Retained UI provides direct stable ownership for focus, composition, docking, drag/drop and deterministic node identity, and can avoid full-tree work through invalidation. Its cost is lifecycle/invalidation complexity and risk of a heavier internal framework.
+Retained UI gives direct stable ownership for focus, composition, docking, drag/drop, automation identity, and invalidation. Costs are lifecycle/invalidation complexity and over-engineering risk.
 
-Immediate-mode UI can reduce explicit node lifecycle bookkeeping and make simple engineering surfaces concise. For this product it shifts complexity into stable IDs, external focus/text/docking state, large-list behavior and reconciliation of long-lived MMO panels. It can also encourage rebuilding more presentation state each frame unless carefully engineered.
+Immediate UI reduces explicit node lifecycle bookkeeping for simple surfaces but shifts complexity into stable IDs, external text/focus/docking/drag state, large-list behavior, and reconciliation of long-lived MMO panels. Without discipline it can also encourage full-frame rebuild work.
 
 ### Risks
 
-Retained risk: over-engineering a general widget framework before HUD Slice 01 proves the need.
+Retained: building a general widget framework beyond HUD Slice 01 needs.
 
-Immediate-mode risk: hidden state machinery emerges separately for text/IME, docking, drag/drop and automation, effectively recreating retained semantics in fragmented form.
+Immediate: fragmented state mechanisms effectively recreate retained semantics in less coherent form.
 
 ### Recommendation
 
-Use the retained tree for the production gameplay UI foundation, restricted to primitives required by the representative HUD. Permit implementation-local immediate helpers for debug/engineering overlays that do not define production gameplay UI ownership.
+Use a retained tree for production gameplay UI, restricted to primitives required by representative HUD proof. Permit implementation-local immediate helpers for engineering/debug overlays only.
 
-### Future impact and superseding evidence
+### Superseding evidence / future impact
 
-Reopen this choice only if measured implementation evidence shows the retained foundation materially fails frame-time, memory, correctness, development complexity, platform text/input requirements, accessibility, or future client reuse in a way a realistic alternative demonstrably solves better while preserving authority and testability.
-
-Framework fashion or preference alone is not sufficient superseding evidence.
+Reopen only if measured implementation evidence shows material failure in frame-time, memory, correctness, development complexity, platform text/input, accessibility, or reuse and a realistic alternative preserves authority/testability better. Framework preference alone is insufficient.
 
 ### Decision timing
 
-`Must decide now? YES` at the ownership-model level because P1 public state/interaction contracts otherwise risk incompatible assumptions. Exact internal storage, invalidation algorithm and helper style remain implementation details.
+`Must decide now? YES` at the ownership-model level because P1 public state/interaction contracts otherwise risk incompatible assumptions. Exact storage, invalidation algorithm, and helper style remain implementation details.
 
 ## 21. Corrected execution DAG
 
-The high-level programme becomes:
-
 ```text
-UI-P0 / correction exact-head audit
+UI-P0 correction candidate
+  |
+  v
+fresh independent exact-head correction audit
+  |
+  v
+KEEP + protected integration/readback + LIVE workspace ownership
   |
   v
 UI-P1 workspace-ready ui-core foundation
@@ -758,28 +680,31 @@ UI-P6 physical world+HUD viewport A/B qualification
              v
 UI-P7 FOV decision checkpoint
 
-Independent production view-model adapters (P8) may branch from the
-first stage that provides their required foundation/source contracts.
-Only FOV-sensitive P8 work is obligatorily downstream of P7.
+P8 adapters branch from the first stage that supplies their actual
+foundation/source dependencies. Only FOV-sensitive P8 is obligatorily
+downstream of P7.
 
-UI-P9 high-fidelity polish follows proven foundation and representative
-density for the affected surfaces; it must not pre-empt unresolved FOV
-or gameplay-authority decisions.
+P9 high-fidelity polish follows proven foundation and representative
+density for affected surfaces and cannot pre-empt unresolved FOV or
+gameplay-authority decisions.
 ```
 
-P2 and P3 parallelism is conditional on exact path disjointness and serialized shared workspace/composition surfaces.
+P2/P3 parallelism is conditional on exact path disjointness and serialized shared workspace/composition surfaces.
 
-## 22. Corrected entry/exit checkpoints
+## 22. Entry/exit checkpoints
 
 ### Correction/P0 exit
 
-Before runtime work:
+Before any runtime work:
 
-- this addendum and the audit record are integrated to protected `main`;
-- fresh exact-head review returns no unresolved `FIX`/`NEEDS_DECISION` for the corrected architecture;
-- final FOV remains undecided;
-- addons remain deferred;
-- no runtime authority is inferred from documentation CI.
+- the correction candidate receives fresh independent exact-head review;
+- terminal review is `KEEP` with zero unresolved material findings;
+- repository exact-head checks are green;
+- correction is integrated only through normal Merge Queue;
+- real `merge_group` aggregate gate succeeds;
+- protected-main readback confirms the integrated correction bytes;
+- FOV remains undecided and addons remain deferred;
+- no runtime authority is inferred from docs CI.
 
 ### P1 entry
 
@@ -791,66 +716,67 @@ Before runtime work:
 ### P1 exit
 
 - deterministic foundation tests green;
-- actual Cargo metadata matches boundary policy with `--locked`;
+- Cargo metadata matches boundary policy with `--locked`;
 - no forbidden framework/GPU/gameplay/synthetic dependency from `ui-core`;
-- API is sufficient for bounded P2/P3 without speculative public surface;
-- exact-head repository gate passes.
+- API sufficient for bounded P2/P3 without speculative public surface;
+- exact-head repository gate green.
 
 ### P2 exit
 
-- one coherent app-owned input arbitration route exists;
-- full required text/IME/focus/capture lifecycle is represented;
-- active gameplay actions reconcile on UI ownership changes;
-- DPI/resize/minimize behavior is deterministic;
+- one coherent app-owned arbitration route exists;
+- required IME/focus/capture lifecycle represented;
+- active gameplay actions reconcile when UI ownership changes;
+- DPI/resize/minimize deterministic;
 - `apps/client` remains sole composition root;
 - pre-native gameplay unavailability remains fail-closed.
 
 ### P3/P4 exit
 
-- real physical `wgpu` draw evidence exists for the required primitives/text;
-- physical resources remain renderer-owned/reconstructible;
-- semantic UI state survives/reconciles renderer recovery as applicable;
-- UI/world measurement boundaries remain observable.
+- real physical `wgpu` draw evidence exists for required primitives/text;
+- physical resources renderer-owned/reconstructible;
+- semantic UI state survives/reconciles applicable renderer recovery;
+- UI/world measurement boundaries observable.
 
 ### P5 exit
 
-- HUD Slice 01 uses one production-safe UI semantic seam;
-- synthetic adapters remain one-way test dependencies;
+- HUD Slice 01 uses one production-safe semantic seam;
+- synthetic adapters are one-way test dependencies;
 - no production dependency reaches synthetic-only packages;
-- required interaction/docking/virtualization/text behavior is demonstrated.
+- required interaction/docking/virtualization/text behavior demonstrated.
 
 ### P6 exit
 
-- world+HUD is physically rendered in one named qualification host/cell;
-- A/B comparison uses the frozen experiment identity and deterministic B policy;
-- no unknown world state is fabricated;
-- performance and fairness evidence are independently reviewable;
+- world+HUD physically rendered in one named qualification host/cell;
+- A/B uses frozen experiment identity and deterministic B policy;
+- no unknown world state fabricated;
+- performance/fairness evidence independently reviewable;
 - implementation author has not selected final product FOV unilaterally.
 
 ### P7 exit
 
-- explicit reviewed FOV decision exists;
-- responsive outcome has separately authorized server relevance/network/fairness evidence before product acceptance;
-- losing experimental path is removed or quarantined according to the decision;
-- regression tests bind the selected behavior.
+- fixed outcome may become accepted if the reviewed evidence supports it;
+- responsive outcome is only `PREFERRED_PENDING_SERVER_RELEVANCE_PROOF` until separate server/network/fairness evidence succeeds;
+- final responsive product acceptance occurs only after that proof and independent review;
+- losing experimental path is removed/quarantined after the applicable decision;
+- regression tests bind selected behavior.
 
 ## 23. Rollback and ownership
 
-Every runtime slice must remain independently revertible unless a later separately accepted contract explicitly introduces a cross-domain dependency requiring coordinated rollback.
+Every runtime slice remains independently revertible unless a later separately accepted contract explicitly introduces cross-domain rollback coupling.
 
-Presentation-only correction/rollback must not change server authority, protocol semantics or gameplay truth.
+Presentation-only rollback does not change server authority, protocol semantics, or gameplay truth.
 
-Shared path leases are execution authority, not architectural ownership. Historical #351/#356 Cargo custody does not permanently reserve the workspace, and a future UI worker cannot infer shared-path authority from this document.
+Shared path leases are execution authority, not architectural ownership. Historical #351/#356 Cargo custody does not permanently reserve the workspace, and no future UI worker may infer shared-path authority from this document.
 
 ## 24. Fresh review requirement
 
-Because this addendum materially corrects the merged #549 architecture plan, the original audit classification cannot by itself qualify this new text.
+Because this addendum materially corrects merged #549 architecture, the original audit cannot qualify this new text.
 
-Before P1 begins, a fresh reviewer must bind its result to:
+Before integration, a fresh reviewer must bind the result to:
 
 ```text
 repository: Oteryn/Oteryn-Game
-correction_pr: <live PR number containing this addendum>
+correction_pr: <live PR containing this addendum>
 base: main
 exact_head: <live correction head>
 ```
@@ -863,13 +789,13 @@ FIX
 NEEDS_DECISION
 ```
 
-A self-check by the author is useful but does not substitute for any repository-required independent review.
+A self-check by the author is useful but does not substitute for repository-required independent review.
 
-Any material content change after a qualifying review invalidates that review target and requires fresh exact-head readback.
+Any material content change invalidates the previous correction review and requires fresh exact-head review before Merge Queue submission.
 
 ## 25. Terminal state
 
-Until the correction is protected-integrated, independently reviewed on its exact final head, and the LIVE shared-workspace gate is available:
+Until a fresh independent exact-head review returns `KEEP`, the correction is lawfully integrated through Merge Queue and protected readback is complete:
 
 ```text
 UI_ARCHITECTURE_CORRECTION = IN_REVIEW
@@ -879,4 +805,4 @@ FIXED_FOV_POLICY = UNDECIDED
 ADDON_PLATFORM = DEFERRED_FUTURE_CONCEPT
 ```
 
-After protected integration plus a clean exact-head correction audit, the architecture blocker is removed, but P1 still requires fresh workspace ownership allocation before mutation.
+After clean review + protected integration/readback, the architecture blocker is removed. P1 still requires fresh shared-workspace ownership allocation before mutation.
