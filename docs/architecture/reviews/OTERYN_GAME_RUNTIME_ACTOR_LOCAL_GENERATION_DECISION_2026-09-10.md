@@ -39,6 +39,7 @@ rejected_options:
   - generation_wrap_or_saturating_reuse
   - raw_pointer_vector_index_or_client_handle_as_actor_authority
   - actor_namespace_reset_while_the_same_scope_ownership_generation_remains_authoritative
+  - actor_local_id_remap_or_alias_to_a_different_generation_cell_within_one_scope_generation
   - separate_unbounded_generation_history_hidden_behind_active_actor_count
   - bump_scope_ownership_generation_only_to_reclaim_actor_ids
   - durable_actor_identity_history_as_a_first_carrier_prerequisite
@@ -59,12 +60,15 @@ production_authority_changed: false
 cross_repository_authority_changed: false
 supersedes: []
 required_validation:
+  - actor_local_id_has_immutable_one_to_one_logical_slot_binding_within_scope_generation
+  - distinct_actor_local_ids_cannot_alias_one_logical_generation_cell
   - same_scope_same_slot_reuse_advances_generation
   - stale_pre_reuse_ref_rejects
   - removal_without_reuse_rejects_old_ref
   - scope_generation_change_fences_entire_prior_local_namespace
   - same_scope_namespace_reset_is_forbidden_or_fails_closed
   - checked_local_generation_exhaustion_never_wraps
+  - exhaustion_records_terminal_slot_state_without_actor_or_index_publication
   - exhaustion_rejects_before_partial_actor_or_index_publication
   - no_retirement_path_allocates_unbounded_history
   - retained_generation_cardinality_equals_configured_slot_cardinality
@@ -108,11 +112,13 @@ The carrier must stay finite. Removal, reuse and exhaustion cannot evict a live 
 
 The namespace contains exactly the configured actor-slot cardinality `M`. This decision does **not** choose `M`; the production value remains blocked on ADR-0009/PERF-01.
 
-`ActorLocalId` is an opaque typed identity within that namespace. An implementation may map it efficiently to a slot, but a raw array/vector index, pointer or client-visible handle is not independently valid actor authority and cannot bypass the complete typed reference.
+`ActorLocalId` is an opaque typed identity within that namespace. For the complete lifetime of one `ScopeOwnershipGeneration`, every valid `ActorLocalId` has an immutable one-to-one binding to exactly one **logical actor slot** and therefore to exactly one actor-local generation cell. An `ActorLocalId` cannot later be remapped to another logical slot, and two distinct `ActorLocalId` values cannot alias the same logical slot/generation cell within that scope generation.
 
-### 2. Generation belongs to the slot, not to an ever-growing retirement map
+An implementation may move physical storage or map the typed identity efficiently to its logical slot, but such physical relocation must preserve that immutable logical binding. A raw array/vector index, pointer or client-visible handle is not independently valid actor authority and cannot bypass the complete typed reference.
 
-Every configured local slot owns one finite checked `ActorLocalGeneration` cell for the lifetime of the current scope ownership generation. That cell exists whether the slot is currently occupied or vacant after prior use.
+### 2. Generation belongs to the immutable logical slot binding, not to an ever-growing retirement map
+
+Every configured logical slot owns one finite checked `ActorLocalGeneration` cell for the lifetime of the current scope ownership generation. That cell exists whether the slot is currently occupied or vacant after prior use. Because `ActorLocalId -> logical slot` is immutable within that scope generation, generation history cannot be lost or switched merely by remapping an ID to a different physical storage position.
 
 Abstract state is sufficient for the contract:
 
@@ -125,11 +131,11 @@ EXHAUSTED(g_max)
 
 Exact Rust enum/layout is not selected here.
 
-A successful first use establishes a valid local generation according to the future typed implementation contract. Removing an actor changes `LIVE(g) -> VACANT_REUSABLE(g)` only after the actor is no longer current. Removal does not erase or decrement `g`.
+A successful first use establishes a valid local generation according to the future typed implementation contract. Removing an actor changes `LIVE(g) -> VACANT_REUSABLE(g)` only after the actor is no longer current. Removal does not erase or decrement `g` and does not detach that retained generation from the logical slot/`ActorLocalId` binding.
 
 ### 3. Reuse requires checked generation advance before publication
 
-Reusing the same `ActorLocalId` in the same `ScopeOwnershipGeneration` requires a checked strict successor of the retained local generation. The successor is established as part of the admission transition before the replacement actor can become externally resolvable/current.
+Reusing the same `ActorLocalId` in the same `ScopeOwnershipGeneration` requires a checked strict successor of the retained local generation in that ID's immutable logical slot. The successor is established as part of the admission transition before the replacement actor can become externally resolvable/current.
 
 Therefore:
 
@@ -140,13 +146,13 @@ new actor: (..., local_id=L, generation=g+1)
 
 and the old reference cannot resolve to the new actor. No saturating increment, wrap, reset, decrement or same-generation reuse is permitted.
 
-The complete actor/index publication is atomic from the resolver's point of view: a failed successor/admission leaves the prior authoritative carrier state unchanged and publishes no replacement identity.
+For a representable successor, a failed admission must not publish the new actor, lookup/index entry or current reference; externally authoritative actor-resolution state remains unchanged. A checked **no-successor** failure at `g_max` is the deliberate exception for internal slot-lifecycle bookkeeping: it atomically records `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)` while publishing no actor/index/current reference. That terminal slot-state transition prevents the allocator from selecting the same unsafe slot again and is not partial actor publication.
 
 ### 4. The outer scope generation is the namespace incarnation fence
 
 Actor-local generation state is required to survive for the full lifetime of the **same** authoritative `ScopeOwnershipGeneration`. The carrier must not destroy and recreate a fresh local namespace while that same scope generation remains authoritative after actor references could have escaped.
 
-If the carrier state is lost while the same scope generation is still nominally current, the runtime fails closed. It must either restore the exact required local-generation state from an already-authorized source or cease authority so that the normal owning scope lifecycle establishes a new `ScopeOwnershipGeneration`. This V1 does not require durable actor history and does not authorize a persistence schema.
+If the carrier state is lost while the same scope generation is still nominally current, the runtime fails closed. It must either restore the exact required local-generation state and immutable logical ID-to-slot bindings from an already-authorized source or cease authority so that the normal owning scope lifecycle establishes a new `ScopeOwnershipGeneration`. This V1 does not require durable actor history and does not authorize a persistence schema.
 
 Once a legitimately authorized scope-owner transition establishes a **new** `ScopeOwnershipGeneration`, the new owner may initialize a fresh finite actor-local namespace. Every reference from the prior namespace contains the old outer generation and is rejected before local actor state is accepted. Local generation high-water state therefore does not need to survive across distinct scope ownership generations merely to prevent stale-reference revival.
 
@@ -154,7 +160,7 @@ A scope ownership generation must never be advanced merely as an actor-ID garbag
 
 ### 5. Exhaustion is checked, terminal for the failed allocation, and never wraps
 
-If a previously used slot has no safe representable local-generation successor, the slot enters `EXHAUSTED` for the remainder of that `ScopeOwnershipGeneration`. It is never reused under that outer generation.
+If a previously used slot has no safe representable local-generation successor, the slot atomically enters `EXHAUSTED(g_max)` for the remainder of that `ScopeOwnershipGeneration`. It is never reused under that outer generation. Recording this terminal slot-lifecycle state is required finite capacity bookkeeping; it does not publish a replacement actor or change the retained generation value.
 
 The semantic internal result is:
 
@@ -162,7 +168,7 @@ The semantic internal result is:
 ACTOR_LOCAL_GENERATION_EXHAUSTED
 -> Foundation category: CAPACITY_EXCEEDED
 -> progression: TERMINAL for the rejected actor-allocation attempt
--> mutation: NO_PARTIAL_ACTOR_OR_INDEX_PUBLICATION
+-> mutation: EXHAUSTED_SLOT_STATE_ONLY; NO_PARTIAL_ACTOR_OR_INDEX_PUBLICATION
 ```
 
 This decision names the semantic result but does not allocate a public wire code. The implementation may continue to admit through other non-live, non-exhausted slots within the configured finite carrier. If no safe slot remains available, new actor admission fails closed; it does not recycle a live/exhausted slot and does not self-advance `ScopeOwnershipGeneration` to manufacture capacity.
@@ -177,7 +183,7 @@ For this V1 shape, retained actor-local generation cardinality is exactly:
 retained_generation_cells = configured_actor_slots = M
 ```
 
-Retirement allocates no per-retirement tombstone, high-water map entry or identity-history node. Reusing or exhausting a slot changes only the finite state already owned by that slot.
+Retirement allocates no per-retirement tombstone, high-water map entry or identity-history node. Reusing or exhausting a slot changes only the finite state already owned by that immutable logical slot/`ActorLocalId` binding.
 
 Accordingly, after this decision is protected-integrated:
 
@@ -188,11 +194,11 @@ independent_RL03_numeric_maximum = NOT_REQUIRED
 
 This classification does **not** choose the RL-01 value. `M` still requires the accepted representative ADR-0009/PERF-01 capacity cell before registry serialization or executable carrier acceptance.
 
-A future implementation that instead introduces a separately growing retirement/tombstone/history structure does not comply with this V1 classification and must reopen RL-03 with measured finite evidence before acceptance.
+A future implementation that instead introduces a separately growing retirement/tombstone/history structure, or remaps actor-local IDs across independent generation cells, does not comply with this V1 classification and must reopen RL-03 with measured finite evidence before acceptance.
 
 ## Direct lookup and physical representation boundary
 
-This decision does not choose a Rust `Vec`, slab, hash table, arena, ECS or allocator. The carrier may use a separate bounded lookup/index representation only if #530's RL-02 evidence and later physical selection account for it honestly. Any index/free-slot bookkeeping must remain finite relative to configured `M`; it cannot smuggle an independently unbounded identity history back into the design.
+This decision does not choose a Rust `Vec`, slab, hash table, arena, ECS or allocator. The carrier may use a separate bounded lookup/index representation only if #530's RL-02 evidence and later physical selection account for it honestly. Any index/free-slot bookkeeping must remain finite relative to configured `M`; it cannot smuggle an independently unbounded identity history back into the design or permit two IDs to alias/remap across logical generation cells.
 
 Exact-target lookup remains direct by complete typed actor reference and does not gain geometry/range/LoS/visibility/pathfinding or dynamic-retarget authority.
 
@@ -200,9 +206,9 @@ Exact-target lookup remains direct by complete typed actor reference and does no
 
 The one logical owner for the current Channel scope serializes local actor admission/removal/reuse. A late callback, AI decision, Ability occurrence, Movement request or other completion carrying an old scope generation or actor-local generation cannot become authoritative merely because the same local identity is live again.
 
-Validation order must preserve the outer fence: wrong `WorldId`/`ChannelId` or stale `ScopeOwnershipGeneration` rejects before current actor state is exposed. Matching scope then requires exact local identity and exact current local generation.
+Validation order must preserve the outer fence: wrong `WorldId`/`ChannelId` or stale `ScopeOwnershipGeneration` rejects before current actor state is exposed. Matching scope then requires exact local identity, that identity's immutable logical slot binding, and exact current local generation.
 
-A removal/reuse transition cannot publish the new generation before the actor record/index state needed for exact current lookup is coherently available, and cannot leave a new generation visible if the admission fails.
+A removal/reuse transition cannot publish the new generation before the actor record/index state needed for exact current lookup is coherently available, and cannot leave a new actor/current reference visible if admission fails. A no-successor exhaustion may only publish the internal `EXHAUSTED` slot state described above.
 
 ## Options and trade-offs
 
@@ -229,6 +235,10 @@ This preserves stale-reference safety but recreates the exact independent-growth
 ### Rejected — never reuse local identities within a scope generation
 
 A monotonic unique-ID allocator avoids per-ID generation reuse but moves the lifetime problem into a monotonically consumed identity namespace. It eventually exhausts independently of active actor count and therefore does not close RL-03 for the first carrier.
+
+### Rejected — remap an actor-local ID to another generation slot
+
+Allowing one escaped `ActorLocalId` to move between independent generation cells can make an old `(ActorLocalId, generation)` pair current again when the destination cell carries the same generation value. Preventing that resurrection would require extra per-ID history, defeating the selected RL-03 classification. The logical ID-to-slot/generation-cell binding is therefore immutable within one scope ownership generation.
 
 ### Rejected — reset local generations after removal/restart
 
@@ -311,16 +321,17 @@ The implementation allocation must prove at minimum:
 
 1. exact current scope/local-id/local-generation resolves;
 2. missing/vacant local slot rejects;
-3. reuse of one slot advances generation and the old ref rejects;
-4. repeated same-slot churn does not grow retained generation cardinality;
-5. retirement across every configured slot never creates a history entry beyond `M`;
-6. local-generation successor overflow never wraps and the exhausted slot cannot be reused;
-7. failed generation advance/admission publishes no partial actor/index state;
-8. a legitimate new `ScopeOwnershipGeneration` fences every prior local reference even if local IDs/generation representations are initialized anew;
-9. resetting/reconstructing the local namespace under the same scope generation is rejected/fail-closed unless exact generation state is restored;
-10. wrong World, wrong Channel and stale scope generation reject before actor state exposure;
-11. untyped AI/client/protocol-like scalars cannot call the authoritative resolver as complete actor refs;
-12. no variable geometry/target collection or unbounded retirement structure is introduced.
+3. every `ActorLocalId` remains bound to exactly one logical slot/generation cell for the complete scope generation and distinct IDs cannot alias that cell;
+4. reuse of one slot advances generation and the old ref rejects;
+5. repeated same-slot churn does not grow retained generation cardinality;
+6. retirement across every configured slot never creates a history entry beyond `M`;
+7. local-generation successor overflow never wraps, atomically marks only that vacant slot `EXHAUSTED`, and the exhausted slot cannot be reused;
+8. failed generation advance/admission publishes no partial actor/index/current-reference state; the only permitted exhaustion mutation is the terminal slot-state transition in item 7;
+9. a legitimate new `ScopeOwnershipGeneration` fences every prior local reference even if local IDs/generation representations are initialized anew;
+10. resetting/reconstructing the local namespace under the same scope generation is rejected/fail-closed unless exact generation state and immutable logical bindings are restored;
+11. wrong World, wrong Channel and stale scope generation reject before actor state exposure;
+12. untyped AI/client/protocol-like scalars cannot call the authoritative resolver as complete actor refs;
+13. no variable geometry/target collection or unbounded retirement structure is introduced.
 
 Documentation-only candidate validation remains governance/semantic CI, whole-diff self-review and genuinely independent exact-head architecture review. Runtime/E2E is `NOT_APPLICABLE` to this paper-only decision and remains mandatory for the later executable carrier according to its allocated risk surface.
 
