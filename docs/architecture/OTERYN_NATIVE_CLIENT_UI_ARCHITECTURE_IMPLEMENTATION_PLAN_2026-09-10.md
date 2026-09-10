@@ -1158,7 +1158,7 @@ base: main
 exact_head: <live PR head at audit time>
 ```
 
-A review of an older head does not qualify a later materially changed candidate.
+A review of an older head does not qualify a later materially changed candidate. The auditor must not implement UI-P1 or later runtime slices in the same audit pass; P0 is review/correction only.
 
 ## 19. Execution sequencing constraints
 
