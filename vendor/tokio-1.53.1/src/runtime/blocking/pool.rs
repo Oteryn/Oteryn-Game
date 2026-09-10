@@ -589,13 +589,33 @@ impl Spawner {
             all(loom, not(test)), // the function is covered by loom tests
             test
         ), allow(dead_code))]
-        pub(crate) fn spawn_mandatory_blocking<F, R>(func: F) -> Option<JoinHandle<R>>
+        pub(crate) fn spawn_mandatory_blocking<F, R>(&self, rt: &Handle, func: F) -> Option<JoinHandle<R>>
         where
             F: FnOnce() -> R + Send + 'static,
             R: Send + 'static,
         {
-            let rt = Handle::current();
-            rt.inner.blocking_spawner().spawn_mandatory_blocking(&rt, func)
+            let fn_size = std::mem::size_of::<F>();
+            let (join_handle, spawn_result) = if fn_size > BOX_FUTURE_THRESHOLD {
+                self.spawn_blocking_inner(
+                    Box::new(func),
+                    Mandatory::Mandatory,
+                    SpawnMeta::new_unnamed(fn_size),
+                    rt,
+                )
+            } else {
+                self.spawn_blocking_inner(
+                    func,
+                    Mandatory::Mandatory,
+                    SpawnMeta::new_unnamed(fn_size),
+                    rt,
+                )
+            };
+
+            if spawn_result.is_ok() {
+                Some(join_handle)
+            } else {
+                None
+            }
         }
     }
 
