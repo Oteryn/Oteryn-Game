@@ -62,6 +62,7 @@ Produce one bounded architecture resolution for Issue #539 that freezes only the
 - [x] Preserve `WorldId + ChannelId + ScopeOwnershipGeneration + actor-local identity + actor-local generation` as the minimum exact-reference authority shape.
 - [x] Require immutable one-to-one `ActorLocalId` -> logical slot/generation-cell binding within one scope ownership generation; prohibit remap/alias resurrection.
 - [x] Permit only the finite `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)` bookkeeping transition when checked generation successor is unavailable, while publishing no actor/index/current ref.
+- [x] Require failed admission to leave every existing actor unchanged, including when the only permitted mutation is terminal exhaustion of the vacant candidate slot.
 - [x] Do not choose a production actor ceiling; keep `RUNTIME-ACTOR-RL-01` blocked on ADR-0009/PERF-01.
 - [x] Record realistic alternatives, trade-offs, decision timing, supersession evidence, `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS`.
 - [ ] Exact-head whole-diff self-review and applicable repository CI pass after the material review repair.

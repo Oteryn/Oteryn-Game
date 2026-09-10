@@ -146,7 +146,7 @@ new actor: (..., local_id=L, generation=g+1)
 
 and the old reference cannot resolve to the new actor. No saturating increment, wrap, reset, decrement or same-generation reuse is permitted.
 
-For a representable successor, a failed admission must not publish the new actor, lookup/index entry or current reference; externally authoritative actor-resolution state remains unchanged. A checked **no-successor** failure at `g_max` is the deliberate exception for internal slot-lifecycle bookkeeping: it atomically records `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)` while publishing no actor/index/current reference. That terminal slot-state transition prevents the allocator from selecting the same unsafe slot again and is not partial actor publication.
+For a representable successor, a failed admission must not publish the new actor, lookup/index entry or current reference; every existing actor and all externally authoritative actor-resolution state remain unchanged. A checked **no-successor** failure at `g_max` is the deliberate exception for internal slot-lifecycle bookkeeping: it atomically records `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)` while publishing no actor/index/current reference and changing no existing actor. That terminal slot-state transition prevents the allocator from selecting the same unsafe slot again and is not partial actor publication.
 
 ### 4. The outer scope generation is the namespace incarnation fence
 
@@ -326,7 +326,7 @@ The implementation allocation must prove at minimum:
 5. repeated same-slot churn does not grow retained generation cardinality;
 6. retirement across every configured slot never creates a history entry beyond `M`;
 7. local-generation successor overflow never wraps, atomically marks only that vacant slot `EXHAUSTED`, and the exhausted slot cannot be reused;
-8. failed generation advance/admission publishes no partial actor/index/current-reference state; the only permitted exhaustion mutation is the terminal slot-state transition in item 7;
+8. failed generation advance/admission leaves every existing actor unchanged and publishes no partial actor/index/current-reference state; the only permitted exhaustion mutation is the terminal slot-state transition in item 7;
 9. a legitimate new `ScopeOwnershipGeneration` fences every prior local reference even if local IDs/generation representations are initialized anew;
 10. resetting/reconstructing the local namespace under the same scope generation is rejected/fail-closed unless exact generation state and immutable logical bindings are restored;
 11. wrong World, wrong Channel and stale scope generation reject before actor state exposure;
