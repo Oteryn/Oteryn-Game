@@ -1149,6 +1149,17 @@ For `FIX`, identify exact document section and smallest required correction.
 
 For `NEEDS_DECISION`, identify the precise owner-sensitive decision that cannot be resolved from accepted architecture or evidence. Do not broaden the blocker to unrelated implementation work.
 
+The independent audit should explicitly bind its result to:
+
+```text
+repository: Oteryn/Oteryn-Game
+pull_request: #549
+base: main
+exact_head: <live PR head at audit time>
+```
+
+A review of an older head does not qualify a later materially changed candidate.
+
 ## 19. Execution sequencing constraints
 
 - P1 must not start until P0 architecture audit is resolved sufficiently for implementation.
