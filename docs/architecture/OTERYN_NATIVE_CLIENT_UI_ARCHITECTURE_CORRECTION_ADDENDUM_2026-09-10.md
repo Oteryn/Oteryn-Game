@@ -337,6 +337,8 @@ P2 must define re-arming: a press consumed while the route is ineligible cannot 
 
 `ContextKind::Global` remains eligible under text/modal contexts in the current `BindingMap`. Global is not a gameplay-authorization bypass. App-owned mappings must explicitly distinguish permitted cross-mode local actions from gameplay intents; modal/text ownership still blocks unintended gameplay commands, regardless of binding priority. When a modal supersedes a captured background target, cancel or transfer ownership before routing the next semantic event.
 
+Qualify the full adapter -> arbitration -> semantic-router stream, not only hand-built letter events with a modifier bit already set. At the audited snapshot, `input-platform` emits physical modifier key events (for example ControlLeft code 224), while `InputRouter::process_button()` adds every key atom to the chord. A normal Ctrl+A binding represented as Control plus the non-modifier A atom can therefore fail to match a stream that also retains the Control key atom. P2 must reconcile modifier facts and non-modifier chord identity at their owning boundary, preserve left/right release semantics, and prove modifier release/repeat behavior. Do not fix this by hiding native events in widgets or by testing an unrealistically shortened event stream.
+
 ## 8. P2 client composition correction
 
 P2 must reconcile existing pre-native composition instead of adding a third owner.
@@ -548,7 +550,7 @@ These are required future test cases, not tests claimed executed by the architec
 | P2 | Press -> modal -> release while consumed -> close -> fresh press | One cancellation, released atom absent, exactly one new eligible start |
 | P2 | Press during modal -> close -> repeat/other key before release | No synthetic re-arming or unintended gameplay action |
 | P2 | Global high-priority binding while text/modal owns input | Only explicitly permitted cross-mode local action; no gameplay bypass |
-| P2 | Focus/capture/device loss while UI consumes events; duplicate cleanup | All relevant state owners reconcile; no stuck hold/capture or duplicate action |
+| P2 | Full adapter modifier-down/key-down/modifier-up/key-up sequence; left/right modifiers; focus/capture/device loss and duplicate cleanup | Expected chord matches without accidental extra modifier atoms; owners reconcile; no stale repeat/hold/capture or duplicate action |
 | P2/P4 | Empty/multibyte preedit, invalid/out-of-bounds range, commit, focus loss | Bounded valid text state, explicit cursor/range units, exactly-once insertion |
 | P3 | Stale generation at physical render entry | No surface acquisition, queue submission, presentation or reconfiguration |
 | P3 | Timeout/occluded/outdated/lost and present-then-reconfigure failure | Actual presentation distinguished from skip/recovery; bounded recovery preserved |

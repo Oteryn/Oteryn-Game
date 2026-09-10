@@ -49,6 +49,7 @@ These files were read completely at the audited protected SHA. Directory names d
 | `crates/client-runtime/src/lib.rs` | `bd908a2c6e2d418dc09e39b7f42d9ac58cfd78a0` |
 | `crates/client-domain/src/lib.rs` | `9cb4fb57493a0ff01d7514e47bb730ea7ca4b7f9` |
 | `crates/client-simulation/src/lib.rs` | `53218533d094ea74f0adf5ec153ca0f57f574af8` |
+| `crates/input-actions/src/lib.rs` | `ae5a3fec1db556f664284bddac9e4a4337e1286a` |
 | `crates/input-actions/src/router.rs` | `8655c5bfb6afd36d4ab5a131fd0871961f3e5ee1` |
 | `crates/input-actions/src/semantic.rs` | `489c926c48f795f56b2f08c7defb94fdf9b93f0b` |
 | `crates/input-actions/Cargo.toml` | `9d7138e63d686f5b0bfedac0d0d7a8608a5950c8` |
@@ -62,7 +63,7 @@ These files were read completely at the audited protected SHA. Directory names d
 | `Cargo.toml` | `fb4134748560219c5a4cb80f58ad98ac7d1c22a2` |
 | `workspace-boundaries.toml` | `6af6c9f9e05151afa603cd3d86f4fb3261abaa3c` |
 
-Additional contextual evidence includes the earlier #549 audit and inspected ALPHA-CLIENT contract sections. Those contextual reads are not represented as whole-file re-audits. Legacy OTClient behavior remains earlier reference evidence; this pass did not independently requalify that external repository.
+Additional contextual evidence includes `crates/input-actions/src/physical.rs` lines 1-150 (blob `ffb0d4570f56c6df506d3d7ec34142931fbd6df8`), the earlier #549 audit and inspected ALPHA-CLIENT contract sections. Those contextual reads are not represented as whole-file re-audits. Legacy OTClient behavior remains earlier reference evidence; this pass did not independently requalify that external repository.
 
 ## 2. Existing corrections retained, not rediscovered as new blockers
 
@@ -79,6 +80,10 @@ PR #552 was open at the live census and records an independent KEEP for #551's o
 **FACT:** `InputRouter::set_context_active()` calls `cancel_ineligible()` without clearing `held`. `process_button(Released)` removes the atom; focus/capture/device lifecycle handlers have their own cleanup. `BindingMap::resolve()` and `is_context_eligible()` keep Global contexts eligible during text/modal input.
 
 **INFERENCE, high confidence:** implementing the existing conditional input arrow as an early return for consumed UI events can swallow releases, retain stale physical state, or let a high-priority Global gameplay mapping bypass intended modal ownership. This is a risk in the planned composition, not a claim that a production gameplay UI currently exhibits it.
+
+**ADDITIONAL FACT:** `InputPlatformAdapter::process_key()` emits modifier key events, `KeyCode::new(224)` is valid, and `InputRouter::process_button()` includes all held atoms when creating a chord. The source trace ControlLeft-down -> A-down yields Control plus `[A, ControlLeft]`, not the conventional Control plus `[A]`. The inspected modified-key router test injects the letter with an already-set modifier bit instead of that complete adapter sequence.
+
+**INFERENCE, high confidence:** directly composing these existing surfaces does not establish correct modifier-chord behavior. P2 must qualify the complete adapter/arbitration/router stream, including left/right modifier releases and repeat cleanup; shortened normalized-event tests are insufficient. This is a source-derived mismatch, not a claimed executed Rust regression.
 
 **CORRECTION:** Sections 5 and 7 distinguish semantic admission from always-reconciled cleanup, require explicit re-arming, and prevent Global from becoming a gameplay bypass. P2 owns the minimal router/composition change and the negative tests; no duplicate physical-key registry or fabricated OS lifecycle is authorized.
 
@@ -126,7 +131,7 @@ PR #552 was open at the live census and records an independent KEEP for #551's o
 
 The changed document was prepared in an isolated local source copy. Its unmodified input was verified against Git blob `29006bffa2af1e5581b2eba4b331d102fe480e85`, not inferred from a filename or moving branch.
 
-Local document checks cover UTF-8, final newline/trailing whitespace, fenced blocks, table structure, top-level section continuity, preserved FOV/addon/dependency/review constraints, the 15-row future boundary matrix, corrected DAG text/acyclicity and the exact two-file write scope. Whole-diff author review is not independent architecture review. These are document checks, not execution of the required future Rust/UI tests.
+Local document checks cover UTF-8, final newline/trailing whitespace, fenced blocks, table structure, top-level section continuity, preserved FOV/addon/dependency/review constraints, the 15-row future boundary matrix, corrected DAG text/acyclicity, full modifier-stream qualification and the exact two-file write scope. Whole-diff author review is not independent architecture review. These are document checks, not execution of the required future Rust/UI tests.
 
 The local environment has no `cargo`/`rustc` or authorized Windows GPU execution surface, and its GitHub network route is unavailable. Repository reads/publication use the GitHub connector. No local Rust build/test, physical rendering, Tier-2 journey, A/B benchmark or production-closure execution is claimed. Runtime E2E for this two-document patch is `NOT_APPLICABLE` because no runtime behavior changes; future UI qualification remains unperformed, not PASS.
 
