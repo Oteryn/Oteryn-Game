@@ -491,21 +491,26 @@ impl State<ClientConnectionData> for ExpectServerKx<'_> {
             HandshakeType::ServerKeyExchange,
             HandshakePayload::ServerKeyExchange
         )?;
+        #[cfg(feature = "std")]
+        let resource_owner = m.decoded_owner().map(|owner| owner.owner());
         self.transcript.add_message(&m);
 
-        let kx = opaque_kx
-            .unwrap_given_kxa(self.suite.kx)
-            .ok_or_else(|| {
-                cx.common.send_fatal_alert(
-                    AlertDescription::DecodeError,
-                    InvalidMessage::MissingKeyExchange,
-                )
-            })?;
+        let kx = opaque_kx.unwrap_given_kxa(self.suite.kx).ok_or_else(|| {
+            cx.common.send_fatal_alert(
+                AlertDescription::DecodeError,
+                InvalidMessage::MissingKeyExchange,
+            )
+        })?;
 
         // Save the signature and signed parameters for later verification.
-        let mut kx_params = Vec::new();
-        kx.params.encode(&mut kx_params);
-        let server_kx = ServerKxDetails::new(kx_params, kx.dss);
+        #[cfg(feature = "std")]
+        let server_kx = if let Some(owner) = resource_owner {
+            ServerKxDetails::new_with_resource_owner(&kx.params, kx.dss, owner)?
+        } else {
+            ServerKxDetails::new(&kx.params, kx.dss)
+        };
+        #[cfg(not(feature = "std"))]
+        let server_kx = ServerKxDetails::new(&kx.params, kx.dss);
 
         #[cfg_attr(not(feature = "logging"), allow(unused_variables))]
         {
@@ -637,14 +642,86 @@ fn emit_finished(
 struct ServerKxDetails {
     kx_params: Vec<u8>,
     kx_sig: DigitallySignedStruct,
+    #[cfg(feature = "std")]
+    _kx_params_custody: Option<ServerKxParamsCustody>,
 }
 
 impl ServerKxDetails {
-    fn new(params: Vec<u8>, sig: DigitallySignedStruct) -> Self {
+    fn new(params: &ServerKeyExchangeParams, sig: DigitallySignedStruct) -> Self {
+        let mut kx_params = Vec::new();
+        params.encode(&mut kx_params);
         Self {
-            kx_params: params,
+            kx_params,
             kx_sig: sig,
+            #[cfg(feature = "std")]
+            _kx_params_custody: None,
         }
+    }
+
+    #[cfg(feature = "std")]
+    fn new_with_resource_owner(
+        params: &ServerKeyExchangeParams,
+        sig: DigitallySignedStruct,
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<Self, InvalidMessage> {
+        let capacity = server_kx_params_encoded_len(params)?;
+        let custody = ServerKxParamsCustody::reserve(owner, capacity)?;
+        let mut kx_params = Vec::with_capacity(capacity);
+        params.encode(&mut kx_params);
+        if kx_params.capacity() != capacity || kx_params.len() != capacity {
+            drop(kx_params);
+            return Err(InvalidMessage::MessageTooLarge);
+        }
+
+        Ok(Self {
+            kx_params,
+            kx_sig: sig,
+            _kx_params_custody: Some(custody),
+        })
+    }
+}
+
+#[cfg(feature = "std")]
+fn server_kx_params_encoded_len(params: &ServerKeyExchangeParams) -> Result<usize, InvalidMessage> {
+    match params {
+        ServerKeyExchangeParams::Ecdh(ecdh) => 4usize
+            .checked_add(ecdh.public.0.len())
+            .ok_or(InvalidMessage::MessageTooLarge),
+        ServerKeyExchangeParams::Dh(dh) => [dh.dh_p.0.len(), dh.dh_g.0.len(), dh.dh_Ys.0.len()]
+            .into_iter()
+            .try_fold(0usize, |total, len| {
+                total
+                    .checked_add(2)
+                    .and_then(|total| total.checked_add(len))
+                    .ok_or(InvalidMessage::MessageTooLarge)
+            }),
+    }
+}
+
+#[cfg(feature = "std")]
+#[derive(Debug)]
+struct ServerKxParamsCustody {
+    owner: Arc<dyn crate::DeframerBufferOwner>,
+    bytes: usize,
+}
+
+#[cfg(feature = "std")]
+impl ServerKxParamsCustody {
+    fn reserve(
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+        bytes: usize,
+    ) -> Result<Self, InvalidMessage> {
+        owner
+            .try_reserve(bytes)
+            .map_err(|_| InvalidMessage::MessageTooLarge)?;
+        Ok(Self { owner, bytes })
+    }
+}
+
+#[cfg(feature = "std")]
+impl Drop for ServerKxParamsCustody {
+    fn drop(&mut self) {
+        self.owner.release(self.bytes);
     }
 }
 
