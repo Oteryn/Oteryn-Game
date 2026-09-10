@@ -17,6 +17,10 @@ jobs:
     timeout-minutes: 15
     permissions:
       contents: read
+    outputs:
+      rust: ${{ steps.lanes.outputs.rust }}
+      windows: ${{ steps.lanes.outputs.windows }}
+      surface: ${{ steps.lanes.outputs.surface }}
     steps:
       - name: Validate exact merge-group identity
         shell: bash
@@ -36,6 +40,93 @@ jobs:
           [[ "$HEAD_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$HEAD_SHA" == "$GITHUB_SHA_VALUE" ]]
           [[ "$HEAD_SHA" != "$BASE_SHA" ]]
+
+      - name: Check out protected-base classifier input
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.merge_group.base_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Classify trusted merge-group lanes
+        id: lanes
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.merge_group.base_sha }}
+          HEAD_SHA: ${{ github.event.merge_group.head_sha }}
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import os
+          import re
+          import subprocess
+          from pathlib import PurePosixPath
+
+          base = os.environ.get('BASE_SHA', '').strip().lower()
+          head = os.environ.get('HEAD_SHA', '').strip().lower()
+          result = {'rust': 'true', 'windows': 'true', 'surface': 'full'}
+
+          def valid_path(path: str) -> bool:
+              return (
+                  bool(path)
+                  and '\x00' not in path
+                  and '\n' not in path
+                  and '\r' not in path
+                  and '\\' not in path
+                  and not path.startswith('/')
+                  and '..' not in path.split('/')
+                  and str(PurePosixPath(path)) == path
+              )
+
+          try:
+              if re.fullmatch(r'[0-9a-f]{40}', base) is None or re.fullmatch(r'[0-9a-f]{40}', head) is None:
+                  raise ValueError('invalid merge-group identity')
+              if base == head:
+                  raise ValueError('empty merge-group identity')
+              actual = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip().lower()
+              if actual != base:
+                  raise ValueError('protected-base checkout mismatch')
+              subprocess.check_call(['git', 'fetch', '--no-tags', '--depth=1', 'origin', head])
+              fetched = subprocess.check_output(['git', 'rev-parse', head], text=True).strip().lower()
+              if fetched != head:
+                  raise ValueError('merge-group head fetch mismatch')
+              raw = subprocess.check_output([
+                  'git', 'diff', '--no-ext-diff', '--no-textconv', '--no-renames',
+                  '--name-status', '-z', base, head, '--'
+              ])
+              if not raw or not raw.endswith(b'\0'):
+                  raise ValueError('empty or incomplete merge-group diff')
+              fields = raw[:-1].split(b'\0')
+              if len(fields) % 2:
+                  raise ValueError('malformed merge-group diff')
+              allowed_statuses = {b'A', b'M', b'D'}
+              paths = []
+              for index in range(0, len(fields), 2):
+                  status = fields[index]
+                  if status not in allowed_statuses:
+                      raise ValueError('unmodelled merge-group status')
+                  path = fields[index + 1].decode('utf-8')
+                  if not valid_path(path):
+                      raise ValueError('invalid merge-group path')
+                  paths.append(path)
+                  if status != b'D':
+                      row = subprocess.check_output(['git', 'ls-tree', head, '--', path], text=True).strip()
+                      parts = row.split(None, 3)
+                      if len(parts) != 4 or parts[0] not in {'100644', '100755'} or parts[1] != 'blob':
+                          raise ValueError('special candidate object mode')
+              if not paths or len(set(paths)) != len(paths):
+                  raise ValueError('empty or duplicate merge-group paths')
+              if all(path.startswith('docs/architecture/') and path.endswith('.md') for path in paths):
+                  result = {'rust': 'false', 'windows': 'false', 'surface': 'architecture-docs'}
+          except (OSError, UnicodeDecodeError, ValueError, subprocess.SubprocessError):
+              result = {'rust': 'true', 'windows': 'true', 'surface': 'full'}
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a', encoding='utf-8') as output:
+              output.write(f"rust={result['rust']}\n")
+              output.write(f"windows={result['windows']}\n")
+              output.write(f"surface={result['surface']}\n")
+          print(f"Merge-group lane classification: {result}")
+          PY
 
       - name: Check out exact merge-group candidate
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -105,6 +196,8 @@ jobs:
 
   rust_linux:
     name: Merge Queue / Rust Linux workspace
+    needs: candidate
+    if: needs.candidate.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     permissions:
@@ -171,6 +264,8 @@ jobs:
 
   durability_postgres:
     name: Merge Queue / Durability PostgreSQL harness
+    needs: candidate
+    if: needs.candidate.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -218,6 +313,8 @@ jobs:
 
   rust_windows:
     name: Merge Queue / Rust Windows client
+    needs: candidate
+    if: needs.candidate.outputs.windows == 'true'
     runs-on: windows-2025
     timeout-minutes: 60
     permissions:
@@ -258,6 +355,8 @@ jobs:
 
   rust_supply_chain:
     name: Merge Queue / Rust supply chain
+    needs: candidate
+    if: needs.candidate.outputs.rust == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:
@@ -284,18 +383,43 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     steps:
-      - name: Require every Merge Queue qualification layer
+      - name: Require every applicable Merge Queue qualification layer
         shell: bash
         env:
           CANDIDATE: ${{ needs.candidate.result }}
           DEPENDENCY_REVIEW: ${{ needs.dependency_review.result }}
           CODEQL: ${{ needs.codeql.result }}
+          RUST_REQUIRED: ${{ needs.candidate.outputs.rust }}
+          WINDOWS_REQUIRED: ${{ needs.candidate.outputs.windows }}
           RUST_LINUX: ${{ needs.rust_linux.result }}
           DURABILITY_POSTGRES: ${{ needs.durability_postgres.result }}
           RUST_WINDOWS: ${{ needs.rust_windows.result }}
           RUST_SUPPLY_CHAIN: ${{ needs.rust_supply_chain.result }}
         run: |
           set -euo pipefail
-          for result in "$CANDIDATE" "$DEPENDENCY_REVIEW" "$CODEQL" "$RUST_LINUX" "$DURABILITY_POSTGRES" "$RUST_WINDOWS" "$RUST_SUPPLY_CHAIN"; do
+          RUST_REQUIRED="${RUST_REQUIRED:-true}"
+          WINDOWS_REQUIRED="${WINDOWS_REQUIRED:-true}"
+          for result in "$CANDIDATE" "$DEPENDENCY_REVIEW" "$CODEQL"; do
             test "$result" = success
           done
+          case "$RUST_REQUIRED:$WINDOWS_REQUIRED" in
+            true:true|false:false) ;;
+            *)
+              echo "invalid Merge Queue lane selection: rust=$RUST_REQUIRED windows=$WINDOWS_REQUIRED" >&2
+              exit 1
+              ;;
+          esac
+          if [[ "$RUST_REQUIRED" == "true" ]]; then
+            for result in "$RUST_LINUX" "$DURABILITY_POSTGRES" "$RUST_SUPPLY_CHAIN"; do
+              test "$result" = success
+            done
+          else
+            for result in "$RUST_LINUX" "$DURABILITY_POSTGRES" "$RUST_SUPPLY_CHAIN"; do
+              [[ "$result" == success || "$result" == skipped ]]
+            done
+          fi
+          if [[ "$WINDOWS_REQUIRED" == "true" ]]; then
+            test "$RUST_WINDOWS" = success
+          else
+            [[ "$RUST_WINDOWS" == success || "$RUST_WINDOWS" == skipped ]]
+          fi

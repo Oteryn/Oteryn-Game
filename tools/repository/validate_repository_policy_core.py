@@ -47,7 +47,7 @@ EXPECTED_MERGE_GATE_VALIDATE_JOB_SHA256 = (
     "bed1966b918ef7548bcaa0ac5b1a4563d4c7cc7464a34e35128fdaf72d8b5160"
 )
 EXPECTED_MERGE_GATE_LANES_JOB_SHA256 = "7f101b51bfeff7c63495f8d9662a9369a1abd597485d852a5b4964d1fad221c5"
-EXPECTED_MERGE_GROUP_GATE_BLOB = "e347ceff04e976fe35a010cac930af5aaa22112e"
+EXPECTED_MERGE_GROUP_GATE_BLOB = "c59b30fde7538e738346eec03a602081dc4ac2d6"
 EXPECTED_POST_MERGE_RUST_SHA256 = "d34a8feeef8b37568217159e85cab54a0868abf9ab8045f5113b9bc8c3c6f0f7"
 EXPECTED_MERGE_GROUP_GATE_TOP_LEVEL_KEYS = [
     "name",
@@ -316,7 +316,7 @@ def main() -> int:
 
     push_ruleset = policy.get("push_ruleset", {})
     if push_ruleset.get("name") != "Protect repository control plane" or push_ruleset.get("target") != "push":
-        errors.append("control-plane ruleset must be a dedicated push ruleset")
+        errors.append("control-plane push ruleset must be a dedicated push ruleset")
     if push_ruleset.get("enforcement") != "active":
         errors.append("control-plane push ruleset must be active")
     if push_ruleset.get("bypass_actors") != []:
