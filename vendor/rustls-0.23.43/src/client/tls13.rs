@@ -583,24 +583,18 @@ impl State<ClientConnectionData> for ExpectEncryptedExtensions {
         )?;
 
         let ech_retry_configs = match (cx.data.ech_status, &exts.encrypted_client_hello_ack) {
-            // If we didn't offer ECH, or ECH was accepted, but the server sent an ECH encrypted
-            // extension with retry configs, we must error.
             (EchStatus::NotOffered | EchStatus::Accepted, Some(_)) => {
                 return Err(cx.common.send_fatal_alert(
                     AlertDescription::UnsupportedExtension,
                     PeerMisbehaved::UnsolicitedEchExtension,
                 ));
             }
-            // If we offered ECH, and it was rejected, store the retry configs (if any) from
-            // the server's ECH extension. We will return them in an error produced at the end
-            // of the handshake.
             (EchStatus::Rejected, ext) => ext
                 .as_ref()
                 .map(|ext| ext.retry_configs.to_vec()),
             _ => None,
         };
 
-        // QUIC transport parameters
         if cx.common.is_quic() {
             match exts
                 .transport_parameters
@@ -630,7 +624,6 @@ impl State<ClientConnectionData> for ExpectEncryptedExtensions {
                 }
 
                 if was_early_traffic && !cx.common.early_traffic {
-                    // If no early traffic, set the encryption key for handshakes
                     self.key_schedule
                         .set_handshake_encrypter(cx.common);
                 }
@@ -688,8 +681,6 @@ impl State<ClientConnectionData> for ExpectEncryptedExtensions {
                 }
                 cx.common.handshake_kind = Some(HandshakeKind::Resumed);
 
-                // We *don't* reverify the certificate chain here: resumption is a
-                // continuation of the previous session in terms of security policy.
                 let cert_verified = verify::ServerCertVerified::assertion();
                 let sig_verified = verify::HandshakeSignatureValid::assertion();
                 Ok(Box::new(ExpectFinished {
@@ -954,9 +945,6 @@ impl State<ClientConnectionData> for ExpectCertificateOrCertReq {
     }
 }
 
-// TLS1.3 version of CertificateRequest handling.  We then move to expecting the server
-// Certificate. Unfortunately the CertificateRequest type changed in an annoying way
-// in TLS1.3.
 struct ExpectCertificateRequest {
     config: Arc<ClientConfig>,
     server_name: ServerName<'static>,
@@ -985,10 +973,6 @@ impl State<ClientConnectionData> for ExpectCertificateRequest {
         self.transcript.add_message(&m);
         debug!("Got CertificateRequest {certreq:?}");
 
-        // Fortunately the problems here in TLS1.2 and prior are corrected in
-        // TLS1.3.
-
-        // Must be empty during handshake.
         if !certreq.context.0.is_empty() {
             warn!("Server sent non-empty certreq context");
             return Err(cx.common.send_fatal_alert(
@@ -1098,10 +1082,6 @@ fn read_second_decode_with_rollback<'a, T: Codec<'a>>(
     match T::read(reader) {
         Ok(value) => Ok(value),
         Err(err) => {
-            // `read` has returned, so every partially-built value and armed
-            // local guard has already been destroyed.  Return only the
-            // parser-local aggregate charges left by successful nested
-            // subreads; backing-bound custody is excluded by `rollback`.
             owner.rollback(checkpoint);
             Err(err)
         }
@@ -1117,6 +1097,9 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
     where
         Self: 'm,
     {
+        #[cfg(feature = "std")]
+        self.transcript.try_add_message(&m)?;
+        #[cfg(not(feature = "std"))]
         self.transcript.add_message(&m);
         #[cfg(feature = "std")]
         let decoded_owner = m.decoded_owner();
@@ -1233,10 +1216,6 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
             }
             let converted = cert_payload
                 .into_owned_chain_and_ocsp_with_resource_owner(owner.clone());
-            // The conversion consumed and destroyed all second-decode source
-            // backing.  Payload backing carries its own token; this releases
-            // only parser-local generic-list reservations still owned by the
-            // second-decode scope.
             owner.rollback(checkpoint);
             let (chain, ocsp, custody) = converted?;
             let server_cert =
@@ -1289,7 +1268,6 @@ impl State<ClientConnectionData> for ExpectCompressedCertificate {
 
 #[cfg(feature = "std")]
 struct ChargedDecompressedCertificate {
-    // Backing precedes custody so it is destroyed before the debit releases.
     bytes: Vec<u8>,
     _custody: Option<crate::msgs::codec::DecodedCustody>,
 }
@@ -1336,6 +1314,9 @@ impl State<ClientConnectionData> for ExpectCertificate {
         Self: 'm,
     {
         if !self.message_already_in_transcript {
+            #[cfg(feature = "std")]
+            self.transcript.try_add_message(&m)?;
+            #[cfg(not(feature = "std"))]
             self.transcript.add_message(&m);
         }
         #[cfg(feature = "std")]
@@ -1346,7 +1327,6 @@ impl State<ClientConnectionData> for ExpectCertificate {
             HandshakePayload::CertificateTls13
         )?;
 
-        // This is only non-empty for client auth.
         if !cert_chain.context.0.is_empty() {
             return Err(cx.common.send_fatal_alert(
                 AlertDescription::DecodeError,
@@ -1387,7 +1367,6 @@ impl State<ClientConnectionData> for ExpectCertificate {
     }
 }
 
-// --- TLS1.3 CertificateVerify ---
 struct ExpectCertificateVerify<'a> {
     config: Arc<ClientConfig>,
     server_name: ServerName<'static>,
@@ -1417,7 +1396,6 @@ impl State<ClientConnectionData> for ExpectCertificateVerify<'_> {
 
         trace!("Server cert is {:?}", self.server_cert.cert_chain);
 
-        // 1. Verify the certificate chain.
         let (end_entity, intermediates) = self
             .server_cert
             .cert_chain
@@ -1441,7 +1419,9 @@ impl State<ClientConnectionData> for ExpectCertificateVerify<'_> {
                     .send_cert_verify_error_alert(err)
             })?;
 
-        // 2. Verify their signature on the handshake.
+        #[cfg(feature = "std")]
+        let handshake_hash = self.transcript.try_current_hash()?;
+        #[cfg(not(feature = "std"))]
         let handshake_hash = self.transcript.current_hash();
         let sig_verified = self
             .config
@@ -1465,7 +1445,9 @@ impl State<ClientConnectionData> for ExpectCertificateVerify<'_> {
         #[cfg(feature = "std")]
         {
             cx.common.peer_certificate_custody = peer_certificate_custody.map(Into::into);
+            self.transcript.try_add_message(&m)?;
         }
+        #[cfg(not(feature = "std"))]
         self.transcript.add_message(&m);
 
         Ok(Box::new(ExpectFinished {
@@ -1616,8 +1598,6 @@ impl State<ClientConnectionData> for ExpectFinished {
         st.transcript.add_message(&m);
 
         let hash_after_handshake = st.transcript.current_hash();
-        /* The EndOfEarlyData message to server is still encrypted with early data keys,
-         * but appears in the transcript after the server Finished. */
         if cx.common.early_traffic {
             emit_end_of_early_data_tls13(&mut st.transcript, cx.common);
             cx.common.early_traffic = false;
@@ -1628,8 +1608,6 @@ impl State<ClientConnectionData> for ExpectFinished {
 
         let mut flight = HandshakeFlightTls13::new(&mut st.transcript);
 
-        /* Send our authentication/finished messages.  These are still encrypted
-         * with our handshake keys. */
         if let Some(client_auth) = st.client_auth {
             match client_auth {
                 ClientAuthDetails::Empty {
@@ -1641,8 +1619,6 @@ impl State<ClientConnectionData> for ExpectFinished {
                     auth_context_tls13: auth_context,
                     ..
                 } if cx.data.ech_status == EchStatus::Rejected => {
-                    // If ECH was offered, and rejected, we MUST respond with
-                    // an empty certificate message.
                     emit_certificate_tls13(&mut flight, None, auth_context);
                 }
                 ClientAuthDetails::Verify {
@@ -1679,23 +1655,17 @@ impl State<ClientConnectionData> for ExpectFinished {
         emit_finished_tls13(&mut flight, &verify_data);
         flight.finish(cx.common);
 
-        /* We're now sure this server supports TLS1.3.  But if we run out of TLS1.3 tickets
-         * when connecting to it again, we definitely don't want to attempt a TLS1.2 resumption. */
         st.config
             .resumption
             .store
             .remove_tls12_session(&st.server_name);
 
-        /* Now move to our application traffic keys. */
         cx.common.check_aligned_handshake()?;
         let (key_schedule, resumption) =
             key_schedule_pre_finished.into_traffic(cx.common, st.transcript.current_hash());
         cx.common
             .start_traffic(&mut cx.sendable_plaintext);
 
-        // Now that we've reached the end of the normal handshake we must enforce ECH acceptance by
-        // sending an alert and returning an error (potentially with retry configs) if the server
-        // did not accept our ECH offer.
         if cx.data.ech_status == EchStatus::Rejected {
             return Err(ech::fatal_alert_required(st.ech_retry_configs, cx.common));
         }
@@ -1723,9 +1693,6 @@ impl State<ClientConnectionData> for ExpectFinished {
     }
 }
 
-// -- Traffic transit state (TLS1.3) --
-// In this state we can be sent tickets, key updates,
-// and application data.
 struct ExpectTraffic {
     config: Arc<ClientConfig>,
     session_storage: Arc<dyn ClientSessionStore>,
@@ -1837,15 +1804,13 @@ impl ExpectTraffic {
             ));
         }
 
-        // Mustn't be interleaved with other handshake messages.
         common.check_aligned_handshake()?;
 
         if common.should_update_key(key_update_request)? {
             self.key_schedule
-                .update_encrypter_and_notify(common);
+                .request_key_update_and_update_encrypter(common)?;
         }
 
-        // Update our read-side keys.
         self.key_schedule
             .update_decrypter(common);
         Ok(())
@@ -2054,8 +2019,6 @@ mod resource_owner_tests {
         const SIZE_LEN: ListLength = ListLength::U16;
     }
 
-    /// Models a malformed decompressed Certificate body: a nested list is
-    /// decoded successfully before a later field is truncated.
     #[derive(Debug)]
     struct MalformedCompressedCertificateBody;
 
@@ -2076,8 +2039,6 @@ mod resource_owner_tests {
         });
         let (decoded_owner, arc_charge) = DecodedOwner::new(ledger.clone()).unwrap();
 
-        // This represents the independently custodied decompression backing.
-        // It is deliberately established before the second-decode checkpoint.
         let prospective =
             ProspectiveDecodedCustody::reserve(decoded_owner.clone(), 4).unwrap();
         let decompressed = vec![0u8; 4];
@@ -2085,8 +2046,6 @@ mod resource_owner_tests {
         let before_second_decode = ledger.used.load(Ordering::SeqCst);
         let checkpoint = decoded_owner.checkpoint();
 
-        // u16 list length=2, two successfully decoded entries, then the
-        // required trailing u16 field is absent.
         let malformed = [0, 2, 1, 2];
         let mut reader = Reader::init_with_owner(&malformed, decoded_owner.clone());
         assert!(read_second_decode_with_rollback::<MalformedCompressedCertificateBody>(
@@ -2132,8 +2091,6 @@ mod resource_owner_tests {
         assert_eq!(decompressed.bytes.capacity(), 37);
         assert_eq!(ledger.used.load(Ordering::SeqCst), owner_control + 37);
 
-        // A handler error or cancellation drops this value before returning;
-        // the backing field is destroyed before its custody field releases.
         drop(decompressed);
         assert_eq!(ledger.used.load(Ordering::SeqCst), owner_control);
         drop(owner);
