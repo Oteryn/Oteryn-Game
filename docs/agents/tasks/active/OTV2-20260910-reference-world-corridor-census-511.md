@@ -11,12 +11,11 @@ base_branch: main
 branch: agent/reference-world-corridor-census-511
 pr: 525
 base_sha: 43ff3341e079f2883b78d01db5cee649290d90be
-head_sha: 6ee784479cbb7871982957113467138a2edb8647
+head_sha: pending_final_exact_head_freeze
 final_head_sha: null
 final_head_frozen_at: null
 owner: REFERENCE_WORLD_CORRIDOR_CENSUS_511
 created_at: 2026-09-10T08:40:00+02:00
-updated_at: 2026-09-10T10:45:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/**
@@ -27,6 +26,7 @@ depends_on:
   - Oteryn/Oteryn-Game#162
   - Oteryn/Oteryn-Game#511
   - Oteryn/Oteryn-Game#523
+  - Oteryn/Oteryn-Game#526
 blocks:
   - Oteryn/Oteryn-Game#504
 cross_repository_coordination_id: null
@@ -34,48 +34,30 @@ external_repositories:
   - blakinio/Otheryn@e417c5e7c22986bf4acef0495eb47f7b72c97cce (READ_ONLY_MIGRATION_EVIDENCE)
 ```
 
-## Protected activation evidence
+## Protected authority and resume
 
-This task is **ACTIVE_PHASE_A** under the single protected allocation:
+The single canonical worker is this existing Draft PR #525 / branch `agent/reference-world-corridor-census-511`.
 
-- allocation PR #523 exact candidate `e9251de77dd1a7d011e4ad6e3e3323c2d9602fe9`;
-- protected allocation/main commit `81ff001609c730b1dca1b28c431199045dec00f3`;
-- real merge-group run `34445097627` = SUCCESS;
-- merge-group aggregate `game-gate` job `102770140001` = SUCCESS;
-- protected allocation path `docs/agents/programs/OTV2_REFERENCE_WORLD_CORRIDOR_CENSUS_511_ALLOCATION_20260910.md` read back from protected main;
-- explicit #162 activation comment `5614294048` after fresh overlap/custody reconciliation;
-- concurrent prospective allocation PR #522 is CLOSED UNMERGED as superseded and grants no canonical worker authority.
+Protected lifecycle evidence:
 
-Material work is restricted to the exact owned paths above. Existing producer/reconstruction/runtime/registry/workflow/Cargo/Platform/Atlas paths remain read-only.
+- original allocation PR #523 integrated as protected `81ff001609c730b1dca1b28c431199045dec00f3`;
+- original #162 activation comment `5614294048`;
+- allocation repair PR #526 exact head `254fcd098549d5630357e26f0689ab66b7498aea`;
+- #526 real merge-group run `34455053189` and aggregate `game-gate` = SUCCESS;
+- repaired protected `main@1fdc37fdb8b8faf2aaab99f17a25c7a6e986f7c5`;
+- explicit post-repair #162 resume comment `5615644586` after fresh overlap/custody reconciliation.
 
-## Protected repair and resume evidence
+Every material result produced after hold `5614417475` and before resume `5615644586` remains `PRE_REPAIR_UNQUALIFIED / NOT_ACCEPTED_EVIDENCE`. Preserve that history, but never consume those pre-resume counts/digests/classifications as #511/#504 acceptance.
 
-- protected repaired allocation/main: `1fdc37fdb8b8faf2aaab99f17a25c7a6e986f7c5`;
-- repaired allocation PR #526 exact head: `254fcd098549d5630357e26f0689ab66b7498aea`;
-- real merge-group run `34455053189` = SUCCESS;
-- explicit #162 resume comment: `5615644586`;
-- preserved pre-repair branch history through `f6605bfb482649dbb381b2dfd76f1ba1184242ae`;
-- every material pre-resume result remains `PRE_REPAIR_UNQUALIFIED / NOT_ACCEPTED_EVIDENCE`.
+No replacement worker/branch/PR is authorized. Existing producer/reconstruction/runtime/registry/workflow/Cargo/Platform/Atlas paths remain read-only.
 
 ## Outcome
 
-Produce the smallest deterministic Phase-A migration-corpus census needed for the first Reference Newhaven/Targuna corridor evidence. Measure Newhaven and Targuna as **two separate bounded source windows** through the existing protected Game fullworld producer APIs, preserve exact source provenance, and emit machine-readable lower-bound measurements suitable for downstream #504.
+Produce the smallest deterministic Phase-A migration-corpus census needed for the first Reference Newhaven/Targuna corridor evidence. Measure exactly two separate authorized 32x32 source shards on native floor `-7` through the existing protected Game fullworld producer APIs and emit public-safe, machine-readable lower-bound evidence for #504.
 
-The result is migration/source evidence only. It is not a playable world import, not Global target geometry parity, not production resource maxima and not Evolved content.
+This is migration/source evidence only. It is not Global target geometry, a playable world import, production resource maxima, a production chunk/world format or Evolved content.
 
-## Architecture and source authority
-
-- **PROVEN:** #162 / `OTV2_WORK_DELIVERY_COORDINATOR` is the active product control plane.
-- **PROVEN:** protected #523 is the sole allocation for this material worker.
-- **PROVEN:** `tools/game-atlas-fullworld-source/producer.py` owns exact pinned source validation and ordered semantic tile projection and must be consumed read-only.
-- **PROVEN:** `tools/tibia-worldmap-reconstruction/**` remains the later Phase-B comparison family and is read-only in Phase A.
-- **PROVEN:** no second OTBM parser/importer/fullworld exporter is required or authorized.
-- **PROVEN:** protected `.github/workflows/game-atlas-thais-fixture.yml` provides the repository-approved hosted source-acquisition pattern: pinned legacy checkout, exact map SHA-256, exact Drive file ID download, exact ZIP/catalog/appearance digest verification before projection.
-- **PROVEN:** connected Drive source file id `1Dlo3bS4K1nS3mw4BhPZdlHT7lX5zRAvv` was independently streamed during activation preflight; size `246811594` and SHA-256 `1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f` match protected source evidence.
-- **UNKNOWN:** exact Global target geometry for Newhaven/Targuna migration locators; remain `OTS_HYPOTHESIS_ONLY` until later #483-governed target observation.
-- **UNKNOWN:** production hard maxima derived from census counts; #504 owns later evidence-backed resource disposition.
-
-### Exact pinned migration source
+## Exact source contract
 
 ```text
 legacy repository:
@@ -92,189 +74,135 @@ appearance SHA-256:
   dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075
 ```
 
-All exact digests must be reverified on the worker execution surface before counts are accepted.
+The accepted execution must use a fresh one-shot Python interpreter, prove the exact legacy Git top-level and HEAD, require a completely clean legacy worktree including untracked files, and reject pre-existing `tools` / `tools.otbm_atlas*` modules. Immediately after `load_runtime(...)`, every actually loaded legacy parser module must resolve under the pinned legacy `tools` tree, be tracked there, and have a working-tree blob identical to the pinned Git blob. Any mismatch is `LEGACY_PARSER_REVISION_MISMATCH` before evidence acceptance.
 
-### Exact Phase-A starts
+## Exact authorized footprints
 
 ```text
 Newhaven
-  semantic_record=3a6d2a5cfd599439efccce35017e12b8
   locator=(32536,32514)
   native_floor=-7
-  semantic_shard=f-7-r1016-c1016
-  fullworld_region=fm000007_rxp000127_ryp000127
+  authoritative_start_shard=f-7-r1016-c1016
+  lookup_only_region=fm000007_rxp000127_ryp000127
 
 Targuna
-  semantic_record=57d9ef64607b0360d0c01d338f7c70ba
   locator=(31934,31925)
   native_floor=-7
-  semantic_shard=f-7-r997-c997
-  fullworld_region=fm000007_rxp000124_ryp000124
+  authoritative_start_shard=f-7-r997-c997
+  lookup_only_region=fm000007_rxp000124_ryp000124
 ```
 
-These are migration-source locators, never automatic `GLOBAL_REFERENCE_TARGET` coordinates.
+Only the named 32x32 start shard is measured for each location. The 256x256 fullworld region is lookup/retrieval metadata only and must not be counted wholesale.
+
+All coordinates and identities remain `MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY` for Global geometry.
 
 ## Required implementation shape
 
-Prefer the smallest reproducible path:
+Reuse read-only `tools/game-atlas-fullworld-source/producer.py`; do not create another OTBM parser, semantic projection or fullworld exporter.
+
+A thin consumer may live only under `tools/reference-world-corridor-census/**` and must:
+
+- retain/project only records in the two exact authorized start shards;
+- preserve deterministic producer order;
+- preserve explicit unresolved appearances rather than substituting them;
+- report tile/non-empty/ordered-presentation/max-per-cell/floor/identity dimensions separately;
+- retain town/waypoint and transition-like records only as structural migration observations;
+- retain composite/multi-cell visuals only as diagnostics;
+- never commit raw source, map, archive, pixel, sprite or canonical record bytes.
+
+For byte evidence, unpack `record_bytes, record_stats = project_tile_bytes(runtime, tile)` for every selected tile in producer order. Hash/count only `record_bytes`. The canonical multi-record stream is the direct concatenation of those exact bytes with zero added delimiter/prefix/suffix and no stripping of producer-defined trailing newlines. Public evidence may retain only aggregate byte count, maximum single-record byte length and lowercase SHA-256 of that stream.
+
+## Fail-closed expansion rule
+
+Ordinary occupancy of a shard edge is **diagnostic only** and is not clipping proof.
+
+Do not traverse or count any adjacent shard or additional floor under this task. If an exercised structure/path/service fixture is demonstrably clipped, or if expansion necessity is materially ambiguous, record the evidence plus the exact minimal proposed adjacent shard/floor and return:
 
 ```text
-protected game-atlas-fullworld-source producer APIs (read-only)
-+ exact source/digests
-+ Newhaven and Targuna bounded selectors
--> thin deterministic census consumer only if needed
--> machine-readable summary
--> public-safe evidence document
+WINDOW_EXPANSION_REQUIRED
 ```
 
-If tracked helper code is needed it must live only under `tools/reference-world-corridor-census/**`, consume the producer API rather than copy it, and have focused deterministic tests. It must not parse OTBM independently, reconstruct appearance semantics, select a new world schema or add a workflow.
+Then stop before measuring the proposed footprint. Any expansion requires a separately protected #162 allocation amendment. Recursive/flood-fill widening and a single Newhaven-to-Targuna rectangle are forbidden.
 
-## Required measurements
+## Post-resume validation evidence
 
-For Newhaven and Targuna independently report:
+The post-resume worker report on PR #525 (`5616108211`) records:
 
-1. exact source/digest/producer revision;
-2. starting and final source-window/shard/region set plus deterministic expansion order;
-3. floors touched;
-4. total tile records and non-empty tile records;
-5. total ordered presentation/placement records and maximum placements per cell;
-6. resolved/unresolved appearance/presentation totals and exact unresolved identifiers;
-7. unique source item/appearance IDs and unique resolved presentation/sprite identities, migration-only;
-8. town/waypoint and door/teleport/relocation-like source observations without invented gameplay semantics;
-9. candidate composite/multi-cell visual patterns as diagnostics only;
-10. exact clipping/connectivity reason for every expansion;
-11. encoded semantic record bytes where the protected producer already defines them;
-12. deterministic machine-readable summary sufficient for #504 lower-bound resource decisions.
+- focused `self_test.py` PASS;
+- Python compile PASS for census helper/tests;
+- protected fullworld producer compile/self-test PASS;
+- exact pinned source/parser validation PASS;
+- two independent exact-corpus census executions;
+- byte-identical summaries via `cmp`;
+- canonical summary SHA-256 `242ca3df871ba7946c0f86f0b503e29f269c8756c72ac2a3eaf5228e93b52091`;
+- `git diff --check` PASS.
 
-Never collapse `cells`, `total placements`, `max placements per cell`, `unique identities` or `encoded bytes` into one resource.
+Independent readback also verified the claimed pinned parser blobs for `tools/otbm_atlas/{__init__.py,assets.py,nodefile.py,semantic.py}` against `blakinio/Otheryn@e417c5e7c22986bf4acef0495eb47f7b72c97cce`.
 
-## Expansion rule
+Measured public-safe result:
 
-Start from each exact bounded locator window. Expand only when an exercised structure/path/service fixture is demonstrably clipped by the current boundary and record the exact deterministic reason/order.
+| Dimension | Newhaven | Targuna |
+|---|---:|---:|
+| cells / tile records | 1,024 | 1,024 |
+| ordered presentations | 1,199 | 1,264 |
+| max presentations per cell | 5 | 5 |
+| unique appearance source IDs | 70 | 156 |
+| unique resolved sprite IDs | 84 | 190 |
+| aggregate encoded bytes | 899,694 | 939,759 |
+| max encoded record bytes | 3,080 | 3,079 |
+| ordered stream SHA-256 | `bebce3eca44dfcf3ab4044fd7a4a66bf6c1f7a80e2b0d375de14c3eb3898faac` | `5e9a498a37570662f57d24ec8ca020c521ccf56091b03e33970aa6e2a1394438` |
+| unresolved presentations | 0 | 0 |
 
-Never build one Newhaven-to-Targuna rectangle. The geographic gap is not a resident-world resource requirement.
+Both shards have four-edge occupancy classified `EDGE_OCCUPANCY_ONLY_NOT_CLIPPING_PROOF`. No exercised clipping/expansion requirement was established, `window_expansion_required=[]`, and no adjacent shard was counted.
 
-## Required RED/GREEN validation
-
-If helper code is introduced, first prove failing tests for the missing bounded census behavior, then minimal GREEN. At minimum cover:
-
-- exact inclusive/exclusive window boundaries;
-- floor filtering;
-- stable results independent of hash/container enumeration;
-- deterministic expansion order;
-- explicit unresolved appearance propagation;
-- no silent loss of ordered presentations;
-- checked count/byte arithmetic and overflow rejection;
-- exact source/digest mismatch fail-closed;
-- deterministic machine-readable summary;
-- max/max+1 where a local fixed helper bound exists.
-
-Also run existing fullworld producer compile/self-tests relevant to the reused API. Do not change that producer to make the consumer pass.
+`phase_a_result=PASS`, `phase_b_target_parity=NOT_PERFORMED`, `registry_maxima_selected=false`, `production_authority=NONE`.
 
 ## Acceptance criteria
 
-- [ ] Exact pinned map/asset/catalog/appearance identities verified on execution surface before measurements accepted.
-- [ ] Existing fullworld producer API reused; no duplicate parser/importer/schema.
-- [ ] Newhaven and Targuna measured as separate bounded windows.
-- [ ] Tile/non-empty/placement/max-per-cell/floor counts independently reported.
-- [ ] Resolved/unresolved identifiers explicit and machine-readable.
-- [ ] Every expansion justified by clipping/connectivity evidence.
-- [ ] No silent tile/item/stack/presentation loss.
-- [ ] Transition-like records remain structural observations only.
-- [ ] #504 receives exact lower-bound corpus dimensions without production-maxima claim.
-- [ ] No migration/OTS value promoted to Global Reference truth.
-- [ ] No proprietary map/source/pixel/screenshot bytes committed.
-- [ ] No permanent world/chunk/bundle/GPU/resource layout selected.
-- [ ] No registry/runtime/client/server/Cargo/workflow/Platform/Atlas/META write.
-- [ ] Complete final diff self-review has zero open material findings.
-- [ ] Exact-head repository checks are green.
+- [x] Exact pinned map/asset/catalog/appearance identities verified on the execution surface before measurements were accepted.
+- [x] Exact legacy parser checkout/imported-module provenance verified fail-closed.
+- [x] Existing fullworld producer API reused; no duplicate parser/importer/schema.
+- [x] Newhaven and Targuna measured as separate exact 32x32 floor -7 windows.
+- [x] 256x256 source regions retained as lookup-only envelopes.
+- [x] Tile/non-empty/placement/max-per-cell/floor dimensions independently reported.
+- [x] Resolved/unresolved identifiers explicit and machine-readable.
+- [x] Canonical stream count/max/SHA-256 framing reproduced deterministically without tracked raw bytes.
+- [x] Edge occupancy is not promoted to clipping/expansion evidence.
+- [x] No unallocated expansion occurred.
+- [x] Transition-like records remain structural observations only.
+- [x] #504 receives lower-bound dimensions only; no production maximum selected.
+- [x] No migration/OTS value promoted to Global Reference truth.
+- [x] No proprietary map/source/pixel/screenshot/canonical-record bytes committed.
+- [x] No permanent world/chunk/bundle/GPU/resource layout selected.
+- [x] No registry/runtime/client/server/Cargo/workflow/Platform/Atlas/META write.
+- [ ] Final exact-head whole-diff self-review has zero open material findings.
+- [ ] Final exact-head repository checks are green.
+- [ ] Required independent review, if selected by the current review policy/task gate, is satisfied on the final material head.
 - [ ] Unresolved review threads/requested changes are zero before integration handoff.
-
-## Excluded scope
-
-No Phase-B Global capture/observation, target parity claim, production Content/world runtime, full-world import, permanent `.omap/.owb` or chunk format, Movement/Combat/NPC runtime, server/client protocol IDs, renderer physical-layout decision, production resource hard maximum, registry mutation, deployment, external repository write or Evolved behavior.
 
 ## Failure behavior
 
-- exact pinned source unavailable on the active authorized execution surface: `SOURCE_CORPUS_REQUIRED`;
-- legacy checkout, interpreter, module-origin, tracking or loaded-blob mismatch: `LEGACY_PARSER_REVISION_MISMATCH` before evidence acceptance;
-- digest mismatch: fail closed before output acceptance;
-- unresolved critical mapping/appearance: preserve explicit unresolved evidence; do not substitute another source;
+- source unavailable: `SOURCE_CORPUS_REQUIRED`;
+- legacy checkout/import provenance mismatch: `LEGACY_PARSER_REVISION_MISMATCH`;
+- source digest mismatch: fail closed before evidence acceptance;
+- unresolved critical mapping/appearance: preserve explicit unresolved evidence;
 - count/byte arithmetic failure: fail closed;
-- proven or ambiguous expansion necessity: `WINDOW_EXPANSION_REQUIRED` with the minimal proposed shard/floor; stop before counting it;
-- unallocated path needed: `SHARED_LEASE_REQUIRED` with exact path/reason;
-- material architecture decision needed: `ARCHITECTURE_ESCALATION_REQUIRED` for only the affected lane.
+- clipping/ambiguous expansion need: `WINDOW_EXPANSION_REQUIRED` and stop before measuring the proposed footprint;
+- required unallocated path: `SHARED_LEASE_REQUIRED`;
+- material architecture decision: `ARCHITECTURE_ESCALATION_REQUIRED`.
 
-## Validation
+## Final gate state
 
-### Focused
-
-- command/run: `python tools/reference-world-corridor-census/self_test.py`
-- result: PASS after recorded missing-module RED; parser provenance/contamination, boundary/floor/order/unresolved/losslessness/stream-framing/overflow/digest negatives all GREEN
-- command/run: `python -m py_compile tools/reference-world-corridor-census/census.py tools/reference-world-corridor-census/self_test.py`
-- result: PASS
-
-### Component/integration
-
-- command/run: `python -m py_compile tools/game-atlas-fullworld-source/producer.py tools/game-atlas-fullworld-source/self_test.py && python tools/game-atlas-fullworld-source/self_test.py`
-- result: PASS
-- command/run: two independent exact pinned-corpus census executions followed by `cmp /tmp/census-final-a.json /tmp/census-final-b.json`
-- result: PASS; post-resume canonical SHA-256 `242ca3df871ba7946c0f86f0b503e29f269c8756c72ac2a3eaf5228e93b52091`
-
-### E2E
-
-- scenario: `NOT_APPLICABLE` — Phase A is migration-corpus evidence only
-- result: `NOT_APPLICABLE`
-
-### Exact-head CI
-
-- final head: pending
-- trigger source: pull_request
-- workflow/run/job: pending
-- result: pending
-
-## Self-review
-
-- post-repair implementation/merge head: `6ee784479cbb7871982957113467138a2edb8647`; task-record follow-up commit pending
-- material findings: 0 after changed-file and whole-diff review
-- verdict: PASS
-
-## Independent review
-
-- required: resolve from current risk policy and final changed paths
-- exact head: pending or `NOT_APPLICABLE`
-- verdict: pending or `NOT_APPLICABLE`
-
-## Phase-A measured result
-
-- Newhaven: one 32x32 shard, 1,024 cells/tile records, 1,199 ordered presentations, max 5/cell, 70 appearance IDs, 84 sprite IDs, 899,694 semantic bytes, zero unresolved.
-- Targuna: one 32x32 shard, 1,024 cells/tile records, 1,264 ordered presentations, max 5/cell, 156 appearance IDs, 190 sprite IDs, 939,759 semantic bytes, zero unresolved.
-- Newhaven direct-concatenation stream: 899,694 bytes, max record 3,080 bytes, SHA-256 `bebce3eca44dfcf3ab4044fd7a4a66bf6c1f7a80e2b0d375de14c3eb3898faac`.
-- Targuna direct-concatenation stream: 939,759 bytes, max record 3,079 bytes, SHA-256 `5e9a498a37570662f57d24ec8ca020c521ccf56091b03e33970aa6e2a1394438`.
-- Four-edge occupancy is `EDGE_OCCUPANCY_ONLY_NOT_CLIPPING_PROOF`, not clipping or expansion evidence; no `WINDOW_EXPANSION_REQUIRED` finding exists and no adjacent shard was counted.
-- Canonical details: `tools/reference-world-corridor-census/phase-a-summary.json` and public-safe evidence document.
-- `phase_b_target_parity=NOT_PERFORMED`; `registry_maxima_selected=false`; `production_authority=NONE`.
-
-## Context checkpoint
+The tracked task intentionally does not embed its own final commit SHA because doing so would require a self-referential follow-up commit. Live PR #525, exact-head reviews/checks and Issue #162 are the lifecycle authority for final SHA/status.
 
 ```yaml
-last_progress: post-repair resume reconciliation, parser provenance validation, canonical stream evidence, focused tests, and exact real-corpus double run complete
+last_progress: post-repair exact-corpus evidence regenerated and task wording reconciled to protected allocation
 status: active
 branch: agent/reference-world-corridor-census-511
-head_sha: 6ee784479cbb7871982957113467138a2edb8647
 pr: 525
-final_head_sha: pending exact-head CI
-final_head_frozen_at: null
-ci_trigger_source: pull_request
-ci_check_generation: pending push
-ci_checks_for_current_head: 0
-ci_run_ids: []
-ci_job_ids: []
-runner_assignment_state: not_started
-owner_action_required: none
-blocker: null
+final_head_sha: pending_live_exact_head_freeze
 phase_a_result: PASS
 phase_b_target_parity: NOT_PERFORMED
 production_authority: NONE
-next_action: keep Draft PR #525 and obtain exact-head repository checks/independent review; do not begin Phase B
+next_action: freeze the resulting exact head, run whole-diff self-review and exact-head repository checks, resolve the independent-review requirement from current policy/task authority, then hand off for separate integration authorization; do not begin Phase B
 ```
