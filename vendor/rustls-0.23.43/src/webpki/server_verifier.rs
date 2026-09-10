@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use core::mem::size_of;
 
 use pki_types::{CertificateDer, CertificateRevocationListDer, ServerName, UnixTime};
 use webpki::{CertRevocationList, ExpirationPolicy, RevocationCheckDepth, UnknownStatusPolicy};
@@ -308,7 +309,7 @@ impl ServerCertVerifier for WebPkiServerVerifier {
 
         let len = self.supported.mapping.len();
         let bytes = len
-            .checked_mul(core::mem::size_of::<SignatureScheme>())
+            .checked_mul(size_of::<SignatureScheme>())
             .ok_or(InvalidMessage::MessageTooLarge)?;
         if bytes == 0 {
             return Ok((Vec::new(), 0));
@@ -331,6 +332,7 @@ impl ServerCertVerifier for WebPkiServerVerifier {
 #[cfg(test)]
 #[macro_rules_attribute::apply(test_for_each_provider)]
 mod tests {
+    use core::mem::size_of;
     use std::prelude::v1::*;
     use std::{println, vec};
 
@@ -415,7 +417,7 @@ mod tests {
         .build()
         .unwrap();
         let expected = verifier.supported_verify_schemes();
-        let bytes = expected.len() * core::mem::size_of::<SignatureScheme>();
+        let bytes = expected.len() * size_of::<SignatureScheme>();
         assert!(bytes > 0);
 
         let funded = Arc::new(SchemeOwner::new(bytes));
@@ -424,7 +426,7 @@ mod tests {
             .unwrap();
         assert_eq!(actual, expected);
         assert_eq!(reserved, bytes);
-        assert_eq!(actual.capacity() * core::mem::size_of::<SignatureScheme>(), bytes);
+        assert_eq!(actual.capacity() * size_of::<SignatureScheme>(), bytes);
         assert_eq!(funded.reserved.load(Ordering::Relaxed), bytes);
         assert_eq!(funded.released.load(Ordering::Relaxed), 0);
         drop(actual);
