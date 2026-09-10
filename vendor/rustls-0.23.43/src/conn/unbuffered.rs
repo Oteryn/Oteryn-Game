@@ -11,6 +11,7 @@ use crate::Error;
 use crate::client::ClientConnectionData;
 use crate::msgs::deframer::buffers::DeframerSliceBuffer;
 use crate::server::ServerConnectionData;
+use crate::vecbuf::RetainedChunk;
 
 impl UnbufferedConnectionCommon<ClientConnectionData> {
     /// Processes the TLS records in `incoming_tls` buffer until a new [`UnbufferedStatus`] is
@@ -68,12 +69,7 @@ impl<Data> UnbufferedConnectionCommon<Data> {
                 );
             }
 
-            if let Some(chunk) = self
-                .core
-                .common_state
-                .sendable_tls
-                .pop()
-            {
+            if let Some(chunk) = self.core.common_state.sendable_tls.pop_with_custody() {
                 break (
                     buffer.pending_discard(),
                     EncodeTlsData::new(self, chunk).into(),
@@ -486,11 +482,11 @@ impl<Data> WriteTraffic<'_, Data> {
 /// A handshake record must be encoded
 pub struct EncodeTlsData<'c, Data> {
     conn: &'c mut UnbufferedConnectionCommon<Data>,
-    chunk: Option<Vec<u8>>,
+    chunk: Option<RetainedChunk>,
 }
 
 impl<'c, Data> EncodeTlsData<'c, Data> {
-    fn new(conn: &'c mut UnbufferedConnectionCommon<Data>, chunk: Vec<u8>) -> Self {
+    fn new(conn: &'c mut UnbufferedConnectionCommon<Data>, chunk: RetainedChunk) -> Self {
         Self {
             conn,
             chunk: Some(chunk),
@@ -514,6 +510,7 @@ impl<'c, Data> EncodeTlsData<'c, Data> {
         } else {
             let written = chunk.len();
             outgoing_tls[..written].copy_from_slice(&chunk);
+            drop(chunk); // Source backing is gone before its debit is released.
 
             self.conn.wants_write = true;
 
@@ -617,4 +614,137 @@ impl StdError for EncryptError {}
 pub struct InsufficientSizeError {
     /// buffer must be at least this size
     pub required_size: usize,
+}
+
+#[cfg(all(test, feature = "std", feature = "tls12", feature = "ring"))]
+pub(crate) mod outbound_custody_tests {
+    use super::*;
+    use crate::common_state::outbound_custody_tests::kx_message;
+    use crate::server::{ResolvesServerCertUsingSni, ServerConfig, UnbufferedServerConnection};
+    use crate::sync::Arc;
+    use crate::vecbuf::outbound_custody_tests::{control_bytes, Owner};
+    use core::sync::atomic::Ordering;
+
+    fn connection() -> UnbufferedServerConnection {
+        let config =
+            ServerConfig::builder_with_provider(Arc::new(crate::crypto::ring::default_provider()))
+                .with_safe_default_protocol_versions()
+                .unwrap()
+                .with_no_client_auth()
+                .with_cert_resolver(Arc::new(ResolvesServerCertUsingSni::new()));
+        UnbufferedServerConnection::new(Arc::new(config)).unwrap()
+    }
+
+    #[test]
+    fn custody_unbuffered_transfer_retry_success_and_already_encoded() {
+        let mut conn = connection();
+        let m = kx_message(false, 32);
+        let owner = Owner::new(usize::MAX);
+        let common = &mut conn.core.common_state;
+        let len = common.client_kx_outbound_len(&m).unwrap();
+        common
+            .send_msg_with_custody(&m, owner.reserve(len))
+            .unwrap();
+        let pointer = common.sendable_tls.peek().unwrap().as_ptr();
+        let expected = common.sendable_tls.peek().unwrap().to_vec();
+        let charged = owner.used();
+        let attempts = owner.attempts.load(Ordering::SeqCst);
+        let ConnectionState::EncodeTlsData(mut encoder) =
+            conn.process_tls_records(&mut []).state.unwrap()
+        else {
+            panic!("expected queued record");
+        };
+        assert_eq!(encoder.chunk.as_ref().unwrap().as_ptr(), pointer);
+        assert_eq!(owner.used(), charged);
+        let mut too_short = std::vec![0x55; len - 1];
+        for _ in 0..2 {
+            assert!(
+                matches!(encoder.encode(&mut too_short), Err(EncodeError::InsufficientSize(InsufficientSizeError { required_size })) if required_size == len)
+            );
+            assert!(too_short.iter().all(|byte| *byte == 0x55));
+            assert_eq!(encoder.chunk.as_ref().unwrap().as_ptr(), pointer);
+            assert_eq!(owner.used(), charged);
+        }
+        let mut output = std::vec![0; len];
+        assert_eq!(encoder.encode(&mut output).unwrap(), len);
+        assert_eq!(output, expected);
+        assert_eq!(owner.used(), control_bytes(1));
+        assert!(matches!(
+            encoder.encode(&mut output),
+            Err(EncodeError::AlreadyEncoded)
+        ));
+        assert_eq!(owner.attempts.load(Ordering::SeqCst), attempts);
+        drop(encoder);
+        assert!(conn.wants_write);
+        drop(conn);
+        assert_eq!(owner.used(), 0);
+    }
+
+    #[test]
+    fn custody_unbuffered_first_success_drop_and_failed_retry_drop() {
+        for outcome in 0..3 {
+            let mut conn = connection();
+            let owner = Owner::new(usize::MAX);
+            let queue = &mut conn.core.common_state.sendable_tls;
+            queue.prepare_owned_append(owner.clone(), 2).unwrap();
+            queue.append_with_custody(owner.chunk(b"first")).unwrap();
+            queue.append_with_custody(owner.chunk(b"second")).unwrap();
+            let charged = owner.used();
+            let ConnectionState::EncodeTlsData(mut encoder) =
+                conn.process_tls_records(&mut []).state.unwrap()
+            else {
+                panic!("expected queued record");
+            };
+            match outcome {
+                0 => {
+                    let mut output = [0; 5];
+                    assert_eq!(encoder.encode(&mut output).unwrap(), 5);
+                    assert_eq!(&output, b"first");
+                    assert_eq!(owner.used(), charged - 5);
+                }
+                1 => assert_eq!(owner.used(), charged),
+                _ => {
+                    assert!(encoder.encode(&mut []).is_err());
+                    assert_eq!(owner.used(), charged);
+                }
+            }
+            drop(encoder);
+            assert_eq!(owner.used(), control_bytes(2) + 6);
+            let ConnectionState::EncodeTlsData(mut second) =
+                conn.process_tls_records(&mut []).state.unwrap()
+            else {
+                panic!("expected second record");
+            };
+            let mut output = [0; 6];
+            assert_eq!(second.encode(&mut output).unwrap(), 6);
+            assert_eq!(&output, b"second");
+            drop(second);
+            assert_eq!(owner.used(), control_bytes(2));
+            drop(conn);
+            assert_eq!(owner.used(), 0);
+            assert_eq!(*owner.released.lock().unwrap(), [5, 6, control_bytes(2)]);
+        }
+    }
+
+    #[test]
+    fn custody_unbuffered_unowned_output_equivalence() {
+        let mut conn = connection();
+        conn.core
+            .common_state
+            .sendable_tls
+            .append(b"ordinary".to_vec());
+        let ConnectionState::EncodeTlsData(mut encoder) =
+            conn.process_tls_records(&mut []).state.unwrap()
+        else {
+            panic!("expected queued record");
+        };
+        assert!(encoder.encode(&mut [0; 7]).is_err());
+        let mut output = [0; 8];
+        assert_eq!(encoder.encode(&mut output).unwrap(), 8);
+        assert_eq!(&output, b"ordinary");
+        assert!(matches!(
+            encoder.encode(&mut output),
+            Err(EncodeError::AlreadyEncoded)
+        ));
+    }
 }

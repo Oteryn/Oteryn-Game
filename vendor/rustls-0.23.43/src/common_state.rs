@@ -25,6 +25,8 @@ use crate::suites::{PartiallyExtractedSecrets, SupportedCipherSuite};
 use crate::tls12::ConnectionSecrets;
 use crate::unbuffered::{EncryptError, InsufficientSizeError};
 use crate::vecbuf::ChunkVecBuffer;
+#[cfg(feature = "std")]
+use crate::vecbuf::{OutboundTlsCustody, RetainedChunk};
 use crate::{quic, record_layer};
 
 /// Connection state common to both client and server connections.
@@ -442,6 +444,90 @@ impl CommonState {
         self.sendable_tls.append(m.encode());
     }
 
+    #[cfg(feature = "std")]
+    fn queue_tls_message_with_custody(
+        &mut self,
+        m: OutboundOpaqueMessage,
+        custody: OutboundTlsCustody,
+    ) -> Result<(), Error> {
+        // encode writes the header into the existing prefixed Vec and moves it;
+        // it neither allocates nor copies the retained backing.
+        let chunk = RetainedChunk::with_custody(m.encode(), custody)?;
+        self.sendable_tls.append_with_custody(chunk)?;
+        Ok(())
+    }
+
+    /// Source-derived allowance for the TLS1.2 ClientKeyExchange send handoff.
+    /// The caller separately owns the typed/encoded message backing. This seam
+    /// only covers the resulting outbound records and the queue they enter.
+    #[cfg(all(feature = "std", feature = "tls12"))]
+    pub(crate) fn client_kx_outbound_len(&self, m: &Message<'_>) -> Result<usize, Error> {
+        let encoded = self.client_kx_encoded(m)?;
+        self.message_fragmenter
+            .fragment_payload(ContentType::Handshake, m.version, encoded.into())
+            .try_fold(0usize, |total, fragment| {
+                total
+                    .checked_add(crate::msgs::message::HEADER_SIZE)
+                    .and_then(|total| total.checked_add(fragment.payload.len()))
+                    .ok_or_else(|| InvalidMessage::MessageTooLarge.into())
+            })
+    }
+
+    #[cfg(all(feature = "std", feature = "tls12"))]
+    fn client_kx_encoded<'a>(&self, m: &'a Message<'_>) -> Result<&'a [u8], Error> {
+        // This is the already-authorized, unencrypted TLS1.2 KX send. Other
+        // TLS sends retain their existing infallible behavior and policy.
+        if !matches!(self.protocol, Protocol::Tcp)
+            || m.version != ProtocolVersion::TLSv1_2
+            || self.queued_key_update_message.is_some()
+        {
+            return Err(InvalidMessage::UnexpectedMessage("outbound TLS1.2 KX custody").into());
+        }
+        match &m.payload {
+            MessagePayload::Handshake {
+                parsed:
+                    HandshakeMessagePayload(
+                        crate::msgs::handshake::HandshakePayload::ClientKeyExchange(_),
+                    ),
+                encoded,
+            } => Ok(encoded.bytes()),
+            _ => Err(InvalidMessage::UnexpectedMessage("outbound TLS1.2 KX custody").into()),
+        }
+    }
+
+    /// Staged #535 handoff: the later #518/#538 caller must reserve the amount
+    /// returned by client_kx_outbound_len on its SAME owner before calling this,
+    /// and propagate failure before continuing the handshake. No caller is
+    /// connected here until that fallible unit is implemented.
+    #[cfg(all(feature = "std", feature = "tls12"))]
+    pub(crate) fn send_msg_with_custody(
+        &mut self,
+        m: &Message<'_>,
+        mut custody: OutboundTlsCustody,
+    ) -> Result<(), Error> {
+        let required = self.client_kx_outbound_len(m)?;
+        if custody.bytes() != required {
+            return Err(InvalidMessage::MessageTooLarge.into());
+        }
+        let encoded = self.client_kx_encoded(m)?;
+        let fragments = self.message_fragmenter.fragment_payload(
+            ContentType::Handshake,
+            m.version,
+            encoded.into(),
+        );
+        // Reserve/control allocation precedes every record allocation. On
+        // denial no fragment has been constructed or admitted to the queue.
+        self.sendable_tls
+            .prepare_owned_append(custody.owner(), fragments.len())?;
+        for fragment in fragments {
+            let chunk_custody =
+                custody.split(crate::msgs::message::HEADER_SIZE + fragment.payload.len())?;
+            let opaque = fragment.to_unencrypted_opaque();
+            self.queue_tls_message_with_custody(opaque, chunk_custody)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn perhaps_write_key_update(&mut self) {
         if let Some(message) = self.queued_key_update_message.take() {
             self.sendable_tls.append(message);
@@ -635,10 +721,11 @@ impl CommonState {
 
         // Any pre-existing encrypted messages in `sendable_tls` must
         // be output before encrypting any of the `fragments`.
-        while let Some(message) = self.sendable_tls.pop() {
+        while let Some(message) = self.sendable_tls.pop_with_custody() {
             let len = message.len();
             outgoing_tls[written..written + len].copy_from_slice(&message);
             written += len;
+            drop(message); // Destroy source backing, then release its custody.
         }
 
         for m in fragments {
@@ -1064,3 +1151,112 @@ pub(crate) type HandshakeFlightTls13<'a> = HandshakeFlight<'a, true>;
 
 const DEFAULT_RECEIVED_PLAINTEXT_LIMIT: usize = 16 * 1024;
 pub(crate) const DEFAULT_BUFFER_LIMIT: usize = 64 * 1024;
+
+#[cfg(all(test, feature = "std", feature = "tls12"))]
+pub(crate) mod outbound_custody_tests {
+    use super::*;
+    use crate::msgs::codec::DirectDecodedCustody;
+    use crate::msgs::handshake::HandshakePayload;
+    use crate::vecbuf::outbound_custody_tests::{control_bytes, Owner};
+    use core::sync::atomic::Ordering;
+
+    pub(crate) fn kx_message(dhe: bool, len: usize) -> Message<'static> {
+        let mut params = Vec::new();
+        if dhe {
+            params.extend_from_slice(&(len as u16).to_be_bytes());
+        } else {
+            params.push(len as u8);
+        }
+        params.resize(params.len() + len, 0x42);
+        Message::new(
+            ProtocolVersion::TLSv1_2,
+            MessagePayload::handshake(HandshakeMessagePayload(
+                HandshakePayload::ClientKeyExchange(Payload::new(params)),
+            )),
+        )
+    }
+
+    #[test]
+    fn custody_kx_fragmented_wire_equivalence_and_buffered_drain() {
+        for (dhe, len) in [(false, 32), (true, 256)] {
+            let m = kx_message(dhe, len);
+            let mut common = CommonState::new(Side::Client);
+            common.set_max_fragment_size(Some(32)).unwrap();
+            let bytes = common.client_kx_outbound_len(&m).unwrap();
+            let count = common
+                .message_fragmenter
+                .fragment_payload(
+                    ContentType::Handshake,
+                    m.version,
+                    common.client_kx_encoded(&m).unwrap().into(),
+                )
+                .len();
+            let owner = Owner::new(bytes + control_bytes(count));
+            let custody = owner.reserve(bytes);
+            common.send_msg_with_custody(&m, custody).unwrap();
+            assert_eq!(owner.used(), bytes + control_bytes(count));
+            assert_eq!(owner.attempts.load(Ordering::SeqCst), 2);
+            let mut ordinary = CommonState::new(Side::Client);
+            ordinary.set_max_fragment_size(Some(32)).unwrap();
+            ordinary.send_msg(kx_message(dhe, len), false);
+            let mut expected = Vec::new();
+            ordinary.sendable_tls.write_to(&mut expected).unwrap();
+            let mut output = std::vec![0; bytes];
+            assert_eq!(common.write_fragments(&mut output, [].into_iter()), bytes);
+            assert_eq!(output, expected);
+            assert_eq!(owner.used(), control_bytes(count));
+            assert_eq!(owner.attempts.load(Ordering::SeqCst), 2);
+            drop(common);
+            assert_eq!(owner.used(), 0);
+        }
+    }
+
+    #[test]
+    fn custody_kx_record_and_control_max_minus_one_denial() {
+        for dhe in [false, true] {
+            let m = kx_message(dhe, 32);
+            let mut common = CommonState::new(Side::Client);
+            let bytes = common.client_kx_outbound_len(&m).unwrap();
+            let owner = Owner::new(bytes - 1);
+            assert!(DirectDecodedCustody::reserve(owner.clone(), bytes).is_err());
+            assert_eq!(owner.used(), 0);
+            owner
+                .limit
+                .store(bytes + control_bytes(1) - 1, Ordering::SeqCst);
+            let custody = owner.reserve(bytes);
+            assert!(common.send_msg_with_custody(&m, custody).is_err());
+            assert!(common.sendable_tls.is_empty());
+            assert_eq!(owner.used(), 0);
+            owner
+                .limit
+                .store(bytes + control_bytes(1), Ordering::SeqCst);
+            common
+                .send_msg_with_custody(&m, owner.reserve(bytes))
+                .unwrap();
+            assert_eq!(owner.used(), bytes + control_bytes(1));
+            drop(common);
+            assert_eq!(owner.used(), 0);
+        }
+    }
+
+    #[test]
+    fn custody_kx_rejects_wrong_allowance_before_queue_admission() {
+        let m = kx_message(false, 32);
+        let mut common = CommonState::new(Side::Client);
+        let bytes = common.client_kx_outbound_len(&m).unwrap();
+        let owner = Owner::new(usize::MAX);
+        for amount in [bytes - 1, bytes + 1] {
+            assert!(common
+                .send_msg_with_custody(&m, owner.reserve(amount))
+                .is_err());
+            assert_eq!(owner.used(), 0);
+            assert!(common.sendable_tls.is_empty());
+        }
+        assert!(common
+            .client_kx_outbound_len(&Message::build_alert(
+                AlertLevel::Warning,
+                AlertDescription::CloseNotify,
+            ))
+            .is_err());
+    }
+}
