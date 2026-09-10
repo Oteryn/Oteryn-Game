@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 import sys
 import tempfile
 from types import ModuleType, SimpleNamespace
@@ -173,6 +174,7 @@ def test_checked_overflow_and_digest_failure():
         try:
             census.require_sha256(path, "0" * 64, "fixture")
         except census.CensusError as exc:
+            assert not isinstance(exc, census.SourceCorpusRequired)
             assert "digest mismatch" in str(exc)
         else:
             raise AssertionError("digest mismatch accepted")
@@ -203,6 +205,67 @@ def test_expansion_requirement_is_exact_and_fail_closed():
         assert "outside" in str(exc)
     else:
         raise AssertionError("inside point accepted as expansion")
+
+
+def test_structural_teleport_crossing_triggers_terminal_expansion():
+    window = census.Window("x", 64, 96, -7, "f-7-r3-c2", "lookup")
+    destination = SimpleNamespace(x=63, y=96, z=7)
+    summary = census.measure_window(
+        Producer(),
+        object(),
+        window,
+        [Tile(64, 96, 7, [item(3, teleport_destination=destination)])],
+    )
+
+    assert summary["tile_records"] == 1
+    assert summary["window_result"] == "WINDOW_EXPANSION_REQUIRED"
+    assert summary["window_expansion_required"] == [{
+        "classification": "WINDOW_EXPANSION_REQUIRED",
+        "reason": "source TELEPORT_DESTINATION from (64,96,-7) reaches outside authorized start shard at (63,96,-7)",
+        "proposed_floor": -7,
+        "proposed_semantic_shard": "f-7-r3-c1",
+    }]
+
+
+def test_zero_teleport_destination_is_not_expansion_evidence():
+    window = census.Window("x", 64, 96, -7, "f-7-r3-c2", "lookup")
+    destination = SimpleNamespace(x=0, y=0, z=0)
+    summary = census.measure_window(
+        Producer(),
+        object(),
+        window,
+        [Tile(64, 96, 7, [item(3, teleport_destination=destination)])],
+    )
+    assert summary["window_expansion_required"] == []
+    assert summary["window_result"] == "PASS"
+
+
+def test_source_corpus_availability_failures_are_classified():
+    with tempfile.TemporaryDirectory() as tmp:
+        base = Path(tmp)
+        legacy = base / "legacy"
+        map_path = base / "world.otbm"
+        asset_zip = base / "15.32.zip"
+        assets = base / "assets"
+        legacy.mkdir()
+        map_path.write_bytes(b"map")
+        asset_zip.write_bytes(b"zip")
+        assets.mkdir()
+
+        cases = (
+            (legacy / "missing", map_path, asset_zip, assets, "legacy checkout"),
+            (legacy, base / "missing.otbm", asset_zip, assets, "world.otbm"),
+            (legacy, map_path, base / "missing.zip", assets, "15.32.zip"),
+            (legacy, map_path, asset_zip, base / "missing-assets", "extracted assets directory"),
+        )
+        for legacy_arg, map_arg, zip_arg, assets_arg, label in cases:
+            try:
+                census.require_source_corpus_inputs(legacy_arg, map_arg, zip_arg, assets_arg)
+            except census.SourceCorpusRequired as exc:
+                assert str(exc).startswith("SOURCE_CORPUS_REQUIRED:")
+                assert label in str(exc)
+            else:
+                raise AssertionError(f"missing source boundary accepted: {label}")
 
 
 def test_preexisting_parser_module_fails_closed():
@@ -252,9 +315,22 @@ def test_checkout_identity_and_dirty_state_fail_closed():
         try:
             census.verify_legacy_checkout(root)
         except census.CensusError as exc:
+            assert not isinstance(exc, census.SourceCorpusRequired)
             assert "LEGACY_PARSER_REVISION_MISMATCH" in str(exc)
         else:
             raise AssertionError("dirty legacy worktree accepted")
+
+        def unverifiable_git(_repo, *_args):
+            raise subprocess.CalledProcessError(128, "git")
+
+        census._git = unverifiable_git
+        try:
+            census.verify_legacy_checkout(root)
+        except census.CensusError as exc:
+            assert not isinstance(exc, census.SourceCorpusRequired)
+            assert "LEGACY_PARSER_REVISION_MISMATCH" in str(exc)
+        else:
+            raise AssertionError("unverifiable present legacy checkout accepted")
 
     census._git = original_git
     census.LEGACY_REVISION = original_revision
@@ -335,6 +411,9 @@ def main():
     test_checked_overflow_and_digest_failure()
     test_edge_occupancy_is_not_automatic_expansion()
     test_expansion_requirement_is_exact_and_fail_closed()
+    test_structural_teleport_crossing_triggers_terminal_expansion()
+    test_zero_teleport_destination_is_not_expansion_evidence()
+    test_source_corpus_availability_failures_are_classified()
     test_preexisting_parser_module_fails_closed()
     test_checkout_identity_and_dirty_state_fail_closed()
     test_loaded_module_origin_outside_pinned_tree_fails_closed()

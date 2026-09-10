@@ -22,6 +22,10 @@ class CensusError(RuntimeError):
     pass
 
 
+class SourceCorpusRequired(CensusError):
+    pass
+
+
 @dataclass(frozen=True, slots=True)
 class Window:
     name: str
@@ -52,11 +56,40 @@ def checked_add(left: int, right: int, label: str) -> int:
     return left + right
 
 
+def _source_required(label: str, path: Path) -> SourceCorpusRequired:
+    return SourceCorpusRequired(f"SOURCE_CORPUS_REQUIRED: {label} unavailable: {path}")
+
+
+def require_source_path(path: Path, label: str, *, directory: bool) -> Path:
+    try:
+        available = path.is_dir() if directory else path.is_file()
+    except OSError as exc:
+        raise _source_required(label, path) from exc
+    if not available:
+        raise _source_required(label, path)
+    return path
+
+
+def require_source_corpus_inputs(
+    legacy_root: Path,
+    map_path: Path,
+    asset_zip: Path,
+    assets_dir: Path,
+) -> None:
+    require_source_path(legacy_root, "legacy checkout", directory=True)
+    require_source_path(map_path, "world.otbm", directory=False)
+    require_source_path(asset_zip, "15.32.zip", directory=False)
+    require_source_path(assets_dir, "extracted assets directory", directory=True)
+
+
 def require_sha256(path: Path, expected: str, label: str) -> None:
     digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
+    try:
+        with path.open("rb") as handle:
+            for block in iter(lambda: handle.read(1024 * 1024), b""):
+                digest.update(block)
+    except OSError as exc:
+        raise _source_required(label, path) from exc
     actual = digest.hexdigest()
     if actual != expected:
         raise CensusError(f"{label} digest mismatch: expected {expected}, got {actual}")
@@ -78,12 +111,17 @@ def _git(repo: Path, *args: str) -> str:
 
 def verify_legacy_checkout(legacy_root: Path) -> Path:
     root = legacy_root.resolve()
-    top = Path(_git(root, "rev-parse", "--show-toplevel")).resolve()
+    try:
+        top = Path(_git(root, "rev-parse", "--show-toplevel")).resolve()
+        head = _git(root, "rev-parse", "HEAD")
+        status = _git(root, "status", "--porcelain=v1", "--untracked-files=all")
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise CensusError("LEGACY_PARSER_REVISION_MISMATCH: legacy checkout cannot be verified") from exc
     if top != root:
         raise CensusError(f"LEGACY_PARSER_REVISION_MISMATCH: legacy root {root} != git top-level {top}")
-    if _git(root, "rev-parse", "HEAD") != LEGACY_REVISION:
+    if head != LEGACY_REVISION:
         raise CensusError("LEGACY_PARSER_REVISION_MISMATCH: legacy repository HEAD mismatch")
-    if _git(root, "status", "--porcelain=v1", "--untracked-files=all"):
+    if status:
         raise CensusError("LEGACY_PARSER_REVISION_MISMATCH: legacy worktree is not clean")
     return root
 
@@ -230,6 +268,56 @@ def expansion_requirement(window: Window, *, x: int, y: int, floor: int, reason:
     }
 
 
+def _minimal_expansion_point(window: Window, *, x: int, y: int, floor: int) -> tuple[int, int, int]:
+    proposed_x = window.x_min - 1 if x < window.x_min else window.x_max_exclusive if x >= window.x_max_exclusive else x
+    proposed_y = window.y_min - 1 if y < window.y_min else window.y_max_exclusive if y >= window.y_max_exclusive else y
+    return proposed_x, proposed_y, floor
+
+
+def _expansion_from_structural_observation(window: Window, observation: dict[str, Any]) -> dict[str, Any] | None:
+    if observation.get("structural_kind") != "TELEPORT_DESTINATION":
+        return None
+    target = observation.get("source_value")
+    if not isinstance(target, dict) or not {"floor", "x", "y"}.issubset(target):
+        return None
+    target_floor = int(target["floor"])
+    target_x = int(target["x"])
+    target_y = int(target["y"])
+    # The pinned corpus contains (0,0,0) source values whose gameplay meaning is
+    # intentionally unproven. They are not usable evidence for expansion.
+    if (target_x, target_y, target_floor) == (0, 0, 0):
+        return None
+    if (
+        window.x_min <= target_x < window.x_max_exclusive
+        and window.y_min <= target_y < window.y_max_exclusive
+        and target_floor == window.floor
+    ):
+        return None
+    proposed_x, proposed_y, proposed_floor = _minimal_expansion_point(
+        window, x=target_x, y=target_y, floor=target_floor
+    )
+    origin = observation["position"]
+    reason = (
+        "source TELEPORT_DESTINATION from "
+        f"({origin['x']},{origin['y']},{origin['floor']}) reaches outside authorized start shard at "
+        f"({target_x},{target_y},{target_floor})"
+    )
+    return expansion_requirement(
+        window,
+        x=proposed_x,
+        y=proposed_y,
+        floor=proposed_floor,
+        reason=reason,
+    )
+
+
+def _append_expansion_request(requests: list[dict[str, Any]], request: dict[str, Any]) -> None:
+    key = (request["proposed_floor"], request["proposed_semantic_shard"])
+    if any((item["proposed_floor"], item["proposed_semantic_shard"]) == key for item in requests):
+        return
+    requests.append(request)
+
+
 def measure_window(producer: Any, runtime: Any, window: Window, records: Iterable[Any]) -> dict[str, Any]:
     tile_records = non_empty = placements = unresolved = aggregate_bytes = 0
     max_per_cell = max_record_bytes = 0
@@ -284,7 +372,12 @@ def measure_window(producer: Any, runtime: Any, window: Window, records: Iterabl
                         "position": decoded["position"],
                         "source_order": source_order,
                     })
-            transitions.extend(_structural_observations(producer, record))
+            tile_transitions = _structural_observations(producer, record)
+            transitions.extend(tile_transitions)
+            for observation in tile_transitions:
+                request = _expansion_from_structural_observation(window, observation)
+                if request is not None:
+                    _append_expansion_request(expansion_requests, request)
             if record.position.x == window.x_min:
                 occupied_edges.add("west")
             if record.position.x == window.x_max_exclusive - 1:
@@ -362,28 +455,37 @@ def main() -> int:
     args = parser.parse_args()
 
     root = Path(__file__).resolve().parents[2]
+    require_source_corpus_inputs(args.legacy_root, args.map, args.asset_zip, args.assets)
     legacy_root = verify_legacy_checkout(args.legacy_root)
     require_fresh_legacy_import_context()
     require_sha256(args.map, MAP_SHA256, "world.otbm")
     require_sha256(args.asset_zip, ZIP_SHA256, "15.32.zip")
     producer = _load_producer(root)
-    runtime = producer.load_runtime(
-        legacy_root=legacy_root,
-        map_path=args.map,
-        asset_zip=args.asset_zip,
-        assets_dir=args.assets,
-    )
+    try:
+        runtime = producer.load_runtime(
+            legacy_root=legacy_root,
+            map_path=args.map,
+            asset_zip=args.asset_zip,
+            assets_dir=args.assets,
+        )
+    except OSError as exc:
+        raise SourceCorpusRequired(
+            "SOURCE_CORPUS_REQUIRED: producer source inputs unavailable during load_runtime"
+        ) from exc
     parser_modules = verify_loaded_legacy_modules(legacy_root)
 
     retained = {window.name: [] for window in WINDOWS}
-    for record in producer.iter_records(runtime, strict=True):
-        for window in WINDOWS:
-            if (
-                (producer.is_tile(runtime, record) and _inside_tile(producer, record, window))
-                or (producer.is_town(runtime, record) and _inside_source_position(record.temple, window))
-                or (producer.is_waypoint(runtime, record) and _inside_source_position(record.position, window))
-            ):
-                retained[window.name].append(record)
+    try:
+        for record in producer.iter_records(runtime, strict=True):
+            for window in WINDOWS:
+                if (
+                    (producer.is_tile(runtime, record) and _inside_tile(producer, record, window))
+                    or (producer.is_town(runtime, record) and _inside_source_position(record.temple, window))
+                    or (producer.is_waypoint(runtime, record) and _inside_source_position(record.position, window))
+                ):
+                    retained[window.name].append(record)
+    except OSError as exc:
+        raise SourceCorpusRequired("SOURCE_CORPUS_REQUIRED: source record stream unavailable") from exc
 
     windows = [measure_window(producer, runtime, window, retained[window.name]) for window in WINDOWS]
     expansion = [
@@ -439,5 +541,7 @@ def main() -> int:
 if __name__ == "__main__":
     try:
         raise SystemExit(main())
+    except SourceCorpusRequired as exc:
+        raise SystemExit(str(exc))
     except (CensusError, OSError, subprocess.CalledProcessError) as exc:
         raise SystemExit(f"ERROR: {exc}")
