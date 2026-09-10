@@ -23,7 +23,7 @@ replacement_worker_authority: NONE
 
 This is a docs-only control-plane amendment for the SAME canonical WP3 #351/#356 worker. It creates no replacement worker, branch or material PR and grants no present runtime mutation authority.
 
-The current owner directive authorizes the coordinator to prepare and qualify the unblock transaction. Repository integration still follows the exact-candidate authorization and Merge Queue gates below; this document does not bypass them.
+The current owner directive authorizes the coordinator to prepare, qualify, integrate and activate this bounded unblock transaction subject to the active repository/META review, Merge Queue and protected-readback gates. It does not authorize bypass of those gates.
 
 ## Fresh live blocker
 
@@ -84,10 +84,12 @@ The SAME #356 lineage must provide executable Rust 1.94 evidence for this exact 
 1. funded owner-aware normal ServerHello path reaches both the existing TLS 1.2 and TLS 1.3 successor paths with the SAME owner and transcript semantics;
 2. underfunded owner-aware transcript-context admission fails before provider-context allocation and before later handshake successor work;
 3. owner-aware ServerHello transcript growth uses `try_add_message` and releases/transfers backing only through #501 custody;
-4. funded HRR path performs `try_start_hash -> try_into_hrr_buffer -> try_add_message` and can continue to the existing `emit_client_hello_for_retry` seam;
-5. underfunded HRR context or successor-buffer admission fails before second-ClientHello material work;
-6. owner-free TLS 1.2, TLS 1.3 and HRR controls remain behavior-equivalent;
-7. focused check/Clippy/tests required by the current exact dependency graph remain green.
+4. a budget that can fund transcript/provider-context creation but cannot fund the received ServerHello transcript growth must fail specifically at the propagated `try_add_message` boundary before TLS 1.2/TLS 1.3 dispatch or successor-state work;
+5. funded HRR path performs `try_start_hash -> try_into_hrr_buffer -> try_add_message` and can continue to the existing `emit_client_hello_for_retry` seam;
+6. underfunded HRR context or `try_into_hrr_buffer` successor-buffer admission fails before second-ClientHello material work;
+7. a budget that can fund `try_start_hash` and `try_into_hrr_buffer` but cannot fund the subsequent HRR `try_add_message` growth must fail at that propagated add boundary before second-ClientHello material work;
+8. owner-free TLS 1.2, TLS 1.3 and HRR controls remain behavior-equivalent;
+9. focused check/Clippy/tests required by the current exact dependency graph remain green.
 
 Exact-head repository CI remains required after the material checkpoint.
 
@@ -132,7 +134,7 @@ Before it can grant material authority:
 1. confirm the effective PR diff is exactly this one new documentation file;
 2. run/obtain the repository-selected governance validation and all exact-head required PR checks;
 3. obtain one genuinely independent exact-head HIGH-risk review with no unresolved actionable P0/P1/P2 finding and zero unresolved review threads/requested changes;
-4. bind explicit human-owner integration authorization to the exact reviewed candidate SHA after that SHA exists and remains unchanged;
+4. confirm the current task retains explicit human-owner authorization to integrate this bounded control-plane change under active ADR 0005; do not recreate the superseded comment-ledger/fingerprint/attestation machinery;
 5. immediately before submission, re-read repository, PR, `base=main`, exact head, authorization and eligibility;
 6. integrate only through the bound META 3.1 native exact-head Merge Queue route: REST `merge-async` with the exact qualified `sha` and explicit `merge_action="merge_queue"`;
 7. treat HTTP 202 as admission only and perform the required causal receipt/readback checks;
