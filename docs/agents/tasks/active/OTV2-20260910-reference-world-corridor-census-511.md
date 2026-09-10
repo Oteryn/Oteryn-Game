@@ -11,12 +11,12 @@ base_branch: main
 branch: agent/reference-world-corridor-census-511
 pr: 525
 base_sha: 43ff3341e079f2883b78d01db5cee649290d90be
-head_sha: 05c9c94dbc44d7045f840814be8f24894139d62a
+head_sha: pending post-resume commit
 final_head_sha: null
 final_head_frozen_at: null
 owner: REFERENCE_WORLD_CORRIDOR_CENSUS_511
 created_at: 2026-09-10T08:40:00+02:00
-updated_at: 2026-09-10T09:05:00+02:00
+updated_at: 2026-09-10T10:45:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/**
@@ -47,6 +47,15 @@ This task is **ACTIVE_PHASE_A** under the single protected allocation:
 - concurrent prospective allocation PR #522 is CLOSED UNMERGED as superseded and grants no canonical worker authority.
 
 Material work is restricted to the exact owned paths above. Existing producer/reconstruction/runtime/registry/workflow/Cargo/Platform/Atlas paths remain read-only.
+
+## Protected repair and resume evidence
+
+- protected repaired allocation/main: `1fdc37fdb8b8faf2aaab99f17a25c7a6e986f7c5`;
+- repaired allocation PR #526 exact head: `254fcd098549d5630357e26f0689ab66b7498aea`;
+- real merge-group run `34455053189` = SUCCESS;
+- explicit #162 resume comment: `5615644586`;
+- preserved pre-repair branch history through `f6605bfb482649dbb381b2dfd76f1ba1184242ae`;
+- every material pre-resume result remains `PRE_REPAIR_UNQUALIFIED / NOT_ACCEPTED_EVIDENCE`.
 
 ## Outcome
 
@@ -188,10 +197,11 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 ## Failure behavior
 
 - exact pinned source unavailable on the active authorized execution surface: `SOURCE_CORPUS_REQUIRED`;
+- legacy checkout, interpreter, module-origin, tracking or loaded-blob mismatch: `LEGACY_PARSER_REVISION_MISMATCH` before evidence acceptance;
 - digest mismatch: fail closed before output acceptance;
 - unresolved critical mapping/appearance: preserve explicit unresolved evidence; do not substitute another source;
 - count/byte arithmetic failure: fail closed;
-- ambiguous expansion necessity: preserve ambiguity and keep bounded; do not widen to whole world;
+- proven or ambiguous expansion necessity: `WINDOW_EXPANSION_REQUIRED` with the minimal proposed shard/floor; stop before counting it;
 - unallocated path needed: `SHARED_LEASE_REQUIRED` with exact path/reason;
 - material architecture decision needed: `ARCHITECTURE_ESCALATION_REQUIRED` for only the affected lane.
 
@@ -200,7 +210,7 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 ### Focused
 
 - command/run: `python tools/reference-world-corridor-census/self_test.py`
-- result: PASS after recorded missing-module RED; boundary/floor/order/unresolved/losslessness/overflow/digest negatives all GREEN
+- result: PASS after recorded missing-module RED; parser provenance/contamination, boundary/floor/order/unresolved/losslessness/stream-framing/overflow/digest negatives all GREEN
 - command/run: `python -m py_compile tools/reference-world-corridor-census/census.py tools/reference-world-corridor-census/self_test.py`
 - result: PASS
 
@@ -208,8 +218,8 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 
 - command/run: `python -m py_compile tools/game-atlas-fullworld-source/producer.py tools/game-atlas-fullworld-source/self_test.py && python tools/game-atlas-fullworld-source/self_test.py`
 - result: PASS
-- command/run: two independent exact pinned-corpus census executions followed by `cmp /tmp/census-a.json /tmp/census-b.json`
-- result: PASS; canonical SHA-256 `605dcb2c913bf2fd969957652251a99971cb5a43c99dc5ffd55b61374bc87979`
+- command/run: two independent exact pinned-corpus census executions followed by `cmp /tmp/census-post-resume-a.json /tmp/census-post-resume-b.json`
+- result: PASS; post-resume canonical SHA-256 `9b34dc8ad4662032e9c09201514609810375c3c49c0b7e3026b1878e50889610`
 
 ### E2E
 
@@ -239,17 +249,19 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 
 - Newhaven: one 32x32 shard, 1,024 cells/tile records, 1,199 ordered presentations, max 5/cell, 70 appearance IDs, 84 sprite IDs, 899,694 semantic bytes, zero unresolved.
 - Targuna: one 32x32 shard, 1,024 cells/tile records, 1,264 ordered presentations, max 5/cell, 156 appearance IDs, 190 sprite IDs, 939,759 semantic bytes, zero unresolved.
-- Both four-edge occupancies are `AMBIGUOUS_EXPANSION`; no adjacent shard was added without a provable semantic need.
+- Newhaven direct-concatenation stream: 899,694 bytes, max record 3,080 bytes, SHA-256 `bebce3eca44dfcf3ab4044fd7a4a66bf6c1f7a80e2b0d375de14c3eb3898faac`.
+- Targuna direct-concatenation stream: 939,759 bytes, max record 3,079 bytes, SHA-256 `5e9a498a37570662f57d24ec8ca020c521ccf56091b03e33970aa6e2a1394438`.
+- Four-edge occupancy is `EDGE_OCCUPANCY_ONLY`, not clipping or expansion evidence; no `WINDOW_EXPANSION_REQUIRED` finding exists and no adjacent shard was counted.
 - Canonical details: `tools/reference-world-corridor-census/phase-a-summary.json` and public-safe evidence document.
 - `phase_b_target_parity=NOT_PERFORMED`; `registry_maxima_selected=false`; `production_authority=NONE`.
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Phase-A consumer, focused tests, exact real-corpus double run, deterministic summary and evidence complete
+last_progress: post-repair resume reconciliation, parser provenance validation, canonical stream evidence, focused tests, and exact real-corpus double run complete
 status: active
 branch: agent/reference-world-corridor-census-511
-head_sha: 05c9c94dbc44d7045f840814be8f24894139d62a
+head_sha: pending post-resume commit
 pr: 525
 final_head_sha: pending exact-head CI
 final_head_frozen_at: null
@@ -264,5 +276,5 @@ blocker: null
 phase_a_result: PASS
 phase_b_target_parity: NOT_PERFORMED
 production_authority: NONE
-next_action: push the same branch, update Draft PR #525 with exact results, and obtain exact-head repository checks/review; do not begin Phase B
+next_action: commit and push the same branch, update Draft PR #525, and obtain exact-head repository checks/review; do not begin Phase B
 ```

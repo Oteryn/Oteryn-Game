@@ -4,7 +4,10 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import subprocess
+import sys
 from types import SimpleNamespace
+from types import ModuleType
 import tempfile
 
 import census
@@ -82,6 +85,11 @@ def test_boundaries_floor_order_and_losslessness():
     assert summary["unique_appearance_source_ids"] == [1, 2, 999]
     assert len(summary["candidate_composite_diagnostics"]) == 1
     assert [x["kind"] for x in summary["source_landmarks"]] == ["town"]
+    selected = [Producer().project_tile_bytes(object(), record)[0] for record in records if isinstance(record, Tile) and census._inside(record.position, window)]
+    stream = b"".join(selected)
+    assert summary["aggregate_encoded_byte_count"] == len(stream) == summary["encoded_semantic_bytes"]
+    assert summary["max_record_encoded_bytes"] == max(map(len, selected))
+    assert summary["ordered_stream_sha256"] == hashlib.sha256(stream).hexdigest()
 
 
 def test_transition_structure_and_determinism():
@@ -110,18 +118,94 @@ def test_checked_overflow_and_identity_failure():
         else: raise AssertionError("digest mismatch accepted")
 
 
-def test_expansion_is_explicitly_ambiguous():
+def test_edge_occupancy_is_not_an_expansion_request():
     window = census.Window("x", 64, 96, -7, "s", "r")
     summary = census.measure_window(Producer(), object(), window, [Tile(64, 96, 7, [item(1)])])
     assert summary["expansion_order"] == []
-    assert summary["clipping"] == [{"boundary": "north+west", "classification": "AMBIGUOUS_EXPANSION", "reason": "source tile records occupy the bounded edge, but Phase-A source structure alone does not prove which adjacent shard is semantically required"}]
+    assert summary["clipping"] == []
+    assert summary["boundary_diagnostics"] == [{"boundary": "north+west", "classification": "EDGE_OCCUPANCY_ONLY", "reason": "source tile records occupy the bounded edge; occupancy alone neither proves clipping nor creates an expansion need"}]
+    assert census.expansion_disposition([summary]) == ("PASS", [])
+
+    summary["clipping"] = [{"classification": "AMBIGUOUS_EXPANSION", "proposed_next_footprint": {"floor": -7, "semantic_shard": "f-7-r2-c1"}}]
+    result, required = census.expansion_disposition([summary])
+    assert result == "WINDOW_EXPANSION_REQUIRED"
+    assert required[0]["proposed_next_footprint"] == {"floor": -7, "semantic_shard": "f-7-r2-c1"}
+    summary["clipping"][0].pop("proposed_next_footprint")
+    try: census.expansion_disposition([summary])
+    except census.CensusError as exc: assert "minimal proposed next shard/floor" in str(exc)
+    else: raise AssertionError("unbounded expansion finding accepted")
+
+
+def test_empty_stream_framing():
+    summary = census.measure_window(Producer(), object(), census.Window("x", 0, 0, 0, "s", "r"), [])
+    assert summary["aggregate_encoded_byte_count"] == 0
+    assert summary["max_record_encoded_bytes"] == 0
+    assert summary["ordered_stream_sha256"] == hashlib.sha256(b"").hexdigest()
+
+
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(("git", "-C", str(repo), *args), check=True, text=True, stdout=subprocess.PIPE).stdout.strip()
+
+
+def _fixture_repo(root: Path) -> str:
+    (root / "tools/otbm_atlas").mkdir(parents=True)
+    (root / "tools/otbm_atlas/__init__.py").write_text("# fixture\n")
+    (root / "tools/otbm_atlas/semantic.py").write_text("VALUE = 1\n")
+    _git(root, "init", "-q")
+    _git(root, "add", ".")
+    subprocess.run(("git", "-C", str(root), "-c", "user.name=test", "-c", "user.email=test@example.invalid", "commit", "-qm", "fixture"), check=True)
+    return _git(root, "rev-parse", "HEAD")
+
+
+def test_legacy_worktree_and_loaded_module_provenance():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp).resolve()
+        revision = _fixture_repo(root)
+        old_revision = census.LEGACY_REVISION
+        names = ("tools", "tools.otbm_atlas", "tools.otbm_atlas.semantic")
+        previous = {name: sys.modules.get(name) for name in names}
+        try:
+            census.LEGACY_REVISION = revision
+            assert census.verify_legacy_worktree(root) == root
+            (root / "untracked").write_text("dirty")
+            try: census.verify_legacy_worktree(root)
+            except census.CensusError as exc: assert "not completely clean" in str(exc)
+            else: raise AssertionError("untracked legacy file accepted")
+            (root / "untracked").unlink()
+
+            tools = ModuleType("tools"); tools.__path__ = [str(root / "tools")]
+            package = ModuleType("tools.otbm_atlas"); package.__file__ = str(root / "tools/otbm_atlas/__init__.py")
+            semantic = ModuleType("tools.otbm_atlas.semantic"); semantic.__file__ = str(root / "tools/otbm_atlas/semantic.py")
+            sys.modules.update(dict(zip(names, (tools, package, semantic))))
+            evidence = census.verify_loaded_legacy_modules(root)
+            assert [entry["module"] for entry in evidence] == list(names)
+            try: census.verify_fresh_interpreter()
+            except census.CensusError as exc: assert "pre-import module contamination" in str(exc)
+            else: raise AssertionError("pre-import parser module accepted")
+
+            semantic.__file__ = str(Path(tmp).parent / "outside.py")
+            try: census.verify_loaded_legacy_modules(root)
+            except census.CensusError as exc: assert "outside legacy tools tree" in str(exc)
+            else: raise AssertionError("outside module origin accepted")
+            semantic.__file__ = str(root / "tools/otbm_atlas/semantic.py")
+            (root / "tools/otbm_atlas/semantic.py").write_text("VALUE = 2\n")
+            try: census.verify_loaded_legacy_modules(root)
+            except census.CensusError as exc: assert "blob differs" in str(exc)
+            else: raise AssertionError("modified loaded module accepted")
+        finally:
+            census.LEGACY_REVISION = old_revision
+            for name, module in previous.items():
+                if module is None: sys.modules.pop(name, None)
+                else: sys.modules[name] = module
 
 
 def main():
     test_boundaries_floor_order_and_losslessness()
     test_transition_structure_and_determinism()
     test_checked_overflow_and_identity_failure()
-    test_expansion_is_explicitly_ambiguous()
+    test_edge_occupancy_is_not_an_expansion_request()
+    test_empty_stream_framing()
+    test_legacy_worktree_and_loaded_module_provenance()
     print("reference-world-corridor-census self-test: PASS")
     return 0
 

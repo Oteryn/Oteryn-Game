@@ -16,8 +16,7 @@ U64_MAX = (1 << 64) - 1
 LEGACY_REVISION = "e417c5e7c22986bf4acef0495eb47f7b72c97cce"
 MAP_SHA256 = "3bd40d14fefec41f24c4b3ae879e420be1a831ef55b95dcbec721e587a09b034"
 ZIP_SHA256 = "1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f"
-CATALOG_SHA256 = "35639e000c4c108665a091cfbdf699d549d995b37670bc08de575ab6cd380d85"
-APPEARANCE_SHA256 = "dc4f4c01e3701c77877c67895168e4399837046122d6d17e3e608a12a2fed075"
+LEGACY_MODULE_PREFIX = "tools.otbm_atlas"
 
 
 class CensusError(RuntimeError):
@@ -61,6 +60,79 @@ def require_sha256(path: Path, expected: str, label: str) -> None:
         raise CensusError(f"{label} digest mismatch: expected {expected}, got {actual}")
 
 
+def _legacy_parser_error(detail: str) -> CensusError:
+    return CensusError(f"LEGACY_PARSER_REVISION_MISMATCH: {detail}")
+
+
+def verify_fresh_interpreter() -> None:
+    contaminated = sorted(
+        name for name in sys.modules
+        if name == "tools" or name == LEGACY_MODULE_PREFIX or name.startswith(f"{LEGACY_MODULE_PREFIX}.")
+    )
+    if contaminated:
+        raise _legacy_parser_error(f"pre-import module contamination: {', '.join(contaminated)}")
+
+
+def verify_legacy_worktree(legacy_root: Path) -> Path:
+    root = legacy_root.resolve()
+    try:
+        actual_root = Path(_git(root, "rev-parse", "--show-toplevel")).resolve()
+        revision = _git(root, "rev-parse", "HEAD")
+        status = _git(root, "status", "--porcelain=v1", "--untracked-files=all")
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise _legacy_parser_error(f"cannot verify legacy worktree: {exc}") from exc
+    if actual_root != root:
+        raise _legacy_parser_error(f"legacy root {root} is inside worktree {actual_root}")
+    if revision != LEGACY_REVISION:
+        raise _legacy_parser_error(f"expected HEAD {LEGACY_REVISION}, got {revision}")
+    if status:
+        raise _legacy_parser_error("legacy worktree is not completely clean")
+    return root
+
+
+def _module_locations(module: Any) -> list[Path]:
+    source = getattr(module, "__file__", None)
+    if source:
+        return [Path(source).resolve()]
+    search = getattr(module, "__path__", None)
+    if search is None:
+        return []
+    return [Path(location).resolve() for location in search]
+
+
+def verify_loaded_legacy_modules(legacy_root: Path) -> list[dict[str, Any]]:
+    tools_root = (legacy_root / "tools").resolve()
+    selected = {
+        name: module for name, module in sys.modules.items()
+        if name == "tools" or name == LEGACY_MODULE_PREFIX or name.startswith(f"{LEGACY_MODULE_PREFIX}.")
+    }
+    required = {"tools", LEGACY_MODULE_PREFIX}
+    if not required.issubset(selected):
+        raise _legacy_parser_error(f"required parser modules not loaded: {sorted(required - selected)}")
+    evidence = []
+    for name in sorted(selected):
+        locations = _module_locations(selected[name])
+        if not locations:
+            raise _legacy_parser_error(f"loaded module {name} has no verifiable origin")
+        for location in locations:
+            if not location.is_relative_to(tools_root):
+                raise _legacy_parser_error(f"loaded module {name} originates outside legacy tools tree: {location}")
+            if location.is_dir():
+                evidence.append({"module": name, "package_search_location": location.relative_to(legacy_root).as_posix()})
+                continue
+            relative = location.relative_to(legacy_root).as_posix()
+            try:
+                _git(legacy_root, "ls-files", "--error-unmatch", "--", relative)
+                pinned_blob = _git(legacy_root, "rev-parse", f"{LEGACY_REVISION}:{relative}")
+                working_blob = _git(legacy_root, "hash-object", "--", relative)
+            except (OSError, subprocess.CalledProcessError) as exc:
+                raise _legacy_parser_error(f"loaded module {name} file is not tracked: {relative}") from exc
+            if working_blob != pinned_blob:
+                raise _legacy_parser_error(f"loaded module {name} blob differs from pinned Git blob: {relative}")
+            evidence.append({"blob": pinned_blob, "module": name, "tracked_path": relative})
+    return evidence
+
+
 def canonical_summary_bytes(value: Any) -> bytes:
     return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
 
@@ -102,21 +174,25 @@ def measure_window(producer: Any, runtime: Any, window: Window, records: Iterabl
     transitions: list[dict[str, Any]] = []
     composites: list[dict[str, Any]] = []
     occupied_edges: set[str] = set()
+    stream_digest = hashlib.sha256()
+    max_record_encoded_bytes = 0
     for source_order, record in enumerate(records):
         if producer.is_tile(runtime, record):
             if not _inside(record.position, window): continue
             tile_records = checked_add(tile_records, 1, "tile_records")
-            data, stats = producer.project_tile_bytes(runtime, record)
+            record_bytes, stats = producer.project_tile_bytes(runtime, record)
+            stream_digest.update(record_bytes)
+            max_record_encoded_bytes = max(max_record_encoded_bytes, len(record_bytes))
             count = int(stats["presentation_count"])
             placements = checked_add(placements, count, "ordered_presentations")
-            encoded_bytes = checked_add(encoded_bytes, len(data), "encoded_semantic_bytes")
+            encoded_bytes = checked_add(encoded_bytes, len(record_bytes), "encoded_semantic_bytes")
             unresolved = checked_add(unresolved, int(stats.get("unresolved_presentation_count", 0)), "unresolved_presentations")
             non_empty = checked_add(non_empty, int(count > 0), "non_empty_tile_records")
             max_per_cell = max(max_per_cell, count)
             appearances.update(int(x) for x in stats["appearance_ids"])
             sprites.update(int(x) for x in stats["sprite_ids"])
             unresolved_ids.update(int(x) for x in stats.get("unresolved_appearance_ids", set()))
-            decoded = json.loads(data)
+            decoded = json.loads(record_bytes)
             if len(decoded["presentation"]) != count:
                 raise CensusError("producer presentation count does not match ordered semantic record")
             for presentation in decoded["presentation"]:
@@ -134,23 +210,36 @@ def measure_window(producer: Any, runtime: Any, window: Window, records: Iterabl
             landmarks.append({"kind": "town", "name": record.name, "position": {"floor": -record.temple.z, "x": record.temple.x, "y": record.temple.y}, "town_id": record.town_id})
         elif producer.is_waypoint(runtime, record) and _inside(record.position, window):
             landmarks.append({"kind": "waypoint", "name": record.name, "position": {"floor": -record.position.z, "x": record.position.x, "y": record.position.y}})
-    clipping = []
+    boundary_diagnostics = []
     if occupied_edges:
-        clipping.append({"boundary": "+".join(x for x in ("north", "east", "south", "west") if x in occupied_edges), "classification": "AMBIGUOUS_EXPANSION", "reason": "source tile records occupy the bounded edge, but Phase-A source structure alone does not prove which adjacent shard is semantically required"})
+        boundary_diagnostics.append({"boundary": "+".join(x for x in ("north", "east", "south", "west") if x in occupied_edges), "classification": "EDGE_OCCUPANCY_ONLY", "reason": "source tile records occupy the bounded edge; occupancy alone neither proves clipping nor creates an expansion need"})
     return {
         "bounds": {"x_min": window.x_min, "x_max_exclusive": window.x_max_exclusive, "y_min": window.y_min, "y_max_exclusive": window.y_max_exclusive},
         "candidate_composite_diagnostics": sorted(composites, key=lambda x: (x["position"]["floor"], x["position"]["y"], x["position"]["x"], x["export_record_id"])),
-        "cell_capacity": 32 * 32, "clipping": clipping, "encoded_semantic_bytes": encoded_bytes,
+        "aggregate_encoded_byte_count": encoded_bytes, "boundary_diagnostics": boundary_diagnostics,
+        "cell_capacity": 32 * 32, "clipping": [], "encoded_semantic_bytes": encoded_bytes,
         "expansion_order": [], "final_semantic_shards": [window.semantic_shard], "floors": [window.floor],
-        "fullworld_source_regions": [window.fullworld_region], "max_presentations_per_cell": max_per_cell,
+        "fullworld_source_regions": [window.fullworld_region], "lookup_envelope_only": True,
+        "max_presentations_per_cell": max_per_cell, "max_record_encoded_bytes": max_record_encoded_bytes,
         "name": window.name, "non_empty_tile_records": non_empty, "ordered_presentations": placements,
         "resolved_presentation_count": placements - unresolved, "source_landmarks": sorted(landmarks, key=lambda x: (x["kind"], x["name"])),
         "start_semantic_shard": window.semantic_shard, "tile_records": tile_records,
         "transition_like_records": transitions, "unique_appearance_source_ids": sorted(appearances),
         "unique_resolved_presentation_ids": sorted(resolved_presentation_ids),
         "unique_resolved_sprite_ids": sorted(sprites), "unresolved_appearance_ids": sorted(unresolved_ids),
-        "unresolved_presentation_count": unresolved,
+        "unresolved_presentation_count": unresolved, "ordered_stream_sha256": stream_digest.hexdigest(),
     }
+
+
+def expansion_disposition(windows: Iterable[dict[str, Any]]) -> tuple[str, list[dict[str, Any]]]:
+    required = []
+    for window in windows:
+        for finding in window["clipping"]:
+            proposal = finding.get("proposed_next_footprint")
+            if not proposal:
+                raise CensusError("clipping/expansion ambiguity lacks a minimal proposed next shard/floor")
+            required.append({"name": window["name"], **finding})
+    return ("WINDOW_EXPANSION_REQUIRED" if required else "PASS", required)
 
 
 def _load_producer(root: Path) -> Any:
@@ -174,14 +263,12 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    if _git(args.legacy_root, "rev-parse", "HEAD") != LEGACY_REVISION: raise CensusError("legacy repository revision mismatch")
+    verify_fresh_interpreter()
+    legacy_root = verify_legacy_worktree(args.legacy_root)
     require_sha256(args.map, MAP_SHA256, "world.otbm"); require_sha256(args.asset_zip, ZIP_SHA256, "15.32.zip")
-    require_sha256(args.assets / "catalog-content.json", CATALOG_SHA256, "catalog-content.json")
-    appearances = sorted(args.assets.glob("appearances-*.dat"))
-    if len(appearances) != 1: raise CensusError(f"expected one appearance DAT, got {len(appearances)}")
-    require_sha256(appearances[0], APPEARANCE_SHA256, "appearance DAT")
     producer = _load_producer(root)
-    runtime = producer.load_runtime(legacy_root=args.legacy_root, map_path=args.map, asset_zip=args.asset_zip, assets_dir=args.assets)
+    runtime = producer.load_runtime(legacy_root=legacy_root, map_path=args.map, asset_zip=args.asset_zip, assets_dir=args.assets)
+    parser_modules = verify_loaded_legacy_modules(legacy_root)
     retained = {window.name: [] for window in WINDOWS}
     for record in producer.iter_records(runtime, strict=True):
         for window in WINDOWS:
@@ -189,12 +276,14 @@ def main() -> int:
                 or (producer.is_town(runtime, record) and _inside(record.temple, window))
                 or (producer.is_waypoint(runtime, record) and _inside(record.position, window))):
                 retained[window.name].append(record)
+    windows = [measure_window(producer, runtime, window, retained[window.name]) for window in WINDOWS]
+    phase_a_result, expansion_required = expansion_disposition(windows)
     summary = {
-        "classification": "MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY", "phase_a_result": "PASS",
+        "classification": "MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY", "phase_a_result": phase_a_result,
         "phase_b_target_parity": "NOT_PERFORMED", "production_authority": "NONE", "registry_maxima_selected": False,
         "producer": {"api": producer.PRODUCER_API, "code_commit": _git(root, "log", "-1", "--format=%H", "--", "tools/game-atlas-fullworld-source/producer.py"), "repository": "Oteryn/Oteryn-Game"},
-        "source": {"appearance_sha256": APPEARANCE_SHA256, "asset_drive_file_id": "1Dlo3bS4K1nS3mw4BhPZdlHT7lX5zRAvv", "asset_zip_sha256": ZIP_SHA256, "catalog_sha256": CATALOG_SHA256, "legacy_repository": "blakinio/Otheryn", "legacy_revision": LEGACY_REVISION, "world_otbm_sha256": MAP_SHA256},
-        "source_streams": 1, "windows": [measure_window(producer, runtime, window, retained[window.name]) for window in WINDOWS],
+        "source": {"appearance_sha256": runtime.bounded.ASSET_APPEARANCE_SHA256, "asset_drive_file_id": "1Dlo3bS4K1nS3mw4BhPZdlHT7lX5zRAvv", "asset_zip_sha256": runtime.bounded.ASSET_ZIP_SHA256, "catalog_sha256": runtime.bounded.ASSET_CATALOG_SHA256, "legacy_parser_modules": parser_modules, "legacy_repository": "blakinio/Otheryn", "legacy_revision": LEGACY_REVISION, "legacy_worktree_clean": True, "world_otbm_sha256": runtime.bounded.MAP_SHA256},
+        "source_streams": 1, "window_expansion_required": expansion_required, "windows": windows,
     }
     args.output.write_bytes(canonical_summary_bytes(summary))
     print(json.dumps({"output": str(args.output), "sha256": hashlib.sha256(canonical_summary_bytes(summary)).hexdigest(), "windows": [{"name": x["name"], "tile_records": x["tile_records"], "ordered_presentations": x["ordered_presentations"]} for x in summary["windows"]]}, sort_keys=True))
