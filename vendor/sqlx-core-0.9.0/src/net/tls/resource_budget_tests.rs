@@ -884,3 +884,85 @@ fn client_pem_parsing_borrows_charged_backing_without_a_second_copy() {
     drop(malformed);
     assert_eq!(malformed_budget.used.load(Ordering::Acquire), 0);
 }
+
+#[cfg(all(feature = "_tls-rustls", feature = "webpki-roots"))]
+#[test]
+fn credential_and_custom_root_precharge_are_same_ledger_and_fail_closed() {
+    use rustls::pki_types::pem::PemObject;
+    use rustls::pki_types::CertificateDer;
+
+    const CERT: &[u8] = b"-----BEGIN CERTIFICATE-----\nMIIBfTCCASOgAwIBAgIUDZBk0JEdbOds6TsGRPkwvhxFUSMwCgYIKoZIzj0EAwIw\nFDESMBAGA1UEAwwJbG9jYWxob3N0MB4XDTI2MDkwODEyNTMxMFoXDTI2MDkwOTEy\nNTMxMFowFDESMBAGA1UEAwwJbG9jYWxob3N0MFkwEwYHKoZIzj0CAQYIKoZIzj0D\nAQcDQgAEy2WKazyI8TXUnJTbx1vSKqaJx8w+RW8JXa+v/pP7FzXgzntfmqjK9yh8\nm970RDgI5shoO5vx4GbStl1EgzFY1KNTMFEwHQYDVR0OBBYEFEOj0jJhWWip3SDz\n7NKpJwCjWRqhMB8GA1UdIwQYMBaAFEOj0jJhWWip3SDz7NKpJwCjWRqhMA8GA1Ud\nEwEB/wQFMAMBAf8wCgYIKoZIzj0EAwIDSAAwRQIhAPyz4a/hpM3FdPkGujIcZQp1\nw2Jgh0bjZ//2tCW0AMl4AiARhMbhcwqLnNlemlE2HQcfkezW3Zpjt75Zi8tXaGUM\nEQ==\n-----END CERTIFICATE-----\n";
+    const KEY: &[u8] = b"-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg/YnH3AP6GLGXmx4q\nIqRsG/wjKmRE+eY/UJuBHsRM4y6hRANCAATLZYprPIjxNdSclNvHW9IqponHzD5F\nbwldr6/+k/sXNeDOe1+aqMr3KHyb3vREOAjmyGg7m/HgZtK2XUSDMVjU\n-----END PRIVATE KEY-----\n";
+
+    let credential_bound = super::tls_rustls::client_auth_pem_heap_bound(CERT, KEY).unwrap();
+    let denied_credentials = ledger(credential_bound - 1);
+    assert!(super::tls_rustls::client_auth_from_pem_with_resource_budget(
+        CERT,
+        KEY,
+        denied_credentials.clone(),
+    )
+    .is_err());
+    assert_eq!(denied_credentials.used.load(Ordering::Acquire), 0);
+
+    let credentials = ledger(credential_bound);
+    let (chain, key, credential_reservation) =
+        super::tls_rustls::client_auth_from_pem_with_resource_budget(
+            CERT,
+            KEY,
+            credentials.clone(),
+        )
+        .unwrap();
+    assert_eq!(chain.len(), 1);
+    assert!(matches!(key, rustls::pki_types::PrivateKeyDer::Pkcs8(_)));
+    assert_eq!(credentials.used.load(Ordering::Acquire), credential_bound);
+    drop((chain, key));
+    assert_eq!(credentials.used.load(Ordering::Acquire), credential_bound);
+    drop(credential_reservation);
+    assert_eq!(credentials.used.load(Ordering::Acquire), 0);
+
+    let root_probe = ledger(usize::MAX);
+    let (probe_store, probe_reservation) =
+        super::tls_rustls::root_store_with_resource_budget(Some(CERT), root_probe.clone())
+            .unwrap();
+    let root_bound = probe_reservation.bytes();
+    drop(probe_store);
+    assert_eq!(root_probe.used.load(Ordering::Acquire), root_bound);
+    drop(probe_reservation);
+    assert_eq!(root_probe.used.load(Ordering::Acquire), 0);
+
+    let denied_roots = ledger(root_bound - 1);
+    assert!(super::tls_rustls::root_store_with_resource_budget(
+        Some(CERT),
+        denied_roots.clone(),
+    )
+    .is_err());
+    assert_eq!(denied_roots.used.load(Ordering::Acquire), 0);
+
+    let roots = ledger(root_bound);
+    let (mut store, root_reservation) =
+        super::tls_rustls::root_store_with_resource_budget(Some(CERT), roots.clone()).unwrap();
+    for cert in CertificateDer::pem_slice_iter(CERT) {
+        store.add(cert.unwrap()).unwrap();
+    }
+    assert_eq!(roots.used.load(Ordering::Acquire), root_bound);
+    drop(store);
+    assert_eq!(roots.used.load(Ordering::Acquire), root_bound);
+    drop(root_reservation);
+    assert_eq!(roots.used.load(Ordering::Acquire), 0);
+
+    const MALFORMED: &[u8] = b"-----BEGIN CERTIFICATE-----\n!!!!\n-----END CERTIFICATE-----\n";
+    let malformed_roots = ledger(usize::MAX);
+    let parse: Result<(), ()> = (|| {
+        let (mut store, _reservation) = super::tls_rustls::root_store_with_resource_budget(
+            Some(MALFORMED),
+            malformed_roots.clone(),
+        )
+        .map_err(|_| ())?;
+        for cert in CertificateDer::pem_slice_iter(MALFORMED) {
+            store.add(cert.map_err(|_| ())?).map_err(|_| ())?;
+        }
+        Ok(())
+    })();
+    assert!(parse.is_err());
+    assert_eq!(malformed_roots.used.load(Ordering::Acquire), 0);
+}
