@@ -6,6 +6,7 @@ title: Measure bounded Newhaven and Targuna migration-corpus windows
 mode: MIGRATE
 status: waiting
 repository: Oteryn/Oteryn-Game
+issue: 511
 base_branch: main
 branch: agent/reference-world-corridor-census-511
 pr: null
@@ -15,7 +16,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: unassigned_until_protected_162_admission
 created_at: 2026-09-10T08:06:18+02:00
-updated_at: 2026-09-10T08:06:18+02:00
+updated_at: 2026-09-10T08:09:57+02:00
 execution_policy: continuous_progress
 owned_paths:
   - tools/reference-world-corridor-census/**
