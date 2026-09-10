@@ -82,10 +82,11 @@ The SAME #356 lineage must provide executable Rust 1.94 evidence for this exact 
 3. owner-aware ServerHello transcript growth uses `try_add_message` and releases/transfers backing only through #501 custody;
 4. a budget that can fund transcript/provider-context creation but cannot fund the received ServerHello transcript growth must fail specifically at the propagated `try_add_message` boundary before TLS 1.2/TLS 1.3 dispatch or successor-state work;
 5. under existing #425/#501 authority, funded HRR composition performs `try_start_hash -> try_into_hrr_buffer -> try_add_message` and can continue to the existing #427 `emit_client_hello_for_retry` seam;
-6. underfunded HRR context or `try_into_hrr_buffer` successor-buffer admission fails before second-ClientHello material work;
-7. a budget that can fund HRR `try_start_hash` and `try_into_hrr_buffer` but cannot fund the subsequent HRR `try_add_message` growth must fail at that propagated add boundary before second-ClientHello material work;
-8. owner-free TLS 1.2, TLS 1.3 and HRR controls remain behavior-equivalent;
-9. focused check/Clippy/tests required by the current exact dependency graph remain green.
+6. an HRR budget that cannot fund `try_start_hash` provider-context admission must fail at that exact boundary before HRR successor-buffer creation and before second-ClientHello material work;
+7. an HRR budget that funds `try_start_hash` but cannot fund `try_into_hrr_buffer` successor backing must fail at that exact boundary before subsequent HRR transcript growth and before second-ClientHello material work;
+8. an HRR budget that funds `try_start_hash` and `try_into_hrr_buffer` but cannot fund the subsequent HRR `try_add_message` growth must fail at that propagated add boundary before second-ClientHello material work;
+9. owner-free TLS 1.2, TLS 1.3 and HRR controls remain behavior-equivalent;
+10. focused check/Clippy/tests required by the current exact dependency graph remain green.
 
 The HRR cases above are integration/qualification requirements for already-protected #425/#501 authority; they are not a second caller lease from this amendment. Exact-head repository CI remains required after the material checkpoint.
 
