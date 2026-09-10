@@ -211,6 +211,11 @@ pub(super) fn handle_server_hello(
             // server hello message, and switch the relevant state to the copies for the
             // inner client hello.
             Some(mut accepted) => {
+                #[cfg(feature = "std")]
+                accepted
+                    .transcript
+                    .try_add_message(server_hello_msg)?;
+                #[cfg(not(feature = "std"))]
                 accepted
                     .transcript
                     .add_message(server_hello_msg);
@@ -234,6 +239,9 @@ pub(super) fn handle_server_hello(
     // the two halves will have different record layer protections.  Disallow this.
     cx.common.check_aligned_handshake()?;
 
+    #[cfg(feature = "std")]
+    let hash_at_client_recvd_server_hello = transcript.try_current_hash()?;
+    #[cfg(not(feature = "std"))]
     let hash_at_client_recvd_server_hello = transcript.current_hash();
     let key_schedule = key_schedule.derive_client_handshake_secrets(
         cx.data.early_data.is_enabled(),
