@@ -46,7 +46,7 @@ committed.
 
 The canonical machine-readable result is
 `tools/reference-world-corridor-census/phase-a-summary.json`; its SHA-256 is
-`9b34dc8ad4662032e9c09201514609810375c3c49c0b7e3026b1878e50889610`. It preserves the exact sorted appearance and sprite identifiers,
+`242ca3df871ba7946c0f86f0b503e29f269c8756c72ac2a3eaf5228e93b52091`. It preserves the exact sorted appearance and sprite identifiers,
 landmarks, structural observations, bounds, reasons, and classifications.
 
 | Dimension | Newhaven | Targuna |
@@ -83,7 +83,7 @@ For every selected tile, the byte evidence directly concatenates the exact
 `record_bytes` returned by `project_tile_bytes(runtime, tile)` in producer order,
 including producer newlines, with no added/removed framing. Raw canonical bytes
 were ephemeral and are not tracked. Both shards have tile records on all four
-boundaries, recorded as `EDGE_OCCUPANCY_ONLY`: occupancy alone proves neither
+boundaries, recorded as `EDGE_OCCUPANCY_ONLY_NOT_CLIPPING_PROOF`: occupancy alone proves neither
 clipping nor an expansion need. No clipping/expansion ambiguity was established,
 expansion order is `[]`, final equals starting shard, and the two locations are
 never joined into one rectangle.
@@ -113,9 +113,9 @@ PASS
 python tools/game-atlas-fullworld-source/self_test.py
 game-atlas-fullworld-source self-test: PASS
 
-python tools/reference-world-corridor-census/census.py --legacy-root /tmp/oteryn-legacy --map /tmp/oteryn-legacy/vendor/map-analysis/crystalserver/data-global/world/world.otbm --asset-zip /tmp/15.32.zip --assets /tmp/15.32/assets --output /tmp/census-post-resume-a.json
-python tools/reference-world-corridor-census/census.py --legacy-root /tmp/oteryn-legacy --map /tmp/oteryn-legacy/vendor/map-analysis/crystalserver/data-global/world/world.otbm --asset-zip /tmp/15.32.zip --assets /tmp/15.32/assets --output /tmp/census-post-resume-b.json
-cmp /tmp/census-post-resume-a.json /tmp/census-post-resume-b.json
+python tools/reference-world-corridor-census/census.py --legacy-root /tmp/oteryn-legacy --map /tmp/oteryn-legacy/vendor/map-analysis/crystalserver/data-global/world/world.otbm --asset-zip /tmp/15.32.zip --assets /tmp/15.32/assets --output /tmp/census-final-a.json
+python tools/reference-world-corridor-census/census.py --legacy-root /tmp/oteryn-legacy --map /tmp/oteryn-legacy/vendor/map-analysis/crystalserver/data-global/world/world.otbm --asset-zip /tmp/15.32.zip --assets /tmp/15.32/assets --output /tmp/census-final-b.json
+cmp /tmp/census-final-a.json /tmp/census-final-b.json
 PASS; two independent full source streams produced byte-identical summaries
 ```
 

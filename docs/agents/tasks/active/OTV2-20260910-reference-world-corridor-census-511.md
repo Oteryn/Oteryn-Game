@@ -218,8 +218,8 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 
 - command/run: `python -m py_compile tools/game-atlas-fullworld-source/producer.py tools/game-atlas-fullworld-source/self_test.py && python tools/game-atlas-fullworld-source/self_test.py`
 - result: PASS
-- command/run: two independent exact pinned-corpus census executions followed by `cmp /tmp/census-post-resume-a.json /tmp/census-post-resume-b.json`
-- result: PASS; post-resume canonical SHA-256 `9b34dc8ad4662032e9c09201514609810375c3c49c0b7e3026b1878e50889610`
+- command/run: two independent exact pinned-corpus census executions followed by `cmp /tmp/census-final-a.json /tmp/census-final-b.json`
+- result: PASS; post-resume canonical SHA-256 `242ca3df871ba7946c0f86f0b503e29f269c8756c72ac2a3eaf5228e93b52091`
 
 ### E2E
 
@@ -251,7 +251,7 @@ No Phase-B Global capture/observation, target parity claim, production Content/w
 - Targuna: one 32x32 shard, 1,024 cells/tile records, 1,264 ordered presentations, max 5/cell, 156 appearance IDs, 190 sprite IDs, 939,759 semantic bytes, zero unresolved.
 - Newhaven direct-concatenation stream: 899,694 bytes, max record 3,080 bytes, SHA-256 `bebce3eca44dfcf3ab4044fd7a4a66bf6c1f7a80e2b0d375de14c3eb3898faac`.
 - Targuna direct-concatenation stream: 939,759 bytes, max record 3,079 bytes, SHA-256 `5e9a498a37570662f57d24ec8ca020c521ccf56091b03e33970aa6e2a1394438`.
-- Four-edge occupancy is `EDGE_OCCUPANCY_ONLY`, not clipping or expansion evidence; no `WINDOW_EXPANSION_REQUIRED` finding exists and no adjacent shard was counted.
+- Four-edge occupancy is `EDGE_OCCUPANCY_ONLY_NOT_CLIPPING_PROOF`, not clipping or expansion evidence; no `WINDOW_EXPANSION_REQUIRED` finding exists and no adjacent shard was counted.
 - Canonical details: `tools/reference-world-corridor-census/phase-a-summary.json` and public-safe evidence document.
 - `phase_b_target_parity=NOT_PERFORMED`; `registry_maxima_selected=false`; `production_authority=NONE`.
 
