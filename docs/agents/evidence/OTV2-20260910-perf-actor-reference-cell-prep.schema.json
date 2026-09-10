@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/Oteryn/Oteryn-Game/blob/main/docs/agents/evidence/OTV2-20260910-perf-actor-reference-cell-prep.schema.json",
+  "title": "PERF-01 actor-carrier reference-cell evidence",
+  "type": "object",
+  "required": ["schema_version", "contract", "state", "candidate_M", "perf_01_status"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "contract": {"const": "PERF-01-ACTOR-CARRIER-CELL-V1"},
+    "state": {"enum": ["PLACEHOLDER_UNBOUND", "CELL_BOUND_NOT_MEASURED", "MEASUREMENT_INCOMPLETE", "MEASUREMENT_INVALID", "MEASUREMENT_COMPLETE_NOT_ACCEPTED"]},
+    "candidate_M": {"type": ["integer", "null"], "minimum": 0},
+    "perf_01_status": {"const": "OPEN"},
+    "identities": {"$ref": "#/$defs/identities"},
+    "comparison_baseline_identities": {"$ref": "#/$defs/identities"},
+    "cell_fingerprint": {
+      "type": "object", "required": ["expected", "observed"], "additionalProperties": false,
+      "properties": {"expected": {"$ref": "#/$defs/fingerprint"}, "observed": {"$ref": "#/$defs/fingerprint"}}
+    },
+    "enforcement": {"$ref": "#/$defs/enforcement"},
+    "objectives": {"$ref": "#/$defs/objectives"},
+    "workload": {"$ref": "#/$defs/workload"},
+    "populations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/population"}},
+    "soak": {"type": "object"},
+    "lower_coupled_limits": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0, "maximum": 18446744073709551615}},
+    "boundary": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"state": {"const": "PLACEHOLDER_UNBOUND"}}, "required": ["state"]},
+      "then": {"properties": {"candidate_M": {"type": "null"}}},
+      "else": {"required": ["identities", "comparison_baseline_identities", "cell_fingerprint", "enforcement", "objectives", "workload", "populations", "soak", "lower_coupled_limits", "boundary"]}
+    }
+  ],
+  "$defs": {
+    "digest": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"},
+    "identities": {
+      "type": "object",
+      "required": ["repository", "source_revision", "artifact_revision", "artifact_digest", "lockfile_digest", "toolchain_identity", "protocol_revision", "content_revision", "world_revision", "ruleset_revision", "sim_revision", "workload_revision", "capacity_evidence_source"],
+      "properties": {
+        "repository": {"const": "Oteryn/Oteryn-Game"}, "source_revision": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "artifact_revision": {"type": "string", "minLength": 1}, "artifact_digest": {"$ref": "#/$defs/digest"},
+        "lockfile_digest": {"$ref": "#/$defs/digest"}, "toolchain_identity": {"type": "string", "minLength": 1},
+        "protocol_revision": {"type": "string", "minLength": 1}, "content_revision": {"type": "string", "minLength": 1},
+        "world_revision": {"type": "string", "minLength": 1}, "ruleset_revision": {"type": "string", "minLength": 1},
+        "sim_revision": {"type": "string", "minLength": 1}, "workload_revision": {"type": "string", "minLength": 1},
+        "capacity_evidence_source": {"const": "PHYSICAL_REFERENCE_CELL"}
+      }, "additionalProperties": false
+    },
+    "fingerprint": {
+      "type": "object",
+      "required": ["runner_group", "runner_label", "runner_name", "os_family", "cpu_vendor", "cpu_model", "architecture", "online_logical_cpus", "topology", "selected_cpu", "smt_state", "numa_topology", "frequency_policy", "governor", "turbo_state", "total_physical_ram_bytes", "os_distribution", "os_version", "kernel_release", "kernel_architecture", "effective_cpu_limit", "effective_memory_limit_bytes", "rlimit_as_bytes", "allowed_affinity", "page_size_bytes", "host_swap_present"],
+      "properties": {
+        "runner_group": {"const": "game-runners"}, "runner_label": {"const": "oteryn-game"}, "runner_name": {"const": "oteryn-synology-game"}, "os_family": {"const": "Linux"},
+        "cpu_vendor": {"type": "string", "minLength": 1}, "cpu_model": {"type": "string", "minLength": 1}, "architecture": {"type": "string", "minLength": 1},
+        "online_logical_cpus": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0}, "uniqueItems": true},
+        "topology": {"type": "object"}, "selected_cpu": {"type": "integer", "minimum": 0}, "smt_state": {"type": "string", "minLength": 1}, "numa_topology": {"type": "string", "minLength": 1},
+        "frequency_policy": {"type": "string", "minLength": 1}, "governor": {"type": "string", "minLength": 1}, "turbo_state": {"type": "string", "minLength": 1},
+        "total_physical_ram_bytes": {"type": "integer", "minimum": 1}, "os_distribution": {"type": "string", "minLength": 1}, "os_version": {"type": "string", "minLength": 1},
+        "kernel_release": {"type": "string", "minLength": 1}, "kernel_architecture": {"type": "string", "minLength": 1}, "effective_cpu_limit": {"type": "string", "minLength": 1},
+        "effective_memory_limit_bytes": {"type": "integer", "minimum": 1}, "rlimit_as_bytes": {"type": "integer", "minimum": 1, "maximum": 1073741824},
+        "allowed_affinity": {"type": "array", "minItems": 1, "items": {"type": "integer", "minimum": 0}, "uniqueItems": true}, "page_size_bytes": {"type": "integer", "minimum": 1},
+        "host_swap_present": {"type": "boolean"}
+      }, "additionalProperties": false
+    },
+    "enforcement": {
+      "type": "object", "required": ["execution_mode", "container", "affinity_set_succeeded", "affinity_readback", "rlimit_as_soft_bytes", "rlimit_as_hard_bytes", "rlimit_readback_proven", "process_swap_observations_bytes", "exclusive_job_proven", "benchmark_instances", "workflow_run_id", "workflow_job_id", "native_process_proven", "process_start_invariants_proven", "host_background_activity_recorded", "contention_absent"],
+      "properties": {
+        "execution_mode": {"const": "native-release-process"}, "container": {"const": "none"}, "affinity_set_succeeded": {"const": true},
+        "affinity_readback": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"type": "integer", "minimum": 0}},
+        "rlimit_as_soft_bytes": {"type": "integer", "minimum": 1, "maximum": 1073741824}, "rlimit_as_hard_bytes": {"type": "integer", "minimum": 1, "maximum": 1073741824},
+        "rlimit_readback_proven": {"const": true}, "process_swap_observations_bytes": {"type": "array", "minItems": 1, "items": {"const": 0}},
+        "exclusive_job_proven": {"const": true}, "benchmark_instances": {"const": 1}, "workflow_run_id": {"type": "string", "minLength": 1}, "workflow_job_id": {"type": "string", "minLength": 1}, "native_process_proven": {"const": true}, "process_start_invariants_proven": {"const": true}, "host_background_activity_recorded": {"const": true}, "contention_absent": {"const": true}
+      }, "additionalProperties": false
+    },
+    "objectives": {
+      "type": "object", "required": ["latency_p50_us_max", "latency_p95_us_max", "latency_p99_us_max", "queue_age_p99_us_max", "cpu_utilization_basis_points_max", "rss_bytes_max", "swap_bytes_max", "memory_growth_bytes_max", "unexpected_rejections_max"],
+      "properties": {"latency_p50_us_max": {"const": 10000}, "latency_p95_us_max": {"const": 25000}, "latency_p99_us_max": {"const": 50000}, "queue_age_p99_us_max": {"const": 25000}, "cpu_utilization_basis_points_max": {"const": 9000}, "rss_bytes_max": {"const": 858993459}, "swap_bytes_max": {"const": 0}, "memory_growth_bytes_max": {"const": 10737418}, "unexpected_rejections_max": {"const": 0}}, "additionalProperties": false
+    },
+    "workload": {
+      "type": "object", "required": ["window_us", "actor_order", "lookup_per_actor", "mutation_rate_numerator", "mutation_rate_denominator", "reuse_rate_numerator", "reuse_rate_denominator", "fixed_seed", "warmup_windows", "measured_windows", "population_plan", "percentile_method", "minimum_samples_per_metric", "minimum_repetitions", "soak_duration_seconds", "world_id", "channel_id", "session_generation_owner", "exact_current_reference_lookup", "scan_or_candidate_collection", "same_slot_reuse", "generation_advance_checked", "stale_reference_check", "kind_balance_max_difference", "rational_accumulator", "rotation_covers_all_before_repeat", "remove_reuse_preserves_population", "excluded_payloads", "process_reset_between_repetitions"],
+      "properties": {"window_us": {"const": 50000}, "actor_order": {"const": ["PLAYER", "CREATURE", "NPC_SYSTEM"]}, "lookup_per_actor": {"const": 1}, "mutation_rate_numerator": {"const": 1}, "mutation_rate_denominator": {"const": 10}, "reuse_rate_numerator": {"const": 1}, "reuse_rate_denominator": {"const": 100}, "fixed_seed": {"type": "integer"}, "warmup_windows": {"type": "integer", "minimum": 1}, "measured_windows": {"type": "integer", "minimum": 1}, "population_plan": {"type": "array", "minItems": 2, "items": {"type": "integer", "minimum": 1}, "uniqueItems": true}, "percentile_method": {"const": "nearest-rank"}, "minimum_samples_per_metric": {"type": "integer", "minimum": 1}, "minimum_repetitions": {"type": "integer", "minimum": 5}, "soak_duration_seconds": {"type": "integer", "minimum": 1800}, "world_id": {"type": "string", "minLength": 1}, "channel_id": {"type": "string", "minLength": 1}, "session_generation_owner": {"const": "single-logical-mutation-owner"}, "exact_current_reference_lookup": {"const": true}, "scan_or_candidate_collection": {"const": false}, "same_slot_reuse": {"const": true}, "generation_advance_checked": {"const": true}, "stale_reference_check": {"const": true}, "kind_balance_max_difference": {"const": 1}, "rational_accumulator": {"const": true}, "rotation_covers_all_before_repeat": {"const": true}, "remove_reuse_preserves_population": {"const": true}, "excluded_payloads": {"const": ["VARIABLE_BEHAVIOR", "COMBAT", "AI", "INVENTORY", "PATHFINDING", "LOOT", "NETWORK", "PERSISTENCE"]}, "process_reset_between_repetitions": {"const": true}}, "additionalProperties": false
+    },
+    "population": {"type": "object", "required": ["population", "repetitions"], "properties": {"population": {"type": "integer", "minimum": 1}, "repetitions": {"type": "array", "minItems": 5, "items": {"type": "object"}}}, "additionalProperties": false}
+  },
+  "additionalProperties": false
+}
