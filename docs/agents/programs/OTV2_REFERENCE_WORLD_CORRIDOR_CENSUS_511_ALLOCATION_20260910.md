@@ -97,18 +97,18 @@ Consume the current protected Game-owned producer boundary:
   - `project_tile(...)` / `project_tile_bytes(...)` preserve explicit unresolved appearances fail-closed and reuse qualified deterministic semantic bytes;
 - `tools/tibia-worldmap-reconstruction/**` remains the later Phase-B normalized comparison family and is read-only in this Phase-A worker.
 
-`load_runtime(...)` does **not** establish the identity of parser code imported from the supplied legacy checkout. Before calling it, the worker must prove that `legacy_root` is the exact pinned Git worktree and parser subtree:
+`load_runtime(...)` does **not** establish the identity of parser code actually imported from the supplied legacy checkout. Census execution must therefore use a fresh one-shot Python interpreter that has not previously imported `tools`, `tools.otbm_atlas` or any `tools.otbm_atlas.*` module. Before calling `load_runtime(...)`, prove that `legacy_root` is the exact pinned Git worktree and that the complete worktree is clean:
 
 ```text
 git -C <legacy_root> rev-parse --show-toplevel
   -> must resolve to <legacy_root>
 git -C <legacy_root> rev-parse HEAD
   -> e417c5e7c22986bf4acef0495eb47f7b72c97cce
-git -C <legacy_root> status --porcelain=v1 --untracked-files=all -- tools/otbm_atlas
+git -C <legacy_root> status --porcelain=v1 --untracked-files=all
   -> empty
 ```
 
-Any HEAD mismatch, tracked/staged change or untracked file under `tools/otbm_atlas` is `LEGACY_PARSER_REVISION_MISMATCH`. Stop before importing the parser or accepting census evidence. The map/ZIP/catalog/appearance digests do not substitute for parser-code identity.
+Immediately after `load_runtime(...)` and before accepting any census record, enumerate the actually loaded parent/package/parser modules: `tools`, `tools.otbm_atlas` and every loaded `tools.otbm_atlas.*` entry in `sys.modules`. For every such module, its import origin/resolved `__file__` (or package search location when applicable) must be under the exact `<legacy_root>/tools` tree; every loaded file must be tracked by the pinned checkout; and its working-tree blob must equal the blob recorded at `e417c5e7c22986bf4acef0495eb47f7b72c97cce` for that path. Any pre-existing module, origin outside `legacy_root`, untracked loaded file, blob mismatch, missing/unverifiable origin, HEAD mismatch or dirty worktree is `LEGACY_PARSER_REVISION_MISMATCH`. Do not repair a contaminated interpreter with reload/monkeypatching; terminate it and start a fresh one-shot process. Stop before accepting census evidence. The map/ZIP/catalog/appearance digests do not substitute for parser-code identity.
 
 Existing workflows do not themselves perform the required bounded Newhaven/Targuna tile/placement census. Do not create a trigger-only/no-op PR or run an unrelated creature census and relabel it as #511 evidence.
 
@@ -173,7 +173,7 @@ For **each** authorized `32x32` start shard report independently:
 8. town/waypoint and door/teleport/relocation-like source records encountered, classified only to the strength the existing producer/source supports;
 9. candidate composite/multi-cell visual patterns as diagnostics only, with no adjacency-based semantic merge;
 10. clipping/connectivity evidence and exact minimal proposed adjacent shard/floor when `WINDOW_EXPANSION_REQUIRED` is reached; do not count that additional footprint;
-11. canonical semantic record bytes may be computed **ephemerally** using the protected producer, but tracked/public evidence may retain only deterministic aggregate encoded-byte count, maximum single-record byte length and SHA-256 digest of the ordered canonical byte stream; never commit the raw encoded records;
+11. for selected projected tile records, obtain each producer-defined `record_bytes = project_tile_bytes(runtime, tile)` in exact deterministic producer order. Define the canonical multi-record stream as the direct byte concatenation `stream = b"".join(record_bytes_in_order)` with **zero additional delimiter, prefix or suffix**: preserve every byte returned by `project_tile_bytes()` exactly, including its producer-defined trailing newline, and add/strip nothing. `aggregate_encoded_byte_count = len(stream) = sum(len(record_bytes))`; `max_record_encoded_bytes = max(len(record_bytes))`; `ordered_stream_sha256 = SHA256(stream)`. There are no extra framing bytes, so none are added to the aggregate count. The stream/records remain ephemeral; tracked/public evidence may retain only these count/max/digest values, never raw encoded records;
 12. a deterministic machine-readable summary sufficient for #504 to derive lower-bound resource requirements.
 
 Keep these resource dimensions separate: `cells`, `total ordered placements`, `max ordered placements per cell`, `unique identities`, and `encoded bytes`. None may substitute for another.
@@ -182,7 +182,7 @@ Keep these resource dimensions separate: `cells`, `total ordered placements`, `m
 
 If a thin consumer is added, use deterministic test-first validation for at least:
 
-- legacy parser checkout HEAD/subtree mismatch fails before parser import/evidence acceptance;
+- legacy parser checkout HEAD/full-worktree mismatch, pre-import module contamination, loaded-module origin mismatch and loaded-file blob mismatch all fail closed before evidence acceptance;
 - stable results independent of container/hash enumeration;
 - exact `32x32` start-shard inclusion/exclusion at coordinate boundaries;
 - `256x256` source region cannot silently become the measured footprint;
@@ -193,7 +193,7 @@ If a thin consumer is added, use deterministic test-first validation for at leas
 - source/digest mismatch failure before evidence acceptance;
 - no silent dropping of ordered presentations;
 - machine-readable summary determinism;
-- raw canonical record bytes are not written to tracked evidence.
+- canonical stream framing is direct concatenation of exact `project_tile_bytes()` outputs, with aggregate count/max/digest reproduced exactly and no raw canonical record bytes written to tracked evidence.
 
 Also run the existing producer self-test/compile checks applicable to the reused API. Do not mutate the producer merely to satisfy the new consumer.
 
@@ -202,7 +202,7 @@ Before worker handoff require full diff review, applicable focused tests and exa
 ## Failure behavior
 
 - exact pinned source/archive unavailable: `SOURCE_CORPUS_REQUIRED`;
-- legacy checkout HEAD/subtree mismatch: `LEGACY_PARSER_REVISION_MISMATCH` before parser import/evidence acceptance;
+- legacy checkout HEAD/full-worktree mismatch, contaminated interpreter, loaded-module origin mismatch or loaded-file blob mismatch: `LEGACY_PARSER_REVISION_MISMATCH` before evidence acceptance;
 - map/asset/catalog/appearance digest mismatch: fail closed before accepting output;
 - boundary clipping or ambiguous expansion need: `WINDOW_EXPANSION_REQUIRED` with exact proposed next footprint; do not measure it without a separately protected allocation amendment;
 - unresolved critical mapping/appearance: preserve explicit unresolved evidence; do not substitute another source;
