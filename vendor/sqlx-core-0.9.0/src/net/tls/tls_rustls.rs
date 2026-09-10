@@ -25,6 +25,10 @@ use crate::net::Socket;
 pub struct RustlsSocket<S: Socket> {
     inner: StdSocket<S>,
     state: ClientConnection,
+    // Resource-owned TLS configuration backing is dropped with `state` before
+    // either reservation is released.
+    _client_auth_allocation: Option<crate::net::resource_budget::ResourceReservation>,
+    _root_store_allocation: Option<crate::net::resource_budget::ResourceReservation>,
     // Connection-held owner Arcs are dropped with `state` before this charge.
     _owner_allocation: Option<crate::net::resource_budget::ResourceReservation>,
     close_notify_sent: bool,
@@ -188,6 +192,8 @@ where
     let mut socket = RustlsSocket {
         inner: StdSocket::new(socket),
         state: ClientConnection::new(Arc::new(config), host).map_err(Error::tls)?,
+        _client_auth_allocation: None,
+        _root_store_allocation: None,
         _owner_allocation: None,
         close_notify_sent: false,
     };
@@ -206,9 +212,9 @@ pub async fn handshake_with_resource_budget<S>(
 where
     S: Socket,
 {
+    use crate::net::resource_budget::ResourceReservation;
     use core::alloc::Layout;
     use core::sync::atomic::AtomicUsize;
-    use crate::net::resource_budget::ResourceReservation;
 
     let (owner_arc_layout, _) = Layout::new::<[AtomicUsize; 2]>()
         .extend(Layout::new::<DeframerBudgetOwner>())
@@ -235,6 +241,7 @@ where
         .unwrap();
 
     let blocking_owner = crate::rt::resource_owner::blocking_job_owner(resource_budget.clone());
+    let mut client_auth_allocation = None;
     let user_auth = match (tls_config.client_cert_path, tls_config.client_key_path) {
         (Some(cert_path), Some(key_path)) => {
             let cert_data = super::read_certificate_input_owned(cert_path, &blocking_owner)
@@ -243,7 +250,13 @@ where
             let key_data = super::read_certificate_input_owned(key_path, &blocking_owner)
                 .await
                 .map_err(|_| Error::tls("resource-owned private key load failed"))?;
-            Some(client_auth_from_pem(cert_data.get(), key_data.get())?)
+            let (cert_chain, key_der, reservation) = client_auth_from_pem_with_resource_budget(
+                cert_data.get(),
+                key_data.get(),
+                resource_budget.clone(),
+            )?;
+            client_auth_allocation = Some(reservation);
+            Some((cert_chain, key_der))
         }
         (None, None) => None,
         (_, _) => {
@@ -253,6 +266,7 @@ where
         }
     };
 
+    let mut root_store_allocation = None;
     let config = if tls_config.accept_invalid_certs {
         if let Some(user_auth) = user_auth {
             config
@@ -267,41 +281,58 @@ where
                 .with_no_client_auth()
         }
     } else {
-        let mut cert_store = import_root_certs();
-        if let Some(ca) = tls_config.root_cert_path {
-            let data = super::read_certificate_input_owned(ca, &blocking_owner)
-                .await
-                .map_err(|_| Error::tls("resource-owned root certificate load failed"))?;
-            for result in CertificateDer::pem_slice_iter(data.get()) {
-                let Ok(cert) = result else {
-                    return Err(Error::Tls(format!("Invalid certificate {ca}").into()));
-                };
-                cert_store.add(cert).map_err(|err| Error::Tls(err.into()))?;
+        #[cfg(feature = "webpki-roots")]
+        {
+            let custom_roots = if let Some(ca) = tls_config.root_cert_path {
+                let data = super::read_certificate_input_owned(ca, &blocking_owner)
+                    .await
+                    .map_err(|_| Error::tls("resource-owned root certificate load failed"))?;
+                Some((ca, data))
+            } else {
+                None
+            };
+            let custom_pem = custom_roots.as_ref().map(|(_, data)| data.get().as_slice());
+            let (mut cert_store, root_reservation) =
+                root_store_with_resource_budget(custom_pem, resource_budget.clone())?;
+            root_store_allocation = Some(root_reservation);
+            if let Some((ca, data)) = &custom_roots {
+                for result in CertificateDer::pem_slice_iter(data.get()) {
+                    let Ok(cert) = result else {
+                        return Err(Error::Tls(format!("Invalid certificate {ca}").into()));
+                    };
+                    cert_store.add(cert).map_err(|err| Error::Tls(err.into()))?;
+                }
             }
-        }
-        if tls_config.accept_invalid_hostnames {
-            let verifier = WebPkiServerVerifier::builder(Arc::new(cert_store))
-                .build()
-                .map_err(|err| Error::Tls(err.into()))?;
-            if let Some(user_auth) = user_auth {
+            if tls_config.accept_invalid_hostnames {
+                let verifier = WebPkiServerVerifier::builder(Arc::new(cert_store))
+                    .build()
+                    .map_err(|err| Error::Tls(err.into()))?;
+                if let Some(user_auth) = user_auth {
+                    config
+                        .dangerous()
+                        .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
+                        .with_client_auth_cert(user_auth.0, user_auth.1)
+                        .map_err(Error::tls)?
+                } else {
+                    config
+                        .dangerous()
+                        .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
+                        .with_no_client_auth()
+                }
+            } else if let Some(user_auth) = user_auth {
                 config
-                    .dangerous()
-                    .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
+                    .with_root_certificates(cert_store)
                     .with_client_auth_cert(user_auth.0, user_auth.1)
                     .map_err(Error::tls)?
             } else {
-                config
-                    .dangerous()
-                    .with_custom_certificate_verifier(Arc::new(NoHostnameTlsVerifier { verifier }))
-                    .with_no_client_auth()
+                config.with_root_certificates(cert_store).with_no_client_auth()
             }
-        } else if let Some(user_auth) = user_auth {
-            config
-                .with_root_certificates(cert_store)
-                .with_client_auth_cert(user_auth.0, user_auth.1)
-                .map_err(Error::tls)?
-        } else {
-            config.with_root_certificates(cert_store).with_no_client_auth()
+        }
+        #[cfg(not(feature = "webpki-roots"))]
+        {
+            return Err(Error::tls(
+                "resource-owned TLS requires the qualified webpki root graph",
+            ));
         }
     };
 
@@ -312,6 +343,8 @@ where
     let mut socket = RustlsSocket {
         inner: StdSocket::new(socket),
         state,
+        _client_auth_allocation: client_auth_allocation,
+        _root_store_allocation: root_store_allocation,
         _owner_allocation: Some(owner_allocation),
         close_notify_sent: false,
     };
@@ -324,6 +357,127 @@ pub(super) fn client_auth_from_pem(
     key_pem: &[u8],
 ) -> Result<(Vec<CertificateDer<'static>>, PrivateKeyDer<'static>), Error> {
     Ok((certs_from_pem(cert_pem)?, private_key_from_pem(key_pem)?))
+}
+
+#[cfg(feature = "_tls-rustls")]
+pub(super) fn client_auth_from_pem_with_resource_budget(
+    cert_pem: &[u8],
+    key_pem: &[u8],
+    budget: Arc<dyn crate::net::resource_budget::ResourceBudget>,
+) -> Result<(
+    Vec<CertificateDer<'static>>,
+    PrivateKeyDer<'static>,
+    crate::net::resource_budget::ResourceReservation,
+), Error> {
+    use crate::net::resource_budget::ResourceReservation;
+    let bytes = client_auth_pem_heap_bound(cert_pem, key_pem)
+        .map_err(|_| Error::tls("client credential PEM accounting overflow"))?;
+    // The pinned rustls-pki-types slice parser allocates its 1024-byte base64
+    // scratch in the constructor, so this debit must happen before invoking it.
+    let reservation = ResourceReservation::try_new(budget, bytes)
+        .map_err(|_| Error::tls("client credential PEM allocation denied"))?;
+    let certs = certs_from_pem(cert_pem)?;
+    let key = private_key_from_pem(key_pem)?;
+    Ok((certs, key, reservation))
+}
+
+#[cfg(feature = "_tls-rustls")]
+pub(super) fn client_auth_pem_heap_bound(
+    cert_pem: &[u8],
+    key_pem: &[u8],
+) -> Result<usize, crate::net::resource_budget::BudgetError> {
+    use crate::net::resource_budget::BudgetError;
+    let cert_count = count_marker(cert_pem, b"-----BEGIN CERTIFICATE-----");
+    let cert_slots = vec_capacity_for_items(cert_count)?
+        .checked_mul(core::mem::size_of::<CertificateDer<'static>>())
+        .ok_or(BudgetError::Overflow)?;
+    // pki-types 1.15.1 borrows input lines, owns one base64 scratch Vec and
+    // then owns DER backing. One source-sized envelope also covers an unknown
+    // label/malformed-line error allocation while the parser is live.
+    let cert = pem_scratch_capacity_bound(cert_pem.len())?
+        .checked_add(cert_pem.len().checked_mul(2).ok_or(BudgetError::Overflow)?)
+        .and_then(|n| n.checked_add(cert_slots))
+        .ok_or(BudgetError::Overflow)?;
+    let key = pem_scratch_capacity_bound(key_pem.len())?
+        .checked_add(key_pem.len().checked_mul(2).ok_or(BudgetError::Overflow)?)
+        .ok_or(BudgetError::Overflow)?;
+    cert.checked_add(key).ok_or(BudgetError::Overflow)
+}
+
+#[cfg(feature = "webpki-roots")]
+pub(super) fn root_store_with_resource_budget(
+    custom_pem: Option<&[u8]>,
+    budget: Arc<dyn crate::net::resource_budget::ResourceBudget>,
+) -> Result<(
+    RootCertStore,
+    crate::net::resource_budget::ResourceReservation,
+), Error> {
+    use crate::net::resource_budget::{BudgetError, ResourceReservation};
+    let custom = custom_pem.unwrap_or_default();
+    let custom_count = count_marker(custom, b"-----BEGIN CERTIFICATE-----");
+    let total_count = webpki_roots::TLS_SERVER_ROOTS
+        .len()
+        .checked_add(custom_count)
+        .ok_or_else(|| Error::tls("root-store item accounting overflow"))?;
+    let outer = total_count
+        .checked_mul(core::mem::size_of::<rustls::pki_types::TrustAnchor<'static>>())
+        .ok_or_else(|| Error::tls("root-store allocation accounting overflow"))?;
+    // During custom add(), decoded DER may overlap the three owned TrustAnchor
+    // byte fields. Parser scratch and an error/unknown-label envelope are also
+    // simultaneous. Each child is bounded by the immutable PEM source bytes.
+    let custom_bound = if custom.is_empty() {
+        0
+    } else {
+        pem_scratch_capacity_bound(custom.len())?
+            .checked_add(custom.len().checked_mul(5).ok_or(BudgetError::Overflow)?)
+            .ok_or(BudgetError::Overflow)?
+    };
+    let bytes = outer
+        .checked_add(custom_bound)
+        .ok_or_else(|| Error::tls("root-store allocation accounting overflow"))?;
+    let reservation = ResourceReservation::try_new(budget, bytes)
+        .map_err(|_| Error::tls("root-store allocation denied"))?;
+    // Construct the outer Vec only after the exact slot debit. Static WebPKI
+    // anchors borrow their DER; custom anchors are added under the same debit.
+    let mut store = RootCertStore::empty();
+    store.roots = Vec::with_capacity(total_count);
+    store
+        .roots
+        .extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
+    Ok((store, reservation))
+}
+
+#[cfg(feature = "_tls-rustls")]
+fn pem_scratch_capacity_bound(
+    source_len: usize,
+) -> Result<usize, crate::net::resource_budget::BudgetError> {
+    use crate::net::resource_budget::BudgetError;
+    source_len
+        .max(1024)
+        .checked_next_power_of_two()
+        .ok_or(BudgetError::Overflow)
+}
+
+#[cfg(feature = "_tls-rustls")]
+fn vec_capacity_for_items(
+    count: usize,
+) -> Result<usize, crate::net::resource_budget::BudgetError> {
+    use crate::net::resource_budget::BudgetError;
+    if count == 0 {
+        return Ok(0);
+    }
+    count
+        .max(4)
+        .checked_next_power_of_two()
+        .ok_or(BudgetError::Overflow)
+}
+
+#[cfg(feature = "_tls-rustls")]
+fn count_marker(bytes: &[u8], marker: &[u8]) -> usize {
+    if marker.is_empty() || bytes.len() < marker.len() {
+        return 0;
+    }
+    bytes.windows(marker.len()).filter(|window| *window == marker).count()
 }
 
 fn certs_from_pem(pem: &[u8]) -> Result<Vec<CertificateDer<'static>>, Error> {
