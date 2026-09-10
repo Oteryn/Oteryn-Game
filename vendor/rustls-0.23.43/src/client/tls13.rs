@@ -423,6 +423,7 @@ pub(super) fn fill_in_psk_binder(
             // See `prepare_resumption()`.
             debug_assert_eq!(identities.len(), 1);
             debug_assert_eq!(binders.len(), 1);
+            debug_assert_eq!(binders[0].as_ref().len(), real_binder.as_ref().len());
             binders[0] = PresharedKeyBinder::from(real_binder.as_ref().to_vec());
         }
     };
@@ -453,7 +454,7 @@ pub(super) fn prepare_resumption(
     // for our ticket.  This must go last.
     //
     // Include an empty binder. It gets filled in below because it depends on
-    // the message it's contained within (!!!).
+    // the message it's contained in (!!!).
     let obfuscated_ticket_age = resuming_session.obfuscated_ticket_age();
 
     let binder_len = resuming_suite
