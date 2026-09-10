@@ -15,7 +15,7 @@ final_head_sha: null
 final_head_frozen_at: null
 owner: OTV2_SOL_SUPERVISING_ARCHITECT
 created_at: 2026-09-10T14:07:43Z
-updated_at: 2026-09-10T14:18:54Z
+updated_at: 2026-09-10
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_RUNTIME_ACTOR_LOCAL_GENERATION_DECISION_2026-09-10.md
@@ -58,12 +58,14 @@ Produce one bounded architecture resolution for Issue #539 that freezes only the
 - [x] Define when an actor-local identity may be reused and how its generation advances.
 - [x] Define the retention lifetime needed to make stale actor references impossible to revive.
 - [x] State exactly whether `RUNTIME-ACTOR-RL-03` is the same finite resource as first-carrier slots or requires an independent bounded resource.
-- [x] Define checked exhaustion behavior with no wrap, no partial insertion and no live-actor eviction.
+- [x] Define checked exhaustion behavior with no wrap, no partial actor/index publication and no live-actor eviction.
 - [x] Preserve `WorldId + ChannelId + ScopeOwnershipGeneration + actor-local identity + actor-local generation` as the minimum exact-reference authority shape.
+- [x] Require immutable one-to-one `ActorLocalId` -> logical slot/generation-cell binding within one scope ownership generation; prohibit remap/alias resurrection.
+- [x] Permit only the finite `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)` bookkeeping transition when checked generation successor is unavailable, while publishing no actor/index/current ref.
 - [x] Do not choose a production actor ceiling; keep `RUNTIME-ACTOR-RL-01` blocked on ADR-0009/PERF-01.
 - [x] Record realistic alternatives, trade-offs, decision timing, supersession evidence, `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS`.
-- [ ] Exact-head whole-diff self-review and applicable repository CI pass.
-- [ ] Genuinely independent exact-head review reports no unresolved material finding before integration.
+- [ ] Exact-head whole-diff self-review and applicable repository CI pass after the material review repair.
+- [ ] Fresh genuinely independent exact-head review reports no unresolved material finding after the repair.
 
 ## Excluded scope
 
@@ -71,16 +73,25 @@ No runtime/server/client code; no `RESOURCE_LIMITS_REGISTRY.json`; no Cargo/work
 
 ## Implementation / findings
 
-Candidate decision `RUNTIME-ACTOR-LOCAL-GENERATION-V1` is published in PR #541. It selects a finite typed actor-local slot namespace scoped by the already-mandatory `ScopeOwnershipGeneration`. Each configured slot retains its actor-local generation while inactive; reuse requires checked generation advance before publication. A legitimately new scope ownership generation may initialize a fresh local namespace because every older exact actor reference is already rejected by the non-reused outer scope generation. No unbounded tombstone set is required by this shape.
+Candidate decision `RUNTIME-ACTOR-LOCAL-GENERATION-V1` is published in PR #541. It selects a finite typed actor-local slot namespace scoped by the already-mandatory `ScopeOwnershipGeneration`. Each configured logical slot retains its actor-local generation while inactive; reuse requires checked generation advance before publication. Every `ActorLocalId` is immutably bound one-to-one to one logical slot/generation cell for the lifetime of the current scope ownership generation, so a stale escaped ID cannot be remapped onto a different cell carrying an old generation value. A legitimately new scope ownership generation may initialize a fresh local namespace because every older exact actor reference is already rejected by the non-reused outer scope generation. No unbounded tombstone set is required by this shape.
 
 The candidate classifies `RUNTIME-ACTOR-RL-03 = SAME_RESOURCE_AS_RL01_FOR_CHANNEL_RUNTIME_ACTOR_CARRIER_V1` while leaving the numeric RL-01 capacity `M` unresolved for ADR-0009/PERF-01.
+
+### Independent-review findings accepted and repaired
+
+First independent Codex review of exact pre-repair head `4a2cdd6cae3a3457f4ce6feec11254bcc7d4dd01` completed and reported two material findings:
+
+1. **P1 — immutable ID/slot binding missing.** The old wording allowed a future allocator to remap one `ActorLocalId` between physical/logical generation slots; a destination cell with the old generation could resurrect an escaped `(ActorLocalId, generation)` reference. Repair: the architecture now requires an immutable one-to-one `ActorLocalId` -> logical slot -> generation-cell binding for the complete `ScopeOwnershipGeneration`, prohibits alias/remap, and permits physical storage relocation only when the logical binding is preserved.
+2. **P2 — exhaustion mutation ambiguity.** The old rollback sentence said every failed successor/admission left all carrier state unchanged, conflicting with the required terminal `EXHAUSTED` slot transition. Repair: ordinary failed admission publishes no actor/index/current-reference state, while checked no-successor at `g_max` atomically records only `VACANT_REUSABLE(g_max) -> EXHAUSTED(g_max)` and then rejects the allocation.
+
+Both findings are accepted. The first independent review is no longer sufficient after these material repairs; a fresh review of the final repaired exact head is required.
 
 ## Validation
 
 ### Focused
 
-- command/run: GitHub compare of protected base to candidate branch
-- result: pre-PR publication compare `ahead_by=2`, `behind_by=0`, exactly two added documentation paths; final-head compare pending after this task metadata update
+- command/run: GitHub exact changed-file/readback and protected-contract reconciliation
+- result: two-path scope preserved; material repair is limited to the architecture decision plus this task record
 
 ### Component/integration
 
@@ -94,41 +105,42 @@ The candidate classifies `RUNTIME-ACTOR-RL-03 = SAME_RESOURCE_AS_RL01_FOR_CHANNE
 
 ### Exact-head CI
 
-- final head: pending
+- final head: pending final metadata commit/readback
 - trigger source: pull_request #541
-- workflow/run/job: pending
+- workflow/run/job: pending new exact-head generation after repair
 - runner assignment: pending
-- classification: pending
+- classification: documentation/architecture
 - result: pending
 
 ## Self-review
 
-- exact head: pending after this final task-metadata mutation
-- method/reviewer: authoring supervising architect, whole two-file diff
-- material findings: none accepted before final-head re-read; final-head verification pending
+- exact head: pending final metadata commit/readback
+- method/reviewer: authoring supervising architect, complete two-file diff
+- material findings: pre-repair self-review was superseded by independent P1/P2 findings; both are now repaired and require fresh final-head self-review
 - verdict: pending
 
 ## Independent review
 
 - required: YES — new actor identity/generation lifetime and resource-exhaustion semantics affect shared runtime authority
-- exact head: pending
-- method/auditor: genuinely independent exact-head reviewer
-- material findings: pending
-- verdict: pending
+- reviewed pre-repair head: `4a2cdd6cae3a3457f4ce6feec11254bcc7d4dd01`
+- pre-repair findings: P1 immutable logical ID/slot binding; P2 exhaustion state-transition ambiguity
+- disposition: ACCEPTED_AND_REPAIRED
+- final exact head: pending metadata commit/readback
+- final verdict: pending fresh independent review
 
 ## PR and closeout
 
-- changed-file review: PR #541 contains exactly the two declared owned paths before final-head re-read
-- unresolved review threads: pending
+- changed-file review: PR #541 remains exactly the two declared owned paths
+- unresolved review threads: two accepted pre-repair Codex threads; resolve only after repaired exact-head readback confirms both dispositions
 - related/superseded PRs: #537 evidence prerequisite
 - protected auto-merge: FORBIDDEN
-- merge commit/result: pending
+- merge commit/result: pending control-plane integration after clean exact-head qualification
 - ownership release: pending
 
 ## Context checkpoint
 
 ```yaml
-last_progress: Candidate decision published in draft PR #541; task moved to exact-head validation/review.
+last_progress: Accepted and repaired the independent exact-head P1/P2 findings on the existing PR #541 lineage.
 status: validating
 branch: arch/539-runtime-actor-local-generation
 head_sha: null
@@ -136,7 +148,7 @@ pr: 541
 final_head_sha: null
 final_head_frozen_at: null
 ci_trigger_source: pull_request
-ci_check_generation: null
+ci_check_generation: pending_after_repair
 ci_checks_for_current_head: 0
 ci_run_ids: []
 ci_job_ids: []
@@ -145,10 +157,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
-blocker: null
-next_action: Re-read the final PR #541 head, exact diff, repository CI and independent-review requirement.
+blocker: fresh exact-head CI and genuinely independent review after material P1/P2 repair
+next_action: Freeze/read back the repaired PR head, perform complete self-review, resolve only the repaired old threads, then request one fresh exact-head independent review.
 ```
