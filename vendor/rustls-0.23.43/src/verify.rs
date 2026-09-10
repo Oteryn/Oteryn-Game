@@ -446,9 +446,7 @@ mod owner_aware_scheme_tests {
 
         fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
             self.ordinary_calls.fetch_add(1, Ordering::Relaxed);
-            let mut schemes = Vec::new();
-            schemes.push(SignatureScheme::ECDSA_NISTP256_SHA256);
-            schemes
+            vec![SignatureScheme::ECDSA_NISTP256_SHA256]
         }
     }
 
@@ -463,6 +461,72 @@ mod owner_aware_scheme_tests {
         fn release(&self, _bytes: usize) {}
     }
 
+    #[derive(Debug)]
+    struct OptInVerifier {
+        expected_owner: Arc<dyn DeframerBufferOwner>,
+        schemes: Vec<SignatureScheme>,
+    }
+
+    impl ServerCertVerifier for OptInVerifier {
+        fn verify_server_cert(
+            &self,
+            _end_entity: &CertificateDer<'_>,
+            _intermediates: &[CertificateDer<'_>],
+            _server_name: &ServerName<'_>,
+            _ocsp_response: &[u8],
+            _now: UnixTime,
+        ) -> Result<ServerCertVerified, Error> {
+            unreachable!()
+        }
+
+        fn verify_tls12_signature(
+            &self,
+            _message: &[u8],
+            _cert: &CertificateDer<'_>,
+            _dss: &DigitallySignedStruct,
+        ) -> Result<HandshakeSignatureValid, Error> {
+            unreachable!()
+        }
+
+        fn verify_tls13_signature(
+            &self,
+            _message: &[u8],
+            _cert: &CertificateDer<'_>,
+            _dss: &DigitallySignedStruct,
+        ) -> Result<HandshakeSignatureValid, Error> {
+            unreachable!()
+        }
+
+        fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+            self.schemes.clone()
+        }
+
+        fn supported_verify_schemes_with_resource_owner(
+            &self,
+            owner: Arc<dyn DeframerBufferOwner>,
+        ) -> Result<(Vec<SignatureScheme>, usize), InvalidMessage> {
+            if !Arc::ptr_eq(&owner, &self.expected_owner) {
+                return Err(InvalidMessage::MessageTooLarge);
+            }
+            let bytes = self
+                .schemes
+                .len()
+                .checked_mul(core::mem::size_of::<SignatureScheme>())
+                .ok_or(InvalidMessage::MessageTooLarge)?;
+            owner
+                .try_reserve(bytes)
+                .map_err(|_| InvalidMessage::MessageTooLarge)?;
+            let mut schemes = Vec::with_capacity(self.schemes.len());
+            schemes.extend_from_slice(&self.schemes);
+            if schemes.capacity() != self.schemes.len() {
+                drop(schemes);
+                owner.release(bytes);
+                return Err(InvalidMessage::MessageTooLarge);
+            }
+            Ok((schemes, bytes))
+        }
+    }
+
     #[test]
     fn custom_verifier_default_denies_before_ordinary_allocation() {
         let verifier = CountingVerifier {
@@ -474,5 +538,34 @@ mod owner_aware_scheme_tests {
             .supported_verify_schemes_with_resource_owner(owner)
             .is_err());
         assert_eq!(verifier.ordinary_calls.load(Ordering::Relaxed), 0);
+    }
+
+    #[test]
+    fn opted_in_custom_verifier_preserves_order_and_owner_identity() {
+        let owner: Arc<dyn DeframerBufferOwner> = Arc::new(AcceptingOwner);
+        let verifier = OptInVerifier {
+            expected_owner: owner.clone(),
+            schemes: vec![
+                SignatureScheme::RSA_PSS_SHA512,
+                SignatureScheme::ED25519,
+                SignatureScheme::ECDSA_NISTP256_SHA256,
+            ],
+        };
+        let ordinary = verifier.supported_verify_schemes();
+        let (owned, bytes) = verifier
+            .supported_verify_schemes_with_resource_owner(owner.clone())
+            .unwrap();
+        assert_eq!(owned, ordinary);
+        assert_eq!(
+            bytes,
+            owned.capacity() * core::mem::size_of::<SignatureScheme>()
+        );
+        drop(owned);
+        owner.release(bytes);
+
+        let wrong_owner: Arc<dyn DeframerBufferOwner> = Arc::new(AcceptingOwner);
+        assert!(verifier
+            .supported_verify_schemes_with_resource_owner(wrong_owner)
+            .is_err());
     }
 }
