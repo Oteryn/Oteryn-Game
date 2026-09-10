@@ -102,7 +102,7 @@ The evidence harness may model only the already accepted minimum semantics requi
 At minimum one candidate record must be able to represent:
 
 ```text
-Channel scope identity
+Channel scope identity = exact WorldId + ChannelId, with neither component omittable
 current scope ownership generation/fence binding
 actor semantic/local identity
 actor local generation inseparable from the actor reference
@@ -110,6 +110,8 @@ current existence/actionable lifecycle fact
 current authoritative local position only where needed by the first exact-target/local-step proofs
 minimal actor-kind discriminator only if required to exercise mixed actor occupancy
 ```
+
+A `ChannelId` alone is never sufficient semantic scope identity for this evidence model. The modeled actor reference and carrier record must bind both `WorldId` and `ChannelId`, and the harness must prove that the same `ChannelId` under a different `WorldId` cannot resolve the reference.
 
 The harness may compare multiple bounded physical candidate shapes when useful, but must not choose a generic ECS, permanent container, stable wire ID, protocol handle, persistence schema, or runtime module layout.
 
@@ -121,7 +123,7 @@ Do not import `ai::ActorId(u64)` as production authority. Do not stringify/cast 
 
 Required evidence:
 
-- exact fixed/retained bytes per candidate actor record for each measured candidate shape;
+- exact fixed/retained bytes per candidate actor record for each measured candidate shape, including both `WorldId` and `ChannelId` in every modeled Channel scope/reference;
 - checked total retained-byte equations across tested occupancies;
 - mixed actor populations including at least player-like, creature-like and NPC/system-like records so AI-only occupancy cannot define the store;
 - direct lookup and insertion/removal work accounting expressed in deterministic operation/work units where possible;
@@ -172,18 +174,20 @@ If the candidate requires variable actor-owned payload to satisfy even the first
 
 The harness/evidence package must include deterministic tests for at least:
 
-1. exact current actor reference resolves;
+1. exact current actor reference with matching `WorldId + ChannelId`, current scope ownership generation/fence and actor-local generation resolves;
 2. missing actor rejects;
-3. stale generation rejects after removal/recycle;
-4. same local identity with a newer generation cannot be targeted by an old ref;
+3. stale actor-local generation rejects after removal/recycle;
+4. same local identity with a newer actor-local generation cannot be targeted by an old ref;
 5. cross-Channel reference rejects;
-6. an actor cannot be partially visible in the lookup index when admission exceeds a tested candidate ceiling;
-7. capacity rejection leaves all pre-existing actor/index/generation state unchanged;
-8. checked count/byte arithmetic rejects overflow before allocation;
-9. lookup result does not depend on hash/thread/enumeration order;
-10. repeated churn does not grow hidden tombstone/generation history when the candidate claims RL-03 is the same resource;
-11. AI-local/client/protocol handles cannot be substituted for the shared semantic reference in the evidence model;
-12. no geometry, range, LoS, pathfinding or visibility scan is reachable from the modeled exact lookup.
+6. same `ChannelId` under a different `WorldId` rejects, proving scope identity is not ChannelId-only;
+7. stale or mismatched `ScopeOwnershipGeneration` / owner fence rejects even when actor-local identity/generation is otherwise current, and leaves carrier state unchanged;
+8. an actor cannot be partially visible in the lookup index when admission exceeds a tested candidate ceiling;
+9. capacity rejection leaves all pre-existing actor/index/generation state unchanged;
+10. checked count/byte arithmetic rejects overflow before allocation;
+11. lookup result does not depend on hash/thread/enumeration order;
+12. repeated churn does not grow hidden tombstone/generation history when the candidate claims RL-03 is the same resource;
+13. AI-local/client/protocol handles cannot be substituted for the shared semantic reference in the evidence model;
+14. no geometry, range, LoS, pathfinding or visibility scan is reachable from the modeled exact lookup.
 
 ## Measurement discipline
 
