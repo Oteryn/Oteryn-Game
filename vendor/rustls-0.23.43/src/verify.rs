@@ -8,6 +8,8 @@ use crate::error::{Error, InvalidMessage};
 use crate::msgs::base::PayloadU16;
 use crate::msgs::codec::{Codec, Reader};
 use crate::msgs::handshake::DistinguishedName;
+#[cfg(feature = "std")]
+use crate::sync::Arc;
 
 // Marker types.  These are used to bind the fact some verification
 // (certificate chain or handshake signature) has taken place into
@@ -138,6 +140,24 @@ pub trait ServerCertVerifier: Debug + Send + Sync {
     /// This should be in priority order, with the most preferred first.
     fn supported_verify_schemes(&self) -> Vec<SignatureScheme>;
 
+    /// Owner-aware equivalent of [`Self::supported_verify_schemes`].
+    ///
+    /// Implementations that opt in must reserve the returned vector's actual
+    /// backing from `owner` before allocating it.  On success the returned
+    /// byte count is the reservation transferred to the caller, which must
+    /// release it only after the vector backing has been destroyed.
+    ///
+    /// The default deliberately fails before invoking the ordinary allocating
+    /// method, preserving arbitrary custom-verifier semantics without allowing
+    /// an unaccounted fallback.
+    #[cfg(feature = "std")]
+    fn supported_verify_schemes_with_resource_owner(
+        &self,
+        _owner: Arc<dyn crate::DeframerBufferOwner>,
+    ) -> Result<(Vec<SignatureScheme>, usize), InvalidMessage> {
+        Err(InvalidMessage::MessageTooLarge)
+    }
+
     /// Returns whether this verifier requires raw public keys as defined
     /// in [RFC 7250](https://tools.ietf.org/html/rfc7250).
     fn requires_raw_public_keys(&self) -> bool {
@@ -185,7 +205,7 @@ pub trait ClientCertVerifier: Debug + Send + Sync {
     /// presented client certificates.
     ///
     /// In some circumstances this list may be customized to include [`DistinguishedName`] entries
-    /// that do not correspond to a trust anchor in the server's root cert store. For example,
+    /// that do not correspond to a trust anchor in the root cert store. For example,
     /// the server may be configured to trust a root CA that cross-signed an issuer certificate
     /// that the client considers a trust anchor. From the server's perspective the cross-signed
     /// certificate is an intermediate, and not present in the server's root cert store. The client
@@ -207,8 +227,8 @@ pub trait ClientCertVerifier: Debug + Send + Sync {
     /// this verifier.
     ///
     /// `intermediates` contains the intermediate certificates the
-    /// client sent along with the end-entity certificate; it is in the same
-    /// order that the peer sent them and may be empty.
+    /// client sent along with the end-entity certificate; it is in the
+    /// same order that the peer sent them and may be empty.
     ///
     /// Note that none of the certificates have been parsed yet, so it is the responsibility of
     /// the implementer to handle invalid data. It is recommended that the implementer returns
@@ -229,7 +249,7 @@ pub trait ClientCertVerifier: Debug + Send + Sync {
     /// The signature and algorithm are within `dss`.  `cert` contains the
     /// public key to use.
     ///
-    /// `cert` has already been validated by [`ClientCertVerifier::verify_client_cert`].
+    /// `cert` has already been validated by [`ServerCertVerifier::verify_server_cert`].
     ///
     /// If and only if the signature is valid, return `Ok(HandshakeSignatureValid)`.
     /// Otherwise, return an error -- rustls will send an alert and abort the
