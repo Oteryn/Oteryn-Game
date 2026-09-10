@@ -6,6 +6,7 @@
 - Status: **OWNER-REQUESTED CANDIDATE ARCHITECTURE BASELINE / REVIEW REQUIRED**
 - Runtime/product activation authority: **NONE**
 - Server/protocol/content/production mutation authority: **NONE**
+- Addon/mod/plugin architecture: **DEFERRED / FUTURE CONCEPT / OUT OF CURRENT IMPLEMENTATION SCOPE**
 
 ## 1. Purpose
 
@@ -78,6 +79,8 @@ This baseline does **not** freeze:
 - a final browser-client rendering technology;
 - a final serialization format for all user preferences;
 - exact GPU batching thresholds before measurement.
+
+Addon/mod/plugin/community customization is explicitly deferred. No addon runtime, scripting VM, manifest/package format, community API, sandbox/capability system or distribution flow is part of the current UI foundation programme. Current architecture should avoid gratuitous lock-in where cheap, but future extension flexibility must not introduce current implementation complexity.
 
 ## 3. Primary authority boundary
 
@@ -800,6 +803,7 @@ This architecture baseline is ready for owner/review acceptance when reviewers c
 - makes UI performance independently observable;
 - defines deterministic and physical test requirements;
 - specifies one bounded representative gameplay HUD slice;
+- keeps addon/mod/plugin architecture deferred outside the current programme;
 - does not claim final visual design or production readiness.
 
 ## 31. Recommended next safe execution sequence
