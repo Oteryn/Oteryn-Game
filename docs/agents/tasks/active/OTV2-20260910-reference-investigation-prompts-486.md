@@ -13,10 +13,10 @@ pr: 527
 base_sha: 43ff3341e079f2883b78d01db5cee649290d90be
 head_sha: null
 final_head_sha: null
-final_head_frozen_at: 2026-09-10T09:43:00+02:00
+final_head_frozen_at: 2026-09-10T09:45:00+02:00
 owner: OTV2_WORK_DELIVERY_COORDINATOR
 created_at: 2026-09-10T08:51:00+02:00
-updated_at: 2026-09-10T09:43:00+02:00
+updated_at: 2026-09-10T09:45:00+02:00
 execution_policy: continuous_progress
 owned_paths:
   - docs/agents/prompts/OTV2_REFERENCE_INVESTIGATOR.md
@@ -66,11 +66,12 @@ Register one reusable read-only Reference investigator prompt with eight short l
 - [x] Canary/Crystal/legacy OTS remain `OTS_HYPOTHESIS_ONLY` regardless of cross-OTS consensus.
 - [x] Target cut remains the accepted post-2026-07-28 Global boundary; post-target data requires continuity analysis.
 - [x] Operator runbook gives exact recommended aliases, wave ordering and effort levels.
+- [x] Operator runbook now requires one protected adoption/behavior canary before broad Wave-1 rollout, satisfying the applicable prompt-evaluation discipline.
 - [x] Existing #511/#525, #507, WP3/#356, WP4/#335 and other implementation lineages are not mutated or replaced.
-- [x] `PROMPT_LIFECYCLE.json` registers the new prompt exactly once; Agent Governance generation on the pre-freeze content passed after the PR metadata heading repair.
+- [x] `PROMPT_LIFECYCLE.json` registers the new prompt exactly once; Agent Governance validated the pre-repair prompt/lifecycle generation.
 - [x] Prompt README exposes the new reusable alias family.
 - [ ] Final exact-head repository Agent Governance / Architecture Semantic Audit / Merge Gate are green; record externally on the PR after this freeze commit.
-- [x] Whole-diff self-review found no open material P0/P1/P2 finding.
+- [x] Whole-diff self-review has no unresolved material P0/P1/P2 finding after the adoption-canary repair.
 
 ## Excluded scope
 
@@ -100,14 +101,19 @@ Structured/wiki data is decomposed to atomic fields. Wiki/OTS consensus may effi
 
 ### Whole-diff self-review
 
-Reviewed the complete intended six-path docs/governance delta against the admission base. Falsified for: creating a second coordinator; implicit tracked-file or external-repository write authority; implementation-worker replacement; OTS-to-Reference promotion; wiki-only automatic `PROVEN`; post-target current-Global target drift; paid-review authorization; runtime/production authority; Evolved leakage; and alias ambiguity.
+Initial complete-diff challenge found one process P2: the first runbook would have launched four new aliases in parallel immediately after integration even though the bound prompt-evaluation standard distinguishes static contract checks from real adoption/delivery and representative behavior.
 
-Result:
+Disposition: **FIXED** on the same canonical branch. The runbook now requires one protected `Oteryn: ref world` High-effort adoption canary proving canonical prompt resolution, source-registry delivery, read-only authority, no second control plane, no OTS promotion and correct output shape before the remaining Wave-1 aliases are released.
+
+The repaired whole-diff challenge also falsified: creating a second coordinator; implicit tracked-file or external-repository write authority; implementation-worker replacement; OTS-to-Reference promotion; wiki-only automatic `PROVEN`; post-target current-Global target drift; paid-review authorization; runtime/production authority; Evolved leakage; and alias ambiguity.
+
+Final disposition before exact-head CI:
 
 ```text
 P0=0
 P1=0
-P2=0
+P2_OPEN=0
+P2_FIXED=1 (PROMPT_ADOPTION_CANARY_REQUIRED)
 VERDICT=PASS
 ```
 
@@ -127,32 +133,34 @@ No owner-funded/quota AI is consumed for this candidate.
 ### Focused
 
 - command/run: repository Agent Governance validates prompt lifecycle/discovery/policy on PR exact head
-- result: pre-freeze content generation PASS; final frozen-head generation pending externally
+- result: final generation pending externally after adoption-canary repair freeze
 
 ### Component/integration
 
 - command/run: Architecture Semantic Audit + repository Merge Gate selected by changed paths
-- result: final frozen-head generation pending externally
+- result: final generation pending externally after adoption-canary repair freeze
 
-### E2E
+### E2E / behavior
 
-- scenario: `NOT_APPLICABLE` — documentation/read-only research prompt only
-- result: `NOT_APPLICABLE`
+- scenario: runtime gameplay E2E `NOT_APPLICABLE`; prompt adoption/behavior canary intentionally deferred until the reusable prompt is protected and resolvable from canonical main
+- result: `NOT_EVALUATED_BEFORE_PROTECTED_ADOPTION`
+
+Broad multi-lane launch remains held until that canary returns `ADOPTION_PASS`.
 
 ### Exact-head CI
 
 - final head: intentionally recorded in immutable PR/check evidence after this commit exists; a commit cannot contain its own SHA
 - trigger source: pull_request
 - workflow/run/job: pending final frozen-head generation
-- runner assignment: repository-hosted/selected by workflows
+- runner assignment: repository-selected
 - classification: docs/governance
 - result: pending external exact-head evidence
 
 ## Self-review
 
 - exact head: final SHA to be bound externally after this freeze commit exists
-- method/reviewer: coordinating author, complete changed-file/whole-diff challenge
-- material findings: P0=0 / P1=0 / P2=0
+- method/reviewer: coordinating author, complete changed-file/whole-diff challenge plus prompt-eval-standard check
+- material findings: P0=0 / P1=0 / P2 open=0 / P2 fixed=1
 - verdict: PASS
 
 ## Independent review
@@ -175,13 +183,13 @@ No owner-funded/quota AI is consumed for this candidate.
 ## Context checkpoint
 
 ```yaml
-last_progress: final intended six-path prompt/source-registry/operator-runbook/lifecycle/README/task candidate frozen; remaining qualification is external exact-head CI/MQ/readback
+last_progress: prompt/source registry/operator runbook/lifecycle/README/task final candidate repaired for protected adoption canary and frozen; remaining qualification is exact-head CI/MQ/readback
 status: ready
 branch: docs/reference-investigator-486
 head_sha: external exact-head PR evidence after freeze commit
 pr: 527
 final_head_sha: external exact-head PR evidence after freeze commit
-final_head_frozen_at: 2026-09-10T09:43:00+02:00
+final_head_frozen_at: 2026-09-10T09:45:00+02:00
 ci_trigger_source: pull_request
 ci_check_generation: final frozen-head generation pending
 ci_checks_for_current_head: 0
@@ -192,10 +200,10 @@ terminal_ci_wait_started_at: null
 terminal_ci_checks_for_current_generation: 0
 unchanged_state_checks: 0
 identical_failure_retries: 0
-repair_cycles_for_current_gate: 0
+repair_cycles_for_current_gate: 1
 ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: require final frozen-head governance/semantic/merge-gate success, then protected Merge Queue and protected-main readback
+next_action: require final exact-head governance/semantic/merge-gate success, then protected Merge Queue and protected-main readback; after integration run the ref-world adoption canary before broader Wave-1 launch
 ```
