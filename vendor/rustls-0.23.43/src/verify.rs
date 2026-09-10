@@ -205,7 +205,7 @@ pub trait ClientCertVerifier: Debug + Send + Sync {
     /// presented client certificates.
     ///
     /// In some circumstances this list may be customized to include [`DistinguishedName`] entries
-    /// that do not correspond to a trust anchor in the root cert store. For example,
+    /// that do not correspond to a trust anchor in the server's root cert store. For example,
     /// the server may be configured to trust a root CA that cross-signed an issuer certificate
     /// that the client considers a trust anchor. From the server's perspective the cross-signed
     /// certificate is an intermediate, and not present in the server's root cert store. The client
@@ -227,8 +227,8 @@ pub trait ClientCertVerifier: Debug + Send + Sync {
     /// this verifier.
     ///
     /// `intermediates` contains the intermediate certificates the
-    /// client sent along with the end-entity certificate; it is in the
-    /// same order that the peer sent them and may be empty.
+    /// client sent along with the end-entity certificate; it is in the same
+    /// order that the peer sent them and may be empty.
     ///
     /// Note that none of the certificates have been parsed yet, so it is the responsibility of
     /// the implementer to handle invalid data. It is recommended that the implementer returns
@@ -249,7 +249,7 @@ pub trait ClientCertVerifier: Debug + Send + Sync {
     /// The signature and algorithm are within `dss`.  `cert` contains the
     /// public key to use.
     ///
-    /// `cert` has already been validated by [`ServerCertVerifier::verify_server_cert`].
+    /// `cert` has already been validated by [`ClientCertVerifier::verify_client_cert`].
     ///
     /// If and only if the signature is valid, return `Ok(HandshakeSignatureValid)`.
     /// Otherwise, return an error -- rustls will send an alert and abort the
