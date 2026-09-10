@@ -1,5 +1,5 @@
 use crate::{
-    RendererError, SurfaceDecision, SurfaceEvent, SurfacePhase, SurfaceSize, SurfaceState,
+    RendererError, SurfaceDecision, SurfaceEvent, SurfaceSize, SurfaceState,
 };
 use oteryn_foundation::ProcessGeneration;
 
@@ -104,14 +104,10 @@ where
     }
 
     pub fn render(&mut self, generation: ProcessGeneration) -> Result<(), RendererError> {
-        if self.state.phase() != SurfacePhase::Configured {
-            return Err(RendererError::InvalidTransition {
-                phase: self.state.phase(),
-                event: crate::SurfaceEventKind::Presented,
-            });
-        }
-
-        match self.surface.get_current_texture() {
+        let frame = crate::resources::acquire_frame(&self.state, generation, || {
+            self.surface.get_current_texture()
+        })?;
+        match frame {
             wgpu::CurrentSurfaceTexture::Success(frame) => self.present(frame, generation, false),
             wgpu::CurrentSurfaceTexture::Suboptimal(frame) => self.present(frame, generation, true),
             wgpu::CurrentSurfaceTexture::Timeout => {
