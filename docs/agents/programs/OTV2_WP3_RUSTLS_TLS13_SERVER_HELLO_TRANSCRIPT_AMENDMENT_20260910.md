@@ -7,7 +7,8 @@ Coordinator: #162. Programme: #364. Existing sole material worker: #351 / Draft 
 ```yaml
 allocation_id: OTV2-WP3-RUSTLS-TLS13-SERVER-HELLO-TRANSCRIPT-20260910
 repository: Oteryn/Oteryn-Game
-allocation_base_main_sha: 7144c0b9ec8691e481df058c85d890ac88d32461
+initial_allocation_base_main_sha: 7144c0b9ec8691e481df058c85d890ac88d32461
+reconciled_main_sha: 5025be6cf3f5140cf94708f8e6ddc9ab3f40d99f
 allocation_state: NOT_ACTIVE
 preparation_branch: coord/wp3-rustls-tls13-server-hello-transcript-351-20260910
 worker_branch: agent/sqlx-driver-budget-351
@@ -16,11 +17,11 @@ source_wp3_tree: 370624395c910ee3a33268257bd9aecf1810c4e4
 risk: HIGH
 ```
 
-This is an allocation-only control-plane amendment. It grants no present runtime mutation authority and creates no replacement worker, branch, or material PR. Material application is permitted only after independent exact-head review, canonical exact-head checks, normal FULL Merge Queue, protected-main readback, fresh custody/overlap reconciliation, and explicit application to the SAME #351/#356 worker.
+This is an allocation-only control-plane amendment. It grants no present runtime mutation authority and creates no replacement worker, branch, or material PR. The preparation branch was normally reconciled with protected `main@5025be6cf3f5140cf94708f8e6ddc9ab3f40d99f` after upstream advanced during PR creation. Material application is permitted only after independent exact-head review, canonical exact-head checks, normal FULL Merge Queue, protected-main readback, fresh custody/overlap reconciliation, and explicit application to the SAME #351/#356 worker.
 
 ## Verified necessity
 
-Protected #550 enabled owner-aware transcript start/growth at `vendor/rustls-0.23.43/src/client/hs.rs :: ExpectServerHello::handle`. The canonical #356 worker has consumed that authority and current head `aa8281dbec97de4ecf63949f7f7896afcb3ee15e` is reconciled with protected main (`behind_by=0`).
+Protected #550 enabled owner-aware transcript start/growth at `vendor/rustls-0.23.43/src/client/hs.rs :: ExpectServerHello::handle`. The canonical #356 worker has consumed that authority and source head `aa8281dbec97de4ecf63949f7f7896afcb3ee15e` was reconciled with its protected main before this boundary was re-read.
 
 On that exact worker source, `client::tls13::handle_server_hello` receives the resulting `HandshakeHash` and later calls ordinary `transcript.current_hash()` before deriving client handshake secrets. The accepted-ECH branch also calls ordinary `accepted.transcript.add_message(server_hello_msg)`.
 
