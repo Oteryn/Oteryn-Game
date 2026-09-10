@@ -18,7 +18,7 @@ use crate::webpki::{VerifierBuilderError, parse_crls, verify_server_name};
 use crate::{ConfigBuilder, ServerConfig, crypto};
 use crate::{Error, RootCertStore, SignatureScheme};
 
-/// A builder for configuring the `webpki` server certificate verifier.
+/// A builder for configuring a `webpki` server certificate verifier.
 ///
 /// For more information, see the [`WebPkiServerVerifier`] documentation.
 #[derive(Debug, Clone)]
@@ -64,7 +64,7 @@ impl ServerCertVerifierBuilder {
     /// status for each certificate in the verified chain built to a trust anchor
     /// (excluding the trust anchor itself).
     ///
-    /// If CRLs are provided then this setting has no effect. Neither the end entity certificate
+    /// If no CRLs are provided then this setting has no effect. Neither the end entity certificate
     /// or any intermediates will have revocation status checked.
     pub fn only_check_end_entity_revocation(mut self) -> Self {
         self.revocation_check_depth = RevocationCheckDepth::EndEntity;
