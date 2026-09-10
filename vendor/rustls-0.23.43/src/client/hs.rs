@@ -287,6 +287,40 @@ fn emit_client_hello_for_retry(
     mut ech_state: Option<EchState>,
 ) -> NextStateOrError<'static> {
     let config = &input.config;
+
+    #[cfg(feature = "std")]
+    struct VerifierSchemesCharge {
+        owner: Arc<dyn crate::DeframerBufferOwner>,
+        bytes: usize,
+    }
+
+    #[cfg(feature = "std")]
+    impl Drop for VerifierSchemesCharge {
+        fn drop(&mut self) {
+            self.owner.release(self.bytes);
+        }
+    }
+
+    #[cfg(feature = "std")]
+    let mut verifier_schemes_charge: Option<VerifierSchemesCharge> = None;
+    #[cfg(feature = "std")]
+    let signature_schemes = match &input.resource_owner {
+        Some(owner) => {
+            let (schemes, bytes) = config
+                .verifier
+                .supported_verify_schemes_with_resource_owner(owner.clone())
+                .map_err(Error::InvalidMessage)?;
+            verifier_schemes_charge = Some(VerifierSchemesCharge {
+                owner: owner.clone(),
+                bytes,
+            });
+            schemes
+        }
+        None => config.verifier.supported_verify_schemes(),
+    };
+    #[cfg(not(feature = "std"))]
+    let signature_schemes = config.verifier.supported_verify_schemes();
+
     // Defense in depth: the ECH state should be None if ECH is disabled based on config
     // builder semantics.
     let forbids_tls12 = cx.common.is_quic() || ech_state.is_some();
@@ -312,11 +346,7 @@ fn emit_client_hello_for_retry(
                 .collect(),
         ),
         supported_versions: Some(supported_versions),
-        signature_schemes: Some(
-            config
-                .verifier
-                .supported_verify_schemes(),
-        ),
+        signature_schemes: Some(signature_schemes),
         extended_master_secret_request: Some(()),
         certificate_status_request: Some(CertificateStatusRequest::build_ocsp()),
         protocols: extra_exts.protocols.clone(),
@@ -327,7 +357,7 @@ fn emit_client_hello_for_retry(
         Some(TransportParameters::Quic(v)) => exts.transport_parameters = Some(v),
         Some(TransportParameters::QuicDraft(v)) => exts.transport_parameters_draft = Some(v),
         None => {}
-    };
+    }
 
     if supported_versions.tls13 {
         if let Some(cas_extension) = config.verifier.root_hint_subjects() {
@@ -576,6 +606,8 @@ fn emit_client_hello_for_retry(
 
     transcript_buffer.add_message(&ch);
     cx.common.send_msg(ch, false);
+    #[cfg(feature = "std")]
+    drop(verifier_schemes_charge);
 
     // Calculate the hash of ClientHello and use it to derive EarlyTrafficSecret
     let early_data_key_schedule =
