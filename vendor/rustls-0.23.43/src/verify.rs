@@ -401,3 +401,78 @@ fn assertions_are_debug() {
         "ServerCertVerified(())"
     );
 }
+
+#[cfg(all(test, feature = "std"))]
+mod owner_aware_scheme_tests {
+    use core::sync::atomic::{AtomicUsize, Ordering};
+
+    use super::*;
+    use crate::{DeframerBufferError, DeframerBufferOwner};
+
+    #[derive(Debug)]
+    struct CountingVerifier {
+        ordinary_calls: AtomicUsize,
+    }
+
+    impl ServerCertVerifier for CountingVerifier {
+        fn verify_server_cert(
+            &self,
+            _end_entity: &CertificateDer<'_>,
+            _intermediates: &[CertificateDer<'_>],
+            _server_name: &ServerName<'_>,
+            _ocsp_response: &[u8],
+            _now: UnixTime,
+        ) -> Result<ServerCertVerified, Error> {
+            unreachable!()
+        }
+
+        fn verify_tls12_signature(
+            &self,
+            _message: &[u8],
+            _cert: &CertificateDer<'_>,
+            _dss: &DigitallySignedStruct,
+        ) -> Result<HandshakeSignatureValid, Error> {
+            unreachable!()
+        }
+
+        fn verify_tls13_signature(
+            &self,
+            _message: &[u8],
+            _cert: &CertificateDer<'_>,
+            _dss: &DigitallySignedStruct,
+        ) -> Result<HandshakeSignatureValid, Error> {
+            unreachable!()
+        }
+
+        fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+            self.ordinary_calls.fetch_add(1, Ordering::Relaxed);
+            let mut schemes = Vec::new();
+            schemes.push(SignatureScheme::ECDSA_NISTP256_SHA256);
+            schemes
+        }
+    }
+
+    #[derive(Debug)]
+    struct AcceptingOwner;
+
+    impl DeframerBufferOwner for AcceptingOwner {
+        fn try_reserve(&self, _bytes: usize) -> Result<(), DeframerBufferError> {
+            Ok(())
+        }
+
+        fn release(&self, _bytes: usize) {}
+    }
+
+    #[test]
+    fn custom_verifier_default_denies_before_ordinary_allocation() {
+        let verifier = CountingVerifier {
+            ordinary_calls: AtomicUsize::new(0),
+        };
+        let owner: Arc<dyn DeframerBufferOwner> = Arc::new(AcceptingOwner);
+
+        assert!(verifier
+            .supported_verify_schemes_with_resource_owner(owner)
+            .is_err());
+        assert_eq!(verifier.ordinary_calls.load(Ordering::Relaxed), 0);
+    }
+}
