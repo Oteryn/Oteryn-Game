@@ -316,7 +316,7 @@ def main() -> int:
 
     push_ruleset = policy.get("push_ruleset", {})
     if push_ruleset.get("name") != "Protect repository control plane" or push_ruleset.get("target") != "push":
-        errors.append("control-plane push ruleset must be a dedicated push ruleset")
+        errors.append("control-plane ruleset must be a dedicated push ruleset")
     if push_ruleset.get("enforcement") != "active":
         errors.append("control-plane push ruleset must be active")
     if push_ruleset.get("bypass_actors") != []:
