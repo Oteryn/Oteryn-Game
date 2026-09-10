@@ -4,18 +4,18 @@
 task_id: OTV2-20260910-runtime-actor-local-generation-539
 title: Resolve runtime actor-local identity reuse and generation retention
 mode: CONTRACT
-status: implementing
+status: validating
 repository: Oteryn/Oteryn-Game
 base_branch: main
 branch: arch/539-runtime-actor-local-generation
-pr: null
+pr: 541
 base_sha: 2d33d812e578087ac982afc03964fb1917b05b4d
 head_sha: null
 final_head_sha: null
 final_head_frozen_at: null
 owner: OTV2_SOL_SUPERVISING_ARCHITECT
 created_at: 2026-09-10T14:07:43Z
-updated_at: 2026-09-10T14:07:43Z
+updated_at: 2026-09-10T14:18:54Z
 execution_policy: continuous_progress
 owned_paths:
   - docs/architecture/reviews/OTERYN_GAME_RUNTIME_ACTOR_LOCAL_GENERATION_DECISION_2026-09-10.md
@@ -55,13 +55,13 @@ Produce one bounded architecture resolution for Issue #539 that freezes only the
 
 ## Acceptance criteria
 
-- [ ] Define when an actor-local identity may be reused and how its generation advances.
-- [ ] Define the retention lifetime needed to make stale actor references impossible to revive.
-- [ ] State exactly whether `RUNTIME-ACTOR-RL-03` is the same finite resource as first-carrier slots or requires an independent bounded resource.
-- [ ] Define checked exhaustion behavior with no wrap, no partial insertion and no live-actor eviction.
-- [ ] Preserve `WorldId + ChannelId + ScopeOwnershipGeneration + actor-local identity + actor-local generation` as the minimum exact-reference authority shape.
-- [ ] Do not choose a production actor ceiling; keep `RUNTIME-ACTOR-RL-01` blocked on ADR-0009/PERF-01.
-- [ ] Record realistic alternatives, trade-offs, decision timing, supersession evidence, `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS`.
+- [x] Define when an actor-local identity may be reused and how its generation advances.
+- [x] Define the retention lifetime needed to make stale actor references impossible to revive.
+- [x] State exactly whether `RUNTIME-ACTOR-RL-03` is the same finite resource as first-carrier slots or requires an independent bounded resource.
+- [x] Define checked exhaustion behavior with no wrap, no partial insertion and no live-actor eviction.
+- [x] Preserve `WorldId + ChannelId + ScopeOwnershipGeneration + actor-local identity + actor-local generation` as the minimum exact-reference authority shape.
+- [x] Do not choose a production actor ceiling; keep `RUNTIME-ACTOR-RL-01` blocked on ADR-0009/PERF-01.
+- [x] Record realistic alternatives, trade-offs, decision timing, supersession evidence, `DECISIONS_NOT_TAKEN` and `CROSS_DOMAIN_FINDINGS`.
 - [ ] Exact-head whole-diff self-review and applicable repository CI pass.
 - [ ] Genuinely independent exact-head review reports no unresolved material finding before integration.
 
@@ -71,29 +71,31 @@ No runtime/server/client code; no `RESOURCE_LIMITS_REGISTRY.json`; no Cargo/work
 
 ## Implementation / findings
 
-The candidate direction to evaluate is a finite typed actor-local slot namespace scoped by the already-mandatory `ScopeOwnershipGeneration`. Each configured slot retains its actor-local generation while inactive; reuse requires checked generation advance before publication. A scope-ownership-generation change may start a fresh local namespace because every older exact actor reference is already rejected by the non-reused outer scope generation. No unbounded tombstone set is required by this shape. This is a candidate until the decision artifact is reviewed and protected-integrated.
+Candidate decision `RUNTIME-ACTOR-LOCAL-GENERATION-V1` is published in PR #541. It selects a finite typed actor-local slot namespace scoped by the already-mandatory `ScopeOwnershipGeneration`. Each configured slot retains its actor-local generation while inactive; reuse requires checked generation advance before publication. A legitimately new scope ownership generation may initialize a fresh local namespace because every older exact actor reference is already rejected by the non-reused outer scope generation. No unbounded tombstone set is required by this shape.
+
+The candidate classifies `RUNTIME-ACTOR-RL-03 = SAME_RESOURCE_AS_RL01_FOR_CHANNEL_RUNTIME_ACTOR_CARRIER_V1` while leaving the numeric RL-01 capacity `M` unresolved for ADR-0009/PERF-01.
 
 ## Validation
 
 ### Focused
 
-- command/run: documentation consistency and repository compare after candidate publication
-- result: pending
+- command/run: GitHub compare of protected base to candidate branch
+- result: pre-PR publication compare `ahead_by=2`, `behind_by=0`, exactly two added documentation paths; final-head compare pending after this task metadata update
 
 ### Component/integration
 
 - command/run: `NOT_APPLICABLE` — documentation-only architecture candidate
-- result: pending
+- result: `NOT_APPLICABLE`
 
 ### E2E
 
 - scenario: `NOT_APPLICABLE` — no executable runtime path changes
-- result: pending
+- result: `NOT_APPLICABLE`
 
 ### Exact-head CI
 
 - final head: pending
-- trigger source: pending
+- trigger source: pull_request #541
 - workflow/run/job: pending
 - runner assignment: pending
 - classification: pending
@@ -101,9 +103,9 @@ The candidate direction to evaluate is a finite typed actor-local slot namespace
 
 ## Self-review
 
-- exact head: pending
-- method/reviewer: authoring supervising architect
-- material findings: pending
+- exact head: pending after this final task-metadata mutation
+- method/reviewer: authoring supervising architect, whole two-file diff
+- material findings: none accepted before final-head re-read; final-head verification pending
 - verdict: pending
 
 ## Independent review
@@ -116,9 +118,9 @@ The candidate direction to evaluate is a finite typed actor-local slot namespace
 
 ## PR and closeout
 
-- changed-file review: pending
+- changed-file review: PR #541 contains exactly the two declared owned paths before final-head re-read
 - unresolved review threads: pending
-- related/superseded PRs: #537 evidence prerequisite; no successor PR yet
+- related/superseded PRs: #537 evidence prerequisite
 - protected auto-merge: FORBIDDEN
 - merge commit/result: pending
 - ownership release: pending
@@ -126,14 +128,14 @@ The candidate direction to evaluate is a finite typed actor-local slot namespace
 ## Context checkpoint
 
 ```yaml
-last_progress: Issue #539 opened after protected #537 readback; bounded architecture branch created.
-status: implementing
+last_progress: Candidate decision published in draft PR #541; task moved to exact-head validation/review.
+status: validating
 branch: arch/539-runtime-actor-local-generation
 head_sha: null
-pr: null
+pr: 541
 final_head_sha: null
 final_head_frozen_at: null
-ci_trigger_source: null
+ci_trigger_source: pull_request
 ci_check_generation: null
 ci_checks_for_current_head: 0
 ci_run_ids: []
@@ -148,5 +150,5 @@ ci_recovery_actions_for_current_head: 0
 stall_warnings: 0
 owner_action_required: null
 blocker: null
-next_action: Publish the bounded architecture decision candidate for Issue #539 on this branch.
+next_action: Re-read the final PR #541 head, exact diff, repository CI and independent-review requirement.
 ```
