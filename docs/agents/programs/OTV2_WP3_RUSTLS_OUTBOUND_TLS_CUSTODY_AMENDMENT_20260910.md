@@ -53,9 +53,10 @@ No general application-data accounting, new buffering policy, key-update redesig
 
 ### `vendor/rustls-0.23.43/src/vecbuf.rs`
 
-- `ChunkVecBuffer` private representation only for optional per-retained-chunk custody paired with a queued `Vec<u8>`;
-- `append`, `pop`, `consume`, `read`/`read_buf`, and `write_to` only as strictly necessary to transfer/release that custody at the same point the corresponding backing is moved or destroyed;
-- minimum private Drop/helper plumbing required to release still-retained charged chunks on buffer destruction.
+- `ChunkVecBuffer` private representation only for optional per-retained-chunk custody paired with a queued `Vec<u8>` and for exact custody of queue/control backing allocated by the owner-aware outbound path;
+- `append`, `pop`, `consume`, `read`/`read_buf`, and `write_to` only as strictly necessary to transfer/release chunk custody at the same point the corresponding backing is moved or destroyed;
+- minimum private reservation/growth helper needed to reserve `VecDeque` queue/control backing before owner-aware insertion can allocate or grow it, accounting actual element layout/capacity and old/new overlap;
+- minimum private Drop/replacement/shrink plumbing required to retain the queue/control debit while its capacity remains allocated and to release it only after that backing is actually destroyed.
 
 No new public API, generic allocator interception, changed buffer limit, changed read/write ordering or unrelated `ChunkVecBuffer` behavior is granted.
 ## Required semantics
@@ -67,6 +68,8 @@ Any activated implementation must:
 - verify resulting actual capacity/backing is within the pre-reserved source-derived bound before releasing any unused over-reservation;
 - preserve all simultaneous source, typed-message, encoded plaintext, encrypted-record and queued-send backing until each is actually destroyed or custody is explicitly transferred;
 - attach custody to the exact final `Vec<u8>` retained in `sendable_tls` and release it only after the corresponding backing is popped/destroyed, including partial writes, `WouldBlock`, error, cancellation and connection drop;
+- reserve queue/control backing before any owner-aware `VecDeque` allocation/growth, retain that separate debit after the queue becomes logically empty if capacity is still allocated, and release it only on actual replacement/shrink/drop of that backing;
+- preserve old/new queue-control capacity overlap during any replacement growth and fail closed before allocation if the same ledger cannot fund it;
 - avoid double-charge when ownership moves between TLS1.2 KX, encryption and queue stages;
 - preserve TLS1.2 wire bytes, cipher/record semantics, ordering, alerts, randomness, transcript behavior and security;
 - preserve ordinary owner-free std/no_std behavior and existing application-data behavior;
@@ -86,6 +89,7 @@ Before this seam can be treated as proven, the SAME #356 lineage must provide ex
 - full write/pop releasing only after backing destruction;
 - connection error/cancellation/drop releasing all still-retained outbound custody exactly once;
 - multiple queued chunks preserving one-to-one backing/custody association and destruction order;
+- repeated enqueue/drain churn proving `VecDeque` queue/control capacity is either still charged while retained or released only after actual deallocation, with growth denial before allocation and old/new overlap accounted;
 - ordinary unowned `ChunkVecBuffer` behavior and existing buffer limits unchanged;
 - Rust 1.94 focused rustls tests/check/Clippy and the affected SQLx integration control needed to prove the same owner reaches the queue.
 Focused proof does not substitute for #501 transcript/hash completion, the still-gated #493 binder condition, complete TLS composition, real funded SQLx AWS-LC TLS-positive evidence, PostgreSQL 17.6 qualification, final review, canonical CI, Merge Queue or protected-main delivery.
