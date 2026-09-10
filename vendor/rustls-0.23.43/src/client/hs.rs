@@ -604,6 +604,18 @@ fn emit_client_hello_for_retry(
 
     trace!("Sending ClientHello {ch:#?}");
 
+    #[cfg(feature = "std")]
+    if let Some(owner) = &input.resource_owner {
+        transcript_buffer
+            .install_resource_owner(owner.clone())
+            .map_err(Error::InvalidMessage)?;
+        transcript_buffer
+            .try_add_message(&ch)
+            .map_err(Error::InvalidMessage)?;
+    } else {
+        transcript_buffer.add_message(&ch);
+    }
+    #[cfg(not(feature = "std"))]
     transcript_buffer.add_message(&ch);
     cx.common.send_msg(ch, false);
     #[cfg(feature = "std")]
@@ -936,10 +948,34 @@ impl State<ClientConnectionData> for ExpectServerHello {
         }
 
         // Start our handshake hash, and input the server-hello.
-        let mut transcript = self
-            .transcript_buffer
-            .start_hash(suite.hash_provider());
-        transcript.add_message(&m);
+        #[cfg(feature = "std")]
+        let mut transcript = if let Some(owner) = &self.input.resource_owner {
+            self.transcript_buffer
+                .install_resource_owner(owner.clone())
+                .map_err(Error::InvalidMessage)?;
+            let mut transcript = self
+                .transcript_buffer
+                .try_start_hash(suite.hash_provider())
+                .map_err(Error::InvalidMessage)?;
+            transcript
+                .try_add_message(&m)
+                .map_err(Error::InvalidMessage)?;
+            transcript
+        } else {
+            let mut transcript = self
+                .transcript_buffer
+                .start_hash(suite.hash_provider());
+            transcript.add_message(&m);
+            transcript
+        };
+        #[cfg(not(feature = "std"))]
+        let mut transcript = {
+            let mut transcript = self
+                .transcript_buffer
+                .start_hash(suite.hash_provider());
+            transcript.add_message(&m);
+            transcript
+        };
 
         let randoms = ConnectionRandoms::new(self.input.random, server_hello.random);
         // For TLS1.3, start message encryption using
@@ -1076,7 +1112,7 @@ impl ExpectServerHelloOrHelloRetryRequest {
                     )
                 });
             }
-        }
+        };
 
         // Or asks us to use a ciphersuite we didn't offer.
         let Some(cs) = config.find_cipher_suite(hrr.cipher_suite, cx.common.protocol) else {
@@ -1119,12 +1155,43 @@ impl ExpectServerHelloOrHelloRetryRequest {
         };
 
         // This is the draft19 change where the transcript became a tree
-        let transcript = self
-            .next
-            .transcript_buffer
-            .start_hash(cs.hash_provider());
-        let mut transcript_buffer = transcript.into_hrr_buffer();
-        transcript_buffer.add_message(&m);
+        #[cfg(feature = "std")]
+        let mut transcript_buffer = if let Some(owner) = &self.next.input.resource_owner {
+            self.next
+                .transcript_buffer
+                .install_resource_owner(owner.clone())
+                .map_err(Error::InvalidMessage)?;
+            let transcript = self
+                .next
+                .transcript_buffer
+                .try_start_hash(cs.hash_provider())
+                .map_err(Error::InvalidMessage)?;
+            let mut transcript_buffer = transcript
+                .try_into_hrr_buffer()
+                .map_err(Error::InvalidMessage)?;
+            transcript_buffer
+                .try_add_message(&m)
+                .map_err(Error::InvalidMessage)?;
+            transcript_buffer
+        } else {
+            let transcript = self
+                .next
+                .transcript_buffer
+                .start_hash(cs.hash_provider());
+            let mut transcript_buffer = transcript.into_hrr_buffer();
+            transcript_buffer.add_message(&m);
+            transcript_buffer
+        };
+        #[cfg(not(feature = "std"))]
+        let mut transcript_buffer = {
+            let transcript = self
+                .next
+                .transcript_buffer
+                .start_hash(cs.hash_provider());
+            let mut transcript_buffer = transcript.into_hrr_buffer();
+            transcript_buffer.add_message(&m);
+            transcript_buffer
+        };
 
         // If we offered ECH and the server accepted, we also need to update the separate
         // ECH transcript with the hello retry request message.
