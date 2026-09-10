@@ -286,6 +286,90 @@ def test_preexisting_parser_module_fails_closed():
             sys.modules[name] = previous
 
 
+def test_game_producer_provenance_and_import_context_fail_closed():
+    original_git = census._git
+    names = ("corridor_qualified_producer", "oteryn_game_atlas_qualified_dyn_producer")
+    saved = {name: sys.modules.get(name) for name in names}
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp).resolve()
+        producer_path = root / census.GAME_PRODUCER_REL
+        bounded_path = root / census.GAME_BOUNDED_EXPORT_REL
+        producer_path.parent.mkdir(parents=True)
+        bounded_path.parent.mkdir(parents=True)
+        producer_path.write_text("producer")
+        bounded_path.write_text("bounded")
+        commit = "c" * 40
+        blob = "a" * 40
+
+        def clean_git(_repo, *args):
+            if args == ("rev-parse", "--show-toplevel"):
+                return str(root)
+            if args[:3] == ("status", "--porcelain=v1", "--untracked-files=all"):
+                return ""
+            if args[0] == "ls-files":
+                return args[-1]
+            if args[0] == "hash-object":
+                return blob
+            if args[:3] == ("log", "-1", "--format=%H"):
+                return commit
+            if args[0] == "rev-parse" and args[1].startswith(commit + ":"):
+                return blob
+            raise AssertionError(args)
+
+        census._git = clean_git
+        provenance = census.verify_game_producer_inputs(root)
+        assert provenance[census.GAME_PRODUCER_REL]["code_commit"] == commit
+        assert provenance[census.GAME_BOUNDED_EXPORT_REL]["blob"] == blob
+
+        producer_module = ModuleType("producer")
+        producer_module.__file__ = str(producer_path)
+        bounded_module = ModuleType("bounded")
+        bounded_module.__file__ = str(bounded_path)
+        census.verify_loaded_game_producer_modules(
+            root, provenance, producer_module, SimpleNamespace(bounded=bounded_module)
+        )
+
+        def dirty_git(repo, *args):
+            if args[:3] == ("status", "--porcelain=v1", "--untracked-files=all"):
+                return " M " + census.GAME_PRODUCER_REL
+            return clean_git(repo, *args)
+
+        census._git = dirty_git
+        try:
+            census.verify_game_producer_inputs(root)
+        except census.CensusError as exc:
+            assert "GAME_PRODUCER_REVISION_MISMATCH" in str(exc)
+        else:
+            raise AssertionError("dirty Game producer path accepted")
+
+        census._git = clean_git
+        bounded_module.__file__ = str(root / "outside-export.py")
+        try:
+            census.verify_loaded_game_producer_modules(
+                root, provenance, producer_module, SimpleNamespace(bounded=bounded_module)
+            )
+        except census.CensusError as exc:
+            assert "GAME_PRODUCER_REVISION_MISMATCH" in str(exc)
+            assert "origin mismatch" in str(exc)
+        else:
+            raise AssertionError("outside loaded Game producer dependency accepted")
+
+        sys.modules[names[1]] = ModuleType(names[1])
+        try:
+            census.require_fresh_game_producer_import_context()
+        except census.CensusError as exc:
+            assert "GAME_PRODUCER_REVISION_MISMATCH" in str(exc)
+        else:
+            raise AssertionError("pre-existing Game producer module accepted")
+
+    census._git = original_git
+    for name, previous in saved.items():
+        if previous is None:
+            sys.modules.pop(name, None)
+        else:
+            sys.modules[name] = previous
+
+
 def test_checkout_identity_and_dirty_state_fail_closed():
     original_git = census._git
     original_revision = census.LEGACY_REVISION
@@ -415,6 +499,7 @@ def main():
     test_zero_teleport_destination_is_not_expansion_evidence()
     test_source_corpus_availability_failures_are_classified()
     test_preexisting_parser_module_fails_closed()
+    test_game_producer_provenance_and_import_context_fail_closed()
     test_checkout_identity_and_dirty_state_fail_closed()
     test_loaded_module_origin_outside_pinned_tree_fails_closed()
     print("reference-world-corridor-census self-test: PASS")

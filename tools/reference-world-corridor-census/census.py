@@ -16,6 +16,8 @@ U64_MAX = (1 << 64) - 1
 LEGACY_REVISION = "e417c5e7c22986bf4acef0495eb47f7b72c97cce"
 MAP_SHA256 = "3bd40d14fefec41f24c4b3ae879e420be1a831ef55b95dcbec721e587a09b034"
 ZIP_SHA256 = "1a6bad8b7598cd874f534cd4aae2d249fb3d9b4458b3ccfa75754f91bb27870f"
+GAME_PRODUCER_REL = "tools/game-atlas-fullworld-source/producer.py"
+GAME_BOUNDED_EXPORT_REL = "tools/game-atlas-thais-fixture/export.py"
 
 
 class CensusError(RuntimeError):
@@ -107,6 +109,69 @@ def _git(repo: Path, *args: str) -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     ).stdout.strip()
+
+
+def require_fresh_game_producer_import_context() -> None:
+    names = ("corridor_qualified_producer", "oteryn_game_atlas_qualified_dyn_producer")
+    contaminated = [name for name in names if name in sys.modules]
+    if contaminated:
+        raise CensusError(
+            "GAME_PRODUCER_REVISION_MISMATCH: pre-existing Game producer modules: "
+            + ",".join(contaminated)
+        )
+
+
+def verify_game_producer_inputs(root: Path) -> dict[str, dict[str, str]]:
+    root = root.resolve()
+    relatives = (GAME_PRODUCER_REL, GAME_BOUNDED_EXPORT_REL)
+    try:
+        top = Path(_git(root, "rev-parse", "--show-toplevel")).resolve()
+        status = _git(root, "status", "--porcelain=v1", "--untracked-files=all", "--", *relatives)
+    except (OSError, subprocess.CalledProcessError) as exc:
+        raise CensusError("GAME_PRODUCER_REVISION_MISMATCH: Game producer checkout cannot be verified") from exc
+    if top != root:
+        raise CensusError(f"GAME_PRODUCER_REVISION_MISMATCH: repository root {root} != git top-level {top}")
+    if status:
+        raise CensusError("GAME_PRODUCER_REVISION_MISMATCH: Game producer paths are not clean")
+
+    verified: dict[str, dict[str, str]] = {}
+    for relative in relatives:
+        try:
+            tracked = _git(root, "ls-files", "--error-unmatch", "--", relative)
+            working_blob = _git(root, "hash-object", "--", relative)
+            code_commit = _git(root, "log", "-1", "--format=%H", "--", relative)
+            committed_blob = _git(root, "rev-parse", f"{code_commit}:{relative}")
+        except (OSError, subprocess.CalledProcessError) as exc:
+            raise CensusError(
+                f"GAME_PRODUCER_REVISION_MISMATCH: untracked/unverifiable Game producer path {relative}"
+            ) from exc
+        if tracked != relative or not code_commit or working_blob != committed_blob:
+            raise CensusError(f"GAME_PRODUCER_REVISION_MISMATCH: Game producer blob mismatch for {relative}")
+        verified[relative] = {"code_commit": code_commit, "blob": committed_blob}
+    return verified
+
+
+def verify_loaded_game_producer_modules(
+    root: Path,
+    provenance: dict[str, dict[str, str]],
+    producer: Any,
+    runtime: Any,
+) -> None:
+    expected = (
+        ("producer", producer, GAME_PRODUCER_REL),
+        ("bounded producer", runtime.bounded, GAME_BOUNDED_EXPORT_REL),
+    )
+    for label, module, relative in expected:
+        origin = getattr(module, "__file__", None)
+        expected_path = (root / relative).resolve()
+        if origin is None or Path(origin).resolve() != expected_path:
+            raise CensusError(f"GAME_PRODUCER_REVISION_MISMATCH: loaded {label} origin mismatch")
+        try:
+            working_blob = _git(root, "hash-object", "--", relative)
+        except (OSError, subprocess.CalledProcessError) as exc:
+            raise CensusError(f"GAME_PRODUCER_REVISION_MISMATCH: cannot reverify loaded {label} blob") from exc
+        if working_blob != provenance[relative]["blob"]:
+            raise CensusError(f"GAME_PRODUCER_REVISION_MISMATCH: loaded {label} blob changed during execution")
 
 
 def verify_legacy_checkout(legacy_root: Path) -> Path:
@@ -460,6 +525,8 @@ def main() -> int:
     require_fresh_legacy_import_context()
     require_sha256(args.map, MAP_SHA256, "world.otbm")
     require_sha256(args.asset_zip, ZIP_SHA256, "15.32.zip")
+    game_producer_provenance = verify_game_producer_inputs(root)
+    require_fresh_game_producer_import_context()
     producer = _load_producer(root)
     try:
         runtime = producer.load_runtime(
@@ -472,6 +539,7 @@ def main() -> int:
         raise SourceCorpusRequired(
             "SOURCE_CORPUS_REQUIRED: producer source inputs unavailable during load_runtime"
         ) from exc
+    verify_loaded_game_producer_modules(root, game_producer_provenance, producer, runtime)
     parser_modules = verify_loaded_legacy_modules(legacy_root)
 
     retained = {window.name: [] for window in WINDOWS}
@@ -501,7 +569,7 @@ def main() -> int:
         "registry_maxima_selected": False,
         "producer": {
             "api": producer.PRODUCER_API,
-            "code_commit": _git(root, "log", "-1", "--format=%H", "--", "tools/game-atlas-fullworld-source/producer.py"),
+            "code_commit": game_producer_provenance[GAME_PRODUCER_REL]["code_commit"],
             "repository": "Oteryn/Oteryn-Game",
         },
         "source": {
