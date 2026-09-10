@@ -150,11 +150,25 @@ def verify_loaded_legacy_modules(legacy_root: Path) -> list[dict[str, str]]:
     return verified
 
 
-def _inside(position: Any, window: Window) -> bool:
+def _inside_source_position(position: Any, window: Window) -> bool:
+    """Filter source-only metadata; this is not a second tile transform authority."""
     return (
         window.x_min <= position.x < window.x_max_exclusive
         and window.y_min <= position.y < window.y_max_exclusive
         and -int(position.z) == window.floor
+    )
+
+
+def _source_position_metadata(position: Any) -> dict[str, int]:
+    """Serialize non-tile source metadata for which the producer exposes no API."""
+    return {"floor": -int(position.z), "x": position.x, "y": position.y}
+
+
+def _inside_tile(producer: Any, tile: Any, window: Window) -> bool:
+    return (
+        window.x_min <= tile.position.x < window.x_max_exclusive
+        and window.y_min <= tile.position.y < window.y_max_exclusive
+        and producer.native_floor(tile) == window.floor
     )
 
 
@@ -164,13 +178,17 @@ def _walk_items(items: Iterable[Any]) -> Iterable[Any]:
         yield from _walk_items(getattr(item, "children", ()))
 
 
-def _structural_observations(tile: Any) -> list[dict[str, Any]]:
+def _structural_observations(producer: Any, tile: Any) -> list[dict[str, Any]]:
     visible = ([tile.ground] if tile.ground is not None else []) + list(tile.items)
     result = []
     for item_order, item in enumerate(_walk_items(visible)):
         base = {
             "item_order": item_order,
-            "position": {"floor": -tile.position.z, "x": tile.position.x, "y": tile.position.y},
+            "position": {
+                "floor": producer.native_floor(tile),
+                "x": tile.position.x,
+                "y": tile.position.y,
+            },
             "source_item_id": item.server_id,
         }
         fields = (
@@ -184,7 +202,7 @@ def _structural_observations(tile: Any) -> list[dict[str, Any]]:
             if value is None:
                 continue
             encoded = (
-                {"floor": -value.z, "x": value.x, "y": value.y}
+                _source_position_metadata(value)
                 if field == "teleport_destination" else value
             )
             result.append({**base, "structural_kind": kind, "source_value": encoded})
@@ -228,7 +246,7 @@ def measure_window(producer: Any, runtime: Any, window: Window, records: Iterabl
 
     for source_order, record in enumerate(records):
         if producer.is_tile(runtime, record):
-            if not _inside(record.position, window):
+            if not _inside_tile(producer, record, window):
                 continue
             tile_records = checked_add(tile_records, 1, "tile_records")
             record_bytes, record_stats = producer.project_tile_bytes(runtime, record)
@@ -266,7 +284,7 @@ def measure_window(producer: Any, runtime: Any, window: Window, records: Iterabl
                         "position": decoded["position"],
                         "source_order": source_order,
                     })
-            transitions.extend(_structural_observations(record))
+            transitions.extend(_structural_observations(producer, record))
             if record.position.x == window.x_min:
                 occupied_edges.add("west")
             if record.position.x == window.x_max_exclusive - 1:
@@ -275,16 +293,16 @@ def measure_window(producer: Any, runtime: Any, window: Window, records: Iterabl
                 occupied_edges.add("north")
             if record.position.y == window.y_max_exclusive - 1:
                 occupied_edges.add("south")
-        elif producer.is_town(runtime, record) and _inside(record.temple, window):
+        elif producer.is_town(runtime, record) and _inside_source_position(record.temple, window):
             landmarks.append({
                 "kind": "town", "name": record.name,
-                "position": {"floor": -record.temple.z, "x": record.temple.x, "y": record.temple.y},
+                "position": _source_position_metadata(record.temple),
                 "town_id": record.town_id,
             })
-        elif producer.is_waypoint(runtime, record) and _inside(record.position, window):
+        elif producer.is_waypoint(runtime, record) and _inside_source_position(record.position, window):
             landmarks.append({
                 "kind": "waypoint", "name": record.name,
-                "position": {"floor": -record.position.z, "x": record.position.x, "y": record.position.y},
+                "position": _source_position_metadata(record.position),
             })
 
     return {
@@ -361,9 +379,9 @@ def main() -> int:
     for record in producer.iter_records(runtime, strict=True):
         for window in WINDOWS:
             if (
-                (producer.is_tile(runtime, record) and _inside(record.position, window))
-                or (producer.is_town(runtime, record) and _inside(record.temple, window))
-                or (producer.is_waypoint(runtime, record) and _inside(record.position, window))
+                (producer.is_tile(runtime, record) and _inside_tile(producer, record, window))
+                or (producer.is_town(runtime, record) and _inside_source_position(record.temple, window))
+                or (producer.is_waypoint(runtime, record) and _inside_source_position(record.position, window))
             ):
                 retained[window.name].append(record)
 

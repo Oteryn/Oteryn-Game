@@ -128,6 +128,23 @@ def test_empty_window_has_canonical_empty_stream():
     assert summary["window_result"] == "PASS"
 
 
+def test_tile_selection_and_structure_use_producer_native_floor():
+    class ProducerWithDistinctNativeFloor(Producer):
+        def native_floor(self, _value): return 123
+
+    producer = ProducerWithDistinctNativeFloor()
+    window = census.Window("producer-floor", 10, 20, 123, "s", "r")
+    summary = census.measure_window(
+        producer,
+        object(),
+        window,
+        [Tile(10, 20, 7, [item(1, action_id=50)])],
+    )
+
+    assert summary["tile_records"] == 1
+    assert summary["transition_like_records"][0]["position"]["floor"] == 123
+
+
 def test_transition_structure_and_determinism():
     dest = SimpleNamespace(x=8, y=9, z=6)
     nested = item(4, house_door_id=2)
@@ -313,6 +330,7 @@ def test_loaded_module_origin_outside_pinned_tree_fails_closed():
 def main():
     test_boundaries_floor_order_losslessness_and_stream_framing()
     test_empty_window_has_canonical_empty_stream()
+    test_tile_selection_and_structure_use_producer_native_floor()
     test_transition_structure_and_determinism()
     test_checked_overflow_and_digest_failure()
     test_edge_occupancy_is_not_automatic_expansion()
