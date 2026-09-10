@@ -34,9 +34,12 @@ class Window:
     fullworld_region: str
 
     @property
-    def x_max_exclusive(self) -> int: return self.x_min + 32
+    def x_max_exclusive(self) -> int:
+        return self.x_min + 32
+
     @property
-    def y_max_exclusive(self) -> int: return self.y_min + 32
+    def y_max_exclusive(self) -> int:
+        return self.y_min + 32
 
 
 WINDOWS = (
@@ -65,10 +68,96 @@ def canonical_summary_bytes(value: Any) -> bytes:
     return (json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":")) + "\n").encode("utf-8")
 
 
+def _git(repo: Path, *args: str) -> str:
+    return subprocess.run(
+        ("git", "-C", str(repo), *args),
+        check=True,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    ).stdout.strip()
+
+
+def verify_legacy_checkout(legacy_root: Path) -> Path:
+    root = legacy_root.resolve()
+    top = Path(_git(root, "rev-parse", "--show-toplevel")).resolve()
+    if top != root:
+        raise CensusError(f"LEGACY_PARSER_REVISION_MISMATCH: legacy root {root} != git top-level {top}")
+    if _git(root, "rev-parse", "HEAD") != LEGACY_REVISION:
+        raise CensusError("LEGACY_PARSER_REVISION_MISMATCH: legacy repository HEAD mismatch")
+    if _git(root, "status", "--porcelain=v1", "--untracked-files=all"):
+        raise CensusError("LEGACY_PARSER_REVISION_MISMATCH: legacy worktree is not clean")
+    return root
+
+
+def require_fresh_legacy_import_context() -> None:
+    contaminated = sorted(
+        name for name in sys.modules
+        if name == "tools" or name == "tools.otbm_atlas" or name.startswith("tools.otbm_atlas.")
+    )
+    if contaminated:
+        raise CensusError(
+            "LEGACY_PARSER_REVISION_MISMATCH: pre-existing legacy parser modules: "
+            + ",".join(contaminated)
+        )
+
+
+def _under(path: Path, parent: Path) -> bool:
+    try:
+        path.resolve().relative_to(parent.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def verify_loaded_legacy_modules(legacy_root: Path) -> list[dict[str, str]]:
+    root = legacy_root.resolve()
+    tools_root = root / "tools"
+    required = {"tools", "tools.otbm_atlas", "tools.otbm_atlas.assets", "tools.otbm_atlas.semantic"}
+    names = sorted(
+        name for name in sys.modules
+        if name == "tools" or name == "tools.otbm_atlas" or name.startswith("tools.otbm_atlas.")
+    )
+    missing = sorted(required.difference(names))
+    if missing:
+        raise CensusError("LEGACY_PARSER_REVISION_MISMATCH: missing loaded parser modules: " + ",".join(missing))
+
+    verified: list[dict[str, str]] = []
+    for name in names:
+        module = sys.modules[name]
+        file_name = getattr(module, "__file__", None)
+        search_locations = list(getattr(getattr(module, "__spec__", None), "submodule_search_locations", None) or [])
+        if file_name is None and not search_locations:
+            raise CensusError(f"LEGACY_PARSER_REVISION_MISMATCH: unverifiable origin for {name}")
+        for location in search_locations:
+            if not _under(Path(location), tools_root):
+                raise CensusError(f"LEGACY_PARSER_REVISION_MISMATCH: package origin outside pinned tree for {name}")
+        if file_name is None:
+            verified.append({"module": name, "origin": "namespace-under-pinned-tools"})
+            continue
+
+        file_path = Path(file_name).resolve()
+        if not _under(file_path, tools_root):
+            raise CensusError(f"LEGACY_PARSER_REVISION_MISMATCH: module origin outside pinned tree for {name}")
+        relative = file_path.relative_to(root).as_posix()
+        try:
+            tracked = _git(root, "ls-files", "--error-unmatch", "--", relative)
+            working_blob = _git(root, "hash-object", "--", relative)
+            pinned_blob = _git(root, "rev-parse", f"{LEGACY_REVISION}:{relative}")
+        except subprocess.CalledProcessError as exc:
+            raise CensusError(f"LEGACY_PARSER_REVISION_MISMATCH: untracked/unverifiable module {name}") from exc
+        if tracked != relative or working_blob != pinned_blob:
+            raise CensusError(f"LEGACY_PARSER_REVISION_MISMATCH: loaded blob mismatch for {name}")
+        verified.append({"module": name, "path": relative, "blob": pinned_blob})
+    return verified
+
+
 def _inside(position: Any, window: Window) -> bool:
-    return (window.x_min <= position.x < window.x_max_exclusive
-            and window.y_min <= position.y < window.y_max_exclusive
-            and -int(position.z) == window.floor)
+    return (
+        window.x_min <= position.x < window.x_max_exclusive
+        and window.y_min <= position.y < window.y_max_exclusive
+        and -int(position.z) == window.floor
+    )
 
 
 def _walk_items(items: Iterable[Any]) -> Iterable[Any]:
@@ -81,19 +170,54 @@ def _structural_observations(tile: Any) -> list[dict[str, Any]]:
     visible = ([tile.ground] if tile.ground is not None else []) + list(tile.items)
     result = []
     for item_order, item in enumerate(_walk_items(visible)):
-        base = {"item_order": item_order, "position": {"floor": -tile.position.z, "x": tile.position.x, "y": tile.position.y}, "source_item_id": item.server_id}
-        fields = (("ACTION_ID", "action_id"), ("HOUSE_DOOR_ID", "house_door_id"), ("TELEPORT_DESTINATION", "teleport_destination"), ("UNIQUE_ID", "unique_id"))
+        base = {
+            "item_order": item_order,
+            "position": {"floor": -tile.position.z, "x": tile.position.x, "y": tile.position.y},
+            "source_item_id": item.server_id,
+        }
+        fields = (
+            ("ACTION_ID", "action_id"),
+            ("HOUSE_DOOR_ID", "house_door_id"),
+            ("TELEPORT_DESTINATION", "teleport_destination"),
+            ("UNIQUE_ID", "unique_id"),
+        )
         for kind, field in fields:
             value = getattr(item, field, None)
-            if value is None: continue
-            encoded = ({"floor": -value.z, "x": value.x, "y": value.y} if field == "teleport_destination" else value)
+            if value is None:
+                continue
+            encoded = (
+                {"floor": -value.z, "x": value.x, "y": value.y}
+                if field == "teleport_destination" else value
+            )
             result.append({**base, "structural_kind": kind, "source_value": encoded})
-    return sorted(result, key=lambda x: (x["position"]["floor"], x["position"]["y"], x["position"]["x"], x["structural_kind"], x["item_order"]))
+    return sorted(
+        result,
+        key=lambda x: (
+            x["position"]["floor"], x["position"]["y"], x["position"]["x"],
+            x["structural_kind"], x["item_order"],
+        ),
+    )
+
+
+def semantic_shard_for(x: int, y: int, floor: int) -> str:
+    return f"f{floor}-r{y // 32}-c{x // 32}"
+
+
+def expansion_requirement(window: Window, *, x: int, y: int, floor: int, reason: str) -> dict[str, Any]:
+    if window.x_min <= x < window.x_max_exclusive and window.y_min <= y < window.y_max_exclusive and floor == window.floor:
+        raise CensusError("expansion requirement must point outside the authorized start shard")
+    return {
+        "classification": "WINDOW_EXPANSION_REQUIRED",
+        "reason": reason,
+        "proposed_floor": floor,
+        "proposed_semantic_shard": semantic_shard_for(x, y, floor),
+    }
 
 
 def measure_window(producer: Any, runtime: Any, window: Window, records: Iterable[Any]) -> dict[str, Any]:
-    tile_records = non_empty = placements = unresolved = encoded_bytes = 0
-    max_per_cell = 0
+    tile_records = non_empty = placements = unresolved = aggregate_bytes = 0
+    max_per_cell = max_record_bytes = 0
+    stream_digest = hashlib.sha256()
     appearances: set[int] = set()
     sprites: set[int] = set()
     unresolved_ids: set[int] = set()
@@ -102,105 +226,207 @@ def measure_window(producer: Any, runtime: Any, window: Window, records: Iterabl
     transitions: list[dict[str, Any]] = []
     composites: list[dict[str, Any]] = []
     occupied_edges: set[str] = set()
+    expansion_requests: list[dict[str, Any]] = []
+
     for source_order, record in enumerate(records):
         if producer.is_tile(runtime, record):
-            if not _inside(record.position, window): continue
+            if not _inside(record.position, window):
+                continue
             tile_records = checked_add(tile_records, 1, "tile_records")
-            data, stats = producer.project_tile_bytes(runtime, record)
-            count = int(stats["presentation_count"])
+            record_bytes, record_stats = producer.project_tile_bytes(runtime, record)
+            count = int(record_stats["presentation_count"])
             placements = checked_add(placements, count, "ordered_presentations")
-            encoded_bytes = checked_add(encoded_bytes, len(data), "encoded_semantic_bytes")
-            unresolved = checked_add(unresolved, int(stats.get("unresolved_presentation_count", 0)), "unresolved_presentations")
+            aggregate_bytes = checked_add(aggregate_bytes, len(record_bytes), "aggregate_encoded_byte_count")
+            max_record_bytes = max(max_record_bytes, len(record_bytes))
+            stream_digest.update(record_bytes)
+            unresolved = checked_add(
+                unresolved,
+                int(record_stats.get("unresolved_presentation_count", 0)),
+                "unresolved_presentations",
+            )
             non_empty = checked_add(non_empty, int(count > 0), "non_empty_tile_records")
             max_per_cell = max(max_per_cell, count)
-            appearances.update(int(x) for x in stats["appearance_ids"])
-            sprites.update(int(x) for x in stats["sprite_ids"])
-            unresolved_ids.update(int(x) for x in stats.get("unresolved_appearance_ids", set()))
-            decoded = json.loads(data)
+            appearances.update(int(x) for x in record_stats["appearance_ids"])
+            sprites.update(int(x) for x in record_stats["sprite_ids"])
+            unresolved_ids.update(int(x) for x in record_stats.get("unresolved_appearance_ids", set()))
+
+            decoded = json.loads(record_bytes)
             if len(decoded["presentation"]) != count:
                 raise CensusError("producer presentation count does not match ordered semantic record")
             for presentation in decoded["presentation"]:
-                coverage = [point for primitive in presentation["resolved_primitives"] for point in primitive.get("visual_coverage_offsets", [])]
+                coverage = [
+                    point
+                    for primitive in presentation["resolved_primitives"]
+                    for point in primitive.get("visual_coverage_offsets", [])
+                ]
                 if "presentation_resolution_state" not in presentation:
                     resolved_presentation_ids.add(str(presentation["export_record_id"]))
                 if any(point.get("dx_tiles") != 0 or point.get("dy_tiles") != 0 for point in coverage):
-                    composites.append({"appearance_source_id": presentation["appearance_source_id"], "export_record_id": presentation["export_record_id"], "position": decoded["position"], "source_order": source_order})
+                    composites.append({
+                        "appearance_source_id": presentation["appearance_source_id"],
+                        "export_record_id": presentation["export_record_id"],
+                        "position": decoded["position"],
+                        "source_order": source_order,
+                    })
             transitions.extend(_structural_observations(record))
-            if record.position.x == window.x_min: occupied_edges.add("west")
-            if record.position.x == window.x_max_exclusive - 1: occupied_edges.add("east")
-            if record.position.y == window.y_min: occupied_edges.add("north")
-            if record.position.y == window.y_max_exclusive - 1: occupied_edges.add("south")
+            if record.position.x == window.x_min:
+                occupied_edges.add("west")
+            if record.position.x == window.x_max_exclusive - 1:
+                occupied_edges.add("east")
+            if record.position.y == window.y_min:
+                occupied_edges.add("north")
+            if record.position.y == window.y_max_exclusive - 1:
+                occupied_edges.add("south")
         elif producer.is_town(runtime, record) and _inside(record.temple, window):
-            landmarks.append({"kind": "town", "name": record.name, "position": {"floor": -record.temple.z, "x": record.temple.x, "y": record.temple.y}, "town_id": record.town_id})
+            landmarks.append({
+                "kind": "town", "name": record.name,
+                "position": {"floor": -record.temple.z, "x": record.temple.x, "y": record.temple.y},
+                "town_id": record.town_id,
+            })
         elif producer.is_waypoint(runtime, record) and _inside(record.position, window):
-            landmarks.append({"kind": "waypoint", "name": record.name, "position": {"floor": -record.position.z, "x": record.position.x, "y": record.position.y}})
-    clipping = []
-    if occupied_edges:
-        clipping.append({"boundary": "+".join(x for x in ("north", "east", "south", "west") if x in occupied_edges), "classification": "AMBIGUOUS_EXPANSION", "reason": "source tile records occupy the bounded edge, but Phase-A source structure alone does not prove which adjacent shard is semantically required"})
+            landmarks.append({
+                "kind": "waypoint", "name": record.name,
+                "position": {"floor": -record.position.z, "x": record.position.x, "y": record.position.y},
+            })
+
     return {
-        "bounds": {"x_min": window.x_min, "x_max_exclusive": window.x_max_exclusive, "y_min": window.y_min, "y_max_exclusive": window.y_max_exclusive},
-        "candidate_composite_diagnostics": sorted(composites, key=lambda x: (x["position"]["floor"], x["position"]["y"], x["position"]["x"], x["export_record_id"])),
-        "cell_capacity": 32 * 32, "clipping": clipping, "encoded_semantic_bytes": encoded_bytes,
-        "expansion_order": [], "final_semantic_shards": [window.semantic_shard], "floors": [window.floor],
-        "fullworld_source_regions": [window.fullworld_region], "max_presentations_per_cell": max_per_cell,
-        "name": window.name, "non_empty_tile_records": non_empty, "ordered_presentations": placements,
-        "resolved_presentation_count": placements - unresolved, "source_landmarks": sorted(landmarks, key=lambda x: (x["kind"], x["name"])),
-        "start_semantic_shard": window.semantic_shard, "tile_records": tile_records,
-        "transition_like_records": transitions, "unique_appearance_source_ids": sorted(appearances),
+        "aggregate_encoded_byte_count": aggregate_bytes,
+        "boundary_occupancy": sorted(occupied_edges),
+        "boundary_occupancy_classification": "EDGE_OCCUPANCY_ONLY_NOT_CLIPPING_PROOF",
+        "bounds": {
+            "x_min": window.x_min, "x_max_exclusive": window.x_max_exclusive,
+            "y_min": window.y_min, "y_max_exclusive": window.y_max_exclusive,
+        },
+        "candidate_composite_diagnostics": sorted(
+            composites,
+            key=lambda x: (x["position"]["floor"], x["position"]["y"], x["position"]["x"], x["export_record_id"]),
+        ),
+        "cell_capacity": 32 * 32,
+        "floors": [window.floor],
+        "fullworld_source_region_lookup_envelope": window.fullworld_region,
+        "max_presentations_per_cell": max_per_cell,
+        "max_record_encoded_bytes": max_record_bytes,
+        "name": window.name,
+        "non_empty_tile_records": non_empty,
+        "ordered_presentations": placements,
+        "ordered_stream_sha256": stream_digest.hexdigest(),
+        "resolved_presentation_count": placements - unresolved,
+        "source_landmarks": sorted(landmarks, key=lambda x: (x["kind"], x["name"])),
+        "start_semantic_shard": window.semantic_shard,
+        "tile_records": tile_records,
+        "transition_like_records": transitions,
+        "unique_appearance_source_ids": sorted(appearances),
         "unique_resolved_presentation_ids": sorted(resolved_presentation_ids),
-        "unique_resolved_sprite_ids": sorted(sprites), "unresolved_appearance_ids": sorted(unresolved_ids),
+        "unique_resolved_sprite_ids": sorted(sprites),
+        "unresolved_appearance_ids": sorted(unresolved_ids),
         "unresolved_presentation_count": unresolved,
+        "window_expansion_required": expansion_requests,
+        "window_result": "WINDOW_EXPANSION_REQUIRED" if expansion_requests else "PASS",
     }
 
 
 def _load_producer(root: Path) -> Any:
     path = root / "tools/game-atlas-fullworld-source/producer.py"
     spec = importlib.util.spec_from_file_location("corridor_qualified_producer", path)
-    if spec is None or spec.loader is None: raise CensusError(f"cannot load producer: {path}")
+    if spec is None or spec.loader is None:
+        raise CensusError(f"cannot load producer: {path}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
     return module
 
 
-def _git(repo: Path, *args: str) -> str:
-    return subprocess.run(("git", "-C", str(repo), *args), check=True, text=True, stdout=subprocess.PIPE).stdout.strip()
-
-
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--legacy-root", type=Path, required=True); parser.add_argument("--map", type=Path, required=True)
-    parser.add_argument("--asset-zip", type=Path, required=True); parser.add_argument("--assets", type=Path, required=True)
+    parser.add_argument("--legacy-root", type=Path, required=True)
+    parser.add_argument("--map", type=Path, required=True)
+    parser.add_argument("--asset-zip", type=Path, required=True)
+    parser.add_argument("--assets", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
+
     root = Path(__file__).resolve().parents[2]
-    if _git(args.legacy_root, "rev-parse", "HEAD") != LEGACY_REVISION: raise CensusError("legacy repository revision mismatch")
-    require_sha256(args.map, MAP_SHA256, "world.otbm"); require_sha256(args.asset_zip, ZIP_SHA256, "15.32.zip")
+    legacy_root = verify_legacy_checkout(args.legacy_root)
+    require_fresh_legacy_import_context()
+    require_sha256(args.map, MAP_SHA256, "world.otbm")
+    require_sha256(args.asset_zip, ZIP_SHA256, "15.32.zip")
     require_sha256(args.assets / "catalog-content.json", CATALOG_SHA256, "catalog-content.json")
-    appearances = sorted(args.assets.glob("appearances-*.dat"))
-    if len(appearances) != 1: raise CensusError(f"expected one appearance DAT, got {len(appearances)}")
-    require_sha256(appearances[0], APPEARANCE_SHA256, "appearance DAT")
+    appearance_files = sorted(args.assets.glob("appearances-*.dat"))
+    if len(appearance_files) != 1:
+        raise CensusError(f"expected one appearance DAT, got {len(appearance_files)}")
+    require_sha256(appearance_files[0], APPEARANCE_SHA256, "appearance DAT")
+
     producer = _load_producer(root)
-    runtime = producer.load_runtime(legacy_root=args.legacy_root, map_path=args.map, asset_zip=args.asset_zip, assets_dir=args.assets)
+    runtime = producer.load_runtime(
+        legacy_root=legacy_root,
+        map_path=args.map,
+        asset_zip=args.asset_zip,
+        assets_dir=args.assets,
+    )
+    parser_modules = verify_loaded_legacy_modules(legacy_root)
+
     retained = {window.name: [] for window in WINDOWS}
     for record in producer.iter_records(runtime, strict=True):
         for window in WINDOWS:
-            if ((producer.is_tile(runtime, record) and _inside(record.position, window))
+            if (
+                (producer.is_tile(runtime, record) and _inside(record.position, window))
                 or (producer.is_town(runtime, record) and _inside(record.temple, window))
-                or (producer.is_waypoint(runtime, record) and _inside(record.position, window))):
+                or (producer.is_waypoint(runtime, record) and _inside(record.position, window))
+            ):
                 retained[window.name].append(record)
+
+    windows = [measure_window(producer, runtime, window, retained[window.name]) for window in WINDOWS]
+    expansion = [
+        {"name": window["name"], "requests": window["window_expansion_required"]}
+        for window in windows if window["window_expansion_required"]
+    ]
+    phase_result = "WINDOW_EXPANSION_REQUIRED" if expansion else "PASS"
     summary = {
-        "classification": "MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY", "phase_a_result": "PASS",
-        "phase_b_target_parity": "NOT_PERFORMED", "production_authority": "NONE", "registry_maxima_selected": False,
-        "producer": {"api": producer.PRODUCER_API, "code_commit": _git(root, "log", "-1", "--format=%H", "--", "tools/game-atlas-fullworld-source/producer.py"), "repository": "Oteryn/Oteryn-Game"},
-        "source": {"appearance_sha256": APPEARANCE_SHA256, "asset_drive_file_id": "1Dlo3bS4K1nS3mw4BhPZdlHT7lX5zRAvv", "asset_zip_sha256": ZIP_SHA256, "catalog_sha256": CATALOG_SHA256, "legacy_repository": "blakinio/Otheryn", "legacy_revision": LEGACY_REVISION, "world_otbm_sha256": MAP_SHA256},
-        "source_streams": 1, "windows": [measure_window(producer, runtime, window, retained[window.name]) for window in WINDOWS],
+        "classification": "MIGRATION_EVIDENCE / OTS_HYPOTHESIS_ONLY",
+        "phase_a_result": phase_result,
+        "phase_b_target_parity": "NOT_PERFORMED",
+        "production_authority": "NONE",
+        "registry_maxima_selected": False,
+        "producer": {
+            "api": producer.PRODUCER_API,
+            "code_commit": _git(root, "log", "-1", "--format=%H", "--", "tools/game-atlas-fullworld-source/producer.py"),
+            "repository": "Oteryn/Oteryn-Game",
+        },
+        "source": {
+            "appearance_sha256": APPEARANCE_SHA256,
+            "asset_drive_file_id": "1Dlo3bS4K1nS3mw4BhPZdlHT7lX5zRAvv",
+            "asset_zip_sha256": ZIP_SHA256,
+            "catalog_sha256": CATALOG_SHA256,
+            "legacy_parser_modules": parser_modules,
+            "legacy_repository": "blakinio/Otheryn",
+            "legacy_revision": LEGACY_REVISION,
+            "world_otbm_sha256": MAP_SHA256,
+        },
+        "source_streams": 1,
+        "window_expansion_required": expansion,
+        "windows": windows,
     }
-    args.output.write_bytes(canonical_summary_bytes(summary))
-    print(json.dumps({"output": str(args.output), "sha256": hashlib.sha256(canonical_summary_bytes(summary)).hexdigest(), "windows": [{"name": x["name"], "tile_records": x["tile_records"], "ordered_presentations": x["ordered_presentations"]} for x in summary["windows"]]}, sort_keys=True))
+    output = canonical_summary_bytes(summary)
+    args.output.write_bytes(output)
+    print(json.dumps({
+        "output": str(args.output),
+        "phase_a_result": phase_result,
+        "sha256": hashlib.sha256(output).hexdigest(),
+        "windows": [
+            {
+                "name": item["name"],
+                "tile_records": item["tile_records"],
+                "ordered_presentations": item["ordered_presentations"],
+                "ordered_stream_sha256": item["ordered_stream_sha256"],
+            }
+            for item in windows
+        ],
+    }, sort_keys=True))
     return 0
 
 
 if __name__ == "__main__":
-    try: raise SystemExit(main())
-    except (CensusError, OSError, subprocess.CalledProcessError) as exc: raise SystemExit(f"ERROR: {exc}")
+    try:
+        raise SystemExit(main())
+    except (CensusError, OSError, subprocess.CalledProcessError) as exc:
+        raise SystemExit(f"ERROR: {exc}")
